@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Palette"
 description: "Palette setup, built-in presets, HUD preset, serialization, and palette effects."
-lastModified: "2026-08-08T20:51:38+02:00"
+lastModified: "2026-09-03T20:01:06+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-palette.md"
 ---
 
@@ -143,6 +143,23 @@ const palette = new Palette(256);
 palette.applyHUD(1);
 palette.set(2, new Color32(20, 16, 32)); // override hud_bg
 BT.paletteSet(palette);
+```
+
+## Fill a block of slots
+
+Writes a transformed color into one contiguous block of slots, replacing a hand-written `for` loop of `palette.set()`
+calls. Returns the next free slot so multiple blocks can be chained without recomputing offsets.
+
+```ts twoslash
+import { Color32, Palette } from 'blit386';
+const palette = new Palette(256);
+const baseColors = [new Color32(200, 60, 40), new Color32(180, 140, 60), new Color32(90, 90, 200)];
+// ---cut---
+// Write a "fire" variant of baseColors starting at slot 20, one call instead of a loop.
+const next = palette.fillBlock(20, baseColors, (color) => new Color32(Math.min(255, color.r + 80), color.g, color.b));
+
+// next is 20 + baseColors.length – chain a second block right after the first.
+palette.fillBlock(next, baseColors, (color) => new Color32(color.r, color.g, Math.min(255, color.b + 80)));
 ```
 
 ## Named slot aliases

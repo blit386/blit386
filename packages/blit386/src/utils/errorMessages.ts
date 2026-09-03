@@ -482,6 +482,21 @@ export function hudRangeError(startSlot: number, count: number, size: number): s
 }
 
 /**
+ * Returns the error message when a `fillBlock` call would exceed the palette size.
+ *
+ * @param start – The requested start slot.
+ * @param count – Number of slots the block needs (`source.length`).
+ * @param size – The palette size.
+ * @returns User-facing error string.
+ */
+export function paletteBlockRangeError(start: number, count: number, size: number): string {
+    return (
+        `fillBlock needs ${count} slots starting at ${start}, ` +
+        `but this palette only has ${size} entries (max slot: ${size - 1}).`
+    );
+}
+
+/**
  * Returns the error message for a sprite pixel whose color is absent from the
  * active palette.
  *

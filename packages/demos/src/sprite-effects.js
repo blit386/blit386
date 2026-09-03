@@ -351,12 +351,14 @@ class Demo {
         this.buildStaticThemeBlocks();
 
         // Dynamic blocks (8..12) start as copies of the original.
-        // update() will replace them each tick.
+        // update() will replace them each tick. palette.fillBlock(start, source, transform)
+        // writes transform(baseColor) into one slot per base color, starting at `start`.
         for (let block = BLOCK_DAMAGE_FLASH; block <= BLOCK_DAYNIGHT; block++) {
-            for (let i = 0; i < colorCount; i++) {
-                const base = this.baseColors[i];
-                this.palette.set(COLOR_BASE + block * colorCount + i, new Color32(base.r, base.g, base.b, base.a));
-            }
+            this.palette.fillBlock(
+                COLOR_BASE + block * colorCount,
+                this.baseColors,
+                (base) => new Color32(base.r, base.g, base.b, base.a),
+            );
         }
 
         // Load and indexize sprite
@@ -657,72 +659,87 @@ class Demo {
         // n is how many unique colors the sprite has – every block is n slots wide.
         const n = this.colorCount;
 
-        for (let i = 0; i < n; i++) {
-            const base = this.baseColors[i];
+        // Each block below is a palette.fillBlock(start, source, transform) call: it walks
+        // this.baseColors once and writes transform(baseColor) into one slot per color,
+        // starting at `start`. That replaces a hand-written for loop over the same colors.
 
+        // Block 1: Silhouette – near-black with slight variation to preserve depth cues.
+        // Floor channels like blocks 4-7 so every recipe hands Color32 whole bytes.
+        this.palette.fillBlock(COLOR_BASE + BLOCK_SILHOUETTE * n, this.baseColors, (base) => {
             // The average brightness of this pixel (0..255 range).
             const lum = Math.floor(base.luminance);
 
-            // Block 1: Silhouette – near-black with slight variation to preserve depth cues.
-            // Floor channels like blocks 4-7 so every recipe hands Color32 whole bytes.
-            this.palette.set(
-                COLOR_BASE + BLOCK_SILHOUETTE * n + i,
-                new Color32(Math.floor(lum * 0.08), Math.floor(lum * 0.08), Math.floor(lum * 0.1), base.a),
-            );
+            return new Color32(Math.floor(lum * 0.08), Math.floor(lum * 0.08), Math.floor(lum * 0.1), base.a);
+        });
 
-            // Block 2: Damage white – everything shifted toward bright white.
+        // Block 2: Damage white – everything shifted toward bright white.
+        this.palette.fillBlock(COLOR_BASE + BLOCK_DAMAGE_WHITE * n, this.baseColors, (base) => {
+            const lum = Math.floor(base.luminance);
             const whitened = Math.floor(128 + lum * 0.5);
-            this.palette.set(
-                COLOR_BASE + BLOCK_DAMAGE_WHITE * n + i,
-                new Color32(whitened, whitened, whitened, base.a),
-            );
 
-            // Block 3: Damage red – everything shifted toward red.
-            this.palette.set(
-                COLOR_BASE + BLOCK_DAMAGE_RED * n + i,
-                new Color32(Math.min(255, lum + 80), Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a),
-            );
+            return new Color32(whitened, whitened, whitened, base.a);
+        });
 
-            // Block 4: Team red – multiply base colors with a red tint.
-            this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_RED * n + i,
+        // Block 3: Damage red – everything shifted toward red.
+        this.palette.fillBlock(COLOR_BASE + BLOCK_DAMAGE_RED * n, this.baseColors, (base) => {
+            const lum = Math.floor(base.luminance);
+
+            return new Color32(Math.min(255, lum + 80), Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a);
+        });
+
+        // Block 4: Team red – multiply base colors with a red tint.
+        this.palette.fillBlock(
+            COLOR_BASE + BLOCK_TEAM_RED * n,
+            this.baseColors,
+            (base) =>
                 new Color32(
                     Math.min(255, Math.floor(base.r * 1.4)),
                     Math.floor(base.g * 0.5),
                     Math.floor(base.b * 0.5),
                     base.a,
                 ),
-            );
+        );
 
-            // Block 5: Team blue – multiply with a blue tint.
-            this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_BLUE * n + i,
+        // Block 5: Team blue – multiply with a blue tint.
+        this.palette.fillBlock(
+            COLOR_BASE + BLOCK_TEAM_BLUE * n,
+            this.baseColors,
+            (base) =>
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.floor(base.g * 0.7),
                     Math.min(255, Math.floor(base.b * 1.6)),
                     base.a,
                 ),
-            );
+        );
 
-            // Block 6: Team green – multiply with a green tint.
-            this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_GREEN * n + i,
+        // Block 6: Team green – multiply with a green tint.
+        this.palette.fillBlock(
+            COLOR_BASE + BLOCK_TEAM_GREEN * n,
+            this.baseColors,
+            (base) =>
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.min(255, Math.floor(base.g * 1.4)),
                     Math.floor(base.b * 0.5),
                     base.a,
                 ),
-            );
+        );
 
-            // Block 7: Frozen – push toward cold blue-white.
-            this.palette.set(
-                COLOR_BASE + BLOCK_FROZEN * n + i,
-                new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a),
-            );
-        }
+        // Block 7: Frozen – push toward cold blue-white.
+        this.palette.fillBlock(COLOR_BASE + BLOCK_FROZEN * n, this.baseColors, (base) => {
+            const lum = Math.floor(base.luminance);
+
+            return new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a);
+        });
     }
+
+    // The 5 update*Block() methods below run every tick (called from update() above), unlike
+    // buildStaticThemeBlocks() which only runs once in init(). They stay as plain for loops
+    // instead of palette.fillBlock(start, source, transform) calls on purpose: fillBlock takes
+    // a transform function, and writing `(base) => ...` inline at each call site would create a
+    // brand-new function 60 times a second. A raw loop reuses the same code without allocating
+    // anything extra per tick.
 
     /**
      * Damage flash: alternates between "all white" and "all red" every 3 ticks

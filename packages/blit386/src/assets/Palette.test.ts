@@ -427,3 +427,124 @@ describe('applyHUD', () => {
         expect(palette.isDirty).toBe(true);
     });
 });
+
+describe('fillBlock', () => {
+    it('writes transform(source[i], i) into the block starting at start', () => {
+        const palette = new Palette(16);
+        const source = [Color32.fromHex('#ff0000'), Color32.fromHex('#00ff00'), Color32.fromHex('#0000ff')];
+
+        palette.fillBlock(1, source, (color) => color);
+
+        expect(palette.get(1).isEqual(Color32.fromHex('#ff0000'))).toBe(true);
+        expect(palette.get(2).isEqual(Color32.fromHex('#00ff00'))).toBe(true);
+        expect(palette.get(3).isEqual(Color32.fromHex('#0000ff'))).toBe(true);
+    });
+
+    it('passes the source index to transform', () => {
+        const palette = new Palette(16);
+        const source = [Color32.black, Color32.black, Color32.black];
+
+        palette.fillBlock(1, source, (_color, index) => new Color32(index, 0, 0, 255));
+
+        expect(palette.get(1).r).toBe(0);
+        expect(palette.get(2).r).toBe(1);
+        expect(palette.get(3).r).toBe(2);
+    });
+
+    it('fills a block at a non-default start offset', () => {
+        const palette = new Palette(64);
+        const source = [Color32.fromHex('#ff0000'), Color32.fromHex('#00ff00')];
+
+        palette.fillBlock(10, source, (color) => color);
+
+        expect(palette.get(10).isEqual(Color32.fromHex('#ff0000'))).toBe(true);
+        expect(palette.get(11).isEqual(Color32.fromHex('#00ff00'))).toBe(true);
+    });
+
+    it('returns the next free slot for chaining', () => {
+        const palette = new Palette(64);
+        const a = [Color32.black, Color32.black];
+        const b = [Color32.white, Color32.white, Color32.white];
+
+        const next = palette.fillBlock(10, a, (color) => color);
+
+        expect(next).toBe(12);
+
+        const afterB = palette.fillBlock(next, b, (color) => color);
+
+        expect(afterB).toBe(15);
+        expect(palette.get(11).isEqual(Color32.black)).toBe(true);
+        expect(palette.get(12).isEqual(Color32.white)).toBe(true);
+    });
+
+    it('does not touch slots outside the written range', () => {
+        const palette = new Palette(16);
+        const source = [Color32.fromHex('#ff0000'), Color32.fromHex('#00ff00')];
+
+        palette.set(4, new Color32(1, 2, 3, 255));
+        palette.set(7, new Color32(4, 5, 6, 255));
+        palette.fillBlock(5, source, (color) => color);
+
+        expect(palette.get(4).isEqual(new Color32(1, 2, 3, 255))).toBe(true);
+        expect(palette.get(7).isEqual(new Color32(4, 5, 6, 255))).toBe(true);
+    });
+
+    it('throws when the block would exceed the palette size', () => {
+        const palette = new Palette(16);
+        const source = [Color32.black, Color32.black, Color32.black];
+
+        expect(() => palette.fillBlock(14, source, (color) => color)).toThrow('fillBlock needs 3 slots starting at 14');
+    });
+
+    it('throws when start is negative, even with an empty source', () => {
+        const palette = new Palette(16);
+
+        expect(() => palette.fillBlock(-1, [], (color) => color)).toThrow(
+            "The color number must be a whole number that's 0 or higher",
+        );
+    });
+
+    it('throws when start is fractional', () => {
+        const palette = new Palette(16);
+
+        expect(() => palette.fillBlock(1.5, [Color32.black], (color) => color)).toThrow(
+            "The color number must be a whole number that's 0 or higher",
+        );
+    });
+
+    it('throws when an individual target slot is invalid', () => {
+        const palette = new Palette(16);
+        const source = [new Color32(1, 2, 3, 255)];
+
+        expect(() => palette.fillBlock(0, source, (color) => color)).toThrow('is always see-through');
+    });
+
+    it('returns start unchanged and writes nothing when source is empty', () => {
+        const palette = new Palette(16);
+
+        palette.set(5, new Color32(9, 9, 9, 255));
+
+        const next = palette.fillBlock(5, [], () => Color32.black);
+
+        expect(next).toBe(5);
+        expect(palette.get(5).isEqual(new Color32(9, 9, 9, 255))).toBe(true);
+    });
+
+    it('marks the palette dirty after filling', () => {
+        const palette = new Palette(16);
+
+        palette.clearDirty();
+        palette.fillBlock(1, [Color32.black], (color) => color);
+
+        expect(palette.isDirty).toBe(true);
+    });
+
+    it('does not mark the palette dirty when source is empty', () => {
+        const palette = new Palette(16);
+
+        palette.clearDirty();
+        palette.fillBlock(1, [], (color) => color);
+
+        expect(palette.isDirty).toBe(false);
+    });
+});

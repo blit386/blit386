@@ -337,24 +337,37 @@ class Demo {
 
             const colorCount = this.colorCount;
 
-            // Build theme blocks: Fire, Ice, and Void are static once written here.
-            for (let i = 0; i < colorCount; i++) {
-                const base = this.baseColors[i];
+            // Build theme blocks: Fire, Ice, Void, and Pulse are static once written here.
+            // palette.fillBlock(start, source, transform) writes transform(baseColor) into one
+            // slot per base color, starting at `start` – it replaces a hand-written for loop.
 
-                this.palette.set(
-                    COLOR_BASE + colorCount + i,
-                    new Color32(Math.min(255, base.r + 80), base.g, Math.max(0, base.b - 80)),
-                );
-                this.palette.set(
-                    COLOR_BASE + colorCount * 2 + i,
-                    new Color32(Math.max(0, base.r - 60), base.g, Math.min(255, base.b + 80)),
-                );
-                this.palette.set(
-                    COLOR_BASE + colorCount * 3 + i,
-                    new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
-                );
-                this.palette.set(COLOR_BASE + colorCount * 4 + i, new Color32(base.r, base.g, base.b, 255));
-            }
+            // Fire: push red up and pull blue down.
+            this.palette.fillBlock(
+                COLOR_BASE + colorCount,
+                this.baseColors,
+                (base) => new Color32(Math.min(255, base.r + 80), base.g, Math.max(0, base.b - 80)),
+            );
+
+            // Ice: pull red down and push blue up.
+            this.palette.fillBlock(
+                COLOR_BASE + colorCount * 2,
+                this.baseColors,
+                (base) => new Color32(Math.max(0, base.r - 60), base.g, Math.min(255, base.b + 80)),
+            );
+
+            // Void: darken every channel toward black.
+            this.palette.fillBlock(
+                COLOR_BASE + colorCount * 3,
+                this.baseColors,
+                (base) => new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
+            );
+
+            // Pulse: same colors as the original, at full opacity.
+            this.palette.fillBlock(
+                COLOR_BASE + colorCount * 4,
+                this.baseColors,
+                (base) => new Color32(base.r, base.g, base.b, 255),
+            );
 
             const image = await canvasToImage(canvas);
             this.sheet = new SpriteSheet(image);
