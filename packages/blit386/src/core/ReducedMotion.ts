@@ -117,11 +117,33 @@ export class ReducedMotion {
     private mediaQueryList: MediaQueryList | null = null;
 
     /**
+     * Resolved preference last reported to {@link onChange} (or read at {@link attach} time).
+     * Guards against notifying with a value the demo has already observed – see {@link handleChange}.
+     */
+    private lastNotified = false;
+
+    /**
      * Creates a reduced-motion subsystem. Call {@link attach} after a successful init.
      */
     constructor() {
         this.handleChange = (event: MediaQueryListEvent): void => {
-            this.onChange?.(event.matches);
+            const flags = readReducedMotionUrlFlags();
+
+            const prefersReduced = resolveReducedMotionPreferred({
+                urlForceOn: flags.forceOn,
+                urlForceOff: flags.forceOff,
+                platformPrefersReduced: event.matches,
+            });
+
+            if (prefersReduced === this.lastNotified) {
+                // The URL override already resolved to this value, or the resolved preference
+                // otherwise didn't actually change – notifying would disagree with what
+                // BT.isReducedMotionPreferred already reports, or repeat a stale event.
+                return;
+            }
+
+            this.lastNotified = prefersReduced;
+            this.onChange?.(prefersReduced);
         };
     }
 
@@ -156,6 +178,7 @@ export class ReducedMotion {
         }
 
         this.onChange = onChange;
+        this.lastNotified = ReducedMotion.isPreferred;
         this.mediaQueryList = globalThis.matchMedia(MEDIA_QUERY);
         this.mediaQueryList.addEventListener('change', this.handleChange);
     }

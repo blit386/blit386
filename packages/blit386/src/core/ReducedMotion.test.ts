@@ -7,6 +7,31 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { readReducedMotionUrlFlags, ReducedMotion, resolveReducedMotionPreferred } from './ReducedMotion';
 
+/**
+ * Runs `body` with `globalThis.location.search` stubbed to `search`, restoring it afterward.
+ *
+ * @param search – Query string including the leading '?'.
+ * @param body – Assertions to run while the stub is installed.
+ */
+function withSearch(search: string, body: () => void): void {
+    const original = Reflect.getOwnPropertyDescriptor(globalThis, 'location');
+
+    Reflect.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: { search },
+    });
+
+    try {
+        body();
+    } finally {
+        Reflect.deleteProperty(globalThis, 'location');
+
+        if (original) {
+            Reflect.defineProperty(globalThis, 'location', original);
+        }
+    }
+}
+
 describe('resolveReducedMotionPreferred', () => {
     it('lets ?noreducedmotion beat ?reducedmotion when both are present', () => {
         expect(
@@ -41,15 +66,6 @@ describe('readReducedMotionUrlFlags', () => {
     afterEach(() => {
         Reflect.deleteProperty(globalThis, 'location');
     });
-
-    function withSearch(search: string, body: () => void): void {
-        Reflect.defineProperty(globalThis, 'location', {
-            configurable: true,
-            value: { search },
-        });
-
-        body();
-    }
 
     it('reports both flags false when there is no location', () => {
         expect(readReducedMotionUrlFlags()).toEqual({ forceOn: false, forceOff: false });
@@ -182,5 +198,50 @@ describe('ReducedMotion instance', () => {
 
         expect(newOnChange).toHaveBeenCalledWith(true);
         expect(oldOnChange).not.toHaveBeenCalled();
+    });
+
+    it('resolves a URL override over a contradicting platform change, suppressing the callback', () => {
+        withSearch('?noreducedmotion', () => {
+            const { mql } = installMockMatchMedia(false);
+            const onChange = vi.fn();
+            const reducedMotion = new ReducedMotion();
+
+            reducedMotion.attach(onChange);
+
+            // The platform now prefers reduced motion, but ?noreducedmotion still forces it off –
+            // the resolved value (false) hasn't changed from what attach() already reported.
+            mql.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+            expect(onChange).not.toHaveBeenCalled();
+        });
+    });
+
+    it('stays suppressed under an active override no matter which way the platform swings', () => {
+        withSearch('?reducedmotion', () => {
+            const { mql } = installMockMatchMedia(false);
+            const onChange = vi.fn();
+            const reducedMotion = new ReducedMotion();
+
+            reducedMotion.attach(onChange);
+
+            // ?reducedmotion forces the resolved value to true regardless of the platform read, so
+            // neither a false nor a true platform event changes it from what attach() already reported.
+            mql.dispatchEvent(Object.assign(new Event('change'), { matches: false }));
+            mql.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+            expect(onChange).not.toHaveBeenCalled();
+        });
+    });
+
+    it('suppresses a redundant notification when the resolved value does not actually change', () => {
+        const { mql } = installMockMatchMedia(false);
+        const onChange = vi.fn();
+        const reducedMotion = new ReducedMotion();
+
+        reducedMotion.attach(onChange);
+
+        mql.dispatchEvent(Object.assign(new Event('change'), { matches: false }));
+
+        expect(onChange).not.toHaveBeenCalled();
     });
 });
