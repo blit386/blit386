@@ -311,10 +311,10 @@ each build. It fails on known drift-warning patterns and verifies the API Extrac
 - [ ] Review analytics/usage (if available)
 - [ ] Update roadmap
 - [ ] Check for security advisories
-- [ ] Run MCP governance preflight for `blit386` and `blit386-demos`
-      (`pnpm run security:mcp-preflight -- --governance-only`; see
+- [ ] MCP governance audit runs automatically (`.github/workflows/mcp-governance-audit.yml`, monthly); check it passed,
+      or run it early (`pnpm run security:mcp-preflight -- --governance-only`; see
       [docs/security/security-runbook.md](security/security-runbook.md))
-- [ ] Review shadow MCP flags and re-auth critical security MCPs if needed
+- [ ] Re-auth critical security MCPs (Opsera) if needed
 - [ ] Review and close stale issues
 
 ### Before releases

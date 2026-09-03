@@ -201,6 +201,11 @@ export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutEx
  * The one MCP server the repo declares for contributors. `packages/website` both serves
  * this endpoint and publishes the discovery card, so the URL exists as two JSON copies
  * neither of which can import a constant – this file is what keeps them honest.
+ *
+ * The name and classification also live in `ACCEPTED_SHADOW_MCP_ENTRIES` in
+ * `packages/blit386/scripts/security/mcp-preflight.mjs` (the monthly governance audit's
+ * allowlist) – two files independently comparing against the same literal with no clean
+ * import path between them, so keep both in sync by hand.
  */
 const PROJECT_MCP_SERVER_NAME = 'blit386-docs';
 

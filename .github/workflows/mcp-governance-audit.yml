@@ -1,0 +1,66 @@
+name: MCP Governance Audit
+
+# BT-38: automated monthly check that the tracked root .mcp.json carries only the
+# documented, accepted shadow MCP entry (blit386-docs – see "Accepted MCP entries" in
+# packages/blit386/docs/security/security-runbook.md) and nothing unmanaged or unreviewed.
+#
+# Runs mcp-preflight.mjs in --governance-only mode, which never touches live MCP session
+# state (it only scans static *.mcp.json files) – so a partial or total MCP outage
+# elsewhere never blocks this check, and it needs no --mcps-dir at all.
+
+on:
+  schedule:
+    - cron: '0 6 1 * *' # monthly, 1st of the month at 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  # One fixed, workflow-wide group: a schedule run and a workflow_dispatch run should
+  # never execute concurrently and race each other's report output.
+  group: mcp-governance-audit
+  cancel-in-progress: true
+
+jobs:
+  governance-audit:
+    name: MCP governance audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.23.1'
+
+      # No pnpm install: mcp-preflight.mjs uses only Node builtins (fs, os, path, node:util).
+      # The checkout root here already is the monorepo root, so a single governance-only
+      # pass covers the tracked root .mcp.json directly – unlike the documented agent-session
+      # procedure, which starts from inside a package directory and needs a --repo-root ../..
+      # walk-up pass to reach it.
+      - name: Run MCP governance preflight
+        run: |
+          node packages/blit386/scripts/security/mcp-preflight.mjs \
+            --governance-only \
+            --repo-root . \
+            --include-user-config \
+            --output-json mcp-governance-report.json
+
+      - name: Governance audit summary
+        if: always()
+        run: |
+          {
+            echo '## MCP governance audit'
+            echo ''
+            echo 'Monthly scan of tracked MCP config files for unmanaged (shadow) servers.'
+            echo ''
+            echo 'A failing run means an unaccepted shadow MCP entry was found. Compare against'
+            echo '"Accepted MCP entries" in packages/blit386/docs/security/security-runbook.md'
+            echo 'and either migrate/remove the server or update that table (and its matching'
+            echo 'ACCEPTED_SHADOW_MCP_ENTRIES entry in mcp-preflight.mjs) if it is a deliberate,'
+            echo 'reviewed addition.'
+          } >> "$GITHUB_STEP_SUMMARY"

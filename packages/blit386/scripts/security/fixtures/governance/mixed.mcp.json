@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "type": "http",
+      "url": "https://blit386.dev/mcp"
+    },
+    "shadow-remote": {
+      "url": "https://example.com/mcp"
+    }
+  }
+}
