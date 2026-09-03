@@ -160,7 +160,9 @@ RGBA values are gone.
 <Since symbol="BT.systemPrint" />
 <Since symbol="BT.systemPrintMeasure" />
 
-Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
+Built-in 6×14 monospace font covering printable ASCII (characters 32–126) plus a set of extra glyphs (dashes, accented
+Latin punctuation, media icons, arrows, Greek capitals, and more) – see `scripts/system-font-extra-chars.mjs` for the
+full list.
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
