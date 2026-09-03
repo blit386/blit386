@@ -407,19 +407,15 @@ export class GameLoop {
     private recomputeBaselineMin(): void {
         let baseline = Number.POSITIVE_INFINITY;
         let baselineIndex = -1;
-        let seen = 0;
 
-        for (const [index, sample] of this.recentDeltas.entries()) {
-            if (seen >= this.deltaCount) {
-                break;
-            }
+        for (let index = 0; index < this.deltaCount; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index is bounded by deltaCount <= BASELINE_WINDOW
+            const sample = this.recentDeltas[index] ?? Number.POSITIVE_INFINITY;
 
             if (sample < baseline) {
                 baseline = sample;
                 baselineIndex = index;
             }
-
-            seen++;
         }
 
         this.baselineMin = baseline;
