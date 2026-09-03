@@ -85,6 +85,10 @@
 
                     if (needsDisplay.has(mode)) {
                         cfg.drawingBufferSize = new Vector2i(1280, 960);
+                        // Without this, the default 960x720 maxCanvasSize CSS cap (BTAPI.init ->
+                        // applyCanvasLayoutStyles) scales the on-screen canvas below drawingBufferSize,
+                        // shrinking the captured screenshot to 960x720 instead of 1280x960.
+                        cfg.maxCanvasSize = new Vector2i(1280, 960);
                         cfg.outputUpscaleFilter = mode === 'upscale-linear' ? 'linear' : 'nearest';
                     }
 
