@@ -268,9 +268,10 @@ export class Splash {
      * Collapses the remaining fade-in and the minimum hold.
      *
      * Skip cannot mean "start now": when the splash is also the loading screen,
-     * the handoff still waits on {@link markInitSettled}. The fade-out is left at
-     * its full duration because it is the handoff into the game's palette, not
-     * decoration.
+     * the handoff still waits on {@link markInitSettled}. Normal runs leave the
+     * fade-out at its full duration because it is the handoff into the game's
+     * palette, not decoration; reduced-motion runs complete it immediately instead
+     * (see {@link leaveShown}).
      */
     public skip(): void {
         if (this.currentState === 'disabled' || this.currentState === 'done') {
