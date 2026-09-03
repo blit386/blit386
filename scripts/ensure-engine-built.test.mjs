@@ -3,7 +3,13 @@ import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { buildEngineBuildCommand, isEngineBuilt, resolveEngineViteEntry } from './ensure-engine-built.mjs';
+import {
+    buildEngineBuildCommand,
+    getNewestMtimeMs,
+    isEngineBuilt,
+    resolveEngineSourceDir,
+    resolveEngineViteEntry,
+} from './ensure-engine-built.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -18,18 +24,54 @@ describe('ensure-engine-built', () => {
     });
 
     describe('isEngineBuilt', () => {
-        it('is true when the vite entry file exists', () => {
+        const fakeEntry = '/fake/packages/blit386/dist/vite.js';
+        const fakeSourceDir = '/fake/packages/blit386/src';
+
+        it('is true when the vite entry file exists and is at least as new as the source', () => {
             assert.equal(
-                isEngineBuilt('/fake/packages/blit386/dist/vite.js', () => true),
+                isEngineBuilt(
+                    fakeEntry,
+                    fakeSourceDir,
+                    () => true,
+                    () => 200,
+                    () => 100,
+                ),
                 true,
             );
         });
 
         it('is false when the vite entry file is missing', () => {
             assert.equal(
-                isEngineBuilt('/fake/packages/blit386/dist/vite.js', () => false),
+                isEngineBuilt(
+                    fakeEntry,
+                    fakeSourceDir,
+                    () => false,
+                    () => 200,
+                    () => 100,
+                ),
                 false,
             );
+        });
+
+        it('is false when the vite entry file is older than the source – stale dist', () => {
+            assert.equal(
+                isEngineBuilt(
+                    fakeEntry,
+                    fakeSourceDir,
+                    () => true,
+                    () => 100,
+                    () => 200,
+                ),
+                false,
+            );
+        });
+    });
+
+    describe('getNewestMtimeMs', () => {
+        it('returns the mtime of the engine source tree as a positive number', () => {
+            const mtimeMs = getNewestMtimeMs(resolveEngineSourceDir());
+
+            assert.ok(mtimeMs > 0);
         });
     });
 
