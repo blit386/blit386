@@ -273,7 +273,9 @@ fallback-to-full-reload behavior for unrecognized file types.
 
 ## System font
 
-A built-in 6×14 monospace font covering printable ASCII (characters 32–126). No load step needed.
+A built-in 6×14 monospace font covering printable ASCII (characters 32–126) plus a set of extra glyphs (dashes, accented
+Latin punctuation, media icons, arrows, Greek capitals, and more) – see `scripts/system-font-extra-chars.mjs` for the
+full list. No load step needed.
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
