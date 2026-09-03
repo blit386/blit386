@@ -93,3 +93,27 @@ describe('PointerInput.getPos', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('PointerInput.getPosTo', () => {
+    const out = new Vector2i();
+
+    bench(
+        'getPosTo(0, out)',
+        () => {
+            input.getPosTo(0, out);
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+describe('PointerInput.getDeltaTo', () => {
+    const out = new Vector2i();
+
+    bench(
+        'getDeltaTo(0, out)',
+        () => {
+            input.getDeltaTo(0, out);
+        },
+        BENCH_OPTIONS,
+    );
+});

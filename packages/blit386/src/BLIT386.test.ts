@@ -1217,6 +1217,72 @@ describe('BT.pointerDelta', () => {
     });
 });
 
+describe('BT.pointerPosTo', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('writes (0, 0) into out when the engine is not initialized', () => {
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue(null);
+
+        const out = new Vector2i(9, 9);
+        const result = BT.pointerPosTo(out);
+
+        expect(out.x).toBe(0);
+        expect(out.y).toBe(0);
+        expect(result).toBe(out);
+    });
+
+    it('delegates to the pointer subsystem with out and the supplied slot index', () => {
+        const out = new Vector2i();
+        const getPosTo = vi.fn().mockReturnValue(out);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getPosTo } as never);
+
+        const result = BT.pointerPosTo(out, 2);
+
+        expect(getPosTo).toHaveBeenCalledWith(2, out);
+        expect(result).toBe(out);
+    });
+
+    it('defaults the pointer index to 0 (mouse)', () => {
+        const out = new Vector2i();
+        const getPosTo = vi.fn().mockReturnValue(out);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getPosTo } as never);
+
+        BT.pointerPosTo(out);
+
+        expect(getPosTo).toHaveBeenCalledWith(0, out);
+    });
+});
+
+describe('BT.pointerDeltaTo', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('writes (0, 0) into out when the engine is not initialized', () => {
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue(null);
+
+        const out = new Vector2i(9, 9);
+        const result = BT.pointerDeltaTo(out);
+
+        expect(out.x).toBe(0);
+        expect(out.y).toBe(0);
+        expect(result).toBe(out);
+    });
+
+    it('delegates to the pointer subsystem with out and the supplied slot index', () => {
+        const out = new Vector2i();
+        const getDeltaTo = vi.fn().mockReturnValue(out);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getDeltaTo } as never);
+
+        const result = BT.pointerDeltaTo(out, 1);
+
+        expect(getDeltaTo).toHaveBeenCalledWith(1, out);
+        expect(result).toBe(out);
+    });
+});
+
 describe('BT.isPointerActive', () => {
     afterEach(() => {
         vi.restoreAllMocks();
