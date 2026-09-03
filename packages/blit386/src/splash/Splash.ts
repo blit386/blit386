@@ -52,6 +52,9 @@ export class Splash {
     /** Whether the viewer asked to skip. Collapses the fade-in and the minimum hold. */
     private isSkipped = false;
 
+    /** Whether reduced motion is preferred for this run. Set once, in {@link start}. */
+    private isReducedMotion = false;
+
     /** The splash's own palette: slot 0 transparent, the gray ramp above it. */
     private readonly ramp: Palette;
 
@@ -163,14 +166,25 @@ export class Splash {
      *
      * Calling this more than once is a no-op, so a re-entrant caller cannot
      * restart a finished splash.
+     *
+     * @param reducedMotion – When `true`, skips the fade-in effect entirely (the palette
+     *   snaps straight to the fully lit ramp) and collapses the minimum hold the same way a
+     *   manual {@link skip} does, without waiting for a press.
      */
-    public start(): void {
+    public start(reducedMotion: boolean = false): void {
         if (this.currentState !== 'disabled') {
             return;
         }
 
+        this.isReducedMotion = reducedMotion;
         this.enter('fadingIn', this.timeProvider());
-        this.effects.add(new ExposureFadeEffect(this.live, this.ramp, FADE_IN_MS));
+
+        if (reducedMotion) {
+            this.live.copyFrom(this.ramp);
+            this.isSkipped = true;
+        } else {
+            this.effects.add(new ExposureFadeEffect(this.live, this.ramp, FADE_IN_MS));
+        }
     }
 
     /**
@@ -373,7 +387,15 @@ export class Splash {
         // A skip can leave the fade-in still running. Clearing first stops the two
         // effects fighting over the same palette for the rest of the fade-in's duration.
         this.effects.clear();
-        this.effects.add(new ExposureFadeEffect(this.live, createBlackened(this.live), FADE_OUT_MS));
+
+        if (this.isReducedMotion) {
+            // Instant swap: snap to black and immediately back-date entry time so the very
+            // next transition() check sees the fade-out duration as already elapsed.
+            this.live.copyFrom(createBlackened(this.live));
+            this.stateEnteredAt -= FADE_OUT_MS;
+        } else {
+            this.effects.add(new ExposureFadeEffect(this.live, createBlackened(this.live), FADE_OUT_MS));
+        }
 
         return true;
     }

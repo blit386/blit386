@@ -7,7 +7,14 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { FADE_IN_MS, FADE_OUT_MS, GLITCH_MAX_INTENSITY, HOLD_MIN_MS, RAMP_PALETTE_SIZE } from './constants';
+import {
+    FADE_IN_MS,
+    FADE_OUT_MS,
+    GLITCH_MAX_INTENSITY,
+    HOLD_MIN_MS,
+    RAMP_LAST_SLOT,
+    RAMP_PALETTE_SIZE,
+} from './constants';
 import { Splash } from './Splash';
 
 describe('Splash state machine', () => {
@@ -240,5 +247,65 @@ describe('Splash dissolve', () => {
 
         expect(() => splash.advance()).not.toThrow();
         expect(splash.dissolveEffect).toBeNull();
+    });
+});
+
+describe('Splash reduced motion', () => {
+    let now = 0;
+    let splash: Splash;
+
+    beforeEach(() => {
+        now = 0;
+        splash = new Splash({}, () => now);
+    });
+
+    function step(ms: number): void {
+        now += ms;
+        splash.advance();
+    }
+
+    it('shows the fully lit ramp immediately, with no fade-in wait', () => {
+        splash.start(true);
+        step(1);
+
+        expect(splash.state).toBe('shown');
+        expect(splash.palette.get(RAMP_LAST_SLOT).r).toBe(255);
+    });
+
+    it('still waits on init() before collapsing the hold, same as a manual skip', () => {
+        splash.start(true);
+        step(1);
+        step(HOLD_MIN_MS * 10);
+
+        expect(splash.state).toBe('shown');
+    });
+
+    it('collapses straight to done once init settles, with an instant black palette swap', () => {
+        splash.start(true);
+        step(1);
+        splash.markInitSettled();
+        step(1);
+
+        expect(splash.state).toBe('done');
+        expect(splash.palette.get(RAMP_LAST_SLOT).r).toBe(0);
+    });
+
+    it('does not animate through the fade-out duration', () => {
+        splash.start(true);
+        step(1);
+        splash.markInitSettled();
+
+        // One tiny step is enough to reach done; a real fade would still be mid-transition
+        // for FADE_OUT_MS-1 more milliseconds.
+        step(1);
+
+        expect(splash.state).toBe('done');
+    });
+
+    it('defaults to the animated path when start() is called with no argument', () => {
+        splash.start();
+        step(1);
+
+        expect(splash.state).toBe('fadingIn');
     });
 });
