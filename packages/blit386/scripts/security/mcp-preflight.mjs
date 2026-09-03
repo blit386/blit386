@@ -42,6 +42,16 @@ export const SECURITY_MCP_REGISTRY = [
     },
 ];
 
+/**
+ * Shadow MCP entries accepted by governance policy. Matched on name + classification + exact
+ * root-config path only – the URL half of this row is pinned separately by
+ * PROJECT_MCP_SERVER_URL in ../../../../scripts/check-agent-config.mjs (findProjectMcpFailures),
+ * wired into `pnpm run agents:check`. See "Accepted MCP entries" in
+ * docs/security/security-runbook.md – that table and this const must stay in sync manually.
+ * @type {{ name: string, classification: string }[]}
+ */
+export const ACCEPTED_SHADOW_MCP_ENTRIES = [{ name: 'blit386-docs', classification: 'shadow-remote' }];
+
 const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json'];
 const RUNLAYER_URL_PATTERN = /runlayer\.com/i;
 const RUNLAYER_COMMAND_PATTERN = /runlayer\s+run\b/i;
@@ -289,6 +299,15 @@ export function runMcpPreflight(options) {
             .map((server) => ({ config: config.path, name: server.name, classification: server.classification })),
     );
 
+    const rootConfigPath = path.join(repoRoot, '.mcp.json');
+    const isAcceptedShadow = (/** @type {{ config: string, name: string, classification: string }} */ server) =>
+        server.config === rootConfigPath &&
+        ACCEPTED_SHADOW_MCP_ENTRIES.some(
+            (entry) => entry.name === server.name && entry.classification === server.classification,
+        );
+    const acceptedShadowServers = shadowServers.filter(isAcceptedShadow);
+    const unacceptedShadowServers = shadowServers.filter((server) => !isAcceptedShadow(server));
+
     const criticalUsable = governanceOnly ? false : criticalMcpUsable(mcpServers);
     const recommendedFallbacks = governanceOnly ? [] : collectRecommendedFallbacks(mcpServers);
 
@@ -310,12 +329,16 @@ export function runMcpPreflight(options) {
             })),
             shadowCount: shadowServers.length,
             shadowServers,
+            acceptedShadowServers,
+            unacceptedShadowServers,
         },
         summary: {
             criticalUsable,
             allowFallback: options.allowFallback ?? false,
             recommendedFallbacks,
-            proceed: governanceOnly ? true : criticalUsable || (options.allowFallback ?? false),
+            proceed: governanceOnly
+                ? unacceptedShadowServers.length === 0
+                : criticalUsable || (options.allowFallback ?? false),
         },
     };
 
@@ -332,7 +355,10 @@ export function runMcpPreflight(options) {
  * @returns {string}
  */
 export function formatPreflightSummary(report) {
-    const lines = ['MCP security preflight', `Generated: ${report.generatedAt}`, `mcps-dir: ${report.mcpsDir}`];
+    const lines = ['MCP security preflight', `Generated: ${report.generatedAt}`];
+    if (report.mcpsDir) {
+        lines.push(`mcps-dir: ${report.mcpsDir}`);
+    }
 
     if (report.governanceOnly) {
         lines.push('', 'Governance-only mode');
@@ -360,12 +386,19 @@ export function formatPreflightSummary(report) {
             lines.push(`  - ${config.path}: ${names}`);
         }
     }
-    if (report.governance.shadowCount > 0) {
-        lines.push('', 'Shadow MCP servers flagged:');
-        for (const shadow of report.governance.shadowServers) {
+    if (report.governance.acceptedShadowServers.length > 0) {
+        lines.push('', 'Accepted shadow MCP entries:');
+        for (const shadow of report.governance.acceptedShadowServers) {
             lines.push(`  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`);
         }
-    } else {
+    }
+    if (report.governance.unacceptedShadowServers.length > 0) {
+        lines.push('', 'Unaccepted shadow MCP entries flagged:');
+        for (const shadow of report.governance.unacceptedShadowServers) {
+            lines.push(`  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`);
+        }
+    }
+    if (report.governance.shadowCount === 0) {
         lines.push('', 'No shadow MCP servers flagged in scanned configs.');
     }
 
@@ -392,6 +425,8 @@ export function formatPreflightSummary(report) {
  *   configs: Array<{ path: string, serverNames: string[], readError: string | null, shadowServers: Array<{ name: string, classification: string }> }>,
  *   shadowCount: number,
  *   shadowServers: Array<{ config: string, name: string, classification: string }>,
+ *   acceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
+ *   unacceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
  * }} governance
  * @property {{
  *   criticalUsable: boolean,
@@ -441,18 +476,19 @@ export function parseArgs(argv) {
 function main() {
     const args = parseArgs(process.argv.slice(2));
 
-    if (!args.mcpsDir) {
+    if (!args.mcpsDir && !args.governanceOnly) {
         console.error(
-            'Usage: node scripts/security/mcp-preflight.mjs --mcps-dir <mcps-path> [--repo-root <path>] [--include-user-config] [--governance-only] [--allow-fallback] [--output-json <path>]',
+            'Usage: node scripts/security/mcp-preflight.mjs --mcps-dir <mcps-path> [--repo-root <path>] [--include-user-config] [--governance-only] [--allow-fallback] [--output-json <path>]\n' +
+                '--mcps-dir is required unless --governance-only is set (governance-only never reads it).',
         );
         process.exit(1);
     }
 
-    const mcpsDir = path.resolve(args.mcpsDir);
-    if (!fs.existsSync(mcpsDir)) {
-        console.error(`mcps-dir does not exist: ${mcpsDir}`);
-        process.exit(1);
-    }
+    // A missing or nonexistent mcps-dir is not fatal here: classifyMcpServer already reports
+    // each security MCP as 'absent' for a directory that does not exist, so --allow-fallback
+    // governs whether that is acceptable – deliberately not a hard exit, so a total MCP-session
+    // outage degrades the same way a single missing server already does.
+    const mcpsDir = args.mcpsDir ? path.resolve(args.mcpsDir) : '';
 
     const report = runMcpPreflight({
         mcpsDir,

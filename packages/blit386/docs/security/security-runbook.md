@@ -45,21 +45,30 @@ pnpm run security:mcp-preflight -- \
   --output-json security-reports/mcp-preflight-latest.json
 ```
 
-Governance-only (monthly):
+Governance-only (monthly) – `--mcps-dir` is not required here, since governance-only mode never reads it (it only scans
+static `*.mcp.json` files):
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \
   --output-json security-reports/mcp-governance-$(date +%Y-%m).json
 ```
 
+This same command runs automatically every month via
+[`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) – see
+[Periodic governance](#periodic-governance-monthly).
+
 Exit codes:
 
-- `0` – proceed (critical MCP healthy, or `--allow-fallback` with documented fallbacks).
-- `1` – missing `--mcps-dir`, invalid path, or critical MCP down without `--allow-fallback`.
+- `0` – proceed (critical MCP healthy, `--allow-fallback` with documented fallbacks, or – governance-only – no
+  unaccepted shadow MCP entries found).
+- `1` – missing `--mcps-dir` (unless `--governance-only`, which never reads it), critical MCP down without
+  `--allow-fallback`, or – governance-only – an unaccepted shadow MCP entry found. A nonexistent `--mcps-dir` is no
+  longer fatal by itself: every registered security MCP is reported `absent`, and `--allow-fallback` governs whether
+  that is acceptable – this is what lets a full MCP-session outage proceed deterministically instead of crashing before
+  fallback logic runs.
 
 Never skip the preflight silently. If a tier is unavailable, run the fallback row from the matrix below and record it in
 the report.
@@ -155,6 +164,11 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
 
 ## Periodic governance (monthly)
 
+[`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) runs this
+automatically every month from the repo root – a failing run (red X in Actions) means an unaccepted shadow MCP entry was
+found; that is the enforced check. The steps below are the same procedure run by hand, useful as an early check or from
+inside an agent session:
+
 1. Run governance-only preflight for both packages (use each package directory as `--repo-root`).
 2. Run it once more with the monorepo root as `--repo-root` – `discoverMcpConfigPaths` only walks one level up, so a
    package-rooted run reaches `packages/`, never the repo root. Without this pass the tracked root `.mcp.json` is never
@@ -162,15 +176,16 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
 
    ```bash
    pnpm run security:mcp-preflight -- \
-     --mcps-dir "<mcps-path>" \
      --repo-root ../.. \
      --governance-only \
      --include-user-config \
      --output-json security-reports/mcp-governance-root-$(date +%Y-%m).json
    ```
 
-3. Review shadow MCP flags against the accepted entries below; migrate or remove every unmanaged server that is not
-   listed there, per organizational policy.
+3. Review shadow MCP flags against the accepted entries below. `summary.proceed` (and the script's exit code) already
+   reflects this automatically – it is `false` whenever `governance.unacceptedShadowServers` is non-empty – so this step
+   is about deciding what to do with a failure, not detecting one by hand: migrate or remove every unmanaged server that
+   is not listed there, per organizational policy.
 4. Re-authenticate critical MCPs (Opsera) if status is `auth_required`.
 5. Store reports under `security-reports/` (gitignored).
 
@@ -180,6 +195,11 @@ The entry below is expected in the repo-root pass from step 2 and must not be mi
 Acceptance is bound to the whole row, not the name: a flagged server qualifies only when the name, URL, config path, and
 classification all match. The same name pointing at a different URL, or appearing in a different config file, is a
 finding.
+
+The name, config path, and classification columns are enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
+[`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs); the URL column is
+enforced separately by `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs` (`pnpm run agents:check`). Both are
+hand-synced to this table – there is no shared import between them.
 
 | Server | URL | Declared in | Expected classification |
 | --- | --- | --- | --- |

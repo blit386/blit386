@@ -73,16 +73,20 @@ run their `security:audit` script directly (see `/deep-review <package>` step 3)
 
 ## Periodic governance (monthly)
 
-Run once per month for each package:
+`.github/workflows/mcp-governance-audit.yml` runs a governance-only pass from the repo root automatically every month
+and fails (exit 1) if it finds an unaccepted shadow MCP entry – that is the enforced check. Run it by hand only as an
+early check or when you specifically need agent-session context; from a package directory:
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \
   --output-json security-reports/mcp-governance-$(date +%Y-%m).json
 ```
+
+`--mcps-dir` is not required for governance-only calls – that mode never reads the MCP session's tool-state folder, only
+static `*.mcp.json` files.
 
 Then run it once more with the monorepo root as `--repo-root` (`--repo-root ../..` from a package directory), keeping
 `--include-user-config` and writing to a distinct `--output-json` path so the repo-root report does not overwrite the
@@ -92,7 +96,11 @@ and never scans the tracked root `.mcp.json`.
 Review shadow MCP flags. Exactly one entry is accepted, and only when all four fields match: name `blit386-docs`,
 classification `shadow-remote`, config path the repo-root `.mcp.json`, and URL `https://blit386.dev/mcp`. A shadow count
 of one matching all four is a clean run; anything else – a different name, a different config path, or the same name
-pointing elsewhere – is a finding, not an accepted entry. See "Accepted MCP entries" in the runbook.
+pointing elsewhere – is a finding, not an accepted entry. See "Accepted MCP entries" in the runbook. This is no longer
+just a human judgment call: the report's `governance.unacceptedShadowServers` and `summary.proceed` (the exit code)
+already reflect it, matched against `ACCEPTED_SHADOW_MCP_ENTRIES` in `mcp-preflight.mjs` (name and classification;
+config path is checked against the repo root's own `.mcp.json`) – the URL field is enforced separately by
+`pnpm run agents:check`, so a finding here still needs a human to decide migrate/remove vs. update the allowlist.
 
 The preflight report prints name, classification, and config path but not the URL, so the URL half is enforced
 separately by `pnpm run agents:check` (`findProjectMcpFailures` in `scripts/check-agent-config.mjs`). It pins the
@@ -108,4 +116,5 @@ local username.
 
 - [docs/security/security-runbook.md](../../../packages/blit386/docs/security/security-runbook.md)
 - `packages/blit386/scripts/security/mcp-preflight.mjs`
+- `.github/workflows/mcp-governance-audit.yml` (automated monthly enforcement)
 - Runlayer MCP governance rule (shadow MCP detection)
