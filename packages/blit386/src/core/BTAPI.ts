@@ -46,7 +46,7 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { AudioBus, Backend, HardwareSettings, IBTDemo } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,
@@ -253,13 +253,13 @@ export class BTAPI {
     /** Screen orientation detection / lock subsystem. Created and attached during {@link init}. */
     private orientation: Orientation | null = null;
 
-    // TODO: Additional subsystems for future implementation:
-    // AssetManager
-
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
      */
     private constructor() {}
+
+    // TODO: Additional subsystems for future implementation:
+    // AssetManager
 
     /**
      * Gets the lazily created singleton instance.
@@ -469,7 +469,7 @@ export class BTAPI {
                             this.pointer,
                             this.keyboard,
                             this.loop?.getTicks() ?? 0,
-                            () => this.demo?.overlayRows?.(),
+                            this.getDemoOverlayRows,
                             this.overlayTiming,
                             this.palette,
                             this.framePaletteUsageMask,
@@ -1610,6 +1610,16 @@ export class BTAPI {
     }
 
     /**
+     * Bound supplier for {@link IBTDemo.overlayRows}, passed to `Overlay.handleFrameInput` and
+     * `Overlay.updateAndRender`. A field instead of an inline closure at each call site so the
+     * two call sites (input handling, then draw) do not each allocate a fresh arrow function
+     * every frame.
+     *
+     * @returns Current demo's overlay rows, if any.
+     */
+    private readonly getDemoOverlayRows = (): readonly OverlayRow[] | undefined => this.demo?.overlayRows?.();
+
+    /**
      * Reads and validates demo `configure()` output into resolved hardware settings.
      *
      * @param demo – Demo implementing {@link IBTDemo}.
@@ -2015,7 +2025,10 @@ export class BTAPI {
      * Applies overlay input (palette swatch copy, then body toggle) and clears per-frame palette usage.
      *
      * Input runs here (not in {@link Overlay.updateAndRender}) so visibility is current
-     * when deciding whether to track palette usage during `demo.render()`.
+     * when deciding whether to track palette usage during `demo.render()`. The usage mask is
+     * only cleared when tracking is actually active this frame (it toggles with overlay/palette
+     * visibility above) – nothing reads or repopulates it otherwise, so clearing it would be
+     * wasted work on every frame the overlay palette grid is not visible.
      */
     private beginRenderFrame(): void {
         if (this.overlay) {
@@ -2023,14 +2036,16 @@ export class BTAPI {
                 this.pointer,
                 this.pendingOverlayTogglePress,
                 this.loop?.getTicks() ?? 0,
-                () => this.demo?.overlayRows?.(),
+                this.getDemoOverlayRows,
                 this.palette,
             );
         }
 
         this.pendingOverlayTogglePress = false;
 
-        resetUsage(this.framePaletteUsageMask);
+        if (this.isTrackingFramePaletteUsage()) {
+            resetUsage(this.framePaletteUsageMask);
+        }
     }
 
     /**

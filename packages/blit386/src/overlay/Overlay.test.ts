@@ -379,6 +379,60 @@ describe('Overlay', () => {
         expect(texts).toContain('render()  3.8ms');
     });
 
+    it('re-formats the cached top-timing label on the next frame instead of staying stale', () => {
+        // Regression test for the cached label watermark: an earlier version compared
+        // Math.round(ms * 10) against the previous frame's watermark instead of comparing the
+        // toFixed(1) string itself, which can disagree with toFixed(1)'s decimal rounding at a
+        // tie and freeze the label on stale text. Two distinct frames here must produce two
+        // distinct labels.
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        // Two independent renderer mocks so each frame's draw calls can be inspected in
+        // isolation; the shared `overlay` instance carries the timing sampler's smoothing
+        // state (and the label cache under test) across both calls.
+        const firstRenderer = createMockRenderer();
+        const secondRenderer = createMockRenderer();
+        const baseSample = {
+            updateSteps: 1,
+            droppedFrames: 0,
+            primitiveOverflowCount: 0,
+            spriteOverflowCount: 0,
+            primitiveSubmittedVertices: 0,
+            spriteSubmittedVertices: 0,
+        };
+
+        overlay.updateAndRender(firstRenderer, mockFont, null, null, 0, undefined, {
+            ...baseSample,
+            frameMs: 10,
+            updateMs: 2,
+            renderMs: 4,
+            drawCalls: 10,
+        });
+
+        const firstTexts = getBitmapTextCalls(firstRenderer).map((call) => call.text);
+
+        expect(firstTexts).toContain('Frame 10.0ms');
+        expect(firstTexts).toContain('render()  4.0ms');
+
+        overlay.updateAndRender(secondRenderer, mockFont, null, null, 1, undefined, {
+            ...baseSample,
+            frameMs: 20,
+            updateMs: 5,
+            renderMs: 8,
+            drawCalls: 20,
+        });
+
+        const secondTexts = getBitmapTextCalls(secondRenderer).map((call) => call.text);
+
+        // Exponentially smoothed toward the new raw samples (FPS_SMOOTHING = 0.12), not a
+        // straight pass-through of the second frame's raw values.
+        expect(secondTexts).toContain('Frame 11.2ms');
+        expect(secondTexts).toContain('render()  4.5ms');
+        expect(secondTexts).toContain('Draw Calls 20');
+        expect(secondTexts).not.toContain('Frame 10.0ms');
+        expect(secondTexts).not.toContain('render()  4.0ms');
+    });
+
     it('skips draw calls when body is hidden and the toggle hint is disabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const overlay = createOverlay(layout, 'Demo', { isOverlayToggleHintVisible: false });

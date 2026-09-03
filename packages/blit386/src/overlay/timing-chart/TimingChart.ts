@@ -29,6 +29,7 @@ import {
     computeTimingChartTagMarkerX,
     computeTimingChartTagTextX,
     computeTimingChartTagTickY,
+    createTimingChartTagGroupScratch,
     formatTimingChartTagRelTick,
     groupTimingChartTagsByColumn,
     normalizeTimingChartTagLabel,
@@ -36,6 +37,7 @@ import {
     TIMING_CHART_TAG_START,
     type TimingChartTag,
     type TimingChartTagColumnGroup,
+    type TimingChartTagGroupScratch,
 } from './tags';
 
 /**
@@ -83,6 +85,9 @@ export class TimingChart {
     #totalSamples = 0;
 
     readonly #tagLabelPos = new Vector2i(0, 0);
+
+    /** Reusable group pool for {@link groupTimingChartTagsByColumn}, populated fresh each {@link draw}. */
+    readonly #tagGroupScratch: TimingChartTagGroupScratch = createTimingChartTagGroupScratch();
 
     /**
      * Creates a timing chart with the given feature flag.
@@ -230,7 +235,12 @@ export class TimingChart {
 
         this.#drawGridLines(target, chartRect, style);
 
-        const tagGroups = groupTimingChartTagsByColumn(this.#tags, this.#totalSamples, this.#bufferWidth);
+        const tagGroups = groupTimingChartTagsByColumn(
+            this.#tags,
+            this.#totalSamples,
+            this.#bufferWidth,
+            this.#tagGroupScratch,
+        );
 
         this.#drawTagMarkers(target, chartRect, style, tagGroups);
 
@@ -375,7 +385,7 @@ export class TimingChart {
 
                 target.drawLabelOnTop(
                     font,
-                    this.#tagLabelPos.clone(),
+                    this.#tagLabelPos,
                     formatTimingChartTagRelTick(leadTag.tick, this.#startTick),
                     paletteOffset,
                 );
@@ -392,7 +402,7 @@ export class TimingChart {
                 this.#tagLabelPos.x = textX;
                 this.#tagLabelPos.y = computeTimingChartTagLabelY(chartRect.y, stackIndex);
 
-                target.drawLabelOnTop(font, this.#tagLabelPos.clone(), tag.label, paletteOffset);
+                target.drawLabelOnTop(font, this.#tagLabelPos, tag.label, paletteOffset);
                 /* eslint-enable security/detect-object-injection */
             }
         }

@@ -6,6 +6,7 @@ import {
     computeTimingChartTagMarkerX,
     computeTimingChartTagTextX,
     computeTimingChartTagTickY,
+    createTimingChartTagGroupScratch,
     formatTimingChartTagRelTick,
     groupTimingChartTagsByColumn,
     normalizeTimingChartTagLabel,
@@ -114,9 +115,45 @@ describe('groupTimingChartTagsByColumn', () => {
             { label: 'C', tick: 2, sampleIndex: 9 },
         ];
 
-        expect(groupTimingChartTagsByColumn(tags, 10, 100)).toEqual([
+        expect(groupTimingChartTagsByColumn(tags, 10, 100, createTimingChartTagGroupScratch())).toEqual([
             { sampleIndex: 5, tags: [tags[0], tags[1]] },
             { sampleIndex: 9, tags: [tags[2]] },
+        ]);
+    });
+
+    it('returns an empty list without touching the scratch pool when there are no tags', () => {
+        const scratch = createTimingChartTagGroupScratch();
+
+        expect(groupTimingChartTagsByColumn([], 10, 100, scratch)).toEqual([]);
+    });
+
+    it('reuses pooled group descriptors across calls without leaking stale tags', () => {
+        const scratch = createTimingChartTagGroupScratch();
+
+        const first: TimingChartTag[] = [
+            { label: 'A', tick: 1, sampleIndex: 1 },
+            { label: 'B', tick: 2, sampleIndex: 2 },
+            { label: 'C', tick: 3, sampleIndex: 3 },
+        ];
+
+        expect(groupTimingChartTagsByColumn(first, 10, 100, scratch)).toEqual([
+            { sampleIndex: 1, tags: [first[0]] },
+            { sampleIndex: 2, tags: [first[1]] },
+            { sampleIndex: 3, tags: [first[2]] },
+        ]);
+
+        const second: TimingChartTag[] = [{ label: 'D', tick: 4, sampleIndex: 4 }];
+
+        expect(groupTimingChartTagsByColumn(second, 10, 100, scratch)).toEqual([{ sampleIndex: 4, tags: [second[0]] }]);
+
+        const third: TimingChartTag[] = [
+            { label: 'E', tick: 5, sampleIndex: 5 },
+            { label: 'F', tick: 6, sampleIndex: 6 },
+        ];
+
+        expect(groupTimingChartTagsByColumn(third, 10, 100, scratch)).toEqual([
+            { sampleIndex: 5, tags: [third[0]] },
+            { sampleIndex: 6, tags: [third[1]] },
         ]);
     });
 });

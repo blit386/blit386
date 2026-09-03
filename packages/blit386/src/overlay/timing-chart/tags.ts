@@ -35,6 +35,48 @@ export type TimingChartTagColumnGroup = {
     tags: TimingChartTag[];
 };
 
+/** Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per {@link TimingChart} instance. */
+export interface TimingChartTagGroupScratch {
+    /** Pooled group descriptors; only the first N (from the last call) are live. */
+    groups: TimingChartTagColumnGroup[];
+}
+
+/**
+ * Creates an empty scratch pool for {@link groupTimingChartTagsByColumn}.
+ *
+ * @returns Scratch pool with no pooled groups yet.
+ */
+export function createTimingChartTagGroupScratch(): TimingChartTagGroupScratch {
+    return { groups: [] };
+}
+
+/**
+ * Returns the pooled group descriptor at `index`, growing the pool and resetting the
+ * descriptor's tag list as needed.
+ *
+ * @param scratch – Scratch pool.
+ * @param index – Zero-based group index for this call.
+ * @param sampleIndex – Column sample index for this group.
+ * @returns Reset, reused group descriptor.
+ */
+function acquireTagGroup(
+    scratch: TimingChartTagGroupScratch,
+    index: number,
+    sampleIndex: number,
+): TimingChartTagColumnGroup {
+    while (scratch.groups.length <= index) {
+        scratch.groups.push({ sampleIndex: 0, tags: [] });
+    }
+
+    // eslint-disable-next-line security/detect-object-injection -- index bounded by the while loop above
+    const group = scratch.groups[index] as TimingChartTagColumnGroup;
+
+    group.sampleIndex = sampleIndex;
+    group.tags.length = 0;
+
+    return group;
+}
+
 /**
  * Normalizes a tag label; empty or missing labels become `"Untitled"`.
  *
@@ -164,46 +206,49 @@ export function computeTimingChartTagLabelY(chartTopY: number, stackIndex: numbe
 /**
  * Groups on-screen tags by sample column for stacked drawing.
  *
+ * Relies on {@link TimingChartTag.sampleIndex} being non-decreasing across `tags` (tags are
+ * pushed in assignment order and `sampleIndex` is the monotonic sample counter at assign time,
+ * and pruning preserves relative order), so tags sharing a column are always contiguous – a
+ * single run-length pass over pooled group descriptors replaces the previous per-call
+ * `Map`/array allocations.
+ *
  * @param tags – Active tags for the current frame.
  * @param totalSamples – Timing samples recorded since the last chart width reset.
  * @param chartWidth – Chart width in pixels.
- * @returns Groups in first-seen column order.
+ * @param scratch – Reusable group pool from {@link createTimingChartTagGroupScratch}.
+ * @returns Groups in first-seen column order; live only until the next call with `scratch`.
  */
 export function groupTimingChartTagsByColumn(
     tags: readonly TimingChartTag[],
     totalSamples: number,
     chartWidth: number,
-): TimingChartTagColumnGroup[] {
-    const groups = new Map<number, TimingChartTag[]>();
-    const order: number[] = [];
+    scratch: TimingChartTagGroupScratch,
+): readonly TimingChartTagColumnGroup[] {
+    if (tags.length === 0) {
+        scratch.groups.length = 0;
+
+        return scratch.groups;
+    }
+
+    let groupCount = 0;
+    let currentGroup: TimingChartTagColumnGroup | undefined;
 
     for (const tag of tags) {
         if (shouldPruneTimingChartTag(totalSamples, tag.sampleIndex, chartWidth)) {
             continue;
         }
 
-        let bucket = groups.get(tag.sampleIndex);
-
-        if (bucket === undefined) {
-            bucket = [];
-            groups.set(tag.sampleIndex, bucket);
-            order.push(tag.sampleIndex);
+        if (currentGroup === undefined || currentGroup.sampleIndex !== tag.sampleIndex) {
+            currentGroup = acquireTagGroup(scratch, groupCount, tag.sampleIndex);
+            groupCount++;
         }
 
-        bucket.push(tag);
+        currentGroup.tags.push(tag);
     }
 
-    const result: TimingChartTagColumnGroup[] = [];
+    scratch.groups.length = groupCount;
 
-    for (const sampleIndex of order) {
-        const bucket = groups.get(sampleIndex);
-
-        if (bucket !== undefined && bucket.length > 0) {
-            result.push({ sampleIndex, tags: bucket });
-        }
-    }
-
-    return result;
+    return scratch.groups;
 }
 
 /**
