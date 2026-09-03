@@ -11,6 +11,7 @@ import { Color32 } from '../utils/Color32';
 import {
     hudRangeError,
     hudStartSlotError,
+    paletteBlockRangeError,
     paletteIndexNegativeError,
     paletteIndexOutOfRangeError,
 } from '../utils/errorMessages';
@@ -381,6 +382,45 @@ export class Palette {
             this.set(slot, Color32.fromHex(hex));
             this.setNamed(name, slot);
         }
+    }
+
+    /**
+     * Writes a transformed block of colors into contiguous palette slots.
+     *
+     * Writes `transform(source[i], i)` into slot `start + i` for every `i` in `[0, source.length)`, delegating
+     * each write to {@link set} so it inherits {@link set}'s validation, including the rule that slot 0 must
+     * stay transparent. Collapses the common pattern of looping
+     * `palette.set(start + i, transform(baseColors[i]))` into one call.
+     *
+     * @since 1.7.0
+     * @param start – First palette index to write.
+     * @param source – Source colors to read from, in order. `source[i]` maps to slot `start + i`.
+     * @param transform – Called once per source color as `transform(color, i)`; its return value is written to
+     *   slot `start + i`.
+     * @returns The next free slot after the written block (`start + source.length`), for chaining further
+     *   writes.
+     * @throws Error if `start` is not a non-negative integer.
+     * @throws Error if the block would exceed the palette size.
+     * @throws Error if an individual slot write is invalid – see {@link set}.
+     */
+    public fillBlock(
+        start: number,
+        source: readonly Color32[],
+        transform: (color: Color32, index: number) => Color32,
+    ): number {
+        if (!Number.isInteger(start) || start < 0) {
+            throw new Error(paletteIndexNegativeError(start));
+        }
+
+        if (start + source.length > this.size) {
+            throw new Error(paletteBlockRangeError(start, source.length, this.size));
+        }
+
+        for (const [i, color] of source.entries()) {
+            this.set(start + i, transform(color, i));
+        }
+
+        return start + source.length;
     }
 
     /**

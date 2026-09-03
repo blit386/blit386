@@ -394,11 +394,10 @@ class Demo {
 
         // Sprite colors for this theme
         // We take the original stone RGBA values from baseColors and apply a tint.
-        // tintColor() below picks the right recipe for the theme name.
-        for (let i = 0; i < this.baseColors.length; i++) {
-            // Register the tinted color at the SAME slot number regardless of theme.
-            palette.set(COLOR_BASE + i, this.tintColor(this.baseColors[i], themeName));
-        }
+        // tintColor() below picks the right recipe for the theme name. palette.fillBlock()
+        // writes the tinted color for each base color starting at COLOR_BASE, so every theme
+        // registers its tinted colors at the SAME slot numbers.
+        palette.fillBlock(COLOR_BASE, this.baseColors, (base) => this.tintColor(base, themeName));
 
         // Representative swatch colors (same in every palette)
         // These are used for the theme legend on the left side.
