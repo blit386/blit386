@@ -324,7 +324,6 @@ class Demo implements IBTDemo {
 ### Reduced motion
 
 <Since symbol="BT.isReducedMotionPreferred" />
-<Since symbol="IBTDemo.onReducedMotionChange" />
 
 `BT.isReducedMotionPreferred` reads the browser's `prefers-reduced-motion` setting. After a successful `init()`, the
 engine also listens for changes and calls optional `IBTDemo.onReducedMotionChange(prefersReduced)` when the demo
@@ -335,7 +334,7 @@ getter and the change hook. The built-in splash does respect it; see
 [The splash and reduced motion](guide-splash.md#reduced-motion).
 
 ```ts twoslash
-import { BT, type HardwareSettings, type IBTDemo } from 'blit386';
+import { BT, type IBTDemo } from 'blit386';
 
 class Demo implements IBTDemo {
   onReducedMotionChange(prefersReduced: boolean): void {

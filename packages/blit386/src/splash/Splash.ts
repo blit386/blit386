@@ -49,7 +49,7 @@ export class Splash {
     /** Whether the game's `init()` has settled (resolved or rejected). */
     private isInitSettled = false;
 
-    /** Whether the viewer asked to skip. Collapses the fade-in and the minimum hold. */
+    /** Whether the viewer asked to skip, or reduced motion is preferred. Collapses the fade-in and the minimum hold. */
     private isSkipped = false;
 
     /** Whether reduced motion is preferred for this run. Set once, in {@link start}. */

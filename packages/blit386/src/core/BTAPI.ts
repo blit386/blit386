@@ -1797,7 +1797,7 @@ export class BTAPI {
     }
 
     /**
-     * Attaches the reduced-motion preference listener, rebinding the demo callback.
+     * Attaches the reduced-motion preference listener, binding the demo callback.
      *
      * Extracted from {@link init} to keep that method's cyclomatic complexity within the
      * project's lint threshold, following the same pattern as {@link attachInputSubsystems}

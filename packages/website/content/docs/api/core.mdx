@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-09-01T16:51:54+02:00"
+lastModified: "2026-09-03T20:33:55+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -274,6 +274,8 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   the session afterward. See [API: Audio](/docs/api/audio#unlock-state).
 - `screenOrientation` is runtime state from the Screen Orientation API (`null` when unavailable). See
   [Screen orientation](/docs/api/browser-support#screen-orientation).
+- `isReducedMotionPreferred` is runtime state too: resolves `prefers-reduced-motion` (or a `?reducedmotion` /
+  `?noreducedmotion` URL override). See [Reduced motion](#reduced-motion).
 - `BT.random` is runtime state too: a live, always-present `Random` instance (time-seeded at engine start). Reseed with
   `BT.randomSeed(seed)` for reproducible runs. See [API: Random](/docs/api/random#engine-default-btrandom).
 
@@ -313,6 +315,39 @@ class Demo implements IBTDemo {
   render(): void {}
 }
 ```
+
+### Reduced motion
+
+<Since symbol="BT.isReducedMotionPreferred" />
+
+`BT.isReducedMotionPreferred` reads the browser's `prefers-reduced-motion` setting. After a successful `init()`, the
+engine also listens for changes and calls optional `IBTDemo.onReducedMotionChange(prefersReduced)` when the demo
+implements it – the preference can change while your game is running, the same way orientation can.
+
+Reducing your own animation fidelity, screen-shake, or particle counts is a demo concern – the engine only supplies the
+getter and the change hook. The built-in splash does respect it; see
+[The splash and reduced motion](/docs/guides/splash#reduced-motion).
+
+```ts twoslash
+import { BT, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  onReducedMotionChange(prefersReduced: boolean): void {
+    console.log('reduced motion:', prefersReduced, BT.isReducedMotionPreferred);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+
+  render(): void {}
+}
+```
+
+`?reducedmotion` and `?noreducedmotion` are valueless URL flags for testing either state without changing OS settings or
+devtools media emulation; `?noreducedmotion` wins when both are present.
 
 ### Requested vs. active backend
 

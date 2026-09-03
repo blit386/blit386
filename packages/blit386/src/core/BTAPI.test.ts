@@ -2827,6 +2827,7 @@ describe('BTAPI', () => {
         describe('hotReplaceDemo', () => {
             afterEach(() => {
                 Reflect.deleteProperty(globalThis, 'screen');
+                Reflect.deleteProperty(globalThis, 'matchMedia');
             });
 
             it('swaps in the new demo and returns true when init() succeeds', async () => {
@@ -2921,6 +2922,38 @@ describe('BTAPI', () => {
 
                 expect(newOnOrientationChange).toHaveBeenCalledWith('portrait-primary');
                 expect(oldOnOrientationChange).not.toHaveBeenCalled();
+            });
+
+            it('rebinds reduced-motion change events to the new demo after a successful swap', async () => {
+                const target = new EventTarget();
+                const mockMediaQueryList = {
+                    matches: false,
+                    addEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.addEventListener(event, listener),
+                    ),
+                    removeEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.removeEventListener(event, listener),
+                    ),
+                    dispatchEvent: (event: Event) => target.dispatchEvent(event),
+                };
+
+                Object.defineProperty(globalThis, 'matchMedia', {
+                    configurable: true,
+                    value: vi.fn(() => mockMediaQueryList),
+                });
+
+                const oldOnReducedMotionChange = vi.fn();
+                const oldDemo = { ...makeMockDemo(), onReducedMotionChange: oldOnReducedMotionChange };
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newOnReducedMotionChange = vi.fn();
+                const newDemo = { ...makeMockDemo(), onReducedMotionChange: newOnReducedMotionChange };
+                await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                mockMediaQueryList.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+                expect(newOnReducedMotionChange).toHaveBeenCalledWith(true);
+                expect(oldOnReducedMotionChange).not.toHaveBeenCalled();
             });
         });
     });

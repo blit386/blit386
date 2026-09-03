@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "The BLIT386 Splash"
 description: "The BLIT386 splash: gating, the loading-screen hold, the palette handoff, and the skip."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-09-03T20:55:39+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-splash.md"
 ---
 
@@ -136,6 +136,24 @@ Swallowing consumes the press _edge_, not the key. A key still physically down a
 `BT.isKeyDown` on the first frame, which is honest: the player really is holding it.
 
 </Callout>
+
+## Reduced motion
+
+<Since symbol="BT.isReducedMotionPreferred" />
+
+When `BT.isReducedMotionPreferred` is `true` at splash start, the splash shows a static hold instead of animating:
+
+- No fade-in – the ramp and logo appear at full brightness immediately.
+- The minimum hold still collapses the same way a manual skip does (see [The skip](#the-skip)), but it still waits on
+  `init()` – the splash doubling as a loading screen does not change.
+- The handoff into your game's palette is an instant swap, not the animated exposure fade described in
+  [The palette handoff](#the-palette-handoff) – no intermediate blackened frame.
+- The WebGPU dissolve is skipped entirely. It is a simulated glitch effect – exactly the category of motion
+  `prefers-reduced-motion` exists to suppress – rather than a decoration to tone down.
+
+You do not opt into any of this. It follows `BT.isReducedMotionPreferred` automatically, which itself follows the
+platform's `prefers-reduced-motion` setting (or the `?reducedmotion` / `?noreducedmotion` URL overrides – see
+[API: Core](/docs/api/core#reduced-motion)).
 
 ## Backends
 
