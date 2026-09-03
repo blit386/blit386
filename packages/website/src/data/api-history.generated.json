@@ -1678,7 +1678,6 @@
       "HardwareSettings",
       "HotContext",
       "HotReloadContext",
-      "IBTDemo.onReducedMotionChange",
       "PreferredOrientation",
       "bootstrap",
       "defaultConfig",
