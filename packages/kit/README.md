@@ -25,8 +25,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a file
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
   - `blit clean` – replace `src/game.ts` (or `src/game.js`) with an empty skeleton: the same `init`/`update`/`render`
-    shape, no drawing, no input handling, ready for your own code. Nothing else in the project is touched. Warns before
-    replacing a file that no longer matches what was scaffolded, and always asks first – add `--yes` to skip the prompt.
+    shape, no drawing, no input handling, ready for your own code. No other project file is touched other than
+    `.blit/manifest.json`'s tracked hash for it, kept in step so later drift checks do not flag the skeleton as
+    modified. Warns before replacing a file that no longer matches what was scaffolded, and always asks first – add
+    `--yes` to skip the prompt.
   - `blit help` – list the commands.
 - `content/` – everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and

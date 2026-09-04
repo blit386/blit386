@@ -74,6 +74,16 @@ export async function runClean(args: string[]): Promise<void> {
         return;
     }
 
+    if (isTs && isJs) {
+        out(
+            ui.error(
+                "Couldn't tell if this is a JavaScript or TypeScript project (both tsconfig.json and jsconfig.json are here).",
+            ),
+        );
+        process.exitCode = 1;
+        return;
+    }
+
     const relPath = isTs ? GAME_FILE_TS : GAME_FILE_JS;
     const absPath = join(root, relPath);
 
@@ -114,8 +124,21 @@ export async function runClean(args: string[]): Promise<void> {
     writeFileSync(absPath, skeleton);
     out(ui.success(`Replaced ${relPath} with an empty skeleton.`));
 
+    // The game file is already replaced – the command's actual job is done. Keeping the manifest's tracked hash in
+    // step is bookkeeping for later drift checks (`blit doctor`, `blit agents sync --check`), not the deliverable
+    // itself, so a failure here is reported and swallowed rather than crashing a command that otherwise succeeded.
     if (manifest && entry && isSafeRelPath(relPath, root)) {
         entry.sha256 = sha256Text(skeleton);
-        writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`);
+
+        try {
+            writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`);
+        } catch (error) {
+            out(
+                ui.warn(
+                    `Couldn't update .blit/manifest.json (${error instanceof Error ? error.message : String(error)}).`,
+                ),
+            );
+            out(ui.info(`${relPath} may show as modified in later drift checks.`));
+        }
     }
 }

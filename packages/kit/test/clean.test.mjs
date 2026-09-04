@@ -8,7 +8,7 @@
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -201,6 +201,50 @@ test('blit clean fails when the game file is missing', () => {
         assert.equal(exitCode, 1);
         assert.ok(output.includes("Couldn't find src/game.ts"), `got:\n${output}`);
     } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit clean rejects a project with both tsconfig.json and jsconfig.json', () => {
+    const { root, gameRelPath: tsGameRelPath } = makeGame({ language: 'ts', withManifest: false });
+    const jsGameRelPath = 'src/game.js';
+    try {
+        writeFileSync(join(root, 'jsconfig.json'), '{}\n');
+        writeFileSync(join(root, jsGameRelPath), DEFAULT_GAME_SOURCE);
+
+        const { exitCode, output } = runClean(root, ['--yes']);
+        assert.equal(exitCode, 1);
+        assert.ok(
+            output.includes("Couldn't tell if this is a JavaScript or TypeScript project"),
+            `expected an ambiguous-language error, got:\n${output}`,
+        );
+
+        assert.equal(readFileSync(join(root, tsGameRelPath), 'utf8'), DEFAULT_GAME_SOURCE, 'TS game must be untouched');
+        assert.equal(readFileSync(join(root, jsGameRelPath), 'utf8'), DEFAULT_GAME_SOURCE, 'JS game must be untouched');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit clean replaces the game file even when the manifest cannot be updated', {
+    skip: process.getuid?.() === 0,
+}, () => {
+    const { root, gameRelPath } = makeGame({ language: 'ts' });
+    try {
+        chmodSync(join(root, '.blit', 'manifest.json'), 0o444);
+
+        const { exitCode, output } = runClean(root, ['--yes']);
+        assert.equal(exitCode, 0, `expected exit 0, got ${exitCode}:\n${output}`);
+        assert.ok(output.includes('Replaced'), `expected the file-replaced success line, got:\n${output}`);
+        assert.ok(
+            output.includes("Couldn't update .blit/manifest.json"),
+            `expected a manifest-write warning, got:\n${output}`,
+        );
+
+        const content = readFileSync(join(root, gameRelPath), 'utf8');
+        assert.ok(!content.includes('Catcher') && content.includes('class Game'), 'game file must still be replaced');
+    } finally {
+        chmodSync(join(root, '.blit', 'manifest.json'), 0o644);
         rmSync(root, { recursive: true, force: true });
     }
 });
