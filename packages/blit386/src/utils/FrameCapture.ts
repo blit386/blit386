@@ -93,8 +93,8 @@ export async function pixelBufferToPNG(
 
 /**
  * Triggers a browser download of `blob` under `filename`, via a temporary object URL
- * and a synthetic anchor click. Shared by `BT.downloadFrame` and the engine's F9
- * frame-capture shortcut so both trigger a download the same way.
+ * and a synthetic anchor click. Shared by `BT.downloadFrame` and the engine's
+ * Shift+F9 frame-capture shortcut so both trigger a download the same way.
  *
  * @param blob – File contents to download.
  * @param filename – Target download filename.

@@ -578,6 +578,13 @@ export class BTAPI {
      * subsystems are detached so listeners, polling state, the audio context, the held
      * wake lock sentinel, and the orientation/reduced-motion change listeners do not leak
      * across engine restarts (relevant in tests where the same DOM persists).
+     *
+     * Also clears {@link isCapturingFrameViaShortcut}. A Shift+F9 capture in flight when
+     * `stop()` runs is waiting on a render pass that will now never happen, so its
+     * `captureFrameViaShortcut()` promise never settles and its `finally` block never
+     * clears the guard; without this, every Shift+F9 press after the next `init()` would
+     * silently no-op forever. The stale promise itself is left to be garbage-collected –
+     * it has no other observers, so there is nothing further to cancel.
      */
     public stop(): void {
         this.loop?.stop();
@@ -591,6 +598,8 @@ export class BTAPI {
 
         this.reducedMotion?.detach();
         this.reducedMotion = null;
+
+        this.isCapturingFrameViaShortcut = false;
     }
 
     /**

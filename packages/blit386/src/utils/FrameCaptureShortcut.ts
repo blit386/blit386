@@ -1,5 +1,5 @@
 /**
- * F9 dev-mode frame-capture shortcut: gating and the default timestamped filename.
+ * Shift+F9 dev-mode frame-capture shortcut: gating and the default timestamped filename.
  *
  * Split into a pure resolver ({@link resolveFrameCaptureShortcutEnabled}) and a thin
  * reader ({@link isFrameCaptureShortcutEnabled}), mirroring `globalExpose.ts`'s
@@ -19,10 +19,10 @@ export interface FrameCaptureShortcutSignals {
 }
 
 /**
- * Resolves whether the F9 frame-capture shortcut is active, from already-gathered signals.
+ * Resolves whether the Shift+F9 frame-capture shortcut is active, from already-gathered signals.
  *
  * @param signals – See {@link FrameCaptureShortcutSignals}.
- * @returns `true` when F9 should capture and download the current frame.
+ * @returns `true` when Shift+F9 should capture and download the current frame.
  */
 export function resolveFrameCaptureShortcutEnabled(signals: FrameCaptureShortcutSignals): boolean {
     if (signals.configureFlag !== undefined) {
@@ -36,7 +36,7 @@ export function resolveFrameCaptureShortcutEnabled(signals: FrameCaptureShortcut
  * Gathers the frame-capture shortcut's gating signal and resolves it.
  *
  * @param configureFlag – Explicit `HardwareSettings.isFrameCaptureShortcutEnabled`, if the demo set one.
- * @returns `true` when F9 should capture and download the current frame.
+ * @returns `true` when Shift+F9 should capture and download the current frame.
  */
 export function isFrameCaptureShortcutEnabled(configureFlag?: boolean): boolean {
     return resolveFrameCaptureShortcutEnabled({ configureFlag, devMode: isDevMode() });
@@ -53,7 +53,7 @@ function pad2(value: number): string {
 }
 
 /**
- * Builds the default filename for an F9 frame capture: the local date and time it was
+ * Builds the default filename for a Shift+F9 frame capture: the local date and time it was
  * taken, so repeated presses never overwrite each other and sort chronologically.
  *
  * @param date – Capture moment. Defaults to now.

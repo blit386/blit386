@@ -141,9 +141,9 @@ describe('downloadBlob', () => {
         vi.stubGlobal('document', { createElement });
 
         // Filenames come from callers such as `BT.downloadFrame` (a caller-chosen
-        // name) or the F9 shortcut's `defaultFrameCaptureFilename` (a timestamped
-        // one) – downloadBlob itself is filename-agnostic, so exercise it with the
-        // timestamped shape to match how the F9 path actually calls it.
+        // name) or the Shift+F9 shortcut's `defaultFrameCaptureFilename` (a
+        // timestamped one) – downloadBlob itself is filename-agnostic, so exercise
+        // it with the timestamped shape to match how the Shift+F9 path actually calls it.
         const filename = defaultFrameCaptureFilename(new Date(2026, 8, 18, 7, 19, 33));
 
         downloadBlob(blob, filename);

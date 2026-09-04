@@ -91,7 +91,8 @@ class Demo {
             // deliberate trade-off so touch users can save at all; see render().)
             // The overlay still works on demand: press ` to show it and ` again to
             // hide it before you capture. The bottom-left 17x13 corner also stays
-            // tappable to toggle it, which is why our UI panel sits in the top-right.
+            // tappable to toggle it, which is why our UI panel avoids that corner
+            // (it sits in the top-left instead).
             isOverlayToggleHintVisible: false,
         };
     }
