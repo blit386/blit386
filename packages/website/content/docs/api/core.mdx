@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-09-01T16:51:54+02:00"
+lastModified: "2026-09-04T07:53:32+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -228,6 +228,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `isSplashEnabled` | `boolean` | _unset_ | Play the BLIT386 splash before the game starts. Unset means shown in release builds, hidden in development. See [the splash guide](/docs/guides/splash) |
 | `splashColorDark` | `Color32` | `Color32.black` | Dark endpoint of the splash's 16-step gray ramp |
 | `splashColorLight` | `Color32` | `Color32.white` | Light endpoint of the splash's 16-step gray ramp |
+| `isFrameCaptureShortcutEnabled` | `boolean` | _unset_ | Pressing Shift+F9 captures the current frame and downloads it as a timestamped PNG. Unset means enabled in development builds, disabled in release. Set `true` to keep it in a production build, or `false` to free up Shift+F9 |
 | `isOverlayEnabled` | `boolean` | `true` | Engine overlay HUD after each `render()` |
 | `isOverlayVisibleAtStart` | `boolean` | `false` | Show overlay body (metrics/palette/custom rows) on first frame |
 | `isOverlayToggleHintVisible` | `boolean` | `true` | Draw toggle hint icon while overlay body is hidden |

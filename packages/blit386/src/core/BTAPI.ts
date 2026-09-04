@@ -63,8 +63,14 @@ import { initWebGPU } from './WebGPUContext';
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
-/** `KeyboardEvent.code` for the F9 dev-mode frame-capture shortcut; see {@link HardwareSettings.isFrameCaptureShortcutEnabled}. */
+/**
+ * `KeyboardEvent.code` for the Shift+F9 dev-mode frame-capture shortcut; see
+ * {@link HardwareSettings.isFrameCaptureShortcutEnabled}. Combined with {@link SHIFT_KEY_CODES}.
+ */
 const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
+
+/** `KeyboardEvent.code` values for either Shift key, held alongside F9 to trigger the frame-capture shortcut. */
+const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 
 /**
  * Central runtime facade for BLIT386 engine services.
@@ -180,9 +186,9 @@ export class BTAPI {
     private pendingOverlayTogglePress = false;
 
     /**
-     * True while an F9 dev-mode frame capture is in flight (see
+     * True while a Shift+F9 dev-mode frame capture is in flight (see
      * {@link HardwareSettings.isFrameCaptureShortcutEnabled}), so holding or repeatedly
-     * tapping F9 cannot queue overlapping captures.
+     * tapping the shortcut cannot queue overlapping captures.
      */
     private isCapturingFrameViaShortcut = false;
 
@@ -443,12 +449,15 @@ export class BTAPI {
                     this.pendingOverlayTogglePress = true;
                 }
 
-                // Dev-mode default: F9 saves a screenshot in every demo, no demo code
-                // needed. Unlike the overlay toggle above, this doesn't need to wait for
-                // the render phase – it just kicks off an async capture-and-download.
+                // Dev-mode default: Shift+F9 saves a screenshot in every demo, no demo
+                // code needed. Unlike the overlay toggle above, this doesn't need to wait
+                // for the render phase – it just kicks off an async capture-and-download.
+                // Shift, not bare F9: a future shortcut reuses bare F9 for a
+                // copy-to-clipboard action instead of a file download.
                 if (
                     !this.isCapturingFrameViaShortcut &&
                     isFrameCaptureShortcutEnabled(hwSettings.isFrameCaptureShortcutEnabled) &&
+                    SHIFT_KEY_CODES.some((code) => this.keyboard?.isKeyDown(code)) &&
                     this.keyboard?.isKeyPressed(FRAME_CAPTURE_SHORTCUT_KEY_CODE, undefined, tick)
                 ) {
                     void this.captureFrameViaShortcut();
@@ -1634,8 +1643,8 @@ export class BTAPI {
 
     /**
      * Captures the current frame and downloads it under a timestamped filename, for the
-     * F9 dev-mode shortcut. Fire-and-forget from the update tick: errors are logged, not
-     * thrown, so a failed capture never crashes the game loop.
+     * Shift+F9 dev-mode shortcut. Fire-and-forget from the update tick: errors are logged,
+     * not thrown, so a failed capture never crashes the game loop.
      */
     private async captureFrameViaShortcut(): Promise<void> {
         this.isCapturingFrameViaShortcut = true;
@@ -1647,7 +1656,7 @@ export class BTAPI {
             downloadBlob(blob, filename);
             console.log(`[BT] Frame captured: ${filename}`);
         } catch (error) {
-            console.error('[BT] Frame capture (F9) failed:', error);
+            console.error('[BT] Frame capture (Shift+F9) failed:', error);
         } finally {
             this.isCapturingFrameViaShortcut = false;
         }

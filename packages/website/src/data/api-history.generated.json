@@ -1178,6 +1178,10 @@
         {
           "version": "1.5.0",
           "note": "Added {@link HardwareSettings.splashColorLight}."
+        },
+        {
+          "version": "1.7.0",
+          "note": "Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}."
         }
       ],
       "deprecated": null,

@@ -248,12 +248,12 @@ export interface HardwareSettings {
     splashColorLight?: Color32;
 
     /**
-     * Whether pressing F9 captures the current frame and downloads it as a PNG.
+     * Whether pressing Shift+F9 captures the current frame and downloads it as a PNG.
      *
      * Leave unset for the default: enabled in development builds, disabled in release,
      * per {@link BT.isDevMode}. Setting it explicitly wins over dev-mode detection – set
-     * `true` to keep the shortcut in a production build, or `false` to free up F9 (for
-     * example if the game binds it to something else).
+     * `true` to keep the shortcut in a production build, or `false` to free up Shift+F9
+     * (for example if the game binds it to something else).
      *
      * @since 1.7.0
      */

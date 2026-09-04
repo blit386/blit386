@@ -9,8 +9,10 @@
 //
 // Dev-mode extras, built into the engine itself (every demo gets these for free,
 // not just this one): while BT.isDevMode is true (running from `pnpm run dev`, not
-// a production build), pressing F9 saves a timestamped frame too, without needing
-// to click a button first – see HardwareSettings.isFrameCaptureShortcutEnabled.
+// a production build), pressing Shift+F9 saves a timestamped frame too, without
+// needing to click a button first – see HardwareSettings.isFrameCaptureShortcutEnabled.
+// Shift, not bare F9: a future shortcut reuses bare F9 for a copy-to-clipboard
+// action instead of a file download.
 // The engine also exposes the whole BT namespace as window.BT in dev mode
 // (BootstrapOptions.exposeGlobal, on by default), so you can run
 // window.BT.downloadFrame('my-file.png') straight from the browser console at any time.
@@ -251,11 +253,14 @@ class Demo {
             ui.label(this.lastCaptureMessage, { color: this.lastCaptureColor });
         } else {
             // Nothing happening – a quiet hint in dim gray. In dev mode (running from
-            // `pnpm run dev`, not a production build) we also mention the F9 shortcut –
-            // an engine default (every demo gets it, see HardwareSettings.isFrameCaptureShortcutEnabled),
-            // not something this demo wires up itself. It has no visible button of its
-            // own to advertise it, so this is the most relevant place to mention it.
-            const hint = BT.isDevMode ? 'Saves the current frame (dev: F9 also works)' : 'Saves the current frame';
+            // `pnpm run dev`, not a production build) we also mention the Shift+F9
+            // shortcut – an engine default (every demo gets it, see
+            // HardwareSettings.isFrameCaptureShortcutEnabled), not something this demo
+            // wires up itself. It has no visible button of its own to advertise it, so
+            // this is the most relevant place to mention it.
+            const hint = BT.isDevMode
+                ? 'Saves the current frame (dev: Shift+F9 also works)'
+                : 'Saves the current frame';
             ui.label(hint, { color: 'dim' });
         }
 
