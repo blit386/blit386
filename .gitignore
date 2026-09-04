@@ -72,6 +72,11 @@ pnpm-debug.log*
 tmp/
 temp/
 
+# Cross-process build locks (scripts/ensure-engine-built.mjs, scripts/ensure-kit-built.mjs) -
+# created and removed at runtime; a crashed process can leave one behind
+/.ensure-engine-built.lock/
+/.ensure-kit-built.lock/
+
 # Superpowers skill scratch (task briefs, review diffs, progress ledger)
 .superpowers/
 docs/superpowers/
