@@ -7,6 +7,7 @@ import {
     buildKitBuildCommand,
     getNewestMtimeMs,
     isKitBuilt,
+    resolveKitBuildLockDir,
     resolveKitRegistryEntry,
     resolveKitSourceDir,
 } from './ensure-kit-built.mjs';
@@ -20,6 +21,14 @@ describe('ensure-kit-built', () => {
 
             assert.ok(entry.endsWith(join('kit', 'dist', 'migrations', 'registry.js')));
             assert.ok(entry.includes(join('packages', 'kit')));
+        });
+    });
+
+    describe('resolveKitBuildLockDir', () => {
+        it('points at a repo-root lock directory, outside every package', () => {
+            const lockDir = resolveKitBuildLockDir();
+
+            assert.equal(lockDir, resolve(repositoryRoot, '.ensure-kit-built.lock'));
         });
     });
 
