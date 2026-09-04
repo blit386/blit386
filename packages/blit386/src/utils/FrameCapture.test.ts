@@ -6,10 +6,11 @@
  * browser-only APIs such as `ImageData` and `OffscreenCanvas`.
  */
 
+import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
-import { alignedBytesPerRow, downloadBlob, FrameCapture, swizzleBGRAtoRGBA } from './FrameCapture';
+import { alignedBytesPerRow, downloadBlob, FrameCapture, pixelBufferToPNG, swizzleBGRAtoRGBA } from './FrameCapture';
 import { defaultFrameCaptureFilename } from './FrameCaptureShortcut';
 
 /**
@@ -357,5 +358,106 @@ describe('FrameCapture', () => {
         const device = createMockGPUDevice();
 
         await expect(capture.resolve(device)).resolves.toBeUndefined();
+    });
+});
+
+describe('pixelBufferToPNG decoded dimensions (regression)', () => {
+    /**
+     * Installs an `OffscreenCanvas` mock whose `convertToBlob()` actually encodes real PNG bytes
+     * (via `pngjs`) from the `ImageData` it was given, instead of returning an opaque fake `Blob`.
+     * Unlike {@link installBrowserMocks}, this lets a test decode the result and verify its real
+     * encoded pixel dimensions – the whole point of this regression test (see BT-488): a mocked
+     * fixed-content Blob can't catch a width/height mismatch introduced upstream.
+     */
+    function installRealPNGBrowserMocks(): void {
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                data: Uint8ClampedArray;
+                width: number;
+                height: number;
+                constructor(data: Uint8ClampedArray, width: number, height: number) {
+                    this.data = data;
+                    this.width = width;
+                    this.height = height;
+                }
+            },
+        );
+
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class MockOffscreenCanvas {
+                private putData: { data: Uint8ClampedArray; width: number; height: number } | null = null;
+
+                constructor(
+                    public width: number,
+                    public height: number,
+                ) {}
+
+                getContext(): { putImageData: (imageData: ImageData) => void } {
+                    return {
+                        putImageData: (imageData: ImageData) => {
+                            this.putData = { data: imageData.data, width: imageData.width, height: imageData.height };
+                        },
+                    };
+                }
+
+                async convertToBlob(): Promise<Blob> {
+                    if (!this.putData) {
+                        throw new Error('putImageData was not called before convertToBlob');
+                    }
+
+                    const png = new PNG({ width: this.putData.width, height: this.putData.height });
+
+                    png.data = Buffer.from(this.putData.data);
+
+                    return new Blob([new Uint8Array(PNG.sync.write(png))], { type: 'image/png' });
+                }
+            },
+        );
+    }
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('decodes to the exact width/height passed in, for a non-square retro resolution', async () => {
+        installRealPNGBrowserMocks();
+
+        const width = 320;
+        const height = 240;
+
+        // 320 * 4 = 1280, already a multiple of 256, so no row padding to strip here – this test
+        // is about width/height correctness, not the padding logic covered elsewhere in this file.
+        const paddedBytesPerRow = alignedBytesPerRow(width);
+        const buffer = new ArrayBuffer(paddedBytesPerRow * height);
+        const view = new Uint8Array(buffer);
+
+        view.fill(128);
+
+        const blob = await pixelBufferToPNG(buffer, width, height, paddedBytesPerRow, false);
+        const decoded = PNG.sync.read(Buffer.from(await blob.arrayBuffer()));
+
+        expect(decoded.width).toBe(width);
+        expect(decoded.height).toBe(height);
+    });
+
+    it('decodes to the drawing-buffer size, not the logical display size, when they differ', async () => {
+        installRealPNGBrowserMocks();
+
+        // Mirrors BT-488: a captured frame must match outputSize (drawingBufferSize ?? displaySize),
+        // here a 640x480 drawing buffer for a 320x240 logical display – not the logical size.
+        const width = 640;
+        const height = 480;
+        const paddedBytesPerRow = alignedBytesPerRow(width);
+        const buffer = new ArrayBuffer(paddedBytesPerRow * height);
+
+        const blob = await pixelBufferToPNG(buffer, width, height, paddedBytesPerRow, false);
+        const decoded = PNG.sync.read(Buffer.from(await blob.arrayBuffer()));
+
+        expect(decoded.width).toBe(width);
+        expect(decoded.height).toBe(height);
+        expect(decoded.width).not.toBe(320);
+        expect(decoded.height).not.toBe(240);
     });
 });

@@ -192,6 +192,7 @@ export function createMockGPUDevice(): GPUDevice {
          */
         createCommandEncoder: () => ({
             beginRenderPass: () => createMockRenderPassEncoder(),
+            copyTextureToBuffer: () => {},
             finish: () => ({ label: 'MockCommandBuffer' }) as unknown as GPUCommandBuffer,
             label: 'MockCommandEncoder',
         }),
@@ -226,13 +227,19 @@ export function createMockGPUDevice(): GPUDevice {
 /**
  * Creates a mock GPUCanvasContext.
  *
+ * When `canvas` is provided, `getCurrentTexture()` derives its mock texture's width/height from
+ * `canvas.width`/`canvas.height` – mirroring the real WebGPU spec, where the current texture always
+ * matches the canvas backing store set by `WebGPUContext.ts`. Tests that don't care about texture
+ * size (most of them) can omit `canvas` and keep getting the fixed `DEFAULT_SIZE_PX` mock texture.
+ *
+ * @param canvas – Optional backing canvas to derive the current texture's size from.
  * @returns Mock GPUCanvasContext stub.
  */
-export function createMockGPUCanvasContext(): GPUCanvasContext {
+export function createMockGPUCanvasContext(canvas?: HTMLCanvasElement): GPUCanvasContext {
     return {
         configure: () => {},
-        getCurrentTexture: () => createMockGPUTexture(),
-        canvas: {} as HTMLCanvasElement,
+        getCurrentTexture: () => (canvas ? createMockGPUTexture(canvas.width, canvas.height) : createMockGPUTexture()),
+        canvas: canvas ?? ({} as HTMLCanvasElement),
     } as unknown as GPUCanvasContext;
 }
 

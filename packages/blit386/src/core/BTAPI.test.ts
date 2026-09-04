@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockAudioBuffer } from '../__test__/webaudio-mock';
@@ -90,7 +91,11 @@ function makeMockDemo(targetFPS = 60, initResult = true, audioVoices?: number): 
 }
 
 function makeMockCanvas(): HTMLCanvasElement {
-    return {
+    // `canvas` is referenced from its own `getContext` below (assigned once the whole object
+    // exists) so the mock GPUCanvasContext's getCurrentTexture() can mirror WebGPUContext.ts's
+    // real behavior: it sets canvas.width/height from drawingBufferSize BEFORE calling
+    // getContext('webgpu'), and getCurrentTexture() always matches whatever that backing store is.
+    const canvas = {
         width: 0,
         height: 0,
         style: {
@@ -100,14 +105,20 @@ function makeMockCanvas(): HTMLCanvasElement {
             setProperty: vi.fn(),
             getPropertyValue: vi.fn(() => ''),
         },
-        getContext: (type: string) => (type === 'webgpu' ? createMockGPUCanvasContext() : null),
+        getContext: (type: string) => (type === 'webgpu' ? createMockGPUCanvasContext(canvas) : null),
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
     } as unknown as HTMLCanvasElement;
+
+    return canvas;
 }
 
 function makeMock2DCanvas(): HTMLCanvasElement {
-    return {
+    // `canvas` is referenced from its own `toBlob` below (assigned once the whole object exists)
+    // so the mock can encode a real PNG sized to canvas.width/height – SoftwareRenderer.ts sets
+    // those directly to outputSize before ever calling toBlob(), so by the time toBlob runs they
+    // hold the real resolved size, not a stale default.
+    const canvas = {
         ...makeMockCanvas(),
         getContext: (type: string) => {
             if (type === '2d') {
@@ -126,8 +137,16 @@ function makeMock2DCanvas(): HTMLCanvasElement {
             }
             return null;
         },
-        toBlob: (callback: (blob: Blob | null) => void) => callback(new Blob(['x'], { type: 'image/png' })),
+        toBlob: (callback: (blob: Blob | null) => void) => {
+            const png = new PNG({ width: canvas.width, height: canvas.height });
+
+            png.data = Buffer.alloc(canvas.width * canvas.height * 4);
+
+            callback(new Blob([new Uint8Array(PNG.sync.write(png))], { type: 'image/png' }));
+        },
     } as unknown as HTMLCanvasElement;
+
+    return canvas;
 }
 
 /** Minimal 2D context shape for {@link OffscreenCanvas#getContext} mocks; rejects non-`2d` types. */
@@ -148,6 +167,75 @@ function makeOffscreenCanvas2dContext(): OffscreenCanvas2DMock {
             }) as ImageData,
         putImageData: vi.fn(),
     };
+}
+
+/**
+ * Stubs global `ImageData` and `OffscreenCanvas` so `FrameCapture.ts`'s `pixelBufferToPNG()`
+ * (the WebGPU capture path) produces a real PNG-encoded Blob sized to whatever width/height it
+ * was actually called with, instead of an opaque fake Blob. Lets a test decode the result and
+ * verify the real encoded pixel dimensions – see BT-488, where a mocked fixed-content Blob could
+ * never have caught a captured-size regression.
+ */
+function installRealPNGOffscreenCanvasMock(): void {
+    vi.stubGlobal(
+        'ImageData',
+        class MockImageData {
+            data: Uint8ClampedArray;
+            width: number;
+            height: number;
+            constructor(data: Uint8ClampedArray, width: number, height: number) {
+                this.data = data;
+                this.width = width;
+                this.height = height;
+            }
+        },
+    );
+
+    vi.stubGlobal(
+        'OffscreenCanvas',
+        class MockOffscreenCanvas {
+            private putData: { data: Uint8ClampedArray; width: number; height: number } | null = null;
+
+            constructor(
+                public width: number,
+                public height: number,
+            ) {}
+
+            getContext(): { putImageData: (imageData: ImageData) => void } {
+                return {
+                    putImageData: (imageData: ImageData) => {
+                        this.putData = { data: imageData.data, width: imageData.width, height: imageData.height };
+                    },
+                };
+            }
+
+            async convertToBlob(): Promise<Blob> {
+                if (!this.putData) {
+                    throw new Error('putImageData was not called before convertToBlob');
+                }
+
+                const png = new PNG({ width: this.putData.width, height: this.putData.height });
+
+                png.data = Buffer.from(this.putData.data);
+
+                return new Blob([new Uint8Array(PNG.sync.write(png))], { type: 'image/png' });
+            }
+        },
+    );
+}
+
+/**
+ * Decodes a captured PNG `Blob` with `pngjs` and returns its real encoded width/height – the
+ * dimensions a design tool or `sips` would report, as opposed to whatever size a mocked Blob
+ * merely claims to be.
+ *
+ * @param blob – PNG-encoded Blob to decode.
+ * @returns Decoded pixel width and height.
+ */
+async function decodedPngSize(blob: Blob): Promise<{ width: number; height: number }> {
+    const decoded = PNG.sync.read(Buffer.from(await blob.arrayBuffer()));
+
+    return { width: decoded.width, height: decoded.height };
 }
 
 describe('sound playback passthroughs', () => {
@@ -1280,6 +1368,33 @@ describe('BTAPI', () => {
             expect(result).toBe(mockBlob);
         });
 
+        it('captureFrame decodes to outputSize (drawingBufferSize), not displaySize, on the WebGPU path', async () => {
+            installRealPNGOffscreenCanvasMock();
+
+            // makeMockDemo() sets displaySize 320x240 and drawingBufferSize 640x480, so
+            // outputSize (drawingBufferSize ?? displaySize) resolves to 640x480 – the captured
+            // PNG must match that, not the smaller logical displaySize (regression for BT-488).
+            await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const renderer = BTAPI.instance.getRenderer();
+
+            expect(renderer).not.toBeNull();
+
+            const capturePromise = BTAPI.instance.captureFrame();
+
+            renderer?.beginFrame();
+            renderer?.endFrame();
+
+            const blob = await capturePromise;
+            const { width, height } = await decodedPngSize(blob);
+
+            expect(width).toBe(BT.outputSize.x);
+            expect(height).toBe(BT.outputSize.y);
+            expect(width).toBe(640);
+            expect(height).toBe(480);
+        });
+
         it('captureFrame works in software mode after a rendered frame', async () => {
             vi.stubGlobal('location', { search: '?backend=software' });
             vi.stubGlobal(
@@ -1323,6 +1438,15 @@ describe('BTAPI', () => {
 
             const blob = await capturePromise;
             expect(blob.type).toBe('image/png');
+
+            // Software backend still must match outputSize (drawingBufferSize ?? displaySize):
+            // 640x480 here, not the smaller 320x240 logical displaySize.
+            const { width, height } = await decodedPngSize(blob);
+
+            expect(width).toBe(BT.outputSize.x);
+            expect(height).toBe(BT.outputSize.y);
+            expect(width).toBe(640);
+            expect(height).toBe(480);
         });
 
         it('auto-falls back to software when WebGPU is unavailable and 2D canvas is available', async () => {

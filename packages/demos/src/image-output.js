@@ -76,7 +76,8 @@ class Demo {
     messageTimer = 0;
 
     /**
-     * Hides the overlay toggle hint so saved screenshots stay clean.
+     * Hides the overlay toggle hint so saved screenshots stay clean, and pins the
+     * display size so BT.downloadFrame() saves raw, 1:1 pixels.
      *
      * @returns {Partial<HardwareSettings>} Demo hardware settings.
      */
@@ -94,6 +95,19 @@ class Demo {
             // tappable to toggle it, which is why our UI panel avoids that corner
             // (it sits in the top-left instead).
             isOverlayToggleHintVisible: false,
+
+            // Most demos leave displaySize unset and let the engine fill in its
+            // default hardware profile, which includes a 640x480 "drawing buffer" –
+            // an internal 2x upscale so the picture looks crisp on screen. Save PNG
+            // would then download that upscaled 640x480 buffer instead of the demo's
+            // real 320x240 canvas. Declaring displaySize here (even though 320x240 is
+            // already the default value) tells the engine "this demo picked its own
+            // sizes on purpose," which turns that automatic upscale off. The picture
+            // still looks sharp on screen – your browser scales the smaller image up
+            // using the same nearest-neighbor technique the engine used internally –
+            // but the saved PNG now has exactly one file pixel per canvas pixel,
+            // which is what "pixel-perfect" means for retro pixel art.
+            displaySize: new Vector2i(320, 240),
         };
     }
 
