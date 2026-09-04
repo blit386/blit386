@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { acquireLockOrConfirmBuilt, releaseBuildLock } from './build-lock.mjs';
+import { acquireLockOrConfirmBuilt, reclaimAbandonedLock, releaseBuildLock } from './build-lock.mjs';
 
 describe('build-lock', () => {
     const makeLockDir = () => join(mkdtempSync(join(tmpdir(), 'build-lock-')), 'lock');
@@ -54,6 +54,37 @@ describe('build-lock', () => {
 
             assert.equal(acquired, true);
             assert.equal(sleepCalls, 1);
+            assert.equal(Number(readFileSync(join(lockDir, 'pid'), 'utf8')), process.pid);
+
+            rmSync(lockDir, { recursive: true, force: true });
+        });
+
+        it('never evicts a live lock owner no matter how old the lock directory is', () => {
+            const lockDir = makeLockDir();
+
+            assert.equal(
+                acquireLockOrConfirmBuilt(lockDir, () => false),
+                true,
+            );
+
+            // Backdate the lock directory well past LOCK_STALE_MS – staleness alone must never
+            // evict a confirmed-alive owner, only a dead pid (or an unreadable one) may.
+            const farPast = new Date(Date.now() - 60 * 60 * 1000);
+            utimesSync(lockDir, farPast, farPast);
+
+            let sleepCalls = 0;
+            const sleep = () => {
+                sleepCalls += 1;
+
+                if (sleepCalls === 3) {
+                    releaseBuildLock(lockDir);
+                }
+            };
+
+            const acquired = acquireLockOrConfirmBuilt(lockDir, () => false, sleep);
+
+            assert.equal(acquired, true);
+            assert.equal(sleepCalls, 3);
             assert.equal(Number(readFileSync(join(lockDir, 'pid'), 'utf8')), process.pid);
 
             rmSync(lockDir, { recursive: true, force: true });
@@ -113,6 +144,48 @@ describe('build-lock', () => {
             assert.equal(sleepCalls, 0);
 
             rmSync(lockDir, { recursive: true, force: true });
+        });
+    });
+
+    describe('reclaimAbandonedLock', () => {
+        it('deletes a lock whose recorded pid is dead', () => {
+            const lockDir = makeLockDir();
+
+            assert.equal(
+                acquireLockOrConfirmBuilt(lockDir, () => false),
+                true,
+            );
+            writeFileSync(join(lockDir, 'pid'), '999999999');
+
+            reclaimAbandonedLock(lockDir);
+
+            assert.equal(existsSync(lockDir), false);
+        });
+
+        it('restores a lock instead of deleting it if its pid turns out to be alive', () => {
+            const lockDir = makeLockDir();
+
+            assert.equal(
+                acquireLockOrConfirmBuilt(lockDir, () => false),
+                true,
+            );
+
+            // Simulates a waiter reaching the reclaim step on a lock that has, in truth, already
+            // become live again (recreated by another process between the waiter's freshness
+            // check and this call) – the exact race a plain rmSync cannot protect against.
+            reclaimAbandonedLock(lockDir);
+
+            assert.equal(existsSync(lockDir), true);
+            assert.equal(Number(readFileSync(join(lockDir, 'pid'), 'utf8')), process.pid);
+
+            rmSync(lockDir, { recursive: true, force: true });
+        });
+
+        it('is a no-op when the lock directory is already gone', () => {
+            const lockDir = makeLockDir();
+
+            assert.doesNotThrow(() => reclaimAbandonedLock(lockDir));
+            assert.equal(existsSync(lockDir), false);
         });
     });
 
