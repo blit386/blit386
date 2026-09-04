@@ -22,6 +22,7 @@
     "test:compact-tables": "node --test scripts/prettier-plugin-compact-tables.test.mjs",
     "test:shell-safety": "node --test scripts/shell-safety.test.mjs",
     "test:spellcheck-coverage": "node --test scripts/spellcheck-coverage.test.mjs",
+    "test:build-lock": "node --test scripts/build-lock.test.mjs",
     "test:ensure-engine-built": "node --test scripts/ensure-engine-built.test.mjs",
     "test:ensure-kit-built": "node --test scripts/ensure-kit-built.test.mjs",
     "test:ci-workflow-benchmark": "node --test scripts/ci-workflow-benchmark.test.mjs",

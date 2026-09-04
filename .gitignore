@@ -72,8 +72,8 @@ pnpm-debug.log*
 tmp/
 temp/
 
-# Cross-process build locks (scripts/ensure-engine-built.mjs, scripts/ensure-kit-built.mjs) -
-# created and removed at runtime; a crashed process can leave one behind
+# Cross-process build locks (scripts/build-lock.mjs, used by ensure-engine-built.mjs and
+# ensure-kit-built.mjs) – created and removed at runtime; a crashed process can leave one behind
 /.ensure-engine-built.lock/
 /.ensure-kit-built.lock/
 

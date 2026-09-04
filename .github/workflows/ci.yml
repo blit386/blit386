@@ -159,6 +159,10 @@ jobs:
         run: pnpm run test:spellcheck-coverage
         background: true
 
+      - name: Run build-lock tests
+        run: pnpm run test:build-lock
+        background: true
+
       - name: Run ensure-engine-built tests
         run: pnpm run test:ensure-engine-built
         background: true

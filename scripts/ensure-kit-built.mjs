@@ -4,9 +4,9 @@
  * freshly created checkout or git worktree, since `dist/` is gitignored and only a build produces
  * it. `packages/blit386/scripts/gen-deprecations.mjs` imports `MIGRATIONS` from
  * `packages/kit/dist/migrations/registry.js`, so a tag-less/dist-less checkout would otherwise fail
- * with a confusing "Cannot find module" error. Mirrors `ensure-engine-built.mjs`, including its
- * locking (see that file's header for why: two processes racing the same TOCTOU check-then-build
- * against a shared dist/ intermittently corrupt each other's output).
+ * with a confusing "Cannot find module" error. Mirrors `ensure-engine-built.mjs`, including its use
+ * of `build-lock.mjs` (see that file's header for why: two processes racing the same TOCTOU
+ * check-then-build against a shared dist/ intermittently corrupt each other's output).
  *
  * Also rebuilds when `dist/` exists but is stale – newer than the checked-in build, but older than
  * `packages/kit/src`. tsup bundles `migrations/registry.js` from `registry.ts` plus whatever it
@@ -20,9 +20,11 @@
  *   node ../../scripts/ensure-kit-built.mjs
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { acquireLockOrConfirmBuilt, releaseBuildLock } from './build-lock.mjs';
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -31,30 +33,6 @@ const resolveKitRegistryEntry = () => resolve(scriptDir, '..', 'packages', 'kit'
 const resolveKitSourceDir = () => resolve(scriptDir, '..', 'packages', 'kit', 'src');
 
 const resolveKitBuildLockDir = () => resolve(scriptDir, '..', '.ensure-kit-built.lock');
-
-/** Milliseconds between polls while waiting for another process's build or lock. */
-const LOCK_POLL_MS = 200;
-
-/** A lock older than this is assumed abandoned even if its owning pid looks alive (clock skew, pid reuse). */
-const LOCK_STALE_MS = 10 * 60 * 1000;
-
-/** Synchronous sleep – this script is spawnSync-based throughout, so polling has to block, not await. */
-const sleepSync = (ms) => {
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
-};
-
-const isPidAlive = (pid) => {
-    if (!Number.isInteger(pid)) {
-        return false;
-    }
-
-    try {
-        process.kill(pid, 0);
-        return true;
-    } catch {
-        return false;
-    }
-};
 
 /** Newest mtime (ms) of any file under `dir`, recursively. 0 if `dir` has no files. */
 const getNewestMtimeMs = (dir) => {
@@ -85,61 +63,12 @@ const buildKitBuildCommand = () => ({
     cwd: resolve(scriptDir, '..'),
 });
 
-/**
- * Blocks until either this process holds the exclusive build lock (return `true` – the caller
- * should build) or another process's build has made the kit fresh while waiting (return `false` –
- * the caller should skip the build). A lock directory whose pid is no longer running, or that has
- * been held past `LOCK_STALE_MS`, is treated as abandoned and cleared.
- */
-const acquireLockOrConfirmBuilt = (lockDir = resolveKitBuildLockDir(), checkBuilt = isKitBuilt, sleep = sleepSync) => {
-    const waitStartedMs = Date.now();
-
-    for (;;) {
-        if (checkBuilt()) {
-            return false;
-        }
-
-        try {
-            mkdirSync(lockDir);
-            writeFileSync(resolve(lockDir, 'pid'), String(process.pid));
-            return true;
-        } catch (err) {
-            if (err.code !== 'EEXIST') {
-                throw err;
-            }
-        }
-
-        let lockOwnerPid = Number.NaN;
-
-        try {
-            lockOwnerPid = Number(readFileSync(resolve(lockDir, 'pid'), 'utf8'));
-        } catch {
-            // Lock directory exists but its pid file hasn't been written yet – a few-microsecond
-            // window right after another process's mkdirSync, not an abandoned lock.
-        }
-
-        const isAbandoned =
-            (Number.isInteger(lockOwnerPid) && !isPidAlive(lockOwnerPid)) || Date.now() - waitStartedMs > LOCK_STALE_MS;
-
-        if (isAbandoned) {
-            rmSync(lockDir, { recursive: true, force: true });
-            continue;
-        }
-
-        sleep(LOCK_POLL_MS);
-    }
-};
-
-const releaseKitBuildLock = (lockDir = resolveKitBuildLockDir()) => {
-    rmSync(lockDir, { recursive: true, force: true });
-};
-
 const main = () => {
     if (isKitBuilt()) {
         return;
     }
 
-    if (!acquireLockOrConfirmBuilt()) {
+    if (!acquireLockOrConfirmBuilt(resolveKitBuildLockDir(), isKitBuilt)) {
         return;
     }
 
@@ -163,16 +92,14 @@ const main = () => {
             process.exitCode = 1;
         }
     } finally {
-        releaseKitBuildLock();
+        releaseBuildLock(resolveKitBuildLockDir());
     }
 };
 
 export {
-    acquireLockOrConfirmBuilt,
     buildKitBuildCommand,
     getNewestMtimeMs,
     isKitBuilt,
-    releaseKitBuildLock,
     resolveKitBuildLockDir,
     resolveKitRegistryEntry,
     resolveKitSourceDir,
