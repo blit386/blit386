@@ -22,10 +22,9 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import {
@@ -36,6 +35,7 @@ import {
     replaceManagedRegion,
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
+import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-safety';
 import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
 import { ui } from '../messages';
@@ -52,16 +52,6 @@ import {
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
 const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON];
-
-/** SHA-256 hex digest of a string. */
-function sha256Text(text: string): string {
-    return createHash('sha256').update(text).digest('hex');
-}
-
-/** SHA-256 hex digest of a file's current on-disk content. */
-function sha256(filePath: string): string {
-    return createHash('sha256').update(readFileSync(filePath)).digest('hex');
-}
 
 interface McpConfigLike {
     mcpServers?: Record<string, unknown>;
@@ -202,60 +192,6 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
     );
 
     return driftCount;
-}
-
-/**
- * True if `absPath` (assumed to resolve under `root`) is reached through a symlink at any existing
- * path segment – the file itself or any of its parent directories. Checked with `lstatSync`, which
- * does not follow symlinks, so a symlink pointing outside `root` (or to a file outside it) is caught
- * even when it resolves to something that exists. A segment that does not exist yet is not a symlink
- * and is treated as safe – the caller is about to create it, not read or write through it.
- */
-function hasSymlinkedSegment(absPath: string, root: string): boolean {
-    const rel = relative(root, absPath);
-
-    if (rel === '' || rel.startsWith(`..${sep}`)) {
-        return false;
-    }
-
-    let current = root;
-
-    for (const segment of rel.split(sep)) {
-        current = join(current, segment);
-
-        let stat;
-
-        try {
-            stat = lstatSync(current);
-        } catch {
-            return false;
-        }
-
-        if (stat.isSymbolicLink()) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Reject manifest paths that are absolute, escape the project root via `..` segments, or are reached
- * through a symlink (the file itself or a parent directory) – lexical safety alone would still let a
- * symlink swapped in after scaffolding redirect a read or write outside the project.
- */
-function isSafeRelPath(relPath: string, root: string): boolean {
-    if (isAbsolute(relPath) || normalize(relPath).startsWith(`..${sep}`)) {
-        return false;
-    }
-
-    const abs = resolve(root, relPath);
-
-    if (abs !== root && !abs.startsWith(root + sep)) {
-        return false;
-    }
-
-    return !hasSymlinkedSegment(abs, root);
 }
 
 /**
