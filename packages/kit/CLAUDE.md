@@ -11,7 +11,7 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 `pnpm run <script>` from this package's directory (or `pnpm --filter @blit386/kit run <script>` from the repo root).
 
 The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit doctor`, `blit upgrade`,
-`blit migrate`, `blit agents sync` / `blit agents add`, `blit help`.
+`blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
 
 ## Kit content vs engine docs
 
