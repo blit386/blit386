@@ -22,6 +22,10 @@
  * A no-op once the engine is built and fresh – one existsSync plus one small directory walk is the
  * only cost on every normal run.
  *
+ * Concurrency-safe via `build-lock.mjs` – see that file's header for why (two processes racing this
+ * script's TOCTOU check-then-build against a shared `dist/` intermittently corrupted each other's
+ * output) and how (an exclusive, pid-backed lock directory).
+ *
  * Usage (from a package directory):
  *   node ../../scripts/ensure-engine-built.mjs
  */
@@ -30,11 +34,15 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { acquireLockOrConfirmBuilt, releaseBuildLock } from './build-lock.mjs';
+
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
 const resolveEngineViteEntry = () => resolve(scriptDir, '..', 'packages', 'blit386', 'dist', 'vite.js');
 
 const resolveEngineSourceDir = () => resolve(scriptDir, '..', 'packages', 'blit386', 'src');
+
+const resolveEngineBuildLockDir = () => resolve(scriptDir, '..', '.ensure-engine-built.lock');
 
 /** Newest mtime (ms) of any file under `dir`, recursively. 0 if `dir` has no files. */
 const getNewestMtimeMs = (dir) => {
@@ -70,23 +78,42 @@ const main = () => {
         return;
     }
 
-    console.log('packages/blit386/dist is missing or stale – building the engine first...');
-
-    const { command, args, cwd } = buildEngineBuildCommand();
-    const result = spawnSync(command, args, { stdio: 'inherit', cwd });
-
-    if (result.status !== 0) {
-        process.exitCode = result.status ?? 1;
+    if (!acquireLockOrConfirmBuilt(resolveEngineBuildLockDir(), isEngineBuilt)) {
         return;
     }
 
-    if (!isEngineBuilt()) {
-        console.error('Engine build finished but packages/blit386/dist/vite.js is still missing or stale.');
-        process.exitCode = 1;
+    try {
+        if (isEngineBuilt()) {
+            return;
+        }
+
+        console.log('packages/blit386/dist is missing or stale – building the engine first...');
+
+        const { command, args, cwd } = buildEngineBuildCommand();
+        const result = spawnSync(command, args, { stdio: 'inherit', cwd });
+
+        if (result.status !== 0) {
+            process.exitCode = result.status ?? 1;
+            return;
+        }
+
+        if (!isEngineBuilt()) {
+            console.error('Engine build finished but packages/blit386/dist/vite.js is still missing or stale.');
+            process.exitCode = 1;
+        }
+    } finally {
+        releaseBuildLock(resolveEngineBuildLockDir());
     }
 };
 
-export { buildEngineBuildCommand, getNewestMtimeMs, isEngineBuilt, resolveEngineViteEntry, resolveEngineSourceDir };
+export {
+    buildEngineBuildCommand,
+    getNewestMtimeMs,
+    isEngineBuilt,
+    resolveEngineBuildLockDir,
+    resolveEngineSourceDir,
+    resolveEngineViteEntry,
+};
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();

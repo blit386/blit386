@@ -798,6 +798,21 @@ export const BT = {
     },
 
     /**
+     * Whether reduced motion is currently preferred.
+     *
+     * Resolves `window.matchMedia('(prefers-reduced-motion: reduce)')`, or the
+     * `?reducedmotion` / `?noreducedmotion` URL flags when either is present. Pair with
+     * {@link IBTDemo.onReducedMotionChange} to react when the preference changes at runtime –
+     * it is not fixed for the session, the same way {@link BT.screenOrientation} is not.
+     *
+     * @since 1.7.0
+     * @returns `true` when reduced motion should be preferred.
+     */
+    get isReducedMotionPreferred(): boolean {
+        return BTAPI.instance.isReducedMotionPreferred();
+    },
+
+    /**
      * Whether the audio context has been unlocked by a user gesture.
      *
      * Browsers require a user gesture (pointer, key, or touch press) before

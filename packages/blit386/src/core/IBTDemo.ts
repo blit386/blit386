@@ -562,6 +562,7 @@ export interface OverlayRow {
  * @since 0.1.0
  * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
  * @changed 1.4.0 Added optional {@link IBTDemo.onHotReload} hook.
+ * @changed 1.7.0 Added optional {@link IBTDemo.onReducedMotionChange} hook.
  */
 export interface IBTDemo {
     /**
@@ -651,6 +652,19 @@ export interface IBTDemo {
      *   `'landscape-primary'` or `'portrait-secondary'`).
      */
     onOrientationChange?(type: string): void;
+
+    /**
+     * Optional hook called when the `prefers-reduced-motion` preference changes.
+     *
+     * The engine installs a listener after a successful `init()` and removes it on
+     * `stop()`. Use this to reduce animation fidelity, disable screen-shake, or swap
+     * transitions for instant cuts; the engine does not change your own draw calls for you.
+     * Read the current value any time via {@link BT.isReducedMotionPreferred}.
+     *
+     * @since 1.7.0
+     * @param prefersReduced – `true` when reduced motion is now preferred.
+     */
+    onReducedMotionChange?(prefersReduced: boolean): void;
 
     /**
      * Optional hook called after a hot reload swaps in new code for this demo.

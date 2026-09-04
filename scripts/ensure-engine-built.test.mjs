@@ -7,6 +7,7 @@ import {
     buildEngineBuildCommand,
     getNewestMtimeMs,
     isEngineBuilt,
+    resolveEngineBuildLockDir,
     resolveEngineSourceDir,
     resolveEngineViteEntry,
 } from './ensure-engine-built.mjs';
@@ -20,6 +21,14 @@ describe('ensure-engine-built', () => {
 
             assert.ok(entry.endsWith(join('blit386', 'dist', 'vite.js')));
             assert.ok(entry.includes(join('packages', 'blit386')));
+        });
+    });
+
+    describe('resolveEngineBuildLockDir', () => {
+        it('points at a repo-root lock directory, outside every package', () => {
+            const lockDir = resolveEngineBuildLockDir();
+
+            assert.equal(lockDir, resolve(repositoryRoot, '.ensure-engine-built.lock'));
         });
     });
 

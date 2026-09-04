@@ -1,11 +1,12 @@
 /**
  * `blit` - the project-local BLIT386 helper CLI.
  *
- * Commands: run | doctor | upgrade | migrate | agents | help. Kept tiny and beginner-friendly; see ./messages for the
- * voice.
+ * Commands: run | doctor | upgrade | migrate | agents | clean | help. Kept tiny and beginner-friendly; see ./messages
+ * for the voice.
  */
 
 import { runAgents } from './commands/agents';
+import { runClean } from './commands/clean';
 import { runDoctor } from './commands/doctor';
 import { runMigrate } from './commands/migrate';
 import { runDev } from './commands/run';
@@ -22,6 +23,7 @@ Commands:
   ${color.cyan('upgrade')}    Update blit386 to the latest version (then offers migrate)
   ${color.cyan('migrate')}    Update old names + enable hot reload (--write to apply)
   ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
+  ${color.cyan('clean')}      Replace your game code with an empty skeleton (--yes to skip the prompt)
   ${color.cyan('help')}       Show this help
 `;
 
@@ -43,6 +45,9 @@ async function main(): Promise<void> {
             break;
         case 'agents':
             runAgents(process.argv.slice(3));
+            break;
+        case 'clean':
+            await runClean(process.argv.slice(3));
             break;
         case 'help':
         case '--help':

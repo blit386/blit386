@@ -20,6 +20,7 @@ src/
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
     WakeLock.ts             # Screen Wake Lock subsystem: acquire/release/re-acquire on visibilitychange (HardwareSettings.isWakeLockEnabled)
     Orientation.ts          # Screen orientation detection + optional lock (HardwareSettings.preferredOrientation, IBTDemo.onOrientationChange, BT.screenOrientation)
+    ReducedMotion.ts         # prefers-reduced-motion detection (IBTDemo.onReducedMotionChange, BT.isReducedMotionPreferred)
   hot/
     protocol.ts             # Shared types/constants for the hot-reload runtime (no value imports from src/; shared with the src/vite/ plugin)
     HotRuntime.ts           # Vite HMR context registration, generation counter, hard-reload request, reload announce/broadcast
