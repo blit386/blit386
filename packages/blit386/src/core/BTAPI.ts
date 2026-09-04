@@ -40,6 +40,8 @@ import {
     paletteIndexOutOfRangeError,
     spriteNotIndexizedError,
 } from '../utils/errorMessages';
+import { downloadBlob } from '../utils/FrameCapture';
+import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
 import { Random } from '../utils/Random';
 import type { Rect2i } from '../utils/Rect2i';
 import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLimits';
@@ -61,6 +63,15 @@ import { initWebGPU } from './WebGPUContext';
 
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
+
+/**
+ * `KeyboardEvent.code` for the Shift+F9 dev-mode frame-capture shortcut; see
+ * {@link HardwareSettings.isFrameCaptureShortcutEnabled}. Combined with {@link SHIFT_KEY_CODES}.
+ */
+const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
+
+/** `KeyboardEvent.code` values for either Shift key, held alongside F9 to trigger the frame-capture shortcut. */
+const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 
 /**
  * Central runtime facade for BLIT386 engine services.
@@ -174,6 +185,13 @@ export class BTAPI {
      * update tick for the frame has already run) still observes a press that landed inside a tick.
      */
     private pendingOverlayTogglePress = false;
+
+    /**
+     * True while a Shift+F9 dev-mode frame capture is in flight (see
+     * {@link HardwareSettings.isFrameCaptureShortcutEnabled}), so holding or repeatedly
+     * tapping the shortcut cannot queue overlapping captures.
+     */
+    private isCapturingFrameViaShortcut = false;
 
     /** Bitmask of palette indices referenced by demo draw calls this frame. */
     private readonly framePaletteUsageMask = new Uint8Array(USAGE_CAPACITY);
@@ -435,6 +453,20 @@ export class BTAPI {
                     this.pendingOverlayTogglePress = true;
                 }
 
+                // Dev-mode default: Shift+F9 saves a screenshot in every demo, no demo
+                // code needed. Unlike the overlay toggle above, this doesn't need to wait
+                // for the render phase – it just kicks off an async capture-and-download.
+                // Shift, not bare F9: a future shortcut reuses bare F9 for a
+                // copy-to-clipboard action instead of a file download.
+                if (
+                    !this.isCapturingFrameViaShortcut &&
+                    isFrameCaptureShortcutEnabled(hwSettings.isFrameCaptureShortcutEnabled) &&
+                    SHIFT_KEY_CODES.some((code) => this.keyboard?.isKeyDown(code)) &&
+                    this.keyboard?.isKeyPressed(FRAME_CAPTURE_SHORTCUT_KEY_CODE, undefined, tick)
+                ) {
+                    void this.captureFrameViaShortcut();
+                }
+
                 // Keyboard edges and text buffer align with fixed update rate, not display
                 // refresh rate (render may run 2x update on 120 Hz / 60 FPS setups).
                 this.keyboard?.endUpdate(tick);
@@ -546,6 +578,13 @@ export class BTAPI {
      * subsystems are detached so listeners, polling state, the audio context, the held
      * wake lock sentinel, and the orientation/reduced-motion change listeners do not leak
      * across engine restarts (relevant in tests where the same DOM persists).
+     *
+     * Also clears {@link isCapturingFrameViaShortcut}. A Shift+F9 capture in flight when
+     * `stop()` runs is waiting on a render pass that will now never happen, so its
+     * `captureFrameViaShortcut()` promise never settles and its `finally` block never
+     * clears the guard; without this, every Shift+F9 press after the next `init()` would
+     * silently no-op forever. The stale promise itself is left to be garbage-collected –
+     * it has no other observers, so there is nothing further to cancel.
      */
     public stop(): void {
         this.loop?.stop();
@@ -559,6 +598,8 @@ export class BTAPI {
 
         this.reducedMotion?.detach();
         this.reducedMotion = null;
+
+        this.isCapturingFrameViaShortcut = false;
     }
 
     /**
@@ -1646,6 +1687,27 @@ export class BTAPI {
         }
 
         this.renderer.clearEffects();
+    }
+
+    /**
+     * Captures the current frame and downloads it under a timestamped filename, for the
+     * Shift+F9 dev-mode shortcut. Fire-and-forget from the update tick: errors are logged,
+     * not thrown, so a failed capture never crashes the game loop.
+     */
+    private async captureFrameViaShortcut(): Promise<void> {
+        this.isCapturingFrameViaShortcut = true;
+
+        try {
+            const blob = await this.captureFrame();
+            const filename = defaultFrameCaptureFilename();
+
+            downloadBlob(blob, filename);
+            console.log(`[BT] Frame captured: ${filename}`);
+        } catch (error) {
+            console.error('[BT] Frame capture (Shift+F9) failed:', error);
+        } finally {
+            this.isCapturingFrameViaShortcut = false;
+        }
     }
 
     /**

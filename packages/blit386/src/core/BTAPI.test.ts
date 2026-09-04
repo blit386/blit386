@@ -49,12 +49,20 @@ import type { Effect } from '../render/effects/Effect';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
+import type * as FrameCaptureModule from '../utils/FrameCapture';
+import { downloadBlob } from '../utils/FrameCapture';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { BTAPI } from './BTAPI';
 import type { GameLoop } from './GameLoop';
 import type { HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
 import { collectUsedIndices } from './RenderPaletteUsage';
+
+vi.mock('../utils/FrameCapture', async (importOriginal) => {
+    const actual = await importOriginal<typeof FrameCaptureModule>();
+
+    return { ...actual, downloadBlob: vi.fn() };
+});
 
 function resetSingleton(): void {
     // BTAPI._instance is private; the cast is intentional – there is no public
@@ -2693,6 +2701,227 @@ describe('BTAPI', () => {
             loop?.tick(20);
 
             expect(overlay?.isBodyVisible).toBe(true);
+        });
+    });
+
+    describe('Shift+F9 frame-capture shortcut', () => {
+        function findKeydownHandler(canvas: HTMLCanvasElement): (event: { code: string }) => void {
+            const keydownCall = (canvas.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
+                ([type]) => type === 'keydown',
+            );
+            const keydownHandler = keydownCall?.[1] as ((event: { code: string }) => void) | undefined;
+
+            expect(keydownHandler).toBeDefined();
+
+            return keydownHandler as (event: { code: string }) => void;
+        }
+
+        function getLoop(): { tick: (currentTime: number) => void } | null {
+            return (BTAPI.instance as unknown as { loop: { tick: (currentTime: number) => void } | null }).loop;
+        }
+
+        beforeEach(() => {
+            vi.mocked(downloadBlob).mockClear();
+        });
+
+        it('captures and downloads a frame when enabled and Shift+F9 is pressed', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const mockBlob = new Blob(['png-data'], { type: 'image/png' });
+
+            vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+
+            const keydownHandler = findKeydownHandler(canvas);
+
+            keydownHandler({ code: 'ShiftLeft' });
+            keydownHandler({ code: 'F9' });
+            getLoop()?.tick(20);
+
+            // The capture-and-download runs fire-and-forget from the update tick;
+            // flush pending microtasks so the awaited captureFrame/downloadBlob chain settles.
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(downloadBlob).toHaveBeenCalledExactlyOnceWith(
+                mockBlob,
+                expect.stringMatching(/^blit386-capture-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.png$/),
+            );
+        });
+
+        it('does nothing when F9 is pressed without Shift held', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const captureFrameSpy = vi.spyOn(BTAPI.instance, 'captureFrame');
+
+            findKeydownHandler(canvas)({ code: 'F9' });
+            getLoop()?.tick(20);
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(captureFrameSpy).not.toHaveBeenCalled();
+            expect(downloadBlob).not.toHaveBeenCalled();
+        });
+
+        it('does nothing when isFrameCaptureShortcutEnabled is explicitly false', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: false,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const captureFrameSpy = vi.spyOn(BTAPI.instance, 'captureFrame');
+            const keydownHandler = findKeydownHandler(canvas);
+
+            keydownHandler({ code: 'ShiftLeft' });
+            keydownHandler({ code: 'F9' });
+            getLoop()?.tick(20);
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(captureFrameSpy).not.toHaveBeenCalled();
+            expect(downloadBlob).not.toHaveBeenCalled();
+        });
+
+        it('ignores a second Shift+F9 press while a capture is already in flight', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            let resolveCapture: ((blob: Blob) => void) | undefined;
+            const pendingCapture = new Promise<Blob>((resolve) => {
+                resolveCapture = resolve;
+            });
+
+            vi.spyOn(BTAPI.instance, 'captureFrame').mockReturnValue(pendingCapture);
+
+            const keydownHandler = findKeydownHandler(canvas);
+            const loop = getLoop();
+
+            keydownHandler({ code: 'ShiftLeft' });
+            keydownHandler({ code: 'F9' });
+            loop?.tick(20);
+            await Promise.resolve();
+
+            keydownHandler({ code: 'F9' });
+            loop?.tick(40);
+            await Promise.resolve();
+
+            resolveCapture?.(new Blob(['png-data'], { type: 'image/png' }));
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(BTAPI.instance.captureFrame).toHaveBeenCalledOnce();
+            expect(downloadBlob).toHaveBeenCalledOnce();
+        });
+
+        it('recovers after stop() interrupts a capture that never settled', async () => {
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            const firstCanvas = makeMockCanvas();
+
+            await BTAPI.instance.init(demo, firstCanvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            // A capture that never resolves, standing in for a render pass that never
+            // happens because stop() runs first – the same shape as a page navigation
+            // interrupting an in-flight Shift+F9 capture.
+            const neverSettles = new Promise<Blob>(() => {});
+
+            vi.spyOn(BTAPI.instance, 'captureFrame').mockReturnValue(neverSettles);
+
+            const firstKeydownHandler = findKeydownHandler(firstCanvas);
+
+            firstKeydownHandler({ code: 'ShiftLeft' });
+            firstKeydownHandler({ code: 'F9' });
+            getLoop()?.tick(20);
+            await Promise.resolve();
+
+            // stop() must clear the in-flight guard even though the capture above never
+            // settled – otherwise every Shift+F9 press after the next init() would
+            // silently no-op forever.
+            BTAPI.instance.stop();
+
+            const secondCanvas = makeMockCanvas();
+            const mockBlob = new Blob(['png-data'], { type: 'image/png' });
+
+            await BTAPI.instance.init(demo, secondCanvas);
+            BTAPI.instance.setPalette(new Palette(16));
+            vi.mocked(downloadBlob).mockClear();
+            vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+
+            findKeydownHandler(secondCanvas)({ code: 'ShiftLeft' });
+            findKeydownHandler(secondCanvas)({ code: 'F9' });
+            getLoop()?.tick(20);
+
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(downloadBlob).toHaveBeenCalledExactlyOnceWith(
+                mockBlob,
+                expect.stringMatching(/^blit386-capture-\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.png$/),
+            );
         });
     });
 

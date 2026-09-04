@@ -3,9 +3,19 @@
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Click or tap the "Save PNG" button from the
-// shared UI kit (or press Space) to download the current frame – so the demo works on
+// shared UI kit (or press S) to download the current frame – so the demo works on
 // touch screens too. Note: the kit panel is drawn on screen, so it appears in the
 // saved PNG as well. That is fine for this demo – see the comment in render().
+//
+// Dev-mode extras, built into the engine itself (every demo gets these for free,
+// not just this one): while BT.isDevMode is true (running from `pnpm run dev`, not
+// a production build), pressing Shift+F9 saves a timestamped frame too, without
+// needing to click a button first – see HardwareSettings.isFrameCaptureShortcutEnabled.
+// Shift, not bare F9: a future shortcut reuses bare F9 for a copy-to-clipboard
+// action instead of a file download.
+// The engine also exposes the whole BT namespace as window.BT in dev mode
+// (BootstrapOptions.exposeGlobal, on by default), so you can run
+// window.BT.downloadFrame('my-file.png') straight from the browser console at any time.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics).
 // Guide: https://blit386.dev/docs/api/rendering#frame-capture
@@ -37,7 +47,7 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 /**
  * Image output demo.
  * Draws a colorful test pattern and saves the frame to PNG when the kit's
- * "Save PNG" button is clicked, tapped, or triggered with the Space key.
+ * "Save PNG" button is clicked, tapped, or triggered with the S key.
  *
  * @implements {IBTDemo}
  */
@@ -81,7 +91,8 @@ class Demo {
             // deliberate trade-off so touch users can save at all; see render().)
             // The overlay still works on demand: press ` to show it and ` again to
             // hide it before you capture. The bottom-left 17x13 corner also stays
-            // tappable to toggle it, which is why our UI panel sits in the top-right.
+            // tappable to toggle it, which is why our UI panel avoids that corner
+            // (it sits in the top-left instead).
             isOverlayToggleHintVisible: false,
         };
     }
@@ -128,7 +139,7 @@ class Demo {
      */
     update() {
         // Let the UI kit do its per-tick housekeeping first: it latches keyboard
-        // shortcuts (like the Save button's Space binding) and tracks touch contacts.
+        // shortcuts (like the Save button's S binding) and tracks touch contacts.
         // This must be the first line of update() so nothing misses a key press.
         ui.tick();
 
@@ -212,19 +223,24 @@ class Demo {
         // Vertical line through the center (20 pixels up and down from center).
         BT.drawLine(new Vector2i(cx, cy - 20), new Vector2i(cx, cy + 20), C_WHITE);
 
-        // UI kit panel in the top-right corner. We put it there (not bottom-left)
-        // because the engine keeps the bottom-left 17x13 corner tappable for toggling
-        // the stats overlay, and we do not want the two to fight over taps.
+        // UI kit panel in the top-left corner. We avoid bottom-left specifically
+        // because the engine keeps that 17x13 corner tappable for toggling the stats
+        // overlay, and we do not want the two to fight over taps; top-left has no
+        // such conflict.
         // Note: this panel is drawn onto the frame, so it WILL be part of the saved
         // PNG. That is acceptable here – it even doubles as a caption telling you
         // which demo produced the screenshot.
-        ui.begin(UI_ANCHORS.TOP_RIGHT);
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.panel('Image Output');
 
         // The Save button. ui.button() returns true only on the single frame it was
-        // clicked, tapped, or its bound key (Space) was pressed – so holding Space
-        // does not spam downloads. We also ignore it while a save is already running.
-        if (ui.button('Save PNG (Space)', { key: 'Space' }) && !this.capturing) {
+        // clicked, tapped, or its bound key (S) was pressed – so holding S does not
+        // spam downloads. We also ignore it while a save is already running.
+        // Bound to S rather than Space: Space is the browser's page-scroll key, and
+        // this demo does not opt into isCapturingKeyboardScroll, so a Space press
+        // would both save AND scroll the page – confusing on a page taller than the
+        // canvas.
+        if (ui.button('Save PNG (S)', { key: 'KeyS' }) && !this.capturing) {
             this.saveFrame();
         }
 
@@ -237,8 +253,16 @@ class Demo {
             // A save just finished – show the result in green (success) or orange (error).
             ui.label(this.lastCaptureMessage, { color: this.lastCaptureColor });
         } else {
-            // Nothing happening – a quiet hint in dim gray.
-            ui.label('Saves the current frame', { color: 'dim' });
+            // Nothing happening – a quiet hint in dim gray. In dev mode (running from
+            // `pnpm run dev`, not a production build) we also mention the Shift+F9
+            // shortcut – an engine default (every demo gets it, see
+            // HardwareSettings.isFrameCaptureShortcutEnabled), not something this demo
+            // wires up itself. It has no visible button of its own to advertise it, so
+            // this is the most relevant place to mention it.
+            const hint = BT.isDevMode
+                ? 'Saves the current frame (dev: Shift+F9 also works)'
+                : 'Saves the current frame';
+            ui.label(hint, { color: 'dim' });
         }
 
         // Frame counter so you can tell consecutive screenshots apart.
