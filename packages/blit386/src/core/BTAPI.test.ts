@@ -1671,6 +1671,87 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('reduced motion', () => {
+        type FakeMediaQueryList = {
+            matches: boolean;
+            addEventListener: ReturnType<typeof vi.fn>;
+            removeEventListener: ReturnType<typeof vi.fn>;
+            dispatchEvent: (event: Event) => boolean;
+        };
+
+        afterEach(() => {
+            Reflect.deleteProperty(globalThis, 'matchMedia');
+        });
+
+        function installMockMatchMedia(matches = false): FakeMediaQueryList {
+            const target = new EventTarget();
+
+            const mql: FakeMediaQueryList = {
+                matches,
+                addEventListener: vi.fn((event: string, listener: EventListener) => {
+                    target.addEventListener(event, listener);
+                }),
+                removeEventListener: vi.fn((event: string, listener: EventListener) => {
+                    target.removeEventListener(event, listener);
+                }),
+                dispatchEvent: (event: Event) => target.dispatchEvent(event),
+            };
+
+            Object.defineProperty(globalThis, 'matchMedia', {
+                configurable: true,
+                value: vi.fn(() => mql),
+            });
+
+            return mql;
+        }
+
+        function makeReducedMotionDemo(onReducedMotionChange?: (prefersReduced: boolean) => void): IBTDemo {
+            const demo: IBTDemo = {
+                ...makeMockDemo(),
+                configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    drawingBufferSize: new Vector2i(640, 480),
+                    targetFPS: 60,
+                }),
+            };
+
+            if (onReducedMotionChange !== undefined) {
+                demo.onReducedMotionChange = onReducedMotionChange;
+            }
+
+            return demo;
+        }
+
+        it('exposes the current preference via isReducedMotionPreferred', () => {
+            installMockMatchMedia(true);
+
+            expect(BTAPI.instance.isReducedMotionPreferred()).toBe(true);
+            expect(BT.isReducedMotionPreferred).toBe(true);
+        });
+
+        it('forwards preference change events to demo.onReducedMotionChange', async () => {
+            const mql = installMockMatchMedia(false);
+            const onReducedMotionChange = vi.fn();
+
+            await BTAPI.instance.init(makeReducedMotionDemo(onReducedMotionChange), makeMockCanvas());
+
+            mql.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+            expect(onReducedMotionChange).toHaveBeenCalledWith(true);
+        });
+
+        it('removes the reduced-motion listener on stop', async () => {
+            const mql = installMockMatchMedia();
+
+            await BTAPI.instance.init(makeReducedMotionDemo(vi.fn()), makeMockCanvas());
+
+            BTAPI.instance.stop();
+
+            expect(mql.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+        });
+    });
+
     describe('assignTag', () => {
         it('forwards tags to Overlay when the timing chart is enabled', async () => {
             const assignSpy = vi.spyOn(Overlay.prototype, 'assignTag');
@@ -2746,6 +2827,7 @@ describe('BTAPI', () => {
         describe('hotReplaceDemo', () => {
             afterEach(() => {
                 Reflect.deleteProperty(globalThis, 'screen');
+                Reflect.deleteProperty(globalThis, 'matchMedia');
             });
 
             it('swaps in the new demo and returns true when init() succeeds', async () => {
@@ -2840,6 +2922,38 @@ describe('BTAPI', () => {
 
                 expect(newOnOrientationChange).toHaveBeenCalledWith('portrait-primary');
                 expect(oldOnOrientationChange).not.toHaveBeenCalled();
+            });
+
+            it('rebinds reduced-motion change events to the new demo after a successful swap', async () => {
+                const target = new EventTarget();
+                const mockMediaQueryList = {
+                    matches: false,
+                    addEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.addEventListener(event, listener),
+                    ),
+                    removeEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.removeEventListener(event, listener),
+                    ),
+                    dispatchEvent: (event: Event) => target.dispatchEvent(event),
+                };
+
+                Object.defineProperty(globalThis, 'matchMedia', {
+                    configurable: true,
+                    value: vi.fn(() => mockMediaQueryList),
+                });
+
+                const oldOnReducedMotionChange = vi.fn();
+                const oldDemo = { ...makeMockDemo(), onReducedMotionChange: oldOnReducedMotionChange };
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newOnReducedMotionChange = vi.fn();
+                const newDemo = { ...makeMockDemo(), onReducedMotionChange: newOnReducedMotionChange };
+                await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                mockMediaQueryList.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+                expect(newOnReducedMotionChange).toHaveBeenCalledWith(true);
+                expect(oldOnReducedMotionChange).not.toHaveBeenCalled();
             });
         });
     });
@@ -2988,6 +3102,34 @@ describe('BTAPI splash palette capture', () => {
 
         expect(live).toBe(gamePalette);
         expect(live?.get(1).r).toBe(0);
+    });
+
+    it('installs the captured palette immediately when reduced motion is preferred', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.white);
+
+        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.endPaletteCapture(true);
+
+        const live = renderPalette();
+
+        expect(live).toBe(gamePalette);
+        expect(live?.get(1).r).toBe(255);
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('snaps the splash palette to black immediately when the game never set one and reduced motion is preferred', () => {
+        const splashPalette = new Palette(RAMP_PALETTE_SIZE);
+        splashPalette.set(16, Color32.white);
+
+        armWithSplashPalette(splashPalette);
+
+        BTAPI.instance.endPaletteCapture(true);
+
+        expect(splashPalette.get(16).r).toBe(0);
+        expect(activeEffectCount()).toBe(0);
     });
 
     it('lands exactly on the captured colors once the handoff fade completes', () => {
@@ -3352,5 +3494,55 @@ describe('BTAPI splash lifecycle in init', () => {
         await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
 
         expect(endUpdate).toHaveBeenCalled();
+    });
+
+    describe('reduced motion', () => {
+        function installMockMatchMedia(matches: boolean): void {
+            Object.defineProperty(globalThis, 'matchMedia', {
+                configurable: true,
+                value: vi.fn(() => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+            });
+        }
+
+        afterEach(() => {
+            Reflect.deleteProperty(globalThis, 'matchMedia');
+        });
+
+        it('installs the game palette with no animated handoff', async () => {
+            installMockMatchMedia(true);
+
+            const gamePalette = new Palette(16);
+            gamePalette.set(1, Color32.white);
+
+            await BTAPI.instance.init(
+                makeSplashDemo({ isSplashEnabled: true }, () => {
+                    BTAPI.instance.setPalette(gamePalette);
+                }),
+                makeMockCanvas(),
+            );
+
+            expect(renderPalette()).toBe(gamePalette);
+            expect(gamePalette.get(1).r).toBe(255);
+        });
+
+        it('skips the WebGPU dissolve', async () => {
+            installMockMatchMedia(true);
+
+            const enableDissolveSpy = vi.spyOn(Splash.prototype, 'enableDissolve');
+
+            await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+            expect(enableDissolveSpy).not.toHaveBeenCalled();
+        });
+
+        it('still runs the WebGPU dissolve when reduced motion is not preferred', async () => {
+            installMockMatchMedia(false);
+
+            const enableDissolveSpy = vi.spyOn(Splash.prototype, 'enableDissolve');
+
+            await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+            expect(enableDissolveSpy).toHaveBeenCalled();
+        });
     });
 });

@@ -54,6 +54,7 @@ import {
     resolveOverlayTimingChartDiagnostics,
 } from './IBTDemo';
 import { Orientation } from './Orientation';
+import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { WakeLock } from './WakeLock';
 import { initWebGPU } from './WebGPUContext';
@@ -252,6 +253,9 @@ export class BTAPI {
 
     /** Screen orientation detection / lock subsystem. Created and attached during {@link init}. */
     private orientation: Orientation | null = null;
+
+    /** Reduced-motion preference detection. Created and attached during {@link init}. */
+    private reducedMotion: ReducedMotion | null = null;
 
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
@@ -527,19 +531,21 @@ export class BTAPI {
         this.orientation = new Orientation();
         this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
 
+        this.attachReducedMotion(demo);
+
         console.log('[BT] Initialization complete');
 
         return true;
     }
 
     /**
-     * Stops the active game loop and detaches input, audio, wake lock, and orientation
-     * subsystems.
+     * Stops the active game loop and detaches input, audio, wake lock, orientation, and
+     * reduced-motion subsystems.
      *
-     * Pointer, keyboard, gamepad, audio, wake lock, and orientation subsystems are
-     * detached so listeners, polling state, the audio context, the held wake lock
-     * sentinel, and the orientation change listener do not leak across engine restarts
-     * (relevant in tests where the same DOM persists).
+     * Pointer, keyboard, gamepad, audio, wake lock, orientation, and reduced-motion
+     * subsystems are detached so listeners, polling state, the audio context, the held
+     * wake lock sentinel, and the orientation/reduced-motion change listeners do not leak
+     * across engine restarts (relevant in tests where the same DOM persists).
      */
     public stop(): void {
         this.loop?.stop();
@@ -550,6 +556,9 @@ export class BTAPI {
 
         this.orientation?.detach();
         this.orientation = null;
+
+        this.reducedMotion?.detach();
+        this.reducedMotion = null;
     }
 
     /**
@@ -563,10 +572,11 @@ export class BTAPI {
      * loop while this candidate's `init()` runs. A failed hot reload must leave the running
      * engine untouched.
      *
-     * On success, also rebinds the orientation subsystem's change callback to the new
-     * instance via {@link Orientation.setOnChange} - the listener installed at {@link init}
-     * closes over the *previous* demo's bound `onOrientationChange`, so without this,
-     * orientation events would keep reaching stale code after the swap.
+     * On success, also rebinds the orientation and reduced-motion subsystems' change
+     * callbacks to the new instance via {@link Orientation.setOnChange} and
+     * {@link ReducedMotion.setOnChange} - the listeners installed at {@link init} close over
+     * the *previous* demo's bound `onOrientationChange` / `onReducedMotionChange`, so without
+     * this, those events would keep reaching stale code after the swap.
      *
      * @param newDemo – Freshly constructed candidate demo instance.
      * @returns `true` when `newDemo.init()` succeeds and {@link demo} was swapped to it.
@@ -599,6 +609,7 @@ export class BTAPI {
 
         this.demo = newDemo;
         this.orientation?.setOnChange(newDemo.onOrientationChange?.bind(newDemo) ?? null);
+        this.reducedMotion?.setOnChange(newDemo.onReducedMotionChange?.bind(newDemo) ?? null);
 
         return true;
     }
@@ -1009,6 +1020,20 @@ export class BTAPI {
     }
 
     /**
+     * Reports whether reduced motion is currently preferred.
+     *
+     * Resolves the `?reducedmotion` / `?noreducedmotion` URL flags over the platform's own
+     * `prefers-reduced-motion: reduce` match. Does not require a successful init – reads the
+     * platform API directly, mirroring {@link getScreenOrientation}.
+     *
+     * @since 1.7.0
+     * @returns `true` when reduced motion should be preferred.
+     */
+    public isReducedMotionPreferred(): boolean {
+        return ReducedMotion.isPreferred;
+    }
+
+    /**
      * Gets the pointer input subsystem created during initialization.
      *
      * @returns Pointer input instance, or null when the engine has not been
@@ -1123,8 +1148,11 @@ export class BTAPI {
      *
      * Palette effects started during capture are dropped: they hold snapshots of a
      * palette that is about to be replaced wholesale.
+     *
+     * @param reducedMotion – When `true`, skips the exposure fade entirely and installs the
+     *   target colors immediately – no intermediate blackened state, no animation.
      */
-    public endPaletteCapture(): void {
+    public endPaletteCapture(reducedMotion: boolean = false): void {
         const captured = this.pendingPalette;
 
         this.isCapturingPalette = false;
@@ -1135,8 +1163,19 @@ export class BTAPI {
 
             if (current) {
                 this.paletteEffects.clear();
-                this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+
+                if (reducedMotion) {
+                    current.copyFrom(createBlackened(current));
+                } else {
+                    this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+                }
             }
+
+            return;
+        }
+
+        if (reducedMotion) {
+            this.installPalette(captured);
 
             return;
         }
@@ -1758,6 +1797,22 @@ export class BTAPI {
     }
 
     /**
+     * Attaches the reduced-motion preference listener, binding the demo callback.
+     *
+     * Extracted from {@link init} to keep that method's cyclomatic complexity within the
+     * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
+     * and {@link attachAudioSubsystem}.
+     *
+     * @param demo – Active demo instance whose optional {@link IBTDemo.onReducedMotionChange}
+     *   hook is bound.
+     */
+    private attachReducedMotion(demo: IBTDemo): void {
+        this.reducedMotion?.detach();
+        this.reducedMotion = new ReducedMotion();
+        this.reducedMotion.attach(demo.onReducedMotionChange?.bind(demo) ?? null);
+    }
+
+    /**
      * Constructs and initializes the renderer for the active hardware settings.
      *
      * Logs the selected backend name, constructs the matching {@link IRenderer},
@@ -2215,17 +2270,21 @@ export class BTAPI {
      * @returns Whatever the demo's `init()` resolved to.
      */
     private async runDemoInitBehindSplash(demo: IBTDemo, splash: Splash, displaySize: Vector2i): Promise<boolean> {
+        const reducedMotion = ReducedMotion.isPreferred;
+
         // Install it as the active palette, not just on the renderer: endPaletteCapture()
         // reads this.palette to fade the splash down when the game never sets one of its
         // own, and the two must not disagree while the splash is the thing on screen.
         this.installPalette(splash.palette);
         this.beginPaletteCapture();
         splash.attachSkipInput(globalThis);
-        splash.start();
+        splash.start(reducedMotion);
 
         // Gate on activeBackend, not requestedBackend: this is a runtime feature
-        // gate, and the software renderer throws on post-process.
-        if (this.activeBackend === 'webgpu') {
+        // gate, and the software renderer throws on post-process. Reduced motion skips the
+        // dissolve entirely – it is a simulated glitch effect, exactly the category of motion
+        // the preference exists to suppress.
+        if (this.activeBackend === 'webgpu' && !reducedMotion) {
             splash.enableDissolve();
 
             const dissolve = splash.dissolveEffect;
@@ -2267,7 +2326,7 @@ export class BTAPI {
                 this.effectRemove(dissolve);
             }
 
-            this.endPaletteCapture();
+            this.endPaletteCapture(reducedMotion);
             this.drainInputEdges();
         }
     }
