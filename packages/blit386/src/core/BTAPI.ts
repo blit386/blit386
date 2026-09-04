@@ -40,6 +40,8 @@ import {
     paletteIndexOutOfRangeError,
     spriteNotIndexizedError,
 } from '../utils/errorMessages';
+import { downloadBlob } from '../utils/FrameCapture';
+import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
 import { Random } from '../utils/Random';
 import type { Rect2i } from '../utils/Rect2i';
 import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLimits';
@@ -60,6 +62,9 @@ import { initWebGPU } from './WebGPUContext';
 
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
+
+/** `KeyboardEvent.code` for the F9 dev-mode frame-capture shortcut; see {@link HardwareSettings.isFrameCaptureShortcutEnabled}. */
+const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
 
 /**
  * Central runtime facade for BLIT386 engine services.
@@ -173,6 +178,13 @@ export class BTAPI {
      * update tick for the frame has already run) still observes a press that landed inside a tick.
      */
     private pendingOverlayTogglePress = false;
+
+    /**
+     * True while an F9 dev-mode frame capture is in flight (see
+     * {@link HardwareSettings.isFrameCaptureShortcutEnabled}), so holding or repeatedly
+     * tapping F9 cannot queue overlapping captures.
+     */
+    private isCapturingFrameViaShortcut = false;
 
     /** Bitmask of palette indices referenced by demo draw calls this frame. */
     private readonly framePaletteUsageMask = new Uint8Array(USAGE_CAPACITY);
@@ -429,6 +441,17 @@ export class BTAPI {
                 // by which point this tick's edge would otherwise already be gone.
                 if (this.keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, tick)) {
                     this.pendingOverlayTogglePress = true;
+                }
+
+                // Dev-mode default: F9 saves a screenshot in every demo, no demo code
+                // needed. Unlike the overlay toggle above, this doesn't need to wait for
+                // the render phase – it just kicks off an async capture-and-download.
+                if (
+                    !this.isCapturingFrameViaShortcut &&
+                    isFrameCaptureShortcutEnabled(hwSettings.isFrameCaptureShortcutEnabled) &&
+                    this.keyboard?.isKeyPressed(FRAME_CAPTURE_SHORTCUT_KEY_CODE, undefined, tick)
+                ) {
+                    void this.captureFrameViaShortcut();
                 }
 
                 // Keyboard edges and text buffer align with fixed update rate, not display
@@ -1607,6 +1630,27 @@ export class BTAPI {
         }
 
         this.renderer.clearEffects();
+    }
+
+    /**
+     * Captures the current frame and downloads it under a timestamped filename, for the
+     * F9 dev-mode shortcut. Fire-and-forget from the update tick: errors are logged, not
+     * thrown, so a failed capture never crashes the game loop.
+     */
+    private async captureFrameViaShortcut(): Promise<void> {
+        this.isCapturingFrameViaShortcut = true;
+
+        try {
+            const blob = await this.captureFrame();
+            const filename = defaultFrameCaptureFilename();
+
+            downloadBlob(blob, filename);
+            console.log(`[BT] Frame captured: ${filename}`);
+        } catch (error) {
+            console.error('[BT] Frame capture (F9) failed:', error);
+        } finally {
+            this.isCapturingFrameViaShortcut = false;
+        }
     }
 
     /**

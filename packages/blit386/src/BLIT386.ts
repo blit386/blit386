@@ -78,6 +78,7 @@ import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError, systemFontNotReadyError } from './utils/errorMessages';
+import { downloadBlob } from './utils/FrameCapture';
 import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
@@ -2283,14 +2284,8 @@ export const BT = {
      */
     downloadFrame: async (filename: string = 'blit386-capture.png'): Promise<void> => {
         const blob = await BTAPI.instance.captureFrame();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
 
-        link.href = url;
-        link.download = filename;
-        link.click();
-
-        URL.revokeObjectURL(url);
+        downloadBlob(blob, filename);
     },
 
     /**

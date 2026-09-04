@@ -75,6 +75,7 @@ export interface HotReloadContext {
  * @changed 1.5.0 Added {@link HardwareSettings.isSplashEnabled}.
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
+ * @changed 1.7.0 Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}.
  */
 export interface HardwareSettings {
     /**
@@ -245,6 +246,18 @@ export interface HardwareSettings {
      * @since 1.5.0
      */
     splashColorLight?: Color32;
+
+    /**
+     * Whether pressing F9 captures the current frame and downloads it as a PNG.
+     *
+     * Leave unset for the default: enabled in development builds, disabled in release,
+     * per {@link BT.isDevMode}. Setting it explicitly wins over dev-mode detection – set
+     * `true` to keep the shortcut in a production build, or `false` to free up F9 (for
+     * example if the game binds it to something else).
+     *
+     * @since 1.7.0
+     */
+    isFrameCaptureShortcutEnabled?: boolean;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -865,6 +878,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickIfDefinedPartial(picked, partial, 'isSplashEnabled');
+    pickIfDefinedPartial(picked, partial, 'isFrameCaptureShortcutEnabled');
 
     const pickedSplashColorDark = pickConfigureColor(partial.splashColorDark);
     if (pickedSplashColorDark !== undefined) {
@@ -1038,6 +1052,10 @@ function assignFullDefaultMergeScalars(
     assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
     assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
 
+    // Same reasoning as isSplashEnabled above: must stay unset so dev-mode detection
+    // can resolve it in src/utils/FrameCaptureShortcut.ts.
+    assignIfDefined(optionals, 'isFrameCaptureShortcutEnabled', picked.isFrameCaptureShortcutEnabled);
+
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle ?? defaults.overlayStyle));
 
     assignIfDefined(
@@ -1181,6 +1199,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
     assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
     assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
+    assignIfDefined(optionals, 'isFrameCaptureShortcutEnabled', picked.isFrameCaptureShortcutEnabled);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);
     assignIfDefined(optionals, 'overlayPaletteRowsVisible', picked.overlayPaletteRowsVisible);

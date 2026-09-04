@@ -92,6 +92,25 @@ export async function pixelBufferToPNG(
 }
 
 /**
+ * Triggers a browser download of `blob` under `filename`, via a temporary object URL
+ * and a synthetic anchor click. Shared by `BT.downloadFrame` and the engine's F9
+ * frame-capture shortcut so both trigger a download the same way.
+ *
+ * @param blob – File contents to download.
+ * @param filename – Target download filename.
+ */
+export function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = filename;
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+/**
  * Manages single-frame capture from the WebGPU rendering pipeline.
  *
  * A capture request is queued via {@link request}, executed during the

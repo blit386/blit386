@@ -9,7 +9,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
-import { alignedBytesPerRow, FrameCapture, swizzleBGRAtoRGBA } from './FrameCapture';
+import { alignedBytesPerRow, downloadBlob, FrameCapture, swizzleBGRAtoRGBA } from './FrameCapture';
+import { defaultFrameCaptureFilename } from './FrameCaptureShortcut';
 
 /**
  * Installs browser-only globals (ImageData, OffscreenCanvas) that don't exist in Node.js.
@@ -118,6 +119,41 @@ describe('swizzleBGRAtoRGBA', () => {
         swizzleBGRAtoRGBA(data);
 
         expect(data.length).toBe(0);
+    });
+});
+
+describe('downloadBlob', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('creates an object URL, clicks a synthetic anchor, and revokes the URL', () => {
+        const blob = new Blob(['png-data'], { type: 'image/png' });
+        const mockUrl = 'blob:mock-url';
+        const createObjectURL = vi.fn().mockReturnValue(mockUrl);
+        const revokeObjectURL = vi.fn();
+
+        vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+
+        const mockAnchor = { href: '', download: '', click: vi.fn() };
+        const createElement = vi.fn().mockReturnValue(mockAnchor);
+
+        vi.stubGlobal('document', { createElement });
+
+        // Filenames come from callers such as `BT.downloadFrame` (a caller-chosen
+        // name) or the F9 shortcut's `defaultFrameCaptureFilename` (a timestamped
+        // one) – downloadBlob itself is filename-agnostic, so exercise it with the
+        // timestamped shape to match how the F9 path actually calls it.
+        const filename = defaultFrameCaptureFilename(new Date(2026, 8, 18, 7, 19, 33));
+
+        downloadBlob(blob, filename);
+
+        expect(createObjectURL).toHaveBeenCalledWith(blob);
+        expect(createElement).toHaveBeenCalledWith('a');
+        expect(mockAnchor.href).toBe(mockUrl);
+        expect(mockAnchor.download).toBe('blit386-capture-2026-09-18-07-19-33.png');
+        expect(mockAnchor.click).toHaveBeenCalledOnce();
+        expect(revokeObjectURL).toHaveBeenCalledWith(mockUrl);
     });
 });
 
