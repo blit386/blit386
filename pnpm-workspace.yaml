@@ -14,7 +14,7 @@ overrides:
   esbuild: ^0.28.2
   js-yaml@>=3.0.0 <3.15.1: ^3.15.2
   js-yaml@>=4.0.0 <4.3.1: ^4.3.2
-  undici@>=7.0.0 <7.29.0: ^7.29.0
+  undici@>=7.0.0 <7.29.0: ^7.29.1
   # GHSA-2v37-7h3g-55p8 (high): custom generators loop indefinitely when size is zero.
   # Dev-only, reached through postcss via vite and vitest, so it never enters a runtime
   # bundle - but `security:audit` covers dev + prod, so it fails CI. 3.3.17 is the patch.
