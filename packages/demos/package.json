@@ -66,7 +66,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
     "@eslint/js": "^10.0.1",
-    "@shikijs/twoslash": "^4.3.1",
+    "@shikijs/twoslash": "^4.4.3",
     "autoprefixer": "^10.5.5",
     "concurrently": "^10.0.5",
     "cspell": "^10.0.1",
@@ -81,7 +81,7 @@
     "knip": "^6.32.0",
     "postcss-nesting": "^14.0.1",
     "prettier": "^3.9.6",
-    "shiki": "^4.3.1",
+    "shiki": "^4.4.3",
     "typescript": "~5.9.3",
     "vite": "^8.1.5"
   }
