@@ -113,6 +113,7 @@ async function main(): Promise<void> {
     const userAgent = process.env.npm_config_user_agent ?? '';
     const pmName = detectPackageManager(userAgent);
     const pm = pmHints(pmName);
+    const packageManager = packageManagerField(pmName, userAgent);
 
     scaffold({
         targetDir,
@@ -122,7 +123,7 @@ async function main(): Promise<void> {
         pmRunBuild: pm.runBuildCmd,
         pmRunFormat: pm.runFormatCmd,
         pmRunLint: pm.runLintCmd,
-        packageManager: packageManagerField(pmName, userAgent),
+        ...(packageManager === undefined ? {} : { packageManager }),
         includeCi: wizardOptions.includeCi,
         agents: wizardOptions.agents,
         language,

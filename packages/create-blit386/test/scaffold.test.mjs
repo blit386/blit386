@@ -507,6 +507,33 @@ test('scaffold with both Claude and Cursor agents writes both adapter trees', ()
     }
 });
 
+test('scaffold omits packageManager when the option is absent', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-no-pm-field-'));
+
+    try {
+        const project = join(work, 'bun-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'bun-game',
+            pmInstall: 'bun install',
+            pmRunDev: 'bun run dev',
+            pmRunBuild: 'bun run build',
+            pmRunFormat: 'bun run format',
+            pmRunLint: 'bun run lint',
+            agents: [],
+        });
+
+        const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
+        assert.equal(pkg.packageManager, undefined, 'bun scaffolds must not write a Corepack packageManager pin');
+        assert.ok(
+            !readFileSync(join(project, 'package.json'), 'utf8').includes('{{'),
+            'placeholders should be rendered',
+        );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('blit agents sync --check exits 0 when no files have drifted', () => {
     assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
 

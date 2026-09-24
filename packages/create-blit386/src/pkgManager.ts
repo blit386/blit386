@@ -42,20 +42,32 @@ export function detectPackageManager(userAgent: string): PackageManager {
 }
 
 /**
+ * Exact semver (major.minor.patch, optional prerelease and build). Corepack rejects a pin that is not
+ * one of these, including a truncated `11.0.0` taken from `11.0.0-dev.1005`.
+ */
+const EXACT_SEMVER =
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
+/**
  * Corepack `packageManager` field value (`name@version`) for a generated game's `package.json`.
  *
  * Writing this before the first install stops Corepack from auto-adding a field that pins whatever
- * version happened to run the install. The version is taken only from `userAgent`; a missing version throws
- * rather than writing a guessed pin Corepack would then rewrite.
+ * version happened to run the install. Returns undefined for bun: Corepack accepts only npm, pnpm, and yarn,
+ * and a `bun@` pin is rejected. A missing or non-exact version throws rather than writing a guessed pin.
  */
-export function packageManagerField(name: PackageManager, userAgent: string): string {
-    // Leading boundary so `npm` does not match the same letters inside `pnpm/x.y.z`.
-    const version = userAgent.match(new RegExp(`(?:^|[\\s/])${name}/(\\d+(?:\\.\\d+){1,3})`))?.[1];
+export function packageManagerField(name: PackageManager, userAgent: string): string | undefined {
+    if (name === 'bun') {
+        return undefined;
+    }
 
-    if (version === undefined) {
+    // Leading boundary so `npm` does not match the same letters inside `pnpm/x.y.z`. The token after
+    // the slash is the whole version, so a prerelease or build suffix is not cut off.
+    const version = userAgent.match(new RegExp(`(?:^|[\\s/])${name}/(\\S+)`))?.[1];
+
+    if (version === undefined || !EXACT_SEMVER.test(version)) {
         throw new Error(
-            `Could not read a ${name} version from the package-manager user agent. ` +
-                'Run create-blit386 with npm, pnpm, yarn, or bun.',
+            `Could not read an exact ${name} version from the package-manager user agent. ` +
+                'Run create-blit386 with npm, pnpm, or yarn.',
         );
     }
 

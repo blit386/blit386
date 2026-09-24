@@ -59,8 +59,11 @@ export interface ScaffoldOptions {
     /** AI assistants to generate config for. Empty means none. Both entries write both adapter trees. */
     agents: readonly AgentKind[];
 
-    /** Corepack `packageManager` field (`name@version`) written into the generated `package.json`. */
-    packageManager: string;
+    /**
+     * Corepack `packageManager` field (`name@version`) written into the generated `package.json`.
+     * Omit for bun; Corepack accepts only npm, pnpm, and yarn.
+     */
+    packageManager?: string;
 
     /** Language layer to use; defaults to `'js'`. */
     language?: LanguageChoice;
@@ -218,7 +221,7 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
-        packageManager: options.packageManager,
+        packageManager: options.packageManager ?? '',
 
         // Resolved per language so base templates stay language-agnostic.
         entryFile,
@@ -232,6 +235,10 @@ export function scaffold(options: ScaffoldOptions): void {
     const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
     copyTemplateTree(join(templates, language), options.targetDir, vars, writtenPaths);
+    if (options.packageManager === undefined) {
+        const pkgPath = join(options.targetDir, 'package.json');
+        writeFileSync(pkgPath, readFileSync(pkgPath, 'utf8').replace(/^[ \t]*"packageManager": "",\r?\n/m, ''));
+    }
 
     if (options.includeCi) {
         copyTemplateTree(
