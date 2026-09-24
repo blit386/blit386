@@ -25,20 +25,41 @@ export interface PmHints {
 }
 
 /** Detect the package manager from the invoking agent, defaulting to npm (which ships with Node). */
-export function detectPackageManager(): PackageManager {
-    const agent = process.env.npm_config_user_agent ?? '';
-
-    if (agent.startsWith('pnpm')) {
+export function detectPackageManager(userAgent: string): PackageManager {
+    if (userAgent.startsWith('pnpm')) {
         return 'pnpm';
     }
-    if (agent.startsWith('yarn')) {
+
+    if (userAgent.startsWith('yarn')) {
         return 'yarn';
     }
-    if (agent.startsWith('bun')) {
+
+    if (userAgent.startsWith('bun')) {
         return 'bun';
     }
 
     return 'npm';
+}
+
+/**
+ * Corepack `packageManager` field value (`name@version`) for a generated game's `package.json`.
+ *
+ * Writing this before the first install stops Corepack from auto-adding a field that pins whatever
+ * version happened to run the install. The version is taken only from `userAgent`; a missing version throws
+ * rather than writing a guessed pin Corepack would then rewrite.
+ */
+export function packageManagerField(name: PackageManager, userAgent: string): string {
+    // Leading boundary so `npm` does not match the same letters inside `pnpm/x.y.z`.
+    const version = userAgent.match(new RegExp(`(?:^|[\\s/])${name}/(\\d+(?:\\.\\d+){1,3})`))?.[1];
+
+    if (version === undefined) {
+        throw new Error(
+            `Could not read a ${name} version from the package-manager user agent. ` +
+                'Run create-blit386 with npm, pnpm, yarn, or bun.',
+        );
+    }
+
+    return `${name}@${version}`;
 }
 
 /** Human-facing commands and spawn arguments for a given package manager. */
