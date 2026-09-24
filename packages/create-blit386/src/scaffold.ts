@@ -36,14 +36,14 @@ import {
     type TemplateVars,
 } from '@blit386/kit/adapters';
 
+import { packageManagerField, type PackageManager } from './pkgManager';
+
 /** blit386 version range written into the generated package.json. */
 const BLIT386_RANGE = '^1.7.0';
 
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';
 const CURSOR_DIR = '.cursor';
-
-export type AgentChoice = 'none' | AgentKind;
 
 /** Which language layer to scaffold. */
 export type LanguageChoice = 'js' | 'ts';
@@ -57,9 +57,25 @@ export interface ScaffoldOptions {
     pmRunFormat: string;
     pmRunLint: string;
     includeCi?: boolean;
-    agent?: AgentChoice;
+    /**
+     * AI assistants to generate config for. Empty or omitted means none. Selecting both Claude and
+     * Cursor writes both adapters' files in one scaffold.
+     */
+    agents?: readonly AgentKind[];
+    /**
+     * Corepack `packageManager` field (`name@version`) written into the generated `package.json`.
+     * When omitted, inferred from `pmInstall` with the scaffolder's default version pins.
+     */
+    packageManager?: string;
     /** Language layer to use; defaults to `'js'`. */
     language?: LanguageChoice;
+}
+
+/** Infer a Corepack field from the install command when callers omit `packageManager`. */
+function inferPackageManagerField(pmInstall: string): string {
+    const names: readonly PackageManager[] = ['pnpm', 'yarn', 'bun', 'npm'];
+    const name = names.find((pm) => pmInstall.startsWith(pm)) ?? 'npm';
+    return packageManagerField(name, '');
 }
 
 function templatesDir(): string {
@@ -214,6 +230,7 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
+        packageManager: options.packageManager ?? inferPackageManagerField(options.pmInstall),
         // Resolved per language so base templates stay language-agnostic.
         entryFile,
         gameFile,
@@ -235,11 +252,11 @@ export function scaffold(options: ScaffoldOptions): void {
         );
     }
 
-    if (options.agent === 'cursor') {
+    const agents = options.agents ?? [];
+    if (agents.includes('cursor')) {
         writeGeneratedFiles(options.targetDir, generateCursorAdapter(kit, vars), writtenPaths);
     }
-
-    if (options.agent === 'claude') {
+    if (agents.includes('claude')) {
         writeGeneratedFiles(options.targetDir, generateClaudeAdapter(kit, vars), writtenPaths);
     }
 

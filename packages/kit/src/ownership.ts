@@ -118,8 +118,8 @@ export function isKitManaged(fileClass: FileClass): boolean {
 /**
  * One AI assistant the kit generates files for.
  *
- * Scoped to the path helpers below. The scaffolder's `AgentChoice` narrows to `'none' | AgentKind`;
- * `blit agents add` uses `AgentKind` directly.
+ * Scoped to the path helpers below. The scaffolder's wizard collects zero or more of these
+ * (`agents: readonly AgentKind[]`); `blit agents add` uses `AgentKind` directly.
  */
 export type AgentKind = 'claude' | 'cursor';
 

@@ -14,32 +14,34 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 ## Scaffold flow
 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
-2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistant
-   (none / Claude / Cursor), optional CI.
+2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
+   (multi-select: none / Claude / Cursor / both), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
-4. If an AI assistant was chosen, its config is generated from the kit IR (`generateClaudeAdapter` /
+4. For each AI assistant chosen, its config is generated from the kit IR (`generateClaudeAdapter` /
    `generateCursorAdapter` in `@blit386/kit/adapters`), rendering `{{placeholders}}` as it goes, and the scaffolder
-   writes those `{ path, content }` pairs to disk. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
-   `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
-   `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including a SessionStart hook
-   (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
-   starts. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills with frontmatter stripped),
-   `.cursor/hooks.json`, and `.cursor/hooks/shell-safety.sh` - Cursor has no SessionStart-equivalent event, so it does
-   not get the bootstrap hook. Each adapter also emits a documentation-MCP config registering the `blit386-docs` server
-   at `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets `.cursor/mcp.json`. The two entries differ by
-   one key on purpose - Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks
-   a local stdio server. Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single source
-   both packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given
-   project is decided by `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually
-   references gets copied (all under `packages/kit/`).
+   writes those `{ path, content }` pairs to disk. Choosing both Claude and Cursor installs both trees. Claude gets
+   `CLAUDE.md`, `.claude/rules/` (from `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`),
+   `.claude/settings.json` (hooks from `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) -
+   including a SessionStart hook (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor`
+   when a fresh remote/web session starts. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same
+   skills with frontmatter stripped), `.cursor/hooks.json`, and `.cursor/hooks/shell-safety.sh` - Cursor has no
+   SessionStart-equivalent event, so it does not get the bootstrap hook. Each adapter also emits a documentation-MCP
+   config registering the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets
+   `.cursor/mcp.json`. The two entries differ by one key on purpose - Claude Code skips a remote entry that has a `url`
+   but no `type`, while for Cursor a `type` marks a local stdio server. Every path an adapter emits is built from
+   `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/` /
+   `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only a
+   script one of that adapter's own hook entries actually references gets copied (all under `packages/kit/`).
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated
    `package.json` and the exact version stamped into `.blit/manifest.json`. Full reasoning: `packages/kit/CLAUDE.md`.
-   `AGENTS.md` and `docs/` are then emitted **verbatim**: `scaffold()` writes the `GeneratedFile` values that
-   `agentsFile()` and `collectDocs()` return, with no `{{placeholder}}` substitution. Only templates, rules, and skills
-   pass through `render()`. Prose in `AGENTS.md` and `docs/` must therefore spell out both language cases
-   ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
+   Generated `package.json` also gets a Corepack `packageManager` field (`name@version`) from the invoking manager (see
+   `packageManagerField` in `src/pkgManager.ts`) so Corepack does not auto-add one during the first install. `AGENTS.md`
+   and `docs/` are then emitted **verbatim**: `scaffold()` writes the `GeneratedFile` values that `agentsFile()` and
+   `collectDocs()` return, with no `{{placeholder}}` substitution. Only templates, rules, and skills pass through
+   `render()`. Prose in `AGENTS.md` and `docs/` must therefore spell out both language cases ("`src/game.js` (or
+   `src/game.ts`)"), never `{{gameFile}}`.
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path, class, kit version, sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
    without clobbering user edits. The `class` values come from `classifyFile()` in `@blit386/kit/adapters` - the same

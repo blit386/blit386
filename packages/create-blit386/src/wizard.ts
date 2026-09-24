@@ -2,17 +2,19 @@
  * The short setup wizard.
  *
  * JavaScript and TypeScript are both supported. Optional CI and AI-assistant files can be added when the user opts in.
+ * Assistants are multi-select so Claude Code and Cursor can both be chosen in one pass.
  */
 
-import { cancel, confirm, isCancel, select } from '@clack/prompts';
+import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';
 
-import { AGENT_LABEL, AGENT_SETUP_HINT } from '@blit386/kit/adapters';
+import { AGENT_KINDS, AGENT_LABEL, AGENT_SETUP_HINT, type AgentKind } from '@blit386/kit/adapters';
 
-import type { AgentChoice, LanguageChoice } from './scaffold';
+import type { LanguageChoice } from './scaffold';
 
 export interface WizardOptions {
     language: LanguageChoice;
-    agent: AgentChoice;
+    /** Assistants to generate config for; empty means none. */
+    agents: readonly AgentKind[];
     includeCi: boolean;
 }
 
@@ -34,16 +36,17 @@ export async function runWizard(): Promise<WizardOptions> {
         bail();
     }
 
-    const agent = await select({
-        message: 'Do you use an AI coding assistant?',
-        initialValue: 'none',
-        options: [
-            { value: 'none', label: 'No, just the game and docs', hint: 'recommended to start' },
-            { value: 'claude', label: AGENT_LABEL.claude, hint: AGENT_SETUP_HINT.claude },
-            { value: 'cursor', label: AGENT_LABEL.cursor, hint: AGENT_SETUP_HINT.cursor },
-        ],
+    const agents = await multiselect({
+        message: 'Which AI coding assistants do you use?',
+        options: AGENT_KINDS.map((kind) => ({
+            value: kind,
+            label: AGENT_LABEL[kind],
+            hint: AGENT_SETUP_HINT[kind],
+        })),
+        // Empty selection is "none" - beginners can skip without a dedicated None radio.
+        required: false,
     });
-    if (isCancel(agent)) {
+    if (isCancel(agents)) {
         bail();
     }
 
@@ -57,7 +60,7 @@ export async function runWizard(): Promise<WizardOptions> {
 
     return {
         language: language as LanguageChoice,
-        agent: agent as AgentChoice,
+        agents: agents as AgentKind[],
         includeCi,
     };
 }
@@ -66,7 +69,7 @@ export async function runWizard(): Promise<WizardOptions> {
 export function defaultWizardOptions(): WizardOptions {
     return {
         language: 'js',
-        agent: 'none',
+        agents: [],
         includeCi: false,
     };
 }

@@ -24,6 +24,20 @@ export interface PmHints {
     installArgs: string[];
 }
 
+/**
+ * Fallback `name@version` pins when `npm_config_user_agent` has no version.
+ *
+ * pnpm's fallback matches the monorepo root `packageManager` field (`package.json` at the repo root) - keep them
+ * in step by hand when the root pin moves. End-user scaffolds prefer the version from the invoking agent string
+ * so Corepack does not rewrite a mismatched field during the first install.
+ */
+const DEFAULT_PM_VERSION: Record<PackageManager, string> = {
+    npm: '10.9.2',
+    pnpm: '11.20.0',
+    yarn: '1.22.22',
+    bun: '1.2.5',
+};
+
 /** Detect the package manager from the invoking agent, defaulting to npm (which ships with Node). */
 export function detectPackageManager(): PackageManager {
     const agent = process.env.npm_config_user_agent ?? '';
@@ -39,6 +53,29 @@ export function detectPackageManager(): PackageManager {
     }
 
     return 'npm';
+}
+
+/**
+ * Parse `name/x.y.z` from a user-agent string such as `pnpm/11.20.0 npm/? node/v22.18.0 linux x64`.
+ * Returns undefined when the agent string does not name that manager with a version.
+ */
+export function parsePackageManagerVersion(userAgent: string, name: PackageManager): string | undefined {
+    const match = userAgent.match(new RegExp(`(?:^|[\\s/])${name}/(\\d+(?:\\.\\d+){1,3})`));
+    return match?.[1];
+}
+
+/**
+ * Corepack `packageManager` field value (`name@version`) for a generated game's `package.json`.
+ *
+ * Writing this before the first install stops Corepack from auto-adding a field that pins whatever
+ * version happened to run the install (and printing the "doesn't define a 'packageManager' field" warning).
+ */
+export function packageManagerField(
+    name: PackageManager,
+    userAgent: string = process.env.npm_config_user_agent ?? '',
+): string {
+    const version = parsePackageManagerVersion(userAgent, name) ?? DEFAULT_PM_VERSION[name];
+    return `${name}@${version}`;
 }
 
 /** Human-facing commands and spawn arguments for a given package manager. */

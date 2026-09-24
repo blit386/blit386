@@ -114,6 +114,12 @@ test('scaffolds a runnable game project', () => {
 
         const manifest = JSON.parse(manifestRaw);
         assert.equal(manifest.name, 'my-game', 'package name should match the folder');
+        assert.ok(manifest.packageManager, 'package.json should set packageManager so Corepack does not rewrite it');
+        assert.match(
+            manifest.packageManager,
+            /^(npm|pnpm|yarn|bun)@\d+\.\d+\.\d+/,
+            'packageManager should be a Corepack name@version pin',
+        );
         assert.ok(manifest.dependencies?.blit386, 'blit386 dependency is missing');
         assert.equal(manifest.dependencies.blit386, '^1.7.0', 'generated games should pin blit386 ^1.7.0');
         assert.equal(
@@ -208,7 +214,7 @@ test('scaffold copies optional CI and agent files when requested', () => {
             pmRunFormat,
             pmRunLint,
             includeCi: true,
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         assert.ok(existsSync(join(project, '.github', 'workflows', 'ci.yml')), 'CI workflow should be generated');
@@ -378,7 +384,7 @@ test('scaffold copies optional CI and agent files when requested', () => {
             pmRunFormat: 'pnpm run format',
             pmRunLint: 'pnpm run lint',
             includeCi: false,
-            agent: 'cursor',
+            agents: ['cursor'],
         });
 
         // Cursor adapter: rules, hooks, and commands should all be generated.
@@ -472,6 +478,43 @@ test('scaffold copies optional CI and agent files when requested', () => {
     }
 });
 
+test('scaffold with both Claude and Cursor agents writes both adapter trees', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-both-agents-'));
+
+    try {
+        const project = join(work, 'both-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'both-game',
+            pmInstall: 'pnpm install',
+            pmRunDev: 'pnpm run dev',
+            pmRunBuild: 'pnpm run build',
+            pmRunFormat: 'pnpm run format',
+            pmRunLint: 'pnpm run lint',
+            packageManager: 'pnpm@11.20.0',
+            agents: ['claude', 'cursor'],
+        });
+
+        assert.ok(existsSync(join(project, 'CLAUDE.md')), 'Claude CLAUDE.md should be generated');
+        assert.ok(existsSync(join(project, '.mcp.json')), 'Claude .mcp.json should be generated');
+        assert.ok(
+            existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')),
+            'Claude rules should be generated',
+        );
+        assert.ok(
+            existsSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc')),
+            'Cursor rules should be generated',
+        );
+        assert.ok(existsSync(join(project, '.cursor', 'hooks.json')), 'Cursor hooks.json should be generated');
+        assert.ok(existsSync(join(project, '.cursor', 'mcp.json')), 'Cursor mcp.json should be generated');
+
+        const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
+        assert.equal(pkg.packageManager, 'pnpm@11.20.0', 'explicit packageManager option should land in package.json');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('blit agents sync --check exits 0 when no files have drifted', () => {
     assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
 
@@ -516,7 +559,7 @@ test('blit agents sync --check exits non-zero when a kit-managed file is modifie
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         // Simulate a user (or an AI agent) editing a kit-owned rule file.
@@ -590,7 +633,7 @@ test('scaffold agent files match @blit386/kit/adapters memory output', () => {
                 pmRunBuild: 'pnpm run build',
                 pmRunFormat: 'pnpm run format',
                 pmRunLint: 'pnpm run lint',
-                agent,
+                agents: [agent],
             });
 
             const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
@@ -638,7 +681,7 @@ function scaffoldWithManifest(work, name, agent) {
         pmRunBuild: 'pnpm run build',
         pmRunFormat: 'pnpm run format',
         pmRunLint: 'pnpm run lint',
-        agent,
+        agents: [agent],
     });
 
     return { project, manifest: JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8')) };
@@ -728,7 +771,7 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Claude pro
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         const ruleBefore = readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8');
@@ -785,7 +828,7 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Cursor pro
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'cursor',
+            agents: ['cursor'],
         });
 
         const hooksBefore = readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8');
@@ -829,7 +872,7 @@ test('blit agents sync --force restores the kit version of a user-edited kit fil
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         const rulePath = join(project, '.claude', 'rules', 'blit-api-names.md');
@@ -863,7 +906,7 @@ test('blit agents sync preserves user notes outside the managed region of CLAUDE
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         const claudePath = join(project, 'CLAUDE.md');
@@ -899,7 +942,7 @@ test('blit agents sync keeps a shared-file note across repeated syncs', () => {
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         const claudePath = join(project, 'CLAUDE.md');
@@ -1038,7 +1081,7 @@ test('blit agents add is a friendly no-op when the assistant is already set up',
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
@@ -1143,7 +1186,7 @@ test('blit agents sync does not flag a clean-merged kit file as drift', { skip: 
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         // The user adds their own line to a kit-owned rule file. With the kit unchanged, a sync three-way
@@ -1191,7 +1234,7 @@ test('the scaffolded MCP config is recorded as kit-owned in the manifest', () =>
                 pmRunBuild: 'npm run build',
                 pmRunFormat: 'npm run format',
                 pmRunLint: 'npm run lint',
-                agent,
+                agents: [agent],
             });
 
             const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
@@ -1226,7 +1269,7 @@ test('blit agents sync keeps a user-added MCP server in .mcp.json', { skip: !has
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         // .mcp.json is the natural place for a user to register their own servers. Being kit-owned, it
@@ -1528,7 +1571,7 @@ test('blit agents sync does not write through a symlinked kit-owned directory', 
             pmRunBuild: 'npm run build',
             pmRunFormat: 'npm run format',
             pmRunLint: 'npm run lint',
-            agent: 'claude',
+            agents: ['claude'],
         });
 
         // Replace the kit-owned rules directory (already tracked in the manifest from scaffolding) with
