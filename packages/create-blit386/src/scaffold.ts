@@ -43,8 +43,6 @@ const BLIT386_RANGE = '^1.7.0';
 const GITHUB_DIR = '.github';
 const CURSOR_DIR = '.cursor';
 
-export type AgentChoice = 'none' | AgentKind;
-
 /** Which language layer to scaffold. */
 export type LanguageChoice = 'js' | 'ts';
 
@@ -57,7 +55,16 @@ export interface ScaffoldOptions {
     pmRunFormat: string;
     pmRunLint: string;
     includeCi?: boolean;
-    agent?: AgentChoice;
+
+    /** AI assistants to generate config for. Empty means none. Both entries write both adapter trees. */
+    agents: readonly AgentKind[];
+
+    /**
+     * Corepack `packageManager` field (`name@version`) written into the generated `package.json`.
+     * Omit for bun; Corepack accepts only npm, pnpm, and yarn.
+     */
+    packageManager?: string;
+
     /** Language layer to use; defaults to `'js'`. */
     language?: LanguageChoice;
 }
@@ -214,8 +221,11 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
+        packageManager: options.packageManager ?? '',
+
         // Resolved per language so base templates stay language-agnostic.
         entryFile,
+
         gameFile,
     };
 
@@ -225,6 +235,10 @@ export function scaffold(options: ScaffoldOptions): void {
     const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
     copyTemplateTree(join(templates, language), options.targetDir, vars, writtenPaths);
+    if (options.packageManager === undefined) {
+        const pkgPath = join(options.targetDir, 'package.json');
+        writeFileSync(pkgPath, readFileSync(pkgPath, 'utf8').replace(/^[ \t]*"packageManager": "",\r?\n/m, ''));
+    }
 
     if (options.includeCi) {
         copyTemplateTree(
@@ -235,11 +249,10 @@ export function scaffold(options: ScaffoldOptions): void {
         );
     }
 
-    if (options.agent === 'cursor') {
+    if (options.agents.includes('cursor')) {
         writeGeneratedFiles(options.targetDir, generateCursorAdapter(kit, vars), writtenPaths);
     }
-
-    if (options.agent === 'claude') {
+    if (options.agents.includes('claude')) {
         writeGeneratedFiles(options.targetDir, generateClaudeAdapter(kit, vars), writtenPaths);
     }
 

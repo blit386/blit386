@@ -16,7 +16,7 @@ import { basename, resolve } from 'node:path';
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
 import { isInteractive, meetsNodeFloor, NODE_FLOOR } from './env';
-import { detectPackageManager, pmHints } from './pkgManager';
+import { detectPackageManager, packageManagerField, pmHints } from './pkgManager';
 import { scaffold } from './scaffold';
 import { defaultWizardOptions, runWizard } from './wizard';
 
@@ -110,7 +110,10 @@ async function main(): Promise<void> {
     const language = flagTs ? 'ts' : wizardOptions.language;
     const languageLabel = language === 'ts' ? 'TypeScript' : 'JavaScript';
 
-    const pm = pmHints(detectPackageManager());
+    const userAgent = process.env.npm_config_user_agent ?? '';
+    const pmName = detectPackageManager(userAgent);
+    const pm = pmHints(pmName);
+    const packageManager = packageManagerField(pmName, userAgent);
 
     scaffold({
         targetDir,
@@ -120,8 +123,9 @@ async function main(): Promise<void> {
         pmRunBuild: pm.runBuildCmd,
         pmRunFormat: pm.runFormatCmd,
         pmRunLint: pm.runLintCmd,
+        ...(packageManager === undefined ? {} : { packageManager }),
         includeCi: wizardOptions.includeCi,
-        agent: wizardOptions.agent,
+        agents: wizardOptions.agents,
         language,
     });
     log.success(`Created ${projectName} (${languageLabel})`);

@@ -25,20 +25,53 @@ export interface PmHints {
 }
 
 /** Detect the package manager from the invoking agent, defaulting to npm (which ships with Node). */
-export function detectPackageManager(): PackageManager {
-    const agent = process.env.npm_config_user_agent ?? '';
-
-    if (agent.startsWith('pnpm')) {
+export function detectPackageManager(userAgent: string): PackageManager {
+    if (userAgent.startsWith('pnpm')) {
         return 'pnpm';
     }
-    if (agent.startsWith('yarn')) {
+
+    if (userAgent.startsWith('yarn')) {
         return 'yarn';
     }
-    if (agent.startsWith('bun')) {
+
+    if (userAgent.startsWith('bun')) {
         return 'bun';
     }
 
     return 'npm';
+}
+
+/**
+ * Exact semver (major.minor.patch, optional prerelease and build). Corepack rejects a pin that is not
+ * one of these, including a truncated `11.0.0` taken from `11.0.0-dev.1005`.
+ */
+const EXACT_SEMVER =
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
+/**
+ * Corepack `packageManager` field value (`name@version`) for a generated game's `package.json`.
+ *
+ * Writing this before the first install stops Corepack from auto-adding a field that pins whatever
+ * version happened to run the install. Returns undefined for bun: Corepack accepts only npm, pnpm, and yarn,
+ * and a `bun@` pin is rejected. A missing or non-exact version throws rather than writing a guessed pin.
+ */
+export function packageManagerField(name: PackageManager, userAgent: string): string | undefined {
+    if (name === 'bun') {
+        return undefined;
+    }
+
+    // Leading boundary so `npm` does not match the same letters inside `pnpm/x.y.z`. The token after
+    // the slash is the whole version, so a prerelease or build suffix is not cut off.
+    const version = userAgent.match(new RegExp(`(?:^|[\\s/])${name}/(\\S+)`))?.[1];
+
+    if (version === undefined || !EXACT_SEMVER.test(version)) {
+        throw new Error(
+            `Could not read an exact ${name} version from the package-manager user agent. ` +
+                'Run create-blit386 with npm, pnpm, or yarn.',
+        );
+    }
+
+    return `${name}@${version}`;
 }
 
 /** Human-facing commands and spawn arguments for a given package manager. */
