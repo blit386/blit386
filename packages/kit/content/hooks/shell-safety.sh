@@ -57,7 +57,12 @@ try:
 except Exception:
     print('0')
     raise SystemExit(0)
-print('1' if ('hook_event_name' in data or 'tool_name' in data) else '0')
+# Cursor beforeShellExecution also sets hook_event_name (to that event name) and must
+# receive JSON allow/deny on stdout. Claude Code PreToolUse is the only Claude signal -
+# treating any hook_event_name / tool_name as Claude made respond_allow exit with empty
+# stdout, and Cursor failClosed then blocked every Shell call.
+event = data.get('hook_event_name')
+print('1' if event == 'PreToolUse' else '0')
 ")"
 
 COMMAND_TEXT="$(printf '%s' "$INPUT_JSON" | python3 -c "
