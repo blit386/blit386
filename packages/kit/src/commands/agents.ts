@@ -12,7 +12,9 @@
  *   - shared files (AGENTS.md, CLAUDE.md) get only their managed region rewritten;
  *   - kit-owned files the user edited are three-way merged when git is available, otherwise saved
  *     alongside as `<file>.new`;
- *   - user-owned files are never touched.
+ *   - user-owned files are never touched;
+ *   - a file new in this kit whose path already holds an untracked, different file is saved as
+ *     `<file>.new` and left out of the manifest (an identical one is adopted silently).
  * `--force [path...]` overwrites the named files (or all kit-managed files) with the kit version.
  *
  * `add <claude|cursor>` sets up the files for one AI assistant in a project that did not pick it at
@@ -340,6 +342,8 @@ interface SyncTally {
     restored: string[];
     added: string[];
     review: string[];
+    /** Untracked files already on disk at a path the kit newly ships; the kit version went to `.new`. */
+    collided: string[];
     orphaned: string[];
     unchanged: number;
 }
@@ -390,6 +394,7 @@ export function runFullSync(
         restored: [],
         added: [],
         review: [],
+        collided: [],
         orphaned: [],
         unchanged: 0,
     };
@@ -415,7 +420,24 @@ export function runFullSync(
 
         // New file the kit added since this project was scaffolded.
         if (!entry) {
-            writeRel(root, relPath, incoming);
+            const existed = existsSync(abs);
+
+            // An untracked file already sits at this path (e.g. a hand-written skill that a later kit
+            // now ships under the same name). Never overwrite it - git cannot bring it back. Save the
+            // kit version alongside and leave the path untracked until the user resolves it.
+            if (existed && readFileSync(abs, 'utf8') !== incoming) {
+                if (writeRel(root, `${relPath}.new`, incoming)) {
+                    tally.collided.push(relPath);
+                } else {
+                    out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+                }
+                continue;
+            }
+
+            // Missing, or already byte-identical to the kit version: write (if needed) and adopt it.
+            if (!existed) {
+                writeRel(root, relPath, incoming);
+            }
             writeBase(root, relPath, incoming, out);
             entryByPath.set(relPath, {
                 path: relPath,
@@ -423,7 +445,11 @@ export function runFullSync(
                 kitVersion: newKitVersion,
                 sha256: sha256Text(incoming),
             });
-            tally.added.push(relPath);
+            if (existed) {
+                tally.unchanged++;
+            } else {
+                tally.added.push(relPath);
+            }
             continue;
         }
 
@@ -562,7 +588,7 @@ export function runFullSync(
 
     printSummary(out, tally);
 
-    return tally.review.length;
+    return tally.review.length + tally.collided.length;
 }
 
 /** Print the Tier-1 voice summary of a sync run. */
@@ -583,6 +609,10 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
         out(ui.warn(`You changed ${path}, so I saved the kit version as ${path}.new.`));
         out(ui.info('Compare the two and keep what you like.'));
     }
+    for (const path of tally.collided) {
+        out(ui.warn(`${path} already exists, so I saved the kit version as ${path}.new.`));
+        out(ui.info('Compare the two and keep what you like. Sync tracks the file once it matches the kit version.'));
+    }
     for (const path of tally.orphaned) {
         out(ui.info(`${path} is no longer part of the kit. You can delete it if you do not need it.`));
     }
@@ -590,14 +620,16 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
     const changed = tally.updated.length + tally.merged.length + tally.restored.length + tally.added.length;
 
     out('');
-    if (changed === 0 && tally.review.length === 0) {
+    const needEyes = tally.review.length + tally.collided.length;
+
+    if (changed === 0 && needEyes === 0) {
         out(ui.success('Everything is already up to date.'));
         return;
     }
 
     const parts = [`${changed} updated`, `${tally.unchanged} unchanged`];
-    if (tally.review.length > 0) {
-        parts.push(`${tally.review.length} need your eyes`);
+    if (needEyes > 0) {
+        parts.push(`${needEyes} need your eyes`);
     }
     out(ui.info(parts.join(', ')));
 }
