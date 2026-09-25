@@ -2,12 +2,14 @@
 name: read-keyboard
 description:
   Read keyboard keys and face buttons in update(). Use for keyboard movement, jumping, menus, typed text, or remapping
-  keys, including raw key codes like 'KeyW' and the arrow-keys-to-D-pad mapping.
+  keys, including raw key codes like 'KeyW' and the default key mapping (W, A, S, D for player 0, arrow keys for player
+  1).
 ---
 
 # Read the keyboard
 
-Read keys and face buttons in `update()`. Arrow keys and Space already map to the D-pad and `BTN_A`.
+Read keys and face buttons in `update()`. For player 0, W, A, S, D already map to the D-pad and Space to `BTN_A`; the
+arrow keys belong to player 1 until you remap them (see Remap a face button below).
 
 ## When to use
 
@@ -45,6 +47,7 @@ this.name += BT.inputString; // characters typed this frame (a getter)
 
 ```js
 BT.inputMap(0, BT.BTN_A, 'KeyZ', 'Space'); // player, button, one or more key codes
+BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft'); // one-player game: WASD and arrows both steer
 BT.inputMapReset(); // back to defaults
 ```
 

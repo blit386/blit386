@@ -36,7 +36,9 @@ update() {
 }
 ```
 
-On a keyboard, the arrow keys map to the D-pad and Space maps to `BTN_A` by default, so these work with no extra setup.
+On a keyboard, player 0's D-pad is W, A, S, D and Space maps to `BTN_A` by default, so these work with no extra setup.
+The arrow keys belong to player 1 out of the box. A one-player game that wants both, like the starter, maps them onto
+player 0: `BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft')`.
 
 Arrow keys and Space also scroll the web page by default. When your game uses them, opt in so the page does not move
 while you play:

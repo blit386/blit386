@@ -8,6 +8,9 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 
 - The `blit` CLI - a small helper you run inside a BLIT386 game:
   - `blit run` - start the dev server and open the game.
+  - `blit play` - play-test the game from the terminal: open it in the Chrome or Edge already installed, run steps (hold
+    keys, wait, read `window.__game.state()`, save frames), and print one JSON line per step. Needs `playwright-core` in
+    the game (an optional peer dependency; the command prints the line that adds it).
   - `blit doctor` - check Node, git, and the installed `blit386` version.
   - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
     a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
@@ -46,13 +49,15 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 
 Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it - you do not have to
 name them. In Claude Code they live in `.claude/skills/`; in Cursor they are slash commands in `.cursor/commands/`, so
-there you can also invoke one by name (`/add-sprite`).
+there you can also invoke one by name (`/add-sprite`). Cursor 2.4 and newer also reads `.claude/skills/` by itself, so
+in a game set up for both assistants the skills load on their own in Cursor too.
 
 | Skill | What it is for |
 | --- | --- |
 | `structure-a-game` | The shape of a game: `configure`, `init`, `update`, `render` - and what the engine does not do for you |
 | `run` | Start the dev server and see the game |
 | `fix` | The game crashes, shows a black screen, or behaves oddly |
+| `test-the-game` | Play-test the game in a browser: fixed seeds, key presses, and reading the game state |
 | `ask-the-docs` | Look something up that the local `docs/` folder does not cover, using the live docs at blit386.dev |
 | `use-hot-reload` | Keep playing while you edit code or assets (`blit386/vite`, `onHotReload`) |
 | `use-dev-mode` | Gate debug HUDs, cheat keys, and verbose logging on `BT.isDevMode` |
@@ -85,6 +90,7 @@ Inside a project created by `create-blit386`:
 
 ```bash
 npx blit run
+npx blit play --help
 npx blit doctor
 npx blit upgrade
 npx blit migrate
