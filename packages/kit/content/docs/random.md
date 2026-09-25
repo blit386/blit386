@@ -49,6 +49,12 @@ async init() {
 That is how daily challenges, shareable level codes, and reproducible bug reports work: store one number, rebuild the
 same world from it.
 
+You do not need code for the bug-report case. Open the game with `?seed=1234` in the URL and the engine seeds
+`BT.random` for you, right before your `init()` runs - in a built game too, so a shared link reproduces the run. If your
+`init()` calls `BT.randomSeed()` itself, that call wins. Only whole numbers count - plain digits, optionally negative,
+and no bigger than JavaScript can represent exactly (up to about 9 quadrillion, `Number.MAX_SAFE_INTEGER`). `?seed=abc`
+or `?seed=1.5` is ignored with a console warning and the run stays random.
+
 `BT.random` is shared, so everything draws from the same sequence. If you want your level layout to stay identical no
 matter how many shots the player fires, give it a private generator:
 

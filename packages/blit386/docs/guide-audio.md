@@ -137,7 +137,7 @@ voices used/total, steal, and drop readout. See [Audio meters](api-overlay.md#au
 reference.
 
 A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
-play instead:
+play instead (call `BT.randomSeed` with the same seed, and keep the random-call order, to reproduce a run):
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
@@ -145,7 +145,7 @@ import { AudioClip, BT } from 'blit386';
 const footstep = await AudioClip.load('audio/footstep.mp3');
 
 function playFootstep() {
-  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+  const pitch = BT.random.float(0.9, 1.1); // 0.9-1.1x
 
   BT.soundPlay(footstep, { pitch, volume: 0.6 });
 }

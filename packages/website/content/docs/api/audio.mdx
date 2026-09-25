@@ -343,7 +343,8 @@ instead of reasoning about the pool from code - see [Audio meters](/docs/api/ove
 
 </Callout>
 
-A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
+A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic, using the
+seedable `BT.random`:
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
@@ -351,7 +352,7 @@ import { AudioClip, BT } from 'blit386';
 const footstep = await AudioClip.load('audio/footstep.mp3');
 
 function playFootstep() {
-  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+  const pitch = BT.random.float(0.9, 1.1); // 0.9-1.1x
 
   BT.soundPlay(footstep, { pitch, volume: 0.6 });
 }

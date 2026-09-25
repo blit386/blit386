@@ -58,6 +58,7 @@ import {
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
+import { readSeedUrlParam } from './SeedUrlParam';
 import { WakeLock } from './WakeLock';
 import { initWebGPU } from './WebGPUContext';
 
@@ -420,6 +421,16 @@ export class BTAPI {
         // Splash gating resolves here, before the game's init() is invoked, so
         // init() observes 'disabled' or 'fadingIn' and never an undecided state.
         this.splash = createSplashIfEnabled(hwSettings);
+
+        // `?seed=N` lands here, before the game's init(), so a BT.randomSeed() call in init()
+        // still wins. Read in release builds too: a seed in a shared URL is the point. Not
+        // repeated by hotReplaceDemo() - a hot-reload swap keeps the running stream.
+        const urlSeed = readSeedUrlParam();
+
+        if (urlSeed !== null) {
+            this.random.seed(urlSeed);
+            console.log(`[BT] Seeded BT.random from ?seed=${urlSeed}`);
+        }
 
         console.log('[BT] Initializing demo');
 
@@ -1146,8 +1157,10 @@ export class BTAPI {
      * Default engine PRNG (live reference).
      *
      * Time-seeded when the singleton is created. Call {@link randomSeed} for a
-     * reproducible sequence.
+     * reproducible sequence, or open the page with `?seed=N` - {@link init} applies that
+     * seed before the demo's own `init()` runs, so a `randomSeed` call there still wins.
      *
+     * @changed 1.8.0 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
      * @returns The shared {@link Random} instance.
      */
     public getRandom(): Random {
@@ -1157,6 +1170,10 @@ export class BTAPI {
     /**
      * Reseeds the default engine PRNG.
      *
+     * Calling this from the demo's `init()` overrides a `?seed=N` URL parameter, which
+     * {@link init} applies just before the demo's `init()`.
+     *
+     * @changed 1.8.0 Documented precedence over the `?seed=N` URL parameter.
      * @param seed - Any finite number; only its lower 32 bits are used.
      */
     public randomSeed(seed: number): void {

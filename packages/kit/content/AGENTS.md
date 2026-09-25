@@ -88,6 +88,7 @@ From the project folder:
 
 - `npm run dev` (or `pnpm run dev`) - start the game and open it in your browser.
 - `npx blit run` - the same thing, the friendly way.
+- `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version (and offer to fix any renamed API names for you).
 - `npx blit migrate` - update old BLIT386 names in your game to the current ones (and enable hot reload on blit386

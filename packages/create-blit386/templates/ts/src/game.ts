@@ -2,7 +2,7 @@
 //
 // Move the paddle to catch the blocks falling from the top.
 // On a phone or tablet: drag or tap - the paddle centers under your finger.
-// On a computer: move the mouse, or use the left and right arrow keys as a fallback.
+// On a computer: move the mouse, or use the left and right arrow keys (or A and D) as a fallback.
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
 // Every BLIT386 game is one class with up to four methods. We use three of them here:
@@ -16,6 +16,9 @@
 //
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
 // Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
+//
+// Testing tip: add `?seed=42` to the page address to get the same falling blocks every run, and open the browser
+// console and type `__game.state()` to see the score, lives, and positions as numbers.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
@@ -34,6 +37,56 @@ const PADDLE_SPEED = 3; // how many pixels the paddle moves each step
 const ITEM_FALL_SPEED = 2; // how many pixels a block falls each step
 const SPAWN_EVERY = 45; // a new block appears every this many steps (60 steps is about one second)
 const STARTING_LIVES = 3;
+
+// A snapshot of the game that a test (or an AI agent driving a browser) can read instead of guessing from pixels.
+interface GameState {
+    ticks: number;
+    score: number;
+    lives: number;
+    paddle: { x: number; y: number; width: number; height: number };
+    items: { x: number; y: number }[];
+}
+
+// What the dev build puts on `window.__game`. Open the browser console and type `__game.state()` to try it.
+declare global {
+    interface Window {
+        __game?: {
+            state(): GameState;
+            frame(): Promise<string>; // the next frame as a PNG data URL, sharp and unscaled by the browser
+        };
+    }
+}
+
+// Read `?seed=1234` from the page address. The same seed makes the blocks fall in the same places every run,
+// which is how you replay a bug or give a test a fixed starting point. No seed means a different game every time.
+function readSeed(): number | null {
+    const raw = new URLSearchParams(window.location.search).get('seed');
+
+    if (raw === null) {
+        return null;
+    }
+
+    const seed = Number(raw);
+
+    if (!Number.isSafeInteger(seed)) {
+        console.warn(`[game] Ignoring ?seed=${raw}: it must be a whole number.`);
+
+        return null;
+    }
+
+    return seed;
+}
+
+// Turn a PNG blob into a data URL string, which a browser tool can read back out of the page.
+function blobToDataURL(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+    });
+}
 
 class Game {
     // How big the screen is. We read the real size in init().
@@ -68,11 +121,37 @@ class Game {
         this.paddlePos.x = Math.floor((this.screen.x - PADDLE_WIDTH) / 2);
         this.paddlePos.y = this.screen.y - PADDLE_HEIGHT - 6;
 
+        // Out of the box, player 0 steers with WASD and the arrow keys belong to player 1.
+        // This game has one player, so let both sets of keys move the paddle.
+        BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft');
+        BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight');
+
+        const seed = readSeed();
+
+        if (seed !== null) {
+            BT.randomSeed(seed);
+        }
+
+        // Dev builds only: let tests and AI agents read the game state and grab exact frames.
+        // A shipped game (a production build) never has `window.__game`.
+        if (BT.isDevMode) {
+            window.__game = {
+                state: () => ({
+                    ticks: BT.ticks,
+                    score: this.score,
+                    lives: this.lives,
+                    paddle: { x: this.paddlePos.x, y: this.paddlePos.y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
+                    items: this.items.map((item) => ({ x: item.x, y: item.y })),
+                }),
+                frame: async () => blobToDataURL(await BT.captureFrame()),
+            };
+        }
+
         return true; // tell the engine that setup worked
     }
 
     update(): void {
-        // BLIT386 supports two ways to move the paddle: pointer input (mouse and touch) and arrow keys.
+        // BLIT386 supports two ways to move the paddle: pointer input (mouse and touch) and the keyboard.
         // We check the pointer first because it works on phones, tablets, and any computer with a mouse.
         // The "0" you see in BT.isPointerActive(0) and BT.pointerPos(0) means "the first pointer slot."
         // A phone can track several fingers at once; slot 0 is always the first (or only) one.
@@ -82,7 +161,7 @@ class Game {
             // Subtracting half the paddle width shifts it left so it is balanced around the cursor or finger.
             this.paddlePos.x = BT.pointerPos(0).x - Math.floor(PADDLE_WIDTH / 2);
         } else {
-            // No pointer is active - fall back to the arrow keys (or a connected gamepad).
+            // No pointer is active - fall back to the arrow keys, A and D (or a connected gamepad).
             // BT.isDown() is true for every frame the button is held down, not just the frame it was pressed.
             if (BT.isDown(BT.BTN_LEFT, 0)) {
                 this.paddlePos.x -= PADDLE_SPEED;
@@ -107,7 +186,9 @@ class Game {
 
         // Every SPAWN_EVERY steps, drop a new block at a random spot along the top.
         if (BT.ticks % SPAWN_EVERY === 0) {
-            const x = Math.floor(Math.random() * (this.screen.x - ITEM_SIZE));
+            // BT.random.int(n) picks a whole number from 0 up to (but not including) n. Unlike the browser's own random,
+            // BT.random can be seeded: a `?seed=` in the address replays the exact same drops.
+            const x = BT.random.int(this.screen.x - ITEM_SIZE);
             this.items.push(new Vector2i(x, -ITEM_SIZE));
         }
 

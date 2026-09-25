@@ -1,7 +1,7 @@
 /**
  * `blit` - the project-local BLIT386 helper CLI.
  *
- * Commands: run | doctor | upgrade | migrate | agents | clean | help. Kept tiny and beginner-friendly; see ./messages
+ * Commands: run | play | doctor | upgrade | migrate | agents | clean | help. Kept tiny and beginner-friendly; see ./messages
  * for the voice.
  */
 
@@ -9,6 +9,7 @@ import { runAgents } from './commands/agents';
 import { runClean } from './commands/clean';
 import { runDoctor } from './commands/doctor';
 import { runMigrate } from './commands/migrate';
+import { runPlay } from './commands/play';
 import { runDev } from './commands/run';
 import { runUpgrade } from './commands/upgrade';
 import { color, ui } from './messages';
@@ -19,6 +20,7 @@ Usage: blit <command>
 
 Commands:
   ${color.cyan('run')}        Start your game in the browser
+  ${color.cyan('play')}       Play-test your game in a browser and print its state (--help for steps)
   ${color.cyan('doctor')}     Check your setup (Node, git, blit386 version)
   ${color.cyan('upgrade')}    Update blit386 to the latest version (then offers migrate)
   ${color.cyan('migrate')}    Update old names + enable hot reload (--write to apply)
@@ -33,6 +35,9 @@ async function main(): Promise<void> {
     switch (command) {
         case 'run':
             runDev();
+            break;
+        case 'play':
+            await runPlay(process.argv.slice(3));
             break;
         case 'doctor':
             runDoctor();

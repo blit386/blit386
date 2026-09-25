@@ -296,7 +296,9 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 - `isReducedMotionPreferred` is runtime state too: resolves `prefers-reduced-motion` (or a `?reducedmotion` /
   `?noreducedmotion` URL override). See [Reduced motion](#reduced-motion).
 - `BT.random` is runtime state too: a live, always-present `Random` instance (time-seeded at engine start). Reseed with
-  `BT.randomSeed(seed)` for reproducible runs. See [API: Random](api-random.md#engine-default-btrandom).
+  `BT.randomSeed(seed)` for reproducible runs, or open the page with `?seed=N` (since 1.8.0) - applied in `init()`
+  before the demo's own `init()`, in release builds too, so a `randomSeed` call there still wins. See
+  [API: Random](api-random.md#engine-default-btrandom).
 
 ### Screen orientation
 

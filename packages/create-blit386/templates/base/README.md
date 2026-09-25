@@ -14,7 +14,7 @@ You need [Node.js](https://nodejs.org) installed once (download the big LTS butt
 A web address like `http://localhost:5173` appears. Open it in your browser to play.
 
 - Phone or tablet: tap or drag - the paddle follows your finger.
-- Computer: move the mouse to steer the paddle, or use the left and right arrow keys as a fallback.
+- Computer: move the mouse to steer the paddle, or use the left and right arrow keys (or A and D) as a fallback.
 
 Catch the falling blocks before they reach the bottom.
 
@@ -34,6 +34,7 @@ More about hot reload: `docs/hot-reload.md`.
 
 - `{{pmRunDev}}` - start the game (the everyday command).
 - `npx blit run` - the same thing, the friendly way.
+- `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version.
 

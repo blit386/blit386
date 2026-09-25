@@ -152,7 +152,11 @@ test('scaffolds a runnable game project', () => {
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.js should include a commented onHotReload example');
+        assert.ok(game.includes('BT.random'), 'game.js should use the seedable BT.random');
+        assert.ok(!game.includes('Math.random'), 'game.js should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
+        // The test-the-game skill reads window.__game and replays runs with ?seed=, which needs BT.random.
+        assert.ok(game.includes('__game'), 'game.js should expose window.__game for the test-the-game skill');
 
         assert.ok(
             existsSync(join(project, 'docs', 'hot-reload.md')),
@@ -258,6 +262,10 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(
             existsSync(join(project, '.claude', 'skills', 'fix', 'SKILL.md')),
             '.claude/skills/fix/SKILL.md should be generated',
+        );
+        assert.ok(
+            existsSync(join(project, '.claude', 'skills', 'test-the-game', 'SKILL.md')),
+            '.claude/skills/test-the-game/SKILL.md should be generated',
         );
 
         // Rule files should have frontmatter stripped (Claude reads plain markdown).
@@ -410,6 +418,10 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(
             existsSync(join(cursorProject, '.cursor', 'commands', 'fix.md')),
             '.cursor/commands/fix.md should be generated',
+        );
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'commands', 'test-the-game.md')),
+            '.cursor/commands/test-the-game.md should be generated',
         );
 
         // Cursor commands are invoked by filename, so the skill frontmatter is stripped.
@@ -1847,7 +1859,10 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const game = readFileSync(join(project, 'src', 'game.ts'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.ts is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.ts should include a commented onHotReload example');
+        assert.ok(game.includes('BT.random'), 'game.ts should use the seedable BT.random');
+        assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
+        assert.ok(game.includes('__game'), 'game.ts should expose window.__game for the test-the-game skill');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
