@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-09-25T13:52:41+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
@@ -134,7 +134,7 @@ voices used/total, steal, and drop readout. See [Audio meters](/docs/api/overlay
 reference.
 
 A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
-play instead:
+play instead (call `BT.randomSeed` with the same seed, and keep the random-call order, to reproduce a run):
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
@@ -142,7 +142,7 @@ import { AudioClip, BT } from 'blit386';
 const footstep = await AudioClip.load('audio/footstep.mp3');
 
 function playFootstep() {
-  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+  const pitch = BT.random.float(0.9, 1.1); // 0.9-1.1x
 
   BT.soundPlay(footstep, { pitch, volume: 0.6 });
 }
