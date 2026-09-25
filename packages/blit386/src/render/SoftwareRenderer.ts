@@ -261,6 +261,12 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns `true` when contexts are ready; otherwise `false`.
      */
     async init(): Promise<boolean> {
+        // Re-init replaces the logical canvas; captures queued against the old one must
+        // not settle from the rebuilt scene (mirrors WebGPURenderer.init()).
+        for (const request of this.takePendingDisplaySizeRequests()) {
+            request.reject(new Error("Can't capture frame: renderer was reset before the frame rendered"));
+        }
+
         this.canvas.width = this.outputSize.x;
         this.canvas.height = this.outputSize.y;
 

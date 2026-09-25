@@ -44,9 +44,9 @@ const exact = await BT.captureFrame({ size: 'display' }); // 320x240 for the def
 await BT.downloadFrame('exact.png', { size: 'display' });
 ```
 
-Use this whenever you compare frames or read pixels: the size no longer depends on the game's `configure()`, and the
-capture never collides with someone pressing F9 in the same frame. It leaves out display-tier effects, since those only
-exist in the upscaled buffer.
+Use this whenever you compare frames or read pixels: the PNG always matches `BT.displaySize` (whatever
+`drawingBufferSize` is set to), and the capture never collides with someone pressing F9 in the same frame. It leaves out
+display-tier effects, since those only exist in the upscaled buffer.
 
 ## The built-in dev shortcut (engine 1.7.0+)
 

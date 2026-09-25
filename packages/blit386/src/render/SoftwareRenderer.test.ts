@@ -443,6 +443,26 @@ describe('SoftwareRenderer', () => {
         expect(logicalToBlob).toHaveBeenCalledOnce();
     });
 
+    it('rejects pending display-size captures when init() re-runs', async () => {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(4, 4));
+
+        await renderer.init();
+
+        const publicCapture = renderer.captureFrameAtDisplaySize();
+        const shortcutCapture = renderer.captureFrameForShortcut();
+
+        await renderer.init();
+
+        await expect(publicCapture).rejects.toThrow('renderer was reset');
+        await expect(shortcutCapture).rejects.toThrow('renderer was reset');
+    });
+
     it('produces deterministic output for the same command sequence', async () => {
         const canvas = {
             width: 0,
