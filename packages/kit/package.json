@@ -68,9 +68,23 @@
     "pretest": "pnpm run build",
     "test": "node --test 'test/**/*.test.mjs'"
   },
+  "peerDependencies": {
+    "playwright-core": "^1.62.1",
+    "vite": "^8.1.5"
+  },
+  "peerDependenciesMeta": {
+    "playwright-core": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "playwright-core": "^1.62.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.1.5"
   }
 }
