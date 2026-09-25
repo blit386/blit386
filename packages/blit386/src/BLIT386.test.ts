@@ -1502,6 +1502,34 @@ describe('BT.captureFrame', () => {
     });
 });
 
+describe("BT.captureFrame({ size: 'display' })", () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("passes 'display' through to BTAPI.instance.captureFrame", async () => {
+        const mockBlob = new Blob(['png'], { type: 'image/png' });
+        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+
+        const result = await BT.captureFrame({ size: 'display' });
+
+        expect(result).toBe(mockBlob);
+        expect(spy).toHaveBeenCalledExactlyOnceWith('display');
+    });
+
+    it('passes undefined (the outputSize default) when no options are given', async () => {
+        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+
+        await BT.captureFrame();
+
+        expect(spy).toHaveBeenCalledExactlyOnceWith(undefined);
+    });
+});
+
 describe('BT.downloadFrame', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
@@ -1533,6 +1561,21 @@ describe('BT.downloadFrame', () => {
         expect(mockAnchor.download).toBe('screenshot.png');
         expect(mockAnchor.click).toHaveBeenCalledOnce();
         expect(revokeObjectURL).toHaveBeenCalledWith(mockUrl);
+    });
+
+    it("forwards { size: 'display' } to BTAPI.instance.captureFrame", async () => {
+        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+
+        vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:x'), revokeObjectURL: vi.fn() });
+        vi.spyOn(document, 'createElement').mockReturnValue({
+            href: '',
+            download: '',
+            click: vi.fn(),
+        } as unknown as HTMLAnchorElement);
+
+        await BT.downloadFrame('exact.png', { size: 'display' });
+
+        expect(spy).toHaveBeenCalledExactlyOnceWith('display');
     });
 
     it('uses the default filename when none is provided', async () => {

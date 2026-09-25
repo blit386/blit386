@@ -273,6 +273,8 @@ See [Post-Process Effects Guide](guide-post-process-effects.md) for parameter re
 
 <Since symbol="BT.captureFrame" />
 <Since symbol="BT.downloadFrame" />
+<Since symbol="FrameCaptureOptions" />
+<Since symbol="FrameCaptureSize" />
 
 Capture the current rendered frame as a PNG.
 
@@ -286,7 +288,28 @@ const url = URL.createObjectURL(blob);
 // Convenience: capture and trigger a browser download
 await BT.downloadFrame();
 await BT.downloadFrame('screenshot-001.png'); // custom filename
+
+// Exact game pixels: one PNG pixel per logical pixel, at BT.displaySize
+const exact = await BT.captureFrame({ size: 'display' });
+await BT.downloadFrame('exact.png', { size: 'display' });
 ```
+
+### Which size?
+
+`FrameCaptureOptions.size` picks the resolution, and with it what the PNG contains:
+
+| `size` | PNG dimensions | Contains | Use for |
+| --- | --- | --- | --- |
+| `'output'` (default) | `BT.outputSize` (`drawingBufferSize ?? displaySize`) | Upscaled frame plus display-tier post-process effects (scanlines, vignette, bloom, ...) | What the player sees: screenshot buttons, sharing |
+| `'display'` | `BT.displaySize` | Logical frame resolved straight from the palette-indexed scene buffer: no upscale, no display-tier effects (pixel-tier effects such as `PixelGlitch` are included) | Tests, agents, image diffs, pixel art export |
+
+A game with no `configure()` inherits the default `640×480` drawing buffer for a `320×240` logical display, so
+`BT.captureFrame()` returns a `640×480` PNG where every game pixel is a 2×2 block. `{ size: 'display' }` returns the
+`320×240` original. Neither size is affected by how the browser scales the canvas on screen.
+
+The display-size capture has its own pending slot on the renderer, separate from the F9 / Shift+F9 dev shortcuts, so an
+agent's capture and a keypress in the same frame both resolve. Two `{ size: 'display' }` requests in the same frame
+still reject the earlier one, as two `BT.captureFrame()` calls always have.
 
 <DemoEmbed demo="013-image-output" title="BLIT386 image output demo" />
 
@@ -297,10 +320,8 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 
 </Callout>
 
-Both `BT.captureFrame()` and `BT.downloadFrame()` capture at `BT.outputSize` (`drawingBufferSize ?? displaySize`). The
-F9 / Shift+F9 dev-mode capture shortcuts are a separate, internal path that instead captures at logical
-`BT.displaySize`, without display-tier post-process effects - see the resolution model in
-[Core](api-core.md#resolution-model) for details.
+The F9 / Shift+F9 dev-mode capture shortcuts use the same logical-size path as `{ size: 'display' }`, from their own
+pending slot - see the resolution model in [Core](api-core.md#resolution-model) for details.
 
 ## API history
 

@@ -204,15 +204,16 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 
 </Callout>
 
-<Callout title="F9 / Shift+F9 dev-mode capture: displaySize, not outputSize">
+<Callout title="Capturing at displaySize instead of outputSize">
 
-`BT.captureFrame()` and `BT.downloadFrame()` always match `BT.outputSize`, as described above. The dev-mode
-frame-capture shortcuts (`HardwareSettings.isFrameCaptureShortcutEnabled`) are separate, internal capture paths that
-instead save at logical `BT.displaySize`, resolved directly from the palette-indexed scene buffer: F9 copies to the OS
-clipboard, Shift+F9 downloads a file. That keeps every logical pixel a single output pixel for pixel-alignment and
-palette debugging, but it also means both shortcuts exclude display-tier post-process effects (scanlines, vignette,
-bloom, and similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer the
-shortcuts bypass.
+`BT.captureFrame()` and `BT.downloadFrame()` match `BT.outputSize` by default, as described above. Pass
+`{ size: 'display' }` (engine 1.8.0+) to capture at logical `BT.displaySize` instead, resolved directly from the
+palette-indexed scene buffer. That keeps every logical pixel a single PNG pixel for tests, image diffs, and palette
+debugging, but it also means the capture excludes display-tier post-process effects (scanlines, vignette, bloom, and
+similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer this path bypasses.
+The dev-mode frame-capture shortcuts (`HardwareSettings.isFrameCaptureShortcutEnabled`) take the same logical-size path:
+F9 copies to the OS clipboard, Shift+F9 downloads a file. Details and the size comparison table:
+[Rendering](api-rendering.md#frame-capture).
 
 </Callout>
 
@@ -245,7 +246,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `isSplashEnabled` | `boolean` | _unset_ | Play the BLIT386 splash before the game starts. Unset means shown in release builds, hidden in development. See [the splash guide](guide-splash.md) |
 | `splashColorDark` | `Color32` | `Color32.black` | Dark endpoint of the splash's 16-step gray ramp |
 | `splashColorLight` | `Color32` | `Color32.white` | Light endpoint of the splash's 16-step gray ramp |
-| `isFrameCaptureShortcutEnabled` | `boolean` | _unset_ | F9 copies the current frame to the clipboard, and Shift+F9 downloads it as a timestamped PNG - both at logical `BT.displaySize` rather than `BT.outputSize` (unlike `BT.captureFrame()`/`downloadFrame()`) and without display-tier post-process effects, see the callout above. Unset means enabled in development builds, disabled in release. Set `true` to keep both in a production build, or `false` to free up F9 and Shift+F9 |
+| `isFrameCaptureShortcutEnabled` | `boolean` | _unset_ | F9 copies the current frame to the clipboard, and Shift+F9 downloads it as a timestamped PNG - both at logical `BT.displaySize` rather than `BT.outputSize` (like `BT.captureFrame({ size: 'display' })`) and without display-tier post-process effects, see the callout above. Unset means enabled in development builds, disabled in release. Set `true` to keep both in a production build, or `false` to free up F9 and Shift+F9 |
 | `isOverlayEnabled` | `boolean` | `true` | Engine overlay HUD after each `render()` |
 | `isOverlayVisibleAtStart` | `boolean` | `false` | Show overlay body (metrics/palette/custom rows) on first frame |
 | `isOverlayToggleHintVisible` | `boolean` | `true` | Draw toggle hint icon while overlay body is hidden |

@@ -113,7 +113,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
     private pending: Pending | null = null;
+    /** Pending public `captureFrameAtDisplaySize` request. */
     private pendingDisplaySize: Pending | null = null;
+    /** Pending F9 / Shift+F9 `captureFrameForShortcut` request - its own slot, see {@link IRenderer}. */
+    private pendingShortcutDisplaySize: Pending | null = null;
     private primitiveSubmittedVertices = 0;
     private spriteSubmittedVertices = 0;
 
@@ -350,11 +353,8 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                 this.pending = null;
             }
 
-            if (this.pendingDisplaySize) {
-                this.pendingDisplaySize.reject(
-                    new Error("Can't save this frame - the renderer hasn't finished initializing yet."),
-                );
-                this.pendingDisplaySize = null;
+            for (const request of this.takePendingDisplaySizeRequests()) {
+                request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));
             }
 
             return;
@@ -610,8 +610,9 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Returns a promise that resolves with a PNG Blob of the logical (pre-upscale)
      * frame on the next `endFrame` call, bypassing the output canvas upscale.
-     * Backs the Shift+F9 dev-mode capture shortcut. Any previously pending
-     * `captureFrameAtDisplaySize` capture is rejected before the new one is registered.
+     * Backs the public `BT.captureFrame({ size: 'display' })`. Any previously pending
+     * `captureFrameAtDisplaySize` capture is rejected before the new one is registered;
+     * the shortcut slot ({@link captureFrameForShortcut}) is unaffected.
      *
      * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
      */
@@ -626,6 +627,26 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
         return new Promise<Blob>((resolve, reject) => {
             this.pendingDisplaySize = { resolve, reject };
+        });
+    }
+
+    /**
+     * Same capture as {@link captureFrameAtDisplaySize}, from the slot reserved for the
+     * F9 / Shift+F9 dev-mode shortcuts.
+     *
+     * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
+     */
+    captureFrameForShortcut(): Promise<Blob> {
+        if (this.pendingShortcutDisplaySize) {
+            this.pendingShortcutDisplaySize.reject(
+                new Error(
+                    'A capture is already in progress. Wait for the first captureFrameForShortcut() to finish before requesting another.',
+                ),
+            );
+        }
+
+        return new Promise<Blob>((resolve, reject) => {
+            this.pendingShortcutDisplaySize = { resolve, reject };
         });
     }
 
@@ -673,6 +694,28 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     /** Not supported - always throws. */
     clearEffects(): void {
         throw new Error(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
+    }
+
+    /**
+     * Returns every pending display-size request (public and shortcut slots) and clears
+     * both slots, so the caller settles them all from one logical-canvas export.
+     *
+     * @returns Pending requests, possibly empty.
+     */
+    private takePendingDisplaySizeRequests(): Pending[] {
+        const requests: Pending[] = [];
+
+        if (this.pendingDisplaySize) {
+            requests.push(this.pendingDisplaySize);
+            this.pendingDisplaySize = null;
+        }
+
+        if (this.pendingShortcutDisplaySize) {
+            requests.push(this.pendingShortcutDisplaySize);
+            this.pendingShortcutDisplaySize = null;
+        }
+
+        return requests;
     }
 
     /**
@@ -1205,21 +1248,34 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Resolves or rejects the pending `captureFrameAtDisplaySize` promise by exporting
-     * `logicalCanvas` (the pre-upscale, logical-resolution buffer) instead of the output
-     * `canvas`. Handles both `OffscreenCanvas.convertToBlob` and the plain-canvas
-     * `HTMLCanvasElement.toBlob` fallback, since `logicalCanvas` may be either. Clears
-     * `pendingDisplaySize` after handling.
+     * Resolves or rejects the pending `captureFrameAtDisplaySize` /
+     * `captureFrameForShortcut` promises by exporting `logicalCanvas` (the pre-upscale,
+     * logical-resolution buffer) instead of the output `canvas`. Both slots settle from
+     * the same single export. Handles both `OffscreenCanvas.convertToBlob` and the
+     * plain-canvas `HTMLCanvasElement.toBlob` fallback, since `logicalCanvas` may be
+     * either. Clears both slots after handling.
      */
     private resolvePendingDisplaySize(): void {
-        if (!this.pendingDisplaySize) {
+        const requests = this.takePendingDisplaySizeRequests();
+
+        if (requests.length === 0) {
             return;
         }
 
-        const request = this.pendingDisplaySize;
+        // Fan one export out to every pending slot.
+        const request: Pending = {
+            resolve: (blob) => {
+                for (const pending of requests) {
+                    pending.resolve(blob);
+                }
+            },
+            reject: (error) => {
+                for (const pending of requests) {
+                    pending.reject(error);
+                }
+            },
+        };
         const canvas = this.logicalCanvas;
-
-        this.pendingDisplaySize = null;
 
         if (!canvas) {
             request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));

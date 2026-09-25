@@ -40,7 +40,7 @@ import {
     paletteIndexOutOfRangeError,
     spriteNotIndexizedError,
 } from '../utils/errorMessages';
-import { downloadBlob, writeBlobToClipboard } from '../utils/FrameCapture';
+import { downloadBlob, type FrameCaptureSize, writeBlobToClipboard } from '../utils/FrameCapture';
 import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
 import { Random } from '../utils/Random';
 import type { Rect2i } from '../utils/Rect2i';
@@ -194,12 +194,14 @@ export class BTAPI {
      * True while a Shift+F9 save or bare-F9 clipboard-copy dev-mode frame capture is in
      * flight (see {@link HardwareSettings.isFrameCaptureShortcutEnabled}). Shared by both
      * shortcuts rather than one guard each: both ultimately call
-     * `IRenderer.captureFrameAtDisplaySize()`, which is backed by a single-slot
+     * `IRenderer.captureFrameForShortcut()`, which is backed by a single-slot
      * `FrameCapture` request queue on the renderer - a second call while the first is still
      * pending rejects the first with "Capture superseded by a new request" instead of
      * queuing it. Independent guards would let one shortcut silently fail the other's
      * capture instead of preventing the overlap, so holding or rapidly alternating between
-     * F9 and Shift+F9 must block on this one flag.
+     * F9 and Shift+F9 must block on this one flag. The public
+     * `captureFrame({ size: 'display' })` uses a separate renderer slot, so it needs no
+     * guard here and never contends with a keypress.
      */
     private isFrameCaptureShortcutInFlight = false;
 
@@ -1487,15 +1489,17 @@ export class BTAPI {
      * Captures the next rendered frame as a PNG blob.
      * The capture occurs on the next completed render cycle.
      *
+     * @param size - `'output'` (default) captures at `outputSize`; `'display'` captures at
+     *   logical `displaySize` without the upscale or display-tier effects.
      * @returns Promise resolving to a PNG Blob.
      * @throws Error if the renderer is not initialized.
      */
-    public captureFrame(): Promise<Blob> {
+    public captureFrame(size: FrameCaptureSize = 'output'): Promise<Blob> {
         if (!this.renderer) {
             return Promise.reject(new Error("Can't capture frame: renderer not initialized"));
         }
 
-        return this.renderer.captureFrame();
+        return size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
     }
 
     /**
@@ -1776,7 +1780,7 @@ export class BTAPI {
                 throw new Error("Can't capture frame: renderer not initialized");
             }
 
-            const blob = await this.renderer.captureFrameAtDisplaySize();
+            const blob = await this.renderer.captureFrameForShortcut();
             const filename = defaultFrameCaptureFilename();
 
             downloadBlob(blob, filename);
@@ -1804,7 +1808,7 @@ export class BTAPI {
      * event - some browsers invalidate sticky user activation once a task boundary (not
      * just a microtask/await) has passed, and reject `clipboard.write()` as not
      * user-initiated if it runs after one. Passing the still-pending
-     * `captureFrameAtDisplaySize()` promise straight into `writeBlobToClipboard` (rather
+     * `captureFrameForShortcut()` promise straight into `writeBlobToClipboard` (rather
      * than awaiting it here first) is what keeps the write call itself synchronous; the
      * capture completing is unavoidably async (it waits on the next render pass's GPU
      * readback), so this is the most that can be done to keep the write attempt tied to the
@@ -1838,7 +1842,7 @@ export class BTAPI {
         // The clipboard.write() call inside writeBlobToClipboard() has already started
         // synchronously by this point; awaiting its result is handled separately so this
         // method itself never becomes `async` (see the class doc above).
-        void this.settleFrameCopy(writeBlobToClipboard(this.renderer.captureFrameAtDisplaySize()), generation);
+        void this.settleFrameCopy(writeBlobToClipboard(this.renderer.captureFrameForShortcut()), generation);
     }
 
     /**

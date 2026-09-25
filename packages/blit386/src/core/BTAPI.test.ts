@@ -1395,13 +1395,14 @@ describe('BTAPI', () => {
             expect(height).toBe(480);
         });
 
-        it('captureFrameAtDisplaySize decodes to displaySize, not outputSize (drawingBufferSize), on the WebGPU path', async () => {
+        it("captureFrame('display') decodes to displaySize, not outputSize (drawingBufferSize), on the WebGPU path", async () => {
             installRealPNGOffscreenCanvasMock();
 
             // Same mock demo as the outputSize test above (displaySize 320x240,
-            // drawingBufferSize 640x480), but captureFrameAtDisplaySize backs the Shift+F9
-            // dev-mode shortcut (BT-490): it must decode to the smaller logical displaySize,
-            // the opposite of the public captureFrame()/outputSize contract BT-488 confirmed.
+            // drawingBufferSize 640x480), but captureFrame('display') (BT-532, the public
+            // form of the Shift+F9 path from BT-490) must decode to the smaller logical
+            // displaySize, the opposite of the default captureFrame()/outputSize contract
+            // BT-488 confirmed.
             await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
             BTAPI.instance.setPalette(new Palette(16));
 
@@ -1409,7 +1410,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const capturePromise = (renderer as NonNullable<typeof renderer>).captureFrameAtDisplaySize();
+            const capturePromise = BTAPI.instance.captureFrame('display');
 
             renderer?.beginFrame();
             renderer?.endFrame();
@@ -1421,6 +1422,35 @@ describe('BTAPI', () => {
             expect(height).toBe(BT.displaySize.y);
             expect(width).toBe(320);
             expect(height).toBe(240);
+        });
+
+        it("captureFrame('display') and a concurrent shortcut capture both resolve from one frame", async () => {
+            installRealPNGOffscreenCanvasMock();
+
+            // The public display-size capture has its own renderer slot (BT-532), so an
+            // agent's capture and a human's F9 press in the same frame never supersede
+            // each other - both settle, both at displaySize.
+            await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const renderer = BTAPI.instance.getRenderer();
+
+            expect(renderer).not.toBeNull();
+
+            const publicCapture = BTAPI.instance.captureFrame('display');
+            const shortcutCapture = (renderer as NonNullable<typeof renderer>).captureFrameForShortcut();
+
+            renderer?.beginFrame();
+            renderer?.endFrame();
+
+            const [publicBlob, shortcutBlob] = await Promise.all([publicCapture, shortcutCapture]);
+
+            for (const blob of [publicBlob, shortcutBlob]) {
+                const { width, height } = await decodedPngSize(blob);
+
+                expect(width).toBe(320);
+                expect(height).toBe(240);
+            }
         });
 
         it('captureFrame works in software mode after a rendered frame', async () => {
@@ -1477,7 +1507,7 @@ describe('BTAPI', () => {
             expect(height).toBe(480);
         });
 
-        it('captureFrameAtDisplaySize decodes to displaySize, not outputSize (drawingBufferSize), in software mode', async () => {
+        it("captureFrame('display') decodes to displaySize, not outputSize (drawingBufferSize), in software mode", async () => {
             vi.stubGlobal('location', { search: '?backend=software' });
 
             // Unlike makeOffscreenCanvas2dContext()'s stub above, this mock also implements
@@ -1549,7 +1579,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const capturePromise = (renderer as NonNullable<typeof renderer>).captureFrameAtDisplaySize();
+            const capturePromise = BTAPI.instance.captureFrame('display');
 
             renderer?.beginFrame();
             renderer?.endFrame();
@@ -2985,7 +3015,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
             const renderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize').mockResolvedValue(mockBlob);
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockResolvedValue(mockBlob);
 
             const keydownHandler = findKeydownHandler(canvas);
 
@@ -2994,7 +3024,7 @@ describe('BTAPI', () => {
             getLoop()?.tick(20);
 
             // The capture-and-download runs fire-and-forget from the update tick;
-            // flush pending microtasks so the awaited captureFrameAtDisplaySize/downloadBlob
+            // flush pending microtasks so the awaited captureFrameForShortcut/downloadBlob
             // chain settles.
             await Promise.resolve();
             await Promise.resolve();
@@ -3049,7 +3079,7 @@ describe('BTAPI', () => {
             BTAPI.instance.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize');
+            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut');
             const keydownHandler = findKeydownHandler(canvas);
 
             keydownHandler({ code: 'ShiftLeft' });
@@ -3086,8 +3116,8 @@ describe('BTAPI', () => {
             });
 
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameAtDisplaySizeSpy = vi
-                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize')
+            const captureFrameForShortcutSpy = vi
+                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut')
                 .mockReturnValue(pendingCapture);
 
             const keydownHandler = findKeydownHandler(canvas);
@@ -3106,7 +3136,7 @@ describe('BTAPI', () => {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(captureFrameAtDisplaySizeSpy).toHaveBeenCalledOnce();
+            expect(captureFrameForShortcutSpy).toHaveBeenCalledOnce();
             expect(downloadBlob).toHaveBeenCalledOnce();
         });
 
@@ -3135,7 +3165,7 @@ describe('BTAPI', () => {
 
             const firstRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameAtDisplaySize').mockReturnValue(
+            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameForShortcut').mockReturnValue(
                 neverSettles,
             );
 
@@ -3160,10 +3190,9 @@ describe('BTAPI', () => {
 
             const secondRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(
-                secondRenderer as NonNullable<typeof secondRenderer>,
-                'captureFrameAtDisplaySize',
-            ).mockResolvedValue(mockBlob);
+            vi.spyOn(secondRenderer as NonNullable<typeof secondRenderer>, 'captureFrameForShortcut').mockResolvedValue(
+                mockBlob,
+            );
 
             findKeydownHandler(secondCanvas)({ code: 'ShiftLeft' });
             findKeydownHandler(secondCanvas)({ code: 'F9' });
@@ -3277,7 +3306,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
             const renderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize').mockResolvedValue(mockBlob);
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockResolvedValue(mockBlob);
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
 
@@ -3310,7 +3339,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
             const renderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize').mockResolvedValue(mockBlob);
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockResolvedValue(mockBlob);
 
             // A real Shift+F9 press delivers one keydown event, with shiftKey true, to both
             // listeners: KeyboardInput's (driving the tick-based Shift+F9 download check) and
@@ -3348,7 +3377,7 @@ describe('BTAPI', () => {
 
             const mockClipboard = installMockClipboard();
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize');
+            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut');
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
 
@@ -3381,7 +3410,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
             const renderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize').mockResolvedValue(mockBlob);
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockResolvedValue(mockBlob);
 
             const handler = findClipboardShortcutKeydownHandler(canvas);
 
@@ -3420,8 +3449,8 @@ describe('BTAPI', () => {
             });
 
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameAtDisplaySizeSpy = vi
-                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize')
+            const captureFrameForShortcutSpy = vi
+                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut')
                 .mockReturnValue(pendingCapture);
 
             const handler = findClipboardShortcutKeydownHandler(canvas);
@@ -3437,7 +3466,7 @@ describe('BTAPI', () => {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(captureFrameAtDisplaySizeSpy).toHaveBeenCalledOnce();
+            expect(captureFrameForShortcutSpy).toHaveBeenCalledOnce();
             expect(mockClipboard.write).toHaveBeenCalledOnce();
         });
 
@@ -3461,7 +3490,7 @@ describe('BTAPI', () => {
             const mockClipboard = installMockClipboard();
 
             // Both shortcuts route through the renderer's single-slot capture queue
-            // (IRenderer.captureFrameAtDisplaySize), so a bare-F9 copy must not start while
+            // (IRenderer.captureFrameForShortcut), so a bare-F9 copy must not start while
             // a Shift+F9 capture is still pending - starting one would supersede the other's
             // request instead of queuing behind it.
             let resolveCapture: ((blob: Blob) => void) | undefined;
@@ -3470,8 +3499,8 @@ describe('BTAPI', () => {
             });
 
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameAtDisplaySizeSpy = vi
-                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize')
+            const captureFrameForShortcutSpy = vi
+                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut')
                 .mockReturnValue(pendingCapture);
 
             const keydownHandler = findKeydownHandler(canvas);
@@ -3490,7 +3519,7 @@ describe('BTAPI', () => {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(captureFrameAtDisplaySizeSpy).toHaveBeenCalledOnce();
+            expect(captureFrameForShortcutSpy).toHaveBeenCalledOnce();
             expect(mockClipboard.write).not.toHaveBeenCalled();
             expect(downloadBlob).toHaveBeenCalledOnce();
         });
@@ -3522,8 +3551,8 @@ describe('BTAPI', () => {
             });
 
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameAtDisplaySizeSpy = vi
-                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize')
+            const captureFrameForShortcutSpy = vi
+                .spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut')
                 .mockReturnValue(pendingCapture);
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
@@ -3540,7 +3569,7 @@ describe('BTAPI', () => {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(captureFrameAtDisplaySizeSpy).toHaveBeenCalledOnce();
+            expect(captureFrameForShortcutSpy).toHaveBeenCalledOnce();
             expect(downloadBlob).not.toHaveBeenCalled();
             expect(mockClipboard.write).toHaveBeenCalledOnce();
         });
@@ -3572,7 +3601,7 @@ describe('BTAPI', () => {
 
             const firstRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameAtDisplaySize').mockReturnValue(
+            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameForShortcut').mockReturnValue(
                 neverSettles,
             );
 
@@ -3593,10 +3622,9 @@ describe('BTAPI', () => {
 
             const secondRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(
-                secondRenderer as NonNullable<typeof secondRenderer>,
-                'captureFrameAtDisplaySize',
-            ).mockResolvedValue(mockBlob);
+            vi.spyOn(secondRenderer as NonNullable<typeof secondRenderer>, 'captureFrameForShortcut').mockResolvedValue(
+                mockBlob,
+            );
 
             findClipboardShortcutKeydownHandler(secondCanvas)(f9Event());
 
@@ -3637,7 +3665,7 @@ describe('BTAPI', () => {
 
             const firstRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameAtDisplaySize').mockReturnValue(
+            vi.spyOn(firstRenderer as NonNullable<typeof firstRenderer>, 'captureFrameForShortcut').mockReturnValue(
                 staleCapture,
             );
 
@@ -3658,7 +3686,7 @@ describe('BTAPI', () => {
 
             const secondRenderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(secondRenderer as NonNullable<typeof secondRenderer>, 'captureFrameAtDisplaySize').mockReturnValue(
+            vi.spyOn(secondRenderer as NonNullable<typeof secondRenderer>, 'captureFrameForShortcut').mockReturnValue(
                 currentCapture,
             );
 
@@ -3709,9 +3737,7 @@ describe('BTAPI', () => {
 
             const renderer = BTAPI.instance.getRenderer();
 
-            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize').mockReturnValue(
-                neverSettles,
-            );
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockReturnValue(neverSettles);
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
 
@@ -3751,7 +3777,7 @@ describe('BTAPI', () => {
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize');
+            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut');
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
 
@@ -3790,7 +3816,7 @@ describe('BTAPI', () => {
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const renderer = BTAPI.instance.getRenderer();
-            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameAtDisplaySize');
+            const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut');
 
             findClipboardShortcutKeydownHandler(canvas)(f9Event());
 

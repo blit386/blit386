@@ -962,6 +962,109 @@ describe('frame capture', () => {
         uninstallMockNavigatorGPU();
     });
 
+    it('captureFrameAtDisplaySize and captureFrameForShortcut both resolve from the same frame', async () => {
+        const copyTextureToBufferFn = vi.fn();
+        const device = createMockGPUDevice();
+        const originalCreate = device.createCommandEncoder.bind(device);
+
+        vi.spyOn(device, 'createCommandEncoder').mockImplementation(() => {
+            const encoder = originalCreate();
+
+            (encoder as unknown as Record<string, unknown>).copyTextureToBuffer = copyTextureToBufferFn;
+
+            return encoder;
+        });
+
+        const renderer = new WebGPURenderer(device, createMockGPUCanvasContext(), new Vector2i(4, 4));
+
+        installMockNavigatorGPU();
+
+        await renderer.init();
+        renderer.setPalette(createTestPalette());
+
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                constructor(
+                    public data: Uint8ClampedArray,
+                    public width: number,
+                    public height: number,
+                ) {}
+            },
+        );
+
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class MockOffscreenCanvas {
+                getContext(): { putImageData: ReturnType<typeof vi.fn> } {
+                    return { putImageData: vi.fn() };
+                }
+                async convertToBlob(): Promise<Blob> {
+                    return new Blob(['test'], { type: 'image/png' });
+                }
+            },
+        );
+
+        // Two separate slots (BT-532): neither request supersedes the other.
+        const publicCapture = renderer.captureFrameAtDisplaySize();
+        const shortcutCapture = renderer.captureFrameForShortcut();
+
+        renderer.beginFrame();
+        renderer.endFrame();
+
+        const blobs = await Promise.all([publicCapture, shortcutCapture]);
+
+        expect(copyTextureToBufferFn).toHaveBeenCalledTimes(2);
+        expect(blobs[0]).toBeInstanceOf(Blob);
+        expect(blobs[1]).toBeInstanceOf(Blob);
+
+        vi.unstubAllGlobals();
+        uninstallMockNavigatorGPU();
+    });
+
+    it('rejects a pending display-size capture when init() re-runs and drops the resolve pass', async () => {
+        const device = createMockGPUDevice();
+        const renderer = new WebGPURenderer(device, createMockGPUCanvasContext(), new Vector2i(4, 4));
+
+        installMockNavigatorGPU();
+
+        await renderer.init();
+
+        const publicCapture = renderer.captureFrameAtDisplaySize();
+        const shortcutCapture = renderer.captureFrameForShortcut();
+
+        // Device-loss recovery / teardown path: init() disposes resolvePass before
+        // rebuilding it, so nothing can service the captures queued before it.
+        await renderer.init();
+
+        await expect(publicCapture).rejects.toThrow('renderer was reset');
+        await expect(shortcutCapture).rejects.toThrow('renderer was reset');
+
+        uninstallMockNavigatorGPU();
+    });
+
+    it('rejects a pending display-size capture on endFrame when the resolve pass is missing', async () => {
+        const device = createMockGPUDevice();
+        const renderer = new WebGPURenderer(device, createMockGPUCanvasContext(), new Vector2i(4, 4));
+
+        installMockNavigatorGPU();
+
+        await renderer.init();
+        renderer.setPalette(createTestPalette());
+
+        const publicCapture = renderer.captureFrameAtDisplaySize();
+
+        // Simulate the resolvePass === null window submitFrame used to hang in.
+        (renderer as unknown as { resolvePass: unknown }).resolvePass = null;
+
+        renderer.beginFrame();
+        renderer.endFrame();
+
+        await expect(publicCapture).rejects.toThrow('resolve pass not initialized');
+
+        uninstallMockNavigatorGPU();
+    });
+
     it('endFrame does not call copyTextureToBuffer without pending capture', async () => {
         const copyTextureToBufferFn = vi.fn();
         const device = createMockGPUDevice();

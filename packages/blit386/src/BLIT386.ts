@@ -78,7 +78,7 @@ import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError, systemFontNotReadyError } from './utils/errorMessages';
-import { downloadBlob } from './utils/FrameCapture';
+import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
 import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
@@ -2270,35 +2270,53 @@ export const BT = {
     /**
      * Captures the next rendered frame as a PNG blob.
      *
-     * The returned promise resolves after the next render pass has completed.
+     * The returned promise resolves after the next render pass has completed. By default
+     * the PNG matches {@link BT.outputSize} (`drawingBufferSize ?? displaySize`), including
+     * display-tier post-process effects. Pass `{ size: 'display' }` for an exact 1:1 frame
+     * at logical {@link BT.displaySize}, resolved straight from the palette-indexed scene
+     * buffer - no upscale and no display-tier effects (scanlines, vignette, bloom) - which
+     * is what tests and agents want for pixel comparisons. The display-size capture has
+     * its own pending slot, so it never contends with the F9 / Shift+F9 dev shortcuts.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
+     * @param options - Capture options; `size` defaults to `'output'`.
      * @returns PNG image data for the captured frame.
      *
      * @example
      * const blob = await BT.captureFrame();
      * const url = URL.createObjectURL(blob);
      * console.log('Captured frame:', url);
+     *
+     * // Exact game pixels, one PNG pixel per logical pixel:
+     * const exact = await BT.captureFrame({ size: 'display' });
      */
-    captureFrame: async (): Promise<Blob> => {
-        return await BTAPI.instance.captureFrame();
+    captureFrame: async (options: FrameCaptureOptions = {}): Promise<Blob> => {
+        return await BTAPI.instance.captureFrame(options.size);
     },
 
     /**
      * Captures the next rendered frame and downloads it from the browser.
      *
      * Convenience wrapper around {@link BT.captureFrame} that creates a temporary
-     * object URL and clicks a synthetic anchor element.
+     * object URL and clicks a synthetic anchor element. Takes the same `options` as
+     * {@link BT.captureFrame}.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Accepts `{ size: 'display' }` to download at logical `BT.displaySize`.
      * @param filename - Target download filename.
+     * @param options - Capture options; `size` defaults to `'output'`.
      *
      * @example
      * await BT.downloadFrame();
      * await BT.downloadFrame('screenshot-001.png');
+     * await BT.downloadFrame('exact.png', { size: 'display' });
      */
-    downloadFrame: async (filename: string = 'blit386-capture.png'): Promise<void> => {
-        const blob = await BTAPI.instance.captureFrame();
+    downloadFrame: async (
+        filename: string = 'blit386-capture.png',
+        options: FrameCaptureOptions = {},
+    ): Promise<void> => {
+        const blob = await BTAPI.instance.captureFrame(options.size);
 
         downloadBlob(blob, filename);
     },
@@ -2492,6 +2510,8 @@ export type {
     Effect,
     EffectTier,
     ExposureFadeOptions,
+    FrameCaptureOptions,
+    FrameCaptureSize,
     HardwareSettings,
     HotContext,
     HotReloadContext,

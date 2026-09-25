@@ -152,14 +152,25 @@ export interface IRenderer {
 
     /**
      * Captures the next rendered frame at logical `BT.displaySize`, bypassing any
-     * drawing-buffer upscale and display-tier post-process effects. Backs the
-     * Shift+F9 dev-mode capture shortcut; unlike {@link captureFrame}, this does not
+     * drawing-buffer upscale and display-tier post-process effects. Backs the public
+     * `BT.captureFrame({ size: 'display' })`; unlike {@link captureFrame}, this does not
      * match `BT.outputSize` when `drawingBufferSize` is set. A second call while a
-     * capture is pending rejects the prior pending promise.
+     * capture is pending rejects the prior pending promise. Has its own pending slot,
+     * independent of {@link captureFrameForShortcut}, so a public capture and an F9 press
+     * never supersede each other.
      *
      * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
      */
     captureFrameAtDisplaySize(): Promise<Blob>;
+
+    /**
+     * Same capture as {@link captureFrameAtDisplaySize} but from a separate pending slot
+     * reserved for the F9 / Shift+F9 dev-mode shortcuts, so a shortcut press can neither
+     * supersede nor be superseded by a public `BT.captureFrame({ size: 'display' })`.
+     *
+     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
+     */
+    captureFrameForShortcut(): Promise<Blob>;
 
     /**
      * Sets the camera offset for scrolling.
