@@ -10,8 +10,8 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together wit
 TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), pnpm, Node >= 22.18.0. Scripts are
 `pnpm run <script>` from this package's directory (or `pnpm --filter @blit386/kit run <script>` from the repo root).
 
-The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit doctor`, `blit upgrade`,
-`blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
+The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit play`, `blit doctor`,
+`blit upgrade`, `blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
 
 ## Kit content vs engine docs
 
@@ -23,7 +23,7 @@ anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP
 last resort, for when the documentation itself falls short.
 
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
-game-author capability skills plus the `run`, `fix`, `migrate`, and `ask-the-docs` workflow skills),
+game-author capability skills plus the `run`, `fix`, `test-the-game`, `migrate`, and `ask-the-docs` workflow skills),
 `hooks/shell-safety.sh` + `hooks.manifest.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`
 \- adding a skill folder is enough, nothing registers it by name.
 
@@ -73,6 +73,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead`, building a fade target with `fillBlock` |
+| `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, the starters' `window.__game` shape and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
