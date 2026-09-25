@@ -742,6 +742,64 @@ describe('BTAPI', () => {
             expect(await BTAPI.instance.init(makeMockDemo(60, true, 64), makeMockCanvas())).toBe(true);
         });
 
+        describe('?seed URL parameter', () => {
+            afterEach(() => {
+                vi.unstubAllGlobals();
+            });
+
+            it('seeds BT.random from ?seed=N before the demo init() runs', async () => {
+                vi.stubGlobal('location', { search: '?seed=42' });
+                const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+                const demo = makeMockDemo();
+                let seedSeenInInit: number | undefined;
+                (demo.init as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+                    seedSeenInInit = BTAPI.instance.getRandom().seedValue;
+
+                    return true;
+                });
+
+                expect(await BTAPI.instance.init(demo, makeMockCanvas())).toBe(true);
+                expect(seedSeenInInit).toBe(42);
+                expect(log).toHaveBeenCalledWith('[BT] Seeded BT.random from ?seed=42');
+            });
+
+            it("lets the game's own randomSeed() in init() override ?seed=N", async () => {
+                vi.stubGlobal('location', { search: '?seed=42' });
+
+                const demo = makeMockDemo();
+                (demo.init as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+                    BTAPI.instance.randomSeed(7);
+
+                    return true;
+                });
+
+                expect(await BTAPI.instance.init(demo, makeMockCanvas())).toBe(true);
+                expect(BTAPI.instance.getRandom().seedValue).toBe(7);
+            });
+
+            it('keeps the time seed and warns for a non-integer ?seed', async () => {
+                vi.stubGlobal('location', { search: '?seed=abc' });
+                const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const before = BTAPI.instance.getRandom().seedValue;
+
+                expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+                expect(BTAPI.instance.getRandom().seedValue).toBe(before);
+                expect(warn).toHaveBeenCalledWith('[BT] Ignoring ?seed=abc: it must be a whole number.');
+            });
+
+            it('does not reseed on a hot-reload swap', async () => {
+                vi.stubGlobal('location', { search: '?seed=42' });
+
+                expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+                BTAPI.instance.getRandom().next();
+                const state = BTAPI.instance.getRandom().getState();
+
+                expect(await BTAPI.instance.hotReplaceDemo(makeMockDemo())).toBe(true);
+                expect(BTAPI.instance.getRandom().getState()).toBe(state);
+            });
+        });
+
         it('rejects invalid displaySize before layout or renderer setup', async () => {
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({

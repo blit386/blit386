@@ -869,14 +869,24 @@
     "BT.random": {
       "kind": "getter",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "`?seed=N` URL parameter seeds the shared generator before the demo's `init()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.randomSeed": {
       "kind": "method",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Documented precedence over the `?seed=N` URL parameter."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
