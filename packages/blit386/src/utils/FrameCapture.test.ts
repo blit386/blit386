@@ -192,6 +192,23 @@ describe('FrameCapture', () => {
         await expect(firstCapture).rejects.toThrow('superseded');
     });
 
+    it('reject() settles the pending capture with the given error and clears the slot', async () => {
+        const capture = new FrameCapture();
+        const pending = capture.request();
+
+        capture.reject(new Error('renderer went away'));
+
+        await expect(pending).rejects.toThrow('renderer went away');
+        expect(capture.hasPending()).toBe(false);
+    });
+
+    it('reject() is a no-op without a pending capture', () => {
+        const capture = new FrameCapture();
+
+        expect(() => capture.reject(new Error('nothing pending'))).not.toThrow();
+        expect(capture.hasPending()).toBe(false);
+    });
+
     it('should clear the pending flag after resolve', async () => {
         const capture = new FrameCapture();
 

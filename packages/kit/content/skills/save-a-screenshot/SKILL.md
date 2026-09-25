@@ -33,6 +33,21 @@ async takeShot() {
 }
 ```
 
+## Get an exact 1:1 frame (tests, agents, pixel art) - engine 1.8.0+
+
+By default the PNG matches `BT.outputSize`, which for a game with no `configure()` is `640x480` - every game pixel a 2x2
+block, plus any display-tier effects (scanlines, vignette). For the game's real pixels, one PNG pixel per logical pixel
+at `BT.displaySize`, pass `{ size: 'display' }`:
+
+```js
+const exact = await BT.captureFrame({ size: 'display' }); // 320x240 for the default game
+await BT.downloadFrame('exact.png', { size: 'display' });
+```
+
+Use this whenever you compare frames or read pixels: the PNG always matches `BT.displaySize` (whatever
+`drawingBufferSize` is set to), and the capture never collides with someone pressing F9 in the same frame. It leaves out
+display-tier effects, since those only exist in the upscaled buffer.
+
 ## The built-in dev shortcut (engine 1.7.0+)
 
 While `npm run dev` is running, you do not need any code to grab a frame:
@@ -57,8 +72,9 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 
 ## Key calls
 
-- `BT.downloadFrame(filename?)` (method, async) - capture and download.
-- `BT.captureFrame()` (method, async) - resolve to a PNG `Blob`.
+- `BT.downloadFrame(filename?, options?)` (method, async) - capture and download.
+- `BT.captureFrame(options?)` (method, async) - resolve to a PNG `Blob`.
+- `{ size: 'display' }` (options, engine 1.8.0+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.
 
 ## Notes

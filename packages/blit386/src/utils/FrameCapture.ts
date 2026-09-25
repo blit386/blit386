@@ -18,6 +18,26 @@ type Resolve = (blob: Blob) => void;
 type Reject = (reason: Error) => void;
 
 /**
+ * Which resolution `BT.captureFrame()` / `BT.downloadFrame()` capture at: `'output'`
+ * matches `BT.outputSize` (`drawingBufferSize ?? displaySize`, including display-tier
+ * post-process effects); `'display'` matches logical `BT.displaySize`, resolved straight
+ * from the palette-indexed scene buffer without the upscale or display-tier effects.
+ *
+ * @since 1.8.0
+ */
+export type FrameCaptureSize = 'output' | 'display';
+
+/**
+ * Options for `BT.captureFrame()` and `BT.downloadFrame()`.
+ *
+ * @since 1.8.0
+ */
+export interface FrameCaptureOptions {
+    /** Capture resolution; defaults to `'output'`. See {@link FrameCaptureSize}. */
+    size?: FrameCaptureSize;
+}
+
+/**
  * Calculates the WebGPU-aligned byte size per row for a given image width.
  *
  * @param width - Image width in pixels.
@@ -183,6 +203,17 @@ export class FrameCapture {
             this.pendingResolve = resolve;
             this.pendingReject = reject;
         });
+    }
+
+    /**
+     * Rejects the pending capture, if any, and clears the pending state. Used when the
+     * renderer can no longer service the request (teardown, device loss).
+     *
+     * @param reason - Error the pending promise rejects with.
+     */
+    reject(reason: Error): void {
+        this.pendingReject?.(reason);
+        this.cleanup();
     }
 
     /**

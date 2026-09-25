@@ -81,12 +81,25 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     private readonly frameCapture = new FrameCapture();
 
     /**
-     * Frame capture manager for the Shift+F9 dev-mode shortcut, which captures at
-     * logical `displaySize` rather than `outputSize`. Kept separate from
-     * {@link frameCapture} so the two capture paths never contend for the same
-     * pending-request slot.
+     * Frame capture manager for the public `captureFrame({ size: 'display' })` path, which
+     * captures at logical `displaySize` rather than `outputSize`. Kept separate from
+     * {@link frameCapture} and {@link shortcutFrameCapture} so the three capture paths
+     * never contend for the same pending-request slot.
+     */
+    private readonly displayFrameCapture = new FrameCapture();
+
+    /**
+     * Frame capture manager for the F9 / Shift+F9 dev-mode shortcuts, which capture at
+     * logical `displaySize` like {@link displayFrameCapture} but from their own slot, so
+     * a keypress and a public display-size capture never supersede each other.
      */
     private readonly shortcutFrameCapture = new FrameCapture();
+
+    /** Both display-size slots, so {@link submitFrame} can service them with one resolve pass. */
+    private readonly displayCaptureSlots: readonly FrameCapture[] = [
+        this.displayFrameCapture,
+        this.shortcutFrameCapture,
+    ];
 
     /** Active palette for color lookups and GPU upload. */
     private palette: Palette | null = null;
@@ -261,6 +274,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             this.displayChain = null;
             this.resolvePass?.dispose();
             this.resolvePass = null;
+            this.rejectPendingDisplayCaptures("Can't capture frame: renderer was reset before the frame rendered");
             this.sceneTex?.destroy();
             this.sceneTex = null;
             this.sceneTexView = null;
@@ -610,14 +624,25 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Captures the next rendered frame at logical `displaySize`, resolved directly
      * from the palette-indexed scene texture and bypassing the drawing-buffer upscale
-     * and any display-tier post-process effects. Backs the Shift+F9 dev-mode capture
-     * shortcut; unlike {@link captureFrame}, this does not match `outputSize` when
-     * `drawingBufferSize` is set. The capture happens on the next `endFrame()` call.
-     * If a capture is already pending, the previous one is rejected.
+     * and any display-tier post-process effects. Backs the public
+     * `BT.captureFrame({ size: 'display' })`; unlike {@link captureFrame}, this does not
+     * match `outputSize` when `drawingBufferSize` is set. The capture happens on the next
+     * `endFrame()` call. If a capture is already pending in this slot, the previous one is
+     * rejected; the shortcut slot ({@link captureFrameForShortcut}) is unaffected.
      *
      * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
      */
     captureFrameAtDisplaySize(): Promise<Blob> {
+        return this.displayFrameCapture.request();
+    }
+
+    /**
+     * Same capture as {@link captureFrameAtDisplaySize}, from the slot reserved for the
+     * F9 / Shift+F9 dev-mode shortcuts.
+     *
+     * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
+     */
+    captureFrameForShortcut(): Promise<Blob> {
         return this.shortcutFrameCapture.request();
     }
 
@@ -733,6 +758,22 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
         this.pixelChain.clear();
         this.displayChain.clear();
+    }
+
+    /**
+     * Rejects any pending display-size capture (public or shortcut slot). Called when
+     * {@link resolvePass} is gone - during teardown / device-loss re-init, and from
+     * {@link submitFrame} when a frame is submitted without it - so an awaited capture
+     * fails with a clear message instead of hanging forever.
+     *
+     * @param message - Rejection message.
+     */
+    private rejectPendingDisplayCaptures(message: string): void {
+        for (const capture of this.displayCaptureSlots) {
+            if (capture.hasPending()) {
+                capture.reject(new Error(message));
+            }
+        }
     }
 
     /**
@@ -1044,17 +1085,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             this.frameCapture.executeInEncoder(this.device, swapTexture, encoder);
         }
 
-        const isCapturingDisplaySize = this.resolvePass !== null && this.shortcutFrameCapture.hasPending();
-
-        if (isCapturingDisplaySize && this.resolvePass) {
-            const destView = this.requireDisplayCaptureTexView();
-
-            this.resolvePass.encode(encoder, this.requireSceneTexView(), destView, this.displaySize);
-
-            if (this.displayCaptureTex) {
-                this.shortcutFrameCapture.executeInEncoder(this.device, this.displayCaptureTex, encoder);
-            }
-        }
+        const isCapturingDisplaySize = this.encodeDisplayCaptures(encoder);
 
         this.device.queue.submit([encoder.finish()]);
 
@@ -1063,7 +1094,11 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         }
 
         if (isCapturingDisplaySize) {
-            void this.shortcutFrameCapture.resolve(this.device);
+            for (const capture of this.displayCaptureSlots) {
+                if (capture.hasPending()) {
+                    void capture.resolve(this.device);
+                }
+            }
         }
 
         // Defensive reset so the pipeline state is clean even if beginFrame() is not
@@ -1121,6 +1156,41 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         }
 
         return this.sceneTexView;
+    }
+
+    /**
+     * Records the display-size readback for every pending slot in
+     * {@link displayCaptureSlots}: one resolve pass into the shared capture target, then
+     * one texture-to-buffer copy per pending slot. Without {@link resolvePass} (teardown /
+     * device-loss window) the pending captures are rejected instead of left hanging.
+     *
+     * @param encoder - Active command encoder.
+     * @returns `true` when at least one display-size capture was recorded.
+     */
+    private encodeDisplayCaptures(encoder: GPUCommandEncoder): boolean {
+        if (!this.displayCaptureSlots.some((capture) => capture.hasPending())) {
+            return false;
+        }
+
+        if (!this.resolvePass) {
+            this.rejectPendingDisplayCaptures("Can't capture frame: renderer resolve pass not initialized");
+
+            return false;
+        }
+
+        const destView = this.requireDisplayCaptureTexView();
+
+        this.resolvePass.encode(encoder, this.requireSceneTexView(), destView, this.displaySize);
+
+        if (this.displayCaptureTex) {
+            for (const capture of this.displayCaptureSlots) {
+                if (capture.hasPending()) {
+                    capture.executeInEncoder(this.device, this.displayCaptureTex, encoder);
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
