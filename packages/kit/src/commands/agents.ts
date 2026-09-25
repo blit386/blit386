@@ -426,9 +426,9 @@ export function runFullSync(
             // now ships under the same name). Never overwrite it - git cannot bring it back. Save the
             // kit version alongside and leave the path untracked until the user resolves it.
             if (existed && readFileSync(abs, 'utf8') !== incoming) {
-                if (writeRel(root, `${relPath}.new`, incoming)) {
-                    tally.collided.push(relPath);
-                } else {
+                // Counted even when the sidecar cannot be written: the collision is unresolved either way.
+                tally.collided.push(relPath);
+                if (!writeRel(root, `${relPath}.new`, incoming)) {
                     out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
                 }
                 continue;
