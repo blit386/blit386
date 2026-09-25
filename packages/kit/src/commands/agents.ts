@@ -428,8 +428,13 @@ export function runFullSync(
             if (existed && readFileSync(abs, 'utf8') !== incoming) {
                 // Counted even when the sidecar cannot be written: the collision is unresolved either way.
                 tally.collided.push(relPath);
-                if (!writeRel(root, `${relPath}.new`, incoming)) {
-                    out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+                try {
+                    if (!writeRel(root, `${relPath}.new`, incoming)) {
+                        out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+                    }
+                } catch (error) {
+                    const reason = error instanceof Error ? error.message : String(error);
+                    out(ui.warn(`Could not save ${relPath}.new (${reason}).`));
                 }
                 continue;
             }
