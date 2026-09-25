@@ -343,7 +343,7 @@ interface SyncTally {
     added: string[];
     review: string[];
     /** Untracked files already on disk at a path the kit newly ships; the kit version went to `.new`. */
-    collided: string[];
+    collided: { path: string; sidecarSaved: boolean }[];
     orphaned: string[];
     unchanged: number;
 }
@@ -427,15 +427,17 @@ export function runFullSync(
             // kit version alongside and leave the path untracked until the user resolves it.
             if (existed && readFileSync(abs, 'utf8') !== incoming) {
                 // Counted even when the sidecar cannot be written: the collision is unresolved either way.
-                tally.collided.push(relPath);
+                let sidecarSaved = false;
                 try {
-                    if (!writeRel(root, `${relPath}.new`, incoming)) {
+                    sidecarSaved = writeRel(root, `${relPath}.new`, incoming);
+                    if (!sidecarSaved) {
                         out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
                     }
                 } catch (error) {
                     const reason = error instanceof Error ? error.message : String(error);
                     out(ui.warn(`Could not save ${relPath}.new (${reason}).`));
                 }
+                tally.collided.push({ path: relPath, sidecarSaved });
                 continue;
             }
 
@@ -614,9 +616,17 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
         out(ui.warn(`You changed ${path}, so I saved the kit version as ${path}.new.`));
         out(ui.info('Compare the two and keep what you like.'));
     }
-    for (const path of tally.collided) {
-        out(ui.warn(`${path} already exists, so I saved the kit version as ${path}.new.`));
-        out(ui.info('Compare the two and keep what you like. Sync tracks the file once it matches the kit version.'));
+    for (const { path, sidecarSaved } of tally.collided) {
+        if (sidecarSaved) {
+            out(ui.warn(`${path} already exists, so I saved the kit version as ${path}.new.`));
+            out(
+                ui.info(
+                    'Compare the two and keep what you like. Sync tracks the file once it matches the kit version.',
+                ),
+            );
+        } else {
+            out(ui.warn(`${path} already exists, so I left it alone. The kit version could not be saved next to it.`));
+        }
     }
     for (const path of tally.orphaned) {
         out(ui.info(`${path} is no longer part of the kit. You can delete it if you do not need it.`));
