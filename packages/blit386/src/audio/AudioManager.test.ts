@@ -6,8 +6,8 @@
  * Verifies the bus graph wiring (`sfx`/`music` -> `main` -> `destination`),
  * bus volume get/set, mute semantics (mute preserves the configured volume;
  * unmute restores it), and the browser autoplay-unlock gesture state machine
- * (pointerdown/keydown flip locked -> unlocked and self-remove the gesture
- * listeners). Uses the Web Audio mock factories since Node.js and happy-dom
+ * (pointerdown/pointerup/touchend/keydown flip locked -> unlocked and
+ * self-remove the gesture listeners). Uses the Web Audio mock factories since Node.js and happy-dom
  * provide no Web Audio APIs.
  */
 
@@ -25,7 +25,7 @@ import {
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
 import { notifyMusicHotReplace } from './audioDecodeContext';
-import { AudioManager } from './AudioManager';
+import { AudioManager, UNLOCK_GESTURE_EVENTS } from './AudioManager';
 import { INVALID_SOUND_REF } from './VoicePool';
 
 /**
@@ -497,29 +497,56 @@ describe('AudioManager', () => {
                 expect(audio.isUnlocked()).toBe(true);
             });
 
-            expect(removeSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function));
-            expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
-            expect(removeSpy).toHaveBeenCalledWith('touchstart', expect.any(Function));
+            for (const type of UNLOCK_GESTURE_EVENTS) {
+                expect(removeSpy).toHaveBeenCalledWith(type, expect.any(Function));
+            }
         });
 
-        it('unlocks on keydown', async () => {
+        it.each(['keydown', 'pointerup', 'touchend'])('unlocks on %s', async (type) => {
             audio.attach(canvas);
 
-            canvas.dispatchEvent(new Event('keydown', { bubbles: true }));
+            canvas.dispatchEvent(new Event(type, { bubbles: true }));
 
             await vi.waitFor(() => {
                 expect(audio.isUnlocked()).toBe(true);
             });
         });
 
-        it('unlocks on touchstart', async () => {
+        it('does not listen to touchstart, which is not a user activation', () => {
             audio.attach(canvas);
 
             canvas.dispatchEvent(new Event('touchstart', { bubbles: true }));
 
+            expect(getMockContext().resumeCallCount).toBe(0);
+        });
+
+        it('retries resume on the next gesture while an earlier resume() is still pending', async () => {
+            // Per the Web Audio spec, resume() called outside a user activation stays pending
+            // (it is not rejected) until the context is allowed to start. On a touch device the
+            // pointerdown half of a tap behaves this way; the touchend half is the activation.
+            audio.attach(canvas);
+
+            const context = getMockContext() as unknown as { resume: () => Promise<void>; state: AudioContextState };
+            const resume = vi.fn(() => {
+                if (resume.mock.calls.length === 1) {
+                    return new Promise<void>(() => {});
+                }
+
+                context.state = 'running';
+
+                return Promise.resolve();
+            });
+
+            context.resume = resume;
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            canvas.dispatchEvent(new Event('touchend', { bubbles: true }));
+
             await vi.waitFor(() => {
                 expect(audio.isUnlocked()).toBe(true);
             });
+
+            expect(resume).toHaveBeenCalledTimes(2);
         });
 
         it('calls resume exactly once even if a second gesture fires after unlock', async () => {

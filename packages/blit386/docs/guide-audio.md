@@ -42,10 +42,12 @@ Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts` (including a c
 | State | What that means |
 | --- | --- |
 | Locked (default until a gesture) | `BT.isAudioUnlocked` is `false`. `audioVolumeSet`/`audioMuteSet` calls still update engine-side state, but the browser's audio context is suspended, so nothing is audible yet. |
-| Unlocked | `BT.isAudioUnlocked` is `true`. Set once `AudioContext.resume()` resolves after the first `pointerdown`, `keydown`, or `touchstart` on the canvas. Stays unlocked for the rest of the session. |
+| Unlocked | `BT.isAudioUnlocked` is `true`. Set once `AudioContext.resume()` resolves after the first `pointerdown`, `pointerup`, `touchend`, or `keydown` on the canvas. Stays unlocked for the rest of the session. |
 
-The engine listens for all three gesture types at once and removes the listeners as soon as one of them succeeds, so
-whichever input method a player uses first (mouse, keyboard, or touch) unlocks audio.
+The engine listens for all four gesture types at once and removes the listeners as soon as one of them succeeds, so
+whichever input method a player uses first (mouse, keyboard, or touch) unlocks audio. A mouse press or a key press
+unlocks immediately; a tap unlocks when the finger lifts, because browsers do not count `touchstart` or a touch
+`pointerdown` as a user activation, only `touchend` / `pointerup`.
 
 ## Usage example
 

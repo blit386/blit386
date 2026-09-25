@@ -88,8 +88,8 @@ configured, not `0`.
 <Since symbol="BT.isAudioUnlocked" />
 
 Browsers block audio playback until a user gesture. `BT.isAudioUnlocked` is `false` until the first `pointerdown`,
-`keydown`, or `touchstart` on the canvas successfully resumes the audio context, and stays `true` for the rest of the
-session.
+`pointerup`, `touchend`, or `keydown` on the canvas successfully resumes the audio context, and stays `true` for the
+rest of the session. On a touch screen that is the end of the first tap, since `touchstart` is not a user activation.
 
 ```ts twoslash
 import { BT } from 'blit386';

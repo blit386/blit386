@@ -32,6 +32,15 @@ const MIN_BUS_VOLUME = 0;
 /** Maximum accepted bus volume. */
 const MAX_BUS_VOLUME = 1;
 
+/**
+ * Canvas events that attempt to unlock the audio context. Every entry is an
+ * activation-triggering input event for at least one input method: a mouse
+ * `pointerdown`, a touch `pointerup` / `touchend` (a touch `pointerdown` and
+ * `touchstart` are not user activations, so they can never start the context),
+ * and `keydown`. Exported for tests.
+ */
+export const UNLOCK_GESTURE_EVENTS = ['pointerdown', 'pointerup', 'touchend', 'keydown'] as const;
+
 /** Per-bus value keyed the same way as the bus graph (`main`, `music`, `sfx`). */
 type PerBus<T> = Record<AudioBus, T>;
 
@@ -74,9 +83,6 @@ export class AudioManager {
     /** `true` once a user gesture has successfully resumed the audio context. */
     private unlocked = false;
 
-    /** `true` while a {@link resumeAndUnlock} call is in flight, guarding against concurrent resume attempts. */
-    private isUnlocking = false;
-
     /** Logical (pre-mute) volume per bus, reported by {@link volumeGet} regardless of mute state. */
     private logicalVolume: PerBus<number>;
 
@@ -95,29 +101,21 @@ export class AudioManager {
     /** Buffer and options from the latest {@link musicPlay} call made while locked; overwritten by a newer pending call, consumed by {@link resumeAndUnlock}. */
     private pendingMusicRequest: { buffer: AudioBuffer; options: MusicPlayOptions | undefined } | null = null;
 
-    /** Bound `pointerdown` unlock gesture handler; removed by reference in {@link removeUnlockListeners}. */
-    private readonly onPointerDown: (event: Event) => void;
-
-    /** Bound `keydown` unlock gesture handler; removed by reference in {@link removeUnlockListeners}. */
-    private readonly onKeyDown: (event: Event) => void;
-
-    /** Bound `touchstart` unlock gesture handler; removed by reference in {@link removeUnlockListeners}. */
-    private readonly onTouchStart: (event: Event) => void;
+    /** Bound unlock gesture handler shared by every {@link UNLOCK_GESTURE_EVENTS} type; removed by reference in {@link removeUnlockListeners}. */
+    private readonly onUnlockGesture: (event: Event) => void;
 
     /**
      * Creates an `AudioManager` with no context, bus graph, or listeners attached.
      *
-     * Binds the one-shot unlock-gesture handler references so {@link detach} can
-     * remove the same function instances that {@link attach} added, and
+     * Binds the unlock-gesture handler reference so {@link detach} can remove
+     * the same function instance that {@link attach} added, and
      * initializes every bus to full logical volume and unmuted.
      */
     constructor() {
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
 
-        this.onPointerDown = () => this.unlock();
-        this.onKeyDown = () => this.unlock();
-        this.onTouchStart = () => this.unlock();
+        this.onUnlockGesture = () => this.unlock();
     }
 
     /**
@@ -164,9 +162,9 @@ export class AudioManager {
 
         this.target = target;
 
-        target.addEventListener('pointerdown', this.onPointerDown);
-        target.addEventListener('keydown', this.onKeyDown);
-        target.addEventListener('touchstart', this.onTouchStart);
+        for (const type of UNLOCK_GESTURE_EVENTS) {
+            target.addEventListener(type, this.onUnlockGesture);
+        }
     }
 
     /**
@@ -207,7 +205,6 @@ export class AudioManager {
         this.busNodes = null;
         this.target = null;
         this.unlocked = false;
-        this.isUnlocking = false;
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
         this.mutedGainSnapshot = {};
@@ -666,27 +663,29 @@ export class AudioManager {
     }
 
     /**
-     * Resumes the audio context on the first successful unlock gesture and
-     * removes the gesture listeners. Left attached (to retry on the next
-     * gesture) when `resume()` rejects.
+     * Calls `context.resume()` on every unlock gesture until one succeeds, then
+     * removes the gesture listeners.
      *
-     * Guarded by {@link isUnlocking} so rapid-fire gestures (for example a
-     * pointerdown and a keydown in the same frame) only trigger one concurrent
-     * `resume()` attempt.
+     * Deliberately not guarded against an in-flight `resume()`: per the Web
+     * Audio spec a `resume()` called outside a user activation stays pending
+     * (not rejected) until the context is allowed to start. On a touch device
+     * the `pointerdown` half of a tap is such a call; only the `pointerup` /
+     * `touchend` half is the activation, and its own `resume()` is what lets
+     * both settle. Concurrent `resume()` calls are idempotent.
      */
     private unlock(): void {
-        if (this.unlocked || this.isUnlocking || this.context === null) {
+        if (this.unlocked || this.context === null) {
             return;
         }
-
-        this.isUnlocking = true;
 
         void this.resumeAndUnlock(this.context);
     }
 
     /**
-     * Awaits `context.resume()` and flips {@link unlocked} on success. Always
-     * clears {@link isUnlocking} so a failed attempt can retry on the next gesture.
+     * Awaits `context.resume()` and flips {@link unlocked} on success. A
+     * rejected attempt is logged and the listeners stay attached, so the next
+     * gesture retries. When a concurrent attempt already flipped
+     * {@link unlocked}, returns without repeating the one-time unlock work.
      *
      * On success, starts any music request remembered from before unlock (see
      * {@link musicPlay}) via {@link startRememberedMusicRequest}.
@@ -700,8 +699,10 @@ export class AudioManager {
             console.error('[BT] Failed to resume the audio context', error);
 
             return;
-        } finally {
-            this.isUnlocking = false;
+        }
+
+        if (this.unlocked) {
+            return;
         }
 
         this.unlocked = true;
@@ -738,17 +739,17 @@ export class AudioManager {
     }
 
     /**
-     * Removes the pointerdown/keydown/touchstart unlock gesture listeners from
-     * {@link target}. Safe to call when not attached or already removed.
+     * Removes the {@link UNLOCK_GESTURE_EVENTS} listeners from {@link target}.
+     * Safe to call when not attached or already removed.
      */
     private removeUnlockListeners(): void {
         if (this.target === null) {
             return;
         }
 
-        this.target.removeEventListener('pointerdown', this.onPointerDown);
-        this.target.removeEventListener('keydown', this.onKeyDown);
-        this.target.removeEventListener('touchstart', this.onTouchStart);
+        for (const type of UNLOCK_GESTURE_EVENTS) {
+            this.target.removeEventListener(type, this.onUnlockGesture);
+        }
     }
 }
 

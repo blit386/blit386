@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "Audio buses, SFX voice pool, crossfading music, and procedural synthesis."
-lastModified: "2026-09-25T13:34:49+02:00"
+lastModified: "2026-09-25T14:35:12+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-audio.md"
 ---
 
@@ -85,8 +85,8 @@ configured, not `0`.
 <Since symbol="BT.isAudioUnlocked" />
 
 Browsers block audio playback until a user gesture. `BT.isAudioUnlocked` is `false` until the first `pointerdown`,
-`keydown`, or `touchstart` on the canvas successfully resumes the audio context, and stays `true` for the rest of the
-session.
+`pointerup`, `touchend`, or `keydown` on the canvas successfully resumes the audio context, and stays `true` for the
+rest of the session. On a touch screen that is the end of the first tap, since `touchstart` is not a user activation.
 
 ```ts twoslash
 import { BT } from 'blit386';
