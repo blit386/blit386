@@ -152,10 +152,11 @@ test('scaffolds a runnable game project', () => {
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.js should include a commented onHotReload example');
+        assert.ok(game.includes('BT.random'), 'game.js should use the seedable BT.random');
+        assert.ok(!game.includes('Math.random'), 'game.js should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
         // The test-the-game skill reads window.__game and replays runs with ?seed=, which needs BT.random.
         assert.ok(game.includes('__game'), 'game.js should expose window.__game for the test-the-game skill');
-        assert.ok(!game.includes('Math.random('), 'game.js should roll with BT.random so ?seed= replays a run');
 
         assert.ok(
             existsSync(join(project, 'docs', 'hot-reload.md')),
@@ -1858,9 +1859,10 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const game = readFileSync(join(project, 'src', 'game.ts'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.ts is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.ts should include a commented onHotReload example');
+        assert.ok(game.includes('BT.random'), 'game.ts should use the seedable BT.random');
+        assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
         assert.ok(game.includes('__game'), 'game.ts should expose window.__game for the test-the-game skill');
-        assert.ok(!game.includes('Math.random('), 'game.ts should roll with BT.random so ?seed= replays a run');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
