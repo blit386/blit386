@@ -7,6 +7,9 @@
 
 const PARAM = 'seed';
 
+/** Optional sign, then digits only - `Number()` alone would round `1.0000000000000001` to `1`. */
+const INTEGER_TEXT = /^-?\d+$/u;
+
 /**
  * Validates the raw `?seed=` value.
  *
@@ -21,7 +24,8 @@ export function resolveSeedUrlParam(raw: string | null): number | null {
         return null;
     }
 
-    const seed = raw.trim() === '' ? Number.NaN : Number(raw);
+    const text = raw.trim();
+    const seed = INTEGER_TEXT.test(text) ? Number(text) : Number.NaN;
 
     if (!Number.isSafeInteger(seed)) {
         console.warn(`[BT] Ignoring ?seed=${raw}: it must be a whole number.`);

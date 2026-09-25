@@ -96,7 +96,8 @@ with the save and you can rebuild the same world from a single number.
 To reproduce a run without touching code, open the game with `?seed=1234` in the URL. The engine seeds `BT.random` right
 before `init()` runs and logs `[BT] Seeded BT.random from ?seed=1234`; it works in a built game too. A `BT.randomSeed()`
 call in `init()` runs later and wins, so do not add one "just in case" if the user wants the URL to control the seed.
-Anything that is not a whole number (`?seed=1.5`, `?seed=abc`) is ignored with a warning.
+Anything that is not a safe integer - plain digits, optionally negative, within `Number.MIN_SAFE_INTEGER` to
+`Number.MAX_SAFE_INTEGER` - is ignored with a warning (`?seed=1.5`, `?seed=1e3`, `?seed=abc`).
 
 ## Your own generator
 

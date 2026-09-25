@@ -46,9 +46,11 @@ Since 1.8.0, opening the page with `?seed=N` seeds `BT.random` for you: `BT.init
 demo's `init()` runs and logs `[BT] Seeded BT.random from ?seed=N`. A bug report that includes the URL now reproduces
 the run without any code in the game, which is why the parameter is read in release builds too, not only in dev mode.
 
-Precedence is simple: your own `BT.randomSeed()` call in `init()` runs later, so it wins. Only whole numbers are
-accepted - `?seed=1.5` or `?seed=abc` logs `[BT] Ignoring ?seed=...: it must be a whole number.` and keeps the time
-seed, rather than silently collapsing to seed `0`. A hot-reload swap does not reseed; the running stream continues.
+Precedence is simple: your own `BT.randomSeed()` call in `init()` runs later, so it wins. Only safe integers are
+accepted - digits with an optional minus sign, within `Number.MIN_SAFE_INTEGER` to `Number.MAX_SAFE_INTEGER` (about 9
+quadrillion either way). `?seed=1.5`, `?seed=1e3`, or `?seed=abc` logs
+`[BT] Ignoring ?seed=...: it must be a whole number.` and keeps the time seed, rather than silently collapsing to seed
+`0`. A hot-reload swap does not reseed; the running stream continues.
 
 ## Same seed, same world
 

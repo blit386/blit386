@@ -35,6 +35,8 @@ describe('resolveSeedUrlParam', () => {
         ['abc', 'non-numeric'],
         ['', 'empty'],
         ['9007199254740993', 'beyond safe integer range'],
+        ['1.0000000000000001', 'fractional text that Number() would round to 1'],
+        ['1e3', 'exponent notation'],
     ])('rejects %s (%s) with a warning', (raw) => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
