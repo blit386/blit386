@@ -134,7 +134,7 @@ voices used/total, steal, and drop readout. See [Audio meters](/docs/api/overlay
 reference.
 
 A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
-play instead (`BT.random` is seedable, so a replay stays reproducible):
+play instead (call `BT.randomSeed` with the same seed, and keep the random-call order, to reproduce a run):
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
