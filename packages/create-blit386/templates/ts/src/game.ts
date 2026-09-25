@@ -107,7 +107,9 @@ class Game {
 
         // Every SPAWN_EVERY steps, drop a new block at a random spot along the top.
         if (BT.ticks % SPAWN_EVERY === 0) {
-            const x = Math.floor(Math.random() * (this.screen.x - ITEM_SIZE));
+            // BT.random.int(n) picks a whole number from 0 up to (but not including) n. Unlike the browser's own random,
+            // BT.random can be seeded: call BT.randomSeed(42) in init() and every run drops the same blocks.
+            const x = BT.random.int(this.screen.x - ITEM_SIZE);
             this.items.push(new Vector2i(x, -ITEM_SIZE));
         }
 
