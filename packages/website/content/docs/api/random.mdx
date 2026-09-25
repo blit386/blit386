@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded Random PRNG, coordinate hashes, and Value/Perlin/Simplex pattern noise for procedural worlds."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-09-25T13:41:33+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-random.md"
 ---
 
@@ -34,7 +34,9 @@ rng.direction4(); // cardinal unit vector
 ```
 
 Omit the constructor seed to time-seed from `Date.now()` (lower 32 bits). Call `seed(n)` later to restart from a known
-value.
+value. The shared `BT.random` can also be seeded from the URL: `?seed=N` (since 1.8.0) is applied before the demo's
+`init()`, so a `BT.randomSeed()` call there still wins. See
+[Seeding from the URL](/docs/guides/random#seeding-from-the-url).
 
 ## Engine default (`BT.random`)
 

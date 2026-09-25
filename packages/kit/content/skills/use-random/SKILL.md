@@ -93,6 +93,11 @@ async init() {
 That is what makes daily challenges, level codes, and bug reports you can actually reproduce possible. Store the seed
 with the save and you can rebuild the same world from a single number.
 
+To reproduce a run without touching code, open the game with `?seed=1234` in the URL. The engine seeds `BT.random` right
+before `init()` runs and logs `[BT] Seeded BT.random from ?seed=1234`; it works in a built game too. A `BT.randomSeed()`
+call in `init()` runs later and wins, so do not add one "just in case" if the user wants the URL to control the seed.
+Anything that is not a whole number (`?seed=1.5`, `?seed=abc`) is ignored with a warning.
+
 ## Your own generator
 
 `BT.random` is shared, so anything that draws from it shifts what everything else gets next. When you need one part of

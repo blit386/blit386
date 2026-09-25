@@ -1132,10 +1132,12 @@ export const BT = {
      * Default engine PRNG (live reference - not a copy).
      *
      * Time-seeded when the engine singleton is created. Call {@link BT.randomSeed}
-     * for a reproducible run. Mutating the instance (for example `BT.random.int(10)`)
-     * advances the shared stream.
+     * for a reproducible run, or open the page with `?seed=N` - applied in `BT.init()`
+     * just before the demo's own `init()`, so a `randomSeed` call there still wins.
+     * Mutating the instance (for example `BT.random.int(10)`) advances the shared stream.
      *
      * @since 1.5.0
+     * @changed 1.8.0 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
      * @returns The shared {@link Random} instance.
      * @example
      * BT.randomSeed(42);
@@ -1149,7 +1151,11 @@ export const BT = {
     /**
      * Reseeds the default engine PRNG so subsequent draws are reproducible.
      *
+     * Calling this from the demo's `init()` overrides a `?seed=N` URL parameter, which
+     * `BT.init()` applies just before the demo's `init()`.
+     *
      * @since 1.5.0
+     * @changed 1.8.0 Documented precedence over the `?seed=N` URL parameter.
      * @param seed - Any finite number; only its lower 32 bits are used.
      * @example
      * BT.randomSeed(1234);

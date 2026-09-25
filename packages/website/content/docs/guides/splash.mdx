@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "The BLIT386 Splash"
 description: "The BLIT386 splash: gating, the loading-screen hold, the palette handoff, and the skip."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-09-25T13:41:33+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-splash.md"
 ---
 
@@ -20,7 +20,9 @@ the three `configure()` fields are in the [hardware settings table](/docs/api/co
 Three gating layers, resolved in order. The first match wins.
 
 1. `HardwareSettings.isSplashEnabled` from your `configure()`. Explicit wins over everything.
-2. The `?splash` and `?nosplash` URL flags. Both are valueless.
+2. The `?splash` and `?nosplash` URL flags. Both are valueless. (The engine's other URL parameters live elsewhere:
+   `?backend=software` in [API: Core](/docs/api/core#requested-vs-active-backend), `?reducedmotion` / `?noreducedmotion`
+   under [Reduced motion](#reduced-motion), and `?seed=N` in [Random](/docs/guides/random#seeding-from-the-url).)
 3. `BT.isDevMode` - on in release builds, off in development.
 
 So with no configuration at all, a production build shows the splash and a dev server does not.

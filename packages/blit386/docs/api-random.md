@@ -37,7 +37,9 @@ rng.direction4(); // cardinal unit vector
 ```
 
 Omit the constructor seed to time-seed from `Date.now()` (lower 32 bits). Call `seed(n)` later to restart from a known
-value.
+value. The shared `BT.random` can also be seeded from the URL: `?seed=N` (since 1.8.0) is applied before the demo's
+`init()`, so a `BT.randomSeed()` call there still wins. See
+[Seeding from the URL](guide-random.md#seeding-from-the-url).
 
 ## Engine default (`BT.random`)
 

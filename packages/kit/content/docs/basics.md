@@ -175,6 +175,7 @@ configure() {
 ```
 
 Or skip it once by adding `?nosplash` to the URL. `?splash` forces it on, which is how you check it in a dev build.
+(`?seed=N` is the other URL parameter worth knowing: it seeds `BT.random` so a run repeats - see `docs/random.md`.)
 
 ## Keep playing while you edit
 
