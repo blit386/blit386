@@ -207,7 +207,7 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 <Callout title="Capturing at displaySize instead of outputSize">
 
 `BT.captureFrame()` and `BT.downloadFrame()` match `BT.outputSize` by default, as described above. Pass
-`{ size: 'display' }` (engine 1.8.0+) to capture at logical `BT.displaySize` instead, resolved directly from the
+`{ size: 'display' }` (engine 1.7.1+) to capture at logical `BT.displaySize` instead, resolved directly from the
 palette-indexed scene buffer. That keeps every logical pixel a single PNG pixel for tests, image diffs, and palette
 debugging, but it also means the capture excludes display-tier post-process effects (scanlines, vignette, bloom, and
 similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer this path bypasses.
@@ -296,7 +296,7 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 - `isReducedMotionPreferred` is runtime state too: resolves `prefers-reduced-motion` (or a `?reducedmotion` /
   `?noreducedmotion` URL override). See [Reduced motion](#reduced-motion).
 - `BT.random` is runtime state too: a live, always-present `Random` instance (time-seeded at engine start). Reseed with
-  `BT.randomSeed(seed)` for reproducible runs, or open the page with `?seed=N` (since 1.8.0) - applied in `init()`
+  `BT.randomSeed(seed)` for reproducible runs, or open the page with `?seed=N` (since 1.7.1) - applied in `init()`
   before the demo's own `init()`, in release builds too, so a `randomSeed` call there still wins. See
   [API: Random](api-random.md#engine-default-btrandom).
 

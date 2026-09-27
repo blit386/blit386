@@ -88,7 +88,7 @@ order, and prints one JSON line per step.
 
    This is sharper than a browser screenshot: it is the game's own pixels, not scaled by the page. It matches
    `BT.outputSize`, though, which for the starter game is `640x480` - every game pixel a 2x2 block. For a 1:1 frame at
-   `BT.displaySize` (`320x240`), the size that pixel comparisons want, use the engine call directly (engine 1.8.0+):
+   `BT.displaySize` (`320x240`), the size that pixel comparisons want, use the engine call directly (engine 1.7.1+):
 
    ```js
    await window.BT.captureFrame({ size: 'display' }); // a PNG Blob, one pixel per game pixel
@@ -112,7 +112,7 @@ order, and prints one JSON line per step.
   `state()` when you need to check something new, for example `level: this.level`. Keep it plain numbers, strings, and
   arrays so it can be printed.
 - An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and
-  `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.8.0+ for a 1:1 frame) work
+  `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.7.1+ for a 1:1 frame) work
   straight away, and the terminal `state` step falls back to `BT.ticks`. See `use-dev-mode`.
 - Both `window.__game` and `window.BT` exist only while the dev server runs the game. A built game has neither.
 - `?seed=` only helps if the game rolls dice with `BT.random`, not `Math.random()`. See `use-random`.

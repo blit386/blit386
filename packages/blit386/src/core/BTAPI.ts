@@ -96,7 +96,7 @@ export class BTAPI {
     public static readonly VERSION_MINOR = 7;
 
     /** Patch version number. */
-    public static readonly VERSION_PATCH = 0;
+    public static readonly VERSION_PATCH = 1;
 
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
@@ -1176,7 +1176,7 @@ export class BTAPI {
      * reproducible sequence, or open the page with `?seed=N` - {@link init} applies that
      * seed before the demo's own `init()` runs, so a `randomSeed` call there still wins.
      *
-     * @changed 1.8.0 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
+     * @changed 1.7.1 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
      * @returns The shared {@link Random} instance.
      */
     public getRandom(): Random {
@@ -1189,7 +1189,7 @@ export class BTAPI {
      * Calling this from the demo's `init()` overrides a `?seed=N` URL parameter, which
      * {@link init} applies just before the demo's `init()`.
      *
-     * @changed 1.8.0 Documented precedence over the `?seed=N` URL parameter.
+     * @changed 1.7.1 Documented precedence over the `?seed=N` URL parameter.
      * @param seed - Any finite number; only its lower 32 bits are used.
      */
     public randomSeed(seed: number): void {

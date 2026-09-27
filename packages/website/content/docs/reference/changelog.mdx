@@ -16,6 +16,28 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.7.1 - 2026-09-27
+
+### Added
+
+- Seeding from the URL: opening a page with `?seed=N` seeds `BT.random` automatically, applied right before the demo's
+  own `init()` runs so a `BT.randomSeed()` call there still wins. The parameter is read in release builds too, since a
+  seed in a shared bug-report URL is the point; only safe integers are accepted, anything else keeps the time seed. See
+  [Random](/docs/api/random) and [the random guide](/docs/guides/random#seeding-from-the-url).
+- `BT.captureFrame()` and `BT.downloadFrame()` accept a new `{ size: 'display' }` option to capture the exact logical
+  `BT.displaySize` frame instead of the `BT.outputSize`-matched default. See
+  [Frame capture](/docs/api/rendering#which-size).
+
+### Fixed
+
+- `BT.cameraReset()` now clears the cached camera offset so a reset persists into the next render frame; previously the
+  engine silently re-applied the stale pre-reset offset on the following frame. See
+  [Camera](/docs/api/camera#camera-persists-across-zero-update-frames).
+- Touch devices now unlock audio: the unlock listener covered `touchstart`, which never counts as a user activation for
+  touch input, and a stuck in-flight guard dropped every gesture after the first failed attempt. Audio now unlocks on
+  `pointerdown`, `pointerup`, `touchend`, or `keydown`, retrying on each gesture. See
+  [Locked vs. unlocked](/docs/guides/audio#locked-vs-unlocked).
+
 ## 1.7.0 - 2026-09-11
 
 ### Added

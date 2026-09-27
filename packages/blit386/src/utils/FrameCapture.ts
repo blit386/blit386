@@ -23,14 +23,14 @@ type Reject = (reason: Error) => void;
  * post-process effects); `'display'` matches logical `BT.displaySize`, resolved straight
  * from the palette-indexed scene buffer without the upscale or display-tier effects.
  *
- * @since 1.8.0
+ * @since 1.7.1
  */
 export type FrameCaptureSize = 'output' | 'display';
 
 /**
  * Options for `BT.captureFrame()` and `BT.downloadFrame()`.
  *
- * @since 1.8.0
+ * @since 1.7.1
  */
 export interface FrameCaptureOptions {
     /** Capture resolution; defaults to `'output'`. See {@link FrameCaptureSize}. */

@@ -42,7 +42,7 @@ independent of the shared engine one - see [Independent streams](#independent-st
 
 ### Seeding from the URL
 
-Since 1.8.0, opening the page with `?seed=N` seeds `BT.random` for you: `BT.init()` applies the seed right before your
+Since 1.7.1, opening the page with `?seed=N` seeds `BT.random` for you: `BT.init()` applies the seed right before your
 demo's `init()` runs and logs `[BT] Seeded BT.random from ?seed=N`. A bug report that includes the URL now reproduces
 the run without any code in the game, which is why the parameter is read in release builds too, not only in dev mode.
 

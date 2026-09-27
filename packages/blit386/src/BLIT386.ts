@@ -1137,7 +1137,7 @@ export const BT = {
      * Mutating the instance (for example `BT.random.int(10)`) advances the shared stream.
      *
      * @since 1.5.0
-     * @changed 1.8.0 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
+     * @changed 1.7.1 `?seed=N` URL parameter seeds the shared generator before the demo's `init()`.
      * @returns The shared {@link Random} instance.
      * @example
      * BT.randomSeed(42);
@@ -1155,7 +1155,7 @@ export const BT = {
      * `BT.init()` applies just before the demo's `init()`.
      *
      * @since 1.5.0
-     * @changed 1.8.0 Documented precedence over the `?seed=N` URL parameter.
+     * @changed 1.7.1 Documented precedence over the `?seed=N` URL parameter.
      * @param seed - Any finite number; only its lower 32 bits are used.
      * @example
      * BT.randomSeed(1234);
@@ -2288,7 +2288,7 @@ export const BT = {
      * its own pending slot, so it never contends with the F9 / Shift+F9 dev shortcuts.
      *
      * @since 1.0.3
-     * @changed 1.8.0 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
+     * @changed 1.7.1 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
      * @param options - Capture options; `size` defaults to `'output'`.
      * @returns PNG image data for the captured frame.
      *
@@ -2312,7 +2312,7 @@ export const BT = {
      * {@link BT.captureFrame}.
      *
      * @since 1.0.3
-     * @changed 1.8.0 Accepts `{ size: 'display' }` to download at logical `BT.displaySize`.
+     * @changed 1.7.1 Accepts `{ size: 'display' }` to download at logical `BT.displaySize`.
      * @param filename - Target download filename.
      * @param options - Capture options; `size` defaults to `'output'`.
      *
