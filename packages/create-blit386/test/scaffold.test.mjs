@@ -152,6 +152,12 @@ test('scaffolds a runnable game project', () => {
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.js should include a commented onHotReload example');
+        // Player 0 is WASD by default; the starter promises arrow keys too, so it must remap them (BT-536).
+        assert.ok(
+            game.includes("BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft')") &&
+                game.includes("BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight')"),
+            'game.js should map ArrowLeft/ArrowRight onto player 0 with BT.inputMap',
+        );
         assert.ok(game.includes('BT.random'), 'game.js should use the seedable BT.random');
         assert.ok(!game.includes('Math.random'), 'game.js should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
@@ -1859,6 +1865,12 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const game = readFileSync(join(project, 'src', 'game.ts'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.ts is missing the bootstrap call');
         assert.ok(game.includes('onHotReload'), 'game.ts should include a commented onHotReload example');
+        // Player 0 is WASD by default; the starter promises arrow keys too, so it must remap them (BT-536).
+        assert.ok(
+            game.includes("BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft')") &&
+                game.includes("BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight')"),
+            'game.ts should map ArrowLeft/ArrowRight onto player 0 with BT.inputMap',
+        );
         assert.ok(game.includes('BT.random'), 'game.ts should use the seedable BT.random');
         assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
