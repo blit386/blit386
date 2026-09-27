@@ -379,7 +379,7 @@
       "changes": [
         {
           "version": "1.7.1",
-          "note": "Also clears the offset the engine re-applies at the start of the next\nframe, so the reset persists into later frames instead of being overwritten."
+          "note": "Now persists once nothing sets the camera again: previously, the offset\nthe engine re-applies at frame start stayed at its pre-reset value forever, so a\nlater frame that never calls `cameraSet` again still saw the old offset leak back in."
         }
       ],
       "deprecated": null,
