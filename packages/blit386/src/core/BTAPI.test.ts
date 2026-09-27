@@ -676,13 +676,45 @@ describe('BTAPI', () => {
             expect(() => BTAPI.instance.resetCamera()).not.toThrow();
         });
 
-        it("resetCamera should clear the offset cached for next frame's re-prime", () => {
+        /**
+         * Reads the private cache the engine re-applies to the renderer at the start of the
+         * next frame, to survive a render frame with zero fixed-update steps.
+         *
+         * @returns The cached camera offset.
+         */
+        function lastCameraOffset(): Vector2i {
+            return (BTAPI.instance as unknown as { lastCameraOffset: Vector2i }).lastCameraOffset;
+        }
+
+        it("resetCamera should not clear the offset cached for next frame's re-prime immediately", () => {
+            // resetCamera() is also how demos flip to screen space for UI at the end of
+            // render(), expecting their next update() to restore the world offset via
+            // setCameraOffset(). Clearing the cache immediately would leak a snap-to-origin
+            // flash into a render frame with zero fixed-update steps that falls before that
+            // restoring call - see BTAPI's pendingCameraReset doc comment.
             BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
             BTAPI.instance.resetCamera();
 
-            const lastCameraOffset = (BTAPI.instance as unknown as { lastCameraOffset: Vector2i }).lastCameraOffset;
+            expect(lastCameraOffset()).toEqual(new Vector2i(500, 0));
+        });
 
-            expect(lastCameraOffset).toEqual(new Vector2i(0, 0));
+        it('resetCamera should durably clear the cached offset once the next fixed-update tick commits it', () => {
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+
+            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+
+            expect(lastCameraOffset()).toEqual(new Vector2i(0, 0));
+        });
+
+        it('setCameraOffset should supersede a pending resetCamera before it commits', () => {
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+            BTAPI.instance.setCameraOffset(new Vector2i(10, 20));
+
+            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+
+            expect(lastCameraOffset()).toEqual(new Vector2i(10, 20));
         });
 
         it('setPalette should store the provided palette before init', () => {
