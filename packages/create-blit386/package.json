@@ -1,6 +1,6 @@
 {
   "name": "create-blit386",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Scaffold a new BLIT386 game in seconds.",
   "author": {
     "name": "Václav Vančura",

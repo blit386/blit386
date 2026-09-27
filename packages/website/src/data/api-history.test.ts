@@ -119,10 +119,14 @@ describe('getPageSymbols', () => {
 });
 
 describe('the generated history', () => {
-    it('declares both package versions as semver, with unreleased ahead of released', () => {
+    it('declares both package versions as semver, with unreleased never behind released', () => {
         expect(apiHistory.packageVersion).toMatch(SEMVER);
         expect(apiHistory.unreleasedVersion).toMatch(SEMVER);
-        expect(compareVersions(apiHistory.unreleasedVersion, apiHistory.packageVersion)).toBeGreaterThan(0);
+        // Equal, not just ahead: a version-bump commit lands before its tag does, so `packageVersion`
+        // (read live from package.json) briefly catches up to `unreleasedVersion` while the release it
+        // names is still unpublished. That is what keeps this release's symbols `unreleased` instead of
+        // `stable` - see gen-api-history.mjs's `deriveStatus` and its `UNRELEASED_VERSION` doc comment.
+        expect(compareVersions(apiHistory.unreleasedVersion, apiHistory.packageVersion)).toBeGreaterThanOrEqual(0);
     });
 
     it('gives every symbol a well-formed record', () => {

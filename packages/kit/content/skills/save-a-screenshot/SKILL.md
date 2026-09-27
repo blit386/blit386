@@ -33,7 +33,7 @@ async takeShot() {
 }
 ```
 
-## Get an exact 1:1 frame (tests, agents, pixel art) - engine 1.8.0+
+## Get an exact 1:1 frame (tests, agents, pixel art) - engine 1.7.1+
 
 By default the PNG matches `BT.outputSize`, which for a game with no `configure()` is `640x480` - every game pixel a 2x2
 block, plus any display-tier effects (scanlines, vignette). For the game's real pixels, one PNG pixel per logical pixel
@@ -74,7 +74,7 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 
 - `BT.downloadFrame(filename?, options?)` (method, async) - capture and download.
 - `BT.captureFrame(options?)` (method, async) - resolve to a PNG `Blob`.
-- `{ size: 'display' }` (options, engine 1.8.0+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
+- `{ size: 'display' }` (options, engine 1.7.1+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.
 
 ## Notes
