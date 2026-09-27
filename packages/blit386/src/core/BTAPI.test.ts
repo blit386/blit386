@@ -4245,6 +4245,26 @@ describe('camera reset persistence through the real game loop', () => {
             rafCallbacks.shift()?.(clock);
         }
 
+        /**
+         * Drains frames until `condition` is true, bounded so a regression that never
+         * satisfies it fails this test with a clear error instead of hanging the Vitest
+         * worker - `drainOneFrame` is synchronous, so a runaway loop here blocks the event
+         * loop and cannot be interrupted by `testTimeout`.
+         *
+         * @param condition - Checked after each drained frame.
+         */
+        function drainFramesUntil(condition: () => boolean): void {
+            const maxFrames = 1000;
+
+            for (let frames = 0; !condition(); frames++) {
+                if (frames >= maxFrames) {
+                    throw new Error(`Exceeded ${maxFrames} frames waiting for condition.`);
+                }
+
+                drainOneFrame();
+            }
+        }
+
         const cameraSamples: Vector2i[] = [];
         let hasEstablishedWorldOffset = false;
         let hasIssuedReset = false;
@@ -4283,9 +4303,7 @@ describe('camera reset persistence through the real game loop', () => {
         drainOneFrame();
         drainOneFrame();
 
-        while (!hasIssuedReset) {
-            drainOneFrame();
-        }
+        drainFramesUntil(() => hasIssuedReset);
 
         // The frame that issued the reset re-primed to the world offset first - the reset
         // only affects this frame's remaining draws, not the sample taken at render() start.
@@ -4302,9 +4320,7 @@ describe('camera reset persistence through the real game loop', () => {
         // samples the result immediately after.
         const ticksBeforeCommit = BTAPI.instance.getTicks();
 
-        while (BTAPI.instance.getTicks() === ticksBeforeCommit) {
-            drainOneFrame();
-        }
+        drainFramesUntil(() => BTAPI.instance.getTicks() !== ticksBeforeCommit);
 
         expect(cameraSamples.at(-1)).toEqual(new Vector2i(0, 0));
     });
