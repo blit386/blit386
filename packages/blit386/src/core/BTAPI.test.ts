@@ -676,6 +676,47 @@ describe('BTAPI', () => {
             expect(() => BTAPI.instance.resetCamera()).not.toThrow();
         });
 
+        /**
+         * Reads the private cache the engine re-applies to the renderer at the start of the
+         * next frame, to survive a render frame with zero fixed-update steps.
+         *
+         * @returns The cached camera offset.
+         */
+        function lastCameraOffset(): Vector2i {
+            return (BTAPI.instance as unknown as { lastCameraOffset: Vector2i }).lastCameraOffset;
+        }
+
+        it("resetCamera should not clear the offset cached for next frame's re-prime immediately", () => {
+            // resetCamera() is also how demos flip to screen space for UI at the end of
+            // render(), expecting their next update() to restore the world offset via
+            // setCameraOffset(). Clearing the cache immediately would leak a snap-to-origin
+            // flash into a render frame with zero fixed-update steps that falls before that
+            // restoring call - see BTAPI's pendingCameraReset doc comment.
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+
+            expect(lastCameraOffset()).toEqual(new Vector2i(500, 0));
+        });
+
+        it('resetCamera should durably clear the cached offset once the next fixed-update tick commits it', () => {
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+
+            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+
+            expect(lastCameraOffset()).toEqual(new Vector2i(0, 0));
+        });
+
+        it('setCameraOffset should supersede a pending resetCamera before it commits', () => {
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+            BTAPI.instance.setCameraOffset(new Vector2i(10, 20));
+
+            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+
+            expect(lastCameraOffset()).toEqual(new Vector2i(10, 20));
+        });
+
         it('setPalette should store the provided palette before init', () => {
             const palette = new Palette(16);
 
@@ -4150,6 +4191,138 @@ describe('BTAPI', () => {
                 expect(oldOnReducedMotionChange).not.toHaveBeenCalled();
             });
         });
+    });
+});
+
+describe('camera reset persistence through the real game loop', () => {
+    beforeEach(() => {
+        resetSingleton();
+
+        vi.resetAllMocks();
+        installMockNavigatorGPU();
+    });
+
+    afterEach(() => {
+        (BTAPI.instance as unknown as { loop: GameLoop | null }).loop?.stop();
+
+        resetSingleton();
+
+        uninstallMockNavigatorGPU();
+
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it('retains the world offset across a zero fixed-update render, then commits the reset durably once a tick with no setCameraOffset() runs', async () => {
+        // A synthetic clock the test fully controls, shared by requestAnimationFrame's
+        // timestamp and performance.now() so GameLoop's accumulator math is deterministic -
+        // unlike the real clock, which would make the exact update-tick cadence unpredictable.
+        let clock = 0;
+
+        vi.spyOn(performance, 'now').mockImplementation(() => clock);
+
+        const rafCallbacks: FrameRequestCallback[] = [];
+
+        vi.stubGlobal(
+            'requestAnimationFrame',
+            vi.fn((callback: FrameRequestCallback) => {
+                rafCallbacks.push(callback);
+
+                return rafCallbacks.length;
+            }),
+        );
+
+        /**
+         * Advances the fake clock and fires the next queued rAF callback, if any.
+         *
+         * A 5ms step against `targetFPS: 60`'s ~16.667ms fixed-update interval means most
+         * frames land with zero update steps, with an update firing roughly every 4th frame -
+         * exactly the "render outpaces update" condition `lastCameraOffset` exists for.
+         */
+        function drainOneFrame(): void {
+            clock += 5;
+
+            rafCallbacks.shift()?.(clock);
+        }
+
+        /**
+         * Drains frames until `condition` is true, bounded so a regression that never
+         * satisfies it fails this test with a clear error instead of hanging the Vitest
+         * worker - `drainOneFrame` is synchronous, so a runaway loop here blocks the event
+         * loop and cannot be interrupted by `testTimeout`.
+         *
+         * @param condition - Checked after each drained frame.
+         */
+        function drainFramesUntil(condition: () => boolean): void {
+            const maxFrames = 1000;
+
+            for (let frames = 0; !condition(); frames++) {
+                if (frames >= maxFrames) {
+                    throw new Error(`Exceeded ${maxFrames} frames waiting for condition.`);
+                }
+
+                drainOneFrame();
+            }
+        }
+
+        const cameraSamples: Vector2i[] = [];
+        let hasEstablishedWorldOffset = false;
+        let hasIssuedReset = false;
+
+        const demo: IBTDemo = {
+            configure: () => ({
+                isSplashEnabled: false,
+                displaySize: new Vector2i(320, 240),
+                targetFPS: 60,
+            }),
+            init: vi.fn().mockResolvedValue(true),
+            update: vi.fn(() => {
+                if (!hasEstablishedWorldOffset) {
+                    BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+                    hasEstablishedWorldOffset = true;
+                }
+
+                // Later ticks deliberately never call setCameraOffset again, simulating a
+                // screen (a menu, a world map) that stops touching the camera after the reset.
+            }),
+            render: vi.fn(() => {
+                cameraSamples.push(BTAPI.instance.getCameraOffset());
+
+                if (hasEstablishedWorldOffset && !hasIssuedReset) {
+                    // The documented pattern: flip to screen space for UI at the end of render().
+                    BTAPI.instance.resetCamera();
+                    hasIssuedReset = true;
+                }
+            }),
+        };
+
+        await BTAPI.instance.init(demo, makeMockCanvas());
+        BTAPI.instance.setPalette(new Palette(16));
+
+        // GameLoop.start() double-rAF-bootstraps before its first real tick.
+        drainOneFrame();
+        drainOneFrame();
+
+        drainFramesUntil(() => hasIssuedReset);
+
+        // The frame that issued the reset re-primed to the world offset first - the reset
+        // only affects this frame's remaining draws, not the sample taken at render() start.
+        expect(cameraSamples.at(-1)).toEqual(new Vector2i(500, 0));
+
+        // A render frame with zero fixed-update steps must still hold the world offset -
+        // committing the reset immediately would flash it to (0, 0) here instead.
+        drainOneFrame();
+
+        expect(cameraSamples.at(-1)).toEqual(new Vector2i(500, 0));
+
+        // Drive frames until a fixed-update tick runs (update() no longer calls
+        // setCameraOffset, so this commits the pending reset); that same frame's render()
+        // samples the result immediately after.
+        const ticksBeforeCommit = BTAPI.instance.getTicks();
+
+        drainFramesUntil(() => BTAPI.instance.getTicks() !== ticksBeforeCommit);
+
+        expect(cameraSamples.at(-1)).toEqual(new Vector2i(0, 0));
     });
 });
 

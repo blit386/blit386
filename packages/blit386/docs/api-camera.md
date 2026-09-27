@@ -41,8 +41,13 @@ const clamped2 = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 common on high refresh-rate displays where `render()` outpaces the fixed update rate (see
 [Render frames with zero update() steps](api-game-loop.md#render-frames-with-zero-update-steps) in API: Game Loop). Call
 `cameraSet()` once per `update()` tick and `cameraReset()` at the end of `render()` to switch to screen space for UI
-overlays, as the demos below do; the engine re-applies the last offset before the next render pass begins, so the reset
-never leaks into the following frame's world draw.
+overlays, as the demos below do; the engine re-applies the last offset before the next render pass begins, so as long as
+`update()` keeps calling `cameraSet()`, the reset never leaks into a later frame's world draw.
+
+`cameraReset()` itself persists the same way, on a one fixed-update-tick delay: if nothing calls `cameraSet()` again by
+the next tick, the camera offset becomes `(0, 0)` for every following frame, not just the rest of the current one - so a
+screen that stops touching the camera altogether (a menu, a world map after a scrolling level) starts clean instead of
+inheriting whatever offset the previous screen last scrolled to.
 
 Standalone helper (same math as `BT.cameraClamp`):
 

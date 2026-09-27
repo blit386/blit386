@@ -136,6 +136,21 @@ export class BTAPI {
     private lastCameraOffset: Vector2i = Vector2i.zero();
 
     /**
+     * True when {@link resetCamera} ran and its effect on {@link lastCameraOffset} is still
+     * deferred to the next fixed-update tick (see {@link commitPendingCameraReset}).
+     *
+     * `resetCamera()` is also the documented way to flip to screen space for UI at the end of
+     * `render()`, with the demo's next `update()` restoring the world offset via
+     * {@link setCameraOffset}. Committing the reset to `lastCameraOffset` immediately would make
+     * it durable right away, which would incorrectly override the world offset during a render
+     * frame with zero fixed-update steps that falls between that reset and the restoring
+     * `setCameraOffset()` call - the exact snap-to-origin flash `lastCameraOffset` exists to
+     * prevent. Deferring the commit lets a following `setCameraOffset()` supersede it normally,
+     * while still making the reset durable once nothing calls `setCameraOffset()` again.
+     */
+    private pendingCameraReset = false;
+
+    /**
      * Engine overlay; non-null when {@link HardwareSettings.isOverlayEnabled}
      * is not `false`. Layout is fixed at init; drawn after demo `render()` each frame.
      */
@@ -475,6 +490,7 @@ export class BTAPI {
             updateInterval,
             () => {
                 const updateStartMs = performance.now();
+                this.commitPendingCameraReset();
                 this.demo?.update();
                 this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
                 this.pendingUpdateSteps++;
@@ -1526,6 +1542,7 @@ export class BTAPI {
      * @param offset - Camera position offset in pixels.
      */
     public setCameraOffset(offset: Vector2i): void {
+        this.pendingCameraReset = false;
         this.lastCameraOffset = offset.clone();
         this.renderer?.setCameraOffset(offset);
     }
@@ -1541,8 +1558,12 @@ export class BTAPI {
 
     /**
      * Resets the camera offset to (0, 0).
+     *
+     * Its effect on the offset the engine re-applies at the start of the next frame is
+     * deferred to the next fixed-update tick - see {@link pendingCameraReset}.
      */
     public resetCamera(): void {
+        this.pendingCameraReset = true;
         this.renderer?.resetCamera();
     }
 
@@ -1746,6 +1767,19 @@ export class BTAPI {
             SHIFT_KEY_CODES.some((code) => this.keyboard?.isKeyDown(code)) &&
             this.keyboard?.isKeyPressed(FRAME_CAPTURE_SHORTCUT_KEY_CODE, undefined, tick) === true
         );
+    }
+
+    /**
+     * Applies a deferred {@link resetCamera} to {@link lastCameraOffset}, if one is pending.
+     * Called at the start of the fixed-update tick, before the demo's own `update()` runs, so a
+     * `setCameraOffset()` call inside that `update()` overrides it normally - see
+     * {@link pendingCameraReset}.
+     */
+    private commitPendingCameraReset(): void {
+        if (this.pendingCameraReset) {
+            this.pendingCameraReset = false;
+            this.lastCameraOffset = Vector2i.zero();
+        }
     }
 
     /**
