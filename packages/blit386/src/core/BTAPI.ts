@@ -1543,6 +1543,7 @@ export class BTAPI {
      * Resets the camera offset to (0, 0).
      */
     public resetCamera(): void {
+        this.lastCameraOffset = Vector2i.zero();
         this.renderer?.resetCamera();
     }
 

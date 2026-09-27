@@ -1583,6 +1583,8 @@ export const BT = {
      * Resets the global camera offset to `(0, 0)`.
      *
      * @since 0.1.0
+     * @changed 1.7.1 Also clears the offset the engine re-applies at the start of the next
+     *   frame, so the reset persists into later frames instead of being overwritten.
      */
     cameraReset: (): void => {
         BTAPI.instance.resetCamera();

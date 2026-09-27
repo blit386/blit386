@@ -676,6 +676,15 @@ describe('BTAPI', () => {
             expect(() => BTAPI.instance.resetCamera()).not.toThrow();
         });
 
+        it("resetCamera should clear the offset cached for next frame's re-prime", () => {
+            BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
+            BTAPI.instance.resetCamera();
+
+            const lastCameraOffset = (BTAPI.instance as unknown as { lastCameraOffset: Vector2i }).lastCameraOffset;
+
+            expect(lastCameraOffset).toEqual(new Vector2i(0, 0));
+        });
+
         it('setPalette should store the provided palette before init', () => {
             const palette = new Palette(16);
 
