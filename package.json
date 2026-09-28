@@ -39,14 +39,14 @@
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.14",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
-    "cspell": "^10.0.1",
+    "cspell": "^10.3.3",
     "husky": "^9.1.7",
-    "knip": "^6.32.0",
+    "knip": "^6.37.0",
     "lint-staged": "^17.3.0",
     "markdown-link-check": "^3.15.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.8"
   }
 }
