@@ -132,7 +132,7 @@
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4.1.11",
-    "@webgpu/types": "^0.1.72",
+    "@webgpu/types": "^0.1.74",
     "acorn": "^8.17.0",
     "cspell": "^10.0.1",
     "esbuild": "^0.28.2",
