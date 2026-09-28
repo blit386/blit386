@@ -1,0 +1,19 @@
+# Keep text files with LF line endings on every computer. Without this, Git on Windows
+# checks files out with CRLF endings, and `format:check` fails because Biome expects LF.
+* text=auto eol=lf
+
+# Images, sounds, and fonts are binary: Git must never change their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.btfont binary

@@ -1,5 +1,5 @@
 /**
- * CLI tests for `blit doctor`, focused on the D14 kit-engine range check.
+ * CLI tests for `blit doctor`, focused on the D14 kit-engine range check and the .gitattributes check.
  *
  * Each case is a hand-rolled game folder with a fake `node_modules/blit386` version. Requires
  * `pnpm run build` first (the package `pretest` script does that).
@@ -115,6 +115,30 @@ test('blit doctor warns when the installed engine is newer than the kit was writ
             `expected stale-kit warn, got:\n${output}`,
         );
         assert.ok(output.includes('blit agents sync'), `expected kit sync hint, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor warns when the game has no .gitattributes', () => {
+    const root = makeGame('1.7.0');
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(output.includes('No .gitattributes file'), `expected .gitattributes warn, got:\n${output}`);
+        assert.ok(output.includes('* text=auto eol=lf'), `expected .gitattributes fix hint, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor stays quiet about .gitattributes when the game has one', () => {
+    const root = makeGame('1.7.0');
+    writeFileSync(join(root, '.gitattributes'), '* text=auto eol=lf\n');
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(!output.includes('No .gitattributes file'), `did not expect .gitattributes warn, got:\n${output}`);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

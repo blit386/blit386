@@ -59,8 +59,8 @@
       "groupName": "type definitions"
     },
     {
-      "description": "Do not bump workflow pnpm/node pins separately from packageManager/engines",
-      "matchManagers": ["github-actions"],
+      "description": "Do not bump workflow pnpm/node pins or .node-version separately from packageManager/engines",
+      "matchManagers": ["github-actions", "nodenv"],
       "matchPackageNames": ["node", "pnpm"],
       "enabled": false
     },

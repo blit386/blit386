@@ -2,8 +2,9 @@
  * Turns the templates plus the kit's canonical docs into a ready-to-run game project.
  *
  * Sources:
- *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, biome.json,
- *                        prettier.config.js + .prettierignore + scripts/prettier-plugin-compact-tables.mjs)
+ *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, .gitattributes,
+ *                        .node-version, biome.json, prettier.config.js + .prettierignore +
+ *                        scripts/prettier-plugin-compact-tables.mjs)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
  *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
  *   - @blit386/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
@@ -85,6 +86,12 @@ function mapOutputName(name: string): string {
     }
     if (name === 'editorconfig') {
         return '.editorconfig';
+    }
+    if (name === 'gitattributes') {
+        return '.gitattributes';
+    }
+    if (name === 'node-version') {
+        return '.node-version';
     }
     if (name === 'prettierignore') {
         return '.prettierignore';
