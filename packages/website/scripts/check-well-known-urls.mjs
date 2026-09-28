@@ -220,6 +220,8 @@ function startWranglerDev(port) {
 /** @param {import('node:child_process').ChildProcess} child */
 async function stopWranglerDev(child) {
     if (child.exitCode !== null) {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
         child.unref();
         return;
     }

@@ -147,11 +147,12 @@ function guardRunningShim(root: string): () => void {
 
 /** Spawn the package manager inheriting stdio. Returns the exit code (1 if it could not start). */
 export function runPm(root: string, pm: PackageManager, args: string[]): number {
-    const restoreShim = process.platform === 'win32' ? guardRunningShim(root) : () => {};
+    const isWindows = process.platform === 'win32';
+    const restoreShim = isWindows ? guardRunningShim(root) : () => {};
     const result = spawnSync(pm, args, {
         cwd: root,
         stdio: 'inherit',
-        shell: process.platform === 'win32',
+        shell: isWindows,
     });
     restoreShim();
 
