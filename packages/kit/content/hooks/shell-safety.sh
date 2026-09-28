@@ -4,6 +4,9 @@
 # Also symlinked directly as this repo's own .cursor/hooks/shell-safety.sh (dogfooding the same
 # dual-protocol script every scaffolded game gets) - see .claude/hooks/shell-safety.sh for the
 # Claude-only sibling copy this repo's own PreToolUse hook uses instead.
+# Cursor starts this through shell-safety-run.cjs. On Windows, `sh` is not on the hook PATH
+# (Git for Windows puts git.exe in Git\cmd and sh.exe in Git\bin), so a bare `sh` command
+# exits with no JSON and failClosed blocks every Shell call.
 #
 # Protocol:
 #   Cursor - JSON on stdout with {"permission":"allow"|"deny"|"ask"}

@@ -44,6 +44,7 @@ test('classifyFile returns kit-owned for every managed directory and exact path'
         '.cursor/rules/blit386.mdc',
         '.cursor/hooks.json',
         '.cursor/hooks/shell-safety.sh',
+        '.cursor/hooks/shell-safety-run.cjs',
         '.cursor/commands/fix.md',
     ];
 
@@ -100,6 +101,23 @@ test('hasAgentFiles is false for an empty or user-owned-only file list', () => {
     assert.equal(hasAgentFiles([], 'claude'), false);
     assert.equal(hasAgentFiles([], 'cursor'), false);
     assert.equal(hasAgentFiles([{ path: 'src/game.js' }, { path: 'AGENTS.md' }], 'claude'), false);
+});
+
+test('Cursor shell safety starts through node and emits both hook files', () => {
+    const root = kitRoot();
+    const files = generateCursorAdapter(root, VARS);
+    const hooksFile = files.find((file) => file.path === '.cursor/hooks.json');
+    assert.ok(hooksFile, 'expected .cursor/hooks.json');
+    const hooksJson = JSON.parse(hooksFile.content);
+    const command = hooksJson.hooks.beforeShellExecution[0].command;
+
+    assert.match(command, /^node \.cursor\/hooks\/shell-safety-run\.cjs \.cursor\/hooks\/shell-safety\.sh$/);
+    assert.ok(files.some((file) => file.path === '.cursor/hooks/shell-safety-run.cjs'));
+    assert.ok(files.some((file) => file.path === '.cursor/hooks/shell-safety.sh'));
+    assert.equal(
+        generateClaudeAdapter(root, VARS).some((file) => file.path.endsWith('shell-safety-run.cjs')),
+        false,
+    );
 });
 
 test('every file the kit emits classifies as kit-owned or shared, never user-owned', () => {
