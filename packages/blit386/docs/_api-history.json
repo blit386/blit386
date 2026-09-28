@@ -1,6 +1,6 @@
 {
   "packageVersion": "1.7.1",
-  "unreleasedVersion": "1.7.1",
+  "unreleasedVersion": "1.7.2",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -14,7 +14,8 @@
     "1.4.0": "2026-07-23T12:32:13+02:00",
     "1.5.0": "2026-08-11T06:51:18+02:00",
     "1.7.0": "2026-09-11T17:44:36+02:00",
-    "1.7.1": null
+    "1.7.1": "2026-09-27T11:48:26+02:00",
+    "1.7.2": null
   },
   "symbols": {
     "AssetLoader": {
@@ -1162,14 +1163,14 @@
       "since": "1.7.1",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "FrameCaptureSize": {
       "kind": "type",
       "since": "1.7.1",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "FullscreenEffect": {
       "kind": "class",
