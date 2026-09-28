@@ -4,7 +4,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { kitRoot } from './kit-root';
@@ -112,13 +112,48 @@ export function pmRemoveArgs(pm: PackageManager, pkg: string): string[] {
     return pm === 'npm' ? ['uninstall', pkg] : ['remove', pkg];
 }
 
+/**
+ * On Windows, `npx blit` runs through `node_modules/.bin/blit.cmd`. cmd.exe re-reads a batch file by byte offset after
+ * each command, so if the package manager rewrites the shim while we run, cmd resumes mid-file and prints garbage such
+ * as "'ode' is not recognized". Returns a function that puts the original shim back, but only when it changed and the
+ * script it launches still exists (so a genuinely moved entry point is never left stale).
+ */
+function guardRunningShim(root: string): () => void {
+    const shim = join(root, 'node_modules', '.bin', 'blit.cmd');
+    let original: Buffer;
+
+    try {
+        original = readFileSync(shim);
+    } catch {
+        return () => {};
+    }
+
+    return () => {
+        try {
+            if (readFileSync(shim).equals(original)) {
+                return;
+            }
+
+            const target = /"%~?dp0%?\\([^"]+\.js)"/.exec(original.toString('utf8'))?.[1];
+
+            if (target && existsSync(join(dirname(shim), target))) {
+                writeFileSync(shim, original);
+            }
+        } catch {
+            // Best effort: a cosmetic error from cmd.exe must never fail the upgrade itself.
+        }
+    };
+}
+
 /** Spawn the package manager inheriting stdio. Returns the exit code (1 if it could not start). */
 export function runPm(root: string, pm: PackageManager, args: string[]): number {
+    const restoreShim = process.platform === 'win32' ? guardRunningShim(root) : () => {};
     const result = spawnSync(pm, args, {
         cwd: root,
         stdio: 'inherit',
         shell: process.platform === 'win32',
     });
+    restoreShim();
 
     return result.status ?? 1;
 }
