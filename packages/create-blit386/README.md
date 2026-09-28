@@ -20,6 +20,8 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
 - A small, complete starter game (Catcher) with a comment on every line - JavaScript by default, or TypeScript with
   `--ts`.
 - A ready-to-run Vite setup: `index.html`, `src/game.js` (or `src/game.ts`), and a dev server.
+- Cross-platform defaults: `.gitattributes` keeps line endings LF on Windows too, and `.node-version` tells version
+  managers (fnm, mise, nodenv) and the optional CI workflow which Node.js to use.
 - Local guides (`docs/`) and an `AGENTS.md` so you - or an AI assistant - can learn the engine without leaving the
   project.
 - The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit migrate`,

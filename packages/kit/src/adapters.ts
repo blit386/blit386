@@ -327,18 +327,24 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
 }
 
 /**
- * Basenames of hook scripts (e.g. `session-start.sh`) that one adapter's manifest entries
- * actually invoke, extracted from each entry's `command` string. A script absent from this set
- * is not wired into that adapter's settings/hooks file, so the adapter must not emit it.
+ * Basenames of hook scripts (e.g. `session-start.sh`, `shell-safety-run.cjs`) that one adapter's
+ * manifest entries actually invoke, extracted from each entry's `command` string. A script absent
+ * from this set is not wired into that adapter's settings/hooks file, so the adapter must not emit it.
  */
 function referencedHookScripts(manifest: HooksManifest, adapter: 'claude' | 'cursor'): Set<string> {
     const names = new Set<string>();
 
     for (const hook of manifest.hooks) {
         const command = adapter === 'claude' ? hook.claude?.command : hook.cursor?.command;
-        const scriptName = command?.match(/([\w.-]+\.sh)\b/)?.[1];
-        if (scriptName) {
-            names.add(scriptName);
+        if (!command) {
+            continue;
+        }
+
+        for (const match of command.matchAll(/([\w.-]+\.(?:sh|cjs))\b/g)) {
+            const scriptName = match[1];
+            if (scriptName) {
+                names.add(scriptName);
+            }
         }
     }
 

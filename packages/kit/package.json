@@ -66,7 +66,7 @@
     "prepack": "tsup",
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm run build",
-    "test": "node --test 'test/**/*.test.mjs'"
+    "test": "node --test \"test/**/*.test.mjs\""
   },
   "peerDependencies": {
     "playwright-core": "^1.62.1",

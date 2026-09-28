@@ -23,7 +23,8 @@ pnpm --filter blit386 run test
 
 Requirements:
 
-- Node.js >=22.18.0 (`engines` in `package.json`)
+- Node.js >=22.18.0 (`engines` in `package.json`); `.node-version` pins the exact version CI uses, and fnm, mise, or
+  nodenv pick it up automatically
 - pnpm 11.20.0 (`packageManager` in `package.json`)
 
 AI agent sessions (Claude Code) and the optional [devcontainer](.devcontainer/devcontainer.json)

@@ -23,7 +23,7 @@
       "intent": "Block risky destructive git commands that could lose game progress",
       "cursor": {
         "event": "beforeShellExecution",
-        "command": "sh .cursor/hooks/shell-safety.sh",
+        "command": "node .cursor/hooks/shell-safety-run.cjs .cursor/hooks/shell-safety.sh",
         "timeout": 10,
         "failClosed": true
       },

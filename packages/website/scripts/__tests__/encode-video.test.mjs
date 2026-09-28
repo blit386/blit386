@@ -1,5 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { join, sep } from 'node:path';
 import {
     DEFAULTS,
     buildAv1Args,
@@ -127,10 +128,11 @@ describe('parseFrameRate', () => {
 
 describe('buildOutputPaths', () => {
     test('appends the codec and poster suffixes to the base name', () => {
-        const paths = buildOutputPaths('public/media/blog/1-4-0', 'hot-reload');
-        assert.equal(paths.av1, 'public/media/blog/1-4-0/hot-reload.av1.mp4');
-        assert.equal(paths.h264, 'public/media/blog/1-4-0/hot-reload.h264.mp4');
-        assert.equal(paths.posterWebp, 'public/media/blog/1-4-0/hot-reload.webp');
+        const outDir = 'public/media/blog/1-4-0';
+        const paths = buildOutputPaths(outDir, 'hot-reload');
+        assert.equal(paths.av1, join(outDir, 'hot-reload.av1.mp4'));
+        assert.equal(paths.h264, join(outDir, 'hot-reload.h264.mp4'));
+        assert.equal(paths.posterWebp, join(outDir, 'hot-reload.webp'));
     });
 
     // Guards the naming contract with src/components/video-embed.tsx, which builds its
@@ -138,9 +140,11 @@ describe('buildOutputPaths', () => {
     test('matches the suffixes VideoEmbed derives from its src prop', () => {
         const src = '/media/blog/1-4-0/hot-reload';
         const paths = buildOutputPaths('public/media/blog/1-4-0', 'hot-reload');
-        assert.ok(paths.av1.endsWith(`${src}.av1.mp4`.replace('/media', 'media')));
-        assert.ok(paths.h264.endsWith(`${src}.h264.mp4`.replace('/media', 'media')));
-        assert.ok(paths.posterWebp.endsWith(`${src}.webp`.replace('/media', 'media')));
+        /** @param {string} suffix */
+        const tail = (suffix) => `${src}${suffix}`.replace('/media', 'media').split('/').join(sep);
+        assert.ok(paths.av1.endsWith(tail('.av1.mp4')));
+        assert.ok(paths.h264.endsWith(tail('.h264.mp4')));
+        assert.ok(paths.posterWebp.endsWith(tail('.webp')));
     });
 });
 

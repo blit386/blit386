@@ -5,6 +5,7 @@
  * ffmpeg, or the filesystem.
  */
 import assert from 'node:assert/strict';
+import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
@@ -17,6 +18,7 @@ import {
     buildOgFilterGraph,
     buildOgImagePath,
     computeOgScale,
+    DEFAULT_OUT_DIR,
     DEFAULTS,
     OG_CAPTURE_OVERRIDES,
     parseArgs,
@@ -228,8 +230,8 @@ describe('buildOgFfmpegArgs', () => {
 
 describe('output paths', () => {
     it('names the card and its intermediate distinctly', () => {
-        assert.equal(buildOgImagePath('public/social', 'basics'), 'public/social/og-basics.png');
-        assert.equal(buildNativeImagePath('public/social', 'basics'), 'public/social/og-basics.native.png');
+        assert.equal(buildOgImagePath('public/social', 'basics'), join('public/social', 'og-basics.png'));
+        assert.equal(buildNativeImagePath('public/social', 'basics'), join('public/social', 'og-basics.native.png'));
     });
 });
 
@@ -238,16 +240,16 @@ describe('resolveOutDir', () => {
         // Running from the repo root must not create a stray public/social there.
         assert.equal(
             resolveOutDir('', '/somewhere/else', '/repo/packages/demos'),
-            '/repo/packages/demos/public/social',
+            join('/repo/packages/demos', DEFAULT_OUT_DIR),
         );
     });
 
     it('resolves an explicit --out against the caller cwd', () => {
-        assert.equal(resolveOutDir('tmp/cards', '/work', '/repo/packages/demos'), '/work/tmp/cards');
+        assert.equal(resolveOutDir('tmp/cards', '/work', '/repo/packages/demos'), resolve('/work', 'tmp/cards'));
     });
 
     it('leaves an absolute --out alone', () => {
-        assert.equal(resolveOutDir('/tmp/cards', '/work', '/repo/packages/demos'), '/tmp/cards');
+        assert.equal(resolveOutDir('/tmp/cards', '/work', '/repo/packages/demos'), resolve('/tmp/cards'));
     });
 });
 

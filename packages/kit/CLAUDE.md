@@ -76,7 +76,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, the starters' `window.__game` shape and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
-| `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
+| `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols). Cursor invokes it via `shell-safety-run.cjs` because Windows hook PATH has `git.exe` but not `sh` |
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
 | `src/adapters.ts` (docs-MCP config) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |

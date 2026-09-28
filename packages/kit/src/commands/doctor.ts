@@ -1,5 +1,7 @@
 /** `blit doctor` - a friendly checkup of the things a BLIT386 game needs. */
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
     compareVersions,
     detectPackageManager,
@@ -52,6 +54,13 @@ export function runDoctor(): void {
         out('');
         out(NO_GIT_NAG);
         out('');
+    }
+
+    // Games scaffolded before create-blit386 shipped .gitattributes: Git for Windows checks those out
+    // with CRLF (core.autocrlf=true by default), and Biome's lineEnding "lf" then fails format:check.
+    if (!existsSync(join(root, '.gitattributes'))) {
+        out(ui.warn('No .gitattributes file, so Git on Windows may switch your files to CRLF line endings.'));
+        out(ui.info('Create a .gitattributes file containing `* text=auto eol=lf` to keep them LF everywhere.'));
     }
 
     const version = installedVersion(root, 'blit386');

@@ -69,6 +69,8 @@ test('scaffolds a runnable game project', () => {
             'README.md',
             '.gitignore',
             '.editorconfig',
+            '.gitattributes',
+            '.node-version',
             '.prettierignore',
             'biome.json',
             'prettier.config.js',
@@ -84,6 +86,14 @@ test('scaffolds a runnable game project', () => {
         for (const relativePath of expected) {
             assert.ok(existsSync(join(project, relativePath)), `expected ${relativePath} to be generated`);
         }
+
+        // biome.json enforces LF, so the repo must force LF checkouts - otherwise Git for Windows
+        // (core.autocrlf=true by default) hands the user CRLF files and format:check fails.
+        assert.match(
+            readFileSync(join(project, '.gitattributes'), 'utf8'),
+            /^\* text=auto eol=lf$/m,
+            '.gitattributes should normalize text files to LF',
+        );
 
         // The manifest should record files with sha256 hashes and correct classes.
         const blitManifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
