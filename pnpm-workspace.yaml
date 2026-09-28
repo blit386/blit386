@@ -25,7 +25,7 @@ overrides:
   # @microsoft/api-extractor (vite-plugin-dts), so it never enters a runtime bundle - but
   # `security:audit` covers dev + prod, so it fails CI. 3.1.6 is the patch; pinned to the
   # latest 3.x (3.1.7) rather than the 4.x major, since ajv declares `^3.0.1`.
-  fast-uri@<3.1.6: ^3.1.7
+  fast-uri@<3.1.6: ^3.1.8
   # GHSA-gqvv-2mrq-wpjv (moderate): incomplete fix for CVE-2026-39408 - toSSG() still
   # writes files outside the output directory. GHSA-g6gw-c38x-mqfc (moderate): unbounded
   # dot-notation nesting in parseBody() can cause memory exhaustion. GHSA-crvj-82cr-hjcx
