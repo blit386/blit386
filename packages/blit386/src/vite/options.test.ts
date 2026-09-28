@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { defaultInclude, resolveOptions } from './options';
@@ -28,7 +30,7 @@ describe('resolveOptions', () => {
     it('applies every default when called with no user options', () => {
         const resolved = resolveOptions(undefined, '/project');
 
-        expect(resolved.assetDirs).toEqual(['/project/public']);
+        expect(resolved.assetDirs).toEqual([resolve('/project', 'public')]);
         expect(resolved.fullReloadOnUnknownAssets).toBe(true);
         expect(resolved.include).toBe(defaultInclude);
         expect(resolved.assetTypes.get('.png')).toBe('image');
@@ -46,7 +48,7 @@ describe('resolveOptions', () => {
     it('resolves assetDirs against the given root', () => {
         const resolved = resolveOptions({ assetDirs: ['static', 'assets'] }, '/project');
 
-        expect(resolved.assetDirs).toEqual(['/project/static', '/project/assets']);
+        expect(resolved.assetDirs).toEqual([resolve('/project', 'static'), resolve('/project', 'assets')]);
     });
 
     it('merges user assetTypes over the defaults rather than replacing them', () => {
