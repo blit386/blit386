@@ -15,16 +15,27 @@ const script = join(here, '..', 'content', 'hooks', 'shell-safety.sh');
 /**
  * @param {string} command
  */
-function run(command) {
-    const payload = JSON.stringify({
-        hook_event_name: 'beforeShellExecution',
-        command,
-        cwd: here,
-        sandbox: false,
-    });
+/**
+ * @param {string} payload
+ */
+function runRaw(payload) {
     const result = spawnSync(process.execPath, [runner, script], { input: payload, encoding: 'utf8' });
 
     return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+/**
+ * @param {string} command
+ */
+function run(command) {
+    return runRaw(
+        JSON.stringify({
+            hook_event_name: 'beforeShellExecution',
+            command,
+            cwd: here,
+            sandbox: false,
+        }),
+    );
 }
 
 describe('cursor shell-safety runner', () => {
@@ -50,5 +61,27 @@ describe('cursor shell-safety runner', () => {
         const result = run('git push --force');
         assert.equal(result.status, 0);
         assert.equal(JSON.parse(result.stdout).permission, 'ask');
+    });
+
+    it('denies a payload that does not parse', () => {
+        const result = runRaw('not-json');
+        assert.equal(result.status, 0);
+        assert.equal(JSON.parse(result.stdout).permission, 'deny');
+    });
+
+    it('allows a payload prefixed with a UTF-8 BOM', () => {
+        const payload = `\uFEFF${JSON.stringify({
+            hook_event_name: 'beforeShellExecution',
+            command: 'echo test',
+        })}`;
+        const result = runRaw(payload);
+        assert.equal(result.status, 0);
+        assert.equal(JSON.parse(result.stdout).permission, 'allow');
+    });
+
+    it('allows a payload with no command', () => {
+        const result = runRaw(JSON.stringify({ hook_event_name: 'beforeShellExecution' }));
+        assert.equal(result.status, 0);
+        assert.equal(JSON.parse(result.stdout).permission, 'allow');
     });
 });

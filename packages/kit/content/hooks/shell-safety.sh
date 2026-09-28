@@ -56,7 +56,7 @@ INPUT_JSON="$(cat)"
 IS_CLAUDE="$(printf '%s' "$INPUT_JSON" | python3 -c "
 import json, sys
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(sys.stdin.buffer.read().decode('utf-8-sig'))
 except Exception:
     print('0')
     raise SystemExit(0)
@@ -89,13 +89,13 @@ def walk(node):
     return ''
 
 try:
-    data = json.load(sys.stdin)
+    data = json.loads(sys.stdin.buffer.read().decode('utf-8-sig'))
 except Exception:
-    print('')
-    raise SystemExit(0)
+    raise SystemExit(1)
 
 print(walk(data))
 ")"
+COMMAND_STATUS=$?
 
 respond_allow() {
     if [ "$IS_CLAUDE" = "1" ]; then
@@ -138,6 +138,16 @@ print(json.dumps({
     printf '{"permission":"ask","user_message":"%s","agent_message":"%s"}\n' "$USER_MSG" "$AGENT_MSG"
     exit 0
 }
+
+# Fail closed when the payload cannot be parsed. Cursor on Windows prefixes
+# stdin with a UTF-8 BOM, which json.load rejects; decode utf-8-sig above so a
+# real payload still parses. An empty command after a successful parse is an
+# allow. A parser failure is not: allowing it would let an unread command through.
+if [ "$COMMAND_STATUS" -ne 0 ]; then
+    respond_deny \
+        'Shell safety hook could not parse the request, so it was blocked.' \
+        'The shell safety hook could not parse the request payload.'
+fi
 
 if [ -z "$COMMAND_TEXT" ]; then
     respond_allow
