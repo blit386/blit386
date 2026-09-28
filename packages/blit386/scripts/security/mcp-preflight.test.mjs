@@ -223,7 +223,7 @@ describe('parseArgs', () => {
         assert.equal(args.mcpsDir, '/tmp/mcps');
         assert.equal(args.governanceOnly, true);
         assert.equal(args.includeUserConfig, true);
-        assert.equal(args.outputJsonPath, '/tmp/report.json');
+        assert.equal(args.outputJsonPath, path.resolve('/tmp/report.json'));
     });
 });
 

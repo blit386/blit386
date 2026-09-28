@@ -219,14 +219,31 @@ function startWranglerDev(port) {
 
 /** @param {import('node:child_process').ChildProcess} child */
 async function stopWranglerDev(child) {
-    if (child.exitCode !== null) return;
+    if (child.exitCode !== null) {
+        child.unref();
+        return;
+    }
 
-    child.kill('SIGTERM');
+    // `child.kill` on Windows stops the direct child only. That child is `pnpm exec`,
+    // and wrangler/workerd keep the stdio pipes open, so this process never exits
+    // after the check has already passed.
+    if (process.platform === 'win32' && child.pid !== undefined) {
+        spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true });
+    } else {
+        child.kill('SIGTERM');
+    }
+
     const exited = await Promise.race([
-        new Promise((r) => child.once('exit', () => r(true))),
-        new Promise((r) => setTimeout(() => r(false), SERVER_SHUTDOWN_GRACE_MS)),
+        new Promise((resolveExit) => child.once('exit', () => resolveExit(true))),
+        new Promise((resolveExit) => setTimeout(() => resolveExit(false), SERVER_SHUTDOWN_GRACE_MS)),
     ]);
-    if (!exited) child.kill('SIGKILL');
+    if (!exited && process.platform !== 'win32') {
+        child.kill('SIGKILL');
+    }
+
+    child.stdout?.destroy();
+    child.stderr?.destroy();
+    child.unref();
 }
 
 /** @param {unknown} error @returns {string} */

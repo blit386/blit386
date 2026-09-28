@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
     DEFAULTS,
@@ -180,8 +181,9 @@ describe('buildUpscaleArgs', () => {
 
 describe('resolveEncodeVideoScriptPath', () => {
     test('resolves to packages/website/scripts/encode-video.mjs relative to this script', () => {
-        const result = resolveEncodeVideoScriptPath('file:///repo/packages/demos/scripts/capture-demo-clip.mjs');
-        assert.equal(result, join('/repo', 'packages', 'website', 'scripts', 'encode-video.mjs'));
+        const modulePath = fileURLToPath(new URL('../capture-demo-clip.mjs', import.meta.url));
+        const result = resolveEncodeVideoScriptPath(pathToFileURL(modulePath).href);
+        assert.equal(result, fileURLToPath(new URL('../../../website/scripts/encode-video.mjs', import.meta.url)));
     });
 });
 
