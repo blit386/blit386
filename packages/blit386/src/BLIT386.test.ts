@@ -640,6 +640,25 @@ describe('BT.testState', () => {
         });
     });
 
+    it('reads an Error message once, so a getter that changes between reads cannot leak a non-string', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const fickle = new Error('unused');
+        let reads = 0;
+        Object.defineProperty(fickle, 'message', {
+            get(): unknown {
+                reads++;
+                return reads === 1 ? 'first read' : { notAString: true };
+            },
+        });
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(
+            makeDemo(() => {
+                throw fickle;
+            }),
+        );
+
+        expect(BT.testState().error).toBe('first read');
+    });
+
     it('reports an Error whose message getter throws with a generic message', () => {
         vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const hostile = new Error('hidden');

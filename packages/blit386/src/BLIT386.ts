@@ -231,8 +231,13 @@ function describeTestStateError(err: unknown): string {
     }
 
     try {
-        if (err instanceof Error && typeof err.message === 'string') {
-            return err.message;
+        if (err instanceof Error) {
+            // Read once: a `message` getter could return a string on one read and not the next.
+            const message: unknown = err.message;
+
+            if (typeof message === 'string') {
+                return message;
+            }
         }
     } catch {
         // Fall through: a throwing `message` getter or `instanceof` check.
