@@ -30,6 +30,7 @@ import {
     btfontJsonTooLargeError,
     CANVAS_NOT_FOUND_MESSAGE,
     INIT_FAILED_MESSAGE,
+    keyboardLayoutUnknownWarning,
     noActivePaletteError,
     OVERLAY_NO_BACKEND,
     paletteIndexNegativeError,
@@ -543,5 +544,25 @@ describe('audio clip error message helpers', () => {
         it('mentions pitch sweep', () => {
             expect(audioClipSynthPitchSweepFrequencyError(0)).toContain('pitch sweep');
         });
+    });
+});
+
+describe('keyboardLayoutUnknownWarning', () => {
+    const layouts = ['versus', 'single'] as const;
+
+    it('quotes a string value and names the fallback', () => {
+        expect(keyboardLayoutUnknownWarning('solo', layouts)).toBe(
+            `keyboardLayout must be 'versus' or 'single' (got "solo"). Falling back to 'versus'`,
+        );
+    });
+
+    it('never throws on values JSON cannot serialize', () => {
+        const cyclic: Record<string, unknown> = {};
+        cyclic.self = cyclic;
+
+        expect(keyboardLayoutUnknownWarning(1n, layouts)).toContain('(got <bigint>)');
+        expect(keyboardLayoutUnknownWarning(cyclic, layouts)).toContain('(got <object>)');
+        expect(keyboardLayoutUnknownWarning(() => 'x', layouts)).toContain('(got <function>)');
+        expect(keyboardLayoutUnknownWarning(Symbol('x'), layouts)).toContain('(got <symbol>)');
     });
 });

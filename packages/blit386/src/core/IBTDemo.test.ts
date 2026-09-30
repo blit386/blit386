@@ -487,6 +487,16 @@ describe('keyboardLayout', () => {
         );
     });
 
+    it('falls back only the layout when the value cannot be serialized', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const settings = mergeHardwareSettings({ targetFPS: 30, keyboardLayout: 1n as never });
+
+        expect(settings.keyboardLayout).toBe('versus');
+        expect(settings.targetFPS).toBe(30);
+        expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('(got <bigint>)'));
+    });
+
     it('turns on keyboard scroll capture for single when the flag is omitted', () => {
         expect(mergeHardwareSettings({ keyboardLayout: 'single' }).isCapturingKeyboardScroll).toBe(true);
         expect(

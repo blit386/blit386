@@ -110,6 +110,28 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
 }
 
 /**
+ * Describes an arbitrary `configure()` value for a diagnostic without ever throwing:
+ * `JSON.stringify` output when it has one, otherwise a `<typeof>` placeholder (BigInt and
+ * cyclic objects make `JSON.stringify` throw; functions and symbols make it return nothing).
+ *
+ * @param value - Value to describe.
+ * @returns Short printable description.
+ */
+function describeConfigureValue(value: unknown): string {
+    try {
+        const json = JSON.stringify(value);
+
+        if (json !== undefined) {
+            return json;
+        }
+    } catch {
+        // Fall through to the typeof placeholder.
+    }
+
+    return `<${typeof value}>`;
+}
+
+/**
  * Returns the warning for an unknown `keyboardLayout` hardware setting.
  *
  * @param value - Invalid `keyboardLayout` value from `configure()`.
@@ -119,7 +141,7 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
 export function keyboardLayoutUnknownWarning(value: unknown, validLayouts: readonly string[]): string {
     const quoted = validLayouts.map((layout) => `'${layout}'`).join(' or ');
 
-    return `keyboardLayout must be ${quoted} (got ${JSON.stringify(value)}). Falling back to '${validLayouts[0]}'`;
+    return `keyboardLayout must be ${quoted} (got ${describeConfigureValue(value)}). Falling back to '${validLayouts[0]}'`;
 }
 
 /**
