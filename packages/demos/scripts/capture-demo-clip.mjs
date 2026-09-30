@@ -402,7 +402,9 @@ const main = async () => {
             // not engine init, so reading dimensions immediately is a race: it can read the
             // default instead of the demo's real configured size, silently producing a
             // downscale (not an upscale) once the mismatch reaches the ffmpeg scale filter.
-            const dimensions = await page.evaluate(buildCanvasReadyScript(CANVAS_ID, 5000));
+            // The timeout throws. A canvas still at that default has not finished init, and
+            // the probe below must not call getContext('webgpu') before the engine does.
+            const dimensions = await page.evaluate(buildCanvasReadyScript(CANVAS_ID, 5000, true));
             await page.evaluate(buildWebGPUProbeScript(CANVAS_ID));
             const target = computeUpscaleTarget(dimensions.width, dimensions.height, options.upscale);
 

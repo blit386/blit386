@@ -277,6 +277,11 @@ describe('buildWebGPUProbeScript', () => {
     it('refuses a canvas that has no WebGPU context', () => {
         const script = buildWebGPUProbeScript(CANVAS_ID);
 
+        // Still at 300x150 means init has not resized the canvas. getContext('webgpu')
+        // has to come after that check: calling it first would take the canvas.
+        assert.match(script, /renderer init has not finished/);
+        assert.ok(script.indexOf('renderer init has not finished') < script.indexOf("getContext('webgpu')"));
+
         // The engine only calls getContext('webgpu') when that backend actually started.
         // A software fallback has already taken the canvas as 2D, so this returns null.
         assert.match(script, /getContext\('webgpu'\)/);

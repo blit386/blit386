@@ -93,10 +93,12 @@ ${onTimeout}
 }
 
 /**
- * Browser-side script that throws unless the canvas already has a WebGPU context.
+ * Browser-side script that throws unless renderer init has finished on the WebGPU backend.
  *
- * The engine acquires that context only when WebGPU init succeeds. A software fallback has
- * already taken the canvas as a 2D context by the time this runs, and `getContext('webgpu')`
+ * `initWebGPU` resizes the canvas and then acquires its context in the same turn, so a canvas
+ * still at the browser's 300x150 default has not finished init. Calling `getContext('webgpu')`
+ * before that would take the canvas itself. After a successful init the context is already
+ * there. A software fallback has taken the canvas as 2D instead, and `getContext('webgpu')`
  * then returns null. There is no `window.BT` on a production page, so this is the check.
  *
  * @param {string} canvasId Canvas element id.
@@ -106,7 +108,15 @@ export function buildWebGPUProbeScript(canvasId) {
     return `
 (() => {
     const canvas = document.getElementById('${canvasId}');
+
     if (!canvas) throw new Error('Canvas #${canvasId} not found.');
+
+    if (canvas.width === ${DEFAULT_CANVAS_WIDTH} && canvas.height === ${DEFAULT_CANVAS_HEIGHT}) {
+        throw new Error(
+            'Refusing to capture: #${canvasId} is still ${DEFAULT_CANVAS_WIDTH}x${DEFAULT_CANVAS_HEIGHT}, so renderer init has not finished.',
+        );
+    }
+
     if (!canvas.getContext('webgpu')) {
         throw new Error(
             'Refusing to capture: #${canvasId} has no WebGPU context, so the demo is on the software backend.',
