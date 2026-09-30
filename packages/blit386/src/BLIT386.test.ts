@@ -636,7 +636,29 @@ describe('BT.testState', () => {
             ticks: 42,
             backend: 'software',
             state: null,
-            error: 'testState() threw a non-Error value',
+            error: 'testState() threw a value with no readable message',
+        });
+    });
+
+    it('reports an Error whose message getter throws with a generic message', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const hostile = new Error('hidden');
+        Object.defineProperty(hostile, 'message', {
+            get(): string {
+                throw new Error('message getter threw');
+            },
+        });
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(
+            makeDemo(() => {
+                throw hostile;
+            }),
+        );
+
+        expect(BT.testState()).toEqual({
+            ticks: 42,
+            backend: 'software',
+            state: null,
+            error: 'testState() threw a value with no readable message',
         });
     });
 

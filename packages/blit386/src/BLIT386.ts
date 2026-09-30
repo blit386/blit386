@@ -214,6 +214,33 @@ function reportDrawError(error: unknown): void {
     }
 }
 
+/** `BT.testState()`'s `error` when the thrown value yields no readable message. */
+const TEST_STATE_UNREADABLE_ERROR = 'testState() threw a value with no readable message';
+
+/**
+ * Turns whatever a `testState()` hook (or its serialization) threw into an error message,
+ * without ever throwing itself: no `String(err)` (a null-prototype object has no primitive
+ * conversion), and the `message` read is guarded (a getter can throw).
+ *
+ * @param err - Value caught from the hook call or the JSON round-trip.
+ * @returns The `Error` message or thrown string, else {@link TEST_STATE_UNREADABLE_ERROR}.
+ */
+function describeTestStateError(err: unknown): string {
+    if (typeof err === 'string') {
+        return err;
+    }
+
+    try {
+        if (err instanceof Error && typeof err.message === 'string') {
+            return err.message;
+        }
+    } catch {
+        // Fall through: a throwing `message` getter or `instanceof` check.
+    }
+
+    return TEST_STATE_UNREADABLE_ERROR;
+}
+
 /**
  * Returns runtime keyboard `KeyboardEvent.code` list for a face button and player,
  * or `null` when there is no keyboard fallback (e.g. players 2-3 for face buttons).
@@ -771,15 +798,7 @@ export const BT = {
         } catch (err) {
             console.error('[BT] testState() threw:', err);
 
-            // No `String(err)`: a thrown null-prototype object has no primitive conversion and would throw here.
-            const error =
-                err instanceof Error
-                    ? err.message
-                    : typeof err === 'string'
-                      ? err
-                      : 'testState() threw a non-Error value';
-
-            return { ticks, backend, state: null, error };
+            return { ticks, backend, state: null, error: describeTestStateError(err) };
         }
     },
 
