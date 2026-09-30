@@ -10,7 +10,7 @@ import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins/social-meta.js';
-import { CANVAS_ID } from '../agent-browser-session.mjs';
+import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
     buildNativeImagePath,
@@ -270,6 +270,23 @@ describe('buildCanvasPrepScript', () => {
         // a 320x320 canvas into a resampled ~301x301 PNG. This defensive reset protects the capture
         // even though that rule is gone, against a browser zoom setting or a future regression.
         assert.match(script, /body\.style\.setProperty\('zoom', '1', 'important'\)/);
+    });
+});
+
+describe('buildWebGPUProbeScript', () => {
+    it('refuses a canvas that has no WebGPU context', () => {
+        const script = buildWebGPUProbeScript(CANVAS_ID);
+
+        // Still at 300x150 means init has not resized the canvas. getContext('webgpu')
+        // has to come after that check: calling it first would take the canvas.
+        assert.match(script, /renderer init has not finished/);
+        assert.ok(script.indexOf('renderer init has not finished') < script.indexOf("getContext('webgpu')"));
+
+        // The engine only calls getContext('webgpu') when that backend actually started.
+        // A software fallback has already taken the canvas as 2D, so this returns null.
+        assert.match(script, /getContext\('webgpu'\)/);
+        assert.match(script, /software backend/);
+        assert.ok(script.includes(CANVAS_ID));
     });
 });
 

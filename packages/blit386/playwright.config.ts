@@ -26,6 +26,7 @@ export default defineConfig({
                 ...devices['Desktop Chrome'],
                 channel: 'chrome',
                 launchOptions: {
+                    // Hand-kept in step with CHROME_WEBGPU_ARGS in packages/demos/scripts/playwright-session.mjs.
                     args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-gpu-sandbox'],
                 },
             },

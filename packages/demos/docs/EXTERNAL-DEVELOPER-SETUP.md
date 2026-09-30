@@ -71,7 +71,7 @@ blit386/                        # This repo
 │       ├── public/                # Static assets: sprites/, fonts/, audio/, _headers
 │       ├── _partials/             # Shared HTML template + persistent-shell chrome (demo-shell.js)
 │       ├── plugins/               # virtual-demos + demo-order.js + demo-vintage-urls.js + registry
-│       ├── scripts/                # agent-browser-session, capture-demo-clip, capture-og-image,
+│       ├── scripts/                # playwright-session, capture-demo-clip, capture-og-image,
 │       │                           # check-demo-comment-links, check-demo-registry, generate-audio-loops
 │       ├── docs/                   # This guide, security headers
 │       └── package.json

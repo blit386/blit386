@@ -13,7 +13,6 @@ import {
     computeUpscaleTarget,
     parseArgs,
     resolveEncodeVideoScriptPath,
-    sliceRanges,
 } from '../capture-demo-clip.mjs';
 
 describe('parseArgs', () => {
@@ -207,23 +206,5 @@ describe('buildStopScript', () => {
         assert.match(script, /new Blob\(window\.__btChunks/u);
         assert.match(script, /btoa\(binary\)/u);
         assert.match(script, /chunkSize = 32768/u);
-    });
-});
-
-describe('sliceRanges', () => {
-    test('returns nothing for a zero length', () => {
-        assert.deepEqual(sliceRanges(0, 300_000), []);
-    });
-
-    test('returns one range when the length fits in one chunk', () => {
-        assert.deepEqual(sliceRanges(300_000, 300_000), [{ start: 0, length: 300_000 }]);
-    });
-
-    test('splits a length spanning multiple chunks, with a short final range', () => {
-        assert.deepEqual(sliceRanges(700_000, 300_000), [
-            { start: 0, length: 300_000 },
-            { start: 300_000, length: 300_000 },
-            { start: 600_000, length: 100_000 },
-        ]);
     });
 });

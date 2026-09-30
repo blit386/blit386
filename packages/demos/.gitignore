@@ -1,9 +1,6 @@
 # Cloudflare Pages local dev
 .wrangler/
 
-# agent-browser CLI session data
-.playwright-cli/
-
 # Minified files
 *.min.js
 *.min.css

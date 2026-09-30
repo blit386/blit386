@@ -30,7 +30,7 @@ One demo per file under `src/`, and that file is the single source of truth - no
 `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets (including `favicon.svg` and the
 committed `social/` OG cards), `_partials/` the shared HTML template and shell scripts, `plugins/` the Vite plugin plus
 the order and vintage-URL registries, the social/SEO head builder (`social-meta.js`) and its shared `html-escape.js`,
-`scripts/` the check, generate, and capture scripts plus the `agent-browser-session.mjs` helpers the two capture scripts
+`scripts/` the check, generate, and capture scripts plus the `playwright-session.mjs` helpers the two capture scripts
 share.
 
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
