@@ -64,16 +64,16 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace, `BT.isDevMode` |
 | `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `window.BT` console debugging |
 | `content/AGENTS.md` | Overall game shape, hard rules, doc routing, hot-reload tiers |
-| `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / `onReducedMotionChange`, never `registerHotReload` |
+| `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / `onReducedMotionChange` / `testState`, never `registerHotReload` |
 | `content/rules/blit-integer-coords.md` | Integer-coordinate rule (`Vector2i` / `Rect2i`) |
 | `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games |
-| `content/skills/use-dev-mode/SKILL.md` | `BT.isDevMode` resolution order, cheat-key / debug-HUD gating examples, what dev mode turns on (`window.BT`, F9 capture) |
+| `content/skills/use-dev-mode/SKILL.md` | `BT.isDevMode` resolution order, cheat-key / debug-HUD gating examples, what dev mode turns on (`window.BT`, F9 capture), the `testState()` hook and `BT.testState()` envelope |
 | `content/skills/show-a-loading-screen/SKILL.md` | `BT.loadingAssetsCount`, per-sheet status, and how the splash already covers `init()` |
 | `content/skills/use-random/SKILL.md` | `BT.random` / `BT.randomSeed`, `Random` methods, state and stream helpers |
 | `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead`, building a fade target with `fillBlock` |
-| `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, the starters' `window.__game` shape and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
+| `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, the starters' `window.__game` shape, `BT.testState()`, and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols). Cursor invokes it via `shell-safety-run.cjs` because Windows hook PATH has `git.exe` but not `sh` |

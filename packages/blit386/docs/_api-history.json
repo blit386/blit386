@@ -1039,6 +1039,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.testState": {
+      "kind": "method",
+      "since": "1.7.2",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.ticks": {
       "kind": "getter",
       "since": "1.0.4",
@@ -1263,6 +1270,10 @@
         {
           "version": "1.7.0",
           "note": "Added optional {@link IBTDemo.onReducedMotionChange} hook."
+        },
+        {
+          "version": "1.7.2",
+          "note": "Added optional {@link IBTDemo.testState} hook."
         }
       ],
       "deprecated": null,
@@ -1482,6 +1493,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "TestStateSnapshot": {
+      "kind": "interface",
+      "since": "1.7.2",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "TextSize": {
       "kind": "interface",
@@ -1723,11 +1741,13 @@
       "BT.screenOrientation",
       "BT.splashState",
       "BT.targetFPS",
+      "BT.testState",
       "BootstrapOptions",
       "HardwareSettings",
       "HotContext",
       "HotReloadContext",
       "PreferredOrientation",
+      "TestStateSnapshot",
       "bootstrap",
       "defaultConfig",
       "displayError",

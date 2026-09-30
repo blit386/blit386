@@ -122,6 +122,11 @@ Optional methods on your game class (the one you pass to `bootstrap()`):
   current value any time from `BT.isReducedMotionPreferred`; this hook is for reacting mid-session. The engine tones
   down its own splash for you, but never changes your draw calls - toning down shake, flicker, and long transitions is
   your code.
+- `testState()` - return the game's state as plain JSON (numbers, strings, booleans, arrays, plain objects) for
+  play-testing (engine 1.7.2+). The engine never calls it on its own; `BT.testState()` reads it and returns
+  `{ ticks, backend, state }`, and in a dev build an agent reads that with `window.BT.testState()`. `state` is a deep
+  copy (a `Vector2i` arrives as `{ x, y }`), or `null` when the game has no hook. A throw, a cycle, or a `BigInt` gives
+  `state: null` plus an `error` message instead of throwing. See the `use-dev-mode` skill.
 
 Do not call `registerHotReload` yourself - it is tooling-only. The `blit386()` Vite plugin injects it. Hand-calling it
 from game code is unsupported.

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-09-27T11:21:43+02:00"
+lastModified: "2026-09-30T16:21:42Z"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -483,6 +483,61 @@ Read it inside a lifecycle method instead.
 
 A consumer who skips the `blit386/vite` plugin reads as release everywhere the plugin's marker would otherwise apply -
 see [The `blit386/vite` plugin](/docs/guides/hot-reload#the-blit386vite-plugin) for what installing it actually does.
+
+### Test state for agent play-testing
+
+<Since symbol="BT.testState" />
+<Since symbol="TestStateSnapshot" />
+
+An agent play-testing a game in a browser (a built-in browser pane or a CDP script) needs the game's state as JSON, not
+guessed from pixels. Give the game class an optional `testState()` hook that returns plain JSON, and read it with
+`BT.testState()`. In dev builds `BT` is already exposed as `window.BT`, so the agent's evaluate call is
+`window.BT.testState()` - no per-game global and no `declare global` block.
+
+```ts twoslash
+import { BT, type IBTDemo, Vector2i } from 'blit386';
+
+class Demo implements IBTDemo {
+  private score = 0;
+  private lives = 3;
+  private readonly player = new Vector2i(160, 200);
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+
+  render(): void {}
+
+  testState(): unknown {
+    return { score: this.score, lives: this.lives, player: this.player };
+  }
+}
+
+// From the browser console or an agent's evaluate call (dev build):
+// window.BT.testState()
+// -> { ticks: 812, backend: 'webgpu', state: { score: 0, lives: 3, player: { x: 160, y: 200 } } }
+const snapshot = BT.testState();
+```
+
+`BT.testState()` returns a `TestStateSnapshot` envelope:
+
+| Field | Value |
+| --- | --- |
+| `ticks` | `BT.ticks` - always present, so an agent can tell whether the game advanced between two calls |
+| `backend` | `BT.activeBackend` |
+| `state` | Deep copy of the hook's result, or `null` when the game has no hook |
+| `error` | Only when the readout failed: the message, with `state: null` |
+
+- The hook is looked up on the running game instance on every call, so it keeps working after a `'reinit'`
+  [hot reload](/docs/guides/hot-reload) swaps in a new instance.
+- The result goes through `JSON.parse(JSON.stringify(...))`. Callers get plain data they cannot use to mutate live game
+  objects; class instances such as `Vector2i` arrive as `{ x, y }`, and functions and `undefined` fields are dropped.
+- `BT.testState()` never throws. A throwing hook, a cycle, or a `BigInt` logs `[BT] testState() threw:` to the console
+  and comes back as `state: null` with the message in `error`.
+- The engine never calls `testState()` on its own, so the hook costs nothing unless something reads it. `BT.testState()`
+  also exists in release builds; only the `window.BT` global is dev-only (see `BootstrapOptions.exposeGlobal`).
 
 ### Splash state
 
