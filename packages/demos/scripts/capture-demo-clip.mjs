@@ -1,7 +1,6 @@
 /**
- * Capture a running demo's canvas directly, bypassing agent-browser record's compositor
- * (which only manages 1280x578 at 10fps, cropping and letterboxing the canvas). Recording
- * the canvas element's own MediaStream avoids the compositor entirely: native resolution,
+ * Capture a running demo's canvas directly. A viewport recording crops and letterboxes the
+ * canvas; recording the canvas element's own MediaStream does not: native resolution,
  * native frame rate.
  *
  * Recipe: open the demo in `?embed` mode (no banner, no chrome), capture the canvas
@@ -25,23 +24,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
 import {
-    AGENT_BROWSER_MAX_BUFFER,
-    AGENT_BROWSER_TIMEOUT_MS,
     buildCanvasReadyScript,
     buildEmbedUrl,
+    buildWebGPUProbeScript,
     CANVAS_ID,
-    runAgentBrowser as runAgentBrowserSession,
+    launchCaptureBrowser,
     sleep,
-} from './agent-browser-session.mjs';
+} from './playwright-session.mjs';
 
 // #region Configuration
 
-// Re-exported so this module stays the single import site for its own tests and callers,
-// even though the definitions now live in agent-browser-session.mjs.
-export { AGENT_BROWSER_MAX_BUFFER, AGENT_BROWSER_TIMEOUT_MS, buildEmbedUrl, CANVAS_ID };
-
-export const CAPTURE_SESSION = 'blit386-capture';
-export const B64_PULL_CHUNK_CHARS = 300_000;
+// Re-exported so this module stays the single import site for its own tests and callers.
+export { buildEmbedUrl, CANVAS_ID };
 export const B64_PUSH_CHUNK_CHARS = 0x8000;
 
 export const DEFAULTS = {
@@ -238,9 +232,8 @@ export function resolveEncodeVideoScriptPath(moduleUrl) {
 // #region Browser scripts
 
 /**
- * Browser-side script (run via `agent-browser eval --stdin`) that starts recording the
- * canvas element directly. This is what avoids agent-browser record's compositor, which
- * only manages 1280x578 at 10fps with cropping and letterboxing.
+ * Browser-side script that starts recording the canvas element directly, at the canvas's
+ * own resolution and frame rate rather than the viewport's.
  *
  * @param {number} bitrate MediaRecorder `videoBitsPerSecond`.
  * @returns {string} JavaScript source. Evaluates to the chosen mimeType.
@@ -276,9 +269,8 @@ export function buildRecorderScript(bitrate) {
  * String.fromCharCode.apply blows the call stack on one giant array, so the encode has to
  * happen in pieces even though the result is one string.
  *
- * A direct file download does not work here: headless Chrome cancels it. Pulling the
- * base64 string back out through repeated eval calls (see sliceRanges) is the path that
- * works.
+ * A direct file download does not work here: headless Chrome cancels it. The base64 string
+ * is read back with one `page.evaluate`.
  *
  * @returns {string} JavaScript source. Resolves to `window.__b64.length`.
  */
@@ -309,23 +301,6 @@ export function buildStopScript() {
 `.trim();
 }
 
-/**
- * Split a total character length into chunk-sized {start, length} ranges, for pulling
- * window.__b64 back out of the browser a few hundred KB at a time (a single eval call
- * returning the whole string is what the manual recipe found unreliable).
- *
- * @param {number} totalLength Total string length to cover.
- * @param {number} chunkSize Max length per range.
- * @returns {{ start: number, length: number }[]} Ranges covering [0, totalLength).
- */
-export function sliceRanges(totalLength, chunkSize) {
-    const ranges = [];
-    for (let start = 0; start < totalLength; start += chunkSize) {
-        ranges.push({ start, length: Math.min(chunkSize, totalLength - start) });
-    }
-    return ranges;
-}
-
 // #endregion
 
 // #region Runner
@@ -343,22 +318,6 @@ const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out
   --keep-intermediate    Keep raw.webm and the lossless upscaled.mp4 intermediate
   --dry-run              Print the planned commands and exit
 `;
-
-/**
- * Run `agent-browser` in this script's dedicated capture session.
- *
- * Thin wrapper that binds CAPTURE_SESSION, so a clip capture and a card capture can never
- * share a browser session. Everything else lives in agent-browser-session.mjs.
- *
- * @param {string[]} args Arguments after `agent-browser`, e.g. `['open', url, '--json']`.
- * @param {{ stdin?: string, quiet?: boolean }} [options] Optional stdin payload, used for
- *   `eval --stdin`, and a `quiet` flag that skips the command banner (used for the
- *   high-volume base64 pull loop, which would otherwise flood the terminal).
- * @returns {*} `envelope.data.result` when present, otherwise `envelope.data`.
- */
-function runAgentBrowser(args, options = {}) {
-    return runAgentBrowserSession(CAPTURE_SESSION, args, options);
-}
 
 /**
  * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
@@ -428,49 +387,47 @@ const main = async () => {
             throw new Error('ffmpeg is required for the upscale step but was not found on PATH.');
         }
 
+        let browser;
+
         try {
-            runAgentBrowser(['open', embedUrl, '--json']);
+            const launched = await launchCaptureBrowser();
+            browser = launched.browser;
+            const { page } = launched;
+
+            await page.goto(embedUrl);
 
             // The canvas starts at the browser's default backing-store size (300x150) until
             // the engine finishes async WebGPU init and resizes it (WebGPUContext.ts sets
-            // canvas.width/height as part of that init). `open` only waits for page load, not
-            // engine init, so reading dimensions immediately is a race: it can read the
+            // canvas.width/height as part of that init). Navigation only waits for page load,
+            // not engine init, so reading dimensions immediately is a race: it can read the
             // default instead of the demo's real configured size, silently producing a
             // downscale (not an upscale) once the mismatch reaches the ffmpeg scale filter.
-            const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], {
-                stdin: buildCanvasReadyScript(CANVAS_ID, 5000),
-            });
+            const dimensions = await page.evaluate(buildCanvasReadyScript(CANVAS_ID, 5000));
+            await page.evaluate(buildWebGPUProbeScript(CANVAS_ID));
             const target = computeUpscaleTarget(dimensions.width, dimensions.height, options.upscale);
 
-            runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildRecorderScript(options.bitrate) });
+            await page.evaluate(buildRecorderScript(options.bitrate));
 
             console.log(`Recording ${options.slug} for ${options.duration}s...`);
             await sleep(options.duration);
 
-            const totalLength = runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildStopScript() });
+            const totalLength = await page.evaluate(buildStopScript());
             if (!Number.isSafeInteger(totalLength) || totalLength <= 0) {
                 throw new Error(`Expected a positive base64 length from the browser, got ${totalLength}.`);
             }
 
-            const ranges = sliceRanges(totalLength, B64_PULL_CHUNK_CHARS);
-            console.log(`Pulling ${ranges.length} chunks from the browser...`);
-
-            let base64 = '';
-            for (const range of ranges) {
-                base64 += runAgentBrowser(['eval', '--stdin', '--json'], {
-                    stdin: `window.__b64.slice(${range.start}, ${range.start + range.length})`,
-                    quiet: true,
-                });
-            }
+            const base64 = await page.evaluate('window.__b64');
 
             writeFileSync(paths.raw, Buffer.from(base64, 'base64'));
 
             runFfmpeg(buildUpscaleArgs(paths.raw, paths.upscaled, target));
         } finally {
-            try {
-                runAgentBrowser(['close', '--json']);
-            } catch (closeError) {
-                console.error(`Warning: failed to close agent-browser session: ${closeError.message}`);
+            if (browser) {
+                try {
+                    await browser.close();
+                } catch (closeError) {
+                    console.error(`Warning: failed to close the browser: ${closeError.message}`);
+                }
             }
         }
 

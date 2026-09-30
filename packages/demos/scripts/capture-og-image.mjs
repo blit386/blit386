@@ -7,8 +7,8 @@
  * reachable only from inside a demo module - there is no `window.BT` global - and a WebGPU
  * swap chain does not reliably read back through `canvas.toDataURL()`, which is exactly why
  * WebGPUContext configures the canvas with COPY_SRC for the engine's own capture path.
- * `agent-browser screenshot <selector>` goes through CDP and captures the composited surface,
- * so it works without touching engine or demo source.
+ * Playwright's element screenshot goes through CDP and captures the composited surface, so it
+ * works without touching engine or demo source.
  *
  * Crispness comes from doing no resampling until ffmpeg: the page is restyled so the canvas
  * occupies exactly its own drawing-buffer size in CSS pixels at deviceScaleFactor 1, making
@@ -47,16 +47,13 @@ import {
 import {
     buildCanvasReadyScript,
     buildEmbedUrl,
+    buildWebGPUProbeScript,
     CANVAS_ID,
-    runAgentBrowser as runAgentBrowserSession,
+    launchCaptureBrowser,
     sleep,
-} from './agent-browser-session.mjs';
+} from './playwright-session.mjs';
 
 // #region Configuration
-
-// Distinct from capture-demo-clip.mjs's session, so a half-finished clip capture can never
-// leave page state that a card capture silently inherits.
-export const OG_SESSION = 'blit386-og';
 
 // Resolved from this module's own location, so both the registry read and the default output
 // directory land in packages/demos no matter where the caller invoked the script from.
@@ -73,7 +70,7 @@ export const VIEWPORT_WIDTH = 1600;
 export const VIEWPORT_HEIGHT = 1000;
 export const DEVICE_SCALE_FACTOR = 1;
 
-// The engine's WebGPU init is async and `open` only waits for page load.
+// The engine's WebGPU init is async and navigation only waits for page load.
 export const CANVAS_READY_TIMEOUT_MS = 10_000;
 
 export const CARD_BACKGROUND = 'black';
@@ -471,17 +468,6 @@ Usage: pnpm run capture:og -- <slug> [options]
 `;
 
 /**
- * Run `agent-browser` in this script's dedicated session.
- *
- * @param {string[]} args Arguments after `agent-browser`.
- * @param {{ stdin?: string, quiet?: boolean }} [options] Optional stdin payload and log control.
- * @returns {*} The unwrapped envelope payload.
- */
-function runAgentBrowser(args, options = {}) {
-    return runAgentBrowserSession(OG_SESSION, args, options);
-}
-
-/**
  * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
  *
  * @param {string[]} args Arguments for `ffmpeg`, output path last.
@@ -501,13 +487,14 @@ function runFfmpeg(args) {
 }
 
 /**
- * Capture one demo's card. Assumes the browser session and viewport are already set up.
+ * Capture one demo's card. Assumes the browser and viewport are already set up.
  *
+ * @param {import('playwright-core').Page} page Page from {@link launchCaptureBrowser}.
  * @param {string} slug Demo slug.
  * @param {object} options Parsed options.
  * @returns {Promise<void>}
  */
-async function captureOne(slug, options) {
+async function captureOne(page, slug, options) {
     // eslint-disable-next-line security/detect-object-injection
     const override = Object.hasOwn(OG_CAPTURE_OVERRIDES, slug) ? OG_CAPTURE_OVERRIDES[slug] : {};
     const settle = override.settle ?? options.settle;
@@ -516,21 +503,20 @@ async function captureOne(slug, options) {
     const nativePath = buildNativeImagePath(options.out, slug);
     const cardPath = buildOgImagePath(options.out, slug);
 
-    runAgentBrowser(['navigate', buildEmbedUrl(options.baseUrl, slug), '--json']);
+    await page.goto(buildEmbedUrl(options.baseUrl, slug));
 
     // Strict: a card rendered from the browser's 300x150 default would be a silently wrong
     // image rather than a visible failure, and this runs unattended across 46 demos.
-    runAgentBrowser(['eval', '--stdin', '--json'], {
-        stdin: buildCanvasReadyScript(CANVAS_ID, CANVAS_READY_TIMEOUT_MS, true),
-    });
+    await page.evaluate(buildCanvasReadyScript(CANVAS_ID, CANVAS_READY_TIMEOUT_MS, true));
+    await page.evaluate(buildWebGPUProbeScript(CANVAS_ID));
 
-    const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildCanvasPrepScript(CANVAS_ID) });
+    const dimensions = await page.evaluate(buildCanvasPrepScript(CANVAS_ID));
 
     console.log(`  canvas ${dimensions.width}x${dimensions.height}, settling ${settle}s...`);
     // Time-based demos need a moment so the card shows motion, not frame zero.
     await sleep(settle);
 
-    runAgentBrowser(['screenshot', `#${CANVAS_ID}`, nativePath, '--json']);
+    await page.locator(`#${CANVAS_ID}`).screenshot({ path: nativePath });
 
     const target = computeOgScale(dimensions.width, dimensions.height, scaleMode);
     console.log(
@@ -606,24 +592,22 @@ async function main() {
 
     const failures = [];
 
+    let browser;
+
     try {
-        // One session for the whole run: 46 browser cold starts would roughly triple the
-        // wall-clock time, and each navigate tears the previous demo's WebGPU device down.
-        runAgentBrowser(['open', 'about:blank', '--json']);
-        runAgentBrowser([
-            'set',
-            'viewport',
-            String(VIEWPORT_WIDTH),
-            String(VIEWPORT_HEIGHT),
-            String(DEVICE_SCALE_FACTOR),
-            '--json',
-        ]);
+        // One browser for the whole run: 46 cold starts would roughly triple the wall-clock
+        // time, and each navigation tears the previous demo's WebGPU device down.
+        const launched = await launchCaptureBrowser({
+            viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
+            deviceScaleFactor: DEVICE_SCALE_FACTOR,
+        });
+        browser = launched.browser;
 
         for (const [index, slug] of pending.entries()) {
             console.log(`\n[${index + 1}/${pending.length}] ${slug}`);
 
             try {
-                await captureOne(slug, { ...options, out: outDir, ogScaleBySlug });
+                await captureOne(launched.page, slug, { ...options, out: outDir, ogScaleBySlug });
             } catch (error) {
                 // Keep going: one demo that will not initialize should not cost the other 45.
                 console.error(`  FAILED: ${error.message}`);
@@ -631,7 +615,9 @@ async function main() {
             }
         }
     } finally {
-        runAgentBrowser(['close', '--json'], { quiet: true });
+        if (browser) {
+            await browser.close();
+        }
     }
 
     console.log(`\nCaptured ${pending.length - failures.length} card(s) into ${outDir}`);

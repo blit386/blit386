@@ -18,7 +18,7 @@
       "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs", "postcss.config.js"],
       "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs"],
       "ignoreExportsUsedInFile": true,
-      "ignoreBinaries": ["agent-browser", "ffmpeg"]
+      "ignoreBinaries": ["ffmpeg"]
     },
     "packages/website": {
       "entry": ["press.config.tsx", "waku.config.ts", "src/**/*.test.ts"],

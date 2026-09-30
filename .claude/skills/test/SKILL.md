@@ -71,9 +71,9 @@ produced `packages/blit386/dist/` first - `pnpm run test` builds it automaticall
 | `src/shared/__tests__/ui-gestures.test.mjs` | Swipe direction/threshold/time-window recognition, the widget-exclusion gate, the dominant-axis tie-break |
 | `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating |
 
-The live capture-to-file pipelines (driving `agent-browser`, encoding with ffmpeg) are not covered - verify those by
-hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM harness) and the
-individual demo files under `src/<topic>.js` remain uncovered, per the "no automated tests" note above.
+The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
+verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM
+harness) and the individual demo files under `src/<topic>.js` remain uncovered, per the "no automated tests" note above.
 
 Manual hot-reload check (nothing automated covers this - run by hand after touching hot-reload wiring):
 

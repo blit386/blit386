@@ -272,8 +272,8 @@ One line, 60-104 characters, ending in a period, within the first 2000 bytes of 
 enforces every one of those rules, so a new demo cannot ship without one.
 
 Each demo also has a 1200x630 OpenGraph card committed under `public/social/og-<slug>.png`. Cards are captured by hand,
-never in CI, and need `agent-browser` and `ffmpeg` on `PATH`. `pnpm run check:demo-registry` fails if a demo's card is
-missing - a new demo cannot ship without one, even though capturing stays a manual step.
+never in CI, and need Google Chrome installed and `ffmpeg` on `PATH`. `pnpm run check:demo-registry` fails if a demo's
+card is missing - a new demo cannot ship without one, even though capturing stays a manual step.
 
 **After changing a demo, re-capture its card.** Build, serve, then capture that one slug:
 

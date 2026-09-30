@@ -216,6 +216,9 @@ importers:
       knip:
         specifier: ^6.32.0
         version: 6.32.2
+      playwright-core:
+        specifier: ^1.62.1
+        version: 1.62.1
       postcss-nesting:
         specifier: ^14.0.1
         version: 14.0.1(postcss@8.5.25)
