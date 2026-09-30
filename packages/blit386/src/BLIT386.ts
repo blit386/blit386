@@ -43,6 +43,7 @@ import {
     type OverlayStyle,
     type OverlayTimingChartStyle,
     type PreferredOrientation,
+    type TestStateSnapshot,
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
@@ -730,6 +731,48 @@ export const BT = {
      */
     get isDevMode(): boolean {
         return BTAPI.instance.isDevMode();
+    },
+
+    /**
+     * JSON readout of the running game for automated play-testing.
+     *
+     * Returns the current tick and active backend plus a deep copy of the game's optional
+     * {@link IBTDemo.testState} result (`null` when the game has no hook). In dev builds `BT`
+     * is exposed as `window.BT`, so a browser-driving agent or a CDP script reads it with
+     * `window.BT.testState()` - no per-game global needed.
+     *
+     * The hook is looked up on the active demo instance on every call, so it keeps working
+     * after a `'reinit'` hot reload replaces that instance. The result is snapshotted through
+     * `JSON.parse(JSON.stringify(...))`: callers get plain data they cannot use to mutate live
+     * game objects. Never throws - a throwing hook or an unserializable result (a cycle or a
+     * `BigInt`) is logged as `[BT] testState() threw:` and reported as `state: null` with the
+     * message in `error`.
+     *
+     * Available in release builds too; it only reads state and does nothing until called.
+     *
+     * @since 1.7.2
+     * @returns `{ ticks, backend, state }`, plus `error` when the readout failed.
+     */
+    testState: (): TestStateSnapshot => {
+        const ticks = BT.ticks;
+        const backend = BT.activeBackend;
+        const demo = BTAPI.instance.getDemo();
+
+        if (typeof demo?.testState !== 'function') {
+            return { ticks, backend, state: null };
+        }
+
+        try {
+            // `JSON.stringify` returns `undefined` (despite its lib typing) for `undefined` or a function.
+            const json = JSON.stringify(demo.testState()) as string | undefined;
+            const state: unknown = json === undefined ? null : JSON.parse(json);
+
+            return { ticks, backend, state };
+        } catch (err) {
+            console.error('[BT] testState() threw:', err);
+
+            return { ticks, backend, state: null, error: err instanceof Error ? err.message : String(err) };
+        }
     },
 
     /**
@@ -2541,6 +2584,7 @@ export type {
     SynthPitchSweep,
     SynthVibrato,
     SynthWaveform,
+    TestStateSnapshot,
     TextSize,
 };
 export type { IndexedSpriteLoadResult };

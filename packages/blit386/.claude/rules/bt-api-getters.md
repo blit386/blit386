@@ -64,6 +64,8 @@ frame; calling methods on `BT.random` advances the shared stream.
   `isKeyReleased(...)`
 - Side-effect booleans (Tier C): `Timer.fireIfElapsed()` - not `is*` because the call advances state
 - Async: `captureFrame`, `downloadFrame`
+- Snapshots that call game code and allocate a fresh copy per call: `testState` (runs the demo's `testState()` hook and
+  deep-copies the result, so it is never a getter)
 
 Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-deprecations.md` (`pointerPosValid`,
 `buttonDown`, `keyDown`, …).

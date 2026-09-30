@@ -553,6 +553,32 @@ export interface OverlayRow {
 }
 
 /**
+ * Envelope returned by {@link BT.testState}: the engine's tick and backend plus the game's own
+ * {@link IBTDemo.testState} readout.
+ *
+ * @since 1.7.2
+ */
+export interface TestStateSnapshot {
+    /** Current fixed-update tick, same as {@link BT.ticks}. */
+    ticks: number;
+
+    /** Backend that actually started, same as {@link BT.activeBackend}. */
+    backend: Backend | null;
+
+    /**
+     * Deep copy of the game's {@link IBTDemo.testState} result, or `null` when the game has no
+     * hook, the hook threw, or its result could not be serialized.
+     */
+    state: unknown;
+
+    /**
+     * Present only when {@link state} is `null` because the hook threw or its result could not
+     * be serialized (a cycle or a `BigInt`); holds the error message.
+     */
+    error?: string;
+}
+
+/**
  * Demo contract implemented by BLIT386 applications.
  *
  * Engine lifecycle order:
@@ -566,6 +592,7 @@ export interface OverlayRow {
  * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
  * @changed 1.4.0 Added optional {@link IBTDemo.onHotReload} hook.
  * @changed 1.7.0 Added optional {@link IBTDemo.onReducedMotionChange} hook.
+ * @changed 1.7.2 Added optional {@link IBTDemo.testState} hook.
  */
 export interface IBTDemo {
     /**
@@ -641,6 +668,24 @@ export interface IBTDemo {
      * @returns Read-only list of overlay rows, or `undefined` for none.
      */
     overlayRows?(): readonly OverlayRow[] | undefined;
+
+    /**
+     * Optional hook returning a JSON readout of the game's state for automated play-testing.
+     *
+     * Never called by the engine loop. It is read on demand through {@link BT.testState}, which
+     * wraps the result in a {@link TestStateSnapshot} envelope with the tick and backend - in dev
+     * builds that is `window.BT.testState()`, so an agent driving a browser gets the same readout
+     * from every game instead of a hand-written `window.__game`.
+     *
+     * Must return plain JSON: numbers, strings, booleans, `null`, arrays, and plain objects. The
+     * engine deep-copies the result through `JSON.parse(JSON.stringify(...))`, so class instances
+     * such as `Vector2i` arrive as `{ x, y }`, `undefined` fields and functions are dropped, and a
+     * cycle or a `BigInt` makes the snapshot report an error instead of returning data.
+     *
+     * @since 1.7.2
+     * @returns Plain-JSON game state (for example `{ score, lives, player: { x, y } }`).
+     */
+    testState?(): unknown;
 
     /**
      * Optional hook called when `screen.orientation` reports a type change.

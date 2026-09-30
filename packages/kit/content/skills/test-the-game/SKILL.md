@@ -63,6 +63,15 @@ order, and prints one JSON line per step.
    It returns plain numbers, for example `{ ticks, score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
    about a second apart: `ticks` should have grown by about 60.
 
+   If the game class has a `testState()` method (engine 1.7.2+), read that instead - it works the same in every game:
+
+   ```js
+   window.BT.testState();
+   ```
+
+   It returns `{ ticks, backend, state }`, where `state` is what `testState()` returned (or `null` when the game has no
+   such method). See `use-dev-mode`.
+
 5. Press keys, then read the state again. Keys use `KeyboardEvent.code` names: `KeyA`, `KeyD`, `ArrowLeft`, `Space`.
    Player 0 uses W, A, S, D and Space out of the box; the starter game also maps the left and right arrow keys.
    - A quick tap from your browser tool's key-press action is enough for things that react to one press (`BT.isPressed`:
@@ -111,6 +120,9 @@ order, and prints one JSON line per step.
 - `window.__game` is the starter game's own code in `src/game.*`: look for `window.__game` in `init()`. Add a field to
   `state()` when you need to check something new, for example `level: this.level`. Keep it plain numbers, strings, and
   arrays so it can be printed.
+- For a game of your own, a `testState()` method on the game class (engine 1.7.2+) is less code than `window.__game`: no
+  global to assign and no `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step still
+  reads `window.__game` for now, so use `eval:window.BT.testState()` there for a game that only has `testState()`.
 - An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and
   `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.7.1+ for a 1:1 frame) work
   straight away, and the terminal `state` step falls back to `BT.ticks`. See `use-dev-mode`.

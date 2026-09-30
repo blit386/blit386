@@ -26,12 +26,15 @@ too, on the game running in front of you:
 ```js
 BT.displaySize; // how big the screen actually is
 BT.ticks; // how many update steps have happened so far
-BT.activeBackend; // 'webgpu' or 'canvas2d' - which renderer you really got
+BT.activeBackend; // 'webgpu' or 'software' - which renderer you really got
 BT.palette.get(1); // what color is actually in slot 1
 ```
 
 That is often the fastest way to answer "is this value what I think it is" without adding a `console.log` and reloading.
 Type `BT` on its own and press Enter to expand the whole object and browse it.
+
+If your game class has a `testState()` method (blit386 1.7.2+), `BT.testState()` prints what it returns next to the tick
+counter and the renderer - see the `use-dev-mode` skill.
 
 A built game does not get `window.BT` - it is there for you while you work, and gone once you ship. It is a debugging
 convenience, not a place to write game code: your game should always reach the engine through its own

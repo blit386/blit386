@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'v
 import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
-import type { BitmapFont, HardwareSettings } from './BLIT386';
+import type { BitmapFont, HardwareSettings, IBTDemo } from './BLIT386';
 import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
@@ -539,6 +539,118 @@ describe('BT.isDevMode', () => {
 
         expect(BT.isDevMode).toBe(true);
         expect(spy).toHaveBeenCalledWith();
+    });
+});
+
+describe('BT.testState', () => {
+    /** Minimal demo with an optional `testState` hook; `init()` resolves so `hotReplaceDemo` accepts it. */
+    function makeDemo(testState?: () => unknown): IBTDemo {
+        return {
+            init: vi.fn().mockResolvedValue(true),
+            update: vi.fn(),
+            render: vi.fn(),
+            ...(testState ? { testState } : {}),
+        };
+    }
+
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        vi.spyOn(BTAPI.instance, 'getTicks').mockReturnValue(42);
+        vi.spyOn(BTAPI.instance, 'getActiveBackend').mockReturnValue('software');
+    });
+
+    afterEach(() => {
+        Reflect.set(BTAPI.instance, 'demo', null);
+    });
+
+    it('returns ticks and backend with state null when no demo is running', () => {
+        expect(BT.testState()).toEqual({ ticks: 42, backend: 'software', state: null });
+    });
+
+    it('returns state null when the demo has no testState hook', () => {
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(makeDemo());
+
+        expect(BT.testState()).toEqual({ ticks: 42, backend: 'software', state: null });
+    });
+
+    it('deep-copies the hook result so mutating it does not touch the game', () => {
+        const item = { id: 1 };
+        const game = { score: 3, player: new Vector2i(10, 20), items: [item] };
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(makeDemo(() => game));
+
+        const snapshot = BT.testState();
+
+        expect(snapshot).toEqual({
+            ticks: 42,
+            backend: 'software',
+            state: { score: 3, player: { x: 10, y: 20 }, items: [{ id: 1 }] },
+        });
+        expect(Object.getPrototypeOf((snapshot.state as { player: unknown }).player)).toBe(Object.prototype);
+
+        const state = snapshot.state as typeof game;
+        state.score = 99;
+        for (const copy of state.items) {
+            copy.id = 99;
+        }
+
+        expect(game.score).toBe(3);
+        expect(item.id).toBe(1);
+    });
+
+    it('maps an undefined hook result to state null', () => {
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(makeDemo(() => undefined));
+
+        expect(BT.testState()).toEqual({ ticks: 42, backend: 'software', state: null });
+    });
+
+    it('catches a throwing hook, logs it, and reports the message', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const boom = new Error('boom');
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(
+            makeDemo(() => {
+                throw boom;
+            }),
+        );
+
+        expect(BT.testState()).toEqual({ ticks: 42, backend: 'software', state: null, error: 'boom' });
+        expect(errorSpy).toHaveBeenCalledWith('[BT] testState() threw:', boom);
+    });
+
+    it('reports a cyclic result instead of throwing', () => {
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const cyclic: Record<string, unknown> = {};
+        cyclic.self = cyclic;
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(makeDemo(() => cyclic));
+
+        const snapshot = BT.testState();
+
+        expect(snapshot.state).toBeNull();
+        expect(snapshot.error).toMatch(/circular/i);
+        expect(errorSpy).toHaveBeenCalledWith('[BT] testState() threw:', expect.any(TypeError));
+    });
+
+    it('reports a BigInt result instead of throwing', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        vi.spyOn(BTAPI.instance, 'getDemo').mockReturnValue(makeDemo(() => ({ big: 1n })));
+
+        const snapshot = BT.testState();
+
+        expect(snapshot.state).toBeNull();
+        expect(snapshot.error).toMatch(/bigint/i);
+    });
+
+    it("calls the new instance's hook after a 'reinit' hot-reload swap", async () => {
+        const oldHook = vi.fn(() => ({ generation: 1 }));
+        const newHook = vi.fn(() => ({ generation: 2 }));
+        Reflect.set(BTAPI.instance, 'demo', makeDemo(oldHook));
+
+        expect(BT.testState().state).toEqual({ generation: 1 });
+
+        expect(await BTAPI.instance.hotReplaceDemo(makeDemo(newHook))).toBe(true);
+
+        expect(BT.testState().state).toEqual({ generation: 2 });
+        expect(oldHook).toHaveBeenCalledTimes(1);
+        expect(newHook).toHaveBeenCalledTimes(1);
     });
 });
 
