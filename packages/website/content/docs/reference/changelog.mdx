@@ -16,6 +16,17 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.7.2 - Unreleased
+
+### Added
+
+- `keyboardLayout` in `configure()`: `'single'` gives player 0 WASD _and_ the arrow keys, so a one-player game reading
+  `BT.isDown(BT.BTN_LEFT)` finally answers to the left arrow; player 1 moves to IJKL, and keyboard scroll capture turns
+  on unless `isCapturingKeyboardScroll` is set explicitly. The default `'versus'` keeps today's split (WASD for player
+  0, arrows for player 1), so existing games are unchanged. `BT.inputMapReset()` restores the active layout's defaults,
+  and the new tables are exposed as `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2`. See
+  [Keyboard layouts](/docs/guides/input#keyboard-layouts).
+
 ## 1.7.1 - 2026-09-27
 
 ### Added

@@ -19,7 +19,14 @@ import { announce, nextGeneration, requestHardReload } from './HotRuntime';
 const HARD_RELOAD_VECTOR_FIELDS = ['displaySize', 'drawingBufferSize', 'maxCanvasSize'] as const;
 
 /** HardwareSettings scalar/string fields that force a hard reload when they change. */
-const HARD_RELOAD_SCALAR_FIELDS = ['targetFPS', 'backend', 'audioVoices', 'outputUpscaleFilter'] as const;
+const HARD_RELOAD_SCALAR_FIELDS = [
+    'targetFPS',
+    'backend',
+    'audioVoices',
+    'outputUpscaleFilter',
+    // Seeds the keyboard maps once before init(), so a change needs a fresh init().
+    'keyboardLayout',
+] as const;
 
 /** HardwareSettings overlay scalar/boolean/count flags that force a hard reload when they change. */
 const HARD_RELOAD_OVERLAY_FLAG_FIELDS = [

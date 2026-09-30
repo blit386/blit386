@@ -110,6 +110,19 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
 }
 
 /**
+ * Returns the warning for an unknown `keyboardLayout` hardware setting.
+ *
+ * @param value - Invalid `keyboardLayout` value from `configure()`.
+ * @param validLayouts - Every accepted layout name.
+ * @returns User-facing warning string.
+ */
+export function keyboardLayoutUnknownWarning(value: unknown, validLayouts: readonly string[]): string {
+    const quoted = validLayouts.map((layout) => `'${layout}'`).join(' or ');
+
+    return `keyboardLayout must be ${quoted} (got ${JSON.stringify(value)}). Falling back to '${validLayouts[0]}'`;
+}
+
+/**
  * Returns the error message for an `audioVoices` hardware setting outside the supported range.
  *
  * @param value - Invalid `audioVoices` value.

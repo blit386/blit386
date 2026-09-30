@@ -37,6 +37,7 @@ import {
     type HardwareSettings,
     type HotReloadContext,
     type IBTDemo,
+    type KeyboardLayout,
     mergeHardwareSettings,
     type OverlayAudioMeterStyle,
     type OverlayRow,
@@ -48,12 +49,18 @@ import {
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
 import {
-    createDefaultKeyboardRuntimeMaps,
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
+    DEFAULT_KEYBOARD_SINGLE_PLAYER1,
+    DEFAULT_KEYBOARD_SINGLE_PLAYER2,
     FACE_BUTTON_FLAGS,
     type FaceButtonCode,
 } from './input/defaultKeyboardMap';
+import {
+    getKeyboardFaceButtonKeys,
+    resetKeyboardFaceButtonMaps,
+    setKeyboardFaceButtonKeys,
+} from './input/keyboardRuntimeMaps';
 import { BarrelDistortion } from './render/effects/display/BarrelDistortion';
 import { Bloom } from './render/effects/display/Bloom';
 import { ChromaticAberration } from './render/effects/display/ChromaticAberration';
@@ -90,31 +97,12 @@ import { Timer } from './utils/Timer';
 import { ValueNoise } from './utils/ValueNoise';
 import { Vector2i } from './utils/Vector2i';
 
-/** Runtime face-button → key-code lists for keyboard player 0 (mutable via {@link BT.inputMap}). */
-let keyboardFaceButtonKeysPlayer0: Map<number, string[]>;
-
-/** Runtime face-button → key-code lists for keyboard player 1 (mutable via {@link BT.inputMap}). */
-let keyboardFaceButtonKeysPlayer1: Map<number, string[]>;
-
 /** Pointer button bit mask (`BTN_POINTER_A..D`). */
 const POINTER_BUTTON_MASK = (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
 const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
 
 /** Face button bit mask (`BTN_UP..BTN_SELECT`). */
 const FACE_BUTTON_MASK = (1 << 12) - 1;
-
-/**
- * Replaces runtime keyboard maps with fresh copies of {@link DEFAULT_KEYBOARD_PLAYER1} /
- * {@link DEFAULT_KEYBOARD_PLAYER2}.
- */
-function resetKeyboardFaceButtonMaps(): void {
-    const [m0, m1] = createDefaultKeyboardRuntimeMaps();
-
-    keyboardFaceButtonKeysPlayer0 = m0;
-    keyboardFaceButtonKeysPlayer1 = m1;
-}
-
-resetKeyboardFaceButtonMaps();
 
 /**
  * Shows a beginner-friendly runtime error in the canvas container and console.
@@ -259,15 +247,7 @@ function faceButtonKeys(button: number, player: number): readonly string[] | nul
         return null;
     }
 
-    if (player === 0) {
-        return keyboardFaceButtonKeysPlayer0.get(button as FaceButtonCode) ?? null;
-    }
-
-    if (player === 1) {
-        return keyboardFaceButtonKeysPlayer1.get(button as FaceButtonCode) ?? null;
-    }
-
-    return null;
+    return getKeyboardFaceButtonKeys(player, button);
 }
 
 /**
@@ -548,6 +528,8 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 0 (first keyboard player).
      *
      * @since 1.0.3
+     * @changed 1.7.2 Now the `'versus'` `keyboardLayout` table (the default); see
+     *   `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` for `'single'`.
      */
     DEFAULT_KEYBOARD_PLAYER1,
 
@@ -555,8 +537,26 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 1 (second keyboard player).
      *
      * @since 1.0.3
+     * @changed 1.7.2 Now the `'versus'` `keyboardLayout` table (the default); see
+     *   `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` for `'single'`.
      */
     DEFAULT_KEYBOARD_PLAYER2,
+
+    /**
+     * Default `KeyboardEvent.code` values for player index 0 under
+     * `keyboardLayout: 'single'`: WASD plus the arrow keys on the D-pad.
+     *
+     * @since 1.7.2
+     */
+    DEFAULT_KEYBOARD_SINGLE_PLAYER1,
+
+    /**
+     * Default `KeyboardEvent.code` values for player index 1 under
+     * `keyboardLayout: 'single'`: IJKL on the D-pad.
+     *
+     * @since 1.7.2
+     */
+    DEFAULT_KEYBOARD_SINGLE_PLAYER2,
 
     /**
      * Initializes the engine against a demo instance and target canvas.
@@ -2085,21 +2085,20 @@ export const BT = {
             return;
         }
 
-        const codes = [...keys];
-
-        if (player === 0) {
-            keyboardFaceButtonKeysPlayer0.set(button, codes);
-        } else {
-            keyboardFaceButtonKeysPlayer1.set(button, codes);
-        }
+        setKeyboardFaceButtonKeys(player, button, [...keys]);
     },
 
     /**
      * Restores built-in default keyboard maps for players `0` and `1`.
      *
-     * Same tables as `BT.DEFAULT_KEYBOARD_PLAYER1` and `BT.DEFAULT_KEYBOARD_PLAYER2`.
+     * Uses the tables for the active `keyboardLayout` from `configure()`:
+     * `BT.DEFAULT_KEYBOARD_PLAYER1` / `BT.DEFAULT_KEYBOARD_PLAYER2` for `'versus'` (the
+     * default), `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2`
+     * for `'single'`.
      *
      * @since 1.0.3
+     * @changed 1.7.2 Restores the defaults of the active `HardwareSettings.keyboardLayout`
+     *   instead of always the `'versus'` tables.
      */
     inputMapReset: (): void => {
         resetKeyboardFaceButtonMaps();
@@ -2600,6 +2599,7 @@ export type {
     HotContext,
     HotReloadContext,
     IBTDemo,
+    KeyboardLayout,
     MusicPlayOptions,
     OverlayAudioMeterStyle,
     OverlayRow,

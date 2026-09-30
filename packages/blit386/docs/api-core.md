@@ -243,6 +243,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `isCapturingKeyboardScroll` | `boolean` | `false` | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off) |
 | `isWakeLockEnabled` | `boolean` | `false` | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported) |
 | `preferredOrientation` | `PreferredOrientation` | `'any'` | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported) |
+| `keyboardLayout` | `'versus' \| 'single'` | `'versus'` | Built-in keyboard map: `'versus'` gives player 0 WASD and player 1 the arrows; `'single'` gives player 0 WASD and the arrows and moves player 1 to IJKL, and turns on `isCapturingKeyboardScroll` unless set explicitly. See [the input guide](guide-input.md#keyboard-layouts) |
 | `isSplashEnabled` | `boolean` | _unset_ | Play the BLIT386 splash before the game starts. Unset means shown in release builds, hidden in development. See [the splash guide](guide-splash.md) |
 | `splashColorDark` | `Color32` | `Color32.black` | Dark endpoint of the splash's 16-step gray ramp |
 | `splashColorLight` | `Color32` | `Color32.white` | Light endpoint of the splash's 16-step gray ramp |
