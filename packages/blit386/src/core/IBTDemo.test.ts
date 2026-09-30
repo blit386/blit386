@@ -487,6 +487,17 @@ describe('keyboardLayout', () => {
         );
     });
 
+    it('resolves an unknown layout to versus when displaySize is provided', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            keyboardLayout: 'solo' as never,
+        });
+
+        expect(settings.keyboardLayout).toBe('versus');
+    });
+
     it('falls back only the layout when the value cannot be serialized', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 

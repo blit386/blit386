@@ -918,7 +918,7 @@ function pickIfDefinedPartial<K extends keyof HardwareSettings>(
 /**
  * Copies a defined {@link HardwareSettings.keyboardLayout} into `picked` when it names a
  * known {@link KeyboardLayout}; unknown values (possible from untyped JS `configure()`
- * code) log a warning and are dropped so the `'versus'` default applies.
+ * code) log a warning and resolve to the `'versus'` fallback, on both merge paths.
  *
  * @param picked - Output partial settings.
  * @param value - Raw `keyboardLayout` value from `configure()`.
@@ -935,6 +935,7 @@ function pickKeyboardLayout(picked: Partial<HardwareSettings>, value: unknown): 
     }
 
     console.warn(`[BT] ${keyboardLayoutUnknownWarning(value, KEYBOARD_LAYOUTS)}`);
+    picked.keyboardLayout = KEYBOARD_LAYOUTS[0];
 }
 
 /**
