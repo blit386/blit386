@@ -616,6 +616,30 @@ describe('BT.testState', () => {
         expect(errorSpy).toHaveBeenCalledWith('[BT] testState() threw:', boom);
     });
 
+    it('reports a thrown string as-is and a thrown null-prototype object with a generic message', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const getDemo = vi.spyOn(BTAPI.instance, 'getDemo');
+
+        getDemo.mockReturnValue(
+            makeDemo(() => {
+                throw 'plain string';
+            }),
+        );
+        expect(BT.testState().error).toBe('plain string');
+
+        getDemo.mockReturnValue(
+            makeDemo(() => {
+                throw Object.create(null);
+            }),
+        );
+        expect(BT.testState()).toEqual({
+            ticks: 42,
+            backend: 'software',
+            state: null,
+            error: 'testState() threw a non-Error value',
+        });
+    });
+
     it('reports a cyclic result instead of throwing', () => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         const cyclic: Record<string, unknown> = {};

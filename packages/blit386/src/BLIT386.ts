@@ -771,7 +771,15 @@ export const BT = {
         } catch (err) {
             console.error('[BT] testState() threw:', err);
 
-            return { ticks, backend, state: null, error: err instanceof Error ? err.message : String(err) };
+            // No `String(err)`: a thrown null-prototype object has no primitive conversion and would throw here.
+            const error =
+                err instanceof Error
+                    ? err.message
+                    : typeof err === 'string'
+                      ? err
+                      : 'testState() threw a non-Error value';
+
+            return { ticks, backend, state: null, error };
         }
     },
 
