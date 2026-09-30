@@ -12,9 +12,16 @@ import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
+
 import { createRepoProgram, ENTRY_FILE, enumerateSymbols, ROOT } from './gen-api-history.mjs';
 
 const RULE_FILE_PATH = join(ROOT, '.claude', 'rules', 'bt-api-getters.md');
+const HARDWARE_SETTINGS_FILE = join(ROOT, 'src', 'core', 'IBTDemo.ts');
+const HARDWARE_SETTINGS_INTERFACE = 'HardwareSettings';
+const TIER_B_ROW_MARKER = '**B** Configure flags';
+/** Boolean-flag naming prefixes governed by the Tier A / Tier B convention. */
+const FLAG_NAME_PATTERN = /^(is|has)[A-Z]/;
 
 /**
  * Bare `BT.*` member names that legitimately never get an individual backtick-wrapped mention in
@@ -84,6 +91,82 @@ export function findMissingRuleMentions(memberNames, ruleContent, allowlist = NO
     return failures;
 }
 
+/**
+ * Enumerates the `is*` / `has*` boolean fields declared on the `HardwareSettings` interface,
+ * using the TypeScript type checker (never a regex over source text) so an optional
+ * `flag?: boolean` and a plain `flag: boolean` both count.
+ *
+ * @param {import('typescript').Program} program - Program containing the interface's source file.
+ * @param {{ filePath?: string, interfaceName?: string }} [options] - Defaults to `HardwareSettings` in `src/core/IBTDemo.ts`.
+ * @returns {string[]} Field names in declaration order (empty when the interface is not found).
+ */
+export function enumerateHardwareSettingsFlags(program, options = {}) {
+    const sourceFile = program.getSourceFile(options.filePath ?? HARDWARE_SETTINGS_FILE);
+    const interfaceName = options.interfaceName ?? HARDWARE_SETTINGS_INTERFACE;
+
+    if (!sourceFile) {
+        return [];
+    }
+
+    const checker = program.getTypeChecker();
+    const names = [];
+
+    for (const statement of sourceFile.statements) {
+        if (!ts.isInterfaceDeclaration(statement) || statement.name.text !== interfaceName) {
+            continue;
+        }
+
+        for (const member of statement.members) {
+            if (!ts.isPropertySignature(member) || !ts.isIdentifier(member.name)) {
+                continue;
+            }
+
+            const name = member.name.text;
+            const type = checker.getNonNullableType(checker.getTypeAtLocation(member));
+
+            if (FLAG_NAME_PATTERN.test(name) && (type.flags & ts.TypeFlags.BooleanLike) !== 0) {
+                names.push(name);
+            }
+        }
+    }
+
+    return names;
+}
+
+/**
+ * Extracts the Tier B "Configure flags" table row from the rule file text.
+ *
+ * @param {string} ruleContent - Full text of `bt-api-getters.md`.
+ * @returns {string | undefined} The row's line, or `undefined` when the row is absent.
+ */
+export function extractTierBRow(ruleContent) {
+    return ruleContent.split('\n').find((line) => line.includes(TIER_B_ROW_MARKER));
+}
+
+/**
+ * Asserts every `HardwareSettings` flag has an inline-code mention in the Tier B row, using the
+ * same bare-name-or-call-syntax matching as `findMissingRuleMentions` (scoped to that row so a
+ * mention elsewhere in the file cannot mask a Tier B omission).
+ *
+ * @param {string[]} flagNames - `HardwareSettings` flag field names.
+ * @param {string} ruleContent - Full text of `bt-api-getters.md`.
+ * @returns {string[]} Human-readable failure messages (empty when all found).
+ */
+export function findMissingTierBMentions(flagNames, ruleContent) {
+    const row = extractTierBRow(ruleContent);
+
+    if (row === undefined) {
+        return [`The Tier B row ("${TIER_B_ROW_MARKER}") is missing from .claude/rules/bt-api-getters.md`];
+    }
+
+    return flagNames
+        .filter((name) => findMissingRuleMentions([name], row, new Set()).length > 0)
+        .map(
+            (name) =>
+                `${HARDWARE_SETTINGS_INTERFACE}.${name} is missing from the Tier B row of .claude/rules/bt-api-getters.md (expected an inline code span: \`${name}\`)`,
+        );
+}
+
 /** Path relative to the package root, for readable console output. */
 function relativeToRoot(filePath) {
     return filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
@@ -107,19 +190,41 @@ function main() {
     const memberNames = deriveBtMemberNames(namingRelevantNames);
     const ruleContent = readFileSync(RULE_FILE_PATH, 'utf8');
     const failures = findMissingRuleMentions(memberNames, ruleContent);
+    const flagNames = enumerateHardwareSettingsFlags(program);
+    const flagFailures =
+        flagNames.length === 0
+            ? [
+                  `No is*/has* boolean fields found on ${HARDWARE_SETTINGS_INTERFACE} in ${relativeToRoot(HARDWARE_SETTINGS_FILE)} (interface renamed or moved?)`,
+              ]
+            : findMissingTierBMentions(flagNames, ruleContent);
 
-    if (failures.length === 0) {
+    if (failures.length === 0 && flagFailures.length === 0) {
         console.log(
             `All ${memberNames.length} public BT.* getters and methods are mentioned in ${relativeToRoot(RULE_FILE_PATH)}.`,
+        );
+        console.log(
+            `All ${flagNames.length} ${HARDWARE_SETTINGS_INTERFACE} is*/has* flags are mentioned in the Tier B row.`,
         );
 
         return;
     }
 
-    console.error(`${failures.length} public BT.* getter(s)/method(s) missing from ${relativeToRoot(RULE_FILE_PATH)}:`);
+    if (failures.length > 0) {
+        console.error(
+            `${failures.length} public BT.* getter(s)/method(s) missing from ${relativeToRoot(RULE_FILE_PATH)}:`,
+        );
 
-    for (const failure of failures) {
-        console.error(`  - ${failure}`);
+        for (const failure of failures) {
+            console.error(`  - ${failure}`);
+        }
+    }
+
+    if (flagFailures.length > 0) {
+        console.error(`${HARDWARE_SETTINGS_INTERFACE} flag drift in ${relativeToRoot(RULE_FILE_PATH)}:`);
+
+        for (const failure of flagFailures) {
+            console.error(`  - ${failure}`);
+        }
     }
 
     process.exit(1);

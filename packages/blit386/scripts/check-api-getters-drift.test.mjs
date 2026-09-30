@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { join } from 'node:path';
+
+import { createProgramFromFiles, ENTRY_FILE, ROOT } from './gen-api-history.mjs';
 import {
     deriveBtMemberNames,
+    enumerateHardwareSettingsFlags,
+    extractTierBRow,
     findMissingRuleMentions,
+    findMissingTierBMentions,
     NO_INLINE_MENTION_ALLOWLIST,
 } from './check-api-getters-drift.mjs';
 
@@ -110,5 +116,58 @@ describe('NO_INLINE_MENTION_ALLOWLIST', () => {
             'keyReleased',
             'pointerPosValid',
         ]);
+    });
+});
+
+describe('enumerateHardwareSettingsFlags', () => {
+    it('finds the is*/has* boolean fields of the real HardwareSettings interface', () => {
+        const program = createProgramFromFiles([ENTRY_FILE]);
+        const flags = enumerateHardwareSettingsFlags(program, { filePath: join(ROOT, 'src', 'core', 'IBTDemo.ts') });
+
+        assert.ok(flags.includes('isOverlayEnabled'));
+        assert.ok(flags.includes('isFrameCaptureShortcutEnabled'));
+        assert.ok(flags.every((name) => /^(is|has)[A-Z]/.test(name)));
+    });
+
+    it('returns an empty array when the source file is not in the program', () => {
+        const program = createProgramFromFiles([ENTRY_FILE]);
+
+        assert.deepEqual(enumerateHardwareSettingsFlags(program, { filePath: join(ROOT, 'nope.ts') }), []);
+    });
+});
+
+describe('findMissingTierBMentions', () => {
+    const rule = [
+        '| **A** Runtime queries | `is*` | `isDevMode` |',
+        '| **B** Configure flags | grammatical `is*` | `isOverlayEnabled`, `isSplashEnabled` |',
+    ].join('\n');
+
+    it('extracts only the Tier B row', () => {
+        assert.match(extractTierBRow(rule), /isSplashEnabled/);
+        assert.equal(extractTierBRow('nothing'), undefined);
+    });
+
+    it('passes when every flag is in the Tier B row', () => {
+        assert.deepEqual(findMissingTierBMentions(['isOverlayEnabled', 'isSplashEnabled'], rule), []);
+    });
+
+    it('fails for a flag missing from the row even when mentioned elsewhere in the file', () => {
+        const failures = findMissingTierBMentions(['isDevMode'], rule);
+
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /HardwareSettings\.isDevMode/);
+    });
+
+    it('does not let a longer sibling satisfy a shorter flag', () => {
+        const failures = findMissingTierBMentions(['isOverlay'], rule);
+
+        assert.equal(failures.length, 1);
+    });
+
+    it('fails when the Tier B row itself is absent', () => {
+        const failures = findMissingTierBMentions(['isOverlayEnabled'], 'no table');
+
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /Tier B row/);
     });
 });
