@@ -159,6 +159,7 @@ describe('hasHardReloadDiff', () => {
         backend: 'software',
         audioVoices: 8,
         outputUpscaleFilter: 'linear',
+        keyboardLayout: 'single',
         isOverlayEnabled: false,
     };
 

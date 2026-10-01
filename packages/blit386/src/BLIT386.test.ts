@@ -17,6 +17,7 @@ import type { BitmapFont, HardwareSettings, IBTDemo } from './BLIT386';
 import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
+import { setKeyboardLayout } from './input/keyboardRuntimeMaps';
 import { SoftwareRenderer } from './render/SoftwareRenderer';
 import { DEFAULT_CONTAINER_ID } from './utils/BootstrapHelpers';
 
@@ -1332,6 +1333,75 @@ describe('BT.inputMap / BT.inputMapReset', () => {
 
         BT.isDown(BT.BTN_A, 0);
         expect(isDown).toHaveBeenCalledWith([]);
+    });
+});
+
+describe('BT keyboard defaults under keyboardLayout', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    afterEach(() => {
+        // BTAPI seeds this from configure() at init; restore the engine's pre-init layout.
+        setKeyboardLayout('versus');
+    });
+
+    function spyKeyboard(): ReturnType<typeof vi.fn> {
+        const isDown = vi.fn().mockImplementation((codes: readonly string[]) => codes.includes('ArrowLeft'));
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue({ isButtonDown: isDown } as never);
+
+        return isDown;
+    }
+
+    it('keeps the arrow keys on player 1 under versus', () => {
+        spyKeyboard();
+        setKeyboardLayout('versus');
+
+        expect(BT.isDown(BT.BTN_LEFT, 0)).toBe(false);
+        expect(BT.isDown(BT.BTN_LEFT, 1)).toBe(true);
+    });
+
+    it('answers player 0 to both A and the left arrow under single', () => {
+        const isDown = spyKeyboard();
+        setKeyboardLayout('single');
+
+        expect(BT.isDown(BT.BTN_LEFT)).toBe(true);
+        expect(isDown).toHaveBeenLastCalledWith([
+            ...(BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1[BT.BTN_LEFT as FaceButtonCode] ?? []),
+        ]);
+        expect(isDown).toHaveBeenLastCalledWith(['KeyA', 'ArrowLeft']);
+    });
+
+    it('moves player 1 to IJKL under single', () => {
+        const isDown = spyKeyboard();
+        setKeyboardLayout('single');
+
+        expect(BT.isDown(BT.BTN_LEFT, 1)).toBe(false);
+        expect(isDown).toHaveBeenLastCalledWith(['KeyJ']);
+    });
+
+    it('lets BT.inputMap override one button of the single layout', () => {
+        const isDown = spyKeyboard();
+        setKeyboardLayout('single');
+
+        BT.inputMap(0, BT.BTN_LEFT, 'KeyQ');
+
+        expect(BT.isDown(BT.BTN_LEFT, 0)).toBe(false);
+        expect(isDown).toHaveBeenLastCalledWith(['KeyQ']);
+    });
+
+    it('restores the single layout on BT.inputMapReset', () => {
+        const isDown = spyKeyboard();
+        setKeyboardLayout('single');
+        BT.inputMap(0, BT.BTN_LEFT, 'KeyQ');
+        BT.inputMap(1, BT.BTN_LEFT, 'KeyZ');
+
+        BT.inputMapReset();
+
+        expect(BT.isDown(BT.BTN_LEFT, 0)).toBe(true);
+        expect(isDown).toHaveBeenLastCalledWith(['KeyA', 'ArrowLeft']);
+        BT.isDown(BT.BTN_LEFT, 1);
+        expect(isDown).toHaveBeenLastCalledWith(['KeyJ']);
     });
 });
 

@@ -1,5 +1,6 @@
 import { DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
 import type { Color32 } from '../utils/Color32';
+import { keyboardLayoutUnknownWarning } from '../utils/errorMessages';
 import { Vector2i } from '../utils/Vector2i';
 
 /**
@@ -43,6 +44,25 @@ export type AudioBus = 'main' | 'music' | 'sfx';
 export type PreferredOrientation = 'landscape' | 'portrait' | 'any';
 
 /**
+ * Every valid {@link KeyboardLayout} value, in declaration order. Used to validate
+ * {@link HardwareSettings.keyboardLayout} coming from untyped `configure()` code.
+ */
+const KEYBOARD_LAYOUTS = ['versus', 'single'] as const;
+
+/**
+ * Built-in keyboard face-button defaults for {@link HardwareSettings.keyboardLayout}.
+ *
+ * - `'versus'` (default) - two keyboard players: player 0 steers with WASD, player 1 with
+ *   the arrow keys.
+ * - `'single'` - one keyboard player: player 0 steers with WASD *and* the arrow keys;
+ *   player 1 moves to IJKL. Also turns on {@link HardwareSettings.isCapturingKeyboardScroll}
+ *   unless `configure()` sets that flag explicitly.
+ *
+ * @since 1.7.2
+ */
+export type KeyboardLayout = (typeof KEYBOARD_LAYOUTS)[number];
+
+/**
  * Passed to {@link IBTDemo.onHotReload} after a hot reload swaps in new code.
  *
  * @since 1.4.0
@@ -76,6 +96,7 @@ export interface HotReloadContext {
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
  * @changed 1.7.0 Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}.
+ * @changed 1.7.2 Added {@link HardwareSettings.keyboardLayout}.
  */
 export interface HardwareSettings {
     /**
@@ -215,6 +236,28 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     preferredOrientation?: PreferredOrientation;
+
+    /**
+     * Which built-in keyboard map the two keyboard players start with.
+     *
+     * | Layout | Player 0 D-pad | Player 1 D-pad |
+     * | --- | --- | --- |
+     * | `'versus'` (default) | W A S D | Arrow keys |
+     * | `'single'` | W A S D and arrow keys | I J K L |
+     *
+     * Face and system buttons are the same in both layouts. Set `'single'` in a one-player
+     * game so `BT.isDown(BT.BTN_LEFT)` answers to the left arrow as well as `A`. `'single'`
+     * also turns on {@link HardwareSettings.isCapturingKeyboardScroll} (so the arrows stop
+     * scrolling the host page) unless `configure()` sets that flag explicitly.
+     *
+     * Applied once, before the game's `init()` runs, so `BT.inputMap` calls in `init()`
+     * still override single buttons; `BT.inputMapReset()` restores this layout's defaults.
+     * Unknown values log a warning and fall back to `'versus'`. Defaults to `'versus'` in
+     * {@link defaultConfig}.
+     *
+     * @since 1.7.2
+     */
+    keyboardLayout?: KeyboardLayout;
 
     /**
      * Whether the BLIT386 splash plays before the game starts.
@@ -756,6 +799,7 @@ export function defaultConfig(): HardwareSettings {
         isCapturingKeyboardScroll: false,
         isWakeLockEnabled: false,
         preferredOrientation: 'any',
+        keyboardLayout: 'versus',
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -872,6 +916,29 @@ function pickIfDefinedPartial<K extends keyof HardwareSettings>(
 }
 
 /**
+ * Copies a defined {@link HardwareSettings.keyboardLayout} into `picked` when it names a
+ * known {@link KeyboardLayout}; unknown values (possible from untyped JS `configure()`
+ * code) log a warning and resolve to the `'versus'` fallback, on both merge paths.
+ *
+ * @param picked - Output partial settings.
+ * @param value - Raw `keyboardLayout` value from `configure()`.
+ */
+function pickKeyboardLayout(picked: Partial<HardwareSettings>, value: unknown): void {
+    if (value === undefined) {
+        return;
+    }
+
+    if ((KEYBOARD_LAYOUTS as readonly unknown[]).includes(value)) {
+        picked.keyboardLayout = value as KeyboardLayout;
+
+        return;
+    }
+
+    console.warn(`[BT] ${keyboardLayoutUnknownWarning(value, KEYBOARD_LAYOUTS)}`);
+    picked.keyboardLayout = KEYBOARD_LAYOUTS[0];
+}
+
+/**
  * Copies defined overlay fields from `partial` into `picked`.
  *
  * @param picked - Output partial settings.
@@ -937,6 +1004,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'isCapturingKeyboardScroll');
     pickIfDefinedPartial(picked, partial, 'isWakeLockEnabled');
     pickIfDefinedPartial(picked, partial, 'preferredOrientation');
+    pickKeyboardLayout(picked, partial.keyboardLayout);
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickIfDefinedPartial(picked, partial, 'isSplashEnabled');
@@ -1104,6 +1172,7 @@ function assignFullDefaultMergeScalars(
     );
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled ?? defaults.isWakeLockEnabled);
     assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation ?? defaults.preferredOrientation);
+    assignIfDefined(optionals, 'keyboardLayout', picked.keyboardLayout ?? defaults.keyboardLayout);
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
@@ -1257,6 +1326,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'isCapturingKeyboardScroll', picked.isCapturingKeyboardScroll);
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
     assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation);
+    assignIfDefined(optionals, 'keyboardLayout', picked.keyboardLayout);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
     assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
@@ -1331,6 +1401,26 @@ function mergeExplicitDisplayProfile(
 }
 
 /**
+ * Turns on keyboard scroll capture for the `'single'` {@link KeyboardLayout} when
+ * `configure()` left {@link HardwareSettings.isCapturingKeyboardScroll} unset - the arrow
+ * keys then steer player 0, so they should not also scroll the host page.
+ *
+ * @param merged - Resolved settings from either merge path.
+ * @param picked - Defined fields from `configure()`.
+ * @returns `merged`, with `isCapturingKeyboardScroll` forced on when the rule applies.
+ */
+function applyKeyboardLayoutScrollCapture(
+    merged: HardwareSettings,
+    picked: Partial<HardwareSettings>,
+): HardwareSettings {
+    if (merged.keyboardLayout === 'single' && picked.isCapturingKeyboardScroll === undefined) {
+        merged.isCapturingKeyboardScroll = true;
+    }
+
+    return merged;
+}
+
+/**
  * Resolves demo `configure()` output into complete {@link HardwareSettings}.
  *
  * When `displaySize` is omitted from `partial`, unset fields inherit from
@@ -1353,11 +1443,12 @@ export function mergeHardwareSettings(partial?: Partial<HardwareSettings>): Hard
     const normalized = normalizeDeprecatedHardwareSettings(partial);
     const picked = pickDefinedHardwareSettings(normalized);
 
-    if (normalized.displaySize === undefined) {
-        return mergePartialWithFullDefaults(normalized, picked, defaults);
-    }
+    const merged =
+        normalized.displaySize === undefined
+            ? mergePartialWithFullDefaults(normalized, picked, defaults)
+            : mergeExplicitDisplayProfile(normalized, picked, defaults);
 
-    return mergeExplicitDisplayProfile(normalized, picked, defaults);
+    return applyKeyboardLayoutScrollCapture(merged, picked);
 }
 
 /** Resolved timing-chart renderer diagnostic visualization mode. */

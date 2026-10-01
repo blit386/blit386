@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-09-30T16:40:11Z"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -218,6 +218,8 @@ under rapid input - the tick already consumed and cleared the edge before render
 <Since symbol="BT.BTN_SHOULDER" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER1" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER2" />
+<Since symbol="BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1" />
+<Since symbol="BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2" />
 
 Face button constants are bit flags. You can pass a single button or a combined mask; matching uses ANY semantics:
 `BT.isDown(BT.BTN_A | BT.BTN_B)` is true when either A or B is down.
@@ -244,10 +246,46 @@ BT.isDown(BT.BTN_ABXY, 0); // A, B, X, or Y for player 0
 BT.isDown(BT.BTN_SHOULDER, 1); // L or R shoulder for player 1
 ```
 
+<Callout type="warn" title="Arrow keys belong to player 1 by default">
+
+Out of the box the engine assumes two keyboard players: player 0 steers with W, A, S, D and player 1 with the arrow
+keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does **not** react to the left arrow. Set
+`keyboardLayout: 'single'` in `configure()` to give player 0 both WASD and the arrows, or remap single buttons with
+[`BT.inputMap(0, ...)`](#remapping-btinputmap--btinputmapreset).
+
+</Callout>
+
+### Keyboard layouts
+
+`HardwareSettings.keyboardLayout` picks which built-in map the two keyboard players start with:
+
+| Layout | Player 0 D-pad | Player 1 D-pad |
+| --- | --- | --- |
+| `'versus'` (default) | W A S D | Arrow keys |
+| `'single'` | W A S D and arrow keys | I J K L |
+
+Face and system buttons are the same in both layouts (player 0: Space / B for A, N for B, 5 for Start, Escape for
+Select; player 1: `;` / Numpad 1, `'` / Numpad 2, Backspace / Numpad `/`). `'single'` also turns on
+[`isCapturingKeyboardScroll`](#scroll-delta) so the arrows stop scrolling the host page, unless `configure()` sets that
+flag itself.
+
+```ts twoslash
+import { type HardwareSettings } from 'blit386';
+
+function configure(): Partial<HardwareSettings> {
+  return {
+    keyboardLayout: 'single', // one player: WASD and the arrows both steer player 0
+  };
+}
+```
+
+The layout is applied before your `init()` runs, so `BT.inputMap` calls in `init()` still override single buttons, and
+`BT.inputMapReset()` restores the active layout's defaults. Changing it during a hot reload triggers a full reload.
+
 Built-in defaults are exposed as read-only tables (same values the engine starts with):
 
-- `BT.DEFAULT_KEYBOARD_PLAYER1`
-- `BT.DEFAULT_KEYBOARD_PLAYER2`
+- `BT.DEFAULT_KEYBOARD_PLAYER1` / `BT.DEFAULT_KEYBOARD_PLAYER2` - `'versus'`
+- `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` - `'single'`
 
 <DemoEmbed demo="035-keyboard-diagnostic" title="BLIT386 keyboard diagnostic demo" />
 
@@ -266,7 +304,7 @@ BT.inputMap(0, BT.BTN_A, 'Space');
 BT.inputMap(0, BT.BTN_UP, 'ArrowUp', 'KeyW'); // either key triggers UP for player 0
 BT.inputMap(1, BT.BTN_START, 'Enter', 'NumpadEnter');
 
-// Restore built-in defaults for both keyboard players (does not affect pointer or future gamepad state)
+// Restore the active keyboardLayout's defaults for both keyboard players (does not affect pointer or gamepad state)
 BT.inputMapReset();
 ```
 
@@ -393,7 +431,7 @@ function configure(): Partial<HardwareSettings> {
 Keyboard scroll capture is also opt-in. Set `isCapturingKeyboardScroll: true` in `configure()` so the engine calls
 `preventDefault()` on canvas `keydown` for keys that scroll the host page by default (arrow keys, Space,
 PageUp/PageDown, Home, End). When the flag is omitted (the default), those keys still scroll the page while the canvas
-is focused.
+is focused - except under `keyboardLayout: 'single'`, which turns capture on unless you set the flag to `false`.
 
 ```ts twoslash
 import { type HardwareSettings } from 'blit386';
@@ -479,8 +517,8 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 
 - `PointerInput`, `KeyboardInput`, and `GamepadInput` are internal; import from `blit386` and access through `BT.*`
   methods.
-- Default keyboard tables live in `defaultKeyboardMap.ts`; runtime remaps are stored in the `BT` facade and reset with
-  `BT.inputMapReset()`.
+- Default keyboard tables live in `defaultKeyboardMap.ts`; runtime remaps live in `keyboardRuntimeMaps.ts`, seeded from
+  `keyboardLayout` inside `BTAPI.init()` before `demo.init()`, and reset with `BT.inputMapReset()`.
 - Pointer slot count is 4 (indices `0`-`3`); iterate with a literal loop or constant in demo code - there is no public
   `POINTER_SLOT_COUNT` export.
 - `PointerInput`, `KeyboardInput`, and `GamepadInput` are created and attached inside `BTAPI.init()`, so they are ready

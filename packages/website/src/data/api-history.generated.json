@@ -217,16 +217,40 @@
     "BT.DEFAULT_KEYBOARD_PLAYER1": {
       "kind": "const",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.7.2",
+          "note": "Now the `'versus'` `keyboardLayout` table (the default); see\n`BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` for `'single'`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.DEFAULT_KEYBOARD_PLAYER2": {
       "kind": "const",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.7.2",
+          "note": "Now the `'versus'` `keyboardLayout` table (the default); see\n`BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` for `'single'`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
+    },
+    "BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1": {
+      "kind": "const",
+      "since": "1.7.2",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2": {
+      "kind": "const",
+      "since": "1.7.2",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.FLIP_H": {
       "kind": "const",
@@ -556,7 +580,12 @@
     "BT.inputMapReset": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.7.2",
+          "note": "Restores the defaults of the active `HardwareSettings.keyboardLayout`\ninstead of always the `'versus'` tables."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1236,6 +1265,10 @@
         {
           "version": "1.7.0",
           "note": "Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}."
+        },
+        {
+          "version": "1.7.2",
+          "note": "Added {@link HardwareSettings.keyboardLayout}."
         }
       ],
       "deprecated": null,
@@ -1292,6 +1325,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "KeyboardLayout": {
+      "kind": "type",
+      "since": "1.7.2",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "MusicPlayOptions": {
       "kind": "interface",
@@ -1865,6 +1905,8 @@
       "BT.BTN_Y",
       "BT.DEFAULT_KEYBOARD_PLAYER1",
       "BT.DEFAULT_KEYBOARD_PLAYER2",
+      "BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1",
+      "BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2",
       "BT.PLAYER_FOUR",
       "BT.PLAYER_ONE",
       "BT.PLAYER_THREE",

@@ -88,6 +88,7 @@ configure() {
         isWakeLockEnabled: true, // opt in to stop mobile screens dimming during play
         isFrameCaptureShortcutEnabled: false, // opt out of the dev-mode F9 / Shift+F9 capture keys (engine 1.7.0+)
         preferredOrientation: 'landscape', // ask the browser to lock after start (Android)
+        keyboardLayout: 'single', // WASD and arrows both steer player 0 (engine 1.7.2+)
     };
 }
 ```
@@ -99,6 +100,10 @@ can tap-hold-scroll the page), `none` when on (the game owns the gesture).
 Keyboard scroll capture defaults to off so arrow keys and Space still scroll the host page while the canvas is focused.
 Set `isCapturingKeyboardScroll: true` when your game maps those keys (for example ArrowUp/Down or Space as a face
 button).
+
+`keyboardLayout` is a string, not an `is*` flag: `'versus'` (default) gives player 0 W, A, S, D and player 1 the arrow
+keys; `'single'` gives player 0 both sets and moves player 1 to I, J, K, L. `'single'` also turns keyboard scroll
+capture on unless `isCapturingKeyboardScroll` is set explicitly.
 
 Screen wake lock defaults to off. Set `isWakeLockEnabled: true` so phones and tablets do not dim or lock the screen
 during active play; the engine requests it after a successful start and silently does nothing on browsers that do not

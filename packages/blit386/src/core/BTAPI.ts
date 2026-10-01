@@ -20,6 +20,7 @@ import type { MusicPlayOptions } from '../audio/MusicPlayer';
 import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audio/VoicePool';
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
+import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
 import type { OverlayAudioSnapshot, OverlayDrawTarget } from '../overlay';
 import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
@@ -2040,6 +2041,8 @@ export class BTAPI {
             getTicks: () => this.loop?.getTicks() ?? 0,
         });
         this.keyboard.setIsCapturingScroll(hw.isCapturingKeyboardScroll === true);
+        // Seed the keyboard maps before the game's init() runs, so BT.inputMap calls there win.
+        setKeyboardLayout(hw.keyboardLayout ?? 'versus');
 
         // Own listener, separate from KeyboardInput - see handleClipboardShortcutKeydown's
         // doc comment. Remove-before-add guards against a duplicate registration if this

@@ -7,7 +7,7 @@
  * mutable settings state.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Color32 } from '../utils/Color32';
 import { validateDimensions } from '../utils/RenderLimits';
@@ -451,5 +451,78 @@ describe('splash hardware settings', () => {
 
         expect(merged.splashColorDark?.r).toBe(10);
         expect(merged.splashColorLight?.r).toBe(240);
+    });
+});
+
+describe('keyboardLayout', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('defaults to versus', () => {
+        expect(defaultConfig().keyboardLayout).toBe('versus');
+        expect(mergeHardwareSettings({ targetFPS: 30 }).keyboardLayout).toBe('versus');
+    });
+
+    it('stays unset when displaySize is provided without an explicit value', () => {
+        expect(mergeHardwareSettings({ displaySize: new Vector2i(320, 240) }).keyboardLayout).toBeUndefined();
+    });
+
+    it('keeps an explicit layout on both merge paths', () => {
+        expect(mergeHardwareSettings({ keyboardLayout: 'single' }).keyboardLayout).toBe('single');
+        expect(
+            mergeHardwareSettings({ displaySize: new Vector2i(320, 240), keyboardLayout: 'single' }).keyboardLayout,
+        ).toBe('single');
+    });
+
+    it('warns and falls back to versus for an unknown layout', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const settings = mergeHardwareSettings({ keyboardLayout: 'solo' as never });
+
+        expect(settings.keyboardLayout).toBe('versus');
+        expect(settings.isCapturingKeyboardScroll).toBe(false);
+        expect(warn).toHaveBeenCalledExactlyOnceWith(
+            expect.stringContaining("keyboardLayout must be 'versus' or 'single'"),
+        );
+    });
+
+    it('resolves an unknown layout to versus when displaySize is provided', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            keyboardLayout: 'solo' as never,
+        });
+
+        expect(settings.keyboardLayout).toBe('versus');
+    });
+
+    it('falls back only the layout when the value cannot be serialized', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        const settings = mergeHardwareSettings({ targetFPS: 30, keyboardLayout: 1n as never });
+
+        expect(settings.keyboardLayout).toBe('versus');
+        expect(settings.targetFPS).toBe(30);
+        expect(warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('(got <bigint>)'));
+    });
+
+    it('turns on keyboard scroll capture for single when the flag is omitted', () => {
+        expect(mergeHardwareSettings({ keyboardLayout: 'single' }).isCapturingKeyboardScroll).toBe(true);
+        expect(
+            mergeHardwareSettings({ displaySize: new Vector2i(320, 240), keyboardLayout: 'single' })
+                .isCapturingKeyboardScroll,
+        ).toBe(true);
+    });
+
+    it('keeps an explicit isCapturingKeyboardScroll: false under single', () => {
+        const settings = mergeHardwareSettings({ keyboardLayout: 'single', isCapturingKeyboardScroll: false });
+
+        expect(settings.isCapturingKeyboardScroll).toBe(false);
+    });
+
+    it('leaves keyboard scroll capture off for versus', () => {
+        expect(mergeHardwareSettings({ keyboardLayout: 'versus' }).isCapturingKeyboardScroll).toBe(false);
     });
 });

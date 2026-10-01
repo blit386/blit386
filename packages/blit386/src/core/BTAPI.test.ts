@@ -36,6 +36,7 @@ import { AudioManager } from '../audio/AudioManager';
 import { INVALID_SOUND_REF } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
 import { KeyboardInput } from '../input/KeyboardInput';
+import { getKeyboardFaceButtonKeys, setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import type { OverlayDrawTarget } from '../overlay';
 import { DEFAULT_IDX_TEXT, Overlay, paletteBandY } from '../overlay';
 import { AUDIO_METER_BAR_GAP_PX, AUDIO_METER_BAR_WIDTH_PX } from '../overlay/audio-meter/constants';
@@ -1811,6 +1812,83 @@ describe('BTAPI', () => {
             expect(result).toBe(true);
             expect(BT.requestedBackend).toBe('webgpu');
             expect(BT.activeBackend).toBe('software');
+        });
+    });
+
+    describe('keyboard layout', () => {
+        const BTN_LEFT = 1 << 2;
+
+        afterEach(() => {
+            setKeyboardLayout('versus');
+        });
+
+        function makeLayoutDemo(settings: Partial<HardwareSettings>, init: () => boolean): IBTDemo {
+            return {
+                ...makeMockDemo(),
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    ...settings,
+                }),
+                init: vi.fn(async () => init()),
+            };
+        }
+
+        it('seeds the single layout before the game init() runs', async () => {
+            let player0LeftAtInit: readonly string[] | null = null;
+            const demo = makeLayoutDemo({ keyboardLayout: 'single' }, () => {
+                player0LeftAtInit = getKeyboardFaceButtonKeys(0, BTN_LEFT);
+
+                return true;
+            });
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+
+            expect(player0LeftAtInit).toEqual(['KeyA', 'ArrowLeft']);
+            expect(getKeyboardFaceButtonKeys(1, BTN_LEFT)).toEqual(['KeyJ']);
+        });
+
+        it('keeps BT.inputMap calls made in the game init()', async () => {
+            const demo = makeLayoutDemo({ keyboardLayout: 'single' }, () => {
+                BT.inputMap(0, BT.BTN_LEFT, 'KeyQ');
+
+                return true;
+            });
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+
+            expect(getKeyboardFaceButtonKeys(0, BTN_LEFT)).toEqual(['KeyQ']);
+        });
+
+        it('reseeds versus when configure() omits the layout', async () => {
+            setKeyboardLayout('single');
+            const demo = makeLayoutDemo({}, () => true);
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+
+            expect(getKeyboardFaceButtonKeys(0, BTN_LEFT)).toEqual(['KeyA']);
+            expect(getKeyboardFaceButtonKeys(1, BTN_LEFT)).toEqual(['ArrowLeft']);
+        });
+
+        it('captures keyboard scroll under single unless configure() opts out', async () => {
+            const setIsCapturingScroll = vi.spyOn(KeyboardInput.prototype, 'setIsCapturingScroll');
+
+            await BTAPI.instance.init(
+                makeLayoutDemo({ keyboardLayout: 'single' }, () => true),
+                makeMockCanvas(),
+            );
+
+            expect(setIsCapturingScroll).toHaveBeenLastCalledWith(true);
+
+            resetSingleton();
+            installMockNavigatorGPU();
+            await BTAPI.instance.init(
+                makeLayoutDemo({ keyboardLayout: 'single', isCapturingKeyboardScroll: false }, () => true),
+                makeMockCanvas(),
+            );
+
+            expect(setIsCapturingScroll).toHaveBeenLastCalledWith(false);
         });
     });
 
