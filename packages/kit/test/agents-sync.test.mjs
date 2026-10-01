@@ -28,14 +28,18 @@ const vars = {
 /** A skill the installed kit emits for Claude, standing in for "a skill added in a later kit". */
 const skill = generateClaudeAdapter(kitRoot(), vars).find((f) => f.path.endsWith('/SKILL.md'));
 
+/** The one user-owned file the Claude adapter emits: sync writes it when missing and never again. */
+const LAUNCH_JSON = '.claude/launch.json';
+
 /**
  * Game folder whose manifest uses Claude (via CLAUDE.md) but does not track `skill.path`, with
  * `onDisk` written at that path as an untracked file.
  *
- * @param {string} onDisk
+ * @param {string | null} onDisk - content of the untracked file, or null to write none
+ * @param {string} [relPath] - where the untracked file goes; defaults to `skill.path`
  * @returns {string}
  */
-function makeGame(onDisk) {
+function makeGame(onDisk, relPath = skill.path) {
     const root = mkdtempSync(join(tmpdir(), 'blit-agents-sync-'));
     writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'sync-game', private: true }));
     mkdirSync(join(root, '.blit'));
@@ -43,8 +47,10 @@ function makeGame(onDisk) {
         join(root, '.blit', 'manifest.json'),
         JSON.stringify({ kitVersion: '0.0.0', vars, files: [{ path: 'CLAUDE.md', class: 'shared', sha256: '' }] }),
     );
-    mkdirSync(dirname(join(root, skill.path)), { recursive: true });
-    writeFileSync(join(root, skill.path), onDisk);
+    if (onDisk !== null) {
+        mkdirSync(dirname(join(root, relPath)), { recursive: true });
+        writeFileSync(join(root, relPath), onDisk);
+    }
     return root;
 }
 
@@ -86,6 +92,46 @@ test('sync silently adopts an untracked file that already matches the kit versio
         assert.ok(!existsSync(join(root, `${skill.path}.new`)), 'identical file needs no .new copy');
         assert.ok(!output.includes(skill.path), `expected no mention of the adopted file, got:\n${output}`);
         assert.ok(trackedPaths(root).includes(skill.path), 'identical file is adopted into the manifest');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync leaves a pre-existing untracked .claude/launch.json alone, with no .new copy', () => {
+    const mine = '{ "version": "0.0.1", "configurations": [{ "name": "hand-written", "port": 4000 }] }\n';
+    const root = makeGame(mine, LAUNCH_JSON);
+
+    try {
+        const { output } = runSync(root);
+
+        assert.equal(readFileSync(join(root, LAUNCH_JSON), 'utf8'), mine, 'user file must be untouched');
+        assert.ok(!existsSync(join(root, `${LAUNCH_JSON}.new`)), 'a user-owned file gets no .new copy');
+        assert.ok(!output.includes(LAUNCH_JSON), `expected no mention of the file, got:\n${output}`);
+        assert.ok(!trackedPaths(root).includes(LAUNCH_JSON), 'an untracked user file stays untracked');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync adds .claude/launch.json when missing, then never rewrites an edited one', () => {
+    const root = makeGame(null);
+
+    try {
+        runSync(root);
+
+        const generated = JSON.parse(readFileSync(join(root, LAUNCH_JSON), 'utf8'));
+        assert.equal(generated.configurations[0].runtimeExecutable, 'npm');
+        assert.ok(trackedPaths(root).includes(LAUNCH_JSON));
+        assert.ok(!existsSync(join(root, '.blit', 'base', LAUNCH_JSON)), 'user-owned files keep no base copy');
+
+        // The desktop app (or the user) rewrites the file; neither a plain nor a forced sync may undo that.
+        const edited = JSON.stringify({ ...generated, autoVerify: false });
+        writeFileSync(join(root, LAUNCH_JSON), edited);
+        runSync(root);
+        spawnSync(process.execPath, [blitCli, 'agents', 'sync', '--force'], { cwd: root });
+
+        assert.equal(readFileSync(join(root, LAUNCH_JSON), 'utf8'), edited, 'edited file must be untouched');
+        assert.ok(!existsSync(join(root, `${LAUNCH_JSON}.new`)), 'an edited user-owned file gets no .new copy');
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

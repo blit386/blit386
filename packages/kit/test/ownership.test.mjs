@@ -14,7 +14,7 @@ import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
 import { agentsFile, collectDocs, generateClaudeAdapter, generateCursorAdapter, kitRoot } from '../dist/adapters.js';
-import { classifyFile, hasAgentFiles, isAgentPath, isKitManaged } from '../dist/ownership.js';
+import { CLAUDE_LAUNCH_JSON, classifyFile, hasAgentFiles, isAgentPath, isKitManaged } from '../dist/ownership.js';
 
 /** Template vars sufficient to render every adapter file (package-manager commands, project name). */
 const VARS = {
@@ -120,7 +120,40 @@ test('Cursor shell safety starts through node and emits both hook files', () => 
     );
 });
 
-test('every file the kit emits classifies as kit-owned or shared, never user-owned', () => {
+test('the Claude launch config is user-owned and emitted only by the Claude adapter', () => {
+    const root = kitRoot();
+
+    assert.equal(CLAUDE_LAUNCH_JSON, '.claude/launch.json');
+    assert.equal(classifyFile(CLAUDE_LAUNCH_JSON), 'user-owned');
+    assert.ok(generateClaudeAdapter(root, VARS).some((file) => file.path === CLAUDE_LAUNCH_JSON));
+    assert.equal(
+        generateCursorAdapter(root, VARS).some((file) => file.path.endsWith('launch.json')),
+        false,
+    );
+});
+
+test('the launch config runs vite through the package manager that leads pmRunDev', () => {
+    const root = kitRoot();
+    const configFor = (pmRunDev) => {
+        const file = generateClaudeAdapter(root, { ...VARS, pmRunDev }).find((f) => f.path === CLAUDE_LAUNCH_JSON);
+        return JSON.parse(file.content).configurations[0];
+    };
+    const flags = ['--port', '5173', '--strictPort', '--no-open'];
+
+    assert.deepEqual(configFor('npm run dev'), {
+        name: 'test-game-dev',
+        runtimeExecutable: 'npm',
+        runtimeArgs: ['exec', '--', 'vite', ...flags],
+        port: 5173,
+        autoPort: false,
+    });
+    assert.deepEqual(configFor('pnpm run dev').runtimeArgs, ['exec', 'vite', ...flags]);
+    assert.deepEqual(configFor('yarn dev').runtimeArgs, ['vite', ...flags]);
+    assert.deepEqual(configFor('bun run dev').runtimeArgs, ['x', 'vite', ...flags]);
+    assert.equal(configFor('mystery run dev').runtimeExecutable, 'npm', 'an unknown manager falls back to npm');
+});
+
+test('every file the kit emits classifies as kit-owned or shared, except the user-owned launch config', () => {
     const root = kitRoot();
     const emitted = [
         agentsFile(root),
@@ -132,6 +165,10 @@ test('every file the kit emits classifies as kit-owned or shared, never user-own
     assert.ok(emitted.length > 0, 'expected the kit to emit at least one file');
 
     for (const file of emitted) {
+        if (file.path === CLAUDE_LAUNCH_JSON) {
+            continue;
+        }
+
         assert.notEqual(
             classifyFile(file.path),
             'user-owned',

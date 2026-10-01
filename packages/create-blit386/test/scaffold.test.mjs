@@ -535,6 +535,43 @@ test('scaffold with both Claude and Cursor agents writes both adapter trees', ()
     }
 });
 
+test('a Claude scaffold ships a user-owned .claude/launch.json for its package manager; Cursor-only has none', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-launch-json-'));
+    const launchJson = join('.claude', 'launch.json');
+    const make = (pm, agents) => {
+        const project = join(work, `${pm}-${agents.join('-')}`);
+        scaffold({
+            targetDir: project,
+            projectName: 'Launch Game',
+            pmInstall: `${pm} install`,
+            pmRunDev: `${pm} run dev`,
+            pmRunBuild: `${pm} run build`,
+            pmRunFormat: `${pm} run format`,
+            pmRunLint: `${pm} run lint`,
+            agents,
+        });
+        return project;
+    };
+
+    try {
+        for (const pm of ['pnpm', 'npm']) {
+            const project = make(pm, ['claude']);
+            const [config] = JSON.parse(readFileSync(join(project, launchJson), 'utf8')).configurations;
+
+            assert.equal(config.runtimeExecutable, pm);
+            assert.equal(config.port, 5173);
+
+            const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+            assert.equal(manifest.files.find((f) => f.path === '.claude/launch.json')?.class, 'user-owned');
+            assert.ok(!existsSync(join(project, '.blit', 'base', launchJson)), 'user-owned files keep no base copy');
+        }
+
+        assert.ok(!existsSync(join(make('pnpm', ['cursor']), launchJson)), 'Cursor does not read launch.json');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffold omits packageManager when the option is absent', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-no-pm-field-'));
 
