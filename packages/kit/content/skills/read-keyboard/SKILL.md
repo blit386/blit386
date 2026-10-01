@@ -1,6 +1,6 @@
 ---
 name: read-keyboard
-description:
+description: >-
   Read keyboard keys and face buttons in update(). Use for keyboard movement, jumping, menus, typed text, or remapping
   keys, including raw key codes like 'KeyW', the default key mapping (W, A, S, D for player 0, arrow keys for player 1),
   and making the arrow keys steer player 0 in a one-player game (keyboardLayout: 'single').

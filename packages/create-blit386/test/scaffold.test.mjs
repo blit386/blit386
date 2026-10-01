@@ -413,7 +413,7 @@ test('scaffold copies optional CI and agent files when requested', () => {
             packageManager: 'pnpm@11.20.0',
         });
 
-        // Cursor adapter: rules, hooks, and commands should all be generated.
+        // Cursor adapter: rules, hooks, and skills should all be generated.
         assert.ok(
             existsSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc')),
             'Cursor rule blit-api-names.mdc should be generated',
@@ -428,22 +428,26 @@ test('scaffold copies optional CI and agent files when requested', () => {
             '.cursor/hooks/shell-safety.sh should be generated',
         );
         assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'commands', 'run.md')),
-            '.cursor/commands/run.md should be generated',
+            existsSync(join(cursorProject, '.cursor', 'skills', 'run', 'SKILL.md')),
+            '.cursor/skills/run/SKILL.md should be generated',
         );
         assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'commands', 'fix.md')),
-            '.cursor/commands/fix.md should be generated',
+            existsSync(join(cursorProject, '.cursor', 'skills', 'fix', 'SKILL.md')),
+            '.cursor/skills/fix/SKILL.md should be generated',
         );
         assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'commands', 'test-the-game.md')),
-            '.cursor/commands/test-the-game.md should be generated',
+            existsSync(join(cursorProject, '.cursor', 'skills', 'test-the-game', 'SKILL.md')),
+            '.cursor/skills/test-the-game/SKILL.md should be generated',
+        );
+        assert.ok(
+            !existsSync(join(cursorProject, '.cursor', 'commands', 'run.md')),
+            '.cursor/commands/run.md should not be generated',
         );
 
-        // Cursor commands are invoked by filename, so the skill frontmatter is stripped.
-        const runCommand = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
-        assert.ok(!runCommand.startsWith('---'), 'Cursor command files should not have YAML frontmatter');
-        assert.ok(runCommand.includes('# Run the game'), 'Cursor command should contain the skill body');
+        // Cursor reads name/description from the frontmatter to discover and trigger the skill.
+        const cursorRunSkill = readFileSync(join(cursorProject, '.cursor', 'skills', 'run', 'SKILL.md'), 'utf8');
+        assert.ok(cursorRunSkill.startsWith('---'), 'Cursor skill files should keep YAML frontmatter');
+        assert.ok(cursorRunSkill.includes('# Run the game'), 'Cursor skill should contain the skill body');
 
         // Cursor rule files should keep their MDC frontmatter (Cursor reads alwaysApply from it).
         const apiRule = readFileSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
@@ -471,9 +475,8 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(formatHook.command.includes('format'), 'format hook should reference the format command');
         assert.ok(!formatHook.command.includes('{{'), 'format hook should not have unrendered placeholders');
 
-        // Commands should have template vars rendered.
-        const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
-        assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
+        // Skills should have template vars rendered.
+        assert.ok(!cursorRunSkill.includes('{{'), 'run skill should not have unrendered placeholders');
 
         // The same docs-MCP server, in Cursor's shape: a type there would mark a local stdio server,
         // so the remote entry carries the url alone.
@@ -527,6 +530,14 @@ test('scaffold with both Claude and Cursor agents writes both adapter trees', ()
 
         assert.ok(existsSync(join(project, 'CLAUDE.md')), 'Claude CLAUDE.md should be generated');
         assert.ok(existsSync(join(project, '.cursor', 'hooks.json')), 'Cursor hooks.json should be generated');
+        assert.ok(
+            existsSync(join(project, '.claude', 'skills', 'play-a-sound', 'SKILL.md')),
+            'both-assistant games should ship the Claude skill',
+        );
+        assert.ok(
+            existsSync(join(project, '.cursor', 'skills', 'play-a-sound', 'SKILL.md')),
+            'both-assistant games should also ship the Cursor skill',
+        );
 
         const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
         assert.equal(pkg.packageManager, 'pnpm@11.20.0', 'explicit packageManager option should land in package.json');
@@ -1149,7 +1160,10 @@ test('blit agents add cursor sets up Cursor files and a later sync is clean', ()
             existsSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc')),
             '.cursor/rules should be created',
         );
-        assert.ok(existsSync(join(project, '.cursor', 'commands', 'run.md')), '.cursor/commands should be created');
+        assert.ok(
+            existsSync(join(project, '.cursor', 'skills', 'run', 'SKILL.md')),
+            '.cursor/skills should be created',
+        );
         assert.ok(existsSync(join(project, '.cursor', 'mcp.json')), '.cursor/mcp.json should be created');
 
         const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));

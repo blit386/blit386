@@ -45,7 +45,7 @@ test('classifyFile returns kit-owned for every managed directory and exact path'
         '.cursor/hooks.json',
         '.cursor/hooks/shell-safety.sh',
         '.cursor/hooks/shell-safety-run.cjs',
-        '.cursor/commands/fix.md',
+        '.cursor/skills/run/SKILL.md',
     ];
 
     for (const path of kitOwned) {

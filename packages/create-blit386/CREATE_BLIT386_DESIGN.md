@@ -307,7 +307,7 @@ Capability matrix (what each adapter emits from the same source):
 | Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed |
 | --- | --- | --- | --- | --- |
 | Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/commands` or scoped rules | reads `AGENTS.md` |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | reads `AGENTS.md` |
 | Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) - richest | `.zed/settings.json` tool_permissions |
 | Lockfile / .env block | prose warning | settings.json PreToolUse | hooks.json `failClosed` | settings.json `always_deny` |
 | Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | n/a |
@@ -348,9 +348,9 @@ Canonical intent (`kit/hooks.manifest.json`):
 
 Same intent; four formats; differing enforcement power (AGENTS.md only instructs, the others truly block). Rules and
 skills follow the same pattern: a "rule" becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a glob-scoped
-`.cursor/rules/*.mdc`; a "skill" becomes a `.claude/skills/<name>/SKILL.md`, a `.cursor/commands/<name>.md`, and a "read
-docs/<topic>.md" pointer for agents without a skill mechanism. Adding a new agent = writing one adapter that maps these
-intent types to that agent's files and capabilities.
+`.cursor/rules/*.mdc`; a "skill" becomes a `.claude/skills/<name>/SKILL.md`, a `.cursor/skills/<name>/SKILL.md`, and a
+"read docs/<topic>.md" pointer for agents without a skill mechanism. Adding a new agent = writing one adapter that maps
+these intent types to that agent's files and capabilities.
 
 ### 4.4 Progressive disclosure (the "good student" model)
 

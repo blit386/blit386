@@ -25,7 +25,10 @@ last resort, for when the documentation itself falls short.
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
 game-author capability skills plus the `run`, `fix`, `test-the-game`, `migrate`, and `ask-the-docs` workflow skills),
 `hooks/shell-safety.sh` + `hooks.manifest.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`
-\- adding a skill folder is enough, nothing registers it by name.
+\- adding a skill folder is enough, nothing registers it by name. Claude Code gets each skill as
+`.claude/skills/<name>/SKILL.md` with the frontmatter kept. Cursor gets the same file as
+`.cursor/skills/<name>/SKILL.md`, frontmatter kept, so it loads the skill from the description and still answers
+`/name`. The two always-on convention files in `content/rules/` stay `.cursor/rules/*.mdc`; they are not skills.
 
 Kit content must be self-contained. Skills and docs may reference only `packages/blit386` (the engine) and other local
 kit files. Do not reference the `packages/demos` package, its demo slugs, or its URLs - that package may be archived in
