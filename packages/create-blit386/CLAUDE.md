@@ -23,16 +23,17 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    `CLAUDE.md`, `.claude/rules/` (from `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`),
    `.claude/settings.json` (hooks from `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) -
    including a SessionStart hook (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor`
-   when a fresh remote/web session starts. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same
-   skills with frontmatter stripped), `.cursor/hooks.json`, `.cursor/hooks/shell-safety-run.cjs`, and
-   `.cursor/hooks/shell-safety.sh` - Cursor has no SessionStart-equivalent event, so it does not get the bootstrap hook.
-   Each adapter also emits a documentation-MCP config registering the `blit386-docs` server at
-   `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets `.cursor/mcp.json`. The two entries differ by one
-   key on purpose - Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks a
-   local stdio server. Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single source both
-   packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project
-   is decided by `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually
-   references gets copied (all under `packages/kit/`).
+   when a fresh remote/web session starts - and `.claude/launch.json`, the Claude desktop app's preview-server config
+   (Vite on port 5173 through the chosen package manager), which is user-owned: no `.blit/base/` copy, and sync never
+   rewrites it. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills with frontmatter
+   stripped), `.cursor/hooks.json`, `.cursor/hooks/shell-safety-run.cjs`, and `.cursor/hooks/shell-safety.sh` - Cursor
+   has no SessionStart-equivalent event, so it does not get the bootstrap hook. Each adapter also emits a
+   documentation-MCP config registering the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json`
+   and Cursor gets `.cursor/mcp.json`. The two entries differ by one key on purpose - Claude Code skips a remote entry
+   that has a `url` but no `type`, while for Cursor a `type` marks a local stdio server. Every path an adapter emits is
+   built from `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/`
+   / `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only
+   a script one of that adapter's own hook entries actually references gets copied (all under `packages/kit/`).
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated

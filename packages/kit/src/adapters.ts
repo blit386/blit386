@@ -12,6 +12,7 @@ import { join } from 'node:path';
 import {
     AGENTS_MD,
     CLAUDE_HOOKS_DIR,
+    CLAUDE_LAUNCH_JSON,
     CLAUDE_MCP_JSON,
     CLAUDE_MD,
     CLAUDE_RULES_DIR,
@@ -214,6 +215,8 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `.claude/settings.json`          (kit-owned; translated from content/hooks.manifest.json)
  *   - `.claude/hooks/{script}`         (kit-owned; copied verbatim)
  *   - `.mcp.json`                      (kit-owned; the blit386.dev documentation MCP server)
+ *   - `.claude/launch.json`            (user-owned; the desktop app's preview-server config, written
+ *                                       when missing and never touched again)
  *
  * @param root - The kit root directory.
  * @param vars - Template variables used when rendering generated content.
@@ -301,6 +304,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
     }
 
     files.push(mcpConfigFile('claude'));
+    files.push(launchConfigFile(vars));
 
     const hooksScriptsDir = join(contentRoot, 'hooks');
     if (existsSync(hooksScriptsDir)) {
@@ -513,6 +517,57 @@ function mcpConfigFile(target: McpTarget): GeneratedFile {
         path: target === 'claude' ? CLAUDE_MCP_JSON : CURSOR_MCP_JSON,
         content: `${JSON.stringify(buildMcpConfig(target), null, 2)}\n`,
     };
+}
+
+/**
+ * The port the Claude desktop app's preview looks at. Vite's own default, pinned with `--strictPort`:
+ * Vite ignores the `PORT` variable the app would pass with `autoPort: true`, so a fixed port is the
+ * only setting under which the preview and the server are guaranteed to agree.
+ */
+const DEV_SERVER_PORT = 5173;
+
+/**
+ * How each package manager runs the project-local `vite` binary, keyed by the manager name that
+ * leads `vars.pmRunDev`. Vite is run directly rather than through the `dev` script so the flags
+ * below reach it the same way under every manager.
+ */
+const VITE_RUNNER_ARGS: Record<string, readonly string[] | undefined> & { npm: readonly string[] } = {
+    npm: ['exec', '--', 'vite'],
+    pnpm: ['exec', 'vite'],
+    yarn: ['vite'],
+    bun: ['x', 'vite'],
+};
+
+/**
+ * `.claude/launch.json`: one preview-server configuration, so the Claude desktop app's browser pane
+ * can start the game with no setup. `--no-open` overrides the starter's `server.open: true`, which
+ * would otherwise pop a system browser window next to the pane. Not `--open false`: Vite reads that
+ * `false` as a path and opens `/false`.
+ */
+function launchConfigFile(vars: TemplateVars): GeneratedFile {
+    const manager = vars.pmRunDev?.split(' ')[0] ?? '';
+    const runner = VITE_RUNNER_ARGS[manager];
+
+    const config = {
+        version: '0.0.1',
+        configurations: [
+            {
+                name: `${vars.packageName ?? 'game'}-dev`,
+                runtimeExecutable: runner ? manager : 'npm',
+                runtimeArgs: [
+                    ...(runner ?? VITE_RUNNER_ARGS.npm),
+                    '--port',
+                    String(DEV_SERVER_PORT),
+                    '--strictPort',
+                    '--no-open',
+                ],
+                port: DEV_SERVER_PORT,
+                autoPort: false,
+            },
+        ],
+    };
+
+    return { path: CLAUDE_LAUNCH_JSON, content: `${JSON.stringify(config, null, 2)}\n` };
 }
 
 /**

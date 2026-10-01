@@ -28,6 +28,8 @@ Use this when you need to run the game to test a change, or when the user says "
 
 - If the port is in use, read `docs/when-something-breaks.md` for the "port already in use" fix.
 - If the browser does not open, navigate to `http://localhost:5173` manually.
+- If your editor has a built-in preview pane that reads `.claude/launch.json` (the Claude desktop app does), it can
+  start the game and show it there, with no terminal step. That file is yours to edit, for example to change the port.
 - The game works without WebGPU (the engine falls back to Canvas 2D), so it runs in any modern browser.
 - Older project, and every save full-reloads the page? Run `npx blit migrate --write` (blit386 1.4.0+) to wire the
   plugin into `vite.config`, then restart once.

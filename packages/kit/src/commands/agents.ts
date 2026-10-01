@@ -12,7 +12,8 @@
  *   - shared files (AGENTS.md, CLAUDE.md) get only their managed region rewritten;
  *   - kit-owned files the user edited are three-way merged when git is available, otherwise saved
  *     alongside as `<file>.new`;
- *   - user-owned files are never touched;
+ *   - user-owned files are never touched; the one the kit itself emits (`.claude/launch.json`) is
+ *     written only when it is missing;
  *   - a file new in this kit whose path already holds an untracked, different file is saved as
  *     `<file>.new` and left out of the manifest (an identical one is adopted silently).
  * `--force [path...]` overwrites the named files (or all kit-managed files) with the kit version.
@@ -412,6 +413,23 @@ export function runFullSync(
 
         const entry = entryByPath.get(relPath);
         const abs = resolve(root, relPath);
+
+        // User-owned adapter output (`.claude/launch.json`): the user, the desktop app, and other tools
+        // all write into it, so the kit only fills the gap when the file is missing. An existing file,
+        // tracked or not, is never read, merged, forced, or given a `.new` copy, and has no base copy.
+        if (classifyFile(relPath) === 'user-owned') {
+            if (!existsSync(abs) && writeRel(root, relPath, incoming)) {
+                entryByPath.set(relPath, {
+                    path: relPath,
+                    class: 'user-owned',
+                    kitVersion: newKitVersion,
+                    sha256: sha256Text(incoming),
+                });
+                (entry ? tally.restored : tally.added).push(relPath);
+            }
+            continue;
+        }
+
         const basePath = resolve(root, BLIT_DIR, BASE_DIR, relPath);
         // Checked once per file: the base copy lives at a different path than `relPath` itself (an
         // extra `.blit/base/` prefix), so it needs its own symlink check rather than inheriting the
@@ -720,7 +738,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
 
-    const generated = agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars);
+    // A user-owned generated file (`.claude/launch.json`) that already exists is the user's: drop it
+    // here so it is neither a collision that aborts the setup nor overwritten below.
+    const generated = (agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars)).filter(
+        (file) => classifyFile(file.path) !== 'user-owned' || !existsSync(resolve(root, file.path)),
+    );
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
 
     // A generated path that already exists on disk but is not tracked in the manifest belongs to the
@@ -798,11 +820,15 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
             continue;
         }
 
+        const fileClass = classifyFile(relPath);
+
         writeRel(root, relPath, file.content);
-        writeBase(root, relPath, file.content, out);
+        if (isKitManaged(fileClass)) {
+            writeBase(root, relPath, file.content, out);
+        }
         entryByPath.set(relPath, {
             path: relPath,
-            class: classifyFile(relPath),
+            class: fileClass,
             kitVersion,
             sha256: sha256Text(file.content),
         });

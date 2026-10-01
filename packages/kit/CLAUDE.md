@@ -80,6 +80,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
 | `src/adapters.ts` (docs-MCP config) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
+| `src/adapters.ts` (`launchConfigFile`, `.claude/launch.json`) | The starter's dev port or `server.open` (`packages/create-blit386/templates/base/vite.config.js`), a new package manager, or the Claude desktop app's `launch.json` fields change |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` - that is the only human-facing
 list of what ships, and it has no automated guard.

@@ -34,6 +34,13 @@ export const CLAUDE_HOOKS_DIR = `${CLAUDE_DIR}hooks/`;
 export const CLAUDE_SETTINGS_JSON = `${CLAUDE_DIR}settings.json`;
 
 /**
+ * The Claude desktop app's preview-server configuration. Deliberately absent from `KIT_OWNED_FILES`:
+ * the desktop app and other tools write into this file, so it is user-owned - the kit writes it when
+ * it is missing and never touches it again.
+ */
+export const CLAUDE_LAUNCH_JSON = `${CLAUDE_DIR}launch.json`;
+
+/**
  * Claude Code's MCP server configuration. Project root, not under `.claude/` - that is Claude Code's
  * own convention, so this is the one Claude path the `CLAUDE_DIR` prefix does not cover and
  * `AGENT_PATHS` has to name outright.
@@ -58,7 +65,8 @@ export const DOCS_DIR = 'docs/';
  *
  * - `kit-owned`  - regenerated freely on sync when unmodified; never clobbered when modified
  * - `shared`     - only the managed region (`<!-- blit-kit:managed:start/end -->`) is rewritten on sync
- * - `user-owned` - scaffolded once, never touched again by sync or upgrade
+ * - `user-owned` - scaffolded once, never touched again by sync or upgrade. An adapter may emit one
+ *   (`CLAUDE_LAUNCH_JSON`); sync and `add` then write it only when it is missing on disk
  */
 export type FileClass = 'kit-owned' | 'shared' | 'user-owned';
 
