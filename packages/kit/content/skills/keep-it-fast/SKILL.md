@@ -1,6 +1,6 @@
 ---
 name: keep-it-fast
-description:
+description: >-
   Find and fix slow frames: stop making new objects every frame, batch sprites by sheet, skip what is off screen, and
   stay inside the engine's per-frame drawing budget. Use when the game stutters, drops frames, feels slow, gets slower
   the longer it runs, when sprites mysteriously vanish, or when the user asks how to make the game run faster.

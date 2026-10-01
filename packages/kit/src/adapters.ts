@@ -18,11 +18,11 @@ import {
     CLAUDE_RULES_DIR,
     CLAUDE_SETTINGS_JSON,
     CLAUDE_SKILLS_DIR,
-    CURSOR_COMMANDS_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_HOOKS_JSON,
     CURSOR_MCP_JSON,
     CURSOR_RULES_DIR,
+    CURSOR_SKILLS_DIR,
     DOCS_DIR,
 } from './ownership';
 import type { TemplateVars } from './manifest';
@@ -572,11 +572,11 @@ function launchConfigFile(vars: TemplateVars): GeneratedFile {
 
 /**
  * Generate the Cursor adapter files from the kit IR:
- *   - `.cursor/rules/{name}.mdc`      (kit-owned; MDC frontmatter preserved)
- *   - `.cursor/hooks.json`            (kit-owned; translated from content/hooks.manifest.json)
- *   - `.cursor/hooks/{script}`        (kit-owned; copied verbatim)
- *   - `.cursor/commands/{name}.md`    (kit-owned, one per skill)
- *   - `.cursor/mcp.json`              (kit-owned; the blit386.dev documentation MCP server)
+ *   - `.cursor/rules/{name}.mdc`           (kit-owned; MDC frontmatter preserved)
+ *   - `.cursor/hooks.json`                 (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.cursor/hooks/{script}`             (kit-owned; copied verbatim)
+ *   - `.cursor/skills/{name}/SKILL.md`     (kit-owned, one per skill; frontmatter kept)
+ *   - `.cursor/mcp.json`                   (kit-owned; the blit386.dev documentation MCP server)
  */
 export function generateCursorAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
     const contentRoot = join(root, 'content');
@@ -639,12 +639,11 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
                 continue;
             }
 
-            // A Cursor command is invoked by filename, so the skill's name/description
-            // frontmatter adds no value and would render as literal text. Strip it.
-            // The Claude adapter keeps the frontmatter (a skill needs it to trigger).
+            // Keep the frontmatter: Cursor reads name/description from it to discover and
+            // trigger the skill, the same way Claude Code does. Stripping it would make it inert.
             files.push({
-                path: `${CURSOR_COMMANDS_DIR}${entry.name}.md`,
-                content: render(stripFrontmatter(readFileSync(skillSrc, 'utf8')), vars),
+                path: `${CURSOR_SKILLS_DIR}${entry.name}/SKILL.md`,
+                content: render(readFileSync(skillSrc, 'utf8'), vars),
             });
         }
     }

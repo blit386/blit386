@@ -51,7 +51,7 @@ export const CLAUDE_MCP_JSON = '.mcp.json';
 export const CURSOR_DIR = '.cursor/';
 export const CURSOR_RULES_DIR = `${CURSOR_DIR}rules/`;
 export const CURSOR_HOOKS_DIR = `${CURSOR_DIR}hooks/`;
-export const CURSOR_COMMANDS_DIR = `${CURSOR_DIR}commands/`;
+export const CURSOR_SKILLS_DIR = `${CURSOR_DIR}skills/`;
 export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 
 /** Cursor's MCP server configuration. */
@@ -84,7 +84,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CLAUDE_HOOKS_DIR,
     CURSOR_RULES_DIR,
     CURSOR_HOOKS_DIR,
-    CURSOR_COMMANDS_DIR,
+    CURSOR_SKILLS_DIR,
 ];
 
 /**

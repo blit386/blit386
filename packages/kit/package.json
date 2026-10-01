@@ -85,6 +85,7 @@
     "playwright-core": "^1.62.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vite": "^8.1.5"
+    "vite": "^8.1.5",
+    "yaml": "^2.9.1"
   }
 }

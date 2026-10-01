@@ -224,7 +224,7 @@ bump from step 2 actually took effect.
 When the release touches agents or hot reload, spend two extra minutes:
 
 - Scaffold once with Claude or Cursor selected and confirm the generated agent files look right (for Claude: hooks under
-  `.claude/` / `settings.json`; for Cursor: `.cursor/commands` and hooks).
+  `.claude/` / `settings.json`; for Cursor: `.cursor/skills` and hooks).
 - Run `npx blit agents sync` on the smoke project and confirm it reports clean (or only expected drift).
 - If the starter ships `blit386/vite`, edit a `render()` line and confirm hot reload without a full page reload.
 

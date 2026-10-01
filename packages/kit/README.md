@@ -54,9 +54,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 ## The game-author skills
 
 Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it - you do not have to
-name them. In Claude Code they live in `.claude/skills/`; in Cursor they are slash commands in `.cursor/commands/`, so
-there you can also invoke one by name (`/add-sprite`). Cursor 2.4 and newer also reads `.claude/skills/` by itself, so
-in a game set up for both assistants the skills load on their own in Cursor too.
+name them. In Claude Code they live in `.claude/skills/<name>/SKILL.md`. In Cursor they live in
+`.cursor/skills/<name>/SKILL.md`, with the same name and description, so Cursor loads one on its own too, and you can
+still invoke one by name (`/add-sprite`). A game set up for both assistants ships both copies. Cursor also reads
+`.claude/skills/`, so the same skill can show up twice there; both copies are the same text.
 
 | Skill | What it is for |
 | --- | --- |
