@@ -7,7 +7,8 @@
 const { readFileSync } = require('node:fs');
 const path = require('node:path');
 
-const LOCK_FILES = new Set(['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb']);
+/** Lock files that do not end in `.lock`. Any `*.lock` file (yarn.lock, bun.lock, ...) is caught by its suffix. */
+const LOCK_FILES = new Set(['package-lock.json', 'pnpm-lock.yaml', 'bun.lockb']);
 
 /** `.env` and `.env.local`, but not `.env.example` - that one is a template meant to be edited. */
 const isEnvFile = (name) => (name === '.env' || name.startsWith('.env.')) && name !== '.env.example';
@@ -21,7 +22,7 @@ try {
 
 const name = typeof file === 'string' ? path.basename(file) : '';
 
-if (LOCK_FILES.has(name)) {
+if (name.endsWith('.lock') || LOCK_FILES.has(name)) {
     process.stderr.write(
         `[BLOCKED] ${name} is written by the package manager. Change package.json and run an install instead.\n`,
     );
