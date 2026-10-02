@@ -35,8 +35,8 @@ npx blit play --seed 42 wait:1000 state hold:ArrowLeft:500 state shot
 That starts the dev server, opens the game in the Chrome or Edge on this computer, focuses the canvas, runs the steps in
 order, and prints one JSON line per step.
 
-- Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels), `state`,
-  `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
+- Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button
+  100 ms), `state`, `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
   (show the browser window). `npx blit play --help` lists them all.
 - The first time, it may say it needs the `playwright-core` package and print the command that adds it. Run that command
@@ -121,8 +121,8 @@ order, and prints one JSON line per step.
   `state()` when you need to check something new, for example `level: this.level`. Keep it plain numbers, strings, and
   arrays so it can be printed.
 - For a game of your own, a `testState()` method on the game class (engine 1.7.2+) is less code than `window.__game`: no
-  global to assign and no `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step still
-  reads `window.__game` for now, so use `eval:window.BT.testState()` there for a game that only has `testState()`.
+  global to assign and no `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints
+  it too, and falls back to `window.__game.state()` for a game without the method.
 - An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and
   `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.7.1+ for a 1:1 frame) work
   straight away, and the terminal `state` step falls back to `BT.ticks`. See `use-dev-mode`.
@@ -131,6 +131,7 @@ order, and prints one JSON line per step.
 - If the browser pane or tab is hidden, the browser slows the game down or stops it completely: `ticks` climbs slowly or
   not at all, and `document.visibilityState` reads `hidden`. Show the pane again, or use `npx blit play`, before testing
   anything that depends on timing.
-- If nothing happens when you press keys, the canvas has lost focus, the pointer has taken over the paddle, or a key
-  that must be held was only tapped. Focus the canvas again with `document.querySelector('canvas').focus()`, keep the
-  mouse off it, and hold movement keys as in step 5.
+- If nothing happens when you press keys, the canvas has lost focus, the pointer has taken over the paddle, a key that
+  must be held was only tapped, or the game is still on a title screen waiting for a press (check the state). Focus the
+  canvas again with `document.querySelector('canvas').focus()`, keep the mouse off it, and hold movement keys as in
+  step 5.

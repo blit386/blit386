@@ -2,4 +2,13 @@ node_modules/
 dist/
 .DS_Store
 *.log
+*.tsbuildinfo
 screenshots/
+
+# Secrets stay on this computer (.env.example is the shareable template)
+.env
+.env.*
+!.env.example
+
+# Your own Claude Code settings; the shared ones in .claude/settings.json are tracked
+.claude/settings.local.json

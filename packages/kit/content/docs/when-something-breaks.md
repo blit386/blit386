@@ -66,12 +66,55 @@ Work through this list in order:
    numbers you pass to `BT.clear`, `BT.drawRectFill`, and friends against the slots you set up in `init()`. (More in
    `palette.md`.)
 
+## The game freezes on one picture
+
+The game was running, then it stopped on a single frame: nothing moves and no key does anything. Open the browser
+console. There is almost always a red error there, and it came from your `update()` or `render()`.
+
+The engine calls `update()` and `render()` over and over, and each round asks the browser for the next one. If your code
+throws an error in the middle of a round, the engine never gets to ask, so the loop stops for good. There is no error
+screen and no restart; the last picture just stays there until you reload the page.
+
+Read the first red line, fix that spot, and reload. Be extra careful with browser features that can fail on some
+devices, like saving with `localStorage` (it throws in some private windows) or `navigator.vibrate`. Wrap those in `try`
+/ `catch` so a failure skips the feature instead of stopping the game:
+
+```js
+try {
+  localStorage.setItem('best', String(this.best));
+} catch {
+  // Saving is not available here. Keep playing without it.
+}
+```
+
 ## Key or button taps feel randomly missed
 
 If tapping a key or button sometimes does nothing, especially when you tap fast, check where you read it. `update()`
 always finishes before `render()` runs each frame, and one-frame events like `BT.isKeyPressed`, `BT.isKeyReleased`,
 `BT.inputString`, `BT.isPressed`, and `BT.isReleased` already reset by the time `render()` sees them. Read them in
 `update()`, and save what happened (in a variable on `this`) if `render()` needs to know about it later. See `input.md`.
+
+## The keyboard does nothing
+
+- Has the game been clicked? Keys go to the game only while its canvas has _focus_ - the browser's word for "the thing
+  you are typing into." Click the game once.
+- Did you remap a button with `BT.inputMap`? It replaces the button's whole key list, it does not add to it.
+  `BT.inputMap(0, BT.BTN_LEFT, 'ArrowLeft')` makes the left arrow work and switches `KeyA` off. List every key you want:
+  `BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft')`.
+- In a one-player game, do you want the arrow keys as well as W, A, S, D? Out of the box the arrows belong to player 1,
+  the second keyboard player. Return `keyboardLayout: 'single'` from `configure()` (blit386 1.7.2+) and player 0 gets
+  both. See `input.md`.
+
+## The mouse acts as if it were pressed all the time
+
+`BT.isPointerActive()` does not mean "the button is down." For the mouse it turns `true` as soon as the mouse moves over
+the game and stays `true` until it leaves, so it really means "the mouse is over the game." To react to a click or a
+tap, ask about the button instead:
+
+- `BT.isPressed(BT.BTN_POINTER_A, slot)` - true for one `update()` step, right when the button or finger goes down.
+- `BT.isDown(BT.BTN_POINTER_A, slot)` - true for as long as it is held.
+
+Slot 0 is the mouse; slots 1 to 3 are fingers on a touch screen. Check all four if the game should work with both.
 
 ## The game is completely silent
 
@@ -87,6 +130,27 @@ clicked, tapped, or pressed a key on it - otherwise every site you opened would 
 
 Music behaves a bit differently on purpose: `BT.musicPlay()` called too early is remembered and starts by itself on the
 first click or keypress, while `BT.soundPlay()` called too early is thrown away. More in `audio.md`.
+
+### The very first sound is missing
+
+A sound you play on the same click that starts the game can still be thrown away. The browser needs a moment after that
+first click before sound is switched on, so `BT.isAudioUnlocked` is still `false` during that `update()` step and turns
+`true` a step or two later. If a sound must play right at the start (a looping background, say), remember that you want
+it and start it once the flag is `true`:
+
+```js
+update() {
+  if (this.wantsAmbience && BT.isAudioUnlocked) {
+    BT.soundPlay(this.ambience, { loop: true });
+    this.wantsAmbience = false;
+  }
+}
+```
+
+### `AudioClip.synth` says the sound is too long
+
+A synthesized sound can be at most 60 seconds long; a longer `duration` throws an error. For a long background, make a
+short clip and loop it with `BT.soundPlay(clip, { loop: true })`, or load a sound file from `public/` instead.
 
 ## A big red overlay covers the page
 
@@ -140,6 +204,18 @@ With hot reload (the starter's `blit386` Vite plugin), most saves keep the game 
 If the page reloads on every tiny edit, check that `vite.config.js` still has `plugins: [blit386()]` and that you are on
 blit386 1.4.0 or newer (`npx blit doctor`). Older games can pick the plugin up with `npx blit migrate --write` (or
 `npx blit upgrade`), then restart the dev server once.
+
+## I edited another file and the game still runs the old code
+
+Hot reload decides what to do by looking at your game class (the file with `bootstrap(...)` in it). When you edit a
+different file that the game imports, the game class itself did not change, so the engine keeps the running game and
+does not run `init()` again. That has one surprising effect:
+
+- A plain function the game calls every frame picks up your edit right away.
+- An object the game made in `init()` and kept on `this` (say `this.player = new Player()`) was built from the old code
+  and keeps running it.
+
+Reload the page to rebuild everything from the new code.
 
 ## The game restarted and lost my score
 

@@ -3,17 +3,17 @@
   "hooks": [
     {
       "id": "format-on-edit",
-      "intent": "Format source files after each AI-assisted edit to keep code consistent",
+      "intent": "Format the one file an AI-assisted edit just changed, to keep code consistent",
       "cursor": {
         "event": "afterFileEdit",
-        "command": "{{pmRunFormat}}",
+        "command": "node .cursor/hooks/format-file.cjs",
         "matcher": "Write|TabWrite",
         "timeout": 30,
         "failClosed": false
       },
       "claude": {
         "event": "PostToolUse",
-        "command": "{{pmRunFormat}}",
+        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-file.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 30
       }
@@ -31,6 +31,16 @@
         "event": "PreToolUse",
         "command": "sh .claude/hooks/shell-safety.sh",
         "matcher": "Bash",
+        "timeout": 10
+      }
+    },
+    {
+      "id": "protect-generated-and-secret-files",
+      "intent": "Keep the assistant from hand-editing lock files and .env files",
+      "claude": {
+        "event": "PreToolUse",
+        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
+        "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
       }
     },

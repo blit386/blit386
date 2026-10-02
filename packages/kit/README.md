@@ -9,8 +9,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 - The `blit` CLI - a small helper you run inside a BLIT386 game:
   - `blit run` - start the dev server and open the game.
   - `blit play` - play-test the game from the terminal: open it in the Chrome or Edge already installed, run steps (hold
-    keys, wait, read `window.__game.state()`, save frames), and print one JSON line per step. Needs `playwright-core` in
-    the game (an optional peer dependency; the command prints the line that adds it).
+    keys, wait, read the game's `testState()` or `window.__game.state()`, save frames), and print one JSON line per
+    step. Needs `playwright-core` in the game (an optional peer dependency; the command prints the line that adds it).
   - `blit doctor` - check Node, git, and the installed `blit386` version.
   - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
     a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
@@ -40,9 +40,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor file generation lives in `src/adapters.ts` and is
   exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` / `blit agents add` share one
   implementation; the paths it emits and their sync ownership classes are defined once in `src/ownership.ts`. The same
-  manifest drives Cursor's `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit +
-  block-dangerous-shell). Claude Code also gets a SessionStart hook that installs dependencies and runs `blit doctor`
-  when a fresh remote/web session starts, so a scaffolded game works without manual setup; Cursor has no
+  manifest drives Cursor's `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit, which formats
+  only the file that was edited, + block-dangerous-shell). Claude Code also gets a hook that blocks hand edits to lock
+  files and `.env` files (Cursor has no pre-edit event), and a SessionStart hook that installs dependencies and runs
+  `blit doctor` when a fresh remote/web session starts, so a scaffolded game works without manual setup; Cursor has no
   SessionStart-equivalent event, so it does not get this hook. Both adapters also emit a documentation-MCP config -
   `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor - registering the `blit386-docs` server at
   `https://blit386.dev/mcp` so an assistant can search the live docs. Claude Code asks once whether to allow it. The
