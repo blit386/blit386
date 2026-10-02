@@ -96,6 +96,8 @@ describe('protect-files.cjs', () => {
             '/game/package-lock.json',
             'yarn.lock',
             'bun.lock',
+            'bun.lockb',
+            'tools/custom.lock',
             '.env',
             'a/.env.local',
         ]) {
@@ -107,7 +109,7 @@ describe('protect-files.cjs', () => {
     });
 
     it('lets every other file through', () => {
-        for (const file of ['src/game.ts', 'package.json', '.env.example', 'docs/environment.md']) {
+        for (const file of ['src/game.ts', 'package.json', '.env.example', 'docs/environment.md', 'src/lock.ts']) {
             assert.equal(edit(file).status, 0, `${file} should be allowed`);
         }
 
