@@ -35,14 +35,20 @@ Steps (keys use KeyboardEvent.code names: ArrowLeft, KeyA, Space, Enter, ...):
   press:<key>         Tap a key.
   hold:<key>:<ms>     Hold a key down for <ms> milliseconds.
   move:<x>:<y>        Move the mouse to game pixel (x, y).
-  click:<x>:<y>       Click at game pixel (x, y).
-  state               Print window.__game.state() (or BT.ticks if the game has no __game).
+  click:<x>:<y>       Click at game pixel (x, y), holding the button for 100 ms so the game sees it.
+  state               Print the game's testState(), else window.__game.state(), else BT.ticks.
   shot[:<file.png>]   Save the next frame as a PNG (default: screenshots/tick-<n>.png).
   eval:<expression>   Print the result of a JavaScript expression run in the game page (BT is available).
 
 Example:
   npx blit play --seed 42 wait:1000 state hold:ArrowLeft:500 state shot
 `;
+
+/**
+ * The game reads the mouse button once per step (1/60 s). A click that is over sooner than that is never seen, so
+ * `click` holds the button down for a few steps.
+ */
+const CLICK_HOLD_MS = 100;
 
 /** Tried in this order; the command uses whichever browser the computer already has. */
 const BROWSER_CHANNELS = ['chrome', 'msedge'] as const;
@@ -71,6 +77,9 @@ interface GamePage {
         activeBackend: string | null;
         displaySize: { x: number; y: number };
         captureFrame(): Promise<Blob>;
+
+        /** Engine 1.7.2+. `state` is `null` when the game class has no `testState()` method. */
+        testState?(): { state: unknown };
     };
     __game?: { state(): unknown };
 }
@@ -156,14 +165,17 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
         case 'click': {
             const point = await toPagePoint(page, toNumber(args[0], 'x'), toNumber(args[1], 'y'));
 
-            await (name === 'move' ? page.mouse.move(point.x, point.y) : page.mouse.click(point.x, point.y));
+            await (name === 'move'
+                ? page.mouse.move(point.x, point.y)
+                : page.mouse.click(point.x, point.y, { delay: CLICK_HOLD_MS }));
             return undefined;
         }
         case 'state':
             return page.evaluate(() => {
                 const game = globalThis as unknown as GamePage;
 
-                return game.__game ? game.__game.state() : { ticks: game.BT.ticks };
+                // An engine older than 1.7.2 has no BT.testState(); a game without the hook gets `state: null` from it.
+                return game.BT.testState?.().state ?? game.__game?.state() ?? { ticks: game.BT.ticks };
             });
         case 'shot': {
             // PNG bytes come back as a plain number array, the simplest thing page.evaluate can carry.
