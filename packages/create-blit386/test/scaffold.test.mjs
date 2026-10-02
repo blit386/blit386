@@ -310,6 +310,12 @@ test('scaffold copies optional CI and agent files when requested', () => {
             existsSync(join(project, '.claude', 'hooks', 'session-start.sh')),
             '.claude/hooks/session-start.sh should be generated',
         );
+        for (const script of ['format-file.cjs', 'protect-files.cjs']) {
+            assert.ok(
+                existsSync(join(project, '.claude', 'hooks', script)),
+                `.claude/hooks/${script} should be generated`,
+            );
+        }
 
         // The docs-MCP config. Claude Code skips a remote entry that has a url but no type, so the type
         // is load-bearing, not decoration.
@@ -474,6 +480,14 @@ test('scaffold copies optional CI and agent files when requested', () => {
         const formatHook = hooksJson.hooks.afterFileEdit[0];
         assert.ok(formatHook.command.includes('format'), 'format hook should reference the format command');
         assert.ok(!formatHook.command.includes('{{'), 'format hook should not have unrendered placeholders');
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'hooks', 'format-file.cjs')),
+            '.cursor/hooks/format-file.cjs should be generated',
+        );
+        assert.ok(
+            !existsSync(join(cursorProject, '.cursor', 'hooks', 'protect-files.cjs')),
+            '.cursor/hooks/protect-files.cjs should not be generated (Claude-only hook)',
+        );
 
         // Skills should have template vars rendered.
         assert.ok(!cursorRunSkill.includes('{{'), 'run skill should not have unrendered placeholders');
