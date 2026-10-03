@@ -55,4 +55,5 @@ export const DEMO_ORDER = [
     'noise',
     'palette-exposure-fade',
     'reduced-motion',
+    'bunnymark',
 ];

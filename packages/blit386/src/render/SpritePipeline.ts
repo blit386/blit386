@@ -6,6 +6,10 @@ import { Vector2i } from '../utils/Vector2i';
 
 /**
  * Maximum number of sprite vertices retained for a frame.
+ *
+ * Manual-sync hazard: `packages/demos/src/bunnymark.js` copies this value and the 6
+ * vertices per quad (`quadSize` below) so the demo can stop submitting sprites before
+ * this buffer drops them. Change both together. Do not raise the cap from the demo.
  */
 const MAX_VERTICES = 50000;
 
