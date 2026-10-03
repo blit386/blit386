@@ -528,7 +528,7 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 0 (first keyboard player).
      *
      * @since 1.0.3
-     * @changed 1.7.2 Now the `'versus'` `keyboardLayout` table (the default); see
+     * @changed 1.8.0 Now the `'versus'` `keyboardLayout` table (the default); see
      *   `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` for `'single'`.
      */
     DEFAULT_KEYBOARD_PLAYER1,
@@ -537,7 +537,7 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 1 (second keyboard player).
      *
      * @since 1.0.3
-     * @changed 1.7.2 Now the `'versus'` `keyboardLayout` table (the default); see
+     * @changed 1.8.0 Now the `'versus'` `keyboardLayout` table (the default); see
      *   `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` for `'single'`.
      */
     DEFAULT_KEYBOARD_PLAYER2,
@@ -546,7 +546,7 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 0 under
      * `keyboardLayout: 'single'`: WASD plus the arrow keys on the D-pad.
      *
-     * @since 1.7.2
+     * @since 1.8.0
      */
     DEFAULT_KEYBOARD_SINGLE_PLAYER1,
 
@@ -554,7 +554,7 @@ export const BT = {
      * Default `KeyboardEvent.code` values for player index 1 under
      * `keyboardLayout: 'single'`: IJKL on the D-pad.
      *
-     * @since 1.7.2
+     * @since 1.8.0
      */
     DEFAULT_KEYBOARD_SINGLE_PLAYER2,
 
@@ -782,7 +782,7 @@ export const BT = {
      *
      * Available in release builds too; it only reads state and does nothing until called.
      *
-     * @since 1.7.2
+     * @since 1.8.0
      * @returns `{ ticks, backend, state }`, plus `error` when the readout failed.
      */
     testState: (): TestStateSnapshot => {
@@ -2097,7 +2097,7 @@ export const BT = {
      * for `'single'`.
      *
      * @since 1.0.3
-     * @changed 1.7.2 Restores the defaults of the active `HardwareSettings.keyboardLayout`
+     * @changed 1.8.0 Restores the defaults of the active `HardwareSettings.keyboardLayout`
      *   instead of always the `'versus'` tables.
      */
     inputMapReset: (): void => {

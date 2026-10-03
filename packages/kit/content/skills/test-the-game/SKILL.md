@@ -63,7 +63,7 @@ order, and prints one JSON line per step.
    It returns plain numbers, for example `{ ticks, score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
    about a second apart: `ticks` should have grown by about 60.
 
-   If the game class has a `testState()` method (engine 1.7.2+), read that instead - it works the same in every game:
+   If the game class has a `testState()` method (engine 1.8.0+), read that instead - it works the same in every game:
 
    ```js
    window.BT.testState();
@@ -120,7 +120,7 @@ order, and prints one JSON line per step.
 - `window.__game` is the starter game's own code in `src/game.*`: look for `window.__game` in `init()`. Add a field to
   `state()` when you need to check something new, for example `level: this.level`. Keep it plain numbers, strings, and
   arrays so it can be printed.
-- For a game of your own, a `testState()` method on the game class (engine 1.7.2+) is less code than `window.__game`: no
+- For a game of your own, a `testState()` method on the game class (engine 1.8.0+) is less code than `window.__game`: no
   global to assign and no `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints
   it too, and falls back to `window.__game.state()` for a game without the method.
 - An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and

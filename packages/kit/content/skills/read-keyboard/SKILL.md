@@ -33,7 +33,7 @@ Player number is `0` for a one-player game. Directions: `BT.BTN_LEFT/RIGHT/UP/DO
 ```js
 configure() {
     return {
-        keyboardLayout: 'single', // player 0: WASD and arrows; player 1: IJKL (engine 1.7.2+)
+        keyboardLayout: 'single', // player 0: WASD and arrows; player 1: IJKL (engine 1.8.0+)
     };
 }
 ```
