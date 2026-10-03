@@ -302,9 +302,11 @@ Then check the two downstream packages:
 - `packages/website`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
   sibling `../blit386/docs` path directly off disk - it does not need those changes pushed to GitHub first. Follow with
   `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles. `sync:docs:check` runs
-  `git diff -- content/docs` after regenerating, so it fails on any uncommitted mirror change by design, and the
-  mirror's `lastModified` comes from `git log`. Order: commit the engine doc change first, then `sync:docs`, then commit
-  the mirror (a trailing `lastModified`-only commit is normal), then run the check.
+  `git diff -- content/docs` after regenerating, so it fails when the regenerated mirror differs from the index; staged
+  mirror changes that match the generated output can pass before commit. The mirror's `lastModified` comes from
+  `git log`, so keep the regenerated value as-is (never hand-edit the timezone format). Order: commit the engine doc
+  change first, then `sync:docs`, then commit the mirror (a trailing `lastModified`-only commit is normal), then run the
+  check.
 
 #### Regenerate `docs/_api-history.json` - only after the tag exists
 
