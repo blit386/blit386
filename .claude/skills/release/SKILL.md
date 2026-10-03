@@ -42,6 +42,14 @@ to the scaffolder CLI or to kit content is a `minor`, not a `major` - a major bu
 public API broke compatibility, nothing else. See `packages/create-blit386/PUBLISHING.md` ("Semver policy") for the full
 rule.
 
+Check the answer against the contents before going further: any `feat(api)` commit, or any new `@since NEW_VERSION` tag
+in `packages/blit386/src`, means new public engine API, which is a `minor` at least, never a patch. If the user asked
+for a patch and the tags say otherwise, stop and raise it. Fixing it late means rewriting the version in every `@since`
+/ `@changed` tag, the kit content that says "engine X.Y.Z+", `UNRELEASED_VERSION`, the changelog heading, and the
+regenerated `_api-history.json` and website `api-history.generated.json` - `grep -rl` the old version across `packages/`
+(excluding the two generated files, which `pnpm --filter blit386 run api:history` rewrites), `sed` it, then regenerate
+and run `sync:docs`.
+
 ### 2. Find the last tag and its UTC timestamp
 
 ```bash
@@ -293,7 +301,10 @@ Then check the two downstream packages:
   just stale, and won't show up as a missing mention.
 - `packages/website`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
   sibling `../blit386/docs` path directly off disk - it does not need those changes pushed to GitHub first. Follow with
-  `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles.
+  `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles. `sync:docs:check` runs
+  `git diff -- content/docs` after regenerating, so it fails on any uncommitted mirror change by design, and the
+  mirror's `lastModified` comes from `git log`. Order: commit the engine doc change first, then `sync:docs`, then commit
+  the mirror (a trailing `lastModified`-only commit is normal), then run the check.
 
 #### Regenerate `docs/_api-history.json` - only after the tag exists
 
