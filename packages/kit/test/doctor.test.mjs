@@ -55,7 +55,7 @@ function runDoctor(cwd) {
 }
 
 test('blit doctor reports a compatible engine range', () => {
-    const root = makeGame('1.7.0');
+    const root = makeGame('1.7.1');
     try {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
@@ -70,15 +70,15 @@ test('blit doctor reports a compatible engine range', () => {
 });
 
 test('blit doctor nudges to check docs when the engine is newer than docsReviewedAt but still compatible', () => {
-    // The kit's committed blit386.docsReviewedAt is "1.7.0" (packages/kit/package.json); a patch release
+    // The kit's committed blit386.docsReviewedAt is "1.7.1" (packages/kit/package.json); a patch release
     // above that still satisfies the ^1.7.0 engineRange, so this exercises the compatible-but-stale branch.
-    const root = makeGame('1.7.1');
+    const root = makeGame('1.7.2');
     try {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
         assert.ok(output.includes('is compatible with this kit'), `expected compatible line, got:\n${output}`);
         assert.ok(
-            output.includes('guides were last checked against blit386 1.7.0'),
+            output.includes('guides were last checked against blit386 1.7.1'),
             `expected docs-review nudge, got:\n${output}`,
         );
         assert.ok(
@@ -121,7 +121,7 @@ test('blit doctor warns when the installed engine is newer than the kit was writ
 });
 
 test('blit doctor warns when the game has no .gitattributes', () => {
-    const root = makeGame('1.7.0');
+    const root = makeGame('1.7.1');
     try {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
@@ -133,7 +133,7 @@ test('blit doctor warns when the game has no .gitattributes', () => {
 });
 
 test('blit doctor stays quiet about .gitattributes when the game has one', () => {
-    const root = makeGame('1.7.0');
+    const root = makeGame('1.7.1');
     writeFileSync(join(root, '.gitattributes'), '* text=auto eol=lf\n');
     try {
         const { exitCode, output } = runDoctor(root);
