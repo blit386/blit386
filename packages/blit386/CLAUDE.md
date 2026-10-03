@@ -115,9 +115,9 @@ blit386.dev banner you must never hand-edit - lives in `.claude/rules/docs-autho
 ## Commands
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386 run <script>` from the repo
-root); `package.json` is the list, and `pnpm run preflight` is the gating set. Shell commands are rewritten by
-`rtk hook claude` (Claude Code) / `rtk hook cursor` (Cursor) - prefer `rtk read` / `rtk grep` over native Read/Grep for
-exploration.
+root); `package.json` is the list, and `pnpm run preflight` is the gating set. Test, lint, and git-diff shell commands
+are rewritten by `rtk hook claude` (Claude Code) / `rtk hook cursor` (Cursor); search and read commands are excluded in
+the user's rtk config - use the native Read/Grep for exploration.
 
 ## Testing
 

@@ -233,8 +233,8 @@ convention. Full detail: `.claude/rules/file-structure.md`.
 ## Commands, formatting, git
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-demos run <script>` from the
-repo root); `package.json` is the list and `pnpm run preflight` is the gating set. Shell commands are rewritten by
-`rtk hook claude` - prefer `rtk read` / `rtk grep` over native Read/Grep.
+repo root); `package.json` is the list and `pnpm run preflight` is the gating set. Test, lint, and git-diff shell
+commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep.
 
 Biome owns JS/JSON/CSS, Prettier owns Markdown/YAML: 4-space indent (2 for JSON/YAML/Markdown), 120 columns, single
 quotes, semicolons, trailing commas. Markdown tables are compact by design via the shared root
