@@ -9,7 +9,7 @@
  * Depends on `window.__blit386IsEmbedded` from the tiny first-paint stamp in layout.html.
  *
  * The banner (logo, arrows, combobox, shell/embed switch), the nav/URL/iframe model, the
- * fuzzy combobox, and Plausible analytics each live in their own sibling module; this file
+ * fuzzy combobox, and Plausible analytics (shell and standalone embeds) each live in their own sibling module; this file
  * only wires them together.
  */
 
@@ -21,5 +21,6 @@ if (window.__blit386IsEmbedded) {
 } else {
     prepareShell();
     renderShell();
-    initAnalytics();
 }
+
+initAnalytics();

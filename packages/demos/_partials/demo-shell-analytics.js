@@ -1,16 +1,37 @@
 /**
  * Plausible analytics bootstrap for the demo shell document.
  *
- * Loaded only on the shell document (never inside embed iframes or demo swaps) so pageviews
- * are not double-counted. See `demo-shell.js` for how this is wired into the shell bootstrap.
+ * Loaded on the shell document and on standalone `?embed` pages (docs-site and third-party
+ * iframes), but not inside the shell's own same-origin content iframe, so pageviews are not
+ * double-counted. See `demo-shell.js` for how this is wired into the bootstrap.
  */
 
 /**
- * Load Plausible only on the shell document so embed iframes (and demo swaps) do not
- * double-count pageviews.
+ * Whether this document is the content iframe of the demo shell (same-origin parent). A
+ * cross-origin parent throws on `location` access, which means a real external embed.
+ * @returns {boolean}
+ */
+function isShellFrame() {
+    if (window.parent === window) {
+        return false;
+    }
+
+    try {
+        return window.parent.location.origin === location.origin;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Load Plausible unless the shell already counts this view from its parent document.
  * @returns {void}
  */
 export function initAnalytics() {
+    if (isShellFrame()) {
+        return;
+    }
+
     const plausibleScript = document.createElement('script');
 
     plausibleScript.async = true;
