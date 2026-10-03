@@ -22,7 +22,7 @@
   },
   "blit386": {
     "engineRange": "^1.7.0",
-    "docsReviewedAt": "1.7.0"
+    "docsReviewedAt": "1.7.1"
   },
   "bin": {
     "blit": "./dist/cli.js"
