@@ -159,19 +159,15 @@ const SPAWN_VY_MAX = -2;
 // Where bunnies appear when the pointer isn't the thing asking for them.
 const FOUNTAIN_Y = 56;
 
-// The panel has a fixed width so the bunnies can be kept out of it: sprites are drawn
-// on top of UI panels, so a bunny inside the panel would cover the numbers. 118 pixels
-// fits the widest row, the Split sheets checkbox: a 10-pixel box, 16 letters of 6
-// pixels, and the padding around them.
+// The panel has a fixed width. 118 pixels fits the widest row, the Split sheets
+// checkbox: a 10-pixel box, 16 letters of 6 pixels, and the padding around them.
+// Sprites draw on top of panels, so a bunny on the left can cover the numbers.
 const PANEL_W = 118;
 
 // Gap between the screen edge and the panel, and the panel's top edge. The top edge
 // sits below the engine overlay so the two never overlap.
 const PANEL_MARGIN = 4;
 const PANEL_Y = 58;
-
-// The bunnies' left wall: just right of the panel. Everything left of it belongs to the HUD.
-const ARENA_LEFT = PANEL_MARGIN + PANEL_W + PANEL_MARGIN;
 
 // URL switches for timing runs (see the header comment). A present ?bunnies must be a
 // whole number from 1 to the field limit: MAX_WEBGPU_BUNNIES on WebGPU, MAX_SOFTWARE_BUNNIES
@@ -472,9 +468,9 @@ class Demo {
         // start the loop.
         this.sheets = await loadBunnySheets(this.palette);
 
-        // The fountain sits in the middle of the bunnies' area, right of the panel.
-        // `>> 1` halves a whole number, like Math.floor(n / 2).
-        this.fountainX = (ARENA_LEFT + screenW - BUNNY_W) >> 1;
+        // The fountain sits in the middle of the canvas. `>> 1` halves a whole
+        // number, like Math.floor(n / 2). Bunnies bounce off the canvas left edge.
+        this.fountainX = (screenW - BUNNY_W) >> 1;
 
         this.applyUrlSwitches();
 
@@ -566,9 +562,9 @@ class Demo {
             let y = ys[i] + vy;
 
             // Past the side walls: pin to the wall and reverse sideways speed.
-            // The left wall is the panel's right edge, not the screen edge.
-            if (x < ARENA_LEFT) {
-                x = ARENA_LEFT;
+            // The left wall is the canvas edge.
+            if (x < 0) {
+                x = 0;
                 vx = -vx;
             } else if (x > right) {
                 x = right;
@@ -658,13 +654,12 @@ class Demo {
     }
 
     /**
-     * Keeps the spawn point inside the bunnies' area, so a click in the corner (or
-     * on the panel) still shows a bunny.
+     * Keeps the spawn point on the canvas, so a click in a corner still shows a bunny.
      */
     clampSpawn() {
-        // Math.max keeps the higher number, Math.min the lower, so a click in the
-        // panel or past the edge is pushed back inside the bunnies' area.
-        this.spawnX = Math.min(this.arenaRight, Math.max(ARENA_LEFT, this.spawnX));
+        // Math.max keeps the higher number, Math.min the lower, so a click past
+        // the canvas edge is pushed back inside. The left edge is 0.
+        this.spawnX = Math.min(this.arenaRight, Math.max(0, this.spawnX));
         this.spawnY = Math.min(this.arenaFloor, Math.max(0, this.spawnY));
     }
 
@@ -800,7 +795,7 @@ class Demo {
      * Panel: counts and the buttons. update() and render() stay on the engine overlay.
      */
     drawHud() {
-        // Fixed width and position, so ARENA_LEFT always matches the panel's right edge.
+        // Fixed width and position. Bunnies use the full canvas, including behind this panel.
         ui.begin(UI_ANCHORS.TOP_LEFT, { y: PANEL_Y, width: PANEL_W, margin: PANEL_MARGIN, kvCols: 8 });
         ui.panel('Bunnymark');
         ui.kv('Bunnies', this.count);
