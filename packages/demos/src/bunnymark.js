@@ -1,5 +1,5 @@
 // Bunnymark - how many bouncing sprites the engine can move before a frame slips.
-// @description Spawn bouncing bunnies until the sprite cap, and count quads this demo will not draw.
+// @description Spawn bouncing bunnies and count the quads WebGPU skips past its sprite cap.
 //
 // What you will see:
 //   - An original pixel bunny (not the Pixi.js rabbit) in several colors
@@ -104,7 +104,7 @@ const MAX_SOFTWARE_BUNNIES = 262144;
 // SpritePipeline keeps MAX_VERTICES vertices and spends 6 of them on each quad
 // (two triangles). 50000 / 6 = 8333 sprites, then further quads are dropped.
 // Manual-sync hazard: packages/blit386/src/render/SpritePipeline.ts (MAX_VERTICES
-// and the `6 * VALUES_PER_VERTEX` quad size). This ticket does not change that cap.
+// and the `6 * VALUES_PER_VERTEX` quad size). Change both together.
 const SPRITE_VERTEX_CAP = 50000;
 const VERTICES_PER_QUAD = 6;
 const SPRITE_QUAD_CAP = Math.floor(SPRITE_VERTEX_CAP / VERTICES_PER_QUAD);
@@ -166,14 +166,13 @@ const OVERLAY_BAR_H = 13;
 const OVERLAY_ROW_GAP = 1;
 const TIMING_CHART_H = 22;
 const OVERLAY_TEXT_ROWS = 4;
-const OVERLAY_BANDS = OVERLAY_TEXT_ROWS + 1;
-const OVERLAY_BOTTOM = OVERLAY_TEXT_ROWS * OVERLAY_BAR_H + TIMING_CHART_H + (OVERLAY_BANDS - 1) * OVERLAY_ROW_GAP;
+// Each text row is a bar plus the gap after it. The chart band has no gap of its own
+// in that count: four gaps sit between the five bands, and the stack ends on the
+// diagnostics bar.
+const OVERLAY_BOTTOM = OVERLAY_TEXT_ROWS * (OVERLAY_BAR_H + OVERLAY_ROW_GAP) + TIMING_CHART_H;
 
-// First pixel under those bars. Bunnies bounce here instead of under the chart.
+// First pixel under those bars. Bunnies bounce here, and a fountain batch appears here.
 const ARENA_TOP = OVERLAY_BOTTOM + 1;
-
-// Where bunnies appear when the pointer isn't the thing asking for them.
-const FOUNTAIN_Y = ARENA_TOP;
 
 // The panel has a fixed width. 118 pixels fits the widest row, the Split sheets
 // checkbox: a 10-pixel box, 16 letters of 6 pixels, and the padding around them.
@@ -423,7 +422,7 @@ class Demo {
     addPressed = false;
 
     spawnX = 0;
-    spawnY = FOUNTAIN_Y;
+    spawnY = ARENA_TOP;
 
     // Middle of the bunnies' area, worked out once in init() from the screen width.
     fountainX = 0;
@@ -479,8 +478,8 @@ class Demo {
         const screenW = display.x;
         const screenH = display.y;
 
+        // Sides and floor are the canvas. The ceiling is ARENA_TOP, under the chart.
         this.arenaRight = screenW - BUNNY_W;
-        // The ceiling is ARENA_TOP, under the chart, so the hop is shorter than the canvas.
         this.arenaFloor = screenH - BUNNY_H;
         this.capsSprites = BT.activeBackend === 'webgpu';
 
@@ -522,7 +521,8 @@ class Demo {
      * Plain numbers for window.BT.testState() so a browser check can read the
      * counters without scraping the picture.
      *
-     * @returns {object} Counts for the frame. The draw cap is always in force.
+     * @returns {object} Counts for the frame. WebGPU drops past the bunny draw cap.
+     * Software draws every live bunny.
      */
     testState() {
         return {
@@ -546,7 +546,7 @@ class Demo {
 
         this.splitSheets = params.has(PARAM_SPLIT);
         this.spawnX = this.fountainX;
-        this.spawnY = FOUNTAIN_Y;
+        this.spawnY = ARENA_TOP;
         this.spawnBatch(bunnyCountFromParams(params, this.fieldLimit()));
     }
 
@@ -644,7 +644,7 @@ class Demo {
         // Pointer spawn already stored a point. Everything else uses the fountain.
         if (!fromPointer) {
             this.spawnX = this.fountainX;
-            this.spawnY = FOUNTAIN_Y;
+            this.spawnY = ARENA_TOP;
         }
 
         return true;
