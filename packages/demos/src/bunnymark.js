@@ -15,7 +15,8 @@
 // Live version: https://demos.blit386.dev/bunnymark
 //
 // The engine overlay (press ` or the bottom-left corner) shows Present FPS, update(),
-// render(), and Draw Calls. This demo turns that overlay on at startup. Draw Calls
+// render(), Draw Calls, and a timing chart between the title and the Present row.
+// This demo turns that overlay and the chart on at startup. Draw Calls
 // counts each BT.drawSprite, so it climbs with the bunny count in both sheet modes.
 // The Batches row follows the sprite pipeline's rule (a new batch whenever the
 // sheet changes), because the engine does not report that count yet (BT-114).
@@ -156,8 +157,23 @@ const SPAWN_VX_MAX = 4;
 const SPAWN_VY_MIN = -8;
 const SPAWN_VY_MAX = -2;
 
+// Overlay bands this demo turns on: title, timing chart, Present row, timing
+// text, and the sprite diagnostics row. Heights match the engine
+// (OVERLAY_BAR_HEIGHT, OVERLAY_ROW_GAP_PX, DEFAULT_TIMING_CHART_HEIGHT in
+// packages/blit386/src/overlay). Copy a change here or the panel slides
+// under the chart.
+const OVERLAY_BAR_H = 13;
+const OVERLAY_ROW_GAP = 1;
+const TIMING_CHART_H = 22;
+const OVERLAY_TEXT_ROWS = 4;
+const OVERLAY_BANDS = OVERLAY_TEXT_ROWS + 1;
+const OVERLAY_BOTTOM = OVERLAY_TEXT_ROWS * OVERLAY_BAR_H + TIMING_CHART_H + (OVERLAY_BANDS - 1) * OVERLAY_ROW_GAP;
+
+// First pixel under those bars. Bunnies bounce here instead of under the chart.
+const ARENA_TOP = OVERLAY_BOTTOM + 1;
+
 // Where bunnies appear when the pointer isn't the thing asking for them.
-const FOUNTAIN_Y = 56;
+const FOUNTAIN_Y = ARENA_TOP;
 
 // The panel has a fixed width. 118 pixels fits the widest row, the Split sheets
 // checkbox: a 10-pixel box, 16 letters of 6 pixels, and the padding around them.
@@ -165,9 +181,10 @@ const FOUNTAIN_Y = 56;
 const PANEL_W = 118;
 
 // Gap between the screen edge and the panel, and the panel's top edge. The top edge
-// sits below the engine overlay so the two never overlap.
+// sits below the engine overlay, including the timing chart, so the two never overlap.
 const PANEL_MARGIN = 4;
-const PANEL_Y = 58;
+const PANEL_CLEARANCE = 3;
+const PANEL_Y = OVERLAY_BOTTOM + PANEL_CLEARANCE;
 
 // URL switches for timing runs (see the header comment). A present ?bunnies must be a
 // whole number from 1 to the field limit: MAX_WEBGPU_BUNNIES on WebGPU, MAX_SOFTWARE_BUNNIES
@@ -435,6 +452,10 @@ class Demo {
             // Adds the Prim / Spr row: the engine's own vertex use and overflow count.
             isOverlayRendererDiagnosticsBarEnabled: true,
 
+            // Scrolling update() and render() bars between the title and Present.
+            // The default band is 22 px, which is what OVERLAY_BOTTOM counts on.
+            isOverlayTimingChartEnabled: true,
+
             overlayStyle: {
                 textPaletteIndex: UI_TEXT,
                 barPaletteIndex: UI_PANEL,
@@ -459,6 +480,7 @@ class Demo {
         const screenH = display.y;
 
         this.arenaRight = screenW - BUNNY_W;
+        // The ceiling is ARENA_TOP, under the chart, so the hop is shorter than the canvas.
         this.arenaFloor = screenH - BUNNY_H;
         this.capsSprites = BT.activeBackend === 'webgpu';
 
@@ -542,8 +564,9 @@ class Demo {
     }
 
     /**
-     * Moves every live bunny. Gravity, then bounce off the screen edges.
-     * Nothing in this loop creates an object. That is the whole point.
+     * Moves every live bunny. Gravity, then bounce off the canvas sides, the
+     * overlay ceiling, and the floor. Nothing in this loop creates an object.
+     * That is the whole point.
      */
     stepBunnies() {
         const xs = this.xs;
@@ -572,8 +595,10 @@ class Demo {
             }
 
             // Past the ceiling: pin and head back down (positive Y).
-            if (y < 0) {
-                y = 0;
+            // The ceiling is the overlay, not the canvas top, so bunnies stay
+            // under the timing chart.
+            if (y < ARENA_TOP) {
+                y = ARENA_TOP;
                 vy = Math.abs(vy);
             } else if (y > floor) {
                 y = floor;
@@ -658,9 +683,10 @@ class Demo {
      */
     clampSpawn() {
         // Math.max keeps the higher number, Math.min the lower, so a click past
-        // the canvas edge is pushed back inside. The left edge is 0.
+        // the canvas edge is pushed back inside. The left edge is 0. The top
+        // edge is the overlay, so a click on the chart spawns just under it.
         this.spawnX = Math.min(this.arenaRight, Math.max(0, this.spawnX));
-        this.spawnY = Math.min(this.arenaFloor, Math.max(0, this.spawnY));
+        this.spawnY = Math.min(this.arenaFloor, Math.max(ARENA_TOP, this.spawnY));
     }
 
     /**

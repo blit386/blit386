@@ -1,4 +1,4 @@
-/** Height of each overlay bar strip in pixels. */
+/** Height of each overlay bar strip in pixels. packages/demos/src/bunnymark.js copies this. */
 export const OVERLAY_BAR_HEIGHT = 13;
 
 /** Horizontal inset from screen edges for overlay text and chrome. */
@@ -13,5 +13,5 @@ export const OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX = -4;
 /** Vertical offset for top-row text inside the top bar. */
 export const OVERLAY_TOP_TEXT_Y = 0;
 
-/** Gap between stacked overlay bars (custom rows and bottom bar). */
+/** Gap between stacked overlay bars (custom rows and bottom bar). packages/demos/src/bunnymark.js copies this. */
 export const OVERLAY_ROW_GAP_PX = 1;
