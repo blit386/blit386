@@ -1,10 +1,10 @@
 // Bunnymark - how many bouncing sprites the engine can move before a frame slips.
-// @description Spawn bouncing bunnies until the sprite buffer fills, and see which quads the engine drops.
+// @description Spawn bouncing bunnies until the sprite cap, and count quads this demo will not draw.
 //
 // What you will see:
 //   - An original pixel bunny (not the Pixi.js rabbit) in several colors
 //   - Click, hold, or a gamepad button adds them in batches
-//   - A counter for how many were drawn and how many the sprite buffer cannot take
+//   - A counter for how many were drawn and how many this demo did not submit
 //   - An optional mode that alternates several copies of the picture so batches break
 //
 // Prerequisites:
@@ -16,17 +16,22 @@
 //
 // The engine overlay (press ` or the bottom-left corner) shows Present FPS and Draw Calls.
 // This demo turns that overlay on at startup. Draw Calls counts each BT.drawSprite, so it
-// climbs with the bunny count either way. The Batches row on the panel is the GPU number,
-// worked out here by following the sprite pipeline's rule (a new batch whenever the sheet
-// changes), because the engine does not report it yet (BT-114). One sheet stays one batch,
-// and alternating sheets breaks that batch on every bunny. The overlay's
-// bottom row (Prim / Spr) is the engine's own vertex count and overflow ("ov") for the frame,
-// so you can check this panel's Dropped number against the engine itself.
+// climbs with the bunny count in both sheet modes. The Batches row follows the sprite
+// pipeline's rule (a new batch whenever the sheet changes), because the engine does not
+// report that count yet (BT-114). One sheet stays one batch, and alternating sheets breaks
+// that batch on every bunny. The overlay's bottom row (Prim / Spr) is the engine's own
+// vertex count and overflow ("ov"). Dropped on this panel is bunnies this demo did not
+// submit. ov stays 0 while the letter reserve holds; a rising ov means the panel used
+// more quads than that reserve.
 //
 // For repeatable timing runs, two URL switches skip the clicking:
 //   ?bunnies=5000   start with that many bunnies instead of one batch
 //   ?split          start with Split sheets already on
-// Add &backend=software to the same URL to time the software renderer instead.
+// A missing ?bunnies starts one batch. A present value must be a whole number from 1
+// to the field limit; anything else stops startup. Add &backend=software
+// to time the software renderer. This demo still submits only up to the same bunny cap
+// there, so Drawn and Dropped mean the same thing on both renderers. The software renderer
+// itself has no vertex cap; the stop is this demo's.
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
@@ -152,7 +157,8 @@ const PANEL_Y = 58;
 // The bunnies' left wall: just right of the panel. Everything left of it belongs to the HUD.
 const ARENA_LEFT = PANEL_MARGIN + PANEL_W + PANEL_MARGIN;
 
-// URL switches for timing runs (see the header comment). ?bunnies is clamped to MAX_BUNNIES.
+// URL switches for timing runs (see the header comment). A present ?bunnies must be a
+// whole number from 1 to MAX_BUNNIES. A missing one means "start with one batch".
 const PARAM_BUNNIES = 'bunnies';
 const PARAM_SPLIT = 'split';
 
@@ -186,35 +192,29 @@ function rgb(r, g, b) {
     return new Color32(r, g, b, 255);
 }
 
+// Which bunny color a grid character stands for. -1 means "skip this pixel" (the '.'
+// empty cells). A character missing from this table is a typo in BUNNY_ROWS: indexize()
+// would still succeed and ship a shifted picture, so the painter throws instead.
+const PIXEL_COLOR_INDEX = {
+    '.': -1,
+    1: 0,
+    2: 1,
+    3: 2,
+    4: 3,
+};
+
 /**
- * Which of the four bunny colors a grid character stands for.
- * -1 means "skip this pixel" (the '.' empty cells).
- *
  * @param {string} ch
  * @returns {number}
  */
 function colorIndexForPixel(ch) {
-    if (ch === '.') {
-        return -1;
+    const index = PIXEL_COLOR_INDEX[ch];
+
+    if (index === undefined) {
+        throw new Error(`Bunny pixel "${ch}" is not "." or "1"-"4".`);
     }
 
-    if (ch === '1') {
-        return 0;
-    }
-
-    if (ch === '2') {
-        return 1;
-    }
-
-    if (ch === '3') {
-        return 2;
-    }
-
-    if (ch === '4') {
-        return 3;
-    }
-
-    throw new Error(`Bunny pixel "${ch}" is not "." or "1"-"4".`);
+    return index;
 }
 
 /**
@@ -325,6 +325,34 @@ function formatMs(ms) {
 }
 
 /**
+ * How many bunnies to place at startup.
+ * No ?bunnies means one batch. A present value has to be a whole number from 1
+ * to MAX_BUNNIES, written as digits (5000, not 5.5 or 1e3).
+ *
+ * @param {URLSearchParams} params
+ * @returns {number}
+ */
+function bunnyCountFromParams(params) {
+    const raw = params.get(PARAM_BUNNIES);
+
+    if (raw === null) {
+        return SPAWN_BATCH;
+    }
+
+    if (!/^[1-9]\d*$/.test(raw)) {
+        throw new Error(`?${PARAM_BUNNIES} must be a whole number from 1 to ${MAX_BUNNIES}, not "${raw}".`);
+    }
+
+    const asked = Number(raw);
+
+    if (!Number.isSafeInteger(asked) || asked > MAX_BUNNIES) {
+        throw new Error(`?${PARAM_BUNNIES}=${raw} is above the field limit of ${MAX_BUNNIES}.`);
+    }
+
+    return asked;
+}
+
+/**
  * Bouncing-sprite stress test.
  *
  * The lesson is the bunny loop: position and speed live in flat typed arrays
@@ -366,9 +394,10 @@ class Demo {
     screenW = 0;
     screenH = 0;
 
-    // True on the WebGPU backend, which is the one with the vertex cap. Software
-    // draws every submitted sprite and reports no dropped quads.
-    limitsSprites = false;
+    // Right and bottom walls of the bunnies' area. The screen size does not change,
+    // so init() stores them once and the hop loop only reads them.
+    arenaRight = 0;
+    arenaFloor = 0;
 
     splitSheets = false;
 
@@ -427,17 +456,14 @@ class Demo {
 
         this.screenW = display.x;
         this.screenH = display.y;
-        this.limitsSprites = BT.activeBackend === 'webgpu';
+        this.arenaRight = this.screenW - BUNNY_W;
+        this.arenaFloor = this.screenH - BUNNY_H;
 
         BT.randomSeed(RANDOM_SEED);
 
-        try {
-            this.sheets = await loadBunnySheets(this.palette);
-        } catch (error) {
-            console.error('[Bunnymark] Failed to build the bunny sheet:', error);
-
-            return false;
-        }
+        // A failed upload throws out of init(). The engine reports that and does not
+        // start the loop.
+        this.sheets = await loadBunnySheets(this.palette);
 
         // The fountain sits in the middle of the bunnies' area, right of the panel.
         // `>> 1` halves a whole number, like Math.floor(n / 2).
@@ -470,9 +496,12 @@ class Demo {
         const drawStart = performance.now();
 
         BT.clear(this.theme.bg);
-        this.rememberUpdateTime();
+
+        this.publishUpdateTime();
         this.drawBunnies();
+
         this.renderMs = performance.now() - drawStart;
+
         this.drawHud();
     }
 
@@ -480,7 +509,7 @@ class Demo {
      * Plain numbers for window.BT.testState() so a browser check can read the
      * counters without scraping the picture.
      *
-     * @returns {object} Counts, timings, and whether the WebGPU cap is in force.
+     * @returns {object} Counts and timings. The draw cap is always in force.
      */
     testState() {
         return {
@@ -491,27 +520,22 @@ class Demo {
             updateMs: this.updateMs,
             renderMs: this.renderMs,
             splitSheets: this.splitSheets,
-            limitsSprites: this.limitsSprites,
         };
     }
 
     /**
      * Reads the optional ?bunnies=N and ?split URL switches, so a timing run can
      * start with a known crowd instead of a lot of clicking. Without ?bunnies the
-     * demo starts with one ordinary batch.
+     * demo starts with one ordinary batch. A present ?bunnies that is not a whole
+     * number from 1 to MAX_BUNNIES throws, and init() stops.
      */
     applyUrlSwitches() {
         const params = new URLSearchParams(window.location.search);
 
-        // The URL is typed by a person, so check it: Number('abc') is NaN, and a
-        // negative or huge count must not reach the arrays.
-        const asked = Number(params.get(PARAM_BUNNIES));
-        const start = Number.isFinite(asked) && asked > 0 ? Math.min(Math.floor(asked), MAX_BUNNIES) : SPAWN_BATCH;
-
         this.splitSheets = params.has(PARAM_SPLIT);
         this.spawnX = this.fountainX;
         this.spawnY = FOUNTAIN_Y;
-        this.spawnBatch(start);
+        this.spawnBatch(bunnyCountFromParams(params));
     }
 
     /**
@@ -528,13 +552,15 @@ class Demo {
         this.updateMs = 0;
         this.updateSteps = 0;
         this.renderMs = 0;
+
         BT.randomSeed(RANDOM_SEED);
     }
 
     /**
-     * Keeps the last update timing when this frame did not run update() at all.
+     * Copies this frame's update timing onto the panel. A frame that ran no
+     * update() (common at 120 Hz) keeps the numbers already published.
      */
-    rememberUpdateTime() {
+    publishUpdateTime() {
         if (this.pendingUpdateSteps === 0) {
             return;
         }
@@ -554,8 +580,8 @@ class Demo {
         const ys = this.ys;
         const vxs = this.vxs;
         const vys = this.vys;
-        const right = this.screenW - BUNNY_W;
-        const floor = this.screenH - BUNNY_H;
+        const right = this.arenaRight;
+        const floor = this.arenaFloor;
         const n = this.count;
         const random = BT.random;
 
@@ -608,9 +634,11 @@ class Demo {
 
         this.addPressed = false;
 
-        const fromPad = BT.isDown(BT.BTN_A, 0) || BT.isKeyDown(KEY_ADD);
+        // Face button A is also Space. KeyN is the on-screen Add button's key.
+        // Both are held state, so they keep spawning while held.
+        const fromHeld = BT.isDown(BT.BTN_A, 0) || BT.isKeyDown(KEY_ADD);
 
-        if (!fromPointer && !fromButton && !fromPad) {
+        if (!fromPointer && !fromButton && !fromHeld) {
             return false;
         }
 
@@ -660,20 +688,10 @@ class Demo {
      * on the panel) still shows a bunny.
      */
     clampSpawn() {
-        const right = this.screenW - BUNNY_W;
-        const floor = this.screenH - BUNNY_H;
-
-        if (this.spawnX < ARENA_LEFT) {
-            this.spawnX = ARENA_LEFT;
-        } else if (this.spawnX > right) {
-            this.spawnX = right;
-        }
-
-        if (this.spawnY < 0) {
-            this.spawnY = 0;
-        } else if (this.spawnY > floor) {
-            this.spawnY = floor;
-        }
+        // Math.max keeps the higher number, Math.min the lower, so a click in the
+        // panel or past the edge is pushed back inside the bunnies' area.
+        this.spawnX = Math.min(this.arenaRight, Math.max(ARENA_LEFT, this.spawnX));
+        this.spawnY = Math.min(this.arenaFloor, Math.max(0, this.spawnY));
     }
 
     /**
@@ -702,6 +720,7 @@ class Demo {
             vxs[n] = random.float(SPAWN_VX_MIN, SPAWN_VX_MAX);
             vys[n] = random.float(SPAWN_VY_MIN, SPAWN_VY_MAX);
             variants[n] = random.int(VARIANT_COUNT);
+
             n += 1;
         }
 
@@ -709,37 +728,39 @@ class Demo {
     }
 
     /**
-     * Draws as many bunnies as the backend will actually keep. On WebGPU that
-     * stops at BUNNY_DRAW_CAP so we never trip the engine's per-quad warning.
-     * The leftovers are counted as dropped instead of pretending they appeared.
+     * Submits at most BUNNY_DRAW_CAP bunnies, on every backend. The leftovers are
+     * counted as dropped instead of being sent to the renderer. Stopping here
+     * keeps the WebGPU buffer from warning, and leaves the reserved quads for
+     * the panel. render() runs only after init() stored the sheets.
      */
     drawBunnies() {
-        const sheets = this.sheets;
-        const limit = this.limitsSprites ? Math.min(this.count, BUNNY_DRAW_CAP) : this.count;
+        const limit = Math.min(this.count, BUNNY_DRAW_CAP);
 
         this.drawn = limit;
         this.dropped = this.count - limit;
 
-        if (!sheets || limit === 0) {
+        if (limit === 0) {
             this.spriteBatches = 0;
 
             return;
         }
 
+        const sheets = this.sheets;
         const xs = this.xs;
         const ys = this.ys;
         const variants = this.variants;
         const pos = this.drawPos;
         const src = this.srcRect;
-        const split = this.splitSheets;
+
+        // One sheet: span is 1, and the remainder of any count divided by 1 is 0,
+        // so every bunny stays on texture 0 (one batch). Split mode uses all four
+        // copies in turn (0, 1, 2, 3, 0, ...). Each change of sheet is another batch.
+        const sheetSpan = this.splitSheets ? SHEET_COUNT : 1;
         let batches = 0;
         let lastSheet = -1;
 
         for (let i = 0; i < limit; i++) {
-            // One sheet: every bunny stays on texture 0, so the pipeline never
-            // flushes mid-loop (one batch). Split mode walks the copies in turn
-            // (0, 1, 2, 3, 0, ...). Each switch is another batch.
-            const sheetIndex = split ? i % SHEET_COUNT : 0;
+            const sheetIndex = i % sheetSpan;
 
             if (sheetIndex !== lastSheet) {
                 batches += 1;
@@ -804,10 +825,6 @@ class Demo {
     hudNote() {
         if (this.count >= MAX_BUNNIES) {
             return 'Field is full';
-        }
-
-        if (!this.limitsSprites) {
-            return 'Software: no cap';
         }
 
         if (this.dropped > 0) {
