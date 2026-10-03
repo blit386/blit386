@@ -16,13 +16,29 @@
 //
 // The engine overlay (press ` or the bottom-left corner) shows Present FPS and Draw Calls.
 // This demo turns that overlay on at startup. Draw Calls counts each BT.drawSprite, so it
-// climbs with the bunny count either way. The Batches row on the panel is the real GPU
-// number: one sheet stays one batch, and alternating sheets breaks that batch.
+// climbs with the bunny count either way. The Batches row on the panel is the GPU number,
+// worked out here by following the sprite pipeline's rule (a new batch whenever the sheet
+// changes), because the engine does not report it yet (BT-114). One sheet stays one batch,
+// and alternating sheets breaks that batch on every bunny. The overlay's
+// bottom row (Prim / Spr) is the engine's own vertex count and overflow ("ov") for the frame,
+// so you can check this panel's Dropped number against the engine itself.
+//
+// For repeatable timing runs, two URL switches skip the clicking:
+//   ?bunnies=5000   start with that many bunnies instead of one batch
+//   ?split          start with Split sheets already on
+// Add &backend=software to the same URL to time the software renderer instead.
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage } from './shared/canvas-sprites.js';
-import { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui } from './shared/ui.js';
+import {
+    applyTheme,
+    THEME_DEFAULT_START_SLOT,
+    THEME_PANEL_OFFSET,
+    THEME_TEXT_OFFSET,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -122,6 +138,23 @@ const SPAWN_VY_MAX = -2;
 
 // Where bunnies appear when the pointer isn't the thing asking for them.
 const FOUNTAIN_Y = 56;
+
+// The panel has a fixed width so the bunnies can be kept out of it: sprites are drawn
+// on top of UI panels, so a bunny inside the panel would cover the numbers. 118 pixels
+// fits the widest row: 18 letters of 6 pixels, plus 5 pixels of padding each side.
+const PANEL_W = 118;
+
+// Gap between the screen edge and the panel, and the panel's top edge. The top edge
+// sits below the engine overlay so the two never overlap.
+const PANEL_MARGIN = 4;
+const PANEL_Y = 58;
+
+// The bunnies' left wall: just right of the panel. Everything left of it belongs to the HUD.
+const ARENA_LEFT = PANEL_MARGIN + PANEL_W + PANEL_MARGIN;
+
+// URL switches for timing runs (see the header comment). ?bunnies is clamped to MAX_BUNNIES.
+const PARAM_BUNNIES = 'bunnies';
+const PARAM_SPLIT = 'split';
 
 // Six recolors of the same four slots. Order inside each row is outline, fur,
 // inner ear / belly, eye. paletteOffset selects a row at draw time.
@@ -346,6 +379,9 @@ class Demo {
     spawnX = 0;
     spawnY = FOUNTAIN_Y;
 
+    // Middle of the bunnies' area, worked out once in init() from the screen width.
+    fountainX = 0;
+
     // Timers. pending* collects every update() since the last render(); the
     // shown values stay put on a frame that ran no update (common at 120 Hz).
     pendingUpdateMs = 0;
@@ -366,6 +402,8 @@ class Demo {
     configure() {
         return {
             isOverlayVisibleAtStart: true,
+            // Adds the Prim / Spr row: the engine's own vertex use and overflow count.
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 textPaletteIndex: UI_TEXT,
                 barPaletteIndex: UI_PANEL,
@@ -401,9 +439,11 @@ class Demo {
             return false;
         }
 
-        this.spawnX = (this.screenW - BUNNY_W) >> 1;
-        this.spawnY = FOUNTAIN_Y;
-        this.spawnBatch();
+        // The fountain sits in the middle of the bunnies' area, right of the panel.
+        // `>> 1` halves a whole number, like Math.floor(n / 2).
+        this.fountainX = (ARENA_LEFT + this.screenW - BUNNY_W) >> 1;
+
+        this.applyUrlSwitches();
 
         return true;
     }
@@ -419,7 +459,7 @@ class Demo {
         this.stepBunnies();
 
         if (this.wantsSpawn()) {
-            this.spawnBatch();
+            this.spawnBatch(SPAWN_BATCH);
         }
 
         this.pendingUpdateMs += performance.now() - start;
@@ -453,6 +493,25 @@ class Demo {
             splitSheets: this.splitSheets,
             limitsSprites: this.limitsSprites,
         };
+    }
+
+    /**
+     * Reads the optional ?bunnies=N and ?split URL switches, so a timing run can
+     * start with a known crowd instead of a lot of clicking. Without ?bunnies the
+     * demo starts with one ordinary batch.
+     */
+    applyUrlSwitches() {
+        const params = new URLSearchParams(window.location.search);
+
+        // The URL is typed by a person, so check it: Number('abc') is NaN, and a
+        // negative or huge count must not reach the arrays.
+        const asked = Number(params.get(PARAM_BUNNIES));
+        const start = Number.isFinite(asked) && asked > 0 ? Math.min(Math.floor(asked), MAX_BUNNIES) : SPAWN_BATCH;
+
+        this.splitSheets = params.has(PARAM_SPLIT);
+        this.spawnX = this.fountainX;
+        this.spawnY = FOUNTAIN_Y;
+        this.spawnBatch(start);
     }
 
     /**
@@ -507,8 +566,9 @@ class Demo {
             let y = ys[i] + vy;
 
             // Past the side walls: pin to the wall and reverse sideways speed.
-            if (x < 0) {
-                x = 0;
+            // The left wall is the panel's right edge, not the screen edge.
+            if (x < ARENA_LEFT) {
+                x = ARENA_LEFT;
                 vx = -vx;
             } else if (x > right) {
                 x = right;
@@ -560,7 +620,7 @@ class Demo {
 
         // Pointer spawn already stored a point. Everything else uses the fountain.
         if (!fromPointer) {
-            this.spawnX = (this.screenW - BUNNY_W) >> 1;
+            this.spawnX = this.fountainX;
             this.spawnY = FOUNTAIN_Y;
         }
 
@@ -596,14 +656,15 @@ class Demo {
     }
 
     /**
-     * Keeps the spawn point on screen so a click in the corner still shows a bunny.
+     * Keeps the spawn point inside the bunnies' area, so a click in the corner (or
+     * on the panel) still shows a bunny.
      */
     clampSpawn() {
         const right = this.screenW - BUNNY_W;
         const floor = this.screenH - BUNNY_H;
 
-        if (this.spawnX < 0) {
-            this.spawnX = 0;
+        if (this.spawnX < ARENA_LEFT) {
+            this.spawnX = ARENA_LEFT;
         } else if (this.spawnX > right) {
             this.spawnX = right;
         }
@@ -616,10 +677,12 @@ class Demo {
     }
 
     /**
-     * Writes the next batch into the free slots at the end of the arrays.
+     * Writes the next `size` bunnies into the free slots at the end of the arrays.
      * Random velocities come from the seeded BT.random stream.
+     *
+     * @param {number} size - How many bunnies to add. Stops early at MAX_BUNNIES.
      */
-    spawnBatch() {
+    spawnBatch(size) {
         this.clampSpawn();
 
         const random = BT.random;
@@ -631,7 +694,7 @@ class Demo {
         const x = this.spawnX;
         const y = this.spawnY;
         let n = this.count;
-        const end = Math.min(MAX_BUNNIES, n + SPAWN_BATCH);
+        const end = Math.min(MAX_BUNNIES, n + size);
 
         while (n < end) {
             xs[n] = x;
@@ -704,7 +767,8 @@ class Demo {
         const updateLabel =
             this.updateSteps > 1 ? `${formatMs(this.updateMs)} x${this.updateSteps}` : formatMs(this.updateMs);
 
-        ui.begin('topLeft', { y: 46, kvCols: 8 });
+        // Fixed width and position, so ARENA_LEFT always matches the panel's right edge.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: PANEL_Y, width: PANEL_W, margin: PANEL_MARGIN, kvCols: 8 });
         ui.panel('Bunnymark');
         ui.kv('Bunnies', this.count);
         ui.kv('Drawn', this.drawn);
@@ -714,9 +778,12 @@ class Demo {
         ui.kv('Batches', this.spriteBatches);
         ui.kv('Cap', SPRITE_QUAD_CAP);
         ui.label(this.hudNote(), { color: this.dropped > 0 ? 'warm' : 'dim' });
-        ui.label(this.splitSheets ? 'Alternating sheets' : 'One sheet, one batch', { color: 'info' });
 
+        // The Batches row above already says which mode is on, so the checkbox needs no
+        // extra label. A small gap keeps its box clear of the text and the button.
+        ui.spacer(2);
         this.splitSheets = ui.checkbox('Split sheets (S)', this.splitSheets, { key: 'KeyS' });
+        ui.spacer(4);
 
         if (ui.button('Add 100 (N)', { key: KEY_ADD })) {
             this.addPressed = true;
@@ -740,14 +807,14 @@ class Demo {
         }
 
         if (!this.limitsSprites) {
-            return 'Software draws every bunny';
+            return 'Software: no cap';
         }
 
         if (this.dropped > 0) {
-            return 'Past the cap, extras skipped';
+            return 'Over cap: skipped';
         }
 
-        return 'Hold the field, Space, or A';
+        return 'Hold, Space or A';
     }
 }
 
