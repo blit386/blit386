@@ -78,7 +78,7 @@ interface GamePage {
         displaySize: { x: number; y: number };
         captureFrame(): Promise<Blob>;
 
-        /** Engine 1.7.2+. `state` is `null` when the game class has no `testState()` method. */
+        /** Engine 1.8.0+. `state` is `null` when the game class has no `testState()` method. */
         testState?(): { state: unknown };
     };
     __game?: { state(): unknown };
@@ -174,7 +174,7 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
             return page.evaluate(() => {
                 const game = globalThis as unknown as GamePage;
 
-                // An engine older than 1.7.2 has no BT.testState(); a game without the hook gets `state: null` from it.
+                // An engine older than 1.8.0 has no BT.testState(); a game without the hook gets `state: null` from it.
                 return game.BT.testState?.().state ?? game.__game?.state() ?? { ticks: game.BT.ticks };
             });
         case 'shot': {

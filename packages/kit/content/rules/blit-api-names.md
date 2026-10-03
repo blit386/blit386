@@ -88,7 +88,7 @@ configure() {
         isWakeLockEnabled: true, // opt in to stop mobile screens dimming during play
         isFrameCaptureShortcutEnabled: false, // opt out of the dev-mode F9 / Shift+F9 capture keys (engine 1.7.0+)
         preferredOrientation: 'landscape', // ask the browser to lock after start (Android)
-        keyboardLayout: 'single', // WASD and arrows both steer player 0 (engine 1.7.2+)
+        keyboardLayout: 'single', // WASD and arrows both steer player 0 (engine 1.8.0+)
     };
 }
 ```
@@ -128,7 +128,7 @@ Optional methods on your game class (the one you pass to `bootstrap()`):
   down its own splash for you, but never changes your draw calls - toning down shake, flicker, and long transitions is
   your code.
 - `testState()` - return the game's state as plain JSON (numbers, strings, booleans, arrays, plain objects) for
-  play-testing (engine 1.7.2+). The engine never calls it on its own; `BT.testState()` reads it and returns
+  play-testing (engine 1.8.0+). The engine never calls it on its own; `BT.testState()` reads it and returns
   `{ ticks, backend, state }`, and in a dev build an agent reads that with `window.BT.testState()`. `state` is a deep
   copy (a `Vector2i` arrives as `{ x, y }`), or `null` when the game has no hook. A throw, a cycle, or a `BigInt` gives
   `state: null` plus an `error` message instead of throwing. See the `use-dev-mode` skill.

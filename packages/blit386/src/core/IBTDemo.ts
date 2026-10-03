@@ -58,7 +58,7 @@ const KEYBOARD_LAYOUTS = ['versus', 'single'] as const;
  *   player 1 moves to IJKL. Also turns on {@link HardwareSettings.isCapturingKeyboardScroll}
  *   unless `configure()` sets that flag explicitly.
  *
- * @since 1.7.2
+ * @since 1.8.0
  */
 export type KeyboardLayout = (typeof KEYBOARD_LAYOUTS)[number];
 
@@ -96,7 +96,7 @@ export interface HotReloadContext {
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
  * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
  * @changed 1.7.0 Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}.
- * @changed 1.7.2 Added {@link HardwareSettings.keyboardLayout}.
+ * @changed 1.8.0 Added {@link HardwareSettings.keyboardLayout}.
  */
 export interface HardwareSettings {
     /**
@@ -255,7 +255,7 @@ export interface HardwareSettings {
      * Unknown values log a warning and fall back to `'versus'`. Defaults to `'versus'` in
      * {@link defaultConfig}.
      *
-     * @since 1.7.2
+     * @since 1.8.0
      */
     keyboardLayout?: KeyboardLayout;
 
@@ -599,7 +599,7 @@ export interface OverlayRow {
  * Envelope returned by {@link BT.testState}: the engine's tick and backend plus the game's own
  * {@link IBTDemo.testState} readout.
  *
- * @since 1.7.2
+ * @since 1.8.0
  */
 export interface TestStateSnapshot {
     /** Current fixed-update tick, same as {@link BT.ticks}. */
@@ -635,7 +635,7 @@ export interface TestStateSnapshot {
  * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
  * @changed 1.4.0 Added optional {@link IBTDemo.onHotReload} hook.
  * @changed 1.7.0 Added optional {@link IBTDemo.onReducedMotionChange} hook.
- * @changed 1.7.2 Added optional {@link IBTDemo.testState} hook.
+ * @changed 1.8.0 Added optional {@link IBTDemo.testState} hook.
  */
 export interface IBTDemo {
     /**
@@ -725,7 +725,7 @@ export interface IBTDemo {
      * such as `Vector2i` arrive as `{ x, y }`, `undefined` fields and functions are dropped, and a
      * cycle or a `BigInt` makes the snapshot report an error instead of returning data.
      *
-     * @since 1.7.2
+     * @since 1.8.0
      * @returns Plain-JSON game state (for example `{ score, lives, player: { x, y } }`).
      */
     testState?(): unknown;

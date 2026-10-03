@@ -45,7 +45,7 @@ On a keyboard, player 0's D-pad is W, A, S, D and Space maps to `BTN_A` by defau
 ```js
 configure() {
   return {
-    keyboardLayout: 'single', // WASD and the arrow keys both steer player 0 (engine 1.7.2+)
+    keyboardLayout: 'single', // WASD and the arrow keys both steer player 0 (engine 1.8.0+)
   };
 }
 ```

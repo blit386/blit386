@@ -2,7 +2,7 @@
 name: use-dev-mode
 description:
   Gate debug HUDs, cheat keys, verbose logging, and test fixtures on `BT.isDevMode` (engine 1.5.0+) instead of a
-  hand-rolled flag, and expose game state for play-testing with a `testState()` method (engine 1.7.2+). Use when the
+  hand-rolled flag, and expose game state for play-testing with a `testState()` method (engine 1.8.0+). Use when the
   user asks how to tell a dev build from a release build, wants a feature to only run while developing, wants something
   like a cheat key to disappear once the game ships, or wants an agent or the console to read the game's state.
 ---
@@ -53,7 +53,7 @@ Left alone, both follow `BT.isDevMode`, so neither ships to players by accident.
 wins over that default - `exposeGlobal: true` for the first, `isFrameCaptureShortcutEnabled: true` for the second - if
 you want one in a release build on purpose.
 
-## Let an agent read the game's state (engine 1.7.2+)
+## Let an agent read the game's state (engine 1.8.0+)
 
 Add a `testState()` method to your game class that returns what a play-tester needs to check, as plain JSON:
 

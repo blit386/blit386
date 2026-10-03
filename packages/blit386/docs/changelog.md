@@ -19,7 +19,7 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.7.2 - Unreleased
+## 1.8.0 - Unreleased
 
 ### Added
 
@@ -29,6 +29,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   0, arrows for player 1), so existing games are unchanged. `BT.inputMapReset()` restores the active layout's defaults,
   and the new tables are exposed as `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2`. See
   [Keyboard layouts](guide-input.md#keyboard-layouts).
+- `testState()` game hook and `BT.testState()` readout: a game can return plain JSON from an optional `testState()`
+  method on its class, and an agent play-testing in dev reads it with `window.BT.testState()` instead of a hand-written
+  `window.__game` global. The result is `{ ticks, backend, state }`, with an `error` field when the readout threw. See
+  [Core API](api-core.md).
 
 ## 1.7.1 - 2026-09-27
 

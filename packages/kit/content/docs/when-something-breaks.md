@@ -33,7 +33,7 @@ BT.palette.get(1); // what color is actually in slot 1
 That is often the fastest way to answer "is this value what I think it is" without adding a `console.log` and reloading.
 Type `BT` on its own and press Enter to expand the whole object and browse it.
 
-If your game class has a `testState()` method (blit386 1.7.2+), `BT.testState()` prints what it returns next to the tick
+If your game class has a `testState()` method (blit386 1.8.0+), `BT.testState()` prints what it returns next to the tick
 counter and the renderer - see the `use-dev-mode` skill.
 
 A built game does not get `window.BT` - it is there for you while you work, and gone once you ship. It is a debugging
@@ -102,7 +102,7 @@ always finishes before `render()` runs each frame, and one-frame events like `BT
   `BT.inputMap(0, BT.BTN_LEFT, 'ArrowLeft')` makes the left arrow work and switches `KeyA` off. List every key you want:
   `BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft')`.
 - In a one-player game, do you want the arrow keys as well as W, A, S, D? Out of the box the arrows belong to player 1,
-  the second keyboard player. Return `keyboardLayout: 'single'` from `configure()` (blit386 1.7.2+) and player 0 gets
+  the second keyboard player. Return `keyboardLayout: 'single'` from `configure()` (blit386 1.8.0+) and player 0 gets
   both. See `input.md`.
 
 ## The mouse acts as if it were pressed all the time
