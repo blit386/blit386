@@ -80,6 +80,8 @@ to these URLs via `VINTAGE_URLS`.
 - [sprites](https://demos.blit386.dev/sprites) - Programmatic sprite sheet, source rectangles, palette offsets
 - [animation](https://demos.blit386.dev/animation) - Tick-based animation, walk frame cycling, state machines, particles
 - [sprite-effects](https://demos.blit386.dev/sprite-effects) - Damage flash, silhouette, ghost, team colors, day/night
+- [bunnymark](https://demos.blit386.dev/bunnymark) - Sprite throughput stress test: bouncing bunnies in typed arrays, a
+  WebGPU quad cap, a software field that grows past it, and a multi-sheet mode that breaks batches
 - [starfield](https://demos.blit386.dev/starfield) - Parallax scrolling starfield
 - [tilemap](https://demos.blit386.dev/tilemap) - Grid-based tile world with camera
 
