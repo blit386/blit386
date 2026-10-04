@@ -21,6 +21,7 @@ import { SpriteSheet } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import { resolveSpriteOrientation, SPRITE_FLIP_H, SPRITE_ROT_90_CW } from './SpriteOrientation';
 import { SpritePipeline } from './SpritePipeline';
 
 const BENCH_OPTIONS = {
@@ -114,6 +115,9 @@ await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), '
 pipeline.drawSprite(spriteSheet, SPRITE_RECT, DEST_POS);
 pipeline.reset();
 
+/** Orientation for `ROT_90_CW | FLIP_H`: exercises both a corner permutation and an axis swap. */
+const ROT_90_FLIP_H = resolveSpriteOrientation(SPRITE_ROT_90_CW | SPRITE_FLIP_H);
+
 const font = createSystemFont();
 const bitmapText = makePrintableAsciiText(TEXT_LENGTH);
 
@@ -127,6 +131,18 @@ describe('SpritePipeline vertex batch filling', () => {
         () => {
             pipeline.reset();
             fillWithSprites(pipeline, spriteSheet, SPRITE_DRAW_COUNT);
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'drawSpriteOriented x 5000 same-texture quads (ROT_90_CW | FLIP_H)',
+        () => {
+            pipeline.reset();
+
+            for (let i = 0; i < SPRITE_DRAW_COUNT; i++) {
+                pipeline.drawSpriteOriented(spriteSheet, SPRITE_RECT, DEST_POS, 0, ROT_90_FLIP_H);
+            }
         },
         BENCH_OPTIONS,
     );

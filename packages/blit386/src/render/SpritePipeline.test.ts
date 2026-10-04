@@ -15,6 +15,15 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
+    applyMaskToGrid,
+    DOC_RESULTS,
+    indexToLetter,
+    PADDED_SHEET_H,
+    PADDED_SHEET_PIXELS,
+    PADDED_SHEET_W,
+    PADDED_SRC_RECT_ARGS,
+} from '../__test__/spriteOrientationFixture';
+import {
     createMockGPUDevice,
     createMockPaletteBuffer,
     createMockRenderPassEncoder,
@@ -25,6 +34,7 @@ import type { BitmapFont, Glyph } from '../assets/BitmapFont';
 import { SpriteSheet } from '../assets/SpriteSheet';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import { resolveSpriteOrientation } from './SpriteOrientation';
 import { SpritePipeline } from './SpritePipeline';
 
 describe('SpritePipeline constructor', () => {
@@ -515,5 +525,116 @@ describe('drawBitmapText', () => {
             pipeline.drawBitmapText(font, new Vector2i(0, 0), 'X', 2);
             pipeline.encodePass(createMockRenderPassEncoder());
         }).not.toThrow();
+    });
+});
+
+describe('drawSpriteOriented (flip and quarter turns)', () => {
+    const device = createMockGPUDevice();
+    const pipeline = new SpritePipeline();
+
+    // The padded sheet puts ABC / DEF at (1, 1), so UVs are not trivially 0 and 1.
+    const SHEET_W = PADDED_SHEET_W;
+    const SHEET_H = PADDED_SHEET_H;
+    const sheetPixels = PADDED_SHEET_PIXELS;
+    const SRC = new Rect2i(...PADDED_SRC_RECT_ARGS);
+    const DEST = new Vector2i(7, 9);
+
+    beforeAll(async () => {
+        installMockNavigatorGPU();
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+    });
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    /** Queues one draw, encodes, and returns the 6 uploaded vertices as [x, y, u, v, paletteOffset] rows. */
+    function captureQuad(draw: (sheet: SpriteSheet) => void): number[][] {
+        pipeline.reset();
+        const writeBuffer = vi.spyOn(device.queue, 'writeBuffer');
+        draw(SpriteSheet.fromIndexedPixels(SHEET_W, SHEET_H, sheetPixels));
+        pipeline.encodePass(createMockRenderPassEncoder() as unknown as GPURenderPassEncoder);
+
+        const call = writeBuffer.mock.calls.at(-1);
+        writeBuffer.mockRestore();
+        const buffer = call?.[2] as ArrayBuffer;
+        const floats = new Float32Array(buffer, 0, 30);
+        const uints = new Uint32Array(buffer, 0, 30);
+
+        return Array.from({ length: 6 }, (_, i) => [
+            floats[i * 5] ?? 0,
+            floats[i * 5 + 1] ?? 0,
+            floats[i * 5 + 2] ?? 0,
+            floats[i * 5 + 3] ?? 0,
+            uints[i * 5 + 4] ?? 0,
+        ]);
+    }
+
+    /**
+     * Rasterizes the quad the way the GPU would: interpolate UV at each covered pixel center
+     * (the corner permutation is affine, so bilinear interpolation is exact) and load that texel.
+     */
+    function sampleQuad(vertices: number[][]): string {
+        const [tl, tr, bl] = vertices as [number[], number[], number[]];
+        const br = vertices[4] as number[];
+        const [x0, y0] = tl as [number, number];
+        const [x1, y1] = br as [number, number];
+        const rows: string[] = [];
+
+        for (let py = y0; py < y1; py++) {
+            let row = '';
+            for (let px = x0; px < x1; px++) {
+                const s = (px + 0.5 - x0) / (x1 - x0);
+                const t = (py + 0.5 - y0) / (y1 - y0);
+                const u =
+                    (1 - s) * (1 - t) * (tl[2] ?? 0) +
+                    s * (1 - t) * (tr[2] ?? 0) +
+                    (1 - s) * t * (bl[2] ?? 0) +
+                    s * t * (br[2] ?? 0);
+                const v =
+                    (1 - s) * (1 - t) * (tl[3] ?? 0) +
+                    s * (1 - t) * (tr[3] ?? 0) +
+                    (1 - s) * t * (bl[3] ?? 0) +
+                    s * t * (br[3] ?? 0);
+                row += indexToLetter(sheetPixels[Math.floor(v * SHEET_H) * SHEET_W + Math.floor(u * SHEET_W)] ?? 0);
+            }
+            rows.push(row);
+        }
+
+        return rows.join(' / ');
+    }
+
+    it('keeps the overload 1 vertex stream unchanged', () => {
+        const u0 = 1 / SHEET_W;
+        const v0 = 1 / SHEET_H;
+        const u1 = 4 / SHEET_W;
+        const v1 = 3 / SHEET_H;
+        const vertices = captureQuad((sheet) => pipeline.drawSprite(sheet, SRC, DEST, 2));
+
+        expect(vertices).toEqual(
+            [
+                [7, 9, u0, v0, 2],
+                [10, 9, u1, v0, 2],
+                [7, 11, u0, v1, 2],
+                [10, 9, u1, v0, 2],
+                [10, 11, u1, v1, 2],
+                [7, 11, u0, v1, 2],
+            ].map((row) => row.map((value, i) => (i < 4 ? Math.fround(value) : value))),
+        );
+    });
+
+    it.each(Array.from({ length: 32 }, (_, mask) => mask))('mask %i samples the documented grid', (mask) => {
+        const orientation = resolveSpriteOrientation(mask);
+        const vertices =
+            orientation === 0
+                ? captureQuad((sheet) => pipeline.drawSprite(sheet, SRC, DEST, 3))
+                : captureQuad((sheet) => pipeline.drawSpriteOriented(sheet, SRC, DEST, 3, orientation));
+
+        expect(vertices[0]?.slice(0, 2)).toEqual([7, 9]);
+        expect(vertices.every((vertex) => vertex[4] === 3)).toBe(true);
+        expect(sampleQuad(vertices)).toBe(applyMaskToGrid(mask));
+        // eslint-disable-next-line security/detect-object-injection
+        expect(sampleQuad(vertices)).toBe(DOC_RESULTS[orientation]);
     });
 });

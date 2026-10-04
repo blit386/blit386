@@ -1,5 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import {
+    applyMaskToGrid,
+    DOC_RESULTS,
+    indexToLetter,
+    PADDED_SHEET_H,
+    PADDED_SHEET_PIXELS,
+    PADDED_SHEET_W,
+    PADDED_SRC_RECT_ARGS,
+    SOURCE_H,
+    SOURCE_PIXELS,
+    SOURCE_W,
+} from '../__test__/spriteOrientationFixture';
 import { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
 import { SpriteSheet } from '../assets/SpriteSheet';
@@ -8,6 +20,7 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import { SoftwareRenderer } from './SoftwareRenderer';
+import { resolveSpriteOrientation } from './SpriteOrientation';
 
 type MockContext = {
     imageSmoothingEnabled: boolean;
@@ -565,5 +578,126 @@ describe('SoftwareRenderer', () => {
         });
 
         renderer.endFrame();
+    });
+});
+
+describe('SoftwareRenderer drawSpriteOriented (flip and quarter turns)', () => {
+    const DISPLAY = 8;
+
+    beforeEach(() => {
+        logicalContext.lastImageData = null;
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                constructor(
+                    public width: number,
+                    public height: number,
+                    public data: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4),
+                ) {}
+            },
+        );
+        vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    /** Palette where index n renders as (n, 0, 0), so the framebuffer's red channel reads back the index. */
+    function makeIndexPalette(): Palette {
+        const palette = new Palette(16);
+        for (let i = 1; i < 16; i++) {
+            palette.set(i, new Color32(i, 0, 0, 255));
+        }
+        return palette;
+    }
+
+    async function render(draw: (renderer: SoftwareRenderer) => void): Promise<ImageData> {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(DISPLAY, DISPLAY));
+        await renderer.init();
+        renderer.setPalette(makeIndexPalette());
+        renderer.beginFrame();
+        draw(renderer);
+        renderer.endFrame();
+
+        return logicalContext.lastImageData as ImageData;
+    }
+
+    /** Reads a w x h block at (x, y) back as letters (stored index = red channel). */
+    function readGrid(frame: ImageData, x: number, y: number, w: number, h: number): string {
+        return Array.from({ length: h }, (_, row) =>
+            Array.from({ length: w }, (_, col) => indexToLetter(getPixel(frame, DISPLAY, x + col, y + row)[0])).join(
+                '',
+            ),
+        ).join(' / ');
+    }
+
+    // Draw from inside a larger sheet so source-rect offsets are exercised.
+    const SRC = new Rect2i(...PADDED_SRC_RECT_ARGS);
+
+    it.each(Array.from({ length: 32 }, (_, mask) => mask))('mask %i writes the documented grid', async (mask) => {
+        const orientation = resolveSpriteOrientation(mask);
+        const frame = await render((renderer) => {
+            const sheet = SpriteSheet.fromIndexedPixels(PADDED_SHEET_W, PADDED_SHEET_H, PADDED_SHEET_PIXELS);
+            renderer.setCameraOffset(new Vector2i(1, 1));
+            if (orientation === 0) {
+                renderer.drawSprite(sheet, SRC, new Vector2i(3, 3), 0);
+            } else {
+                renderer.drawSpriteOriented(sheet, SRC, new Vector2i(3, 3), 0, orientation);
+            }
+        });
+        const swap = orientation >= 4;
+        const w = swap ? SOURCE_H : SOURCE_W;
+        const h = swap ? SOURCE_W : SOURCE_H;
+
+        // Camera (1, 1) puts the footprint top-left at (2, 2); nothing else is touched.
+        expect(readGrid(frame, 2, 2, w, h)).toBe(applyMaskToGrid(mask));
+        // eslint-disable-next-line security/detect-object-injection
+        expect(readGrid(frame, 2, 2, w, h)).toBe(DOC_RESULTS[orientation]);
+        expect(
+            readGrid(frame, 1, 1, w + 2, h + 2)
+                .replaceAll(/[A-F]/g, '')
+                .replaceAll(' / ', ''),
+        ).toMatch(/^\.+$/);
+    });
+
+    it('applies paletteOffset and transparency on the oriented path', async () => {
+        const frame = await render((renderer) => {
+            const sheet = SpriteSheet.fromIndexedPixels(2, 1, new Uint8Array([1, 0]));
+            renderer.drawSpriteOriented(
+                sheet,
+                new Rect2i(0, 0, 2, 1),
+                new Vector2i(0, 0),
+                2,
+                resolveSpriteOrientation(1),
+            );
+        });
+
+        expect(getPixel(frame, DISPLAY, 0, 0)).toEqual([0, 0, 0, 0]);
+        expect(getPixel(frame, DISPLAY, 1, 0)).toEqual([3, 0, 0, 255]);
+    });
+
+    it('keeps clipped texels where the full GPU quad would put them', async () => {
+        // Source rect overhangs the 3x2 sheet by one column on the left; with FLIP_H the visible
+        // columns land on the left of the 4-wide footprint, matching the GPU quad.
+        const frame = await render((renderer) => {
+            const sheet = SpriteSheet.fromIndexedPixels(SOURCE_W, SOURCE_H, SOURCE_PIXELS);
+            renderer.drawSpriteOriented(
+                sheet,
+                new Rect2i(-1, 0, 4, 2),
+                new Vector2i(0, 0),
+                0,
+                resolveSpriteOrientation(1),
+            );
+        });
+
+        expect(readGrid(frame, 0, 0, 4, 2)).toBe('CBA. / FED.');
     });
 });

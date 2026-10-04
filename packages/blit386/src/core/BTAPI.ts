@@ -27,6 +27,7 @@ import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTo
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
+import { resolveSpriteOrientation, type SpriteDrawParams } from '../render/SpriteOrientation';
 import { WebGPURenderer } from '../render/WebGPURenderer';
 import type { SplashState } from '../splash';
 import { createBlackened, HANDOFF_FADE_MS, isSplashEnabled, Splash } from '../splash';
@@ -1452,16 +1453,46 @@ export class BTAPI {
      * @throws If the sprite sheet has not been indexized.
      */
     public drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
-        this.assertPaletteIndex(paletteOffset);
-        this.requireIndexizedSheet(spriteSheet);
+        this.submitSprite(spriteSheet, srcRect, destPos, paletteOffset, 0);
+    }
 
-        if (this.renderer && this.isTrackingFramePaletteUsage()) {
-            spriteSheet.markPaletteIndicesInRect(srcRect, paletteOffset, this.framePaletteUsageMask);
+    /**
+     * Draws a sprite region with a params object (the params form of `BT.drawSprite`).
+     * The params are read once into locals, never mutated or retained.
+     *
+     * @param spriteSheet - Source sprite sheet (must have been indexized via spriteSheet.indexize()).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destPos - Top-left of the post-flags footprint.
+     * @param params - Flags and palette offset.
+     * @throws If `params` is null or an array, `destPos` is not a `Vector2i`, the flags are invalid, or
+     *   anything {@link drawSprite} rejects.
+     */
+    public drawSpriteWithParams(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        params: SpriteDrawParams,
+    ): void {
+        if (params === null || Array.isArray(params)) {
+            throw new Error(
+                `drawSprite params must be a SpriteDrawParams object like { flags: BT.FLIP_H }, got ${params === null ? 'null' : 'an array'}`,
+            );
         }
 
-        this.markDrawCall();
+        if (!(destPos instanceof Vector2i)) {
+            throw new Error(
+                'drawSprite with params takes a Vector2i destination; a Rect2i (stretched) destination is not supported yet',
+            );
+        }
 
-        this.renderer?.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+        // Absent fields take the documented defaults (no flip, no palette shift).
+        this.submitSprite(
+            spriteSheet,
+            srcRect,
+            destPos,
+            params.paletteOffset ?? 0,
+            resolveSpriteOrientation(params.flags ?? 0),
+        );
     }
 
     /**
@@ -2337,6 +2368,40 @@ export class BTAPI {
                 `[BT] Dropped ${event.droppedFrames} frame(s) ` +
                     `(frame time ${event.deltaTime.toFixed(1)}ms, expected ${event.expectedInterval.toFixed(1)}ms)`,
             );
+        }
+    }
+
+    /**
+     * Validates and submits one sprite draw shared by {@link drawSprite} and {@link drawSpriteWithParams}.
+     * Orientation `0` goes to the renderer's plain `drawSprite`, so overload 1 output stays unchanged.
+     *
+     * @param spriteSheet - Source sprite sheet (must have been indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destPos - Top-left of the (post-flags) footprint.
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index from `resolveSpriteOrientation`.
+     * @throws If the palette offset is invalid or the sprite sheet has not been indexized.
+     */
+    private submitSprite(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        this.assertPaletteIndex(paletteOffset);
+        this.requireIndexizedSheet(spriteSheet);
+
+        if (this.renderer && this.isTrackingFramePaletteUsage()) {
+            spriteSheet.markPaletteIndicesInRect(srcRect, paletteOffset, this.framePaletteUsageMask);
+        }
+
+        this.markDrawCall();
+
+        if (orientation === 0) {
+            this.renderer?.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+        } else {
+            this.renderer?.drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
         }
     }
 

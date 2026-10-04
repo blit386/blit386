@@ -1,5 +1,5 @@
 // Sprites: how to draw images (sprites) on screen using BLIT386.
-// @description Draw images from a programmatic sprite sheet, picking grid cells and palette offsets to vary them.
+// @description Draw sprites from a sheet: pick grid cells, recolor with palette offsets, and flip or rotate.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),
@@ -17,7 +17,8 @@
 // This demo builds a six-shape sheet on an offscreen canvas, then shows:
 //   1. BT.drawTile() - one shape per grid cell, picked by cell number.
 //   2. Palette offsets - shifting every pixel index to a different color block.
-//   3. Opacity pulsing - rewriting palette alpha slots in update().
+//   3. Flip and quarter-turn flags - one triangle drawn facing four ways, plus one you
+//      turn around with the Turn button or Space (BT.drawSprite with a params object).
 //
 // Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
 // installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
@@ -55,7 +56,7 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 
 // Where in the palette the sprite's original colors start. The sprite uses two colors
-// (fill + stroke), and the recolored theme blocks below stack up to about slot 19, so
+// (fill + stroke), and the recolored theme blocks below stack up to about slot 17, so
 // everything above that stays free for the shared UI theme (slots 240-251).
 const COLOR_BASE = 10;
 
@@ -73,6 +74,22 @@ const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 // Cell number of the star in the sheet (cells count left to right, then top to bottom).
 // The palette-offset row below the shape grid draws this cell four times.
 const STAR_TILE = 3;
+
+// Cell number of the triangle - the one shape that looks different when turned.
+const TRIANGLE_TILE = 2;
+
+// The triangle points up in the sheet. These flags turn it to face each way.
+// Each flag is one bit of a number, so several can be combined with | ("bitwise or",
+// which keeps every bit that is set in either side). The engine always applies them in
+// the same order, whichever way round you write them: flips first, then the turn. So
+// BT.ROT_90_CW | BT.FLIP_V mirrors the triangle top to bottom, then turns it a quarter
+// turn clockwise.
+const FACINGS = [
+    { name: 'Up', flags: 0 },
+    { name: 'Right', flags: BT.ROT_90_CW },
+    { name: 'Down', flags: BT.ROT_180_CW },
+    { name: 'Left', flags: BT.ROT_270_CW },
+];
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
@@ -268,7 +285,7 @@ function buildShapeSheet() {
 }
 
 /**
- * Demonstrates sprite sheets, source rectangles, palette offsets, and opacity pulsing.
+ * Demonstrates sprite sheets, source rectangles, palette offsets, and flip/rotate flags.
  *
  * @implements {IBTDemo}
  */
@@ -284,7 +301,17 @@ class Demo {
 
     colorCount = 0;
     baseColors = [];
-    animTime = 0;
+
+    // Source rect of the triangle cell, built once in init() (sheet.tileRect makes a new
+    // Rect2i each call, so keep it out of render()).
+    triangleRect = null;
+
+    // One reusable params object for BT.drawSprite. Create it with every field present and
+    // rewrite the fields between draws - the engine reads it and never keeps it.
+    drawParams = { flags: 0, paletteOffset: 0 };
+
+    // Which way the turnable triangle faces; the Turn button (or Space) toggles it in render().
+    isFacingLeft = false;
 
     /**
      * @returns {Partial<HardwareSettings>}
@@ -292,6 +319,10 @@ class Demo {
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
+
+            // Space is the Turn button's shortcut. Without this, the browser also treats
+            // Space as "scroll the page down", so every press would jump the page.
+            isCapturingKeyboardScroll: true,
 
             overlayStyle: {
                 barPaletteIndex: UI_BG,
@@ -333,7 +364,7 @@ class Demo {
 
             const colorCount = this.colorCount;
 
-            // Build theme blocks: Fire, Ice, Void, and Pulse are static once written here.
+            // Build theme blocks: Fire, Ice, and Void are static once written here.
             // palette.fillBlock(start, source, transform) writes transform(baseColor) into one
             // slot per base color, starting at `start` - it replaces a hand-written for loop.
 
@@ -358,13 +389,6 @@ class Demo {
                 (base) => new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
             );
 
-            // Pulse: same colors as the original, at full opacity.
-            this.palette.fillBlock(
-                COLOR_BASE + colorCount * 4,
-                this.baseColors,
-                (base) => new Color32(base.r, base.g, base.b, 255),
-            );
-
             const image = await canvasToImage(canvas);
             this.sheet = new SpriteSheet(image);
             this.sheet.indexize(this.palette);
@@ -372,6 +396,7 @@ class Demo {
             // The sheet is a SHAPE_COLS x SHAPE_ROWS grid of SHAPE_CELL squares, so BT.drawTile can
             // find each shape by its number - no Rect2i bookkeeping.
             this.sheet.tileSize = SHAPE_CELL;
+            this.triangleRect = this.sheet.tileRect(TRIANGLE_TILE);
             BT.paletteSet(this.palette);
 
             console.log(
@@ -387,11 +412,9 @@ class Demo {
     }
 
     update() {
-        this.animTime += BT.deltaSeconds;
-
-        if (!this.colorCount) {
-            return;
-        }
+        // Always first: this latches the Turn button's Space shortcut, so a quick key press
+        // is never missed (the button itself is declared in render()).
+        ui.tick();
     }
 
     render() {
@@ -426,6 +449,37 @@ class Demo {
 
         BT.drawTile(this.sheet, STAR_TILE, new Vector2i(8 + themeSpacing * 3, themeY), n * 3);
         ui.caption(6 + themeSpacing * 3, themeY + 22, 'Void', { color: 'dim' });
+
+        // Row 3: flags. The same triangle cell, turned by params.flags instead of being
+        // drawn four times in the PNG.
+        const facingY = 122;
+        const params = this.drawParams;
+
+        for (let i = 0; i < FACINGS.length; i++) {
+            const destX = 6 + i * shapeSpacing;
+            params.flags = FACINGS[i].flags;
+            BT.drawSprite(this.sheet, this.triangleRect, new Vector2i(destX, facingY), params);
+            ui.caption(destX, facingY + 22, FACINGS[i].name, { color: 'dim' });
+        }
+
+        // The turnable one: right or left. It sits in the fifth column of the row, plus a
+        // 20-pixel gap so it reads as separate from the four fixed examples.
+        const playerX = 6 + 4 * shapeSpacing + 20;
+
+        // The Turn button goes just to the triangle's right: the triangle is 20 pixels wide,
+        // so 24 leaves a 4-pixel gap. Tapping it, clicking it, or pressing Space flips which
+        // way the triangle faces.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: playerX + 24, y: facingY });
+
+        if (ui.button('Turn', { key: 'Space' })) {
+            this.isFacingLeft = !this.isFacingLeft;
+        }
+
+        ui.end();
+
+        // ROT_90_CW points the triangle right, ROT_270_CW points it left.
+        params.flags = this.isFacingLeft ? BT.ROT_270_CW : BT.ROT_90_CW;
+        BT.drawSprite(this.sheet, this.triangleRect, new Vector2i(playerX, facingY), params);
 
         this.renderCodeSnippet();
     }
