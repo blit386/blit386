@@ -77,6 +77,8 @@ this game already knows how to query it:
   page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs` returned), and
   `get_docs_summary` (the whole site's contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
+- Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
+  skills for the current release, plus full example games.
 - Reading a page? Request its URL with the header `Accept: text/markdown` and the site returns markdown instead of HTML
   \- far less to wade through.
 

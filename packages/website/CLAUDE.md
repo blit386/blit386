@@ -17,8 +17,8 @@ exploration.
 ## Critical Rules
 
 1. Public engine docs are generated, not authored here. Edit the canonical copy in `packages/blit386/docs/`, then run
-   `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/` or
-   `src/data/api-history.generated.json`
+   `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/`,
+   `content/docs/build-a-game/`, or `src/data/api-history.generated.json`
 2. Documentation ships with the change - update `content/` and run `pnpm run docs:links` from the repo root when adding
    links. `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx` file via `git ls-files`
    regardless of cwd); this package no longer carries its own copy
@@ -42,6 +42,7 @@ exploration.
 | Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
 | Engine API truth | `packages/blit386/docs/` in this monorepo - never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
+| How the Build a Game pages are built | `scripts/sync-kit-pages.mjs`, the second half of `pnpm run sync:docs` - see Build a Game pages |
 | How mirror drift is checked | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` (in `preflight` and in CI) |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test:scripts`) |
 | Worker plugin test coverage | `src/**/*.test.ts` (Vitest, via `pnpm run test:unit`) - see Test runners |
@@ -171,7 +172,8 @@ Hand-authored: `content/index.mdx`, `showcase.mdx`, `community.mdx`, `mcp-server
 
 Generated, never hand-edit: every `content/docs/<section>/<topic>.mdx` (flat files, not folder `index.mdx`), the section
 `meta.json` files, and `src/data/api-history.generated.json`. The MDX pages carry a "generated" banner in frontmatter;
-the section `meta.json` files carry no banner but are generated all the same.
+the section `meta.json` files carry no banner but are generated all the same. All of `content/docs/build-a-game/` is
+generated too (see Build a Game pages).
 
 Doc frontmatter: `title` required; `description`, `icon`, `full` optional. Sidebar order comes from an optional
 `meta.json` / `meta.yaml` per folder. When hand-authored content links to API reference, use site-absolute paths
@@ -227,6 +229,29 @@ GitHub.
 
 The `Since`, `ApiAvailability`, and `PageChangelog` components all read `src/data/api-history.ts`, a typed loader over
 the generated JSON. Never add a symbol to that JSON here; fix `packages/blit386` and re-sync.
+
+## Build a Game pages
+
+`scripts/sync-kit-pages.mjs` (run by `pnpm run sync:docs` after the engine mirror, so `sync:docs:check` covers it) owns
+`content/docs/build-a-game/` outright: it deletes the folder and writes the start page, the JavaScript starter project
+(the scaffolder's `templates/` with placeholders filled), `AGENTS.md`, and every kit guide, skill, and rule from
+`packages/kit/content/`, plus the demos listed in `FIRST_GAME_EXAMPLES` as example pages. They exist so an agent with
+only the docs MCP connector and no scaffolded project can build a game (BT-557). Every page opens with the version it
+was written for: the engine changelog's `## X.Y.Z - Unreleased` version when there is one (kit content on main already
+teaches it), otherwise the published lockstep version. The starter project always pins the published version, since an
+unreleased one is not on npm. Adding or dating that changelog heading, and every release bump, makes the folder stale
+until `sync:docs` runs again. CI's `quality-website` job runs on changes to those sources as well as this package.
+
+Two size limits shaped it, both measured with `wrangler deploy --dry-run`:
+
+- Every page is prerendered into the Worker (`__waku_build_metadata.js` plus the page's MDX module) at roughly 3.5x its
+  source size after gzip. All 48 demos took the Worker from 4.1 MB to 8.9 MB gzip against the 10 MiB limit; the 15 in
+  `FIRST_GAME_EXAMPLES` keep it near 6.2 MB. `pnpm run check:deploy-size` fails if adding demos breaks the budget (see
+  Deploy).
+- The client search index `/api/search` is a single static asset, capped at 25 MiB per asset; it was 17.1 MiB before
+  these pages and their prose alone pushed it to 27 MiB. `flexsearchPlugin({ buildIndex })` in `press.config.tsx`
+  indexes the subpages by title and description only (`KIT_PAGES_PREFIX`, a manual-sync copy of the script's `SECTION`).
+  The MCP server's `search_docs` scans full text and is unaffected.
 
 ## Twoslash
 

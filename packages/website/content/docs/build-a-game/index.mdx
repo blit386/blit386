@@ -1,0 +1,94 @@
+---
+# Generated from packages/kit/content by scripts/sync-kit-pages.mjs.
+# Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
+title: "Build a Game"
+description: "Start here to build a BLIT386 game from an empty folder: the starter template, AGENTS.md, kit guides, skills, and examples."
+---
+
+> Written for blit386 1.8.0, which is not on npm yet. The newest release is 1.7.1, so an API on this page may be missing from the version npm installs until 1.8.0 ships.
+
+Everything needed to write a BLIT386 game from scratch, with no project on disk yet. Every page here can be read through the blit386-docs MCP server: find it with `search_docs`, read it with `get_doc_page`.
+
+## Quickest start
+
+`npm create blit386@latest my-game` creates the whole project, with these same guides, skills, and rules already on disk.
+
+## Without the scaffolder
+
+1. Write the four files on the [Starter Template](/docs/build-a-game/starter-template) page into an empty folder.
+2. Run `npm install`, then `npm run dev`.
+3. Read [AGENTS.md](/docs/build-a-game/agents) - the rules every BLIT386 game follows.
+4. Replace the starter game in `src/game.js` with your own, using the skills below for each feature.
+
+## Kit guides
+
+In a scaffolded game these are the files in `docs/`.
+
+- [Sound and music](/docs/build-a-game/kit-guides/audio)
+- [Basics: the game loop](/docs/build-a-game/kit-guides/basics)
+- [Drawing](/docs/build-a-game/kit-guides/drawing)
+- [Getting started](/docs/build-a-game/kit-guides/getting-started)
+- [Hot reload: keep playing while you edit](/docs/build-a-game/kit-guides/hot-reload)
+- [Input](/docs/build-a-game/kit-guides/input)
+- [Colors and the palette](/docs/build-a-game/kit-guides/palette)
+- [Random numbers and world generation](/docs/build-a-game/kit-guides/random)
+- [When something breaks](/docs/build-a-game/kit-guides/when-something-breaks)
+
+## Skills
+
+One task each. In a scaffolded game they live in `.claude/skills/`.
+
+- [Skill: Add a CRT or post-process effect](/docs/build-a-game/skills/add-crt-effect)
+- [Skill: Add a sprite](/docs/build-a-game/skills/add-sprite)
+- [Skill: Add text](/docs/build-a-game/skills/add-text)
+- [Skill: Animate the palette](/docs/build-a-game/skills/animate-the-palette)
+- [Skill: Ask the docs](/docs/build-a-game/skills/ask-the-docs)
+- [Skill: Design your own sound](/docs/build-a-game/skills/design-a-sound)
+- [Skill: Draw shapes](/docs/build-a-game/skills/draw-shapes)
+- [Skill: Fix a runtime error](/docs/build-a-game/skills/fix)
+- [Skill: Keep it fast](/docs/build-a-game/skills/keep-it-fast)
+- [Skill: Update BLIT386 API names](/docs/build-a-game/skills/migrate)
+- [Skill: Move and time things](/docs/build-a-game/skills/move-and-time)
+- [Skill: Play a sound](/docs/build-a-game/skills/play-a-sound)
+- [Skill: Read a gamepad](/docs/build-a-game/skills/read-gamepad)
+- [Skill: Read the keyboard](/docs/build-a-game/skills/read-keyboard)
+- [Skill: Read the mouse, touch, and pen](/docs/build-a-game/skills/read-pointer)
+- [Skill: Run the game](/docs/build-a-game/skills/run)
+- [Skill: Save a screenshot](/docs/build-a-game/skills/save-a-screenshot)
+- [Skill: Scroll with a camera](/docs/build-a-game/skills/scroll-with-camera)
+- [Skill: Share the game](/docs/build-a-game/skills/share-the-game)
+- [Skill: Show a loading screen](/docs/build-a-game/skills/show-a-loading-screen)
+- [Skill: Show the debug overlay](/docs/build-a-game/skills/show-debug-overlay)
+- [Skill: Smooth the motion](/docs/build-a-game/skills/smooth-the-motion)
+- [Skill: Structure a game](/docs/build-a-game/skills/structure-a-game)
+- [Skill: Test the game](/docs/build-a-game/skills/test-the-game)
+- [Skill: Use dev mode](/docs/build-a-game/skills/use-dev-mode)
+- [Skill: Use hot reload](/docs/build-a-game/skills/use-hot-reload)
+- [Skill: Use noise](/docs/build-a-game/skills/use-noise)
+- [Skill: Use the palette (colors)](/docs/build-a-game/skills/use-palette)
+- [Skill: Use random](/docs/build-a-game/skills/use-random)
+
+## Rules
+
+- [BLIT386 API names](/docs/build-a-game/rules/blit-api-names)
+- [Integer coordinates](/docs/build-a-game/rules/blit-integer-coords)
+
+## Examples
+
+Programs from the demo site, each running live at demos.blit386.dev. Most call demo-site helpers from `./shared/` and are not standalone; each page says what it needs. The full set of demos is at https://demos.blit386.dev.
+
+- [Example: Hello World](/docs/build-a-game/examples/hello-world)
+- [Example: Basics](/docs/build-a-game/examples/basics)
+- [Example: Primitives](/docs/build-a-game/examples/primitives)
+- [Example: Camera](/docs/build-a-game/examples/camera)
+- [Example: Sprites](/docs/build-a-game/examples/sprites)
+- [Example: Animation](/docs/build-a-game/examples/animation)
+- [Example: Tilemap](/docs/build-a-game/examples/tilemap)
+- [Example: Palette Cycling](/docs/build-a-game/examples/palette-cycling)
+- [Example: Pointer Basics](/docs/build-a-game/examples/pointer-basics)
+- [Example: Keyboard Input](/docs/build-a-game/examples/keyboard-input)
+- [Example: Snake Game](/docs/build-a-game/examples/snake-game)
+- [Example: Gamepad Input](/docs/build-a-game/examples/gamepad-input)
+- [Example: Audio Basics](/docs/build-a-game/examples/audio-basics)
+- [Example: Synth Toy](/docs/build-a-game/examples/synth-toy)
+- [Example: Random Basics](/docs/build-a-game/examples/random-basics)

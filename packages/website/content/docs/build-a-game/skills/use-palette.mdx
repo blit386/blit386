@@ -1,0 +1,81 @@
+---
+# Generated from packages/kit/content/skills/use-palette/SKILL.md by scripts/sync-kit-pages.mjs.
+# Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
+title: "Skill: Use the palette (colors)"
+description: "Set up and change colors with BLIT386's palette-first system of numbered color slots. Use whenever the user sets up colors, mentions colors, themes, or..."
+---
+
+> Written for blit386 1.8.0, which is not on npm yet. The newest release is 1.7.1, so an API on this page may be missing from the version npm installs until 1.8.0 ships.
+
+BLIT386 is palette-first: fill numbered color slots once, then draw with the slot numbers. Change a slot and everything
+drawn with it changes.
+
+## When to use
+
+Use whenever you set up colors, the user mentions colors or themes, or you need to recolor things at runtime.
+
+## Make a palette in init()
+
+```js
+async init() {
+    this.palette = BT.paletteCreate(16); // room for 16 colors; slot 0 is transparent
+
+    this.palette.set(1, new Color32(230, 80, 60)); // each channel 0..255
+    this.palette.set(2, new Color32(20, 24, 40)); // background
+    this.palette.set(3, Color32.white); // named presets are getters (no parentheses)
+
+    BT.paletteSet(this.palette); // from now on, draw with slot numbers
+    return true;
+}
+```
+
+## Fill a run of slots in one call (engine 1.7.0+)
+
+When a block of slots is built from one list of colors - a dimmed copy for shadows, a tinted copy for a night theme -
+use `fillBlock` instead of writing the loop:
+
+```js
+// fillBlock(start, source, transform) writes transform(source[i], i) into slot start + i,
+// and returns the next free slot after the block.
+// Slots 1..3 are taken above, so this darker copy starts at 4 and must fit inside the 16 slots.
+const next = this.palette.fillBlock(
+  4,
+  this.baseColors,
+  (color) => new Color32(color.r >> 1, color.g >> 1, color.b >> 1),
+);
+```
+
+Chain from the return value to lay a second block down straight after the first, so no slot numbers are counted by hand.
+
+## Change a color later (the palette is live)
+
+```js
+update() {
+    if (this.hurt) {
+        this.palette.set(1, new Color32(255, 255, 255)); // everything in slot 1 flashes white next frame
+    }
+}
+```
+
+## Key calls
+
+- `BT.paletteCreate(size?)` (method) - new palette (default 256 slots).
+- `palette.set(index, color)` / `palette.get(index)` (methods) - write / read a slot.
+- `palette.fillBlock(start, source, transform)` (method, engine 1.7.0+) - write a transformed block of colors into
+  contiguous slots; returns `start + source.length`.
+- `BT.paletteSet(palette)` (method) - make a palette active.
+- `palette.applyHUD(startSlot?)` (method) - fill six ready-made HUD colors (white, background, label, header, dim, code)
+  in one call.
+- Built-in retro palettes: `Palette.vga()`, `Palette.cga()`, `Palette.c64()`, `Palette.nes()`, `Palette.gameboy()`,
+  `Palette.pico8()`.
+- `Color32` presets are getters (no parentheses): `Color32.white`, `Color32.black`, `Color32.red`, `Color32.green`,
+  `Color32.blue`, `Color32.yellow`, `Color32.cyan`, `Color32.magenta`. Also `Color32.fromHex('#ff8800')` and named
+  colors via `Color32.resolveNamedColor('cornflowerblue')`.
+
+## Notes
+
+- Slot 0 is always transparent - start visible colors at slot 1.
+- `new Color32(r, g, b)` or `new Color32(r, g, b, a)` (alpha 0..255).
+- Recoloring by changing slots is cheaper than redrawing. For animated color motion see the animate-the-palette skill.
+
+See `docs/palette.md`.

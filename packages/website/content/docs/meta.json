@@ -3,6 +3,7 @@
   "pagesIndex": "[Documentation](/docs)",
   "pages": [
     "getting-started",
+    "build-a-game",
     "faq",
     "api",
     "guides",

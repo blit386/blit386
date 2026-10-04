@@ -42,7 +42,7 @@
     "format": "biome format --write . && prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
     "format:check": "biome check . && prettier --ignore-path ../../.prettierignore --check \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress --gitignore-root \"$(git rev-parse --show-toplevel)\"",
-    "sync:docs": "node scripts/sync-docs-from-engine.mjs",
+    "sync:docs": "node scripts/sync-docs-from-engine.mjs && node scripts/sync-kit-pages.mjs",
     "sync:docs:check": "node scripts/check-docs-sync.mjs",
     "sync:docs:watch": "node scripts/watch-engine-docs.mjs",
     "check:well-known-schemas": "node scripts/check-well-known-schemas.mjs",

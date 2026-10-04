@@ -68,6 +68,14 @@ jobs:
             website:
               - 'packages/website/**'
               - 'packages/blit386/**'
+              # Sources of the generated Build a Game pages (scripts/sync-kit-pages.mjs), so
+              # sync:docs:check catches a stale mirror in the PR that changed them.
+              - 'packages/kit/content/**'
+              - 'packages/kit/package.json'
+              - 'packages/create-blit386/templates/**'
+              - 'packages/demos/src/*.js'
+              - 'packages/demos/plugins/demo-registry.js'
+              - 'packages/demos/plugins/demo-order.js'
             kit:
               - 'packages/kit/**'
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but

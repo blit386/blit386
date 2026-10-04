@@ -1,0 +1,20 @@
+{
+  "title": "Examples",
+  "pages": [
+    "hello-world",
+    "basics",
+    "primitives",
+    "camera",
+    "sprites",
+    "animation",
+    "tilemap",
+    "palette-cycling",
+    "pointer-basics",
+    "keyboard-input",
+    "snake-game",
+    "gamepad-input",
+    "audio-basics",
+    "synth-toy",
+    "random-basics"
+  ]
+}

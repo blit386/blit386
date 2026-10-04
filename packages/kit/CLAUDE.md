@@ -22,6 +22,11 @@ anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP
 `get_docs_summary`), `https://blit386.dev/llms.txt`, or any doc page fetched with `Accept: text/markdown`. GitHub is the
 last resort, for when the documentation itself falls short.
 
+`content/` is also published to blit386.dev under `/docs/build-a-game/` by
+`packages/website/scripts/sync-kit-pages.mjs`, for agents with no scaffolded project. After editing anything in
+`content/` (or bumping the version), run `pnpm run sync:docs` in `packages/website` and commit the result - its CI job
+fails on a stale mirror.
+
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
 game-author capability skills plus the `run`, `fix`, `test-the-game`, `migrate`, and `ask-the-docs` workflow skills),
 the scripts in `hooks/` + `hooks.manifest.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`

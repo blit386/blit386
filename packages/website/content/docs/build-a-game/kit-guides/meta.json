@@ -1,0 +1,14 @@
+{
+  "title": "Kit Guides",
+  "pages": [
+    "audio",
+    "basics",
+    "drawing",
+    "getting-started",
+    "hot-reload",
+    "input",
+    "palette",
+    "random",
+    "when-something-breaks"
+  ]
+}
