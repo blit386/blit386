@@ -11,9 +11,11 @@
  * - Right stick moves a small aim cursor.
  * - Trigger pressure changes pod size (a little "throttle" feeling).
  * - A cycles pod color, B toggles a small trail, Start resets position.
+ * - R2 (the right trigger as a button) gives the pod a short speed boost.
  *
  * It also shows `BT.isGamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
- * a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`.
+ * a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`. The triggers also
+ * work as digital buttons: `BT.isDown(BT.BTN_L2, player)` and `BT.isPressed(BT.BTN_R2, player)`.
  *
  * The status panel on the right comes from the shared UI kit in src/shared/ui.js:
  * pip rows light up while buttons are physically held, key-value rows show the raw
@@ -26,6 +28,7 @@
  * - Move the left stick to fly the pod; move the right stick to drag the crosshair.
  * - Squeeze either trigger and watch the pod grow (whichever trigger reads higher wins).
  * - Hold A and B together and watch the "(A|B) mask" pip in the panel light up.
+ * - Pull R2 half way and feel the boost; the "R2 held" pip lights at the same point the Throttle meter reaches half.
  *
  * Live version: https://demos.blit386.dev/gamepad-input
  */
@@ -67,6 +70,10 @@ const ARENA_H = 124;
 const POD_BASE_SIZE = 10;
 const POD_MAX_EXTRA_SIZE = 10;
 const POD_SPEED = 3;
+
+// R2 press gives the pod a short speed burst: BOOST_TICKS update ticks at BOOST_FACTOR x speed.
+const BOOST_TICKS = 20;
+const BOOST_FACTOR = 2;
 const AIM_SPEED = 4;
 const TRAIL_MAX = 28;
 
@@ -121,6 +128,9 @@ class Demo {
 
     // Cycles through three pod colors when A is pressed.
     podColorIndex = 0;
+
+    // Update ticks of boost left. R2 (the right trigger as a DIGITAL button) starts it.
+    boostTicks = 0;
 
     wasConnected = false;
 
@@ -221,6 +231,12 @@ class Demo {
             this.resetPod();
         }
 
+        // R2 is the right trigger read as a button: BT.isPressed fires once per pull past
+        // half way, like any other button. (BT.getAxis below still gives the analog pull.)
+        if (BT.isPressed(BT.BTN_R2, PLAYER)) {
+            this.boostTicks = BOOST_TICKS;
+        }
+
         // Axes are dead-zone filtered by the engine.
         const moveX = BT.getAxis(BT.AXIS_LEFT_X, PLAYER);
         const moveY = BT.getAxis(BT.AXIS_LEFT_Y, PLAYER);
@@ -234,7 +250,14 @@ class Demo {
         this.prevAimPos = this.aimPos;
 
         // Convert analog float values into integer pixel steps.
-        this.podPos = this.podPos.add(new Vector2i(Math.round(moveX * POD_SPEED), Math.round(moveY * POD_SPEED)));
+        // While boosted, the pod moves BOOST_FACTOR times faster; each tick uses one up.
+        const speed = this.boostTicks > 0 ? POD_SPEED * BOOST_FACTOR : POD_SPEED;
+
+        if (this.boostTicks > 0) {
+            this.boostTicks -= 1;
+        }
+
+        this.podPos = this.podPos.add(new Vector2i(Math.round(moveX * speed), Math.round(moveY * speed)));
         this.aimPos = this.aimPos.add(new Vector2i(Math.round(aimX * AIM_SPEED), Math.round(aimY * AIM_SPEED)));
 
         const podHalf = this.currentPodHalfSize(throttle);
@@ -345,6 +368,7 @@ class Demo {
         this.prevAimPos = this.aimPos;
 
         this.trail = [];
+        this.boostTicks = 0;
     }
 
     /**
@@ -357,6 +381,7 @@ class Demo {
         ui.label('Left stick move | Right stick aim', { color: 'dim' });
         ui.label('Triggers = pod size', { color: 'dim' });
         ui.label('A color | B trail | Start reset', { color: 'dim' });
+        ui.label('R2 = boost', { color: 'dim' });
 
         // ui.hasTouch() turns true after the first touch contact and stays true. Touch
         // devices rarely have a gamepad attached, so warn those visitors up front.
@@ -440,6 +465,11 @@ class Demo {
         ui.pip('A held', aHeld);
         ui.pip('B held', bHeld);
         ui.pip('(A|B) mask', maskHeld);
+
+        // The triggers as DIGITAL buttons: held once pulled past half way. The Throttle
+        // meter below shows the same triggers as an ANALOG 0..1 pull.
+        ui.pip('L2 held', BT.isDown(BT.BTN_L2, PLAYER));
+        ui.pip('R2 held', BT.isDown(BT.BTN_R2, PLAYER));
         ui.separator();
 
         // LX/LY are the left stick, RX/RY the right stick, each from -1.00 to +1.00.
