@@ -105,6 +105,12 @@ export class SpritePipeline {
     /** Pre-allocated UV scratch object for drawSprite, written by SpriteSheet.getUVsTo. */
     private readonly tempUV: { u0: number; v0: number; u1: number; v1: number } = { u0: 0, v0: 0, u1: 0, v1: 0 };
 
+    /** Scratch destination origin for {@link drawSpriteStretched}. */
+    private readonly tempPos: Vector2i = new Vector2i(0, 0);
+
+    /** Scratch UV corners for {@link drawSpriteStretched}: TL, TR, BL, BR as (u, v) pairs. */
+    private readonly stretchUV = new Float64Array(8);
+
     /**
      * Creates an empty sprite pipeline.
      * Call `init()` before encoding GPU work.
@@ -222,6 +228,74 @@ export class SpritePipeline {
             bl & 2 ? uvs.v1 : uvs.v0,
             br & 1 ? uvs.u1 : uvs.u0,
             br & 2 ? uvs.v1 : uvs.v0,
+            paletteOffset,
+        );
+    }
+
+    /**
+     * Draws the post-flags footprint of `srcRect` stretched into a `destW x destH` box (integer scale or a
+     * `Rect2i` destination). Footprint-space UV edges are shifted by a quarter destination pixel, in
+     * footprint texels (`-1 / (4 * destW)` on x, `-1 / (4 * destH)` on y), before mapping back to the
+     * source, so float32 exact ties land on the lower texel and match the software renderer's
+     * `stretchSampleIndex`. Non-tie samples sit at least `1 / (2 * destW)` texels from an edge, so the shift
+     * leaves them alone. No shader or vertex-layout change.
+     *
+     * @param spriteSheet - Source sprite sheet (must have been indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destX - Box left edge in screen pixels.
+     * @param destY - Box top edge in screen pixels.
+     * @param destW - Box width in pixels (at least 1).
+     * @param destH - Box height in pixels (at least 1).
+     * @param paletteOffset - Index offset added to every sprite pixel at draw time.
+     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`.
+     */
+    drawSpriteStretched(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destX: number,
+        destY: number,
+        destW: number,
+        destH: number,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        const texture = spriteSheet.getTexture(this.device as GPUDevice);
+        // eslint-disable-next-line security/detect-object-injection
+        const row = SPRITE_ORIENTATIONS[orientation] as SpriteOrientation;
+        const fw = row.swap ? srcRect.height : srcRect.width;
+        const fh = row.swap ? srcRect.width : srcRect.height;
+        const px0 = -1 / (4 * destW);
+        const py0 = -1 / (4 * destH);
+        const px1 = fw + px0;
+        const py1 = fh + py0;
+        const uv = this.stretchUV;
+
+        for (let corner = 0; corner < 4; corner++) {
+            const px = corner & 1 ? px1 : px0;
+            const py = corner & 2 ? py1 : py0;
+            // Invert the point map: footprint point -> source point.
+            const u = row.flipX ? fw - px : px;
+            const v = row.flipY ? fh - py : py;
+
+            uv[corner * 2] = (srcRect.x + (row.swap ? v : u)) / spriteSheet.width;
+            uv[corner * 2 + 1] = (srcRect.y + (row.swap ? u : v)) / spriteSheet.height;
+        }
+
+        this.tempPos.set(destX, destY);
+        this.tempSize.set(destW, destH);
+
+        this.drawTexturedQuad(
+            texture,
+            this.tempPos,
+            this.tempSize,
+            uv[0] as number,
+            uv[1] as number,
+            uv[2] as number,
+            uv[3] as number,
+            uv[4] as number,
+            uv[5] as number,
+            uv[6] as number,
+            uv[7] as number,
             paletteOffset,
         );
     }

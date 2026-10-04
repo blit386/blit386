@@ -151,6 +151,31 @@ export interface IRenderer {
     ): void;
 
     /**
+     * Draws the post-flags footprint of a sprite region stretched into a destination box, sampling each
+     * destination pixel at its center with exact ties rounding down (see "Stretch sampling" in
+     * `docs/api-rendering.md`). Used for integer `scale` and for a `Rect2i` destination.
+     *
+     * @param spriteSheet - Source sprite sheet (must be indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destX - Box left edge in display coordinates.
+     * @param destY - Box top edge in display coordinates.
+     * @param destW - Box width in pixels (at least 1).
+     * @param destH - Box height in pixels (at least 1).
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index `0`-`7` from `resolveSpriteOrientation`.
+     */
+    drawSpriteStretched(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destX: number,
+        destY: number,
+        destW: number,
+        destH: number,
+        paletteOffset: number,
+        orientation: number,
+    ): void;
+
+    /**
      * Draws text using a bitmap font.
      *
      * @param font - Bitmap font with character glyphs (underlying sheet must be indexized).
