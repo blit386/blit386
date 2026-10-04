@@ -144,6 +144,9 @@ class Demo {
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            // The default keyboard layout maps Space to the A button this demo reads - keep
+            // the page from scrolling when it is pressed.
+            isCapturingKeyboardScroll: true,
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_CHART_DIM,

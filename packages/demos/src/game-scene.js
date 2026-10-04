@@ -303,6 +303,9 @@ class Demo {
             // can find it.
             isOverlayToggleHintVisible: false,
 
+            // Space is the Save PNG shortcut - keep the page from scrolling when it is pressed.
+            isCapturingKeyboardScroll: true,
+
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 3,
