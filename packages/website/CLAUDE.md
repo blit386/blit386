@@ -48,6 +48,7 @@ exploration.
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
+| Cloudflare size limits (25 MiB per asset, Worker gzip budget) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
 | Cloudflare security headers | `public/_headers` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
 
@@ -445,3 +446,20 @@ All four `cloudflare/wrangler-action` steps in `.github/workflows/deploy.yml` (`
 though only the two `deploy-website*` jobs strictly need the version pinned - so a deploy always runs the same wrangler
 as local `pnpm run deploy` / `pnpm run start`, not whatever `wrangler-action` defaults to. That pin must match this
 package's `wrangler` devDependency exactly; a Renovate bump to one without the other silently drifts the two apart.
+
+### Size limits
+
+Cloudflare rejects a deploy on two size limits, and nothing short of `wrangler deploy` used to notice either.
+`pnpm run check:deploy-size` (`scripts/check-deploy-size.mjs`) fails first. It runs right after `pnpm run build` in
+`preflight` and in CI's `build-website` job, checks the assets first (an oversized one makes the dry-run itself fail),
+and prints each measured size:
+
+| Limit | Cloudflare | Budget the check enforces | Measured 2026-10-04 on `main` | With BT-557's kit pages |
+| --- | --- | --- | --- | --- |
+| Any single file under `dist/public` | 25 MiB per asset | 25 MiB (`MAX_ASSET_BYTES`) | `/api/search` 17.07 MiB | ~17.9 MiB; briefly 28.8 MiB before the index dropped their prose |
+| Worker upload (`dist/server`), gzip | 10 MiB (paid plan) | 8 MiB, 80% (`WORKER_GZIP_BUDGET_BYTES`) | 3.86 MiB | ~6.2 MiB |
+
+The gzip figure is parsed from `wrangler deploy --dry-run` (the `Total Upload: ... / gzip: ...` line, no auth needed).
+That is the number Cloudflare enforces, and wrangler decides which `dist/server` files count as modules. The per-asset
+sizes are a direct walk of `dist/public`. Raise the Worker budget only after you have measured what is growing; every
+prerendered page adds to `__waku_build_metadata.js`.
