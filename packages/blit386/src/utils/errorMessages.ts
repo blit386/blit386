@@ -579,13 +579,14 @@ export function spriteTileGridMissingError(): string {
 
 /**
  * Returns the error message shown when a tile size is not a positive whole
- * number on both axes.
+ * number up to the maximum on both axes.
  *
  * @param value - The rejected size, already formatted for display.
+ * @param max - Largest allowed tile edge in pixels.
  * @returns User-facing error string.
  */
-export function spriteTileSizeInvalidError(value: string): string {
-    return `Tile size must be a positive whole number of pixels on both axes. Got: ${value}.`;
+export function spriteTileSizeInvalidError(value: string, max: number): string {
+    return `Tile size must be a positive whole number of pixels, at most ${max}, on both axes. Got: ${value}.`;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { MAX_RENDER_DIMENSION } from './RenderLimits';
 import { assertTileCoordinate, assertTileSize } from './TileGrid';
 
 describe('assertTileSize', () => {
@@ -13,9 +14,15 @@ describe('assertTileSize', () => {
         [-8, 8],
         [16.5, 16],
         [Number.NaN, 16],
+        [MAX_RENDER_DIMENSION + 1, 16],
+        [16, 2 ** 32], // Would truncate to 0 inside Vector2i.
     ])('throws a RangeError for %s x %s', (tileW, tileH) => {
         expect(() => assertTileSize(tileW, tileH)).toThrow(RangeError);
         expect(() => assertTileSize(tileW, tileH)).toThrow(/positive whole number/);
+    });
+
+    it('accepts the maximum asset dimension as a tile edge', () => {
+        expect(() => assertTileSize(MAX_RENDER_DIMENSION, MAX_RENDER_DIMENSION)).not.toThrow();
     });
 });
 

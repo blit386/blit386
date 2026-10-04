@@ -903,7 +903,7 @@ describe('SpriteSheet', () => {
             expect(sheet.tileSize).toBeNull();
         });
 
-        it.each([0, -16, 16.5])('rejects tile size %s at set time', (size) => {
+        it.each([0, -16, 16.5, 2 ** 32])('rejects tile size %s at set time', (size) => {
             const sheet = new SpriteSheet(gridImage);
 
             expect(() => {
