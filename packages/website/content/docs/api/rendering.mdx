@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Rendering"
 description: "Primitives, sprites, text, post-process effects, and frame capture."
-lastModified: "2026-10-04T18:57:10+02:00"
+lastModified: "2026-10-04T19:14:52+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
 ---
 
@@ -164,13 +164,14 @@ One sprite sheet frame then covers every facing direction:
 
 ```ts twoslash
 import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+import type { SpriteDrawParams } from 'blit386';
 declare const sheet: SpriteSheet;
 declare const isFacingLeft: boolean;
 const srcRect = new Rect2i(0, 0, 16, 16);
 const destPos = new Vector2i(40, 60);
 // ---cut---
 // Allocate once, outside the draw loop, with every field present.
-const params = { flags: 0, scale: 1, paletteOffset: 0 };
+const params: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 };
 
 params.flags = isFacingLeft ? BT.FLIP_H : 0;
 BT.drawSprite(sheet, srcRect, destPos, params);
@@ -217,13 +218,13 @@ interface SpriteDrawParams {
 
 - The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
   hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
-  never changes.
+  never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a `Vector2i`.
 - With a `Vector2i` dest, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite with
   `ROT_90_CW` covers 32x16, growing down and right from `dest`; with `scale: 2` it covers 64x32.
 - With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
   Any `scale` other than `undefined`, `1`, or `(1, 1)` shows an error, because the rect already fixes the box. The
-  neutral `scale: 1` keeps one reused params object valid for both dest kinds. A rect with zero or negative width or
-  height draws nothing.
+  neutral `scale: 1` keeps one reused params object valid for both dest kinds. An empty or negative source or
+  destination rect draws nothing.
 - `scale` is a positive integer (`number` or `Vector2i`). `scale: 2` and `scale: new Vector2i(2, 2)` match, and
   `scale.x` is on-screen width even after a 90-degree turn. `0`, negatives, and non-integers show an error that points
   at a `Rect2i` dest for uneven sizes.
@@ -362,8 +363,8 @@ interface SpriteFrame {
 The shipped [dispatch](#dispatch) extends as follows:
 
 - `typeof src === 'string'`: overload 3. `typeof src === 'number'`: overload 4. Both throw until their tickets ship.
-- Create a reused params object with every field present, so its shape never changes:
-  `{ flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`.
+- Create a reused params object with every field present, so its shape never changes, annotated as `SpriteDrawParams`:
+  `const params: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`.
 - Overload 3 is `SpritePack.frame(name)` followed by overload 2 with `frame.sheet` and `frame.rect`. A missing name
   throws. `frame(name)` returns the same frozen `SpriteFrame` on every call, so a hot loop resolves it once and calls
   `BT.drawSprite(frame.sheet, frame.rect, dest)` (overload 1) or adds `params` (overload 2) - no per-draw string lookup.
