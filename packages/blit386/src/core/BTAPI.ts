@@ -1519,10 +1519,11 @@ export class BTAPI {
             this.submitSpriteStretched(
                 spriteSheet,
                 srcRect,
-                dest.x,
-                dest.y,
-                dest.width,
-                dest.height,
+                // Rect2i fields are public and mutable: truncate like the constructor (NaN -> 0 draws nothing).
+                dest.x | 0,
+                dest.y | 0,
+                dest.width | 0,
+                dest.height | 0,
                 paletteOffset,
                 orientation,
             );
@@ -2495,7 +2496,7 @@ export class BTAPI {
         this.assertPaletteIndex(paletteOffset);
         this.requireIndexizedSheet(spriteSheet);
 
-        if (destW <= 0 || destH <= 0) {
+        if (destW <= 0 || destH <= 0 || srcRect.width <= 0 || srcRect.height <= 0) {
             return;
         }
 

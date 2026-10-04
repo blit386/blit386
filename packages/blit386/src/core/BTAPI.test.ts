@@ -2921,6 +2921,70 @@ describe('BTAPI', () => {
             expect(markSpy).not.toHaveBeenCalled();
         });
 
+        it('draws nothing for an empty source rect with a Rect2i destination', async () => {
+            const markSpy = vi.fn();
+            const mockSheet = makeIndexizedSpriteSheet(markSpy);
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayPaletteEnabled: true,
+                    isOverlayVisibleAtStart: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+            stubRendererDrawCalls();
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+            const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
+            const dest = new Rect2i(0, 0, 20, 20);
+
+            expect(() => {
+                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 0, 8), dest, {});
+                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 8, 0), dest, {});
+            }).not.toThrow();
+            expect(stretchedSpy).not.toHaveBeenCalled();
+        });
+
+        it('truncates a fractional or NaN Rect2i destination like the constructor', async () => {
+            const mockSheet = makeIndexizedSpriteSheet(vi.fn());
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayPaletteEnabled: true,
+                    isOverlayVisibleAtStart: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+            stubRendererDrawCalls();
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+            const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
+            const src = new Rect2i(0, 0, 8, 8);
+            const dest = new Rect2i(1, 2, 10, 10);
+
+            // Public mutable fields can hold fractions or NaN after construction.
+            dest.x = 1.9;
+            dest.width = 10.7;
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
+            expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 1, 2, 10, 10, 0, 0);
+
+            dest.width = Number.NaN;
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
+            expect(stretchedSpy).toHaveBeenCalledTimes(1);
+        });
+
         describe('fast-path Rect2i guard', () => {
             const guardDemo = (): IBTDemo => ({
                 configure: () => ({
@@ -2948,7 +3012,7 @@ describe('BTAPI', () => {
                         new Rect2i(0, 0, 8, 8),
                         new Rect2i(0, 0, 16, 16) as unknown as Vector2i,
                     ),
-                ).toThrow('{}');
+                ).toThrow('needs a params object');
             });
 
             it('does not check in release mode', async () => {

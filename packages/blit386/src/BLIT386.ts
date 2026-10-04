@@ -2653,10 +2653,10 @@ export const BT = {
      * even after a 90-degree turn). For an uneven size, pass a `Rect2i` as `destPos` instead: the sprite is
      * stretched into it with nearest-neighbor sampling at pixel centers, the same on both backends. A
      * `Rect2i` needs the params form - write `BT.drawSprite(sheet, src, destRect, {})` - and accepts only
-     * `scale: 1` or no scale.
+     * `scale: 1`, `new Vector2i(1, 1)`, or no scale.
      *
      * @since 0.1.0
-     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips and quarter turns.
+     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, and Rect2i stretch destinations.
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
      * @param destPos - Destination top-left in display coordinates, or (params form only) a Rect2i to stretch into.
@@ -2667,7 +2667,7 @@ export const BT = {
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10));
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), 16); // blue team
      *
-     * const params = { flags: 0, scale: 1, paletteOffset: 0 }; // allocate once
+     * const params: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 }; // allocate once
      * params.flags = facingLeft ? BT.FLIP_H : 0;
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), params);
      * params.scale = 2; // double size
