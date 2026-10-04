@@ -645,10 +645,37 @@ describe('BTAPI', () => {
                 ).toThrow(`got ${label}`);
             });
 
-            it('throws for a Rect2i destination', () => {
+            it.each([
+                ['2', 2],
+                ['Vector2i(2, 1)', new Vector2i(2, 1)],
+            ])('throws for a Rect2i destination with scale %s', (_label, scale) => {
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8) as unknown as Vector2i, {}),
-                ).toThrow('takes a Vector2i destination');
+                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), { scale }),
+                ).toThrow('takes no scale');
+            });
+
+            it.each([
+                ['undefined', undefined],
+                ['1', 1],
+                ['Vector2i(1, 1)', new Vector2i(1, 1)],
+            ])('accepts a Rect2i destination with neutral scale %s', (_label, scale) => {
+                const params: SpriteDrawParams = scale === undefined ? {} : { scale };
+
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), params),
+                ).not.toThrow();
+            });
+
+            it.each([0, -1, 1.5, Number.NaN])('throws for scale %s, pointing at a Rect2i destination', (scale) => {
+                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, { scale })).toThrow(
+                    'Rect2i destination',
+                );
+            });
+
+            it('throws for a destination that is neither a Vector2i nor a Rect2i', () => {
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(sheet, src, { x: 0, y: 0 } as unknown as Vector2i, {}),
+                ).toThrow('Vector2i or Rect2i destination');
             });
 
             it('throws for a flag bit outside 0x1f, naming the constants', () => {
@@ -2846,6 +2873,97 @@ describe('BTAPI', () => {
             expect(renderer.drawSprite).toHaveBeenNthCalledWith(1, mockSheet, src, dest, 0);
             expect(renderer.drawSprite).toHaveBeenNthCalledWith(2, mockSheet, src, dest, 4);
             expect(orientedSpy).toHaveBeenCalledOnce();
+        });
+
+        it('routes scaled and Rect2i draws to drawSpriteStretched and skips empty boxes', async () => {
+            const markSpy = vi.fn();
+            const mockSheet = makeIndexizedSpriteSheet(markSpy);
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayPaletteEnabled: true,
+                    isOverlayVisibleAtStart: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+            stubRendererDrawCalls();
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+            const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
+            const src = new Rect2i(0, 0, 16, 32);
+            // One reused params object for both destination kinds, as the docs recommend.
+            const params: SpriteDrawParams = { flags: 4, scale: new Vector2i(3, 2), paletteOffset: 1 };
+
+            // ROT_90_CW: footprint 32x16, times (3, 2) in screen axes = 96x32.
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(5, 6), params);
+            expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 5, 6, 96, 32, 1, 4);
+
+            params.scale = 1;
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(1, 2, 30, 50), params);
+            expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 1, 2, 30, 50, 1, 4);
+
+            // Neutral scale on a point keeps the plain path (flags 0 -> drawSprite).
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(0, 0), { scale: 1 });
+            expect(renderer.drawSprite).toHaveBeenCalledWith(mockSheet, src, new Vector2i(0, 0), 0);
+            expect(stretchedSpy).toHaveBeenCalledTimes(2);
+
+            // Empty boxes draw nothing and do not throw.
+            markSpy.mockClear();
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 0, 10), {});
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 10, -3), {});
+            expect(stretchedSpy).toHaveBeenCalledTimes(2);
+            expect(markSpy).not.toHaveBeenCalled();
+        });
+
+        describe('fast-path Rect2i guard', () => {
+            const guardDemo = (): IBTDemo => ({
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            });
+
+            afterEach(() => {
+                Reflect.deleteProperty(globalThis, '__BLIT386_DEV__');
+            });
+
+            it('throws in dev mode and points at a params object', async () => {
+                globalThis.__BLIT386_DEV__ = true;
+                await BTAPI.instance.init(guardDemo(), makeMockCanvas());
+                stubRendererDrawCalls();
+
+                expect(() =>
+                    BTAPI.instance.drawSprite(
+                        makeIndexizedSpriteSheet(vi.fn()),
+                        new Rect2i(0, 0, 8, 8),
+                        new Rect2i(0, 0, 16, 16) as unknown as Vector2i,
+                    ),
+                ).toThrow('{}');
+            });
+
+            it('does not check in release mode', async () => {
+                Reflect.deleteProperty(globalThis, '__BLIT386_DEV__');
+                await BTAPI.instance.init(guardDemo(), makeMockCanvas());
+                stubRendererDrawCalls();
+
+                expect(() =>
+                    BTAPI.instance.drawSprite(
+                        makeIndexizedSpriteSheet(vi.fn()),
+                        new Rect2i(0, 0, 8, 8),
+                        new Rect2i(0, 0, 16, 16) as unknown as Vector2i,
+                    ),
+                ).not.toThrow();
+            });
         });
 
         it('skips palette scans when the palette grid is enabled but the overlay body is hidden', async () => {
