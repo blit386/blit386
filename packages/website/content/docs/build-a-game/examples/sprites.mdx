@@ -92,8 +92,10 @@ const TRIANGLE_TILE = 2;
 
 // The triangle points up in the sheet. These flags turn it to face each way.
 // Each flag is one bit of a number, so several can be combined with | ("bitwise or",
-// which keeps every bit that is set in either side): BT.ROT_90_CW | BT.FLIP_V turns
-// the triangle a quarter turn and then mirrors it top to bottom.
+// which keeps every bit that is set in either side). The engine always applies them in
+// the same order, whichever way round you write them: flips first, then the turn. So
+// BT.ROT_90_CW | BT.FLIP_V mirrors the triangle top to bottom, then turns it a quarter
+// turn clockwise.
 const FACINGS = [
     { name: 'Up', flags: 0 },
     { name: 'Right', flags: BT.ROT_90_CW },

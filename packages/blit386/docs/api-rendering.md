@@ -193,16 +193,18 @@ BT.ROT_180_CW; // rotate 180°
 BT.ROT_270_CW; // rotate 270° clockwise
 ```
 
-```ts
+```ts twoslash
+import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
+// ---cut---
 // 1. Fast path. Unchanged since 0.1.0.
-drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
+declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
 
 // 2. Params object (1.8.0). `params` is required here: without it, a call is overload 1.
-drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i, params: SpriteDrawParams): void;
+declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i, params: SpriteDrawParams): void;
 
 interface SpriteDrawParams {
-    flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
-    paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
+  flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
+  paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
 }
 ```
 

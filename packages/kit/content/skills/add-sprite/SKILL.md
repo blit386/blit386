@@ -81,7 +81,7 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
 
   // render()
   this.drawParams.flags = this.isFacingLeft ? BT.FLIP_H : 0;
-  BT.drawSprite(this.hero, this.heroRect, this.heroPos, this.drawParams);
+  BT.drawSprite(this.hero, this.heroRect, new Vector2i(120, 90), this.drawParams);
   ```
 
   `flags` takes `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. A 90 or
