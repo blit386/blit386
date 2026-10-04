@@ -25,8 +25,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
-  `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders. See
-  [Triggers: analog or digital](guide-input.md#triggers-analog-or-digital).
+  `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`
+  to `BTN_SELECT`. See [Triggers: analog or digital](guide-input.md#triggers-analog-or-digital).
+- `BT.nativeScreenToDisplayPos(clientX, clientY)`: converts viewport coordinates, such as a DOM event's `clientX` /
+  `clientY`, to display coordinates with the same math pointer input uses (floor, then clamp to `[0, displaySize - 1]`).
+  Use it for DOM events the engine does not wrap, such as a file dropped onto the canvas. It returns `null` before
+  initialization, for a zero-size canvas, or for a non-finite coordinate. Pointer input now shares the same conversion
+  function, so the two cannot drift. See [Input guide](guide-input.md#converting-your-own-dom-events).
 - `keyboardLayout` in `configure()`: `'single'` gives player 0 WASD _and_ the arrow keys, so a one-player game reading
   `BT.isDown(BT.BTN_LEFT)` finally answers to the left arrow; player 1 moves to IJKL, and keyboard scroll capture turns
   on unless `isCapturingKeyboardScroll` is set explicitly. The default `'versus'` keeps today's split (WASD for player
@@ -37,6 +42,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   method on its class, and an agent play-testing in dev reads it with `window.BT.testState()` instead of a hand-written
   `window.__game` global. The result is `{ ticks, backend, state }`, with an `error` field when the readout threw. See
   [Core API](api-core.md).
+- `BT.isAnyKeyDown()`, `BT.isAnyKeyPressed(repeatRate?)`, `BT.isAnyKeyReleased()`, and the gamepad twins
+  `BT.isAnyButtonDown(player?)`, `BT.isAnyButtonPressed(player?, repeatRate?)`, `BT.isAnyButtonReleased(player?)`: ask
+  about the whole keyboard or one player's gamepad instead of a named key, for "press any key to start" screens. Pressed
+  fires on every new key or button, even with another held. Released follows RetroBlit and means _everything_ is up now,
+  so letting go of one key while another stays down does not fire it. `isAnyButton*` covers `BTN_UP` to `BTN_SELECT`
+  only (no sticks, triggers, keyboard, or pointers). See
+  [Any key and any button](guide-input.md#any-key-and-any-button).
 
 ## 1.7.1 - 2026-09-27
 

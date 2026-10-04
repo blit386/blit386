@@ -1464,6 +1464,53 @@ describe('BT.pointerDelta', () => {
     });
 });
 
+describe('BT.nativeScreenToDisplayPos', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function stubGeometry(rect: Partial<DOMRect>, displaySize: Vector2i | null): void {
+        const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 480, ...rect }) };
+
+        vi.spyOn(BTAPI.instance, 'getCanvas').mockReturnValue(canvas as never);
+        vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(
+            displaySize === null ? null : ({ displaySize } as never),
+        );
+    }
+
+    it('returns null when the engine is not initialized', () => {
+        vi.spyOn(BTAPI.instance, 'getCanvas').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).toBeNull();
+    });
+
+    it('returns null when the canvas has zero size', () => {
+        stubGeometry({ width: 0 }, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).toBeNull();
+    });
+
+    it('converts client coordinates using the canvas rect and display size', () => {
+        stubGeometry({ left: 100, top: 50 }, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(100 + 321, 50 + 201)).toEqual(new Vector2i(160, 100));
+    });
+
+    it('clamps coordinates outside the canvas to the edge pixels', () => {
+        stubGeometry({}, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(-10, -10)).toEqual(new Vector2i(0, 0));
+        expect(BT.nativeScreenToDisplayPos(5000, 5000)).toEqual(new Vector2i(319, 239));
+    });
+
+    it('returns a fresh vector on every call', () => {
+        stubGeometry({}, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).not.toBe(BT.nativeScreenToDisplayPos(10, 10));
+    });
+});
+
 describe('BT.pointerPosTo', () => {
     afterEach(() => {
         vi.restoreAllMocks();
@@ -1661,6 +1708,51 @@ describe('BT.isKeyPressed', () => {
 describe('BT.isKeyReleased', () => {
     it('returns false when the engine is not initialized', () => {
         expect(BT.isKeyReleased('KeyA')).toBe(false);
+    });
+});
+
+describe('BT.isAnyKey and BT.isAnyButton helpers', () => {
+    it('return false when the engine is not initialized', () => {
+        expect(BT.isAnyKeyDown()).toBe(false);
+        expect(BT.isAnyKeyPressed()).toBe(false);
+        expect(BT.isAnyKeyPressed(5)).toBe(false);
+        expect(BT.isAnyKeyReleased()).toBe(false);
+        expect(BT.isAnyButtonDown()).toBe(false);
+        expect(BT.isAnyButtonPressed()).toBe(false);
+        expect(BT.isAnyButtonPressed(1, 5)).toBe(false);
+        expect(BT.isAnyButtonReleased(2)).toBe(false);
+    });
+
+    it('forward to the keyboard and gamepad trackers', () => {
+        vi.spyOn(BTAPI.instance, 'getTicks').mockReturnValue(7);
+        const keyboard = {
+            isAnyKeyDown: vi.fn(() => true),
+            isAnyKeyPressed: vi.fn(() => true),
+            isAnyKeyReleased: vi.fn(() => true),
+        };
+        const gamepad = {
+            isAnyButtonDown: vi.fn(() => true),
+            isAnyButtonPressed: vi.fn(() => true),
+            isAnyButtonReleased: vi.fn(() => true),
+        };
+
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(keyboard as never);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue(gamepad as never);
+
+        expect(BT.isAnyKeyDown()).toBe(true);
+        expect(BT.isAnyKeyPressed(4)).toBe(true);
+        expect(keyboard.isAnyKeyPressed).toHaveBeenCalledWith(4, 7);
+        expect(BT.isAnyKeyReleased()).toBe(true);
+        expect(BT.isAnyButtonDown(1)).toBe(true);
+        expect(gamepad.isAnyButtonDown).toHaveBeenCalledWith(1);
+        expect(BT.isAnyButtonPressed(2, 3)).toBe(true);
+        expect(gamepad.isAnyButtonPressed).toHaveBeenCalledWith(2, 3, 7);
+        expect(BT.isAnyButtonPressed()).toBe(true);
+        expect(gamepad.isAnyButtonPressed).toHaveBeenLastCalledWith(0, undefined, 7);
+        expect(BT.isAnyButtonReleased()).toBe(true);
+        expect(gamepad.isAnyButtonReleased).toHaveBeenCalledWith(0);
+
+        vi.restoreAllMocks();
     });
 });
 

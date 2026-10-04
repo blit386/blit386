@@ -203,6 +203,53 @@ under rapid input - the tick already consumed and cleared the edge before render
 
 <DemoEmbed demo="028-keyboard-input" title="BLIT386 keyboard input demo" />
 
+### Any key and any button
+
+<Since symbol="BT.isAnyKeyDown" />
+<Since symbol="BT.isAnyKeyPressed" />
+<Since symbol="BT.isAnyKeyReleased" />
+<Since symbol="BT.isAnyButtonDown" />
+<Since symbol="BT.isAnyButtonPressed" />
+<Since symbol="BT.isAnyButtonReleased" />
+
+For "press any key to start" screens and idle checks, ask about the whole keyboard (or one player's gamepad) instead of
+a named key:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+if (BT.isAnyKeyPressed()) {
+  // any key went down this tick, even if another key was already held
+}
+
+if (BT.isAnyKeyPressed(10)) {
+  // same, then again every 10 ticks while keys stay held
+}
+
+if (BT.isAnyKeyReleased()) {
+  // the last held key came up: nothing is held now, something was held before
+}
+
+if (BT.isAnyButtonPressed(0)) {
+  // any button on player 0's gamepad went down
+}
+```
+
+- `isAnyKeyPressed` fires on every new key, so holding `A` and then tapping `B` fires it for `B`. With a repeat rate,
+  the cadence is counted from the earliest key still held.
+- `isAnyKeyReleased` and `isAnyButtonReleased` mean "everything is up now". Letting go of one key while another stays
+  down does not fire them; use `BT.isKeyReleased(code)` for per-key release edges. A gamepad disconnecting while buttons
+  were held counts as the release.
+- `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
+  triggers (neither the analog pull nor `BTN_L2` / `BTN_R2`), no keyboard, no pointers. Use `isAnyKey*` for the
+  keyboard. `player` defaults to `0`.
+- Call the pressed and released checks from `update()`, not `render()`. The held checks (`isAnyKeyDown`,
+  `isAnyButtonDown`) are safe anywhere.
+- The keyboard edges clear once per fixed-update tick, and are buffered so a fast tap is never dropped. The gamepad
+  edges follow `BT.isPressed` and `BT.isReleased` instead: they roll over once per rendered frame, so on a display
+  faster than `targetFPS` a gamepad edge can be missed by a frame that runs no update, and a frame that runs several
+  updates reports the same edge to each of them. See [Frame-timing semantics](#frame-timing-semantics).
+
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
 <Since symbol="BT.BTN_UP" />
@@ -535,6 +582,39 @@ display_y = floor((clientY - rect.top)  / rect.height * displaySize.y)
 
 Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion is skipped when the canvas has zero size
 (no layout yet) to avoid NaN coordinates.
+
+### Converting your own DOM events
+
+<Since symbol="BT.nativeScreenToDisplayPos" />
+
+`BT.nativeScreenToDisplayPos(clientX, clientY)` runs the same conversion for coordinates the engine does not track
+itself, such as a file dropped onto the canvas. It returns a new `Vector2i`, or `null` when there is no valid position
+to report:
+
+- the engine is not initialized;
+- the canvas has zero width or height (no layout yet);
+- a coordinate is not finite.
+
+A point outside the canvas is not an error: it clamps to the nearest edge pixel, exactly as pointer input does. The
+canvas rect is read on every call, so the result stays correct after a resize or page scroll. It does not depend on
+pointer state, so it works before the first pointer event and for events the pointer subsystem never sees.
+
+```ts twoslash
+import { BT } from 'blit386';
+
+const canvas = document.querySelector('canvas');
+// ---cut---
+canvas?.addEventListener('dragover', (event) => event.preventDefault());
+canvas?.addEventListener('drop', (event) => {
+  event.preventDefault();
+
+  const pos = BT.nativeScreenToDisplayPos(event.clientX, event.clientY);
+
+  if (pos !== null) {
+    console.log(`dropped at display (${pos.x}, ${pos.y})`);
+  }
+});
+```
 
 ## Implementation notes
 

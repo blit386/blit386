@@ -267,4 +267,111 @@ describe('GamepadInput', () => {
         input.endFrame(2);
         expect(getGamepadsSpy).toHaveBeenCalledTimes(1);
     });
+
+    describe('any-button helpers', () => {
+        it('isAnyButtonDown is true while any mapped button is held', () => {
+            expect(input.isAnyButtonDown(0)).toBe(false);
+
+            pads[0] = makeGamepad({ pressed: [1] });
+            input.endFrame(1);
+
+            expect(input.isAnyButtonDown(0)).toBe(true);
+            expect(input.isAnyButtonDown(1)).toBe(false);
+        });
+
+        it('isAnyButtonPressed fires for a new button while another is held', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endFrame(2);
+
+            expect(input.isAnyButtonPressed(0, undefined, 2)).toBe(false);
+
+            pads[0] = makeGamepad({ pressed: [0, 1] });
+            input.endFrame(3);
+
+            expect(input.isAnyButtonPressed(0, undefined, 3)).toBe(true);
+        });
+
+        it('isAnyButtonPressed repeats while held', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(0);
+
+            expect(input.isAnyButtonPressed(0, 3, 5)).toBe(true);
+            input.endFrame(5);
+
+            expect(input.isAnyButtonPressed(0, 3, 6)).toBe(false);
+            expect(input.isAnyButtonPressed(0, 3, 8)).toBe(true);
+        });
+
+        it('ignores stick and trigger axes', () => {
+            pads[0] = makeGamepad({ axes: [1, 1, 1, 1], buttons: [0, 0, 0, 0, 0, 0, 1, 1] });
+            input.endFrame(1);
+
+            // Triggers (raw buttons 6 and 7) set BTN_L2 / BTN_R2, which the any-button mask leaves out on purpose.
+            expect(input.isAnyButtonDown(0)).toBe(false);
+        });
+
+        it('isAnyButtonReleased waits until every button is up', () => {
+            pads[0] = makeGamepad({ pressed: [0, 1] });
+            input.endFrame(1);
+            input.endFrame(2);
+
+            pads[0] = makeGamepad({ pressed: [1] });
+            input.endFrame(3);
+
+            expect(input.isAnyButtonReleased(0)).toBe(false);
+
+            pads[0] = makeGamepad({ pressed: [] });
+            input.endFrame(4);
+
+            expect(input.isAnyButtonReleased(0)).toBe(true);
+
+            input.endFrame(5);
+
+            expect(input.isAnyButtonReleased(0)).toBe(false);
+        });
+
+        it('isAnyButtonReleased treats a disconnect while held as a release', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endFrame(2);
+
+            pads[0] = null;
+            input.endFrame(3);
+
+            expect(input.isAnyButtonReleased(0)).toBe(true);
+        });
+
+        it('does not count a trigger pull as a press or a release', () => {
+            pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1, 1] });
+            input.endFrame(1);
+
+            expect(input.isAnyButtonPressed(0, undefined, 2)).toBe(false);
+
+            input.endFrame(2);
+            pads[0] = makeGamepad({});
+            input.endFrame(3);
+
+            expect(input.isAnyButtonReleased(0)).toBe(false);
+        });
+
+        it('isAnyButtonReleased ignores a trigger that is still held', () => {
+            pads[0] = makeGamepad({ pressed: [0], buttons: [1, 0, 0, 0, 0, 0, 1] });
+            input.endFrame(1);
+            input.endFrame(2);
+
+            pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1] });
+            input.endFrame(3);
+
+            expect(input.isAnyButtonReleased(0)).toBe(true);
+        });
+
+        it('returns false for invalid players and disconnected pads', () => {
+            expect(input.isAnyButtonDown(-1)).toBe(false);
+            expect(input.isAnyButtonPressed(99, undefined, 0)).toBe(false);
+            expect(input.isAnyButtonReleased(4)).toBe(false);
+            expect(input.isAnyButtonDown(0)).toBe(false);
+            expect(input.isAnyButtonReleased(0)).toBe(false);
+        });
+    });
 });

@@ -2,8 +2,9 @@
 name: read-keyboard
 description: >-
   Read keyboard keys and face buttons in update(). Use for keyboard movement, jumping, menus, typed text, or remapping
-  keys, including raw key codes like 'KeyW', the default key mapping (W, A, S, D for player 0, arrow keys for player 1),
-  and making the arrow keys steer player 0 in a one-player game (keyboardLayout: 'single').
+  keys, "press any key" screens (isAnyKeyPressed), including raw key codes like 'KeyW', the default key mapping (W, A,
+  S, D for player 0, arrow keys for player 1), and making the arrow keys steer player 0 in a one-player game
+  (keyboardLayout: 'single').
 ---
 
 # Read the keyboard
@@ -51,6 +52,21 @@ if (BT.isKeyPressed('Enter')) this.start(); // one frame
 if (BT.isKeyPressed('ArrowUp', 10)) this.menuUp(); // repeats every 10 ticks while held
 ```
 
+## Any key (engine 1.8.0+)
+
+For a "press any key to start" screen or an idle check, ask about the whole keyboard instead of a named key:
+
+```js
+update() {
+    if (BT.isAnyKeyPressed()) this.startGame(); // any key went down this frame, even with another key held
+    if (BT.isAnyKeyReleased()) this.idleTimer = 0; // the LAST held key came up: everything is up now
+}
+```
+
+`BT.isAnyKeyPressed(10)` also repeats every 10 ticks while keys stay held. `isAnyKeyReleased` does not fire when one key
+comes up but another is still down; use `BT.isKeyReleased(code)` for per-key releases. Gamepad version:
+`BT.isAnyButtonPressed(player?)`, see `skills/read-gamepad/`.
+
 ## Typed text
 
 ```js
@@ -68,6 +84,8 @@ BT.inputMapReset(); // back to the keyboardLayout's defaults
 ## Key calls
 
 - `BT.isKeyDown(code)` / `BT.isKeyPressed(code, repeat?)` / `BT.isKeyReleased(code)` - methods.
+- `BT.isAnyKeyDown()` / `BT.isAnyKeyPressed(repeat?)` / `BT.isAnyKeyReleased()` - methods, engine 1.8.0+ (whole
+  keyboard).
 - `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods (face buttons).
 - `BT.inputString` - getter (typed characters).
 - `BT.inputMap(player, button, ...keys)` / `BT.inputMapReset()` - methods (players 0-1 only).

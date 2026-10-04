@@ -61,7 +61,8 @@ const AXIS_RIGHT_Y = 3;
 const AXIS_TRIGGER_L = 4;
 const AXIS_TRIGGER_R = 5;
 
-const VALID_BUTTON_FLAGS = [
+/** `BTN_UP` through `BTN_SELECT`: the buttons the any-button helpers cover. */
+const STANDARD_BUTTON_FLAGS = [
     BTN_UP,
     BTN_DOWN,
     BTN_LEFT,
@@ -74,9 +75,15 @@ const VALID_BUTTON_FLAGS = [
     BTN_R,
     BTN_START,
     BTN_SELECT,
-    BTN_L2,
-    BTN_R2,
 ] as const;
+
+const VALID_BUTTON_FLAGS = [...STANDARD_BUTTON_FLAGS, BTN_L2, BTN_R2] as const;
+
+/**
+ * The standard flags OR-ed together; the mask behind the any-button helpers. The trigger buttons
+ * are left out on purpose: `BT.isAnyButton*` is documented to cover `BTN_UP` to `BTN_SELECT` only.
+ */
+const ANY_BUTTON_MASK = STANDARD_BUTTON_FLAGS.reduce((mask, flag) => mask | flag, 0);
 
 const VALID_AXIS_INDICES = [
     AXIS_LEFT_X,
@@ -409,6 +416,54 @@ export class GamepadInput {
         }
 
         return (~current.buttons & previous.buttons & buttonMask) !== 0;
+    }
+
+    /**
+     * Whether any gamepad button is held for `player`. Sticks and triggers (analog or `BTN_L2` / `BTN_R2`) are not counted.
+     *
+     * @param player - Zero-based player index.
+     * @returns `true` while any button is down.
+     */
+    public isAnyButtonDown(player: number): boolean {
+        return this.isButtonDown(ANY_BUTTON_MASK, player);
+    }
+
+    /**
+     * Press edge for any button: fires when a button goes down, even if others are already held.
+     * With `repeatRate > 0` it also fires every `repeatRate` ticks while buttons stay held.
+     *
+     * @param player - Zero-based player index.
+     * @param repeatRate - Ticks between repeats; omit or non-positive for edge only.
+     * @param currentTick - Current fixed-update tick.
+     * @returns `true` on a press edge or a repeat tick when configured.
+     */
+    public isAnyButtonPressed(player: number, repeatRate: number | undefined, currentTick: number): boolean {
+        return this.isButtonPressed(ANY_BUTTON_MASK, player, repeatRate, currentTick);
+    }
+
+    /**
+     * Release edge for "everything is up": no button is held now, and at least one was held on
+     * the previous frame. Releasing one button while another stays down does not count; a
+     * disconnect while buttons were held does.
+     *
+     * @param player - Zero-based player index.
+     * @returns `true` on the frame the last held button comes up.
+     */
+    public isAnyButtonReleased(player: number): boolean {
+        const index = this.normalizePlayer(player);
+
+        if (index === null) {
+            return false;
+        }
+
+        const current = this.current[index];
+        const previous = this.previous[index];
+
+        if (!current || !previous || (previous.buttons & ANY_BUTTON_MASK) === 0) {
+            return false;
+        }
+
+        return (current.buttons & ANY_BUTTON_MASK) === 0;
     }
 
     /**

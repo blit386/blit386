@@ -48,6 +48,7 @@ import {
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
+import { clientToDisplayPos } from './input/clientToDisplayPos';
 import {
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
@@ -1711,6 +1712,32 @@ export const BT = {
     },
 
     /**
+     * Converts viewport coordinates, such as a DOM event's `clientX` / `clientY`, to display
+     * coordinates, using the same conversion as pointer input.
+     *
+     * Use it for DOM events the engine does not wrap, for example a file dropped onto the canvas.
+     * Each axis is `floor((client - canvasRect.start) / canvasRect.size * displaySize)`, clamped to
+     * `[0, displaySize - 1]`, so a point outside the canvas lands on the nearest edge pixel. Reads the
+     * canvas rect on every call, so the result is correct after a resize or scroll.
+     *
+     * @since 1.8.0
+     * @param clientX - Viewport X, such as DOM `clientX`.
+     * @param clientY - Viewport Y, such as DOM `clientY`.
+     * @returns A new display-space position, or `null` when the engine has not been initialized,
+     *   the canvas has zero width or height, or a coordinate is not finite.
+     */
+    nativeScreenToDisplayPos: (clientX: number, clientY: number): Vector2i | null => {
+        const canvas = BTAPI.instance.getCanvas();
+        const displaySize = BTAPI.instance.getHardwareSettings()?.displaySize;
+
+        if (!canvas || !displaySize) {
+            return null;
+        }
+
+        return clientToDisplayPos(clientX, clientY, canvas.getBoundingClientRect(), displaySize, new Vector2i());
+    },
+
+    /**
      * Writes the position of the pointer in the given slot, in display coordinates, into `out`.
      *
      * Zero-allocation counterpart to {@link pointerPos}. Slot 0 is the mouse; slots 1 through 3 are
@@ -2316,6 +2343,95 @@ export const BT = {
      */
     get inputString(): string {
         return BTAPI.instance.getKeyboard()?.getInputString() ?? '';
+    },
+
+    /**
+     * Checks whether at least one keyboard key is currently held.
+     *
+     * @since 1.8.0
+     * @returns `true` while any key is down.
+     */
+    isAnyKeyDown: (): boolean => {
+        return BTAPI.instance.getKeyboard()?.isAnyKeyDown() ?? false;
+    },
+
+    /**
+     * Checks whether any keyboard key was pressed on the current fixed-update tick.
+     *
+     * Fires when a key goes down, even if other keys are already held. With `repeatRate > 0` it
+     * also fires every `repeatRate` ticks while keys stay held, counted from the earliest-pressed
+     * key that is still down. Call from `update()`, not `render()`, like {@link isKeyPressed}.
+     *
+     * @since 1.8.0
+     * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
+     * @returns `true` on a press edge (and on repeat ticks when configured).
+     */
+    isAnyKeyPressed: (repeatRate?: number): boolean => {
+        const tick = BTAPI.instance.getTicks();
+
+        return BTAPI.instance.getKeyboard()?.isAnyKeyPressed(repeatRate, tick) ?? false;
+    },
+
+    /**
+     * Checks whether every keyboard key has just been released.
+     *
+     * Matches RetroBlit: `true` only on the tick where no key is held any more and at least one
+     * was held before. Releasing one key while another stays down does not count; use
+     * {@link isKeyReleased} for per-key edges. Call from `update()`, not `render()`.
+     *
+     * @since 1.8.0
+     * @returns `true` on the tick the last held key comes up.
+     */
+    isAnyKeyReleased: (): boolean => {
+        return BTAPI.instance.getKeyboard()?.isAnyKeyReleased() ?? false;
+    },
+
+    /**
+     * Checks whether at least one gamepad button is held for a player.
+     *
+     * Covers the `BTN_UP` to `BTN_SELECT` buttons of a connected gamepad. Sticks, triggers
+     * (analog or `BTN_L2` / `BTN_R2`), the keyboard, and pointers are not included; use {@link isAnyKeyDown} for the keyboard.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @returns `true` while any of the player's gamepad buttons is down.
+     */
+    isAnyButtonDown: (player: number = 0): boolean => {
+        return BTAPI.instance.getGamepad()?.isAnyButtonDown(player) ?? false;
+    },
+
+    /**
+     * Checks whether any gamepad button was pressed since the last rendered frame.
+     *
+     * Same press and repeat semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`.
+     * Like {@link isPressed}, the gamepad edge rolls over once per rendered frame, not once per fixed update: a
+     * frame that runs no update can miss it, and a frame that runs several updates reports it to each.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
+     * @returns `true` on a press edge (and on repeat ticks when configured).
+     */
+    isAnyButtonPressed: (player: number = 0, repeatRate?: number): boolean => {
+        const tick = BTAPI.instance.getTicks();
+
+        return BTAPI.instance.getGamepad()?.isAnyButtonPressed(player, repeatRate, tick) ?? false;
+    },
+
+    /**
+     * Checks whether every gamepad button has just been released for a player.
+     *
+     * Same "everything is up" meaning as {@link isAnyKeyReleased}: `true` only on the frame where no button
+     * is held any more and at least one was held before. A gamepad disconnecting while buttons were held
+     * also counts. Call from `update()`. Like {@link isReleased}, the edge rolls over once per rendered frame,
+     * not once per fixed update.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @returns `true` on the frame the last held button comes up.
+     */
+    isAnyButtonReleased: (player: number = 0): boolean => {
+        return BTAPI.instance.getGamepad()?.isAnyButtonReleased(player) ?? false;
     },
 
     /**

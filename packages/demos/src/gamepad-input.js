@@ -468,6 +468,10 @@ class Demo {
         ui.pip('B held', bHeld);
         ui.pip('(A|B) mask', maskHeld);
 
+        // Lit while ANY button is held (face, shoulders, D-pad, Start, Select - not sticks or
+        // triggers). BT.isAnyButtonPressed(player) is the matching one-frame edge for "press any button".
+        ui.pip('Any button', BT.isAnyButtonDown(PLAYER));
+
         // The triggers as DIGITAL buttons: held once pulled past half way. The Throttle
         // meter below shows the same triggers as an ANALOG 0..1 pull.
         ui.pip('L2 held', BT.isDown(BT.BTN_L2, PLAYER));
