@@ -120,7 +120,8 @@ Draws are auto-batched by texture. Group draws from the same sheet to minimize G
 <Since symbol="BT.ROT_180_CW" />
 <Since symbol="BT.ROT_270_CW" />
 
-The following flags are defined for future use. They are not yet accepted by `BT.drawSprite()`:
+The following flags are defined for future use. They are not yet accepted by `BT.drawSprite()` - see
+[Planned: sprite draw params](#planned-sprite-draw-params) for the contract that will accept them:
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -131,6 +132,152 @@ BT.ROT_90_CW; // rotate 90° clockwise
 BT.ROT_180_CW; // rotate 180°
 BT.ROT_270_CW; // rotate 270° clockwise
 ```
+
+### Planned: sprite draw params
+
+<Callout title="Planned - not shipped">
+
+This section locks the unified `BT.drawSprite` v2 shape decided in BT-236. No runtime overload, `SpriteDrawParams` type,
+or transform behavior has shipped yet. The existing `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` call stays
+the allocation-free fast path.
+
+</Callout>
+
+All transform features hang off one reusable params object. Separate methods stay separate: `BT.drawTile` (BT-265) and
+`BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no `drawSpriteScaled`, no `tint`, and no
+arbitrary-angle `rotation` field in v1.
+
+```ts
+// 1. Shipped. Unchanged.
+drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
+
+// 2. Planned params object. Reusable; the engine only reads it.
+drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params?: SpriteDrawParams): void;
+
+// 3. Planned named frame (BT-271).
+drawSprite(pack: SpritePack, frameName: string, dest: Vector2i | Rect2i, params?: SpriteDrawParams): void;
+
+// 4. Reserved for BT-262 (milestone 2.0.0). Not added to the 1.8.0 types.
+drawSprite(
+    sheet: SpriteSheet,
+    srcX: number,
+    srcY: number,
+    srcW: number,
+    srcH: number,
+    destX: number,
+    destY: number,
+    paletteOffsetOrParams?: number | SpriteDrawParams,
+): void;
+
+interface SpriteDrawParams {
+    flags?: number; // BT.FLIP_H | BT.FLIP_V | one ROT_* bit
+    pivot?: Vector2i; // source pixels, before flags; optional
+    scale?: number | Vector2i; // positive integers, screen axes, after flags
+    paletteOffset?: number; // same meaning as the fast-path 4th argument
+}
+```
+
+#### Dispatch
+
+Overload order is significant. Declare the shipped fast path first. Runtime dispatch:
+
+- A numeric 4th argument (or omitted, defaulting to `0`) is always `paletteOffset` and always the fast path. `dest` is
+  read as a point (`x`, `y` only). One `typeof` branch, no allocation, no `instanceof` on the hot path.
+- A plain object 4th argument is `SpriteDrawParams`. `null` and arrays throw. The engine copies the numbers it needs
+  before returning and never mutates or retains the object, so a hot loop can allocate `params` once and write fields
+  between draws. On the software backend that copy is mandatory: commands are replayed later.
+- `drawSprite(sheet, src, destRect, 0)` is a type error: a destination rectangle cannot take a bare palette offset. Put
+  `paletteOffset` on the params object.
+- On the params path, `dest instanceof Rect2i` is the stretch footprint; `dest instanceof Vector2i` is a point. Anything
+  else throws. Do not use `'width' in dest` - `Vector2i.width` aliases `x`.
+- Named-frame lookup is `SpritePack.frame(name)`, which returns the pack's stored `Rect2i` (no clone). Overload 3 is
+  that lookup plus overload 2. Hot loops cache the rect and call overload 1 or 2. A missing name throws. No raw-number
+  form for names.
+- Overload 4, when it exists, cannot express a destination rectangle. Scaled draws use overload 2. Raw numbers occupy
+  arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the fast path.
+
+#### Transform order and flags
+
+Order: flags, then integer scale, then placement. Flips apply before the single rotation bit.
+
+- `params.flags` uses the existing `BT.FLIP_*` / `BT.ROT_*` bits (values unchanged since 0.1.0). Booleans are not
+  accepted.
+- More than one of `ROT_90_CW`, `ROT_180_CW`, `ROT_270_CW`, or any bit outside `0x1f`, throws and names the constants.
+  Do not normalize.
+- `ROT_180_CW` alone and `FLIP_H | FLIP_V` alone produce the same image. Passing both composes (a second 180 returns to
+  identity).
+- `scale` multiplies the post-flags footprint in screen axes, so `scale.x` is on-screen width even after a 90-degree
+  turn.
+- Arbitrary-angle rotation is out of v1. There is no `rotation` field, so a leftover `rotation` on an object literal is
+  a type error rather than a silent no-op. If a later ticket adds an angle, the unit is degrees, and the software
+  renderer throws until it can match pixel-for-pixel.
+
+Eight orientations for a 3x2 source `ABC / DEF` under flips-then-rotate (redundant spellings noted):
+
+| Flags | Result |
+| --- | --- |
+| (none) | `ABC / DEF` |
+| `FLIP_H` | `CBA / FED` |
+| `FLIP_V` | `DEF / ABC` |
+| `FLIP_H \| FLIP_V` or `ROT_180_CW` | `FED / CBA` |
+| `ROT_90_CW` | `DA / EB / FC` |
+| `ROT_90_CW \| FLIP_H` | `AD / BE / CF` |
+| `ROT_90_CW \| FLIP_V` | `FC / EB / DA` |
+| `ROT_90_CW \| FLIP_H \| FLIP_V` or `ROT_270_CW` | `CF / BE / AD` |
+
+#### Placement, pivot, and scale
+
+- With a `Vector2i` dest and no pivot, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite
+  with `ROT_90_CW` occupies 32x16 growing down and right from `dest`.
+- With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
+- Omitted `pivot` pins the footprint's top-left (the rule above). An explicit `pivot` is a point in source pixels
+  relative to the source rect's top-left, mapped through the same flags with corner math `(x, y)` in `[0, sw] x [0, sh]`
+  (not the texel `n - 1` map), then multiplied by scale. That point sits on `dest`. Explicit `(0, 0)` is the source
+  origin, which moves under flips and 90/270, so it is not the same as omitting pivot. Values outside the sprite are
+  legal.
+- `pivot` and `scale` together with a `Rect2i` dest throw; the rect already fixes the box.
+- `scale` is a positive integer (`number` or `Vector2i`). `scale: 2` and `scale: new Vector2i(2, 2)` match. `0`,
+  negatives, and non-integers throw; the error points at a `Rect2i` dest for uneven sizes.
+- Nearest-neighbor for a post-flags footprint `(fw, fh)` stretched into `(dw, dh)`: source texel
+  `(dx * fw / dw, dy * fh / dh)` with truncating division. Integer scale is the equal-block case (`dw = fw * scale`).
+  The 1:1 fast path keeps today's UV and blit math. Scaled quads use a separate emission path so 1:1 vertices stay
+  identical.
+
+Flag corner map after flips-then-rotate, used for pivot (output size swaps to `(sh, sw)` for 90 and 270):
+
+| Flags | Mapped pivot |
+| --- | --- |
+| identity | `(px, py)` |
+| `FLIP_H` | `(sw - px, py)` |
+| `FLIP_V` | `(px, sh - py)` |
+| `FLIP_H \| FLIP_V` or `ROT_180_CW` | `(sw - px, sh - py)` |
+| `ROT_90_CW` | `(sh - py, px)` |
+| `ROT_270_CW` | `(py, sw - px)` |
+
+Texel remap uses the same axes with `n - 1` so column `0` lands on column `sw - 1`.
+
+#### Color
+
+The only recolor control is `paletteOffset`, on the fast path or inside params, never both and never stacked. There is
+no `tint` field. Older sketches that used `Color32` / `ColorArg` as a 4th argument are stale.
+
+#### Software-renderer parity
+
+No accepted field degrades. The software blit is the pixel spec; WebGPU must match it. The 1:1 path stays today's
+`blitIndexedRect` / UV quad emission.
+
+| Field | Parity |
+| --- | --- |
+| `paletteOffset` | Already matched. Same validation as today. |
+| `flags` | Pixel-exact source-index remap, then the same transparency and palette rules. Not a shader-only effect. |
+| `pivot` | Pixel-exact integer move of the footprint origin. Components copied into the queued command. |
+| `scale` / `dest: Rect2i` | Pixel-exact nearest-neighbor using the formula above, on both backends. |
+| `rotation` | Not accepted. A future software path throws rather than skipping the rotation. |
+| Frame name | Resolved to a rect, then the same path. No separate software behavior. |
+| Nine-slice | Not a sprite-params field. Own `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)`. |
+
+GPU note for implementers: the vertex shader already passes UVs through. Flags and scale are CPU-side corner and UV
+writes into the existing 5-value vertex. Do not add a flags uniform on the 1:1 path.
 
 ### Refreshing after a palette-layout swap
 
