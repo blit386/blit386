@@ -319,6 +319,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         const { name, arguments: args = {} } = params;
+                        const origin = new URL(c.req.url).origin;
 
                         if (name === 'search_docs') {
                             const query = args.query;
@@ -330,7 +331,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                 });
                             }
                             try {
-                                const results = await searchDocs(query, new URL(c.req.url).origin);
+                                const results = await searchDocs(query, origin);
                                 return c.json({
                                     jsonrpc: '2.0',
                                     id,
@@ -354,7 +355,6 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     error: { code: -32602, message: 'Invalid params' },
                                 });
                             }
-                            const origin = new URL(c.req.url).origin;
                             const sitePath = toSitePath(input, origin);
                             let corpus: CorpusEntry[];
                             try {
@@ -368,8 +368,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             }
                             // A linear scan of ~100 entries per call costs nothing next to the
                             // extraction the corpus cache already amortizes.
-                            const entry =
-                                sitePath === undefined ? undefined : corpus.find((page) => page.url === sitePath);
+                            const entry = corpus.find((page) => page.url === sitePath);
                             if (!entry) {
                                 return c.json({
                                     jsonrpc: '2.0',
@@ -407,8 +406,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                 // Resolve against the incoming request origin and serve from the
                                 // ASSETS binding - never fetch the public hostname from inside the
                                 // Worker (self-zone subrequests time out with Cloudflare 522).
-                                const assetUrl = new URL('/llms.txt', c.req.url);
-                                const res = await assets.fetch(new Request(assetUrl.href));
+                                const res = await assets.fetch(new Request(`${origin}/llms.txt`));
                                 if (!res.ok) {
                                     return c.json({
                                         jsonrpc: '2.0',
@@ -416,7 +414,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                         error: { code: -32603, message: 'Internal error: summary unavailable' },
                                     });
                                 }
-                                const text = absolutizeLinks(await res.text(), assetUrl.origin);
+                                const text = absolutizeLinks(await res.text(), origin);
                                 return c.json({
                                     jsonrpc: '2.0',
                                     id,
