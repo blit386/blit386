@@ -1,5 +1,5 @@
 // Sprites: how to draw images (sprites) on screen using BLIT386.
-// @description Draw images from a programmatic sprite sheet, using source rectangles and palette offsets to vary them.
+// @description Draw images from a programmatic sprite sheet, picking grid cells and palette offsets to vary them.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),
@@ -8,15 +8,16 @@
 //
 // A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
 // In BLIT386, sprites are stored in a "sprite sheet": one big image that
-// contains many small sprites arranged in a grid. You draw individual sprites by
-// telling the engine which rectangular region (a Rect2i "source rect") to copy.
+// contains many small sprites arranged in a grid. You draw one sprite by telling
+// the engine which part of the sheet to copy. BT.drawSprite() takes that part as a
+// rectangle (a Rect2i "source rect"). When every sprite sits in an equal-sized cell,
+// you can instead give the sheet its cell size once (sheet.tileSize) and use
+// BT.drawTile(), which takes just the cell number.
 //
 // This demo builds a six-shape sheet on an offscreen canvas, then shows:
-//   1. BT.drawSprite() with different source regions (one shape per cell).
-//   2. BT.drawTile() - the same, but the sheet knows its grid, so you pass a cell number
-//      instead of a Rect2i.
-//   3. Palette offsets - shifting every pixel index to a different color block.
-//   4. Opacity pulsing - rewriting palette alpha slots in update().
+//   1. BT.drawTile() - one shape per grid cell, picked by cell number.
+//   2. Palette offsets - shifting every pixel index to a different color block.
+//   3. Opacity pulsing - rewriting palette alpha slots in update().
 //
 // Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
 // installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
@@ -30,8 +31,10 @@
 // After calling sheet.indexize(palette), each pixel in the sprite is stored
 // as a palette index number. When you draw the sprite:
 //
-//   BT.drawSprite(sheet, src, pos, 0)           - uses original colors
-//   BT.drawSprite(sheet, src, pos, colorCount)  - shifts ALL pixel indices up by colorCount
+//   BT.drawTile(sheet, cell, pos, 0)           - uses original colors
+//   BT.drawTile(sheet, cell, pos, colorCount)  - shifts ALL pixel indices up by colorCount
+//
+// BT.drawSprite() takes the same last argument, so this works with either call.
 //
 // If the original colors are at palette[10..14], offset=5 shifts every pixel
 // to use palette[15..19] - a completely different color theme!
@@ -68,7 +71,8 @@ const SHAPE_ROWS = 2;
 const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 
 // Cell number of the star in the sheet (cells count left to right, then top to bottom).
-const STAR_TILE = 3; // Star cell - used for the palette-offset row.
+// The palette-offset row below the shape grid draws this cell four times.
+const STAR_TILE = 3;
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so

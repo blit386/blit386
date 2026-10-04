@@ -142,6 +142,20 @@ function reportEngineNotReady(methodName: string): void {
 }
 
 /**
+ * Treats any non-null object argument as a `Vector2i` for `BT.drawTile` dispatch.
+ *
+ * A bare `typeof value === 'object'` also matches `null`, which would let an untyped
+ * `null` argument reach `.x` / `.y` and surface a raw TypeError instead of the
+ * wrong-arguments error. Still `typeof`-based, so the dispatch stays `instanceof`-free.
+ *
+ * @param value - Argument to classify.
+ * @returns `true` for a non-null object.
+ */
+function isVectorArg(value: unknown): value is Vector2i {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
  * Converts an unknown runtime value into a concise display type label.
  *
  * @param value - Runtime value to inspect.
@@ -2694,29 +2708,25 @@ export const BT = {
                 return;
             }
 
-            // (sheet, index, destPos, paletteOffset?)
-            if (typeof rowOrDestPos === 'object') {
-                BTAPI.instance.drawTile(
-                    spriteSheet,
-                    colOrIndex,
-                    undefined,
-                    rowOrDestPos,
-                    typeof arg4 === 'number' ? arg4 : undefined,
-                );
-                return;
-            }
+            // Each form accepts exactly its own argument shapes; anything else falls through to the
+            // wrong-arguments error below rather than being coerced.
+            if (isVectorArg(rowOrDestPos)) {
+                // (sheet, index, destPos, paletteOffset?)
+                if (!isVectorArg(arg4)) {
+                    BTAPI.instance.drawTile(spriteSheet, colOrIndex, undefined, rowOrDestPos, arg4);
+                    return;
+                }
+            } else if (isVectorArg(arg5)) {
+                // (sheet, col, row, tileSize, destPos, paletteOffset?)
+                if (typeof arg4 === 'number' || isVectorArg(arg4)) {
+                    const tileW = typeof arg4 === 'number' ? arg4 : arg4.x;
+                    const tileH = typeof arg4 === 'number' ? arg4 : arg4.y;
 
-            // (sheet, col, row, tileSize, destPos, paletteOffset?)
-            if (typeof arg5 === 'object') {
-                const tileW = typeof arg4 === 'object' ? arg4.x : (arg4 ?? Number.NaN);
-                const tileH = typeof arg4 === 'object' ? arg4.y : (arg4 ?? Number.NaN);
-
-                BTAPI.instance.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
-                return;
-            }
-
-            // (sheet, col, row, destPos, paletteOffset?)
-            if (typeof arg4 === 'object') {
+                    BTAPI.instance.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
+                    return;
+                }
+            } else if (isVectorArg(arg4)) {
+                // (sheet, col, row, destPos, paletteOffset?)
                 BTAPI.instance.drawTile(spriteSheet, colOrIndex, rowOrDestPos, arg4, arg5);
                 return;
             }

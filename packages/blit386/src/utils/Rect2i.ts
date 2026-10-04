@@ -219,8 +219,9 @@ export class Rect2i {
     /**
      * Creates the source rectangle of one cell in a grid of equal tiles.
      *
-     * Pure math with no sheet to check against, so it never rejects a tile for
-     * being past the edge of an image - use `sheet.tileRect()` for that.
+     * Validates its arguments but has no image to check against, so it never
+     * rejects a tile for being past the edge of a sheet - use
+     * `sheet.tileRect()` for that.
      *
      * @since 1.8.0
      * @param col - Zero-based column.

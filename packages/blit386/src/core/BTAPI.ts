@@ -102,14 +102,14 @@ export class BTAPI {
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
 
-    /** Current demo instance implementing IBTDemo. */
     /**
      * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
      * sprite pipeline consumes `srcRect` before returning and the software
      * renderer clones it into its command list.
      */
-    private readonly tileRect = new Rect2i();
+    private readonly scratchTileRect = new Rect2i();
 
+    /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
 
     /** Hardware configuration settings from the demo. */
@@ -1483,7 +1483,7 @@ export class BTAPI {
     ): void {
         this.drawSprite(
             spriteSheet,
-            writeGridTileRect(this.tileRect, spriteSheet, colOrIndex, row),
+            writeGridTileRect(this.scratchTileRect, spriteSheet, colOrIndex, row),
             destPos,
             paletteOffset,
         );
@@ -1512,7 +1512,7 @@ export class BTAPI {
     ): void {
         this.drawSprite(
             spriteSheet,
-            writeTileRect(this.tileRect, spriteSheet, col, row, tileW, tileH),
+            writeTileRect(this.scratchTileRect, spriteSheet, col, row, tileW, tileH),
             destPos,
             paletteOffset,
         );

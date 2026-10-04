@@ -2213,6 +2213,59 @@ describe('BT.drawTile', () => {
         });
     });
 
+    it('rejects a non-number paletteOffset in the index form instead of dropping it', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can mix up the forms
+            BT.drawTile(gridSheet(), 1, new Vector2i(16, 16), dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing tile size in the explicit-size form', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass undefined for tileSize
+            BT.drawTile(new SpriteSheet(mockImage), 1, 0, undefined, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects null object arguments with the wrong-arguments error, not a raw TypeError', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass null for tileSize
+            BT.drawTile(new SpriteSheet(mockImage), 1, 0, null, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+            expect(text).not.toContain('Cannot read properties of null');
+        });
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass null for destPos
+            BT.drawTile(gridSheet(), 1, 1, null);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows engine-not-ready message when drawing before bootstrap completes', async () => {
+        await withErrorContainer(async () => {
+            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue(null);
+
+            BT.drawTile(gridSheet(), 0, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain("The engine isn't ready yet.");
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
     it('shows a missing await message for Promise sprite sheet values', async () => {
         await withErrorContainer(async () => {
             BT.drawTile(Promise.resolve({}) as unknown as SpriteSheet, 0, dest);
