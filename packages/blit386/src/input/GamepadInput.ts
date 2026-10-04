@@ -23,6 +23,8 @@ const GP_BUTTON_X = 2;
 const GP_BUTTON_Y = 3;
 const GP_BUTTON_L = 4;
 const GP_BUTTON_R = 5;
+const GP_BUTTON_L2 = 6;
+const GP_BUTTON_R2 = 7;
 const GP_BUTTON_SELECT = 8;
 const GP_BUTTON_START = 9;
 const GP_BUTTON_UP = 12;
@@ -44,6 +46,13 @@ const BTN_R = 1 << 9;
 const BTN_START = 1 << 10;
 const BTN_SELECT = 1 << 11;
 
+/**
+ * Trigger bit flags mirrored from `BT.BTN_L2` / `BT.BTN_R2` to avoid circular imports.
+ * Manual-sync hazard: keep in step with `BLIT386.ts`; `GamepadInput.test.ts` asserts the parity.
+ */
+const BTN_L2 = 1 << 16;
+const BTN_R2 = 1 << 17;
+
 /** Axis constants mirrored from `BT.AXIS_*` to avoid circular imports. */
 const AXIS_LEFT_X = 0;
 const AXIS_LEFT_Y = 1;
@@ -52,7 +61,8 @@ const AXIS_RIGHT_Y = 3;
 const AXIS_TRIGGER_L = 4;
 const AXIS_TRIGGER_R = 5;
 
-const VALID_BUTTON_FLAGS = [
+/** `BTN_UP` through `BTN_SELECT`: the buttons the any-button helpers cover. */
+const STANDARD_BUTTON_FLAGS = [
     BTN_UP,
     BTN_DOWN,
     BTN_LEFT,
@@ -67,8 +77,13 @@ const VALID_BUTTON_FLAGS = [
     BTN_SELECT,
 ] as const;
 
-/** Every `BTN_*` flag OR-ed together; the mask behind the any-button helpers. */
-const ALL_BUTTONS_MASK = VALID_BUTTON_FLAGS.reduce((mask, flag) => mask | flag, 0);
+const VALID_BUTTON_FLAGS = [...STANDARD_BUTTON_FLAGS, BTN_L2, BTN_R2] as const;
+
+/**
+ * The standard flags OR-ed together; the mask behind the any-button helpers. The trigger buttons
+ * are left out on purpose: `BT.isAnyButton*` is documented to cover `BTN_UP` to `BTN_SELECT` only.
+ */
+const ANY_BUTTON_MASK = STANDARD_BUTTON_FLAGS.reduce((mask, flag) => mask | flag, 0);
 
 const VALID_AXIS_INDICES = [
     AXIS_LEFT_X,
@@ -81,6 +96,9 @@ const VALID_AXIS_INDICES = [
 
 /** Number of tracked axes per player, in {@link VALID_AXIS_INDICES} order. */
 const GAMEPAD_AXIS_COUNT = VALID_AXIS_INDICES.length;
+
+/** A gamepad button (including a trigger) counts as down at or above this analog value. */
+const BUTTON_DOWN_THRESHOLD = 0.5;
 
 /** Fixed-length, preallocated per-player axis tuple (mutated in place, never reallocated). */
 type GamepadAxes = [number, number, number, number, number, number];
@@ -122,6 +140,19 @@ function getButtonValue(pad: Gamepad, index: number): number {
 }
 
 /**
+ * Checks digital down-state for a trigger by thresholding its analog value.
+ * Browsers set `pressed` themselves (Chromium at about 12% pull), so the flag
+ * is ignored here to keep the fixed 50% threshold.
+ *
+ * @param pad - Gamepad object.
+ * @param index - Raw trigger button index.
+ * @returns `true` when the analog value reaches the threshold.
+ */
+function isTriggerDown(pad: Gamepad, index: number): boolean {
+    return getButtonValue(pad, index) >= BUTTON_DOWN_THRESHOLD;
+}
+
+/**
  * Checks digital down-state for a gamepad button.
  *
  * @param pad - Gamepad object.
@@ -135,7 +166,7 @@ function isButtonDown(pad: Gamepad, index: number): boolean {
         return false;
     }
 
-    return button.pressed || button.value >= 0.5;
+    return button.pressed || button.value >= BUTTON_DOWN_THRESHOLD;
 }
 
 /**
@@ -388,13 +419,13 @@ export class GamepadInput {
     }
 
     /**
-     * Whether any gamepad button is held for `player`. Sticks and analog triggers are not buttons.
+     * Whether any gamepad button is held for `player`. Sticks and triggers (analog or `BTN_L2` / `BTN_R2`) are not counted.
      *
      * @param player - Zero-based player index.
      * @returns `true` while any button is down.
      */
     public isAnyButtonDown(player: number): boolean {
-        return this.isButtonDown(ALL_BUTTONS_MASK, player);
+        return this.isButtonDown(ANY_BUTTON_MASK, player);
     }
 
     /**
@@ -407,7 +438,7 @@ export class GamepadInput {
      * @returns `true` on a press edge or a repeat tick when configured.
      */
     public isAnyButtonPressed(player: number, repeatRate: number | undefined, currentTick: number): boolean {
-        return this.isButtonPressed(ALL_BUTTONS_MASK, player, repeatRate, currentTick);
+        return this.isButtonPressed(ANY_BUTTON_MASK, player, repeatRate, currentTick);
     }
 
     /**
@@ -428,11 +459,11 @@ export class GamepadInput {
         const current = this.current[index];
         const previous = this.previous[index];
 
-        if (!current || !previous || previous.buttons === 0) {
+        if (!current || !previous || (previous.buttons & ANY_BUTTON_MASK) === 0) {
             return false;
         }
 
-        return current.buttons === 0;
+        return (current.buttons & ANY_BUTTON_MASK) === 0;
     }
 
     /**
@@ -608,6 +639,12 @@ export class GamepadInput {
         if (isButtonDown(pad, GP_BUTTON_SELECT)) {
             mask |= BTN_SELECT;
         }
+        if (isTriggerDown(pad, GP_BUTTON_L2)) {
+            mask |= BTN_L2;
+        }
+        if (isTriggerDown(pad, GP_BUTTON_R2)) {
+            mask |= BTN_R2;
+        }
 
         return mask;
     }
@@ -624,8 +661,8 @@ export class GamepadInput {
         target[1] = this.applyStickDeadZone(getAxis(pad, 1));
         target[2] = this.applyStickDeadZone(getAxis(pad, 2));
         target[3] = this.applyStickDeadZone(getAxis(pad, 3));
-        target[4] = getButtonValue(pad, 6);
-        target[5] = getButtonValue(pad, 7);
+        target[4] = getButtonValue(pad, GP_BUTTON_L2);
+        target[5] = getButtonValue(pad, GP_BUTTON_R2);
     }
 
     /**

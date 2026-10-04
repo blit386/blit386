@@ -62,7 +62,8 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
   the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
   time because the overlay itself read the toggle key's edge from the render phase
 - Default gamepad stick dead zone is `0.75`
-- Triggers are axis-only for now (`AXIS_TRIGGER_L` / `AXIS_TRIGGER_R`); dedicated trigger button constants do not exist
+- Triggers are available both as axes (`AXIS_TRIGGER_L/R`) and as gamepad-only digital buttons (`BTN_L2` / `BTN_R2`,
+  mask `BTN_TRIGGER`; down at a fixed 0.5 analog value, keyboard never triggers them)
 
 ## API Conventions
 

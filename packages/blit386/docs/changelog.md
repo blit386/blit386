@@ -23,6 +23,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
+  `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
+  `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`
+  to `BTN_SELECT`. See [Triggers: analog or digital](guide-input.md#triggers-analog-or-digital).
 - `BT.nativeScreenToDisplayPos(clientX, clientY)`: converts viewport coordinates, such as a DOM event's `clientX` /
   `clientY`, to display coordinates with the same math pointer input uses (floor, then clamp to `[0, displaySize - 1]`).
   Use it for DOM events the engine does not wrap, such as a file dropped onto the canvas. It returns `null` before
