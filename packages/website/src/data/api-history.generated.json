@@ -116,6 +116,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.BTN_L2": {
+      "kind": "const",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.BTN_LEFT": {
       "kind": "const",
       "since": "0.1.0",
@@ -165,6 +172,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.BTN_R2": {
+      "kind": "const",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.BTN_RIGHT": {
       "kind": "const",
       "since": "0.1.0",
@@ -192,6 +206,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "BT.BTN_TRIGGER": {
+      "kind": "const",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.BTN_UP": {
       "kind": "const",
@@ -662,7 +683,12 @@
     "BT.isDown": {
       "kind": "method",
       "since": "1.1.1",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only)."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -711,7 +737,12 @@
     "BT.isPressed": {
       "kind": "method",
       "since": "1.1.1",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only)."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -725,7 +756,12 @@
     "BT.isReleased": {
       "kind": "method",
       "since": "1.1.1",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only)."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1938,6 +1974,7 @@
       "BT.BTN_B",
       "BT.BTN_DOWN",
       "BT.BTN_L",
+      "BT.BTN_L2",
       "BT.BTN_LEFT",
       "BT.BTN_POINTER_A",
       "BT.BTN_POINTER_ANY",
@@ -1945,10 +1982,12 @@
       "BT.BTN_POINTER_C",
       "BT.BTN_POINTER_D",
       "BT.BTN_R",
+      "BT.BTN_R2",
       "BT.BTN_RIGHT",
       "BT.BTN_SELECT",
       "BT.BTN_SHOULDER",
       "BT.BTN_START",
+      "BT.BTN_TRIGGER",
       "BT.BTN_UP",
       "BT.BTN_X",
       "BT.BTN_Y",

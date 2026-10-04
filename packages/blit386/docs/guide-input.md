@@ -241,7 +241,8 @@ if (BT.isAnyButtonPressed(0)) {
   down does not fire them; use `BT.isKeyReleased(code)` for per-key release edges. A gamepad disconnecting while buttons
   were held counts as the release.
 - `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
-  analog triggers, no keyboard, no pointers. Use `isAnyKey*` for the keyboard. `player` defaults to `0`.
+  triggers (neither the analog pull nor `BTN_L2` / `BTN_R2`), no keyboard, no pointers. Use `isAnyKey*` for the
+  keyboard. `player` defaults to `0`.
 - Call the pressed and released checks from `update()`, not `render()`. The held checks (`isAnyKeyDown`,
   `isAnyButtonDown`) are safe anywhere.
 - The keyboard edges clear once per fixed-update tick, and are buffered so a fast tap is never dropped. The gamepad
@@ -303,6 +304,30 @@ keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does **not** react t
 [`BT.inputMap(0, ...)`](#remapping-btinputmap--btinputmapreset).
 
 </Callout>
+
+### Triggers: analog or digital
+
+<Since symbol="BT.BTN_L2" />
+<Since symbol="BT.BTN_R2" />
+<Since symbol="BT.BTN_TRIGGER" />
+
+Each trigger is available two ways. `BT.getAxis(BT.AXIS_TRIGGER_L)` / `AXIS_TRIGGER_R` return the pull from 0 to 1.
+`BT.BTN_L2` and `BT.BTN_R2` (mask `BT.BTN_TRIGGER`) work with `BT.isDown`, `BT.isPressed` and `BT.isReleased` and turn
+on at 50% pull or more, judged from the analog value alone (the browser's own pressed flag is ignored). The threshold is
+fixed. `BTN_L` and `BTN_R` are still the shoulder buttons, not the triggers.
+
+Trigger buttons are gamepad only. Keyboard players never trigger them and `BT.inputMap` ignores them, so give keyboard
+players an explicit fallback if your game needs one:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+// Either trigger on player 0 (gamepad only, ANY-match like other masks)
+BT.isDown(BT.BTN_TRIGGER, 0);
+
+// Same action with a keyboard fallback
+const fire = BT.isPressed(BT.BTN_R2, 0) || BT.isPressed(BT.BTN_A, 0);
+```
 
 ### Keyboard layouts
 

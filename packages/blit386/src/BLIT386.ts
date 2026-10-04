@@ -105,6 +105,9 @@ const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
 /** Face button bit mask (`BTN_UP..BTN_SELECT`). */
 const FACE_BUTTON_MASK = (1 << 12) - 1;
 
+/** Trigger button bit flags (`BTN_L2`, `BTN_R2`). Gamepad only, no keyboard fallback. */
+const TRIGGER_BUTTON_FLAGS = [1 << 16, 1 << 17] as const;
+
 /**
  * Shows a beginner-friendly runtime error in the canvas container and console.
  *
@@ -517,6 +520,31 @@ export const BT = {
      * @since 1.0.3
      */
     BTN_SHOULDER: (1 << 8) | (1 << 9),
+
+    /**
+     * Left trigger as a digital button (down at 50% pull or more). Gamepad only:
+     * keyboard players never trigger it and `BT.inputMap` rejects it. The analog
+     * pull is still available through `BT.getAxis(BT.AXIS_TRIGGER_L)`.
+     *
+     * @since 1.8.0
+     */
+    BTN_L2: 1 << 16,
+
+    /**
+     * Right trigger as a digital button (down at 50% pull or more). Gamepad only:
+     * keyboard players never trigger it and `BT.inputMap` rejects it. The analog
+     * pull is still available through `BT.getAxis(BT.AXIS_TRIGGER_R)`.
+     *
+     * @since 1.8.0
+     */
+    BTN_R2: 1 << 17,
+
+    /**
+     * Either trigger as a digital button (`BTN_L2 | BTN_R2`).
+     *
+     * @since 1.8.0
+     */
+    BTN_TRIGGER: (1 << 16) | (1 << 17),
 
     /**
      * Any pointer button (A/B/C/D).
@@ -1865,7 +1893,10 @@ export const BT = {
      * and gamepad input (logical OR). Players `2` and `3` use gamepad only.
      * Pointer flags (`BTN_POINTER_*`) use the `player` argument as pointer slot.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads / keyboard, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -1909,6 +1940,16 @@ export const BT = {
             }
         }
 
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonDown(triggerButton, player) ?? false) {
+                return true;
+            }
+        }
+
         return false;
     },
 
@@ -1935,7 +1976,10 @@ export const BT = {
      * face buttons (players 0 and 1), the press edge clears once per fixed-update tick,
      * which always runs before that frame's `render()`.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -1993,6 +2037,16 @@ export const BT = {
             }
         }
 
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonPressed(triggerButton, player, repeatRate, tick) ?? false) {
+                return true;
+            }
+        }
+
         return false;
     },
 
@@ -2020,7 +2074,10 @@ export const BT = {
      * face buttons (players 0 and 1), the release edge clears once per fixed-update tick,
      * which always runs before that frame's `render()`.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2070,6 +2127,16 @@ export const BT = {
                 (gamepadIsReleased && !(isKeyboardDown && !keyboardIsReleased));
 
             if (mergedIsReleased) {
+                return true;
+            }
+        }
+
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonReleased(triggerButton, player) ?? false) {
                 return true;
             }
         }
@@ -2322,8 +2389,8 @@ export const BT = {
     /**
      * Checks whether at least one gamepad button is held for a player.
      *
-     * Covers the `BTN_UP` to `BTN_SELECT` buttons of a connected gamepad. Sticks, analog
-     * triggers, the keyboard, and pointers are not included; use {@link isAnyKeyDown} for the keyboard.
+     * Covers the `BTN_UP` to `BTN_SELECT` buttons of a connected gamepad. Sticks, triggers
+     * (analog or `BTN_L2` / `BTN_R2`), the keyboard, and pointers are not included; use {@link isAnyKeyDown} for the keyboard.
      *
      * @since 1.8.0
      * @param player - Zero-based gamepad index (0-3).
