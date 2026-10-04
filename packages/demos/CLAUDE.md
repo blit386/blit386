@@ -50,11 +50,11 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL. Enforced, not
    merely expected: `check:demo-registry` fails on a missing, duplicated, or dangling README entry, naming the slug.
 
-Fifteen demos (`FIRST_GAME_EXAMPLES` in `packages/website/scripts/sync-kit-pages.mjs`) are also published, full source
-and `@description`, as example pages on blit386.dev for agents building a first game. Editing, renaming, or removing one
-of them makes that mirror stale: run `pnpm run sync:docs` in `packages/website` and commit the result. The website
-script imports `buildRegistry()` from `plugins/demo-registry.js`, which the website type-checks under its stricter
-config.
+The demos listed in `FIRST_GAME_EXAMPLES` (`packages/website/scripts/sync-kit-pages.mjs`) are also published, full
+source and `@description`, as example pages on blit386.dev for agents building a first game. Editing, renaming, or
+removing one of them makes that mirror stale: run `pnpm run sync:docs` in `packages/website` and commit the result. The
+website script imports `buildRegistry()` from `plugins/demo-registry.js`, which the website type-checks under its
+stricter config.
 
 The page title defaults to `BLIT386 Demo – Title Cased Topic` (en dash; the sidebar `navLabel` also uses an en dash).
 Override with a `// @pageTitle Custom Title` comment in the file header.

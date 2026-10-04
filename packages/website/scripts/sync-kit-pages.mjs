@@ -10,9 +10,10 @@
  * per-file lists live here: every set is a directory read, so a new skill, kit guide, rule, or
  * demo publishes on the next sync.
  *
- * Every page is labeled with the version it was written for (the lockstep kit version), because
- * kit content describes games pinned to a release while the rest of the site tracks the newest
- * engine.
+ * Every page is labeled with the version it was written for, because kit content describes games
+ * pinned to a release while the rest of the site tracks the newest engine. Between releases, kit
+ * content on main already teaches the next release's API, so the label names that unreleased
+ * release (from the engine changelog) while the starter project still pins the published one.
  *
  * The output is a committed, generated artifact, like the engine mirror: `pnpm run sync:docs`
  * runs this after `sync-docs-from-engine.mjs`, and `pnpm run sync:docs:check` fails when it
@@ -61,13 +62,27 @@ const FIRST_GAME_EXAMPLES = new Set([
     'random-basics',
 ]);
 
-// The kit, engine, and scaffolder release in lockstep, so the kit's version is the engine version
-// this content was written for. `bump:check` at the repo root keeps the three in step.
-const readKitVersion = () => JSON.parse(readFileSync(join(PACKAGES, 'kit', 'package.json'), 'utf8')).version;
+// The engine changelog's heading for work not yet released, `## X.Y.Z - Unreleased` - the
+// convention the /release skill documents and renames to a dated heading at release time.
+const UNRELEASED_HEADING = /^## (\d+\.\d+\.\d+) - Unreleased$/mu;
 
-const versionLabel = (version) =>
-    `> Written for blit386 ${version}. The rest of blit386.dev documents the newest engine, so an API you find there ` +
-    `may be missing from a game pinned to ${version}.`;
+/**
+ * The versions kit content is written against. `published` is the lockstep release on npm (the
+ * kit, engine, and scaffolder release together; `bump:check` keeps them in step) and is what the
+ * starter project pins. `unreleased` is the next release when the engine changelog has an
+ * Unreleased section, because kit content on main already describes that version's API.
+ */
+const readRelease = () => ({
+    published: JSON.parse(readFileSync(join(PACKAGES, 'kit', 'package.json'), 'utf8')).version,
+    unreleased: UNRELEASED_HEADING.exec(readFileSync(join(PACKAGES, 'blit386', 'docs', 'changelog.md'), 'utf8'))?.[1],
+});
+
+const versionLabel = ({ published, unreleased }) =>
+    unreleased === undefined
+        ? `> Written for blit386 ${published}. The rest of blit386.dev documents the newest engine, so an API you ` +
+          `find there may be missing from a game pinned to ${published}.`
+        : `> Written for blit386 ${unreleased}, which is not on npm yet. The newest release is ${published}, so ` +
+          `an API on this page may be missing from the version npm installs until ${unreleased} ships.`;
 
 /** Quote a frontmatter scalar. JSON strings are valid YAML double-quoted scalars. */
 const yamlString = (value) => JSON.stringify(value);
@@ -142,7 +157,7 @@ const codeBlock = (lang, source, title) => {
 };
 
 /** Render a kit markdown file (H1 title) into a page body, escaped for MDX. */
-const markdownPage = ({ sourcePath, version, description, title: titleOverride }) => {
+const markdownPage = ({ sourcePath, release, description, title: titleOverride }) => {
     const { fields, body: withoutFrontmatter } = splitFrontmatter(readFileSync(sourcePath, 'utf8'));
     const { title, body } = extractTitleAndBody(withoutFrontmatter, sourcePath);
     const { body: transformed } = transformBody(body, relative(REPO_ROOT, dirname(sourcePath)));
@@ -151,7 +166,7 @@ const markdownPage = ({ sourcePath, version, description, title: titleOverride }
         title: titleOverride ?? title,
         description: shorten(description ?? fields.description ?? firstParagraph(body)),
         sourcePath,
-        body: `${versionLabel(version)}\n\n${transformed}`,
+        body: `${versionLabel(release)}\n\n${transformed}`,
     };
 };
 
@@ -167,15 +182,15 @@ const fillPlaceholders = (text, vars, source) =>
 
 /**
  * The JavaScript starter project, as `npm create blit386@latest my-game` would write it. Both
- * dependencies are pinned to the lockstep version. The scaffolder pins `blit386` through its own
+ * dependencies are pinned to the published lockstep version. The scaffolder pins `blit386` through its own
  * `BLIT386_RANGE` constant, which `bump:check` keeps on the same release line.
  */
-const starterPage = (version) => {
+const starterPage = (release) => {
     const vars = {
         projectName: 'my-game',
         packageName: 'my-game',
-        blit386Version: `^${version}`,
-        kitVersion: `^${version}`,
+        blit386Version: `^${release.published}`,
+        kitVersion: `^${release.published}`,
         packageManager: '',
         entryFile: '/src/game.js',
     };
@@ -201,7 +216,7 @@ const starterPage = (version) => {
         description: 'The four files of a new BLIT386 game - package.json, index.html, vite.config.js, src/game.js.',
         sourcePath: join(TEMPLATES, 'js'),
         body: [
-            versionLabel(version),
+            versionLabel(release),
             'This is the JavaScript project `npm create blit386@latest my-game` writes, minus the AI-assistant and ' +
                 'formatter files. Put these four files in an empty folder, run `npm install`, then `npm run dev`. ' +
                 'The game in `src/game.js` is a small, complete example: a paddle that catches falling blocks, with ' +
@@ -211,7 +226,7 @@ const starterPage = (version) => {
     };
 };
 
-const examplePage = (demo, version) => {
+const examplePage = (demo, release) => {
     const source = readFileSync(demo.sourcePath, 'utf8');
     const usesShared = source.includes("from './shared/");
     const notes = [
@@ -229,7 +244,7 @@ const examplePage = (demo, version) => {
         title: `Example: ${demo.navLabel}`,
         description: shorten(demo.description),
         sourcePath: demo.sourcePath,
-        body: [versionLabel(version), notes.join(' '), codeBlock('js', source, `${demo.slug}.js`)].join('\n\n'),
+        body: [versionLabel(release), notes.join(' '), codeBlock('js', source, `${demo.slug}.js`)].join('\n\n'),
     };
 };
 
@@ -241,14 +256,14 @@ const listMarkdown = (dir) =>
 
 const linkList = (pages) => pages.map(({ url, title }) => `- [${title}](${url})`).join('\n');
 
-const indexPage = ({ version, groups }) => ({
+const indexPage = ({ release, groups }) => ({
     title: 'Build a Game',
     description:
         'Start here to build a BLIT386 game from an empty folder: the starter template, AGENTS.md, kit guides, ' +
         'skills, and examples.',
     sourcePath: KIT_CONTENT,
     body: [
-        versionLabel(version),
+        versionLabel(release),
         'Everything needed to write a BLIT386 game from scratch, with no project on disk yet. Every page here can be ' +
             'read through the blit386-docs MCP server: find it with `search_docs`, read it with `get_doc_page`.',
         '## Quickest start',
@@ -266,7 +281,7 @@ const indexPage = ({ version, groups }) => ({
 });
 
 /** Build every page as `{ file, url, page }`, grouped for the index and the sidebar. */
-const buildPages = (version) => {
+const buildPages = (release) => {
     const group = (folder, pages) =>
         pages.map(({ slug, page }) => ({
             file: join(folder, `${slug}.mdx`),
@@ -279,7 +294,7 @@ const buildPages = (version) => {
             folder,
             listMarkdown(dir).map((sourcePath) => ({
                 slug: basename(sourcePath, '.md'),
-                page: markdownPage({ sourcePath, version }),
+                page: markdownPage({ sourcePath, release }),
             })),
         );
 
@@ -292,7 +307,7 @@ const buildPages = (version) => {
             .map((entry) => entry.name)
             .sort()
             .map((slug) => {
-                const page = markdownPage({ sourcePath: join(KIT_CONTENT, 'skills', slug, 'SKILL.md'), version });
+                const page = markdownPage({ sourcePath: join(KIT_CONTENT, 'skills', slug, 'SKILL.md'), release });
                 return { slug, page: { ...page, title: `Skill: ${page.title}` } };
             }),
     );
@@ -308,7 +323,7 @@ const buildPages = (version) => {
         'examples',
         registry
             .filter((demo) => FIRST_GAME_EXAMPLES.has(demo.slug))
-            .map((demo) => ({ slug: demo.slug, page: examplePage(demo, version) })),
+            .map((demo) => ({ slug: demo.slug, page: examplePage(demo, release) })),
     );
 
     const agents = {
@@ -316,19 +331,19 @@ const buildPages = (version) => {
         url: `${SITE_BASE}/agents`,
         page: markdownPage({
             sourcePath: join(KIT_CONTENT, 'AGENTS.md'),
-            version,
+            release,
             title: 'AGENTS.md',
             description: 'The instructions every scaffolded BLIT386 game gives its AI assistant: how a game is built.',
         }),
     };
-    const starter = { file: 'starter-template.mdx', url: `${SITE_BASE}/starter-template`, page: starterPage(version) };
+    const starter = { file: 'starter-template.mdx', url: `${SITE_BASE}/starter-template`, page: starterPage(release) };
 
     const linked = (entries) => entries.map(({ url, page }) => ({ url, title: page.title }));
     const index = {
         file: 'index.mdx',
         url: SITE_BASE,
         page: indexPage({
-            version,
+            release,
             groups: [
                 {
                     heading: 'Kit guides',
@@ -375,8 +390,8 @@ const buildPages = (version) => {
 };
 
 const main = () => {
-    const version = readKitVersion();
-    const { pages, metas } = buildPages(version);
+    const release = readRelease();
+    const { pages, metas } = buildPages(release);
 
     rmSync(OUT_DIR, { recursive: true, force: true });
 
@@ -390,10 +405,12 @@ const main = () => {
         writeFileSync(join(OUT_DIR, file), renderMdx(page));
     }
 
-    console.log(`${pages.length} page(s) generated in ${relative(ROOT, OUT_DIR)} for blit386 ${version}.`);
+    console.log(
+        `${pages.length} page(s) generated in ${relative(ROOT, OUT_DIR)} for blit386 ${release.unreleased ?? release.published}.`,
+    );
 };
 
-export { buildPages, fenceFor, fillPlaceholders, shorten, splitFrontmatter, versionLabel, SECTION };
+export { buildPages, fenceFor, fillPlaceholders, readRelease, shorten, splitFrontmatter, versionLabel, SECTION };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();

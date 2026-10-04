@@ -235,9 +235,11 @@ the generated JSON. Never add a symbol to that JSON here; fix `packages/blit386`
 `content/docs/build-a-game/` outright: it deletes the folder and writes the start page, the JavaScript starter project
 (the scaffolder's `templates/` with placeholders filled), `AGENTS.md`, and every kit guide, skill, and rule from
 `packages/kit/content/`, plus the demos listed in `FIRST_GAME_EXAMPLES` as example pages. They exist so an agent with
-only the docs MCP connector and no scaffolded project can build a game (BT-557). Every page opens with the lockstep
-version it was written for, so every release bump makes the folder stale until `sync:docs` runs again. CI's
-`quality-website` job runs on changes to those sources as well as this package.
+only the docs MCP connector and no scaffolded project can build a game (BT-557). Every page opens with the version it
+was written for: the engine changelog's `## X.Y.Z - Unreleased` version when there is one (kit content on main already
+teaches it), otherwise the published lockstep version. The starter project always pins the published version, since an
+unreleased one is not on npm. Adding or dating that changelog heading, and every release bump, makes the folder stale
+until `sync:docs` runs again. CI's `quality-website` job runs on changes to those sources as well as this package.
 
 Two size limits shaped it, both measured with `wrangler deploy --dry-run`:
 

@@ -7,6 +7,7 @@ import {
     buildPages,
     fenceFor,
     fillPlaceholders,
+    readRelease,
     SECTION,
     shorten,
     splitFrontmatter,
@@ -14,7 +15,7 @@ import {
 } from '../sync-kit-pages.mjs';
 
 const PACKAGES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const KIT_VERSION = JSON.parse(readFileSync(join(PACKAGES, 'kit', 'package.json'), 'utf8')).version;
+const RELEASE = readRelease();
 
 describe('splitFrontmatter', () => {
     test('folds an indented multi-line value into one line', () => {
@@ -62,13 +63,37 @@ describe('shorten', () => {
     });
 });
 
+describe('versionLabel', () => {
+    test('names the published version when nothing is unreleased', () => {
+        assert.match(versionLabel({ published: '1.7.1', unreleased: undefined }), /^> Written for blit386 1\.7\.1\. /u);
+    });
+
+    test('names the unreleased version and the published one npm installs', () => {
+        const label = versionLabel({ published: '1.7.1', unreleased: '1.8.0' });
+
+        assert.match(label, /^> Written for blit386 1\.8\.0, which is not on npm yet\. The newest release is 1\.7\.1/u);
+    });
+});
+
+describe('readRelease', () => {
+    test('reads the published kit version and the changelog Unreleased heading, if any', () => {
+        const changelog = readFileSync(join(PACKAGES, 'blit386', 'docs', 'changelog.md'), 'utf8');
+
+        assert.equal(
+            RELEASE.published,
+            JSON.parse(readFileSync(join(PACKAGES, 'kit', 'package.json'), 'utf8')).version,
+        );
+        assert.equal(RELEASE.unreleased, /^## (\S+) - Unreleased$/mu.exec(changelog)?.[1]);
+    });
+});
+
 describe('buildPages against the real kit, templates, and demos', () => {
-    const { pages, metas } = buildPages(KIT_VERSION);
+    const { pages, metas } = buildPages(RELEASE);
     const byUrl = new Map(pages.map((entry) => [entry.url, entry]));
 
     test('labels every page with the version it was written for', () => {
         for (const { url, page } of pages) {
-            assert.ok(page.body.startsWith(versionLabel(KIT_VERSION)), `${url} lacks the version label`);
+            assert.ok(page.body.startsWith(versionLabel(RELEASE)), `${url} lacks the version label`);
         }
     });
 
@@ -90,7 +115,10 @@ describe('buildPages against the real kit, templates, and demos', () => {
 
         assert.doesNotMatch(body, /\{\{/u);
         assert.doesNotMatch(body, /"packageManager"/u);
-        assert.match(body, new RegExp(`"blit386": "\\^${KIT_VERSION.replaceAll('.', '\\.')}"`, 'u'));
+        assert.ok(
+            body.includes(`"blit386": "^${RELEASE.published}"`),
+            'blit386 is not pinned to the published version',
+        );
         assert.match(body, /```js title="src\/game\.js"/u);
     });
 
