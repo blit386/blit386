@@ -1,0 +1,163 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Sprite Flip and Rotation</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+            // Signal test readiness regardless of success/failure.
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+
+            const colorBlack = 1;
+
+            // Six distinct cell colors, laid out as the doc's 3x2 `ABC / DEF` source.
+            const CELL_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+
+            // Each cell is 6x6 pixels, so the 3x2-cell sprite is 18x12 - non-square and asymmetric.
+            const CELL = 6;
+            const SPRITE_W = 3 * CELL;
+            const SPRITE_H = 2 * CELL;
+
+            // A one-pixel black notch in cell A's top-left corner marks the source origin, so a flip
+            // that only swaps cells of matching color would still show.
+            function createSpriteImage() {
+                const c = document.createElement('canvas');
+
+                c.width = SPRITE_W;
+                c.height = SPRITE_H;
+
+                const ctx = c.getContext('2d');
+
+                CELL_COLORS.forEach((color, i) => {
+                    ctx.fillStyle = color;
+                    ctx.fillRect((i % 3) * CELL, Math.floor(i / 3) * CELL, CELL, CELL);
+                });
+
+                ctx.clearRect(0, 0, 1, 1);
+
+                const img = new Image();
+
+                return new Promise((resolve) => {
+                    img.onload = () => resolve(img);
+                    img.src = c.toDataURL();
+                });
+            }
+
+            class SpritesOrientedTest {
+                spriteSheet = null;
+
+                // Allocated once and rewritten per draw, as the docs recommend.
+                params = { flags: 0, paletteOffset: 0 };
+
+                configure() {
+                    return {
+                        // See sprites.html: no blit386() Vite plugin here, so disable the splash.
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(320, 240),
+                        targetFPS: 60,
+                    };
+                }
+
+                async init() {
+                    const palette = new Palette(16);
+
+                    palette.set(colorBlack, new Color32(0, 0, 0, 255));
+                    CELL_COLORS.forEach((hex, i) => palette.set(2 + i, Color32.fromHex(hex)));
+
+                    BT.paletteSet(palette);
+
+                    const img = await createSpriteImage();
+
+                    this.spriteSheet = new SpriteSheet(img);
+                    this.spriteSheet.indexize(palette);
+
+                    return true;
+                }
+
+                update() {}
+
+                render() {
+                    BT.clear(colorBlack);
+
+                    const sheet = this.spriteSheet;
+
+                    if (!sheet) {
+                        return;
+                    }
+
+                    const src = new Rect2i(0, 0, SPRITE_W, SPRITE_H);
+                    const params = this.params;
+
+                    // Row 1: the 8 orientations by their shortest flags (doc table order).
+                    const shortest = [
+                        0,
+                        BT.FLIP_H,
+                        BT.FLIP_V,
+                        BT.ROT_180_CW,
+                        BT.ROT_90_CW,
+                        BT.ROT_90_CW | BT.FLIP_H,
+                        BT.ROT_90_CW | BT.FLIP_V,
+                        BT.ROT_270_CW,
+                    ];
+
+                    // Row 2: the same orientations by their alternate spellings - must match row 1.
+                    const alsoSpelled = [
+                        BT.ROT_180_CW | BT.FLIP_H | BT.FLIP_V,
+                        BT.ROT_180_CW | BT.FLIP_V,
+                        BT.ROT_180_CW | BT.FLIP_H,
+                        BT.FLIP_H | BT.FLIP_V,
+                        BT.ROT_270_CW | BT.FLIP_H | BT.FLIP_V,
+                        BT.ROT_270_CW | BT.FLIP_V,
+                        BT.ROT_270_CW | BT.FLIP_H,
+                        BT.ROT_90_CW | BT.FLIP_H | BT.FLIP_V,
+                    ];
+
+                    [shortest, alsoSpelled].forEach((row, rowIndex) => {
+                        row.forEach((flags, i) => {
+                            params.flags = flags;
+                            BT.drawSprite(sheet, src, new Vector2i(8 + i * 28, 10 + rowIndex * 30), params);
+                        });
+                    });
+
+                    // Row 3: paletteOffset through params (every cell shifts one slot), next to the
+                    // fast-path draw it must match.
+                    params.flags = BT.FLIP_H;
+                    params.paletteOffset = 1;
+                    BT.drawSprite(sheet, src, new Vector2i(8, 70), params);
+                    params.flags = 0;
+                    BT.drawSprite(sheet, src, new Vector2i(36, 70), 1);
+                    params.paletteOffset = 0;
+
+                    // Signal render complete.
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(SpritesOrientedTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

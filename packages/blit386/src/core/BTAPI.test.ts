@@ -48,6 +48,7 @@ import {
     PALETTE_SWATCH_GAP_PX,
 } from '../overlay/palette/PaletteView';
 import type { Effect } from '../render/effects/Effect';
+import type { SpriteDrawParams } from '../render/SpriteOrientation';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
@@ -628,6 +629,39 @@ describe('BTAPI', () => {
             expect(() => BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0))).toThrow(
                 "This sprite sheet hasn't been prepared yet.",
             );
+        });
+
+        describe('drawSpriteWithParams', () => {
+            const sheet = { isIndexed: () => true } as unknown as SpriteSheet;
+            const src = new Rect2i(0, 0, 16, 16);
+            const dest = new Vector2i(0, 0);
+
+            it.each([
+                ['null', null],
+                ['an array', []],
+            ])('throws for %s params', (label, params) => {
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(sheet, src, dest, params as unknown as SpriteDrawParams),
+                ).toThrow(`got ${label}`);
+            });
+
+            it('throws for a Rect2i destination', () => {
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8) as unknown as Vector2i, {}),
+                ).toThrow('takes a Vector2i destination');
+            });
+
+            it('throws for a flag bit outside 0x1f, naming the constants', () => {
+                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, { flags: 1 << 5 })).toThrow(
+                    /BT\.FLIP_H.*BT\.ROT_270_CW/,
+                );
+            });
+
+            it('reads params without mutating them', () => {
+                const params = Object.freeze({ flags: 1, paletteOffset: 2 });
+
+                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, params)).not.toThrow();
+            });
         });
 
         it('drawSprite should register the sheet for spritesRefresh tracking', () => {
@@ -2771,6 +2805,47 @@ describe('BTAPI', () => {
             BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'a');
 
             expect(markSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it('routes params draws by orientation and still scans palette usage', async () => {
+            const markSpy = vi.fn();
+            const mockSheet = makeIndexizedSpriteSheet(markSpy);
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayPaletteEnabled: true,
+                    isOverlayVisibleAtStart: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+            stubRendererDrawCalls();
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+            const orientedSpy = vi.spyOn(renderer, 'drawSpriteOriented').mockImplementation(() => {});
+            const src = new Rect2i(0, 0, 16, 32);
+            const dest = new Vector2i(5, 6);
+            const params = { flags: 4 | 1, paletteOffset: 3 };
+
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+            params.flags = 0;
+
+            expect(orientedSpy).toHaveBeenCalledWith(mockSheet, src, dest, 3, 5);
+            expect(renderer.drawSprite).not.toHaveBeenCalled();
+            expect(markSpy).toHaveBeenCalledWith(src, 3, expect.anything());
+
+            // Identity spellings (no flags, or ROT_180_CW | FLIP_H | FLIP_V) take the plain drawSprite path.
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, { flags: 8 | 1 | 2, paletteOffset: 4 });
+
+            expect(renderer.drawSprite).toHaveBeenNthCalledWith(1, mockSheet, src, dest, 0);
+            expect(renderer.drawSprite).toHaveBeenNthCalledWith(2, mockSheet, src, dest, 4);
+            expect(orientedSpy).toHaveBeenCalledOnce();
         });
 
         it('skips palette scans when the palette grid is enabled but the overlay body is hidden', async () => {

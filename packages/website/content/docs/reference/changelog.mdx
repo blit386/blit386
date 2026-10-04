@@ -20,6 +20,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- Sprite flip and quarter turns: `BT.drawSprite(sheet, src, dest, params)` takes a `SpriteDrawParams` object as the 4th
+  argument, with `flags` (any combination of `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`)
+  and `paletteOffset`. The flags compose in a fixed order into 8 orientations, `dest` is the top-left of the turned
+  footprint, and both backends match pixel for pixel. The number form of the 4th argument is unchanged and still
+  allocation-free. See [Flipping and rotating sprites](/docs/api/rendering#flipping-and-rotating-sprites).
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
   `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`

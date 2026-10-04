@@ -133,6 +133,24 @@ export interface IRenderer {
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
 
     /**
+     * Draws a flipped / quarter-turned sprite region. `destPos` is the top-left of the post-flags
+     * footprint (`sh x sw` for a 90 or 270 degree turn).
+     *
+     * @param spriteSheet - Source sprite sheet (must be indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destPos - Screen position of the footprint's top-left corner.
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index `1`-`7` from `resolveSpriteOrientation` (`0` uses {@link drawSprite}).
+     */
+    drawSpriteOriented(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffset: number,
+        orientation: number,
+    ): void;
+
+    /**
      * Draws text using a bitmap font.
      *
      * @param font - Bitmap font with character glyphs (underlying sheet must be indexized).

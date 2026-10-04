@@ -10,6 +10,8 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
+import type { SpriteOrientation } from './SpriteOrientation';
+import { SPRITE_ORIENTATIONS } from './SpriteOrientation';
 
 /** A queued filled-rectangle or outline-rectangle draw command. */
 type RectCommand = {
@@ -45,6 +47,8 @@ type SpriteCommand = {
     srcRect: Rect2i;
     destPos: Vector2i;
     paletteOffset: number;
+    /** Row of {@link SPRITE_ORIENTATIONS}; `0` takes the unchanged {@link blitIndexedRect} path. */
+    orientation: number;
     cameraX: number;
     cameraY: number;
 };
@@ -511,12 +515,34 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
+        this.drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, 0);
+    }
+
+    /**
+     * Queues a flipped / quarter-turned sprite blit. `destPos` is the top-left of the post-flags
+     * footprint (`sh x sw` for a 90 or 270 degree turn).
+     *
+     * @param spriteSheet - Source sprite sheet containing the indexed pixels.
+     * @param srcRect - Source region within the sprite sheet in pixels.
+     * @param destPos - Destination position in logical coordinates.
+     * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
+     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, from `resolveSpriteOrientation` (`0` replays through
+     *   the unchanged {@link blitIndexedRect} path).
+     */
+    drawSpriteOriented(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
         this.commands.push({
             kind: 'sprite',
             spriteSheet,
             srcRect: srcRect.clone(),
             destPos: destPos.clone(),
             paletteOffset,
+            orientation,
             cameraX: this.cameraOffset.x,
             cameraY: this.cameraOffset.y,
         });
@@ -975,6 +1001,11 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private rasterSprite(command: SpriteCommand): void {
         const indexedPixels = command.spriteSheet.getIndexedPixelsRef();
 
+        if (command.orientation !== 0) {
+            this.blitIndexedRectOriented(indexedPixels, command);
+            return;
+        }
+
         this.blitIndexedRect(
             indexedPixels,
             command.spriteSheet.width,
@@ -1073,6 +1104,69 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                     pixels,
                     destX + destOffsetX + x,
                     destY + destOffsetY + y,
+                    color.r,
+                    color.g,
+                    color.b,
+                    255,
+                );
+            }
+        }
+    }
+
+    /**
+     * Blits a sprite command's source rect through its orientation's point map. Same clipping,
+     * transparency, and palette rules as {@link blitIndexedRect}; each source texel `(i, j)` lands on
+     * the footprint texel given by the point map with `sw - 1` / `sh - 1` (texel centers).
+     *
+     * @param indexedPixels - Source sheet's indexed-pixel buffer.
+     * @param command - Sprite command with a non-zero orientation.
+     */
+    private blitIndexedRectOriented(indexedPixels: Uint8Array, command: SpriteCommand): void {
+        const { srcRect, spriteSheet } = command;
+        const clipped = this.clipScratch;
+
+        if (
+            !clipSpriteSourceRectXYTo(
+                srcRect.x,
+                srcRect.y,
+                srcRect.width,
+                srcRect.height,
+                spriteSheet.width,
+                spriteSheet.height,
+                clipped,
+            )
+        ) {
+            return;
+        }
+
+        const row = SPRITE_ORIENTATIONS[command.orientation] as SpriteOrientation;
+        // Full source size, not the clipped one, so clipped texels keep the placement the GPU quad gives them.
+        const maxX = (row.swap ? srcRect.height : srcRect.width) - 1;
+        const maxY = (row.swap ? srcRect.width : srcRect.height) - 1;
+        const destX = command.destPos.x - command.cameraX;
+        const destY = command.destPos.y - command.cameraY;
+        const sheetWidth = spriteSheet.width;
+        const pixels = this.framePixels;
+
+        for (let y = clipped.y; y < clipped.y + clipped.height; y++) {
+            const j = y - srcRect.y;
+
+            for (let x = clipped.x; x < clipped.x + clipped.width; x++) {
+                const rawIndex = indexedPixels[y * sheetWidth + x] ?? 0;
+
+                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
+                    continue;
+                }
+
+                const i = x - srcRect.x;
+                const u = row.swap ? j : i;
+                const v = row.swap ? i : j;
+                const color = this.resolveSpriteColor((rawIndex + command.paletteOffset) >>> 0);
+
+                this.writePixel(
+                    pixels,
+                    destX + (row.flipX ? maxX - u : u),
+                    destY + (row.flipY ? maxY - v : v),
                     color.r,
                     color.g,
                     color.b,

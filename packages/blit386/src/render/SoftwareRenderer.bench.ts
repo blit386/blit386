@@ -24,6 +24,7 @@ import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { SoftwareRenderer } from './SoftwareRenderer';
+import { resolveSpriteOrientation, SPRITE_FLIP_H, SPRITE_ROT_90_CW } from './SpriteOrientation';
 
 const BENCH_OPTIONS = {
     iterations: 100,
@@ -193,6 +194,7 @@ describe('SoftwareRenderer sprite blit', () => {
     const smallSrcRect = new Rect2i(0, 0, 8, 8);
     const largeSrcRect = new Rect2i(0, 0, 32, 32);
     const destPos = new Vector2i(0, 0);
+    const rot90FlipH = resolveSpriteOrientation(SPRITE_ROT_90_CW | SPRITE_FLIP_H);
 
     bench(
         'drawSprite (8x8 source rect)',
@@ -215,6 +217,20 @@ describe('SoftwareRenderer sprite blit', () => {
 
             for (let i = 0; i < SPRITE_DRAW_COUNT; i++) {
                 renderer.drawSprite(sheet, largeSrcRect, destPos, 0);
+            }
+
+            renderer.endFrame();
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'drawSpriteOriented (32x32 source rect, ROT_90_CW | FLIP_H)',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < SPRITE_DRAW_COUNT; i++) {
+                renderer.drawSpriteOriented(sheet, largeSrcRect, destPos, 0, rot90FlipH);
             }
 
             renderer.endFrame();

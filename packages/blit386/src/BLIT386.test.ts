@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, type MockIns
 import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
-import type { BitmapFont, HardwareSettings, IBTDemo } from './BLIT386';
+import type { BitmapFont, HardwareSettings, IBTDemo, SpriteDrawParams } from './BLIT386';
 import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
@@ -2073,6 +2073,52 @@ describe('BT.drawSprite', () => {
 
             const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
             expect(text).toContain("Did you forget to use 'await' before SpriteSheet.load()?");
+        });
+    });
+
+    it('routes an object 4th argument to the params path and a number to the fast path', () => {
+        const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        const withParams = vi.spyOn(BTAPI.instance, 'drawSpriteWithParams').mockReturnValue(undefined);
+        const sheet = new SpriteSheet(mockImage);
+        const src = new Rect2i(0, 0, 16, 16);
+        const dest = new Vector2i(1, 2);
+        const params = { flags: BT.FLIP_H, paletteOffset: 0 };
+
+        BT.drawSprite(sheet, src, dest, params);
+        BT.drawSprite(sheet, src, dest, 3);
+
+        expect(withParams).toHaveBeenCalledWith(sheet, src, dest, params);
+        expect(fast).toHaveBeenCalledOnce();
+        expect(fast).toHaveBeenCalledWith(sheet, src, dest, 3);
+    });
+
+    it('sends null params to the params path, which rejects them', async () => {
+        await withErrorContainer(async () => {
+            const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+
+            BT.drawSprite(
+                new SpriteSheet(mockImage),
+                new Rect2i(0, 0, 8, 8),
+                new Vector2i(0, 0),
+                null as unknown as SpriteDrawParams,
+            );
+
+            expect(fast).not.toHaveBeenCalled();
+            expect(document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '').toContain('got null');
+        });
+    });
+
+    it.each([
+        ['frame name', 'hero-idle'],
+        ['raw source numbers', 0],
+    ])('rejects a %s source until that overload ships', async (label, src) => {
+        await withErrorContainer(async () => {
+            const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+
+            BT.drawSprite(new SpriteSheet(mockImage), src as unknown as Rect2i, new Vector2i(0, 0));
+
+            expect(fast).not.toHaveBeenCalled();
+            expect(document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '').toContain(label);
         });
     });
 

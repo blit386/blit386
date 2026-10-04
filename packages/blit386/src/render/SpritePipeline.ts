@@ -3,6 +3,8 @@ import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import type { SpriteOrientation } from './SpriteOrientation';
+import { SPRITE_ORIENTATIONS, SPRITE_UV_CORNERS } from './SpriteOrientation';
 
 /**
  * Maximum number of sprite vertices retained for a frame.
@@ -159,7 +161,69 @@ export class SpritePipeline {
         // Use a pre-allocated vector for size to avoid allocation.
         this.tempSize.set(srcRect.width, srcRect.height);
 
-        this.drawTexturedQuad(texture, destPos, this.tempSize, uvs.u0, uvs.v0, uvs.u1, uvs.v1, paletteOffset);
+        this.drawTexturedQuad(
+            texture,
+            destPos,
+            this.tempSize,
+            uvs.u0,
+            uvs.v0,
+            uvs.u1,
+            uvs.v0,
+            uvs.u0,
+            uvs.v1,
+            uvs.u1,
+            uvs.v1,
+            paletteOffset,
+        );
+    }
+
+    /**
+     * Draws a flipped / quarter-turned sprite region by permuting which source UV corner lands on
+     * which quad corner. No shader or uniform change: the vertex layout is the same as {@link drawSprite}.
+     *
+     * @param spriteSheet - Source sprite sheet (must have been indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destPos - Screen position of the post-flags footprint's top-left corner.
+     * @param paletteOffset - Index offset added to every sprite pixel at draw time.
+     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, from `resolveSpriteOrientation`.
+     */
+    drawSpriteOriented(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        const texture = spriteSheet.getTexture(this.device as GPUDevice);
+        const uvs = spriteSheet.getUVsTo(srcRect, this.tempUV);
+        // eslint-disable-next-line security/detect-object-injection
+        const swap = (SPRITE_ORIENTATIONS[orientation] as SpriteOrientation).swap;
+
+        this.tempSize.set(swap ? srcRect.height : srcRect.width, swap ? srcRect.width : srcRect.height);
+
+        // Source corner per screen corner (TL, TR, BL, BR): bit 0 = right (u1), bit 1 = bottom (v1).
+        // `orientation` comes from resolveSpriteOrientation (0-7), so all four reads are in range.
+        const base = orientation * 4;
+        // eslint-disable-next-line security/detect-object-injection
+        const tl = SPRITE_UV_CORNERS[base] as number;
+        const tr = SPRITE_UV_CORNERS[base + 1] as number;
+        const bl = SPRITE_UV_CORNERS[base + 2] as number;
+        const br = SPRITE_UV_CORNERS[base + 3] as number;
+
+        this.drawTexturedQuad(
+            texture,
+            destPos,
+            this.tempSize,
+            tl & 1 ? uvs.u1 : uvs.u0,
+            tl & 2 ? uvs.v1 : uvs.v0,
+            tr & 1 ? uvs.u1 : uvs.u0,
+            tr & 2 ? uvs.v1 : uvs.v0,
+            bl & 1 ? uvs.u1 : uvs.u0,
+            bl & 2 ? uvs.v1 : uvs.v0,
+            br & 1 ? uvs.u1 : uvs.u0,
+            br & 2 ? uvs.v1 : uvs.v0,
+            paletteOffset,
+        );
     }
 
     /**
@@ -392,20 +456,28 @@ export class SpritePipeline {
      * @param texture - GPU r8uint index texture.
      * @param pos - Screen position (top-left corner).
      * @param size - Quad dimensions in pixels.
-     * @param u0 - Left UV coordinate (0-1).
-     * @param v0 - Top UV coordinate (0-1).
-     * @param u1 - Right UV coordinate (0-1).
-     * @param v1 - Bottom UV coordinate (0-1).
+     * @param uTL - U at the top-left corner (0-1).
+     * @param vTL - V at the top-left corner (0-1).
+     * @param uTR - U at the top-right corner.
+     * @param vTR - V at the top-right corner.
+     * @param uBL - U at the bottom-left corner.
+     * @param vBL - V at the bottom-left corner.
+     * @param uBR - U at the bottom-right corner.
+     * @param vBR - V at the bottom-right corner.
      * @param paletteOffset - Palette index offset for this quad.
      */
     private drawTexturedQuad(
         texture: GPUTexture,
         pos: Vector2i,
         size: Vector2i,
-        u0: number,
-        v0: number,
-        u1: number,
-        v1: number,
+        uTL: number,
+        vTL: number,
+        uTR: number,
+        vTR: number,
+        uBL: number,
+        vBL: number,
+        uBR: number,
+        vBR: number,
         paletteOffset: number,
     ): void {
         // Flush if switching textures.
@@ -440,14 +512,14 @@ export class SpritePipeline {
         const y1 = pos.y + size.y;
 
         // Triangle 1.
-        this.addVertex(x0, y0, u0, v0, paletteOffset);
-        this.addVertex(x1, y0, u1, v0, paletteOffset);
-        this.addVertex(x0, y1, u0, v1, paletteOffset);
+        this.addVertex(x0, y0, uTL, vTL, paletteOffset);
+        this.addVertex(x1, y0, uTR, vTR, paletteOffset);
+        this.addVertex(x0, y1, uBL, vBL, paletteOffset);
 
         // Triangle 2.
-        this.addVertex(x1, y0, u1, v0, paletteOffset);
-        this.addVertex(x1, y1, u1, v1, paletteOffset);
-        this.addVertex(x0, y1, u0, v1, paletteOffset);
+        this.addVertex(x1, y0, uTR, vTR, paletteOffset);
+        this.addVertex(x1, y1, uBR, vBR, paletteOffset);
+        this.addVertex(x0, y1, uBL, vBL, paletteOffset);
     }
 
     /**

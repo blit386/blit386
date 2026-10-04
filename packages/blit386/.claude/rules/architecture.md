@@ -60,6 +60,7 @@ src/
     SoftwareRenderer.ts    # Canvas 2D software fallback implementing IRenderer
     PrimitivePipeline.ts   # Batched geometry writing palette indices (pixels, lines, rects)
     SpritePipeline.ts      # Batched textured quads (sprites, bitmap text)
+    SpriteOrientation.ts   # FLIP_*/ROT_* bits, mask -> orientation lookup, the one orientation table both backends read
     PostProcessChain.ts    # Tier-aware fullscreen effect chain
     UpscalePass.ts         # RGBA texture upscale helper (tests / utilities)
     PaletteResolveUpscalePass.ts # r8uint palette indices -> RGBA + upscale

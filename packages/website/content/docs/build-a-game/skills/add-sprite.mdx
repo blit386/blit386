@@ -60,6 +60,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   Pass `{ tileSize }` in `options` to give the sheet a grid of equal cells.
 - `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` (method) - draw a region. `paletteOffset` shifts every
   pixel's slot, so you can recolor the same sprite (team colors, day/night).
+- `BT.drawSprite(sheet, srcRect, destPos, { flags, paletteOffset })` (method) - same, flipped or turned by `flags`
+  (engine 1.8.0+).
 - `BT.drawTile(sheet, index, destPos, paletteOffset?)` / `BT.drawTile(sheet, col, row, destPos, paletteOffset?)`
   (method) - draw one grid cell, no `Rect2i` needed (engine 1.8.0+).
 - `sheet.fullRect()` (method) - the whole-sheet `Rect2i`.
@@ -70,8 +72,22 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
 
 - Slot 0 is transparent, so sprite colors start at slot 1. `loadIndexed` handles that.
 - Sprites draw at whole-number positions only.
-- There is no built-in flip or rotate at draw time yet - the `FLIP_*` / `ROT_*` constants are not accepted by
-  `drawSprite` today. To face the other way, author a flipped frame in the PNG.
+- To face the other way, flip at draw time instead of adding a mirrored frame to the PNG (engine 1.8.0+). Pass a params
+  object as the 4th argument. Make it once in `init()` with every field present, then change `flags` per draw:
+
+  ```js
+  // init()
+  this.drawParams = { flags: 0, paletteOffset: 0 };
+
+  // render()
+  this.drawParams.flags = this.isFacingLeft ? BT.FLIP_H : 0;
+  BT.drawSprite(this.hero, this.heroRect, this.heroPos, this.drawParams);
+  ```
+
+  `flags` takes `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. A 90 or
+  270 degree turn swaps width and height; `destPos` stays the top-left corner. To flip a grid tile, pass
+  `sheet.tileRect(...)` (built in `init()`) to `BT.drawSprite` - `BT.drawTile` takes no params.
+
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the
   show-a-loading-screen skill (`BT.loadingAssetsCount`, `sheet.status`, `sheet.progress`).

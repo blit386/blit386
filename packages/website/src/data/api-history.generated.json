@@ -276,14 +276,24 @@
     "BT.FLIP_H": {
       "kind": "const",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.FLIP_V": {
       "kind": "const",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -318,21 +328,36 @@
     "BT.ROT_180_CW": {
       "kind": "const",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.ROT_270_CW": {
       "kind": "const",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.ROT_90_CW": {
       "kind": "const",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -520,7 +545,12 @@
     "BT.drawSprite": {
       "kind": "method",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Added the `SpriteDrawParams` 4th-argument form for flips and quarter turns."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1584,6 +1614,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "SpriteDrawParams": {
+      "kind": "interface",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "SpriteSheet": {
       "kind": "class",
       "since": "0.1.0",
@@ -1962,6 +1999,7 @@
       "BT.systemPrintMeasure",
       "FrameCaptureOptions",
       "FrameCaptureSize",
+      "SpriteDrawParams",
       "amber",
       "crtPipBoy",
       "green"

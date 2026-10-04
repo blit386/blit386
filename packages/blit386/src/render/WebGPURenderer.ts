@@ -574,6 +574,25 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Draws a flipped / quarter-turned sprite region (see {@link IRenderer.drawSpriteOriented}).
+     *
+     * @param spriteSheet - Source sprite sheet (must be indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destPos - Screen position of the footprint's top-left corner.
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index from `resolveSpriteOrientation`.
+     */
+    drawSpriteOriented(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        this.sprites.drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
+    }
+
+    /**
      * Draws text using a bitmap font through the indexed sprite pipeline.
      * Renders each character as a textured sprite.
      *

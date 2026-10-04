@@ -78,6 +78,14 @@ import { FullscreenPixelEffect } from './render/effects/FullscreenPixelEffect';
 import { PixelGlitch } from './render/effects/pixel/PixelGlitch';
 import { PixelMosaic } from './render/effects/pixel/PixelMosaic';
 import { amber, crtPipBoy, green } from './render/effects/presets';
+import type { SpriteDrawParams } from './render/SpriteOrientation';
+import {
+    SPRITE_FLIP_H,
+    SPRITE_FLIP_V,
+    SPRITE_ROT_90_CW,
+    SPRITE_ROT_180_CW,
+    SPRITE_ROT_270_CW,
+} from './render/SpriteOrientation';
 import type { SplashState } from './splash';
 import type { BootstrapOptions, DemoConstructor } from './utils/Bootstrap';
 import { bootstrap as bootstrapImpl } from './utils/Bootstrap';
@@ -292,39 +300,44 @@ function pointerFlagToPointerCode(pointerFlag: number): number | null {
 /** Main BLIT386 API namespace used by runtime demos. */
 export const BT = {
     /**
-     * Horizontal flip flag for sprite rendering.
+     * Horizontal flip flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
+     * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
      */
-    FLIP_H: 1,
+    FLIP_H: SPRITE_FLIP_H,
 
     /**
-     * Vertical flip flag for sprite rendering.
+     * Vertical flip flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
+     * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
      */
-    FLIP_V: 1 << 1,
+    FLIP_V: SPRITE_FLIP_V,
 
     /**
-     * Rotate 90° clockwise flag for sprite rendering.
+     * Rotate 90° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
+     * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
      */
-    ROT_90_CW: 1 << 2,
+    ROT_90_CW: SPRITE_ROT_90_CW,
 
     /**
-     * Rotate 180° flag for sprite rendering.
+     * Rotate 180° flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
+     * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
      */
-    ROT_180_CW: 1 << 3,
+    ROT_180_CW: SPRITE_ROT_180_CW,
 
     /**
-     * Rotate 270° clockwise flag for sprite rendering.
+     * Rotate 270° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
+     * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
      */
-    ROT_270_CW: 1 << 4,
+    ROT_270_CW: SPRITE_ROT_270_CW,
 
     /**
      * Up button bit flag.
@@ -2628,17 +2641,35 @@ export const BT = {
      * JS number written into a `u32` vertex attribute wraps to a large unsigned integer, which also
      * produces out-of-bounds black pixels.
      *
+     * **Flip and quarter turns (since 1.8.0):** pass a {@link SpriteDrawParams} object as the 4th argument
+     * instead of a number. `params.flags` takes any combination of `BT.FLIP_H`, `BT.FLIP_V`,
+     * `BT.ROT_90_CW`, `BT.ROT_180_CW`, and `BT.ROT_270_CW`, composed as FLIP_H, then FLIP_V, then the
+     * clockwise quarter turns summed modulo 4. `destPos` is the top-left of the post-flags footprint, so a
+     * 16x32 sprite with `ROT_90_CW` covers 32x16. `params.paletteOffset` means the same as the number form.
+     * The object is read, never mutated or retained: allocate it once and rewrite its fields between draws.
+     *
      * @since 0.1.0
+     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips and quarter turns.
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
      * @param destPos - Destination top-left position in display coordinates.
-     * @param paletteOffset - Shift added to every stored pixel index before palette lookup (default 0).
+     * @param paletteOffsetOrParams - Shift added to every stored pixel index before palette lookup (default
+     *   0), or a {@link SpriteDrawParams} object.
      *
      * @example
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10));
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), 16); // blue team
+     *
+     * const params = { flags: 0, paletteOffset: 0 }; // allocate once
+     * params.flags = facingLeft ? BT.FLIP_H : 0;
+     * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), params);
      */
-    drawSprite: (spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void => {
+    drawSprite: ((
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destPos: Vector2i,
+        paletteOffsetOrParams?: number | SpriteDrawParams,
+    ): void => {
         if (!isRendererReady()) {
             reportEngineNotReady('drawSprite');
             return;
@@ -2650,10 +2681,34 @@ export const BT = {
                 return;
             }
 
-            BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+            // Dispatch reads argument 2, then argument 4: two typeof checks, no instanceof, no
+            // allocation on the fast path. Later overloads slot into the non-object branch.
+            if (typeof srcRect === 'object') {
+                if (typeof paletteOffsetOrParams === 'object') {
+                    BTAPI.instance.drawSpriteWithParams(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
+                } else {
+                    BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
+                }
+
+                return;
+            }
+
+            const srcType = typeof srcRect;
+            throw new Error(
+                srcType === 'string'
+                    ? 'drawSprite does not accept a frame name yet; pass a Rect2i source rectangle'
+                    : srcType === 'number'
+                      ? 'drawSprite does not accept raw source numbers yet; pass a Rect2i source rectangle'
+                      : `drawSprite expects a Rect2i source rectangle, got ${describeRuntimeType(srcRect)}`,
+            );
         } catch (error) {
             reportDrawError(error);
         }
+        // Object literals cannot declare overloads; the cast gives callers the typed forms. The
+        // shipped fast path is declared first. gen-api-history.mjs unwraps the `as`.
+    }) as {
+        (spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
+        (spriteSheet: SpriteSheet, src: Rect2i, dest: Vector2i, params: SpriteDrawParams): void;
     },
 
     /**
@@ -2671,8 +2726,8 @@ export const BT = {
      * cells counted from the top-left; a partial cell at the right or bottom edge is not a tile, and a tile outside
      * the grid is an error. `paletteOffset` works exactly as in {@link BT.drawSprite}.
      *
-     * Allocation-free: the engine reuses one internal source rectangle. To flip or scale a tile, pass
-     * `sheet.tileRect(...)` to `BT.drawSprite` instead.
+     * Allocation-free: the engine reuses one internal source rectangle. To flip or rotate a tile, pass
+     * `sheet.tileRect(...)` to `BT.drawSprite` with a {@link SpriteDrawParams} object instead.
      *
      * @since 1.8.0
      * @param spriteSheet - Indexized sprite sheet.
@@ -2910,6 +2965,7 @@ export type {
     SoundRef,
     SoundStopOptions,
     SplashState,
+    SpriteDrawParams,
     SynthEnvelope,
     SynthParams,
     SynthPitchSweep,
