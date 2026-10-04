@@ -7,7 +7,7 @@ description: "Read mouse position, movement delta, scroll wheel, and four pointe
 
 > Written for blit386 1.8.0, which is not on npm yet. The newest release is 1.7.1, so an API on this page may be missing from the version npm installs until 1.8.0 ships.
 
-Live version: https://demos.blit386.dev/pointer-basics. Imports from `./shared/` are helpers for the demo site itself (themed panels, on-screen D-pad, post-process fallbacks). They are not part of blit386 and are not on npm - leave them out of your own game.
+Live version: https://demos.blit386.dev/pointer-basics. This is the demo-site source, not a standalone file: it imports and calls helpers from `./shared/` (themed panels, on-screen D-pad, post-process fallbacks), which are not part of blit386 and are not on npm. To run it as is, keep those files from https://github.com/blit386/blit386/tree/main/packages/demos/src/shared at the same relative path. To adapt it, remove or replace the helper imports and every call to them.
 
 ```js title="pointer-basics.js"
 /**

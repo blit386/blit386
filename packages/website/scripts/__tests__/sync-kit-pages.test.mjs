@@ -141,7 +141,7 @@ describe('buildPages against the real kit, templates, and demos', () => {
         const { page } = byUrl.get(`/docs/${SECTION}/examples/snake-game`);
 
         assert.equal(page.title, 'Example: Snake Game');
-        assert.match(page.body, /Imports from `\.\/shared\/`/u);
+        assert.match(page.body, /not a standalone file: it imports and calls helpers from `\.\/shared\/`/u);
         assert.ok(page.body.includes(readFileSync(join(PACKAGES, 'demos', 'src', 'snake-game.js'), 'utf8').trimEnd()));
     });
 

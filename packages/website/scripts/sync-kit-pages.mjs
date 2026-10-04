@@ -36,6 +36,7 @@ const SECTION = 'build-a-game';
 const OUT_DIR = join(ROOT, 'content', 'docs', SECTION);
 const SITE_BASE = `/docs/${SECTION}`;
 const DEMOS_SITE = 'https://demos.blit386.dev';
+const DEMOS_SHARED_SOURCE = 'https://github.com/blit386/blit386/tree/main/packages/demos/src/shared';
 const DESCRIPTION_MAX_LENGTH = 160;
 
 // The demos published as examples. Not all of them: every page is prerendered into the Worker
@@ -252,9 +253,11 @@ const examplePage = (demo, release) => {
         `Live version: ${DEMOS_SITE}/${demo.slug}.`,
         ...(usesShared
             ? [
-                  'Imports from `./shared/` are helpers for the demo site itself (themed panels, on-screen D-pad, ' +
-                      'post-process fallbacks). They are not part of blit386 and are not on npm - leave them out of ' +
-                      'your own game.',
+                  'This is the demo-site source, not a standalone file: it imports and calls helpers from ' +
+                      '`./shared/` (themed panels, on-screen D-pad, post-process fallbacks), which are not part of ' +
+                      `blit386 and are not on npm. To run it as is, keep those files from ${DEMOS_SHARED_SOURCE} ` +
+                      'at the same relative path. To adapt it, remove or replace the helper imports and every call ' +
+                      'to them.',
               ]
             : []),
     ];
@@ -378,7 +381,8 @@ const buildPages = (release) => {
                 {
                     heading: 'Examples',
                     intro:
-                        'Complete, single-file programs from the demo site, each running live at demos.blit386.dev. ' +
+                        'Programs from the demo site, each running live at demos.blit386.dev. Most call demo-site ' +
+                        'helpers from `./shared/` and are not standalone; each page says what it needs. ' +
                         `The full set of demos is at ${DEMOS_SITE}.`,
                     pages: linked(examples),
                 },
