@@ -90,6 +90,8 @@ No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 - `spellcheck` - cspell on `content/` and `src/`
 - `knip` - unused exports/deps
 - `build` - `CLOUDFLARE=1 waku build`
+- `check:deploy-size` - fails when any `dist/public` file exceeds Cloudflare's 25 MiB per-asset limit or the Worker's
+  gzip upload (from `wrangler deploy --dry-run`) exceeds its 8 MiB budget
 - `sync:docs:check` - regenerates `content/docs` from `packages/blit386/docs/` and fails when the mirror drifted
 
 `sync:docs:check` is deliberately last: it rewrites `content/docs` in the working tree, so any gate after it would be
