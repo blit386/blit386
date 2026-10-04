@@ -219,6 +219,9 @@ under rapid input - the tick already consumed and cleared the edge before render
 <Since symbol="BT.BTN_SELECT" />
 <Since symbol="BT.BTN_ABXY" />
 <Since symbol="BT.BTN_SHOULDER" />
+<Since symbol="BT.BTN_L2" />
+<Since symbol="BT.BTN_R2" />
+<Since symbol="BT.BTN_TRIGGER" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER1" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER2" />
 <Since symbol="BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1" />
@@ -247,6 +250,7 @@ BT.isDown(BT.BTN_LEFT, 1);
 // Composite face-button masks (ANY-match semantics)
 BT.isDown(BT.BTN_ABXY, 0); // A, B, X, or Y for player 0
 BT.isDown(BT.BTN_SHOULDER, 1); // L or R shoulder for player 1
+BT.isDown(BT.BTN_TRIGGER, 0); // L2 or R2 trigger past half pull, gamepad only
 ```
 
 <Callout type="warn" title="Arrow keys belong to player 1 by default">
@@ -257,6 +261,20 @@ keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does **not** react t
 [`BT.inputMap(0, ...)`](#remapping-btinputmap--btinputmapreset).
 
 </Callout>
+
+### Triggers: analog or digital
+
+Each trigger is available two ways. `BT.getAxis(BT.AXIS_TRIGGER_L)` / `AXIS_TRIGGER_R` return the pull from 0 to 1.
+`BT.BTN_L2` and `BT.BTN_R2` (mask `BT.BTN_TRIGGER`) work with `BT.isDown`, `BT.isPressed` and `BT.isReleased` and turn
+on at 50% pull or more, the same rule every gamepad button uses. The threshold is fixed. `BTN_L` and `BTN_R` are still
+the shoulder buttons, not the triggers.
+
+Trigger buttons are gamepad only. Keyboard players never trigger them and `BT.inputMap` ignores them, so give keyboard
+players an explicit fallback if your game needs one:
+
+```ts
+const fire = BT.isPressed(BT.BTN_R2, 0) || BT.isPressed(BT.BTN_A, 0);
+```
 
 ### Keyboard layouts
 

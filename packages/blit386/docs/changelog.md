@@ -23,6 +23,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
+  `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
+  `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders. See
+  [Triggers: analog or digital](guide-input.md#triggers-analog-or-digital).
 - `keyboardLayout` in `configure()`: `'single'` gives player 0 WASD _and_ the arrow keys, so a one-player game reading
   `BT.isDown(BT.BTN_LEFT)` finally answers to the left arrow; player 1 moves to IJKL, and keyboard scroll capture turns
   on unless `isCapturingKeyboardScroll` is set explicitly. The default `'versus'` keeps today's split (WASD for player
