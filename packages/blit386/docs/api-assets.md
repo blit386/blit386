@@ -138,8 +138,10 @@ const walkFrames = [0, 1, 2, 3].map((i) => sheet.tileRect(i)); // built once in 
 sheet.tileSize = 8; // or set or change it later; null removes the grid
 ```
 
-`sheet.tileSize` reads back as a frozen `Vector2i` (or `null`). The grid survives a hot-reload image swap, and lookups
-are checked against the sheet's current size. See [Drawing tiles](api-rendering.md#drawing-tiles).
+Setting `sheet.tileSize` (or the `tileSize` load option) to anything but a positive whole number on both axes throws a
+`RangeError` and leaves the grid unchanged. `sheet.tileSize` reads back as a frozen `Vector2i` (or `null`). The grid
+survives a hot-reload image swap, and lookups are checked against the sheet's current size. See
+[Drawing tiles](api-rendering.md#drawing-tiles).
 
 ## Sprite setup - manual path
 

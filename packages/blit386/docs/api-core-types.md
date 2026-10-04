@@ -82,6 +82,9 @@ declare const px: number;
 declare const py: number;
 declare const other: Rect2i;
 declare const out: Rect2i;
+declare const col: number;
+declare const row: number;
+declare const tileSize: number | Vector2i;
 // ---cut---
 const r = new Rect2i(x, y, width, height);
 
@@ -106,7 +109,8 @@ r.max; // Vector2i getter (bottom-right)
 ```
 
 `Rect2i.fromTile(col, row, tileSize)` builds one cell of a grid of equal tiles; `tileSize` is a number or a `Vector2i`.
-It is pure math with no bounds check against an image (`sheet.tileRect` does that).
+It validates its arguments (a `RangeError` for a size that is not a positive whole number, or a negative or fractional
+`col` / `row`) but does not check against any image (`sheet.tileRect` does that).
 
 <DemoEmbed demo="002-primitives" title="BLIT386 primitives demo" />
 
