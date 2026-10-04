@@ -157,46 +157,17 @@ function toSitePath(input: string, requestOrigin: string): string | undefined {
     return path === '' ? '/' : path;
 }
 
-// A CommonMark code fence line: up to three spaces of indent, a run of three or more backticks
-// or tildes, then the rest of the line (the info string on an opener).
-const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})(.*?)\r?$/;
-const RELATIVE_LINK_TARGET = /\]\(\//g;
-
-// Make every site-relative markdown link absolute, so llms.txt links are fetchable by a client
-// that has no base URL to resolve them against. Fenced code blocks keep their literal text: per
-// CommonMark a block closes on a fence of the same character, at least as long as the opener,
-// with nothing after it, and an unclosed block runs to the end of the document.
+// Make every site-relative link in llms.txt absolute, so a client with no base URL can fetch it.
+// llms.txt is a generated index of links with no code blocks, so a plain substitution is exact.
+// Page bodies are not rewritten: parsing markdown here to spare code samples is a CommonMark
+// implementation's job, and get_doc_page accepts their site paths as they stand.
 function absolutizeLinks(markdown: string, origin: string): string {
-    let openFence: string | undefined;
-
-    return markdown
-        .split('\n')
-        .map((line) => {
-            const [, fence, rest = ''] = FENCE_LINE.exec(line) ?? [];
-
-            if (openFence === undefined) {
-                // A backtick fence's info string may not contain a backtick, so such a line is prose.
-                if (fence !== undefined && !(fence.startsWith('`') && rest.includes('`'))) {
-                    openFence = fence;
-                    return line;
-                }
-
-                return line.replace(RELATIVE_LINK_TARGET, `](${origin}/`);
-            }
-
-            if (
-                fence !== undefined &&
-                fence[0] === openFence[0] &&
-                fence.length >= openFence.length &&
-                rest.trim() === ''
-            ) {
-                openFence = undefined;
-            }
-
-            return line;
-        })
-        .join('\n');
+    return markdown.replace(/\]\(\//g, `](${origin}/`);
 }
+
+// Tells a client how to follow the site-relative links in a page body returned verbatim.
+const PAGE_LINK_NOTE = (origin: string): string =>
+    `Links starting with "/" are on ${origin} and can be passed to get_doc_page as written.`;
 
 // Longest slice of a caller's get_doc_page argument echoed back in an error message.
 const MAX_ECHOED_INPUT = 200;
@@ -219,9 +190,11 @@ const MAX_ECHOED_INPUT = 200;
  * public origin: a Worker fetching its own zone hostname times out (Cloudflare 522),
  * and that 522 page was previously being wrapped as a "successful" result.
  *
- * Every URL handed out is absolute, resolved against the request's own origin rather than
- * pinned to blit386.dev: a preview deployment (next.blit386.dev) or a local dev server then
- * links to its own pages, which are the ones its corpus actually holds.
+ * Every URL the server itself hands out (search results, a page's Source line, llms.txt
+ * links) is absolute, resolved against the request's own origin rather than pinned to
+ * blit386.dev: a preview deployment (next.blit386.dev) or a local dev server then links to its
+ * own pages, which are the ones its corpus actually holds. Page bodies are returned verbatim;
+ * their site-relative links go straight back into get_doc_page.
  */
 export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {
     return {
@@ -432,7 +405,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     content: [
                                         {
                                             type: 'text',
-                                            text: `# ${entry.title}\n\nSource: ${new URL(entry.url, origin).href}\n\n${absolutizeLinks(entry.body, origin)}`,
+                                            text: `# ${entry.title}\n\nSource: ${new URL(entry.url, origin).href}. ${PAGE_LINK_NOTE(origin)}\n\n${entry.body}`,
                                         },
                                     ],
                                 },

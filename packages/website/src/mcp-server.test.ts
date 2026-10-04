@@ -589,7 +589,7 @@ describe('mcpServerPlugin', () => {
         }
 
         const PALETTE_PAGE =
-            '# Palette cycling\n\nSource: https://blit386.dev/docs/palette\n\nCycling shifts colors without redrawing.';
+            '# Palette cycling\n\nSource: https://blit386.dev/docs/palette. Links starting with "/" are on https://blit386.dev and can be passed to get_doc_page as written.\n\nCycling shifts colors without redrawing.';
 
         it.each([
             ['a site path', '/docs/palette'],
@@ -607,28 +607,14 @@ describe('mcpServerPlugin', () => {
             );
 
             expect(text).toBe(
-                '# Sprites\n\nSource: https://next.blit386.dev/docs/sprites\n\nA sprite is a small bitmap.',
+                '# Sprites\n\nSource: https://next.blit386.dev/docs/sprites. Links starting with "/" are on https://next.blit386.dev and can be passed to get_doc_page as written.\n\nA sprite is a small bitmap.',
             );
         });
 
-        it('makes site-relative links in the body absolute and leaves code blocks alone', async () => {
-            const { loader } = createFakeLoader([createFakePage({ url: '/docs/a', title: 'A' })]);
-            const texts = new Map([
-                [
-                    '/docs/a',
-                    'See [B](/docs/b) and [C](https://example.com/c).\n\n````md\n```\n[D](/docs/d)\n```\n````\n\n[E](/docs/e)',
-                ],
-            ]);
-            const context = createMockAppContext({ loader, adapters: [createTextAdapter(texts)] });
-            middleware = await createPluginMiddleware(mcpServerPlugin(), context);
-
-            expect(pageText(await getPage({ url: '/docs/a' }))).toBe(
-                '# A\n\nSource: https://blit386.dev/docs/a\n\nSee [B](https://blit386.dev/docs/b) and [C](https://example.com/c).\n\n````md\n```\n[D](/docs/d)\n```\n````\n\n[E](https://blit386.dev/docs/e)',
-            );
-        });
-
-        /** The body get_doc_page returns for a single page whose extracted text is `body`. */
-        async function rewrittenBody(body: string): Promise<string | undefined> {
+        it('returns the body verbatim, so links in code samples stay exactly as written', async () => {
+            // Includes a fenced block inside a block quote: the body is never rewritten, so no
+            // markdown construct can have its literal text changed.
+            const body = 'See [B](/docs/b).\n\n> ````\n> [D](/docs/d)\n> ````\n\n```\n[E](/docs/e)\n```';
             const { loader } = createFakeLoader([createFakePage({ url: '/docs/a', title: 'A' })]);
             const context = createMockAppContext({
                 loader,
@@ -636,28 +622,9 @@ describe('mcpServerPlugin', () => {
             });
             middleware = await createPluginMiddleware(mcpServerPlugin(), context);
 
-            return pageText(await getPage({ url: '/docs/a' }))?.replace(
-                '# A\n\nSource: https://blit386.dev/docs/a\n\n',
-                '',
+            expect(pageText(await getPage({ url: '/docs/a' }))).toBe(
+                `# A\n\nSource: https://blit386.dev/docs/a. Links starting with "/" are on https://blit386.dev and can be passed to get_doc_page as written.\n\n${body}`,
             );
-        }
-
-        // Each case: a code block that must stay literal, then a link after it that must be rewritten
-        // (or, for an unclosed block, stay literal too, because the block runs to the end).
-        it.each([
-            ['a closing fence longer than the opener', '```\n[D](/docs/d)\n`````\n[E](/docs/e)', true],
-            ['an opener and closer indented by three spaces', '   ~~~\n[D](/docs/d)\n   ~~~\n[E](/docs/e)', true],
-            ['a tilde block that a backtick line does not close', '~~~\n```\n[D](/docs/d)\n~~~\n[E](/docs/e)', true],
-            ['a closer followed by text, which does not close', '```\n``` x\n[D](/docs/d)\n```\n[E](/docs/e)', true],
-            ['an unclosed block, which runs to the end', '```\n[D](/docs/d)\n[E](/docs/e)', false],
-        ])('keeps links literal inside %s', async (_label, body, isClosed) => {
-            const expected = isClosed ? body.replace('[E](/docs/e)', '[E](https://blit386.dev/docs/e)') : body;
-
-            expect(await rewrittenBody(body)).toBe(expected);
-        });
-
-        it('treats a backtick line with a backtick in its info string as prose', async () => {
-            expect(await rewrittenBody('``` a`b\n[D](/docs/d)')).toBe('``` a`b\n[D](https://blit386.dev/docs/d)');
         });
 
         it('rejects a malformed or foreign URL before extracting the corpus', async () => {
