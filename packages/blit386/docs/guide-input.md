@@ -247,7 +247,6 @@ BT.isDown(BT.BTN_LEFT, 1);
 // Composite face-button masks (ANY-match semantics)
 BT.isDown(BT.BTN_ABXY, 0); // A, B, X, or Y for player 0
 BT.isDown(BT.BTN_SHOULDER, 1); // L or R shoulder for player 1
-BT.isDown(BT.BTN_TRIGGER, 0); // L2 or R2 trigger past half pull, gamepad only
 ```
 
 <Callout type="warn" title="Arrow keys belong to player 1 by default">
@@ -273,7 +272,13 @@ fixed. `BTN_L` and `BTN_R` are still the shoulder buttons, not the triggers.
 Trigger buttons are gamepad only. Keyboard players never trigger them and `BT.inputMap` ignores them, so give keyboard
 players an explicit fallback if your game needs one:
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+// Either trigger on player 0 (gamepad only, ANY-match like other masks)
+BT.isDown(BT.BTN_TRIGGER, 0);
+
+// Same action with a keyboard fallback
 const fire = BT.isPressed(BT.BTN_R2, 0) || BT.isPressed(BT.BTN_A, 0);
 ```
 

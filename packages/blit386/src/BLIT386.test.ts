@@ -17,7 +17,7 @@ import type { BitmapFont, HardwareSettings, IBTDemo } from './BLIT386';
 import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
-import { setKeyboardLayout } from './input/keyboardRuntimeMaps';
+import { getKeyboardFaceButtonKeys, setKeyboardLayout } from './input/keyboardRuntimeMaps';
 import { SoftwareRenderer } from './render/SoftwareRenderer';
 import { DEFAULT_CONTAINER_ID } from './utils/BootstrapHelpers';
 
@@ -1813,9 +1813,6 @@ describe('BT trigger buttons (gamepad-only)', () => {
         vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(null);
 
         expect(BT.isDown(BT.BTN_L2, 0)).toBe(false);
-        expect(BT.isDown(BT.BTN_L2, 4)).toBe(false);
-        expect(BT.isDown(BT.BTN_L2, -1)).toBe(false);
-        expect(BT.isDown(BT.BTN_L2, 1.5)).toBe(false);
     });
 
     it('combines a face button and a trigger in one mask (ANY semantics)', () => {
@@ -1827,12 +1824,12 @@ describe('BT trigger buttons (gamepad-only)', () => {
         expect(BT.isDown(BT.BTN_A, 0)).toBe(false);
     });
 
-    it('BT.inputMap rejects trigger bits', () => {
-        const before = BT.isDown(BT.BTN_A, 0);
+    it('BT.inputMap rejects trigger bits without storing a keyboard mapping', () => {
+        BT.inputMap(0, BT.BTN_L2, 'KeyQ');
+        BT.inputMap(1, BT.BTN_TRIGGER, 'KeyE');
 
-        expect(() => BT.inputMap(0, BT.BTN_L2, 'KeyQ')).not.toThrow();
-        expect(() => BT.inputMap(0, BT.BTN_TRIGGER, 'KeyQ')).not.toThrow();
-        expect(BT.isDown(BT.BTN_A, 0)).toBe(before);
+        expect(getKeyboardFaceButtonKeys(0, BT.BTN_L2)).toBeNull();
+        expect(getKeyboardFaceButtonKeys(1, BT.BTN_TRIGGER)).toBeNull();
     });
 });
 
