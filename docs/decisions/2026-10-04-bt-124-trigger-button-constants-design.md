@@ -1,6 +1,7 @@
 # BT-124: trigger button constants and digital trigger mapping
 
-Status: approved design, pending implementation plan. Milestone 1.8.0 (new public API, minor bump).
+Status: implemented in PR 709, amended after review (analog-only threshold, any-button mask unchanged). Milestone 1.8.0
+(new public API, minor bump).
 
 ## Goal
 
@@ -13,7 +14,7 @@ calls used for every other button, without touching the existing analog `BT.getA
 | Question | Decision |
 | --- | --- |
 | New constants or fold into shoulders | New constants. Reworking `BTN_L` / `BTN_R` is out of scope per BT-124 |
-| Digital threshold | Fixed 0.5, same rule as every other gamepad button (`pressed` or `value >= 0.5`). No setting, no validation |
+| Digital threshold | Fixed 0.5 on the analog value only. The browser `pressed` flag is ignored (Chromium sets it at about 12% pull). No setting, no validation |
 | Keyboard players | Gamepad-only. No default keys, `BT.inputMap` rejects the new bits |
 | Demo | Extend `gamepad-input.js`. No new demo and no BT-542 sub-ticket |
 
@@ -35,9 +36,12 @@ are not widened. That keeps `faceButtonKeys` and `BT.inputMap` rejecting trigger
 - Mirror `BTN_L2` / `BTN_R2` locally next to the existing mirrored `BTN_*` copies (circular-import avoidance). Document
   the copy as a manual-sync hazard at both sites, or guard it with a parity test, per
   `.claude/rules/named-constants.md`.
-- `mapButtons` sets the two bits from raw Gamepad API buttons 6 and 7 through the existing `isButtonDown` helper, so the
-  digital rule matches every other button.
-- The `0.5` literal in `isButtonDown` becomes one named constant (shared, not duplicated).
+- `mapButtons` sets the two bits from raw Gamepad API buttons 6 and 7 with `isTriggerDown`, which thresholds
+  `getButtonValue(pad, index) >= 0.5` and ignores the browser's `pressed` flag. The shared `isButtonDown` rule
+  (`pressed || value >= 0.5`) would turn a trigger on at about 12% pull in Chromium, so triggers do not use it.
+- The `0.5` literal becomes one named constant (`BUTTON_DOWN_THRESHOLD`), shared by `isButtonDown` and `isTriggerDown`.
+- The any-button helpers (`BT.isAnyButton*`, BT-123) keep covering `BTN_UP` to `BTN_SELECT` only: their mask is built
+  from the standard flags, not from `VALID_BUTTON_FLAGS`, so the trigger bits never count as "any button".
 - Add both bits to `VALID_BUTTON_FLAGS` so first-press tick tracking and `repeatRate` work for triggers.
 - The analog values written by `mapAxesInto` (`AXIS_TRIGGER_L/R`) are unchanged.
 

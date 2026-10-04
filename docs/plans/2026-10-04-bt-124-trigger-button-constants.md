@@ -7,8 +7,8 @@
 through `BT.isDown` / `BT.isPressed` / `BT.isReleased`, with a 0.5 threshold, gamepad-only.
 
 **Architecture:** Two new bits (16, 17) sit above the pointer bits, so `FACE_BUTTON_MASK` and `FACE_BUTTON_FLAGS` stay
-untouched and `BT.inputMap` keeps rejecting them. `GamepadInput.mapButtons` sets the bits from raw buttons 6 and 7 with
-the existing `isButtonDown` rule. `BT.isDown/isPressed/isReleased` get one extra gamepad-only loop over
+untouched and `BT.inputMap` keeps rejecting them. `GamepadInput.mapButtons` sets the bits from raw buttons 6 and 7 by
+thresholding the analog value (`isTriggerDown`). `BT.isDown/isPressed/isReleased` get one extra gamepad-only loop over
 `TRIGGER_BUTTON_FLAGS`. The analog axis path is unchanged.
 
 **Tech Stack:** TypeScript (strict), Vitest, pnpm workspace (`packages/blit386`, `packages/demos`, `packages/kit`,
@@ -16,9 +16,15 @@ the existing `isButtonDown` rule. `BT.isDown/isPressed/isReleased` get one extra
 
 **Spec:** `docs/decisions/2026-10-04-bt-124-trigger-button-constants-design.md`
 
+> **Amended after review:** the original plan routed triggers through `isButtonDown` (`pressed || value >= 0.5`). A
+> final review found that browsers set `pressed` at about 12% trigger pull, so triggers now threshold on the analog
+> value only (`isTriggerDown`). The text below is corrected where it stated the old rule; the original code blocks are
+> kept as the record of what was first written. The any-button mask also excludes the trigger bits (BT-123).
+
 ## Global Constraints
 
-- Threshold is fixed at 0.5 (`pressed || value >= 0.5`). No setting, no validation, no new `HardwareSettings` field.
+- Threshold is fixed at 0.5 on the analog value only (the browser `pressed` flag is ignored). No setting, no validation,
+  no new `HardwareSettings` field.
 - Keyboard players get nothing for the new bits. `BT.inputMap(player, BT.BTN_L2, ...)` is a no-op.
 - `BTN_L` / `BTN_R` (bits 8, 9) and `AXIS_TRIGGER_L/R` behavior must not change.
 - Bits: `BTN_L2 = 1 << 16`, `BTN_R2 = 1 << 17`, `BTN_TRIGGER = BTN_L2 | BTN_R2`, all `@since 1.8.0`.
@@ -223,13 +229,15 @@ const BUTTON_DOWN_THRESHOLD = 0.5;
 6. In `mapButtons`, before `return mask;`:
 
 ```ts
-if (isButtonDown(pad, GP_BUTTON_L2)) {
+if (isTriggerDown(pad, GP_BUTTON_L2)) {
   mask |= BTN_L2;
 }
-if (isButtonDown(pad, GP_BUTTON_R2)) {
+if (isTriggerDown(pad, GP_BUTTON_R2)) {
   mask |= BTN_R2;
 }
 ```
+
+where `isTriggerDown(pad, index)` is `getButtonValue(pad, index) >= BUTTON_DOWN_THRESHOLD` (it ignores `pressed`).
 
 7. In `mapAxesInto`, replace the literal `6` / `7` with `GP_BUTTON_L2` / `GP_BUTTON_R2`.
 8. Add a parity test inside `describe('GamepadInput', ...)` in `GamepadInput.test.ts`:
@@ -489,8 +497,8 @@ Add a short section after the face-button section (same heading level style as i
 
 Each trigger is available two ways. `BT.getAxis(BT.AXIS_TRIGGER_L)` / `AXIS_TRIGGER_R` return the pull from 0 to 1.
 `BT.BTN_L2` and `BT.BTN_R2` (mask `BT.BTN_TRIGGER`) work with `BT.isDown`, `BT.isPressed` and `BT.isReleased` and turn
-on at 50% pull or more, the same rule every gamepad button uses. The threshold is fixed. `BTN_L` and `BTN_R` are still
-the shoulder buttons, not the triggers.
+on at 50% pull or more, judged from the analog value alone. The threshold is fixed. `BTN_L` and `BTN_R` are still the
+shoulder buttons, not the triggers.
 
 Trigger buttons are gamepad only. Keyboard players never trigger them and `BT.inputMap` ignores them, so give keyboard
 players an explicit fallback if your game needs one:
