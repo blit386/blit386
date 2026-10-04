@@ -27,6 +27,7 @@
             // Signal test readiness regardless of success/failure.
             window.__RENDER_COMPLETE__ = false;
             window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
 
             const colorBlack = 1;
 
@@ -149,6 +150,7 @@
                     params.paletteOffset = 0;
 
                     // Signal render complete.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
                     window.__RENDER_COMPLETE__ = true;
                 }
             }
