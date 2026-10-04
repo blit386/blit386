@@ -28,7 +28,6 @@ import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import {
-    isNeutralSpriteScale,
     resolveSpriteOrientation,
     resolveSpriteScale,
     SPRITE_ORIENTATIONS,
@@ -1508,9 +1507,11 @@ export class BTAPI {
         // Absent fields take the documented defaults (no flip, scale 1, no palette shift).
         const orientation = resolveSpriteOrientation(params.flags ?? 0);
         const paletteOffset = params.paletteOffset ?? 0;
+        const scale = resolveSpriteScale(params.scale, this.spriteScaleScratch);
+        const isUnscaled = scale.x === 1 && scale.y === 1;
 
         if (dest instanceof Rect2i) {
-            if (!isNeutralSpriteScale(params.scale)) {
+            if (!isUnscaled) {
                 throw new Error(
                     'drawSprite with a Rect2i destination takes no scale: the rectangle already sets the size. Pass scale: 1 or leave it out',
                 );
@@ -1534,9 +1535,8 @@ export class BTAPI {
             throw new Error('drawSprite with params takes a Vector2i or Rect2i destination');
         }
 
-        const scale = resolveSpriteScale(params.scale, this.spriteScaleScratch);
-
-        if (scale.x === 1 && scale.y === 1) {
+        // An unscaled point keeps the 1:1 / oriented path, so its output stays identical to overload 1.
+        if (isUnscaled) {
             this.submitSprite(spriteSheet, srcRect, dest, paletteOffset, orientation);
             return;
         }

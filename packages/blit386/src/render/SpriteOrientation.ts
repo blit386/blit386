@@ -42,8 +42,8 @@ export interface SpriteDrawParams {
     /**
      * Positive integer scale of the post-flags footprint, in screen axes (default `1`). `2` equals
      * `new Vector2i(2, 2)`; `scale.x` is on-screen width even after a 90-degree turn. For uneven sizes,
-     * pass a `Rect2i` destination instead. With a `Rect2i` destination only `1` (or leaving it out) is
-     * accepted, so one reused params object works for both destination kinds.
+     * pass a `Rect2i` destination instead. With a `Rect2i` destination only `1`, `new Vector2i(1, 1)`, or
+     * leaving it out is accepted, so one reused params object works for both destination kinds.
      */
     scale?: number | Vector2i;
 
@@ -256,15 +256,4 @@ export function resolveSpriteScale(scale: number | Vector2i | undefined, out: Ve
 
     const got = scale === null ? 'null' : typeof scale;
     throw new Error(`Invalid sprite scale (${got}): use a positive integer or a Vector2i of positive integers`);
-}
-
-/**
- * Whether `scale` leaves the footprint unchanged: `undefined`, `1`, or `Vector2i(1, 1)`. The only values a
- * `Rect2i` destination accepts.
- *
- * @param scale - The params field.
- * @returns `true` for a neutral scale.
- */
-export function isNeutralSpriteScale(scale: number | Vector2i | undefined): boolean {
-    return scale === undefined || scale === 1 || (scale instanceof Vector2i && scale.x === 1 && scale.y === 1);
 }

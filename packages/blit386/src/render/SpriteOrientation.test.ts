@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { applyMaskToGrid, DOC_RESULTS } from '../__test__/spriteOrientationFixture';
 import { Vector2i } from '../utils/Vector2i';
 import {
-    isNeutralSpriteScale,
     resolveSpriteOrientation,
     resolveSpriteScale,
     SPRITE_FLIP_H,
@@ -129,18 +128,5 @@ describe('resolveSpriteScale', () => {
         ['a plain object', { x: 2, y: 2 }],
     ])('rejects %s', (_label, scale) => {
         expect(() => resolveSpriteScale(scale as unknown as number, out)).toThrow('Invalid sprite scale');
-    });
-});
-
-describe('isNeutralSpriteScale', () => {
-    it.each([
-        [undefined, true],
-        [1, true],
-        [new Vector2i(1, 1), true],
-        [2, false],
-        [new Vector2i(1, 2), false],
-        [0, false],
-    ])('%o -> %s', (scale, expected) => {
-        expect(isNeutralSpriteScale(scale)).toBe(expected);
     });
 });
