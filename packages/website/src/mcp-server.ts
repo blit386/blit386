@@ -185,6 +185,9 @@ const MAX_ECHOED_INPUT = 200;
  *
  * get_doc_page returns one page's full markdown from the same cached corpus. It is a lookup
  * by site path, not a proxy: anything that does not resolve to a known page is rejected.
+ * Pages come back whole, with no cap or truncation: the longest, the changelog, is about
+ * 34 KB, well inside any client's context window, and a truncated page would send the agent
+ * hunting for the rest. Revisit with a visible truncation notice if a page outgrows that.
  *
  * get_docs_summary returns /llms.txt via the ASSETS binding rather than fetching the
  * public origin: a Worker fetching its own zone hostname times out (Cloudflare 522),
