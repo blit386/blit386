@@ -27,7 +27,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   argument, with `flags` (any combination of `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`)
   and `paletteOffset`. The flags compose in a fixed order into 8 orientations, `dest` is the top-left of the turned
   footprint, and both backends match pixel for pixel. The number form of the 4th argument is unchanged and still
-  allocation-free. See [Flipping and rotating sprites](api-rendering.md#flipping-and-rotating-sprites).
+  allocation-free. See
+  [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
+- Sprite scale and stretch: `SpriteDrawParams.scale` takes a positive integer or a `Vector2i` of positive integers and
+  multiplies the post-flags footprint in screen axes, and the params form of `BT.drawSprite` accepts a `Rect2i`
+  destination that the sprite is stretched into. Both use nearest-neighbor sampling at pixel centers, identical on
+  WebGPU and software. A `Rect2i` needs the params form (`BT.drawSprite(sheet, src, rect, {})`); development builds show
+  an error when one reaches the fast path. See
+  [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
   `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`

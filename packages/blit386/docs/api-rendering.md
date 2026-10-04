@@ -152,9 +152,10 @@ BT.drawTile(sheet, 2, 1, new Vector2i(16, 24), new Vector2i(40, 60)); // 16×24 
 - `sheet.tileRect(index)` / `sheet.tileRect(col, row)` return the same rectangle as a new `Rect2i` - use them in
   `init()` to build frame lists. `Rect2i.fromTile(col, row, tileSize)` does the math with no sheet at all.
 - To flip or rotate a tile, use `BT.drawSprite(sheet, sheet.tileRect(i), dest, params)` - see
-  [Flipping and rotating sprites](#flipping-and-rotating-sprites). `drawTile` has no params object and no `tint`.
+  [Flipping, rotating, and scaling sprites](#flipping-rotating-and-scaling-sprites). `drawTile` has no params object and
+  no `tint`.
 
-### Flipping and rotating sprites
+### Flipping, rotating, and scaling sprites
 
 <Since symbol="BT.FLIP_H" />
 <Since symbol="BT.FLIP_V" />
@@ -174,13 +175,23 @@ const srcRect = new Rect2i(0, 0, 16, 16);
 const destPos = new Vector2i(40, 60);
 // ---cut---
 // Allocate once, outside the draw loop, with every field present.
-const params = { flags: 0, paletteOffset: 0 };
+const params = { flags: 0, scale: 1, paletteOffset: 0 };
 
 params.flags = isFacingLeft ? BT.FLIP_H : 0;
 BT.drawSprite(sheet, srcRect, destPos, params);
 
 params.flags = BT.ROT_90_CW | BT.FLIP_V; // combine bits with |
 BT.drawSprite(sheet, srcRect, destPos, params);
+
+params.flags = 0;
+params.scale = 2; // twice as big, nearest-neighbor
+BT.drawSprite(sheet, srcRect, destPos, params);
+
+params.scale = new Vector2i(3, 1); // three times as wide
+BT.drawSprite(sheet, srcRect, destPos, params);
+
+params.scale = 1;
+BT.drawSprite(sheet, srcRect, new Rect2i(10, 40, 50, 12), params); // stretch into a box
 ```
 
 ```ts twoslash
@@ -200,10 +211,11 @@ import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
 declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
 
 // 2. Params object (1.8.0). `params` is required here: without it, a call is overload 1.
-declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i, params: SpriteDrawParams): void;
+declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
 
 interface SpriteDrawParams {
   flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
+  scale?: number | Vector2i; // positive integers, screen axes, after flags (default 1)
   paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
 }
 ```
@@ -211,8 +223,15 @@ interface SpriteDrawParams {
 - The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
   hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
   never changes.
-- `dest` is the top-left of the post-flags footprint. A 16x32 sprite with `ROT_90_CW` covers 32x16, growing down and
-  right from `dest`.
+- With a `Vector2i` dest, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite with
+  `ROT_90_CW` covers 32x16, growing down and right from `dest`; with `scale: 2` it covers 64x32.
+- With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
+  Any `scale` other than `undefined`, `1`, or `(1, 1)` shows an error, because the rect already fixes the box. The
+  neutral `scale: 1` keeps one reused params object valid for both dest kinds. A rect with zero or negative width or
+  height draws nothing.
+- `scale` is a positive integer (`number` or `Vector2i`). `scale: 2` and `scale: new Vector2i(2, 2)` match, and
+  `scale.x` is on-screen width even after a 90-degree turn. `0`, negatives, and non-integers show an error that points
+  at a `Rect2i` dest for uneven sizes.
 - `paletteOffset` works exactly as on the fast path, with the same validation. The only recolor control is
   `paletteOffset`: on the fast path or inside params, never both.
 - The flipped draw is the same on both backends, pixel for pixel. The fast path (a number or nothing as the 4th
@@ -227,7 +246,11 @@ Runtime dispatch reads argument 2, then argument 4:
 2. A string source (a named frame) or raw source numbers show an error for now - see
    [Planned: sprite draw params](#planned-sprite-draw-params).
 
-With params, `dest` must be a `Vector2i`; a `Rect2i` destination shows an error until stretched draws ship.
+With params, `dest instanceof Rect2i` is the stretch box and `dest instanceof Vector2i` is a point; anything else shows
+an error. A `Rect2i` dest needs the params form: `drawSprite(sheet, src, destRect)` and
+`drawSprite(sheet, src, destRect, 0)` are type errors - write `drawSprite(sheet, src, destRect, {})`. In development
+builds the fast path also shows an error for a `Rect2i` from untyped code, instead of drawing it unscaled at the
+rectangle's top-left; release builds skip the check.
 
 #### Transform order and flags
 
@@ -259,103 +282,6 @@ Texel remap uses the same point map on the texel center: source texel `(i, j)` l
 `map(i + 0.5, j + 0.5) - (0.5, 0.5)`, which is the point map with `sw - 1` and `sh - 1` in place of `sw` and `sh`. For
 example, `FLIP_H` sends column `0` to column `sw - 1`.
 
-### Planned: sprite draw params
-
-<Callout title="Planned - not shipped">
-
-This section locks the rest of the unified `BT.drawSprite` v2 shape decided in BT-236 (revised 2026-10-04). Overload 2
-with `flags` and `paletteOffset` and a `Vector2i` dest shipped in 1.8.0 - see
-[Flipping and rotating sprites](#flipping-and-rotating-sprites). `pivot`, `scale`, a `Rect2i` dest, overloads 3 and 4,
-and the `SpritePack` / `SpriteFrame` types have not shipped yet.
-
-</Callout>
-
-All transform features hang off one reusable params object. Separate methods stay separate:
-[`BT.drawTile`](#drawing-tiles) and `BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no
-`drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
-
-```ts
-// 1. Shipped. Unchanged.
-drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
-
-// 2. Shipped with a Vector2i dest (1.8.0). Planned: widen dest to Vector2i | Rect2i (BT-269).
-drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
-
-// 3. Planned named frame (BT-271). Always takes the params path, so `params` may be omitted.
-drawSprite(pack: SpritePack, frameName: string, dest: Vector2i | Rect2i, params?: SpriteDrawParams): void;
-
-// 4. Reserved for BT-262 (milestone 2.0.0). Not added to the 1.8.0 types.
-drawSprite(
-    sheet: SpriteSheet,
-    srcX: number,
-    srcY: number,
-    srcW: number,
-    srcH: number,
-    destX: number,
-    destY: number,
-    paletteOffsetOrParams?: number | SpriteDrawParams,
-): void;
-
-interface SpriteDrawParams {
-    flags?: number; // shipped
-    pivot?: Vector2i | undefined; // planned (BT-268): source pixels, before flags; assign undefined to reset
-    scale?: number | Vector2i; // planned (BT-269): positive integers, screen axes, after flags
-    paletteOffset?: number; // shipped
-}
-
-// Planned (BT-271). Returned by SpritePack.frame(name).
-interface SpriteFrame {
-    readonly sheet: SpriteSheet; // the page this frame lives on
-    readonly rect: Rect2i; // frozen
-    readonly pivot?: Vector2i; // frozen; filled from Aseprite slice data by BT-364, never applied implicitly
-}
-```
-
-`| undefined` on `pivot` is deliberate: a reused params object returns to the default pivot with
-`params.pivot = undefined`, and that assignment must type-check under `exactOptionalPropertyTypes`.
-
-#### Planned dispatch
-
-The shipped [dispatch](#dispatch) extends as follows:
-
-- `typeof src === 'string'`: overload 3. `typeof src === 'number'`: overload 4. Both throw until their tickets ship.
-- `drawSprite(sheet, src, destRect)` and `drawSprite(sheet, src, destRect, 0)` are type errors, because overload 1 only
-  takes a `Vector2i` and overload 2 requires `params`. Write `drawSprite(sheet, src, destRect, {})`. Untyped callers
-  would otherwise get a silent unscaled draw at the rectangle's top-left, so the fast path asserts
-  `!(dest instanceof Rect2i)` in dev mode only and throws a message pointing at `{}`. Read the dev-mode flag once, not
-  per draw: `isDevMode()` resolves several signals on every call.
-- Create a reused params object with every field present, so its shape never changes:
-  `{ flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`.
-- On the params path, `dest instanceof Rect2i` is the stretch footprint; `dest instanceof Vector2i` is a point. Anything
-  else throws. Do not use `'width' in dest` - `Vector2i.width` aliases `x`.
-- Overload 3 is `SpritePack.frame(name)` followed by overload 2 with `frame.sheet` and `frame.rect`. A missing name
-  throws. `frame(name)` returns the same frozen `SpriteFrame` on every call, so a hot loop resolves it once and calls
-  `BT.drawSprite(frame.sheet, frame.rect, dest)` (overload 1) or adds `params` (overload 2) - no per-draw string lookup.
-  Carrying the sheet on the frame keeps multi-page packs correct and makes a rect from the wrong sheet impossible.
-  `frame.pivot` is data only: pass `params.pivot = frame.pivot` to use it. There is no raw-number form for names.
-- Overload 4, when it exists, cannot express a destination rectangle, so stretched draws (a `Rect2i` dest) use
-  overload 2. Raw numbers occupy arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the
-  fast path, so `flags`, integer `scale`, and `pivot` work as on overload 2 with a point dest.
-- Planned transform order: flags, then integer scale, then placement. `scale` multiplies the post-flags footprint in
-  screen axes, so `scale.x` is on-screen width even after a 90-degree turn. If a later ticket adds an arbitrary angle,
-  the unit is degrees, and the software renderer throws until it can match pixel-for-pixel.
-
-#### Placement, pivot, and scale
-
-- With a `Vector2i` dest and no pivot, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite
-  with `ROT_90_CW` occupies 32x16 growing down and right from `dest`.
-- With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
-  With a `Rect2i` dest, a defined `pivot` throws, and so does any `scale` other than `undefined`, `1`, or `(1, 1)`; each
-  check stands alone, because the rect already fixes the box. The neutral `scale: 1` keeps one reused params object
-  valid for both dest kinds.
-- An `undefined` `pivot` pins the footprint's top-left (the rule above). An explicit `pivot` is a point in source pixels
-  relative to the source rect's top-left, sent through the point map, then multiplied by scale. That point sits on
-  `dest`. Explicit `(0, 0)` is the source origin, which moves under flips and 90/270, so it is not the same as no pivot.
-  To return a reused params object to the default, assign `params.pivot = undefined`. Values outside the sprite are
-  legal.
-- `scale` is a positive integer (`number` or `Vector2i`). `scale: 2` and `scale: new Vector2i(2, 2)` match. `0`,
-  negatives, and non-integers throw; the error points at a `Rect2i` dest for uneven sizes.
-
 #### Stretch sampling
 
 Nearest-neighbor for a post-flags footprint `(fw, fh)` stretched into `(dw, dh)` samples each destination pixel at its
@@ -376,10 +302,93 @@ The footprint texel then maps back to a source texel through the orientation's t
   texels from a texel edge, so the shift moves ties down and leaves other samples on their texel.
 - A float32 simulation of that shifted interpolation, using normalized UVs on a 1024-wide sheet, matched the formula on
   964,800 of 964,800 cases (source widths 1-48, destination widths 1-200). Center sampling without the shift missed
-  7,466 of them. The simulation is not a GPU run: BT-269 must add a visual-regression case with uneven stretches on both
-  backends.
+  7,466 of them. The simulation is not a GPU run. The visual-regression suite renders uneven stretches on both backends
+  and compares them pixel for pixel.
 - The 1:1 fast path keeps today's UV and blit math. Scaled and stretched quads use a separate emission path so 1:1
   vertices stay identical.
+
+### Planned: sprite draw params
+
+<Callout title="Planned - not shipped">
+
+This section locks the rest of the unified `BT.drawSprite` v2 shape decided in BT-236 (revised 2026-10-04). Overload 2
+with `flags`, `paletteOffset`, `scale`, and a `Vector2i` or `Rect2i` dest shipped in 1.8.0 - see
+[Flipping, rotating, and scaling sprites](#flipping-rotating-and-scaling-sprites). Only `pivot`, overloads 3 and 4, and
+the `SpritePack` / `SpriteFrame` types have not shipped yet.
+
+</Callout>
+
+All transform features hang off one reusable params object. Separate methods stay separate:
+[`BT.drawTile`](#drawing-tiles) and `BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no
+`drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
+
+```ts
+// 1. Shipped. Unchanged.
+drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
+
+// 2. Shipped (1.8.0).
+drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
+
+// 3. Planned named frame (BT-271). Always takes the params path, so `params` may be omitted.
+drawSprite(pack: SpritePack, frameName: string, dest: Vector2i | Rect2i, params?: SpriteDrawParams): void;
+
+// 4. Reserved for BT-262 (milestone 2.0.0). Not added to the 1.8.0 types.
+drawSprite(
+    sheet: SpriteSheet,
+    srcX: number,
+    srcY: number,
+    srcW: number,
+    srcH: number,
+    destX: number,
+    destY: number,
+    paletteOffsetOrParams?: number | SpriteDrawParams,
+): void;
+
+interface SpriteDrawParams {
+    flags?: number; // shipped
+    pivot?: Vector2i | undefined; // planned (BT-268): source pixels, before flags; assign undefined to reset
+    scale?: number | Vector2i; // shipped
+    paletteOffset?: number; // shipped
+}
+
+// Planned (BT-271). Returned by SpritePack.frame(name).
+interface SpriteFrame {
+    readonly sheet: SpriteSheet; // the page this frame lives on
+    readonly rect: Rect2i; // frozen
+    readonly pivot?: Vector2i; // frozen; filled from Aseprite slice data by BT-364, never applied implicitly
+}
+```
+
+`| undefined` on `pivot` is deliberate: a reused params object returns to the default pivot with
+`params.pivot = undefined`, and that assignment must type-check under `exactOptionalPropertyTypes`.
+
+#### Planned dispatch
+
+The shipped [dispatch](#dispatch) extends as follows:
+
+- `typeof src === 'string'`: overload 3. `typeof src === 'number'`: overload 4. Both throw until their tickets ship.
+- Create a reused params object with every field present, so its shape never changes:
+  `{ flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`.
+- Overload 3 is `SpritePack.frame(name)` followed by overload 2 with `frame.sheet` and `frame.rect`. A missing name
+  throws. `frame(name)` returns the same frozen `SpriteFrame` on every call, so a hot loop resolves it once and calls
+  `BT.drawSprite(frame.sheet, frame.rect, dest)` (overload 1) or adds `params` (overload 2) - no per-draw string lookup.
+  Carrying the sheet on the frame keeps multi-page packs correct and makes a rect from the wrong sheet impossible.
+  `frame.pivot` is data only: pass `params.pivot = frame.pivot` to use it. There is no raw-number form for names.
+- Overload 4, when it exists, cannot express a destination rectangle, so stretched draws (a `Rect2i` dest) use
+  overload 2. Raw numbers occupy arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the
+  fast path, so `flags`, integer `scale`, and `pivot` work as on overload 2 with a point dest.
+- Planned transform order: flags, then integer scale, then placement. `scale` multiplies the post-flags footprint in
+  screen axes, so `scale.x` is on-screen width even after a 90-degree turn. If a later ticket adds an arbitrary angle,
+  the unit is degrees, and the software renderer throws until it can match pixel-for-pixel.
+
+#### Planned: pivot
+
+- An `undefined` `pivot` pins the footprint's top-left (the `Vector2i` dest rule above). An explicit `pivot` is a point
+  in source pixels relative to the source rect's top-left, sent through the point map, then multiplied by scale. That
+  point sits on `dest`. Explicit `(0, 0)` is the source origin, which moves under flips and 90/270, so it is not the
+  same as no pivot. To return a reused params object to the default, assign `params.pivot = undefined`. Values outside
+  the sprite are legal.
+- With a `Rect2i` dest, a defined `pivot` throws; the rect already fixes the box.
 
 #### Color
 

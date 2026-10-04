@@ -88,6 +88,19 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   270 degree turn swaps width and height; `destPos` stays the top-left corner. To flip a grid tile, pass
   `sheet.tileRect(...)` (built in `init()`) to `BT.drawSprite` - `BT.drawTile` takes no params.
 
+- To draw a sprite bigger, scale it at draw time instead of drawing a bigger PNG (engine 1.8.0+). Add `scale` to the
+  same params object - give it every field up front, `{ flags: 0, scale: 1, paletteOffset: 0 }`, and change fields
+  between draws:
+
+  ```js
+  this.drawParams.scale = 2; // whole numbers only: 2, 3, ... or new Vector2i(3, 1)
+  BT.drawSprite(this.sheet, this.heroRect, pos, this.drawParams);
+  ```
+
+  For a size that is not a whole multiple (a UI bar, a panel), pass a `Rect2i` as the destination instead and leave
+  `scale` at 1: `BT.drawSprite(sheet, rect, new Rect2i(x, y, w, h), this.drawParams)`. A `Rect2i` destination always
+  needs the params object - `{}` is enough.
+
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the
   show-a-loading-screen skill (`BT.loadingAssetsCount`, `sheet.status`, `sheet.progress`).
