@@ -1550,8 +1550,9 @@ export class BTAPI {
         this.submitSpriteStretched(
             spriteSheet,
             srcRect,
-            dest.x,
-            dest.y,
+            // Vector2i fields are public and mutable too: truncate like the Rect2i branch above.
+            dest.x | 0,
+            dest.y | 0,
             footprintW * scale.x,
             footprintH * scale.y,
             paletteOffset,

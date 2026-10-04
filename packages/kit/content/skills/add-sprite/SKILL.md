@@ -104,9 +104,15 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   BT.drawSprite(this.hero, this.heroRect, pos, this.drawParams);
   ```
 
-  For a size that is not a whole multiple (a UI bar, a panel), pass a `Rect2i` as the destination instead and leave
-  `scale` at 1: `BT.drawSprite(sheet, rect, new Rect2i(x, y, w, h), this.drawParams)`. A `Rect2i` destination always
-  needs the params object - `{}` is enough.
+  For a size that is not a whole multiple (a UI bar, a panel), pass a `Rect2i` as the destination instead. Set `scale`
+  back to 1 first - a `Rect2i` already fixes the size, so any other scale is an error:
+
+  ```js
+  this.drawParams.scale = 1;
+  BT.drawSprite(this.hero, this.heroRect, new Rect2i(x, y, w, h), this.drawParams);
+  ```
+
+  A `Rect2i` destination always needs the params object - `{}` is enough.
 
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the

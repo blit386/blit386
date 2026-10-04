@@ -2983,6 +2983,13 @@ describe('BTAPI', () => {
             dest.width = Number.NaN;
             BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
             expect(stretchedSpy).toHaveBeenCalledTimes(1);
+
+            // A scaled Vector2i dest has the same public mutable fields and is truncated the same way.
+            const point = new Vector2i(3, 4);
+            point.x = 3.6;
+            point.y = 4.2;
+            BTAPI.instance.drawSpriteWithParams(mockSheet, src, point, { scale: 2 });
+            expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 3, 4, 16, 16, 0, 0);
         });
 
         describe('fast-path Rect2i guard', () => {

@@ -288,9 +288,16 @@ example, `FLIP_H` sends column `0` to column `sw - 1`.
 Nearest-neighbor for a post-flags footprint `(fw, fh)` stretched into `(dw, dh)` samples each destination pixel at its
 center, with exact ties rounding down. All operands are non-negative integers, so the division truncates:
 
-```ts
-footprintX = Math.floor(((2 * dx + 1) * fw - 1) / (2 * dw));
-footprintY = Math.floor(((2 * dy + 1) * fh - 1) / (2 * dh));
+```ts twoslash
+declare const dx: number; // destination pixel, 0 to dw - 1
+declare const dy: number;
+declare const fw: number; // post-flags footprint size in texels
+declare const fh: number;
+declare const dw: number; // destination size in pixels
+declare const dh: number;
+// ---cut---
+const footprintX = Math.floor(((2 * dx + 1) * fw - 1) / (2 * dw));
+const footprintY = Math.floor(((2 * dy + 1) * fh - 1) / (2 * dh));
 ```
 
 The footprint texel then maps back to a source texel through the orientation's texel remap.
