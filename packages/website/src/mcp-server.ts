@@ -157,21 +157,30 @@ function toSitePath(input: string, requestOrigin: string): string | undefined {
     return path === '' ? '/' : path;
 }
 
+// Matches a whole fenced code block (backtick or tilde fence of three or more, closed by the
+// same fence) or a site-relative link target. Fences come first so code is matched whole and
+// passed through untouched.
+const FENCE_OR_RELATIVE_LINK = /^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$|\]\(\//gm;
+
 // Make every site-relative markdown link absolute, so llms.txt links are fetchable by a client
-// that has no base URL to resolve them against.
+// that has no base URL to resolve them against. Code blocks keep their literal text.
 function absolutizeLinks(markdown: string, origin: string): string {
-    return markdown.replace(/\]\(\//g, `](${origin}/`);
+    return markdown.replace(FENCE_OR_RELATIVE_LINK, (match, fence?: string) => (fence ? match : `](${origin}/`));
 }
+
+// Longest slice of a caller's get_doc_page argument echoed back in an error message.
+const MAX_ECHOED_INPUT = 200;
 
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
  *
  * search_docs scans the loader pages in-process, scoring substring matches against a
  * corpus that is extracted once per loader and cached for the isolate. It deliberately
- * does NOT build a FlexSearch index: in static mode that index ships as an 8.4 MB asset
- * and rebuilding it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare
+ * does NOT build a FlexSearch index: in static mode that index ships as a multi-megabyte
+ * asset and rebuilding it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare
  * error 1102) - the same reason the site itself moved search client-side (see
- * press.config.tsx). For ~30 pages a substring scan is well within the Worker budget.
+ * press.config.tsx). A substring scan of every page stays well within the Worker budget;
+ * re-measure the first search on a cold isolate if the corpus grows by an order of magnitude.
  *
  * get_doc_page returns one page's full markdown from the same cached corpus. It is a lookup
  * by site path, not a proxy: anything that does not resolve to a known page is rejected.
@@ -375,7 +384,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     id,
                                     error: {
                                         code: -32602,
-                                        message: `No BLIT386 documentation page at "${input}". Use search_docs or get_docs_summary to find a page URL.`,
+                                        message: `No BLIT386 documentation page at "${input.length > MAX_ECHOED_INPUT ? `${input.slice(0, MAX_ECHOED_INPUT)}...` : input}". Use search_docs or get_docs_summary to find a page URL.`,
                                     },
                                 });
                             }

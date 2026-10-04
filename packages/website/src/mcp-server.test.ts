@@ -611,14 +611,19 @@ describe('mcpServerPlugin', () => {
             );
         });
 
-        it('makes site-relative links in the body absolute', async () => {
+        it('makes site-relative links in the body absolute and leaves code blocks alone', async () => {
             const { loader } = createFakeLoader([createFakePage({ url: '/docs/a', title: 'A' })]);
-            const texts = new Map([['/docs/a', 'See [B](/docs/b) and [C](https://example.com/c).']]);
+            const texts = new Map([
+                [
+                    '/docs/a',
+                    'See [B](/docs/b) and [C](https://example.com/c).\n\n````md\n```\n[D](/docs/d)\n```\n````\n\n[E](/docs/e)',
+                ],
+            ]);
             const context = createMockAppContext({ loader, adapters: [createTextAdapter(texts)] });
             middleware = await createPluginMiddleware(mcpServerPlugin(), context);
 
             expect(pageText(await getPage({ url: '/docs/a' }))).toBe(
-                '# A\n\nSource: https://blit386.dev/docs/a\n\nSee [B](https://blit386.dev/docs/b) and [C](https://example.com/c).',
+                '# A\n\nSource: https://blit386.dev/docs/a\n\nSee [B](https://blit386.dev/docs/b) and [C](https://example.com/c).\n\n````md\n```\n[D](/docs/d)\n```\n````\n\n[E](https://blit386.dev/docs/e)',
             );
         });
 
@@ -632,6 +637,14 @@ describe('mcpServerPlugin', () => {
                 code: -32602,
                 message: `No BLIT386 documentation page at "${url}". Use search_docs or get_docs_summary to find a page URL.`,
             });
+        });
+
+        it('truncates a long unknown input in the error message', async () => {
+            const url = `/docs/${'x'.repeat(500)}`;
+
+            expect((await getPage({ url })).error?.message).toBe(
+                `No BLIT386 documentation page at "${url.slice(0, 200)}...". Use search_docs or get_docs_summary to find a page URL.`,
+            );
         });
 
         it.each([
