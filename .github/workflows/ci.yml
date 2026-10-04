@@ -602,6 +602,11 @@ jobs:
         env:
           NODE_ENV: production
 
+      # Cloudflare rejects a static asset over 25 MiB and a Worker over 10 MiB gzip,
+      # and only `wrangler deploy` would otherwise notice - fail here instead.
+      - name: Check deploy size limits
+        run: pnpm --filter blit386-website run check:deploy-size
+
       # Boots the built worker (wrangler dev against dist/server/wrangler.json) and
       # makes real requests against every URL/endpoint advertised to agents, including
       # /mcp's JSON-RPC tools - a bare status check would not have caught BT-247's
