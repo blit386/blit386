@@ -91,6 +91,7 @@ Rect2i.fromMinMax(min, max); // from corner vectors
 Rect2i.fromMinMaxXY(minX, minY, maxX, maxY); // zero-allocation variant
 Rect2i.fromCenterSize(center, size); // centered rectangle
 Rect2i.fromCenterSizeXY(cx, cy, w, h); // zero-allocation variant
+Rect2i.fromTile(col, row, tileSize); // one cell of a grid of equal tiles
 
 // Instance methods
 r.isContaining(point); // boolean - point inside rect
@@ -103,6 +104,9 @@ r.center; // Vector2i getter
 r.min; // Vector2i getter (top-left)
 r.max; // Vector2i getter (bottom-right)
 ```
+
+`Rect2i.fromTile(col, row, tileSize)` builds one cell of a grid of equal tiles; `tileSize` is a number or a `Vector2i`.
+It is pure math with no bounds check against an image (`sheet.tileRect` does that).
 
 <DemoEmbed demo="002-primitives" title="BLIT386 primitives demo" />
 

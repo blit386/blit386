@@ -524,6 +524,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.drawTile": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.drawingBufferSize": {
       "kind": "getter",
       "since": "1.1.0",
@@ -1943,6 +1950,7 @@
       "BT.drawRect",
       "BT.drawRectFill",
       "BT.drawSprite",
+      "BT.drawTile",
       "BT.effectAdd",
       "BT.effectClear",
       "BT.effectRemove",

@@ -49,6 +49,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   so letting go of one key while another stays down does not fire it. `isAnyButton*` covers `BTN_UP` to `BTN_SELECT`
   only (no sticks, triggers, keyboard, or pointers). See
   [Any key and any button](guide-input.md#any-key-and-any-button).
+- `BT.drawTile`: draw one cell of a grid-shaped sprite sheet by row-major index (`BT.drawTile(sheet, index, destPos)`)
+  or by column and row (`BT.drawTile(sheet, col, row, destPos)`), with an optional `paletteOffset`, using a tile size
+  stored on the sheet. `BT.drawTile(sheet, col, row, tileSize, destPos)` passes the size per call instead. Square or
+  non-square tiles; a partial edge cell is not a tile, and out-of-grid tiles are an error. Allocation-free. Set the grid
+  with the new `tileSize` option of `SpriteSheet.load` / `SpriteSheet.loadIndexed` or the `sheet.tileSize` property;
+  `sheet.tileRect(...)` and `Rect2i.fromTile(...)` return the rectangle. See
+  [Drawing tiles](api-rendering.md#drawing-tiles).
 
 ## 1.7.1 - 2026-09-27
 

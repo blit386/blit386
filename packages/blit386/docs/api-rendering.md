@@ -112,6 +112,48 @@ Draws are auto-batched by texture. Group draws from the same sheet to minimize G
 
 <DemoEmbed demo="010-sprite-effects" title="BLIT386 sprite effects demo" />
 
+### Drawing tiles
+
+<Since symbol="BT.drawTile" />
+
+Most retro sprite sheets are grids of equal cells. Give the sheet a tile size once, then draw cells by index or by
+column and row - no `Rect2i` math:
+
+```ts twoslash
+import { BT, type Palette, SpriteSheet, Vector2i } from 'blit386';
+declare const palette: Palette;
+declare const frame: number;
+// ---cut---
+const { sheet } = await SpriteSheet.loadIndexed('/sprites/hero.png', palette, 1, { tileSize: 16 });
+
+BT.drawTile(sheet, frame, new Vector2i(40, 60)); // row-major index: 0 is top-left
+BT.drawTile(sheet, 2, 1, new Vector2i(40, 60)); // column 2, row 1
+BT.drawTile(sheet, 2, 1, new Vector2i(40, 60), 16); // with a palette offset
+```
+
+A sheet with no grid can still be drawn by passing the tile size before the position:
+
+```ts twoslash
+import { BT, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+BT.drawTile(sheet, 2, 1, 8, new Vector2i(40, 60)); // 8×8 tiles
+BT.drawTile(sheet, 2, 1, new Vector2i(16, 24), new Vector2i(40, 60)); // 16×24 tiles
+```
+
+- Grid: `tileSize` is a number for square tiles or a `Vector2i` for width × height. Set it with the `tileSize` option of
+  `SpriteSheet.load` / `loadIndexed`, or `sheet.tileSize = 16` at any time. See [Assets](api-assets.md#tile-grids).
+- Whole tiles only: a 40-pixel-wide sheet of 16-pixel tiles has 2 columns; the 8-pixel strip at the edge is not a tile.
+- Errors: a tile outside the grid, a negative or fractional index, column, or row, a tile size that is not a positive
+  whole number, or a grid form on a sheet with no tile size all show an error instead of drawing.
+- Watch the argument order: `BT.drawTile(sheet, col, row, new Vector2i(16, 16))` is the grid form with a destination,
+  not the explicit-size form with a missing destination.
+- No allocation: `BT.drawTile` reuses one internal source rectangle, so it is safe in a hot loop.
+- `sheet.tileRect(index)` / `sheet.tileRect(col, row)` return the same rectangle as a new `Rect2i` - use them in
+  `init()` to build frame lists. `Rect2i.fromTile(col, row, tileSize)` does the math with no sheet at all.
+- Flipped, rotated, or scaled tiles will use `BT.drawSprite(sheet, sheet.tileRect(i), dest, params)` once
+  [sprite draw params](#planned-sprite-draw-params) ship. `drawTile` has no params object and no `tint`.
+
 ### Sprite transform constants
 
 <Since symbol="BT.FLIP_H" />
@@ -143,9 +185,9 @@ This section locks the unified `BT.drawSprite` v2 shape decided in BT-236 (revis
 
 </Callout>
 
-All transform features hang off one reusable params object. Separate methods stay separate: `BT.drawTile` (BT-265) and
-`BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no `drawSpriteScaled`, no `tint`, and no
-arbitrary-angle `rotation` field in v1.
+All transform features hang off one reusable params object. Separate methods stay separate:
+[`BT.drawTile`](#drawing-tiles) and `BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no
+`drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
 
 ```ts
 // 1. Shipped. Unchanged.

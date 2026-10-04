@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Assets"
 description: "Sprite sheets, bitmap fonts, and asset loading."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-10-04T12:29:25+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-assets.md"
 ---
 
@@ -117,6 +117,24 @@ BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 - Slot `0` is never touched - transparent pixels in the image map to slot 0 at draw time.
 
 <DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
+
+### Tile grids
+
+Pass `tileSize` to `loadIndexed` (or `load`) when the image is a grid of equal cells. `BT.drawTile` and `sheet.tileRect`
+then find cells for you:
+
+```ts twoslash
+import { type Palette, SpriteSheet, Vector2i } from 'blit386';
+declare const palette: Palette;
+// ---cut---
+const { sheet } = await SpriteSheet.loadIndexed('/sprites/walk.png', palette, 1, { tileSize: new Vector2i(16, 24) });
+
+const walkFrames = [0, 1, 2, 3].map((i) => sheet.tileRect(i)); // built once in init()
+sheet.tileSize = 8; // or set or change it later; null removes the grid
+```
+
+`sheet.tileSize` reads back as a frozen `Vector2i` (or `null`). The grid survives a hot-reload image swap, and lookups
+are checked against the sheet's current size. See [Drawing tiles](/docs/api/rendering#drawing-tiles).
 
 ## Sprite setup - manual path
 
