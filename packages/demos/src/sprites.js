@@ -13,8 +13,10 @@
 //
 // This demo builds a six-shape sheet on an offscreen canvas, then shows:
 //   1. BT.drawSprite() with different source regions (one shape per cell).
-//   2. Palette offsets - shifting every pixel index to a different color block.
-//   3. Opacity pulsing - rewriting palette alpha slots in update().
+//   2. BT.drawTile() - the same, but the sheet knows its grid, so you pass a cell number
+//      instead of a Rect2i.
+//   3. Palette offsets - shifting every pixel index to a different color block.
+//   4. Opacity pulsing - rewriting palette alpha slots in update().
 //
 // Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
 // installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
@@ -38,7 +40,7 @@
 // Palette Presets demo explores the palette system in depth:
 // https://demos.blit386.dev/palette-presets
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
@@ -48,7 +50,6 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // Where in the palette the sprite's original colors start. The sprite uses two colors
 // (fill + stroke), and the recolored theme blocks below stack up to about slot 19, so
@@ -65,6 +66,9 @@ const SHAPE_ROWS = 2;
 // captions under each shape in render(). The captions sit 50 pixels apart, so the
 // longer names are shortened ('Tri', 'Gem') to keep each label inside its column.
 const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
+
+// Cell number of the star in the sheet (cells count left to right, then top to bottom).
+const STAR_TILE = 3; // Star cell - used for the palette-offset row.
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
@@ -227,7 +231,7 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
 /**
  * Builds a 3x2 sprite sheet with six shapes on an offscreen canvas.
  *
- * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, rects: Rect2i[] }}
+ * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D }}
  */
 function buildShapeSheet() {
     const sheetW = SHAPE_COLS * SHAPE_CELL;
@@ -242,8 +246,6 @@ function buildShapeSheet() {
     // Clear to transparent so unused pixels stay invisible.
     ctx.clearRect(0, 0, sheetW, sheetH);
 
-    const rects = [];
-
     // One cell per entry in the shared SHAPE_NAMES list (the same list captions use).
     for (let i = 0; i < SHAPE_NAMES.length; i++) {
         const col = i % SHAPE_COLS;
@@ -252,14 +254,13 @@ function buildShapeSheet() {
         const cellY = row * SHAPE_CELL;
 
         drawShapeInCell(ctx, cellX, cellY, i);
-        rects.push(new Rect2i(cellX, cellY, SHAPE_CELL, SHAPE_CELL));
     }
 
     // Flatten the smooth, anti-aliased edges into flat colors so every pixel matches a
     // palette entry exactly (see quantizeCanvasToShapeColors() for why this is required).
     quantizeCanvasToShapeColors(ctx, sheetW, sheetH);
 
-    return { canvas, ctx, rects };
+    return { canvas, ctx };
 }
 
 /**
@@ -276,13 +277,6 @@ class Demo {
     // Slot map for the shared UI kit theme, filled in init() by applyTheme().
     // theme.bg, theme.text, and friends are palette indices for our own drawing.
     theme = null;
-
-    // One Rect2i per shape cell in the programmatic sheet.
-    shapeRects = [];
-
-    // Star cell - reused for the palette-offset row below the shape grid.
-    /** @type {Rect2i | null} */
-    themeRect = null;
 
     colorCount = 0;
     baseColors = [];
@@ -328,9 +322,7 @@ class Demo {
         this.theme = applyTheme(this.palette);
 
         try {
-            const { canvas, ctx, rects } = buildShapeSheet();
-            this.shapeRects = rects;
-            this.themeRect = rects[3]; // Star - used for palette-offset demos.
+            const { canvas, ctx } = buildShapeSheet();
 
             this.baseColors = registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, COLOR_BASE);
             this.colorCount = this.baseColors.length;
@@ -372,6 +364,10 @@ class Demo {
             const image = await canvasToImage(canvas);
             this.sheet = new SpriteSheet(image);
             this.sheet.indexize(this.palette);
+
+            // The sheet is a SHAPE_COLS x SHAPE_ROWS grid of SHAPE_CELL squares, so BT.drawTile can
+            // find each shape by its number - no Rect2i bookkeeping.
+            this.sheet.tileSize = SHAPE_CELL;
             BT.paletteSet(this.palette);
 
             console.log(
@@ -398,13 +394,13 @@ class Demo {
         // Clear the whole screen with the shared UI theme's background color.
         BT.clear(this.theme.bg);
 
-        // Row 1: six shapes - each draw call uses a different source Rect2i.
+        // Row 1: six shapes - each draw call picks a different cell number.
         const shapeY = 14;
         const shapeSpacing = 50;
 
-        for (let i = 0; i < this.shapeRects.length; i++) {
+        for (let i = 0; i < SHAPE_NAMES.length; i++) {
             const destX = 6 + i * shapeSpacing;
-            BT.drawSprite(this.sheet, this.shapeRects[i], new Vector2i(destX, shapeY), 0);
+            BT.drawTile(this.sheet, i, new Vector2i(destX, shapeY), 0);
             ui.caption(destX, shapeY + 22, SHAPE_NAMES[i], { color: 'dim' });
         }
 
@@ -415,16 +411,16 @@ class Demo {
         const themeY = 78;
         const themeSpacing = 72;
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8, themeY), 0);
+        BT.drawTile(this.sheet, STAR_TILE, new Vector2i(8, themeY), 0);
         ui.caption(6, themeY + 22, 'Original', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing, themeY), n);
+        BT.drawTile(this.sheet, STAR_TILE, new Vector2i(8 + themeSpacing, themeY), n);
         ui.caption(6 + themeSpacing, themeY + 22, 'Fire', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 2, themeY), n * 2);
+        BT.drawTile(this.sheet, STAR_TILE, new Vector2i(8 + themeSpacing * 2, themeY), n * 2);
         ui.caption(6 + themeSpacing * 2, themeY + 22, 'Ice', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 3, themeY), n * 3);
+        BT.drawTile(this.sheet, STAR_TILE, new Vector2i(8 + themeSpacing * 3, themeY), n * 3);
         ui.caption(6 + themeSpacing * 3, themeY + 22, 'Void', { color: 'dim' });
 
         this.renderCodeSnippet();
