@@ -1869,10 +1869,10 @@ export const BT = {
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads / keyboard, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
-     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` while the button remains pressed.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
@@ -1952,11 +1952,11 @@ export const BT = {
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
      * @param repeatRate - Optional repeat interval in fixed ticks (`0`/omitted = edge only).
-     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` on the transition frame.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
@@ -2050,10 +2050,10 @@ export const BT = {
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
-     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` on the release frame.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
