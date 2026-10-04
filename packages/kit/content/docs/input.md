@@ -109,6 +109,10 @@ if (BT.isPointerActive(0)) {
 }
 ```
 
+Mouse, touch, and pen positions are already in display pixels. If you listen to a browser event yourself (for example a
+file dropped on the canvas), `BT.nativeScreenToDisplayPos(event.clientX, event.clientY)` converts its coordinates the
+same way, or returns `null` when there is no valid position.
+
 ### Mouse wheel
 
 The mouse wheel also scrolls the web page by default. If your game reads `BT.pointerScrollDelta` (for example to zoom

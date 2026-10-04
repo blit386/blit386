@@ -811,6 +811,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.nativeScreenToDisplayPos": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.outputSize": {
       "kind": "getter",
       "since": "1.0.4",
@@ -1973,6 +1980,7 @@
       "BT.isPointerActive",
       "BT.isPressed",
       "BT.isReleased",
+      "BT.nativeScreenToDisplayPos",
       "BT.pointerDelta",
       "BT.pointerDeltaTo",
       "BT.pointerPos",

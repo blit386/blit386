@@ -1464,6 +1464,53 @@ describe('BT.pointerDelta', () => {
     });
 });
 
+describe('BT.nativeScreenToDisplayPos', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function stubGeometry(rect: Partial<DOMRect>, displaySize: Vector2i | null): void {
+        const canvas = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 640, height: 480, ...rect }) };
+
+        vi.spyOn(BTAPI.instance, 'getCanvas').mockReturnValue(canvas as never);
+        vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(
+            displaySize === null ? null : ({ displaySize } as never),
+        );
+    }
+
+    it('returns null when the engine is not initialized', () => {
+        vi.spyOn(BTAPI.instance, 'getCanvas').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).toBeNull();
+    });
+
+    it('returns null when the canvas has zero size', () => {
+        stubGeometry({ width: 0 }, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).toBeNull();
+    });
+
+    it('converts client coordinates using the canvas rect and display size', () => {
+        stubGeometry({ left: 100, top: 50 }, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(100 + 321, 50 + 201)).toEqual(new Vector2i(160, 100));
+    });
+
+    it('clamps coordinates outside the canvas to the edge pixels', () => {
+        stubGeometry({}, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(-10, -10)).toEqual(new Vector2i(0, 0));
+        expect(BT.nativeScreenToDisplayPos(5000, 5000)).toEqual(new Vector2i(319, 239));
+    });
+
+    it('returns a fresh vector on every call', () => {
+        stubGeometry({}, new Vector2i(320, 240));
+
+        expect(BT.nativeScreenToDisplayPos(10, 10)).not.toBe(BT.nativeScreenToDisplayPos(10, 10));
+    });
+});
+
 describe('BT.pointerPosTo', () => {
     afterEach(() => {
         vi.restoreAllMocks();
