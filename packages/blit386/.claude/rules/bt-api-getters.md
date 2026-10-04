@@ -59,6 +59,8 @@ frame; calling methods on `BT.random` advances the shared stream.
 - Any parameter: `pointerPos(0)`, `pointerDelta(0)`, `isDown(BT.BTN_A)`, `getAxis(...)`, `cameraClamp(...)`
 - Zero-alloc out-param counterparts: `pointerPosTo(out, index?)`, `pointerDeltaTo(out, index?)` - write into the
   caller's `Vector2i` instead of allocating; `out` comes first because the slot index has a default
+- Coordinate conversion from caller-supplied values: `nativeScreenToDisplayPos(clientX, clientY)` - takes arguments, so
+  it is a method, and returns `null` when there is no valid position
 - Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
   `isPressed(...)`, `isReleased(...)`, `isGamepadConnected(...)`, `isKeyDown(...)`, `isKeyPressed(...)`,
   `isKeyReleased(...)`

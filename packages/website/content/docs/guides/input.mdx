@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-09-30T16:40:11Z"
+lastModified: "2026-10-04T08:23:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -508,6 +508,39 @@ display_y = floor((clientY - rect.top)  / rect.height * displaySize.y)
 
 Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion is skipped when the canvas has zero size
 (no layout yet) to avoid NaN coordinates.
+
+### Converting your own DOM events
+
+<Since symbol="BT.nativeScreenToDisplayPos" />
+
+`BT.nativeScreenToDisplayPos(clientX, clientY)` runs the same conversion for coordinates the engine does not track
+itself, such as a file dropped onto the canvas. It returns a new `Vector2i`, or `null` when there is no valid position
+to report:
+
+- the engine is not initialized;
+- the canvas has zero width or height (no layout yet);
+- a coordinate is not finite.
+
+A point outside the canvas is not an error: it clamps to the nearest edge pixel, exactly as pointer input does. The
+canvas rect is read on every call, so the result stays correct after a resize or page scroll. It does not depend on
+pointer state, so it works before the first pointer event and for events the pointer subsystem never sees.
+
+```ts twoslash
+import { BT } from 'blit386';
+
+const canvas = document.querySelector('canvas');
+// ---cut---
+canvas?.addEventListener('dragover', (event) => event.preventDefault());
+canvas?.addEventListener('drop', (event) => {
+  event.preventDefault();
+
+  const pos = BT.nativeScreenToDisplayPos(event.clientX, event.clientY);
+
+  if (pos !== null) {
+    console.log(`dropped at display (${pos.x}, ${pos.y})`);
+  }
+});
+```
 
 ## Implementation notes
 

@@ -18,6 +18,7 @@
 import type { Rect2i } from '../utils/Rect2i';
 import type { Vector2i } from '../utils/Vector2i';
 import { Vector2i as Vector2iImpl } from '../utils/Vector2i';
+import { clientToDisplayPos } from './clientToDisplayPos';
 
 /** Maximum number of simultaneously tracked pointers (slot 0 = mouse, 1-3 = touch / pen). */
 export const POINTER_SLOT_COUNT = 4;
@@ -1057,22 +1058,8 @@ export class PointerInput {
             return;
         }
 
-        // Guard against a zero-sized canvas (no layout yet) which would
-        // produce NaN coordinates from the division below.
-        if (rect.width === 0 || rect.height === 0) {
-            return;
-        }
-
-        const x = Math.max(
-            0,
-            Math.min(Math.floor(((clientX - rect.left) / rect.width) * displaySize.x), displaySize.x - 1),
-        );
-        const y = Math.max(
-            0,
-            Math.min(Math.floor(((clientY - rect.top) / rect.height) * displaySize.y), displaySize.y - 1),
-        );
-
-        slot.pos.set(x, y);
+        // Returns null on a zero-sized canvas (no layout yet), leaving the slot untouched.
+        clientToDisplayPos(clientX, clientY, rect, displaySize, slot.pos);
     }
 
     /**

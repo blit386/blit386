@@ -48,6 +48,7 @@ import {
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
+import { clientToDisplayPos } from './input/clientToDisplayPos';
 import {
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
@@ -1680,6 +1681,32 @@ export const BT = {
      */
     pointerPos: (pointerIndex: number = 0): Vector2i => {
         return BTAPI.instance.getPointer()?.getPos(pointerIndex) ?? Vector2i.zero();
+    },
+
+    /**
+     * Converts viewport coordinates, such as a DOM event's `clientX` / `clientY`, to display
+     * coordinates, using the same conversion as pointer input.
+     *
+     * Use it for DOM events the engine does not wrap, for example a file dropped onto the canvas.
+     * Each axis is `floor((client - canvasRect.start) / canvasRect.size * displaySize)`, clamped to
+     * `[0, displaySize - 1]`, so a point outside the canvas lands on the nearest edge pixel. Reads the
+     * canvas rect on every call, so the result is correct after a resize or scroll.
+     *
+     * @since 1.8.0
+     * @param clientX - Viewport X, such as DOM `clientX`.
+     * @param clientY - Viewport Y, such as DOM `clientY`.
+     * @returns A new display-space position, or `null` when the engine has not been initialized,
+     *   the canvas has zero width or height, or a coordinate is not finite.
+     */
+    nativeScreenToDisplayPos: (clientX: number, clientY: number): Vector2i | null => {
+        const canvas = BTAPI.instance.getCanvas();
+        const displaySize = BTAPI.instance.getHardwareSettings()?.displaySize;
+
+        if (!canvas || !displaySize) {
+            return null;
+        }
+
+        return clientToDisplayPos(clientX, clientY, canvas.getBoundingClientRect(), displaySize, new Vector2i());
     },
 
     /**
