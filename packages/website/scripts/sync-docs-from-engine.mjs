@@ -416,7 +416,10 @@ const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
             },
         ).trim();
 
-        return output === '' ? undefined : output;
+        // Newer git (2.54+) prints a UTC %aI date with a `Z` suffix, older git with `+00:00`. The
+        // committed mirror would otherwise flip between the two with whoever last ran the sync, and
+        // `sync:docs:check` would fail on the other machine, so settle on the `+00:00` form.
+        return output === '' ? undefined : output.replace(/Z$/u, '+00:00');
     } catch {
         return undefined;
     }
