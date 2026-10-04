@@ -544,6 +544,17 @@ describe('SpriteSheet', () => {
             expect(loadSpy).toHaveBeenCalledWith('hero.png');
             expect(result.sheet.tileSize?.y).toBe(24);
         });
+
+        it('rejects an invalid tileSize before writing the palette or loading the image', async () => {
+            const loadColorsSpy = vi.spyOn(SpriteSheet, 'loadColorsIntoPalette').mockResolvedValue([]);
+            const loadSpy = vi.spyOn(SpriteSheet, 'load');
+
+            await expect(SpriteSheet.loadIndexed('hero.png', new Palette(32), 4, { tileSize: 0 })).rejects.toThrow(
+                RangeError,
+            );
+            expect(loadColorsSpy).not.toHaveBeenCalled();
+            expect(loadSpy).not.toHaveBeenCalled();
+        });
     });
 
     describe('loadColorsIntoPalette', () => {

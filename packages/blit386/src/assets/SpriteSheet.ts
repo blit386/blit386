@@ -399,18 +399,7 @@ export class SpriteSheet {
      * @throws RangeError if the size is not a positive integer on both axes (the grid is left unchanged).
      */
     set tileSize(value: number | Vector2i | null) {
-        if (value === null) {
-            this._tileSize = null;
-
-            return;
-        }
-
-        const tileW = typeof value === 'number' ? value : value.x;
-        const tileH = typeof value === 'number' ? value : value.y;
-
-        assertTileSize(tileW, tileH);
-
-        this._tileSize = Object.freeze(new Vector2i(tileW, tileH));
+        this._tileSize = value === null ? null : toTileSize(value);
     }
 
     /**
@@ -438,12 +427,12 @@ export class SpriteSheet {
      * @throws RangeError if `options.tileSize` is not a positive integer on both axes.
      */
     static async load(url: string, options?: { tileSize?: number | Vector2i }): Promise<SpriteSheet> {
+        // Validate before any loading so a bad size fails fast with no side effects.
+        const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
         const image = await AssetLoader.loadImage(url);
         const sheet = new SpriteSheet(image);
 
-        if (options?.tileSize !== undefined) {
-            sheet.tileSize = options.tileSize;
-        }
+        sheet._tileSize = tileSize;
 
         sheet.sourceUrl = url;
         sheet.registerForHotReload();
@@ -495,14 +484,13 @@ export class SpriteSheet {
         startSlot: number,
         options?: { sort?: 'luminance' | 'none'; tileSize?: number | Vector2i },
     ): Promise<IndexedSpriteLoadResult> {
+        // Validate before loadColorsIntoPalette writes the palette, so a bad size leaves it untouched.
+        const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
         const colors = await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options);
         const sheet = await SpriteSheet.load(url);
 
         sheet.indexize(palette);
-
-        if (options?.tileSize !== undefined) {
-            sheet.tileSize = options.tileSize;
-        }
+        sheet._tileSize = tileSize;
 
         return {
             sheet,
@@ -1132,6 +1120,24 @@ export class SpriteSheet {
             hotReloadRegistry.delete(key);
         }
     }
+}
+
+/**
+ * Validates a tile size given as a number (square) or a `Vector2i` and returns
+ * it as a frozen `Vector2i` copy. Shared by the {@link SpriteSheet.tileSize}
+ * setter and the `tileSize` option of `load` / `loadIndexed`.
+ *
+ * @param value - Tile size in pixels.
+ * @returns Frozen tile size.
+ * @throws RangeError if the size is not a positive integer on both axes.
+ */
+function toTileSize(value: number | Vector2i): Vector2i {
+    const tileW = typeof value === 'number' ? value : value.x;
+    const tileH = typeof value === 'number' ? value : value.y;
+
+    assertTileSize(tileW, tileH);
+
+    return Object.freeze(new Vector2i(tileW, tileH));
 }
 
 /**
