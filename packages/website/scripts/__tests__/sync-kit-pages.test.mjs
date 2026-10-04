@@ -25,6 +25,14 @@ describe('splitFrontmatter', () => {
         assert.equal(body, '# Title\n');
     });
 
+    test('drops a block-scalar indicator before folding the lines below it', () => {
+        for (const indicator of ['>', '>-', '|', '|+']) {
+            const { fields } = splitFrontmatter(`---\ndescription: ${indicator}\n  one\n  two\n---\n`);
+
+            assert.deepEqual(fields, { description: 'one two' }, indicator);
+        }
+    });
+
     test('returns the whole text as body when there is no frontmatter', () => {
         assert.deepEqual(splitFrontmatter('# Title\n'), { fields: {}, body: '# Title\n' });
     });
@@ -152,6 +160,22 @@ describe('buildPages against the real kit, templates, and demos', () => {
             if (name !== 'index') {
                 assert.ok(listed.has(name), `${name} is missing from the sidebar`);
             }
+        }
+    });
+
+    test('leaves no template placeholder on any page', () => {
+        for (const { url, page } of pages) {
+            assert.doesNotMatch(page.body, /\{\{\w+\}\}/u, `${url} has an unfilled placeholder`);
+        }
+    });
+
+    test('never starts a description with a YAML block-scalar indicator', () => {
+        for (const { url, page } of pages) {
+            assert.doesNotMatch(
+                page.description,
+                /^[>|]/u,
+                `${url} description starts with ${page.description.slice(0, 2)}`,
+            );
         }
     });
 

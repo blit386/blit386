@@ -115,6 +115,8 @@ const firstParagraph = (markdown) =>
         .map((block) => block.trim())
         .find((block) => block !== '' && !/^(#|-|\*|>|```|\||<!--|\d+\.)/u.test(block)) ?? '';
 
+const BLOCK_SCALAR_INDICATOR = /^[>|][+-]?$/u;
+
 /**
  * Split leading YAML frontmatter into its top-level scalar fields and the body. Handles the two
  * shapes kit content uses: `key: value` on one line, and a bare `key:` followed by indented
@@ -135,7 +137,8 @@ const splitFrontmatter = (markdown) => {
 
         if (keyMatch) {
             currentKey = keyMatch[1];
-            fields[currentKey] = keyMatch[2].trim();
+            // A lone block-scalar indicator (`>-`, `|`, ...) only says how the lines below fold.
+            fields[currentKey] = keyMatch[2].trim().replace(BLOCK_SCALAR_INDICATOR, '');
         } else if (currentKey && /^\s+\S/u.test(line)) {
             fields[currentKey] = `${fields[currentKey]} ${line.trim()}`.trim();
         }
@@ -157,8 +160,24 @@ const codeBlock = (lang, source, title) => {
 };
 
 /** Render a kit markdown file (H1 title) into a page body, escaped for MDX. */
+// The package-manager commands the scaffolder fills into kit content per game (`TemplateVars` in
+// packages/create-blit386/src/scaffold.ts). These pages target no particular game, so they use npm,
+// matching the starter page's instructions. A placeholder outside this set fails the sync.
+const PACKAGE_MANAGER_VARS = {
+    pmInstall: 'npm install',
+    pmRunDev: 'npm run dev',
+    pmRunBuild: 'npm run build',
+    pmRunFormat: 'npm run format',
+    pmRunLint: 'npm run lint',
+};
+
 const markdownPage = ({ sourcePath, release, description, title: titleOverride }) => {
-    const { fields, body: withoutFrontmatter } = splitFrontmatter(readFileSync(sourcePath, 'utf8'));
+    const source = fillPlaceholders(
+        readFileSync(sourcePath, 'utf8'),
+        PACKAGE_MANAGER_VARS,
+        relative(REPO_ROOT, sourcePath),
+    );
+    const { fields, body: withoutFrontmatter } = splitFrontmatter(source);
     const { title, body } = extractTitleAndBody(withoutFrontmatter, sourcePath);
     const { body: transformed } = transformBody(body, relative(REPO_ROOT, dirname(sourcePath)));
 
