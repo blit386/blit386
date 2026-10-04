@@ -70,13 +70,12 @@ export function buildRegistry(rootDir) {
     const bySlug = new Map();
 
     for (const file of files) {
-        const match = file.match(FILENAME_PATTERN);
+        const slug = file.match(FILENAME_PATTERN)?.[1];
 
-        if (!match) {
+        if (!slug) {
             continue;
         }
 
-        const slug = match[1];
         const sourcePath = join(srcDir, file);
         const header = readHeader(sourcePath);
         const title = deriveTitle(slug, header);
@@ -148,7 +147,7 @@ function deriveTitle(slug, header) {
     const override = header.match(PAGE_TITLE_PATTERN);
 
     if (override) {
-        return override[1].trim();
+        return (override[1] ?? '').trim();
     }
 
     return `BLIT386 Demo – ${titleCaseTopic(slug)}`;
@@ -167,7 +166,7 @@ export function deriveShortTitle(slug, header) {
     const override = header.match(PAGE_TITLE_PATTERN);
 
     if (override) {
-        return override[1].trim().replace(PAGE_TITLE_PREFIX_PATTERN, '');
+        return (override[1] ?? '').trim().replace(PAGE_TITLE_PREFIX_PATTERN, '');
     }
 
     return titleCaseTopic(slug);
@@ -189,7 +188,7 @@ export function deriveDescription(header) {
         return '';
     }
 
-    return match[1].trim();
+    return (match[1] ?? '').trim();
 }
 
 /**
@@ -209,7 +208,7 @@ export function deriveOgScale(header) {
         return '';
     }
 
-    return match[1].trim();
+    return (match[1] ?? '').trim();
 }
 
 /**
@@ -220,6 +219,6 @@ export function deriveOgScale(header) {
 function titleCaseTopic(topic) {
     return topic
         .split('-')
-        .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1) : word))
+        .map((word) => (word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
         .join(' ');
 }

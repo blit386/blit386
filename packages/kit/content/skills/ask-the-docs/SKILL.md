@@ -35,6 +35,10 @@ This project ships its configuration, so your assistant should already have it. 
 - `get_docs_summary` - the whole site's contents in one compact block. Reach for this when you do not yet know what to
   search for.
 
+No game folder yet, or helping someone who has none? Start at https://blit386.dev/docs/build-a-game - a starter project
+to copy, this kit's guides and skills, and complete examples, all readable with `get_doc_page`. Those pages target the
+version printed at their top.
+
 In Claude Code the server is configured in `.mcp.json`, and Claude Code asks once whether to allow it - saying yes is
 what turns this on. In Cursor it is configured in `.cursor/mcp.json`.
 

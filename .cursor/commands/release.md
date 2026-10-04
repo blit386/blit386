@@ -297,7 +297,8 @@ Then check the two downstream packages:
   mirror changes that match the generated output can pass before commit. The mirror's `lastModified` comes from
   `git log`, so keep the regenerated value as-is (never hand-edit the timezone format). Order: commit the engine doc
   change first, then `sync:docs`, then commit the mirror (a trailing `lastModified`-only commit is normal), then run the
-  check.
+  check. The version bump alone also makes `content/docs/build-a-game/` stale - every page there carries the lockstep
+  version - so run `sync:docs` after the bump even when no engine doc changed.
 
 #### Regenerate `docs/_api-history.json` - only after the tag exists
 
