@@ -8,7 +8,7 @@
  * suppression behavior used by facade helpers.
  */
 
-import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, type MockInstance, vi } from 'vitest';
 
 import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
@@ -2084,6 +2084,194 @@ describe('BT.drawSprite', () => {
 
             const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
             expect(text).toContain("The engine isn't ready yet.");
+        });
+    });
+});
+
+describe('BT.drawTile', () => {
+    // 64x48 sheet: 16x24 tiles give 4 columns x 2 rows.
+    const mockImage = { width: 64, height: 48 } as HTMLImageElement;
+    const dest = new Vector2i(10, 20);
+
+    /** Source rects as they were at call time - drawTile reuses one scratch rect. */
+    let captured: number[][];
+    let drawSpriteSpy: MockInstance<BTAPI['drawSprite']>;
+
+    function gridSheet(): SpriteSheet {
+        const sheet = new SpriteSheet(mockImage);
+        sheet.tileSize = new Vector2i(16, 24);
+
+        return sheet;
+    }
+
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
+        captured = [];
+        drawSpriteSpy = vi
+            .spyOn(BTAPI.instance, 'drawSprite')
+            .mockImplementation((_sheet: SpriteSheet, srcRect: Rect2i) => {
+                captured.push([srcRect.x, srcRect.y, srcRect.width, srcRect.height]);
+            });
+    });
+
+    it('draws by row-major index using the sheet grid', () => {
+        const sheet = gridSheet();
+
+        BT.drawTile(sheet, 5, dest);
+
+        expect(captured).toEqual([[16, 24, 16, 24]]);
+        expect(drawSpriteSpy).toHaveBeenCalledWith(sheet, expect.any(Rect2i), dest, 0);
+    });
+
+    it('draws by column and row using the sheet grid', () => {
+        BT.drawTile(gridSheet(), 3, 1, dest);
+
+        expect(captured).toEqual([[48, 24, 16, 24]]);
+    });
+
+    it('draws with an explicit number tile size on a sheet with no grid', () => {
+        BT.drawTile(new SpriteSheet(mockImage), 2, 1, 16, dest);
+
+        expect(captured).toEqual([[32, 16, 16, 16]]);
+    });
+
+    it('tells (col, row, Vector2i size, dest) apart from (col, row, dest, paletteOffset)', () => {
+        const sheet = gridSheet();
+
+        BT.drawTile(sheet, 1, 0, new Vector2i(32, 24), dest);
+        BT.drawTile(sheet, 1, 0, dest, 7);
+
+        expect(captured).toEqual([
+            [32, 0, 32, 24],
+            [16, 0, 16, 24],
+        ]);
+        expect(drawSpriteSpy).toHaveBeenNthCalledWith(1, sheet, expect.any(Rect2i), dest, 0);
+        expect(drawSpriteSpy).toHaveBeenNthCalledWith(2, sheet, expect.any(Rect2i), dest, 7);
+    });
+
+    it('forwards paletteOffset in all three forms', () => {
+        const sheet = gridSheet();
+
+        BT.drawTile(sheet, 5, dest, 16);
+        BT.drawTile(sheet, 1, 1, dest, 17);
+        BT.drawTile(sheet, 1, 1, 16, dest, 18);
+
+        expect(drawSpriteSpy.mock.calls.map((call) => call[3])).toEqual([16, 17, 18]);
+    });
+
+    it('passes the same scratch Rect2i on every call (no per-draw allocation)', () => {
+        const sheet = gridSheet();
+
+        BT.drawTile(sheet, 0, dest);
+        BT.drawTile(sheet, 1, 1, dest);
+        BT.drawTile(sheet, 0, 0, 8, dest);
+
+        const rects = drawSpriteSpy.mock.calls.map((call) => call[1]);
+        expect(rects[0]).toBe(rects[1]);
+        expect(rects[1]).toBe(rects[2]);
+    });
+
+    it('shows the grid-missing message, naming the explicit-size form, on a sheet with no grid', async () => {
+        await withErrorContainer(async () => {
+            // Explicit-size call with destPos forgotten: lands in the sheet-grid form.
+            BT.drawTile(new SpriteSheet(mockImage), 1, 0, new Vector2i(16, 16));
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('no tile size');
+            expect(text).toContain('BT.drawTile(sheet, col, row, tileSize, destPos)');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects a NaN column from untyped callers instead of drawing', async () => {
+        await withErrorContainer(async () => {
+            BT.drawTile(gridSheet(), Number.NaN, 0, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('Tile column must be a whole number');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('reports an out-of-grid tile', async () => {
+        await withErrorContainer(async () => {
+            BT.drawTile(gridSheet(), 8, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('outside this sheet');
+        });
+    });
+
+    it('reports wrong arguments when no destPos is given', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can omit destPos
+            BT.drawTile(gridSheet(), 1, 1);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+    });
+
+    it('rejects a non-number paletteOffset in the index form instead of dropping it', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can mix up the forms
+            BT.drawTile(gridSheet(), 1, new Vector2i(16, 16), dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects a missing tile size in the explicit-size form', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass undefined for tileSize
+            BT.drawTile(new SpriteSheet(mockImage), 1, 0, undefined, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects null object arguments with the wrong-arguments error, not a raw TypeError', async () => {
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass null for tileSize
+            BT.drawTile(new SpriteSheet(mockImage), 1, 0, null, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+            expect(text).not.toContain('Cannot read properties of null');
+        });
+        await withErrorContainer(async () => {
+            // @ts-expect-error -- untyped JS callers can pass null for destPos
+            BT.drawTile(gridSheet(), 1, 1, null);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('drawTile expects');
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows engine-not-ready message when drawing before bootstrap completes', async () => {
+        await withErrorContainer(async () => {
+            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue(null);
+
+            BT.drawTile(gridSheet(), 0, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain("The engine isn't ready yet.");
+        });
+        expect(drawSpriteSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows a missing await message for Promise sprite sheet values', async () => {
+        await withErrorContainer(async () => {
+            BT.drawTile(Promise.resolve({}) as unknown as SpriteSheet, 0, dest);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain("Did you forget to use 'await' before SpriteSheet.load()?");
         });
     });
 });

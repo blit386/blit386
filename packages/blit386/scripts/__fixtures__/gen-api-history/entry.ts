@@ -33,6 +33,19 @@ export const FixtureBT = {
      */
     add: (amount: number): number => amount,
 
+    /**
+     * Fixture overloaded method member, cast to an overloaded call-signature type like `BT.drawTile`.
+     *
+     * @since 1.0.0
+     * @param a - First value.
+     * @param b - Optional second value.
+     * @returns The first value.
+     */
+    pick: ((a: number, b?: number): number => b ?? a) as {
+        (a: number): number;
+        (a: number, b: number): number;
+    },
+
     /** Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style. */
     flag: 1,
 };

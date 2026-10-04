@@ -364,7 +364,17 @@ function classifyBtMemberKind(declaration) {
     }
 
     if (ts.isPropertyAssignment(declaration)) {
-        const initializer = declaration.initializer;
+        let initializer = declaration.initializer;
+
+        // `BT.drawTile` is `(arrow) as { overloads }` - object literals cannot declare overloads directly.
+        while (
+            initializer &&
+            (ts.isAsExpression(initializer) ||
+                ts.isSatisfiesExpression(initializer) ||
+                ts.isParenthesizedExpression(initializer))
+        ) {
+            initializer = initializer.expression;
+        }
 
         if (initializer && (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer))) {
             return 'method';

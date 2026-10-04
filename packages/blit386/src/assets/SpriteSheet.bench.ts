@@ -37,6 +37,13 @@ function makeBenchSheet(width: number, height: number): SpriteSheet {
 
 const glyphSheet = makeBenchSheet(8, 8);
 const spriteSheet = makeBenchSheet(64, 64);
+/** 64x64 sheet cut into 8x8 tiles: 64 tiles. */
+const tileSheet = makeBenchSheet(64, 64);
+tileSheet.tileSize = 8;
+
+/** Keeps each `tileRect` result live so V8 cannot scalar-replace the allocation being measured. */
+const tileRectSink = { value: 0 };
+
 const usageMask = new Uint8Array(256);
 
 describe('SpriteSheet.markPaletteIndicesInRect', () => {
@@ -54,6 +61,18 @@ describe('SpriteSheet.markPaletteIndicesInRect', () => {
         () => {
             resetUsage(usageMask);
             spriteSheet.markPaletteIndicesInRect(SPRITE_RECT, 0, usageMask);
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+describe('SpriteSheet.tileRect', () => {
+    bench(
+        'tileRect(index) x 64 (allocates one Rect2i each)',
+        () => {
+            for (let i = 0; i < 64; i++) {
+                tileRectSink.value += tileSheet.tileRect(i).x;
+            }
         },
         BENCH_OPTIONS,
     );

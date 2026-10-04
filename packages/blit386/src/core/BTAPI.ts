@@ -13,7 +13,7 @@ import {
     PaletteEffectManager,
     paletteSwap,
 } from '../assets/PaletteEffect';
-import type { SpriteSheet } from '../assets/SpriteSheet';
+import { type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
@@ -44,7 +44,7 @@ import {
 import { downloadBlob, type FrameCaptureSize, writeBlobToClipboard } from '../utils/FrameCapture';
 import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
 import { Random } from '../utils/Random';
-import type { Rect2i } from '../utils/Rect2i';
+import { Rect2i } from '../utils/Rect2i';
 import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLimits';
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
@@ -101,6 +101,13 @@ export class BTAPI {
 
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
+
+    /**
+     * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
+     * sprite pipeline consumes `srcRect` before returning and the software
+     * renderer clones it into its command list.
+     */
+    private readonly scratchTileRect = new Rect2i();
 
     /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
@@ -1455,6 +1462,60 @@ export class BTAPI {
         this.markDrawCall();
 
         this.renderer?.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+    }
+
+    /**
+     * Draws one tile from a sheet's own grid ({@link SpriteSheet.tileSize}).
+     *
+     * @param spriteSheet - Indexized sheet with a tile grid.
+     * @param colOrIndex - Row-major index when `row` is `undefined`, otherwise the column.
+     * @param row - Zero-based row, or `undefined` for the index form.
+     * @param destPos - Screen position of the tile's top-left corner.
+     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @throws If the sheet has no grid, the tile is outside it, or anything {@link drawSprite} rejects.
+     */
+    public drawTile(
+        spriteSheet: SpriteSheet,
+        colOrIndex: number,
+        row: number | undefined,
+        destPos: Vector2i,
+        paletteOffset: number = 0,
+    ): void {
+        this.drawSprite(
+            spriteSheet,
+            writeGridTileRect(this.scratchTileRect, spriteSheet, colOrIndex, row),
+            destPos,
+            paletteOffset,
+        );
+    }
+
+    /**
+     * Draws one tile using a tile size given per call instead of the sheet's grid.
+     *
+     * @param spriteSheet - Indexized sheet.
+     * @param col - Zero-based column.
+     * @param row - Zero-based row.
+     * @param tileW - Tile width in pixels.
+     * @param tileH - Tile height in pixels.
+     * @param destPos - Screen position of the tile's top-left corner.
+     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @throws If the size or tile is invalid, or anything {@link drawSprite} rejects.
+     */
+    public drawTileSized(
+        spriteSheet: SpriteSheet,
+        col: number,
+        row: number,
+        tileW: number,
+        tileH: number,
+        destPos: Vector2i,
+        paletteOffset: number = 0,
+    ): void {
+        this.drawSprite(
+            spriteSheet,
+            writeTileRect(this.scratchTileRect, spriteSheet, col, row, tileW, tileH),
+            destPos,
+            paletteOffset,
+        );
     }
 
     /**

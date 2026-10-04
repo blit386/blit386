@@ -100,6 +100,7 @@ src/
     CanvasLayoutStyles.ts  # Canvas layout CSS custom properties helper
     RenderLimits.ts        # Render dimension validation (8192 px per axis; 16,777,216 total pixels)
     AssetLimits.ts         # Asset dimension validation, btfont/glyph limits, sprite-blit clipping
+    TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid
     HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector

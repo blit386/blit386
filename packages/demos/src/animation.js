@@ -126,7 +126,7 @@ function drawWalkFrame(ctx, frameIndex) {
 /**
  * Builds a horizontal strip with idle + three walk frames.
  *
- * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, frames: Rect2i[] }}
+ * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D }}
  */
 function buildWalkSheet() {
     const sheetW = WALK_FRAME_W * WALK_FRAME_COUNT;
@@ -140,14 +140,11 @@ function buildWalkSheet() {
 
     ctx.clearRect(0, 0, sheetW, sheetH);
 
-    const frames = [];
-
     for (let f = 0; f < WALK_FRAME_COUNT; f++) {
         drawWalkFrame(ctx, f);
-        frames.push(new Rect2i(f * WALK_FRAME_W, 0, WALK_FRAME_W, WALK_FRAME_W));
     }
 
-    return { canvas, ctx, frames };
+    return { canvas, ctx };
 }
 
 /**
@@ -270,14 +267,17 @@ class Demo {
 
         // Build a four-frame walk strip on an offscreen canvas (idle + three walk poses).
         try {
-            const { canvas, ctx, frames } = buildWalkSheet();
-            this.walkFrames = frames;
+            const { canvas, ctx } = buildWalkSheet();
 
             registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, SPRITE_BASE);
 
             const image = await canvasToImage(canvas);
             this.spriteSheet = new SpriteSheet(image);
             this.spriteSheet.indexize(this.palette);
+
+            // The strip is WALK_FRAME_COUNT square cells; tileRect(f) cuts frame f out of it.
+            this.spriteSheet.tileSize = WALK_FRAME_W;
+            this.walkFrames = Array.from({ length: WALK_FRAME_COUNT }, (_, f) => this.spriteSheet.tileRect(f));
 
             BT.paletteSet(this.palette);
             console.log(`[AnimationDemo] Built walk sheet: ${canvas.width}x${canvas.height}px, 4 frames`);

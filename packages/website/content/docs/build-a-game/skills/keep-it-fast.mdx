@@ -80,6 +80,8 @@ argument - the object to write the answer into:
 - `vec.set(x, y)` and `vec.copyFrom(other)` instead of `new Vector2i(...)`
 - `BT.pointerPosTo(out, slot?)` and `BT.pointerDeltaTo(out, slot?)` instead of `BT.pointerPos(slot?)` /
   `BT.pointerDelta(slot?)` (engine 1.7.0+) - the destination vector comes first, and is returned for chaining
+- `BT.drawTile(sheet, index, pos)` instead of `BT.drawSprite(sheet, new Rect2i(...), pos)` for grid sheets - it reuses
+  one rectangle inside the engine (engine 1.8.0+)
 
 ```js
 // One reused vector, read every frame for all four pointer slots.

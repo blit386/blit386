@@ -22,9 +22,10 @@ import { registerHotContext } from '../hot/HotRuntime';
 import { AssetLimitError, MAX_ASSET_DIMENSION, MAX_ASSET_PIXELS } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
+import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
 import { Palette } from './Palette';
-import { getHotReloadSheets, SpriteSheet } from './SpriteSheet';
+import { getHotReloadSheets, SpriteSheet, writeGridTileRect, writeTileRect } from './SpriteSheet';
 
 // SpriteSheet.destroy() unconditionally normalizes `sourceUrl` against `document.baseURI`
 // (see unregisterFromHotReload in SpriteSheet.ts) whenever a sheet was loaded via
@@ -417,6 +418,23 @@ describe('SpriteSheet', () => {
             expect(closeSpy).toHaveBeenCalledOnce();
         });
 
+        it('stores the tileSize option on the loaded sheet', async () => {
+            vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ close: vi.fn() } as unknown as ImageBitmap));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            const sheet = await SpriteSheet.load('test.png', { tileSize: 16 });
+
+            expect(sheet.tileSize?.x).toBe(16);
+            expect(sheet.tileSize?.y).toBe(16);
+        });
+
+        it('rejects an invalid tileSize option', async () => {
+            vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ close: vi.fn() } as unknown as ImageBitmap));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            await expect(SpriteSheet.load('test.png', { tileSize: 0 })).rejects.toThrow(RangeError);
+        });
+
         describe('AssetLoader.loadingCount via SpriteSheet.load', () => {
             /** Image stub whose `onload`/`onerror` must be fired manually, so tests control timing. */
             class DeferredImage {
@@ -512,6 +530,30 @@ describe('SpriteSheet', () => {
             await SpriteSheet.loadIndexed('hero.png', palette, 4, { sort: 'none' });
 
             expect(loadColorsSpy).toHaveBeenCalledWith('hero.png', palette, 4, { sort: 'none' });
+        });
+
+        it('stores the tileSize option and passes only the URL to load', async () => {
+            const palette = new Palette(32);
+            const sheet = new SpriteSheet({ width: 64, height: 48 } as HTMLImageElement);
+            vi.spyOn(sheet, 'indexize').mockReturnValue(undefined);
+            vi.spyOn(SpriteSheet, 'loadColorsIntoPalette').mockResolvedValue([]);
+            const loadSpy = vi.spyOn(SpriteSheet, 'load').mockResolvedValue(sheet);
+
+            const result = await SpriteSheet.loadIndexed('hero.png', palette, 4, { tileSize: new Vector2i(16, 24) });
+
+            expect(loadSpy).toHaveBeenCalledWith('hero.png');
+            expect(result.sheet.tileSize?.y).toBe(24);
+        });
+
+        it('rejects an invalid tileSize before writing the palette or loading the image', async () => {
+            const loadColorsSpy = vi.spyOn(SpriteSheet, 'loadColorsIntoPalette').mockResolvedValue([]);
+            const loadSpy = vi.spyOn(SpriteSheet, 'load');
+
+            await expect(SpriteSheet.loadIndexed('hero.png', new Palette(32), 4, { tileSize: 0 })).rejects.toThrow(
+                RangeError,
+            );
+            expect(loadColorsSpy).not.toHaveBeenCalled();
+            expect(loadSpy).not.toHaveBeenCalled();
         });
     });
 
@@ -821,6 +863,153 @@ describe('SpriteSheet', () => {
             sheet.markPaletteIndicesInRect(new Rect2i(0, 0, 16, 16), 0, mask);
 
             expect(collectUsedIndices(mask, 16, scratch)).toEqual([]);
+        });
+    });
+
+    describe('tile grid', () => {
+        // 64x48 sheet of 16x24 tiles: 4 columns x 2 rows.
+        const gridImage = { width: 64, height: 48 } as HTMLImageElement;
+
+        function rectValues(rect: Rect2i): number[] {
+            return [rect.x, rect.y, rect.width, rect.height];
+        }
+
+        it('has no tile size by default', () => {
+            expect(new SpriteSheet(gridImage).tileSize).toBeNull();
+        });
+
+        it('stores a number tile size as a square Vector2i', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = 16;
+
+            expect(sheet.tileSize?.x).toBe(16);
+            expect(sheet.tileSize?.y).toBe(16);
+        });
+
+        it('stores a Vector2i tile size as a frozen copy', () => {
+            const sheet = new SpriteSheet(gridImage);
+            const size = new Vector2i(16, 24);
+            sheet.tileSize = size;
+
+            expect(sheet.tileSize).not.toBe(size);
+            expect(Object.isFrozen(sheet.tileSize)).toBe(true);
+        });
+
+        it('clears the grid when set to null', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = 16;
+            sheet.tileSize = null;
+
+            expect(sheet.tileSize).toBeNull();
+        });
+
+        it.each([0, -16, 16.5, 2 ** 32])('rejects tile size %s at set time', (size) => {
+            const sheet = new SpriteSheet(gridImage);
+
+            expect(() => {
+                sheet.tileSize = size;
+            }).toThrow(RangeError);
+            expect(sheet.tileSize).toBeNull();
+        });
+
+        it('works on a fromIndexedPixels sheet', () => {
+            const sheet = SpriteSheet.fromIndexedPixels(4, 2, new Uint8Array(8) as Uint8Array<ArrayBuffer>);
+            sheet.tileSize = 2;
+
+            expect(rectValues(sheet.tileRect(1, 0))).toEqual([2, 0, 2, 2]);
+        });
+
+        it('agrees between col/row and row-major index on a non-square grid', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = new Vector2i(16, 24);
+
+            expect(rectValues(sheet.tileRect(3, 1))).toEqual([48, 24, 16, 24]);
+            expect(rectValues(sheet.tileRect(7))).toEqual([48, 24, 16, 24]);
+            expect(rectValues(sheet.tileRect(5))).toEqual(rectValues(sheet.tileRect(1, 1)));
+        });
+
+        it('returns a new Rect2i on every call', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = 16;
+
+            expect(sheet.tileRect(0)).not.toBe(sheet.tileRect(0));
+        });
+
+        it('throws the grid-missing error on a sheet with no tile size', () => {
+            const sheet = new SpriteSheet(gridImage);
+
+            expect(() => sheet.tileRect(0)).toThrow(/tileSize/);
+            expect(() => sheet.tileRect(0, 0)).toThrow(/BT\.drawTile\(sheet, col, row, tileSize, destPos\)/);
+        });
+
+        it('accepts the last whole tile and rejects one past it', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = new Vector2i(16, 24);
+
+            expect(() => sheet.tileRect(3, 1)).not.toThrow();
+            expect(() => sheet.tileRect(4, 0)).toThrow(/outside this sheet's grid of 4 x 2/);
+            expect(() => sheet.tileRect(0, 2)).toThrow(RangeError);
+            expect(() => sheet.tileRect(7)).not.toThrow();
+            expect(() => sheet.tileRect(8)).toThrow(/index 8/);
+        });
+
+        it('does not count a partial tile at the right or bottom edge', () => {
+            // 40x40 sheet of 16x16 tiles: 2 x 2 whole tiles, an 8px strip left over on each axis.
+            const sheet = new SpriteSheet({ width: 40, height: 40 } as HTMLImageElement);
+            sheet.tileSize = 16;
+
+            expect(() => sheet.tileRect(1, 1)).not.toThrow();
+            expect(() => sheet.tileRect(2, 0)).toThrow(RangeError);
+            expect(() => sheet.tileRect(4)).toThrow(RangeError);
+        });
+
+        it('throws out-of-grid (not NaN math) when the tile is larger than the sheet', () => {
+            const sheet = new SpriteSheet({ width: 8, height: 8 } as HTMLImageElement);
+            sheet.tileSize = 16;
+
+            expect(() => sheet.tileRect(0)).toThrow(/grid of 0 x 0/);
+            expect(() => sheet.tileRect(0, 0)).toThrow(/grid of 0 x 0/);
+        });
+
+        it('rejects negative and fractional coordinates', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = 16;
+
+            expect(() => sheet.tileRect(-1)).toThrow(/Tile index/);
+            expect(() => sheet.tileRect(0.5, 0)).toThrow(/Tile column/);
+            expect(() => sheet.tileRect(0, Number.NaN)).toThrow(/Tile row/);
+        });
+
+        it('keeps the tile size across a hot-reload swap and checks bounds against the new size', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = 16;
+            expect(() => sheet.tileRect(3, 0)).not.toThrow();
+
+            sheet.beginHotReplace();
+            sheet.hotReplaceImage({ width: 32, height: 16 } as HTMLImageElement, null);
+
+            expect(sheet.tileSize?.x).toBe(16);
+            expect(() => sheet.tileRect(1, 0)).not.toThrow();
+            expect(() => sheet.tileRect(3, 0)).toThrow(/grid of 2 x 1/);
+        });
+
+        it('writeTileRect writes into and returns the given rect', () => {
+            const sheet = new SpriteSheet(gridImage);
+            const out = new Rect2i();
+
+            expect(writeTileRect(out, sheet, 1, 1, 16, 24)).toBe(out);
+            expect(rectValues(out)).toEqual([16, 24, 16, 24]);
+        });
+
+        it('writeGridTileRect reuses the given rect for index and col/row lookups', () => {
+            const sheet = new SpriteSheet(gridImage);
+            sheet.tileSize = new Vector2i(16, 24);
+            const out = new Rect2i();
+
+            expect(writeGridTileRect(out, sheet, 6, undefined)).toBe(out);
+            expect(rectValues(out)).toEqual([32, 24, 16, 24]);
+            expect(writeGridTileRect(out, sheet, 0, 1)).toBe(out);
+            expect(rectValues(out)).toEqual([0, 24, 16, 24]);
         });
     });
 

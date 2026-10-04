@@ -2,9 +2,14 @@ import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { isHotActive } from '../hot/HotRuntime';
 import { assertDimensions, assertImageElementWithinLimits, assertIndexedPixelInput } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { spriteColorNotInPaletteError } from '../utils/errorMessages';
+import {
+    spriteColorNotInPaletteError,
+    spriteTileGridMissingError,
+    spriteTileOutOfGridError,
+} from '../utils/errorMessages';
 import { normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
+import { assertTileCoordinate, assertTileSize } from '../utils/TileGrid';
 import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
 import type { Palette } from './Palette';
@@ -291,6 +296,9 @@ export class SpriteSheet {
     /** Load progress in `[0, 1]`. Backing field for the public {@link progress} getter. */
     private _progress = 1.0;
 
+    /** Tile grid cell size, or `null` when the sheet has no grid. Backing field for {@link tileSize}. */
+    private _tileSize: Vector2i | null = null;
+
     /**
      * Creates a sprite sheet from a loaded image.
      * Use the static load() method for easier loading from URL.
@@ -365,6 +373,36 @@ export class SpriteSheet {
     }
 
     /**
+     * Gets the size of one tile in this sheet's grid, or `null` when the sheet
+     * has no grid.
+     *
+     * The grid is what lets `BT.drawTile(sheet, index, destPos)`,
+     * `BT.drawTile(sheet, col, row, destPos)`, and {@link tileRect} find a
+     * tile without you computing a `Rect2i`. Tiles are counted in whole cells
+     * from the top-left; a partial cell at the right or bottom edge is not a
+     * tile. The returned vector is frozen - assign a new size instead of
+     * mutating it. The grid survives a hot-reload image swap; bounds are
+     * checked against the sheet's current size on every lookup.
+     *
+     * @since 1.8.0
+     * @returns The tile size, or `null`.
+     */
+    get tileSize(): Vector2i | null {
+        return this._tileSize;
+    }
+
+    /**
+     * Sets the size of one tile in this sheet's grid.
+     *
+     * @since 1.8.0
+     * @param value - A number for square tiles, a `Vector2i` for width x height, or `null` to remove the grid.
+     * @throws RangeError if the size is not a positive integer on both axes (the grid is left unchanged).
+     */
+    set tileSize(value: number | Vector2i | null) {
+        this._tileSize = value === null ? null : toTileSize(value);
+    }
+
+    /**
      * Returns a display label for the source image, used in error messages.
      *
      * @returns Quoted image `src` when available, or `(unnamed)` for sheets
@@ -381,12 +419,20 @@ export class SpriteSheet {
      * settings for more predictable GPU uploads. If bitmap creation fails, the
      * instance still works and falls back to uploading the `HTMLImageElement`.
      *
+     * @changed 1.8.0 Added `options.tileSize`.
      * @param url - Path or URL to the image file.
+     * @param options - Optional configuration.
+     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet.tileSize}).
      * @returns Promise resolving to the loaded SpriteSheet.
+     * @throws RangeError if `options.tileSize` is not a positive integer on both axes.
      */
-    static async load(url: string): Promise<SpriteSheet> {
+    static async load(url: string, options?: { tileSize?: number | Vector2i }): Promise<SpriteSheet> {
+        // Validate before any loading so a bad size fails fast with no side effects.
+        const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
         const image = await AssetLoader.loadImage(url);
         const sheet = new SpriteSheet(image);
+
+        sheet._tileSize = tileSize;
 
         sheet.sourceUrl = url;
         sheet.registerForHotReload();
@@ -425,20 +471,26 @@ export class SpriteSheet {
      * @param url - Path or URL to the PNG file.
      * @param palette - Target palette used for both registration and indexization.
      * @param startSlot - First palette slot to write discovered colors into.
-     * @param options - Optional color-sort behavior for registration.
+     * @changed 1.8.0 Added `options.tileSize`.
+     * @param options - Optional color-sort behavior for registration and tile grid size.
      * @param options.sort - Color ordering for palette registration.
+     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet.tileSize}).
      * @returns Object with `sheet`, `srcRect`, and registered `colors`.
+     * @throws RangeError if `options.tileSize` is not a positive integer on both axes.
      */
     static async loadIndexed(
         url: string,
         palette: Palette,
         startSlot: number,
-        options?: { sort?: 'luminance' | 'none' },
+        options?: { sort?: 'luminance' | 'none'; tileSize?: number | Vector2i },
     ): Promise<IndexedSpriteLoadResult> {
+        // Validate before loadColorsIntoPalette writes the palette, so a bad size leaves it untouched.
+        const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
         const colors = await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options);
         const sheet = await SpriteSheet.load(url);
 
         sheet.indexize(palette);
+        sheet._tileSize = tileSize;
 
         return {
             sheet,
@@ -847,6 +899,42 @@ export class SpriteSheet {
     }
 
     /**
+     * Returns the source rectangle of one tile in this sheet's grid.
+     *
+     * Allocates a new `Rect2i` per call - build frame lists with it in
+     * `init()`. For per-frame drawing, `BT.drawTile` does the same lookup
+     * without allocating.
+     *
+     * @since 1.8.0
+     * @param index - Row-major tile index: `0` is top-left, counting across each row then down.
+     * @returns New source rectangle for the tile.
+     * @throws Error if the sheet has no {@link tileSize}.
+     * @throws RangeError if the index is negative, fractional, or past the last whole tile.
+     */
+    tileRect(index: number): Rect2i;
+    /**
+     * Returns the source rectangle of the tile at a grid column and row.
+     *
+     * @since 1.8.0
+     * @param col - Zero-based column.
+     * @param row - Zero-based row.
+     * @returns New source rectangle for the tile.
+     * @throws Error if the sheet has no {@link tileSize}.
+     * @throws RangeError if `col` / `row` is negative, fractional, or outside the grid of whole tiles.
+     */
+    tileRect(col: number, row: number): Rect2i;
+    /**
+     * Implementation of the {@link SpriteSheet.tileRect} overloads.
+     *
+     * @param colOrIndex - Row-major index when `row` is omitted, otherwise the column.
+     * @param row - Zero-based row, or omitted for the index form.
+     * @returns New source rectangle for the tile.
+     */
+    tileRect(colOrIndex: number, row?: number): Rect2i {
+        return writeGridTileRect(new Rect2i(), this, colOrIndex, row);
+    }
+
+    /**
      * Gets or lazily creates the GPU texture for this sprite sheet.
      *
      * If `indexize()` has been called, creates an `r8uint` texture from the
@@ -1032,4 +1120,109 @@ export class SpriteSheet {
             hotReloadRegistry.delete(key);
         }
     }
+}
+
+/**
+ * Validates a tile size given as a number (square) or a `Vector2i` and returns
+ * it as a frozen `Vector2i` copy. Shared by the {@link SpriteSheet.tileSize}
+ * setter and the `tileSize` option of `load` / `loadIndexed`.
+ *
+ * @param value - Tile size in pixels.
+ * @returns Frozen tile size.
+ * @throws RangeError if the size is not a positive integer on both axes.
+ */
+function toTileSize(value: number | Vector2i): Vector2i {
+    const tileW = typeof value === 'number' ? value : value.x;
+    const tileH = typeof value === 'number' ? value : value.y;
+
+    assertTileSize(tileW, tileH);
+
+    return Object.freeze(new Vector2i(tileW, tileH));
+}
+
+/**
+ * Writes the source rectangle of one tile into `out`, validating the tile size
+ * and checking the tile against the sheet's current grid of whole tiles.
+ *
+ * Engine-internal: shared by {@link SpriteSheet.tileRect} and `BT.drawTile` so
+ * both apply the same bounds rules. Not re-exported from the package entry.
+ *
+ * @param out - Rectangle to write into.
+ * @param sheet - Sheet whose current size bounds the grid.
+ * @param col - Zero-based column.
+ * @param row - Zero-based row.
+ * @param tileW - Tile width in pixels.
+ * @param tileH - Tile height in pixels.
+ * @returns `out`, for chaining.
+ * @throws RangeError for an invalid size or coordinate, or a tile outside the grid.
+ */
+export function writeTileRect(
+    out: Rect2i,
+    sheet: SpriteSheet,
+    col: number,
+    row: number,
+    tileW: number,
+    tileH: number,
+): Rect2i {
+    assertTileSize(tileW, tileH);
+    assertTileCoordinate('column', col);
+    assertTileCoordinate('row', row);
+
+    const columns = Math.floor(sheet.width / tileW);
+    const rows = Math.floor(sheet.height / tileH);
+
+    if (col >= columns || row >= rows) {
+        throw new RangeError(spriteTileOutOfGridError(`(${col}, ${row})`, columns, rows));
+    }
+
+    out.x = col * tileW;
+    out.y = row * tileH;
+    out.width = tileW;
+    out.height = tileH;
+
+    return out;
+}
+
+/**
+ * Writes the source rectangle of one tile into `out` using the sheet's own
+ * {@link SpriteSheet.tileSize}: a row-major index when `row` is `undefined`,
+ * otherwise a column and row.
+ *
+ * Engine-internal; not re-exported from the package entry.
+ *
+ * @param out - Rectangle to write into.
+ * @param sheet - Sheet with a tile grid.
+ * @param colOrIndex - Row-major index when `row` is `undefined`, otherwise the column.
+ * @param row - Zero-based row, or `undefined` for the index form.
+ * @returns `out`, for chaining.
+ * @throws Error if the sheet has no tile size.
+ * @throws RangeError for an invalid coordinate or a tile outside the grid.
+ */
+export function writeGridTileRect(
+    out: Rect2i,
+    sheet: SpriteSheet,
+    colOrIndex: number,
+    row: number | undefined,
+): Rect2i {
+    const tileSize = sheet.tileSize;
+
+    if (tileSize === null) {
+        throw new Error(spriteTileGridMissingError());
+    }
+
+    if (row !== undefined) {
+        return writeTileRect(out, sheet, colOrIndex, row, tileSize.x, tileSize.y);
+    }
+
+    assertTileCoordinate('index', colOrIndex);
+
+    const columns = Math.floor(sheet.width / tileSize.x);
+    const rows = Math.floor(sheet.height / tileSize.y);
+
+    // Also covers a zero-tile grid (tile larger than the sheet), so the modulo below never divides by zero.
+    if (colOrIndex >= columns * rows) {
+        throw new RangeError(spriteTileOutOfGridError(`index ${colOrIndex}`, columns, rows));
+    }
+
+    return writeTileRect(out, sheet, colOrIndex % columns, Math.floor(colOrIndex / columns), tileSize.x, tileSize.y);
 }

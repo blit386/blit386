@@ -16,6 +16,7 @@
 import { bench, describe } from 'vitest';
 
 import { Palette } from './assets/Palette';
+import { SpriteSheet } from './assets/SpriteSheet';
 import { BT } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import { SoftwareRenderer } from './render/SoftwareRenderer';
@@ -122,6 +123,13 @@ const rect = new Rect2i(10, 10, 4, 4);
 const p0 = new Vector2i(0, 0);
 const p1 = new Vector2i(319, 239);
 
+const tilePixels = new Uint8Array(64 * 64) as Uint8Array<ArrayBuffer>;
+tilePixels.fill(1);
+const tileSheet = SpriteSheet.fromIndexedPixels(64, 64, tilePixels);
+tileSheet.tileSize = 8;
+const tileSrc = new Rect2i(8, 8, 8, 8);
+const tileDest = new Vector2i(16, 16);
+
 describe('BT draw-call facade', () => {
     bench(
         'BT.drawPixel(x, y, paletteIndex) x 10000',
@@ -169,6 +177,30 @@ describe('BT draw-call facade', () => {
 
             for (let i = 0; i < 100; i++) {
                 BT.drawLine(p0, p1, PALETTE_INDEX);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'BT.drawSprite(sheet, fixed 8x8 rect) x 5000',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < 5000; i++) {
+                BT.drawSprite(tileSheet, tileSrc, tileDest);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'BT.drawTile(sheet, index) x 5000',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < 5000; i++) {
+                BT.drawTile(tileSheet, i & 63, tileDest);
             }
         },
         BENCH_OPTIONS,

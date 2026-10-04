@@ -142,6 +142,20 @@ function reportEngineNotReady(methodName: string): void {
 }
 
 /**
+ * Treats any non-null object argument as a `Vector2i` for `BT.drawTile` dispatch.
+ *
+ * A bare `typeof value === 'object'` also matches `null`, which would let an untyped
+ * `null` argument reach `.x` / `.y` and surface a raw TypeError instead of the
+ * wrong-arguments error. Still `typeof`-based, so the dispatch stays `instanceof`-free.
+ *
+ * @param value - Argument to classify.
+ * @returns `true` for a non-null object.
+ */
+function isVectorArg(value: unknown): value is Vector2i {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
  * Converts an unknown runtime value into a concise display type label.
  *
  * @param value - Runtime value to inspect.
@@ -2640,6 +2654,108 @@ export const BT = {
         } catch (error) {
             reportDrawError(error);
         }
+    },
+
+    /**
+     * Draws one tile from a sprite sheet laid out as a grid of equal cells.
+     *
+     * Three forms:
+     *
+     * - `BT.drawTile(sheet, index, destPos, paletteOffset?)` - row-major index into the sheet's grid.
+     * - `BT.drawTile(sheet, col, row, destPos, paletteOffset?)` - column and row in the sheet's grid.
+     * - `BT.drawTile(sheet, col, row, tileSize, destPos, paletteOffset?)` - tile size given here, for sheets with no
+     *   grid. `tileSize` is a number for square tiles or a `Vector2i` for width x height.
+     *
+     * The first two need a grid on the sheet: `SpriteSheet.load(url, { tileSize: 16 })`,
+     * `SpriteSheet.loadIndexed(url, palette, slot, { tileSize: 16 })`, or `sheet.tileSize = 16`. Tiles are whole
+     * cells counted from the top-left; a partial cell at the right or bottom edge is not a tile, and a tile outside
+     * the grid is an error. `paletteOffset` works exactly as in {@link BT.drawSprite}.
+     *
+     * Allocation-free: the engine reuses one internal source rectangle. To flip or scale a tile, pass
+     * `sheet.tileRect(...)` to `BT.drawSprite` instead.
+     *
+     * @since 1.8.0
+     * @param spriteSheet - Indexized sprite sheet.
+     * @param colOrIndex - Tile index (first form) or column (other forms).
+     * @param rowOrDestPos - Destination position (first form) or row (other forms).
+     * @param arg4 - Palette offset (first form), destination position (second form), or tile size (third form).
+     * @param arg5 - Palette offset (second form) or destination position (third form).
+     * @param arg6 - Palette offset (third form).
+     *
+     * @example
+     * const sheet = await SpriteSheet.load('/sprites/hero.png', { tileSize: 16 });
+     * // ...after sheet.indexize(palette):
+     * BT.drawTile(sheet, frame, new Vector2i(40, 60)); // by index
+     * BT.drawTile(sheet, 2, 1, new Vector2i(40, 60)); // by column and row
+     * BT.drawTile(otherSheet, 2, 1, 8, new Vector2i(40, 60)); // explicit 8x8 tiles
+     */
+    drawTile: ((
+        spriteSheet: SpriteSheet,
+        colOrIndex: number,
+        rowOrDestPos: number | Vector2i,
+        arg4?: number | Vector2i,
+        arg5?: number | Vector2i,
+        arg6?: number,
+    ): void => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawTile');
+            return;
+        }
+
+        try {
+            if (spriteSheet instanceof Promise) {
+                reportMissingAwait('SpriteSheet.load()');
+                return;
+            }
+
+            // Each form accepts exactly its own argument shapes; anything else falls through to the
+            // wrong-arguments error below rather than being coerced.
+            if (isVectorArg(rowOrDestPos)) {
+                // (sheet, index, destPos, paletteOffset?)
+                if (!isVectorArg(arg4)) {
+                    BTAPI.instance.drawTile(spriteSheet, colOrIndex, undefined, rowOrDestPos, arg4);
+                    return;
+                }
+            } else if (isVectorArg(arg5)) {
+                // (sheet, col, row, tileSize, destPos, paletteOffset?)
+                if (typeof arg4 === 'number' || isVectorArg(arg4)) {
+                    const tileW = typeof arg4 === 'number' ? arg4 : arg4.x;
+                    const tileH = typeof arg4 === 'number' ? arg4 : arg4.y;
+
+                    BTAPI.instance.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
+                    return;
+                }
+            } else if (isVectorArg(arg4)) {
+                // (sheet, col, row, destPos, paletteOffset?)
+                BTAPI.instance.drawTile(spriteSheet, colOrIndex, rowOrDestPos, arg4, arg5);
+                return;
+            }
+
+            const typeDetails = [colOrIndex, rowOrDestPos, arg4, arg5, arg6]
+                .map(describeRuntimeType)
+                .filter((part) => part !== 'undefined')
+                .join(', ');
+            showBeginnerRuntimeError(
+                'drawTile expects (sheet, index, destPos), (sheet, col, row, destPos), or ' +
+                    `(sheet, col, row, tileSize, destPos), each with an optional paletteOffset. Got: [sheet, ${typeDetails}]`,
+                'Wrong drawTile Arguments',
+            );
+        } catch (error) {
+            reportDrawError(error);
+        }
+        // Object literals cannot declare overloads; the cast gives callers the three typed forms.
+        // gen-api-history.mjs unwraps the `as` and still classifies this member as a method.
+    }) as {
+        (spriteSheet: SpriteSheet, index: number, destPos: Vector2i, paletteOffset?: number): void;
+        (spriteSheet: SpriteSheet, col: number, row: number, destPos: Vector2i, paletteOffset?: number): void;
+        (
+            spriteSheet: SpriteSheet,
+            col: number,
+            row: number,
+            tileSize: number | Vector2i,
+            destPos: Vector2i,
+            paletteOffset?: number,
+        ): void;
     },
 
     /**

@@ -123,6 +123,26 @@ BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 
 <DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
 
+### Tile grids
+
+Pass `tileSize` to `loadIndexed` (or `load`) when the image is a grid of equal cells. `BT.drawTile` and `sheet.tileRect`
+then find cells for you:
+
+```ts twoslash
+import { type Palette, SpriteSheet, Vector2i } from 'blit386';
+declare const palette: Palette;
+// ---cut---
+const { sheet } = await SpriteSheet.loadIndexed('/sprites/walk.png', palette, 1, { tileSize: new Vector2i(16, 24) });
+
+const walkFrames = [0, 1, 2, 3].map((i) => sheet.tileRect(i)); // built once in init()
+sheet.tileSize = 8; // or set or change it later; null removes the grid
+```
+
+Setting `sheet.tileSize` (or the `tileSize` load option) to anything but a positive whole number of at most 8192 (the
+largest sheet the engine accepts) on both axes throws a `RangeError` and leaves the grid unchanged. `sheet.tileSize`
+reads back as a frozen `Vector2i` (or `null`). The grid survives a hot-reload image swap, and lookups are checked
+against the sheet's current size. See [Drawing tiles](api-rendering.md#drawing-tiles).
+
 ## Sprite setup - manual path
 
 Use this only when you need fine-grained control over the palette layout or want to load several sheets into the same

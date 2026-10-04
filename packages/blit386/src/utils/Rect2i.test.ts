@@ -1002,4 +1002,27 @@ describe('Rect2i', () => {
             expect(r.bottom).toBe(60);
         });
     });
+
+    describe('Rect2i.fromTile', () => {
+        it('builds a square tile rect from a number size', () => {
+            const rect = Rect2i.fromTile(2, 1, 16);
+
+            expect([rect.x, rect.y, rect.width, rect.height]).toEqual([32, 16, 16, 16]);
+        });
+
+        it('builds a non-square tile rect from a Vector2i size', () => {
+            const rect = Rect2i.fromTile(3, 1, new Vector2i(16, 24));
+
+            expect([rect.x, rect.y, rect.width, rect.height]).toEqual([48, 24, 16, 24]);
+        });
+
+        it.each([0, -16, 16.5])('throws for tile size %s', (size) => {
+            expect(() => Rect2i.fromTile(0, 0, size)).toThrow(RangeError);
+        });
+
+        it('throws for a negative or fractional column or row', () => {
+            expect(() => Rect2i.fromTile(-1, 0, 16)).toThrow(/Tile column/);
+            expect(() => Rect2i.fromTile(0, 0.5, 16)).toThrow(/Tile row/);
+        });
+    });
 });
