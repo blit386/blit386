@@ -246,7 +246,8 @@ Two size limits shaped it, both measured with `wrangler deploy --dry-run`:
 
 - Every page is prerendered into the Worker (`__waku_build_metadata.js` plus the page's MDX module) at roughly 3.5x its
   source size after gzip. All 48 demos took the Worker from 4.1 MB to 8.9 MB gzip against the 10 MiB limit; the 15 in
-  `FIRST_GAME_EXAMPLES` keep it near 6.2 MB. Re-measure before adding demos.
+  `FIRST_GAME_EXAMPLES` keep it near 6.2 MB. `pnpm run check:deploy-size` fails if adding demos breaks the budget (see
+  Deploy).
 - The client search index `/api/search` is a single static asset, capped at 25 MiB per asset; it was 17.1 MiB before
   these pages and their prose alone pushed it to 27 MiB. `flexsearchPlugin({ buildIndex })` in `press.config.tsx`
   indexes the subpages by title and description only (`KIT_PAGES_PREFIX`, a manual-sync copy of the script's `SECTION`).

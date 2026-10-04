@@ -42,8 +42,8 @@ const DESCRIPTION_MAX_LENGTH = 160;
 // bundle at roughly 3.5x its source size after gzip, and all 48 demos took the Worker from 4.1 MB
 // to 8.9 MB gzip against Cloudflare's 10 MiB limit (measured for BT-557). These cover what a first
 // game needs - program structure, drawing, each input device, a complete game, sprites, animation,
-// camera, tilemaps, sound, palette, and random - in DEMO_ORDER. Add one only after re-measuring
-// with `wrangler deploy --dry-run`.
+// camera, tilemaps, sound, palette, and random - in DEMO_ORDER. After adding one, `pnpm run build`
+// and `pnpm run check:deploy-size` must still pass.
 const FIRST_GAME_EXAMPLES = new Set([
     'hello-world',
     'basics',
