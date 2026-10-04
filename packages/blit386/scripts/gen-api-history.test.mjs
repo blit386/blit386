@@ -153,6 +153,9 @@ describe('collectSymbolRecords / enumerateSymbols (fixture module graph)', () =>
 
         assert.equal(symbols['FixtureBT.add'].kind, 'method');
         assert.equal(symbols['FixtureBT.add'].since, null);
+
+        assert.equal(symbols['FixtureBT.pick'].kind, 'method');
+        assert.equal(symbols['FixtureBT.pick'].since, '1.0.0');
     });
 
     it('collectSymbolRecords exposes the AST node and source file needed for backfill', () => {
