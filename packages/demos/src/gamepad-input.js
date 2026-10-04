@@ -14,8 +14,9 @@
  * - R2 (the right trigger as a button) gives the pod a short speed boost.
  *
  * It also shows `BT.isGamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
- * a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`. The triggers also
- * work as digital buttons: `BT.isDown(BT.BTN_L2, player)` and `BT.isPressed(BT.BTN_R2, player)`.
+ * a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`. The
+ * triggers also work as digital buttons: `BT.isDown(BT.BTN_L2, player)` and
+ * `BT.isPressed(BT.BTN_R2, player)`.
  *
  * The status panel on the right comes from the shared UI kit in src/shared/ui.js:
  * pip rows light up while buttons are physically held, key-value rows show the raw
@@ -28,7 +29,8 @@
  * - Move the left stick to fly the pod; move the right stick to drag the crosshair.
  * - Squeeze either trigger and watch the pod grow (whichever trigger reads higher wins).
  * - Hold A and B together and watch the "(A|B) mask" pip in the panel light up.
- * - Pull R2 half way and feel the boost; the "R2 held" pip lights at the same point the Throttle meter reaches half.
+ * - Pull R2 past half way while moving the left stick to feel the boost; the
+ *   "R2 held" pip lights once R2 passes half pull.
  *
  * Live version: https://demos.blit386.dev/gamepad-input
  */
