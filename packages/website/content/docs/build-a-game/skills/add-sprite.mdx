@@ -85,7 +85,11 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   ```
 
   In TypeScript, annotate the field as `SpriteDrawParams` (a type exported by `blit386`) so `scale` can later hold a
-  `Vector2i`.
+  `Vector2i`:
+
+  ```ts
+  drawParams: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+  ```
 
   `flags` takes `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. A 90 or
   270 degree turn swaps width and height; `destPos` stays the top-left corner. To flip a grid tile, pass
