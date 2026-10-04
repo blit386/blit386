@@ -268,9 +268,9 @@ merged.
 
 The repository ships a project MCP config at `.mcp.json` declaring `blit386-docs`, the documentation server at
 `https://blit386.dev/mcp`. An MCP-capable assistant opened at the repo root picks it up automatically and can search the
-engine docs (`search_docs`) or pull the `llms.txt` summary (`get_docs_summary`) without leaving your editor. The server
-is public, read-only, and needs no credentials; setup for other clients is documented at
-[blit386.dev/mcp-server](https://blit386.dev/mcp-server).
+engine docs (`search_docs`), read a whole page (`get_doc_page`), or pull the `llms.txt` summary (`get_docs_summary`)
+without leaving your editor. The server is public, read-only, and needs no credentials; setup for other clients is
+documented at [blit386.dev/mcp-server](https://blit386.dev/mcp-server).
 
 If you use AI tools (like GitHub Copilot or Claude) to help write code, please include the AI trailer in your commit
 message:

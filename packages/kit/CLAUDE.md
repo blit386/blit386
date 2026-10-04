@@ -18,7 +18,7 @@ The `blit` CLI is a project-local bin inside every generated game: `blit run`, `
 Generated games receive `AGENTS.md`, nine beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
 `input`, `palette`, `random`, `audio`, `hot-reload`, `when-something-breaks`), and the game-author skills in
 `content/skills/`. These are not copies of the engine's full `docs/` tree - they teach the starter game and route
-anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP server (`search_docs`,
+anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP server (`search_docs`, `get_doc_page`,
 `get_docs_summary`), `https://blit386.dev/llms.txt`, or any doc page fetched with `Accept: text/markdown`. GitHub is the
 last resort, for when the documentation itself falls short.
 

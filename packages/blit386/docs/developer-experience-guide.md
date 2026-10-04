@@ -250,7 +250,7 @@ Claude Code reads agent policy from this repo's `.claude/` directory, plus the p
 | `.claude/rules/*.md` | Agent rules - always-applied global policy plus glob-scoped rules (for example `ts-file-structure.md` on `src/**/*.ts`) |
 | `.claude/settings.json` | Hooks: `SessionStart` → toolchain bootstrap; `PreToolUse` → RTK shell rewrite + sensitive-file block; `PostToolUse` → format + spellcheck |
 | `.claude/skills/*/SKILL.md` | Reusable command workflows (`preflight`, `format`, …); Zed symlinks under `.agents/skills/` |
-| `.mcp.json` | Project MCP servers - `blit386-docs`, the blit386.dev docs server (`search_docs`, `get_docs_summary`). Listed as a pre-approved project server in `.claude/settings.json`, so it connects without a per-machine trust prompt |
+| `.mcp.json` | Project MCP servers - `blit386-docs`, the blit386.dev docs server (`search_docs`, `get_doc_page`, `get_docs_summary`). Listed as a pre-approved project server in `.claude/settings.json`, so it connects without a per-machine trust prompt |
 
 When changing `package.json` scripts or preflight steps, update matching `.claude/skills/*/SKILL.md` files and any
 `.claude/rules/*.md` that reference those commands.

@@ -315,15 +315,15 @@ Capability matrix (what each adapter emits from the same source):
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
 The "Live docs lookup" row (the `blit386-docs` MCP server at `https://blit386.dev/mcp`, teaching an assistant the
-`search_docs` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks) carries three
-decisions worth keeping: (1) no `content/mcp.manifest.json` - one server with no per-adapter divergence beyond a single
-key does not earn a manifest plus parser plus schema; revisit when a second server appears. (2) the generated
-`.claude/settings.json` deliberately does not pre-approve the server in its MCP enable list - the approval prompt is
-Claude Code's own consent boundary for a network server, the scaffolder is not the party entitled to answer it, and a
-checked-in settings file's approvals are ignored in an untrusted folder anyway. (3) the two generated configs differ by
-one key on purpose: Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks a
-local stdio server. Both are kit-owned, so `blit agents sync` refreshes them and three-way merges a user's own added
-servers.
+`search_docs` / `get_doc_page` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks)
+carries three decisions worth keeping: (1) no `content/mcp.manifest.json` - one server with no per-adapter divergence
+beyond a single key does not earn a manifest plus parser plus schema; revisit when a second server appears. (2) the
+generated `.claude/settings.json` deliberately does not pre-approve the server in its MCP enable list - the approval
+prompt is Claude Code's own consent boundary for a network server, the scaffolder is not the party entitled to answer
+it, and a checked-in settings file's approvals are ignored in an untrusted folder anyway. (3) the two generated configs
+differ by one key on purpose: Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type`
+marks a local stdio server. Both are kit-owned, so `blit agents sync` refreshes them and three-way merges a user's own
+added servers.
 
 The ground truth expresses INTENT; each adapter expresses its agent's CAPABILITY. Content differs per agent, not just
 file location. Worked example - one guardrail ("never let the agent edit lockfiles or secrets"), four renderings:

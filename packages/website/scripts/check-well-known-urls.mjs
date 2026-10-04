@@ -301,6 +301,7 @@ async function checkMcpEndpoint(baseUrl) {
     };
 
     await call('search_docs', { query: 'palette' });
+    await call('get_doc_page', { url: '/docs/getting-started' });
     await call('get_docs_summary', {});
 
     return failures;
