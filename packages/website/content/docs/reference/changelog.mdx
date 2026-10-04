@@ -20,6 +20,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- `BT.nativeScreenToDisplayPos(clientX, clientY)`: converts viewport coordinates, such as a DOM event's `clientX` /
+  `clientY`, to display coordinates with the same math pointer input uses (floor, then clamp to `[0, displaySize - 1]`).
+  Use it for DOM events the engine does not wrap, such as a file dropped onto the canvas. It returns `null` before
+  initialization, for a zero-size canvas, or for a non-finite coordinate. Pointer input now shares the same conversion
+  function, so the two cannot drift. See [Input guide](/docs/guides/input#converting-your-own-dom-events).
 - `keyboardLayout` in `configure()`: `'single'` gives player 0 WASD _and_ the arrow keys, so a one-player game reading
   `BT.isDown(BT.BTN_LEFT)` finally answers to the left arrow; player 1 moves to IJKL, and keyboard scroll capture turns
   on unless `isCapturingKeyboardScroll` is set explicitly. The default `'versus'` keeps today's split (WASD for player

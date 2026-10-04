@@ -17,6 +17,7 @@ import { Overlay } from '../overlay/Overlay';
 import { computeGrid } from '../overlay/palette/PaletteView';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import { clientToDisplayPos } from './clientToDisplayPos';
 import { POINTER_SLOT_COUNT, PointerInput } from './PointerInput';
 
 const BTN_POINTER_A = 20;
@@ -642,6 +643,33 @@ describe('PointerInput', () => {
 
             expect(pos.x).toBe(80);
             expect(pos.y).toBe(60);
+        });
+
+        it('agrees with clientToDisplayPos for in-range, edge, and out-of-range points', () => {
+            const points: [number, number][] = [
+                [10, 20],
+                [170, 140],
+                [649, 499],
+                [650, 500],
+                [-40, -40],
+                [5000, 5000],
+            ];
+
+            for (const [clientX, clientY] of points) {
+                canvas.dispatchEvent(
+                    pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX, clientY }),
+                );
+
+                const expected = clientToDisplayPos(
+                    clientX,
+                    clientY,
+                    canvas.getBoundingClientRect(),
+                    new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT),
+                    new Vector2i(),
+                );
+
+                expect(input.getPos(0)).toEqual(expected);
+            }
         });
 
         it('does not throw on a zero-sized canvas (skips the position update)', () => {
