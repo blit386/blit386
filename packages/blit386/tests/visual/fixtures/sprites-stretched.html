@@ -27,6 +27,7 @@
             // Signal test readiness regardless of success/failure.
             window.__RENDER_COMPLETE__ = false;
             window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
 
             const colorBlack = 1;
 
@@ -147,7 +148,8 @@
                     BT.drawSprite(sheet, src, new Rect2i(8, 140, 41, 23), params);
                     params.paletteOffset = 0;
 
-                    // Signal render complete.
+                    // Signal render complete, publishing the backend that actually started.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
                     window.__RENDER_COMPLETE__ = true;
                 }
             }

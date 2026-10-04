@@ -5,8 +5,8 @@ import { expect, test } from './coverage-fixture';
 const GPU_PRESENT_DELAY = Number(process.env.GPU_PRESENT_DELAY ?? 100);
 
 test.describe('Sprite Rendering', () => {
-    /** Opens a fixture, waits for the first frame, and returns `false` when WebGPU init failed. */
-    async function openFixture(page: Page, url: string): Promise<boolean> {
+    /** Opens a fixture, waits for the first frame, and returns the backend that actually started (`null` when init failed). */
+    async function openFixture(page: Page, url: string): Promise<'webgpu' | 'software' | null> {
         await page.goto(url);
         await page.waitForFunction(
             () => {
@@ -18,7 +18,13 @@ test.describe('Sprite Rendering', () => {
         const initFailed = await page.evaluate(() => (window as unknown as Record<string, boolean>).__INIT_FAILED__);
         await page.waitForTimeout(GPU_PRESENT_DELAY);
 
-        return !initFailed;
+        if (initFailed) {
+            return null;
+        }
+
+        return page.evaluate(
+            () => (window as unknown as { __ACTIVE_BACKEND__: 'webgpu' | 'software' | null }).__ACTIVE_BACKEND__,
+        );
     }
 
     test('should render palette-indexed sprites with offset and batching', async ({ page }) => {
@@ -116,7 +122,9 @@ test.describe('Sprite Rendering', () => {
     });
 
     test('should render integer scales and uneven stretches', async ({ page }) => {
-        if (!(await openFixture(page, '/sprites-stretched.html'))) {
+        const backend = await openFixture(page, '/sprites-stretched.html');
+
+        if (backend !== 'webgpu') {
             test.skip(true, 'WebGPU not available in this environment');
             return;
         }
@@ -125,7 +133,7 @@ test.describe('Sprite Rendering', () => {
     });
 
     test('should render matching scales and stretches in software mode', async ({ page }) => {
-        expect(await openFixture(page, '/sprites-stretched.html?backend=software')).toBe(true);
+        expect(await openFixture(page, '/sprites-stretched.html?backend=software')).toBe('software');
 
         await expect(page.locator('canvas')).toHaveScreenshot('sprites-stretched-software.png', {
             maxDiffPixelRatio: 0.01,
@@ -133,14 +141,16 @@ test.describe('Sprite Rendering', () => {
     });
 
     test('should render stretched sprites identically on WebGPU and software', async ({ page }) => {
-        if (!(await openFixture(page, '/sprites-stretched.html'))) {
+        const gpuBackend = await openFixture(page, '/sprites-stretched.html');
+
+        if (gpuBackend !== 'webgpu') {
             test.skip(true, 'WebGPU not available in this environment');
             return;
         }
 
         const gpu = await page.locator('canvas').screenshot();
 
-        expect(await openFixture(page, '/sprites-stretched.html?backend=software')).toBe(true);
+        expect(await openFixture(page, '/sprites-stretched.html?backend=software')).toBe('software');
 
         const software = await page.locator('canvas').screenshot();
 
