@@ -242,8 +242,12 @@ if (BT.isAnyButtonPressed(0)) {
   were held counts as the release.
 - `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
   analog triggers, no keyboard, no pointers. Use `isAnyKey*` for the keyboard. `player` defaults to `0`.
-- Like the per-key edges, the pressed and released checks clear once per fixed-update tick: call them from `update()`,
-  not `render()`. The held checks (`isAnyKeyDown`, `isAnyButtonDown`) are safe anywhere.
+- Call the pressed and released checks from `update()`, not `render()`. The held checks (`isAnyKeyDown`,
+  `isAnyButtonDown`) are safe anywhere.
+- The keyboard edges clear once per fixed-update tick, and are buffered so a fast tap is never dropped. The gamepad
+  edges follow `BT.isPressed` and `BT.isReleased` instead: they roll over once per rendered frame, so on a display
+  faster than `targetFPS` a gamepad edge can be missed by a frame that runs no update, and a frame that runs several
+  updates reports the same edge to each of them. See [Frame-timing semantics](#frame-timing-semantics).
 
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 

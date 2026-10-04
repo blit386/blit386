@@ -2307,9 +2307,11 @@ export const BT = {
     },
 
     /**
-     * Checks whether any gamepad button was pressed on the current fixed-update tick.
+     * Checks whether any gamepad button was pressed since the last rendered frame.
      *
-     * Same semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`.
+     * Same press and repeat semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`.
+     * Like {@link isPressed}, the gamepad edge rolls over once per rendered frame, not once per fixed update: a
+     * frame that runs no update can miss it, and a frame that runs several updates reports it to each.
      *
      * @since 1.8.0
      * @param player - Zero-based gamepad index (0-3).
@@ -2325,13 +2327,14 @@ export const BT = {
     /**
      * Checks whether every gamepad button has just been released for a player.
      *
-     * Same semantics as {@link isAnyKeyReleased}: `true` only on the tick where no button is held
-     * any more and at least one was held before. A gamepad disconnecting while buttons were held
-     * also counts. Call from `update()`.
+     * Same "everything is up" meaning as {@link isAnyKeyReleased}: `true` only on the frame where no button
+     * is held any more and at least one was held before. A gamepad disconnecting while buttons were held
+     * also counts. Call from `update()`. Like {@link isReleased}, the edge rolls over once per rendered frame,
+     * not once per fixed update.
      *
      * @since 1.8.0
      * @param player - Zero-based gamepad index (0-3).
-     * @returns `true` on the tick the last held button comes up.
+     * @returns `true` on the frame the last held button comes up.
      */
     isAnyButtonReleased: (player: number = 0): boolean => {
         return BTAPI.instance.getGamepad()?.isAnyButtonReleased(player) ?? false;
