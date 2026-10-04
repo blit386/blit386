@@ -627,6 +627,50 @@ describe('mcpServerPlugin', () => {
             );
         });
 
+        /** The body get_doc_page returns for a single page whose extracted text is `body`. */
+        async function rewrittenBody(body: string): Promise<string | undefined> {
+            const { loader } = createFakeLoader([createFakePage({ url: '/docs/a', title: 'A' })]);
+            const context = createMockAppContext({
+                loader,
+                adapters: [createTextAdapter(new Map([['/docs/a', body]]))],
+            });
+            middleware = await createPluginMiddleware(mcpServerPlugin(), context);
+
+            return pageText(await getPage({ url: '/docs/a' }))?.replace(
+                '# A\n\nSource: https://blit386.dev/docs/a\n\n',
+                '',
+            );
+        }
+
+        // Each case: a code block that must stay literal, then a link after it that must be rewritten
+        // (or, for an unclosed block, stay literal too, because the block runs to the end).
+        it.each([
+            ['a closing fence longer than the opener', '```\n[D](/docs/d)\n`````\n[E](/docs/e)', true],
+            ['an opener and closer indented by three spaces', '   ~~~\n[D](/docs/d)\n   ~~~\n[E](/docs/e)', true],
+            ['a tilde block that a backtick line does not close', '~~~\n```\n[D](/docs/d)\n~~~\n[E](/docs/e)', true],
+            ['a closer followed by text, which does not close', '```\n``` x\n[D](/docs/d)\n```\n[E](/docs/e)', true],
+            ['an unclosed block, which runs to the end', '```\n[D](/docs/d)\n[E](/docs/e)', false],
+        ])('keeps links literal inside %s', async (_label, body, isClosed) => {
+            const expected = isClosed ? body.replace('[E](/docs/e)', '[E](https://blit386.dev/docs/e)') : body;
+
+            expect(await rewrittenBody(body)).toBe(expected);
+        });
+
+        it('treats a backtick line with a backtick in its info string as prose', async () => {
+            expect(await rewrittenBody('``` a`b\n[D](/docs/d)')).toBe('``` a`b\n[D](https://blit386.dev/docs/d)');
+        });
+
+        it('rejects a malformed or foreign URL before extracting the corpus', async () => {
+            ({ middleware, extractions } = await buildMiddleware({
+                loader: () => {
+                    throw new Error('loader exploded');
+                },
+            }));
+
+            expect((await getPage({ url: 'https://example.com/docs/palette' })).error?.code).toBe(-32602);
+            expect(extractions).toEqual([]);
+        });
+
         it.each([
             ['an unknown page', '/docs/nope'],
             ['a page on another host', 'https://example.com/docs/palette'],

@@ -157,15 +157,45 @@ function toSitePath(input: string, requestOrigin: string): string | undefined {
     return path === '' ? '/' : path;
 }
 
-// Matches a whole fenced code block (backtick or tilde fence of three or more, closed by the
-// same fence) or a site-relative link target. Fences come first so code is matched whole and
-// passed through untouched.
-const FENCE_OR_RELATIVE_LINK = /^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$|\]\(\//gm;
+// A CommonMark code fence line: up to three spaces of indent, a run of three or more backticks
+// or tildes, then the rest of the line (the info string on an opener).
+const FENCE_LINE = /^ {0,3}(`{3,}|~{3,})(.*?)\r?$/;
+const RELATIVE_LINK_TARGET = /\]\(\//g;
 
 // Make every site-relative markdown link absolute, so llms.txt links are fetchable by a client
-// that has no base URL to resolve them against. Code blocks keep their literal text.
+// that has no base URL to resolve them against. Fenced code blocks keep their literal text: per
+// CommonMark a block closes on a fence of the same character, at least as long as the opener,
+// with nothing after it, and an unclosed block runs to the end of the document.
 function absolutizeLinks(markdown: string, origin: string): string {
-    return markdown.replace(FENCE_OR_RELATIVE_LINK, (match, fence?: string) => (fence ? match : `](${origin}/`));
+    let openFence: string | undefined;
+
+    return markdown
+        .split('\n')
+        .map((line) => {
+            const [, fence, rest = ''] = FENCE_LINE.exec(line) ?? [];
+
+            if (openFence === undefined) {
+                // A backtick fence's info string may not contain a backtick, so such a line is prose.
+                if (fence !== undefined && !(fence.startsWith('`') && rest.includes('`'))) {
+                    openFence = fence;
+                    return line;
+                }
+
+                return line.replace(RELATIVE_LINK_TARGET, `](${origin}/`);
+            }
+
+            if (
+                fence !== undefined &&
+                fence[0] === openFence[0] &&
+                fence.length >= openFence.length &&
+                rest.trim() === ''
+            ) {
+                openFence = undefined;
+            }
+
+            return line;
+        })
+        .join('\n');
 }
 
 // Longest slice of a caller's get_doc_page argument echoed back in an error message.
@@ -364,7 +394,21 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     error: { code: -32602, message: 'Invalid params' },
                                 });
                             }
+                            const notFound = () =>
+                                c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: {
+                                        code: -32602,
+                                        message: `No BLIT386 documentation page at "${input.length > MAX_ECHOED_INPUT ? `${input.slice(0, MAX_ECHOED_INPUT)}...` : input}". Use search_docs or get_docs_summary to find a page URL.`,
+                                    },
+                                });
+                            // Reject a malformed or foreign URL before touching the corpus, so it
+                            // always answers -32602 and never triggers an extraction.
                             const sitePath = toSitePath(input, origin);
+                            if (sitePath === undefined) {
+                                return notFound();
+                            }
                             let corpus: CorpusEntry[];
                             try {
                                 corpus = await getCorpus();
@@ -379,14 +423,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             // extraction the corpus cache already amortizes.
                             const entry = corpus.find((page) => page.url === sitePath);
                             if (!entry) {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: {
-                                        code: -32602,
-                                        message: `No BLIT386 documentation page at "${input.length > MAX_ECHOED_INPUT ? `${input.slice(0, MAX_ECHOED_INPUT)}...` : input}". Use search_docs or get_docs_summary to find a page URL.`,
-                                    },
-                                });
+                                return notFound();
                             }
                             return c.json({
                                 jsonrpc: '2.0',
