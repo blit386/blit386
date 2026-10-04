@@ -144,13 +144,7 @@ function readHeader(path) {
  * @returns {string}
  */
 function deriveTitle(slug, header) {
-    const override = header.match(PAGE_TITLE_PATTERN);
-
-    if (override) {
-        return (override[1] ?? '').trim();
-    }
-
-    return `BLIT386 Demo – ${titleCaseTopic(slug)}`;
+    return header.match(PAGE_TITLE_PATTERN)?.[1]?.trim() ?? `BLIT386 Demo – ${titleCaseTopic(slug)}`;
 }
 
 /**
@@ -163,13 +157,7 @@ function deriveTitle(slug, header) {
  * @returns {string}
  */
 export function deriveShortTitle(slug, header) {
-    const override = header.match(PAGE_TITLE_PATTERN);
-
-    if (override) {
-        return (override[1] ?? '').trim().replace(PAGE_TITLE_PREFIX_PATTERN, '');
-    }
-
-    return titleCaseTopic(slug);
+    return header.match(PAGE_TITLE_PATTERN)?.[1]?.trim().replace(PAGE_TITLE_PREFIX_PATTERN, '') ?? titleCaseTopic(slug);
 }
 
 /**
@@ -182,13 +170,7 @@ export function deriveShortTitle(slug, header) {
  * @returns {string} The trimmed description, or '' when the tag is absent.
  */
 export function deriveDescription(header) {
-    const match = header.match(DESCRIPTION_PATTERN);
-
-    if (!match) {
-        return '';
-    }
-
-    return (match[1] ?? '').trim();
+    return header.match(DESCRIPTION_PATTERN)?.[1]?.trim() ?? '';
 }
 
 /**
@@ -202,13 +184,7 @@ export function deriveDescription(header) {
  * @returns {string} The trimmed mode, or '' when the tag is absent.
  */
 export function deriveOgScale(header) {
-    const match = header.match(OG_SCALE_PATTERN);
-
-    if (!match) {
-        return '';
-    }
-
-    return (match[1] ?? '').trim();
+    return header.match(OG_SCALE_PATTERN)?.[1]?.trim() ?? '';
 }
 
 /**
@@ -219,6 +195,6 @@ export function deriveOgScale(header) {
 function titleCaseTopic(topic) {
     return topic
         .split('-')
-        .map((word) => (word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }

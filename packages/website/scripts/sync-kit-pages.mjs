@@ -274,13 +274,16 @@ const buildPages = (version) => {
             page,
         }));
 
-    const kitGuides = group(
-        'kit-guides',
-        listMarkdown(join(KIT_CONTENT, 'docs')).map((sourcePath) => ({
-            slug: basename(sourcePath, '.md'),
-            page: markdownPage({ sourcePath, version }),
-        })),
-    );
+    const markdownGroup = (folder, dir) =>
+        group(
+            folder,
+            listMarkdown(dir).map((sourcePath) => ({
+                slug: basename(sourcePath, '.md'),
+                page: markdownPage({ sourcePath, version }),
+            })),
+        );
+
+    const kitGuides = markdownGroup('kit-guides', join(KIT_CONTENT, 'docs'));
 
     const skills = group(
         'skills',
@@ -288,20 +291,13 @@ const buildPages = (version) => {
             .filter((entry) => entry.isDirectory())
             .map((entry) => entry.name)
             .sort()
-            .map((slug) => ({
-                slug,
-                page: markdownPage({ sourcePath: join(KIT_CONTENT, 'skills', slug, 'SKILL.md'), version }),
-            }))
-            .map(({ slug, page }) => ({ slug, page: { ...page, title: `Skill: ${page.title}` } })),
+            .map((slug) => {
+                const page = markdownPage({ sourcePath: join(KIT_CONTENT, 'skills', slug, 'SKILL.md'), version });
+                return { slug, page: { ...page, title: `Skill: ${page.title}` } };
+            }),
     );
 
-    const rules = group(
-        'rules',
-        listMarkdown(join(KIT_CONTENT, 'rules')).map((sourcePath) => ({
-            slug: basename(sourcePath, '.md'),
-            page: markdownPage({ sourcePath, version }),
-        })),
-    );
+    const rules = markdownGroup('rules', join(KIT_CONTENT, 'rules'));
 
     const registry = buildRegistry(DEMOS_ROOT);
     const missing = [...FIRST_GAME_EXAMPLES].filter((slug) => !registry.some((demo) => demo.slug === slug));
