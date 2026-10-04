@@ -1605,6 +1605,14 @@ describe('BT gamepad constants and APIs', () => {
         expect(BT.BTN_POINTER_ANY).toBe(BT.BTN_POINTER_A | BT.BTN_POINTER_B | BT.BTN_POINTER_C | BT.BTN_POINTER_D);
     });
 
+    it('defines trigger button constants above the pointer bits', () => {
+        expect(BT.BTN_L2).toBe(1 << 16);
+        expect(BT.BTN_R2).toBe(1 << 17);
+        expect(BT.BTN_TRIGGER).toBe(BT.BTN_L2 | BT.BTN_R2);
+        expect(BT.BTN_TRIGGER & BT.BTN_POINTER_ANY).toBe(0);
+        expect(BT.BTN_TRIGGER & BT.BTN_SHOULDER).toBe(0);
+    });
+
     it('delegates getAxis/isGamepadConnected/gamepadCount to gamepad subsystem', () => {
         const getAxis = vi.fn().mockReturnValue(0.25);
         const isConnected = vi.fn().mockReturnValue(true);

@@ -23,6 +23,8 @@ const GP_BUTTON_X = 2;
 const GP_BUTTON_Y = 3;
 const GP_BUTTON_L = 4;
 const GP_BUTTON_R = 5;
+const GP_BUTTON_L2 = 6;
+const GP_BUTTON_R2 = 7;
 const GP_BUTTON_SELECT = 8;
 const GP_BUTTON_START = 9;
 const GP_BUTTON_UP = 12;
@@ -43,6 +45,13 @@ const BTN_L = 1 << 8;
 const BTN_R = 1 << 9;
 const BTN_START = 1 << 10;
 const BTN_SELECT = 1 << 11;
+
+/**
+ * Trigger bit flags mirrored from `BT.BTN_L2` / `BT.BTN_R2` to avoid circular imports.
+ * Manual-sync hazard: keep in step with `BLIT386.ts`; `GamepadInput.test.ts` asserts the parity.
+ */
+const BTN_L2 = 1 << 16;
+const BTN_R2 = 1 << 17;
 
 /** Axis constants mirrored from `BT.AXIS_*` to avoid circular imports. */
 const AXIS_LEFT_X = 0;
@@ -65,6 +74,8 @@ const VALID_BUTTON_FLAGS = [
     BTN_R,
     BTN_START,
     BTN_SELECT,
+    BTN_L2,
+    BTN_R2,
 ] as const;
 
 const VALID_AXIS_INDICES = [
@@ -78,6 +89,9 @@ const VALID_AXIS_INDICES = [
 
 /** Number of tracked axes per player, in {@link VALID_AXIS_INDICES} order. */
 const GAMEPAD_AXIS_COUNT = VALID_AXIS_INDICES.length;
+
+/** A gamepad button (including a trigger) counts as down at or above this analog value. */
+const BUTTON_DOWN_THRESHOLD = 0.5;
 
 /** Fixed-length, preallocated per-player axis tuple (mutated in place, never reallocated). */
 type GamepadAxes = [number, number, number, number, number, number];
@@ -132,7 +146,7 @@ function isButtonDown(pad: Gamepad, index: number): boolean {
         return false;
     }
 
-    return button.pressed || button.value >= 0.5;
+    return button.pressed || button.value >= BUTTON_DOWN_THRESHOLD;
 }
 
 /**
@@ -557,6 +571,12 @@ export class GamepadInput {
         if (isButtonDown(pad, GP_BUTTON_SELECT)) {
             mask |= BTN_SELECT;
         }
+        if (isButtonDown(pad, GP_BUTTON_L2)) {
+            mask |= BTN_L2;
+        }
+        if (isButtonDown(pad, GP_BUTTON_R2)) {
+            mask |= BTN_R2;
+        }
 
         return mask;
     }
@@ -573,8 +593,8 @@ export class GamepadInput {
         target[1] = this.applyStickDeadZone(getAxis(pad, 1));
         target[2] = this.applyStickDeadZone(getAxis(pad, 2));
         target[3] = this.applyStickDeadZone(getAxis(pad, 3));
-        target[4] = getButtonValue(pad, 6);
-        target[5] = getButtonValue(pad, 7);
+        target[4] = getButtonValue(pad, GP_BUTTON_L2);
+        target[5] = getButtonValue(pad, GP_BUTTON_R2);
     }
 
     /**

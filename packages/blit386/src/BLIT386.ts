@@ -518,6 +518,31 @@ export const BT = {
     BTN_SHOULDER: (1 << 8) | (1 << 9),
 
     /**
+     * Left trigger as a digital button (down at 50% pull or more). Gamepad only:
+     * keyboard players never trigger it and `BT.inputMap` rejects it. The analog
+     * pull is still available through `BT.getAxis(BT.AXIS_TRIGGER_L)`.
+     *
+     * @since 1.8.0
+     */
+    BTN_L2: 1 << 16,
+
+    /**
+     * Right trigger as a digital button (down at 50% pull or more). Gamepad only:
+     * keyboard players never trigger it and `BT.inputMap` rejects it. The analog
+     * pull is still available through `BT.getAxis(BT.AXIS_TRIGGER_R)`.
+     *
+     * @since 1.8.0
+     */
+    BTN_R2: 1 << 17,
+
+    /**
+     * Either trigger as a digital button (`BTN_L2 | BTN_R2`).
+     *
+     * @since 1.8.0
+     */
+    BTN_TRIGGER: (1 << 16) | (1 << 17),
+
+    /**
      * Any pointer button (A/B/C/D).
      *
      * @since 1.0.3

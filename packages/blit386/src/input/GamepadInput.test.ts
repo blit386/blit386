@@ -113,6 +113,82 @@ describe('GamepadInput', () => {
         expect(input.isButtonDown(BT.BTN_UP, 0)).toBe(true);
     });
 
+    it('maps triggers to BTN_L2 / BTN_R2 at the 0.5 threshold', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0.49, 0.5] });
+        input.endFrame(1);
+
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(false);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_TRIGGER, 0)).toBe(true);
+        // The analog value is untouched by the digital mapping.
+        expect(input.getAxis(BT.AXIS_TRIGGER_L, 0)).toBe(0.49);
+    });
+
+    it('does not map triggers onto the shoulder bits', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1, 1] });
+        input.endFrame(1);
+
+        expect(input.isButtonDown(BT.BTN_SHOULDER, 0)).toBe(false);
+
+        pads[0] = makeGamepad({ pressed: [4, 5] });
+        input.endFrame(2);
+
+        expect(input.isButtonDown(BT.BTN_SHOULDER, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_TRIGGER, 0)).toBe(false);
+    });
+
+    it('reports trigger pressed/released edges and supports repeat', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1] });
+        input.endFrame(0);
+
+        expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 5)).toBe(true);
+        input.endFrame(5);
+
+        expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 6)).toBe(false);
+        expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 8)).toBe(true);
+
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0] });
+        input.endFrame(9);
+
+        expect(input.isButtonReleased(BT.BTN_L2, 0)).toBe(true);
+    });
+
+    it('reads triggers as up on a pad that reports fewer than eight buttons', () => {
+        const pad = makeGamepad({});
+        (pad as unknown as { buttons: unknown[] }).buttons = pad.buttons.slice(0, 6);
+        pads[0] = pad;
+        input.endFrame(1);
+
+        expect(input.isButtonDown(BT.BTN_TRIGGER, 0)).toBe(false);
+    });
+
+    it('treats disconnect as release for a held trigger', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0, 1] });
+        input.endFrame(1);
+        pads[0] = null;
+        input.endFrame(2);
+
+        expect(input.isButtonReleased(BT.BTN_R2, 0)).toBe(true);
+    });
+
+    it('ignores unknown bits in a mask', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1] });
+        input.endFrame(1);
+
+        expect(input.isButtonDown(1 << 20, 0)).toBe(false);
+        expect(input.isButtonDown(BT.BTN_A | BT.BTN_L2, 0)).toBe(true);
+    });
+
+    it('keeps the mirrored trigger bits in step with BT.BTN_L2 / BT.BTN_R2', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1, 1] });
+        input.endFrame(1);
+
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(true);
+        expect(BT.BTN_L2).toBe(1 << 16);
+        expect(BT.BTN_R2).toBe(1 << 17);
+    });
+
     it('applies dead zone to stick axes and keeps trigger range', () => {
         pads[0] = makeGamepad({
             axes: [0.7, 0, 0, 0],
