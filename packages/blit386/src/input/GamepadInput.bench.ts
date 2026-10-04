@@ -112,3 +112,15 @@ describe('GamepadInput.endFrame', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('GamepadInput any-button queries', () => {
+    bench(
+        'isAnyButtonDown + isAnyButtonPressed (with repeat) + isAnyButtonReleased',
+        () => {
+            input.isAnyButtonDown(0);
+            input.isAnyButtonPressed(0, 10, 100);
+            input.isAnyButtonReleased(0);
+        },
+        BENCH_OPTIONS,
+    );
+});

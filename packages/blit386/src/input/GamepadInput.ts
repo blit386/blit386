@@ -67,6 +67,9 @@ const VALID_BUTTON_FLAGS = [
     BTN_SELECT,
 ] as const;
 
+/** Every `BTN_*` flag OR-ed together; the mask behind the any-button helpers. */
+const ALL_BUTTONS_MASK = VALID_BUTTON_FLAGS.reduce((mask, flag) => mask | flag, 0);
+
 const VALID_AXIS_INDICES = [
     AXIS_LEFT_X,
     AXIS_LEFT_Y,
@@ -382,6 +385,54 @@ export class GamepadInput {
         }
 
         return (~current.buttons & previous.buttons & buttonMask) !== 0;
+    }
+
+    /**
+     * Whether any gamepad button is held for `player`. Sticks and analog triggers are not buttons.
+     *
+     * @param player - Zero-based player index.
+     * @returns `true` while any button is down.
+     */
+    public isAnyButtonDown(player: number): boolean {
+        return this.isButtonDown(ALL_BUTTONS_MASK, player);
+    }
+
+    /**
+     * Press edge for any button: fires when a button goes down, even if others are already held.
+     * With `repeatRate > 0` it also fires every `repeatRate` ticks while buttons stay held.
+     *
+     * @param player - Zero-based player index.
+     * @param repeatRate - Ticks between repeats; omit or non-positive for edge only.
+     * @param currentTick - Current fixed-update tick.
+     * @returns `true` on a press edge or a repeat tick when configured.
+     */
+    public isAnyButtonPressed(player: number, repeatRate: number | undefined, currentTick: number): boolean {
+        return this.isButtonPressed(ALL_BUTTONS_MASK, player, repeatRate, currentTick);
+    }
+
+    /**
+     * Release edge for "everything is up": no button is held now, and at least one was held on
+     * the previous frame. Releasing one button while another stays down does not count; a
+     * disconnect while buttons were held does.
+     *
+     * @param player - Zero-based player index.
+     * @returns `true` on the frame the last held button comes up.
+     */
+    public isAnyButtonReleased(player: number): boolean {
+        const index = this.normalizePlayer(player);
+
+        if (index === null) {
+            return false;
+        }
+
+        const current = this.current[index];
+        const previous = this.previous[index];
+
+        if (!current || !previous || previous.buttons === 0) {
+            return false;
+        }
+
+        return current.buttons === 0;
     }
 
     /**

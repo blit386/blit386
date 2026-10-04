@@ -2252,6 +2252,92 @@ export const BT = {
     },
 
     /**
+     * Checks whether at least one keyboard key is currently held.
+     *
+     * @since 1.8.0
+     * @returns `true` while any key is down.
+     */
+    isAnyKeyDown: (): boolean => {
+        return BTAPI.instance.getKeyboard()?.isAnyKeyDown() ?? false;
+    },
+
+    /**
+     * Checks whether any keyboard key was pressed on the current fixed-update tick.
+     *
+     * Fires when a key goes down, even if other keys are already held. With `repeatRate > 0` it
+     * also fires every `repeatRate` ticks while keys stay held, counted from the earliest-pressed
+     * key that is still down. Call from `update()`, not `render()`, like {@link isKeyPressed}.
+     *
+     * @since 1.8.0
+     * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
+     * @returns `true` on a press edge (and on repeat ticks when configured).
+     */
+    isAnyKeyPressed: (repeatRate?: number): boolean => {
+        const tick = BTAPI.instance.getTicks();
+
+        return BTAPI.instance.getKeyboard()?.isAnyKeyPressed(repeatRate, tick) ?? false;
+    },
+
+    /**
+     * Checks whether every keyboard key has just been released.
+     *
+     * Matches RetroBlit: `true` only on the tick where no key is held any more and at least one
+     * was held before. Releasing one key while another stays down does not count; use
+     * {@link isKeyReleased} for per-key edges. Call from `update()`, not `render()`.
+     *
+     * @since 1.8.0
+     * @returns `true` on the tick the last held key comes up.
+     */
+    isAnyKeyReleased: (): boolean => {
+        return BTAPI.instance.getKeyboard()?.isAnyKeyReleased() ?? false;
+    },
+
+    /**
+     * Checks whether at least one gamepad button is held for a player.
+     *
+     * Covers the `BTN_UP` to `BTN_SELECT` buttons of a connected gamepad. Sticks, analog
+     * triggers, the keyboard, and pointers are not included; use {@link isAnyKeyDown} for the keyboard.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @returns `true` while any of the player's gamepad buttons is down.
+     */
+    isAnyButtonDown: (player: number = 0): boolean => {
+        return BTAPI.instance.getGamepad()?.isAnyButtonDown(player) ?? false;
+    },
+
+    /**
+     * Checks whether any gamepad button was pressed on the current fixed-update tick.
+     *
+     * Same semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
+     * @returns `true` on a press edge (and on repeat ticks when configured).
+     */
+    isAnyButtonPressed: (player: number = 0, repeatRate?: number): boolean => {
+        const tick = BTAPI.instance.getTicks();
+
+        return BTAPI.instance.getGamepad()?.isAnyButtonPressed(player, repeatRate, tick) ?? false;
+    },
+
+    /**
+     * Checks whether every gamepad button has just been released for a player.
+     *
+     * Same semantics as {@link isAnyKeyReleased}: `true` only on the tick where no button is held
+     * any more and at least one was held before. A gamepad disconnecting while buttons were held
+     * also counts. Call from `update()`.
+     *
+     * @since 1.8.0
+     * @param player - Zero-based gamepad index (0-3).
+     * @returns `true` on the tick the last held button comes up.
+     */
+    isAnyButtonReleased: (player: number = 0): boolean => {
+        return BTAPI.instance.getGamepad()?.isAnyButtonReleased(player) ?? false;
+    },
+
+    /**
      * Built-in 6x14 system font used by {@link BT.systemPrint} (live reference, not a copy).
      *
      * Read `codePoints` on the returned font to see every Unicode code point it covers, or

@@ -233,6 +233,66 @@ export class KeyboardInput {
     }
 
     /**
+     * Whether at least one key is held this frame.
+     *
+     * @returns `true` while any key is down.
+     */
+    public isAnyKeyDown(): boolean {
+        return this.held.size > 0;
+    }
+
+    /**
+     * Press edge for any key: fires when a key goes down, even if other keys are already held.
+     * With `repeatRate > 0` it also fires every `repeatRate` ticks while keys stay held, counted
+     * from the earliest-pressed key that is still down.
+     *
+     * @param repeatRate - Ticks between repeats; omit or non-positive for edge only.
+     * @param currentTick - Current fixed-update tick (`BT.ticks`).
+     * @returns `true` on a press edge or a repeat tick when configured.
+     */
+    public isAnyKeyPressed(repeatRate: number | undefined, currentTick: number): boolean {
+        if (this.pendingPress.size > 0) {
+            return true;
+        }
+
+        let first: number | undefined;
+
+        for (const code of this.held) {
+            if (!this.prevHeld.has(code)) {
+                return true;
+            }
+
+            const t = this.firstPressTick.get(code);
+
+            if (t !== undefined && (first === undefined || t < first)) {
+                first = t;
+            }
+        }
+
+        if (repeatRate === undefined || repeatRate <= 0 || first === undefined) {
+            return false;
+        }
+
+        const dt = currentTick - first;
+
+        return dt > 0 && dt % repeatRate === 0;
+    }
+
+    /**
+     * Release edge for "everything is up": no key is held now, and at least one was held since
+     * the last {@link endUpdate}. Releasing one key while another stays down does not count.
+     *
+     * @returns `true` on the update where the last held key comes up.
+     */
+    public isAnyKeyReleased(): boolean {
+        if (this.held.size > 0) {
+            return false;
+        }
+
+        return this.pendingRelease.size > 0 || this.prevHeld.size > 0;
+    }
+
+    /**
      * Text accumulated since the last {@link endFrame} from `beforeinput`.
      * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter.
      *

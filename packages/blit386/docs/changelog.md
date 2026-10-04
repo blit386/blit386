@@ -33,6 +33,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   method on its class, and an agent play-testing in dev reads it with `window.BT.testState()` instead of a hand-written
   `window.__game` global. The result is `{ ticks, backend, state }`, with an `error` field when the readout threw. See
   [Core API](api-core.md).
+- `BT.isAnyKeyDown()`, `BT.isAnyKeyPressed(repeatRate?)`, `BT.isAnyKeyReleased()`, and the gamepad twins
+  `BT.isAnyButtonDown(player?)`, `BT.isAnyButtonPressed(player?, repeatRate?)`, `BT.isAnyButtonReleased(player?)`: ask
+  about the whole keyboard or one player's gamepad instead of a named key, for "press any key to start" screens. Pressed
+  fires on every new key or button, even with another held. Released follows RetroBlit and means _everything_ is up now,
+  so letting go of one key while another stays down does not fire it. `isAnyButton*` covers `BTN_UP` to `BTN_SELECT`
+  only (no sticks, triggers, keyboard, or pointers). See
+  [Any key and any button](guide-input.md#any-key-and-any-button).
 
 ## 1.7.1 - 2026-09-27
 
