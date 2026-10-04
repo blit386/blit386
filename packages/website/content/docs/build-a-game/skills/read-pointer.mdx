@@ -45,6 +45,9 @@ update() {
   `Vector2i` and return it, instead of making a new one. The destination comes first. Reach for these only inside a hot
   loop - see the `keep-it-fast` skill.
 - `BT.isPointerActive(slot?)` - method; is a pointer present in that slot.
+- `BT.nativeScreenToDisplayPos(clientX, clientY)` - method, engine 1.8.0+; converts a DOM event's `clientX` / `clientY`
+  to display pixels, or `null` before init or for a zero-size canvas. Only for DOM events the engine does not wrap, such
+  as a file dropped on the canvas - for the mouse and touch, `pointerPos` already is in display pixels.
 - `BT.pointerScrollDelta` - getter; vertical wheel delta this frame (requires `isCapturingPointerScroll: true`).
 - Buttons: `BT.BTN_POINTER_A` (primary), `BTN_POINTER_B/C/D`, `BTN_POINTER_ANY`, used with
   `BT.isDown/isPressed/isReleased`.

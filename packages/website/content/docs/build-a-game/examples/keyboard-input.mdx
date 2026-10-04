@@ -29,7 +29,8 @@ Live version: https://demos.blit386.dev/keyboard-input. Imports from `./shared/`
  *   might print different letters).
  * - Raw keys (BT.isKeyDown, BT.isKeyPressed, BT.isKeyReleased) when you need
  *   a specific key, optional fixed-tick repeats with BT.isKeyPressed(code, rate),
- *   and release edges.
+ *   and release edges. When you do NOT care which key, BT.isAnyKeyDown and
+ *   BT.isAnyKeyReleased ask about the whole keyboard instead.
  * - Text input (BT.inputString) for characters in one frame. The buffer clears
  *   once per fixed-update tick, and that tick always finishes before render()
  *   runs, so read it in update(), not render(), or you can miss characters.
@@ -44,6 +45,8 @@ Live version: https://demos.blit386.dev/keyboard-input. Imports from `./shared/`
  * - Tap the same letter repeatedly and watch the press counter climb (edge-only
  *   BT.isKeyPressed, no repeat rate). Press a different key and the counter resets.
  * - Hold Q to see isKeyDown; tap F and watch the release readout.
+ * - Hold two keys, then let go of one: "Any key held" stays lit. Let go of the last
+ *   one and the "All up" tick updates - isAnyKeyReleased means EVERYTHING is up.
  * - Type letters into the buffer line at the bottom.
  * - If keys stop responding, click the canvas - focus may have moved to another
  *   part of the page after you tabbed away.
@@ -133,6 +136,9 @@ class Demo {
 
     /** @type {number | null} Engine tick when `BT.isKeyReleased('KeyF')` last fired. */
     lastFReleaseTick = null;
+
+    /** @type {number | null} Engine tick when `BT.isAnyKeyReleased()` last fired (every key up). */
+    lastAllUpTick = null;
 
     /** @type {string | null} KeyboardEvent.code for the key we are counting presses on. */
     activePressKey = null;
@@ -232,6 +238,13 @@ class Demo {
         if (BT.isKeyReleased('KeyF')) {
             this.lastFReleaseTick = BT.ticks;
             BT.assignTag('Key F released');
+        }
+
+        // Every key up: unlike isKeyReleased('KeyF') above, this does NOT fire when you let go
+        // of one key while another is still down - only when nothing is held any more. Like the
+        // other edges it must be read here in update(), so we remember the tick for render().
+        if (BT.isAnyKeyReleased()) {
+            this.lastAllUpTick = BT.ticks;
         }
 
         // Q held: we only read isKeyDown in render() for a live lit/unlit pip (no state here).
@@ -361,6 +374,12 @@ class Demo {
 
         // The release EDGE was caught in update(); here we only display the remembered tick.
         ui.kv('F rel', this.lastFReleaseTick === null ? 'tap F' : `tick ${this.lastFReleaseTick}`);
+
+        // Held state again, but for the whole keyboard: lit while ANY key is down.
+        ui.pip('Any key held (isAnyKeyDown)', BT.isAnyKeyDown());
+
+        // The "all keys up" edge was caught in update(); here we only show the remembered tick.
+        ui.kv('All up', this.lastAllUpTick === null ? 'press, release' : `tick ${this.lastAllUpTick}`);
         ui.end();
     }
 
