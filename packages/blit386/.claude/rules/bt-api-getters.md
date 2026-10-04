@@ -63,7 +63,8 @@ frame; calling methods on `BT.random` advances the shared stream.
   it is a method, and returns `null` when there is no valid position
 - Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
   `isPressed(...)`, `isReleased(...)`, `isGamepadConnected(...)`, `isKeyDown(...)`, `isKeyPressed(...)`,
-  `isKeyReleased(...)`
+  `isKeyReleased(...)`, `isAnyKeyDown()`, `isAnyKeyPressed(repeatRate?)`, `isAnyKeyReleased()`,
+  `isAnyButtonDown(player?)`, `isAnyButtonPressed(player?, repeatRate?)`, `isAnyButtonReleased(player?)`
 - Side-effect booleans (Tier C): `Timer.fireIfElapsed()` - not `is*` because the call advances state
 - Async: `captureFrame`, `downloadFrame`
 - Snapshots that call game code and allocate a fresh copy per call: `testState` (runs the demo's `testState()` hook and

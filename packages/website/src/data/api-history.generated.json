@@ -596,6 +596,48 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isAnyButtonDown": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAnyButtonPressed": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAnyButtonReleased": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAnyKeyDown": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAnyKeyPressed": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAnyKeyReleased": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.isAudioMuted": {
       "kind": "method",
       "since": "1.3.0",
@@ -1924,6 +1966,12 @@
       "BT.inputMap",
       "BT.inputMapReset",
       "BT.inputString",
+      "BT.isAnyButtonDown",
+      "BT.isAnyButtonPressed",
+      "BT.isAnyButtonReleased",
+      "BT.isAnyKeyDown",
+      "BT.isAnyKeyPressed",
+      "BT.isAnyKeyReleased",
       "BT.isDown",
       "BT.isGamepadConnected",
       "BT.isKeyDown",

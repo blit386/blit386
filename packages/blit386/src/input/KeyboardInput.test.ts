@@ -503,3 +503,143 @@ describe('KeyboardInput', () => {
         });
     });
 });
+
+describe('KeyboardInput any-key helpers', () => {
+    let tick = 0;
+    let canvas: HTMLCanvasElement;
+    let kb: KeyboardInput;
+
+    const down = (code: string): void => {
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    };
+    const up = (code: string): void => {
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+    };
+
+    beforeEach(() => {
+        tick = 0;
+        canvas = createCanvas();
+        kb = new KeyboardInput();
+        kb.attach(canvas, { getTicks: () => tick });
+        kb.endUpdate(0);
+    });
+
+    afterEach(() => {
+        kb.detach();
+        document.body.replaceChildren();
+    });
+
+    it('isAnyKeyDown is true while at least one key is held', () => {
+        expect(kb.isAnyKeyDown()).toBe(false);
+
+        down('KeyA');
+        down('KeyB');
+        up('KeyA');
+
+        expect(kb.isAnyKeyDown()).toBe(true);
+
+        up('KeyB');
+
+        expect(kb.isAnyKeyDown()).toBe(false);
+    });
+
+    it('isAnyKeyPressed fires once on the first key, not while it stays held', () => {
+        down('KeyA');
+
+        expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
+
+        kb.endUpdate(1);
+
+        expect(kb.isAnyKeyPressed(undefined, 1)).toBe(false);
+    });
+
+    it('isAnyKeyPressed fires for a second key pressed while another is held', () => {
+        down('KeyA');
+        kb.endUpdate(1);
+        down('KeyB');
+
+        expect(kb.isAnyKeyPressed(undefined, 1)).toBe(true);
+    });
+
+    it('isAnyKeyPressed sees a tap that starts and ends between two updates', () => {
+        down('KeyJ');
+        up('KeyJ');
+
+        expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
+    });
+
+    it('isAnyKeyPressed repeats on schedule anchored to the earliest held key', () => {
+        tick = 10;
+        down('ArrowDown');
+        kb.endUpdate(10);
+
+        expect(kb.isAnyKeyPressed(5, 11)).toBe(false);
+        expect(kb.isAnyKeyPressed(5, 15)).toBe(true);
+
+        tick = 12;
+        down('ArrowUp');
+        kb.endUpdate(12);
+
+        // ArrowUp is held too, but the cadence still follows ArrowDown (tick 10).
+        expect(kb.isAnyKeyPressed(5, 15)).toBe(true);
+        expect(kb.isAnyKeyPressed(5, 17)).toBe(false);
+    });
+
+    it('isAnyKeyPressed ignores a non-positive repeatRate', () => {
+        down('KeyA');
+        kb.endUpdate(1);
+
+        expect(kb.isAnyKeyPressed(0, 5)).toBe(false);
+        expect(kb.isAnyKeyPressed(-3, 5)).toBe(false);
+    });
+
+    it('isAnyKeyPressed is false with nothing held', () => {
+        expect(kb.isAnyKeyPressed(5, 5)).toBe(false);
+    });
+
+    it('isAnyKeyReleased waits until every key is up', () => {
+        down('KeyA');
+        down('KeyB');
+        kb.endUpdate(1);
+
+        up('KeyA');
+
+        expect(kb.isAnyKeyReleased()).toBe(false);
+
+        kb.endUpdate(2);
+        up('KeyB');
+
+        expect(kb.isAnyKeyReleased()).toBe(true);
+
+        kb.endUpdate(3);
+
+        expect(kb.isAnyKeyReleased()).toBe(false);
+    });
+
+    it('isAnyKeyReleased is false when a different key is pressed in the same update', () => {
+        down('KeyA');
+        kb.endUpdate(1);
+
+        up('KeyA');
+        down('KeyB');
+
+        expect(kb.isAnyKeyReleased()).toBe(false);
+    });
+
+    it('isAnyKeyReleased sees a tap that starts and ends between two updates', () => {
+        down('KeyJ');
+        up('KeyJ');
+
+        expect(kb.isAnyKeyReleased()).toBe(true);
+    });
+
+    it('window blur does not report a release', () => {
+        down('KeyA');
+        kb.endUpdate(1);
+
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isAnyKeyDown()).toBe(false);
+        expect(kb.isAnyKeyReleased()).toBe(false);
+    });
+});

@@ -1703,6 +1703,51 @@ describe('BT.isKeyReleased', () => {
     });
 });
 
+describe('BT.isAnyKey and BT.isAnyButton helpers', () => {
+    it('return false when the engine is not initialized', () => {
+        expect(BT.isAnyKeyDown()).toBe(false);
+        expect(BT.isAnyKeyPressed()).toBe(false);
+        expect(BT.isAnyKeyPressed(5)).toBe(false);
+        expect(BT.isAnyKeyReleased()).toBe(false);
+        expect(BT.isAnyButtonDown()).toBe(false);
+        expect(BT.isAnyButtonPressed()).toBe(false);
+        expect(BT.isAnyButtonPressed(1, 5)).toBe(false);
+        expect(BT.isAnyButtonReleased(2)).toBe(false);
+    });
+
+    it('forward to the keyboard and gamepad trackers', () => {
+        vi.spyOn(BTAPI.instance, 'getTicks').mockReturnValue(7);
+        const keyboard = {
+            isAnyKeyDown: vi.fn(() => true),
+            isAnyKeyPressed: vi.fn(() => true),
+            isAnyKeyReleased: vi.fn(() => true),
+        };
+        const gamepad = {
+            isAnyButtonDown: vi.fn(() => true),
+            isAnyButtonPressed: vi.fn(() => true),
+            isAnyButtonReleased: vi.fn(() => true),
+        };
+
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(keyboard as never);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue(gamepad as never);
+
+        expect(BT.isAnyKeyDown()).toBe(true);
+        expect(BT.isAnyKeyPressed(4)).toBe(true);
+        expect(keyboard.isAnyKeyPressed).toHaveBeenCalledWith(4, 7);
+        expect(BT.isAnyKeyReleased()).toBe(true);
+        expect(BT.isAnyButtonDown(1)).toBe(true);
+        expect(gamepad.isAnyButtonDown).toHaveBeenCalledWith(1);
+        expect(BT.isAnyButtonPressed(2, 3)).toBe(true);
+        expect(gamepad.isAnyButtonPressed).toHaveBeenCalledWith(2, 3, 7);
+        expect(BT.isAnyButtonPressed()).toBe(true);
+        expect(gamepad.isAnyButtonPressed).toHaveBeenLastCalledWith(0, undefined, 7);
+        expect(BT.isAnyButtonReleased()).toBe(true);
+        expect(gamepad.isAnyButtonReleased).toHaveBeenCalledWith(0);
+
+        vi.restoreAllMocks();
+    });
+});
+
 describe('BT.systemPrint', () => {
     beforeEach(() => {
         vi.restoreAllMocks();

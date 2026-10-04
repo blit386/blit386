@@ -440,6 +440,10 @@ class Demo {
         ui.pip('A held', aHeld);
         ui.pip('B held', bHeld);
         ui.pip('(A|B) mask', maskHeld);
+
+        // Lit while ANY button is held (face, shoulders, D-pad, Start, Select - not sticks or
+        // triggers). BT.isAnyButtonPressed(player) is the matching one-frame edge for "press any button".
+        ui.pip('Any button', BT.isAnyButtonDown(PLAYER));
         ui.separator();
 
         // LX/LY are the left stick, RX/RY the right stick, each from -1.00 to +1.00.

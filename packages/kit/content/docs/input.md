@@ -82,6 +82,19 @@ if (BT.isKeyPressed('Enter')) {
 
 `isKeyDown` is "held", `isKeyPressed` and `isKeyReleased` are the one-frame edges, exactly like the buttons above.
 
+For a "press any key to start" screen, you do not need to name a key (engine 1.8.0+):
+
+```js
+if (BT.isAnyKeyPressed()) {
+  this.start(); // any key went down this frame
+}
+```
+
+`BT.isAnyKeyDown()`, `BT.isAnyKeyPressed(repeat?)`, and `BT.isAnyKeyReleased()` cover the whole keyboard. "Released"
+here means every key is up now, not just one of them. `BT.isAnyButtonDown(player?)`,
+`BT.isAnyButtonPressed(player?, repeat?)`, and `BT.isAnyButtonReleased(player?)` do the same for one player's gamepad
+buttons (not sticks or triggers). Read the pressed and released ones in `update()`.
+
 If you read raw arrow keys or Space (not only face buttons), set `isCapturingKeyboardScroll: true` in `configure()` the
 same way.
 

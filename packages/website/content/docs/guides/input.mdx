@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-10-04T08:23:09+02:00"
+lastModified: "2026-10-04T08:39:32+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -199,6 +199,52 @@ under rapid input - the tick already consumed and cleared the edge before render
 </Callout>
 
 <DemoEmbed demo="028-keyboard-input" title="BLIT386 keyboard input demo" />
+
+### Any key and any button
+
+<Since symbol="BT.isAnyKeyDown" />
+<Since symbol="BT.isAnyKeyPressed" />
+<Since symbol="BT.isAnyKeyReleased" />
+<Since symbol="BT.isAnyButtonDown" />
+<Since symbol="BT.isAnyButtonPressed" />
+<Since symbol="BT.isAnyButtonReleased" />
+
+For "press any key to start" screens and idle checks, ask about the whole keyboard (or one player's gamepad) instead of
+a named key:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+if (BT.isAnyKeyPressed()) {
+  // any key went down this tick, even if another key was already held
+}
+
+if (BT.isAnyKeyPressed(10)) {
+  // same, then again every 10 ticks while keys stay held
+}
+
+if (BT.isAnyKeyReleased()) {
+  // the last held key came up: nothing is held now, something was held before
+}
+
+if (BT.isAnyButtonPressed(0)) {
+  // any button on player 0's gamepad went down
+}
+```
+
+- `isAnyKeyPressed` fires on every new key, so holding `A` and then tapping `B` fires it for `B`. With a repeat rate,
+  the cadence is counted from the earliest key still held.
+- `isAnyKeyReleased` and `isAnyButtonReleased` mean "everything is up now". Letting go of one key while another stays
+  down does not fire them; use `BT.isKeyReleased(code)` for per-key release edges. A gamepad disconnecting while buttons
+  were held counts as the release.
+- `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
+  analog triggers, no keyboard, no pointers. Use `isAnyKey*` for the keyboard. `player` defaults to `0`.
+- Call the pressed and released checks from `update()`, not `render()`. The held checks (`isAnyKeyDown`,
+  `isAnyButtonDown`) are safe anywhere.
+- The keyboard edges clear once per fixed-update tick, and are buffered so a fast tap is never dropped. The gamepad
+  edges follow `BT.isPressed` and `BT.isReleased` instead: they roll over once per rendered frame, so on a display
+  faster than `targetFPS` a gamepad edge can be missed by a frame that runs no update, and a frame that runs several
+  updates reports the same edge to each of them. See [Frame-timing semantics](#frame-timing-semantics).
 
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
