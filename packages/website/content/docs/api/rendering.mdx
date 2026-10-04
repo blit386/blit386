@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Rendering"
 description: "Primitives, sprites, text, post-process effects, and frame capture."
-lastModified: "2026-10-04T08:29:23+00:00"
+lastModified: "2026-10-04T09:16:01+00:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
 ---
 
@@ -212,8 +212,9 @@ The release-build fast path costs two `typeof` checks and no `instanceof`.
   `BT.drawSprite(frame.sheet, frame.rect, dest)` (overload 1) or adds `params` (overload 2) - no per-draw string lookup.
   Carrying the sheet on the frame keeps multi-page packs correct and makes a rect from the wrong sheet impossible.
   `frame.pivot` is data only: pass `params.pivot = frame.pivot` to use it. There is no raw-number form for names.
-- Overload 4, when it exists, cannot express a destination rectangle. Scaled draws use overload 2. Raw numbers occupy
-  arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the fast path.
+- Overload 4, when it exists, cannot express a destination rectangle, so stretched draws (a `Rect2i` dest) use
+  overload 2. Raw numbers occupy arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the
+  fast path, so `flags`, integer `scale`, and `pivot` work as on overload 2 with a point dest.
 
 #### Transform order and flags
 
