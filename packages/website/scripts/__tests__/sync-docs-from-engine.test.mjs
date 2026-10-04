@@ -327,6 +327,27 @@ describe('getLastModified', () => {
         assert.equal(result, fixedDate);
     });
 
+    test('writes a UTC date as +00:00 whatever form the local git prints', () => {
+        const utcRepo = mkdtempSync(join(tmpdir(), 'sync-docs-git-utc-'));
+
+        try {
+            mkdirSync(join(utcRepo, 'docs'), { recursive: true });
+            execFileSync('git', ['init', '--quiet'], { cwd: utcRepo, env: gitEnv() });
+            execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: utcRepo, env: gitEnv() });
+            execFileSync('git', ['config', 'user.name', 'Test'], { cwd: utcRepo, env: gitEnv() });
+            writeFileSync(join(utcRepo, 'docs', 'utc.md'), '# UTC\n');
+            execFileSync('git', ['add', '-A'], { cwd: utcRepo, env: gitEnv() });
+            execFileSync('git', ['commit', '--quiet', '-m', 'utc commit'], {
+                cwd: utcRepo,
+                env: gitEnv({ GIT_AUTHOR_DATE: '2026-01-15T10:30:00Z', GIT_COMMITTER_DATE: '2026-01-15T10:30:00Z' }),
+            });
+
+            assert.equal(getLastModified('utc.md', utcRepo), '2026-01-15T10:30:00+00:00');
+        } finally {
+            rmSync(utcRepo, { recursive: true, force: true });
+        }
+    });
+
     test('returns undefined when the path has no history in the repo', () => {
         const result = getLastModified('does-not-exist.md', repoRoot);
         assert.equal(result, undefined);
