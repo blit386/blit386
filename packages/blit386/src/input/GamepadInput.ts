@@ -133,6 +133,19 @@ function getButtonValue(pad: Gamepad, index: number): number {
 }
 
 /**
+ * Checks digital down-state for a trigger by thresholding its analog value.
+ * Browsers set `pressed` themselves (Chromium at about 12% pull), so the flag
+ * is ignored here to keep the fixed 50% threshold.
+ *
+ * @param pad - Gamepad object.
+ * @param index - Raw trigger button index.
+ * @returns `true` when the analog value reaches the threshold.
+ */
+function isTriggerDown(pad: Gamepad, index: number): boolean {
+    return getButtonValue(pad, index) >= BUTTON_DOWN_THRESHOLD;
+}
+
+/**
  * Checks digital down-state for a gamepad button.
  *
  * @param pad - Gamepad object.
@@ -571,10 +584,10 @@ export class GamepadInput {
         if (isButtonDown(pad, GP_BUTTON_SELECT)) {
             mask |= BTN_SELECT;
         }
-        if (isButtonDown(pad, GP_BUTTON_L2)) {
+        if (isTriggerDown(pad, GP_BUTTON_L2)) {
             mask |= BTN_L2;
         }
-        if (isButtonDown(pad, GP_BUTTON_R2)) {
+        if (isTriggerDown(pad, GP_BUTTON_R2)) {
             mask |= BTN_R2;
         }
 

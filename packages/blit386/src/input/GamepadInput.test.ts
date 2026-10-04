@@ -12,12 +12,14 @@ interface PadState {
     isConnected?: boolean;
     buttons?: number[];
     pressed?: number[];
+    /** Explicit `pressed` flag per button index, overriding the derived one (browsers set it themselves). */
+    pressedFlags?: Record<number, boolean>;
     axes?: number[];
 }
 
 function makeGamepad(state: PadState): Gamepad {
     const buttons = Array.from({ length: 16 }, (_, index) => ({
-        pressed: state.pressed?.includes(index) ?? false,
+        pressed: state.pressedFlags?.[index] ?? state.pressed?.includes(index) ?? false,
         touched: false,
         value: state.buttons?.[index] ?? (state.pressed?.includes(index) ? 1 : 0),
     }));
@@ -122,6 +124,33 @@ describe('GamepadInput', () => {
         expect(input.isButtonDown(BT.BTN_TRIGGER, 0)).toBe(true);
         // The analog value is untouched by the digital mapping.
         expect(input.getAxis(BT.AXIS_TRIGGER_L, 0)).toBe(0.49);
+    });
+
+    it('ignores the browser pressed flag for triggers and thresholds the analog value', () => {
+        const buttons = [0, 0, 0, 0, 0, 0, 0.2, 0.2];
+
+        pads[0] = makeGamepad({ buttons, pressedFlags: { 6: true, 7: true } });
+        input.endFrame(1);
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(false);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(false);
+
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0.5, 0.5], pressedFlags: { 6: true, 7: true } });
+        input.endFrame(2);
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(true);
+
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0.5, 0.5], pressedFlags: { 6: false, 7: false } });
+        input.endFrame(3);
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(true);
+    });
+
+    it('reads a digital-only trigger reporting pressed with value 1 as down', () => {
+        pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1, 1], pressedFlags: { 6: true, 7: true } });
+        input.endFrame(1);
+
+        expect(input.isButtonDown(BT.BTN_L2, 0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_R2, 0)).toBe(true);
     });
 
     it('does not map triggers onto the shoulder bits', () => {
