@@ -672,6 +672,17 @@ describe('PointerInput', () => {
             }
         });
 
+        it('ignores non-finite client coordinates instead of writing NaN', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: Number.NaN, clientY: 140 }),
+            );
+
+            expect(input.getPos(0)).toEqual(new Vector2i(80, 60));
+        });
+
         it('does not throw on a zero-sized canvas (skips the position update)', () => {
             const c = createCanvas({ left: 0, top: 0, width: 0, height: 0 });
             const p = new PointerInput();
