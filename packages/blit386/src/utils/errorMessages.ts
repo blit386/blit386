@@ -6,6 +6,7 @@
  */
 
 import { SYNTH_WAVEFORMS } from '../assets/synth/SynthParams';
+import type { TileCoordinateName } from './TileGrid';
 import { buildPathHint, extractExtension } from './urlHints';
 
 /**
@@ -558,6 +559,60 @@ export function spriteNotIndexizedError(): string {
     return (
         "This sprite sheet hasn't been prepared yet. Use SpriteSheet.loadIndexed(...) for one-step setup," +
         ' or call sheet.indexize(palette) after BT.paletteSet.'
+    );
+}
+
+/**
+ * Returns the error message shown when a tile is looked up by grid position on
+ * a sprite sheet that has no tile size.
+ *
+ * @returns User-facing error string.
+ */
+export function spriteTileGridMissingError(): string {
+    return (
+        'This sprite sheet has no tile size, so it cannot find a tile by its grid position.' +
+        ' Load it with SpriteSheet.load(url, { tileSize: 16 }) or loadIndexed(url, palette, slot, { tileSize: 16 }),' +
+        ' or set sheet.tileSize = 16. To pass the size yourself, put it before the position:' +
+        ' BT.drawTile(sheet, col, row, tileSize, destPos).'
+    );
+}
+
+/**
+ * Returns the error message shown when a tile size is not a positive whole
+ * number on both axes.
+ *
+ * @param value - The rejected size, already formatted for display.
+ * @returns User-facing error string.
+ */
+export function spriteTileSizeInvalidError(value: string): string {
+    return `Tile size must be a positive whole number of pixels on both axes. Got: ${value}.`;
+}
+
+/**
+ * Returns the error message shown when a tile column, row, or index is not a
+ * whole number of 0 or more.
+ *
+ * @param name - Which coordinate was rejected.
+ * @param value - The rejected value.
+ * @returns User-facing error string.
+ */
+export function spriteTileCoordinateInvalidError(name: TileCoordinateName, value: number): string {
+    return `Tile ${name} must be a whole number of 0 or more. Got: ${value}.`;
+}
+
+/**
+ * Returns the error message shown when a tile lies outside the sheet's grid of
+ * whole tiles.
+ *
+ * @param tile - The requested tile, already formatted for display.
+ * @param columns - Whole tiles across the sheet.
+ * @param rows - Whole tiles down the sheet.
+ * @returns User-facing error string.
+ */
+export function spriteTileOutOfGridError(tile: string, columns: number, rows: number): string {
+    return (
+        `Tile ${tile} is outside this sheet's grid of ${columns} x ${rows} whole tiles.` +
+        ' A partial tile at the right or bottom edge does not count.'
     );
 }
 

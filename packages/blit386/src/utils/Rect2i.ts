@@ -1,3 +1,4 @@
+import { assertTileCoordinate, assertTileSize } from './TileGrid';
 import { Vector2i } from './Vector2i';
 
 /**
@@ -213,6 +214,34 @@ export class Rect2i {
         const halfHeight = (h / 2) | 0;
 
         return Rect2i.fromValuesUnchecked((centerX | 0) - halfWidth, (centerY | 0) - halfHeight, w, h);
+    }
+
+    /**
+     * Creates the source rectangle of one cell in a grid of equal tiles.
+     *
+     * Pure math with no sheet to check against, so it never rejects a tile for
+     * being past the edge of an image - use `sheet.tileRect()` for that.
+     *
+     * @since 1.8.0
+     * @param col - Zero-based column.
+     * @param row - Zero-based row.
+     * @param tileSize - Tile size in pixels: a number for square tiles, or a `Vector2i` for width x height.
+     * @returns New rectangle at `(col * tileW, row * tileH)` sized one tile.
+     * @throws RangeError if the size is not a positive integer, or `col` / `row` is not a non-negative integer.
+     *
+     * @example
+     * Rect2i.fromTile(2, 1, 16); // Rect2i(32, 16, 16, 16)
+     * Rect2i.fromTile(3, 1, new Vector2i(16, 24)); // Rect2i(48, 24, 16, 24)
+     */
+    static fromTile(col: number, row: number, tileSize: number | Vector2i): Rect2i {
+        const tileW = typeof tileSize === 'number' ? tileSize : tileSize.x;
+        const tileH = typeof tileSize === 'number' ? tileSize : tileSize.y;
+
+        assertTileSize(tileW, tileH);
+        assertTileCoordinate('column', col);
+        assertTileCoordinate('row', row);
+
+        return Rect2i.fromValuesUnchecked(col * tileW, row * tileH, tileW, tileH);
     }
 
     /**
