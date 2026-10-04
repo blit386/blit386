@@ -151,6 +151,18 @@ describe('findUntrackedGeneratedPages', () => {
         assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), []);
     });
 
+    test('flags any untracked file under the generated Build a Game folder', () => {
+        // scripts/sync-kit-pages.mjs owns that folder outright, so no manifest entry is needed.
+        const untrackedFiles = [
+            'content/docs/build-a-game/skills/new-skill.mdx',
+            'content/docs/build-a-game-draft.mdx',
+        ];
+
+        assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), [
+            'content/docs/build-a-game/skills/new-skill.mdx',
+        ]);
+    });
+
     test('returns an empty list when there are no untracked files', () => {
         assert.deepEqual(findUntrackedGeneratedPages([], PAGES), []);
     });

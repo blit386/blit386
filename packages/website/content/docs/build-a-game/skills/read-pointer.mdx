@@ -1,0 +1,66 @@
+---
+# Generated from packages/kit/content/skills/read-pointer/SKILL.md by scripts/sync-kit-pages.mjs.
+# Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
+title: "Skill: Read the mouse, touch, and pen"
+description: "Read mouse, touch, and pen input through BLIT386's unified pointer API with up to four slots. Use for clicking, dragging, painting, aiming, scrolling, or..."
+---
+
+> Written for blit386 1.8.0, which is not on npm yet. The newest release is 1.7.1, so an API on this page may be missing from the version npm installs until 1.8.0 ships.
+
+Mouse, touch, and pen share one "pointer" API with up to four slots. Slot 0 is the mouse or first touch.
+
+## When to use
+
+Use for clicking, dragging, painting, aiming, scrolling, or touch controls.
+
+## How to do it
+
+```js
+configure() {
+    return {
+        // Needed so BT.pointerScrollDelta works and the page does not scroll over the canvas.
+        isCapturingPointerScroll: true,
+    };
+}
+
+update() {
+    if (BT.isPointerActive(0)) {
+        const p = BT.pointerPos(0); // a Vector2i in screen pixels
+        const move = BT.pointerDelta(0); // how far it moved this frame
+
+        if (BT.isDown(BT.BTN_POINTER_A, 0)) this.paintAt(p); // primary button held
+        if (BT.isPressed(BT.BTN_POINTER_A, 0)) this.startDrag(p);
+        if (BT.isReleased(BT.BTN_POINTER_A, 0)) this.endDrag(p, move); // move as flick velocity
+    }
+
+    const wheel = BT.pointerScrollDelta; // a getter; vertical wheel movement this frame (pixels)
+    this.zoom += wheel;
+}
+```
+
+## Key calls
+
+- `BT.pointerPos(slot?)` / `BT.pointerDelta(slot?)` - methods, return `Vector2i`.
+- `BT.pointerPosTo(out, slot?)` / `BT.pointerDeltaTo(out, slot?)` - methods, engine 1.7.0+; write into an existing
+  `Vector2i` and return it, instead of making a new one. The destination comes first. Reach for these only inside a hot
+  loop - see the `keep-it-fast` skill.
+- `BT.isPointerActive(slot?)` - method; is a pointer present in that slot.
+- `BT.nativeScreenToDisplayPos(clientX, clientY)` - method, engine 1.8.0+; converts a DOM event's `clientX` / `clientY`
+  to display pixels, or `null` before init or for a zero-size canvas. Only for DOM events the engine does not wrap, such
+  as a file dropped on the canvas - for the mouse and touch, `pointerPos` already is in display pixels.
+- `BT.pointerScrollDelta` - getter; vertical wheel delta this frame (requires `isCapturingPointerScroll: true`).
+- Buttons: `BT.BTN_POINTER_A` (primary), `BTN_POINTER_B/C/D`, `BTN_POINTER_ANY`, used with
+  `BT.isDown/isPressed/isReleased`.
+- `BT.hideCursor()` / `BT.showCursor()` - methods; hide or restore the OS cursor over the canvas.
+
+## Notes
+
+- Slots: 0 = mouse or first touch; 1-3 = extra touches or pens (multi-touch).
+- Read in `update()`. Positions are already in your screen's pixel coordinates.
+- `pointerDelta` makes a good drag velocity - release while moving to "flick".
+- Wheel capture is opt-in: set `isCapturingPointerScroll: true` in `configure()` when you map the mouse wheel. Without
+  it the host page scrolls normally and `BT.pointerScrollDelta` stays `0`.
+- The same flag gates touch scrolling past the canvas: off means `touch-action: pan-y` (phones can tap-hold-scroll the
+  page); on means `touch-action: none` so the game owns the gesture.
+
+See `docs/input.md`.

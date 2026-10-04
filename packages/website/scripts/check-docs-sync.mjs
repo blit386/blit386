@@ -25,6 +25,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { gitEnv } from './git-env.mjs';
 import { PAGES } from './sync-docs-from-engine.mjs';
+import { SECTION as KIT_SECTION } from './sync-kit-pages.mjs';
 
 const DIFF_FILE_HEADER_PATTERN = /^(?:\+\+\+ |--- )/u;
 const HUNK_HEADER_PATTERN = /^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/u;
@@ -103,8 +104,10 @@ const listUntrackedDocsFiles = (cwd = process.cwd()) =>
  */
 const findUntrackedGeneratedPages = (untrackedFiles, pages = PAGES) => {
     const expected = new Set(pages.map((page) => `content/docs/${page.path}.mdx`));
+    // scripts/sync-kit-pages.mjs owns this whole directory, so everything in it is generated.
+    const kitPrefix = `content/docs/${KIT_SECTION}/`;
 
-    return untrackedFiles.filter((file) => expected.has(file));
+    return untrackedFiles.filter((file) => expected.has(file) || file.startsWith(kitPrefix));
 };
 
 const main = () => {
@@ -117,7 +120,8 @@ const main = () => {
             'Docs mirror has newly generated page(s) missing from the commit (untracked):\n\n' +
                 untrackedGeneratedPages.map((file) => `  ${file}`).join('\n') +
                 '\n\nThese were just written by `pnpm run sync:docs` from a page added to ' +
-                '`packages/blit386/docs/_sitemap.json`. Run `git add` on the file(s) above and commit them.\n',
+                '`packages/blit386/docs/_sitemap.json`, or from new kit, template, or demo content. Run `git add` on ' +
+                'the file(s) above and commit them.\n',
         );
         process.exitCode = 1;
 

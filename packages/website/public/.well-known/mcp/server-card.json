@@ -3,7 +3,7 @@
     "name": "blit386-docs",
     "version": "1.0.0"
   },
-  "description": "Documentation server for the BLIT386 palette-first WebGPU pixel engine library. Exposes search, full-page reading, and site summary tools for AI agents navigating the docs at blit386.dev.",
+  "description": "Documentation server for the BLIT386 palette-first WebGPU pixel engine library. Exposes search, full-page reading, and site summary tools for AI agents navigating the docs at blit386.dev, including a starter project, kit skills, and example games for building a game from scratch.",
   "url": "https://blit386.dev/mcp",
   "transport": {
     "type": "streamable-http"
