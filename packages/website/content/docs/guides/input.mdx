@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-10-04T08:30:44+02:00"
+lastModified: "2026-10-04T08:40:44+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -216,9 +216,6 @@ under rapid input - the tick already consumed and cleared the edge before render
 <Since symbol="BT.BTN_SELECT" />
 <Since symbol="BT.BTN_ABXY" />
 <Since symbol="BT.BTN_SHOULDER" />
-<Since symbol="BT.BTN_L2" />
-<Since symbol="BT.BTN_R2" />
-<Since symbol="BT.BTN_TRIGGER" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER1" />
 <Since symbol="BT.DEFAULT_KEYBOARD_PLAYER2" />
 <Since symbol="BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1" />
@@ -261,10 +258,14 @@ keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does **not** react t
 
 ### Triggers: analog or digital
 
+<Since symbol="BT.BTN_L2" />
+<Since symbol="BT.BTN_R2" />
+<Since symbol="BT.BTN_TRIGGER" />
+
 Each trigger is available two ways. `BT.getAxis(BT.AXIS_TRIGGER_L)` / `AXIS_TRIGGER_R` return the pull from 0 to 1.
 `BT.BTN_L2` and `BT.BTN_R2` (mask `BT.BTN_TRIGGER`) work with `BT.isDown`, `BT.isPressed` and `BT.isReleased` and turn
-on at 50% pull or more, the same rule every gamepad button uses. The threshold is fixed. `BTN_L` and `BTN_R` are still
-the shoulder buttons, not the triggers.
+on at 50% pull or more, judged from the analog value alone (the browser's own pressed flag is ignored). The threshold is
+fixed. `BTN_L` and `BTN_R` are still the shoulder buttons, not the triggers.
 
 Trigger buttons are gamepad only. Keyboard players never trigger them and `BT.inputMap` ignores them, so give keyboard
 players an explicit fallback if your game needs one:
