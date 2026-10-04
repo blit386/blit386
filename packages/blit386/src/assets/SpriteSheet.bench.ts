@@ -41,6 +41,9 @@ const spriteSheet = makeBenchSheet(64, 64);
 const tileSheet = makeBenchSheet(64, 64);
 tileSheet.tileSize = 8;
 
+/** Keeps each `tileRect` result live so V8 cannot scalar-replace the allocation being measured. */
+const tileRectSink = { value: 0 };
+
 const usageMask = new Uint8Array(256);
 
 describe('SpriteSheet.markPaletteIndicesInRect', () => {
@@ -68,7 +71,7 @@ describe('SpriteSheet.tileRect', () => {
         'tileRect(index) x 64 (allocates one Rect2i each)',
         () => {
             for (let i = 0; i < 64; i++) {
-                tileSheet.tileRect(i);
+                tileRectSink.value += tileSheet.tileRect(i).x;
             }
         },
         BENCH_OPTIONS,
