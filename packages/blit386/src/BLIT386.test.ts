@@ -2092,6 +2092,31 @@ describe('BT.drawSprite', () => {
         expect(fast).toHaveBeenCalledWith(sheet, src, dest, 3);
     });
 
+    it('accepts a Rect2i destination and scale on the params form only', () => {
+        const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        const withParams = vi.spyOn(BTAPI.instance, 'drawSpriteWithParams').mockReturnValue(undefined);
+        const sheet = new SpriteSheet(mockImage);
+        const src = new Rect2i(0, 0, 8, 8);
+        const rect = new Rect2i(0, 0, 16, 16);
+        const point = new Vector2i(1, 2);
+
+        BT.drawSprite(sheet, src, rect, {});
+        BT.drawSprite(sheet, src, point, { scale: 2 });
+        BT.drawSprite(sheet, src, point, { scale: new Vector2i(2, 1), flags: BT.ROT_90_CW });
+
+        expect(withParams).toHaveBeenCalledTimes(3);
+        expect(withParams).toHaveBeenNthCalledWith(1, sheet, src, rect, {});
+        expect(fast).not.toHaveBeenCalled();
+
+        if (Math.random() > 2) {
+            // Type-only: never runs. A Rect2i without params would be a silent unscaled draw.
+            // @ts-expect-error - overload 1 only takes a Vector2i destination.
+            BT.drawSprite(sheet, src, rect);
+            // @ts-expect-error - a number 4th argument is overload 1, which only takes a Vector2i.
+            BT.drawSprite(sheet, src, rect, 0);
+        }
+    });
+
     it('sends null params to the params path, which rejects them', async () => {
         await withErrorContainer(async () => {
             const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
