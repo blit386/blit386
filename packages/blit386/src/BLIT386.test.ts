@@ -1757,6 +1757,85 @@ describe('BT.captureFrame', () => {
     });
 });
 
+describe('BT trigger buttons (gamepad-only)', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('isDown reads BTN_L2 / BTN_R2 from the gamepad per player', () => {
+        const isDown = vi.fn((flag: number, player: number) => flag === BT.BTN_R2 && player === 2);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue({ isButtonDown: isDown } as never);
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(null);
+
+        expect(BT.isDown(BT.BTN_R2, 2)).toBe(true);
+        expect(BT.isDown(BT.BTN_L2, 2)).toBe(false);
+        expect(BT.isDown(BT.BTN_TRIGGER, 2)).toBe(true);
+        expect(BT.isDown(BT.BTN_R2, 0)).toBe(false);
+    });
+
+    it('never consults the keyboard for trigger bits', () => {
+        const keyboard = {
+            isButtonDown: vi.fn(() => true),
+            isButtonPressed: vi.fn(() => true),
+            isButtonReleased: vi.fn(() => true),
+        };
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(keyboard as never);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue(null);
+
+        expect(BT.isDown(BT.BTN_TRIGGER, 0)).toBe(false);
+        expect(BT.isPressed(BT.BTN_TRIGGER, 0)).toBe(false);
+        expect(BT.isReleased(BT.BTN_TRIGGER, 0)).toBe(false);
+        expect(keyboard.isButtonDown).not.toHaveBeenCalled();
+        expect(keyboard.isButtonPressed).not.toHaveBeenCalled();
+        expect(keyboard.isButtonReleased).not.toHaveBeenCalled();
+    });
+
+    it('isPressed forwards repeatRate and tick to the gamepad', () => {
+        const isPressed = vi.fn(() => true);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue({ isButtonPressed: isPressed } as never);
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance, 'getTicks').mockReturnValue(42);
+
+        expect(BT.isPressed(BT.BTN_L2, 1, 6)).toBe(true);
+        expect(isPressed).toHaveBeenCalledWith(BT.BTN_L2, 1, 6, 42);
+    });
+
+    it('isReleased reads the gamepad release edge', () => {
+        const isReleased = vi.fn(() => true);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue({ isButtonReleased: isReleased } as never);
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(null);
+
+        expect(BT.isReleased(BT.BTN_R2, 0)).toBe(true);
+    });
+
+    it('returns false for trigger bits when the gamepad subsystem is unavailable', () => {
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue(null);
+
+        expect(BT.isDown(BT.BTN_L2, 0)).toBe(false);
+        expect(BT.isDown(BT.BTN_L2, 4)).toBe(false);
+        expect(BT.isDown(BT.BTN_L2, -1)).toBe(false);
+        expect(BT.isDown(BT.BTN_L2, 1.5)).toBe(false);
+    });
+
+    it('combines a face button and a trigger in one mask (ANY semantics)', () => {
+        const isDown = vi.fn((flag: number) => flag === BT.BTN_L2);
+        vi.spyOn(BTAPI.instance, 'getGamepad').mockReturnValue({ isButtonDown: isDown } as never);
+        vi.spyOn(BTAPI.instance, 'getKeyboard').mockReturnValue({ isButtonDown: vi.fn(() => false) } as never);
+
+        expect(BT.isDown(BT.BTN_A | BT.BTN_L2, 0)).toBe(true);
+        expect(BT.isDown(BT.BTN_A, 0)).toBe(false);
+    });
+
+    it('BT.inputMap rejects trigger bits', () => {
+        const before = BT.isDown(BT.BTN_A, 0);
+
+        expect(() => BT.inputMap(0, BT.BTN_L2, 'KeyQ')).not.toThrow();
+        expect(() => BT.inputMap(0, BT.BTN_TRIGGER, 'KeyQ')).not.toThrow();
+        expect(BT.isDown(BT.BTN_A, 0)).toBe(before);
+    });
+});
+
 describe("BT.captureFrame({ size: 'display' })", () => {
     beforeEach(() => {
         vi.restoreAllMocks();

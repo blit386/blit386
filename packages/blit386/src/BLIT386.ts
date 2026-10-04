@@ -104,6 +104,9 @@ const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
 /** Face button bit mask (`BTN_UP..BTN_SELECT`). */
 const FACE_BUTTON_MASK = (1 << 12) - 1;
 
+/** Trigger button bit flags (`BTN_L2`, `BTN_R2`). Gamepad only, no keyboard fallback. */
+const TRIGGER_BUTTON_FLAGS = [1 << 16, 1 << 17] as const;
+
 /**
  * Shows a beginner-friendly runtime error in the canvas container and console.
  *
@@ -1863,10 +1866,13 @@ export const BT = {
      * and gamepad input (logical OR). Players `2` and `3` use gamepad only.
      * Pointer flags (`BTN_POINTER_*`) use the `player` argument as pointer slot.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads / keyboard, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` while the button remains pressed.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
@@ -1907,6 +1913,16 @@ export const BT = {
             }
         }
 
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonDown(triggerButton, player) ?? false) {
+                return true;
+            }
+        }
+
         return false;
     },
 
@@ -1933,11 +1949,14 @@ export const BT = {
      * face buttons (players 0 and 1), the press edge clears once per fixed-update tick,
      * which always runs before that frame's `render()`.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
      * @param repeatRate - Optional repeat interval in fixed ticks (`0`/omitted = edge only).
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` on the transition frame.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
@@ -1991,6 +2010,16 @@ export const BT = {
             }
         }
 
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonPressed(triggerButton, player, repeatRate, tick) ?? false) {
+                return true;
+            }
+        }
+
         return false;
     },
 
@@ -2018,10 +2047,13 @@ export const BT = {
      * face buttons (players 0 and 1), the release edge clears once per fixed-update tick,
      * which always runs before that frame's `render()`.
      *
+     * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
+     *
      * @since 1.1.1
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
+     * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @returns `true` on the release frame.
      */
     // eslint-disable-next-line complexity -- explicit per-flag routing keeps input semantics easy to audit.
@@ -2068,6 +2100,16 @@ export const BT = {
                 (gamepadIsReleased && !(isKeyboardDown && !keyboardIsReleased));
 
             if (mergedIsReleased) {
+                return true;
+            }
+        }
+
+        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+            if ((button & triggerButton) === 0) {
+                continue;
+            }
+
+            if (BTAPI.instance.getGamepad()?.isButtonReleased(triggerButton, player) ?? false) {
                 return true;
             }
         }
