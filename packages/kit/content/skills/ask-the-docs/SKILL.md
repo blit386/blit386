@@ -26,10 +26,12 @@ comes up empty.
 
 ### 1. The blit386-docs MCP server
 
-This project ships its configuration, so your assistant should already have it. Two tools:
+This project ships its configuration, so your assistant should already have it. Three tools:
 
 - `search_docs` - full-text search across the whole documentation site. Give it a short query such as
   `palette animation` or `gamepad deadzone`. It returns page titles, URLs, and excerpts.
+- `get_doc_page` - the full text of one page as markdown. Pass it a URL from `search_docs` (or a path such as
+  `/docs/guides/input`) when the excerpt is not enough.
 - `get_docs_summary` - the whole site's contents in one compact block. Reach for this when you do not yet know what to
   search for.
 

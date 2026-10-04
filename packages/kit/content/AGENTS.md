@@ -73,8 +73,9 @@ When these local docs come up short, the live documentation at https://blit386.d
 this game already knows how to query it:
 
 - Ask the `blit386-docs` MCP server. If you set up Claude Code or Cursor, it is already configured (`.mcp.json` for
-  Claude Code, `.cursor/mcp.json` for Cursor) and gives your assistant two tools: `search_docs` (full-text search - page
-  titles, URLs, and excerpts) and `get_docs_summary` (the whole site's contents in one compact block).
+  Claude Code, `.cursor/mcp.json` for Cursor) and gives your assistant three tools: `search_docs` (full-text search -
+  page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs` returned), and
+  `get_docs_summary` (the whole site's contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Reading a page? Request its URL with the header `Accept: text/markdown` and the site returns markdown instead of HTML
   \- far less to wade through.

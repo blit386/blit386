@@ -365,10 +365,12 @@ responses.
 
 ## MCP server
 
-A JSON-RPC 2.0 endpoint at `/mcp` (streamable-HTTP, no auth), with two tools: `search_docs` and `get_docs_summary`
-(which returns `/llms.txt`). `search_docs` scans loader pages in-process and scores title and description matches above
-body matches. It deliberately does **not** build a FlexSearch index in-process - that exceeds the Worker CPU limit
-(error 1102), the same reason site search runs in static mode.
+A JSON-RPC 2.0 endpoint at `/mcp` (streamable-HTTP, no auth), with three tools: `search_docs`, `get_doc_page` (one
+page's full markdown, looked up by site path or URL in the same cached corpus - never a fetch), and `get_docs_summary`
+(which returns `/llms.txt`). Every URL the server hands out is absolute, resolved against the request's own origin so a
+preview deployment links to its own pages. `search_docs` scans loader pages in-process and scores title and description
+matches above body matches. It deliberately does **not** build a FlexSearch index in-process - that exceeds the Worker
+CPU limit (error 1102), the same reason site search runs in static mode.
 
 `public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
 into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the

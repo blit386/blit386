@@ -10,6 +10,10 @@ const TITLE_WEIGHT = 10;
 const MAX_RESULTS = 10;
 // Characters of context to show on each side of the first matched term.
 const EXCERPT_RADIUS = 80;
+// The production host. get_doc_page accepts absolute URLs on this host as well as on the
+// request's own origin, so a link copied from blit386.dev still resolves against a preview
+// deployment or a local dev server.
+const CANONICAL_ORIGIN = 'https://blit386.dev';
 
 interface RpcRequest {
     id?: string | number | null;
@@ -61,6 +65,18 @@ const MCP_TOOLS = [
                 query: { type: 'string', description: 'Search query, e.g. "palette animation"' },
             },
             required: ['query'],
+        },
+    },
+    {
+        name: 'get_doc_page',
+        description:
+            'Return the full markdown of one BLIT386 documentation page. Pass a URL from search_docs or get_docs_summary, or a site path such as "/docs/guides/input".',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                url: { type: 'string', description: 'Page URL or site path, e.g. "/docs/guides/input"' },
+            },
+            required: ['url'],
         },
     },
     {
@@ -121,6 +137,32 @@ function buildExcerpt(text: string, terms: readonly string[]): string {
     return `${prefix}${trimmed.slice(start, end).trim()}${suffix}`;
 }
 
+// Reduce a get_doc_page argument to the site path the corpus is keyed by, or undefined when it
+// points anywhere but this site. Accepts a bare path or an absolute URL on the request origin or
+// the canonical host; drops the query, fragment, a trailing slash, and the `.md` suffix that the
+// markdown routes use. This is a lookup key, never a URL to fetch.
+function toSitePath(input: string, requestOrigin: string): string | undefined {
+    let url: URL;
+    try {
+        url = new URL(input.trim(), requestOrigin);
+    } catch {
+        return undefined;
+    }
+
+    if (url.origin !== requestOrigin && url.origin !== CANONICAL_ORIGIN) {
+        return undefined;
+    }
+
+    const path = url.pathname.replace(/\.md$/, '').replace(/\/+$/, '');
+    return path === '' ? '/' : path;
+}
+
+// Make every site-relative markdown link absolute, so llms.txt links are fetchable by a client
+// that has no base URL to resolve them against.
+function absolutizeLinks(markdown: string, origin: string): string {
+    return markdown.replace(/\]\(\//g, `](${origin}/`);
+}
+
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
  *
@@ -131,9 +173,16 @@ function buildExcerpt(text: string, terms: readonly string[]): string {
  * error 1102) - the same reason the site itself moved search client-side (see
  * press.config.tsx). For ~30 pages a substring scan is well within the Worker budget.
  *
+ * get_doc_page returns one page's full markdown from the same cached corpus. It is a lookup
+ * by site path, not a proxy: anything that does not resolve to a known page is rejected.
+ *
  * get_docs_summary returns /llms.txt via the ASSETS binding rather than fetching the
  * public origin: a Worker fetching its own zone hostname times out (Cloudflare 522),
  * and that 522 page was previously being wrapped as a "successful" result.
+ *
+ * Every URL handed out is absolute, resolved against the request's own origin rather than
+ * pinned to blit386.dev: a preview deployment (next.blit386.dev) or a local dev server then
+ * links to its own pages, which are the ones its corpus actually holds.
  */
 export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {
     return {
@@ -190,7 +239,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                 return corpus;
             };
 
-            const searchDocs = async (query: string): Promise<SearchResult[]> => {
+            const searchDocs = async (query: string, origin: string): Promise<SearchResult[]> => {
                 const terms = query
                     .toLowerCase()
                     .split(/\s+/)
@@ -216,7 +265,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                     .slice(0, MAX_RESULTS)
                     .map(({ entry }) => ({
                         title: entry.title,
-                        url: entry.url,
+                        url: new URL(entry.url, origin).href,
                         excerpt: buildExcerpt(entry.body, terms) || entry.description,
                     }));
             };
@@ -281,7 +330,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                 });
                             }
                             try {
-                                const results = await searchDocs(query);
+                                const results = await searchDocs(query, new URL(c.req.url).origin);
                                 return c.json({
                                     jsonrpc: '2.0',
                                     id,
@@ -294,6 +343,55 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     error: { code: -32603, message: 'Internal error: search unavailable' },
                                 });
                             }
+                        }
+
+                        if (name === 'get_doc_page') {
+                            const input = args.url;
+                            if (typeof input !== 'string' || input.trim().length === 0) {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32602, message: 'Invalid params' },
+                                });
+                            }
+                            const origin = new URL(c.req.url).origin;
+                            const sitePath = toSitePath(input, origin);
+                            let corpus: CorpusEntry[];
+                            try {
+                                corpus = await getCorpus();
+                            } catch {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32603, message: 'Internal error: pages unavailable' },
+                                });
+                            }
+                            // A linear scan of ~100 entries per call costs nothing next to the
+                            // extraction the corpus cache already amortizes.
+                            const entry =
+                                sitePath === undefined ? undefined : corpus.find((page) => page.url === sitePath);
+                            if (!entry) {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: {
+                                        code: -32602,
+                                        message: `No BLIT386 documentation page at "${input}". Use search_docs or get_docs_summary to find a page URL.`,
+                                    },
+                                });
+                            }
+                            return c.json({
+                                jsonrpc: '2.0',
+                                id,
+                                result: {
+                                    content: [
+                                        {
+                                            type: 'text',
+                                            text: `# ${entry.title}\n\nSource: ${new URL(entry.url, origin).href}\n\n${absolutizeLinks(entry.body, origin)}`,
+                                        },
+                                    ],
+                                },
+                            });
                         }
 
                         if (name === 'get_docs_summary') {
@@ -318,7 +416,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                         error: { code: -32603, message: 'Internal error: summary unavailable' },
                                     });
                                 }
-                                const text = await res.text();
+                                const text = absolutizeLinks(await res.text(), assetUrl.origin);
                                 return c.json({
                                     jsonrpc: '2.0',
                                     id,

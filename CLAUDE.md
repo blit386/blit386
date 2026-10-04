@@ -69,8 +69,8 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
   [`packages/blit386/docs/security/security-runbook.md`](packages/blit386/docs/security/security-runbook.md). Use
   `/security-run <package>`
 - Project MCP servers: the tracked root [`.mcp.json`](.mcp.json) declares `blit386-docs`, the blit386.dev docs server
-  (`search_docs`, `get_docs_summary`) - query the published engine docs without leaving the repo. Setup for other
-  clients: `packages/website/content/mcp-server.mdx`
+  (`search_docs`, `get_doc_page`, `get_docs_summary`) - query the published engine docs without leaving the repo. Setup
+  for other clients: `packages/website/content/mcp-server.mdx`
 - RTK policy: `~/.claude/RTK.md`
 - Session notes written by the `/remember` skill live in `.remember/` and are not a repo artifact
 

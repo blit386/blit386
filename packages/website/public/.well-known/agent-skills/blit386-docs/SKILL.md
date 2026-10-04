@@ -39,8 +39,9 @@ Content-Type: application/json
 {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "search_docs", "arguments": {"query": "palette animation"}}}
 ```
 
-Returns matching pages with titles, URLs, and content excerpts. The server also exposes `get_docs_summary`, which
-returns the `llms.txt` summary. Call `tools/list` for the full tool schema.
+Returns matching pages with titles, absolute URLs, and content excerpts. Pass one of those URLs (or a site path such as
+`/docs/guides/input`) to `get_doc_page` to read the whole page as markdown. The server also exposes `get_docs_summary`,
+which returns the `llms.txt` summary. Call `tools/list` for the full tool schema.
 
 ## Core API concepts
 

@@ -208,9 +208,9 @@ hand-synced to this table - there is no shared import between them.
 `shadow-remote` is the correct classification, not a finding: `isRunlayerManagedEntry` only exempts Runlayer URLs, and
 this is our own first-party docs server (`packages/website/src/mcp-server.ts`, discovery card at
 `packages/website/public/.well-known/mcp/server-card.json`). It is public, unauthenticated, and read-only - it exposes
-`search_docs` and `get_docs_summary` over the published documentation and carries no credentials. A clean run is a
-shadow count of one whose single entry matches the whole row above - name, URL, config path, and classification
-together. Count and name alone are not enough to call it clean.
+`search_docs`, `get_doc_page`, and `get_docs_summary` over the published documentation and carries no credentials. A
+clean run is a shadow count of one whose single entry matches the whole row above - name, URL, config path, and
+classification together. Count and name alone are not enough to call it clean.
 
 ## Report template
 

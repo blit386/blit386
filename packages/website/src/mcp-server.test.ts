@@ -212,7 +212,7 @@ describe('mcpServerPlugin', () => {
     });
 
     describe('tools/list', () => {
-        it('advertises both tools with their full input schemas', async () => {
+        it('advertises all three tools with their full input schemas', async () => {
             const { json } = await rpc(middleware, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
 
             expect(json.result).toEqual({
@@ -227,6 +227,21 @@ describe('mcpServerPlugin', () => {
                                 query: { type: 'string', description: 'Search query, e.g. "palette animation"' },
                             },
                             required: ['query'],
+                        },
+                    },
+                    {
+                        name: 'get_doc_page',
+                        description:
+                            'Return the full markdown of one BLIT386 documentation page. Pass a URL from search_docs or get_docs_summary, or a site path such as "/docs/guides/input".',
+                        inputSchema: {
+                            type: 'object',
+                            properties: {
+                                url: {
+                                    type: 'string',
+                                    description: 'Page URL or site path, e.g. "/docs/guides/input"',
+                                },
+                            },
+                            required: ['url'],
                         },
                     },
                     {
@@ -339,10 +354,25 @@ describe('mcpServerPlugin', () => {
             expect(searchResults(json)).toEqual([
                 {
                     title: 'Palette cycling',
-                    url: '/docs/palette',
+                    url: 'https://blit386.dev/docs/palette',
                     excerpt: 'Cycling shifts colors without redrawing.',
                 },
             ]);
+        });
+
+        it('resolves result URLs against the origin the request arrived on', async () => {
+            const { json } = await rpc(
+                middleware,
+                {
+                    jsonrpc: '2.0',
+                    id: 6,
+                    method: 'tools/call',
+                    params: { name: 'search_docs', arguments: { query: 'sprite' } },
+                },
+                { url: 'https://next.blit386.dev/mcp' },
+            );
+
+            expect(searchResults(json).map((result) => result.url)).toEqual(['https://next.blit386.dev/docs/sprites']);
         });
 
         describe('ranking', () => {
@@ -356,7 +386,7 @@ describe('mcpServerPlugin', () => {
                     { url: '/nine', title: 'Fonts', body: 'palette '.repeat(9) },
                 ]);
 
-                expect(results.map((r) => r.url)).toEqual(['/eleven', '/title', '/nine']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/eleven', '/title', '/nine']);
             });
 
             it('weighs a description match the same as a title match', async () => {
@@ -366,7 +396,7 @@ describe('mcpServerPlugin', () => {
                     { url: '/nine', title: 'Fonts', body: 'palette '.repeat(9) },
                 ]);
 
-                expect(results.map((r) => r.url)).toEqual(['/described', '/nine']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/described', '/nine']);
             });
 
             it('sums the score across every query term', async () => {
@@ -375,7 +405,7 @@ describe('mcpServerPlugin', () => {
                     { url: '/one', title: 'Guide', body: 'palette' },
                 ]);
 
-                expect(results.map((r) => r.url)).toEqual(['/both', '/one']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/both', '/one']);
             });
 
             it('matches case-insensitively', async () => {
@@ -398,7 +428,7 @@ describe('mcpServerPlugin', () => {
                     { url: '/miss', title: 'Y', body: 'nothing relevant' },
                 ]);
 
-                expect(results.map((r) => r.url)).toEqual(['/hit']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/hit']);
             });
 
             it('caps the response at ten results', async () => {
@@ -541,6 +571,98 @@ describe('mcpServerPlugin', () => {
         });
     });
 
+    describe('get_doc_page', () => {
+        /** Calls get_doc_page with the given arguments and returns the envelope. */
+        async function getPage(args: Record<string, unknown>, url?: string) {
+            const { json } = await rpc(
+                middleware,
+                { jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'get_doc_page', arguments: args } },
+                url === undefined ? {} : { url },
+            );
+
+            return json;
+        }
+
+        /** The text of a successful get_doc_page result. */
+        function pageText(json: JsonRpcResponse): string | undefined {
+            return (json.result as { content?: { text: string }[] } | undefined)?.content?.[0]?.text;
+        }
+
+        const PALETTE_PAGE =
+            '# Palette cycling\n\nSource: https://blit386.dev/docs/palette\n\nCycling shifts colors without redrawing.';
+
+        it.each([
+            ['a site path', '/docs/palette'],
+            ['a path with no leading slash', 'docs/palette'],
+            ['an absolute URL on the canonical host', 'https://blit386.dev/docs/palette'],
+            ['the markdown route', '/docs/palette.md'],
+            ['a trailing slash, query, and fragment', '/docs/palette/?x=1#cycling'],
+        ])('returns the full page for %s', async (_label, url) => {
+            expect(pageText(await getPage({ url }))).toBe(PALETTE_PAGE);
+        });
+
+        it('accepts the canonical host from a preview origin and answers with preview URLs', async () => {
+            const text = pageText(
+                await getPage({ url: 'https://blit386.dev/docs/sprites' }, 'https://next.blit386.dev/mcp'),
+            );
+
+            expect(text).toBe(
+                '# Sprites\n\nSource: https://next.blit386.dev/docs/sprites\n\nA sprite is a small bitmap.',
+            );
+        });
+
+        it('makes site-relative links in the body absolute', async () => {
+            const { loader } = createFakeLoader([createFakePage({ url: '/docs/a', title: 'A' })]);
+            const texts = new Map([['/docs/a', 'See [B](/docs/b) and [C](https://example.com/c).']]);
+            const context = createMockAppContext({ loader, adapters: [createTextAdapter(texts)] });
+            middleware = await createPluginMiddleware(mcpServerPlugin(), context);
+
+            expect(pageText(await getPage({ url: '/docs/a' }))).toBe(
+                '# A\n\nSource: https://blit386.dev/docs/a\n\nSee [B](https://blit386.dev/docs/b) and [C](https://example.com/c).',
+            );
+        });
+
+        it.each([
+            ['an unknown page', '/docs/nope'],
+            ['a page on another host', 'https://example.com/docs/palette'],
+            ['a non-http URL', 'javascript:alert(1)'],
+            ['a malformed URL', 'http://['],
+        ])('answers %s with -32602 naming the input', async (_label, url) => {
+            expect((await getPage({ url })).error).toEqual({
+                code: -32602,
+                message: `No BLIT386 documentation page at "${url}". Use search_docs or get_docs_summary to find a page URL.`,
+            });
+        });
+
+        it.each([
+            ['a missing url', {}],
+            ['a non-string url', { url: 7 }],
+            ['a blank url', { url: '  ' }],
+        ])('answers %s with -32602 Invalid params', async (_label, args) => {
+            expect((await getPage(args)).error).toEqual({ code: -32602, message: 'Invalid params' });
+        });
+
+        it('reuses the cached corpus instead of extracting again', async () => {
+            await getPage({ url: '/docs/palette' });
+            await getPage({ url: '/docs/sprites' });
+
+            expect(extractions).toHaveLength(PAGES.length);
+        });
+
+        it('answers -32603 when the corpus cannot be built', async () => {
+            ({ middleware } = await buildMiddleware({
+                loader: () => {
+                    throw new Error('loader exploded');
+                },
+            }));
+
+            expect((await getPage({ url: '/docs/palette' })).error).toEqual({
+                code: -32603,
+                message: 'Internal error: pages unavailable',
+            });
+        });
+    });
+
     describe('get_docs_summary', () => {
         const call = {
             jsonrpc: '2.0',
@@ -556,6 +678,26 @@ describe('mcpServerPlugin', () => {
             const { json } = await rpc(middleware, call, { env: { ASSETS: assets } });
 
             expect(json.result).toEqual({ content: [{ type: 'text', text: '# BLIT386 docs' }] });
+        });
+
+        it('makes the site-relative llms.txt links absolute', async () => {
+            const assets = createFakeAssets(
+                () => new Response('- [Input](/docs/guides/input): Keys.\n- [GitHub](https://github.com/x)'),
+            );
+
+            const { json } = await rpc(middleware, call, {
+                url: 'https://next.blit386.dev/mcp',
+                env: { ASSETS: assets },
+            });
+
+            expect(json.result).toEqual({
+                content: [
+                    {
+                        type: 'text',
+                        text: '- [Input](https://next.blit386.dev/docs/guides/input): Keys.\n- [GitHub](https://github.com/x)',
+                    },
+                ],
+            });
         });
 
         it('resolves llms.txt against the incoming origin rather than the public hostname', async () => {
