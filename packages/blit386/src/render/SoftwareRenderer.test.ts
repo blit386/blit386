@@ -4,13 +4,22 @@ import {
     applyMaskToGrid,
     DOC_RESULTS,
     indexToLetter,
+    orientRows,
     PADDED_SHEET_H,
     PADDED_SHEET_PIXELS,
     PADDED_SHEET_W,
     PADDED_SRC_RECT_ARGS,
+    scaleRows,
     SOURCE_H,
     SOURCE_PIXELS,
+    SOURCE_ROWS,
     SOURCE_W,
+    stretchRows,
+    WIDE_ROWS,
+    WIDE_SHEET_H,
+    WIDE_SHEET_PIXELS,
+    WIDE_SHEET_W,
+    WIDE_SRC_RECT_ARGS,
 } from '../__test__/spriteOrientationFixture';
 import { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
@@ -582,7 +591,7 @@ describe('SoftwareRenderer', () => {
 });
 
 describe('SoftwareRenderer drawSpriteOriented (flip and quarter turns)', () => {
-    const DISPLAY = 8;
+    const DISPLAY = 16;
 
     beforeEach(() => {
         logicalContext.lastImageData = null;
@@ -699,5 +708,116 @@ describe('SoftwareRenderer drawSpriteOriented (flip and quarter turns)', () => {
         });
 
         expect(readGrid(frame, 0, 0, 4, 2)).toBe('CBA. / FED.');
+    });
+
+    const WIDE_SRC = new Rect2i(...WIDE_SRC_RECT_ARGS);
+
+    function paddedSheet(): SpriteSheet {
+        return SpriteSheet.fromIndexedPixels(PADDED_SHEET_W, PADDED_SHEET_H, PADDED_SHEET_PIXELS);
+    }
+
+    function wideSheet(): SpriteSheet {
+        return SpriteSheet.fromIndexedPixels(WIDE_SHEET_W, WIDE_SHEET_H, WIDE_SHEET_PIXELS);
+    }
+
+    describe('drawSpriteStretched', () => {
+        const integerCases = Array.from({ length: 32 }, (_, mask) =>
+            [1, 2, 3, 4].map((s) => [mask, s] as const),
+        ).flat();
+
+        it.each(integerCases)('mask %i at integer scale %i is a block copy', async (mask, s) => {
+            const orientation = resolveSpriteOrientation(mask);
+            const oriented = orientRows(SOURCE_ROWS, mask);
+            const fw = oriented[0]?.length ?? 0;
+            const fh = oriented.length;
+            const frame = await render((renderer) => {
+                renderer.drawSpriteStretched(paddedSheet(), SRC, 1, 1, fw * s, fh * s, 0, orientation);
+            });
+
+            expect(readGrid(frame, 1, 1, fw * s, fh * s)).toBe(scaleRows(oriented, s, s).join(' / '));
+        });
+
+        it.each([
+            // [label, mask, dw, dh] on the 3x2 ABC / DEF source.
+            ['x 3->2, y 2->1', 0, 2, 1],
+            ['y 2->3', 0, 3, 3],
+            ['ROT_90_CW: x 2->1, y 3->2', 4, 1, 2],
+            ['ROT_90_CW: x 2->3', 4, 3, 3],
+            ['FLIP_H: x 3->2, y 2->3', 1, 2, 3],
+        ])('uneven stretch %s follows the center rule', async (_label, mask, dw, dh) => {
+            const frame = await render((renderer) => {
+                renderer.drawSpriteStretched(paddedSheet(), SRC, 2, 2, dw, dh, 0, resolveSpriteOrientation(mask));
+            });
+
+            expect(readGrid(frame, 2, 2, dw, dh)).toBe(stretchRows(orientRows(SOURCE_ROWS, mask), dw, dh).join(' / '));
+        });
+
+        it.each([
+            ['x 5->7', 0, 7, 3],
+            ['ROT_90_CW: y 5->7', 4, 3, 7],
+        ])('uneven stretch %s on the 5x3 source', async (_label, mask, dw, dh) => {
+            const frame = await render((renderer) => {
+                renderer.drawSpriteStretched(wideSheet(), WIDE_SRC, 2, 2, dw, dh, 0, resolveSpriteOrientation(mask));
+            });
+
+            expect(readGrid(frame, 2, 2, dw, dh)).toBe(stretchRows(orientRows(WIDE_ROWS, mask), dw, dh).join(' / '));
+        });
+
+        it.each(Array.from({ length: 32 }, (_, mask) => mask))(
+            'mask %i stretches the 5x3 source into 7x7',
+            async (mask) => {
+                const frame = await render((renderer) => {
+                    renderer.drawSpriteStretched(wideSheet(), WIDE_SRC, 2, 2, 7, 7, 0, resolveSpriteOrientation(mask));
+                });
+
+                expect(readGrid(frame, 2, 2, 7, 7)).toBe(stretchRows(orientRows(WIDE_ROWS, mask), 7, 7).join(' / '));
+            },
+        );
+
+        it('clips at the screen edge and keeps the visible part in place', async () => {
+            const full = stretchRows(orientRows(SOURCE_ROWS, 0), 6, 4);
+            const frame = await render((renderer) => {
+                renderer.drawSpriteStretched(paddedSheet(), SRC, -2, -1, 6, 4, 0, 0);
+            });
+
+            expect(readGrid(frame, 0, 0, 4, 3)).toBe(
+                full
+                    .slice(1)
+                    .map((row) => row.slice(2))
+                    .join(' / '),
+            );
+        });
+
+        it('clips at the right and bottom edges', async () => {
+            const full = stretchRows(orientRows(SOURCE_ROWS, 0), 6, 4);
+            const frame = await render((renderer) => {
+                renderer.drawSpriteStretched(paddedSheet(), SRC, DISPLAY - 3, DISPLAY - 2, 6, 4, 0, 0);
+            });
+
+            expect(readGrid(frame, DISPLAY - 3, DISPLAY - 2, 3, 2)).toBe(
+                full
+                    .slice(0, 2)
+                    .map((row) => row.slice(0, 3))
+                    .join(' / '),
+            );
+        });
+
+        it('applies the camera offset like a 1:1 sprite', async () => {
+            const frame = await render((renderer) => {
+                renderer.setCameraOffset(new Vector2i(1, 1));
+                renderer.drawSpriteStretched(paddedSheet(), SRC, 3, 3, 6, 4, 0, 0);
+            });
+
+            expect(readGrid(frame, 2, 2, 6, 4)).toBe(scaleRows(SOURCE_ROWS, 2, 2).join(' / '));
+        });
+
+        it('applies paletteOffset and skips transparent texels', async () => {
+            const frame = await render((renderer) => {
+                const sheet = SpriteSheet.fromIndexedPixels(2, 1, new Uint8Array([1, 0]));
+                renderer.drawSpriteStretched(sheet, new Rect2i(0, 0, 2, 1), 0, 0, 4, 1, 2, 0);
+            });
+
+            expect(readGrid(frame, 0, 0, 4, 1)).toBe('CC..');
+        });
     });
 });

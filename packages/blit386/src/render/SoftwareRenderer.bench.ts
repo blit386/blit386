@@ -237,6 +237,20 @@ describe('SoftwareRenderer sprite blit', () => {
         },
         BENCH_OPTIONS,
     );
+
+    bench(
+        'drawSpriteStretched (32x32 source into 48x40, ROT_90_CW | FLIP_H)',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < SPRITE_DRAW_COUNT; i++) {
+                renderer.drawSpriteStretched(sheet, largeSrcRect, destPos.x, destPos.y, 48, 40, 0, rot90FlipH);
+            }
+
+            renderer.endFrame();
+        },
+        BENCH_OPTIONS,
+    );
 });
 
 describe('SoftwareRenderer bitmap text', () => {
