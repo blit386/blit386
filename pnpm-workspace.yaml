@@ -34,7 +34,7 @@ overrides:
   # and waku in packages/website's docs pipeline, so it never enters a runtime bundle -
   # but `security:audit` covers dev + prod, so it fails CI. 4.13.5 is the patch; pinned
   # to the latest 4.x (4.13.7) since waku@1.0.0-beta.6 declares hono@^4.12.14.
-  hono@<4.13.5: ^4.13.7
+  hono@<4.13.5: ^4.13.9
   # GHSA-rgj7-g3m4-5g8c (GHSA-g89c-p67h-r497 / GHSA-2jg2-4ch7-h545, high): libheif
   # vulnerabilities. Dev-only, reached through miniflare via wrangler
   # (packages/website devDependency) for OG image generation, so it never enters a
