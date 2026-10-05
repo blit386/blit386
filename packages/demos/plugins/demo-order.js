@@ -56,4 +56,5 @@ export const DEMO_ORDER = [
     'palette-exposure-fade',
     'reduced-motion',
     'bunnymark',
+    'nine-slice-panels',
 ];
