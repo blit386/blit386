@@ -15,6 +15,8 @@ import { AssetLoader } from './assets/AssetLoader';
 import { AudioClip } from './assets/AudioClip';
 import type { TextSize } from './assets/BitmapFont';
 import { BitmapFont } from './assets/BitmapFont';
+import type { NineSliceMode, NineSliceOptions } from './assets/NineSlice';
+import { NineSlice } from './assets/NineSlice';
 import { MAX_PALETTE_SIZE, Palette } from './assets/Palette';
 import type { ExposureFadeOptions } from './assets/PaletteEffect';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
@@ -2939,6 +2941,7 @@ export {
     Interference,
     interpolate,
     mergeHardwareSettings,
+    NineSlice,
     Noise,
     Palette,
     PerlinNoise,
@@ -2973,6 +2976,8 @@ export type {
     IBTDemo,
     KeyboardLayout,
     MusicPlayOptions,
+    NineSliceMode,
+    NineSliceOptions,
     OverlayAudioMeterStyle,
     OverlayRow,
     OverlayStyle,
