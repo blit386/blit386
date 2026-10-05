@@ -1,6 +1,7 @@
 import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
+import { NineSlice, type NineSliceMode, splitNineSliceAxis } from '../assets/NineSlice';
 import type { Palette } from '../assets/Palette';
 import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import {
@@ -116,6 +117,30 @@ export class BTAPI {
      * renderer clones it into its command list.
      */
     private readonly scratchTileRect = new Rect2i();
+
+    /** Source rect reused by every `drawNineSlice` quad. Safe to share for the same reason as `scratchTileRect`. */
+    private readonly scratchNineSliceSrc = new Rect2i();
+
+    /** Destination point reused by every 1:1 `drawNineSlice` quad (both renderers copy or consume it). */
+    private readonly scratchNineSliceDest = new Vector2i();
+
+    /** `[left, middle, right]` column widths of the current `drawNineSlice` box. */
+    private readonly nineSliceColumns = new Int32Array(3);
+
+    /** `[top, middle, bottom]` row heights of the current `drawNineSlice` box. */
+    private readonly nineSliceRows = new Int32Array(3);
+
+    /** Sheet x of each `drawNineSlice` column strip; end caps crop from their outer side. */
+    private readonly nineSliceSrcX = new Int32Array(3);
+
+    /** Sheet y of each `drawNineSlice` row strip; end caps crop from their outer side. */
+    private readonly nineSliceSrcY = new Int32Array(3);
+
+    /** Screen x of each `drawNineSlice` column box. */
+    private readonly nineSliceBoxX = new Int32Array(3);
+
+    /** Screen y of each `drawNineSlice` row box. */
+    private readonly nineSliceBoxY = new Int32Array(3);
 
     /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
@@ -1628,6 +1653,106 @@ export class BTAPI {
     }
 
     /**
+     * Draws a nine-slice panel into a box: corners at 1:1, edges and center stretched or tiled per the
+     * nine-slice's modes. A box smaller than the corners crops them from their outer side.
+     *
+     * @param nineSlice - Panel from `NineSlice.fromSheet`.
+     * @param destRect - Box to fill; empty, negative, or NaN sizes draw nothing.
+     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @throws If `nineSlice` is not a `NineSlice`, `destRect` is not a `Rect2i`, the palette offset is invalid,
+     *   or the sheet has not been indexized. Validation runs before any quad is emitted.
+     */
+    public drawNineSlice(nineSlice: NineSlice, destRect: Rect2i, paletteOffset: number = 0): void {
+        if (!(nineSlice instanceof NineSlice)) {
+            throw new Error(
+                'drawNineSlice expects a NineSlice; build one with NineSlice.fromSheet(sheet, outer, inner)',
+            );
+        }
+
+        if (!(destRect instanceof Rect2i)) {
+            throw new Error('drawNineSlice expects a Rect2i destination box');
+        }
+
+        const sheet = nineSlice.sheet;
+
+        this.assertPaletteIndex(paletteOffset);
+        this.requireIndexizedSheet(sheet);
+
+        // Rect2i fields are public and mutable: truncate like the constructor (NaN -> 0 draws nothing).
+        const destX = destRect.x | 0;
+        const destY = destRect.y | 0;
+        const destW = destRect.width | 0;
+        const destH = destRect.height | 0;
+
+        if (destW <= 0 || destH <= 0) {
+            return;
+        }
+
+        // One count per API call (like drawBitmapText), however many quads it emits.
+        this.markDrawCall();
+
+        const { outer, inner } = nineSlice;
+        const columns = this.nineSliceColumns;
+        const rows = this.nineSliceRows;
+
+        splitNineSliceAxis(destW, inner.x - outer.x, outer.right - inner.right, columns);
+        splitNineSliceAxis(destH, inner.y - outer.y, outer.bottom - inner.bottom, rows);
+
+        const right = columns[2] as number;
+        const bottom = rows[2] as number;
+        const srcXs = this.nineSliceSrcX;
+        const srcYs = this.nineSliceSrcY;
+        const boxXs = this.nineSliceBoxX;
+        const boxYs = this.nineSliceBoxY;
+
+        srcXs[0] = outer.x;
+        srcXs[1] = inner.x;
+        srcXs[2] = outer.right - right;
+        srcYs[0] = outer.y;
+        srcYs[1] = inner.y;
+        srcYs[2] = outer.bottom - bottom;
+        boxXs[0] = destX;
+        boxXs[1] = destX + (columns[0] as number);
+        boxXs[2] = destX + destW - right;
+        boxYs[0] = destY;
+        boxYs[1] = destY + (rows[0] as number);
+        boxYs[2] = destY + destH - bottom;
+
+        for (let row = 0; row < 3; row++) {
+            // eslint-disable-next-line security/detect-object-injection
+            const boxH = rows[row] as number;
+
+            if (boxH === 0) {
+                continue;
+            }
+
+            // eslint-disable-next-line security/detect-object-injection
+            const srcY = srcYs[row] as number;
+            const srcH = row === 1 ? inner.height : boxH;
+            // eslint-disable-next-line security/detect-object-injection
+            const boxY = boxYs[row] as number;
+
+            for (let col = 0; col < 3; col++) {
+                // eslint-disable-next-line security/detect-object-injection
+                const boxW = columns[col] as number;
+
+                if (boxW === 0) {
+                    continue;
+                }
+
+                // eslint-disable-next-line security/detect-object-injection
+                const srcX = srcXs[col] as number;
+                const srcW = col === 1 ? inner.width : boxW;
+                // eslint-disable-next-line security/detect-object-injection
+                const boxX = boxXs[col] as number;
+                const mode = nineSliceRegionMode(nineSlice, row, col);
+
+                this.emitNineSliceRegion(sheet, srcX, srcY, srcW, srcH, boxX, boxY, boxW, boxH, mode, paletteOffset);
+            }
+        }
+    }
+
+    /**
      * Draws text using a bitmap font with variable-width glyphs.
      * Supports Unicode characters and per-glyph render offsets.
      *
@@ -2568,6 +2693,67 @@ export class BTAPI {
     }
 
     /**
+     * Emits one nine-slice region straight to the renderer (validation already ran in `drawNineSlice`).
+     * Stretch is one stretched quad; tile is 1:1 quads stepping by the strip size from the box's top-left,
+     * with the last column and row cropped.
+     *
+     * @param sheet - Indexized source sheet.
+     * @param srcX - Strip left edge in the sheet.
+     * @param srcY - Strip top edge in the sheet.
+     * @param srcW - Strip width (at least 1).
+     * @param srcH - Strip height (at least 1).
+     * @param boxX - Box left edge.
+     * @param boxY - Box top edge.
+     * @param boxW - Box width (at least 1).
+     * @param boxH - Box height (at least 1).
+     * @param mode - Fill mode (corners arrive as `'tile'`).
+     * @param paletteOffset - Validated palette offset.
+     */
+    private emitNineSliceRegion(
+        sheet: SpriteSheet,
+        srcX: number,
+        srcY: number,
+        srcW: number,
+        srcH: number,
+        boxX: number,
+        boxY: number,
+        boxW: number,
+        boxH: number,
+        mode: NineSliceMode,
+        paletteOffset: number,
+    ): void {
+        const src = this.scratchNineSliceSrc;
+        const isStretch = mode === 'stretch';
+
+        src.x = srcX;
+        src.y = srcY;
+        // A stretch samples the whole strip; tiles never reach past the box, so mark only what shows.
+        src.width = isStretch ? srcW : Math.min(srcW, boxW);
+        src.height = isStretch ? srcH : Math.min(srcH, boxH);
+
+        if (this.renderer && this.isTrackingFramePaletteUsage()) {
+            sheet.markPaletteIndicesInRect(src, paletteOffset, this.framePaletteUsageMask);
+        }
+
+        if (isStretch) {
+            this.renderer?.drawSpriteStretched(sheet, src, boxX, boxY, boxW, boxH, paletteOffset, 0);
+            return;
+        }
+
+        const dest = this.scratchNineSliceDest;
+
+        for (let tileY = 0; tileY < boxH; tileY += srcH) {
+            for (let tileX = 0; tileX < boxW; tileX += srcW) {
+                src.width = Math.min(srcW, boxW - tileX);
+                src.height = Math.min(srcH, boxH - tileY);
+                dest.x = boxX + tileX;
+                dest.y = boxY + tileY;
+                this.renderer?.drawSprite(sheet, src, dest, paletteOffset);
+            }
+        }
+    }
+
+    /**
      * Validates that a sprite sheet has been indexized and registers it for refresh tracking.
      *
      * @param sheet - Sprite sheet to validate.
@@ -2922,6 +3108,23 @@ export class BTAPI {
         this.palette = palette;
         this.renderer?.setPalette(palette);
     }
+}
+
+/**
+ * Fill mode of a nine-slice region: `center` for the middle, `edges` for the edges, and `'tile'` for a corner -
+ * a corner's box always equals its strip, so one 1:1 tile draws it.
+ *
+ * @param nineSlice - Panel being drawn.
+ * @param row - Row index 0-2.
+ * @param col - Column index 0-2.
+ * @returns The region's fill mode.
+ */
+function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode {
+    if (row === 1 && col === 1) {
+        return nineSlice.center;
+    }
+
+    return row === 1 || col === 1 ? nineSlice.edges : 'tile';
 }
 
 /**

@@ -15,6 +15,7 @@
 
 import { bench, describe } from 'vitest';
 
+import { NineSlice } from './assets/NineSlice';
 import { Palette } from './assets/Palette';
 import { SpriteSheet } from './assets/SpriteSheet';
 import { BT } from './BLIT386';
@@ -130,6 +131,13 @@ tileSheet.tileSize = 8;
 const tileSrc = new Rect2i(8, 8, 8, 8);
 const tileDest = new Vector2i(16, 16);
 
+// 24x24 panel on the 64x64 tile sheet: 8px caps, 8x8 center.
+const nineSliceOuter = new Rect2i(0, 0, 24, 24);
+const nineSliceInner = new Rect2i(8, 8, 8, 8);
+const stretchedPanel = NineSlice.fromSheet(tileSheet, nineSliceOuter, nineSliceInner);
+const tiledPanel = NineSlice.fromSheet(tileSheet, nineSliceOuter, nineSliceInner, { edges: 'tile', center: 'tile' });
+const panelBox = new Rect2i(4, 4, 312, 232);
+
 describe('BT draw-call facade', () => {
     bench(
         'BT.drawPixel(x, y, paletteIndex) x 10000',
@@ -201,6 +209,30 @@ describe('BT draw-call facade', () => {
 
             for (let i = 0; i < 5000; i++) {
                 BT.drawTile(tileSheet, i & 63, tileDest);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'BT.drawNineSlice(stretch, 312x232) x 1000',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < 1000; i++) {
+                BT.drawNineSlice(stretchedPanel, panelBox);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'BT.drawNineSlice(tile 8px, 312x232) x 10',
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < 10; i++) {
+                BT.drawNineSlice(tiledPanel, panelBox);
             }
         },
         BENCH_OPTIONS,

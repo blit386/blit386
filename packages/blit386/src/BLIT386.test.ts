@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, type MockIns
 
 import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
+import { NineSlice } from './assets/NineSlice';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { BitmapFont, HardwareSettings, IBTDemo, SpriteDrawParams } from './BLIT386';
 import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
@@ -2344,6 +2345,55 @@ describe('BT.drawTile', () => {
             const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
             expect(text).toContain("Did you forget to use 'await' before SpriteSheet.load()?");
         });
+    });
+});
+
+describe('BT.drawNineSlice', () => {
+    let drawNineSliceSpy: MockInstance<BTAPI['drawNineSlice']>;
+
+    function makeSlice(): NineSlice {
+        const sheet = SpriteSheet.fromIndexedPixels(16, 16, new Uint8Array(256) as Uint8Array<ArrayBuffer>);
+
+        return NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8));
+    }
+
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
+        drawNineSliceSpy = vi.spyOn(BTAPI.instance, 'drawNineSlice').mockImplementation(() => {});
+    });
+
+    it('forwards the nine-slice, box, and paletteOffset', () => {
+        const slice = makeSlice();
+        const box = new Rect2i(10, 20, 64, 32);
+
+        BT.drawNineSlice(slice, box);
+        BT.drawNineSlice(slice, box, 7);
+
+        expect(drawNineSliceSpy).toHaveBeenNthCalledWith(1, slice, box, 0);
+        expect(drawNineSliceSpy).toHaveBeenNthCalledWith(2, slice, box, 7);
+    });
+
+    it('shows the error instead of throwing when BTAPI rejects the call', async () => {
+        drawNineSliceSpy.mockImplementation(() => {
+            throw new Error(
+                'drawNineSlice expects a NineSlice; build one with NineSlice.fromSheet(sheet, outer, inner)',
+            );
+        });
+
+        await withErrorContainer(async () => {
+            expect(() => BT.drawNineSlice({} as NineSlice, new Rect2i(0, 0, 8, 8))).not.toThrow();
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('NineSlice.fromSheet');
+        });
+    });
+
+    it('reports the engine as not ready and draws nothing before init', () => {
+        vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue(null);
+
+        expect(() => BT.drawNineSlice(makeSlice(), new Rect2i(0, 0, 8, 8))).not.toThrow();
+        expect(drawNineSliceSpy).not.toHaveBeenCalled();
     });
 });
 
