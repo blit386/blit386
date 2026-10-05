@@ -89,49 +89,6 @@ const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
 const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 
 /**
- * Source start of nine-slice strip `index` along one axis: start caps keep their start, end caps keep their
- * end (crop from the outer side), the middle strip is the inner rect.
- *
- * @param index - Strip index: 0 start cap, 1 middle, 2 end cap.
- * @param outerStart - Outer rect start on this axis.
- * @param innerStart - Inner rect start on this axis.
- * @param outerEnd - Outer rect end (exclusive) on this axis.
- * @param len - Drawn strip length.
- * @returns Strip start coordinate in the sheet.
- */
-function nineSliceSrcStart(
-    index: number,
-    outerStart: number,
-    innerStart: number,
-    outerEnd: number,
-    len: number,
-): number {
-    if (index === 0) {
-        return outerStart;
-    }
-
-    return index === 1 ? innerStart : outerEnd - len;
-}
-
-/**
- * Box start of nine-slice strip `index` along one axis: start cap, then middle after it, end cap flush end.
- *
- * @param index - Strip index: 0 start cap, 1 middle, 2 end cap.
- * @param destStart - Destination box start on this axis.
- * @param destSize - Destination box size on this axis.
- * @param firstLen - Length of the start cap strip.
- * @param len - Drawn strip length.
- * @returns Strip start coordinate in the destination.
- */
-function nineSliceBoxStart(index: number, destStart: number, destSize: number, firstLen: number, len: number): number {
-    if (index === 0) {
-        return destStart;
-    }
-
-    return index === 1 ? destStart + firstLen : destStart + destSize - len;
-}
-
-/**
  * Fill mode of a nine-slice region: `center` for the middle, `edges` for the edges, and `'tile'` for a corner -
  * a corner's box always equals its strip, so one 1:1 tile draws it.
  *
@@ -189,6 +146,18 @@ export class BTAPI {
 
     /** `[top, middle, bottom]` row heights of the current `drawNineSlice` box. */
     private readonly nineSliceRows = new Int32Array(3);
+
+    /** Sheet x of each `drawNineSlice` column strip; end caps crop from their outer side. */
+    private readonly nineSliceSrcX = new Int32Array(3);
+
+    /** Sheet y of each `drawNineSlice` row strip; end caps crop from their outer side. */
+    private readonly nineSliceSrcY = new Int32Array(3);
+
+    /** Screen x of each `drawNineSlice` column box. */
+    private readonly nineSliceBoxX = new Int32Array(3);
+
+    /** Screen y of each `drawNineSlice` row box. */
+    private readonly nineSliceBoxY = new Int32Array(3);
 
     /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
@@ -1746,6 +1715,26 @@ export class BTAPI {
         splitNineSliceAxis(destW, inner.x - outer.x, outer.right - inner.right, columns);
         splitNineSliceAxis(destH, inner.y - outer.y, outer.bottom - inner.bottom, rows);
 
+        const right = columns[2] as number;
+        const bottom = rows[2] as number;
+        const srcXs = this.nineSliceSrcX;
+        const srcYs = this.nineSliceSrcY;
+        const boxXs = this.nineSliceBoxX;
+        const boxYs = this.nineSliceBoxY;
+
+        srcXs[0] = outer.x;
+        srcXs[1] = inner.x;
+        srcXs[2] = outer.right - right;
+        srcYs[0] = outer.y;
+        srcYs[1] = inner.y;
+        srcYs[2] = outer.bottom - bottom;
+        boxXs[0] = destX;
+        boxXs[1] = destX + (columns[0] as number);
+        boxXs[2] = destX + destW - right;
+        boxYs[0] = destY;
+        boxYs[1] = destY + (rows[0] as number);
+        boxYs[2] = destY + destH - bottom;
+
         for (let row = 0; row < 3; row++) {
             // eslint-disable-next-line security/detect-object-injection
             const boxH = rows[row] as number;
@@ -1754,9 +1743,11 @@ export class BTAPI {
                 continue;
             }
 
-            const srcY = nineSliceSrcStart(row, outer.y, inner.y, outer.bottom, boxH);
+            // eslint-disable-next-line security/detect-object-injection
+            const srcY = srcYs[row] as number;
             const srcH = row === 1 ? inner.height : boxH;
-            const boxY = nineSliceBoxStart(row, destY, destH, rows[0] as number, boxH);
+            // eslint-disable-next-line security/detect-object-injection
+            const boxY = boxYs[row] as number;
 
             for (let col = 0; col < 3; col++) {
                 // eslint-disable-next-line security/detect-object-injection
@@ -1766,9 +1757,11 @@ export class BTAPI {
                     continue;
                 }
 
-                const srcX = nineSliceSrcStart(col, outer.x, inner.x, outer.right, boxW);
+                // eslint-disable-next-line security/detect-object-injection
+                const srcX = srcXs[col] as number;
                 const srcW = col === 1 ? inner.width : boxW;
-                const boxX = nineSliceBoxStart(col, destX, destW, columns[0] as number, boxW);
+                // eslint-disable-next-line security/detect-object-injection
+                const boxX = boxXs[col] as number;
                 const mode = nineSliceRegionMode(nineSlice, row, col);
 
                 this.emitNineSliceRegion(sheet, srcX, srcY, srcW, srcH, boxX, boxY, boxW, boxH, mode, paletteOffset);
