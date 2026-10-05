@@ -1,5 +1,5 @@
 // Sprites: how to draw images (sprites) on screen using BLIT386.
-// @description Draw sprites from a sheet: pick cells, recolor, flip, rotate, scale, and stretch to any size.
+// @description Draw sprites from a sheet: pick cells, recolor, flip, rotate, scale, pivot, and stretch to any size.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),
@@ -20,7 +20,8 @@
 //   3. Flip and quarter-turn flags - one triangle drawn facing four ways, plus one you
 //      turn around with the Turn button or Space (BT.drawSprite with a params object).
 //   4. Scale - the same star drawn 1x to 4x, plus uneven scales like 3x wide (params.scale).
-//   5. Stretch - a heart squeezed into a Rect2i box whose width keeps changing.
+//   5. Pivot - place a sprite by its center or by a corner instead of its top-left (params.pivot).
+//   6. Stretch - a heart squeezed into a Rect2i box whose width keeps changing.
 //
 // Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
 // installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
@@ -103,6 +104,26 @@ const HEART_TILE = 4;
 
 // Whole-number scales drawn side by side in the Scale section.
 const UNIFORM_SCALES = [1, 2, 3, 4];
+
+// Where the Pivot section sits: its title row, the y of the planted triangles' marked dots,
+// and the row where the pivot (0, 0) comparison is drawn.
+const PIVOT_TOP = 214;
+const PIVOT_PLANTED_Y = 252;
+const PIVOT_CORNER_Y = 298;
+
+// Part 1 of the Pivot section: the same triangle, drawn with a different flag and scale each time.
+const PLANTED_POSES = [
+    { flags: 0, scale: 1 },
+    { flags: BT.ROT_90_CW, scale: 1 },
+    { flags: BT.ROT_180_CW, scale: 2 },
+    { flags: BT.FLIP_H, scale: 2 },
+];
+
+// Part 2: the flags under which pivot (0, 0) and no pivot are compared.
+const PIVOT_COMPARISONS = [
+    { name: 'FLIP_H', flags: BT.FLIP_H },
+    { name: 'ROT_90_CW', flags: BT.ROT_90_CW },
+];
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
@@ -333,10 +354,21 @@ class Demo {
     // A fixed, uneven stretch to compare against the animated one: 20x20 into 30x50.
     fixedStretchBox = new Rect2i(560, 250, 30, 50);
 
+    // Pivot points are in SOURCE pixels, measured from the source rect's top-left, before any flags.
+    // Both are built once in init(): centerPivot is the middle of the 20x20 cell, cornerPivot
+    // is its top-left corner (the same corner as no pivot - until a flag moves it).
+    centerPivot = null;
+    cornerPivot = null;
+
+    // Scratch values for the Pivot section: a dest point and a small square that marks it. render()
+    // rewrites them with set() instead of creating new ones every frame.
+    pivotDest = new Vector2i(0, 0);
+    pivotMark = new Rect2i(0, 0, 3, 3);
+
     // One reusable params object for BT.drawSprite. Create it with every field present
-    // (flags, scale, paletteOffset) and rewrite the fields between draws - the engine reads
-    // it and never keeps it.
-    drawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+    // (flags, pivot, scale, paletteOffset) and rewrite the fields between draws - the engine reads
+    // it and never keeps it. pivot: undefined means "place by the top-left".
+    drawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
 
     // Which way the turnable triangle faces; the Turn button (or Space) toggles it in render().
     isFacingLeft = false;
@@ -429,6 +461,8 @@ class Demo {
             this.triangleRect = this.sheet.tileRect(TRIANGLE_TILE);
             this.starRect = this.sheet.tileRect(STAR_TILE);
             this.heartRect = this.sheet.tileRect(HEART_TILE);
+            this.centerPivot = new Vector2i(SHAPE_CELL / 2, SHAPE_CELL / 2);
+            this.cornerPivot = new Vector2i(0, 0);
             BT.paletteSet(this.palette);
 
             console.log(
@@ -517,6 +551,10 @@ class Demo {
 
         this.renderScale(params);
 
+        // ---- Left column, below Flags: Pivot ----
+
+        this.renderPivot(params);
+
         // ---- Lower band: Stretch to a Rect2i ----
 
         this.renderStretch(params);
@@ -529,7 +567,7 @@ class Demo {
      * height separately. Scaling happens after the flags, in screen directions, so scale.x is always the
      * on-screen width - even for a sprite turned a quarter turn.
      *
-     * @param {{ flags: number, scale: number | Vector2i, paletteOffset: number }} params
+     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
      */
     renderScale(params) {
         const left = 330;
@@ -571,11 +609,72 @@ class Demo {
     }
 
     /**
+     * Marks the dest point with a small square so you can see where the sprite is planted.
+     *
+     * @param {number} x
+     * @param {number} y
+     */
+    markPivotDest(x, y) {
+        BT.drawRectFill(this.pivotMark.set(x - 1, y - 1, 3, 3), this.theme.text);
+    }
+
+    /**
+     * Normally dest is where the sprite's top-left lands. params.pivot picks a different point of the
+     * sprite - in source pixels, before flags - to put on dest instead. Part 1 plants a triangle by its
+     * center: flags and scale change, but the marked point never moves. Part 2 shows that pivot
+     * (0, 0) is NOT the same as no pivot: it is the source's top-left corner, and a flip or turn moves
+     * that corner to the other side of the sprite.
+     *
+     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
+     */
+    renderPivot(params) {
+        ui.caption(12, PIVOT_TOP, 'Pivot - place a sprite by a point', { color: 'dim' });
+
+        // Part 1: the center pivot. Each triangle uses the same pivot but a different flag and scale,
+        // and each is drawn at its own marked point.
+        params.pivot = this.centerPivot;
+
+        for (let i = 0; i < PLANTED_POSES.length; i++) {
+            const destX = 40 + i * 70;
+
+            params.flags = PLANTED_POSES[i].flags;
+            params.scale = PLANTED_POSES[i].scale;
+            BT.drawSprite(this.sheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_PLANTED_Y), params);
+            this.markPivotDest(destX, PIVOT_PLANTED_Y);
+        }
+
+        ui.caption(12, PIVOT_PLANTED_Y + 26, 'pivot (10, 10): the dot never moves', { color: 'dim' });
+
+        // Part 2: no pivot vs pivot (0, 0), drawn at the same marked point. With no pivot the sprite's
+        // footprint starts at the dot; with (0, 0) the source's top-left corner is on the dot, and the
+        // flag has moved that corner, so the footprint ends up on the other side.
+        params.scale = 1;
+
+        for (let i = 0; i < PIVOT_COMPARISONS.length; i++) {
+            const destX = 60 + i * 130;
+
+            params.flags = PIVOT_COMPARISONS[i].flags;
+
+            params.pivot = undefined;
+            BT.drawSprite(this.sheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_CORNER_Y), params);
+
+            params.pivot = this.cornerPivot;
+            BT.drawSprite(this.sheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_CORNER_Y), params);
+
+            this.markPivotDest(destX, PIVOT_CORNER_Y);
+
+            // Left sprite is the (0, 0) pivot, right sprite is no pivot.
+            const label = `${PIVOT_COMPARISONS[i].name}: (0,0) | none`;
+            ui.caption(destX - 40, PIVOT_CORNER_Y + 24, label, { color: 'dim' });
+        }
+    }
+
+    /**
      * A Rect2i destination stretches the sprite to any size, even one that is not a whole multiple. Each
      * screen pixel copies the sprite pixel under its center, so the result stays crisp - no blur - and looks
      * the same on every backend. scale must stay 1 here: the box already sets the size.
      *
-     * @param {{ flags: number, scale: number | Vector2i, paletteOffset: number }} params
+     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
      */
     renderStretch(params) {
         const top = this.stretchBox.y;
@@ -586,6 +685,8 @@ class Demo {
         const swing = (Math.sin(BT.ticks / 40) + 1) / 2;
         this.stretchBox.width = Math.round(20 + swing * 180);
 
+        // A Rect2i dest sets the size itself, so a pivot with it throws. Clear it first.
+        params.pivot = undefined;
         params.flags = 0;
         params.scale = 1;
         BT.drawSprite(this.sheet, this.heartRect, this.stretchBox, params);
@@ -604,7 +705,7 @@ class Demo {
         ui.panel('Production PNG load:');
         ui.label('const indexed = await SpriteSheet', { color: 'info' });
         ui.label("  .loadIndexed('/sprites/test.png', palette, 10);", { color: 'info' });
-        ui.label('const params = { flags: 0, scale: 1, paletteOffset: 0 };', { color: 'info' });
+        ui.label('const params = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };', { color: 'info' });
         ui.end();
     }
 }
