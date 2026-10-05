@@ -148,6 +148,27 @@ describe('SpritePipeline vertex batch filling', () => {
     );
 
     bench(
+        'drawSpriteStretched x 5000 same-texture quads (ROT_90_CW | FLIP_H, uneven box)',
+        () => {
+            pipeline.reset();
+
+            for (let i = 0; i < SPRITE_DRAW_COUNT; i++) {
+                pipeline.drawSpriteStretched(
+                    spriteSheet,
+                    SPRITE_RECT,
+                    DEST_POS.x,
+                    DEST_POS.y,
+                    37,
+                    23,
+                    0,
+                    ROT_90_FLIP_H,
+                );
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
         'drawBitmapText 200-char string x 50',
         () => {
             // Reset between calls - MAX_VERTICES (50,000) cannot hold TEXT_DRAW_COUNT full

@@ -27,7 +27,13 @@ import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTo
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
-import { resolveSpriteOrientation, type SpriteDrawParams } from '../render/SpriteOrientation';
+import {
+    resolveSpriteOrientation,
+    resolveSpriteScale,
+    SPRITE_ORIENTATIONS,
+    type SpriteDrawParams,
+    type SpriteOrientation,
+} from '../render/SpriteOrientation';
 import { WebGPURenderer } from '../render/WebGPURenderer';
 import type { SplashState } from '../splash';
 import { createBlackened, HANDOFF_FADE_MS, isSplashEnabled, Splash } from '../splash';
@@ -206,6 +212,15 @@ export class BTAPI {
 
     /** Number of demo draw API calls issued since the last rendered frame. */
     private pendingDrawCalls = 0;
+
+    /** Scratch for the resolved `SpriteDrawParams.scale`, so params draws allocate nothing. */
+    private readonly spriteScaleScratch = new Vector2i(1, 1);
+
+    /**
+     * Cached {@link isDevMode} for dev-only draw checks. Refreshed in {@link init} and once per render
+     * frame (HMR can switch on after init), never per draw: `isDevMode()` resolves several signals.
+     */
+    private isDevGuardActive = false;
 
     /**
      * Overlay Backquote toggle press captured during a fixed-update tick, before
@@ -409,6 +424,7 @@ export class BTAPI {
 
         this.demo = demo;
         this.canvas = canvas;
+        this.isDevGuardActive = isDevMode();
 
         // Hardware settings: demo hook or defaults from defaultConfig() (320x240 logical, 640x480 buffer, 60 FPS).
         console.log('[BT] Reading hardware configuration');
@@ -1450,9 +1466,17 @@ export class BTAPI {
      * @param srcRect - Region to copy from the sprite sheet.
      * @param destPos - Screen position to draw in (the top-left corner).
      * @param paletteOffset - Palette index offset applied at draw time (default 0).
-     * @throws If the sprite sheet has not been indexized.
+     * @throws If the sprite sheet has not been indexized, or (dev mode only) if `destPos` is a `Rect2i`.
      */
     public drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
+        // Untyped callers passing a Rect2i here would get a silent unscaled draw at its top-left.
+        // Dev builds only: release pays one boolean read.
+        if (this.isDevGuardActive && (destPos as unknown) instanceof Rect2i) {
+            throw new Error(
+                'drawSprite with a Rect2i destination needs a params object: drawSprite(sheet, src, destRect, {})',
+            );
+        }
+
         this.submitSprite(spriteSheet, srcRect, destPos, paletteOffset, 0);
     }
 
@@ -1462,15 +1486,16 @@ export class BTAPI {
      *
      * @param spriteSheet - Source sprite sheet (must have been indexized via spriteSheet.indexize()).
      * @param srcRect - Region to copy from the sprite sheet.
-     * @param destPos - Top-left of the post-flags footprint.
-     * @param params - Flags and palette offset.
-     * @throws If `params` is null or an array, `destPos` is not a `Vector2i`, the flags are invalid, or
-     *   anything {@link drawSprite} rejects.
+     * @param dest - A `Vector2i` (top-left of the post-flags, post-scale footprint) or a `Rect2i` (the box
+     *   the footprint is stretched into).
+     * @param params - Flags, scale, and palette offset.
+     * @throws If `params` is null or an array, `dest` is neither a `Vector2i` nor a `Rect2i`, the flags or
+     *   scale are invalid, a `Rect2i` dest has a non-neutral scale, or anything {@link drawSprite} rejects.
      */
     public drawSpriteWithParams(
         spriteSheet: SpriteSheet,
         srcRect: Rect2i,
-        destPos: Vector2i,
+        dest: Vector2i | Rect2i,
         params: SpriteDrawParams,
     ): void {
         if (params === null || Array.isArray(params)) {
@@ -1479,19 +1504,59 @@ export class BTAPI {
             );
         }
 
-        if (!(destPos instanceof Vector2i)) {
-            throw new Error(
-                'drawSprite with params takes a Vector2i destination; a Rect2i (stretched) destination is not supported yet',
+        // Absent fields take the documented defaults (no flip, scale 1, no palette shift).
+        const orientation = resolveSpriteOrientation(params.flags ?? 0);
+        const paletteOffset = params.paletteOffset ?? 0;
+        const scale = resolveSpriteScale(params.scale, this.spriteScaleScratch);
+        const isUnscaled = scale.x === 1 && scale.y === 1;
+
+        if (dest instanceof Rect2i) {
+            if (!isUnscaled) {
+                throw new Error(
+                    'drawSprite with a Rect2i destination takes no scale: the rectangle already sets the size. Pass scale: 1 or leave it out',
+                );
+            }
+
+            this.submitSpriteStretched(
+                spriteSheet,
+                srcRect,
+                // Rect2i fields are public and mutable: truncate like the constructor (NaN -> 0 draws nothing).
+                dest.x | 0,
+                dest.y | 0,
+                dest.width | 0,
+                dest.height | 0,
+                paletteOffset,
+                orientation,
             );
+            return;
         }
 
-        // Absent fields take the documented defaults (no flip, no palette shift).
-        this.submitSprite(
+        if (!(dest instanceof Vector2i)) {
+            throw new Error('drawSprite with params takes a Vector2i or Rect2i destination');
+        }
+
+        // An unscaled point keeps the 1:1 / oriented path, so its output stays identical to overload 1.
+        if (isUnscaled) {
+            this.submitSprite(spriteSheet, srcRect, dest, paletteOffset, orientation);
+            return;
+        }
+
+        // Scale multiplies the post-flags footprint in screen axes.
+        // eslint-disable-next-line security/detect-object-injection
+        const swap = (SPRITE_ORIENTATIONS[orientation] as SpriteOrientation).swap;
+        const footprintW = swap ? srcRect.height : srcRect.width;
+        const footprintH = swap ? srcRect.width : srcRect.height;
+
+        this.submitSpriteStretched(
             spriteSheet,
             srcRect,
-            destPos,
-            params.paletteOffset ?? 0,
-            resolveSpriteOrientation(params.flags ?? 0),
+            // Vector2i fields are public and mutable too: truncate like the Rect2i branch above.
+            dest.x | 0,
+            dest.y | 0,
+            footprintW * scale.x,
+            footprintH * scale.y,
+            paletteOffset,
+            orientation,
         );
     }
 
@@ -2406,6 +2471,55 @@ export class BTAPI {
     }
 
     /**
+     * Validates and submits one stretched draw (integer scale or a `Rect2i` destination). An empty box draws
+     * nothing: a computed size of 0 (an empty bar) is normal layout, not an error.
+     *
+     * @param spriteSheet - Source sprite sheet (must have been indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destX - Box left edge.
+     * @param destY - Box top edge.
+     * @param destW - Box width; `<= 0` draws nothing.
+     * @param destH - Box height; `<= 0` draws nothing.
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index from `resolveSpriteOrientation`.
+     * @throws If the palette offset is invalid or the sprite sheet has not been indexized.
+     */
+    private submitSpriteStretched(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destX: number,
+        destY: number,
+        destW: number,
+        destH: number,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        this.assertPaletteIndex(paletteOffset);
+        this.requireIndexizedSheet(spriteSheet);
+
+        if (destW <= 0 || destH <= 0 || srcRect.width <= 0 || srcRect.height <= 0) {
+            return;
+        }
+
+        if (this.renderer && this.isTrackingFramePaletteUsage()) {
+            spriteSheet.markPaletteIndicesInRect(srcRect, paletteOffset, this.framePaletteUsageMask);
+        }
+
+        this.markDrawCall();
+
+        this.renderer?.drawSpriteStretched(
+            spriteSheet,
+            srcRect,
+            destX,
+            destY,
+            destW,
+            destH,
+            paletteOffset,
+            orientation,
+        );
+    }
+
+    /**
      * Validates that a sprite sheet has been indexized and registers it for refresh tracking.
      *
      * @param sheet - Sprite sheet to validate.
@@ -2496,6 +2610,8 @@ export class BTAPI {
      * wasted work on every frame the overlay palette grid is not visible.
      */
     private beginRenderFrame(): void {
+        this.isDevGuardActive = isDevMode();
+
         if (this.overlay) {
             this.overlay.handleFrameInput(
                 this.pointer,

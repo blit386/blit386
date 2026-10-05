@@ -60,8 +60,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   Pass `{ tileSize }` in `options` to give the sheet a grid of equal cells.
 - `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` (method) - draw a region. `paletteOffset` shifts every
   pixel's slot, so you can recolor the same sprite (team colors, day/night).
-- `BT.drawSprite(sheet, srcRect, destPos, { flags, paletteOffset })` (method) - same, flipped or turned by `flags`
-  (engine 1.8.0+).
+- `BT.drawSprite(sheet, srcRect, destPosOrRect, { flags, scale, paletteOffset })` (method) - same, flipped or turned by
+  `flags`, enlarged by whole-number `scale`, or stretched into a `Rect2i` (engine 1.8.0+).
 - `BT.drawTile(sheet, index, destPos, paletteOffset?)` / `BT.drawTile(sheet, col, row, destPos, paletteOffset?)`
   (method) - draw one grid cell, no `Rect2i` needed (engine 1.8.0+).
 - `sheet.fullRect()` (method) - the whole-sheet `Rect2i`.
@@ -77,16 +77,42 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
 
   ```js
   // init()
-  this.drawParams = { flags: 0, paletteOffset: 0 };
+  this.drawParams = { flags: 0, scale: 1, paletteOffset: 0 };
 
   // render()
   this.drawParams.flags = this.isFacingLeft ? BT.FLIP_H : 0;
   BT.drawSprite(this.hero, this.heroRect, new Vector2i(120, 90), this.drawParams);
   ```
 
+  In TypeScript, annotate the field as `SpriteDrawParams` (a type exported by `blit386`) so `scale` can later hold a
+  `Vector2i`:
+
+  ```ts
+  drawParams: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+  ```
+
   `flags` takes `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. A 90 or
   270 degree turn swaps width and height; `destPos` stays the top-left corner. To flip a grid tile, pass
   `sheet.tileRect(...)` (built in `init()`) to `BT.drawSprite` - `BT.drawTile` takes no params.
+
+- To draw a sprite bigger, scale it at draw time instead of drawing a bigger PNG (engine 1.8.0+). Add `scale` to the
+  same params object - give it every field up front, `{ flags: 0, scale: 1, paletteOffset: 0 }`, and change fields
+  between draws:
+
+  ```js
+  this.drawParams.scale = 2; // whole numbers only: 2, 3, ... or new Vector2i(3, 1)
+  BT.drawSprite(this.hero, this.heroRect, pos, this.drawParams);
+  ```
+
+  For a size that is not a whole multiple (a UI bar, a panel), pass a `Rect2i` as the destination instead. Set `scale`
+  back to 1 first - a `Rect2i` already fixes the size, so any other scale is an error:
+
+  ```js
+  this.drawParams.scale = 1;
+  BT.drawSprite(this.hero, this.heroRect, new Rect2i(x, y, w, h), this.drawParams);
+  ```
+
+  A `Rect2i` destination always needs the params object - `{}` is enough.
 
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the

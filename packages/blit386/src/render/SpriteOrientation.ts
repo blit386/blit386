@@ -6,6 +6,8 @@
  * derived from that row, so the two backends cannot drift apart.
  */
 
+import { Vector2i } from '../utils/Vector2i';
+
 /** Horizontal flip bit. Public as `BT.FLIP_H`. */
 export const SPRITE_FLIP_H = 1;
 
@@ -28,7 +30,7 @@ const FLAGS_MASK = 0x1f;
  * Per-draw options for the params form of `BT.drawSprite`.
  *
  * Read, never mutated or retained: a hot loop can allocate one object and rewrite its fields
- * between draws. Create it with every field present (`{ flags: 0, paletteOffset: 0 }`) so its
+ * between draws. Create it with every field present (`{ flags: 0, scale: 1, paletteOffset: 0 }`) so its
  * shape never changes.
  *
  * @since 1.8.0
@@ -36,6 +38,14 @@ const FLAGS_MASK = 0x1f;
 export interface SpriteDrawParams {
     /** Any combination of `BT.FLIP_*` / `BT.ROT_*` bits (default `0`). */
     flags?: number;
+
+    /**
+     * Positive integer scale of the post-flags footprint, in screen axes (default `1`). `2` equals
+     * `new Vector2i(2, 2)`; `scale.x` is on-screen width even after a 90-degree turn. For uneven sizes,
+     * pass a `Rect2i` destination instead. With a `Rect2i` destination only `1`, `new Vector2i(1, 1)`, or
+     * leaving it out is accepted, so one reused params object works for both destination kinds.
+     */
+    scale?: number | Vector2i;
 
     /** Same meaning as the fast-path 4th argument of `BT.drawSprite` (default `0`). */
     paletteOffset?: number;
@@ -189,4 +199,61 @@ export function resolveSpriteOrientation(flags: number): number {
     // `flags` is a validated integer in [0, FLAGS_MASK], so the 32-entry lookup always hits.
     // eslint-disable-next-line security/detect-object-injection
     return ORIENTATION_BY_MASK[flags] as number;
+}
+
+/**
+ * Footprint texel sampled by destination pixel `d` when `f` footprint texels are stretched across `size`
+ * destination pixels: the pixel center, exact ties rounding down. All operands are non-negative integers.
+ * Equals `floor(d * f / size)` whenever `size` is a multiple of `f` (1:1 and integer scale).
+ *
+ * @param d - Destination pixel, `0` to `size - 1`.
+ * @param f - Footprint length in texels (at least 1).
+ * @param size - Destination length in pixels (at least 1).
+ * @returns Footprint texel, `0` to `f - 1`.
+ */
+export function stretchSampleIndex(d: number, f: number, size: number): number {
+    return Math.floor(((2 * d + 1) * f - 1) / (2 * size));
+}
+
+/**
+ * Throws unless `value` is a positive integer scale component.
+ *
+ * @param value - One scale component.
+ * @throws If `value` is not an integer of at least 1.
+ */
+function assertScaleComponent(value: number): void {
+    if (!Number.isInteger(value) || value < 1) {
+        throw new Error(
+            `Invalid sprite scale ${String(value)}: scale takes positive integers; for an uneven size, pass a Rect2i destination instead`,
+        );
+    }
+}
+
+/**
+ * Validates `SpriteDrawParams.scale` and writes it into `out` as two integers. Validates before writing,
+ * because `Vector2i.set` truncates.
+ *
+ * @param scale - The params field (`undefined` means 1).
+ * @param out - Caller-owned vector to write into.
+ * @returns `out`.
+ * @throws If `scale` is not a positive integer or a `Vector2i` of positive integers.
+ */
+export function resolveSpriteScale(scale: number | Vector2i | undefined, out: Vector2i): Vector2i {
+    if (scale === undefined) {
+        return out.set(1, 1);
+    }
+
+    if (typeof scale === 'number') {
+        assertScaleComponent(scale);
+        return out.set(scale, scale);
+    }
+
+    if (scale instanceof Vector2i) {
+        assertScaleComponent(scale.x);
+        assertScaleComponent(scale.y);
+        return out.set(scale.x, scale.y);
+    }
+
+    const got = scale === null ? 'null' : typeof scale;
+    throw new Error(`Invalid sprite scale (${got}): use a positive integer or a Vector2i of positive integers`);
 }

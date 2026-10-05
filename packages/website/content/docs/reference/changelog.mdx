@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-10-04T17:18:06+02:00"
+lastModified: "2026-10-04T18:57:10+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -24,7 +24,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   argument, with `flags` (any combination of `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`)
   and `paletteOffset`. The flags compose in a fixed order into 8 orientations, `dest` is the top-left of the turned
   footprint, and both backends match pixel for pixel. The number form of the 4th argument is unchanged and still
-  allocation-free. See [Flipping and rotating sprites](/docs/api/rendering#flipping-and-rotating-sprites).
+  allocation-free. See
+  [Flipping, rotating, and scaling sprites](/docs/api/rendering#flipping-rotating-and-scaling-sprites).
+- Sprite scale and stretch: `SpriteDrawParams.scale` takes a positive integer or a `Vector2i` of positive integers and
+  multiplies the post-flags footprint in screen axes, and the params form of `BT.drawSprite` accepts a `Rect2i`
+  destination that the sprite is stretched into. Both use nearest-neighbor sampling at pixel centers, identical on
+  WebGPU and software. A `Rect2i` needs the params form (`BT.drawSprite(sheet, src, rect, {})`); development builds show
+  an error when one reaches the fast path. See
+  [Flipping, rotating, and scaling sprites](/docs/api/rendering#flipping-rotating-and-scaling-sprites).
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
   `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`

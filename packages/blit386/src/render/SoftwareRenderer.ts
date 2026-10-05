@@ -11,7 +11,7 @@ import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
 import type { SpriteOrientation } from './SpriteOrientation';
-import { SPRITE_ORIENTATIONS } from './SpriteOrientation';
+import { SPRITE_ORIENTATIONS, stretchSampleIndex } from './SpriteOrientation';
 
 /** A queued filled-rectangle or outline-rectangle draw command. */
 type RectCommand = {
@@ -54,6 +54,28 @@ type SpriteCommand = {
 };
 
 /**
+ * A queued stretched / scaled sprite blit: the post-flags footprint stretched into a destination box.
+ * Stores numbers only, so queuing copies nothing the caller owns and allocates no Rect2i.
+ */
+type StretchedSpriteCommand = {
+    kind: 'spriteStretched';
+    spriteSheet: SpriteSheet;
+    srcX: number;
+    srcY: number;
+    srcW: number;
+    srcH: number;
+    destX: number;
+    destY: number;
+    destW: number;
+    destH: number;
+    paletteOffset: number;
+    /** Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`. */
+    orientation: number;
+    cameraX: number;
+    cameraY: number;
+};
+
+/**
  * A queued bitmap text draw command. Glyph shapes are resolved once at queue time into
  * `glyphData` (6 ints per glyph: srcX, srcY, srcWidth, srcHeight, destOffsetX, destOffsetY) so
  * replay can blit each glyph without re-walking the string or re-looking up glyph metrics.
@@ -70,7 +92,7 @@ type BitmapTextCommand = {
 };
 
 /** Union of all queued draw commands accumulated between `beginFrame` and `endFrame`. */
-type DrawCommand = PrimitiveCommand | SpriteCommand | BitmapTextCommand;
+type DrawCommand = PrimitiveCommand | SpriteCommand | StretchedSpriteCommand | BitmapTextCommand;
 
 /** Pending `captureFrame` promise callbacks, held until the next `endFrame`. */
 type Pending = {
@@ -550,6 +572,48 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Queues a stretched / scaled sprite blit: the post-flags footprint of `srcRect` sampled into the
+     * `destW x destH` box at (`destX`, `destY`) with the center rule in `stretchSampleIndex`.
+     *
+     * @param spriteSheet - Source sprite sheet containing the indexed pixels.
+     * @param srcRect - Source region within the sprite sheet in pixels.
+     * @param destX - Box left edge in logical coordinates.
+     * @param destY - Box top edge in logical coordinates.
+     * @param destW - Box width in pixels (at least 1).
+     * @param destH - Box height in pixels (at least 1).
+     * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
+     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`.
+     */
+    drawSpriteStretched(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destX: number,
+        destY: number,
+        destW: number,
+        destH: number,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        this.commands.push({
+            kind: 'spriteStretched',
+            spriteSheet,
+            srcX: srcRect.x,
+            srcY: srcRect.y,
+            srcW: srcRect.width,
+            srcH: srcRect.height,
+            destX,
+            destY,
+            destW,
+            destH,
+            paletteOffset,
+            orientation,
+            cameraX: this.cameraOffset.x,
+            cameraY: this.cameraOffset.y,
+        });
+        this.spriteSubmittedVertices += SoftwareRenderer.QUAD_VERTEX_COUNT;
+    }
+
+    /**
      * Queues a bitmap text draw command, expanding each character to a sprite blit on replay.
      *
      * @param font - Bitmap font containing glyph sheet and metrics.
@@ -855,6 +919,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
             case 'sprite':
                 this.rasterSprite(command);
+                return;
+
+            case 'spriteStretched':
+                this.rasterSpriteStretched(command);
                 return;
 
             case 'bitmapText':
@@ -1172,6 +1240,57 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                     color.b,
                     255,
                 );
+            }
+        }
+    }
+
+    /**
+     * Rasterizes a stretched sprite: every destination pixel inside the screen picks its footprint texel
+     * with `stretchSampleIndex`, inverts the orientation (texel centers, so `fw - 1` / `fh - 1`), and
+     * reads that source texel. Same transparency and palette rules as {@link blitIndexedRect}; texels
+     * outside the sheet are skipped so clipped sources keep their placement.
+     *
+     * @param command - Stretched sprite command.
+     */
+    private rasterSpriteStretched(command: StretchedSpriteCommand): void {
+        const { spriteSheet } = command;
+        const indexedPixels = spriteSheet.getIndexedPixelsRef();
+        const sheetW = spriteSheet.width;
+        const sheetH = spriteSheet.height;
+        const row = SPRITE_ORIENTATIONS[command.orientation] as SpriteOrientation;
+        const fw = row.swap ? command.srcH : command.srcW;
+        const fh = row.swap ? command.srcW : command.srcH;
+        const left = command.destX - command.cameraX;
+        const top = command.destY - command.cameraY;
+        const x0 = Math.max(0, left);
+        const y0 = Math.max(0, top);
+        const x1 = Math.min(this.displaySize.x, left + command.destW);
+        const y1 = Math.min(this.displaySize.y, top + command.destH);
+        const pixels = this.framePixels;
+
+        for (let y = y0; y < y1; y++) {
+            const fy = stretchSampleIndex(y - top, fh, command.destH);
+            const v = row.flipY ? fh - 1 - fy : fy;
+
+            for (let x = x0; x < x1; x++) {
+                const fx = stretchSampleIndex(x - left, fw, command.destW);
+                const u = row.flipX ? fw - 1 - fx : fx;
+                const sx = command.srcX + (row.swap ? v : u);
+                const sy = command.srcY + (row.swap ? u : v);
+
+                if (sx < 0 || sy < 0 || sx >= sheetW || sy >= sheetH) {
+                    continue;
+                }
+
+                const rawIndex = indexedPixels[sy * sheetW + sx] ?? 0;
+
+                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
+                    continue;
+                }
+
+                const color = this.resolveSpriteColor((rawIndex + command.paletteOffset) >>> 0);
+
+                this.writePixelUnchecked(pixels, x, y, color.r, color.g, color.b, 255);
             }
         }
     }

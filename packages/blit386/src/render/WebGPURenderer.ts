@@ -593,6 +593,31 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Draws a stretched sprite region (see {@link IRenderer.drawSpriteStretched}).
+     *
+     * @param spriteSheet - Source sprite sheet (must be indexized).
+     * @param srcRect - Region to copy from the sprite sheet.
+     * @param destX - Box left edge.
+     * @param destY - Box top edge.
+     * @param destW - Box width.
+     * @param destH - Box height.
+     * @param paletteOffset - Palette index offset applied at draw time.
+     * @param orientation - Orientation index from `resolveSpriteOrientation`.
+     */
+    drawSpriteStretched(
+        spriteSheet: SpriteSheet,
+        srcRect: Rect2i,
+        destX: number,
+        destY: number,
+        destW: number,
+        destH: number,
+        paletteOffset: number,
+        orientation: number,
+    ): void {
+        this.sprites.drawSpriteStretched(spriteSheet, srcRect, destX, destY, destW, destH, paletteOffset, orientation);
+    }
+
+    /**
      * Draws text using a bitmap font through the indexed sprite pipeline.
      * Renders each character as a textured sprite.
      *

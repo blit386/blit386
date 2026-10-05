@@ -2648,11 +2648,18 @@ export const BT = {
      * 16x32 sprite with `ROT_90_CW` covers 32x16. `params.paletteOffset` means the same as the number form.
      * The object is read, never mutated or retained: allocate it once and rewrite its fields between draws.
      *
+     * **Scale and stretch (since 1.8.0):** `params.scale` takes a positive integer or a `Vector2i` of
+     * positive integers and multiplies the post-flags footprint in screen axes (`scale.x` is on-screen width
+     * even after a 90-degree turn). For an uneven size, pass a `Rect2i` as `destPos` instead: the sprite is
+     * stretched into it with nearest-neighbor sampling at pixel centers, the same on both backends. A
+     * `Rect2i` needs the params form - write `BT.drawSprite(sheet, src, destRect, {})` - and accepts only
+     * `scale: 1`, `new Vector2i(1, 1)`, or no scale.
+     *
      * @since 0.1.0
-     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips and quarter turns.
+     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, and Rect2i stretch destinations.
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
-     * @param destPos - Destination top-left position in display coordinates.
+     * @param destPos - Destination top-left in display coordinates, or (params form only) a Rect2i to stretch into.
      * @param paletteOffsetOrParams - Shift added to every stored pixel index before palette lookup (default
      *   0), or a {@link SpriteDrawParams} object.
      *
@@ -2660,14 +2667,18 @@ export const BT = {
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10));
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), 16); // blue team
      *
-     * const params = { flags: 0, paletteOffset: 0 }; // allocate once
+     * const params: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 }; // allocate once
      * params.flags = facingLeft ? BT.FLIP_H : 0;
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), params);
+     * params.scale = 2; // double size
+     * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), params);
+     * params.scale = 1;
+     * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(10, 40, 48, 12), params); // stretch
      */
     drawSprite: ((
         spriteSheet: SpriteSheet,
         srcRect: Rect2i,
-        destPos: Vector2i,
+        destPos: Vector2i | Rect2i,
         paletteOffsetOrParams?: number | SpriteDrawParams,
     ): void => {
         if (!isRendererReady()) {
@@ -2687,7 +2698,8 @@ export const BT = {
                 if (typeof paletteOffsetOrParams === 'object') {
                     BTAPI.instance.drawSpriteWithParams(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
                 } else {
-                    BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
+                    // Typed callers cannot reach here with a Rect2i; untyped ones hit BTAPI's dev-mode guard.
+                    BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos as Vector2i, paletteOffsetOrParams);
                 }
 
                 return;
@@ -2708,7 +2720,7 @@ export const BT = {
         // shipped fast path is declared first. gen-api-history.mjs unwraps the `as`.
     }) as {
         (spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
-        (spriteSheet: SpriteSheet, src: Rect2i, dest: Vector2i, params: SpriteDrawParams): void;
+        (spriteSheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
     },
 
     /**
@@ -2726,7 +2738,7 @@ export const BT = {
      * cells counted from the top-left; a partial cell at the right or bottom edge is not a tile, and a tile outside
      * the grid is an error. `paletteOffset` works exactly as in {@link BT.drawSprite}.
      *
-     * Allocation-free: the engine reuses one internal source rectangle. To flip or rotate a tile, pass
+     * Allocation-free: the engine reuses one internal source rectangle. To flip, rotate, or scale a tile, pass
      * `sheet.tileRect(...)` to `BT.drawSprite` with a {@link SpriteDrawParams} object instead.
      *
      * @since 1.8.0

@@ -18,10 +18,19 @@ import {
     applyMaskToGrid,
     DOC_RESULTS,
     indexToLetter,
+    orientRows,
     PADDED_SHEET_H,
     PADDED_SHEET_PIXELS,
     PADDED_SHEET_W,
     PADDED_SRC_RECT_ARGS,
+    scaleRows,
+    SOURCE_ROWS,
+    stretchRows,
+    WIDE_ROWS,
+    WIDE_SHEET_H,
+    WIDE_SHEET_PIXELS,
+    WIDE_SHEET_W,
+    WIDE_SRC_RECT_ARGS,
 } from '../__test__/spriteOrientationFixture';
 import {
     createMockGPUDevice,
@@ -528,14 +537,11 @@ describe('drawBitmapText', () => {
     });
 });
 
-describe('drawSpriteOriented (flip and quarter turns)', () => {
+describe('oriented and stretched sprite quads', () => {
     const device = createMockGPUDevice();
     const pipeline = new SpritePipeline();
 
     // The padded sheet puts ABC / DEF at (1, 1), so UVs are not trivially 0 and 1.
-    const SHEET_W = PADDED_SHEET_W;
-    const SHEET_H = PADDED_SHEET_H;
-    const sheetPixels = PADDED_SHEET_PIXELS;
     const SRC = new Rect2i(...PADDED_SRC_RECT_ARGS);
     const DEST = new Vector2i(7, 9);
 
@@ -549,11 +555,15 @@ describe('drawSpriteOriented (flip and quarter turns)', () => {
         uninstallMockNavigatorGPU();
     });
 
+    type SheetSpec = { w: number; h: number; pixels: Uint8Array<ArrayBuffer> };
+    const PADDED: SheetSpec = { w: PADDED_SHEET_W, h: PADDED_SHEET_H, pixels: PADDED_SHEET_PIXELS };
+    const WIDE: SheetSpec = { w: WIDE_SHEET_W, h: WIDE_SHEET_H, pixels: WIDE_SHEET_PIXELS };
+
     /** Queues one draw, encodes, and returns the 6 uploaded vertices as [x, y, u, v, paletteOffset] rows. */
-    function captureQuad(draw: (sheet: SpriteSheet) => void): number[][] {
+    function captureQuad(spec: SheetSpec, draw: (sheet: SpriteSheet) => void): number[][] {
         pipeline.reset();
         const writeBuffer = vi.spyOn(device.queue, 'writeBuffer');
-        draw(SpriteSheet.fromIndexedPixels(SHEET_W, SHEET_H, sheetPixels));
+        draw(SpriteSheet.fromIndexedPixels(spec.w, spec.h, spec.pixels));
         pipeline.encodePass(createMockRenderPassEncoder() as unknown as GPURenderPassEncoder);
 
         const call = writeBuffer.mock.calls.at(-1);
@@ -572,32 +582,27 @@ describe('drawSpriteOriented (flip and quarter turns)', () => {
     }
 
     /**
-     * Rasterizes the quad the way the GPU would: interpolate UV at each covered pixel center
-     * (the corner permutation is affine, so bilinear interpolation is exact) and load that texel.
+     * Rasterizes the quad like the GPU: at each covered pixel center, interpolate UV in float32 from the
+     * corners (the corner layout is affine, so bilinear is exact) and load the texel at floor(uv * size).
      */
-    function sampleQuad(vertices: number[][]): string {
+    function sampleQuad(spec: SheetSpec, vertices: number[][]): string {
         const [tl, tr, bl] = vertices as [number[], number[], number[]];
         const br = vertices[4] as number[];
         const [x0, y0] = tl as [number, number];
         const [x1, y1] = br as [number, number];
+        const f = Math.fround;
         const rows: string[] = [];
 
         for (let py = y0; py < y1; py++) {
             let row = '';
             for (let px = x0; px < x1; px++) {
-                const s = (px + 0.5 - x0) / (x1 - x0);
-                const t = (py + 0.5 - y0) / (y1 - y0);
-                const u =
-                    (1 - s) * (1 - t) * (tl[2] ?? 0) +
-                    s * (1 - t) * (tr[2] ?? 0) +
-                    (1 - s) * t * (bl[2] ?? 0) +
-                    s * t * (br[2] ?? 0);
-                const v =
-                    (1 - s) * (1 - t) * (tl[3] ?? 0) +
-                    s * (1 - t) * (tr[3] ?? 0) +
-                    (1 - s) * t * (bl[3] ?? 0) +
-                    s * t * (br[3] ?? 0);
-                row += indexToLetter(sheetPixels[Math.floor(v * SHEET_H) * SHEET_W + Math.floor(u * SHEET_W)] ?? 0);
+                const s = f((px + 0.5 - x0) / (x1 - x0));
+                const t = f((py + 0.5 - y0) / (y1 - y0));
+                const lerp = (a: number, b: number, c: number, d: number): number =>
+                    f(f(f((1 - s) * (1 - t)) * a) + f(f(s * (1 - t)) * b) + f(f((1 - s) * t) * c) + f(f(s * t) * d));
+                const u = lerp(tl[2] ?? 0, tr[2] ?? 0, bl[2] ?? 0, br[2] ?? 0);
+                const v = lerp(tl[3] ?? 0, tr[3] ?? 0, bl[3] ?? 0, br[3] ?? 0);
+                row += indexToLetter(spec.pixels[Math.floor(f(v * spec.h)) * spec.w + Math.floor(f(u * spec.w))] ?? 0);
             }
             rows.push(row);
         }
@@ -606,11 +611,11 @@ describe('drawSpriteOriented (flip and quarter turns)', () => {
     }
 
     it('keeps the overload 1 vertex stream unchanged', () => {
-        const u0 = 1 / SHEET_W;
-        const v0 = 1 / SHEET_H;
-        const u1 = 4 / SHEET_W;
-        const v1 = 3 / SHEET_H;
-        const vertices = captureQuad((sheet) => pipeline.drawSprite(sheet, SRC, DEST, 2));
+        const u0 = 1 / PADDED_SHEET_W;
+        const v0 = 1 / PADDED_SHEET_H;
+        const u1 = 4 / PADDED_SHEET_W;
+        const v1 = 3 / PADDED_SHEET_H;
+        const vertices = captureQuad(PADDED, (sheet) => pipeline.drawSprite(sheet, SRC, DEST, 2));
 
         expect(vertices).toEqual(
             [
@@ -628,13 +633,94 @@ describe('drawSpriteOriented (flip and quarter turns)', () => {
         const orientation = resolveSpriteOrientation(mask);
         const vertices =
             orientation === 0
-                ? captureQuad((sheet) => pipeline.drawSprite(sheet, SRC, DEST, 3))
-                : captureQuad((sheet) => pipeline.drawSpriteOriented(sheet, SRC, DEST, 3, orientation));
+                ? captureQuad(PADDED, (sheet) => pipeline.drawSprite(sheet, SRC, DEST, 3))
+                : captureQuad(PADDED, (sheet) => pipeline.drawSpriteOriented(sheet, SRC, DEST, 3, orientation));
 
         expect(vertices[0]?.slice(0, 2)).toEqual([7, 9]);
         expect(vertices.every((vertex) => vertex[4] === 3)).toBe(true);
-        expect(sampleQuad(vertices)).toBe(applyMaskToGrid(mask));
+        expect(sampleQuad(PADDED, vertices)).toBe(applyMaskToGrid(mask));
         // eslint-disable-next-line security/detect-object-injection
-        expect(sampleQuad(vertices)).toBe(DOC_RESULTS[orientation]);
+        expect(sampleQuad(PADDED, vertices)).toBe(DOC_RESULTS[orientation]);
+    });
+
+    describe('drawSpriteStretched (scale and Rect2i destinations)', () => {
+        const WIDE_SRC = new Rect2i(...WIDE_SRC_RECT_ARGS);
+
+        it('places the quad at the box and shifts UV edges by a quarter destination pixel', () => {
+            // Identity, 3x2 footprint into 2x1: shift is -1/8 texel on x and -1/4 on y.
+            const vertices = captureQuad(PADDED, (sheet) => pipeline.drawSpriteStretched(sheet, SRC, 7, 9, 2, 1, 3, 0));
+            const u0 = (1 - 1 / 8) / PADDED_SHEET_W;
+            const u1 = (4 - 1 / 8) / PADDED_SHEET_W;
+            const v0 = (1 - 1 / 4) / PADDED_SHEET_H;
+            const v1 = (3 - 1 / 4) / PADDED_SHEET_H;
+
+            expect(vertices).toEqual(
+                [
+                    [7, 9, u0, v0, 3],
+                    [9, 9, u1, v0, 3],
+                    [7, 10, u0, v1, 3],
+                    [9, 9, u1, v0, 3],
+                    [9, 10, u1, v1, 3],
+                    [7, 10, u0, v1, 3],
+                ].map((row) => row.map((value, i) => (i < 4 ? Math.fround(value) : value))),
+            );
+        });
+
+        it('shifts the opposite source edge on a flipped axis', () => {
+            // FLIP_H, 3x2 into 2x1: footprint x edges -1/8 and 3 - 1/8 map to source x 3 + 1/8 and 1/8.
+            const vertices = captureQuad(PADDED, (sheet) =>
+                pipeline.drawSpriteStretched(sheet, SRC, 0, 0, 2, 1, 0, resolveSpriteOrientation(1)),
+            );
+
+            expect(vertices[0]?.[2]).toBe(Math.fround((1 + 3 + 1 / 8) / PADDED_SHEET_W));
+            expect(vertices[1]?.[2]).toBe(Math.fround((1 + 1 / 8) / PADDED_SHEET_W));
+        });
+
+        it.each(Array.from({ length: 32 }, (_, mask) => [1, 2, 3, 4].map((s) => [mask, s] as const)).flat())(
+            'mask %i at integer scale %i samples a block copy',
+            (mask, s) => {
+                const oriented = orientRows(SOURCE_ROWS, mask);
+                const fw = oriented[0]?.length ?? 0;
+                const fh = oriented.length;
+                const vertices = captureQuad(PADDED, (sheet) =>
+                    pipeline.drawSpriteStretched(sheet, SRC, 4, 6, fw * s, fh * s, 0, resolveSpriteOrientation(mask)),
+                );
+
+                expect(sampleQuad(PADDED, vertices)).toBe(scaleRows(oriented, s, s).join(' / '));
+            },
+        );
+
+        it.each([
+            ['x 3->2, y 2->1', 0, 2, 1],
+            ['y 2->3', 0, 3, 3],
+            ['ROT_90_CW: x 2->1, y 3->2', 4, 1, 2],
+            ['ROT_90_CW: x 2->3', 4, 3, 3],
+            ['FLIP_H: x 3->2, y 2->3', 1, 2, 3],
+        ])('uneven stretch %s samples the center rule', (_label, mask, dw, dh) => {
+            const vertices = captureQuad(PADDED, (sheet) =>
+                pipeline.drawSpriteStretched(sheet, SRC, 4, 6, dw, dh, 0, resolveSpriteOrientation(mask)),
+            );
+
+            expect(sampleQuad(PADDED, vertices)).toBe(stretchRows(orientRows(SOURCE_ROWS, mask), dw, dh).join(' / '));
+        });
+
+        it.each([
+            ['x 5->7', 0, 7, 3],
+            ['ROT_90_CW: y 5->7', 4, 3, 7],
+        ])('uneven stretch %s on the 5x3 source', (_label, mask, dw, dh) => {
+            const vertices = captureQuad(WIDE, (sheet) =>
+                pipeline.drawSpriteStretched(sheet, WIDE_SRC, 4, 6, dw, dh, 0, resolveSpriteOrientation(mask)),
+            );
+
+            expect(sampleQuad(WIDE, vertices)).toBe(stretchRows(orientRows(WIDE_ROWS, mask), dw, dh).join(' / '));
+        });
+
+        it.each(Array.from({ length: 32 }, (_, mask) => mask))('mask %i stretches the 5x3 source into 7x7', (mask) => {
+            const vertices = captureQuad(WIDE, (sheet) =>
+                pipeline.drawSpriteStretched(sheet, WIDE_SRC, 4, 6, 7, 7, 0, resolveSpriteOrientation(mask)),
+            );
+
+            expect(sampleQuad(WIDE, vertices)).toBe(stretchRows(orientRows(WIDE_ROWS, mask), 7, 7).join(' / '));
+        });
     });
 });

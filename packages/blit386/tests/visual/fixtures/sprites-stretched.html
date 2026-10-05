@@ -3,7 +3,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Visual Test: Sprite Flip and Rotation</title>
+        <title>Visual Test: Sprite Scale and Stretch</title>
         <style>
             body {
                 margin: 0;
@@ -64,11 +64,11 @@
                 });
             }
 
-            class SpritesOrientedTest {
+            class SpritesStretchedTest {
                 spriteSheet = null;
 
                 // Allocated once and rewritten per draw, as the docs recommend.
-                params = { flags: 0, paletteOffset: 0 };
+                params = { flags: 0, scale: 1, paletteOffset: 0 };
 
                 configure() {
                     return {
@@ -109,53 +109,52 @@
                     const src = new Rect2i(0, 0, SPRITE_W, SPRITE_H);
                     const params = this.params;
 
-                    // Row 1: the 8 orientations by their shortest flags (doc table order).
-                    const shortest = [
-                        0,
-                        BT.FLIP_H,
-                        BT.FLIP_V,
-                        BT.ROT_180_CW,
-                        BT.ROT_90_CW,
-                        BT.ROT_90_CW | BT.FLIP_H,
-                        BT.ROT_90_CW | BT.FLIP_V,
-                        BT.ROT_270_CW,
-                    ];
-
-                    // Row 2: the same orientations by their alternate spellings - must match row 1.
-                    const alsoSpelled = [
-                        BT.ROT_180_CW | BT.FLIP_H | BT.FLIP_V,
-                        BT.ROT_180_CW | BT.FLIP_V,
-                        BT.ROT_180_CW | BT.FLIP_H,
-                        BT.FLIP_H | BT.FLIP_V,
-                        BT.ROT_270_CW | BT.FLIP_H | BT.FLIP_V,
-                        BT.ROT_270_CW | BT.FLIP_V,
-                        BT.ROT_270_CW | BT.FLIP_H,
-                        BT.ROT_90_CW | BT.FLIP_H | BT.FLIP_V,
-                    ];
-
-                    [shortest, alsoSpelled].forEach((row, rowIndex) => {
-                        row.forEach((flags, i) => {
-                            params.flags = flags;
-                            BT.drawSprite(sheet, src, new Vector2i(8 + i * 28, 10 + rowIndex * 30), params);
-                        });
+                    // Row 1: integer scales 1-4 (block copy). 18x12 grows to 72x48.
+                    [1, 2, 3, 4].forEach((s, i) => {
+                        params.scale = s;
+                        BT.drawSprite(sheet, src, new Vector2i([8, 32, 76, 138][i], 8), params);
                     });
 
-                    // Row 3: paletteOffset through params (every cell shifts one slot), next to the
-                    // fast-path draw it must match.
+                    // Row 2: non-uniform scale in screen axes, combined with flags.
+                    params.flags = BT.ROT_90_CW;
+                    params.scale = new Vector2i(3, 1); // 12x18 footprint -> 36x18
+                    BT.drawSprite(sheet, src, new Vector2i(8, 64), params);
                     params.flags = BT.FLIP_H;
-                    params.paletteOffset = 1;
-                    BT.drawSprite(sheet, src, new Vector2i(8, 70), params);
+                    params.scale = new Vector2i(1, 2); // 18x24
+                    BT.drawSprite(sheet, src, new Vector2i(52, 64), params);
+
+                    // Row 3: uneven Rect2i stretches (center sampling decides every column and row).
+                    params.scale = 1;
                     params.flags = 0;
-                    BT.drawSprite(sheet, src, new Vector2i(36, 70), 1);
+                    const stretches = [
+                        [new Rect2i(8, 100, 12, 8), 0], // 3:2 down
+                        [new Rect2i(28, 100, 9, 6), 0], // 2:1 down
+                        [new Rect2i(45, 100, 27, 18), 0], // 2:3 up
+                        [new Rect2i(80, 100, 25, 17), 0], // odd up
+                        [new Rect2i(112, 100, 31, 7), BT.FLIP_V], // wide and short, flipped
+                        [new Rect2i(150, 100, 13, 29), BT.ROT_90_CW], // turned, odd sizes
+                        [new Rect2i(170, 100, 7, 23), BT.ROT_270_CW | BT.FLIP_H],
+                        [new Rect2i(185, 100, 1, 1), 0], // single pixel
+                    ];
+
+                    stretches.forEach(([rect, flags]) => {
+                        params.flags = flags;
+                        BT.drawSprite(sheet, src, rect, params);
+                    });
+
+                    // Row 4: paletteOffset through a Rect2i stretch, and a fractional-looking ratio on both axes.
+                    params.flags = 0;
+                    params.paletteOffset = 1;
+                    BT.drawSprite(sheet, src, new Rect2i(8, 140, 41, 23), params);
                     params.paletteOffset = 0;
 
-                    // Signal render complete.
+                    // Signal render complete, publishing the backend that actually started.
                     window.__ACTIVE_BACKEND__ = BT.activeBackend;
                     window.__RENDER_COMPLETE__ = true;
                 }
             }
 
-            bootstrap(SpritesOrientedTest, {
+            bootstrap(SpritesStretchedTest, {
                 onError: () => {
                     window.__INIT_FAILED__ = true;
                 },
