@@ -26,6 +26,7 @@
 
             window.__RENDER_COMPLETE__ = false;
             window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
 
             const colorBG = 9;
             const colorDarkRed = 10;
@@ -143,6 +144,7 @@
                         BT.drawSprite(sheet, new Rect2i(0, 0, 8, 8), new Vector2i(50, 20), 2);
                     }
 
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
                     window.__RENDER_COMPLETE__ = true;
                 }
             }

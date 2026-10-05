@@ -60,6 +60,7 @@
 
             window.__RENDER_COMPLETE__ = false;
             window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
             window.__FIXTURE_MODE__ = mode;
 
             const colorBlack = 1;
@@ -244,6 +245,7 @@
                     BT.drawLine(new Vector2i(0, 0), new Vector2i(319, 239), colorRed);
                     BT.drawLine(new Vector2i(319, 0), new Vector2i(0, 239), colorBlue);
 
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
                     window.__RENDER_COMPLETE__ = true;
                 }
             }
