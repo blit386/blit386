@@ -74,7 +74,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.14",
     "@tailwindcss/vite": "^4.3.2",
     "@types/mdx": "^2.0.14",
     "@types/node": "^25.9.5",
@@ -84,10 +84,10 @@
     "@webgpu/types": "^0.1.74",
     "blit386": "workspace:*",
     "cross-env": "^7.0.3",
-    "cspell": "^10.0.1",
+    "cspell": "^10.3.5",
     "fumadocs-twoslash": "^3.3.1",
-    "knip": "^6.32.0",
-    "prettier": "^3.9.6",
+    "knip": "^6.38.0",
+    "prettier": "^3.9.9",
     "tailwindcss": "^4.3.2",
     "twoslash": "^0.3.9",
     "typescript": "^6.0.3",
