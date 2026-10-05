@@ -2655,11 +2655,17 @@ export const BT = {
      * `Rect2i` needs the params form - write `BT.drawSprite(sheet, src, destRect, {})` - and accepts only
      * `scale: 1`, `new Vector2i(1, 1)`, or no scale.
      *
+     * **Pivot (since 1.8.0):** `params.pivot` is a point in source pixels, relative to `srcRect`'s top-left,
+     * that lands on a `Vector2i` `destPos` instead of the footprint's top-left. It goes through the flags,
+     * then the scale. An explicit `(0, 0)` is the source origin and moves under flips, unlike no pivot;
+     * assign `params.pivot = undefined` to reset. A `Rect2i` `destPos` takes no pivot.
+     *
      * @since 0.1.0
-     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, and Rect2i stretch destinations.
+     * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, pivot placement, and Rect2i stretch destinations.
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
-     * @param destPos - Destination top-left in display coordinates, or (params form only) a Rect2i to stretch into.
+     * @param destPos - Destination top-left in display coordinates (or where `params.pivot` lands), or (params
+     *   form only) a Rect2i to stretch into.
      * @param paletteOffsetOrParams - Shift added to every stored pixel index before palette lookup (default
      *   0), or a {@link SpriteDrawParams} object.
      *
@@ -2667,7 +2673,7 @@ export const BT = {
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10));
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), 16); // blue team
      *
-     * const params: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 }; // allocate once
+     * const params: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }; // allocate once
      * params.flags = facingLeft ? BT.FLIP_H : 0;
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), params);
      * params.scale = 2; // double size
