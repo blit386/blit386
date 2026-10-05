@@ -22,7 +22,7 @@ export interface NineSliceOptions {
 }
 
 /** Every accepted {@link NineSliceMode}, for the runtime check on untyped callers. */
-const NINE_SLICE_MODES: readonly NineSliceMode[] = ['stretch', 'tile'];
+const MODES: readonly NineSliceMode[] = ['stretch', 'tile'];
 
 /**
  * A sprite region split into 9 parts for scalable UI panels: 4 corners drawn at 1:1, 4 edges and a center that
@@ -178,7 +178,7 @@ function resolveMode(name: 'edges' | 'center', mode: NineSliceMode | undefined):
         return 'stretch';
     }
 
-    if (!NINE_SLICE_MODES.includes(mode)) {
+    if (!MODES.includes(mode)) {
         throw new Error(`NineSlice ${name} must be 'stretch' or 'tile', got ${String(mode)}`);
     }
 

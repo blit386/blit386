@@ -89,23 +89,6 @@ const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
 const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 
 /**
- * Fill mode of a nine-slice region: `center` for the middle, `edges` for the edges, and `'tile'` for a corner -
- * a corner's box always equals its strip, so one 1:1 tile draws it.
- *
- * @param nineSlice - Panel being drawn.
- * @param row - Row index 0-2.
- * @param col - Column index 0-2.
- * @returns The region's fill mode.
- */
-function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode {
-    if (row === 1 && col === 1) {
-        return nineSlice.center;
-    }
-
-    return row === 1 || col === 1 ? nineSlice.edges : 'tile';
-}
-
-/**
  * Central runtime facade for BLIT386 engine services.
  *
  * `BTAPI` owns engine initialization, keeps references to the active renderer
@@ -3125,6 +3108,23 @@ export class BTAPI {
         this.palette = palette;
         this.renderer?.setPalette(palette);
     }
+}
+
+/**
+ * Fill mode of a nine-slice region: `center` for the middle, `edges` for the edges, and `'tile'` for a corner -
+ * a corner's box always equals its strip, so one 1:1 tile draws it.
+ *
+ * @param nineSlice - Panel being drawn.
+ * @param row - Row index 0-2.
+ * @param col - Column index 0-2.
+ * @returns The region's fill mode.
+ */
+function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode {
+    if (row === 1 && col === 1) {
+        return nineSlice.center;
+    }
+
+    return row === 1 || col === 1 ? nineSlice.edges : 'tile';
 }
 
 /**
