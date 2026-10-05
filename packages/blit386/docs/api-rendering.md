@@ -360,14 +360,14 @@ const panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4,
   center: 'stretch', // default 'stretch'
 });
 
-// render(): any box, every frame, no allocation.
+// render(): any box, every frame; drawNineSlice itself allocates nothing.
 BT.drawNineSlice(panel, new Rect2i(20, 20, 120, 64));
 BT.drawNineSlice(panel, new Rect2i(20, 100, 120, 64), 16); // palette offset, as in drawSprite
 ```
 
 - `NineSlice.fromSheet(sheet, outer, inner, options?)` copies and freezes both rects. `outer` must lie inside the sheet,
-  `inner` inside `outer` and at least 1×1. `inner` may touch `outer`: a zero-size top and bottom gives a horizontal
-  three-slice bar.
+  `inner` inside `outer` and at least 1×1. Invalid arguments throw. `inner` may touch `outer`: a zero-size top and
+  bottom gives a horizontal three-slice bar.
 - `'stretch'` fills the box with the [stretch sampling](#stretch-sampling) rule, so it matches `drawSprite` with a
   `Rect2i` dest pixel for pixel on both backends. Edges stretch only along their length.
 - `'tile'` repeats the strip at 1:1 from the box's top-left corner. The last tile on the right and bottom is cropped, so
