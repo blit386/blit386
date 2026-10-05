@@ -337,6 +337,43 @@ The footprint texel then maps back to a source texel through the orientation's t
 - The 1:1 fast path keeps today's UV and blit math. Scaled and stretched quads use a separate emission path so 1:1
   vertices stay identical.
 
+### Nine-slice panels
+
+<Since symbol="BT.drawNineSlice" />
+<Since symbol="NineSlice" />
+
+A nine-slice splits one sprite region into 4 corners, 4 edges, and a center, so a single piece of panel art fills boxes
+of any size. Corners always draw at 1:1. Edges and center either stretch or tile.
+
+```ts twoslash
+import { BT, NineSlice, Rect2i, SpriteSheet } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+// init(): build once. Both rects are in sheet coordinates; inner marks the center.
+const panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), {
+  edges: 'tile', // default 'stretch'
+  center: 'stretch', // default 'stretch'
+});
+
+// render(): any box, every frame, no allocation.
+BT.drawNineSlice(panel, new Rect2i(20, 20, 120, 64));
+BT.drawNineSlice(panel, new Rect2i(20, 100, 120, 64), 16); // palette offset, as in drawSprite
+```
+
+- `NineSlice.fromSheet(sheet, outer, inner, options?)` copies and freezes both rects. `outer` must lie inside the sheet,
+  `inner` inside `outer` and at least 1×1. `inner` may touch `outer`: a zero-size top and bottom gives a horizontal
+  three-slice bar.
+- `'stretch'` fills the box with the [stretch sampling](#stretch-sampling) rule, so it matches `drawSprite` with a
+  `Rect2i` dest pixel for pixel on both backends. Edges stretch only along their length.
+- `'tile'` repeats the strip at 1:1 from the box's top-left corner. The last tile on the right and bottom is cropped, so
+  nothing draws outside `destRect`.
+- When `destRect` is smaller than the two corners on an axis, the corners share it in proportion to their sizes (left
+  and top take the floor) and are cropped from their outer side; the edges between them disappear. A panel can animate
+  open from size 0 and keep its outline.
+- An empty or negative `destRect` draws nothing. Recolor is `paletteOffset` only - there is no tint.
+- Each tile is one quad. Tiling a 1-pixel strip across a large box costs one quad per pixel and can fill the sprite
+  buffer; stretch flat fills and tile only patterned art.
+
 ### Planned: sprite draw params
 
 <Callout title="Planned - not shipped">
@@ -349,8 +386,8 @@ with `flags`, `pivot`, `paletteOffset`, `scale`, and a `Vector2i` or `Rect2i` de
 </Callout>
 
 All transform features hang off one reusable params object. Separate methods stay separate:
-[`BT.drawTile`](#drawing-tiles) and `BT.drawNineSlice` (BT-270) are not further `drawSprite` overloads. There is no
-`drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
+[`BT.drawTile`](#drawing-tiles) and [`BT.drawNineSlice`](#nine-slice-panels) are not further `drawSprite` overloads.
+There is no `drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
 
 ```ts
 // 1. Shipped. Unchanged.
@@ -429,7 +466,7 @@ No accepted field degrades. The software blit is the pixel spec; WebGPU must mat
 | `scale` / `dest: Rect2i` | Pixel-exact nearest-neighbor using the stretch sampling formula above, on both backends. |
 | `rotation` | Not accepted. A future software path throws rather than skipping the rotation. |
 | Frame name | Resolved to a `SpriteFrame`, then the same path. No separate software behavior. |
-| Nine-slice | Not a sprite-params field. Own `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)`, which inherits the stretch sampling formula. |
+| Nine-slice | Not a sprite-params field. Shipped as [BT.drawNineSlice](#nine-slice-panels): stretched parts inherit the stretch sampling formula, tiled parts are 1:1 blits. |
 
 GPU note for implementers: the vertex shader already passes UVs through. Flags and scale are CPU-side corner and UV
 writes into the existing 5-value vertex, with the orientation table choosing which source corner goes to which quad

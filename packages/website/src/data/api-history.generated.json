@@ -521,6 +521,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.drawNineSlice": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.drawPixel": {
       "kind": "method",
       "since": "0.1.0",
@@ -1462,6 +1469,27 @@
       "deprecated": null,
       "status": "stable"
     },
+    "NineSlice": {
+      "kind": "class",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "NineSliceMode": {
+      "kind": "type",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "NineSliceOptions": {
+      "kind": "interface",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "Noise": {
       "kind": "class",
       "since": "1.0.3",
@@ -1983,6 +2011,7 @@
       "BT.clearRect",
       "BT.downloadFrame",
       "BT.drawLine",
+      "BT.drawNineSlice",
       "BT.drawPixel",
       "BT.drawRect",
       "BT.drawRectFill",
@@ -1999,6 +2028,7 @@
       "BT.systemPrintMeasure",
       "FrameCaptureOptions",
       "FrameCaptureSize",
+      "NineSlice",
       "SpriteDrawParams",
       "amber",
       "crtPipBoy",
