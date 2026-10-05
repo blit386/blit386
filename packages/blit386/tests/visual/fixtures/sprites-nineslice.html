@@ -1,0 +1,149 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Nine-slice Panels</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, NineSlice, Palette, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+            // Signal test readiness regardless of success/failure.
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
+
+            const colorBlack = 1;
+
+            // 10x9 panel with uneven caps: left 2, right 3, top 3, bottom 2, center 5x4.
+            const W = 10;
+            const H = 9;
+            const L = 2;
+            const R = 3;
+            const T = 3;
+            const B = 2;
+
+            // Solid corners (2-5), edges striped along their length (6/7), checkered center (8/9),
+            // so stretching and tiling look different and a wrong crop shows.
+            function createPanelPixels() {
+                const pixels = new Uint8Array(W * H);
+
+                for (let y = 0; y < H; y++) {
+                    for (let x = 0; x < W; x++) {
+                        const col = x < L ? 0 : x >= W - R ? 2 : 1;
+                        const row = y < T ? 0 : y >= H - B ? 2 : 1;
+                        let index;
+
+                        if (col !== 1 && row !== 1) {
+                            index = 2 + (row === 2 ? 2 : 0) + (col === 2 ? 1 : 0);
+                        } else if (col === 1 && row === 1) {
+                            index = (x + y) % 2 === 0 ? 8 : 9;
+                        } else if (row !== 1) {
+                            index = x % 2 === 0 ? 6 : 7;
+                        } else {
+                            index = y % 2 === 0 ? 6 : 7;
+                        }
+
+                        pixels[y * W + x] = index;
+                    }
+                }
+
+                return pixels;
+            }
+
+            const COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#808080', '#ff8000'];
+
+            class SpritesNineSliceTest {
+                stretched = null;
+                tiled = null;
+                mixed = null;
+                bar = null;
+
+                configure() {
+                    return {
+                        // See sprites.html: no blit386() Vite plugin here, so disable the splash.
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(320, 240),
+                        targetFPS: 60,
+                    };
+                }
+
+                async init() {
+                    const palette = new Palette(16);
+
+                    palette.set(colorBlack, new Color32(0, 0, 0, 255));
+                    COLORS.forEach((hex, i) => palette.set(2 + i, Color32.fromHex(hex)));
+
+                    BT.paletteSet(palette);
+
+                    const sheet = SpriteSheet.fromIndexedPixels(W, H, createPanelPixels());
+                    const outer = new Rect2i(0, 0, W, H);
+                    const inner = new Rect2i(L, T, W - L - R, H - T - B);
+
+                    this.stretched = NineSlice.fromSheet(sheet, outer, inner);
+                    this.tiled = NineSlice.fromSheet(sheet, outer, inner, { edges: 'tile', center: 'tile' });
+                    this.mixed = NineSlice.fromSheet(sheet, outer, inner, { edges: 'tile', center: 'stretch' });
+                    // Middle band only: a horizontal three-slice bar.
+                    this.bar = NineSlice.fromSheet(sheet, new Rect2i(0, T, W, H - T - B), new Rect2i(L, T, W - L - R, H - T - B));
+
+                    return true;
+                }
+
+                update() {}
+
+                render() {
+                    BT.clear(colorBlack);
+
+                    if (!this.stretched) {
+                        return;
+                    }
+
+                    // Row 1: the three mode combinations at the same uneven size.
+                    BT.drawNineSlice(this.stretched, new Rect2i(8, 8, 37, 23));
+                    BT.drawNineSlice(this.tiled, new Rect2i(56, 8, 37, 23));
+                    BT.drawNineSlice(this.mixed, new Rect2i(104, 8, 37, 23));
+
+                    // Row 1, right: boxes smaller than the corners (both axes, x only, y only).
+                    BT.drawNineSlice(this.stretched, new Rect2i(152, 8, 4, 4));
+                    BT.drawNineSlice(this.tiled, new Rect2i(164, 8, 4, 20));
+                    BT.drawNineSlice(this.tiled, new Rect2i(176, 8, 30, 3));
+
+                    // Row 2: paletteOffset and a three-slice bar.
+                    BT.drawNineSlice(this.tiled, new Rect2i(8, 40, 37, 23), 1);
+                    BT.drawNineSlice(this.bar, new Rect2i(56, 40, 61, 4));
+                    BT.drawNineSlice(this.bar, new Rect2i(56, 50, 61, 11));
+
+                    // Row 3: a large tiled panel and a large stretched one, partly off the right edge.
+                    BT.drawNineSlice(this.tiled, new Rect2i(8, 72, 150, 100));
+                    BT.drawNineSlice(this.stretched, new Rect2i(170, 72, 200, 100));
+
+                    // Signal render complete, publishing the backend that actually started.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(SpritesNineSliceTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

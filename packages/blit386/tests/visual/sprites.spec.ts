@@ -94,4 +94,36 @@ test.describe('Sprite Rendering', () => {
 
         expect(Buffer.compare(gpu, software)).toBe(0);
     });
+
+    test('should render nine-slice panels in every mode', async ({ page }) => {
+        if ((await openFixture(page, '/sprites-nineslice.html')) !== 'webgpu') {
+            test.skip(true, 'WebGPU not available in this environment');
+            return;
+        }
+
+        await expect(page.locator('canvas')).toHaveScreenshot('sprites-nineslice.png', { maxDiffPixelRatio: 0.01 });
+    });
+
+    test('should render matching nine-slice panels in software mode', async ({ page }) => {
+        expect(await openFixture(page, '/sprites-nineslice.html?backend=software')).toBe('software');
+
+        await expect(page.locator('canvas')).toHaveScreenshot('sprites-nineslice-software.png', {
+            maxDiffPixelRatio: 0.01,
+        });
+    });
+
+    test('should render nine-slice panels identically on WebGPU and software', async ({ page }) => {
+        if ((await openFixture(page, '/sprites-nineslice.html')) !== 'webgpu') {
+            test.skip(true, 'WebGPU not available in this environment');
+            return;
+        }
+
+        const gpu = await page.locator('canvas').screenshot();
+
+        expect(await openFixture(page, '/sprites-nineslice.html?backend=software')).toBe('software');
+
+        const software = await page.locator('canvas').screenshot();
+
+        expect(Buffer.compare(gpu, software)).toBe(0);
+    });
 });

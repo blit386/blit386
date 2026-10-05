@@ -2834,6 +2834,40 @@ export const BT = {
     },
 
     /**
+     * Draws a nine-slice panel - a sprite region split into 4 corners, 4 edges, and a center - into any box.
+     * Corners stay 1:1; edges and center stretch or tile as set on the {@link NineSlice}. A box smaller than
+     * the corners crops them from their outer side, so a panel can animate open from size 0. `paletteOffset`
+     * works exactly as in {@link BT.drawSprite}; there is no tint.
+     *
+     * Allocation-free: build the `NineSlice` once in `init()` and reuse it. Stretched parts follow the sprite
+     * stretch rule, and both backends match pixel for pixel. Tiled parts draw one quad per tile, so tiling a
+     * 1-pixel strip across a large box costs many quads - stretch flat fills instead.
+     *
+     * @since 1.8.0
+     * @param nineSlice - Panel from `NineSlice.fromSheet(sheet, outer, inner, options?)`.
+     * @param destRect - Box to fill; an empty or negative size draws nothing.
+     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     *
+     * @example
+     * // init()
+     * this.panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
+     * // render()
+     * BT.drawNineSlice(this.panel, new Rect2i(20, 20, 120, 64));
+     */
+    drawNineSlice: (nineSlice: NineSlice, destRect: Rect2i, paletteOffset: number = 0): void => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawNineSlice');
+            return;
+        }
+
+        try {
+            BTAPI.instance.drawNineSlice(nineSlice, destRect, paletteOffset);
+        } catch (error) {
+            reportDrawError(error);
+        }
+    },
+
+    /**
      * Re-indexizes all tracked sprite sheets against the current active palette.
      *
      * Only call this after a **palette-layout swap** - when the same colors have
