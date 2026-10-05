@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PNG } from 'pngjs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import { createMockAudioBuffer } from '../__test__/webaudio-mock';
 import {
@@ -29,9 +29,10 @@ import {
 import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
+import { NineSlice } from '../assets/NineSlice';
 import { Palette } from '../assets/Palette';
 import { PaletteEffectManager } from '../assets/PaletteEffect';
-import type { SpriteSheet } from '../assets/SpriteSheet';
+import { SpriteSheet } from '../assets/SpriteSheet';
 import { AudioManager } from '../audio/AudioManager';
 import { INVALID_SOUND_REF } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
@@ -3505,6 +3506,314 @@ describe('BTAPI', () => {
             const scratch: number[] = [];
 
             expect(collectUsedIndices(usedMask as Uint8Array, 16, scratch)).toEqual([7]);
+        });
+    });
+
+    describe('drawNineSlice', () => {
+        type Quad = { kind: 'sprite' | 'stretched'; src: number[]; box: number[] };
+
+        // Panel source: L=2, R=3, T=3, B=2, center 5x4 at (6, 7).
+        const OUTER = new Rect2i(4, 4, 10, 9);
+        const INNER = new Rect2i(6, 7, 5, 4);
+
+        /**
+         * Inits BTAPI and records every quad as it was at call time - drawNineSlice reuses one scratch
+         * Rect2i and Vector2i, so the spies' own call records would all show the last values.
+         */
+        async function setup(): Promise<{ quads: Quad[]; sheet: SpriteSheet; markSpy: MockInstance }> {
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayPaletteEnabled: true,
+                    isOverlayVisibleAtStart: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+            const quads: Quad[] = [];
+
+            vi.spyOn(renderer, 'drawSprite').mockImplementation((_sheet, src, dest) => {
+                quads.push({
+                    kind: 'sprite',
+                    src: [src.x, src.y, src.width, src.height],
+                    box: [dest.x, dest.y, src.width, src.height],
+                });
+            });
+            vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(
+                (_sheet, src, x, y, w, h, _offset, orientation) => {
+                    expect(orientation).toBe(0);
+                    quads.push({ kind: 'stretched', src: [src.x, src.y, src.width, src.height], box: [x, y, w, h] });
+                },
+            );
+
+            const sheet = SpriteSheet.fromIndexedPixels(32, 32, new Uint8Array(32 * 32) as Uint8Array<ArrayBuffer>);
+            const markSpy = vi.spyOn(sheet, 'markPaletteIndicesInRect');
+
+            return { quads, sheet, markSpy };
+        }
+
+        /** Asserts the quads tile a `w x h` box at (-3, 5) with every pixel covered exactly once. */
+        function expectExactCoverage(quads: Quad[], w: number, h: number): void {
+            const hits = new Uint8Array(Math.max(w * h, 1));
+
+            for (const { box } of quads) {
+                const [bx = 0, by = 0, bw = 0, bh = 0] = box;
+
+                expect(bw).toBeGreaterThan(0);
+                expect(bh).toBeGreaterThan(0);
+
+                for (let y = by; y < by + bh; y++) {
+                    for (let x = bx; x < bx + bw; x++) {
+                        expect(x >= -3 && x < -3 + w && y >= 5 && y < 5 + h).toBe(true);
+                        hits[(y - 5) * w + (x + 3)] = (hits[(y - 5) * w + (x + 3)] ?? 0) + 1;
+                    }
+                }
+            }
+
+            if (w > 0 && h > 0) {
+                expect(Array.from(hits).every((count) => count === 1)).toBe(true);
+            } else {
+                expect(quads).toHaveLength(0);
+            }
+        }
+
+        function pendingDrawCalls(): number {
+            return (BTAPI.instance as unknown as { pendingDrawCalls: number }).pendingDrawCalls;
+        }
+
+        it('draws 1:1 corners and stretched edges and center when the box fits', async () => {
+            const { quads, sheet } = await setup();
+
+            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(100, 50, 20, 15), 2);
+
+            expect(quads).toEqual([
+                { kind: 'sprite', src: [4, 4, 2, 3], box: [100, 50, 2, 3] },
+                { kind: 'stretched', src: [6, 4, 5, 3], box: [102, 50, 15, 3] },
+                { kind: 'sprite', src: [11, 4, 3, 3], box: [117, 50, 3, 3] },
+                { kind: 'stretched', src: [4, 7, 2, 4], box: [100, 53, 2, 10] },
+                { kind: 'stretched', src: [6, 7, 5, 4], box: [102, 53, 15, 10] },
+                { kind: 'stretched', src: [11, 7, 3, 4], box: [117, 53, 3, 10] },
+                { kind: 'sprite', src: [4, 11, 2, 2], box: [100, 63, 2, 2] },
+                { kind: 'stretched', src: [6, 11, 5, 2], box: [102, 63, 15, 2] },
+                { kind: 'sprite', src: [11, 11, 3, 2], box: [117, 63, 3, 2] },
+            ]);
+        });
+
+        it('forwards paletteOffset to every quad', async () => {
+            const { sheet } = await setup();
+            const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
+
+            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 20, 15), 2);
+
+            for (const call of vi.mocked(renderer.drawSprite).mock.calls) {
+                expect(call[3]).toBe(2);
+            }
+
+            for (const call of vi.mocked(renderer.drawSpriteStretched).mock.calls) {
+                expect(call[6]).toBe(2);
+            }
+        });
+
+        it('crops corners from their outer side when the box is smaller than both caps', async () => {
+            const { quads, sheet } = await setup();
+
+            // x: 4 < 2 + 3 -> [1, 0, 3]; y: 4 < 3 + 2 -> [2, 0, 2].
+            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 4, 4));
+
+            expect(quads).toEqual([
+                { kind: 'sprite', src: [4, 4, 1, 2], box: [0, 0, 1, 2] },
+                { kind: 'sprite', src: [11, 4, 3, 2], box: [1, 0, 3, 2] },
+                { kind: 'sprite', src: [4, 11, 1, 2], box: [0, 2, 1, 2] },
+                { kind: 'sprite', src: [11, 11, 3, 2], box: [1, 2, 3, 2] },
+            ]);
+        });
+
+        it('crops edge thickness with the corners when only one axis is too small', async () => {
+            const { quads, sheet } = await setup();
+
+            // x fits: [2, 15, 3]; y: 4 < 5 -> [2, 0, 2].
+            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 20, 4));
+
+            expect(quads).toEqual([
+                { kind: 'sprite', src: [4, 4, 2, 2], box: [0, 0, 2, 2] },
+                { kind: 'stretched', src: [6, 4, 5, 2], box: [2, 0, 15, 2] },
+                { kind: 'sprite', src: [11, 4, 3, 2], box: [17, 0, 3, 2] },
+                { kind: 'sprite', src: [4, 11, 2, 2], box: [0, 2, 2, 2] },
+                { kind: 'stretched', src: [6, 11, 5, 2], box: [2, 2, 15, 2] },
+                { kind: 'sprite', src: [11, 11, 3, 2], box: [17, 2, 3, 2] },
+            ]);
+        });
+
+        it('tiles edges and center from the region top-left and crops the last tile', async () => {
+            const { quads, sheet } = await setup();
+            const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
+
+            // x: [2, 12, 3]; y: [3, 7, 2]. Strips: top 5 wide -> 5, 5, 2; center 5x4 -> cols 5, 5, 2 x rows 4, 3.
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
+
+            expect(quads.every((quad) => quad.kind === 'sprite')).toBe(true);
+            expect(quads).toHaveLength(1 + 3 + 1 + 2 + 6 + 2 + 1 + 3 + 1);
+            // Top edge, in order.
+            expect(quads.slice(1, 4)).toEqual([
+                { kind: 'sprite', src: [6, 4, 5, 3], box: [2, 0, 5, 3] },
+                { kind: 'sprite', src: [6, 4, 5, 3], box: [7, 0, 5, 3] },
+                { kind: 'sprite', src: [6, 4, 2, 3], box: [12, 0, 2, 3] },
+            ]);
+            // Left edge tiles vertically: 4 rows, then a cropped 3.
+            expect(quads.slice(5, 7)).toEqual([
+                { kind: 'sprite', src: [4, 7, 2, 4], box: [0, 3, 2, 4] },
+                { kind: 'sprite', src: [4, 7, 2, 3], box: [0, 7, 2, 3] },
+            ]);
+            // Center: last tile cropped on both axes.
+            expect(quads[12]).toEqual({ kind: 'sprite', src: [6, 7, 2, 3], box: [12, 7, 2, 3] });
+        });
+
+        it('emits only whole tiles for an exact multiple', async () => {
+            const { quads, sheet } = await setup();
+            const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
+
+            // x: [2, 10, 3]; y: [3, 8, 2] -> top 2 tiles, sides 2 tiles each, center 2x2.
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 15, 13));
+
+            expect(quads).toHaveLength(1 + 2 + 1 + 2 + 4 + 2 + 1 + 2 + 1);
+            expect(quads.slice(1, 3).map((quad) => quad.src)).toEqual([
+                [6, 4, 5, 3],
+                [6, 4, 5, 3],
+            ]);
+        });
+
+        it('mixes tiled edges with a stretched center', async () => {
+            const { quads, sheet } = await setup();
+            const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'stretch' });
+
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
+
+            const stretched = quads.filter((quad) => quad.kind === 'stretched');
+
+            expect(stretched).toEqual([{ kind: 'stretched', src: [6, 7, 5, 4], box: [2, 3, 12, 7] }]);
+            expect(quads).toHaveLength(20 - 6 + 1);
+        });
+
+        it('draws a three-slice bar with no top or bottom caps', async () => {
+            const { quads, sheet } = await setup();
+            const bar = NineSlice.fromSheet(sheet, new Rect2i(0, 20, 12, 6), new Rect2i(4, 20, 4, 6));
+
+            BTAPI.instance.drawNineSlice(bar, new Rect2i(0, 0, 30, 6));
+
+            expect(quads).toEqual([
+                { kind: 'stretched', src: [0, 20, 4, 6], box: [0, 0, 4, 6] },
+                { kind: 'stretched', src: [4, 20, 4, 6], box: [4, 0, 22, 6] },
+                { kind: 'stretched', src: [8, 20, 4, 6], box: [26, 0, 4, 6] },
+            ]);
+        });
+
+        it.each(['stretch', 'tile'] as const)(
+            'covers the box exactly once at every size from 0x0 to 20x20 (%s mode, negative origin)',
+            async (mode) => {
+                const { quads, sheet } = await setup();
+                const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: mode, center: mode });
+
+                for (let w = 0; w <= 20; w++) {
+                    for (let h = 0; h <= 20; h++) {
+                        quads.length = 0;
+                        BTAPI.instance.drawNineSlice(slice, new Rect2i(-3, 5, w, h));
+
+                        expectExactCoverage(quads, w, h);
+                    }
+                }
+            },
+        );
+
+        it('draws nothing for an empty, negative, or NaN box and truncates fractions', async () => {
+            const { quads, sheet } = await setup();
+            const slice = NineSlice.fromSheet(sheet, OUTER, INNER);
+
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 0, 10));
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 10, -3));
+
+            const nan = new Rect2i(0, 0, 10, 10);
+            nan.width = Number.NaN;
+            BTAPI.instance.drawNineSlice(slice, nan);
+
+            expect(quads).toHaveLength(0);
+
+            const fractional = new Rect2i(0, 0, 20, 15);
+            fractional.x = 1.9;
+            fractional.width = 20.7;
+            BTAPI.instance.drawNineSlice(slice, fractional);
+
+            expect(quads[0]?.box).toEqual([1, 0, 2, 3]);
+            expect(quads[2]?.box).toEqual([18, 0, 3, 3]);
+        });
+
+        it.each([
+            [
+                'a non-NineSlice',
+                (slice: NineSlice) => [{ ...slice } as NineSlice, new Rect2i(0, 0, 20, 15), 0],
+                'NineSlice.fromSheet',
+            ],
+            [
+                'a non-Rect2i destination',
+                (slice: NineSlice) => [slice, { x: 0, y: 0, width: 20, height: 15 } as Rect2i, 0],
+                'Rect2i',
+            ],
+            ['a negative paletteOffset', (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), -1], ''],
+            ['an out-of-range paletteOffset', (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), 16], ''],
+        ] as const)('rejects %s before drawing anything', async (_label, args, fragment) => {
+            const { quads, sheet } = await setup();
+            const [slice, dest, offset] = args(NineSlice.fromSheet(sheet, OUTER, INNER));
+
+            expect(() => BTAPI.instance.drawNineSlice(slice as NineSlice, dest as Rect2i, offset as number)).toThrow(
+                fragment || undefined,
+            );
+            expect(quads).toHaveLength(0);
+        });
+
+        it('rejects a sheet that is not indexized before drawing anything', async () => {
+            const { quads } = await setup();
+            const unindexed = new SpriteSheet(null, new Vector2i(32, 32));
+
+            expect(() =>
+                BTAPI.instance.drawNineSlice(NineSlice.fromSheet(unindexed, OUTER, INNER), new Rect2i(0, 0, 20, 15)),
+            ).toThrow();
+            expect(quads).toHaveLength(0);
+        });
+
+        it('counts one draw call per quad and marks palette usage once per region', async () => {
+            const { quads, sheet, markSpy } = await setup();
+            const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
+            const before = pendingDrawCalls();
+
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12), 1);
+
+            expect(pendingDrawCalls() - before).toBe(quads.length);
+            expect(markSpy).toHaveBeenCalledTimes(9);
+            expect(markSpy).toHaveBeenCalledWith(expect.any(Rect2i), 1, expect.anything());
+        });
+
+        it('marks only the cropped part of a tile strip narrower box', async () => {
+            const { sheet, markSpy } = await setup();
+            const marked: number[][] = [];
+
+            markSpy.mockImplementation((rect: Rect2i) => {
+                marked.push([rect.x, rect.y, rect.width, rect.height]);
+            });
+
+            // x: [2, 3, 3]; the top strip is 5 wide but only 3 columns show.
+            BTAPI.instance.drawNineSlice(
+                NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' }),
+                new Rect2i(0, 0, 8, 12),
+            );
+
+            expect(marked[1]).toEqual([6, 4, 3, 3]);
         });
     });
 

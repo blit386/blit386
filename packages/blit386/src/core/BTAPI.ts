@@ -1,6 +1,7 @@
 import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
+import { NineSlice, type NineSliceMode, splitNineSliceAxis } from '../assets/NineSlice';
 import type { Palette } from '../assets/Palette';
 import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import {
@@ -88,6 +89,65 @@ const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
 const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 
 /**
+ * Source start of nine-slice strip `index` along one axis: start caps keep their start, end caps keep their
+ * end (crop from the outer side), the middle strip is the inner rect.
+ *
+ * @param index - Strip index: 0 start cap, 1 middle, 2 end cap.
+ * @param outerStart - Outer rect start on this axis.
+ * @param innerStart - Inner rect start on this axis.
+ * @param outerEnd - Outer rect end (exclusive) on this axis.
+ * @param len - Drawn strip length.
+ * @returns Strip start coordinate in the sheet.
+ */
+function nineSliceSrcStart(
+    index: number,
+    outerStart: number,
+    innerStart: number,
+    outerEnd: number,
+    len: number,
+): number {
+    if (index === 0) {
+        return outerStart;
+    }
+
+    return index === 1 ? innerStart : outerEnd - len;
+}
+
+/**
+ * Box start of nine-slice strip `index` along one axis: start cap, then middle after it, end cap flush end.
+ *
+ * @param index - Strip index: 0 start cap, 1 middle, 2 end cap.
+ * @param destStart - Destination box start on this axis.
+ * @param destSize - Destination box size on this axis.
+ * @param firstLen - Length of the start cap strip.
+ * @param len - Drawn strip length.
+ * @returns Strip start coordinate in the destination.
+ */
+function nineSliceBoxStart(index: number, destStart: number, destSize: number, firstLen: number, len: number): number {
+    if (index === 0) {
+        return destStart;
+    }
+
+    return index === 1 ? destStart + firstLen : destStart + destSize - len;
+}
+
+/**
+ * Fill mode of a nine-slice region: `null` for a corner (always 1:1), `center` for the middle, else `edges`.
+ *
+ * @param nineSlice - Panel being drawn.
+ * @param row - Row index 0-2.
+ * @param col - Column index 0-2.
+ * @returns The region's fill mode, or `null` for a corner.
+ */
+function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode | null {
+    if (row === 1 && col === 1) {
+        return nineSlice.center;
+    }
+
+    return row === 1 || col === 1 ? nineSlice.edges : null;
+}
+
+/**
  * Central runtime facade for BLIT386 engine services.
  *
  * `BTAPI` owns engine initialization, keeps references to the active renderer
@@ -116,6 +176,18 @@ export class BTAPI {
      * renderer clones it into its command list.
      */
     private readonly scratchTileRect = new Rect2i();
+
+    /** Source rect reused by every `drawNineSlice` quad. Safe to share for the same reason as `scratchTileRect`. */
+    private readonly scratchNineSliceSrc = new Rect2i();
+
+    /** Destination point reused by every 1:1 `drawNineSlice` quad (both renderers copy or consume it). */
+    private readonly scratchNineSliceDest = new Vector2i();
+
+    /** `[left, middle, right]` column widths of the current `drawNineSlice` box. */
+    private readonly nineSliceColumns = new Int32Array(3);
+
+    /** `[top, middle, bottom]` row heights of the current `drawNineSlice` box. */
+    private readonly nineSliceRows = new Int32Array(3);
 
     /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
@@ -1628,6 +1700,79 @@ export class BTAPI {
     }
 
     /**
+     * Draws a nine-slice panel into a box: corners at 1:1, edges and center stretched or tiled per the
+     * nine-slice's modes. A box smaller than the corners crops them from their outer side.
+     *
+     * @param nineSlice - Panel from `NineSlice.fromSheet`.
+     * @param destRect - Box to fill; empty, negative, or NaN sizes draw nothing.
+     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @throws If `nineSlice` is not a `NineSlice`, `destRect` is not a `Rect2i`, the palette offset is invalid,
+     *   or the sheet has not been indexized. Validation runs before any quad is emitted.
+     */
+    public drawNineSlice(nineSlice: NineSlice, destRect: Rect2i, paletteOffset: number = 0): void {
+        if (!(nineSlice instanceof NineSlice)) {
+            throw new Error(
+                'drawNineSlice expects a NineSlice; build one with NineSlice.fromSheet(sheet, outer, inner)',
+            );
+        }
+
+        if (!(destRect instanceof Rect2i)) {
+            throw new Error('drawNineSlice expects a Rect2i destination box');
+        }
+
+        const sheet = nineSlice.sheet;
+
+        this.assertPaletteIndex(paletteOffset);
+        this.requireIndexizedSheet(sheet);
+
+        // Rect2i fields are public and mutable: truncate like the constructor (NaN -> 0 draws nothing).
+        const destX = destRect.x | 0;
+        const destY = destRect.y | 0;
+        const destW = destRect.width | 0;
+        const destH = destRect.height | 0;
+
+        if (destW <= 0 || destH <= 0) {
+            return;
+        }
+
+        const { outer, inner } = nineSlice;
+        const columns = this.nineSliceColumns;
+        const rows = this.nineSliceRows;
+
+        splitNineSliceAxis(destW, inner.x - outer.x, outer.right - inner.right, columns);
+        splitNineSliceAxis(destH, inner.y - outer.y, outer.bottom - inner.bottom, rows);
+
+        for (let row = 0; row < 3; row++) {
+            // eslint-disable-next-line security/detect-object-injection
+            const boxH = rows[row] as number;
+
+            if (boxH === 0) {
+                continue;
+            }
+
+            const srcY = nineSliceSrcStart(row, outer.y, inner.y, outer.bottom, boxH);
+            const srcH = row === 1 ? inner.height : boxH;
+            const boxY = nineSliceBoxStart(row, destY, destH, rows[0] as number, boxH);
+
+            for (let col = 0; col < 3; col++) {
+                // eslint-disable-next-line security/detect-object-injection
+                const boxW = columns[col] as number;
+
+                if (boxW === 0) {
+                    continue;
+                }
+
+                const srcX = nineSliceSrcStart(col, outer.x, inner.x, outer.right, boxW);
+                const srcW = col === 1 ? inner.width : boxW;
+                const boxX = nineSliceBoxStart(col, destX, destW, columns[0] as number, boxW);
+                const mode = nineSliceRegionMode(nineSlice, row, col);
+
+                this.emitNineSliceRegion(sheet, srcX, srcY, srcW, srcH, boxX, boxY, boxW, boxH, mode, paletteOffset);
+            }
+        }
+    }
+
+    /**
      * Draws text using a bitmap font with variable-width glyphs.
      * Supports Unicode characters and per-glyph render offsets.
      *
@@ -2565,6 +2710,73 @@ export class BTAPI {
             paletteOffset,
             orientation,
         );
+    }
+
+    /**
+     * Emits one nine-slice region straight to the renderer (validation already ran in `drawNineSlice`).
+     * Stretch is one stretched quad; tile mode and corners are 1:1 quads stepping by the strip size from
+     * the box's top-left, with the last column and row cropped.
+     *
+     * @param sheet - Indexized source sheet.
+     * @param srcX - Strip left edge in the sheet.
+     * @param srcY - Strip top edge in the sheet.
+     * @param srcW - Strip width (at least 1).
+     * @param srcH - Strip height (at least 1).
+     * @param boxX - Box left edge.
+     * @param boxY - Box top edge.
+     * @param boxW - Box width (at least 1).
+     * @param boxH - Box height (at least 1).
+     * @param mode - Fill mode, or `null` for a corner (box size equals strip size).
+     * @param paletteOffset - Validated palette offset.
+     */
+    private emitNineSliceRegion(
+        sheet: SpriteSheet,
+        srcX: number,
+        srcY: number,
+        srcW: number,
+        srcH: number,
+        boxX: number,
+        boxY: number,
+        boxW: number,
+        boxH: number,
+        mode: NineSliceMode | null,
+        paletteOffset: number,
+    ): void {
+        const src = this.scratchNineSliceSrc;
+        const isStretch = mode === 'stretch';
+
+        src.x = srcX;
+        src.y = srcY;
+        // A stretch samples the whole strip; tiles never reach past the box, so mark only what shows.
+        src.width = isStretch ? srcW : Math.min(srcW, boxW);
+        src.height = isStretch ? srcH : Math.min(srcH, boxH);
+
+        if (this.renderer && this.isTrackingFramePaletteUsage()) {
+            sheet.markPaletteIndicesInRect(src, paletteOffset, this.framePaletteUsageMask);
+        }
+
+        if (isStretch) {
+            src.width = srcW;
+            src.height = srcH;
+            this.markDrawCall();
+            this.renderer?.drawSpriteStretched(sheet, src, boxX, boxY, boxW, boxH, paletteOffset, 0);
+            return;
+        }
+
+        const dest = this.scratchNineSliceDest;
+
+        for (let tileY = 0; tileY < boxH; tileY += srcH) {
+            for (let tileX = 0; tileX < boxW; tileX += srcW) {
+                src.x = srcX;
+                src.y = srcY;
+                src.width = Math.min(srcW, boxW - tileX);
+                src.height = Math.min(srcH, boxH - tileY);
+                dest.x = boxX + tileX;
+                dest.y = boxY + tileY;
+                this.markDrawCall();
+                this.renderer?.drawSprite(sheet, src, dest, paletteOffset);
+            }
+        }
     }
 
     /**
