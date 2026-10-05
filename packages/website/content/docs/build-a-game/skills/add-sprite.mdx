@@ -136,6 +136,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   is the center:
 
   ```js
+  import { NineSlice } from 'blit386';
+
   // init()
   this.panel = NineSlice.fromSheet(this.ui, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
 
