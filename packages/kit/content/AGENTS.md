@@ -119,8 +119,8 @@ commented example in `src/game.js` / `src/game.ts`); edits to `configure()` scre
 
 If you use Claude Code, open `CLAUDE.md` for the full project guide. Rules loaded automatically from `.claude/rules/`
 tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand. `.mcp.json` points Claude
-Code at the BLIT386 documentation server; Claude Code asks once whether to allow it, and saying yes lets your assistant
-search the live docs.
+Code at the BLIT386 documentation server, and `.claude/settings.json` pre-approves it, so your assistant can search the
+live docs without a prompt.
 
 If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
 it at the same documentation server.
