@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyMaskToGrid, DOC_RESULTS } from '../__test__/spriteOrientationFixture';
 import { Vector2i } from '../utils/Vector2i';
 import {
+    mapSpritePoint,
     resolveSpriteOrientation,
     resolveSpriteScale,
     SPRITE_FLIP_H,
@@ -57,6 +58,36 @@ describe('SpriteOrientation', () => {
             expect(() => resolveSpriteOrientation(flags)).toThrow(/BT\.FLIP_H.*BT\.ROT_270_CW/);
         },
     );
+});
+
+describe('mapSpritePoint', () => {
+    // The doc table's "Point map" column for a 3x2 source, written out so it is an independent oracle.
+    const SW = 3;
+    const SH = 2;
+    const DOC_POINT_MAPS: ReadonlyArray<(x: number, y: number) => [number, number]> = [
+        (x, y) => [x, y],
+        (x, y) => [SW - x, y],
+        (x, y) => [x, SH - y],
+        (x, y) => [SW - x, SH - y],
+        (x, y) => [SH - y, x],
+        (x, y) => [SH - y, SW - x],
+        (x, y) => [y, x],
+        (x, y) => [y, SW - x],
+    ];
+    const points = [
+        [0, 0],
+        [SW, SH],
+        [1, 1],
+        [-2, 5],
+    ] as const;
+    const cases = DOC_POINT_MAPS.flatMap((_, orientation) => points.map(([x, y]) => [orientation, x, y] as const));
+
+    it.each(cases)('orientation %i maps (%i, %i) like the doc table', (orientation, x, y) => {
+        const out = new Vector2i(99, 99);
+
+        expect(mapSpritePoint(orientation, x, y, SW, SH, out)).toBe(out);
+        expect([out.x, out.y]).toEqual(DOC_POINT_MAPS.at(orientation)?.(x, y));
+    });
 });
 
 describe('stretchSampleIndex', () => {

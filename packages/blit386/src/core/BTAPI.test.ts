@@ -2992,6 +2992,145 @@ describe('BTAPI', () => {
             expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 3, 4, 16, 16, 0, 0);
         });
 
+        describe('pivot', () => {
+            // Doc table point maps for the 3x2 source, keyed by shortest flags; an independent oracle.
+            const SW = 3;
+            const SH = 2;
+            const ORIENTATIONS: ReadonlyArray<readonly [number, (x: number, y: number) => [number, number]]> = [
+                [0, (x, y) => [x, y]],
+                [1, (x, y) => [SW - x, y]],
+                [2, (x, y) => [x, SH - y]],
+                [8, (x, y) => [SW - x, SH - y]],
+                [4, (x, y) => [SH - y, x]],
+                [4 | 1, (x, y) => [SH - y, SW - x]],
+                [4 | 2, (x, y) => [y, x]],
+                [16, (x, y) => [y, SW - x]],
+            ];
+            const PIVOTS = [
+                [0, 0],
+                [SW, SH],
+                [1, 1],
+                [-2, 5],
+            ] as const;
+            const cases = ORIENTATIONS.flatMap(([flags], i) =>
+                PIVOTS.flatMap(([px, py]) => [1, 2].map((scale) => [flags, px, py, scale, i] as const)),
+            );
+
+            async function setup() {
+                const mockSheet = makeIndexizedSpriteSheet(vi.fn());
+                const demo: IBTDemo = {
+                    configure: () => ({ isSplashEnabled: false, displaySize: new Vector2i(320, 240), targetFPS: 60 }),
+                    init: vi.fn().mockResolvedValue(true),
+                    update: vi.fn(),
+                    render: vi.fn(),
+                };
+
+                await BTAPI.instance.init(demo, makeMockCanvas());
+                BTAPI.instance.setPalette(new Palette(16));
+                stubRendererDrawCalls();
+                const renderer = BTAPI.instance.getRenderer() as NonNullable<
+                    ReturnType<typeof BTAPI.instance.getRenderer>
+                >;
+                const oriented = vi.spyOn(renderer, 'drawSpriteOriented').mockImplementation(() => {});
+                const stretched = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
+
+                /** Top-left corner the renderer received for the one draw since the last read. */
+                const lastCorner = (): [number, number] => {
+                    const plain = vi.mocked(renderer.drawSprite).mock.lastCall?.[2];
+                    const turned = oriented.mock.lastCall?.[2];
+                    const scaled = stretched.mock.lastCall;
+                    vi.mocked(renderer.drawSprite).mockClear();
+                    oriented.mockClear();
+                    stretched.mockClear();
+
+                    const point = plain ?? turned;
+                    return point ? [point.x, point.y] : [scaled?.[2] ?? Number.NaN, scaled?.[3] ?? Number.NaN];
+                };
+
+                return { mockSheet, renderer, stretched, lastCorner };
+            }
+
+            it.each(cases)(
+                'flags %i, pivot (%i, %i), scale %i puts the mapped pivot on dest',
+                async (flags, px, py, scale, row) => {
+                    const { mockSheet, lastCorner } = await setup();
+                    const [mx, my] = ORIENTATIONS.at(row)?.[1](px, py) ?? [Number.NaN, Number.NaN];
+
+                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(4, 4, SW, SH), new Vector2i(50, 60), {
+                        flags,
+                        pivot: new Vector2i(px, py),
+                        scale,
+                    });
+
+                    expect(lastCorner()).toEqual([50 - mx * scale, 60 - my * scale]);
+                },
+            );
+
+            it('scales the mapped pivot per screen axis', async () => {
+                const { mockSheet, stretched } = await setup();
+                const src = new Rect2i(0, 0, SW, SH);
+
+                // ROT_90_CW maps (1, 0) to (2, 1); footprint 2x3 times (3, 2) = 6x6.
+                BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(20, 20), {
+                    flags: 4,
+                    pivot: new Vector2i(1, 0),
+                    scale: new Vector2i(3, 2),
+                });
+                expect(stretched).toHaveBeenLastCalledWith(mockSheet, src, 14, 18, 6, 6, 0, 4);
+            });
+
+            it('treats an explicit (0, 0) differently from no pivot once flipped', async () => {
+                const { mockSheet, lastCorner } = await setup();
+                const src = new Rect2i(0, 0, SW, SH);
+                const dest = new Vector2i(10, 10);
+                const params: SpriteDrawParams = { flags: 1, pivot: new Vector2i(0, 0), scale: 1, paletteOffset: 0 };
+
+                BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+                expect(lastCorner()).toEqual([7, 10]);
+
+                params.pivot = undefined;
+                BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+                expect(lastCorner()).toEqual([10, 10]);
+            });
+
+            it('copies the corner instead of passing the caller dest or pivot on', async () => {
+                const { mockSheet, renderer } = await setup();
+                const dest = new Vector2i(10, 10);
+                const pivot = new Vector2i(1, 1);
+
+                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), dest, { pivot });
+                const passed = vi.mocked(renderer.drawSprite).mock.calls[0]?.[2];
+
+                expect(passed).not.toBe(dest);
+                expect(passed).not.toBe(pivot);
+                expect([dest.x, dest.y, pivot.x, pivot.y]).toEqual([10, 10, 1, 1]);
+            });
+
+            it('throws for a pivot with a Rect2i destination, even at scale 1', async () => {
+                const { mockSheet } = await setup();
+
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), new Rect2i(0, 0, 8, 8), {
+                        pivot: new Vector2i(0, 0),
+                        scale: 1,
+                    }),
+                ).toThrow('takes no pivot');
+            });
+
+            it.each([
+                ['a plain object', { x: 1, y: 1 }],
+                ['null', null],
+            ])('throws for %s as pivot', async (_label, pivot) => {
+                const { mockSheet } = await setup();
+
+                expect(() =>
+                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), new Vector2i(0, 0), {
+                        pivot: pivot as unknown as Vector2i,
+                    }),
+                ).toThrow('pivot');
+            });
+        });
+
         describe('fast-path Rect2i guard', () => {
             const guardDemo = (): IBTDemo => ({
                 configure: () => ({

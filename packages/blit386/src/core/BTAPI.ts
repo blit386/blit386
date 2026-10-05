@@ -28,6 +28,7 @@ import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import {
+    mapSpritePoint,
     resolveSpriteOrientation,
     resolveSpriteScale,
     SPRITE_ORIENTATIONS,
@@ -215,6 +216,9 @@ export class BTAPI {
 
     /** Scratch for the resolved `SpriteDrawParams.scale`, so params draws allocate nothing. */
     private readonly spriteScaleScratch = new Vector2i(1, 1);
+
+    /** Footprint corner for params draws with a `Vector2i` dest; renderers copy it when they queue the draw. */
+    private readonly spriteCornerScratch = new Vector2i();
 
     /**
      * Cached {@link isDevMode} for dev-only draw checks. Refreshed in {@link init} and once per render
@@ -1486,11 +1490,12 @@ export class BTAPI {
      *
      * @param spriteSheet - Source sprite sheet (must have been indexized via spriteSheet.indexize()).
      * @param srcRect - Region to copy from the sprite sheet.
-     * @param dest - A `Vector2i` (top-left of the post-flags, post-scale footprint) or a `Rect2i` (the box
-     *   the footprint is stretched into).
-     * @param params - Flags, scale, and palette offset.
-     * @throws If `params` is null or an array, `dest` is neither a `Vector2i` nor a `Rect2i`, the flags or
-     *   scale are invalid, a `Rect2i` dest has a non-neutral scale, or anything {@link drawSprite} rejects.
+     * @param dest - A `Vector2i` (where the pivot lands, or the top-left of the post-flags, post-scale
+     *   footprint without one) or a `Rect2i` (the box the footprint is stretched into).
+     * @param params - Flags, pivot, scale, and palette offset.
+     * @throws If `params` is null or an array, `dest` is neither a `Vector2i` nor a `Rect2i`, the flags,
+     *   pivot, or scale are invalid, a `Rect2i` dest has a pivot or a non-neutral scale, or anything
+     *   {@link drawSprite} rejects.
      */
     public drawSpriteWithParams(
         spriteSheet: SpriteSheet,
@@ -1509,8 +1514,15 @@ export class BTAPI {
         const paletteOffset = params.paletteOffset ?? 0;
         const scale = resolveSpriteScale(params.scale, this.spriteScaleScratch);
         const isUnscaled = scale.x === 1 && scale.y === 1;
+        const pivot = params.pivot;
 
         if (dest instanceof Rect2i) {
+            if (pivot !== undefined) {
+                throw new Error(
+                    'drawSprite with a Rect2i destination takes no pivot: the rectangle already places the sprite. Leave pivot undefined',
+                );
+            }
+
             if (!isUnscaled) {
                 throw new Error(
                     'drawSprite with a Rect2i destination takes no scale: the rectangle already sets the size. Pass scale: 1 or leave it out',
@@ -1535,9 +1547,11 @@ export class BTAPI {
             throw new Error('drawSprite with params takes a Vector2i or Rect2i destination');
         }
 
+        const corner = this.resolveSpriteCorner(dest, pivot, orientation, srcRect, scale);
+
         // An unscaled point keeps the 1:1 / oriented path, so its output stays identical to overload 1.
         if (isUnscaled) {
-            this.submitSprite(spriteSheet, srcRect, dest, paletteOffset, orientation);
+            this.submitSprite(spriteSheet, srcRect, corner, paletteOffset, orientation);
             return;
         }
 
@@ -1550,9 +1564,8 @@ export class BTAPI {
         this.submitSpriteStretched(
             spriteSheet,
             srcRect,
-            // Vector2i fields are public and mutable too: truncate like the Rect2i branch above.
-            dest.x | 0,
-            dest.y | 0,
+            corner.x,
+            corner.y,
             footprintW * scale.x,
             footprintH * scale.y,
             paletteOffset,
@@ -1909,6 +1922,41 @@ export class BTAPI {
         }
 
         this.renderer.clearEffects();
+    }
+
+    /**
+     * Top-left of the post-flags, post-scale footprint for a `Vector2i` destination: `dest`, minus the pivot
+     * sent through the orientation's point map and multiplied by `scale` when one is set. Every draw takes
+     * this one path. Components are truncated, since `Vector2i` fields are public and mutable.
+     *
+     * @param dest - Destination point.
+     * @param pivot - `SpriteDrawParams.pivot`.
+     * @param orientation - Orientation index from `resolveSpriteOrientation`.
+     * @param srcRect - Source region (its size is the point map's `sw x sh`).
+     * @param scale - Resolved integer scale.
+     * @returns A shared scratch vector; renderers copy it when they queue the draw.
+     * @throws If `pivot` is neither `undefined` nor a `Vector2i`.
+     */
+    private resolveSpriteCorner(
+        dest: Vector2i,
+        pivot: Vector2i | undefined,
+        orientation: number,
+        srcRect: Rect2i,
+        scale: Vector2i,
+    ): Vector2i {
+        const corner = this.spriteCornerScratch;
+
+        if (pivot === undefined) {
+            return corner.set(dest.x | 0, dest.y | 0);
+        }
+
+        if (!(pivot instanceof Vector2i)) {
+            throw new Error('drawSprite params.pivot must be a Vector2i or undefined');
+        }
+
+        mapSpritePoint(orientation, pivot.x | 0, pivot.y | 0, srcRect.width, srcRect.height, corner);
+
+        return corner.set((dest.x | 0) - corner.x * scale.x, (dest.y | 0) - corner.y * scale.y);
     }
 
     /**

@@ -30,8 +30,8 @@ const FLAGS_MASK = 0x1f;
  * Per-draw options for the params form of `BT.drawSprite`.
  *
  * Read, never mutated or retained: a hot loop can allocate one object and rewrite its fields
- * between draws. Create it with every field present (`{ flags: 0, scale: 1, paletteOffset: 0 }`) so its
- * shape never changes.
+ * between draws. Create it with every field present (`{ flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`)
+ * so its shape never changes.
  *
  * @since 1.8.0
  */
@@ -46,6 +46,15 @@ export interface SpriteDrawParams {
      * leaving it out is accepted, so one reused params object works for both destination kinds.
      */
     scale?: number | Vector2i;
+
+    /**
+     * Point in source pixels, relative to the source rect's top-left, that lands on a `Vector2i`
+     * destination (default `undefined`: the footprint's top-left lands there). The point goes through the
+     * flags first and is then multiplied by `scale`, so `(0, 0)` is the source origin, which moves under
+     * flips and quarter turns - not the same as no pivot. Values outside the sprite are fine. Assign
+     * `undefined` to reset a reused params object. A `Rect2i` destination takes no pivot.
+     */
+    pivot?: Vector2i | undefined;
 
     /** Same meaning as the fast-path 4th argument of `BT.drawSprite` (default `0`). */
     paletteOffset?: number;
@@ -78,27 +87,40 @@ export const SPRITE_ORIENTATIONS: readonly SpriteOrientation[] = Object.freeze([
 ]);
 
 /**
- * Applies an orientation's point map.
+ * Applies an orientation's point map. The pivot and the texel remap read the same row, so they cannot drift.
  *
- * @param row - Orientation row.
- * @param x - Source X in `[0, sw]`.
- * @param y - Source Y in `[0, sh]`.
+ * @param orientation - Orientation index `0`-`7`, from {@link resolveSpriteOrientation}.
+ * @param x - Source X, usually in `[0, sw]` (values outside are fine).
+ * @param y - Source Y, usually in `[0, sh]`.
  * @param sw - Source width.
  * @param sh - Source height.
- * @returns The point in the post-flags footprint.
+ * @param out - Caller-owned vector to write the post-flags footprint point into.
+ * @returns `out`.
  */
-function mapPoint(row: SpriteOrientation, x: number, y: number, sw: number, sh: number): [number, number] {
+export function mapSpritePoint(
+    orientation: number,
+    x: number,
+    y: number,
+    sw: number,
+    sh: number,
+    out: Vector2i,
+): Vector2i {
+    // eslint-disable-next-line security/detect-object-injection
+    const row = SPRITE_ORIENTATIONS[orientation] as SpriteOrientation;
     const fw = row.swap ? sh : sw;
     const fh = row.swap ? sw : sh;
     const u = row.swap ? y : x;
     const v = row.swap ? x : y;
 
-    return [row.flipX ? fw - u : u, row.flipY ? fh - v : v];
+    return out.set(row.flipX ? fw - u : u, row.flipY ? fh - v : v);
 }
 
 /** Probe source size for matching composed transforms to rows: non-square, so every orientation differs. */
 const PROBE_W = 3;
 const PROBE_H = 2;
+
+/** Scratch for the module-load table builders below. */
+const probePoint = new Vector2i();
 
 /** Quad corners, indexed TL, TR, BL, BR: bit 0 set = right edge, bit 1 set = bottom edge. */
 const CORNER_COUNT = 4;
@@ -136,10 +158,10 @@ function composeMask(mask: number): number {
         [w, h] = [h, w];
     }
 
-    const index = SPRITE_ORIENTATIONS.findIndex((row) =>
+    const index = SPRITE_ORIENTATIONS.findIndex((_, orientation) =>
         corners.every(([cx, cy], i) => {
-            const [px, py] = mapPoint(row, i === 1 ? PROBE_W : 0, i === 2 ? PROBE_H : 0, PROBE_W, PROBE_H);
-            return px === cx && py === cy;
+            mapSpritePoint(orientation, i === 1 ? PROBE_W : 0, i === 2 ? PROBE_H : 0, PROBE_W, PROBE_H, probePoint);
+            return probePoint.x === cx && probePoint.y === cy;
         }),
     );
 
@@ -161,7 +183,9 @@ const ORIENTATION_BY_MASK: Uint8Array = Uint8Array.from({ length: FLAGS_MASK + 1
 export const SPRITE_UV_CORNERS: Uint8Array = Uint8Array.from(
     { length: SPRITE_ORIENTATIONS.length * CORNER_COUNT },
     (_, slot) => {
-        const row = SPRITE_ORIENTATIONS[Math.floor(slot / CORNER_COUNT)] as SpriteOrientation;
+        const orientation = Math.floor(slot / CORNER_COUNT);
+        // eslint-disable-next-line security/detect-object-injection
+        const row = SPRITE_ORIENTATIONS[orientation] as SpriteOrientation;
         const screenCorner = slot % CORNER_COUNT;
         const fw = row.swap ? PROBE_H : PROBE_W;
         const fh = row.swap ? PROBE_W : PROBE_H;
@@ -169,9 +193,9 @@ export const SPRITE_UV_CORNERS: Uint8Array = Uint8Array.from(
         const targetY = screenCorner & 2 ? fh : 0;
 
         for (let src = 0; src < CORNER_COUNT; src++) {
-            const [x, y] = mapPoint(row, src & 1 ? PROBE_W : 0, src & 2 ? PROBE_H : 0, PROBE_W, PROBE_H);
+            mapSpritePoint(orientation, src & 1 ? PROBE_W : 0, src & 2 ? PROBE_H : 0, PROBE_W, PROBE_H, probePoint);
 
-            if (x === targetX && y === targetY) {
+            if (probePoint.x === targetX && probePoint.y === targetY) {
                 return src;
             }
         }

@@ -171,7 +171,7 @@ const srcRect = new Rect2i(0, 0, 16, 16);
 const destPos = new Vector2i(40, 60);
 // ---cut---
 // Allocate once, outside the draw loop, with every field present.
-const params: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+const params: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
 
 params.flags = isFacingLeft ? BT.FLIP_H : 0;
 BT.drawSprite(sheet, srcRect, destPos, params);
@@ -188,6 +188,23 @@ BT.drawSprite(sheet, srcRect, destPos, params);
 
 params.scale = 1;
 BT.drawSprite(sheet, srcRect, new Rect2i(10, 40, 50, 12), params); // stretch into a box
+```
+
+To place a sprite by a point other than its top-left - its feet, its center - set `pivot`:
+
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+import type { SpriteDrawParams } from 'blit386';
+declare const sheet: SpriteSheet;
+const srcRect = new Rect2i(0, 0, 16, 16);
+const feet = new Vector2i(40, 60);
+// ---cut---
+const params: SpriteDrawParams = { flags: 0, pivot: new Vector2i(8, 16), scale: 2, paletteOffset: 0 };
+
+// Bottom center of the 16x16 source lands on `feet`, at any scale.
+BT.drawSprite(sheet, srcRect, feet, params);
+
+params.pivot = undefined; // back to top-left placement
 ```
 
 ```ts twoslash
@@ -211,6 +228,7 @@ declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Re
 
 interface SpriteDrawParams {
   flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
+  pivot?: Vector2i | undefined; // source pixels, before flags (default undefined: top-left placement)
   scale?: number | Vector2i; // positive integers, screen axes, after flags (default 1)
   paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
 }
@@ -219,12 +237,21 @@ interface SpriteDrawParams {
 - The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
   hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
   never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a `Vector2i`.
-- With a `Vector2i` dest, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite with
-  `ROT_90_CW` covers 32x16, growing down and right from `dest`; with `scale: 2` it covers 64x32.
+- With a `Vector2i` dest and no `pivot`, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite
+  with `ROT_90_CW` covers 32x16, growing down and right from `dest`; with `scale: 2` it covers 64x32.
+- `pivot` is a point in source pixels relative to the source rect's top-left, in `[0, sw] x [0, sh]` (corner
+  coordinates, not texel indices). It goes through the flags (the "Point map" column in
+  [Transform order and flags](#transform-order-and-flags)), is multiplied by `scale`, and that point lands on `dest`.
+  Values outside the sprite are fine. The result is an integer move of the footprint, so pixels are identical on both
+  backends.
+- An explicit `pivot` of `(0, 0)` is not the same as no pivot. It is the source's top-left corner, which moves when the
+  sprite is flipped or turned. For a 16x16 sprite with `FLIP_H`, no pivot draws the footprint at `dest`, while
+  `pivot: new Vector2i(0, 0)` draws it 16 pixels to the left, because the source's left edge is now on the right. To
+  return a reused params object to top-left placement, assign `params.pivot = undefined`.
 - With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
-  Any `scale` other than `undefined`, `1`, or `(1, 1)` shows an error, because the rect already fixes the box. The
-  neutral `scale: 1` keeps one reused params object valid for both dest kinds. An empty or negative source or
-  destination rect draws nothing.
+  Any `scale` other than `undefined`, `1`, or `(1, 1)` shows an error, because the rect already fixes the box. A defined
+  `pivot` shows an error too, whatever the `scale`. The neutral `scale: 1` keeps one reused params object valid for both
+  dest kinds. An empty or negative source or destination rect draws nothing.
 - `scale` is a positive integer (`number` or `Vector2i`). `scale: 2` and `scale: new Vector2i(2, 2)` match, and
   `scale.x` is on-screen width even after a 90-degree turn. `0`, negatives, and non-integers show an error that points
   at a `Rect2i` dest for uneven sizes.
@@ -315,9 +342,9 @@ The footprint texel then maps back to a source texel through the orientation's t
 <Callout title="Planned - not shipped">
 
 This section locks the rest of the unified `BT.drawSprite` v2 shape decided in BT-236 (revised 2026-10-04). Overload 2
-with `flags`, `paletteOffset`, `scale`, and a `Vector2i` or `Rect2i` dest shipped in 1.8.0 - see
-[Flipping, rotating, and scaling sprites](#flipping-rotating-and-scaling-sprites). Only `pivot`, overloads 3 and 4, and
-the `SpritePack` / `SpriteFrame` types have not shipped yet.
+with `flags`, `pivot`, `paletteOffset`, `scale`, and a `Vector2i` or `Rect2i` dest shipped in 1.8.0 - see
+[Flipping, rotating, and scaling sprites](#flipping-rotating-and-scaling-sprites). Only overloads 3 and 4 and the
+`SpritePack` / `SpriteFrame` types have not shipped yet.
 
 </Callout>
 
@@ -349,7 +376,7 @@ drawSprite(
 
 interface SpriteDrawParams {
     flags?: number; // shipped
-    pivot?: Vector2i | undefined; // planned (BT-268): source pixels, before flags; assign undefined to reset
+    pivot?: Vector2i | undefined; // shipped: source pixels, before flags; assign undefined to reset
     scale?: number | Vector2i; // shipped
     paletteOffset?: number; // shipped
 }
@@ -383,15 +410,6 @@ The shipped [dispatch](#dispatch) extends as follows:
 - Planned transform order: flags, then integer scale, then placement. `scale` multiplies the post-flags footprint in
   screen axes, so `scale.x` is on-screen width even after a 90-degree turn. If a later ticket adds an arbitrary angle,
   the unit is degrees, and the software renderer throws until it can match pixel-for-pixel.
-
-#### Planned: pivot
-
-- An `undefined` `pivot` pins the footprint's top-left (the `Vector2i` dest rule above). An explicit `pivot` is a point
-  in source pixels relative to the source rect's top-left, sent through the point map, then multiplied by scale. That
-  point sits on `dest`. Explicit `(0, 0)` is the source origin, which moves under flips and 90/270, so it is not the
-  same as no pivot. To return a reused params object to the default, assign `params.pivot = undefined`. Values outside
-  the sprite are legal.
-- With a `Rect2i` dest, a defined `pivot` throws; the rect already fixes the box.
 
 #### Color
 
