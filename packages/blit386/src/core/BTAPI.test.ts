@@ -3765,38 +3765,49 @@ describe('BTAPI', () => {
                 (slice: NineSlice) => [slice, { x: 0, y: 0, width: 20, height: 15 } as Rect2i, 0],
                 'Rect2i',
             ],
-            ['a negative paletteOffset', (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), -1], ''],
-            ['an out-of-range paletteOffset', (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), 16], ''],
+            ['a negative paletteOffset', (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), -1], 'color number'],
+            [
+                'an out-of-range paletteOffset',
+                (slice: NineSlice) => [slice, new Rect2i(0, 0, 20, 15), 16],
+                'too big for this palette',
+            ],
         ] as const)('rejects %s before drawing anything', async (_label, args, fragment) => {
             const { quads, sheet } = await setup();
             const [slice, dest, offset] = args(NineSlice.fromSheet(sheet, OUTER, INNER));
 
             expect(() => BTAPI.instance.drawNineSlice(slice as NineSlice, dest as Rect2i, offset as number)).toThrow(
-                fragment || undefined,
+                fragment,
             );
             expect(quads).toHaveLength(0);
         });
 
         it('rejects a sheet that is not indexized before drawing anything', async () => {
             const { quads } = await setup();
-            const unindexed = new SpriteSheet(null, new Vector2i(32, 32));
+            const rawSheet = new SpriteSheet(null, new Vector2i(32, 32));
 
             expect(() =>
-                BTAPI.instance.drawNineSlice(NineSlice.fromSheet(unindexed, OUTER, INNER), new Rect2i(0, 0, 20, 15)),
-            ).toThrow();
+                BTAPI.instance.drawNineSlice(NineSlice.fromSheet(rawSheet, OUTER, INNER), new Rect2i(0, 0, 20, 15)),
+            ).toThrow("hasn't been prepared");
             expect(quads).toHaveLength(0);
         });
 
-        it('counts one draw call per quad and marks palette usage once per region', async () => {
+        it('counts one draw call per drawNineSlice call and marks palette usage once per region', async () => {
             const { quads, sheet, markSpy } = await setup();
             const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
             const before = pendingDrawCalls();
 
             BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12), 1);
 
-            expect(pendingDrawCalls() - before).toBe(quads.length);
+            expect(quads.length).toBeGreaterThan(1);
+            expect(pendingDrawCalls() - before).toBe(1);
             expect(markSpy).toHaveBeenCalledTimes(9);
             expect(markSpy).toHaveBeenCalledWith(expect.any(Rect2i), 1, expect.anything());
+
+            const afterFirst = pendingDrawCalls();
+
+            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 0, 12));
+
+            expect(pendingDrawCalls() - afterFirst).toBe(0);
         });
 
         it('marks only the cropped part of a tile strip narrower box', async () => {

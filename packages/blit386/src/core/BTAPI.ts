@@ -1735,6 +1735,9 @@ export class BTAPI {
             return;
         }
 
+        // One count per API call (like drawBitmapText), however many quads it emits.
+        this.markDrawCall();
+
         const { outer, inner } = nineSlice;
         const columns = this.nineSliceColumns;
         const rows = this.nineSliceRows;
@@ -2758,7 +2761,6 @@ export class BTAPI {
         if (isStretch) {
             src.width = srcW;
             src.height = srcH;
-            this.markDrawCall();
             this.renderer?.drawSpriteStretched(sheet, src, boxX, boxY, boxW, boxH, paletteOffset, 0);
             return;
         }
@@ -2773,7 +2775,6 @@ export class BTAPI {
                 src.height = Math.min(srcH, boxH - tileY);
                 dest.x = boxX + tileX;
                 dest.y = boxY + tileY;
-                this.markDrawCall();
                 this.renderer?.drawSprite(sheet, src, dest, paletteOffset);
             }
         }

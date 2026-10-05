@@ -68,7 +68,12 @@ export class NineSlice {
      * const panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
      * BT.drawNineSlice(panel, new Rect2i(20, 20, 120, 64));
      */
-    static fromSheet(sheet: SpriteSheet, outer: Rect2i, inner: Rect2i, options: NineSliceOptions = {}): NineSlice {
+    static fromSheet(
+        sheet: SpriteSheet,
+        outer: Rect2i,
+        inner: Rect2i,
+        options: NineSliceOptions | null = {},
+    ): NineSlice {
         if (!(sheet instanceof SpriteSheet)) {
             throw new Error('NineSlice.fromSheet expects a SpriteSheet as its first argument');
         }
@@ -92,12 +97,14 @@ export class NineSlice {
             );
         }
 
+        const opts = options ?? {};
+
         return new NineSlice(
             sheet,
             Object.freeze(outer.clone()),
             Object.freeze(inner.clone()),
-            resolveMode('edges', options.edges),
-            resolveMode('center', options.center),
+            resolveMode('edges', opts.edges),
+            resolveMode('center', opts.center),
         );
     }
 }

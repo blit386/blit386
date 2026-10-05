@@ -61,9 +61,16 @@ describe('NineSlice.fromSheet', () => {
     });
 
     it('accepts a sheet built before indexize (indexing is checked at draw time)', () => {
-        const unindexed = new SpriteSheet(null, makeSheet().size);
+        const rawSheet = new SpriteSheet(null, makeSheet().size);
 
-        expect(() => NineSlice.fromSheet(unindexed, OUTER, INNER)).not.toThrow();
+        expect(() => NineSlice.fromSheet(rawSheet, OUTER, INNER)).not.toThrow();
+    });
+
+    it('treats null options as the defaults', () => {
+        const slice = NineSlice.fromSheet(makeSheet(), OUTER, INNER, null);
+
+        expect(slice.edges).toBe('stretch');
+        expect(slice.center).toBe('stretch');
     });
 
     it.each([
