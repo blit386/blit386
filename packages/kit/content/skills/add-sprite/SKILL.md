@@ -132,8 +132,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   takes no pivot, so reset it before stretching.
 
 - For UI panels, buttons, and dialog boxes, use a nine-slice instead of stretching the whole panel (engine 1.8.0+).
-  Corners stay sharp; edges and center stretch or tile. Build it once in `init()`, both rects in sheet pixels -
-  `inner` is the center:
+  Corners stay sharp; edges and center stretch or tile. Build it once in `init()`, both rects in sheet pixels - `inner`
+  is the center:
 
   ```js
   // init()
