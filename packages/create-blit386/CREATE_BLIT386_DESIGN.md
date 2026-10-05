@@ -304,15 +304,23 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed (planned) |
 | --- | --- | --- | --- | --- |
 | Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | reads `AGENTS.md` |
-| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) - richest | `.zed/settings.json` tool_permissions |
-| Lockfile / .env block | prose warning | settings.json PreToolUse | hooks.json `failClosed` | settings.json `always_deny` |
-| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | n/a |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) |
+| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
+| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only (planned) |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.zed/settings.json` `context_servers` |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
+
+The planned adapters (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are
+specified per agent under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also
+carries their planned capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply
+to all of them. Each implementation ticket adds its column here when the adapter ships - a column describes what the kit
+emits, not what an agent could do. Two findings change this section's model: most new agents read one shared
+`.agents/skills/` folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited
+with `tool_permissions` guardrails, ignores that setting in project files.
 
 The "Live docs lookup" row (the `blit386-docs` MCP server at `https://blit386.dev/mcp`, teaching an assistant the
 `search_docs` / `get_doc_page` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks)
@@ -341,16 +349,19 @@ Canonical intent (`kit/hooks.manifest.json`):
 ```
 
 - AGENTS.md (generic): a prose line under hard rules - "Never modify pnpm-lock.yaml, \*.lock, or .env files."
-  Instruction only; most generic readers cannot enforce.
+  Instruction only; most generic readers cannot enforce. Not yet in `content/AGENTS.md` - BT-297 (Zed) adds it, since
+  that line is all Zed's agent gets.
 - Claude Code: a `.claude/settings.json` PreToolUse hook matching `Write|Edit` that blocks those paths.
-- Cursor: a `.cursor/hooks.json` entry with `failClosed: true` - actually refuses the write. Richest enforcement.
-- Zed: `.zed/settings.json` `tool_permissions.{edit_file,write_file}.always_deny` patterns.
+- Cursor: planned as a `.cursor/hooks.json` entry with `failClosed: true`, but Cursor has no pre-edit hook event, so the
+  shipped adapter does not emit this guard (`hooks.manifest.json` registers `protect-files` for Claude only).
+- Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
+  the user's own settings, so the generated game can only document a paste-in snippet.
 
-Same intent; four formats; differing enforcement power (AGENTS.md only instructs, the others truly block). Rules and
-skills follow the same pattern: a "rule" becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a glob-scoped
-`.cursor/rules/*.mdc`; a "skill" becomes a `.claude/skills/<name>/SKILL.md`, a `.cursor/skills/<name>/SKILL.md`, and a
-"read docs/<topic>.md" pointer for agents without a skill mechanism. Adding a new agent = writing one adapter that maps
-these intent types to that agent's files and capabilities.
+Same intent; four formats; differing enforcement power (AGENTS.md, Cursor, and Zed only instruct; only Claude Code truly
+blocks). Rules and skills follow the same pattern: a "rule" becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a
+glob-scoped `.cursor/rules/*.mdc`; a "skill" becomes a `.claude/skills/<name>/SKILL.md`, a
+`.cursor/skills/<name>/SKILL.md`, and a "read docs/<topic>.md" pointer for agents without a skill mechanism. Adding a
+new agent = writing one adapter that maps these intent types to that agent's files and capabilities.
 
 ### 4.4 Progressive disclosure (the "good student" model)
 
@@ -760,12 +771,11 @@ Phase 4 - "Reach":
 - StackBlitz one-click (after the section 7 verify); iPad path. →
   [BT-292](https://linear.app/vancura/issue/BT-292/stackblitz-one-click-link-and-browser-first-onboarding-copy-rewrite)
   (blocked by [BT-301](https://linear.app/vancura/issue/BT-301/stackblitz-webcontainer-boot-and-render-verification))
-- More agents (Zed, Gemini CLI, Windsurf) - cheap once the pipeline exists. →
-  [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support) (umbrella; sub-issues:
-  [BT-296](https://linear.app/vancura/issue/BT-296/research-and-define-agent-adapter-spec-for-zed-gemini-cli-and-windsurf)
-  research, [BT-297](https://linear.app/vancura/issue/BT-297/zed-agent-adapter) Zed,
-  [BT-298](https://linear.app/vancura/issue/BT-298/gemini-cli-agent-adapter) Gemini CLI,
-  [BT-294](https://linear.app/vancura/issue/BT-294/windsurf-agent-adapter) Windsurf)
+- More agents - cheap once the pipeline exists. →
+  [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support) (umbrella; research
+  [BT-296](https://linear.app/vancura/issue/BT-296), foundation [BT-564](https://linear.app/vancura/issue/BT-564), then
+  adapters for Zed, GitHub Copilot, OpenCode, Codex, Antigravity, and Gemini CLI, plus a long tail. Windsurf dropped
+  2026-10-05)
 
 Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; `blit publish` seam (section 6).
 
