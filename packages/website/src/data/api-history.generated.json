@@ -548,7 +548,7 @@
       "changes": [
         {
           "version": "1.8.0",
-          "note": "Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, and Rect2i stretch destinations."
+          "note": "Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, pivot placement, and Rect2i stretch destinations."
         }
       ],
       "deprecated": null,

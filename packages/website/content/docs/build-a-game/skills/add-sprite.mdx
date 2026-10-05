@@ -60,8 +60,9 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   Pass `{ tileSize }` in `options` to give the sheet a grid of equal cells.
 - `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` (method) - draw a region. `paletteOffset` shifts every
   pixel's slot, so you can recolor the same sprite (team colors, day/night).
-- `BT.drawSprite(sheet, srcRect, destPosOrRect, { flags, scale, paletteOffset })` (method) - same, flipped or turned by
-  `flags`, enlarged by whole-number `scale`, or stretched into a `Rect2i` (engine 1.8.0+).
+- `BT.drawSprite(sheet, srcRect, destPosOrRect, { flags, pivot, scale, paletteOffset })` (method) - same, flipped or
+  turned by `flags`, placed by a `pivot` point, enlarged by whole-number `scale`, or stretched into a `Rect2i` (engine
+  1.8.0+).
 - `BT.drawTile(sheet, index, destPos, paletteOffset?)` / `BT.drawTile(sheet, col, row, destPos, paletteOffset?)`
   (method) - draw one grid cell, no `Rect2i` needed (engine 1.8.0+).
 - `sheet.fullRect()` (method) - the whole-sheet `Rect2i`.
@@ -77,7 +78,7 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
 
   ```js
   // init()
-  this.drawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+  this.drawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
 
   // render()
   this.drawParams.flags = this.isFacingLeft ? BT.FLIP_H : 0;
@@ -88,7 +89,7 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   `Vector2i`:
 
   ```ts
-  drawParams: SpriteDrawParams = { flags: 0, scale: 1, paletteOffset: 0 };
+  drawParams: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
   ```
 
   `flags` takes `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. A 90 or
@@ -96,8 +97,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   `sheet.tileRect(...)` (built in `init()`) to `BT.drawSprite` - `BT.drawTile` takes no params.
 
 - To draw a sprite bigger, scale it at draw time instead of drawing a bigger PNG (engine 1.8.0+). Add `scale` to the
-  same params object - give it every field up front, `{ flags: 0, scale: 1, paletteOffset: 0 }`, and change fields
-  between draws:
+  same params object - give it every field up front, `{ flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`, and
+  change fields between draws:
 
   ```js
   this.drawParams.scale = 2; // whole numbers only: 2, 3, ... or new Vector2i(3, 1)
@@ -113,6 +114,19 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   ```
 
   A `Rect2i` destination always needs the params object - `{}` is enough.
+
+- To place a sprite by its feet or center instead of its top-left, set `pivot` (engine 1.8.0+). It is a point in the
+  source frame's own pixels; the engine flips, turns, and scales it with the sprite and puts it on `destPos`, so a
+  character stays planted when it flips or grows:
+
+  ```js
+  this.drawParams.pivot = new Vector2i(8, 16); // bottom center of a 16x16 frame - make it once in init()
+  BT.drawSprite(this.hero, this.heroRect, this.feetPos, this.drawParams);
+  ```
+
+  `new Vector2i(0, 0)` is not the same as no pivot: it is the frame's top-left corner, which moves to the right edge
+  under `BT.FLIP_H`. Set `this.drawParams.pivot = undefined` to go back to top-left placement - a `Rect2i` destination
+  takes no pivot, so reset it before stretching.
 
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the

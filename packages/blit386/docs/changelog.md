@@ -35,6 +35,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   WebGPU and software. A `Rect2i` needs the params form (`BT.drawSprite(sheet, src, rect, {})`); development builds show
   an error when one reaches the fast path. See
   [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
+- Sprite pivot: `SpriteDrawParams.pivot` places a sprite by any point in source pixels instead of its top-left. The
+  point goes through the flags, then the scale, and lands on the `Vector2i` destination, so a character drawn by its
+  feet stays put when it flips, turns, or grows. An explicit `(0, 0)` is the source origin and moves under flips, unlike
+  no pivot; assign `params.pivot = undefined` to reset a reused object. A `Rect2i` destination with a pivot shows an
+  error. See [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
   `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`
