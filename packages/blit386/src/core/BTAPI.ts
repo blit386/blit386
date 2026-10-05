@@ -132,19 +132,20 @@ function nineSliceBoxStart(index: number, destStart: number, destSize: number, f
 }
 
 /**
- * Fill mode of a nine-slice region: `null` for a corner (always 1:1), `center` for the middle, else `edges`.
+ * Fill mode of a nine-slice region: `center` for the middle, `edges` for the edges, and `'tile'` for a corner -
+ * a corner's box always equals its strip, so one 1:1 tile draws it.
  *
  * @param nineSlice - Panel being drawn.
  * @param row - Row index 0-2.
  * @param col - Column index 0-2.
- * @returns The region's fill mode, or `null` for a corner.
+ * @returns The region's fill mode.
  */
-function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode | null {
+function nineSliceRegionMode(nineSlice: NineSlice, row: number, col: number): NineSliceMode {
     if (row === 1 && col === 1) {
         return nineSlice.center;
     }
 
-    return row === 1 || col === 1 ? nineSlice.edges : null;
+    return row === 1 || col === 1 ? nineSlice.edges : 'tile';
 }
 
 /**
@@ -2717,8 +2718,8 @@ export class BTAPI {
 
     /**
      * Emits one nine-slice region straight to the renderer (validation already ran in `drawNineSlice`).
-     * Stretch is one stretched quad; tile mode and corners are 1:1 quads stepping by the strip size from
-     * the box's top-left, with the last column and row cropped.
+     * Stretch is one stretched quad; tile is 1:1 quads stepping by the strip size from the box's top-left,
+     * with the last column and row cropped.
      *
      * @param sheet - Indexized source sheet.
      * @param srcX - Strip left edge in the sheet.
@@ -2729,7 +2730,7 @@ export class BTAPI {
      * @param boxY - Box top edge.
      * @param boxW - Box width (at least 1).
      * @param boxH - Box height (at least 1).
-     * @param mode - Fill mode, or `null` for a corner (box size equals strip size).
+     * @param mode - Fill mode (corners arrive as `'tile'`).
      * @param paletteOffset - Validated palette offset.
      */
     private emitNineSliceRegion(
@@ -2742,7 +2743,7 @@ export class BTAPI {
         boxY: number,
         boxW: number,
         boxH: number,
-        mode: NineSliceMode | null,
+        mode: NineSliceMode,
         paletteOffset: number,
     ): void {
         const src = this.scratchNineSliceSrc;
@@ -2759,8 +2760,6 @@ export class BTAPI {
         }
 
         if (isStretch) {
-            src.width = srcW;
-            src.height = srcH;
             this.renderer?.drawSpriteStretched(sheet, src, boxX, boxY, boxW, boxH, paletteOffset, 0);
             return;
         }
@@ -2769,8 +2768,6 @@ export class BTAPI {
 
         for (let tileY = 0; tileY < boxH; tileY += srcH) {
             for (let tileX = 0; tileX < boxW; tileX += srcW) {
-                src.x = srcX;
-                src.y = srcY;
                 src.width = Math.min(srcW, boxW - tileX);
                 src.height = Math.min(srcH, boxH - tileY);
                 dest.x = boxX + tileX;

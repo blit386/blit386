@@ -76,6 +76,7 @@ src/
   assets/
     AssetLoader.ts         # Image loading with caching
     SpriteSheet.ts         # GPU texture wrapper (+ loadIndexed convenience path)
+    NineSlice.ts           # Frozen nine-slice asset (NineSlice.fromSheet) + per-axis split helper used by BT.drawNineSlice
     BitmapFont.ts          # Bitmap font system (.btfont)
     SystemFont.ts          # Built-in system font factory (createSystemFont; used by BT.systemPrint)
     fonts/systemFontData.ts # Glyph bitmap data backing SystemFont

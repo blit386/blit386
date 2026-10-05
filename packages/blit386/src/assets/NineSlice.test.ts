@@ -66,11 +66,10 @@ describe('NineSlice.fromSheet', () => {
         expect(() => NineSlice.fromSheet(rawSheet, OUTER, INNER)).not.toThrow();
     });
 
-    it('treats null options as the defaults', () => {
-        const slice = NineSlice.fromSheet(makeSheet(), OUTER, INNER, null);
-
-        expect(slice.edges).toBe('stretch');
-        expect(slice.center).toBe('stretch');
+    it.each([null, 'tile', 1])('rejects non-object options (%s) from untyped callers', (options) => {
+        expect(() => NineSlice.fromSheet(makeSheet(), OUTER, INNER, options as never)).toThrow(
+            'options must be an object',
+        );
     });
 
     it.each([

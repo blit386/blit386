@@ -62,18 +62,14 @@ export class NineSlice {
      * @param options - Edge and center fill modes, both `'stretch'` by default.
      * @returns A frozen nine-slice holding copies of both rects.
      * @throws If `sheet` is not a `SpriteSheet`, a rect is not a `Rect2i` of integers, `outer` leaves the sheet,
-     *   `inner` leaves `outer` or is smaller than 1x1, or a mode is not `'stretch'` or `'tile'`.
+     *   `inner` leaves `outer` or is smaller than 1x1, `options` is not an object, or a mode is not `'stretch'`
+     *   or `'tile'`.
      *
      * @example
      * const panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
      * BT.drawNineSlice(panel, new Rect2i(20, 20, 120, 64));
      */
-    static fromSheet(
-        sheet: SpriteSheet,
-        outer: Rect2i,
-        inner: Rect2i,
-        options: NineSliceOptions | null = {},
-    ): NineSlice {
+    static fromSheet(sheet: SpriteSheet, outer: Rect2i, inner: Rect2i, options: NineSliceOptions = {}): NineSlice {
         if (!(sheet instanceof SpriteSheet)) {
             throw new Error('NineSlice.fromSheet expects a SpriteSheet as its first argument');
         }
@@ -97,14 +93,17 @@ export class NineSlice {
             );
         }
 
-        const opts = options ?? {};
+        // Untyped callers can pass null or a primitive; reject it rather than guess the defaults.
+        if (typeof options !== 'object' || options === null) {
+            throw new Error("NineSlice.fromSheet options must be an object like { edges: 'tile' }, or left out");
+        }
 
         return new NineSlice(
             sheet,
             Object.freeze(outer.clone()),
             Object.freeze(inner.clone()),
-            resolveMode('edges', opts.edges),
-            resolveMode('center', opts.center),
+            resolveMode('edges', options.edges),
+            resolveMode('center', options.center),
         );
     }
 }
