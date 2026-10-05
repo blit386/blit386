@@ -1,65 +1,26 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './coverage-fixture';
-
-// Delay after render-complete signal before taking a screenshot, to allow the
-// GPU to present the frame. Override via GPU_PRESENT_DELAY env var for CI tuning.
-// Falls back to 100 ms if the env var is missing, malformed, or non-positive.
-const GPU_PRESENT_DELAY = (() => {
-    const raw = process.env.GPU_PRESENT_DELAY;
-    if (!raw) {
-        return 100;
-    }
-    const parsed = Number.parseInt(raw, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 100;
-})();
+import { openFixture } from './open-fixture';
 
 /** Maximum allowed pixel-difference ratio across snapshot comparisons. */
 const MAX_DIFF = 0.01;
 
 /**
- * Loads the post-process fixture in the requested mode and waits until the
- * scene render has signalled completion (or initialization has failed).
+ * Common test runner: load fixture, take snapshot.
+ *
+ * Every mode needs the WebGPU backend, so each test skips unless the fixture reports `'webgpu'`. Effect modes throw
+ * from `BT.effectAdd` on the software renderer, which fails fixture init and reports `null`; the baseline and upscale
+ * modes add no effect, so on a silent software fallback they would render without error and need the backend check.
  *
  * @param page - Playwright page handle.
  * @param mode - Fixture mode hash (matches a `case` in the fixture's switch).
- * @returns `true` if the page initialized successfully; `false` when WebGPU
- *   was unavailable in the test environment.
- */
-async function loadFixture(page: Page, mode: string): Promise<boolean> {
-    await page.goto(`/post-process.html#${mode}`);
-
-    await page.waitForFunction(
-        () => {
-            const w = window as unknown as Record<string, boolean>;
-            return w.__RENDER_COMPLETE__ || w.__INIT_FAILED__;
-        },
-        { timeout: 10_000 },
-    );
-
-    const initFailed = await page.evaluate(() => (window as unknown as Record<string, boolean>).__INIT_FAILED__);
-
-    if (initFailed) {
-        return false;
-    }
-
-    await page.waitForTimeout(GPU_PRESENT_DELAY);
-
-    return true;
-}
-
-/**
- * Common test runner: load fixture, take snapshot.
- *
- * @param page - Playwright page handle.
- * @param mode - Fixture mode hash.
  * @param snapshot - Snapshot file name.
  */
 async function runMode(page: Page, mode: string, snapshot: string): Promise<void> {
-    const ok = await loadFixture(page, mode);
-
-    if (!ok) {
+    if ((await openFixture(page, `/post-process.html#${mode}`)) !== 'webgpu') {
         test.skip(true, 'WebGPU not available in this environment');
+
         return;
     }
 

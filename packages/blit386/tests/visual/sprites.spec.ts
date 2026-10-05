@@ -1,32 +1,7 @@
-import type { Page } from '@playwright/test';
-
 import { expect, test } from './coverage-fixture';
-
-const GPU_PRESENT_DELAY = Number(process.env.GPU_PRESENT_DELAY ?? 100);
+import { openFixture } from './open-fixture';
 
 test.describe('Sprite Rendering', () => {
-    /** Opens a fixture, waits for the first frame, and returns the backend that actually started (`null` when init failed). */
-    async function openFixture(page: Page, url: string): Promise<'webgpu' | 'software' | null> {
-        await page.goto(url);
-        await page.waitForFunction(
-            () => {
-                const w = window as unknown as Record<string, boolean>;
-                return w.__RENDER_COMPLETE__ || w.__INIT_FAILED__;
-            },
-            { timeout: 10_000 },
-        );
-        const initFailed = await page.evaluate(() => (window as unknown as Record<string, boolean>).__INIT_FAILED__);
-        await page.waitForTimeout(GPU_PRESENT_DELAY);
-
-        if (initFailed) {
-            return null;
-        }
-
-        return page.evaluate(
-            () => (window as unknown as { __ACTIVE_BACKEND__: 'webgpu' | 'software' | null }).__ACTIVE_BACKEND__,
-        );
-    }
-
     test('should render palette-indexed sprites with offset and batching', async ({ page }) => {
         if ((await openFixture(page, '/sprites.html')) !== 'webgpu') {
             test.skip(true, 'WebGPU not available in this environment');
