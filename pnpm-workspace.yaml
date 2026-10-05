@@ -55,7 +55,7 @@ overrides:
   # (high/moderate): ip-address vulnerabilities. Dev-only, reached through socks via
   # proxy-agent, link-check, and markdown-link-check, so it never enters a runtime bundle -
   # but `security:audit` covers dev + prod, so it fails CI. 10.7.1 is the patch.
-  ip-address@<=10.7.0: ^10.7.1
+  ip-address@<=10.7.0: ^10.7.2
   # GHSA-c475-qrg2-pj4r (high): quadratic-time denial of service in basic-ftp's
   # Client.list() directory-listing parser. Dev-only, reached through get-uri via
   # pac-proxy-agent, proxy-agent, and markdown-link-check, so it never enters a runtime
