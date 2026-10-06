@@ -164,6 +164,13 @@ export class GameLoop {
     private readonly boundTick: (currentTime: number) => void;
 
     /**
+     * Handle of the pending `requestAnimationFrame` callback. {@link stop} cancels it, so a quick
+     * `stop()` + `start()` (a `BT.renderAt` seek, then `BT.resume()`) never leaves the old chain alive
+     * next to the new one.
+     */
+    private rafHandle: number = 0;
+
+    /**
      * Creates a new GameLoop.
      *
      * @param updateInterval - Milliseconds between fixed update steps (1000 / targetFPS).
@@ -196,22 +203,27 @@ export class GameLoop {
         }
 
         this.isRunning = true;
+        this.accumulator = 0;
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
+        this.rafHandle = requestAnimationFrame(() => {
+            this.rafHandle = requestAnimationFrame(() => {
                 this.lastUpdateTime = performance.now();
 
-                requestAnimationFrame(this.boundTick);
+                this.rafHandle = requestAnimationFrame(this.boundTick);
             });
         });
     }
 
     /**
-     * Stops the loop.
-     * The current frame, if already running, is allowed to finish.
+     * Stops the loop and cancels the pending frame. A frame already running is allowed to finish.
      */
     public stop(): void {
         this.isRunning = false;
+
+        // Absent in some non-browser test environments, which only stub requestAnimationFrame.
+        if (typeof cancelAnimationFrame === 'function') {
+            cancelAnimationFrame(this.rafHandle);
+        }
     }
 
     /**
@@ -239,6 +251,34 @@ export class GameLoop {
      */
     public getRenderAlpha(): number {
         return this.renderAlpha;
+    }
+
+    /**
+     * Runs `steps` fixed updates, then one render, synchronously - no `requestAnimationFrame`, no wall clock.
+     *
+     * The deterministic-seek primitive behind `BT.renderAt`. Ticks advance exactly as in the rAF path (each
+     * `onUpdate` sees the pre-increment tick), and `renderAlpha` is `0` because a stepped frame always lands on a tick.
+     * `step(0)` re-renders the current tick.
+     *
+     * @param steps - Number of fixed updates to run; a non-negative integer.
+     * @throws {Error} If the loop is running, or `steps` is not a non-negative safe integer.
+     */
+    public step(steps: number): void {
+        if (this.isRunning) {
+            throw new Error('GameLoop.step() needs the loop stopped; call stop() first');
+        }
+
+        if (!Number.isSafeInteger(steps) || steps < 0) {
+            throw new Error(`GameLoop.step() steps must be a non-negative integer, got: ${steps}`);
+        }
+
+        for (let i = 0; i < steps; i++) {
+            this.onUpdate();
+            this.ticks++;
+        }
+
+        this.renderAlpha = 0;
+        this.onRender();
     }
 
     /**
@@ -284,7 +324,7 @@ export class GameLoop {
 
         this.onRender();
 
-        requestAnimationFrame(this.boundTick);
+        this.rafHandle = requestAnimationFrame(this.boundTick);
     }
 
     /**

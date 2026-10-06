@@ -690,4 +690,116 @@ describe('GameLoop', () => {
             expect(actual).toEqual(expected);
         });
     });
+
+    describe('step', () => {
+        beforeEach(() => {
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn(() => 1),
+            );
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('runs update n times, then render once, synchronously', () => {
+            const calls: string[] = [];
+            const loop = new GameLoop(
+                1000 / 60,
+                () => calls.push('u'),
+                () => calls.push('r'),
+            );
+
+            loop.step(3);
+
+            expect(calls).toEqual(['u', 'u', 'u', 'r']);
+            expect(loop.getTicks()).toBe(3);
+            expect(requestAnimationFrame).not.toHaveBeenCalled();
+        });
+
+        it('sees the pre-increment tick inside update, like the rAF path', () => {
+            const seen: number[] = [];
+            const loop: GameLoop = new GameLoop(1000 / 60, () => seen.push(loop.getTicks()), vi.fn());
+
+            loop.step(2);
+
+            expect(seen).toEqual([0, 1]);
+        });
+
+        it('step(0) renders without updating', () => {
+            const onUpdate = vi.fn();
+            const onRender = vi.fn();
+            const loop = new GameLoop(1000 / 60, onUpdate, onRender);
+
+            loop.step(0);
+
+            expect(onUpdate).not.toHaveBeenCalled();
+            expect(onRender).toHaveBeenCalledTimes(1);
+            expect(loop.getRenderAlpha()).toBe(0);
+        });
+
+        it('throws while the loop is running', () => {
+            const loop = new GameLoop(1000 / 60, vi.fn(), vi.fn());
+
+            loop.start();
+
+            expect(() => loop.step(1)).toThrow('loop stopped');
+        });
+
+        it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects a step count of %s', (steps) => {
+            const loop = new GameLoop(1000 / 60, vi.fn(), vi.fn());
+
+            expect(() => loop.step(steps)).toThrow('non-negative integer');
+        });
+    });
+
+    describe('stop/start', () => {
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('stop() cancels the pending frame so a quick restart runs one chain', () => {
+            const pending = new Map<number, FrameRequestCallback>();
+            let nextId = 1;
+
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn((callback: FrameRequestCallback) => {
+                    pending.set(nextId, callback);
+
+                    return nextId++;
+                }),
+            );
+            vi.stubGlobal(
+                'cancelAnimationFrame',
+                vi.fn((id: number) => {
+                    pending.delete(id);
+                }),
+            );
+
+            const loop = new GameLoop(1000 / 60, vi.fn(), vi.fn());
+
+            loop.start();
+            loop.stop();
+            loop.start();
+
+            expect(pending.size).toBe(1);
+        });
+
+        it('start() clears leftover accumulator time', () => {
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn(() => 1),
+            );
+
+            const loop = new GameLoop(1000 / 60, vi.fn(), vi.fn());
+            const internals = loop as unknown as { accumulator: number };
+
+            internals.accumulator = 50;
+            loop.start();
+
+            expect(internals.accumulator).toBe(0);
+        });
+    });
 });
