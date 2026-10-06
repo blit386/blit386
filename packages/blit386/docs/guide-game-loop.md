@@ -90,6 +90,28 @@ class Player {
 Color transitions (palette flashes, tinted hit-feedback) can be interpolated the same way with `Color32.lerp` /
 `Color32#lerp` - see [API: Core Types](api-core-types.md#color32).
 
+## Seeking and stepping
+
+The engine's clock is ticks, not wall time: `BT.timeSeconds` is `BT.ticks * BT.deltaSeconds`, palette effects advance
+once per fixed update (right after your `update()`), and custom post-process effects receive tick-clock milliseconds in
+`writeUniforms(deltaMs, ...)`. That is what lets [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) jump to any
+time and draw the same frame the live loop would. Drive animation from `BT.timeSeconds` or `BT.ticks`, and change state
+only in `init()` and `update()`. A value read from `performance.now()` cannot be seeked, and a seek calls `render()`
+once, at the end.
+
+```text
+             BT.renderAt(t)                 BT.resume()
+ running  ------------------>  stopped  ------------------>  running
+                                |   ^
+           BT.renderAt(t) or    |   |
+           BT.captureFrame()    +---+
+           (re-renders the seeked tick)
+```
+
+Seeking from the start costs one `update()` per tick - 10,800 calls for three minutes at 60 FPS - so a demo that
+computes its frame from `BT.timeSeconds` seeks instantly, while a game with heavy per-tick simulation seeks slowly by
+design.
+
 ## API history
 
 <ApiAvailability page="guides/game-loop" />

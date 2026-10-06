@@ -75,6 +75,23 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   with the new `tileSize` option of `SpriteSheet.load` / `SpriteSheet.loadIndexed` or the `sheet.tileSize` property;
   `sheet.tileRect(...)` and `Rect2i.fromTile(...)` return the rectangle. See
   [Drawing tiles](/docs/api/rendering#drawing-tiles).
+- Deterministic seek: `BT.renderAt(seconds, { from })` stops the loop and renders exactly the frame at that tick with no
+  `requestAnimationFrame`, so it works in hidden and headless pages. `from: 'start'` (default) resets engine-owned state
+  and re-runs the game's `init()`; `from: 'current'` steps forward. `BT.resume()` restarts the loop from the seeked
+  tick, and `BT.captureFrame()` after a seek captures the seeked frame. See
+  [Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
+
+### Changed
+
+- Palette effects (`paletteCycle`, fades, flashes) now advance once per fixed update, right after the game's `update()`,
+  on the tick clock (`ticks * 1000 / targetFPS`) instead of once per rendered frame on `performance.now()`. They follow
+  the fixed-step loop rather than wall time or the display's refresh rate, and `BT.ticksReset()` pauses them for an
+  update instead of running them backwards. A palette write made in `render()` now lands after the effects rather than
+  before them.
+- The `deltaMs` passed to post-process effects is tick-clock time since the previous rendered frame, not
+  `performance.now()`. No built-in effect reads it.
+- `BT.captureFrame()` called while `BT.renderAt` holds the loop stopped re-renders the seeked frame instead of waiting
+  for a loop frame that never comes.
 
 ## 1.7.1 - 2026-09-27
 

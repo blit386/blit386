@@ -1322,7 +1322,7 @@ export const BT = {
     /**
      * Smoothly interpolates all palette entries toward a target over time.
      *
-     * Snapshots the current palette at the moment this is called. Each frame the
+     * Snapshots the current palette at the moment this is called. Each fixed update the
      * entries are lerped between the snapshot and target using the easing curve.
      * Auto-removes when the fade completes.
      *
