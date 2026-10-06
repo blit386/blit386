@@ -1022,5 +1022,26 @@ describe('AudioManager', () => {
                 audio.unpark();
             }).not.toThrow();
         });
+
+        it('a gesture that unlocks audio while parked keeps the context suspended until unpark', async () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            audio.park();
+
+            expect(context.suspendCallCount).toBe(1);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
+
+            expect(context.suspendCallCount).toBe(2);
+
+            const resumesBefore = context.resumeCallCount;
+
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(resumesBefore + 1);
+        });
     });
 });

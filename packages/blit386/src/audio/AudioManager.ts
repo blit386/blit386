@@ -728,7 +728,8 @@ export class AudioManager {
      * {@link unlocked}, returns without repeating the one-time unlock work.
      *
      * On success, starts any music request remembered from before unlock (see
-     * {@link musicPlay}) via {@link startRememberedMusicRequest}.
+     * {@link musicPlay}) via {@link startRememberedMusicRequest}. While {@link park}ed, suspends the
+     * context again, so it stays silent until {@link unpark}.
      *
      * @param context - Audio context to resume.
      */
@@ -747,6 +748,15 @@ export class AudioManager {
 
         this.unlocked = true;
         this.removeUnlockListeners();
+
+        // A gesture during a BT.renderAt seek unlocks audio, but the loop is still stopped: stay
+        // suspended until unpark() resumes it.
+        if (this.isParked) {
+            context.suspend().catch((error: unknown) => {
+                console.error('[BT] Audio: failed to suspend the context after an unlock during a seek:', error);
+            });
+        }
+
         this.startRememberedMusicRequest();
     }
 
