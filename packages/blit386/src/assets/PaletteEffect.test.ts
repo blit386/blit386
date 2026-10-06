@@ -174,7 +174,7 @@ describe('PaletteEffectManager', () => {
         markDirtySpy.mockRestore();
     });
 
-    it('skips first-frame delta (delta is 0 on first call)', () => {
+    it('reports delta 0 when updated in the same instant the effect was added', () => {
         const clock = makeTimeClock();
         const manager = new PaletteEffectManager(clock.provider);
         const palette = makeTestPalette();
@@ -191,6 +191,69 @@ describe('PaletteEffectManager', () => {
         manager.update(palette);
 
         expect(receivedDelta).toBe(0);
+    });
+
+    it('first update reports the time since the effect was added', () => {
+        const clock = makeTimeClock();
+        const manager = new PaletteEffectManager(clock.provider);
+        const palette = makeTestPalette();
+        let receivedDelta = -1;
+
+        manager.add({
+            update: (_p, deltaMs) => {
+                receivedDelta = deltaMs;
+
+                return false;
+            },
+        });
+
+        clock.advance(40);
+        manager.update(palette);
+
+        expect(receivedDelta).toBe(40);
+    });
+
+    it('clamps a clock that moved backwards to a zero delta', () => {
+        const clock = makeTimeClock();
+        const manager = new PaletteEffectManager(clock.provider);
+        const palette = makeTestPalette();
+        const deltas: number[] = [];
+
+        manager.add({
+            update: (_p, deltaMs) => {
+                deltas.push(deltaMs);
+
+                return true;
+            },
+        });
+
+        clock.advance(-500);
+        manager.update(palette);
+
+        expect(deltas).toEqual([0]);
+    });
+
+    it('reports the first interval on a clock that starts at 0, like the engine tick clock at boot', () => {
+        let now = 0;
+        const manager = new PaletteEffectManager(() => now);
+        const palette = makeTestPalette();
+        const deltas: number[] = [];
+
+        manager.add({
+            update: (_p, deltaMs) => {
+                deltas.push(deltaMs);
+
+                return true;
+            },
+        });
+
+        manager.update(palette);
+        now = 1000 / 60;
+        manager.update(palette);
+
+        // The old `lastTime === 0` sentinel read the tick-0 timestamp as "no previous frame" and
+        // swallowed this interval too.
+        expect(deltas).toEqual([0, 1000 / 60]);
     });
 
     it('computes correct delta between frames', () => {

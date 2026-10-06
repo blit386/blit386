@@ -5199,9 +5199,6 @@ describe('BTAPI splash palette capture', () => {
             return;
         }
 
-        now += 1;
-        manager.update(palette);
-
         now += ms;
         manager.update(palette);
     }

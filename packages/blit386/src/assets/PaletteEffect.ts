@@ -30,10 +30,10 @@ import type { Palette } from './Palette';
  */
 export interface PaletteEffect {
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean;
@@ -42,24 +42,24 @@ export interface PaletteEffect {
 /**
  * Manages active palette effects and updates them each frame.
  *
- * Tracks wall-clock time internally via an injectable time provider so the
- * {@link GameLoop} callback signatures remain unchanged.
+ * Tracks time through an injectable provider so the {@link GameLoop} callback signatures remain unchanged. The engine
+ * passes its tick clock (`ticks * 1000 / targetFPS`), which is what makes palette effects seekable by `BT.renderAt`.
  */
 export class PaletteEffectManager {
     /** Active effects managed by this instance. */
     private effects: PaletteEffect[] = [];
 
-    /** Last wall-clock time in milliseconds, used to compute delta time. */
+    /** Provider time of the previous update, or of the add that woke the manager from idle. */
     private lastTime = 0;
 
-    /** Clock function returning milliseconds. */
+    /** Clock function returning milliseconds. Defaults to `performance.now()`. */
     private readonly timeProvider: () => number;
 
     /**
      * Creates a new effect manager.
      *
      * @param timeProvider - Clock function returning milliseconds. Defaults to
-     *   `performance.now()`. Pass a custom function for deterministic unit tests.
+     *   `performance.now()`; the engine passes its tick clock. Pass a custom function for deterministic unit tests.
      */
     constructor(timeProvider: () => number = () => performance.now()) {
         this.timeProvider = timeProvider;
@@ -80,10 +80,10 @@ export class PaletteEffectManager {
      * @param effect - Effect instance to run each frame.
      */
     add(effect: PaletteEffect): void {
-        // Reset the clock when waking from idle so the first update after a gap
-        // sees delta=0 instead of the entire idle duration.
+        // Waking from idle starts the clock now, so the first update sees only the time since the
+        // effect was added. No sentinel value: the engine's tick clock really does read 0 at boot.
         if (this.effects.length === 0) {
-            this.lastTime = 0;
+            this.lastTime = this.timeProvider();
         }
 
         this.effects.push(effect);
@@ -99,7 +99,8 @@ export class PaletteEffectManager {
      */
     update(palette: Palette): void {
         const now = this.timeProvider();
-        const deltaMs = this.lastTime === 0 ? 0 : now - this.lastTime;
+        // Clamped: a clock that moved backwards (BT.ticksReset() mid-effect) must not run effects in reverse.
+        const deltaMs = Math.max(0, now - this.lastTime);
 
         this.lastTime = now;
 
@@ -165,10 +166,10 @@ export class CycleEffect implements PaletteEffect {
     ) {}
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -393,10 +394,10 @@ export class FadeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -451,10 +452,10 @@ export class FadeRangeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -678,10 +679,10 @@ export class ExposureFadeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -762,10 +763,10 @@ export class FlashEffect implements PaletteEffect {
     ) {}
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
