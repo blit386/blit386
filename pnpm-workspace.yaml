@@ -73,6 +73,11 @@ overrides:
   # so it never enters a runtime bundle - but `security:audit` covers dev + prod, so it
   # fails CI. 7.1.6 is the patch.
   postcss-selector-parser@<7.1.6: ^7.1.6
+  # GHSA-68fv-2mgg-jv7q (high): event-loop denial of service. Dev-only, reached through
+  # vite, tailwindcss, @vue/compiler-core (vite-plugin-dts), and magicast
+  # (@vitest/coverage-v8), so it never enters a runtime bundle - but `security:audit` covers
+  # dev + prod, so it fails CI. 1.2.2 is the patch.
+  source-map-js@<1.2.2: ^1.2.2
 
 allowBuilds:
   esbuild: true
@@ -107,6 +112,10 @@ minimumReleaseAgeExclude:
   # would exempt every future release from the supply-chain gate permanently. Drop this
   # entry once the patch ages past the gate.
   - nanoid@3.3.18
+  # Security patch for GHSA-68fv-2mgg-jv7q, published 2026-09-30 and so inside the 7-day
+  # window until 2026-10-07. Pinned to the exact vetted version, like nanoid above. Drop this
+  # entry once the patch ages past the gate.
+  - source-map-js@1.2.2
   - '@commitlint/config-conventional'
   - cspell
   - knip
