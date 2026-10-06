@@ -4,6 +4,22 @@ import { fileURLToPath } from 'node:url';
 
 const COMMENT_MARKER = '<!-- benchmark-comparison -->';
 const DEFAULT_THRESHOLD = 10;
+const PACKAGE_MARKER = '/packages/blit386/';
+
+/**
+ * Normalizes a Vitest file path so reports recorded in different checkouts match: separators become forward slashes
+ * and everything up to the last `packages/blit386/` segment (the checkout prefix) is dropped. Paths without that
+ * segment, such as the relative paths in test fixtures, are kept as they are.
+ *
+ * @param {string} filepath File path from a Vitest report.
+ * @returns {string} Checkout-independent path.
+ */
+function normalizeFilepath(filepath) {
+    const posix = filepath.replaceAll('\\', '/');
+    const markerIndex = posix.lastIndexOf(PACKAGE_MARKER);
+
+    return markerIndex === -1 ? posix : posix.slice(markerIndex + PACKAGE_MARKER.length);
+}
 
 /**
  * Parses CLI arguments for the benchmark comparison command.
@@ -172,7 +188,7 @@ export function flattenBenchmarks(report) {
                     Number.isFinite(benchmark.hz),
                     `Invalid benchmark.hz for ${group.fullName} > ${benchmark.name} in ${reportLabel}`,
                 );
-                const matchKey = `${file.filepath}::${group.fullName}::${benchmark.name}`;
+                const matchKey = `${normalizeFilepath(file.filepath)}::${group.fullName}::${benchmark.name}`;
                 const label = `${group.fullName} > ${benchmark.name}`;
 
                 entries.push({
@@ -440,7 +456,22 @@ export function hasComparisonFailures(report) {
 }
 
 /**
- * Runs the benchmark comparison CLI. Exits with a nonzero code when {@link hasComparisonFailures} is true, so the
+ * Detects a baseline that shares no benchmark with the current run even though both are non-empty, which means the
+ * match keys diverged (for example a baseline from an unrelated layout) and "Regressions: 0" would be meaningless.
+ *
+ * @param {{ hasBaseline: boolean, summary: { compared: number, newBenchmarks: number, missingBenchmarks: number } }} report
+ *   Comparison report returned by {@link compareReports}.
+ * @returns {boolean} True when both sides have benchmarks but none matched.
+ */
+export function hasZeroMatches(report) {
+    const { compared, newBenchmarks, missingBenchmarks } = report.summary;
+
+    return report.hasBaseline && compared === 0 && newBenchmarks > 0 && missingBenchmarks > 0;
+}
+
+/**
+ * Runs the benchmark comparison CLI. Exits with a nonzero code when {@link hasZeroMatches} or
+ * {@link hasComparisonFailures} is true, so the
  * command can gate a local workflow the same way CI used to gate a PR.
  *
  * @returns {void}
@@ -460,7 +491,13 @@ function main() {
     writeFile(args.jsonOut, JSON.stringify(report, null, 2));
     writeFile(args.markdownOut, buildMarkdown(report));
 
-    if (hasComparisonFailures(report)) {
+    if (hasZeroMatches(report)) {
+        console.error(
+            'No benchmarks matched between the baseline and the current run. The baseline is likely stale or recorded ' +
+                'from a different benchmark layout; re-record it with `pnpm run bench:baseline`.',
+        );
+        process.exitCode = 1;
+    } else if (hasComparisonFailures(report)) {
         process.exitCode = 1;
     }
 }
