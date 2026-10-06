@@ -207,4 +207,18 @@ test.describe('BT.renderAt determinism', () => {
         expect(result.live?.colors).toBeGreaterThan(2);
         expect(result.seek?.png).toBe(result.live?.png);
     });
+
+    // The sync-editor case: scrub back on the page that just played, so the 'start' reset (RNG
+    // restore, effect clear, init() re-run) has live state to undo, not a fresh boot.
+    test('a scrub on the page that played matches its own live frame (software)', async ({ context }) => {
+        const page = await context.newPage();
+
+        expect(await openUnderManualClock(page, '?backend=software&seed=7')).toBe('software');
+
+        const live = await captureLive(page);
+        const seek = await captureSeek(page);
+
+        expect(live.colors).toBeGreaterThan(2);
+        expect(seek.png).toBe(live.png);
+    });
 });
