@@ -79,6 +79,8 @@ to these URLs via `VINTAGE_URLS`.
 - [camera](https://demos.blit386.dev/camera) - Camera scrolling, world vs screen space, mini-map
 - [sprites](https://demos.blit386.dev/sprites) - Sprite sheet cells, palette offsets, flip, rotate, scale, pivot,
   stretch
+- [nine-slice-panels](https://demos.blit386.dev/nine-slice-panels) - One panel at any size: stretch vs tile, corner
+  crop, palette-offset recolor, three-slice bars
 - [animation](https://demos.blit386.dev/animation) - Tick-based animation, walk frame cycling, state machines, particles
 - [sprite-effects](https://demos.blit386.dev/sprite-effects) - Damage flash, silhouette, ghost, team colors, day/night
 - [bunnymark](https://demos.blit386.dev/bunnymark) - Sprite throughput stress test: bouncing bunnies in typed arrays, a
