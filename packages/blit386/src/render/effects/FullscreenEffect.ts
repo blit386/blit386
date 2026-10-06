@@ -121,7 +121,7 @@ export abstract class FullscreenEffect implements Effect {
     /**
      * Calls {@link writeUniforms} then uploads the uniform block to the GPU.
      *
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
+     * @param deltaMs - Milliseconds since the previous frame on the engine's tick clock (seekable by BT.renderAt).
      * @param sourceSize - Pixel dimensions of the source texture for this pass.
      */
     updateUniforms(deltaMs: number, sourceSize: Vector2i): void {

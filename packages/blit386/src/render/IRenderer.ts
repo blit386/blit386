@@ -57,8 +57,11 @@ export interface IRenderer {
 
     /**
      * Ends the current frame and presents the result to the display.
+     *
+     * @param deltaMs - Milliseconds of effect time since the previous frame, passed to post-process effects. The engine
+     *   supplies its tick clock so effects stay seekable; defaults to `0` (no time passes).
      */
-    endFrame(): void;
+    endFrame(deltaMs?: number): void;
 
     /**
      * Returns aggregated per-frame renderer diagnostic counters for overlay internals.

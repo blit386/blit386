@@ -217,13 +217,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     private swapFormat: GPUTextureFormat | null = null;
 
     /**
-     * Timestamp (ms, from `performance.now()`) of the previous `endFrame()`
-     * call. Zero on the first frame so the first deltaMs is reported as 0
-     * rather than a large value spanning engine startup time.
-     */
-    private lastFrameMs: number = 0;
-
-    /**
      * Creates a renderer bound to an initialized device and canvas context.
      *
      * @param device - WebGPU device for GPU operations.
@@ -281,7 +274,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             this.displayCaptureTex?.destroy();
             this.displayCaptureTex = null;
             this.displayCaptureTexView = null;
-            this.lastFrameMs = 0;
 
             // Create shared palette uniform buffer (MAX_PALETTE_SIZE entries x vec4f).
             this.paletteBuffer = this.device.createBuffer({
@@ -404,8 +396,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * 2. Encode pixel chain (if active) -> logical scene texture.
      * 3. Resolve/upscale logical indices to RGBA (destination is display-chain input or swap).
      * 4. Encode display chain (if active) -> swap chain.
+     *
+     * @param deltaMs - Effect time since the previous frame, from the caller (the engine's tick clock).
      */
-    endFrame(): void {
+    endFrame(deltaMs: number = 0): void {
         const swapTexture = this.acquireSwapTexture();
 
         if (!swapTexture) {
@@ -419,10 +413,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         const isPixelChainActive = this.pixelChain?.isActive() ?? false;
         const isDisplayChainActive = this.displayChain?.isActive() ?? false;
         const sceneView = this.resolveSceneView(isPixelChainActive);
-
-        const now = performance.now();
-        const deltaMs = this.lastFrameMs === 0 ? 0 : Math.max(0, now - this.lastFrameMs);
-        this.lastFrameMs = now;
 
         this.encodeScenePass(commandEncoder, sceneView);
         this.encodePostProcess(commandEncoder, swapChainView, isPixelChainActive, isDisplayChainActive, deltaMs);
@@ -1088,7 +1078,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param swapChainView - Current swap-chain view (final destination).
      * @param isPixelChainActive - Whether the pixel chain has any registered effects.
      * @param isDisplayChainActive - Whether the display chain has any registered effects.
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
+     * @param deltaMs - Milliseconds of effect time since the previous frame.
      */
     private encodePostProcess(
         encoder: GPUCommandEncoder,

@@ -19,7 +19,7 @@ export class RollLine extends FullscreenEffect {
     /** Scroll speed multiplier; final scroll velocity = `time * speed`. */
     public speed: number = 1.0;
 
-    /** Wall-clock seconds; demos typically drive this each frame. */
+    /** Seconds; demos drive this each frame. Use BT.timeSeconds so BT.renderAt can seek it. */
     public time: number = 0;
 
     protected readonly label = 'RollLine';

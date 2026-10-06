@@ -213,7 +213,7 @@ export class PostProcessChain {
      * No-op when no effects are registered.
      *
      * @param encoder - Active command encoder.
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
+     * @param deltaMs - Milliseconds since the previous frame on the engine's tick clock (seekable by BT.renderAt).
      * @param destinationView - View the final effect writes to (the next stage's
      *   input texture, or the swap chain).
      */

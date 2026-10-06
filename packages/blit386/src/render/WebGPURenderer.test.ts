@@ -1445,6 +1445,38 @@ describe('post-process effects', () => {
         expect(effect.disposeSpy).toHaveBeenCalledOnce();
     });
 
+    it('passes the caller-supplied deltaMs to post-process effects', async () => {
+        const r = new WebGPURenderer(createMockGPUDevice(), createMockGPUCanvasContext(), new Vector2i(320, 240));
+
+        await r.init();
+        r.setPalette(createTestPalette());
+
+        const effect = createStubEffect('pixel');
+
+        r.addEffect(effect);
+        r.beginFrame();
+        r.endFrame(250);
+
+        expect(effect.updateSpy).toHaveBeenCalledWith(250, expect.anything());
+    });
+
+    it('treats an omitted deltaMs as no time passing', async () => {
+        const r = new WebGPURenderer(createMockGPUDevice(), createMockGPUCanvasContext(), new Vector2i(320, 240));
+
+        await r.init();
+        r.setPalette(createTestPalette());
+
+        const effect = createStubEffect('pixel');
+        const nowSpy = vi.spyOn(performance, 'now');
+
+        r.addEffect(effect);
+        r.beginFrame();
+        r.endFrame();
+
+        expect(effect.updateSpy).toHaveBeenCalledWith(0, expect.anything());
+        expect(nowSpy).not.toHaveBeenCalled();
+    });
+
     it('endFrame uses scene + palette-resolve passes when no effects are registered', async () => {
         const device = createMockGPUDevice();
         const beginRenderPassCalls: unknown[] = [];
