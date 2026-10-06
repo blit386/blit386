@@ -309,7 +309,7 @@ Capability matrix (what each adapter emits from the same source):
 | Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` |
 | On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) |
 | Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only (planned) |
+| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only (planned) |
 | Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.zed/settings.json` `context_servers` |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
@@ -322,16 +322,39 @@ emits, not what an agent could do. Two findings change this section's model: mos
 `.agents/skills/` folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited
 with `tool_permissions` guardrails, ignores that setting in project files.
 
+The foundation those adapters build on (BT-564) is in place:
+
+- **Agent registry.** `AGENT_SPECS` in `src/ownership.ts` holds each agent's data: label, setup hint, private paths,
+  docs-MCP config path, and whether it reads the shared skills folder. `AGENT_ADAPTERS` in `src/adapters.ts` adds the
+  generator. Both are `Record<AgentKind, ...>`, so a new `AgentKind` does not compile until it has an entry in each.
+  Scaffold, `blit agents sync`, and `blit agents add` all call `generateAgentFiles(root, vars, agents)` and never branch
+  on an agent name. `blit doctor` can iterate the MCP path to check every agent (BT-555).
+- **Shared ownership.** `.agents/skills/<name>/SKILL.md` is kit-owned and belongs to every agent whose
+  `readsSharedSkills` is set. It is emitted once while at least one of them is set up. When none is, sync stops
+  regenerating it, so pass 2 drops it from the manifest with the usual "no longer part of the kit" note. Two rules keep
+  this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
+  shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
+  Antigravity owns exact files beside the skills folder. No shipped agent reads the folder yet - Claude Code does not,
+  and Cursor is unverified - so no generated game gets `.agents/` until the first such adapter flips its flag.
+- **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
+  plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
+  matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
+  agent's entry owns its own payload shape and block protocol. Claude's `protect-files.cjs` is now such an entry and
+  fails closed. The shell classifier is a Node port of `shell-safety.sh`, so new agents need neither `sh` nor `python3`.
+  Claude Code and Cursor keep running the script until BT-576 retires it, and `test/guard-core.test.mjs` runs one case
+  table through both implementations so they cannot drift.
+
 The "Live docs lookup" row (the `blit386-docs` MCP server at `https://blit386.dev/mcp`, teaching an assistant the
 `search_docs` / `get_doc_page` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks)
 carries three decisions worth keeping: (1) no `content/mcp.manifest.json` - one server with no per-adapter divergence
 beyond a single key does not earn a manifest plus parser plus schema; revisit when a second server appears. (2) the
-generated `.claude/settings.json` deliberately does not pre-approve the server in its MCP enable list - the approval
-prompt is Claude Code's own consent boundary for a network server, the scaffolder is not the party entitled to answer
-it, and a checked-in settings file's approvals are ignored in an untrusted folder anyway. (3) the two generated configs
-differ by one key on purpose: Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type`
-marks a local stdio server. Both are kit-owned, so `blit agents sync` refreshes them and three-way merges a user's own
-added servers.
+generated `.claude/settings.json` pre-approves the server (`enabledMcpjsonServers: ["blit386-docs"]`, BT-554). This
+reverses an earlier decision to leave the approval prompt alone: a checked-in settings file's approvals take effect only
+once the user has trusted the project folder, so Claude Code's own consent boundary stays in place, while without the
+entry a beginner's assistant sat with the docs server off behind a second prompt nobody explained. Cursor has no
+equivalent key, so `.cursor/mcp.json` gets nothing extra. (3) the two generated configs differ by one key on purpose:
+Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks a local stdio server.
+Both are kit-owned, so `blit agents sync` refreshes them and three-way merges a user's own added servers.
 
 The ground truth expresses INTENT; each adapter expresses its agent's CAPABILITY. Content differs per agent, not just
 file location. Worked example - one guardrail ("never let the agent edit lockfiles or secrets"), four renderings:
@@ -351,7 +374,8 @@ Canonical intent (`kit/hooks.manifest.json`):
 - AGENTS.md (generic): a prose line under hard rules - "Never modify pnpm-lock.yaml, \*.lock, or .env files."
   Instruction only; most generic readers cannot enforce. Not yet in `content/AGENTS.md` - BT-297 (Zed) adds it, since
   that line is all Zed's agent gets.
-- Claude Code: a `.claude/settings.json` PreToolUse hook matching `Write|Edit` that blocks those paths.
+- Claude Code: a `.claude/settings.json` PreToolUse hook matching `Write|Edit` that blocks those paths, and blocks any
+  request it cannot read (the guard core fails closed).
 - Cursor: planned as a `.cursor/hooks.json` entry with `failClosed: true`, but Cursor has no pre-edit hook event, so the
   shipped adapter does not emit this guard (`hooks.manifest.json` registers `protect-files` for Claude only).
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in

@@ -18,7 +18,7 @@
  *     `<file>.new` and left out of the manifest (an identical one is adopted silently).
  * `--force [path...]` overwrites the named files (or all kit-managed files) with the kit version.
  *
- * `add <claude|cursor>` sets up the files for one AI assistant in a project that did not pick it at
+ * `add <agent>` (any `AgentKind`) sets up the files for one AI assistant in a project that did not pick it at
  * scaffold time. It regenerates that assistant's adapter output from the installed kit, writes the new
  * files, and records them in the manifest (so later `sync` runs keep them fresh). It never clobbers an
  * existing file it does not already track: such a file is saved alongside as `<file>.new` instead.
@@ -31,10 +31,11 @@ import { dirname, join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import {
+    AGENT_ADAPTERS,
     agentsFile,
     collectDocs,
-    generateClaudeAdapter,
-    generateCursorAdapter,
+    generateAgentFiles,
+    readKitVersion,
     replaceManagedRegion,
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
@@ -44,7 +45,6 @@ import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type Template
 import { ui } from '../messages';
 import {
     AGENT_KINDS,
-    AGENT_LABEL,
     type AgentKind,
     CLAUDE_MCP_JSON,
     classifyFile,
@@ -216,21 +216,11 @@ function fallbackVars(root: string): TemplateVars {
     };
 }
 
-/** Read the installed kit's own version, for stamping the refreshed manifest. */
-function currentKitVersion(): string {
-    try {
-        const pkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8')) as { version?: string };
-        return typeof pkg.version === 'string' ? pkg.version : '0.0.0';
-    } catch {
-        return '0.0.0';
-    }
-}
-
 /**
  * Recompute every file the installed kit would emit for this project, keyed by project-relative path.
  *
- * Always includes AGENTS.md and docs/. Includes the Claude or Cursor adapter outputs only when the
- * manifest shows the project already uses that assistant.
+ * Always includes AGENTS.md and docs/. Includes an assistant's adapter output only when the manifest
+ * shows the project already uses that assistant, plus the shared skills folder while any of them reads it.
  */
 function regenerate(manifest: ReadBlitManifest, root: string): Map<string, string> {
     const kr = kitRoot();
@@ -251,19 +241,10 @@ function regenerate(manifest: ReadBlitManifest, root: string): Map<string, strin
         map.set(doc.path, doc.content);
     }
 
-    const hasClaude = hasAgentFiles(manifest.files, 'claude');
-    const hasCursor = hasAgentFiles(manifest.files, 'cursor');
+    const present = AGENT_KINDS.filter((agent) => hasAgentFiles(manifest.files, agent));
 
-    if (hasClaude) {
-        for (const file of generateClaudeAdapter(kr, vars)) {
-            map.set(file.path, file.content);
-        }
-    }
-
-    if (hasCursor) {
-        for (const file of generateCursorAdapter(kr, vars)) {
-            map.set(file.path, file.content);
-        }
+    for (const file of generateAgentFiles(kr, vars, present)) {
+        map.set(file.path, file.content);
     }
 
     return map;
@@ -387,7 +368,7 @@ export function runFullSync(
 
     const regenerated = regenerate(manifest, root);
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
-    const newKitVersion = currentKitVersion();
+    const newKitVersion = readKitVersion(kitRoot());
 
     const tally: SyncTally = {
         updated: [],
@@ -727,7 +708,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     }
 
     const manifest = result.manifest;
-    const label = AGENT_LABEL[agent];
+    const label = AGENT_ADAPTERS[agent].label;
 
     if (hasAgentFiles(manifest.files, agent)) {
         out(ui.info(`${label} is already set up in this project.`));
@@ -738,12 +719,18 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
 
-    // A user-owned generated file (`.claude/launch.json`) that already exists is the user's: drop it
-    // here so it is neither a collision that aborts the setup nor overwritten below.
-    const generated = (agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars)).filter(
-        (file) => classifyFile(file.path) !== 'user-owned' || !existsSync(resolve(root, file.path)),
-    );
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
+
+    // A user-owned generated file (`.claude/launch.json`) that already exists is the user's: drop it
+    // here so it is neither a collision that aborts the setup nor overwritten below. A path the
+    // manifest already tracks can only be a shared one another assistant set up (the agent's own
+    // paths are untracked, or `hasAgentFiles` would have stopped us above); `sync` keeps those fresh,
+    // so `add` leaves them alone rather than clobbering an edited copy.
+    const generated = generateAgentFiles(kr, vars, [agent]).filter(
+        (file) =>
+            !entryByPath.has(file.path) &&
+            (classifyFile(file.path) !== 'user-owned' || !existsSync(resolve(root, file.path))),
+    );
 
     // A generated path that already exists on disk but is not tracked in the manifest belongs to the
     // user. For an allowlisted JSON config (the MCP config files), try a structural merge first: the
@@ -802,9 +789,9 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         return collisions.length;
     }
 
-    // No collisions: every generated path is either new or an already-tracked kit file, so writing them
-    // all and refreshing the manifest leaves the set consistent for the next `sync`.
-    const kitVersion = currentKitVersion();
+    // No collisions: every generated path is new, so writing them all and refreshing the manifest leaves
+    // the set consistent for the next `sync`.
+    const kitVersion = readKitVersion(kr);
     const added: string[] = [];
 
     // Lock in the resolved vars so future syncs regenerate deterministically (older manifests lacked them).
@@ -907,7 +894,7 @@ export function runAgents(args: string[]): void {
 
         if (name === '') {
             out(ui.warn('Tell me which assistant to set up.'));
-            out(ui.info('Try `npx blit agents add claude` or `npx blit agents add cursor`.'));
+            out(ui.info(`Try ${AGENT_KINDS.map((kind) => `\`npx blit agents add ${kind}\``).join(' or ')}.`));
             process.exitCode = 1;
             return;
         }
@@ -927,7 +914,7 @@ export function runAgents(args: string[]): void {
             return;
         }
 
-        out(ui.info(`Setting up ${AGENT_LABEL[name]} files from the kit.`));
+        out(ui.info(`Setting up ${AGENT_ADAPTERS[name].label} files from the kit.`));
         out('');
         const needReview = runAddAgent(root, name, out);
 
@@ -938,10 +925,12 @@ export function runAgents(args: string[]): void {
         return;
     }
 
-    out('Usage: blit agents <sync [--check] [--force [path...]] | add <claude|cursor>>');
+    const kinds = AGENT_KINDS.join('|');
+
+    out(`Usage: blit agents <sync [--check] [--force [path...]] | add <${kinds}>>`);
     out('');
     out(ui.info('sync --check       Report kit-managed files that have drifted (non-zero exit on drift).'));
     out(ui.info('sync               Update AI-assistant files from the latest kit version.'));
     out(ui.info('sync --force       Overwrite your edits with the kit version (optionally name files).'));
-    out(ui.info('add <claude|cursor>  Set up files for one AI assistant in this project.'));
+    out(ui.info(`add <${kinds}>  Set up files for one AI assistant in this project.`));
 }

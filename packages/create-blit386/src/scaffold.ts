@@ -27,11 +27,11 @@ import {
     classifyFile,
     collectDocs,
     type GeneratedFile,
-    generateClaudeAdapter,
-    generateCursorAdapter,
+    generateAgentFiles,
     isKitManaged,
     MANIFEST_FILE,
     type ManifestEntry,
+    readKitVersion,
     render,
     resolveKitRoot,
     type TemplateVars,
@@ -57,7 +57,7 @@ export interface ScaffoldOptions {
     pmRunLint: string;
     includeCi?: boolean;
 
-    /** AI assistants to generate config for. Empty means none. Both entries write both adapter trees. */
+    /** AI assistants to generate config for. Empty means none. Each entry writes its own adapter tree. */
     agents: readonly AgentKind[];
 
     /**
@@ -209,8 +209,7 @@ export function scaffold(options: ScaffoldOptions): void {
 
     // One read serves both consumers: the raw version stamps the manifest, the caret range is pinned
     // into the generated package.json.
-    const kitPkg = JSON.parse(readFileSync(join(kit, 'package.json'), 'utf8')) as { version?: string };
-    const kitVer = kitPkg.version ?? '0.1.0';
+    const kitVer = readKitVersion(kit);
 
     const language: LanguageChoice = options.language ?? 'js';
 
@@ -256,12 +255,9 @@ export function scaffold(options: ScaffoldOptions): void {
         );
     }
 
-    if (options.agents.includes('cursor')) {
-        writeGeneratedFiles(options.targetDir, generateCursorAdapter(kit, vars), writtenPaths);
-    }
-    if (options.agents.includes('claude')) {
-        writeGeneratedFiles(options.targetDir, generateClaudeAdapter(kit, vars), writtenPaths);
-    }
+    // Every chosen assistant's files through the kit's agent registry, shared output (the `.agents/skills/`
+    // folder) included once when any chosen assistant reads it.
+    writeGeneratedFiles(options.targetDir, generateAgentFiles(kit, vars, options.agents), writtenPaths);
 
     // The kit's canonical guidance, emitted by the same generators `blit agents sync` uses, so these
     // destinations cannot drift from the paths `classifyFile` assigns ownership to. Both emitters copy

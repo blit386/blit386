@@ -6,24 +6,27 @@
  * pairs; callers write to disk or apply the ownership model as needed.
  */
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+    AGENT_SPECS,
     AGENTS_MD,
+    type AgentKind,
+    type AgentSpec,
     CLAUDE_HOOKS_DIR,
     CLAUDE_LAUNCH_JSON,
-    CLAUDE_MCP_JSON,
     CLAUDE_MD,
     CLAUDE_RULES_DIR,
     CLAUDE_SETTINGS_JSON,
     CLAUDE_SKILLS_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_HOOKS_JSON,
-    CURSOR_MCP_JSON,
     CURSOR_RULES_DIR,
     CURSOR_SKILLS_DIR,
     DOCS_DIR,
+    SHARED_SKILLS_DIR,
+    sharedSkillsWanted,
 } from './ownership';
 import type { TemplateVars } from './manifest';
 
@@ -32,14 +35,15 @@ import type { TemplateVars } from './manifest';
 // subpath - create-blit386 imports these from '@blit386/kit/adapters'.
 export {
     AGENT_KINDS,
-    AGENT_LABEL,
-    AGENT_SETUP_HINT,
+    AGENT_SPECS,
     type AgentKind,
+    type AgentSpec,
     type FileClass,
     classifyFile,
     hasAgentFiles,
     isAgentPath,
     isKitManaged,
+    SHARED_SKILLS_DIR,
 } from './ownership';
 
 // Kit-root resolution lives in its own leaf module so `./env` and the CLI commands can import it
@@ -130,28 +134,25 @@ function stripFrontmatter(content: string): string {
 }
 
 /**
- * Extract the content between the managed-region markers, skipping the ownership-comment block that
- * immediately follows the start marker.
+ * Extract the content between the managed-region markers of the kit's own `AGENTS.md`, skipping the
+ * ownership comment that immediately follows the start marker. Throws when the kit file lacks either
+ * marker or that comment: the kit ships it, so a missing one is a broken kit, not a case to paper over.
  */
 function extractManagedRegion(content: string): string {
-    const startIdx = content.indexOf(MANAGED_START);
-    const endIdx = content.indexOf(MANAGED_END);
+    const afterStart = content.indexOf(MANAGED_START) + MANAGED_START.length;
+    const commentEnd = content.indexOf('-->', afterStart);
+    const end = content.indexOf(MANAGED_END);
 
-    if (startIdx === -1 || endIdx === -1) {
-        return content.trim();
+    if (
+        afterStart < MANAGED_START.length ||
+        !content.slice(afterStart).trimStart().startsWith('<!--') ||
+        commentEnd === -1 ||
+        end < commentEnd
+    ) {
+        throw new Error(`The kit's ${AGENTS_MD} is missing its managed-region markers or ownership comment.`);
     }
 
-    let bodyStart = startIdx + MANAGED_START.length;
-
-    const afterStart = content.slice(bodyStart).trimStart();
-    if (afterStart.startsWith('<!--')) {
-        const commentEnd = content.indexOf('-->', bodyStart);
-        if (commentEnd !== -1) {
-            bodyStart = commentEnd + '-->'.length;
-        }
-    }
-
-    return content.slice(bodyStart, endIdx).trim();
+    return content.slice(commentEnd + '-->'.length, end).trim();
 }
 
 /**
@@ -176,6 +177,24 @@ export function replaceManagedRegion(existing: string, regenerated: string): str
     return `${before}${newBlock}${after}`;
 }
 
+/**
+ * The version of the kit at `root`, read from its own `package.json` - what the scaffolder pins and
+ * what `blit agents sync` stamps into the manifest. Throws when the field is missing: the kit always
+ * publishes one, so there is no sensible version to invent.
+ *
+ * @param root - The kit root directory.
+ * @returns The kit's semver version string.
+ */
+export function readKitVersion(root: string): string {
+    const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { version?: unknown };
+
+    if (typeof version !== 'string') {
+        throw new Error(`${join(root, 'package.json')} has no version.`);
+    }
+
+    return version;
+}
+
 /** The AGENTS.md file, copied verbatim from the kit (a shared file with managed markers). */
 export function agentsFile(root: string): GeneratedFile {
     const content = readFileSync(join(root, 'content', AGENTS_MD), 'utf8');
@@ -186,10 +205,6 @@ export function agentsFile(root: string): GeneratedFile {
 export function collectDocs(root: string): GeneratedFile[] {
     const docsRoot = join(root, 'content', 'docs');
     const files: GeneratedFile[] = [];
-
-    if (!existsSync(docsRoot)) {
-        return files;
-    }
 
     const walk = (dir: string, prefix: string): void => {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -258,88 +273,53 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
 
     files.push({ path: CLAUDE_MD, content: claudeMd });
 
-    const rulesDir = join(contentRoot, 'rules');
-    if (existsSync(rulesDir)) {
-        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
-            if (!entry.isFile() || !entry.name.endsWith('.md')) {
-                continue;
-            }
-
-            const src = join(rulesDir, entry.name);
-            files.push({
-                path: `${CLAUDE_RULES_DIR}${entry.name}`,
-                content: render(stripFrontmatter(readFileSync(src, 'utf8')), vars),
-            });
-        }
+    for (const rule of readRules(contentRoot)) {
+        files.push({ path: `${CLAUDE_RULES_DIR}${rule.name}`, content: render(stripFrontmatter(rule.content), vars) });
     }
 
-    const skillsDir = join(contentRoot, 'skills');
-    if (existsSync(skillsDir)) {
-        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
+    files.push(...collectSkills(contentRoot, vars, CLAUDE_SKILLS_DIR));
 
-            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
-            if (!existsSync(skillSrc)) {
-                continue;
-            }
-
-            // Keep the frontmatter: Claude Code reads name/description from it to
-            // discover and trigger the skill, so stripping it would make it inert.
-            files.push({
-                path: `${CLAUDE_SKILLS_DIR}${entry.name}/SKILL.md`,
-                content: render(readFileSync(skillSrc, 'utf8'), vars),
-            });
-        }
-    }
-
-    const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
-    let claudeHookScripts: Set<string> | null = null;
-    if (existsSync(hookManifestPath)) {
-        const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
-        const claudeSettings = buildClaudeSettings(manifest, vars);
-        files.push({ path: CLAUDE_SETTINGS_JSON, content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
-        claudeHookScripts = referencedHookScripts(manifest, 'claude');
-    }
+    const manifest = readHooksManifest(contentRoot);
+    files.push({
+        path: CLAUDE_SETTINGS_JSON,
+        content: `${JSON.stringify(buildClaudeSettings(manifest, vars), null, 2)}\n`,
+    });
 
     files.push(mcpConfigFile('claude'));
     files.push(launchConfigFile(vars));
-
-    const hooksScriptsDir = join(contentRoot, 'hooks');
-    if (existsSync(hooksScriptsDir)) {
-        for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
-            if (!entry.isFile()) {
-                continue;
-            }
-
-            // Only ship a hook script this adapter actually wires up in settings.json/hooks.json -
-            // a script referenced by only one adapter's manifest entries (e.g. a Claude-only
-            // SessionStart bootstrap) must not land as dead weight in the other adapter's project.
-            if (claudeHookScripts && !claudeHookScripts.has(entry.name)) {
-                continue;
-            }
-
-            files.push({
-                path: `${CLAUDE_HOOKS_DIR}${entry.name}`,
-                content: readFileSync(join(hooksScriptsDir, entry.name), 'utf8'),
-            });
-        }
-    }
+    files.push(...collectHookScripts(contentRoot, manifest, 'claude', CLAUDE_HOOKS_DIR));
 
     return files;
 }
 
+/** Every `content/rules/*.md` file the kit ships, by file name. */
+function readRules(contentRoot: string): { name: string; content: string }[] {
+    const rulesDir = join(contentRoot, 'rules');
+
+    return readdirSync(rulesDir, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+        .map((entry) => ({ name: entry.name, content: readFileSync(join(rulesDir, entry.name), 'utf8') }));
+}
+
+/** The kit's canonical hook intent, `content/hooks.manifest.json`. */
+function readHooksManifest(contentRoot: string): HooksManifest {
+    return JSON.parse(readFileSync(join(contentRoot, 'hooks.manifest.json'), 'utf8')) as HooksManifest;
+}
+
+/** A sibling `.cjs` a hook script loads with `require('./name.cjs')` (the guard core, today). */
+const LOCAL_REQUIRE = /require\(\s*['"]\.\/([\w.-]+\.cjs)['"]\s*\)/g;
+
 /**
- * Basenames of hook scripts (e.g. `session-start.sh`, `shell-safety-run.cjs`) that one adapter's
- * manifest entries actually invoke, extracted from each entry's `command` string. A script absent
- * from this set is not wired into that adapter's settings/hooks file, so the adapter must not emit it.
+ * Basenames of hook scripts (e.g. `session-start.sh`, `shell-safety-run.cjs`) that one adapter's manifest entries
+ * actually invoke, extracted from each entry's `command` string, plus every sibling `.cjs` those scripts `require()`
+ * (so `protect-files.cjs` never ships without `guard-core.cjs`). A script absent from this set is not wired into that
+ * adapter's settings/hooks file, so the adapter must not emit it.
  */
-function referencedHookScripts(manifest: HooksManifest, adapter: 'claude' | 'cursor'): Set<string> {
+function referencedHookScripts(manifest: HooksManifest, agent: AgentKind, hooksDir: string): Set<string> {
     const names = new Set<string>();
 
     for (const hook of manifest.hooks) {
-        const command = adapter === 'claude' ? hook.claude?.command : hook.cursor?.command;
+        const command = hook[agent]?.command;
         if (!command) {
             continue;
         }
@@ -352,7 +332,67 @@ function referencedHookScripts(manifest: HooksManifest, adapter: 'claude' | 'cur
         }
     }
 
+    // A Set iterates entries added during the loop, so dependencies of dependencies are followed too.
+    for (const name of names) {
+        if (!name.endsWith('.cjs')) {
+            continue;
+        }
+
+        for (const match of readFileSync(join(hooksDir, name), 'utf8').matchAll(LOCAL_REQUIRE)) {
+            if (match[1]) {
+                names.add(match[1]);
+            }
+        }
+    }
+
     return names;
+}
+
+/**
+ * Every hook script one adapter wires up, copied verbatim under `destDir`. Only scripts the adapter's manifest entries
+ * reference (and their `require()` siblings) ship - a script referenced by only one adapter (e.g. the Claude-only
+ * SessionStart bootstrap) must not land as dead weight in another adapter's project.
+ */
+function collectHookScripts(
+    contentRoot: string,
+    manifest: HooksManifest,
+    agent: AgentKind,
+    destDir: string,
+): GeneratedFile[] {
+    const hooksDir = join(contentRoot, 'hooks');
+
+    return [...referencedHookScripts(manifest, agent, hooksDir)].sort().map((name) => ({
+        path: `${destDir}${name}`,
+        content: readFileSync(join(hooksDir, name), 'utf8'),
+    }));
+}
+
+/**
+ * Every skill under `content/skills/`, as `<destDir><name>/SKILL.md`. Keeps the frontmatter: every agent that loads
+ * skills reads `name`/`description` from it to discover and trigger the skill, so stripping it would make it inert.
+ */
+function collectSkills(contentRoot: string, vars: TemplateVars, destDir: string): GeneratedFile[] {
+    const skillsDir = join(contentRoot, 'skills');
+
+    return readdirSync(skillsDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => ({
+            path: `${destDir}${entry.name}/SKILL.md`,
+            content: render(readFileSync(join(skillsDir, entry.name, 'SKILL.md'), 'utf8'), vars),
+        }));
+}
+
+/**
+ * The kit skills once, as `.agents/skills/<name>/SKILL.md` - the folder most agents other than Claude Code and Cursor
+ * read natively. Same content and `render()` as the private copies; emitted by `generateAgentFiles` only while an agent
+ * that reads it is set up (`sharedSkillsWanted`).
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns One file per skill.
+ */
+export function generateSharedSkills(root: string, vars: TemplateVars): GeneratedFile[] {
+    return collectSkills(join(root, 'content'), vars, SHARED_SKILLS_DIR);
 }
 
 interface CursorHookEntry {
@@ -486,12 +526,9 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
     return { hooks, enabledMcpjsonServers: [MCP_SERVER_NAME] };
 }
 
-/** Which assistant's MCP configuration file to build. */
-type McpTarget = 'claude' | 'cursor';
-
 /** One remote MCP server entry. */
 interface McpServerEntry {
-    /** Transport marker. Required by Claude Code, omitted for Cursor - see `buildMcpConfig`. */
+    /** Transport marker. Required by Claude Code, omitted for Cursor - see `MCP_SERVER_ENTRY`. */
     type?: string;
     url: string;
 }
@@ -502,25 +539,23 @@ interface McpConfigJson {
 }
 
 /**
- * Build the documentation-MCP configuration for one assistant.
+ * The documentation-MCP server entry each assistant gets.
  *
  * The two entries differ by one key on purpose, and the difference is not cosmetic:
  * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
  * misread a remote HTTP endpoint. Do not harmonize the two shapes.
  */
-function buildMcpConfig(target: McpTarget): McpConfigJson {
-    const entry: McpServerEntry = target === 'claude' ? { type: 'http', url: MCP_SERVER_URL } : { url: MCP_SERVER_URL };
-
-    return { mcpServers: { [MCP_SERVER_NAME]: entry } };
-}
+const MCP_SERVER_ENTRY: Record<AgentKind, McpServerEntry> = {
+    claude: { type: 'http', url: MCP_SERVER_URL },
+    cursor: { url: MCP_SERVER_URL },
+};
 
 /** The MCP configuration file for one assistant, at that assistant's conventional path. */
-function mcpConfigFile(target: McpTarget): GeneratedFile {
-    return {
-        path: target === 'claude' ? CLAUDE_MCP_JSON : CURSOR_MCP_JSON,
-        content: `${JSON.stringify(buildMcpConfig(target), null, 2)}\n`,
-    };
+function mcpConfigFile(agent: AgentKind): GeneratedFile {
+    const config: McpConfigJson = { mcpServers: { [MCP_SERVER_NAME]: MCP_SERVER_ENTRY[agent] } };
+
+    return { path: AGENT_SPECS[agent].mcpConfig, content: `${JSON.stringify(config, null, 2)}\n` };
 }
 
 /**
@@ -586,71 +621,50 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     const contentRoot = join(root, 'content');
     const files: GeneratedFile[] = [];
 
-    const rulesDir = join(contentRoot, 'rules');
-    if (existsSync(rulesDir)) {
-        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
-            if (!entry.isFile() || !entry.name.endsWith('.md')) {
-                continue;
-            }
-
-            const src = join(rulesDir, entry.name);
-            const destName = entry.name.replace(/\.md$/, '.mdc');
-            files.push({ path: `${CURSOR_RULES_DIR}${destName}`, content: render(readFileSync(src, 'utf8'), vars) });
-        }
+    for (const rule of readRules(contentRoot)) {
+        files.push({
+            path: `${CURSOR_RULES_DIR}${rule.name.replace(/\.md$/, '.mdc')}`,
+            content: render(rule.content, vars),
+        });
     }
 
-    const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
-    let cursorHookScripts: Set<string> | null = null;
-    if (existsSync(hookManifestPath)) {
-        const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
-        const cursorHooks = buildCursorHooks(manifest, vars);
-        files.push({ path: CURSOR_HOOKS_JSON, content: `${JSON.stringify(cursorHooks, null, 2)}\n` });
-        cursorHookScripts = referencedHookScripts(manifest, 'cursor');
-    }
+    const manifest = readHooksManifest(contentRoot);
+    files.push({ path: CURSOR_HOOKS_JSON, content: `${JSON.stringify(buildCursorHooks(manifest, vars), null, 2)}\n` });
 
     files.push(mcpConfigFile('cursor'));
-
-    const hooksScriptsDir = join(contentRoot, 'hooks');
-    if (existsSync(hooksScriptsDir)) {
-        for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
-            if (!entry.isFile()) {
-                continue;
-            }
-
-            // Only ship a hook script this adapter actually wires up - see the matching guard in
-            // generateClaudeAdapter for why (a script referenced by only one adapter must not land
-            // as dead weight in the other adapter's project).
-            if (cursorHookScripts && !cursorHookScripts.has(entry.name)) {
-                continue;
-            }
-
-            files.push({
-                path: `${CURSOR_HOOKS_DIR}${entry.name}`,
-                content: readFileSync(join(hooksScriptsDir, entry.name), 'utf8'),
-            });
-        }
-    }
-
-    const skillsDir = join(contentRoot, 'skills');
-    if (existsSync(skillsDir)) {
-        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
-
-            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
-            if (!existsSync(skillSrc)) {
-                continue;
-            }
-
-            // Keep the frontmatter: Cursor reads name/description from it to discover and
-            // trigger the skill, the same way Claude Code does. Stripping it would make it inert.
-            files.push({
-                path: `${CURSOR_SKILLS_DIR}${entry.name}/SKILL.md`,
-                content: render(readFileSync(skillSrc, 'utf8'), vars),
-            });
-        }
-    }
+    files.push(...collectHookScripts(contentRoot, manifest, 'cursor', CURSOR_HOOKS_DIR));
+    files.push(...collectSkills(contentRoot, vars, CURSOR_SKILLS_DIR));
 
     return files;
+}
+
+/** One agent's registry entry: its data from `AGENT_SPECS` plus the generator that renders its private files. */
+export interface AgentAdapter extends AgentSpec {
+    /** Render the agent's private files from the kit IR (shared files come from `generateAgentFiles`). */
+    readonly generate: (root: string, vars: TemplateVars) => GeneratedFile[];
+}
+
+/**
+ * The agent registry: one entry per `AgentKind`. Scaffold, `blit agents sync`, and `blit agents add` all dispatch
+ * through it (via `generateAgentFiles`), so adding an agent is one `AGENT_SPECS` entry plus one generator here.
+ */
+export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
+    claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
+    cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
+};
+
+/**
+ * Every agent file the kit emits for a set of assistants: each one's private files, plus the shared skills folder
+ * once when any of them reads it. The single place shared output is deduplicated - scaffold, sync, and add all call
+ * this rather than the per-agent generators.
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @param agents - The assistants to generate for.
+ * @returns The generated files, each path at most once.
+ */
+export function generateAgentFiles(root: string, vars: TemplateVars, agents: readonly AgentKind[]): GeneratedFile[] {
+    const files = agents.flatMap((agent) => AGENT_ADAPTERS[agent].generate(root, vars));
+
+    return sharedSkillsWanted(agents) ? [...files, ...generateSharedSkills(root, vars)] : files;
 }

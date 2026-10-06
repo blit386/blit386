@@ -61,6 +61,15 @@ export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 export const DOCS_DIR = 'docs/';
 
 /**
+ * The skills folder several agents read natively (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, ...).
+ *
+ * Shared, not private: a path under it belongs to every agent whose `AgentSpec.readsSharedSkills` is set, so the kit
+ * emits it once while at least one of them is set up. Only `.agents/skills/` is claimed - never the bare `.agents/`
+ * prefix, because Antigravity owns exact files (`hooks.json`, `hooks/`, `mcp_config.json`) beside it.
+ */
+export const SHARED_SKILLS_DIR = '.agents/skills/';
+
+/**
  * Which agent-sync ownership class a generated file belongs to.
  *
  * - `kit-owned`  - regenerated freely on sync when unmodified; never clobbered when modified
@@ -85,6 +94,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CURSOR_RULES_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_SKILLS_DIR,
+    SHARED_SKILLS_DIR,
 ];
 
 /**
@@ -99,7 +109,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
  * @returns The ownership class sync applies to that file.
  */
 export function classifyFile(relPath: string): FileClass {
-    const normalized = relPath.replace(/\\/g, '/');
+    const normalized = normalize(relPath);
 
     if (SHARED_FILES.includes(normalized)) {
         return 'shared';
@@ -126,67 +136,114 @@ export function isKitManaged(fileClass: FileClass): boolean {
 /**
  * One AI assistant the kit generates files for.
  *
- * Scoped to the path helpers below. The scaffolder's wizard collects zero or more of these
- * (`agents: readonly AgentKind[]`); `blit agents add` uses `AgentKind` directly.
+ * The scaffolder's wizard collects zero or more of these (`agents: readonly AgentKind[]`); `blit agents add` uses
+ * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
+ * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
 export type AgentKind = 'claude' | 'cursor';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
 export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor'];
 
-/** Human-readable assistant names for Tier-1 messages and wizard hints. */
-export const AGENT_LABEL: Record<AgentKind, string> = {
-    claude: 'Claude Code',
-    cursor: 'Cursor',
-};
-
-/** Project-relative hint of what setting up each assistant adds, for wizard/CLI copy. */
-export const AGENT_SETUP_HINT: Record<AgentKind, string> = {
-    claude: `adds ${CLAUDE_MD}`,
-    cursor: `adds ${CURSOR_RULES_DIR}`,
-};
-
-/**
- * Exact paths and directory prefixes each assistant's generated files occupy.
- *
- * Every path an adapter emits must match here, or `hasAgentFiles` under-reports and a sync skips that
- * assistant's files - `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
- * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json`
- * is already covered by the `CURSOR_DIR` prefix.
- *
- * These are manifest paths, not disk paths: every caller passes `.blit/manifest.json` entries, so a
- * hand-written `.mcp.json` the kit never tracked cannot make an assistant look already set up. The
- * untracked case is handled separately, by `runAddAgent`'s collision check.
- */
-const AGENT_PATHS: Record<AgentKind, { readonly files: readonly string[]; readonly dirs: readonly string[] }> = {
-    claude: { files: [CLAUDE_MD, CLAUDE_MCP_JSON], dirs: [CLAUDE_DIR] },
-    cursor: { files: [], dirs: [CURSOR_DIR] },
-};
+/** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
+export interface AgentSpec {
+    /** Human-readable assistant name for Tier-1 messages and wizard hints. */
+    readonly label: string;
+    /** Project-relative hint of what setting up the assistant adds, for wizard/CLI copy. */
+    readonly setupHint: string;
+    /** Exact paths only this agent's adapter emits. */
+    readonly files: readonly string[];
+    /** Directory prefixes (trailing slash) only this agent's adapter emits. */
+    readonly dirs: readonly string[];
+    /** Where the agent's docs-MCP config lives, so `blit doctor` can check every agent without hardcoding one. */
+    readonly mcpConfig: string;
+    /** Does the agent read `SHARED_SKILLS_DIR`? Claude Code does not, and Cursor is unverified, so both keep private copies. */
+    readonly readsSharedSkills: boolean;
+}
 
 /**
- * Is this project-relative path part of `agent`'s generated file set?
+ * Every assistant's registry data.
  *
- * @param relPath - Path relative to the project root; Windows separators are normalized.
- * @param agent - The assistant to test against.
- * @returns True when the path is one the assistant's adapter emits.
+ * `files` and `dirs` are the agent's private paths: every path an adapter emits must match them (or be a shared path
+ * the agent reads), or a sync skips it - `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
+ * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json` is already covered
+ * by the `CURSOR_DIR` prefix.
  */
-export function isAgentPath(relPath: string, agent: AgentKind): boolean {
-    const normalized = relPath.replace(/\\/g, '/');
-    const spec = AGENT_PATHS[agent];
+export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
+    claude: {
+        label: 'Claude Code',
+        setupHint: `adds ${CLAUDE_MD}`,
+        files: [CLAUDE_MD, CLAUDE_MCP_JSON],
+        dirs: [CLAUDE_DIR],
+        mcpConfig: CLAUDE_MCP_JSON,
+        readsSharedSkills: false,
+    },
+    cursor: {
+        label: 'Cursor',
+        setupHint: `adds ${CURSOR_RULES_DIR}`,
+        files: [],
+        dirs: [CURSOR_DIR],
+        mcpConfig: CURSOR_MCP_JSON,
+        readsSharedSkills: false,
+    },
+};
+
+/** Normalize Windows separators so one prefix test serves every platform. */
+function normalize(relPath: string): string {
+    return relPath.replace(/\\/g, '/');
+}
+
+/** Is the path one only `agent` emits? Shared paths never count. */
+function isPrivateAgentPath(normalized: string, agent: AgentKind): boolean {
+    const spec = AGENT_SPECS[agent];
 
     return spec.files.includes(normalized) || spec.dirs.some((dir) => normalized.startsWith(dir));
 }
 
 /**
+ * Is this project-relative path part of `agent`'s generated file set?
+ *
+ * True for the agent's private paths and for shared paths it reads - so a shared skill belongs to several agents at once.
+ *
+ * @param relPath - Path relative to the project root; Windows separators are normalized.
+ * @param agent - The assistant to test against.
+ * @returns True when the path is one the assistant reads from the kit's output.
+ */
+export function isAgentPath(relPath: string, agent: AgentKind): boolean {
+    const normalized = normalize(relPath);
+
+    return (
+        isPrivateAgentPath(normalized, agent) ||
+        (AGENT_SPECS[agent].readsSharedSkills && normalized.startsWith(SHARED_SKILLS_DIR))
+    );
+}
+
+/**
+ * Should the kit emit the shared skills folder for this set of assistants? Yes while at least one of them reads it;
+ * once none does, sync stops regenerating it and drops it from the manifest like any other retired file.
+ *
+ * @param agents - The assistants set up in the project.
+ * @returns True when any of them reads `SHARED_SKILLS_DIR`.
+ */
+export function sharedSkillsWanted(agents: readonly AgentKind[]): boolean {
+    return agents.some((agent) => AGENT_SPECS[agent].readsSharedSkills);
+}
+
+/**
  * Does an ownership manifest already track files for `agent`?
  *
- * Takes anything carrying a `path` so the scaffolder's writer-side manifest entries and the CLI's
- * reader-side ones both satisfy it structurally, without this module depending on either shape.
+ * Counts private paths only. A tracked shared skill is evidence that some reader is set up, not which one - counting
+ * it would make one reader being set up drag every other reader's files into the next sync.
+ *
+ * Takes anything carrying a `path` so the scaffolder's writer-side manifest entries and the CLI's reader-side ones both
+ * satisfy it structurally, without this module depending on either shape. These are manifest paths, not disk paths: a
+ * hand-written `.mcp.json` the kit never tracked cannot make an assistant look already set up. The untracked case is
+ * handled separately, by `runAddAgent`'s collision check.
  *
  * @param files - The manifest's tracked file entries.
  * @param agent - The assistant to look for.
- * @returns True when at least one tracked file belongs to that assistant.
+ * @returns True when at least one tracked file is private to that assistant.
  */
 export function hasAgentFiles(files: readonly { readonly path: string }[], agent: AgentKind): boolean {
-    return files.some((file) => isAgentPath(file.path, agent));
+    return files.some((file) => isPrivateAgentPath(normalize(file.path), agent));
 }
