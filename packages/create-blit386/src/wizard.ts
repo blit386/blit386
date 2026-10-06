@@ -7,7 +7,7 @@
 
 import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';
 
-import { AGENT_KINDS, AGENT_LABEL, AGENT_SETUP_HINT, type AgentKind } from '@blit386/kit/adapters';
+import { AGENT_ADAPTERS, AGENT_KINDS, type AgentKind } from '@blit386/kit/adapters';
 
 import type { LanguageChoice } from './scaffold';
 
@@ -42,8 +42,8 @@ export async function runWizard(): Promise<WizardOptions> {
         message: 'Which AI coding assistants do you use?',
         options: AGENT_KINDS.map((kind) => ({
             value: kind,
-            label: AGENT_LABEL[kind],
-            hint: AGENT_SETUP_HINT[kind],
+            label: AGENT_ADAPTERS[kind].label,
+            hint: AGENT_ADAPTERS[kind].setupHint,
         })),
 
         // Empty selection is "none" - beginners can skip without a dedicated None radio.

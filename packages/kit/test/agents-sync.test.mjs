@@ -13,6 +13,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { generateClaudeAdapter, kitRoot } from '../dist/adapters.js';
+import { AGENT_KINDS, AGENT_SPECS, SHARED_SKILLS_DIR } from '../dist/ownership.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const blitCli = join(here, '..', 'dist', 'cli.js');
@@ -132,6 +133,64 @@ test('sync adds .claude/launch.json when missing, then never rewrites an edited 
 
         assert.equal(readFileSync(join(root, LAUNCH_JSON), 'utf8'), edited, 'edited file must be untouched');
         assert.ok(!existsSync(join(root, `${LAUNCH_JSON}.new`)), 'an edited user-owned file gets no .new copy');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync drops a tracked shared skill once no set-up assistant reads the shared folder', () => {
+    // Claude does not read `.agents/skills/`, so a Claude-only project has no owner left for it: sync stops
+    // tracking it and tells the user, the same way it retires any file the kit no longer ships for them.
+    const shared = '.agents/skills/run/SKILL.md';
+    const root = makeGame(null);
+    const manifestPath = join(root, '.blit', 'manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.files.push({ path: shared, class: 'kit-owned', sha256: '' });
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    mkdirSync(join(root, '.agents', 'skills', 'run'), { recursive: true });
+    writeFileSync(join(root, shared), 'kept on disk');
+
+    try {
+        const { output } = runSync(root);
+
+        assert.ok(!trackedPaths(root).includes(shared), 'an ownerless shared skill must leave the manifest');
+        assert.ok(
+            output.includes(`${shared} is no longer part of the kit`),
+            `expected an orphan note, got:\n${output}`,
+        );
+        assert.equal(readFileSync(join(root, shared), 'utf8'), 'kept on disk', 'sync never deletes the file');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+/** Assistants that read the shared skills folder; the next test needs two of them. */
+const sharedReaders = AGENT_KINDS.filter((kind) => AGENT_SPECS[kind].readsSharedSkills);
+
+test('add leaves alone a shared skill another assistant already set up', {
+    skip: sharedReaders.length < 2 && 'needs two assistants that read .agents/skills/ - switches on by itself',
+}, () => {
+    // The first reader's `add` writes and tracks the shared skills; the user then edits one. The second
+    // reader emits the same path, which `add` must leave to `sync` rather than overwrite or flag as a
+    // collision.
+    const [first, second] = sharedReaders;
+    const root = mkdtempSync(join(tmpdir(), 'blit-agents-shared-'));
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'shared-game', private: true }));
+    mkdirSync(join(root, '.blit'));
+    writeFileSync(join(root, '.blit', 'manifest.json'), JSON.stringify({ kitVersion: '0.0.0', vars, files: [] }));
+    const add = (agent) =>
+        spawnSync(process.execPath, [blitCli, 'agents', 'add', agent], { cwd: root, encoding: 'utf8' }).status;
+
+    try {
+        assert.equal(add(first), 0);
+
+        const shared = trackedPaths(root).find((path) => path.startsWith(SHARED_SKILLS_DIR));
+        assert.ok(shared, `${first} should have set up the shared skills`);
+        writeFileSync(join(root, shared), 'edited by the user');
+
+        assert.equal(add(second), 0, 'a tracked shared skill is not a collision');
+        assert.equal(readFileSync(join(root, shared), 'utf8'), 'edited by the user', 'the edit must survive');
+        assert.ok(!existsSync(join(root, `${shared}.new`)), 'no .new copy for a path sync already owns');
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

@@ -597,6 +597,44 @@ test('a Claude scaffold ships a user-owned .claude/launch.json for its package m
     }
 });
 
+test('a Claude scaffold ships the guard core beside protect-files.cjs; no scaffold emits .agents/', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-guard-core-'));
+    const make = (agents) => {
+        const project = join(work, agents.join('-') || 'none');
+        scaffold({
+            targetDir: project,
+            projectName: 'Guard Game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agents,
+        });
+        return project;
+    };
+
+    try {
+        const claude = make(['claude']);
+        assert.ok(existsSync(join(claude, '.claude', 'hooks', 'guard-core.cjs')), 'protect-files.cjs needs its core');
+
+        const blocked = spawnSync(process.execPath, [join(claude, '.claude', 'hooks', 'protect-files.cjs')], {
+            input: JSON.stringify({ tool_input: { file_path: 'package-lock.json' } }),
+        });
+        assert.equal(blocked.status, 2, 'the generated protect-files hook still blocks a lock file');
+
+        const cursor = make(['cursor']);
+        assert.ok(!existsSync(join(cursor, '.cursor', 'hooks', 'guard-core.cjs')), 'Cursor has no pre-edit guard');
+
+        // No shipped agent reads the shared skills folder yet, so nothing may emit it.
+        for (const project of [claude, cursor, make(['claude', 'cursor']), make([])]) {
+            assert.ok(!existsSync(join(project, '.agents')), `${project} should have no .agents/ folder`);
+        }
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffold omits packageManager when the option is absent', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-no-pm-field-'));
 

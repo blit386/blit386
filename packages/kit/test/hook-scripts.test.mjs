@@ -1,6 +1,6 @@
 /**
  * The two Node hook scripts every generated game gets: format-file.cjs (formats the one edited file)
- * and protect-files.cjs (blocks hand edits to lock files and .env files).
+ * and protect-files.cjs (blocks hand edits to lock files and .env files, through guard-core.cjs).
  */
 
 import { strict as assert } from 'node:assert';
@@ -112,7 +112,14 @@ describe('protect-files.cjs', () => {
         for (const file of ['src/game.ts', 'package.json', '.env.example', 'docs/environment.md', 'src/lock.ts']) {
             assert.equal(edit(file).status, 0, `${file} should be allowed`);
         }
+    });
 
-        assert.equal(spawnSync(process.execPath, [script], { input: 'not json' }).status, 0);
+    it('fails closed: a payload it cannot read, or one without a file path, blocks the edit', () => {
+        for (const input of ['not json', JSON.stringify({ tool_input: {} })]) {
+            const result = spawnSync(process.execPath, [script], { input, encoding: 'utf8' });
+
+            assert.equal(result.status, 2, input);
+            assert.match(result.stderr, /\[BLOCKED\] The guard could not read the request/);
+        }
     });
 });

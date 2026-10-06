@@ -405,7 +405,7 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
 /**
  * Verifies `.cursor/mcp.json` declares the pinned `blit386-docs` server, using Cursor's own
  * schema for a remote server - which is not Claude's schema. `packages/kit/src/adapters.ts`
- * (`buildMcpConfig`) documents why: for Cursor a `type` field marks a *local stdio* server, so
+ * (`MCP_SERVER_ENTRY`) documents why: for Cursor a `type` field marks a *local stdio* server, so
  * a remote HTTP entry must omit it entirely, unlike the root `.mcp.json` (Claude Code), which
  * requires `"type": "http"`. This is why `.cursor/mcp.json` cannot be a symlink to the root
  * `.mcp.json` the way `.agents/skills/*` symlinks into `.claude/skills/*` - the two files are
