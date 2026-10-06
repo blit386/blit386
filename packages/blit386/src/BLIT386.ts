@@ -2583,7 +2583,8 @@ export const BT = {
      * @since 1.0.3
      * @changed 1.7.1 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
      * @changed 1.8.0 While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of
-     * waiting for the next loop frame.
+     * waiting for the next loop frame. Called while a `BT.renderAt` is still running (not awaited), waits for it and
+     * captures its frame.
      * @param options - Capture options; `size` defaults to `'output'`.
      * @returns PNG image data for the captured frame.
      *
@@ -2615,6 +2616,10 @@ export const BT = {
      * `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. Audio is
      * parked during the seek and sound effects played by stepped updates are dropped.
      *
+     * `BT.resume()` and `BT.captureFrame()` called before the returned promise settles wait for the
+     * seek to finish, so an un-awaited `BT.renderAt(5)` followed by `BT.captureFrame()` captures
+     * the frame at 5 seconds.
+     *
      * @since 1.8.0
      * @param seconds - Target time in seconds; rounded to the nearest tick.
      * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`.
@@ -2630,7 +2635,8 @@ export const BT = {
 
     /**
      * Restarts the game loop after `BT.renderAt` left it stopped, continuing from the seeked tick.
-     * Does nothing when no seek is holding the loop.
+     * Does nothing when no seek is holding the loop. Called while a `BT.renderAt` is still running
+     * (not awaited), waits for that seek to finish before restarting.
      *
      * Music started by a `'start'` seek's `init()` re-run plays from its beginning after resume until
      * music seeking lands.

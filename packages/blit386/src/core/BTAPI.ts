@@ -242,6 +242,9 @@ export class BTAPI {
     /** Serializes overlapping {@link renderAt} calls so seeks never interleave. */
     private seekChain: Promise<void> = Promise.resolve();
 
+    /** {@link renderAt} calls queued or running; {@link resume} and {@link captureFrame} wait while above 0. */
+    private pendingSeeks = 0;
+
     /**
      * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
      * `BT.renderAt` can seek it and it never reads `performance.now()`.
@@ -824,7 +827,13 @@ export class BTAPI {
      * @returns Resolves after the target frame's `endFrame`; rejects on bad input, before init, or a failed `init()`.
      */
     public renderAt(seconds: number, from: RenderAtFrom = 'start'): Promise<void> {
-        const run = this.seekChain.then(() => this.seek(seconds, from));
+        this.pendingSeeks++;
+
+        const run = this.seekChain
+            .then(() => this.seek(seconds, from))
+            .finally(() => {
+                this.pendingSeeks--;
+            });
 
         this.seekChain = run.catch(() => undefined);
 
@@ -833,9 +842,16 @@ export class BTAPI {
 
     /**
      * Restarts the game loop after {@link renderAt} left it stopped, from the seeked tick. A no-op
-     * when no seek is holding the loop.
+     * when no seek is holding the loop. While a `renderAt` is queued or running, waits for it to
+     * finish first.
      */
     public resume(): void {
+        if (this.pendingSeeks > 0) {
+            void this.seekChain.then(() => this.resume());
+
+            return;
+        }
+
         if (!this.loop || !this.isSeekParked) {
             return;
         }
@@ -1887,7 +1903,8 @@ export class BTAPI {
     /**
      * Captures the next rendered frame as a PNG blob.
      * The capture occurs on the next completed render cycle. After `renderAt`, while the loop is stopped, the capture
-     * re-renders the seeked frame instead of waiting for the next loop frame.
+     * re-renders the seeked frame instead of waiting for the next loop frame. While a `renderAt` is queued or running,
+     * the capture waits for it and captures its frame.
      *
      * @param size - `'output'` (default) captures at `outputSize`; `'display'` captures at
      *   logical `displaySize` without the upscale or display-tier effects.
@@ -1902,9 +1919,19 @@ export class BTAPI {
         const capture = size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
 
         // Stopped by a seek, no endFrame is coming: re-render the current tick (zero updates, so no
-        // clock moves and the frame is the seeked one) to settle the capture.
-        if (this.isSeekParked) {
-            this.loop?.step(0);
+        // clock moves and the frame is the seeked one) to settle the capture. With a seek still
+        // pending, do it after the seek: its own render usually settles the capture first, and this
+        // re-render covers a seek that rejected.
+        const settleParked = (): void => {
+            if (this.isSeekParked) {
+                this.loop?.step(0);
+            }
+        };
+
+        if (this.pendingSeeks > 0) {
+            void this.seekChain.then(settleParked);
+        } else {
+            settleParked();
         }
 
         return capture;

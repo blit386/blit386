@@ -1094,14 +1094,122 @@ describe('BTAPI', () => {
             await expect(BTAPI.instance.renderAt(0.5, 'current')).rejects.toThrow('backwards');
         });
 
-        it('serializes overlapping calls', async () => {
-            await boot();
+        /** Makes the next init() call wait until the returned function is called with its result. */
+        function deferNextInit(demo: IBTDemo): (ok: boolean) => void {
+            let release: (ok: boolean) => void = () => undefined;
 
-            const first = BTAPI.instance.renderAt(1, 'current');
-            const second = BTAPI.instance.renderAt(2, 'current');
+            vi.mocked(demo.init).mockImplementationOnce(
+                () =>
+                    new Promise<boolean>((resolve) => {
+                        release = resolve;
+                    }),
+            );
+
+            return (ok) => release(ok);
+        }
+
+        /** Lets every queued microtask and zero-delay timer run. */
+        const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+
+        it('serializes overlapping calls', async () => {
+            const { demo } = await boot();
+            const releaseFirstInit = deferNextInit(demo);
+
+            const first = BTAPI.instance.renderAt(1);
+            const second = BTAPI.instance.renderAt(2);
+
+            await settle();
+
+            // The first seek is parked in its init(); the second has not started its own.
+            expect(demo.init).toHaveBeenCalledTimes(2);
+
+            releaseFirstInit(true);
 
             await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
+            expect(demo.init).toHaveBeenCalledTimes(3);
             expect(BTAPI.instance.getTicks()).toBe(120);
+        });
+
+        it('a rejected seek does not block the next one', async () => {
+            const { demo } = await boot();
+
+            vi.mocked(demo.init).mockResolvedValueOnce(false);
+
+            const failed = BTAPI.instance.renderAt(1);
+            const next = BTAPI.instance.renderAt(2);
+
+            await expect(failed).rejects.toThrow('init()');
+            await expect(next).resolves.toBeUndefined();
+            expect(BTAPI.instance.getTicks()).toBe(120);
+
+            // Nothing is pending any more, so resume() acts right away.
+            vi.mocked(requestAnimationFrame).mockClear();
+            BTAPI.instance.resume();
+
+            expect(requestAnimationFrame).toHaveBeenCalled();
+        });
+
+        it("resume() during a 'start' seek waits for the seek, then plays on from its target", async () => {
+            const { demo } = await boot();
+            const releaseInit = deferNextInit(demo);
+            const ticksSeenByUpdate: number[] = [];
+
+            vi.mocked(demo.update).mockImplementation(() => {
+                ticksSeenByUpdate.push(BTAPI.instance.getTicks());
+            });
+
+            const seek = BTAPI.instance.renderAt(1);
+
+            await settle();
+            vi.mocked(requestAnimationFrame).mockClear();
+            BTAPI.instance.resume();
+            await settle();
+
+            // init() is still running: restarting the loop now would update a half-built game.
+            expect(requestAnimationFrame).not.toHaveBeenCalled();
+
+            releaseInit(true);
+            await seek;
+            await settle();
+
+            expect(requestAnimationFrame).toHaveBeenCalled();
+
+            // Walk the loop's start chain (two warm-up frames, then the first real tick).
+            const runFrame = (time: number): void => {
+                vi.mocked(requestAnimationFrame).mock.lastCall?.[0](time);
+            };
+
+            ticksSeenByUpdate.length = 0;
+            runFrame(0);
+            runFrame(0);
+            runFrame(performance.now() + 20);
+
+            expect(ticksSeenByUpdate[0]).toBe(60);
+        });
+
+        it('captureFrame right after an un-awaited renderAt captures the seeked tick', async () => {
+            const { demo } = await boot();
+            const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
+            let settleCapture: (() => void) | null = null;
+
+            // The capture settles on the next render, with the tick that render drew.
+            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockImplementation(
+                () =>
+                    new Promise<Blob>((resolve) => {
+                        settleCapture = () => resolve(new Blob([String(BTAPI.instance.getTicks())]));
+                    }),
+            );
+            vi.mocked(demo.render).mockImplementation(() => {
+                settleCapture?.();
+                settleCapture = null;
+            });
+
+            await BTAPI.instance.renderAt(0, 'current'); // park the loop first
+
+            void BTAPI.instance.renderAt(1, 'current');
+            const blob = await BTAPI.instance.captureFrame('display');
+
+            expect(await blob.text()).toBe('60');
         });
 
         it('leaves the loop stopped until resume()', async () => {
