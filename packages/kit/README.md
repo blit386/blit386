@@ -47,11 +47,11 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   SessionStart-equivalent event, so it does not get this hook. Both adapters also emit a documentation-MCP config -
   `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor - registering the `blit386-docs` server at
   `https://blit386.dev/mcp` so an assistant can search the live docs. The Claude adapter pre-approves it in
-  `.claude/settings.json` (`enabledMcpjsonServers`), so Claude Code does not prompt. It also writes
-  `.claude/launch.json`, which tells the Claude desktop app's built-in browser pane how to start the game (Vite on port
-  5173, through your package manager), so a preview needs no setup. That file is yours: the desktop app and other tools
-  write into it, so `blit agents sync` and `blit agents add` create it only when it is missing and never change, merge,
-  or `--force` an existing one.
+  `.claude/settings.json` (`enabledMcpjsonServers`), so Claude Code does not prompt for it once the project folder is
+  trusted. It also writes `.claude/launch.json`, which tells the Claude desktop app's built-in browser pane how to start
+  the game (Vite on port 5173, through your package manager), so a preview needs no setup. That file is yours: the
+  desktop app and other tools write into it, so `blit agents sync` and `blit agents add` create it only when it is
+  missing and never change, merge, or `--force` an existing one.
 
 ## The game-author skills
 
