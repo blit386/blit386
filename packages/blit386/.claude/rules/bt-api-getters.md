@@ -45,7 +45,7 @@ frame; calling methods on `BT.random` advances the shared stream.
 ## Keep as methods
 
 - Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `randomSeed`,
-  `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`
+  `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`, `resume`
 - Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFadeExposure`, `paletteFlash`,
   `paletteSwap`, `paletteClearEffects`
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`, `green`)
@@ -67,7 +67,7 @@ frame; calling methods on `BT.random` advances the shared stream.
   `isKeyReleased(...)`, `isAnyKeyDown()`, `isAnyKeyPressed(repeatRate?)`, `isAnyKeyReleased()`,
   `isAnyButtonDown(player?)`, `isAnyButtonPressed(player?, repeatRate?)`, `isAnyButtonReleased(player?)`
 - Side-effect booleans (Tier C): `Timer.fireIfElapsed()` - not `is*` because the call advances state
-- Async: `captureFrame`, `downloadFrame`
+- Async: `captureFrame`, `downloadFrame`, `renderAt`
 - Snapshots that call game code and allocate a fresh copy per call: `testState` (runs the demo's `testState()` hook and
   deep-copies the result, so it is never a getter)
 

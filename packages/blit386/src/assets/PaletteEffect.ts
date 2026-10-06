@@ -137,8 +137,8 @@ export class PaletteEffectManager {
  * Classic water/fire/plasma animation. Runs indefinitely until canceled
  * via {@link PaletteEffectManager.clear}.
  *
- * Uses a fractional accumulator for sub-frame precision and a pre-allocated
- * temporary {@link Color32} to avoid per-frame allocations.
+ * Uses a fractional accumulator for sub-step precision and a pre-allocated
+ * temporary {@link Color32} to avoid per-update allocations.
  */
 export class CycleEffect implements PaletteEffect {
     /** Accumulator for tracking the cycling progress. */
@@ -354,7 +354,7 @@ function applyFadeToRange(
 /**
  * Smoothly interpolates all palette entries toward a target palette over time.
  *
- * Snapshots the current palette at creation. Each frame computes an eased
+ * Snapshots the current palette at creation. Each fixed update computes an eased
  * progress value and lerps between the snapshot and target. At completion,
  * sets entries to the exact target values to avoid floating-point drift.
  *
@@ -558,7 +558,7 @@ function entryLead(snap: Color32, target: Color32, highlightLead: number): numbe
  * @param from - Encoded channel byte at fade start.
  * @param to - Encoded channel byte at fade end.
  * @param tc - Per-entry progress in range [0, 1].
- * @returns Encoded channel byte for the current frame.
+ * @returns Encoded channel byte at progress `tc`.
  */
 function exposeChannel(from: number, to: number, tc: number): number {
     const fromLinear = srgbToLinear(from * INV_255);
@@ -740,7 +740,7 @@ function restoreNonZeroSlots(palette: Palette, snapshot: Color32[]): void {
 /**
  * Temporarily sets all palette entries to a single color, then restores.
  *
- * On the first frame, snapshots all entries and overwrites them with the flash
+ * On its first update, snapshots all entries and overwrites them with the flash
  * color (index 0 is preserved as transparent). After the duration elapses,
  * restores the snapshot and auto-removes.
  */
@@ -773,7 +773,7 @@ export class FlashEffect implements PaletteEffect {
         let keepRunning = true;
 
         if (this.snapshotColors === null) {
-            // First frame: snapshot and apply flash.
+            // First update: snapshot and apply flash.
             this.snapshotColors = snapshotPaletteRange(palette, 0, palette.size - 1);
             copyColorToNonZeroSlots(palette, this.color);
             palette.markDirty();

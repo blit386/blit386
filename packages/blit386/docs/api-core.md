@@ -568,7 +568,8 @@ BT.resume(); // keep playing from tick 192
 | `'start'` (default) | Stops the loop, resets engine-owned state, re-runs your `init()`, steps `update()` from tick 0 to the target, renders once |
 | `'current'` | Stops the loop and steps forward from the current tick; rejects a target in the past |
 
-- **Rounding.** The target tick is `Math.round(seconds * BT.targetFPS)`.
+- **Rounding.** The target tick is `Math.round(seconds * BT.targetFPS)`. After `BT.ticksReset()`, a `'start'` seek still
+  counts `seconds` from the boot run's tick 0 (it replays `init()`), not from the reset point.
 - **What a `'start'` seek resets.** The `BT.random` stream (back to where it was before the boot `init()`, so a
   time-seeded or `?seed=` stream replays identically), palette effects, post-process effects, camera, pending input
   edges, and ticks. Everything your game keeps in its own fields must be set up by `init()` - a field initialized in the
@@ -576,16 +577,21 @@ BT.resume(); // keep playing from tick 192
   the live run, palette effects that `init()` starts behind the splash are dropped, so start a palette cycle you want to
   see from `update()` (for example on tick 0) when the splash is on.
 - **Cost.** One `update()` per tick: three minutes at 60 FPS is 10,800 calls. A game whose animation is a function of
-  `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design.
+  `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. For an export that renders many
+  frames in order, seek once with `'start'`, then step forward with `'current'` - repeated `'start'` seeks replay from
+  tick 0 each time.
 - **The loop stays stopped.** After a seek `BT.captureFrame()` re-renders the seeked frame to capture it (no clock
   moves), and `BT.resume()` restarts the loop from that tick. Calling `renderAt` again without resuming is fine.
+  `BT.captureFrame()` and `BT.resume()` wait for a seek that has not finished yet, so an un-awaited `BT.renderAt(5)`
+  followed by `BT.captureFrame()` captures the frame at 5 seconds.
 - **Audio.** The audio context is suspended during the seek and until `BT.resume()`, and `BT.soundPlay` calls made by
   stepped updates are dropped (they return `INVALID_SOUND_REF`). Music started by `init()` during a `'start'` seek plays
   from its beginning after resume - realigning it needs music seeking, which has not shipped yet.
-- **Errors.** `renderAt` rejects before `init()` has finished, while the splash is up, for a negative or non-finite
-  time, for an unknown `from`, for a past target with `'current'`, and when the re-run `init()` fails. Overlapping calls
-  run one after another. When a seek fails after it started (for example the re-run `init()` fails), the loop stays
-  stopped - call `BT.renderAt` again or `BT.resume()`.
+- **Errors.** `renderAt` rejects before `init()` has finished, while the splash is up, for a negative, non-finite, or
+  too-large time, for options that are not an object (`BT.renderAt(3, 'current')` instead of
+  `BT.renderAt(3, { from: 'current' })`), for an unknown `from`, for a past target with `'current'`, and when the re-run
+  `init()` fails. Overlapping calls run one after another. When a seek fails after it started (for example the re-run
+  `init()` fails), the loop stays stopped - call `BT.renderAt` again or `BT.resume()`.
 - **Determinism.** On one machine and backend, the frame `renderAt(n / BT.targetFPS)` produces is byte-identical to the
   frame the live loop draws at tick `n`, on WebGPU and software. Palette effects advance once per fixed update on the
   tick clock (`BT.ticks * 1000 / BT.targetFPS`), never `performance.now()`, so a seek runs exactly the palette updates
