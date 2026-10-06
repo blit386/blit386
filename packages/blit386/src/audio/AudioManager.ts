@@ -83,6 +83,9 @@ export class AudioManager {
     /** `true` once a user gesture has successfully resumed the audio context. */
     private unlocked = false;
 
+    /** Whether {@link park} has suspended the context and {@link unpark} has not yet released it. */
+    private isParked = false;
+
     /** Logical (pre-mute) volume per bus, reported by {@link volumeGet} regardless of mute state. */
     private logicalVolume: PerBus<number>;
 
@@ -205,6 +208,7 @@ export class AudioManager {
         this.busNodes = null;
         this.target = null;
         this.unlocked = false;
+        this.isParked = false;
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
         this.mutedGainSnapshot = {};
@@ -220,6 +224,42 @@ export class AudioManager {
      */
     public isUnlocked(): boolean {
         return this.unlocked;
+    }
+
+    /**
+     * Suspends the audio context while `BT.renderAt` holds the game loop stopped, so nothing plays
+     * out of step with a frozen clock. Idempotent; a no-op before {@link attach}.
+     */
+    public park(): void {
+        if (this.isParked) {
+            return;
+        }
+
+        this.isParked = true;
+
+        this.context?.suspend().catch((error: unknown) => {
+            console.error('[BT] Audio: failed to suspend the context for a seek:', error);
+        });
+    }
+
+    /**
+     * Releases {@link park}. Resumes the context only when a user gesture already unlocked it - a
+     * locked context stays locked until the next gesture, as without a seek.
+     */
+    public unpark(): void {
+        if (!this.isParked) {
+            return;
+        }
+
+        this.isParked = false;
+
+        if (!this.unlocked) {
+            return;
+        }
+
+        this.context?.resume().catch((error: unknown) => {
+            console.error('[BT] Audio: failed to resume the context after a seek:', error);
+        });
     }
 
     /**

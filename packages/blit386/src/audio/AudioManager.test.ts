@@ -985,4 +985,42 @@ describe('AudioManager', () => {
             expect(audio.isMusicPlaying()).toBe(false);
         });
     });
+
+    describe('park', () => {
+        it('suspends the context on park and resumes it on unpark once unlocked', async () => {
+            audio.attach(canvas);
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
+
+            const context = getMockContext();
+            const resumesBefore = context.resumeCallCount;
+
+            audio.park();
+            audio.park();
+
+            expect(context.suspendCallCount).toBe(1);
+
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(resumesBefore + 1);
+        });
+
+        it('unpark does not resume a context that was never unlocked', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            audio.park();
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(0);
+        });
+
+        it('is a no-op before attach', () => {
+            expect(() => {
+                audio.park();
+                audio.unpark();
+            }).not.toThrow();
+        });
+    });
 });
