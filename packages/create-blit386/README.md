@@ -32,8 +32,9 @@ If you pick one or more AI assistants in the wizard (Claude Code and Cursor are 
 scaffolder also generates each assistant's config (Claude: `CLAUDE.md` + `.claude/` including `settings.json` hooks,
 plus `.mcp.json`; Cursor: `.cursor/` including `hooks.json` and `mcp.json`) from the kit's canonical content, and
 `npx blit agents sync` keeps it current. The MCP config registers the BLIT386 documentation server, so your assistant
-can search the live docs at blit386.dev instead of guessing; Claude Code asks once whether to allow it. Did not pick one
-at the start? Run `npx blit agents add claude` or `npx blit agents add cursor` later to set it up.
+can search the live docs at blit386.dev instead of guessing; Claude Code's `settings.json` pre-approves it, so there is
+no separate prompt once the project folder is trusted. Did not pick one at the start? Run `npx blit agents add claude`
+or `npx blit agents add cursor` later to set it up.
 
 ## Options
 

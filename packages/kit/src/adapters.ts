@@ -386,6 +386,8 @@ interface ClaudeMatcherGroup {
 
 interface ClaudeSettingsJson {
     hooks: Record<string, ClaudeMatcherGroup[]>;
+    /** `.mcp.json` servers Claude Code trusts without its one-time approval prompt. */
+    enabledMcpjsonServers: string[];
 }
 
 interface HookManifestClaudeBlock {
@@ -479,7 +481,9 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
         hooks[event].push(group);
     }
 
-    return { hooks };
+    // Pre-approve the documentation server `.mcp.json` registers, so Claude Code does not leave it
+    // off behind a trust prompt. Cursor has no equivalent key, so `.cursor/mcp.json` gets nothing.
+    return { hooks, enabledMcpjsonServers: [MCP_SERVER_NAME] };
 }
 
 /** Which assistant's MCP configuration file to build. */

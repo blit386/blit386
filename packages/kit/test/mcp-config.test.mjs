@@ -63,6 +63,24 @@ test('the emitted MCP configs match the website server card', { skip: !hasServer
     assert.ok(!('type' in cursor.mcpServers[name]), 'Cursor infers the transport from url; a type would mark stdio');
 });
 
+test('the Claude settings pre-approve the same server .mcp.json declares', () => {
+    const generated = generateClaudeAdapter(kitRoot(), VARS);
+    const settings = readEmittedConfig(generated, '.claude/settings.json');
+    const mcp = readEmittedConfig(generated, '.mcp.json');
+
+    // Pinned to the keys of the emitted .mcp.json (itself checked against the server card above), so a
+    // rename cannot leave the approval pointing at a server that no longer exists.
+    assert.deepEqual(settings.enabledMcpjsonServers, Object.keys(mcp.mcpServers));
+    if (hasServerCard) {
+        const card = JSON.parse(readFileSync(SERVER_CARD_PATH, 'utf8'));
+        assert.deepEqual(settings.enabledMcpjsonServers, [card.serverInfo.name]);
+    }
+
+    // Cursor has no such key; a stray one could break its config.
+    const cursor = readEmittedConfig(generateCursorAdapter(kitRoot(), VARS), '.cursor/mcp.json');
+    assert.ok(!('enabledMcpjsonServers' in cursor), 'Cursor config must not carry enabledMcpjsonServers');
+});
+
 test('both MCP configs are kit-owned, so agents sync keeps them current', () => {
     assert.equal(classifyFile('.mcp.json'), 'kit-owned');
     assert.equal(classifyFile('.cursor/mcp.json'), 'kit-owned');
