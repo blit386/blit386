@@ -552,8 +552,8 @@ const snapshot = BT.testState();
 <Since symbol="RenderAtOptions" />
 
 `BT.renderAt(seconds)` jumps the fixed-step clock to a time and renders exactly the frame at that tick - no
-`requestAnimationFrame`, so it works in hidden tabs and headless browsers. It is how `blit shot --at` takes a picture of
-second 3.2, and how a sync editor scrubs a timeline.
+`requestAnimationFrame`, so it works in hidden tabs and headless browsers. It is what a screenshot tool uses to capture
+exactly second 3.2, and how a sync editor scrubs a timeline.
 
 ```ts twoslash
 import { BT } from 'blit386';
