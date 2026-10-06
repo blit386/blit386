@@ -472,7 +472,7 @@
         },
         {
           "version": "1.8.0",
-          "note": "While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of\nwaiting for the next loop frame."
+          "note": "While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of\nwaiting for the next loop frame. Called while a `BT.renderAt` is still running (not awaited), waits for it and\ncaptures its frame."
         }
       ],
       "deprecated": null,
