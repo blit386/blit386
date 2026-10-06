@@ -98,7 +98,7 @@ import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
-import { noActivePaletteError, systemFontNotReadyError } from './utils/errorMessages';
+import { noActivePaletteError, renderAtOptionsError, systemFontNotReadyError } from './utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
 import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
@@ -2622,7 +2622,8 @@ export const BT = {
      *
      * @since 1.8.0
      * @param seconds - Target time in seconds; rounded to the nearest tick.
-     * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`.
+     * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`. Must be an object - a
+     *   bare `'current'` rejects.
      * @returns Resolves once the target frame has rendered.
      *
      * @example
@@ -2630,6 +2631,12 @@ export const BT = {
      * const png = await BT.captureFrame({ size: 'display' }); // the frame at tick 192
      */
     renderAt: (seconds: number, options: RenderAtOptions = {}): Promise<void> => {
+        // Agents drive window.BT without TypeScript: a positional 'current' would otherwise read as
+        // options.from === undefined and silently replay from the start.
+        if (typeof options !== 'object' || options === null || Array.isArray(options)) {
+            return Promise.reject(new Error(renderAtOptionsError(options)));
+        }
+
         return BTAPI.instance.renderAt(seconds, options.from);
     },
 

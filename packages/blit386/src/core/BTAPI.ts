@@ -3151,12 +3151,17 @@ export class BTAPI {
             throw new Error(errorMessages.renderAtSecondsError(seconds));
         }
 
+        // Rounded, not floored: 3.2 * 60 is 192.00000000000003 and 0.1 * 3 * 60 can land just under.
+        const targetTicks = Math.round(seconds * hwSettings.targetFPS);
+
+        // Finite but huge times (1e300) round to a tick count GameLoop.step() can't take.
+        if (!Number.isSafeInteger(targetTicks)) {
+            throw new Error(errorMessages.renderAtSecondsError(seconds));
+        }
+
         if (from !== 'start' && from !== 'current') {
             throw new Error(errorMessages.renderAtFromError(from));
         }
-
-        // Rounded, not floored: 3.2 * 60 is 192.00000000000003 and 0.1 * 3 * 60 can land just under.
-        const targetTicks = Math.round(seconds * hwSettings.targetFPS);
 
         if (from === 'current' && targetTicks < loop.getTicks()) {
             throw new Error(errorMessages.renderAtPastError(targetTicks, loop.getTicks()));

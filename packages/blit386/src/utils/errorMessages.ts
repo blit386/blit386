@@ -941,13 +941,24 @@ export const RENDER_AT_INIT_FAILED_MESSAGE =
     "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. Check the console for the init() error";
 
 /**
- * `BT.renderAt()` got a time that is not a finite, non-negative number of seconds.
+ * `BT.renderAt()` got a time that is not a finite, non-negative number of seconds, or one too large
+ * to count in ticks.
  *
  * @param seconds - The value passed.
  * @returns Tier 1 error message.
  */
 export function renderAtSecondsError(seconds: unknown): string {
-    return `BT.renderAt() needs a time in seconds that is zero or more. Got: ${String(seconds)}`;
+    return `BT.renderAt() needs a time in seconds that is zero or more (and small enough to count in ticks). Got: ${String(seconds)}`;
+}
+
+/**
+ * `BT.renderAt()` got a second argument that is not an options object (for example a bare `'current'`).
+ *
+ * @param options - The value passed.
+ * @returns Tier 1 error message.
+ */
+export function renderAtOptionsError(options: unknown): string {
+    return `BT.renderAt() takes its options as an object, like { from: 'current' }. Got: ${String(options)}`;
 }
 
 /**

@@ -943,10 +943,12 @@ describe('BTAPI', () => {
             await expect(BTAPI.instance.renderAt(1)).rejects.toThrow("hasn't started");
         });
 
-        it.each([Number.NaN, -1, Number.POSITIVE_INFINITY])('rejects a time of %s', async (seconds) => {
-            await boot();
+        it.each([Number.NaN, -1, Number.POSITIVE_INFINITY, 1e300])('rejects a time of %s', async (seconds) => {
+            const { loop } = await boot();
 
             await expect(BTAPI.instance.renderAt(seconds)).rejects.toThrow('zero or more');
+            // Rejected before any side effect: the live loop is still running.
+            expect((loop as unknown as { isRunning: boolean }).isRunning).toBe(true);
         });
 
         it('rejects an unknown from', async () => {
