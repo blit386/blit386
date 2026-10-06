@@ -239,7 +239,10 @@ pnpm run bench:compare
 
 This runs `scripts/compare-tier-1-benchmarks.mjs` with a 25% regression threshold (matching the previous CI gate),
 writing `benchmark-comparison.json` and `benchmark-comparison.md`. The command exits nonzero if any benchmark regresses
-by more than 25% or a benchmark present in the baseline is missing from the current run.
+by more than 25% or a benchmark present in the baseline is missing from the current run. Benchmarks are matched by their
+path inside `packages/blit386/`, so a baseline recorded in another checkout or worktree still compares. If the baseline
+and the current run share no benchmark at all, the command exits nonzero with a message instead of reporting an empty
+comparison.
 
 </Step>
 

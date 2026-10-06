@@ -6,6 +6,7 @@ import {
     compareReports,
     flattenBenchmarks,
     hasComparisonFailures,
+    hasZeroMatches,
     parseArgs,
 } from './compare-tier-1-benchmarks.mjs';
 
@@ -243,5 +244,26 @@ describe('buildMarkdown', () => {
         const markdown = buildMarkdown(report);
 
         assert.match(markdown, /a\\\|b\(\)/);
+    });
+});
+
+describe('checkout-independent matching', () => {
+    it('matches benchmarks whose filepaths differ only by checkout prefix', () => {
+        const benchmarks = [{ name: 'a', hz: 100 }];
+        const current = makeReport(benchmarks, {
+            filepath: '/Users/a/worktrees/x/packages/blit386/src/Thing.bench.ts',
+        });
+        const baseline = makeReport(benchmarks, { filepath: '/other/worktree/packages/blit386/src/Thing.bench.ts' });
+        const report = compareReports(current, baseline, 10);
+
+        assert.equal(report.summary.compared, 1);
+        assert.equal(hasZeroMatches(report), false);
+    });
+
+    it('fails when both reports are non-empty but nothing matches', () => {
+        const current = makeReport([{ name: 'a', hz: 100 }]);
+        const baseline = makeReport([{ name: 'b', hz: 100 }]);
+
+        assert.equal(hasZeroMatches(compareReports(current, baseline, 10)), true);
     });
 });

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Performance Testing"
 description: "CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-10-06T07:55:19+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-testing.md"
 ---
 
@@ -236,7 +236,10 @@ pnpm run bench:compare
 
 This runs `scripts/compare-tier-1-benchmarks.mjs` with a 25% regression threshold (matching the previous CI gate),
 writing `benchmark-comparison.json` and `benchmark-comparison.md`. The command exits nonzero if any benchmark regresses
-by more than 25% or a benchmark present in the baseline is missing from the current run.
+by more than 25% or a benchmark present in the baseline is missing from the current run. Benchmarks are matched by their
+path inside `packages/blit386/`, so a baseline recorded in another checkout or worktree still compares. If the baseline
+and the current run share no benchmark at all, the command exits nonzero with a message instead of reporting an empty
+comparison.
 
 </Step>
 
