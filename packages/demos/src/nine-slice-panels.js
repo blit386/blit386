@@ -285,7 +285,6 @@ class Demo {
     modeRects = [];
     recolorRects = [];
     staticBarRects = [];
-    buttonRect = null;
 
     // The two boxes whose size changes every frame. render() rewrites them with set(), so no
     // new Rect2i is made per frame.
@@ -295,9 +294,6 @@ class Demo {
     // Text that never changes, built once so render() does not glue strings together every frame.
     sizeLabels = [];
     recolorLabels = [];
-
-    // Where the pointer (mouse or finger) is, for the hover button. pointerPosTo() writes into it.
-    pointerPos = null;
 
     // The tick the open animation started on. The Replay button sets it to "now".
     tweenStart = 0;
@@ -419,14 +415,11 @@ class Demo {
         // Section 3: this box is rewritten every frame, so it only needs to exist.
         this.tweenRect = new Rect2i(0, 0, 0, 0);
 
-        // Section 4: three same-size panels, plus the box for the hover button.
+        // Section 4: three same-size panels, one per look.
         for (let i = 0; i < RECOLOR_NAMES.length; i++) {
             this.recolorRects.push(new Rect2i(RIGHT_X + i * 88, 160, 72, 36));
             this.recolorLabels.push(`${RECOLOR_NAMES[i]} +${this.colorCount * i}`);
         }
-
-        this.buttonRect = new Rect2i(RIGHT_X, 224, 120, 28);
-        this.pointerPos = new Vector2i(0, 0);
 
         // Section 5: two fixed bars and one whose width changes, all with the art's own height.
         this.staticBarRects.push(new Rect2i(RIGHT_X, 284, 48, BAR_H), new Rect2i(RIGHT_X, 300, 96, BAR_H));
@@ -507,13 +500,6 @@ class Demo {
             BT.drawNineSlice(this.mixedPanel, this.recolorRects[i], this.colorCount * i);
             ui.caption(this.recolorRects[i].x, 200, this.recolorLabels[i], { color: 'dim' });
         }
-
-        // A live button: ask where the pointer is, and use the hover colors while it is over the box.
-        BT.pointerPosTo(this.pointerPos);
-        const isHovered = BT.isPointerActive(0) && this.buttonRect.containsXY(this.pointerPos.x, this.pointerPos.y);
-
-        BT.drawNineSlice(this.mixedPanel, this.buttonRect, isHovered ? this.colorCount : 0);
-        ui.caption(this.buttonRect.x + 12, this.buttonRect.y + 10, 'Hover me', { color: 'text' });
     }
 
     /**
