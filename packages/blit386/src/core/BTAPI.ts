@@ -58,7 +58,7 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,
@@ -226,6 +226,21 @@ export class BTAPI {
 
     /** Tick-clock time of the previous loop render, for the post-process delta. */
     private lastRenderFrameMs = 0;
+
+    /** `BT.random` state captured just before the boot `init()`, restored by a `'start'` seek. */
+    private bootRandomState = 0;
+
+    /** `BT.random.seedValue` at the same moment, so a restored seeded stream still reports its seed. */
+    private bootRandomSeed: number | undefined = undefined;
+
+    /** True while a seek runs the game's code (the `init()` re-run and the stepped updates); drops SFX. */
+    private isSeeking = false;
+
+    /** True after `renderAt` stopped the loop, until {@link resume}; `captureFrame` then renders on demand. */
+    private isSeekParked = false;
+
+    /** Serializes overlapping {@link renderAt} calls so seeks never interleave. */
+    private seekChain: Promise<void> = Promise.resolve();
 
     /**
      * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
@@ -514,6 +529,12 @@ export class BTAPI {
 
         console.log('[BT] Initializing demo');
 
+        // Captured after ?seed and before the game's init(), so a 'start' seek replays init() against
+        // the same stream the boot run saw - whether that stream was time-seeded or URL-seeded.
+        this.bootRandomState = this.random.getState();
+        this.bootRandomSeed = this.random.seedValue;
+        this.isSeekParked = false;
+
         if (!(await this.runDemoInitWithSplash(demo, hwSettings))) {
             return false;
         }
@@ -706,6 +727,7 @@ export class BTAPI {
      */
     public stop(): void {
         this.loop?.stop();
+        this.isSeekParked = false;
         this.clearInputSubsystems();
 
         this.wakeLock?.detach();
@@ -790,6 +812,39 @@ export class BTAPI {
      */
     public resetTicks(): void {
         this.loop?.resetTicks();
+    }
+
+    /**
+     * Seeks the fixed-step clock and renders exactly the frame at `seconds`. See `BT.renderAt`.
+     *
+     * Calls are serialized: a second call waits for the first to finish.
+     *
+     * @param seconds - Target time; rounded to the nearest tick (`Math.round(seconds * targetFPS)`).
+     * @param from - `'start'` (default) replays from tick 0; `'current'` steps forward only.
+     * @returns Resolves after the target frame's `endFrame`; rejects on bad input, before init, or a failed `init()`.
+     */
+    public renderAt(seconds: number, from: RenderAtFrom = 'start'): Promise<void> {
+        const run = this.seekChain.then(() => this.seek(seconds, from));
+
+        this.seekChain = run.catch(() => undefined);
+
+        return run;
+    }
+
+    /**
+     * Restarts the game loop after {@link renderAt} left it stopped, from the seeked tick. A no-op
+     * when no seek is holding the loop.
+     */
+    public resume(): void {
+        if (!this.loop || !this.isSeekParked) {
+            return;
+        }
+
+        this.isSeekParked = false;
+        this.audio?.unpark();
+        // TODO(BT-513): realign music with BT.musicSeek(BT.timeSeconds) once music transport lands.
+        // Until then a track started by a 'start' seek's init() re-run plays from 0 after resume.
+        this.loop.start();
     }
 
     /**
@@ -978,14 +1033,15 @@ export class BTAPI {
      *
      * Returns {@link INVALID_SOUND_REF} without allocating a voice when the clip's buffer isn't
      * available (not finished loading yet, or already unloaded) or when the audio subsystem is
-     * not initialized.
+     * not initialized, or while BT.renderAt is stepping through a seek, so a long seek never queues a burst of
+     * sounds.
      *
      * @param clip - Loaded audio clip to play.
      * @param options - Playback options; see {@link SoundPlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
     public soundPlay(clip: AudioClip, options?: SoundPlayOptions): SoundRef {
-        if (clip.buffer === null) {
+        if (clip.buffer === null || this.isSeeking) {
             return INVALID_SOUND_REF;
         }
 
@@ -1830,7 +1886,8 @@ export class BTAPI {
 
     /**
      * Captures the next rendered frame as a PNG blob.
-     * The capture occurs on the next completed render cycle.
+     * The capture occurs on the next completed render cycle. After `renderAt`, while the loop is stopped, the capture
+     * re-renders the seeked frame instead of waiting for the next loop frame.
      *
      * @param size - `'output'` (default) captures at `outputSize`; `'display'` captures at
      *   logical `displaySize` without the upscale or display-tier effects.
@@ -1842,7 +1899,15 @@ export class BTAPI {
             return Promise.reject(new Error("Can't capture frame: renderer not initialized"));
         }
 
-        return size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
+        const capture = size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
+
+        // Stopped by a seek, no endFrame is coming: re-render the current tick (zero updates, so no
+        // clock moves and the frame is the seeked one) to settle the capture.
+        if (this.isSeekParked) {
+            this.loop?.step(0);
+        }
+
+        return capture;
     }
 
     /**
@@ -3038,6 +3103,106 @@ export class BTAPI {
         this.keyboard?.endUpdate(0);
         this.pointer?.endFrame();
         this.gamepad?.endFrame(0);
+    }
+
+    /**
+     * One serialized seek: validate, stop and park, optionally replay from tick 0, then step.
+     *
+     * @param seconds - Target time in seconds.
+     * @param from - Seek origin.
+     */
+    private async seek(seconds: number, from: RenderAtFrom): Promise<void> {
+        const loop = this.loop;
+        const demo = this.demo;
+        const hwSettings = this.hwSettings;
+
+        if (!loop || !demo || !hwSettings) {
+            throw new Error(errorMessages.RENDER_AT_NOT_READY_MESSAGE);
+        }
+
+        if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) {
+            throw new Error(errorMessages.renderAtSecondsError(seconds));
+        }
+
+        if (from !== 'start' && from !== 'current') {
+            throw new Error(errorMessages.renderAtFromError(from));
+        }
+
+        // Rounded, not floored: 3.2 * 60 is 192.00000000000003 and 0.1 * 3 * 60 can land just under.
+        const targetTicks = Math.round(seconds * hwSettings.targetFPS);
+
+        if (from === 'current' && targetTicks < loop.getTicks()) {
+            throw new Error(errorMessages.renderAtPastError(targetTicks, loop.getTicks()));
+        }
+
+        loop.stop();
+        this.isSeekParked = true;
+        this.audio?.park();
+        this.isSeeking = true;
+
+        try {
+            if (from === 'start') {
+                await this.resetForSeek(demo, loop);
+            }
+
+            loop.step(targetTicks - loop.getTicks());
+        } finally {
+            this.isSeeking = false;
+        }
+    }
+
+    /**
+     * Resets engine-owned state to how the boot run found it, then re-runs the game's `init()`.
+     *
+     * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
+     * input edges, ticks, and the frame clock. State the game keeps in its own fields is `init()`'s
+     * job to reset - that is the documented contract of a `'start'` seek. The splash and its handoff
+     * fade are not replayed, but what the handoff did to palette effects is (see the end).
+     *
+     * @param demo - Running game instance.
+     * @param loop - Stopped game loop.
+     */
+    private async resetForSeek(demo: IBTDemo, loop: GameLoop): Promise<void> {
+        // seed() only when it reproduces the captured state exactly (nothing drew between the seed
+        // and the capture), so BT.random.seedValue keeps reporting the seed; setState() clears it.
+        if (this.bootRandomSeed !== undefined && this.bootRandomSeed === this.bootRandomState) {
+            this.random.seed(this.bootRandomSeed);
+        } else {
+            this.random.setState(this.bootRandomState);
+        }
+
+        this.paletteEffects.clear();
+
+        // Gate on activeBackend, like the splash dissolve: the software renderer throws on
+        // post-process, and it has no effects to clear.
+        if (this.activeBackend === 'webgpu') {
+            this.renderer?.clearEffects();
+        }
+
+        this.resetCamera();
+        this.lastCameraOffset = Vector2i.zero();
+        this.drainInputEdges();
+        loop.resetTicks();
+        this.lastRenderFrameMs = 0;
+
+        let ok = false;
+
+        try {
+            ok = await demo.init();
+        } catch (error) {
+            console.error('[BT] renderAt: init() threw while replaying from the start:', error);
+        }
+
+        if (!ok) {
+            throw new Error(errorMessages.RENDER_AT_INIT_FAILED_MESSAGE);
+        }
+
+        // Live, the splash handoff (endPaletteCapture) dropped every palette effect init() started
+        // behind the splash. Replaying init() without the splash must drop them too, or the seek
+        // shows a cycle the live run never ran. `splash` is set once at boot and never cleared.
+        if (this.splash) {
+            this.paletteEffects.clear();
+        }
     }
 
     /**

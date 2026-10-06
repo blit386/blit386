@@ -34,7 +34,7 @@ import { Palette } from '../assets/Palette';
 import { PaletteEffectManager } from '../assets/PaletteEffect';
 import { SpriteSheet } from '../assets/SpriteSheet';
 import { AudioManager } from '../audio/AudioManager';
-import { INVALID_SOUND_REF } from '../audio/VoicePool';
+import { INVALID_SOUND_REF, type SoundRef } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { getKeyboardFaceButtonKeys, setKeyboardLayout } from '../input/keyboardRuntimeMaps';
@@ -49,6 +49,7 @@ import {
     PALETTE_SWATCH_GAP_PX,
 } from '../overlay/palette/PaletteView';
 import type { Effect } from '../render/effects/Effect';
+import type { IRenderer } from '../render/IRenderer';
 import type { SpriteDrawParams } from '../render/SpriteOrientation';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
@@ -59,7 +60,7 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { BTAPI } from './BTAPI';
 import type { GameLoop } from './GameLoop';
-import type { HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
+import type { HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
 import { collectUsedIndices } from './RenderPaletteUsage';
 
 vi.mock('../utils/FrameCapture', async (importOriginal) => {
@@ -926,6 +927,273 @@ describe('BTAPI', () => {
             loop.step(0);
 
             expect(describePalette(palette)).toBe(afterSteps);
+        });
+    });
+
+    describe('renderAt', () => {
+        /** Boots a demo whose update/render are spies; returns the demo and private loop. */
+        async function boot(demo: IBTDemo = makeMockDemo()): Promise<{ demo: IBTDemo; loop: GameLoop }> {
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            return { demo, loop: (BTAPI.instance as unknown as { loop: GameLoop }).loop };
+        }
+
+        it('rejects before init', async () => {
+            await expect(BTAPI.instance.renderAt(1)).rejects.toThrow("hasn't started");
+        });
+
+        it.each([Number.NaN, -1, Number.POSITIVE_INFINITY])('rejects a time of %s', async (seconds) => {
+            await boot();
+
+            await expect(BTAPI.instance.renderAt(seconds)).rejects.toThrow('zero or more');
+        });
+
+        it('rejects an unknown from', async () => {
+            await boot();
+
+            await expect(BTAPI.instance.renderAt(1, 'middle' as RenderAtFrom)).rejects.toThrow("'start' or 'current'");
+        });
+
+        it("from 'start' re-runs init once, steps to the rounded tick, renders once", async () => {
+            const { demo } = await boot();
+
+            vi.mocked(demo.update).mockClear();
+            vi.mocked(demo.render).mockClear();
+
+            await BTAPI.instance.renderAt(3.2);
+
+            expect(demo.init).toHaveBeenCalledTimes(2);
+            expect(demo.update).toHaveBeenCalledTimes(192);
+            expect(demo.render).toHaveBeenCalledTimes(1);
+            expect(BTAPI.instance.getTicks()).toBe(192);
+        });
+
+        it("from 'start' restores the RNG to its pre-init state", async () => {
+            const statesSeenByInit: number[] = [];
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.init).mockImplementation(async () => {
+                statesSeenByInit.push(BTAPI.instance.getRandom().getState());
+
+                return true;
+            });
+            await boot(demo);
+
+            BTAPI.instance.getRandom().next();
+            BTAPI.instance.getRandom().next();
+
+            await BTAPI.instance.renderAt(0);
+
+            expect(statesSeenByInit).toHaveLength(2);
+            expect(statesSeenByInit[1]).toBe(statesSeenByInit[0]);
+        });
+
+        it("from 'start' clears palette and post-process effects before init", async () => {
+            await boot();
+
+            const renderer = (BTAPI.instance as unknown as { renderer: { clearEffects: () => void } }).renderer;
+            const clearSpy = vi.spyOn(renderer, 'clearEffects');
+
+            BTAPI.instance.paletteCycle(1, 4, 1);
+            await BTAPI.instance.renderAt(0.5);
+
+            expect(clearSpy).toHaveBeenCalled();
+            expect(
+                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
+            ).toBe(0);
+        });
+
+        it("from 'start' rejects when the re-run init fails", async () => {
+            const demo = makeMockDemo();
+
+            await boot(demo);
+            vi.mocked(demo.init).mockResolvedValueOnce(false);
+
+            await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
+        });
+
+        it("from 'start' works on the software backend, which has no post-process chain", async () => {
+            const demo: IBTDemo = {
+                configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    backend: 'software',
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            // Same OffscreenCanvas stub the existing software-mode init tests use.
+            vi.stubGlobal(
+                'OffscreenCanvas',
+                class MockOffscreenCanvas {
+                    constructor(
+                        public width: number,
+                        public height: number,
+                    ) {}
+                    getContext(contextType?: string): OffscreenCanvas2DMock | null {
+                        return contextType === '2d' ? makeOffscreenCanvas2dContext() : null;
+                    }
+                },
+            );
+            await BTAPI.instance.init(demo, makeMock2DCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            await expect(BTAPI.instance.renderAt(1)).resolves.toBeUndefined();
+            expect(demo.init).toHaveBeenCalledTimes(2);
+            expect(BTAPI.instance.getTicks()).toBe(60);
+        });
+
+        it("from 'start' keeps palette effects init() starts when the boot run had no splash", async () => {
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.init).mockImplementation(async () => {
+                BTAPI.instance.paletteCycle(1, 4, 1);
+
+                return true;
+            });
+            await boot(demo);
+            await BTAPI.instance.renderAt(0.5);
+
+            expect(
+                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
+            ).toBe(1);
+        });
+
+        it("from 'start' drops palette effects init() starts when the boot run had a splash", async () => {
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.init).mockImplementation(async () => {
+                BTAPI.instance.paletteCycle(1, 4, 1);
+
+                return true;
+            });
+            await boot(demo);
+            // Stand-in for a boot that showed the splash: the live handoff (endPaletteCapture) dropped
+            // every palette effect init() started, and resetForSeek only checks that a splash existed.
+            (BTAPI.instance as unknown as { splash: object | null }).splash = {};
+
+            await BTAPI.instance.renderAt(0.5);
+
+            expect(
+                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
+            ).toBe(0);
+        });
+
+        it("from 'current' steps forward only and rejects a past target", async () => {
+            const { demo } = await boot();
+
+            await BTAPI.instance.renderAt(1, 'current');
+
+            expect(demo.init).toHaveBeenCalledTimes(1);
+            expect(BTAPI.instance.getTicks()).toBe(60);
+
+            await expect(BTAPI.instance.renderAt(0.5, 'current')).rejects.toThrow('backwards');
+        });
+
+        it('serializes overlapping calls', async () => {
+            await boot();
+
+            const first = BTAPI.instance.renderAt(1, 'current');
+            const second = BTAPI.instance.renderAt(2, 'current');
+
+            await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
+            expect(BTAPI.instance.getTicks()).toBe(120);
+        });
+
+        it('leaves the loop stopped until resume()', async () => {
+            const { demo, loop } = await boot();
+
+            await BTAPI.instance.renderAt(1, 'current');
+            vi.mocked(demo.update).mockClear();
+
+            const tick = (loop as unknown as { tick: (now: number) => void }).tick.bind(loop);
+
+            tick(10_000);
+
+            expect(demo.update).not.toHaveBeenCalled();
+
+            vi.mocked(requestAnimationFrame).mockClear();
+            BTAPI.instance.resume();
+
+            expect(requestAnimationFrame).toHaveBeenCalled();
+        });
+
+        it('resume() is a no-op when no seek parked the loop', async () => {
+            await boot();
+            vi.mocked(requestAnimationFrame).mockClear();
+
+            BTAPI.instance.resume();
+
+            expect(requestAnimationFrame).not.toHaveBeenCalled();
+        });
+
+        it('captureFrame after a seek re-renders the same tick to settle', async () => {
+            const { demo } = await boot();
+            const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
+
+            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockResolvedValue(new Blob());
+            await BTAPI.instance.renderAt(1, 'current');
+            vi.mocked(demo.render).mockClear();
+
+            await expect(BTAPI.instance.captureFrame('display')).resolves.toBeInstanceOf(Blob);
+            expect(demo.render).toHaveBeenCalledTimes(1);
+            expect(BTAPI.instance.getTicks()).toBe(60);
+        });
+
+        it('parks audio for the seek, drops SFX while seeking, resumes audio on resume', async () => {
+            // A real, unattached AudioManager (null context, so park/unpark are safe no-ops) with spies -
+            // the stepped render may call other AudioManager methods, which a bare object would lack.
+            const audio = new AudioManager();
+            const refs: SoundRef[] = [];
+            const demo = makeMockDemo();
+            const clip = { buffer: createMockAudioBuffer() } as unknown as AudioClip;
+
+            vi.spyOn(audio, 'park');
+            vi.spyOn(audio, 'unpark');
+            vi.spyOn(audio, 'playSound').mockReturnValue({ voiceIndex: 7, generation: 1 });
+            vi.mocked(demo.update).mockImplementation(() => {
+                refs.push(BTAPI.instance.soundPlay(clip));
+            });
+            await boot(demo);
+            (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
+
+            await BTAPI.instance.renderAt(0.1, 'current');
+
+            expect(audio.park).toHaveBeenCalledTimes(1);
+            expect(audio.playSound).not.toHaveBeenCalled();
+            expect(refs.length).toBeGreaterThan(0);
+            expect(refs.every((ref) => ref === INVALID_SOUND_REF)).toBe(true);
+
+            BTAPI.instance.resume();
+
+            expect(audio.unpark).toHaveBeenCalledTimes(1);
+        });
+
+        it("a keydown while stopped is a press on the first update of a 'current' seek", async () => {
+            const canvas = makeMockCanvas();
+            const pressed: boolean[] = [];
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.update).mockImplementation(() => {
+                pressed.push(BT.isKeyPressed('KeyZ'));
+            });
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+            await BTAPI.instance.renderAt(0, 'current');
+
+            const keydownCall = (canvas.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
+                ([type]) => type === 'keydown',
+            );
+            const keydownHandler = keydownCall?.[1] as ((event: { code: string }) => void) | undefined;
+
+            keydownHandler?.({ code: 'KeyZ' });
+            await BTAPI.instance.renderAt(2 / 60, 'current');
+
+            expect(pressed).toEqual([true, false]);
         });
     });
 

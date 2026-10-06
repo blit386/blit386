@@ -46,6 +46,8 @@ import {
     type OverlayStyle,
     type OverlayTimingChartStyle,
     type PreferredOrientation,
+    type RenderAtFrom,
+    type RenderAtOptions,
     type TestStateSnapshot,
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
@@ -2580,6 +2582,8 @@ export const BT = {
      *
      * @since 1.0.3
      * @changed 1.7.1 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
+     * @changed 1.8.0 While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of
+     * waiting for the next loop frame.
      * @param options - Capture options; `size` defaults to `'output'`.
      * @returns PNG image data for the captured frame.
      *
@@ -2593,6 +2597,48 @@ export const BT = {
      */
     captureFrame: async (options: FrameCaptureOptions = {}): Promise<Blob> => {
         return await BTAPI.instance.captureFrame(options.size);
+    },
+
+    /**
+     * Seeks the fixed-step clock and renders exactly the frame at `seconds` - on demand, with no
+     * `requestAnimationFrame`, so it works in hidden and headless pages.
+     *
+     * `from: 'start'` (default) stops the loop, resets engine-owned state (the `BT.random` stream,
+     * palette and post-process effects, camera, ticks), re-runs your game's `init()`, then steps
+     * `update()` to the target tick and renders once. The splash is not replayed; as in the live
+     * run, palette effects that `init()` started behind it are dropped. `from: 'current'` steps
+     * forward from the tick the game is on and rejects a target in the past. Either way the loop
+     * stays stopped afterwards: `BT.captureFrame()` captures the seeked frame, and `BT.resume()`
+     * keeps playing from it.
+     *
+     * Cost is one `update()` per tick: three minutes at 60 FPS is 10,800 calls. Animation driven by
+     * `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. Audio is
+     * parked during the seek and sound effects played by stepped updates are dropped.
+     *
+     * @since 1.8.0
+     * @param seconds - Target time in seconds; rounded to the nearest tick.
+     * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`.
+     * @returns Resolves once the target frame has rendered.
+     *
+     * @example
+     * await BT.renderAt(3.2);
+     * const png = await BT.captureFrame({ size: 'display' }); // the frame at tick 192
+     */
+    renderAt: (seconds: number, options: RenderAtOptions = {}): Promise<void> => {
+        return BTAPI.instance.renderAt(seconds, options.from);
+    },
+
+    /**
+     * Restarts the game loop after `BT.renderAt` left it stopped, continuing from the seeked tick.
+     * Does nothing when no seek is holding the loop.
+     *
+     * Music started by a `'start'` seek's `init()` re-run plays from its beginning after resume until
+     * music seeking lands.
+     *
+     * @since 1.8.0
+     */
+    resume: (): void => {
+        BTAPI.instance.resume();
     },
 
     /**
@@ -3022,6 +3068,8 @@ export type {
     OverlayStyle,
     OverlayTimingChartStyle,
     PreferredOrientation,
+    RenderAtFrom,
+    RenderAtOptions,
     SoundParamSetOptions,
     SoundPlayOptions,
     SoundRef,

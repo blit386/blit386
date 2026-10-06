@@ -33,6 +33,24 @@ export type Backend = 'webgpu' | 'software';
 export type AudioBus = 'main' | 'music' | 'sfx';
 
 /**
+ * Where `BT.renderAt` starts its seek: `'start'` replays from tick 0 (re-running the game's `init()`), `'current'`
+ * steps forward from the tick the game is on.
+ *
+ * @since 1.8.0
+ */
+export type RenderAtFrom = 'start' | 'current';
+
+/**
+ * Options for `BT.renderAt`.
+ *
+ * @since 1.8.0
+ */
+export interface RenderAtOptions {
+    /** Where the seek starts. Defaults to `'start'`. */
+    from?: RenderAtFrom;
+}
+
+/**
  * Preferred display orientation for {@link HardwareSettings.preferredOrientation}.
  *
  * - `'landscape'` / `'portrait'` - after init, attempt `screen.orientation.lock()`
