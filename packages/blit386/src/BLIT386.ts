@@ -1304,10 +1304,11 @@ export const BT = {
      * Starts rotating a range of palette entries at a constant speed.
      *
      * Classic water/fire/plasma animation technique. Runs indefinitely until
-     * canceled via {@link BT.paletteClearEffects}. Uses a fractional accumulator
-     * for sub-frame precision.
+     * canceled via {@link BT.paletteClearEffects}. Uses a fractional accumulator,
+     * so slow speeds still step exactly on time.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param start - First palette index in the cycling range (inclusive).
      * @param end - Last palette index in the cycling range (inclusive).
      * @param speed - Steps per second. Positive = forward, negative = backward.
@@ -1329,6 +1330,7 @@ export const BT = {
      * - Cross-fade: `BT.paletteFade(nightPalette, 2000, 'ease-in-out')`
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
@@ -1368,6 +1370,7 @@ export const BT = {
      * - Fade out: `BT.paletteFadeExposure(blackPalette, 1000)`
      *
      * @since 1.5.0
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param options - Highlight lead and easing curve.
@@ -1383,6 +1386,7 @@ export const BT = {
      * Indices outside the range are left untouched.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param start - First palette index to fade (inclusive).
      * @param end - Last palette index to fade (inclusive).
      * @param target - Target palette to fade toward.
@@ -1406,6 +1410,7 @@ export const BT = {
      * and restored after the duration elapses. Auto-removes when complete.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
      */

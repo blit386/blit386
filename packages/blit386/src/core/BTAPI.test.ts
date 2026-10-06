@@ -789,6 +789,146 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('tick clock', () => {
+        /** Boots a mock demo and returns the private loop and renderer for driving frames. */
+        async function bootForClock(): Promise<{
+            loop: GameLoop;
+            renderer: { endFrame: (deltaMs?: number) => void };
+            demo: IBTDemo;
+        }> {
+            const demo = makeMockDemo();
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const internals = BTAPI.instance as unknown as {
+                loop: GameLoop;
+                renderer: { endFrame: (deltaMs?: number) => void };
+            };
+
+            return { loop: internals.loop, renderer: internals.renderer, demo };
+        }
+
+        it('feeds post-process effects the tick delta, not wall time', async () => {
+            const { loop, renderer } = await bootForClock();
+            const endFrameSpy = vi.spyOn(renderer, 'endFrame');
+            const nowSpy = vi.spyOn(performance, 'now').mockReturnValue(123_456);
+
+            loop.stop();
+            loop.step(30);
+
+            // 30 * (1000 / 60) is 500 up to float noise. With performance.now() frozen, a 500 ms
+            // delta can only come from the tick clock.
+            expect(endFrameSpy.mock.lastCall?.[0]).toBeCloseTo(500);
+
+            loop.step(0);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(0);
+            nowSpy.mockRestore();
+        });
+
+        it('clamps the delta to 0 after BT.ticksReset()', async () => {
+            const { loop, renderer } = await bootForClock();
+            const endFrameSpy = vi.spyOn(renderer, 'endFrame');
+
+            loop.stop();
+            loop.step(60);
+            BTAPI.instance.resetTicks();
+            loop.step(1);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(0);
+        });
+
+        /** A 16-entry palette with distinct, in-range colors. */
+        function makeRampPalette(base: number): Palette {
+            const palette = new Palette(16);
+
+            for (let slot = 1; slot < 16; slot++) {
+                palette.set(slot, new Color32(base + slot * 3, slot * 10, 255 - slot * 10));
+            }
+
+            return palette;
+        }
+
+        /** The palette's slot colors as one comparable string. */
+        function describePalette(palette: Palette): string {
+            return Array.from({ length: 16 }, (_, slot) => {
+                const color = palette.getRef(slot);
+
+                return `${color.r},${color.g},${color.b}`;
+            }).join(' ');
+        }
+
+        it('a flash that ends during the stepped ticks is gone from the rendered frame', async () => {
+            const { loop } = await bootForClock();
+            const palette = makeRampPalette(10);
+            const before = describePalette(palette);
+
+            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.paletteFlash(new Color32(255, 255, 255), 100);
+
+            loop.stop();
+            // 10 ticks is 166 ms and the flash lasts 100 ms. Updated once per render, the flash would
+            // only take its snapshot here and still be showing.
+            loop.step(10);
+
+            expect(describePalette(palette)).toBe(before);
+        });
+
+        it('one big step and many single steps leave palette effects identical', async () => {
+            const { loop, demo } = await bootForClock();
+
+            vi.mocked(demo.update).mockImplementation(() => {
+                if (BTAPI.instance.getTicks() === 10) {
+                    BTAPI.instance.paletteFlash(new Color32(255, 255, 255), 100);
+                }
+
+                if (BTAPI.instance.getTicks() === 20) {
+                    BTAPI.instance.paletteFadeRange(9, 15, makeRampPalette(200), 2000);
+                }
+            });
+
+            /** Replays ticks 0-60 in the given step sizes and returns the resulting palette. */
+            const run = (stepSizes: number[]): string => {
+                const palette = makeRampPalette(10);
+
+                BTAPI.instance.setPalette(palette); // drops running effects
+                loop.resetTicks();
+                // Speed 1 crosses a whole step exactly at tick 60 - a float boundary that one large
+                // catch-up delta and sixty small deltas can land on opposite sides of.
+                BTAPI.instance.paletteCycle(1, 8, 1);
+
+                for (const size of stepSizes) {
+                    loop.step(size);
+                }
+
+                return describePalette(palette);
+            };
+
+            loop.stop();
+
+            expect(run([60])).toBe(run(Array.from({ length: 60 }, () => 1)));
+        });
+
+        it('re-rendering without updates does not advance palette effects', async () => {
+            const { loop } = await bootForClock();
+            const palette = makeRampPalette(10);
+
+            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.paletteCycle(1, 8, 30);
+
+            loop.stop();
+            loop.step(5);
+
+            const afterSteps = describePalette(palette);
+
+            loop.step(0);
+            loop.step(0);
+
+            expect(describePalette(palette)).toBe(afterSteps);
+        });
+    });
+
     describe('init', () => {
         it('should return false for NaN targetFPS', async () => {
             const result = await BTAPI.instance.init(makeMockDemo(NaN), makeMockCanvas());

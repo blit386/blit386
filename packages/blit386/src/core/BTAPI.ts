@@ -221,8 +221,17 @@ export class BTAPI {
     /** Game loop managing fixed-timestep updates and variable-rate rendering. */
     private loop: GameLoop | null = null;
 
-    /** Manages animated palette effects (cycling, fading, flashing). */
-    private readonly paletteEffects = new PaletteEffectManager();
+    /** Milliseconds per fixed update (`1000 / targetFPS`); set by {@link init}, `0` before. */
+    private updateIntervalMs = 0;
+
+    /** Tick-clock time of the previous loop render, for the post-process delta. */
+    private lastRenderFrameMs = 0;
+
+    /**
+     * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
+     * `BT.renderAt` can seek it and it never reads `performance.now()`.
+     */
+    private readonly paletteEffects = new PaletteEffectManager(() => this.getFrameClockMs());
 
     /** Default engine PRNG; time-seeded when the singleton is created. */
     private readonly random = new Random();
@@ -469,6 +478,8 @@ export class BTAPI {
 
         const updateInterval = 1000 / hwSettings.targetFPS;
 
+        this.updateIntervalMs = updateInterval;
+
         this.isCollectAudioMetersEnabled =
             hwSettings.isOverlayEnabled !== false && hwSettings.isOverlayAudioMetersEnabled === true;
 
@@ -518,6 +529,7 @@ export class BTAPI {
         this.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
 
         this.pendingUpdateMs = 0;
+        this.lastRenderFrameMs = 0;
         this.pendingUpdateSteps = 0;
         this.pendingDrawCalls = 0;
         this.lastCameraOffset = Vector2i.zero();
@@ -548,6 +560,15 @@ export class BTAPI {
                 this.demo?.update();
                 this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
                 this.pendingUpdateSteps++;
+
+                // Palette effects advance once per fixed update, after the game's update(), on the
+                // tick clock. Per update rather than per render is what makes BT.renderAt exact: a
+                // seek runs the same palette updates as live play instead of one catch-up update at
+                // the end (a flash would only take its snapshot then), and the look no longer depends
+                // on the display's refresh rate.
+                if (this.palette && this.paletteEffects.activeCount > 0) {
+                    this.paletteEffects.update(this.palette);
+                }
 
                 const tick = this.loop?.getTicks() ?? 0;
 
@@ -591,13 +612,6 @@ export class BTAPI {
 
                     renderMs = Math.max(0, performance.now() - renderStartMs);
 
-                    // Palette effects run after demo render (so user's explicit palette
-                    // changes in render() are respected) but before endFrame (so effects
-                    // are visible this frame via the dirty-flag GPU upload).
-                    if (this.palette && this.paletteEffects.activeCount > 0) {
-                        this.paletteEffects.update(this.palette);
-                    }
-
                     // Overlay: screen-space HUD after demo content (top/bottom bars).
                     if (this.overlay && this.systemFont) {
                         this.overlay.updateAndRender(
@@ -617,7 +631,7 @@ export class BTAPI {
                     this.captureRendererDiagnostics();
                     this.captureAudioDiagnostics();
 
-                    this.renderer.endFrame();
+                    this.renderer.endFrame(this.consumeFrameDeltaMs());
                 }
 
                 // Snapshot pointer state for next frame's edge detection / delta.
@@ -2098,6 +2112,31 @@ export class BTAPI {
             SHIFT_KEY_CODES.some((code) => this.keyboard?.isKeyDown(code)) &&
             this.keyboard?.isKeyPressed(FRAME_CAPTURE_SHORTCUT_KEY_CODE, undefined, tick) === true
         );
+    }
+
+    /**
+     * Engine tick clock in milliseconds: `ticks * 1000 / targetFPS`. Palette effects and post-process
+     * effects read this instead of `performance.now()`, which is what makes `BT.renderAt` exact.
+     *
+     * @returns Milliseconds of fixed-step time since init or the last tick reset.
+     */
+    private getFrameClockMs(): number {
+        return this.getTicks() * this.updateIntervalMs;
+    }
+
+    /**
+     * Tick-clock milliseconds since the previous loop render, for post-process effects. Clamped at
+     * 0 so a clock reset (`BT.ticksReset()`) never runs effect time backwards.
+     *
+     * @returns Non-negative effect time for this frame.
+     */
+    private consumeFrameDeltaMs(): number {
+        const frameMs = this.getFrameClockMs();
+        const deltaMs = Math.max(0, frameMs - this.lastRenderFrameMs);
+
+        this.lastRenderFrameMs = frameMs;
+
+        return deltaMs;
     }
 
     /**

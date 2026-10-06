@@ -5,8 +5,8 @@
  * change happens automatically on the next frame when the renderer detects the
  * dirty flag and re-uploads the palette uniform buffer.
  *
- * The {@link PaletteEffectManager} is called once per frame from the render
- * callback, after `demo.render()` but before {@link IRenderer.endFrame}.
+ * The {@link PaletteEffectManager} is called once per fixed update from the loop's
+ * update callback, after `demo.update()`.
  */
 
 import { clampByte, clampUnit, Color32, INV_255, linearToSrgb, srgbToLinear } from '../utils/Color32';
@@ -17,7 +17,7 @@ import type { Palette } from './Palette';
 /**
  * A single palette effect that runs over time.
  *
- * The manager calls {@link update} once per frame. The effect mutates palette
+ * The manager calls {@link update} once per fixed update. The effect mutates palette
  * entries via `palette.getRef()` and returns `true` to keep running or `false`
  * to signal completion (the manager removes it automatically).
  *
@@ -40,7 +40,7 @@ export interface PaletteEffect {
 }
 
 /**
- * Manages active palette effects and updates them each frame.
+ * Manages active palette effects and updates them once per fixed update.
  *
  * Tracks time through an injectable provider so the {@link GameLoop} callback signatures remain unchanged. The engine
  * passes its tick clock (`ticks * 1000 / targetFPS`), which is what makes palette effects seekable by `BT.renderAt`.
@@ -77,7 +77,7 @@ export class PaletteEffectManager {
     /**
      * Adds an effect to the active list.
      *
-     * @param effect - Effect instance to run each frame.
+     * @param effect - Effect instance to run once per fixed update.
      */
     add(effect: PaletteEffect): void {
         // Waking from idle starts the clock now, so the first update sees only the time since the
@@ -92,7 +92,7 @@ export class PaletteEffectManager {
     /**
      * Updates all active effects and removes completed ones.
      *
-     * Call this once per frame. Completed effects (returning `false`) are pruned
+     * Call this once per fixed update. Completed effects (returning `false`) are pruned
      * in place without allocating a new array.
      *
      * @param palette - Active palette to pass to each effect.
