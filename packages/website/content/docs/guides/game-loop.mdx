@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Game Loop"
 description: "Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp."
-lastModified: "2026-10-06T14:48:03+02:00"
+lastModified: "2026-10-07T12:32:16+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-game-loop.md"
 ---
 
@@ -92,9 +92,10 @@ Color transitions (palette flashes, tinted hit-feedback) can be interpolated the
 The engine's clock is ticks, not wall time: `BT.timeSeconds` is `BT.ticks * BT.deltaSeconds`, palette effects advance
 once per fixed update (right after your `update()`), and custom post-process effects receive tick-clock milliseconds in
 `writeUniforms(deltaMs, ...)`. That is what lets [`BT.renderAt`](/docs/api/core#seeking-a-frame-with-renderat) jump to any
-time and draw the same frame the live loop would. Drive animation from `BT.timeSeconds` or `BT.ticks`, and change state
-only in `init()` and `update()`. A value read from `performance.now()` cannot be seeked, and a seek calls `render()`
-once, at the end.
+time and draw the same frame the live loop draws on that tick (a seek renders with `BT.renderAlpha` at `0`, so it
+matches a live frame that lands exactly on the tick, not one interpolated between ticks). Drive animation from
+`BT.timeSeconds` or `BT.ticks`, and change state only in `init()` and `update()`. A value read from `performance.now()`
+cannot be seeked, and a seek calls `render()` once, at the end.
 
 ```text
              BT.renderAt(t)                 BT.resume()

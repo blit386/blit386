@@ -2003,6 +2003,7 @@
       "HotContext",
       "HotReloadContext",
       "PreferredOrientation",
+      "RenderAtFrom",
       "RenderAtOptions",
       "TestStateSnapshot",
       "bootstrap",
