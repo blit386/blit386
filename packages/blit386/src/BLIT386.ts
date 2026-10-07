@@ -2607,7 +2607,8 @@ export const BT = {
      * `from: 'start'` (default) stops the loop, resets engine-owned state (the `BT.random` stream,
      * palette and post-process effects, camera, ticks), re-runs your game's `init()`, then steps
      * `update()` to the target tick and renders once. The splash is not replayed; as in the live
-     * run, palette effects that `init()` started behind it are dropped. `from: 'current'` steps
+     * run, palette effects that `init()` started behind it are dropped. Palette slot colors are not
+     * restored, so build the palette inside `init()`. `from: 'current'` steps
      * forward from the tick the game is on and rejects a target in the past. Either way the loop
      * stays stopped afterwards: `BT.captureFrame()` captures the seeked frame, and `BT.resume()`
      * keeps playing from it.

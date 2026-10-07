@@ -95,9 +95,10 @@ Color transitions (palette flashes, tinted hit-feedback) can be interpolated the
 The engine's clock is ticks, not wall time: `BT.timeSeconds` is `BT.ticks * BT.deltaSeconds`, palette effects advance
 once per fixed update (right after your `update()`), and custom post-process effects receive tick-clock milliseconds in
 `writeUniforms(deltaMs, ...)`. That is what lets [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) jump to any
-time and draw the same frame the live loop would. Drive animation from `BT.timeSeconds` or `BT.ticks`, and change state
-only in `init()` and `update()`. A value read from `performance.now()` cannot be seeked, and a seek calls `render()`
-once, at the end.
+time and draw the same frame the live loop draws on that tick (a seek renders with `BT.renderAlpha` at `0`, so it
+matches a live frame that lands exactly on the tick, not one interpolated between ticks). Drive animation from
+`BT.timeSeconds` or `BT.ticks`, and change state only in `init()` and `update()`. A value read from `performance.now()`
+cannot be seeked, and a seek calls `render()` once, at the end.
 
 ```text
              BT.renderAt(t)                 BT.resume()

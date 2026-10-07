@@ -550,6 +550,7 @@ const snapshot = BT.testState();
 <Since symbol="BT.renderAt" />
 <Since symbol="BT.resume" />
 <Since symbol="RenderAtOptions" />
+<Since symbol="RenderAtFrom" />
 
 `BT.renderAt(seconds)` jumps the fixed-step clock to a time and renders exactly the frame at that tick - no
 `requestAnimationFrame`, so it works in hidden tabs and headless browsers. It is what a screenshot tool uses to capture
@@ -573,9 +574,11 @@ BT.resume(); // keep playing from tick 192
 - A `'start'` seek resets the `BT.random` stream (back to where it was before the boot `init()`, so a time-seeded or
   `?seed=` stream replays identically), palette effects, post-process effects, camera, pending input edges, and ticks.
   Everything your game keeps in its own fields must be set up by `init()` - a field initialized in the constructor and
-  only mutated afterwards keeps its mutated value. The splash and its fade-in are not replayed. As in the live run,
-  palette effects that `init()` starts behind the splash are dropped, so start a palette cycle you want to see from
-  `update()` (for example on tick 0) when the splash is on.
+  only mutated afterwards keeps its mutated value. That includes the palette: a seek does not restore slot colors, so
+  build the `Palette` you pass to `BT.paletteSet()` inside `init()` (or reset its slots there). Reusing one object from
+  a constant or the constructor carries over whatever a palette cycle already rotated. The splash and its fade-in are
+  not replayed. As in the live run, palette effects that `init()` starts behind the splash are dropped, so start a
+  palette cycle you want to see from `update()` (for example on tick 0) when the splash is on.
 - A seek costs one `update()` per tick: three minutes at 60 FPS is 10,800 calls. A game whose animation is a function of
   `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. For an export that renders many
   frames in order, seek once with `'start'`, then step forward with `'current'` - repeated `'start'` seeks replay from
@@ -596,9 +599,11 @@ BT.resume(); // keep playing from tick 192
   `init()` fails. Overlapping calls run one after another. When a seek fails after it started (for example the re-run
   `init()` fails), the loop stays stopped - call `BT.renderAt` again or `BT.resume()`.
 - On one machine and backend, the frame `renderAt(n / BT.targetFPS)` produces is byte-identical to the frame the live
-  loop draws at tick `n`, on WebGPU and software. Palette effects advance once per fixed update on the tick clock
-  (`BT.ticks * 1000 / BT.targetFPS`), never `performance.now()`, so a seek runs exactly the palette updates live play
-  ran. Three things are outside the guarantee:
+  loop draws at tick `n` when that live frame also lands exactly on the tick, on WebGPU and software. A seek renders
+  with `BT.renderAlpha` at `0`; a live frame drawn between two ticks can have a larger `renderAlpha`, so a game that
+  interpolates motion in `render()` draws those in-between frames differently. Palette effects advance once per fixed
+  update on the tick clock (`BT.ticks * 1000 / BT.targetFPS`), never `performance.now()`, so a seek runs exactly the
+  palette updates live play ran. Three things are outside the guarantee:
   - anything your own code reads from `performance.now()` or `Date.now()`
   - state `render()` changes, because a seek calls `render()` once, at the end (start effects and change state in
     `init()` or `update()`)
