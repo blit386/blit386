@@ -76,11 +76,11 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, OpenCode, or Zed, it is already configured
-  (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `opencode.json` for OpenCode, `.zed/settings.json` for
-  Zed) and gives your assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts),
-  `get_doc_page` (one page's full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's
-  contents in one compact block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, Antigravity, OpenCode, or Zed, it is already
+  configured (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `.agents/mcp_config.json` for Antigravity,
+  `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your assistant three tools: `search_docs`
+  (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs`
+  returned), and `get_docs_summary` (the whole site's contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
@@ -180,10 +180,15 @@ it:
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
 others. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
 
+If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses
+edits to lock files and `.env`, and destructive git commands) and formats each file after an edit, and
+`.agents/mcp_config.json` points it at the documentation server. Antigravity ignores all of that until you trust the
+workspace, so choose "trust" when it asks the first time you open the project.
+
 For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-`npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
+`npx blit agents add antigravity`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

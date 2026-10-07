@@ -12,6 +12,7 @@
 // Decision (BT-564, BT-576): the shell classification is a Node port of the kit's former
 // shell-safety.sh, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
 // Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs.
+// Antigravity's entry (antigravity-guard.cjs) runs the same port.
 
 const path = require('node:path');
 

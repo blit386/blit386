@@ -15,7 +15,13 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { classifyFile, generateClaudeAdapter, generateCursorAdapter, kitRoot } from '../dist/adapters.js';
+import {
+    classifyFile,
+    generateAntigravityAdapter,
+    generateClaudeAdapter,
+    generateCursorAdapter,
+    kitRoot,
+} from '../dist/adapters.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -84,4 +90,13 @@ test('the Claude settings pre-approve the same server .mcp.json declares', () =>
 test('both MCP configs are kit-owned, so agents sync keeps them current', () => {
     assert.equal(classifyFile('.mcp.json'), 'kit-owned');
     assert.equal(classifyFile('.cursor/mcp.json'), 'kit-owned');
+});
+
+test('Antigravity gets serverUrl, never url or httpUrl, in .agents/mcp_config.json', () => {
+    const config = readEmittedConfig(generateAntigravityAdapter(kitRoot(), VARS), '.agents/mcp_config.json');
+    const [entry] = Object.values(config.mcpServers);
+
+    assert.deepEqual(Object.keys(config.mcpServers), ['blit386-docs']);
+    assert.deepEqual(entry, { serverUrl: 'https://blit386.dev/mcp' });
+    assert.equal(classifyFile('.agents/mcp_config.json'), 'kit-owned');
 });

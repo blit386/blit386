@@ -46,6 +46,7 @@ import { ui } from '../messages';
 import {
     AGENT_KINDS,
     type AgentKind,
+    ANTIGRAVITY_MCP_JSON,
     CLAUDE_MCP_JSON,
     classifyFile,
     CURSOR_MCP_JSON,
@@ -56,7 +57,13 @@ import {
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, OPENCODE_JSON, ZED_SETTINGS_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [
+    CLAUDE_MCP_JSON,
+    CURSOR_MCP_JSON,
+    ANTIGRAVITY_MCP_JSON,
+    OPENCODE_JSON,
+    ZED_SETTINGS_JSON,
+];
 
 /** True for a plain JSON object (not an array or null) - the only shape a JSON config map allows. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {

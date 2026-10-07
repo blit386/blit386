@@ -19,6 +19,7 @@ import {
     collectDocs,
     generateAgentFiles,
     generateClaudeAdapter,
+    generateAntigravityAdapter,
     generateCursorAdapter,
     generateSharedSkills,
     kitRoot,
@@ -112,14 +113,20 @@ test('classifyFile does not match a sibling of a managed directory', () => {
     assert.equal(classifyFile('CLAUDE.md.bak'), 'user-owned');
 });
 
-test('only .agents/skills/ is kit-owned, never the bare .agents/ prefix', () => {
-    // Antigravity will own exact files beside the shared skills folder; none may ride on a `.agents/` prefix.
+test('.agents/ is claimed by exact paths only, never by its bare prefix', () => {
+    // Antigravity owns exact files beside the shared skills folder; nothing else under `.agents/` is the kit's.
     assert.equal(SHARED_SKILLS_DIR, '.agents/skills/');
+
+    for (const path of ['.agents/hooks.json', '.agents/hooks/antigravity-guard.cjs', '.agents/mcp_config.json']) {
+        assert.equal(classifyFile(path), 'kit-owned', path);
+        assert.deepEqual(owners(path), ['antigravity'], `${path} belongs to Antigravity alone`);
+    }
+
     for (const path of [
-        '.agents/hooks.json',
-        '.agents/hooks/guard.cjs',
-        '.agents/mcp_config.json',
         '.agents/notes.md',
+        '.agents/rules/mine.md',
+        '.agents/agents/helper.md',
+        '.agents/plugins/p.json',
     ]) {
         assert.equal(classifyFile(path), 'user-owned', `${path} must not be claimed through a .agents/ prefix`);
         assert.deepEqual(owners(path), [], `${path} must belong to no agent`);
@@ -206,7 +213,8 @@ test('Zed reads the shared skills folder and ships only a merged settings.json, 
     }
 });
 
-test('Claude Code and Cursor keep private skill copies and do not read the shared folder', () => {
+test('Antigravity reads the shared skills folder; Claude Code and Cursor keep private copies', () => {
+    assert.equal(AGENT_SPECS.antigravity.readsSharedSkills, true);
     // Claude Code does not read `.agents/skills/`; Cursor is unverified. Flip only with a source.
     assert.equal(AGENT_SPECS.claude.readsSharedSkills, false);
     assert.equal(AGENT_SPECS.cursor.readsSharedSkills, false);
@@ -299,6 +307,7 @@ test('every file the kit emits classifies as kit-owned or shared, except the use
         ...collectDocs(root),
         ...generateClaudeAdapter(root, VARS),
         ...generateCursorAdapter(root, VARS),
+        ...generateAntigravityAdapter(root, VARS),
         ...generateSharedSkills(root, VARS),
     ];
 
@@ -326,6 +335,10 @@ test('every adapter-emitted path belongs to the agent that emitted it', () => {
 
     for (const file of generateCursorAdapter(root, VARS)) {
         assert.ok(isAgentPath(file.path, 'cursor'), `${file.path} is not recognized as a Cursor file`);
+    }
+
+    for (const file of generateAntigravityAdapter(root, VARS)) {
+        assert.ok(isAgentPath(file.path, 'antigravity'), `${file.path} is not recognized as an Antigravity file`);
     }
 
     for (const file of generateAgentFiles(root, VARS, ['zed'])) {
