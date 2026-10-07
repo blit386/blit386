@@ -320,8 +320,8 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
     opencode: {
         label: 'OpenCode',
         setupHint: `adds ${OPENCODE_JSON}`,
-        files: [OPENCODE_JSON],
-        dirs: [OPENCODE_DIR],
+        files: [OPENCODE_JSON, OPENCODE_KIT_GUARD],
+        dirs: [OPENCODE_HOOKS_DIR],
         mcpConfig: OPENCODE_JSON,
         readsSharedSkills: true,
         readsSharedFiles: [],
