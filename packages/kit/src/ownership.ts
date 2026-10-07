@@ -57,6 +57,13 @@ export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 /** Cursor's MCP server configuration. */
 export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
+/**
+ * Zed's generated configuration. `settings.json` is user-extendable JSON (Zed also allows comments), so like the MCP
+ * configs it is merged structurally by `blit agents add` and three-way merged by `sync`.
+ */
+export const ZED_DIR = '.zed/';
+export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -83,7 +90,13 @@ export type FileClass = 'kit-owned' | 'shared' | 'user-owned';
 const SHARED_FILES: readonly string[] = [AGENTS_MD, CLAUDE_MD];
 
 /** Exact paths the kit owns outright. */
-const KIT_OWNED_FILES: readonly string[] = [CLAUDE_SETTINGS_JSON, CLAUDE_MCP_JSON, CURSOR_HOOKS_JSON, CURSOR_MCP_JSON];
+const KIT_OWNED_FILES: readonly string[] = [
+    CLAUDE_SETTINGS_JSON,
+    CLAUDE_MCP_JSON,
+    CURSOR_HOOKS_JSON,
+    CURSOR_MCP_JSON,
+    ZED_SETTINGS_JSON,
+];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
 const KIT_OWNED_DIRS: readonly string[] = [
@@ -140,10 +153,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor';
+export type AgentKind = 'claude' | 'cursor' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'zed'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -185,6 +198,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [CURSOR_DIR],
         mcpConfig: CURSOR_MCP_JSON,
         readsSharedSkills: false,
+    },
+    zed: {
+        label: 'Zed',
+        setupHint: `adds ${ZED_SETTINGS_JSON}`,
+        files: [],
+        dirs: [ZED_DIR],
+        mcpConfig: ZED_SETTINGS_JSON,
+        readsSharedSkills: true,
     },
 };
 
