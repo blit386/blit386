@@ -13,6 +13,10 @@
 // shell-safety.sh, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
 // Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs.
 // Antigravity's entry (antigravity-guard.cjs) runs the same port.
+//
+// `patchPaths` exists for Codex (codex-guard.cjs, format-file.cjs), whose edits reach a hook as raw
+// apply_patch text rather than a file path. Nothing else needs it, but it is easy to get subtly wrong,
+// so it lives here beside its tests.
 
 const path = require('node:path');
 
@@ -148,6 +152,38 @@ function isDangerousCommand(command) {
     return null;
 }
 
+/** An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. */
+const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): ([\s\S]+)$/;
+
+/**
+ * What Codex's parser trims from both ends of a line before it looks for a header: Rust's `str::trim`, every Unicode
+ * White_Space character. That is JavaScript's `\s` plus U+0085, which `\s` leaves out (`\s` also strips U+FEFF, which
+ * Rust keeps - stripping more only ever finds more headers). Trimming less than Codex would let a header indented with,
+ * say, a no-break space through unseen.
+ */
+const LINE_EDGE_WHITESPACE = /^[\s\u0085]+|[\s\u0085]+$/g;
+
+/**
+ * Every file path an apply_patch text names: each file it adds, updates, deletes, or moves something to. Takes the
+ * raw patch (`*** Begin Patch` ... `*** End Patch`), the same wrapped in a heredoc, or a whole shell command that
+ * carries one - each header is a line of its own in all three. Paths come back as written (relative to the session's
+ * working directory, or absolute). Lines split on `\n` alone, as Codex splits them; anything else in a path, a U+2028
+ * included, stays part of it.
+ *
+ * ponytail: a stateless line scan, unlike Codex's own parser. A context line in an Update hunk whose file text is itself
+ * a header (` *** Add File: x`) is read as one too. That only ever adds a path, so a guard errs toward a deny and the
+ * formatter toward one extra file; track hunk state if that ever bites.
+ *
+ * @param {string} patch - The apply_patch text, or a command containing it.
+ * @returns {string[]} The paths, in order, duplicates kept.
+ */
+function patchPaths(patch) {
+    return patch
+        .split('\n')
+        .map((line) => PATCH_HEADER.exec(line.replace(LINE_EDGE_WHITESPACE, ''))?.[1].replace(LINE_EDGE_WHITESPACE, ''))
+        .filter(Boolean);
+}
+
 /**
  * Parse a hook payload. Throws - so `failClosed` turns it into a deny - unless the text is a JSON object.
  * A leading UTF-8 BOM is dropped first: Cursor on Windows prefixes one.
@@ -187,4 +223,4 @@ function failClosed(check) {
     }
 }
 
-module.exports = { failClosed, isDangerousCommand, isProtectedPath, parsePayload, UNREADABLE };
+module.exports = { failClosed, isDangerousCommand, isProtectedPath, parsePayload, patchPaths, UNREADABLE };

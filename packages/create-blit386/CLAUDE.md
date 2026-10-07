@@ -15,14 +15,14 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
-   (multi-select: none, or any mix of Claude / Cursor / Antigravity / Gemini CLI / OpenCode / Zed), optional CI.
+   (multi-select: none, or any mix of Claude / Cursor / Antigravity / Codex / Gemini CLI / OpenCode / Zed), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
 4. The chosen AI assistants' config is generated from the kit IR in one call, `generateAgentFiles(kit, vars, agents)`
    from `@blit386/kit/adapters`, which dispatches through the kit's agent registry (`AGENT_ADAPTERS`, keyed by
    `AgentKind` - the wizard's labels and hints come from it too), renders `{{placeholders}}` as it goes, and adds the
-   shared `.agents/skills/` folder once when any chosen assistant reads it (Antigravity, Gemini CLI, OpenCode, and Zed
-   do; Claude and Cursor keep private copies). The scaffolder writes those `{ path, content }` pairs to disk and never
-   branches on an agent name. Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from
+   shared `.agents/skills/` folder once when any chosen assistant reads it (Antigravity, Codex, Gemini CLI, OpenCode,
+   and Zed do; Claude and Cursor keep private copies). The scaffolder writes those `{ path, content }` pairs to disk and
+   never branches on an agent name. Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from
    `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
    `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `shell-safety.cjs` (the
    destructive-git guard, shared with Cursor) and `protect-files.cjs` (the lock-file / `.env` guard), both fail-closed
@@ -35,37 +35,46 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    so it does not get the bootstrap hook, and no pre-edit event, so it does not get the lock-file / `.env` guard
    (`protect-files.cjs`). Each adapter also emits a documentation-MCP config registering the `blit386-docs` server at
    `https://blit386.dev/mcp`: Claude gets `.mcp.json`, Cursor gets `.cursor/mcp.json`, Gemini CLI gets an `mcpServers`
-   entry in `.gemini/settings.json`, and Antigravity gets `.agents/mcp_config.json`. Antigravity also gets
-   `.agents/hooks.json` (hook groups named `blit-<id>`, from the manifest's `antigravity` keys) and `.agents/hooks/`
-   (`antigravity-guard.cjs` over `guard-core.cjs`, `format-file.cjs`, and the once-per-conversation
-   `antigravity-bootstrap.cjs`, because Antigravity has no session-start event); it owns those exact paths, never the
-   bare `.agents/` prefix. Gemini CLI gets `.gemini/settings.json` and `.gemini/hooks/` - no `GEMINI.md`
-   (`context.fileName` points it at `AGENTS.md`), no private skills (it reads `.agents/skills/`), and no
-   `.gemini/policies/` (workspace policies do not work). The settings file carries the docs server, the persona pointer,
-   and four hooks, with timeouts in milliseconds; its hook entries are `protect-files.cjs` and the Node
-   `shell-guard.cjs` over `guard-core.cjs` (both exit 2 to block, since Gemini lets a call through on any other exit),
-   `format-file.cjs`, and the session-start script. Gemini CLI ignores `.gemini/settings.json` in an untrusted folder,
-   so `AGENTS.md` tells the user to trust it. `blit agents add gemini` structurally merges into an existing
-   `.gemini/settings.json` instead of colliding (`sync` is what three-way merges). Zed gets `.zed/settings.json`
-   (kit-owned, merged with the user's own settings by `add` and by `sync`): `format_on_save`, Biome as the JavaScript,
-   TypeScript, and JSON formatter, and `context_servers.blit386-docs` - no `agent` key (project settings have none;
-   `agent.tool_permissions` is user-settings only), no hooks, and never a `.rules` / `.cursorrules` / `.windsurfrules` /
-   `.clinerules` file (Zed reads only the first match, which would hide `AGENTS.md`). Its persona and lock-file / `.env`
-   rules are `AGENTS.md` prose. The Claude, Cursor, and Gemini entries differ on purpose - Claude Code skips a remote
-   entry that has a `url` but no `type`, for Cursor a `type` marks a local stdio server, and for Gemini CLI `url` means
-   SSE, so streamable HTTP is `httpUrl` (Antigravity accepts only `serverUrl`). Every path an adapter emits is built
-   from `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/` /
-   `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only a
-   script one of that adapter's own hook entries actually references gets copied, together with any sibling `.cjs` it
-   `require()`s (all under `packages/kit/`). OpenCode gets `opencode.json` (a `formatter` entry per tool - Biome for
-   code and JSON, Prettier for Markdown and YAML, each pinned to its own extensions - a `permission` map for lock files,
-   `.env` files and destructive git commands, and the remote `blit386-docs` entry under `mcp`), the plugin
-   `.opencode/plugins/kit-guard.ts` (it asks the guard core in `.opencode/hooks/guard-core.cjs` before each tool call
-   and runs `.opencode/hooks/session-start.sh` on `session.created`), and the shared `.agents/skills/` folder. OpenCode
-   has no trust gate, so the plugin runs the moment the folder opens. `opencode.json` is kit-owned but user-extendable:
-   `blit agents add opencode` merges it key by key (a user value the kit disagrees with is never overridden), and `sync`
-   three-way merges it. The permission lists restate the guard core's policy as globs, and
-   `packages/kit/test/opencode.test.mjs` pins the two together.
+   entry in `.gemini/settings.json`, Codex gets a `[mcp_servers.blit386-docs]` table in `.codex/config.toml`, and
+   Antigravity gets `.agents/mcp_config.json`. Antigravity also gets `.agents/hooks.json` (hook groups named
+   `blit-<id>`, from the manifest's `antigravity` keys) and `.agents/hooks/` (`antigravity-guard.cjs` over
+   `guard-core.cjs`, `format-file.cjs`, and the once-per-conversation `antigravity-bootstrap.cjs`, because Antigravity
+   has no session-start event); it owns those exact paths, never the bare `.agents/` prefix. Gemini CLI gets
+   `.gemini/settings.json` and `.gemini/hooks/` - no `GEMINI.md` (`context.fileName` points it at `AGENTS.md`), no
+   private skills (it reads `.agents/skills/`), and no `.gemini/policies/` (workspace policies do not work). The
+   settings file carries the docs server, the persona pointer, and four hooks, with timeouts in milliseconds; its hook
+   entries are `protect-files.cjs` and the Node `shell-guard.cjs` over `guard-core.cjs` (both exit 2 to block, since
+   Gemini lets a call through on any other exit), `format-file.cjs`, and the session-start script. Gemini CLI ignores
+   `.gemini/settings.json` in an untrusted folder, so `AGENTS.md` tells the user to trust it. `blit agents add gemini`
+   structurally merges into an existing `.gemini/settings.json` instead of colliding (`sync` is what three-way merges).
+   Codex gets `.codex/hooks.json`, `.codex/config.toml`, and `.codex/hooks/` (`codex-guard.cjs` over `guard-core.cjs`
+   with a `shell` / `patch` argument, `format-file.cjs`, and the session-start script) - no private persona or skills,
+   since it reads `AGENTS.md` and `.agents/skills/`, and no `.codex/rules/` or `.codex/environments/`. Its edits reach
+   the hooks as raw `apply_patch` text, so the guard core's `patchPaths` reads the file paths out of the patch; each
+   hook command walks up from the session directory to the project (Codex has no project-dir variable) and the guard
+   commands turn any failure into exit 2 with a message, because Codex lets a call through on every other outcome. Codex
+   ignores `.codex/` in an untrusted project and runs each project hook only once it is approved in `/hooks`, so
+   `AGENTS.md` teaches both steps. `blit agents add codex` appends the kit's table to an existing `.codex/config.toml`
+   when that file does not name the docs server yet (`sync` three-way merges it like the JSON configs). Zed gets
+   `.zed/settings.json` (kit-owned, merged with the user's own settings by `add` and by `sync`): `format_on_save`, Biome
+   as the JavaScript, TypeScript, and JSON formatter, and `context_servers.blit386-docs` - no `agent` key (project
+   settings have none; `agent.tool_permissions` is user-settings only), no hooks, and never a `.rules` / `.cursorrules`
+   / `.windsurfrules` / `.clinerules` file (Zed reads only the first match, which would hide `AGENTS.md`). Its persona
+   and lock-file / `.env` rules are `AGENTS.md` prose. The Claude, Cursor, and Gemini entries differ on purpose - Claude
+   Code skips a remote entry that has a `url` but no `type`, for Cursor a `type` marks a local stdio server, and for
+   Gemini CLI `url` means SSE, so streamable HTTP is `httpUrl` (Antigravity accepts only `serverUrl`). Every path an
+   adapter emits is built from `packages/kit/src/ownership.ts`, the single source both packages classify against. Within
+   `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project is decided by
+   `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually references gets copied,
+   together with any sibling `.cjs` it `require()`s (all under `packages/kit/`). OpenCode gets `opencode.json` (a
+   `formatter` entry per tool - Biome for code and JSON, Prettier for Markdown and YAML, each pinned to its own
+   extensions - a `permission` map for lock files, `.env` files and destructive git commands, and the remote
+   `blit386-docs` entry under `mcp`), the plugin `.opencode/plugins/kit-guard.ts` (it asks the guard core in
+   `.opencode/hooks/guard-core.cjs` before each tool call and runs `.opencode/hooks/session-start.sh` on
+   `session.created`), and the shared `.agents/skills/` folder. OpenCode has no trust gate, so the plugin runs the
+   moment the folder opens. `opencode.json` is kit-owned but user-extendable: `blit agents add opencode` merges it key
+   by key (a user value the kit disagrees with is never overridden), and `sync` three-way merges it. The permission
+   lists restate the guard core's policy as globs, and `packages/kit/test/opencode.test.mjs` pins the two together.
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated

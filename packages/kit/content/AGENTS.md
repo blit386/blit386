@@ -189,11 +189,23 @@ If you use Gemini CLI, `.gemini/settings.json` points it at this file (`context.
 documentation server, and wires the edit and shell guards. Skills load from `.agents/skills/`. Gemini CLI ignores that
 whole settings file until you trust the folder, so trust the folder when Gemini CLI asks.
 
+If you use Codex (the CLI or the IDE extension; the desktop app is not confirmed to read these project files), it reads
+this file and the skills in `.agents/skills/` on its own. `.codex/config.toml` points it at the same documentation
+server, and `.codex/hooks.json` adds the safety checks (it refuses edits to lock files and `.env`, and destructive git
+commands) and formats each file after an edit. Codex ignores both files at first:
+
+- Trust the project when Codex asks the first time you open it. That turns on the documentation server.
+- Run `/hooks` and approve each of the project's hooks. Until you do, the game has no guardrails. Codex asks for this
+  once per hook, and again after a kit update changes one.
+
+Some git commands (`git push --force`, `git branch -D`, `git stash drop`) need your go-ahead under other assistants;
+Codex cannot ask, so it refuses them. Run those yourself when you mean to.
+
 For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-`npx blit agents add antigravity`, `npx blit agents add gemini`, `npx blit agents add opencode`, or
-`npx blit agents add zed` to add its files now.
+`npx blit agents add antigravity`, `npx blit agents add codex`, `npx blit agents add gemini`,
+`npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

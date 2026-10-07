@@ -96,6 +96,16 @@ export const OPENCODE_KIT_GUARD = `${OPENCODE_DIR}plugins/kit-guard.ts`;
 export const ZED_DIR = '.zed/';
 export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;
 
+/**
+ * Codex's generated configuration. Only these exact paths are the kit's: a user's own `.codex/rules/`,
+ * `.codex/environments/`, or skills stay user-owned. `config.toml` is user-extendable TOML, so `blit agents add` appends
+ * the kit's one table to an existing copy and `sync` three-way merges it like the JSON configs.
+ */
+export const CODEX_DIR = '.codex/';
+export const CODEX_HOOKS_DIR = `${CODEX_DIR}hooks/`;
+export const CODEX_HOOKS_JSON = `${CODEX_DIR}hooks.json`;
+export const CODEX_CONFIG_TOML = `${CODEX_DIR}config.toml`;
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -133,6 +143,8 @@ const KIT_OWNED_FILES: readonly string[] = [
     OPENCODE_JSON,
     OPENCODE_KIT_GUARD,
     ZED_SETTINGS_JSON,
+    CODEX_HOOKS_JSON,
+    CODEX_CONFIG_TOML,
 ];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
@@ -147,6 +159,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     GEMINI_HOOKS_DIR,
     ANTIGRAVITY_HOOKS_DIR,
     OPENCODE_HOOKS_DIR,
+    CODEX_HOOKS_DIR,
     SHARED_SKILLS_DIR,
 ];
 
@@ -193,10 +206,18 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'gemini' | 'opencode' | 'zed';
+export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'codex' | 'gemini' | 'opencode' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'antigravity', 'gemini', 'opencode', 'zed'];
+export const AGENT_KINDS: readonly AgentKind[] = [
+    'claude',
+    'cursor',
+    'antigravity',
+    'codex',
+    'gemini',
+    'opencode',
+    'zed',
+];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -245,6 +266,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         files: [ANTIGRAVITY_HOOKS_JSON, ANTIGRAVITY_MCP_JSON],
         dirs: [ANTIGRAVITY_HOOKS_DIR],
         mcpConfig: ANTIGRAVITY_MCP_JSON,
+        readsSharedSkills: true,
+    },
+    codex: {
+        label: 'Codex',
+        setupHint: `adds ${CODEX_HOOKS_JSON}`,
+        files: [CODEX_HOOKS_JSON, CODEX_CONFIG_TOML],
+        dirs: [CODEX_HOOKS_DIR],
+        mcpConfig: CODEX_CONFIG_TOML,
         readsSharedSkills: true,
     },
     gemini: {

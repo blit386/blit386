@@ -4,6 +4,12 @@
     {
       "id": "format-on-edit",
       "intent": "Format the one file an AI-assisted edit just changed, to keep code consistent",
+      "codex": {
+        "event": "PostToolUse",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/format-file.cjs\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; node \"$d/.codex/hooks/format-file.cjs\"'",
+        "matcher": "apply_patch",
+        "timeout": 30
+      },
       "cursor": {
         "event": "afterFileEdit",
         "command": "node .cursor/hooks/format-file.cjs",
@@ -33,6 +39,12 @@
     {
       "id": "block-dangerous-shell",
       "intent": "Block risky destructive git commands that could lose game progress",
+      "codex": {
+        "event": "PreToolUse",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/codex-guard.cjs\" ]; do d=${d%/*}; done; node \"$d/.codex/hooks/codex-guard.cjs\" shell; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
+        "matcher": "Bash",
+        "timeout": 10
+      },
       "cursor": {
         "event": "beforeShellExecution",
         "command": "node .cursor/hooks/shell-safety.cjs",
@@ -65,6 +77,12 @@
     {
       "id": "protect-generated-and-secret-files",
       "intent": "Keep the assistant from hand-editing lock files and .env files",
+      "codex": {
+        "event": "PreToolUse",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/codex-guard.cjs\" ]; do d=${d%/*}; done; node \"$d/.codex/hooks/codex-guard.cjs\" patch; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
+        "matcher": "apply_patch",
+        "timeout": 10
+      },
       "claude": {
         "event": "PreToolUse",
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
@@ -91,6 +109,12 @@
     {
       "id": "session-start-bootstrap",
       "intent": "Install dependencies and run a checkup when a fresh remote/web session starts, so the game works without manual setup",
+      "codex": {
+        "event": "SessionStart",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/session-start.sh\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; cd \"$d\" && BLIT_PM_INSTALL=\"{{pmInstall}}\" sh .codex/hooks/session-start.sh'",
+        "matcher": "startup",
+        "timeout": 300
+      },
       "claude": {
         "event": "SessionStart",
         "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",

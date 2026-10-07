@@ -4,6 +4,8 @@
 // (`toolCall.args.TargetFile`, `toolCall.args.CommandLine`) and protocol (a JSON decision on stdout).
 // Fails closed on everything: Antigravity documents no behavior for a crashed hook, so an unreadable
 // payload, a missing argument, or a guard-core that will not load all answer with a deny.
+// The mode names (`files`, `shell`) are also written in content/hooks.manifest.json's `antigravity`
+// commands, which cannot import them - rename both together.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { readFileSync } = require('node:fs');
