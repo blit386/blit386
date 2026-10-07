@@ -1,1 +1,0 @@
-../../packages/kit/content/hooks/shell-safety.sh

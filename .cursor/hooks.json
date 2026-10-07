@@ -16,7 +16,7 @@
     ],
     "beforeShellExecution": [
       {
-        "command": "node .cursor/hooks/shell-safety-run.cjs .cursor/hooks/shell-safety.sh",
+        "command": "node .cursor/hooks/shell-safety.cjs",
         "timeout": 10,
         "failClosed": true
       }
