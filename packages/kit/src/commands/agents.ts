@@ -824,26 +824,31 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     // their entries. Only a real conflict (same server key, different content) or an existing file
     // that fails to parse as JSON falls through to the collision path below.
     const mergedPaths = new Set<string>();
+    // `kitContent` is what the kit itself generated, before any merge with a user's file. A merged path keeps it as
+    // its `.blit/base/` ancestor, not the merged text: with the merged text as the base the file would look
+    // unmodified, and the next `sync` would overwrite it with the kit-only version and drop the user's entries.
     const preparedGenerated = generated.map((file) => {
+        const unmerged = { ...file, kitContent: file.content };
+
         if (
             !MERGEABLE_JSON_PATHS.includes(file.path) ||
             !isSafeRelPath(file.path, root) ||
             !existsSync(resolve(root, file.path)) ||
             entryByPath.has(file.path)
         ) {
-            return file;
+            return unmerged;
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
         const mergedContent = tryMergeJsonConfig(file.path, onDisk, file.content);
 
         if (mergedContent === null) {
-            return file;
+            return unmerged;
         }
 
         mergedPaths.add(file.path);
 
-        return { ...file, content: mergedContent };
+        return { ...unmerged, content: mergedContent };
     });
 
     // Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files, the
@@ -897,7 +902,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
         writeRel(root, relPath, file.content);
         if (isKitManaged(fileClass)) {
-            writeBase(root, relPath, file.content, out);
+            writeBase(root, relPath, file.kitContent, out);
         }
         entryByPath.set(relPath, {
             path: relPath,

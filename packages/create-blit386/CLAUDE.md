@@ -38,16 +38,16 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    server, the persona pointer, and four hooks, with timeouts in milliseconds; its hook entries are `protect-files.cjs`
    and the Node `shell-guard.cjs` over `guard-core.cjs` (both exit 2 to block, since Gemini lets a call through on any
    other exit), `format-file.cjs`, and the session-start script. Gemini CLI ignores `.gemini/settings.json` in an
-   untrusted folder, so `AGENTS.md` tells the user to trust it. `blit agents add gemini` three-way-merges into an
-   existing `.gemini/settings.json` instead of colliding. Each adapter also emits a documentation-MCP config registering
-   the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json`, Cursor gets `.cursor/mcp.json`, and
-   Gemini CLI gets an `mcpServers` entry in `.gemini/settings.json`. The entries differ on purpose - Claude Code skips a
-   remote entry that has a `url` but no `type`, for Cursor a `type` marks a local stdio server, and for Gemini CLI `url`
-   means SSE, so streamable HTTP is `httpUrl`. Every path an adapter emits is built from
-   `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/` /
-   `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only a
-   script one of that adapter's own hook entries actually references gets copied, together with any sibling `.cjs` it
-   `require()`s (all under `packages/kit/`).
+   untrusted folder, so `AGENTS.md` tells the user to trust it. `blit agents add gemini` structurally merges into an
+   existing `.gemini/settings.json` instead of colliding (`sync` is what three-way merges). Each adapter also emits a
+   documentation-MCP config registering the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json`,
+   Cursor gets `.cursor/mcp.json`, and Gemini CLI gets an `mcpServers` entry in `.gemini/settings.json`. The entries
+   differ on purpose - Claude Code skips a remote entry that has a `url` but no `type`, for Cursor a `type` marks a
+   local stdio server, and for Gemini CLI `url` means SSE, so streamable HTTP is `httpUrl`. Every path an adapter emits
+   is built from `packages/kit/src/ownership.ts`, the single source both packages classify against. Within
+   `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project is decided by
+   `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually references gets copied,
+   together with any sibling `.cjs` it `require()`s (all under `packages/kit/`).
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated

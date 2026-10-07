@@ -35,7 +35,7 @@ any combination), the scaffolder also generates each assistant's config (Claude:
 content, and `npx blit agents sync` keeps it current. The MCP config registers the BLIT386 documentation server, so your
 assistant can search the live docs at blit386.dev instead of guessing; Claude Code's `settings.json` pre-approves it, so
 there is no separate prompt once the project folder is trusted. Did not pick one at the start? Run
-`npx blit agents add claude` `npx blit agents add cursor`, or `npx blit agents add gemini` later to set it up.
+`npx blit agents add claude`, `npx blit agents add cursor`, or `npx blit agents add gemini` later to set it up.
 
 ## Options
 

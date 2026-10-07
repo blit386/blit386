@@ -2149,6 +2149,76 @@ test('blit agents add gemini merges a pre-existing .gemini/settings.json', () =>
     }
 });
 
+test('a full sync after a merged add keeps the user entries in .gemini/settings.json', { skip: !hasGit }, () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-gemini-merge-sync-'));
+
+    try {
+        const project = join(work, 'gemini-merge-sync');
+        scaffold({
+            targetDir: project,
+            projectName: 'gemini-merge-sync',
+            pmInstall: 'pnpm install',
+            pmRunDev: 'pnpm run dev',
+            pmRunBuild: 'pnpm run build',
+            pmRunFormat: 'pnpm run format',
+            pmRunLint: 'pnpm run lint',
+            agents: [],
+            packageManager: 'pnpm@11.20.0',
+        });
+
+        mkdirSync(join(project, '.gemini'), { recursive: true });
+        writeFileSync(
+            join(project, '.gemini', 'settings.json'),
+            JSON.stringify({ theme: 'Dracula', mcpServers: { mine: { httpUrl: 'https://example.com/mcp' } } }),
+        );
+
+        assert.equal(runBlit(project, ['agents', 'add', 'gemini']).exitCode, 0);
+        const afterAdd = readFileSync(join(project, '.gemini', 'settings.json'), 'utf8');
+
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync.exitCode, 0, sync.output);
+
+        // The user's entries survive, and the file is exactly what the merge wrote.
+        assert.equal(readFileSync(join(project, '.gemini', 'settings.json'), 'utf8'), afterAdd);
+        assert.equal(JSON.parse(afterAdd).theme, 'Dracula');
+        assert.ok('mine' in JSON.parse(afterAdd).mcpServers);
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('a full sync after a merged add keeps the user servers in .mcp.json', { skip: !hasGit }, () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-merge-sync-'));
+
+    try {
+        const project = join(work, 'mcp-merge-sync');
+        scaffold({
+            targetDir: project,
+            projectName: 'mcp-merge-sync',
+            pmInstall: 'pnpm install',
+            pmRunDev: 'pnpm run dev',
+            pmRunBuild: 'pnpm run build',
+            pmRunFormat: 'pnpm run format',
+            pmRunLint: 'pnpm run lint',
+            agents: [],
+            packageManager: 'pnpm@11.20.0',
+        });
+
+        writeFileSync(
+            join(project, '.mcp.json'),
+            JSON.stringify({ mcpServers: { mine: { type: 'http', url: 'https://example.com/mcp' } } }),
+        );
+
+        assert.equal(runBlit(project, ['agents', 'add', 'claude']).exitCode, 0);
+        assert.equal(runBlit(project, ['agents', 'sync']).exitCode, 0);
+
+        const servers = JSON.parse(readFileSync(join(project, '.mcp.json'), 'utf8')).mcpServers;
+        assert.deepEqual(Object.keys(servers).sort(), ['blit386-docs', 'mine']);
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('blit agents add gemini falls back to a .new copy when context.fileName is not strings', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-gemini-badname-'));
 
