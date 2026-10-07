@@ -956,7 +956,7 @@ function buildCopilotHooks(
 /**
  * GitHub Actions pins shared with create-blit386's optional CI template (`templates/optional/ci/github/workflows/ci.yml`).
  * MANUAL-SYNC HAZARD: the kit cannot read that template, so bump both together (Renovate updates the template only);
- * create-blit386's `test/scaffold.test.mjs` compares the two and fails when they drift.
+ * create-blit386's `test/agent-copilot.test.mjs` compares the two and fails when they drift.
  */
 const ACTIONS_CHECKOUT = 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6';
 const ACTIONS_SETUP_NODE = 'actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6';
