@@ -239,6 +239,24 @@ describe('the hook commands, run as Codex runs them', () => {
         assert.match(result.stderr, /\[BLOCKED\]/);
     });
 
+    it('let the format and bootstrap hooks stop quietly outside any project, unlike the guards', () => {
+        for (const [event, matcher] of [
+            ['PostToolUse', 'apply_patch'],
+            ['SessionStart', 'startup'],
+        ]) {
+            const result = runCommand(
+                commandFor(event, matcher),
+                payload('apply_patch', updatePatch('x.js'), tmpdir()),
+                {
+                    cwd: tmpdir(),
+                },
+            );
+
+            assert.equal(result.status, 0, event);
+            assert.equal(result.stderr, '', event);
+        }
+    });
+
     it('format each file a patch touches, resolved against the session cwd, and never exit 2', () => {
         writeFileSync(join(src, 'game.js'), 'edited');
         writeFileSync(join(src, 'other.js'), 'untouched');

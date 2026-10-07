@@ -6,7 +6,7 @@
       "intent": "Format the one file an AI-assisted edit just changed, to keep code consistent",
       "codex": {
         "event": "PostToolUse",
-        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/format-file.cjs\" ]; do d=${d%/*}; done; node \"$d/.codex/hooks/format-file.cjs\"'",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/format-file.cjs\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; node \"$d/.codex/hooks/format-file.cjs\"'",
         "matcher": "apply_patch",
         "timeout": 30
       },
@@ -111,7 +111,7 @@
       "intent": "Install dependencies and run a checkup when a fresh remote/web session starts, so the game works without manual setup",
       "codex": {
         "event": "SessionStart",
-        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/session-start.sh\" ]; do d=${d%/*}; done; cd \"$d\" && BLIT_PM_INSTALL=\"{{pmInstall}}\" sh .codex/hooks/session-start.sh'",
+        "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/session-start.sh\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; cd \"$d\" && BLIT_PM_INSTALL=\"{{pmInstall}}\" sh .codex/hooks/session-start.sh'",
         "matcher": "startup",
         "timeout": 300
       },
