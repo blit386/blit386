@@ -22,6 +22,12 @@
         "command": "node .agents/hooks/format-file.cjs",
         "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
         "timeout": 30
+      },
+      "gemini": {
+        "event": "AfterTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
+        "matcher": "write_file|replace",
+        "timeout": 30000
       }
     },
     {
@@ -45,6 +51,12 @@
         "matcher": "run_command",
         "timeout": 10
       },
+      "gemini": {
+        "event": "BeforeTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
+        "matcher": "run_shell_command",
+        "timeout": 10000
+      },
       "opencode": {
         "event": "tool.execute.before",
         "scripts": ["guard-core.cjs"]
@@ -65,6 +77,12 @@
         "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
         "timeout": 10
       },
+      "gemini": {
+        "event": "BeforeTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
+        "matcher": "write_file|replace",
+        "timeout": 10000
+      },
       "opencode": {
         "event": "tool.execute.before",
         "scripts": ["guard-core.cjs"]
@@ -83,6 +101,12 @@
         "event": "PreInvocation",
         "command": "node .agents/hooks/antigravity-bootstrap.cjs \"{{pmInstall}}\"",
         "timeout": 300
+      },
+      "gemini": {
+        "event": "SessionStart",
+        "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
+        "matcher": "startup",
+        "timeout": 300000
       },
       "opencode": {
         "event": "session.created",

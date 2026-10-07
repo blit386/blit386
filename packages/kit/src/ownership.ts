@@ -57,6 +57,16 @@ export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 /** Cursor's MCP server configuration. */
 export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
+/** Root of Gemini CLI's generated configuration. */
+export const GEMINI_DIR = '.gemini/';
+export const GEMINI_HOOKS_DIR = `${GEMINI_DIR}hooks/`;
+
+/**
+ * Gemini CLI's project settings: the persona pointer (`context.fileName`), the docs MCP server, and every hook. One file
+ * for all three, and users extend it, so `blit agents add` merges into an existing copy instead of colliding with it.
+ */
+export const GEMINI_SETTINGS_JSON = `${GEMINI_DIR}settings.json`;
+
 /**
  * Antigravity's exact paths under `.agents/`. Never the bare `.agents/` prefix: the shared skills folder
  * (`SHARED_SKILLS_DIR`) lives beside these and belongs to many agents.
@@ -117,6 +127,7 @@ const KIT_OWNED_FILES: readonly string[] = [
     CLAUDE_MCP_JSON,
     CURSOR_HOOKS_JSON,
     CURSOR_MCP_JSON,
+    GEMINI_SETTINGS_JSON,
     ANTIGRAVITY_HOOKS_JSON,
     ANTIGRAVITY_MCP_JSON,
     OPENCODE_JSON,
@@ -133,6 +144,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CURSOR_RULES_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_SKILLS_DIR,
+    GEMINI_HOOKS_DIR,
     ANTIGRAVITY_HOOKS_DIR,
     OPENCODE_HOOKS_DIR,
     SHARED_SKILLS_DIR,
@@ -181,10 +193,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'opencode' | 'zed';
+export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'gemini' | 'opencode' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'antigravity', 'opencode', 'zed'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'antigravity', 'gemini', 'opencode', 'zed'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -233,6 +245,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         files: [ANTIGRAVITY_HOOKS_JSON, ANTIGRAVITY_MCP_JSON],
         dirs: [ANTIGRAVITY_HOOKS_DIR],
         mcpConfig: ANTIGRAVITY_MCP_JSON,
+        readsSharedSkills: true,
+    },
+    gemini: {
+        label: 'Gemini CLI',
+        setupHint: `adds ${GEMINI_SETTINGS_JSON}`,
+        files: [],
+        dirs: [GEMINI_DIR],
+        mcpConfig: GEMINI_SETTINGS_JSON,
         readsSharedSkills: true,
     },
     opencode: {

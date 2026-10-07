@@ -20,6 +20,7 @@ import {
     generateAntigravityAdapter,
     generateClaudeAdapter,
     generateCursorAdapter,
+    generateGeminiAdapter,
     kitRoot,
 } from '../dist/adapters.js';
 
@@ -67,6 +68,12 @@ test('the emitted MCP configs match the website server card', { skip: !hasServer
     assert.equal(card.transport.type, 'streamable-http');
     assert.equal(claude.mcpServers[name].type, 'http', 'Claude Code needs the http alias of streamable-http');
     assert.ok(!('type' in cursor.mcpServers[name]), 'Cursor infers the transport from url; a type would mark stdio');
+
+    // Gemini CLI reads `url` as SSE, so the same endpoint goes under `httpUrl`.
+    const gemini = readEmittedConfig(generateGeminiAdapter(kitRoot(), VARS), '.gemini/settings.json');
+    assert.deepEqual(Object.keys(gemini.mcpServers), [name]);
+    assert.equal(gemini.mcpServers[name].httpUrl, card.url);
+    assert.ok(!('url' in gemini.mcpServers[name]), 'a url key would make Gemini CLI speak SSE');
 });
 
 test('the Claude settings pre-approve the same server .mcp.json declares', () => {

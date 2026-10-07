@@ -50,6 +50,7 @@ import {
     CLAUDE_MCP_JSON,
     classifyFile,
     CURSOR_MCP_JSON,
+    GEMINI_SETTINGS_JSON,
     hasAgentFiles,
     isKitManaged,
     OPENCODE_JSON,
@@ -60,6 +61,7 @@ import {
 const MERGEABLE_JSON_PATHS: readonly string[] = [
     CLAUDE_MCP_JSON,
     CURSOR_MCP_JSON,
+    GEMINI_SETTINGS_JSON,
     ANTIGRAVITY_MCP_JSON,
     OPENCODE_JSON,
     ZED_SETTINGS_JSON,
@@ -148,6 +150,84 @@ function tryMergeJsonConfig(existingContent: string, generatedContent: string): 
     const merged = mergeJsonObjects(existing, JSON.parse(generatedContent) as Record<string, unknown>);
 
     return merged === null ? null : `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+/**
+ * Merge the kit's generated `.gemini/settings.json` into a pre-existing hand-written one: the docs server joins
+ * `mcpServers`, the kit's context files join `context.fileName`, and each hook matcher group joins its event's array
+ * unless an identical group is already there. Everything else the user set stays untouched. Returns null - the
+ * collision path - when the existing file is not a JSON object, one of the keys the kit writes into has the wrong shape,
+ * or an MCP server of the kit's name exists with different content.
+ */
+function tryMergeGeminiSettings(existingContent: string, generatedContent: string): string | null {
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(existingContent);
+    } catch {
+        return null;
+    }
+
+    if (!isPlainObject(existing)) {
+        return null;
+    }
+
+    const generated = JSON.parse(generatedContent) as {
+        context: { fileName: string[] };
+        mcpServers: Record<string, unknown>;
+        hooks: Record<string, unknown[]>;
+    };
+
+    const { context, mcpServers, hooks } = existing;
+
+    if (
+        (context !== undefined && !isPlainObject(context)) ||
+        (mcpServers !== undefined && !isPlainObject(mcpServers)) ||
+        (hooks !== undefined && !isPlainObject(hooks))
+    ) {
+        return null;
+    }
+
+    const fileName = context?.fileName;
+    const validFileName =
+        fileName === undefined ||
+        typeof fileName === 'string' ||
+        (Array.isArray(fileName) && fileName.every((name) => typeof name === 'string'));
+
+    if (!validFileName) {
+        return null;
+    }
+
+    const servers = mergeServerMaps(mcpServers ?? {}, generated.mcpServers);
+
+    if (servers === null) {
+        return null;
+    }
+
+    const mergedHooks: Record<string, unknown> = { ...hooks };
+
+    for (const [event, groups] of Object.entries(generated.hooks)) {
+        const current = mergedHooks[event] ?? [];
+
+        if (!Array.isArray(current)) {
+            return null;
+        }
+
+        mergedHooks[event] = [
+            ...current,
+            ...groups.filter((group) => !current.some((c) => isDeepStrictEqual(c, group))),
+        ];
+    }
+
+    const names: string[] = typeof fileName === 'string' ? [fileName] : (fileName ?? []);
+    const merged = {
+        ...existing,
+        context: { ...context, fileName: [...names, ...generated.context.fileName.filter((n) => !names.includes(n))] },
+        mcpServers: servers,
+        hooks: mergedHooks,
+    };
+
+    return `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -739,8 +819,9 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`, `opencode.json`) is the one exception: a clean structural merge with the
- * user's existing file is written and tracked like any other generated file instead of counting as a
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `opencode.json`, `.zed/settings.json`) is the one
+ * exception: a clean structural merge with the user's existing file is written and tracked like any other generated
+ * file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
  */
@@ -782,32 +863,34 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     // their entries. Only a real conflict (same server key, different content) or an existing file
     // that fails to parse as JSON falls through to the collision path below.
     const mergedPaths = new Set<string>();
-
-    // The kit's own content for each merged file: it, not the merged text, is the ancestor a later `sync` merges from.
-    // With the merged text as the base, an untouched file would look like the kit's pristine copy and `sync` would
-    // replace it with the generated one, dropping the user's own entries.
-    const kitContentByPath = new Map<string, string>();
+    // `kitContent` is what the kit itself generated, before any merge with a user's file. A merged path keeps it as
+    // its `.blit/base/` ancestor, not the merged text: with the merged text as the base the file would look
+    // unmodified, and the next `sync` would overwrite it with the kit-only version and drop the user's entries.
     const preparedGenerated = generated.map((file) => {
+        const unmerged = { ...file, kitContent: file.content };
+
         if (
             !MERGEABLE_JSON_PATHS.includes(file.path) ||
             !isSafeRelPath(file.path, root) ||
             !existsSync(resolve(root, file.path)) ||
             entryByPath.has(file.path)
         ) {
-            return file;
+            return unmerged;
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent = tryMergeJsonConfig(onDisk, file.content);
+        const mergedContent =
+            file.path === GEMINI_SETTINGS_JSON
+                ? tryMergeGeminiSettings(onDisk, file.content)
+                : tryMergeJsonConfig(onDisk, file.content);
 
         if (mergedContent === null) {
-            return file;
+            return unmerged;
         }
 
         mergedPaths.add(file.path);
-        kitContentByPath.set(file.path, file.content);
 
-        return { ...file, content: mergedContent };
+        return { ...unmerged, content: mergedContent };
     });
 
     // Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files, the
@@ -861,7 +944,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
         writeRel(root, relPath, file.content);
         if (isKitManaged(fileClass)) {
-            writeBase(root, relPath, kitContentByPath.get(relPath) ?? file.content, out);
+            writeBase(root, relPath, file.kitContent, out);
         }
         entryByPath.set(relPath, {
             path: relPath,

@@ -304,20 +304,23 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | OpenCode | Zed |
-| --- | --- | --- | --- | --- | --- | --- |
-| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
-| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
-| Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.cjs`) | `beforeShellExecution` (`failClosed`) | `.agents/hooks.json` PreToolUse on `run_command` (`antigravity-guard.cjs shell`; deny, or ask for a force push) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
-| Bootstrap | none | SessionStart hook | none | `.agents/hooks.json` PreInvocation (`antigravity-bootstrap.cjs`, once per conversation through a marker file; Antigravity has no session-start event) | plugin `event` handler on `session.created` | none |
-| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
-| Trust gate | n/a | yes | yes | yes | **none** - project plugins run on open | yes |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | Gemini CLI | OpenCode | Zed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | `.gemini/settings.json` `context.fileName: ["AGENTS.md", "GEMINI.md"]` (no `GEMINI.md` emitted) | reads `AGENTS.md` | reads `AGENTS.md` |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
+| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | `.gemini/settings.json` hooks (BeforeTool / AfterTool / SessionStart; timeouts in ms; every entry exits 2 to block and fails closed) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
+| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | BeforeTool `write_file\|replace` runs `protect-files.cjs` (hard deny) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
+| Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.cjs`) | `beforeShellExecution` (`failClosed`) | `.agents/hooks.json` PreToolUse on `run_command` (`antigravity-guard.cjs shell`; deny, or ask for a force push) | BeforeTool `run_shell_command` runs `shell-guard.cjs` (hard deny; the confirm tier denies too, since Gemini has no ask answer) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
+| Bootstrap | none | SessionStart hook | none | `.agents/hooks.json` PreInvocation (`antigravity-bootstrap.cjs`, once per conversation through a marker file; Antigravity has no session-start event) | SessionStart `startup` hook (`session-start.sh`) | plugin `event` handler on `session.created` | none |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `.gemini/settings.json` `mcpServers.blit386-docs.httpUrl` (`url` would mean SSE) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
+| Trust gate | n/a | yes | yes | yes | yes - Gemini CLI ignores `.gemini/settings.json` in an untrusted folder | **none** - project plugins run on open | yes |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
-The planned adapters (Gemini CLI, Codex, GitHub Copilot, and a surveyed long tail) are specified per agent under
+The Gemini CLI (BT-298), Antigravity, OpenCode, and Zed adapters have shipped. Gemini CLI's block-dangerous-shell row is
+a hard deny too: BeforeTool `run_shell_command` runs `shell-guard.cjs`, and Gemini has no ask answer, so the confirm
+tier also blocks. Gemini CLI ignores `.gemini/settings.json` in an untrusted folder, so `AGENTS.md` tells the user to
+trust it. The planned adapters (Codex, GitHub Copilot, and a surveyed long tail) are specified per agent under
 [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
 capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of them. Each
 implementation ticket adds its column here when the adapter ships - a column describes what the kit emits, not what an
@@ -338,9 +341,9 @@ The foundation those adapters build on (BT-564) is in place:
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
   Antigravity owns exact files beside the skills folder (`.agents/hooks.json`, `.agents/hooks/`,
-  `.agents/mcp_config.json`). Antigravity, OpenCode, and Zed read the folder (`readsSharedSkills`), so a game with any
-  of them set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those two gets
-  no `.agents/skills/`.
+  `.agents/mcp_config.json`). Antigravity, Gemini CLI (BT-298), OpenCode, and Zed read the folder (`readsSharedSkills`),
+  so a game with any of them set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with
+  only those two gets no `.agents/skills/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each

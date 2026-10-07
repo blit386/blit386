@@ -192,10 +192,15 @@ edits to lock files and `.env`, and destructive git commands) and formats each f
 `.agents/mcp_config.json` points it at the documentation server. Antigravity ignores all of that until you trust the
 workspace, so choose "trust" when it asks the first time you open the project.
 
+If you use Gemini CLI, `.gemini/settings.json` points it at this file (`context.fileName`), registers the same
+documentation server, and wires the edit and shell guards. Skills load from `.agents/skills/`. Gemini CLI ignores that
+whole settings file until you trust the folder, so trust the folder when Gemini CLI asks.
+
 For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-`npx blit agents add antigravity`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
+`npx blit agents add antigravity`, `npx blit agents add gemini`, `npx blit agents add opencode`, or
+`npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 
