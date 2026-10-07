@@ -137,7 +137,7 @@ Optional methods on your game class (the one you pass to `bootstrap()`):
 Do not call `registerHotReload` yourself - it is tooling-only. The `blit386()` Vite plugin injects it. Hand-calling it
 from game code is unsupported.
 
-## Do not use removed names
+## Do not use deprecated names
 
 `BT.buttonDown` (use `BT.isDown`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
 
