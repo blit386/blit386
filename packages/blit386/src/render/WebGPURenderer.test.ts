@@ -302,14 +302,14 @@ describe('with initialized renderer', () => {
         renderer.beginFrame();
 
         expect(() => {
-            renderer.endFrame();
+            renderer.endFrame(0);
         }).not.toThrow();
     });
 
     it('beginFrame + endFrame cycle works', () => {
         expect(() => {
             renderer.beginFrame();
-            renderer.endFrame();
+            renderer.endFrame(0);
         }).not.toThrow();
     });
 
@@ -317,7 +317,7 @@ describe('with initialized renderer', () => {
         expect(() => {
             for (let i = 0; i < 5; i++) {
                 renderer.beginFrame();
-                renderer.endFrame();
+                renderer.endFrame(0);
             }
         }).not.toThrow();
     });
@@ -329,7 +329,7 @@ describe('with initialized renderer', () => {
             renderer.drawPixel(new Vector2i(10, 10), 2);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawPixel delegates without throwing at (15,25)', () => {
@@ -339,7 +339,7 @@ describe('with initialized renderer', () => {
             renderer.drawPixel(new Vector2i(15, 25), 3);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawRectFill delegates without throwing', () => {
@@ -349,7 +349,7 @@ describe('with initialized renderer', () => {
             renderer.drawRectFill(new Rect2i(5, 5, 20, 20), 4);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawLine delegates without throwing', () => {
@@ -359,7 +359,7 @@ describe('with initialized renderer', () => {
             renderer.drawLine(new Vector2i(0, 0), new Vector2i(50, 50), 5);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawRect delegates without throwing', () => {
@@ -369,7 +369,7 @@ describe('with initialized renderer', () => {
             renderer.drawRect(new Rect2i(10, 10, 30, 30), 6);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('clearRect delegates without throwing', () => {
@@ -379,7 +379,7 @@ describe('with initialized renderer', () => {
             renderer.clearRect(new Rect2i(0, 0, 320, 240), 1);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('setClearColor works within a frame', () => {
@@ -389,7 +389,7 @@ describe('with initialized renderer', () => {
             renderer.setClearColor(4);
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('camera operations work within a frame cycle', () => {
@@ -399,7 +399,7 @@ describe('with initialized renderer', () => {
         renderer.resetCamera();
 
         expect(() => {
-            renderer.endFrame();
+            renderer.endFrame(0);
         }).not.toThrow();
     });
 
@@ -432,7 +432,7 @@ describe('with initialized renderer', () => {
             renderer.drawSprite(mockSheet, new Rect2i(0, 0, 8, 8), new Vector2i(10, 10));
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawBitmapText delegates without throwing', () => {
@@ -448,7 +448,7 @@ describe('with initialized renderer', () => {
             renderer.drawBitmapText(mockFont, new Vector2i(0, 0), '');
         }).not.toThrow();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('drawBarFill routes fills to overlayPrimitives, not primitives', () => {
@@ -462,7 +462,7 @@ describe('with initialized renderer', () => {
         renderer.drawRectFill(rect, 2);
         renderer.drawBarFill(rect, 5);
         renderer.drawBarFillOnTop(rect, 6);
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(sceneFill).toHaveBeenCalledOnce();
         expect(sceneFill).toHaveBeenCalledWith(rect, 2);
@@ -486,7 +486,7 @@ describe('with initialized renderer', () => {
         renderer.drawBitmapText(mockFont, new Vector2i(0, 0), '');
         renderer.drawLabel(mockFont, new Vector2i(4, 4), '');
         renderer.drawLabelOnTop(mockFont, new Vector2i(8, 8), 'Tip');
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(sceneText).toHaveBeenCalledOnce();
         expect(sceneText).toHaveBeenCalledWith(mockFont, new Vector2i(0, 0), '', 0);
@@ -531,7 +531,7 @@ describe('with initialized renderer', () => {
         renderer.drawLabel(mockFont, new Vector2i(5, 225), 'HUD');
         renderer.drawBarFillOnTop(new Rect2i(10, 200, 20, 13), 1);
         renderer.drawLabelOnTop(mockFont, new Vector2i(14, 200), '7');
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(encodeOrder).toEqual([
             'primitives',
@@ -557,7 +557,7 @@ describe('with initialized renderer', () => {
         expect(overlaySpriteReset).toHaveBeenCalledOnce();
         expect(overlayTopSpriteReset).toHaveBeenCalledOnce();
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('aggregates overflow and submitted vertices across scene pipelines', () => {
@@ -572,13 +572,13 @@ describe('with initialized renderer', () => {
         expect(diagnostics.primitiveOverflowCount).toBe(0);
         expect(diagnostics.spriteOverflowCount).toBe(0);
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 
     it('returns zeros after beginFrame clears prior frame pipeline state', () => {
         renderer.beginFrame();
         renderer.drawRectFill(new Rect2i(0, 0, 10, 10), 1);
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         renderer.beginFrame();
 
@@ -589,7 +589,7 @@ describe('with initialized renderer', () => {
             spriteSubmittedVertices: 0,
         });
 
-        renderer.endFrame();
+        renderer.endFrame(0);
     });
 });
 
@@ -669,7 +669,7 @@ describe('lazy overlay pipelines', () => {
 
             expect(getRendererPipelines(renderer).overlayPrimitives).toBe(firstInstance);
 
-            renderer.endFrame();
+            renderer.endFrame(0);
         } finally {
             uninstallMockNavigatorGPU();
         }
@@ -709,7 +709,7 @@ describe('lazy overlay pipelines', () => {
 
             expect(getRendererPipelines(renderer).overlaySprites).toBe(firstInstance);
 
-            renderer.endFrame();
+            renderer.endFrame(0);
         } finally {
             uninstallMockNavigatorGPU();
         }
@@ -741,7 +741,7 @@ describe('lazy overlay pipelines', () => {
                 spriteSubmittedVertices: 0,
             });
 
-            renderer.endFrame();
+            renderer.endFrame(0);
         } finally {
             uninstallMockNavigatorGPU();
         }
@@ -786,7 +786,7 @@ describe('lazy overlay pipelines', () => {
             expect(getRendererPipelines(renderer).overlayPrimitives).toBeNull();
 
             expect(() => {
-                renderer.endFrame();
+                renderer.endFrame(0);
             }).not.toThrow();
 
             // A later draw call retries construction and succeeds now that
@@ -797,7 +797,7 @@ describe('lazy overlay pipelines', () => {
             expect(getRendererPipelines(renderer).overlayPrimitives).not.toBeNull();
 
             expect(() => {
-                renderer.endFrame();
+                renderer.endFrame(0);
             }).not.toThrow();
         } finally {
             consoleError.mockRestore();
@@ -815,7 +815,7 @@ describe('resolveClearColor fallbacks', () => {
         await r.init();
 
         // No setPalette() call - endFrame() resolves clear color to black via fallback.
-        expect(() => r.endFrame()).not.toThrow();
+        expect(() => r.endFrame(0)).not.toThrow();
 
         uninstallMockNavigatorGPU();
     });
@@ -834,7 +834,7 @@ describe('resolveClearColor fallbacks', () => {
 
         r.setPalette(createTestPalette());
 
-        expect(() => r.endFrame()).not.toThrow();
+        expect(() => r.endFrame(0)).not.toThrow();
 
         getSpy.mockRestore();
         uninstallMockNavigatorGPU();
@@ -890,7 +890,7 @@ describe('frame capture', () => {
 
         expect(promise).toBeInstanceOf(Promise);
 
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         await promise;
 
@@ -949,7 +949,7 @@ describe('frame capture', () => {
         const capturePromise = renderer.captureFrame();
 
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         const blob = await capturePromise;
 
@@ -1010,7 +1010,7 @@ describe('frame capture', () => {
         const shortcutCapture = renderer.captureFrameForShortcut();
 
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         const blobs = await Promise.all([publicCapture, shortcutCapture]);
 
@@ -1058,7 +1058,7 @@ describe('frame capture', () => {
         (renderer as unknown as { resolvePass: unknown }).resolvePass = null;
 
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         await expect(publicCapture).rejects.toThrow('resolve pass not initialized');
 
@@ -1087,7 +1087,7 @@ describe('frame capture', () => {
         renderer.setPalette(createTestPalette());
 
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(copyTextureToBufferFn).not.toHaveBeenCalled();
 
@@ -1120,7 +1120,7 @@ describe('endFrame error paths', () => {
             renderer.drawRectFill(new Rect2i(0, 0, 10, 10), 2);
 
             expect(() => {
-                renderer.endFrame();
+                renderer.endFrame(0);
             }).not.toThrow();
 
             expect(errorSpy).toHaveBeenCalledWith(
@@ -1163,7 +1163,7 @@ describe('endFrame error paths', () => {
             renderer.beginFrame();
 
             expect(() => {
-                renderer.endFrame();
+                renderer.endFrame(0);
             }).not.toThrow();
 
             expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('zero dimensions'));
@@ -1255,7 +1255,7 @@ describe('palette dirty-flag auto-propagation', () => {
         expect(palette.isDirty).toBe(true);
 
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         // Renderer must clear the dirty flag as part of the GPU upload.
         expect(palette.isDirty).toBe(false);
@@ -1279,7 +1279,7 @@ describe('palette dirty-flag auto-propagation', () => {
 
         // First frame - initial upload due to isPaletteDirty.
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         const callsAfterFirstFrame = writeBufferSpy.mock.calls.length;
 
@@ -1288,7 +1288,7 @@ describe('palette dirty-flag auto-propagation', () => {
 
         // Second frame - must re-upload because palette.isDirty is true.
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(writeBufferSpy.mock.calls.length).toBeGreaterThan(callsAfterFirstFrame);
 
@@ -1313,7 +1313,7 @@ describe('palette dirty-flag auto-propagation', () => {
 
         // Baseline frame so the initial isPaletteDirty upload is out of the way.
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         writeBufferSpy.mockClear();
 
@@ -1328,7 +1328,7 @@ describe('palette dirty-flag auto-propagation', () => {
             clockMs += 16;
             manager.update(palette);
             renderer.beginFrame();
-            renderer.endFrame();
+            renderer.endFrame(0);
         }
 
         expect(writeBufferSpy).not.toHaveBeenCalled();
@@ -1337,7 +1337,7 @@ describe('palette dirty-flag auto-propagation', () => {
         clockMs += 1000;
         manager.update(palette);
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(writeBufferSpy).toHaveBeenCalledTimes(1);
 
@@ -1362,13 +1362,13 @@ describe('palette dirty-flag auto-propagation', () => {
 
         // First frame - initial upload.
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         const callsAfterFirstFrame = writeBufferSpy.mock.calls.length;
 
         // No mutation - second frame should NOT upload.
         renderer.beginFrame();
-        renderer.endFrame();
+        renderer.endFrame(0);
 
         expect(writeBufferSpy.mock.calls.length).toBe(callsAfterFirstFrame);
 
@@ -1445,22 +1445,7 @@ describe('post-process effects', () => {
         expect(effect.disposeSpy).toHaveBeenCalledOnce();
     });
 
-    it('passes the caller-supplied deltaMs to post-process effects', async () => {
-        const r = new WebGPURenderer(createMockGPUDevice(), createMockGPUCanvasContext(), new Vector2i(320, 240));
-
-        await r.init();
-        r.setPalette(createTestPalette());
-
-        const effect = createStubEffect('pixel');
-
-        r.addEffect(effect);
-        r.beginFrame();
-        r.endFrame(250);
-
-        expect(effect.updateSpy).toHaveBeenCalledWith(250, expect.anything());
-    });
-
-    it('treats an omitted deltaMs as no time passing', async () => {
+    it('passes the caller-supplied deltaMs to post-process effects and keeps no clock of its own', async () => {
         const r = new WebGPURenderer(createMockGPUDevice(), createMockGPUCanvasContext(), new Vector2i(320, 240));
 
         await r.init();
@@ -1471,10 +1456,12 @@ describe('post-process effects', () => {
 
         r.addEffect(effect);
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(250);
 
-        expect(effect.updateSpy).toHaveBeenCalledWith(0, expect.anything());
+        expect(effect.updateSpy).toHaveBeenCalledWith(250, expect.anything());
         expect(nowSpy).not.toHaveBeenCalled();
+
+        nowSpy.mockRestore();
     });
 
     it('endFrame uses scene + palette-resolve passes when no effects are registered', async () => {
@@ -1498,7 +1485,7 @@ describe('post-process effects', () => {
         r.setPalette(createTestPalette());
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         // Logical scene (`r8uint`) then palette resolve/upscale to the swap chain.
         expect(beginRenderPassCalls).toHaveLength(2);
@@ -1515,14 +1502,14 @@ describe('post-process effects', () => {
         r.addEffect(effect);
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         expect(effect.encodeSpy).toHaveBeenCalledTimes(1);
         expect(effect.updateSpy).toHaveBeenCalledTimes(1);
 
         // Second frame: another encode call.
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         expect(effect.encodeSpy).toHaveBeenCalledTimes(2);
     });
@@ -1540,7 +1527,7 @@ describe('post-process effects', () => {
         r.addEffect(effectB);
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         expect(effectA.encodeSpy).toHaveBeenCalledTimes(1);
         expect(effectB.encodeSpy).toHaveBeenCalledTimes(1);
@@ -1581,7 +1568,7 @@ describe('post-process effects', () => {
         r.addEffect(effect);
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         // The scene render pass must target the chain's offscreen view, NOT
         // the swap-chain view. The pixel effect reads that view and writes the
@@ -1632,7 +1619,7 @@ describe('post-process effects', () => {
         r.setPalette(createTestPalette());
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         const scenePass = beginRenderPassCalls[0];
         const sceneAttachment = scenePass?.colorAttachments ? [...scenePass.colorAttachments][0] : undefined;
@@ -1675,7 +1662,7 @@ describe('post-process effects', () => {
         expect(displayEffect.initSpy.mock.calls[0]?.[1]).not.toBe('r8uint');
 
         r.beginFrame();
-        r.endFrame();
+        r.endFrame(0);
 
         expect(pixelEffect.encodeSpy).toHaveBeenCalledTimes(1);
         expect(displayEffect.encodeSpy).toHaveBeenCalledTimes(1);

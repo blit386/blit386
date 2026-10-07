@@ -19,6 +19,15 @@ import type { FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
 
 describe('GameLoop', () => {
+    // Node has no cancelAnimationFrame; GameLoop.stop() calls it unconditionally, as in a browser.
+    beforeEach(() => {
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
     describe('constructor', () => {
         it('should accept a valid positive update interval', () => {
             const loop = new GameLoop(16.67, vi.fn(), vi.fn());

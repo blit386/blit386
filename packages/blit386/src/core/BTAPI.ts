@@ -225,7 +225,7 @@ export class BTAPI {
     private updateIntervalMs = 0;
 
     /** Tick-clock time of the previous loop render, for the post-process delta. */
-    private lastRenderFrameMs = 0;
+    private lastRenderClockMs = 0;
 
     /** `BT.random` state captured just before the boot `init()`, restored by a `'start'` seek. */
     private bootRandomState = 0;
@@ -239,17 +239,17 @@ export class BTAPI {
     /** True after `renderAt` stopped the loop, until {@link resume}; `captureFrame` then renders on demand. */
     private isSeekParked = false;
 
-    /** Serializes overlapping {@link renderAt} calls so seeks never interleave. */
+    /**
+     * Settles after every {@link renderAt} called so far. Seeks chain onto it so they never interleave, and
+     * {@link resume} and {@link captureFrame} chain onto it so they act on the seeked frame, in call order.
+     */
     private seekChain: Promise<void> = Promise.resolve();
-
-    /** {@link renderAt} calls queued or running; {@link resume} and {@link captureFrame} wait while above 0. */
-    private pendingSeeks = 0;
 
     /**
      * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
      * `BT.renderAt` can seek it and it never reads `performance.now()`.
      */
-    private readonly paletteEffects = new PaletteEffectManager(() => this.getFrameClockMs());
+    private readonly paletteEffects = new PaletteEffectManager(() => this.getTickClockMs());
 
     /** Default engine PRNG; time-seeded when the singleton is created. */
     private readonly random = new Random();
@@ -553,7 +553,7 @@ export class BTAPI {
         this.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
 
         this.pendingUpdateMs = 0;
-        this.lastRenderFrameMs = 0;
+        this.lastRenderClockMs = 0;
         this.pendingUpdateSteps = 0;
         this.pendingDrawCalls = 0;
         this.lastCameraOffset = Vector2i.zero();
@@ -827,13 +827,7 @@ export class BTAPI {
      * @returns Resolves after the target frame's `endFrame`; rejects on bad input, before init, or a failed `init()`.
      */
     public renderAt(seconds: number, from: RenderAtFrom = 'start'): Promise<void> {
-        this.pendingSeeks++;
-
-        const run = this.seekChain
-            .then(() => this.seek(seconds, from))
-            .finally(() => {
-                this.pendingSeeks--;
-            });
+        const run = this.seekChain.then(() => this.seek(seconds, from));
 
         this.seekChain = run.catch(() => undefined);
 
@@ -841,26 +835,15 @@ export class BTAPI {
     }
 
     /**
-     * Restarts the game loop after {@link renderAt} left it stopped, from the seeked tick. A no-op
-     * when no seek is holding the loop. While a `renderAt` is queued or running, waits for it to
-     * finish first.
+     * Restarts the game loop after {@link renderAt} left it stopped, from the seeked tick.
+     *
+     * Runs after every `renderAt` called before it has settled, and before any called after it, so it always
+     * resumes from the seeked frame the caller asked for. A no-op when, by then, no seek holds the loop.
+     *
+     * @returns Resolves once the loop has restarted, or once the call turned out to be a no-op.
      */
-    public resume(): void {
-        if (this.pendingSeeks > 0) {
-            void this.seekChain.then(() => this.resume());
-
-            return;
-        }
-
-        if (!this.loop || !this.isSeekParked) {
-            return;
-        }
-
-        this.isSeekParked = false;
-        this.audio?.unpark();
-        // TODO(BT-513): realign music with BT.musicSeek(BT.timeSeconds) once music transport lands.
-        // Until then a track started by a 'start' seek's init() re-run plays from 0 after resume.
-        this.loop.start();
+    public resume(): Promise<void> {
+        return this.seekChain.then(() => this.restartParkedLoop());
     }
 
     /**
@@ -1903,8 +1886,8 @@ export class BTAPI {
     /**
      * Captures the next rendered frame as a PNG blob.
      * The capture occurs on the next completed render cycle. After `renderAt`, while the loop is stopped, the capture
-     * re-renders the seeked frame instead of waiting for the next loop frame. While a `renderAt` is queued or running,
-     * the capture waits for it and captures its frame.
+     * re-renders the seeked frame instead of waiting for the next loop frame. Runs after every `renderAt` called before
+     * it, so an un-awaited seek's frame is the one captured; a throw from that re-render rejects the capture.
      *
      * @param size - `'output'` (default) captures at `outputSize`; `'display'` captures at
      *   logical `displaySize` without the upscale or display-tier effects.
@@ -1918,23 +1901,16 @@ export class BTAPI {
 
         const capture = size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
 
-        // Stopped by a seek, no endFrame is coming: re-render the current tick (zero updates, so no
-        // clock moves and the frame is the seeked one) to settle the capture. With a seek still
-        // pending, do it after the seek: its own render usually settles the capture first, and this
-        // re-render covers a seek that rejected.
-        const settleParked = (): void => {
+        // After every renderAt called so far: while a seek holds the loop stopped no endFrame is coming,
+        // so re-render the current tick (zero updates - no clock moves, the frame is the seeked one) to
+        // settle the capture. A throw from render() rejects the returned promise instead of hanging it.
+        return this.seekChain.then(() => {
             if (this.isSeekParked) {
                 this.loop?.step(0);
             }
-        };
 
-        if (this.pendingSeeks > 0) {
-            void this.seekChain.then(settleParked);
-        } else {
-            settleParked();
-        }
-
-        return capture;
+            return capture;
+        });
     }
 
     /**
@@ -2212,7 +2188,7 @@ export class BTAPI {
      *
      * @returns Milliseconds of fixed-step time since init or the last tick reset.
      */
-    private getFrameClockMs(): number {
+    private getTickClockMs(): number {
         return this.getTicks() * this.updateIntervalMs;
     }
 
@@ -2223,10 +2199,10 @@ export class BTAPI {
      * @returns Non-negative effect time for this frame.
      */
     private consumeFrameDeltaMs(): number {
-        const frameMs = this.getFrameClockMs();
-        const deltaMs = Math.max(0, frameMs - this.lastRenderFrameMs);
+        const nowMs = this.getTickClockMs();
+        const deltaMs = Math.max(0, nowMs - this.lastRenderClockMs);
 
-        this.lastRenderFrameMs = frameMs;
+        this.lastRenderClockMs = nowMs;
 
         return deltaMs;
     }
@@ -3101,7 +3077,9 @@ export class BTAPI {
                     renderer.beginFrame();
                     renderer.setCameraOffset(Vector2i.zero());
                     splash.draw(renderer, displaySize);
-                    renderer.endFrame();
+                    // No effect time passes during the splash: the tick clock has not started, and the
+                    // splash dissolve reads Splash's own clock, not deltaMs.
+                    renderer.endFrame(0);
                 } catch (error) {
                     // Settle rather than scheduling another frame. Nothing else can
                     // resolve this promise, so a throw here would leave init() pending
@@ -3133,6 +3111,22 @@ export class BTAPI {
     }
 
     /**
+     * The body of {@link resume}, run once every earlier seek has settled: restarts the loop and resumes
+     * parked audio when a seek still holds the loop stopped, otherwise does nothing.
+     */
+    private restartParkedLoop(): void {
+        if (!this.loop || !this.isSeekParked) {
+            return;
+        }
+
+        this.isSeekParked = false;
+        this.audio?.unpark();
+        // TODO(BT-513): realign music with BT.musicSeek(BT.timeSeconds) once music transport lands.
+        // Until then a track started by a 'start' seek's init() re-run plays from 0 after resume.
+        this.loop.start();
+    }
+
+    /**
      * One serialized seek: validate, stop and park, optionally replay from tick 0, then step.
      *
      * @param seconds - Target time in seconds.
@@ -3147,15 +3141,12 @@ export class BTAPI {
             throw new Error(errorMessages.RENDER_AT_NOT_READY_MESSAGE);
         }
 
-        if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) {
-            throw new Error(errorMessages.renderAtSecondsError(seconds));
-        }
-
         // Rounded, not floored: 3.2 * 60 is 192.00000000000003 and 0.1 * 3 * 60 can land just under.
         const targetTicks = Math.round(seconds * hwSettings.targetFPS);
 
-        // Finite but huge times (1e300) round to a tick count GameLoop.step() can't take.
-        if (!Number.isSafeInteger(targetTicks)) {
+        // Number.isFinite also rejects non-numbers; the safe-integer check catches a finite time too large
+        // to count in ticks (1e300), before anything is stopped or parked.
+        if (!Number.isFinite(seconds) || seconds < 0 || !Number.isSafeInteger(targetTicks)) {
             throw new Error(errorMessages.renderAtSecondsError(seconds));
         }
 
@@ -3187,7 +3178,7 @@ export class BTAPI {
      * Resets engine-owned state to how the boot run found it, then re-runs the game's `init()`.
      *
      * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, and the frame clock. State the game keeps in its own fields is `init()`'s
+     * input edges, ticks, and the post-process clock. State the game keeps in its own fields is `init()`'s
      * job to reset - that is the documented contract of a `'start'` seek. The splash and its handoff
      * fade are not replayed, but what the handoff did to palette effects is (see the end).
      *
@@ -3215,7 +3206,7 @@ export class BTAPI {
         this.lastCameraOffset = Vector2i.zero();
         this.drainInputEdges();
         loop.resetTicks();
-        this.lastRenderFrameMs = 0;
+        this.lastRenderClockMs = 0;
 
         let ok = false;
 

@@ -219,11 +219,7 @@ export class GameLoop {
      */
     public stop(): void {
         this.isRunning = false;
-
-        // Absent in some non-browser test environments, which only stub requestAnimationFrame.
-        if (typeof cancelAnimationFrame === 'function') {
-            cancelAnimationFrame(this.rafHandle);
-        }
+        cancelAnimationFrame(this.rafHandle);
     }
 
     /**

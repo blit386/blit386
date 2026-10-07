@@ -52,16 +52,16 @@ export class PaletteEffectManager {
     /** Provider time of the previous update, or of the add that woke the manager from idle. */
     private lastTime = 0;
 
-    /** Clock function returning milliseconds. Defaults to `performance.now()`. */
+    /** Clock function returning milliseconds. */
     private readonly timeProvider: () => number;
 
     /**
      * Creates a new effect manager.
      *
-     * @param timeProvider - Clock function returning milliseconds. Defaults to
-     *   `performance.now()`; the engine passes its tick clock. Pass a custom function for deterministic unit tests.
+     * @param timeProvider - Clock function returning milliseconds. The engine passes its tick clock
+     *   (`ticks * 1000 / targetFPS`); the splash passes its own wall clock; tests pass a fake clock.
      */
-    constructor(timeProvider: () => number = () => performance.now()) {
+    constructor(timeProvider: () => number) {
         this.timeProvider = timeProvider;
     }
 

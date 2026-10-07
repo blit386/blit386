@@ -40,6 +40,37 @@ async function installManualClock(page: Page): Promise<void> {
                 callback(now);
             }
         };
+        // Describes a captured PNG: its bytes as base64 so Node can compare them, and its distinct-color count so
+        // two blank frames cannot pass as a match.
+        w.__describeBlob = async (blob: Blob): Promise<{ png: string; colors: number }> => {
+            const bytes = new Uint8Array(await blob.arrayBuffer());
+            let binary = '';
+
+            for (const byte of bytes) {
+                binary += String.fromCharCode(byte);
+            }
+
+            const bitmap = await createImageBitmap(blob);
+            const context = new OffscreenCanvas(bitmap.width, bitmap.height).getContext('2d');
+
+            if (!context) {
+                throw new Error('OffscreenCanvas 2D context unavailable');
+            }
+
+            context.drawImage(bitmap, 0, 0);
+
+            const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+            const colors = new Set<number>();
+
+            for (let i = 0; i < data.length; i += 4) {
+                // The defaults only satisfy noUncheckedIndexedAccess: a 3-byte subarray always has three values.
+                const [r = 0, g = 0, b = 0] = data.subarray(i, i + 3);
+
+                colors.add((r << 16) | (g << 8) | b);
+            }
+
+            return { png: btoa(binary), colors: colors.size };
+        };
     });
 }
 
@@ -78,35 +109,15 @@ interface CapturedFrame {
     colors: number;
 }
 
-/**
- * Describes a PNG Blob in the page: its bytes as base64 so Node can compare them, and its distinct-color count so two
- * blank frames cannot pass as a match.
- */
-const DESCRIBE_BLOB = `async (blob) => {
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    const bitmap = await createImageBitmap(blob);
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext('2d');
-    context.drawImage(bitmap, 0, 0);
-    const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
-    const colors = new Set();
-    for (let i = 0; i < data.length; i += 4) colors.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
-    return { png: btoa(binary), colors: colors.size };
-}`;
-
 /** Runs the live loop to TARGET_TICK in exact fixed steps, then captures at that tick. */
 async function captureLive(page: Page): Promise<CapturedFrame> {
     return page.evaluate(
-        async ({ target, frameMs, describeSource }) => {
+        async ({ target, frameMs }) => {
             const w = window as unknown as {
                 BT: { ticks: number; captureFrame: () => Promise<Blob> };
                 __advanceFrame: (ms: number) => void;
+                __describeBlob: (blob: Blob) => Promise<{ png: string; colors: number }>;
             };
-            const describe = new Function(`return ${describeSource}`)() as (
-                blob: Blob,
-            ) => Promise<{ png: string; colors: number }>;
 
             // GameLoop.start() spends two frames before timing begins.
             w.__advanceFrame(0);
@@ -129,22 +140,20 @@ async function captureLive(page: Page): Promise<CapturedFrame> {
 
             w.__advanceFrame(0);
 
-            return describe(await capture);
+            return w.__describeBlob(await capture);
         },
-        { target: TARGET_TICK, frameMs: FRAME_MS, describeSource: DESCRIBE_BLOB },
+        { target: TARGET_TICK, frameMs: FRAME_MS },
     );
 }
 
-/** Seeks a fresh page straight to TARGET_TICK and captures. */
+/** Seeks the page to TARGET_TICK with a default ('start') renderAt and captures. */
 async function captureSeek(page: Page): Promise<CapturedFrame> {
     return page.evaluate(
-        async ({ seconds, target, describeSource }) => {
+        async ({ seconds, target }) => {
             const w = window as unknown as {
                 BT: { ticks: number; renderAt: (s: number) => Promise<void>; captureFrame: () => Promise<Blob> };
+                __describeBlob: (blob: Blob) => Promise<{ png: string; colors: number }>;
             };
-            const describe = new Function(`return ${describeSource}`)() as (
-                blob: Blob,
-            ) => Promise<{ png: string; colors: number }>;
 
             await w.BT.renderAt(seconds);
 
@@ -152,9 +161,9 @@ async function captureSeek(page: Page): Promise<CapturedFrame> {
                 throw new Error(`seek landed on tick ${w.BT.ticks}`);
             }
 
-            return describe(await w.BT.captureFrame());
+            return w.__describeBlob(await w.BT.captureFrame());
         },
-        { seconds: TARGET_TICK / 60, target: TARGET_TICK, describeSource: DESCRIBE_BLOB },
+        { seconds: TARGET_TICK / 60, target: TARGET_TICK },
     );
 }
 
@@ -190,11 +199,14 @@ test.describe('BT.renderAt determinism', () => {
     test('a seeked frame matches the live loop byte for byte (WebGPU)', async ({ context }) => {
         const result = await liveVersusSeek(context, '?seed=7');
 
-        if (result.backend !== 'webgpu') {
+        // Skip only a silent software fallback (no WebGPU in this browser); a failed init (null) must fail.
+        if (result.backend === 'software') {
             test.skip(true, 'WebGPU not available in this environment');
 
             return;
         }
+
+        expect(result.backend).toBe('webgpu');
 
         expect(result.live?.colors).toBeGreaterThan(2);
         expect(result.seek?.png).toBe(result.live?.png);

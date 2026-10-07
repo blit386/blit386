@@ -76,6 +76,15 @@ function resetSingleton(): void {
     (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
 }
 
+/**
+ * Reads the private palette effect manager's active count.
+ *
+ * @returns Number of palette effects currently registered.
+ */
+function activeEffectCount(): number {
+    return (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount;
+}
+
 function makeMockDemo(targetFPS = 60, initResult = true, audioVoices?: number): IBTDemo {
     return {
         configure: vi.fn().mockReturnValue({
@@ -476,6 +485,7 @@ describe('BTAPI', () => {
 
         vi.resetAllMocks();
         vi.stubGlobal('requestAnimationFrame', vi.fn());
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
         installMockNavigatorGPU();
     });
@@ -794,7 +804,7 @@ describe('BTAPI', () => {
         /** Boots a mock demo and returns the private loop and renderer for driving frames. */
         async function bootForClock(): Promise<{
             loop: GameLoop;
-            renderer: { endFrame: (deltaMs?: number) => void };
+            renderer: { endFrame: (deltaMs: number) => void };
             demo: IBTDemo;
         }> {
             const demo = makeMockDemo();
@@ -804,7 +814,7 @@ describe('BTAPI', () => {
 
             const internals = BTAPI.instance as unknown as {
                 loop: GameLoop;
-                renderer: { endFrame: (deltaMs?: number) => void };
+                renderer: { endFrame: (deltaMs: number) => void };
             };
 
             return { loop: internals.loop, renderer: internals.renderer, demo };
@@ -1001,9 +1011,7 @@ describe('BTAPI', () => {
             await BTAPI.instance.renderAt(0.5);
 
             expect(clearSpy).toHaveBeenCalled();
-            expect(
-                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
-            ).toBe(0);
+            expect(activeEffectCount()).toBe(0);
         });
 
         it("from 'start' rejects when the re-run init fails", async () => {
@@ -1060,9 +1068,7 @@ describe('BTAPI', () => {
             await boot(demo);
             await BTAPI.instance.renderAt(0.5);
 
-            expect(
-                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
-            ).toBe(1);
+            expect(activeEffectCount()).toBe(1);
         });
 
         it("from 'start' drops palette effects init() starts when the boot run had a splash", async () => {
@@ -1080,9 +1086,7 @@ describe('BTAPI', () => {
 
             await BTAPI.instance.renderAt(0.5);
 
-            expect(
-                (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount,
-            ).toBe(0);
+            expect(activeEffectCount()).toBe(0);
         });
 
         it("from 'current' steps forward only and rejects a past target", async () => {
@@ -1144,9 +1148,9 @@ describe('BTAPI', () => {
             await expect(next).resolves.toBeUndefined();
             expect(BTAPI.instance.getTicks()).toBe(120);
 
-            // Nothing is pending any more, so resume() acts right away.
+            // Every earlier seek has settled, so the resume() promise settles with the loop restarted.
             vi.mocked(requestAnimationFrame).mockClear();
-            BTAPI.instance.resume();
+            await BTAPI.instance.resume();
 
             expect(requestAnimationFrame).toHaveBeenCalled();
         });
@@ -1214,6 +1218,36 @@ describe('BTAPI', () => {
             expect(await blob.text()).toBe('60');
         });
 
+        it('resume() runs in call order, so a seek queued after it leaves the loop stopped', async () => {
+            const { demo } = await boot();
+            const releaseInit = deferNextInit(demo);
+
+            const first = BTAPI.instance.renderAt(1);
+            const resumed = BTAPI.instance.resume();
+            const second = BTAPI.instance.renderAt(2, 'current');
+
+            await settle();
+            releaseInit(true);
+            await Promise.all([first, resumed, second]);
+
+            // The second seek ran after the resume, stopped the loop again, and holds it on tick 120.
+            expect(BTAPI.instance.getTicks()).toBe(120);
+            expect((BTAPI.instance as unknown as { isSeekParked: boolean }).isSeekParked).toBe(true);
+        });
+
+        it('captureFrame rejects instead of hanging when the re-render after a seek throws', async () => {
+            const { demo } = await boot();
+            const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
+
+            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockReturnValue(new Promise<Blob>(() => undefined));
+            await BTAPI.instance.renderAt(1, 'current');
+            vi.mocked(demo.render).mockImplementation(() => {
+                throw new Error('render broke');
+            });
+
+            await expect(BTAPI.instance.captureFrame('display')).rejects.toThrow('render broke');
+        });
+
         it('leaves the loop stopped until resume()', async () => {
             const { demo, loop } = await boot();
 
@@ -1227,7 +1261,7 @@ describe('BTAPI', () => {
             expect(demo.update).not.toHaveBeenCalled();
 
             vi.mocked(requestAnimationFrame).mockClear();
-            BTAPI.instance.resume();
+            await BTAPI.instance.resume();
 
             expect(requestAnimationFrame).toHaveBeenCalled();
         });
@@ -1236,7 +1270,7 @@ describe('BTAPI', () => {
             await boot();
             vi.mocked(requestAnimationFrame).mockClear();
 
-            BTAPI.instance.resume();
+            await BTAPI.instance.resume();
 
             expect(requestAnimationFrame).not.toHaveBeenCalled();
         });
@@ -1278,7 +1312,7 @@ describe('BTAPI', () => {
             expect(refs.length).toBeGreaterThan(0);
             expect(refs.every((ref) => ref === INVALID_SOUND_REF)).toBe(true);
 
-            BTAPI.instance.resume();
+            await BTAPI.instance.resume();
 
             expect(audio.unpark).toHaveBeenCalledTimes(1);
         });
@@ -2064,7 +2098,7 @@ describe('BTAPI', () => {
             const capturePromise = BTAPI.instance.captureFrame();
 
             renderer?.beginFrame();
-            renderer?.endFrame();
+            renderer?.endFrame(0);
 
             const blob = await capturePromise;
             const { width, height } = await decodedPngSize(blob);
@@ -2093,7 +2127,7 @@ describe('BTAPI', () => {
             const capturePromise = BTAPI.instance.captureFrame('display');
 
             renderer?.beginFrame();
-            renderer?.endFrame();
+            renderer?.endFrame(0);
 
             const blob = await capturePromise;
             const { width, height } = await decodedPngSize(blob);
@@ -2121,7 +2155,7 @@ describe('BTAPI', () => {
             const shortcutCapture = (renderer as NonNullable<typeof renderer>).captureFrameForShortcut();
 
             renderer?.beginFrame();
-            renderer?.endFrame();
+            renderer?.endFrame(0);
 
             const [publicBlob, shortcutBlob] = await Promise.all([publicCapture, shortcutCapture]);
 
@@ -2172,7 +2206,7 @@ describe('BTAPI', () => {
             expect(renderer).not.toBeNull();
 
             renderer?.beginFrame();
-            renderer?.endFrame();
+            renderer?.endFrame(0);
 
             const blob = await capturePromise;
             expect(blob.type).toBe('image/png');
@@ -2262,7 +2296,7 @@ describe('BTAPI', () => {
             const capturePromise = BTAPI.instance.captureFrame('display');
 
             renderer?.beginFrame();
-            renderer?.endFrame();
+            renderer?.endFrame(0);
 
             const blob = await capturePromise;
 
@@ -5498,6 +5532,7 @@ describe('camera reset persistence through the real game loop', () => {
         resetSingleton();
 
         vi.resetAllMocks();
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
         installMockNavigatorGPU();
     });
 
@@ -5626,15 +5661,6 @@ describe('camera reset persistence through the real game loop', () => {
 });
 
 describe('BTAPI.paletteFadeExposure', () => {
-    /**
-     * Reads the private effect manager's active count.
-     *
-     * @returns Number of palette effects currently registered.
-     */
-    function activeEffectCount(): number {
-        return (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount;
-    }
-
     afterEach(() => {
         BTAPI.instance.paletteClearEffects();
     });
@@ -5690,15 +5716,6 @@ describe('BTAPI splash palette capture', () => {
      */
     function renderPalette(): Palette | null {
         return (BTAPI.instance as unknown as { palette: Palette | null }).palette;
-    }
-
-    /**
-     * Reads the private effect manager's active count.
-     *
-     * @returns Number of palette effects currently registered.
-     */
-    function activeEffectCount(): number {
-        return (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount;
     }
 
     /**
@@ -5944,6 +5961,7 @@ describe('BTAPI splash lifecycle in init', () => {
         pendingFrames.length = 0;
 
         vi.resetAllMocks();
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
         installMockNavigatorGPU();
         driveAnimationFrames();
     });

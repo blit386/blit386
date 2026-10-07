@@ -399,7 +399,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      *
      * @param deltaMs - Effect time since the previous frame, from the caller (the engine's tick clock).
      */
-    endFrame(deltaMs: number = 0): void {
+    endFrame(deltaMs: number): void {
         const swapTexture = this.acquireSwapTexture();
 
         if (!swapTexture) {
