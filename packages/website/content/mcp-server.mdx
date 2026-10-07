@@ -89,6 +89,16 @@ Add to `.agents/mcp_config.json` in your project. Antigravity reads only `server
 }
 ```
 
+### Codex
+
+Add to `.codex/config.toml` in your project (Codex reads it only once you trust the project), or to
+`~/.codex/config.toml` for every project:
+
+```toml
+[mcp_servers.blit386-docs]
+url = "https://blit386.dev/mcp"
+```
+
 ## Testing with curl
 
 ```bash

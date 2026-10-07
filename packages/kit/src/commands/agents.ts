@@ -35,6 +35,7 @@ import {
     agentsFile,
     collectDocs,
     generateAgentFiles,
+    MCP_SERVER_NAME,
     readKitVersion,
     replaceManagedRegion,
 } from '../adapters';
@@ -49,6 +50,7 @@ import {
     ANTIGRAVITY_MCP_JSON,
     CLAUDE_MCP_JSON,
     classifyFile,
+    CODEX_CONFIG_TOML,
     CURSOR_MCP_JSON,
     GEMINI_SETTINGS_JSON,
     hasAgentFiles,
@@ -57,15 +59,8 @@ import {
     ZED_SETTINGS_JSON,
 } from '../ownership';
 
-/** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [
-    CLAUDE_MCP_JSON,
-    CURSOR_MCP_JSON,
-    GEMINI_SETTINGS_JSON,
-    ANTIGRAVITY_MCP_JSON,
-    OPENCODE_JSON,
-    ZED_SETTINGS_JSON,
-];
+/** Merges the kit's generated config into a user's untracked copy; null means "collision, do not merge". */
+type ConfigMerge = (existingContent: string, generatedContent: string) => string | null;
 
 /** True for a plain JSON object (not an array or null) - the only shape a JSON config map allows. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -229,6 +224,45 @@ function tryMergeGeminiSettings(existingContent: string, generatedContent: strin
 
     return `${JSON.stringify(merged, null, 2)}\n`;
 }
+
+/**
+ * Merge the kit's `.codex/config.toml` into a hand-written one, as text: the kit has no TOML parser, and its part of the
+ * file is one table. A file that never names the docs server gets the kit's table appended - a new table at the end is
+ * valid TOML whatever precedes it. A file that already holds exactly the kit's table is kept as it is. Anything else
+ * naming the server (another URL, extra keys, a dotted or inline spelling) returns null - the collision path - because a
+ * second definition of the same table is a TOML error, and Codex refuses to start on a trusted project's broken config.
+ */
+function tryMergeCodexConfig(existingContent: string, generatedContent: string): string | null {
+    const lines = existingContent.split(/\r?\n/).map((line) => line.trim());
+
+    if (!lines.some((line) => line.includes(MCP_SERVER_NAME))) {
+        return [existingContent.trimEnd(), generatedContent].filter((part) => part !== '').join('\n\n');
+    }
+
+    const settings = (block: string[]) => block.filter((line) => line !== '' && !line.startsWith('#'));
+    const kitTable = settings(generatedContent.split('\n'));
+    const start = lines.findIndex((line) => line === kitTable[0]);
+
+    if (start === -1) {
+        return null;
+    }
+
+    const next = lines.findIndex((line, index) => index > start && line.startsWith('['));
+    const table = settings(lines.slice(start, next === -1 ? undefined : next));
+
+    return isDeepStrictEqual(table, kitTable) ? existingContent : null;
+}
+
+/** Config paths `runAddAgent` merges into an untracked existing copy instead of colliding with it. */
+const CONFIG_MERGES: Readonly<Record<string, ConfigMerge>> = {
+    [CLAUDE_MCP_JSON]: tryMergeJsonConfig,
+    [CURSOR_MCP_JSON]: tryMergeJsonConfig,
+    [GEMINI_SETTINGS_JSON]: tryMergeGeminiSettings,
+    [ANTIGRAVITY_MCP_JSON]: tryMergeJsonConfig,
+    [OPENCODE_JSON]: tryMergeJsonConfig,
+    [ZED_SETTINGS_JSON]: tryMergeJsonConfig,
+    [CODEX_CONFIG_TOML]: tryMergeCodexConfig,
+};
 
 /**
  * Check the project's `.blit/manifest.json` for drift.
@@ -858,19 +892,20 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     );
 
     // A generated path that already exists on disk but is not tracked in the manifest belongs to the
-    // user. For an allowlisted JSON config (the MCP config files), try a structural merge first: the
-    // kit's server can usually be added next to whatever the user already registered without touching
-    // their entries. Only a real conflict (same server key, different content) or an existing file
-    // that fails to parse as JSON falls through to the collision path below.
+    // user. For a config in `CONFIG_MERGES` (the MCP and settings files), try a merge first: the kit's
+    // server can usually be added next to whatever the user already registered without touching their
+    // entries. Only a real conflict (same server key, different content) or an existing file the merge
+    // cannot read falls through to the collision path below.
     const mergedPaths = new Set<string>();
     // `kitContent` is what the kit itself generated, before any merge with a user's file. A merged path keeps it as
     // its `.blit/base/` ancestor, not the merged text: with the merged text as the base the file would look
     // unmodified, and the next `sync` would overwrite it with the kit-only version and drop the user's entries.
     const preparedGenerated = generated.map((file) => {
         const unmerged = { ...file, kitContent: file.content };
+        const merge = CONFIG_MERGES[file.path];
 
         if (
-            !MERGEABLE_JSON_PATHS.includes(file.path) ||
+            merge === undefined ||
             !isSafeRelPath(file.path, root) ||
             !existsSync(resolve(root, file.path)) ||
             entryByPath.has(file.path)
@@ -879,10 +914,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent =
-            file.path === GEMINI_SETTINGS_JSON
-                ? tryMergeGeminiSettings(onDisk, file.content)
-                : tryMergeJsonConfig(onDisk, file.content);
+        const mergedContent = merge(onDisk, file.content);
 
         if (mergedContent === null) {
             return unmerged;

@@ -26,9 +26,9 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     to take the kit version. Use `--check` to report drift without writing (CI-safe; `blit doctor` runs it too), or
     `--force [path...]` to take the kit version back. Once sync has merged your edits into a kit file, `--check` treats
     that file as settled - it will not keep reporting it as drifted.
-  - `blit agents add <claude|cursor|antigravity|gemini|opencode|zed>` - set up the files for one AI assistant in a game
-    that did not pick it at the start. It writes the new files and records them so `blit agents sync` keeps them fresh.
-    It never overwrites a file you already have; if one is in the way it saves the kit version next to it as
+  - `blit agents add <claude|cursor|antigravity|codex|gemini|opencode|zed>` - set up the files for one AI assistant in a
+    game that did not pick it at the start. It writes the new files and records them so `blit agents sync` keeps them
+    fresh. It never overwrites a file you already have; if one is in the way it saves the kit version next to it as
     `<file>.new`.
   - `blit clean` - replace `src/game.ts` (or `src/game.js`) with an empty skeleton: the same `init`/`update`/`render`
     shape, no drawing, no input handling, ready for your own code. No other project file is touched other than
@@ -38,8 +38,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit help` - list the commands.
 - `content/` - everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and
-  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/Antigravity/Gemini CLI/OpenCode/Zed file generation lives
-  in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` /
+  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/Antigravity/Codex/Gemini CLI/OpenCode/Zed file generation
+  lives in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` /
   `blit agents add` share one implementation; the paths it emits and their sync ownership classes are defined once in
   `src/ownership.ts`. The same manifest drives Cursor's `.cursor/hooks.json` and Claude Code's `.claude/settings.json`
   (format-on-edit, which formats only the file that was edited, + block-dangerous-shell). Claude Code also gets a hook
@@ -48,13 +48,13 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   without manual setup; Cursor has no SessionStart-equivalent event, so it does not get this hook. Each adapter also
   emits a documentation-MCP config - `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor,
   `.agents/mcp_config.json` for Antigravity, an `mcp` entry in `opencode.json` for OpenCode, an `mcpServers` entry in
-  `.gemini/settings.json` for Gemini CLI - registering the `blit386-docs` server at `https://blit386.dev/mcp` so an
-  assistant can search the live docs. The Claude adapter pre-approves it in `.claude/settings.json`
-  (`enabledMcpjsonServers`), so Claude Code does not prompt for it once the project folder is trusted. It also writes
-  `.claude/launch.json`, which tells the Claude desktop app's built-in browser pane how to start the game (Vite on port
-  5173, through your package manager), so a preview needs no setup. That file is yours: the desktop app and other tools
-  write into it, so `blit agents sync` and `blit agents add` create it only when it is missing and never change, merge,
-  or `--force` an existing one.
+  `.gemini/settings.json` for Gemini CLI, a `[mcp_servers.blit386-docs]` table in `.codex/config.toml` for Codex -
+  registering the `blit386-docs` server at `https://blit386.dev/mcp` so an assistant can search the live docs. The
+  Claude adapter pre-approves it in `.claude/settings.json` (`enabledMcpjsonServers`), so Claude Code does not prompt
+  for it once the project folder is trusted. It also writes `.claude/launch.json`, which tells the Claude desktop app's
+  built-in browser pane how to start the game (Vite on port 5173, through your package manager), so a preview needs no
+  setup. That file is yours: the desktop app and other tools write into it, so `blit agents sync` and `blit agents add`
+  create it only when it is missing and never change, merge, or `--force` an existing one.
 
   Antigravity gets `.agents/hooks.json` plus `.agents/hooks/` (format-on-edit, block-dangerous-shell, the lock-file /
   `.env` guard, and a bootstrap that installs dependencies and runs `blit doctor` once per conversation, since
@@ -77,10 +77,17 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   project plugins run on open - the plugin's header comment lists everything it does. You can extend `opencode.json`:
   `blit agents add opencode` merges the kit's entries into yours, and `blit agents sync` three-way merges your edits.
 
-  Gemini CLI gets `.gemini/settings.json` (the `AGENTS.md` pointer `context.fileName`, the docs server under `httpUrl` -
-  Gemini reads `url` as SSE - and the same four hooks in Gemini's dialect, timeouts in milliseconds) plus
-  `.gemini/hooks/`. Gemini CLI ignores that file until you trust the folder, and `blit agents add gemini` merges into a
-  `.gemini/settings.json` you already have.
+  Codex gets `.codex/hooks.json`, `.codex/config.toml`, and `.codex/hooks/`, and reads `AGENTS.md` and the shared
+  `.agents/skills/` folder by itself. The hooks are the same four (the lock-file / `.env` guard and
+  block-dangerous-shell as thin fail-closed scripts over the guard core, format-on-edit, and the session-start
+  bootstrap). Codex sends an edit as raw `apply_patch` text, so the guard core parses the file paths out of the patch,
+  and each hook command finds the project from the session's directory, since Codex runs hooks there with no project
+  variable. Codex has no ask answer, so the confirm-tier git commands are refused outright. `config.toml` is one
+  `[mcp_servers.blit386-docs]` table: you can add your own settings around it, `blit agents add codex` appends the table
+  to a `config.toml` you already have, and `blit agents sync` three-way merges your edits. Codex ignores `.codex/` until
+  you trust the project, and then runs each project hook only after you approve it in `/hooks` (again whenever a kit
+  update changes it). No `.codex/rules/` (experimental, and one bad rules file switches off every rule) and no
+  `.codex/environments/` (undocumented schema).
 
 ## The game-author skills
 
@@ -88,9 +95,9 @@ Every scaffolded game gets these. Your AI assistant loads one on its own when th
 name them. In Claude Code they live in `.claude/skills/<name>/SKILL.md`. In Cursor they live in
 `.cursor/skills/<name>/SKILL.md`, with the same name and description, so Cursor loads one on its own too, and you can
 still invoke one by name (`/add-sprite`). A game set up for several assistants ships each one's copy. Cursor also reads
-`.claude/skills/`, so the same skill can show up twice there; both copies are the same text. Antigravity, Gemini CLI,
-OpenCode, Zed (and most other assistants) read one shared folder, `.agents/skills/<name>/SKILL.md`, which the kit writes
-once whenever such an assistant is set up.
+`.claude/skills/`, so the same skill can show up twice there; both copies are the same text. Antigravity, Codex, Gemini
+CLI, OpenCode, Zed (and most other assistants) read one shared folder, `.agents/skills/<name>/SKILL.md`, which the kit
+writes once whenever such an assistant is set up.
 
 Zed gets `.zed/settings.json` (format on save, Biome as the JavaScript, TypeScript, and JSON formatter, and the
 `blit386-docs` MCP server), merged with any settings you already have. Zed's agent cannot take guardrails from project
@@ -143,6 +150,7 @@ npx blit migrate --write
 npx blit agents sync
 npx blit agents add cursor
 npx blit agents add antigravity
+npx blit agents add codex
 npx blit agents add gemini
 npx blit agents add opencode
 npx blit agents add zed

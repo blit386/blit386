@@ -12,7 +12,7 @@ import { SHELL_CASES } from './shell-cases.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const hooksDir = join(here, '..', 'content', 'hooks');
-const { failClosed, isDangerousCommand, isProtectedPath, parsePayload } = createRequire(import.meta.url)(
+const { failClosed, isDangerousCommand, isProtectedPath, parsePayload, patchPaths } = createRequire(import.meta.url)(
     join(hooksDir, 'guard-core.cjs'),
 );
 
@@ -57,6 +57,61 @@ describe('isProtectedPath', () => {
         for (const file of ['src/game.ts', 'package.json', '.env.example', 'src/lock.ts']) {
             assert.equal(isProtectedPath(file), null, `${file} should be allowed`);
         }
+    });
+});
+
+describe('patchPaths', () => {
+    // Shaped like what Codex's apply_patch tool actually receives (codex-rs/core/assets/tools/apply_patch.lark).
+    const PATCH = [
+        '*** Begin Patch',
+        '*** Add File: src/enemy.js',
+        '+export const speed = 2;',
+        '+*** Add File: not-a-header.js',
+        '*** Update File: src/game.js',
+        '*** Move to: src/main.js',
+        '@@ function update() {',
+        '-    x += 1;',
+        '+    x += 2;',
+        ' }',
+        '*** End of File',
+        '*** Delete File: notes.md',
+        '*** End Patch',
+    ].join('\n');
+
+    it('names every added, updated, moved-to, and deleted file, in order', () => {
+        assert.deepEqual(patchPaths(PATCH), ['src/enemy.js', 'src/game.js', 'src/main.js', 'notes.md']);
+    });
+
+    it('never reads an added line that looks like a header as one', () => {
+        assert.ok(!patchPaths(PATCH).includes('not-a-header.js'));
+    });
+
+    it('reads a heredoc-wrapped patch and a shell command carrying one', () => {
+        const heredoc = `<<'EOF'\n${PATCH}\nEOF`;
+        const command = `cd game && apply_patch <<'EOF'\n${PATCH}\nEOF`;
+
+        assert.deepEqual(patchPaths(heredoc), patchPaths(PATCH));
+        assert.deepEqual(patchPaths(command), patchPaths(PATCH));
+    });
+
+    it('takes CRLF line ends, indented headers, absolute paths, and an Environment ID line', () => {
+        const patch = [
+            '*** Begin Patch',
+            '*** Environment ID: local',
+            '  *** Update File: /home/me/game/pnpm-lock.yaml  ',
+            '@@',
+            '-a',
+            '+b',
+            '*** End Patch',
+        ].join('\r\n');
+
+        assert.deepEqual(patchPaths(patch), ['/home/me/game/pnpm-lock.yaml']);
+    });
+
+    it('finds nothing in text that is not a patch', () => {
+        assert.deepEqual(patchPaths(''), []);
+        assert.deepEqual(patchPaths('git status'), []);
+        assert.deepEqual(patchPaths('*** Begin Patch\n*** End Patch'), []);
     });
 });
 
