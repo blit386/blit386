@@ -34,9 +34,9 @@ the scripts in `hooks/` + `hooks.manifest.json`. Skills and rules are discovered
 `.claude/skills/<name>/SKILL.md` with the frontmatter kept. Cursor gets the same file as
 `.cursor/skills/<name>/SKILL.md`, frontmatter kept, so it loads the skill from the description and still answers
 `/name`. Most other agents read one shared folder, `.agents/skills/<name>/SKILL.md` (`SHARED_SKILLS_DIR`), so the kit
-emits it once (`generateSharedSkills`) while at least one set-up agent has `readsSharedSkills` in its registry entry. No
-shipped agent sets that flag yet - Claude Code does not read the shared folder and Cursor is unverified, so both keep
-their private copies and no generated game gets `.agents/` today; the first adapter that reads it flips the flag.
+emits it once (`generateSharedSkills`) while at least one set-up agent has `readsSharedSkills` in its registry entry.
+Zed sets that flag (its adapter ships only `.zed/settings.json`; the skills come from the shared folder). Claude Code
+does not read the shared folder and Cursor is unverified, so both keep their private copies.
 `test/skills-frontmatter.test.mjs` enforces the cross-agent limits every skill must meet: `name` lowercase-hyphen, at
 most 64 characters, equal to its folder; `description` at most 1024 characters; a flat layout. The two always-on
 convention files in `content/rules/` stay `.cursor/rules/*.mdc`; they are not skills.
@@ -97,6 +97,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
 | `src/adapters.ts` (docs-MCP config, `MCP_SERVER_ENTRY`) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
+| `src/adapters.ts` (`generateZedAdapter`, `.zed/settings.json`) | Zed's settings keys change (`format_on_save`, the `formatter.language_server` shape, `context_servers`), or Zed starts honoring an `agent` key from project settings (then guardrails become shippable - see the hard-rule snippet in `content/AGENTS.md`) |
 | `src/adapters.ts` (`launchConfigFile`, `.claude/launch.json`) | The starter's dev port or `server.open` (`packages/create-blit386/templates/base/vite.config.js`), a new package manager, or the Claude desktop app's `launch.json` fields change |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` - that is the only human-facing
