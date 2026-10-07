@@ -985,4 +985,94 @@ describe('AudioManager', () => {
             expect(audio.isMusicPlaying()).toBe(false);
         });
     });
+
+    describe('park', () => {
+        it('suspends the context on park and resumes it on unpark once unlocked', async () => {
+            audio.attach(canvas);
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
+
+            const context = getMockContext();
+            const resumesBefore = context.resumeCallCount;
+
+            await audio.park();
+            await audio.park();
+
+            expect(context.suspendCallCount).toBe(1);
+            expect(context.state).toBe('suspended');
+
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(resumesBefore + 1);
+            expect(context.state).toBe('running');
+        });
+
+        it('unpark does not resume a context that was never unlocked', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            audio.park();
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(0);
+        });
+
+        it('is a no-op before attach', () => {
+            expect(() => {
+                audio.park();
+                audio.unpark();
+            }).not.toThrow();
+        });
+
+        it('a gesture that unlocks audio while parked keeps the context suspended until unpark', async () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            audio.park();
+
+            expect(context.suspendCallCount).toBe(1);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
+            await vi.waitFor(() => expect(context.suspendCallCount).toBe(2));
+
+            expect(context.state).toBe('suspended');
+
+            const resumesBefore = context.resumeCallCount;
+
+            audio.unpark();
+
+            expect(context.resumeCallCount).toBe(resumesBefore + 1);
+        });
+
+        it('a gesture while parked starts remembered music only after the context has suspended again', async () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+            const suspendOnce = (context as unknown as AudioContext).suspend.bind(context);
+            let finishSuspend: () => void = () => undefined;
+
+            await audio.park();
+            audio.musicPlay(createMockAudioBuffer());
+
+            // Hold the post-unlock suspend open so the ordering is observable.
+            (context as unknown as { suspend: () => Promise<void> }).suspend = () =>
+                new Promise<void>((resolve) => {
+                    finishSuspend = () => {
+                        void suspendOnce().then(resolve);
+                    };
+                });
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
+
+            expect(context.createBufferSourceCalls).toHaveLength(0);
+
+            finishSuspend();
+
+            await vi.waitFor(() => expect(context.createBufferSourceCalls).toHaveLength(1));
+        });
+    });
 });

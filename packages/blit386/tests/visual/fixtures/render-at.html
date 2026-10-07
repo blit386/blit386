@@ -1,0 +1,130 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: renderAt</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="120" id="blit386-canvas" width="160"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Flicker, Palette, Rect2i, Vector2i } from 'blit386';
+
+            window.BT = BT;
+            window.__BOOTED__ = false;
+            window.__INIT_FAILED__ = false;
+
+            const width = 160;
+            const height = 120;
+
+            class RenderAtTest {
+                configure() {
+                    return {
+                        isSplashEnabled: false,
+                        isOverlayEnabled: false,
+                        displaySize: new Vector2i(width, height),
+                        // Display-tier effects (Flicker) require an output size; 4x the logical size.
+                        drawingBufferSize: new Vector2i(width * 4, height * 4),
+                        maxCanvasSize: new Vector2i(width * 4, height * 4),
+                        targetFPS: 60,
+                    };
+                }
+
+                async init() {
+                    const palette = new Palette(16);
+
+                    for (let slot = 1; slot < 16; slot++) {
+                        palette.set(slot, new Color32(slot * 16, 255 - slot * 12, (slot * 53) % 256));
+                    }
+
+                    BT.paletteSet(palette);
+                    BT.paletteCycle(2, 9, 2.5);
+
+                    this.fadeTarget = new Palette(16);
+
+                    for (let slot = 1; slot < 16; slot++) {
+                        this.fadeTarget.set(slot, new Color32(255 - slot * 9, slot * 7, 128));
+                    }
+
+                    this.dots = Array.from({ length: 24 }, () => ({
+                        x: BT.random.int(width),
+                        y: BT.random.int(height),
+                        speed: BT.random.intInclusive(1, 3),
+                        color: BT.random.intInclusive(2, 9),
+                    }));
+                    this.jitter = 0;
+
+                    this.flicker = null;
+
+                    if (BT.activeBackend === 'webgpu') {
+                        this.flicker = new Flicker();
+                        BT.effectAdd(this.flicker);
+                    }
+
+                    return true;
+                }
+
+                update() {
+                    for (const dot of this.dots) {
+                        dot.x = (dot.x + dot.speed) % width;
+                    }
+
+                    if (BT.ticks % 7 === 0) {
+                        this.jitter = BT.random.int(20);
+                    }
+
+                    // Over by tick ~46: must be gone from the frame at tick 157.
+                    if (BT.ticks === 40) {
+                        BT.paletteFlash(new Color32(255, 255, 255), 100);
+                    }
+
+                    // Slots 10-15 (the bar is 12), outside the cycle: still mid-fade at tick 157.
+                    if (BT.ticks === 90) {
+                        BT.paletteFadeRange(10, 15, this.fadeTarget, 2000);
+                    }
+                }
+
+                render() {
+                    BT.clear(1);
+
+                    for (const dot of this.dots) {
+                        BT.drawRectFill(new Rect2i(dot.x, dot.y, 4, 4), dot.color);
+                    }
+
+                    const barX = Math.floor(Math.sin(BT.timeSeconds * 2) * 50) + 70 + this.jitter;
+
+                    BT.drawRectFill(new Rect2i(barX, 50, 12, 20), 12);
+
+                    if (this.flicker) {
+                        this.flicker.amount = 0.75 + 0.25 * Math.sin(BT.timeSeconds * 5);
+                    }
+                }
+            }
+
+            // bootstrap resolves after BT.init(), which creates and starts the loop - the
+            // earliest point a spec may drive frames or seek.
+            bootstrap(RenderAtTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            }).then((ok) => {
+                window.__BOOTED__ = ok;
+                window.__INIT_FAILED__ = window.__INIT_FAILED__ || !ok;
+            });
+        </script>
+    </body>
+</html>

@@ -83,6 +83,9 @@ export class AudioManager {
     /** `true` once a user gesture has successfully resumed the audio context. */
     private unlocked = false;
 
+    /** Whether {@link park} has suspended the context and {@link unpark} has not yet released it. */
+    private isParked = false;
+
     /** Logical (pre-mute) volume per bus, reported by {@link volumeGet} regardless of mute state. */
     private logicalVolume: PerBus<number>;
 
@@ -205,6 +208,7 @@ export class AudioManager {
         this.busNodes = null;
         this.target = null;
         this.unlocked = false;
+        this.isParked = false;
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
         this.mutedGainSnapshot = {};
@@ -220,6 +224,47 @@ export class AudioManager {
      */
     public isUnlocked(): boolean {
         return this.unlocked;
+    }
+
+    /**
+     * Suspends the audio context while `BT.renderAt` holds the game loop stopped, so nothing plays
+     * out of step with a frozen clock. Idempotent; a no-op before {@link attach}.
+     *
+     * @returns Resolves once the context is suspended - its output buffer has drained - or the
+     *   suspend failed (logged), so a seek can wait for silence before it replays.
+     */
+    public async park(): Promise<void> {
+        if (this.isParked) {
+            return;
+        }
+
+        this.isParked = true;
+
+        try {
+            await this.context?.suspend();
+        } catch (error) {
+            console.error('[BT] Audio: failed to suspend the context for a seek:', error);
+        }
+    }
+
+    /**
+     * Releases {@link park}. Resumes the context only when a user gesture already unlocked it - a
+     * locked context stays locked until the next gesture, as without a seek.
+     */
+    public unpark(): void {
+        if (!this.isParked) {
+            return;
+        }
+
+        this.isParked = false;
+
+        if (!this.unlocked) {
+            return;
+        }
+
+        this.context?.resume().catch((error: unknown) => {
+            console.error('[BT] Audio: failed to resume the context after a seek:', error);
+        });
     }
 
     /**
@@ -688,7 +733,8 @@ export class AudioManager {
      * {@link unlocked}, returns without repeating the one-time unlock work.
      *
      * On success, starts any music request remembered from before unlock (see
-     * {@link musicPlay}) via {@link startRememberedMusicRequest}.
+     * {@link musicPlay}) via {@link startRememberedMusicRequest}. While {@link park}ed, suspends the
+     * context again, so it stays silent until {@link unpark}.
      *
      * @param context - Audio context to resume.
      */
@@ -707,6 +753,18 @@ export class AudioManager {
 
         this.unlocked = true;
         this.removeUnlockListeners();
+
+        // A gesture during a BT.renderAt seek unlocks audio, but the loop is still stopped: stay
+        // suspended until unpark() resumes it, and finish suspending before the remembered music
+        // starts, so none of it is heard mid-seek.
+        if (this.isParked) {
+            try {
+                await context.suspend();
+            } catch (error) {
+                console.error('[BT] Audio: failed to suspend the context after an unlock during a seek:', error);
+            }
+        }
+
         this.startRememberedMusicRequest();
     }
 

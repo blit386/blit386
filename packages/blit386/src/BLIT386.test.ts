@@ -1850,6 +1850,31 @@ describe('BT.captureFrame', () => {
     });
 });
 
+describe('BT.renderAt', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('passes options.from through to BTAPI.instance.renderAt', async () => {
+        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+
+        await BT.renderAt(3, { from: 'current' });
+
+        expect(spy).toHaveBeenCalledWith(3, 'current');
+    });
+
+    it.each([['current'], [null], [[]]])('rejects, never throws, when options is %j', async (options) => {
+        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+        let result: Promise<void> | undefined;
+
+        expect(() => {
+            result = BT.renderAt(3, options as never);
+        }).not.toThrow();
+        await expect(result).rejects.toThrow('takes its options as an object');
+        expect(spy).not.toHaveBeenCalled();
+    });
+});
+
 describe('BT trigger buttons (gamepad-only)', () => {
     afterEach(() => {
         vi.restoreAllMocks();
