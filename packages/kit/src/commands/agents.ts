@@ -49,20 +49,21 @@ import {
     CLAUDE_MCP_JSON,
     classifyFile,
     CURSOR_MCP_JSON,
+    GEMINI_SETTINGS_JSON,
     hasAgentFiles,
     isKitManaged,
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, GEMINI_SETTINGS_JSON];
 
 interface McpConfigLike {
     mcpServers?: Record<string, unknown>;
     [key: string]: unknown;
 }
 
-/** True for a plain JSON object - the only shape `mcpServers` is allowed to have. */
-function isMcpServerMap(value: unknown): value is Record<string, unknown> {
+/** True for a plain JSON object - the only shape `mcpServers` (and every key the Gemini merge descends into) may have. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -82,11 +83,11 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
         return null;
     }
 
-    if (!isMcpServerMap(existing)) {
+    if (!isPlainObject(existing)) {
         return null;
     }
 
-    if (existing.mcpServers !== undefined && !isMcpServerMap(existing.mcpServers)) {
+    if (existing.mcpServers !== undefined && !isPlainObject(existing.mcpServers)) {
         return null;
     }
 
@@ -104,6 +105,91 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
     const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
 
     return `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+/**
+ * Merge the kit's generated `.gemini/settings.json` into a pre-existing hand-written one: the docs server joins
+ * `mcpServers`, the kit's context files join `context.fileName`, and each hook matcher group joins its event's array
+ * unless an identical group is already there. Everything else the user set stays untouched. Returns null - the
+ * collision path - when the existing file is not a JSON object, one of the keys the kit writes into has the wrong shape,
+ * or an MCP server of the kit's name exists with different content.
+ */
+function tryMergeGeminiSettings(existingContent: string, generatedContent: string): string | null {
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(existingContent);
+    } catch {
+        return null;
+    }
+
+    if (!isPlainObject(existing)) {
+        return null;
+    }
+
+    const generated = JSON.parse(generatedContent) as {
+        context: { fileName: string[] };
+        mcpServers: Record<string, unknown>;
+        hooks: Record<string, unknown[]>;
+    };
+
+    const { context, mcpServers, hooks } = existing;
+
+    if (
+        (context !== undefined && !isPlainObject(context)) ||
+        (mcpServers !== undefined && !isPlainObject(mcpServers)) ||
+        (hooks !== undefined && !isPlainObject(hooks))
+    ) {
+        return null;
+    }
+
+    const fileName = context?.fileName;
+    const validFileName =
+        fileName === undefined ||
+        typeof fileName === 'string' ||
+        (Array.isArray(fileName) && fileName.every((name) => typeof name === 'string'));
+
+    if (!validFileName) {
+        return null;
+    }
+
+    for (const [name, entry] of Object.entries(generated.mcpServers)) {
+        if (mcpServers?.[name] !== undefined && !isDeepStrictEqual(mcpServers[name], entry)) {
+            return null;
+        }
+    }
+
+    const mergedHooks: Record<string, unknown> = { ...hooks };
+
+    for (const [event, groups] of Object.entries(generated.hooks)) {
+        const current = mergedHooks[event] ?? [];
+
+        if (!Array.isArray(current)) {
+            return null;
+        }
+
+        mergedHooks[event] = [
+            ...current,
+            ...groups.filter((group) => !current.some((c) => isDeepStrictEqual(c, group))),
+        ];
+    }
+
+    const names: string[] = typeof fileName === 'string' ? [fileName] : (fileName ?? []);
+    const merged = {
+        ...existing,
+        context: { ...context, fileName: [...names, ...generated.context.fileName.filter((n) => !names.includes(n))] },
+        mcpServers: { ...mcpServers, ...generated.mcpServers },
+        hooks: mergedHooks,
+    };
+
+    return `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+/** The structural merge for a mergeable path: Gemini's settings file has its own shape, the MCP configs share one. */
+function tryMergeJsonConfig(path: string, existingContent: string, generatedContent: string): string | null {
+    return path === GEMINI_SETTINGS_JSON
+        ? tryMergeGeminiSettings(existingContent, generatedContent)
+        : tryMergeMcpConfig(existingContent, generatedContent);
 }
 
 /**
@@ -695,8 +781,8 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`) is the one exception: a clean structural merge with the
- * user's existing file is written and tracked like any other generated file instead of counting as a
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`) is the one exception: a clean structural
+ * merge with the user's existing file is written and tracked like any other generated file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
  */
@@ -749,7 +835,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent = tryMergeMcpConfig(onDisk, file.content);
+        const mergedContent = tryMergeJsonConfig(file.path, onDisk, file.content);
 
         if (mergedContent === null) {
             return file;

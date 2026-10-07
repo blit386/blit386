@@ -2,7 +2,7 @@
  * The short setup wizard.
  *
  * JavaScript and TypeScript are both supported. Optional CI and AI-assistant files can be added when the user opts in.
- * Assistants are multi-select so Claude Code and Cursor can both be chosen in one pass.
+ * Assistants are multi-select so any combination of Claude Code, Cursor, and Gemini CLI can be chosen in one pass.
  */
 
 import { cancel, confirm, isCancel, multiselect, select } from '@clack/prompts';

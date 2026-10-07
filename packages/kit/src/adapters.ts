@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code and Cursor.
+ * Shared agent adapters for Claude Code, Cursor, and Gemini CLI.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -25,6 +25,8 @@ import {
     CURSOR_RULES_DIR,
     CURSOR_SKILLS_DIR,
     DOCS_DIR,
+    GEMINI_HOOKS_DIR,
+    GEMINI_SETTINGS_JSON,
     SHARED_SKILLS_DIR,
     sharedSkillsWanted,
 } from './ownership';
@@ -442,6 +444,8 @@ interface HookManifestEntry {
     intent: string;
     cursor?: HookManifestCursorBlock;
     claude?: HookManifestClaudeBlock;
+    /** Same shape as Claude's block, except `timeout` is in milliseconds. */
+    gemini?: HookManifestClaudeBlock;
 }
 
 interface HooksManifest {
@@ -530,7 +534,10 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
 interface McpServerEntry {
     /** Transport marker. Required by Claude Code, omitted for Cursor - see `MCP_SERVER_ENTRY`. */
     type?: string;
-    url: string;
+    /** Streamable HTTP endpoint, in Claude Code and Cursor. Gemini CLI reads this key as SSE, so it uses `httpUrl`. */
+    url?: string;
+    /** Gemini CLI's streamable HTTP endpoint. */
+    httpUrl?: string;
 }
 
 /** The `mcpServers` wrapper both assistants read. */
@@ -545,14 +552,18 @@ interface McpConfigJson {
  * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
  * misread a remote HTTP endpoint. Do not harmonize the two shapes.
+ *
+ * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
+ * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).
  */
 const MCP_SERVER_ENTRY: Record<AgentKind, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
     cursor: { url: MCP_SERVER_URL },
+    gemini: { httpUrl: MCP_SERVER_URL },
 };
 
-/** The MCP configuration file for one assistant, at that assistant's conventional path. */
-function mcpConfigFile(agent: AgentKind): GeneratedFile {
+/** The standalone MCP configuration file for an assistant whose MCP config is not part of a larger settings file. */
+function mcpConfigFile(agent: 'claude' | 'cursor'): GeneratedFile {
     const config: McpConfigJson = { mcpServers: { [MCP_SERVER_NAME]: MCP_SERVER_ENTRY[agent] } };
 
     return { path: AGENT_SPECS[agent].mcpConfig, content: `${JSON.stringify(config, null, 2)}\n` };
@@ -638,6 +649,86 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     return files;
 }
 
+/** One command handler inside a Gemini CLI matcher group. `timeout` is in milliseconds. */
+interface GeminiHookCommand {
+    name: string;
+    type: 'command';
+    command: string;
+    timeout?: number;
+}
+
+/** A Gemini CLI matcher group: a regex over tool names (exact string for lifecycle events) + command hooks. */
+interface GeminiMatcherGroup {
+    matcher?: string;
+    hooks: GeminiHookCommand[];
+}
+
+/** `.gemini/settings.json` as the kit writes it. */
+interface GeminiSettingsJson {
+    context: { fileName: string[] };
+    mcpServers: Record<string, McpServerEntry>;
+    hooks: Record<string, GeminiMatcherGroup[]>;
+}
+
+/**
+ * Gemini CLI reads `GEMINI.md`, not `AGENTS.md`, unless `context.fileName` says otherwise. Listing `GEMINI.md` too keeps
+ * a hand-written one loading; the kit never emits it.
+ */
+const GEMINI_CONTEXT_FILES = [AGENTS_MD, 'GEMINI.md'];
+
+/** Translate the canonical hooks manifest and the docs server into `.gemini/settings.json`, rendering template vars. */
+function buildGeminiSettings(manifest: HooksManifest, vars: TemplateVars): GeminiSettingsJson {
+    const hooks: Record<string, GeminiMatcherGroup[]> = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.gemini) {
+            continue;
+        }
+
+        const { event, command, matcher, timeout } = hook.gemini;
+        const commandHook: GeminiHookCommand = { name: hook.id, type: 'command', command: render(command, vars) };
+
+        if (timeout !== undefined) {
+            commandHook.timeout = timeout;
+        }
+
+        const group: GeminiMatcherGroup = { hooks: [commandHook] };
+        if (matcher !== undefined) {
+            group.matcher = matcher;
+        }
+
+        hooks[event] = [...(hooks[event] ?? []), group];
+    }
+
+    return {
+        context: { fileName: GEMINI_CONTEXT_FILES },
+        mcpServers: { [MCP_SERVER_NAME]: MCP_SERVER_ENTRY.gemini },
+        hooks,
+    };
+}
+
+/**
+ * Generate the Gemini CLI adapter files from the kit IR:
+ *   - `.gemini/settings.json`       (kit-owned, merged on `add`; the `AGENTS.md` pointer, the docs MCP server, and hooks)
+ *   - `.gemini/hooks/{script}`      (kit-owned; copied verbatim)
+ *
+ * Skills come from the shared `.agents/skills/` folder (`generateAgentFiles` adds it) and the persona is `AGENTS.md`,
+ * so neither is emitted here. No `.gemini/policies/` (the workspace policy tier does not work) and no `GEMINI.md`.
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns The generated Gemini CLI files and their contents.
+ */
+export function generateGeminiAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
+    const contentRoot = join(root, 'content');
+    const manifest = readHooksManifest(contentRoot);
+
+    return [
+        { path: GEMINI_SETTINGS_JSON, content: `${JSON.stringify(buildGeminiSettings(manifest, vars), null, 2)}\n` },
+        ...collectHookScripts(contentRoot, manifest, 'gemini', GEMINI_HOOKS_DIR),
+    ];
+}
+
 /** One agent's registry entry: its data from `AGENT_SPECS` plus the generator that renders its private files. */
 export interface AgentAdapter extends AgentSpec {
     /** Render the agent's private files from the kit IR (shared files come from `generateAgentFiles`). */
@@ -651,6 +742,7 @@ export interface AgentAdapter extends AgentSpec {
 export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
     cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
+    gemini: { ...AGENT_SPECS.gemini, generate: generateGeminiAdapter },
 };
 
 /**

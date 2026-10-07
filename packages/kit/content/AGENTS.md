@@ -125,10 +125,14 @@ project folder your assistant can search the live docs without a further prompt.
 If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
 it at the same documentation server.
 
-For other assistants (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
+If you use Gemini CLI, `.gemini/settings.json` points it at this file (`context.fileName`), registers the same
+documentation server, and wires the edit and shell guards. Skills load from `.agents/skills/`. Gemini CLI ignores that
+whole settings file until you trust the folder, so trust the folder when Gemini CLI asks.
 
-Did not set up an assistant when you started the game? Run `npx blit agents add claude` or `npx blit agents add cursor`
-to add its files now.
+For other assistants (Zed, Copilot, and others), this file is your assistant's home base.
+
+Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
+or `npx blit agents add gemini` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

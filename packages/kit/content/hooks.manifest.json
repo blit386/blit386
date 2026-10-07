@@ -16,6 +16,12 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-file.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 30
+      },
+      "gemini": {
+        "event": "AfterTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
+        "matcher": "write_file|replace",
+        "timeout": 30000
       }
     },
     {
@@ -32,6 +38,12 @@
         "command": "sh .claude/hooks/shell-safety.sh",
         "matcher": "Bash",
         "timeout": 10
+      },
+      "gemini": {
+        "event": "BeforeTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
+        "matcher": "run_shell_command",
+        "timeout": 10000
       }
     },
     {
@@ -42,6 +54,12 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
+      },
+      "gemini": {
+        "event": "BeforeTool",
+        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
+        "matcher": "write_file|replace",
+        "timeout": 10000
       }
     },
     {
@@ -52,6 +70,12 @@
         "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
         "matcher": "startup|resume|clear|compact|fork",
         "timeout": 300
+      },
+      "gemini": {
+        "event": "SessionStart",
+        "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
+        "matcher": "startup",
+        "timeout": 300000
       }
     }
   ]

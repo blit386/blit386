@@ -304,23 +304,26 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed (planned) |
-| --- | --- | --- | --- | --- |
-| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) |
-| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only (planned) |
-| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.zed/settings.json` `context_servers` |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Gemini CLI | Zed (planned) |
+| --- | --- | --- | --- | --- | --- |
+| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | `.gemini/settings.json` `context.fileName: ["AGENTS.md", "GEMINI.md"]` (no `GEMINI.md` emitted) | reads `AGENTS.md` |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
+| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.gemini/settings.json` hooks (BeforeTool / AfterTool / SessionStart; timeouts in ms; every entry exits 2 to block and fails closed) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
+| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | BeforeTool `write_file\|replace` runs `protect-files.cjs` (hard deny) | `AGENTS.md` prose only (planned) |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.gemini/settings.json` `mcpServers.blit386-docs.httpUrl` (`url` would mean SSE) | `.zed/settings.json` `context_servers` |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
-The planned adapters (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are
-specified per agent under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also
-carries their planned capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply
-to all of them. Each implementation ticket adds its column here when the adapter ships - a column describes what the kit
-emits, not what an agent could do. Two findings change this section's model: most new agents read one shared
-`.agents/skills/` folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited
-with `tool_permissions` guardrails, ignores that setting in project files.
+The Gemini CLI adapter (BT-298) has shipped. Its block-dangerous-shell row is a hard deny too: BeforeTool
+`run_shell_command` runs `shell-guard.cjs`, and Gemini has no ask answer, so the confirm tier also blocks. Gemini CLI
+ignores `.gemini/settings.json` in an untrusted folder, so `AGENTS.md` tells the user to trust it. The planned adapters
+(Zed, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are specified per agent under
+[BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
+capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of them. Each
+implementation ticket adds its column here when the adapter ships - a column describes what the kit emits, not what an
+agent could do. Two findings change this section's model: most new agents read one shared `.agents/skills/` folder, so a
+skill there is not owned by a single adapter; and Zed, which this matrix once credited with `tool_permissions`
+guardrails, ignores that setting in project files.
 
 The foundation those adapters build on (BT-564) is in place:
 
@@ -334,8 +337,8 @@ The foundation those adapters build on (BT-564) is in place:
   regenerating it, so pass 2 drops it from the manifest with the usual "no longer part of the kit" note. Two rules keep
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
-  Antigravity owns exact files beside the skills folder. No shipped agent reads the folder yet - Claude Code does not,
-  and Cursor is unverified - so no generated game gets `.agents/` until the first such adapter flips its flag.
+  Antigravity owns exact files beside the skills folder. Gemini CLI reads the folder (BT-298); Claude Code does not and
+  Cursor is unverified, so a Claude- or Cursor-only game gets no `.agents/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
