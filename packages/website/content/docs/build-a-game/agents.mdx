@@ -83,10 +83,11 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, or Zed, it is already configured (`.mcp.json`
-  for Claude Code, `.cursor/mcp.json` for Cursor, `.zed/settings.json` for Zed) and gives your assistant three tools:
-  `search_docs` (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL
-  `search_docs` returned), and `get_docs_summary` (the whole site's contents in one compact block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, OpenCode, or Zed, it is already configured
+  (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `opencode.json` for OpenCode, `.zed/settings.json` for
+  Zed) and gives your assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts),
+  `get_doc_page` (one page's full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's
+  contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
@@ -136,6 +137,11 @@ project folder your assistant can search the live docs without a further prompt.
 If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
 it at the same documentation server.
 
+If you use OpenCode, it reads this file and the skills in `.agents/skills/` on its own. `opencode.json` points it at the
+same documentation server, turns on the formatters (Biome for code, Prettier for Markdown and YAML), and keeps it from
+editing lock files and `.env` files or running destructive git commands. OpenCode has no trust prompt, so it loads
+`.opencode/plugins/kit-guard.ts` the moment you open the project - the file's first lines say exactly what it does.
+
 If you use Zed, `.zed/settings.json` turns on format on save, formats JavaScript, TypeScript, and JSON with Biome, and
 points Zed at the same documentation server. Zed reads this file and the skills in `.agents/skills/` on its own. To use
 it:
@@ -184,7 +190,7 @@ others. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows
 For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-or `npx blit agents add zed` to add its files now.
+`npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

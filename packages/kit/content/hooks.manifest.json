@@ -32,6 +32,10 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.cjs\"",
         "matcher": "Bash",
         "timeout": 10
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -42,6 +46,10 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -52,6 +60,10 @@
         "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
         "matcher": "startup|resume|clear|compact|fork",
         "timeout": 300
+      },
+      "opencode": {
+        "event": "session.created",
+        "scripts": ["session-start.sh"]
       }
     }
   ]
