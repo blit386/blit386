@@ -304,23 +304,23 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed (planned) |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Zed |
 | --- | --- | --- | --- | --- |
 | Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` |
 | On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) |
 | Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only (planned) |
+| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
 | Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.zed/settings.json` `context_servers` |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
-The planned adapters (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are
-specified per agent under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also
-carries their planned capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply
-to all of them. Each implementation ticket adds its column here when the adapter ships - a column describes what the kit
-emits, not what an agent could do. Two findings change this section's model: most new agents read one shared
-`.agents/skills/` folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited
-with `tool_permissions` guardrails, ignores that setting in project files.
+The planned adapters (Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are specified
+per agent under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their
+planned capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of
+them. Each implementation ticket adds its column here when the adapter ships - a column describes what the kit emits,
+not what an agent could do. Two findings change this section's model: most new agents read one shared `.agents/skills/`
+folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited with
+`tool_permissions` guardrails, ignores that setting in project files.
 
 The foundation those adapters build on (BT-564) is in place:
 
@@ -334,8 +334,9 @@ The foundation those adapters build on (BT-564) is in place:
   regenerating it, so pass 2 drops it from the manifest with the usual "no longer part of the kit" note. Two rules keep
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
-  Antigravity owns exact files beside the skills folder. No shipped agent reads the folder yet - Claude Code does not,
-  and Cursor is unverified - so no generated game gets `.agents/` until the first such adapter flips its flag.
+  Antigravity owns exact files beside the skills folder. Zed reads the folder (`readsSharedSkills`), so a game with Zed
+  set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those two gets no
+  `.agents/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
@@ -374,14 +375,14 @@ Canonical intent (`kit/hooks.manifest.json`):
 ```
 
 - AGENTS.md (generic): a prose line under hard rules - "Never modify pnpm-lock.yaml, \*.lock, or .env files."
-  Instruction only; most generic readers cannot enforce. Not yet in `content/AGENTS.md` - BT-297 (Zed) adds it, since
-  that line is all Zed's agent gets.
+  Instruction only; most generic readers cannot enforce. It is in `content/AGENTS.md` as two hard rules (lock files,
+  `.env` files), since that is all Zed's agent gets.
 - Claude Code: a `.claude/settings.json` PreToolUse hook matching `Write|Edit` that blocks those paths, and blocks any
   request it cannot read (the guard core fails closed).
 - Cursor: planned as a `.cursor/hooks.json` entry with `failClosed: true`, but Cursor has no pre-edit hook event, so the
   shipped adapter does not emit this guard (`hooks.manifest.json` registers `protect-files` for Claude only).
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
-  the user's own settings, so the generated game can only document a paste-in snippet.
+  the user's own settings, so the generated game documents a paste-in snippet in `AGENTS.md` (Zed adapter, BT-297).
 
 Same intent; four formats; differing enforcement power (AGENTS.md, Cursor, and Zed only instruct; only Claude Code truly
 blocks). Rules and skills follow the same pattern: a "rule" becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a
