@@ -28,15 +28,16 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
   `npx blit agents sync`), provided by [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a
   project-local bin, so invoke it through `npx`.
 
-If you pick one or more AI assistants in the wizard (Claude Code, Cursor, and Antigravity are checkboxes - you can
-choose any combination), the scaffolder also generates each assistant's config (Claude: `CLAUDE.md` + `.claude/`
-including `settings.json` hooks, plus `.mcp.json`; Cursor: `.cursor/` including `hooks.json` and `mcp.json`;
-Antigravity: `.agents/hooks.json`, `.agents/hooks/`, and `.agents/mcp_config.json`, plus the shared `.agents/skills/`
-folder) from the kit's canonical content, and `npx blit agents sync` keeps it current. The MCP config registers the
-BLIT386 documentation server, so your assistant can search the live docs at blit386.dev instead of guessing; Claude
-Code's `settings.json` pre-approves it, so there is no separate prompt once the project folder is trusted. Did not pick
-one at the start? Run `npx blit agents add claude`, `npx blit agents add cursor`, or `npx blit agents add antigravity`
-later to set it up. Antigravity ignores a project's config until you trust the workspace.
+If you pick one or more AI assistants in the wizard (Claude Code, Cursor, Antigravity, and Zed are checkboxes - you can
+choose any mix), the scaffolder also generates each assistant's config (Claude: `CLAUDE.md` + `.claude/` including
+`settings.json` hooks, plus `.mcp.json`; Cursor: `.cursor/` including `hooks.json` and `mcp.json`; Antigravity:
+`.agents/hooks.json`, `.agents/hooks/`, and `.agents/mcp_config.json`; Zed: `.zed/settings.json`; Antigravity and Zed
+also get the shared `.agents/skills/` folder) from the kit's canonical content, and `npx blit agents sync` keeps it
+current. The MCP config registers the BLIT386 documentation server, so your assistant can search the live docs at
+blit386.dev instead of guessing; Claude Code's `settings.json` pre-approves it, so there is no separate prompt once the
+project folder is trusted. Did not pick one at the start? Run `npx blit agents add claude`,
+`npx blit agents add cursor`, `npx blit agents add antigravity`, or `npx blit agents add zed` later to set it up.
+Antigravity and Zed ignore a project's config until you trust the workspace.
 
 ## Options
 

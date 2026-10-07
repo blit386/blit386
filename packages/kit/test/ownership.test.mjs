@@ -188,6 +188,31 @@ test('the shared skills folder is emitted once while any reader is set up, and n
     }
 });
 
+test('Zed reads the shared skills folder and ships only a merged settings.json, with no agent key or rules file', () => {
+    assert.equal(AGENT_SPECS.zed.readsSharedSkills, true);
+
+    const files = generateAgentFiles(kitRoot(), VARS, ['zed']);
+    const settingsFile = files.find((file) => file.path === '.zed/settings.json');
+
+    assert.ok(settingsFile, 'Zed should emit .zed/settings.json');
+    assert.equal(classifyFile('.zed/settings.json'), 'kit-owned');
+    assert.equal(classifyFile('.zed/tasks.json'), 'user-owned', 'only settings.json is kit-owned under .zed/');
+
+    const settings = JSON.parse(settingsFile.content);
+    assert.equal(settings.format_on_save, 'on');
+    assert.deepEqual(settings.languages.JavaScript, { formatter: { language_server: { name: 'biome' } } });
+    for (const language of ['TypeScript', 'JSON', 'JSONC']) {
+        assert.deepEqual(settings.languages[language], settings.languages.JavaScript, language);
+    }
+    assert.deepEqual(settings.context_servers, { 'blit386-docs': { url: 'https://blit386.dev/mcp' } });
+    assert.ok(!('agent' in settings), 'project settings have no agent field; a key there is silently ignored');
+
+    // Zed reads the first match of a fixed rules list, and each entry would hide AGENTS.md.
+    for (const hidden of ['.rules', '.cursorrules', '.windsurfrules', '.clinerules']) {
+        assert.ok(!files.some((file) => file.path === hidden), `${hidden} must never be emitted`);
+    }
+});
+
 test('Antigravity reads the shared skills folder; Claude Code and Cursor keep private copies', () => {
     assert.equal(AGENT_SPECS.antigravity.readsSharedSkills, true);
     // Claude Code does not read `.agents/skills/`; Cursor is unverified. Flip only with a source.
@@ -315,11 +340,33 @@ test('every adapter-emitted path belongs to the agent that emitted it', () => {
         assert.ok(isAgentPath(file.path, 'antigravity'), `${file.path} is not recognized as an Antigravity file`);
     }
 
+    for (const file of generateAgentFiles(root, VARS, ['zed'])) {
+        assert.ok(isAgentPath(file.path, 'zed'), `${file.path} is not recognized as a Zed file`);
+    }
+
     for (const file of generateSharedSkills(root, VARS)) {
         assert.deepEqual(
             owners(file.path),
             AGENT_KINDS.filter((kind) => AGENT_SPECS[kind].readsSharedSkills),
             `${file.path} should belong to exactly the shared-folder readers`,
         );
+    }
+});
+
+test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lock files and .env but not .env.example', () => {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { edit_file, write_file } = JSON.parse(body).agent.tool_permissions.tools;
+    const denies = (rules, path) => rules.always_deny.some(({ pattern }) => new RegExp(pattern, 'i').test(path));
+
+    for (const rules of [edit_file, write_file]) {
+        for (const path of ['pnpm-lock.yaml', 'yarn.lock', 'src/.env', '.env.local']) {
+            assert.ok(denies(rules, path), `${path} should be denied`);
+        }
+
+        for (const path of ['.env.example', 'src/game.js']) {
+            assert.ok(!denies(rules, path), `${path} should be allowed`);
+        }
     }
 });

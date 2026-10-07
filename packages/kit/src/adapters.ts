@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code, Cursor, and Antigravity.
+ * Shared agent adapters for Claude Code, Cursor, Antigravity, and Zed.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -29,6 +29,7 @@ import {
     DOCS_DIR,
     SHARED_SKILLS_DIR,
     sharedSkillsWanted,
+    ZED_SETTINGS_JSON,
 } from './ownership';
 import type { TemplateVars } from './manifest';
 
@@ -84,6 +85,12 @@ const MANAGED_END = '<!-- blit-kit:managed:end -->';
  */
 export const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_URL = 'https://blit386.dev/mcp';
+
+/**
+ * The assistants that get hook scripts and an `mcpServers` JSON file. Zed has neither: its settings file carries the
+ * docs-MCP server (`generateZedAdapter`) and nothing in it runs a script.
+ */
+type HookedAgent = Exclude<AgentKind, 'zed'>;
 
 /** A regenerated file: a project-relative path (forward slashes) and its full content. */
 export interface GeneratedFile {
@@ -317,7 +324,7 @@ const LOCAL_REQUIRE = /require\(\s*['"]\.\/([\w.-]+\.cjs)['"]\s*\)/g;
  * (so `protect-files.cjs` never ships without `guard-core.cjs`). A script absent from this set is not wired into that
  * adapter's settings/hooks file, so the adapter must not emit it.
  */
-function referencedHookScripts(manifest: HooksManifest, agent: AgentKind, hooksDir: string): Set<string> {
+function referencedHookScripts(manifest: HooksManifest, agent: HookedAgent, hooksDir: string): Set<string> {
     const names = new Set<string>();
 
     for (const hook of manifest.hooks) {
@@ -358,7 +365,7 @@ function referencedHookScripts(manifest: HooksManifest, agent: AgentKind, hooksD
 function collectHookScripts(
     contentRoot: string,
     manifest: HooksManifest,
-    agent: AgentKind,
+    agent: HookedAgent,
     destDir: string,
 ): GeneratedFile[] {
     const hooksDir = join(contentRoot, 'hooks');
@@ -561,14 +568,14 @@ interface McpConfigJson {
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
  * misread a remote HTTP endpoint. Antigravity accepts only `serverUrl` for a remote server. Do not harmonize the shapes.
  */
-const MCP_SERVER_ENTRY: Record<AgentKind, McpServerEntry> = {
+const MCP_SERVER_ENTRY: Record<HookedAgent, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
     cursor: { url: MCP_SERVER_URL },
     antigravity: { serverUrl: MCP_SERVER_URL },
 };
 
 /** The MCP configuration file for one assistant, at that assistant's conventional path. */
-function mcpConfigFile(agent: AgentKind): GeneratedFile {
+function mcpConfigFile(agent: HookedAgent): GeneratedFile {
     const config: McpConfigJson = { mcpServers: { [MCP_SERVER_NAME]: MCP_SERVER_ENTRY[agent] } };
 
     return { path: AGENT_SPECS[agent].mcpConfig, content: `${JSON.stringify(config, null, 2)}\n` };
@@ -707,6 +714,31 @@ export function generateAntigravityAdapter(root: string, vars: TemplateVars): Ge
     ];
 }
 
+/**
+ * Generate the Zed adapter files: `.zed/settings.json` only (kit-owned, merged with the user's own settings).
+ *
+ * Zed's built-in agent reads `AGENTS.md` and the shared `.agents/skills/` folder natively, so the persona and skills
+ * need nothing here. The settings turn format-on-save on (the agent's edits are formatted on save too), name Biome as
+ * the JavaScript, TypeScript, and JSON formatter, matching the starter's `format` script (needs the Biome extension), and register the docs MCP server.
+ *
+ * Deliberately absent: an `agent` key (`agent.tool_permissions` is honored only in the user's own settings, so a
+ * project copy would be silently ignored - `AGENTS.md` teaches the hard rules and a paste-in snippet instead), and the
+ * `.rules` / `.cursorrules` / `.windsurfrules` / `.clinerules` files (Zed reads only the first match of that list,
+ * and each of them would hide `AGENTS.md`).
+ *
+ * @returns The generated Zed files.
+ */
+export function generateZedAdapter(): GeneratedFile[] {
+    const biome = { formatter: { language_server: { name: 'biome' } } };
+    const settings = {
+        format_on_save: 'on',
+        languages: { JavaScript: biome, TypeScript: biome, JSON: biome, JSONC: biome },
+        context_servers: { [MCP_SERVER_NAME]: { url: MCP_SERVER_URL } },
+    };
+
+    return [{ path: ZED_SETTINGS_JSON, content: `${JSON.stringify(settings, null, 2)}\n` }];
+}
+
 /** One agent's registry entry: its data from `AGENT_SPECS` plus the generator that renders its private files. */
 export interface AgentAdapter extends AgentSpec {
     /** Render the agent's private files from the kit IR (shared files come from `generateAgentFiles`). */
@@ -721,6 +753,7 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
     cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
     antigravity: { ...AGENT_SPECS.antigravity, generate: generateAntigravityAdapter },
+    zed: { ...AGENT_SPECS.zed, generate: generateZedAdapter },
 };
 
 /**

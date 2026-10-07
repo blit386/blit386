@@ -52,18 +52,24 @@ import {
     CURSOR_MCP_JSON,
     hasAgentFiles,
     isKitManaged,
+    ZED_SETTINGS_JSON,
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, ANTIGRAVITY_MCP_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [
+    CLAUDE_MCP_JSON,
+    CURSOR_MCP_JSON,
+    ANTIGRAVITY_MCP_JSON,
+    ZED_SETTINGS_JSON,
+];
 
 interface McpConfigLike {
     mcpServers?: Record<string, unknown>;
     [key: string]: unknown;
 }
 
-/** True for a plain JSON object - the only shape `mcpServers` is allowed to have. */
-function isMcpServerMap(value: unknown): value is Record<string, unknown> {
+/** True for a plain JSON object (not an array or null) - the only shape `mcpServers` and the merged settings allow. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -83,11 +89,11 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
         return null;
     }
 
-    if (!isMcpServerMap(existing)) {
+    if (!isPlainObject(existing)) {
         return null;
     }
 
-    if (existing.mcpServers !== undefined && !isMcpServerMap(existing.mcpServers)) {
+    if (existing.mcpServers !== undefined && !isPlainObject(existing.mcpServers)) {
         return null;
     }
 
@@ -105,6 +111,60 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
     const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
 
     return `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+/** Returned by `deepMergeJson` when both sides set the same key to different non-object values. */
+const MERGE_CONFLICT = Symbol('merge-conflict');
+
+/**
+ * Deep-merge `generated` into `existing`: objects merge key by key, and a key both sides set to different
+ * non-object values is a conflict, reported as `MERGE_CONFLICT` so the caller can treat it as a collision.
+ */
+function deepMergeJson(existing: unknown, generated: unknown): unknown {
+    if (existing === undefined) {
+        return generated;
+    }
+
+    if (isPlainObject(existing) && isPlainObject(generated)) {
+        const merged: Record<string, unknown> = { ...existing };
+
+        for (const [key, value] of Object.entries(generated)) {
+            const result = deepMergeJson(existing[key], value);
+
+            if (result === MERGE_CONFLICT) {
+                return MERGE_CONFLICT;
+            }
+
+            merged[key] = result;
+        }
+
+        return merged;
+    }
+
+    return isDeepStrictEqual(existing, generated) ? existing : MERGE_CONFLICT;
+}
+
+/**
+ * Merge the kit's generated `.zed/settings.json` into a pre-existing one: the kit's keys are added next to the
+ * user's own. Returns null when the existing file is not plain JSON (Zed also accepts comments, which this does not
+ * parse) or any key the kit sets is already set to something else - the user's choice wins, via the collision path.
+ */
+function tryMergeZedSettings(existingContent: string, generatedContent: string): string | null {
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(existingContent);
+    } catch {
+        return null;
+    }
+
+    if (!isPlainObject(existing)) {
+        return null;
+    }
+
+    const merged = deepMergeJson(existing, JSON.parse(generatedContent));
+
+    return merged === MERGE_CONFLICT ? null : `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -696,8 +756,8 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`) is the one exception: a clean structural merge with the
- * user's existing file is written and tracked like any other generated file instead of counting as a
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.zed/settings.json`) is the one exception: a clean structural merge
+ * with the user's existing file is written and tracked like any other generated file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
  */
@@ -739,6 +799,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     // their entries. Only a real conflict (same server key, different content) or an existing file
     // that fails to parse as JSON falls through to the collision path below.
     const mergedPaths = new Set<string>();
+
+    // The kit's own content for each merged file: it, not the merged text, is the ancestor a later `sync` merges from.
+    // With the merged text as the base, an untouched file would look like the kit's pristine copy and `sync` would
+    // replace it with the generated one, dropping the user's own entries.
+    const kitContentByPath = new Map<string, string>();
     const preparedGenerated = generated.map((file) => {
         if (
             !MERGEABLE_JSON_PATHS.includes(file.path) ||
@@ -750,13 +815,17 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent = tryMergeMcpConfig(onDisk, file.content);
+        const mergedContent =
+            file.path === ZED_SETTINGS_JSON
+                ? tryMergeZedSettings(onDisk, file.content)
+                : tryMergeMcpConfig(onDisk, file.content);
 
         if (mergedContent === null) {
             return file;
         }
 
         mergedPaths.add(file.path);
+        kitContentByPath.set(file.path, file.content);
 
         return { ...file, content: mergedContent };
     });
@@ -812,7 +881,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
         writeRel(root, relPath, file.content);
         if (isKitManaged(fileClass)) {
-            writeBase(root, relPath, file.content, out);
+            writeBase(root, relPath, kitContentByPath.get(relPath) ?? file.content, out);
         }
         entryByPath.set(relPath, {
             path: relPath,
