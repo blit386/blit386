@@ -110,6 +110,19 @@ describe('isProtectedPath', () => {
         }
     });
 
+    it('ignores case, because the file systems most people use do', () => {
+        for (const file of ['PNPM-LOCK.YAML', 'a/Package-Lock.JSON', 'YARN.LOCK', '.ENV', 'config/.Env.Local']) {
+            assert.ok(isProtectedPath(file)?.message, `${file} should be protected`);
+        }
+
+        assert.equal(isProtectedPath('.ENV.EXAMPLE'), null, 'the template stays editable in any case');
+        assert.match(
+            isProtectedPath('PNPM-LOCK.YAML').message,
+            /^PNPM-LOCK\.YAML /,
+            'the message names the file as written',
+        );
+    });
+
     it('lets every other file through', () => {
         for (const file of ['src/game.ts', 'package.json', '.env.example', 'src/lock.ts']) {
             assert.equal(isProtectedPath(file), null, `${file} should be allowed`);
