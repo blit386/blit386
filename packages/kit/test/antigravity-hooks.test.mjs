@@ -112,10 +112,13 @@ describe('antigravity-bootstrap.cjs', () => {
             const first = bootstrap(payload);
             const second = bootstrap(payload);
             const other = bootstrap({ ...payload, conversationId: `${conversationId}-b` });
+            // A UTF-8 BOM in front of the payload is stripped by the shared parser, not by a copy of that rule here.
+            const bom = bootstrap(`﻿${JSON.stringify({ ...payload, conversationId: `${conversationId}-c` })}`);
 
             assert.match(first.injectSteps[0].ephemeralMessage, /checkup-ok/);
             assert.deepEqual(second, {});
             assert.ok(other.injectSteps, 'a new conversation runs the bootstrap again');
+            assert.ok(bom.injectSteps, 'a BOM-prefixed payload is read like any other');
         } finally {
             rmSync(root, { recursive: true, force: true });
         }

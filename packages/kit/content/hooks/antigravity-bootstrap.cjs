@@ -11,11 +11,12 @@ const { createHash } = require('node:crypto');
 const { existsSync, readFileSync, writeFileSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
+const { parsePayload } = require('./guard-core.cjs');
 
 const MAX_REPORT = 2000;
 
 function bootstrap() {
-    const { conversationId, workspacePaths } = JSON.parse(readFileSync(0, 'utf8').replace(/^﻿/, ''));
+    const { conversationId, workspacePaths } = parsePayload(readFileSync(0, 'utf8'));
     const root = workspacePaths?.[0];
 
     if (typeof conversationId !== 'string' || typeof root !== 'string') {
