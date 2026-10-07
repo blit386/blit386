@@ -175,8 +175,10 @@ it:
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
 others. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
 
-Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-or `npx blit agents add antigravity` to add its files now.
+If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses
+edits to lock files and `.env`, and destructive git commands) and formats each file after an edit, and
+`.agents/mcp_config.json` points it at the documentation server. Antigravity ignores all of that until you trust the
+workspace, so choose "trust" when it asks the first time you open the project.
 
 For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
