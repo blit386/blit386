@@ -46,6 +46,7 @@ import { ui } from '../messages';
 import {
     AGENT_KINDS,
     type AgentKind,
+    ANTIGRAVITY_MCP_JSON,
     CLAUDE_MCP_JSON,
     classifyFile,
     CURSOR_MCP_JSON,
@@ -61,6 +62,7 @@ const MERGEABLE_JSON_PATHS: readonly string[] = [
     CLAUDE_MCP_JSON,
     CURSOR_MCP_JSON,
     GEMINI_SETTINGS_JSON,
+    ANTIGRAVITY_MCP_JSON,
     OPENCODE_JSON,
     ZED_SETTINGS_JSON,
 ];

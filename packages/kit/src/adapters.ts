@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code, Cursor, Gemini CLI, OpenCode, and Zed.
+ * Shared agent adapters for Claude Code, Cursor, Antigravity, Gemini CLI, OpenCode, and Zed.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -12,6 +12,8 @@ import { join } from 'node:path';
 import {
     AGENT_SPECS,
     AGENTS_MD,
+    ANTIGRAVITY_HOOKS_DIR,
+    ANTIGRAVITY_HOOKS_JSON,
     type AgentKind,
     type AgentSpec,
     CLAUDE_HOOKS_DIR,
@@ -453,7 +455,7 @@ interface ClaudeSettingsJson {
     enabledMcpjsonServers: string[];
 }
 
-interface HookManifestClaudeBlock {
+interface HookManifestCommandBlock {
     event: string;
     command: string;
     matcher?: string;
@@ -473,10 +475,11 @@ interface HookManifestEntry {
     id: string;
     intent: string;
     cursor?: HookManifestCursorBlock;
-    claude?: HookManifestClaudeBlock;
+    claude?: HookManifestCommandBlock;
+    antigravity?: HookManifestCommandBlock;
     opencode?: HookManifestOpenCodeBlock;
     /** Same shape as Claude's block, except `timeout` is in milliseconds. */
-    gemini?: HookManifestClaudeBlock;
+    gemini?: HookManifestCommandBlock;
 }
 
 interface HooksManifest {
@@ -522,6 +525,28 @@ function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHo
     return { version: 1, hooks };
 }
 
+/** One manifest command block as a command handler, template vars rendered. */
+function commandHandler(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeHookCommand {
+    const handler: ClaudeHookCommand = { type: 'command', command: render(block.command, vars) };
+
+    if (block.timeout !== undefined) {
+        handler.timeout = block.timeout;
+    }
+
+    return handler;
+}
+
+/** One manifest command block as a matcher group (matcher, then a single command handler), template vars rendered. */
+function matcherGroup(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeMatcherGroup {
+    const group: ClaudeMatcherGroup = { hooks: [commandHandler(block, vars)] };
+
+    if (block.matcher !== undefined) {
+        group.matcher = block.matcher;
+    }
+
+    return group;
+}
+
 /**
  * Translate the canonical hooks manifest into Claude Code's `.claude/settings.json` hooks structure,
  * rendering template vars. Claude nests command handlers under matcher groups per event.
@@ -534,20 +559,8 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
             continue;
         }
 
-        const { event, command, matcher, timeout } = hook.claude;
-        const commandHook: ClaudeHookCommand = {
-            type: 'command',
-            command: render(command, vars),
-        };
-
-        if (timeout !== undefined) {
-            commandHook.timeout = timeout;
-        }
-
-        const group: ClaudeMatcherGroup = { hooks: [commandHook] };
-        if (matcher !== undefined) {
-            group.matcher = matcher;
-        }
+        const { event } = hook.claude;
+        const group = matcherGroup(hook.claude, vars);
 
         if (!hooks[event]) {
             hooks[event] = [];
@@ -572,9 +585,11 @@ interface McpServerEntry {
     url?: string;
     /** Gemini CLI's streamable HTTP endpoint. */
     httpUrl?: string;
+    /** Antigravity's key for a remote server; it rejects `url` and `httpUrl`. */
+    serverUrl?: string;
 }
 
-/** The `mcpServers` wrapper both assistants read. */
+/** The `mcpServers` wrapper every assistant reads. */
 interface McpConfigJson {
     mcpServers: Record<string, McpServerEntry>;
 }
@@ -582,10 +597,10 @@ interface McpConfigJson {
 /**
  * The documentation-MCP server entry each assistant gets.
  *
- * The two entries differ by one key on purpose, and the difference is not cosmetic:
+ * The entries differ on purpose, and the difference is not cosmetic:
  * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
- * misread a remote HTTP endpoint. Do not harmonize the two shapes.
+ * misread a remote HTTP endpoint. Antigravity accepts only `serverUrl` for a remote server. Do not harmonize the shapes.
  *
  * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
  * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).
@@ -594,6 +609,7 @@ const MCP_SERVER_ENTRY: Record<McpJsonAgent, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
     cursor: { url: MCP_SERVER_URL },
     gemini: { httpUrl: MCP_SERVER_URL },
+    antigravity: { serverUrl: MCP_SERVER_URL },
 };
 
 /** The standalone MCP configuration file for an assistant whose MCP config is not part of a larger settings file. */
@@ -764,6 +780,59 @@ export function generateGeminiAdapter(root: string, vars: TemplateVars): Generat
 }
 
 /**
+ * Antigravity's `.agents/hooks.json`: hook-group name, then event, then handlers. Tool events (`PreToolUse`,
+ * `PostToolUse`) nest handlers under matcher groups; every other event lists its handlers directly.
+ */
+type AntigravityHooksJson = Record<string, Record<string, (ClaudeMatcherGroup | ClaudeHookCommand)[]>>;
+
+/** The Antigravity events that take a tool matcher. The rest ignore it and expect bare handlers. */
+const ANTIGRAVITY_TOOL_EVENTS: ReadonlySet<string> = new Set(['PreToolUse', 'PostToolUse']);
+
+/**
+ * Translate the canonical hooks manifest into Antigravity's `.agents/hooks.json`. One group per manifest hook,
+ * named `blit-<id>` so a user's own groups never collide with ours; tool events use Claude's matcher-group shape.
+ */
+function buildAntigravityHooks(manifest: HooksManifest, vars: TemplateVars): AntigravityHooksJson {
+    const groups: AntigravityHooksJson = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.antigravity) {
+            continue;
+        }
+
+        const { event } = hook.antigravity;
+        const entry = ANTIGRAVITY_TOOL_EVENTS.has(event)
+            ? matcherGroup(hook.antigravity, vars)
+            : commandHandler(hook.antigravity, vars);
+
+        groups[`blit-${hook.id}`] = { [event]: [entry] };
+    }
+
+    return groups;
+}
+
+/**
+ * Generate the Antigravity adapter files from the kit IR. Persona is `AGENTS.md` and skills are the shared
+ * `.agents/skills/` folder, so neither is emitted here:
+ *   - `.agents/hooks.json`        (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.agents/hooks/{script}`    (kit-owned; copied verbatim)
+ *   - `.agents/mcp_config.json`   (kit-owned; the blit386.dev documentation MCP server)
+ */
+export function generateAntigravityAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
+    const contentRoot = join(root, 'content');
+    const manifest = readHooksManifest(contentRoot);
+
+    return [
+        {
+            path: ANTIGRAVITY_HOOKS_JSON,
+            content: `${JSON.stringify(buildAntigravityHooks(manifest, vars), null, 2)}\n`,
+        },
+        mcpConfigFile('antigravity'),
+        ...collectHookScripts(contentRoot, manifest, 'antigravity', ANTIGRAVITY_HOOKS_DIR),
+    ];
+}
+
+/**
  * The `permission` half of `opencode.json`: OpenCode's declarative deny rules. The last matching rule wins and `*`
  * crosses `/`, so a leading `*` covers nested files and `*.env.example` has to come after `*.env.*`. There is no
  * `"*": "allow"` base entry on purpose: it would override a stricter user-level default for every tool call.
@@ -908,6 +977,7 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
     cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
     gemini: { ...AGENT_SPECS.gemini, generate: generateGeminiAdapter },
+    antigravity: { ...AGENT_SPECS.antigravity, generate: generateAntigravityAdapter },
     opencode: { ...AGENT_SPECS.opencode, generate: generateOpenCodeAdapter },
     zed: { ...AGENT_SPECS.zed, generate: generateZedAdapter },
 };

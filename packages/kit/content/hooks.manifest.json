@@ -17,6 +17,12 @@
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 30
       },
+      "antigravity": {
+        "event": "PostToolUse",
+        "command": "node .agents/hooks/format-file.cjs",
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "timeout": 30
+      },
       "gemini": {
         "event": "AfterTool",
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
@@ -39,6 +45,12 @@
         "matcher": "Bash",
         "timeout": 10
       },
+      "antigravity": {
+        "event": "PreToolUse",
+        "command": "node .agents/hooks/antigravity-guard.cjs shell",
+        "matcher": "run_command",
+        "timeout": 10
+      },
       "gemini": {
         "event": "BeforeTool",
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
@@ -59,6 +71,12 @@
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
       },
+      "antigravity": {
+        "event": "PreToolUse",
+        "command": "node .agents/hooks/antigravity-guard.cjs files",
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "timeout": 10
+      },
       "gemini": {
         "event": "BeforeTool",
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
@@ -77,6 +95,11 @@
         "event": "SessionStart",
         "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
         "matcher": "startup|resume|clear|compact|fork",
+        "timeout": 300
+      },
+      "antigravity": {
+        "event": "PreInvocation",
+        "command": "node .agents/hooks/antigravity-bootstrap.cjs \"{{pmInstall}}\"",
         "timeout": 300
       },
       "gemini": {

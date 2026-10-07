@@ -195,3 +195,58 @@ test('add leaves alone a shared skill another assistant already set up', {
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+/** A game with a manifest but no assistant set up, plus any `files` already on disk (path -> content). */
+function makeBareGame(files = {}) {
+    const root = mkdtempSync(join(tmpdir(), 'blit-agents-agy-'));
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'agy-game', private: true }));
+    mkdirSync(join(root, '.blit'));
+    writeFileSync(join(root, '.blit', 'manifest.json'), JSON.stringify({ kitVersion: '0.0.0', vars, files: [] }));
+
+    for (const [path, content] of Object.entries(files)) {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), content);
+    }
+
+    return root;
+}
+
+const addAntigravity = (root) =>
+    spawnSync(process.execPath, [blitCli, 'agents', 'add', 'antigravity'], { cwd: root, encoding: 'utf8' });
+
+test('add antigravity on a no-agent game writes its exact paths and the shared skills, then sync is clean', () => {
+    const root = makeBareGame();
+
+    try {
+        assert.equal(addAntigravity(root).status, 0);
+
+        const tracked = trackedPaths(root);
+
+        for (const path of ['.agents/hooks.json', '.agents/mcp_config.json', '.agents/hooks/antigravity-guard.cjs']) {
+            assert.ok(tracked.includes(path), `${path} should be tracked`);
+            assert.ok(existsSync(join(root, path)), `${path} should be on disk`);
+        }
+
+        assert.ok(tracked.some((path) => path.startsWith(SHARED_SKILLS_DIR)));
+        assert.ok(!existsSync(join(root, '.agents', 'workflows')) && !existsSync(join(root, '.gemini')));
+        assert.equal(spawnSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], { cwd: root }).status, 0);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('add antigravity merges the docs server into an existing .agents/mcp_config.json', () => {
+    const own = { command: 'node', args: ['mine.js'] };
+    const root = makeBareGame({ '.agents/mcp_config.json': JSON.stringify({ mcpServers: { mine: own } }) });
+
+    try {
+        assert.equal(addAntigravity(root).status, 0);
+
+        const { mcpServers } = JSON.parse(readFileSync(join(root, '.agents', 'mcp_config.json'), 'utf8'));
+
+        assert.deepEqual(mcpServers.mine, own);
+        assert.deepEqual(mcpServers['blit386-docs'], { serverUrl: 'https://blit386.dev/mcp' });
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
