@@ -108,6 +108,21 @@ describe('patchPaths', () => {
         assert.deepEqual(patchPaths(patch), ['/home/me/game/pnpm-lock.yaml']);
     });
 
+    it('trims every edge whitespace Codex trims, so an exotic indent cannot hide a header', () => {
+        for (const indent of ['\u00a0', '\v', '\f', '\u0085', '\u2003', '\u3000', '\t \u00a0']) {
+            const patch = `*** Begin Patch\n${indent}*** Update File: pnpm-lock.yaml${indent}\n@@\n-a\n+b\n*** End Patch`;
+
+            assert.deepEqual(patchPaths(patch), ['pnpm-lock.yaml'], JSON.stringify(indent));
+        }
+    });
+
+    it('keeps a line separator inside a path instead of dropping the header', () => {
+        const patch = '*** Begin Patch\n*** Update File: src/a.js\n*** Update File: x\u2028/../.env\n*** End Patch';
+
+        assert.deepEqual(patchPaths(patch), ['src/a.js', 'x\u2028/../.env']);
+        assert.ok(isProtectedPath(patchPaths(patch)[1]), 'the hidden .env edit is still caught');
+    });
+
     it('finds nothing in text that is not a patch', () => {
         assert.deepEqual(patchPaths(''), []);
         assert.deepEqual(patchPaths('git status'), []);

@@ -153,13 +153,22 @@ function isDangerousCommand(command) {
 }
 
 /** An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. */
-const PATCH_HEADER = /^[ \t]*\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/;
+const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): ([\s\S]+)$/;
+
+/**
+ * What Codex's parser trims from both ends of a line before it looks for a header: Rust's `str::trim`, every Unicode
+ * White_Space character. That is JavaScript's `\s` plus U+0085, which `\s` leaves out (`\s` also strips U+FEFF, which
+ * Rust keeps - stripping more only ever finds more headers). Trimming less than Codex would let a header indented with,
+ * say, a no-break space through unseen.
+ */
+const LINE_EDGE_WHITESPACE = /^[\s\u0085]+|[\s\u0085]+$/g;
 
 /**
  * Every file path an apply_patch text names: each file it adds, updates, deletes, or moves something to. Takes the
  * raw patch (`*** Begin Patch` ... `*** End Patch`), the same wrapped in a heredoc, or a whole shell command that
  * carries one - each header is a line of its own in all three. Paths come back as written (relative to the session's
- * working directory, or absolute).
+ * working directory, or absolute). Lines split on `\n` alone, as Codex splits them; anything else in a path, a U+2028
+ * included, stays part of it.
  *
  * ponytail: a stateless line scan, unlike Codex's own parser. A context line in an Update hunk whose file text is itself
  * a header (` *** Add File: x`) is read as one too. That only ever adds a path, so a guard errs toward a deny and the
@@ -171,7 +180,7 @@ const PATCH_HEADER = /^[ \t]*\*\*\* (?:Add File|Update File|Delete File|Move to)
 function patchPaths(patch) {
     return patch
         .split('\n')
-        .map((line) => PATCH_HEADER.exec(line.replace(/\r$/, ''))?.[1].trim())
+        .map((line) => PATCH_HEADER.exec(line.replace(LINE_EDGE_WHITESPACE, ''))?.[1].replace(LINE_EDGE_WHITESPACE, ''))
         .filter(Boolean);
 }
 
