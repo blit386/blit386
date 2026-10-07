@@ -931,3 +931,56 @@ export function randomIntInclusiveRangeError(min: number, max: number): string {
         'Use a max that is at least as large as min'
     );
 }
+
+/** `BT.renderAt()` called before the game loop exists - before init() finished, or while the splash is up. */
+export const RENDER_AT_NOT_READY_MESSAGE =
+    "Can't seek with BT.renderAt() because the game loop hasn't started yet. Call it after init() has finished and the splash is gone";
+
+/** `BT.renderAt()` re-ran the game's init() for a `from: 'start'` seek and it failed. */
+export const RENDER_AT_INIT_FAILED_MESSAGE =
+    "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. Check the console for the init() error";
+
+/**
+ * `BT.renderAt()` got a time that is not a finite, non-negative number of seconds, or one too large
+ * to count in ticks.
+ *
+ * @param seconds - The value passed.
+ * @returns Tier 1 error message.
+ */
+export function renderAtSecondsError(seconds: unknown): string {
+    return `BT.renderAt() needs a time in seconds that is zero or more (and small enough to count in ticks). Got: ${String(seconds)}`;
+}
+
+/**
+ * `BT.renderAt()` got a second argument that is not an options object (for example a bare `'current'`).
+ *
+ * @param options - The value passed.
+ * @returns Tier 1 error message.
+ */
+export function renderAtOptionsError(options: unknown): string {
+    return `BT.renderAt() takes its options as an object, like { from: 'current' }. Got: ${String(options)}`;
+}
+
+/**
+ * `BT.renderAt()` got an unknown `from` option.
+ *
+ * @param from - The value passed.
+ * @returns Tier 1 error message.
+ */
+export function renderAtFromError(from: unknown): string {
+    return `BT.renderAt() option 'from' must be 'start' or 'current'. Got: ${String(from)}`;
+}
+
+/**
+ * `BT.renderAt(..., { from: 'current' })` asked for a tick that already passed.
+ *
+ * @param targetTicks - Tick the seek asked for.
+ * @param currentTicks - Tick the game is on.
+ * @returns Tier 1 error message.
+ */
+export function renderAtPastError(targetTicks: number, currentTicks: number): string {
+    return (
+        `BT.renderAt() can't seek backwards with from: 'current' (asked for tick ${targetTicks}, the game is on tick ${currentTicks}). ` +
+        "Use from: 'start' to replay from the beginning"
+    );
+}

@@ -56,6 +56,15 @@ The engine gives you a few read-only values (they are properties, so no parenthe
 - `BT.targetFPS` - the frames-per-second you asked for (default 60).
 - `BT.deltaSeconds` - how much time one step represents, in seconds. Use it for smooth motion if you prefer
   speed-per-second over speed-per-step.
+- `BT.timeSeconds` - the same clock in seconds (`BT.ticks * BT.deltaSeconds`).
+
+Animate from these, never from `performance.now()` or `Date.now()`. The engine's clock is the step counter, so
+`BT.renderAt(seconds)` can jump to any moment and draw exactly what the game would show there - but only for motion that
+reads `BT.timeSeconds` or `BT.ticks`. Anything driven by the wall clock jumps around when you seek and never matches a
+screenshot. For the same reason, change game state and start palette effects in `init()` or `update()`, never in
+`render()`: a seek runs `update()` for every step but `render()` only once, at the end. A seek always draws exactly on a
+step, with `BT.renderAlpha` at 0 (see "Drawing between two steps" below), so it matches a live frame that also landed
+exactly on that step - not one the game drew partway between two steps.
 
 ## Phones and screen orientation
 

@@ -81,8 +81,14 @@ export interface MockAudioContext {
     /** Destination node passed to `main.connect(...)` in a well-wired bus graph. */
     readonly destination: AudioNode;
 
+    /** Context state: `'suspended'` until `resume()`, back to `'suspended'` on `suspend()`, `'closed'` after `close()`. */
+    readonly state: AudioContextState;
+
     /** Number of times `resume()` was called. */
     readonly resumeCallCount: number;
+
+    /** Number of times `suspend()` was called. */
+    readonly suspendCallCount: number;
 
     /** Number of times `close()` was called. */
     readonly closeCallCount: number;
@@ -338,6 +344,7 @@ export function createMockAudioContext(): AudioContext {
     const destination = {} as unknown as AudioNode;
     const decodeAudioDataCalls: ArrayBuffer[] = [];
     let resumeCallCount = 0;
+    let suspendCallCount = 0;
     let closeCallCount = 0;
 
     const context = {
@@ -354,6 +361,9 @@ export function createMockAudioContext(): AudioContext {
         decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
         get resumeCallCount() {
             return resumeCallCount;
+        },
+        get suspendCallCount() {
+            return suspendCallCount;
         },
         get closeCallCount() {
             return closeCallCount;
@@ -394,6 +404,12 @@ export function createMockAudioContext(): AudioContext {
         resume: () => {
             resumeCallCount += 1;
             context.state = 'running';
+
+            return Promise.resolve();
+        },
+        suspend: () => {
+            suspendCallCount += 1;
+            context.state = 'suspended';
 
             return Promise.resolve();
         },

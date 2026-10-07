@@ -79,6 +79,10 @@ Read it twice about a second apart and `ticks` should have grown by about 60.
 - It keeps working after a hot reload rebuilds the game object - the engine asks the current one every time.
 - The engine never calls it on its own, so it costs nothing during play. See `test-the-game` for using it.
 
+To look at one exact moment instead of a live game, an agent can call `await window.BT.renderAt(2.5)` - the loop stops
+on that frame, so `window.BT.testState()` and `window.BT.captureFrame()` both describe tick 150 no matter how slow the
+agent's tool calls are. `window.BT.resume()` lets the game run again.
+
 ## Notes
 
 - `BT.isDevMode` is tied to the dev server, not to `NODE_ENV` or any bundler define - there is nothing else to

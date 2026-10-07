@@ -216,10 +216,10 @@ const slot = palette.findColor(color); // → index, or -1 if not found
 <Since symbol="BT.paletteSwap" />
 <Since symbol="BT.paletteClearEffects" />
 
-Animated effects run automatically each frame in the engine's end-of-frame pass (after `demo.render()`, before the GPU
-upload). Multiple effects can run simultaneously on different palette ranges and will not conflict. The public
-`Palette.isDirty` getter reflects whether slots changed since the last GPU upload - effects set this flag; no polling
-needed.
+Animated effects run automatically once per fixed update, right after your `update()`, on the tick clock - so they keep
+the same pace at any refresh rate, and `BT.renderAt` reproduces them exactly. Multiple effects can run simultaneously on
+different palette ranges and will not conflict. The public `Palette.isDirty` getter reflects whether slots changed since
+the last GPU upload - effects set this flag; no polling needed.
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -337,8 +337,8 @@ The full curve list (sine, cubic, bounce, and more) and the `interpolate` helper
 
 <Callout title="Timing">
 
-Effects are applied after `demo.render()` but before the GPU palette upload in `Renderer.endFrame()`. This means user
-draw calls and palette effects see the same consistent snapshot within a frame - they never interleave mid-frame.
+Effects advance once per fixed update, right after `demo.update()`, and never during `demo.render()`. Your draw calls
+therefore see one consistent palette for the whole frame, and the renderer uploads it once at the end of the frame.
 
 Effects that auto-remove (fade, flash) clean up when their duration elapses. `paletteCycle` runs indefinitely until
 `paletteClearEffects()` is called.

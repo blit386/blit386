@@ -18,7 +18,7 @@ export class Noise extends FullscreenEffect {
      */
     public amount: number = 0.025;
 
-    /** Wall-clock seconds; reseeds the noise each frame. */
+    /** Seconds; reseeds the noise each frame. Drive it from BT.timeSeconds so BT.renderAt can seek it. */
     public time: number = 0;
 
     protected readonly label = 'Noise';

@@ -469,6 +469,10 @@
         {
           "version": "1.7.1",
           "note": "Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`."
+        },
+        {
+          "version": "1.8.0",
+          "note": "While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of\nwaiting for the next loop frame. Runs after every `BT.renderAt` called before it, so an un-awaited seek's frame\nis the one captured."
         }
       ],
       "deprecated": null,
@@ -929,35 +933,60 @@
     "BT.paletteCycle": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.paletteFade": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.paletteFadeExposure": {
       "kind": "method",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.paletteFadeRange": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.paletteFlash": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.0",
+          "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1071,12 +1100,26 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.renderAt": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.requestedBackend": {
       "kind": "getter",
       "since": "1.1.0",
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "BT.resume": {
+      "kind": "method",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.screenOrientation": {
       "kind": "getter",
@@ -1586,6 +1629,20 @@
       "deprecated": null,
       "status": "stable"
     },
+    "RenderAtFrom": {
+      "kind": "type",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "RenderAtOptions": {
+      "kind": "interface",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "RollLine": {
       "kind": "class",
       "since": "1.0.3",
@@ -1934,7 +1991,9 @@
       "BT.isReducedMotionPreferred",
       "BT.isSplashVisible",
       "BT.outputSize",
+      "BT.renderAt",
       "BT.requestedBackend",
+      "BT.resume",
       "BT.screenOrientation",
       "BT.splashState",
       "BT.targetFPS",
@@ -1944,6 +2003,8 @@
       "HotContext",
       "HotReloadContext",
       "PreferredOrientation",
+      "RenderAtFrom",
+      "RenderAtOptions",
       "TestStateSnapshot",
       "bootstrap",
       "defaultConfig",

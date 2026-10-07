@@ -22,7 +22,7 @@ export class Interference extends FullscreenEffect {
      */
     public amount: number = 0.06;
 
-    /** Wall-clock seconds; reseeds the row offsets each frame. */
+    /** Seconds; reseeds the row offsets each frame. Drive it from BT.timeSeconds so BT.renderAt can seek it. */
     public time: number = 0;
 
     protected readonly label = 'Interference';

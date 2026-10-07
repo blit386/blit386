@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Post-Process Effects"
 description: "The two-tier post-process effect system, built-in effects, and CRT presets."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-10-06T14:48:03+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-post-process-effects.md"
 ---
 
@@ -273,7 +273,7 @@ A horizontal bright stripe slowly scrolls down the screen.
 <TypeTable type={{
     amount: { type: 'number', default: '0.1', description: 'Strength of the bright band' },
     speed: { type: 'number', default: '1.0', description: 'Scroll velocity multiplier' },
-    time: { type: 'number', default: '0', description: 'Wall-clock seconds; demos drive this each frame' },
+    time: { type: 'number', default: '0', description: 'Seconds; drive it from BT.timeSeconds each frame so BT.renderAt can seek it' },
   }} />
 
 ### `Interference` - per-row analog jitter
@@ -284,7 +284,7 @@ Each row gets a random horizontal offset reseeded each frame.
 
 <TypeTable type={{
     amount: { type: 'number', default: '0.06', description: 'Maximum offset as a UV fraction' },
-    time: { type: 'number', default: '0', description: 'Wall-clock seconds; reseeds each frame' },
+    time: { type: 'number', default: '0', description: 'Seconds; reseeds each frame. Drive it from BT.timeSeconds so BT.renderAt can seek it' },
   }} />
 
 ### `Noise` - additive pseudo-random noise
@@ -295,7 +295,7 @@ Per-pixel film grain. Reseeds each frame from `time`.
 
 <TypeTable type={{
     amount: { type: 'number', default: '0.025', description: 'Noise amplitude as [-amount, +amount] perturbation' },
-    time: { type: 'number', default: '0', description: 'Wall-clock seconds' },
+    time: { type: 'number', default: '0', description: 'Seconds; drive it from BT.timeSeconds so BT.renderAt can seek it' },
   }} />
 
 ### `Bloom` - soft phosphor glow

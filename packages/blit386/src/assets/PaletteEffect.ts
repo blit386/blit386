@@ -5,8 +5,8 @@
  * change happens automatically on the next frame when the renderer detects the
  * dirty flag and re-uploads the palette uniform buffer.
  *
- * The {@link PaletteEffectManager} is called once per frame from the render
- * callback, after `demo.render()` but before {@link IRenderer.endFrame}.
+ * The {@link PaletteEffectManager} is called once per fixed update from the loop's
+ * update callback, after `demo.update()`.
  */
 
 import { clampByte, clampUnit, Color32, INV_255, linearToSrgb, srgbToLinear } from '../utils/Color32';
@@ -17,7 +17,7 @@ import type { Palette } from './Palette';
 /**
  * A single palette effect that runs over time.
  *
- * The manager calls {@link update} once per frame. The effect mutates palette
+ * The manager calls {@link update} once per fixed update. The effect mutates palette
  * entries via `palette.getRef()` and returns `true` to keep running or `false`
  * to signal completion (the manager removes it automatically).
  *
@@ -30,26 +30,26 @@ import type { Palette } from './Palette';
  */
 export interface PaletteEffect {
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean;
 }
 
 /**
- * Manages active palette effects and updates them each frame.
+ * Manages active palette effects and updates them once per fixed update.
  *
- * Tracks wall-clock time internally via an injectable time provider so the
- * {@link GameLoop} callback signatures remain unchanged.
+ * Tracks time through an injectable provider so the {@link GameLoop} callback signatures remain unchanged. The engine
+ * passes its tick clock (`ticks * 1000 / targetFPS`), which is what makes palette effects seekable by `BT.renderAt`.
  */
 export class PaletteEffectManager {
     /** Active effects managed by this instance. */
     private effects: PaletteEffect[] = [];
 
-    /** Last wall-clock time in milliseconds, used to compute delta time. */
+    /** Provider time of the previous update, or of the add that woke the manager from idle. */
     private lastTime = 0;
 
     /** Clock function returning milliseconds. */
@@ -58,10 +58,10 @@ export class PaletteEffectManager {
     /**
      * Creates a new effect manager.
      *
-     * @param timeProvider - Clock function returning milliseconds. Defaults to
-     *   `performance.now()`. Pass a custom function for deterministic unit tests.
+     * @param timeProvider - Clock function returning milliseconds. The engine passes its tick clock
+     *   (`ticks * 1000 / targetFPS`); the splash passes its own wall clock; tests pass a fake clock.
      */
-    constructor(timeProvider: () => number = () => performance.now()) {
+    constructor(timeProvider: () => number) {
         this.timeProvider = timeProvider;
     }
 
@@ -77,13 +77,13 @@ export class PaletteEffectManager {
     /**
      * Adds an effect to the active list.
      *
-     * @param effect - Effect instance to run each frame.
+     * @param effect - Effect instance to run once per fixed update.
      */
     add(effect: PaletteEffect): void {
-        // Reset the clock when waking from idle so the first update after a gap
-        // sees delta=0 instead of the entire idle duration.
+        // Waking from idle starts the clock now, so the first update sees only the time since the
+        // effect was added. No sentinel value: the engine's tick clock really does read 0 at boot.
         if (this.effects.length === 0) {
-            this.lastTime = 0;
+            this.lastTime = this.timeProvider();
         }
 
         this.effects.push(effect);
@@ -92,14 +92,15 @@ export class PaletteEffectManager {
     /**
      * Updates all active effects and removes completed ones.
      *
-     * Call this once per frame. Completed effects (returning `false`) are pruned
+     * Call this once per fixed update. Completed effects (returning `false`) are pruned
      * in place without allocating a new array.
      *
      * @param palette - Active palette to pass to each effect.
      */
     update(palette: Palette): void {
         const now = this.timeProvider();
-        const deltaMs = this.lastTime === 0 ? 0 : now - this.lastTime;
+        // Clamped: a clock that moved backwards (BT.ticksReset() mid-effect) must not run effects in reverse.
+        const deltaMs = Math.max(0, now - this.lastTime);
 
         this.lastTime = now;
 
@@ -136,8 +137,8 @@ export class PaletteEffectManager {
  * Classic water/fire/plasma animation. Runs indefinitely until canceled
  * via {@link PaletteEffectManager.clear}.
  *
- * Uses a fractional accumulator for sub-frame precision and a pre-allocated
- * temporary {@link Color32} to avoid per-frame allocations.
+ * Uses a fractional accumulator for sub-step precision and a pre-allocated
+ * temporary {@link Color32} to avoid per-update allocations.
  */
 export class CycleEffect implements PaletteEffect {
     /** Accumulator for tracking the cycling progress. */
@@ -165,10 +166,10 @@ export class CycleEffect implements PaletteEffect {
     ) {}
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -353,7 +354,7 @@ function applyFadeToRange(
 /**
  * Smoothly interpolates all palette entries toward a target palette over time.
  *
- * Snapshots the current palette at creation. Each frame computes an eased
+ * Snapshots the current palette at creation. Each fixed update computes an eased
  * progress value and lerps between the snapshot and target. At completion,
  * sets entries to the exact target values to avoid floating-point drift.
  *
@@ -393,10 +394,10 @@ export class FadeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -451,10 +452,10 @@ export class FadeRangeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -557,7 +558,7 @@ function entryLead(snap: Color32, target: Color32, highlightLead: number): numbe
  * @param from - Encoded channel byte at fade start.
  * @param to - Encoded channel byte at fade end.
  * @param tc - Per-entry progress in range [0, 1].
- * @returns Encoded channel byte for the current frame.
+ * @returns Encoded channel byte at progress `tc`.
  */
 function exposeChannel(from: number, to: number, tc: number): number {
     const fromLinear = srgbToLinear(from * INV_255);
@@ -678,10 +679,10 @@ export class ExposureFadeEffect implements PaletteEffect {
     }
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
@@ -739,7 +740,7 @@ function restoreNonZeroSlots(palette: Palette, snapshot: Color32[]): void {
 /**
  * Temporarily sets all palette entries to a single color, then restores.
  *
- * On the first frame, snapshots all entries and overwrites them with the flash
+ * On its first update, snapshots all entries and overwrites them with the flash
  * color (index 0 is preserved as transparent). After the duration elapses,
  * restores the snapshot and auto-removes.
  */
@@ -762,17 +763,17 @@ export class FlashEffect implements PaletteEffect {
     ) {}
 
     /**
-     * Advances the effect by one frame.
+     * Advances the effect by one update.
      *
      * @param palette - Active palette to modify.
-     * @param deltaMs - Wall-clock milliseconds since the last frame.
+     * @param deltaMs - Milliseconds since the previous update. The engine updates palette effects once per fixed tick on its tick clock.
      * @returns `true` to keep running, `false` to remove from the manager.
      */
     update(palette: Palette, deltaMs: number): boolean {
         let keepRunning = true;
 
         if (this.snapshotColors === null) {
-            // First frame: snapshot and apply flash.
+            // First update: snapshot and apply flash.
             this.snapshotColors = snapshotPaletteRange(palette, 0, palette.size - 1);
             copyColorToNonZeroSlots(palette, this.color);
             palette.markDirty();

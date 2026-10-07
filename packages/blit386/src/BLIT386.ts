@@ -46,6 +46,8 @@ import {
     type OverlayStyle,
     type OverlayTimingChartStyle,
     type PreferredOrientation,
+    type RenderAtFrom,
+    type RenderAtOptions,
     type TestStateSnapshot,
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
@@ -96,7 +98,7 @@ import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
-import { noActivePaletteError, systemFontNotReadyError } from './utils/errorMessages';
+import { noActivePaletteError, renderAtOptionsError, systemFontNotReadyError } from './utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
 import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
@@ -1304,10 +1306,11 @@ export const BT = {
      * Starts rotating a range of palette entries at a constant speed.
      *
      * Classic water/fire/plasma animation technique. Runs indefinitely until
-     * canceled via {@link BT.paletteClearEffects}. Uses a fractional accumulator
-     * for sub-frame precision.
+     * canceled via {@link BT.paletteClearEffects}. Uses a fractional accumulator,
+     * so slow speeds still step exactly on time.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param start - First palette index in the cycling range (inclusive).
      * @param end - Last palette index in the cycling range (inclusive).
      * @param speed - Steps per second. Positive = forward, negative = backward.
@@ -1319,7 +1322,7 @@ export const BT = {
     /**
      * Smoothly interpolates all palette entries toward a target over time.
      *
-     * Snapshots the current palette at the moment this is called. Each frame the
+     * Snapshots the current palette at the moment this is called. Each fixed update the
      * entries are lerped between the snapshot and target using the easing curve.
      * Auto-removes when the fade completes.
      *
@@ -1329,6 +1332,7 @@ export const BT = {
      * - Cross-fade: `BT.paletteFade(nightPalette, 2000, 'ease-in-out')`
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
@@ -1368,6 +1372,7 @@ export const BT = {
      * - Fade out: `BT.paletteFadeExposure(blackPalette, 1000)`
      *
      * @since 1.5.0
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param options - Highlight lead and easing curve.
@@ -1383,6 +1388,7 @@ export const BT = {
      * Indices outside the range are left untouched.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param start - First palette index to fade (inclusive).
      * @param end - Last palette index to fade (inclusive).
      * @param target - Target palette to fade toward.
@@ -1406,6 +1412,7 @@ export const BT = {
      * and restored after the duration elapses. Auto-removes when complete.
      *
      * @since 1.0.3
+     * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
      */
@@ -2575,6 +2582,9 @@ export const BT = {
      *
      * @since 1.0.3
      * @changed 1.7.1 Accepts `{ size: 'display' }` to capture at logical `BT.displaySize`.
+     * @changed 1.8.0 While `BT.renderAt` holds the loop stopped, re-renders the seeked frame to capture it instead of
+     * waiting for the next loop frame. Runs after every `BT.renderAt` called before it, so an un-awaited seek's frame
+     * is the one captured.
      * @param options - Capture options; `size` defaults to `'output'`.
      * @returns PNG image data for the captured frame.
      *
@@ -2588,6 +2598,62 @@ export const BT = {
      */
     captureFrame: async (options: FrameCaptureOptions = {}): Promise<Blob> => {
         return await BTAPI.instance.captureFrame(options.size);
+    },
+
+    /**
+     * Seeks the fixed-step clock and renders exactly the frame at `seconds` - on demand, with no
+     * `requestAnimationFrame`, so it works in hidden and headless pages.
+     *
+     * `from: 'start'` (default) stops the loop, resets engine-owned state (the `BT.random` stream,
+     * palette and post-process effects, camera, ticks), re-runs your game's `init()`, then steps
+     * `update()` to the target tick and renders once. The splash is not replayed; as in the live
+     * run, palette effects that `init()` started behind it are dropped. Palette slot colors are not
+     * restored, so build the palette inside `init()`. `from: 'current'` steps
+     * forward from the tick the game is on and rejects a target in the past. Either way the loop
+     * stays stopped afterwards: `BT.captureFrame()` captures the seeked frame, and `BT.resume()`
+     * keeps playing from it.
+     *
+     * Cost is one `update()` per tick: three minutes at 60 FPS is 10,800 calls. Animation driven by
+     * `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. Audio is
+     * parked during the seek and sound effects played by stepped updates are dropped.
+     *
+     * `BT.resume()` and `BT.captureFrame()` called before the returned promise settles wait for the
+     * seek to finish, so an un-awaited `BT.renderAt(5)` followed by `BT.captureFrame()` captures
+     * the frame at 5 seconds.
+     *
+     * @since 1.8.0
+     * @param seconds - Target time in seconds; rounded to the nearest tick.
+     * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`. Must be an object - a
+     *   bare `'current'` rejects.
+     * @returns Resolves once the target frame has rendered.
+     *
+     * @example
+     * await BT.renderAt(3.2);
+     * const png = await BT.captureFrame({ size: 'display' }); // the frame at tick 192
+     */
+    renderAt: (seconds: number, options: RenderAtOptions = {}): Promise<void> => {
+        // Agents drive window.BT without TypeScript: a positional 'current' would otherwise read as
+        // options.from === undefined and silently replay from the start.
+        if (typeof options !== 'object' || options === null || Array.isArray(options)) {
+            return Promise.reject(new Error(renderAtOptionsError(options)));
+        }
+
+        return BTAPI.instance.renderAt(seconds, options.from);
+    },
+
+    /**
+     * Restarts the game loop after `BT.renderAt` left it stopped, continuing from the seeked tick.
+     * Takes effect after every `BT.renderAt` called before it (awaited or not) and before any called
+     * after it. Does nothing when, by then, no seek is holding the loop. Awaiting it is optional.
+     *
+     * Music started by a `'start'` seek's `init()` re-run plays from its beginning after resume until
+     * music seeking lands.
+     *
+     * @since 1.8.0
+     * @returns Resolves once the loop has restarted, or once the call turned out to be a no-op.
+     */
+    resume: (): Promise<void> => {
+        return BTAPI.instance.resume();
     },
 
     /**
@@ -3017,6 +3083,8 @@ export type {
     OverlayStyle,
     OverlayTimingChartStyle,
     PreferredOrientation,
+    RenderAtFrom,
+    RenderAtOptions,
     SoundParamSetOptions,
     SoundPlayOptions,
     SoundRef,

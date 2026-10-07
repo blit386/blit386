@@ -48,6 +48,20 @@ Use this whenever you compare frames or read pixels: the PNG always matches `BT.
 `drawingBufferSize` is set to), and the capture never collides with someone pressing F9 in the same frame. It leaves out
 display-tier effects, since those only exist in the upscaled buffer.
 
+## Capture the frame at a given time (engine 1.8.0+)
+
+To screenshot what the game shows at second 3.2 - for a thumbnail, a test, or to check an animation - seek there first,
+then capture:
+
+```js
+await BT.renderAt(3.2); // replays from the start and stops on tick 192
+const shot = await BT.captureFrame({ size: 'display' }); // the frame at 3.2 s
+BT.resume(); // optional: keep playing from there
+```
+
+`renderAt` replays your game from the beginning (it re-runs `init()`), so it only lands on the right frame if everything
+that moves is driven by `BT.timeSeconds`, `BT.ticks`, or `BT.random` - never `performance.now()` or `Date.now()`.
+
 ## The built-in dev shortcut (engine 1.7.0+)
 
 While `npm run dev` is running, you do not need any code to grab a frame:
@@ -75,6 +89,8 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 - `BT.downloadFrame(filename?, options?)` (method, async) - capture and download.
 - `BT.captureFrame(options?)` (method, async) - resolve to a PNG `Blob`.
 - `{ size: 'display' }` (options, engine 1.7.1+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
+- `BT.renderAt(seconds)` (method, async, engine 1.8.0+) - jump to a time and render that exact frame; then
+  `captureFrame`.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.
 
 ## Notes
