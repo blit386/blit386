@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code, Cursor, Gemini CLI, and Zed.
+ * Shared agent adapters for Claude Code, Cursor, Gemini CLI, OpenCode, and Zed.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -27,6 +27,9 @@ import {
     DOCS_DIR,
     GEMINI_HOOKS_DIR,
     GEMINI_SETTINGS_JSON,
+    OPENCODE_HOOKS_DIR,
+    OPENCODE_JSON,
+    OPENCODE_KIT_GUARD,
     SHARED_SKILLS_DIR,
     sharedSkillsWanted,
     ZED_SETTINGS_JSON,
@@ -328,12 +331,23 @@ function referencedHookScripts(manifest: HooksManifest, agent: HookedAgent, hook
     const names = new Set<string>();
 
     for (const hook of manifest.hooks) {
-        const command = hook[agent]?.command;
-        if (!command) {
+        const block = hook[agent];
+        if (!block) {
             continue;
         }
 
-        for (const match of command.matchAll(/([\w.-]+\.(?:sh|cjs))\b/g)) {
+        if ('scripts' in block) {
+            for (const name of block.scripts) {
+                names.add(name);
+            }
+            continue;
+        }
+
+        if (!block.command) {
+            continue;
+        }
+
+        for (const match of block.command.matchAll(/([\w.-]+\.(?:sh|cjs))\b/g)) {
             const scriptName = match[1];
             if (scriptName) {
                 names.add(scriptName);
@@ -446,11 +460,21 @@ interface HookManifestClaudeBlock {
     timeout?: number;
 }
 
+/**
+ * How a hook is wired for OpenCode. Not a command: OpenCode runs `kit-guard.ts` as a plugin, so the block names the
+ * plugin event the hook rides on and the `hooks/` scripts that plugin loads (shipped beside it, like a command's).
+ */
+interface HookManifestOpenCodeBlock {
+    event: string;
+    scripts: string[];
+}
+
 interface HookManifestEntry {
     id: string;
     intent: string;
     cursor?: HookManifestCursorBlock;
     claude?: HookManifestClaudeBlock;
+    opencode?: HookManifestOpenCodeBlock;
     /** Same shape as Claude's block, except `timeout` is in milliseconds. */
     gemini?: HookManifestClaudeBlock;
 }
@@ -537,6 +561,9 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
     return { hooks, enabledMcpjsonServers: [MCP_SERVER_NAME] };
 }
 
+/** The assistants whose docs-MCP config is an `mcpServers` file of its own; OpenCode's lives in `opencode.json`. */
+type McpJsonAgent = Exclude<HookedAgent, 'opencode'>;
+
 /** One remote MCP server entry. */
 interface McpServerEntry {
     /** Transport marker. Required by Claude Code, omitted for Cursor - see `MCP_SERVER_ENTRY`. */
@@ -563,14 +590,14 @@ interface McpConfigJson {
  * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
  * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).
  */
-const MCP_SERVER_ENTRY: Record<HookedAgent, McpServerEntry> = {
+const MCP_SERVER_ENTRY: Record<McpJsonAgent, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
     cursor: { url: MCP_SERVER_URL },
     gemini: { httpUrl: MCP_SERVER_URL },
 };
 
 /** The standalone MCP configuration file for an assistant whose MCP config is not part of a larger settings file. */
-function mcpConfigFile(agent: 'claude' | 'cursor'): GeneratedFile {
+function mcpConfigFile(agent: Exclude<McpJsonAgent, 'gemini'>): GeneratedFile {
     const config: McpConfigJson = { mcpServers: { [MCP_SERVER_NAME]: MCP_SERVER_ENTRY[agent] } };
 
     return { path: AGENT_SPECS[agent].mcpConfig, content: `${JSON.stringify(config, null, 2)}\n` };
@@ -737,6 +764,112 @@ export function generateGeminiAdapter(root: string, vars: TemplateVars): Generat
 }
 
 /**
+ * The `permission` half of `opencode.json`: OpenCode's declarative deny rules. The last matching rule wins and `*`
+ * crosses `/`, so a leading `*` covers nested files and `*.env.example` has to come after `*.env.*`. There is no
+ * `"*": "allow"` base entry on purpose: it would override a stricter user-level default for every tool call.
+ *
+ * MANUAL-SYNC HAZARD: these lists restate the guard core's policy (`content/hooks/guard-core.cjs`: `isProtectedPath`,
+ * `isDangerousCommand`) in a form glob patterns can express - coarser, never laxer. `test/opencode.test.mjs`
+ * runs one case table through both, so an edit on either side that is not mirrored fails the kit tests. The
+ * `kit-guard.ts` plugin enforces the exact policy on top of this, including what a pattern cannot (`bash -c "..."`).
+ */
+const OPENCODE_PERMISSION = {
+    // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
+    // prefix (any depth). Spelling them as `*pnpm-lock.yaml` or `*.env.*` would also catch `my-pnpm-lock.yaml` and
+    // `game.env.js`, which the guard core allows.
+    edit: {
+        'pnpm-lock.yaml': 'deny',
+        '*/pnpm-lock.yaml': 'deny',
+        'package-lock.json': 'deny',
+        '*/package-lock.json': 'deny',
+        'bun.lockb': 'deny',
+        '*/bun.lockb': 'deny',
+        '*.lock': 'deny',
+        '.env': 'deny',
+        '*/.env': 'deny',
+        '.env.*': 'deny',
+        '*/.env.*': 'deny',
+        '.env.example': 'allow',
+        '*/.env.example': 'allow',
+    },
+    // The built-in default for `.env` reads is `ask` in source and `deny` in the docs, so state it.
+    read: {
+        '.env': 'deny',
+        '*/.env': 'deny',
+        '.env.*': 'deny',
+        '*/.env.*': 'deny',
+        '.env.example': 'allow',
+        '*/.env.example': 'allow',
+    },
+    bash: {
+        'git reset --hard*': 'deny',
+        'git checkout -- *': 'deny',
+        'git restore *': 'deny',
+        'git restore --staged *': 'allow',
+        'git clean': 'deny',
+        'git clean *': 'deny',
+        'git clean -n*': 'allow',
+        'git clean --dry-run*': 'allow',
+        'git push -f*': 'ask',
+        'git push * -f*': 'ask',
+        'git push *--force*': 'ask',
+        'git push * +*': 'ask',
+        'git branch -D *': 'ask',
+        'git branch * -D*': 'ask',
+        'git stash drop*': 'ask',
+        'git stash clear*': 'ask',
+    },
+} as const;
+
+/**
+ * Which formatter owns which file type, the same split as the Claude and Cursor `format-file.cjs` hook and the starter's
+ * `format` script: Biome formats code and JSON, Prettier formats Markdown and YAML. OpenCode's formatters are off until
+ * enabled, and its built-in Prettier would also claim code files, so each tool is pinned to its own extensions.
+ */
+const OPENCODE_FORMATTER = {
+    biome: { extensions: ['.js', '.cjs', '.mjs', '.ts', '.json', '.jsonc'] },
+    prettier: { extensions: ['.md', '.mdx', '.mdc', '.yml', '.yaml'] },
+} as const;
+
+/**
+ * `opencode.json`. Both formatters are switched on by name (see `OPENCODE_FORMATTER`). The docs server entry has no
+ * `mcpServers` wrapper - OpenCode calls the key `mcp` and marks a remote server with `type: 'remote'`.
+ */
+function openCodeConfigFile(): GeneratedFile {
+    const config = {
+        $schema: 'https://opencode.ai/config.json',
+        formatter: OPENCODE_FORMATTER,
+        permission: OPENCODE_PERMISSION,
+        mcp: { [MCP_SERVER_NAME]: { type: 'remote', url: MCP_SERVER_URL, enabled: true } },
+    };
+
+    return { path: OPENCODE_JSON, content: `${JSON.stringify(config, null, 2)}\n` };
+}
+
+/**
+ * Generate the OpenCode adapter files from the kit IR. Skills and the persona need none of their own: OpenCode reads
+ * `AGENTS.md` and the shared `.agents/skills/` folder (`generateAgentFiles` emits it).
+ *   - `opencode.json`                   (kit-owned; formatter, permission map, docs MCP server)
+ *   - `.opencode/plugins/kit-guard.ts`  (kit-owned; rendered from `content/hooks/opencode-kit-guard.ts`)
+ *   - `.opencode/hooks/{script}`        (kit-owned; copied verbatim - the guard core and the bootstrap script)
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns The generated OpenCode files and their contents.
+ */
+export function generateOpenCodeAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
+    const contentRoot = join(root, 'content');
+    const manifest = readHooksManifest(contentRoot);
+    const plugin = render(readFileSync(join(contentRoot, 'hooks', 'opencode-kit-guard.ts'), 'utf8'), vars);
+
+    return [
+        openCodeConfigFile(),
+        { path: OPENCODE_KIT_GUARD, content: plugin },
+        ...collectHookScripts(contentRoot, manifest, 'opencode', OPENCODE_HOOKS_DIR),
+    ];
+}
+
+/**
  * Generate the Zed adapter files: `.zed/settings.json` only (kit-owned, merged with the user's own settings).
  *
  * Zed's built-in agent reads `AGENTS.md` and the shared `.agents/skills/` folder natively, so the persona and skills
@@ -775,6 +908,7 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
     cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
     gemini: { ...AGENT_SPECS.gemini, generate: generateGeminiAdapter },
+    opencode: { ...AGENT_SPECS.opencode, generate: generateOpenCodeAdapter },
     zed: { ...AGENT_SPECS.zed, generate: generateZedAdapter },
 };
 

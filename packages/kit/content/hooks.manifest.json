@@ -44,6 +44,10 @@
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
         "matcher": "run_shell_command",
         "timeout": 10000
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -60,6 +64,10 @@
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
         "matcher": "write_file|replace",
         "timeout": 10000
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -76,6 +84,10 @@
         "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
         "matcher": "startup",
         "timeout": 300000
+      },
+      "opencode": {
+        "event": "session.created",
+        "scripts": ["session-start.sh"]
       }
     }
   ]

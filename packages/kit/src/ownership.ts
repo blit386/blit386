@@ -68,6 +68,20 @@ export const GEMINI_HOOKS_DIR = `${GEMINI_DIR}hooks/`;
 export const GEMINI_SETTINGS_JSON = `${GEMINI_DIR}settings.json`;
 
 /**
+ * OpenCode's project configuration: permission map, formatter, and docs MCP server in one JSON file at the project
+ * root. A file a user may extend, so sync merges it like `.mcp.json` rather than replacing it.
+ */
+export const OPENCODE_JSON = 'opencode.json';
+
+/**
+ * Root of OpenCode's generated configuration. Only the paths below are the kit's: a user's own plugins, commands, and
+ * agents under `.opencode/` stay user-owned.
+ */
+export const OPENCODE_DIR = '.opencode/';
+export const OPENCODE_HOOKS_DIR = `${OPENCODE_DIR}hooks/`;
+export const OPENCODE_KIT_GUARD = `${OPENCODE_DIR}plugins/kit-guard.ts`;
+
+/**
  * Zed's generated configuration. `settings.json` is user-extendable JSON (Zed also allows comments), so like the MCP
  * configs it is merged structurally by `blit agents add` and three-way merged by `sync`.
  */
@@ -106,6 +120,8 @@ const KIT_OWNED_FILES: readonly string[] = [
     CURSOR_HOOKS_JSON,
     CURSOR_MCP_JSON,
     GEMINI_SETTINGS_JSON,
+    OPENCODE_JSON,
+    OPENCODE_KIT_GUARD,
     ZED_SETTINGS_JSON,
 ];
 
@@ -119,6 +135,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CURSOR_HOOKS_DIR,
     CURSOR_SKILLS_DIR,
     GEMINI_HOOKS_DIR,
+    OPENCODE_HOOKS_DIR,
     SHARED_SKILLS_DIR,
 ];
 
@@ -165,10 +182,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor' | 'gemini' | 'zed';
+export type AgentKind = 'claude' | 'cursor' | 'gemini' | 'opencode' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'gemini', 'zed'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'gemini', 'opencode', 'zed'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -192,7 +209,7 @@ export interface AgentSpec {
  * `files` and `dirs` are the agent's private paths: every path an adapter emits must match them (or be a shared path
  * the agent reads), or a sync skips it - `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
  * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json` is already covered
- * by the `CURSOR_DIR` prefix.
+ * by the `CURSOR_DIR` prefix; OpenCode's `opencode.json` is a root file too.
  */
 export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
     claude: {
@@ -217,6 +234,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         files: [],
         dirs: [GEMINI_DIR],
         mcpConfig: GEMINI_SETTINGS_JSON,
+        readsSharedSkills: true,
+    },
+    opencode: {
+        label: 'OpenCode',
+        setupHint: `adds ${OPENCODE_JSON}`,
+        files: [OPENCODE_JSON],
+        dirs: [OPENCODE_DIR],
+        mcpConfig: OPENCODE_JSON,
         readsSharedSkills: true,
     },
     zed: {
