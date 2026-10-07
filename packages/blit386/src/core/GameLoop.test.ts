@@ -796,6 +796,71 @@ describe('GameLoop', () => {
             expect(pending.size).toBe(1);
         });
 
+        /** Installs a fake rAF/cAF pair and returns a runner that fires the pending frame at a time. */
+        function installFrameQueue(): { pending: Map<number, FrameRequestCallback>; runFrame: (time: number) => void } {
+            const pending = new Map<number, FrameRequestCallback>();
+            let nextId = 1;
+
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn((callback: FrameRequestCallback) => {
+                    pending.set(nextId, callback);
+
+                    return nextId++;
+                }),
+            );
+            vi.stubGlobal(
+                'cancelAnimationFrame',
+                vi.fn((id: number) => {
+                    pending.delete(id);
+                }),
+            );
+            vi.spyOn(performance, 'now').mockReturnValue(0);
+
+            return {
+                pending,
+                runFrame: (time) => {
+                    const [first] = pending.entries();
+
+                    if (first) {
+                        pending.delete(first[0]);
+                        first[1](time);
+                    }
+                },
+            };
+        }
+
+        it('a callback that stops the loop leaves no frame scheduled', () => {
+            const { pending, runFrame } = installFrameQueue();
+            const loop: GameLoop = new GameLoop(1000 / 60, vi.fn(), () => loop.stop());
+
+            loop.start();
+            runFrame(0);
+            runFrame(0);
+            runFrame(20); // the first real tick; its render stops the loop
+
+            expect(pending.size).toBe(0);
+        });
+
+        it('a callback that stops and restarts the loop leaves exactly one chain', () => {
+            const { pending, runFrame } = installFrameQueue();
+            let restarted = false;
+            const loop: GameLoop = new GameLoop(1000 / 60, vi.fn(), () => {
+                if (!restarted) {
+                    restarted = true;
+                    loop.stop();
+                    loop.start();
+                }
+            });
+
+            loop.start();
+            runFrame(0);
+            runFrame(0);
+            runFrame(20);
+
+            expect(pending.size).toBe(1);
+        });
+
         it('start() clears leftover accumulator time', () => {
             vi.stubGlobal(
                 'requestAnimationFrame',

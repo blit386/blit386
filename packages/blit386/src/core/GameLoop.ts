@@ -290,6 +290,9 @@ export class GameLoop {
             return;
         }
 
+        // The handle that fired this frame. A callback that calls stop() (and maybe start()) below
+        // replaces or cancels it, and then this frame must not schedule the next one.
+        const firedHandle = this.rafHandle;
         const deltaTime = currentTime - this.lastUpdateTime;
         this.lastUpdateTime = currentTime;
 
@@ -320,7 +323,11 @@ export class GameLoop {
 
         this.onRender();
 
-        this.rafHandle = requestAnimationFrame(this.boundTick);
+        // Skip when a callback stopped the loop, or stopped and restarted it (start() already owns
+        // the next frame), so a frame never schedules a second chain.
+        if (this.isRunning && this.rafHandle === firedHandle) {
+            this.rafHandle = requestAnimationFrame(this.boundTick);
+        }
     }
 
     /**

@@ -1218,6 +1218,31 @@ describe('BTAPI', () => {
             expect(await blob.text()).toBe('60');
         });
 
+        it('waits for the audio to finish suspending before it steps', async () => {
+            const { demo } = await boot();
+            const audio = new AudioManager();
+            let finishPark: () => void = () => undefined;
+
+            vi.spyOn(audio, 'park').mockReturnValue(
+                new Promise<void>((resolve) => {
+                    finishPark = resolve;
+                }),
+            );
+            (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
+            vi.mocked(demo.update).mockClear();
+
+            const seek = BTAPI.instance.renderAt(1, 'current');
+
+            await settle();
+
+            expect(demo.update).not.toHaveBeenCalled();
+
+            finishPark();
+            await seek;
+
+            expect(demo.update).toHaveBeenCalledTimes(60);
+        });
+
         it('resume() runs in call order, so a seek queued after it leaves the loop stopped', async () => {
             const { demo } = await boot();
             const releaseInit = deferNextInit(demo);
@@ -1239,13 +1264,32 @@ describe('BTAPI', () => {
             const { demo } = await boot();
             const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
 
-            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockReturnValue(new Promise<Blob>(() => undefined));
+            let supersede: (error: Error) => void = () => undefined;
+            const pendingCapture = new Promise<Blob>((_resolve, reject) => {
+                supersede = reject;
+            });
+
+            // A plain replacement, not vi.spyOn: a spy observes the promise it returns, which would hide
+            // exactly the missing handler this test is about.
+            (renderer as unknown as { captureFrameAtDisplaySize: () => Promise<Blob> }).captureFrameAtDisplaySize =
+                () => pendingCapture;
             await BTAPI.instance.renderAt(1, 'current');
             vi.mocked(demo.render).mockImplementation(() => {
                 throw new Error('render broke');
             });
 
             await expect(BTAPI.instance.captureFrame('display')).rejects.toThrow('render broke');
+
+            // The renderer later rejects the abandoned request (a newer capture supersedes it); that
+            // rejection must not surface as unhandled.
+            const unhandled = vi.fn();
+
+            process.on('unhandledRejection', unhandled);
+            supersede(new Error('Capture superseded'));
+            await new Promise((resolve) => setTimeout(resolve, 10));
+            process.off('unhandledRejection', unhandled);
+
+            expect(unhandled).not.toHaveBeenCalled();
         });
 
         it('leaves the loop stopped until resume()', async () => {

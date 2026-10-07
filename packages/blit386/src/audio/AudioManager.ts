@@ -229,17 +229,22 @@ export class AudioManager {
     /**
      * Suspends the audio context while `BT.renderAt` holds the game loop stopped, so nothing plays
      * out of step with a frozen clock. Idempotent; a no-op before {@link attach}.
+     *
+     * @returns Resolves once the context is suspended - its output buffer has drained - or the
+     *   suspend failed (logged), so a seek can wait for silence before it replays.
      */
-    public park(): void {
+    public async park(): Promise<void> {
         if (this.isParked) {
             return;
         }
 
         this.isParked = true;
 
-        this.context?.suspend().catch((error: unknown) => {
+        try {
+            await this.context?.suspend();
+        } catch (error) {
             console.error('[BT] Audio: failed to suspend the context for a seek:', error);
-        });
+        }
     }
 
     /**
@@ -750,11 +755,14 @@ export class AudioManager {
         this.removeUnlockListeners();
 
         // A gesture during a BT.renderAt seek unlocks audio, but the loop is still stopped: stay
-        // suspended until unpark() resumes it.
+        // suspended until unpark() resumes it, and finish suspending before the remembered music
+        // starts, so none of it is heard mid-seek.
         if (this.isParked) {
-            context.suspend().catch((error: unknown) => {
+            try {
+                await context.suspend();
+            } catch (error) {
                 console.error('[BT] Audio: failed to suspend the context after an unlock during a seek:', error);
-            });
+            }
         }
 
         this.startRememberedMusicRequest();

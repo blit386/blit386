@@ -1901,6 +1901,11 @@ export class BTAPI {
 
         const capture = size === 'display' ? this.renderer.captureFrameAtDisplaySize() : this.renderer.captureFrame();
 
+        // The returned promise carries this request's result. When the re-render below throws, that
+        // promise rejects with the render error and the renderer's request is abandoned; a later
+        // supersede or reset rejection of it must not go unhandled.
+        capture.catch(() => undefined);
+
         // After every renderAt called so far: while a seek holds the loop stopped no endFrame is coming,
         // so re-render the current tick (zero updates - no clock moves, the frame is the seeked one) to
         // settle the capture. A throw from render() rejects the returned promise instead of hanging it.
@@ -3160,7 +3165,9 @@ export class BTAPI {
 
         loop.stop();
         this.isSeekParked = true;
-        this.audio?.park();
+        // Wait for silence: the suspend resolves once the audio output has drained, so nothing from
+        // before the seek is still playing while it replays.
+        await this.audio?.park();
         this.isSeeking = true;
 
         try {

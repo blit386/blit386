@@ -81,6 +81,9 @@ export interface MockAudioContext {
     /** Destination node passed to `main.connect(...)` in a well-wired bus graph. */
     readonly destination: AudioNode;
 
+    /** Context state: `'suspended'` until `resume()`, back to `'suspended'` on `suspend()`, `'closed'` after `close()`. */
+    readonly state: AudioContextState;
+
     /** Number of times `resume()` was called. */
     readonly resumeCallCount: number;
 
@@ -406,6 +409,7 @@ export function createMockAudioContext(): AudioContext {
         },
         suspend: () => {
             suspendCallCount += 1;
+            context.state = 'suspended';
 
             return Promise.resolve();
         },
