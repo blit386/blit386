@@ -30,16 +30,19 @@ const isEnvFile = (name) => (name === '.env' || name.startsWith('.env.')) && nam
  * @returns {{ message: string } | null} Why the edit is blocked, or null to allow it.
  */
 function isProtectedPath(file) {
-    const name = path.basename(file);
+    const original = path.basename(file);
+    // Compared lowercase: macOS and Windows file systems are case-insensitive by default, so `.ENV` and
+    // `PNPM-LOCK.YAML` open the very files the rule protects. On a case-sensitive system this only blocks more.
+    const name = original.toLowerCase();
 
     if (name.endsWith('.lock') || LOCK_FILES.has(name)) {
         return {
-            message: `${name} is written by the package manager. Change package.json and run an install instead.`,
+            message: `${original} is written by the package manager. Change package.json and run an install instead.`,
         };
     }
 
     if (isEnvFile(name)) {
-        return { message: `${name} holds secrets. Ask the user to edit it by hand.` };
+        return { message: `${original} holds secrets. Ask the user to edit it by hand.` };
     }
 
     return null;

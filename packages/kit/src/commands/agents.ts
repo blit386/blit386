@@ -52,6 +52,7 @@ import {
     CURSOR_MCP_JSON,
     hasAgentFiles,
     isKitManaged,
+    OPENCODE_JSON,
     ZED_SETTINGS_JSON,
 } from '../ownership';
 
@@ -60,96 +61,78 @@ const MERGEABLE_JSON_PATHS: readonly string[] = [
     CLAUDE_MCP_JSON,
     CURSOR_MCP_JSON,
     ANTIGRAVITY_MCP_JSON,
+    OPENCODE_JSON,
     ZED_SETTINGS_JSON,
 ];
 
-interface McpConfigLike {
-    mcpServers?: Record<string, unknown>;
-    [key: string]: unknown;
-}
-
-/** True for a plain JSON object (not an array or null) - the only shape `mcpServers` and the merged settings allow. */
+/** True for a plain JSON object (not an array or null) - the only shape a JSON config map allows. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
- * Merge the kit's generated MCP config into a pre-existing hand-written one. Adds the kit's server(s)
- * under `mcpServers` next to whatever the user already registered. Returns null - not a crash - when
- * the existing file isn't a mergeable JSON object, its `mcpServers` isn't a plain object, or a server
- * key the kit wants to add already exists with different content: all three cases fall back to the
- * existing collision (`.new` + abort) path.
+ * Keys whose children are whole MCP server entries: `mcpServers` in `.mcp.json` / `.cursor/mcp.json`, `mcp` in
+ * `opencode.json`, `context_servers` in `.zed/settings.json`. An entry is trusted as a unit - a server the user already registered under the kit's name is kept
+ * only when it is identical to the kit's, never extended or edited key by key, because one extra `command`, `env`, or
+ * `headers` changes what the assistant runs or sends.
  */
-function tryMergeMcpConfig(existingContent: string, generatedContent: string): string | null {
-    let existing: McpConfigLike;
+const MCP_SERVER_MAP_KEYS: readonly string[] = ['mcpServers', 'mcp', 'context_servers'];
 
-    try {
-        existing = JSON.parse(existingContent) as McpConfigLike;
-    } catch {
-        return null;
-    }
-
-    if (!isPlainObject(existing)) {
-        return null;
-    }
-
-    if (existing.mcpServers !== undefined && !isPlainObject(existing.mcpServers)) {
-        return null;
-    }
-
-    const generated = JSON.parse(generatedContent) as McpConfigLike;
-    const generatedServers = generated.mcpServers ?? {};
-    const existingServers = existing.mcpServers ?? {};
-
-    for (const [name, entry] of Object.entries(generatedServers)) {
-        const existingEntry = existingServers[name];
-        if (existingEntry !== undefined && !isDeepStrictEqual(existingEntry, entry)) {
+/** Merge two server maps: the kit's entries are added, and a same-named entry must already be identical. */
+function mergeServerMaps(
+    existing: Record<string, unknown>,
+    generated: Record<string, unknown>,
+): Record<string, unknown> | null {
+    for (const [name, entry] of Object.entries(generated)) {
+        if (existing[name] !== undefined && !isDeepStrictEqual(existing[name], entry)) {
             return null;
         }
     }
 
-    const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
-
-    return `${JSON.stringify(merged, null, 2)}\n`;
+    return { ...existing, ...generated };
 }
 
-/** Returned by `deepMergeJson` when both sides set the same key to different non-object values. */
-const MERGE_CONFLICT = Symbol('merge-conflict');
-
 /**
- * Deep-merge `generated` into `existing`: objects merge key by key, and a key both sides set to different
- * non-object values is a conflict, reported as `MERGE_CONFLICT` so the caller can treat it as a collision.
+ * Deep-merge `generated` into `existing`; returns null at the first key both define with different non-object values,
+ * or when a server map (`MCP_SERVER_MAP_KEYS`) holds a same-named entry that differs.
  */
-function deepMergeJson(existing: unknown, generated: unknown): unknown {
-    if (existing === undefined) {
-        return generated;
-    }
+function mergeJsonObjects(
+    existing: Record<string, unknown>,
+    generated: Record<string, unknown>,
+): Record<string, unknown> | null {
+    const merged = { ...existing };
 
-    if (isPlainObject(existing) && isPlainObject(generated)) {
-        const merged: Record<string, unknown> = { ...existing };
+    for (const [key, value] of Object.entries(generated)) {
+        const current = existing[key];
 
-        for (const [key, value] of Object.entries(generated)) {
-            const result = deepMergeJson(existing[key], value);
+        if (current === undefined) {
+            merged[key] = value;
+        } else if (isPlainObject(current) && isPlainObject(value)) {
+            const inner = MCP_SERVER_MAP_KEYS.includes(key)
+                ? mergeServerMaps(current, value)
+                : mergeJsonObjects(current, value);
 
-            if (result === MERGE_CONFLICT) {
-                return MERGE_CONFLICT;
+            if (inner === null) {
+                return null;
             }
 
-            merged[key] = result;
+            merged[key] = inner;
+        } else if (!isDeepStrictEqual(current, value)) {
+            return null;
         }
-
-        return merged;
     }
 
-    return isDeepStrictEqual(existing, generated) ? existing : MERGE_CONFLICT;
+    return merged;
 }
 
 /**
- * Merge the kit's generated `.zed/settings.json` into a pre-existing one: the kit's keys are added next to the
- * user's own. Returns null when the existing file is not plain JSON (Zed also accepts comments, which this does not
- * parse) or any key the kit sets is already set to something else - the user's choice wins, via the collision path.
+ * Merge the kit's generated JSON config (an MCP config, `opencode.json`, or `.zed/settings.json`) into a pre-existing hand-written one, key by
+ * key: the user's entries stay and only what the file lacks is added after them. Order matters for OpenCode - its last
+ * matching permission rule wins - so the user's rules keep their place. Returns null - not a crash - when the existing
+ * file is not a JSON object or the two disagree on a value (a user's setting is never overridden): the caller falls
+ * back to the collision (`.new` + abort) path.
  */
-function tryMergeZedSettings(existingContent: string, generatedContent: string): string | null {
+function tryMergeJsonConfig(existingContent: string, generatedContent: string): string | null {
     let existing: unknown;
 
     try {
@@ -162,9 +145,9 @@ function tryMergeZedSettings(existingContent: string, generatedContent: string):
         return null;
     }
 
-    const merged = deepMergeJson(existing, JSON.parse(generatedContent));
+    const merged = mergeJsonObjects(existing, JSON.parse(generatedContent) as Record<string, unknown>);
 
-    return merged === MERGE_CONFLICT ? null : `${JSON.stringify(merged, null, 2)}\n`;
+    return merged === null ? null : `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -756,8 +739,8 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.zed/settings.json`) is the one exception: a clean structural merge
- * with the user's existing file is written and tracked like any other generated file instead of counting as a
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `opencode.json`) is the one exception: a clean structural merge with the
+ * user's existing file is written and tracked like any other generated file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
  */
@@ -815,10 +798,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent =
-            file.path === ZED_SETTINGS_JSON
-                ? tryMergeZedSettings(onDisk, file.content)
-                : tryMergeMcpConfig(onDisk, file.content);
+        const mergedContent = tryMergeJsonConfig(onDisk, file.content);
 
         if (mergedContent === null) {
             return file;

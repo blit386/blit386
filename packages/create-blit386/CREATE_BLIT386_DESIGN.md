@@ -304,18 +304,21 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | Zed |
-| --- | --- | --- | --- | --- | --- |
-| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
-| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
-| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `.zed/settings.json` `context_servers` |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | OpenCode | Zed |
+| --- | --- | --- | --- | --- | --- | --- |
+| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` | reads `AGENTS.md` |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
+| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
+| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
+| Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.cjs`) | `beforeShellExecution` (`failClosed`) | `.agents/hooks.json` PreToolUse on `run_command` (`antigravity-guard.cjs shell`; deny, or ask for a force push) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
+| Bootstrap | none | SessionStart hook | none | `.agents/hooks.json` PreInvocation (`antigravity-bootstrap.cjs`, once per conversation through a marker file; Antigravity has no session-start event) | plugin `event` handler on `session.created` | none |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
+| Trust gate | n/a | yes | yes | yes | **none** - project plugins run on open | yes |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
-The planned adapters (Gemini CLI, Codex, GitHub Copilot, OpenCode, and a surveyed long tail) are specified per agent
-under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
+The planned adapters (Gemini CLI, Codex, GitHub Copilot, and a surveyed long tail) are specified per agent under
+[BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
 capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of them. Each
 implementation ticket adds its column here when the adapter ships - a column describes what the kit emits, not what an
 agent could do. Two findings change this section's model: most new agents read one shared `.agents/skills/` folder, so a
@@ -335,9 +338,9 @@ The foundation those adapters build on (BT-564) is in place:
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
   Antigravity owns exact files beside the skills folder (`.agents/hooks.json`, `.agents/hooks/`,
-  `.agents/mcp_config.json`). Antigravity (BT-568) and Zed read the folder (`readsSharedSkills`), so a game with either
-  set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those two gets no
-  `.agents/skills/`.
+  `.agents/mcp_config.json`). Antigravity, OpenCode, and Zed read the folder (`readsSharedSkills`), so a game with any
+  of them set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those two gets
+  no `.agents/skills/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
@@ -386,14 +389,22 @@ Canonical intent (`kit/hooks.manifest.json`):
   `write_to_file|replace_file_content|multi_replace_file_content` that runs `antigravity-guard.cjs files` and replies
   `{"decision": "deny", "reason": ...}`. Antigravity documents no behavior for a crashed hook, so the entry prints a
   deny on any internal error.
+- OpenCode: two layers. `opencode.json` carries a declarative `permission.edit` map (lock files and `.env*` denied, then
+  `*.env.example` allowed, because the last matching rule wins and `*` crosses `/`) and `permission.bash` patterns for
+  the destructive git commands. `.opencode/plugins/kit-guard.ts` throws from `tool.execute.before` using the guard core,
+  which catches what a pattern cannot (`bash -c "..."`, quoting tricks, files named inside a patch). The lists are a
+  coarser restatement of the guard core, pinned together by one case table in `packages/kit/test/opencode.test.mjs`.
+  OpenCode has no trust gate, so the plugin is kept to those two jobs plus the bootstrap, and its header comment says
+  so.
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
   the user's own settings, so the generated game documents a paste-in snippet in `AGENTS.md` (Zed adapter, BT-297).
 
-Same intent; five formats; differing enforcement power (AGENTS.md, Cursor, and Zed only instruct; Claude Code and
-Antigravity truly block). Rules and skills follow the same pattern: a "rule" becomes an AGENTS.md bullet, a
-`.claude/rules/*.md`, and a glob-scoped `.cursor/rules/*.mdc`; a "skill" becomes a `.claude/skills/<name>/SKILL.md`, a
-`.cursor/skills/<name>/SKILL.md`, and a "read docs/<topic>.md" pointer for agents without a skill mechanism. Adding a
-new agent = writing one adapter that maps these intent types to that agent's files and capabilities.
+Same intent; six formats; differing enforcement power (AGENTS.md and Zed only instruct; Cursor blocks shell commands but
+not edits; Claude Code, Antigravity, and OpenCode block both). Rules and skills follow the same pattern: a "rule"
+becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a glob-scoped `.cursor/rules/*.mdc`; a "skill" becomes a
+`.claude/skills/<name>/SKILL.md`, a `.cursor/skills/<name>/SKILL.md`, and a "read docs/<topic>.md" pointer for agents
+without a skill mechanism. Adding a new agent = writing one adapter that maps these intent types to that agent's files
+and capabilities.
 
 ### 4.4 Progressive disclosure (the "good student" model)
 
@@ -416,12 +427,12 @@ Every doc that mentions it uses the `npx` form and explains why once, kindly.
 - `npx blit upgrade` - bump blit386, detect version delta, run codemods, show a diff, escalate non-mechanical changes to
   the AI migration skill (section 4.6). Refuses-with-kindness if unversioned (section 4.7).
 - `npx blit agents add <name>` - generate config for a newly discovered agent from the canonical kit. Implemented Round
-  18 for `claude` and `cursor`: regenerates that assistant's adapter output from the installed kit, writes the new
-  files, and records them in the manifest (so later `sync` keeps them fresh). All-or-nothing: if any generated file
-  would collide with an existing untracked user file, it writes only `<file>.new` copies, leaves the project and
-  manifest untouched, and exits non-zero. (A half-add would let a later `sync` regenerate the colliding path, find no
-  manifest entry, and clobber the user file - so the command refuses to partially activate the assistant.) A friendly
-  no-op pointing at `sync` when the assistant is already set up.
+  18 for `claude` and `cursor`, and for `opencode` (BT-566): regenerates that assistant's adapter output from the
+  installed kit, writes the new files, and records them in the manifest (so later `sync` keeps them fresh).
+  All-or-nothing: if any generated file would collide with an existing untracked user file, it writes only `<file>.new`
+  copies, leaves the project and manifest untouched, and exits non-zero. (A half-add would let a later `sync` regenerate
+  the colliding path, find no manifest entry, and clobber the user file - so the command refuses to partially activate
+  the assistant.) A friendly no-op pointing at `sync` when the assistant is already set up.
 - `npx blit agents sync` - regenerate kit-managed files after a kit update, honoring the ownership model (4.10).
   `--check` exits non-zero on drift without writing (CI-friendly; also surfaced by `blit doctor`).
 - `npx blit doctor` - environment + project health check (node version, git presence, blit386 version, kit-engine
@@ -474,9 +485,9 @@ As built in v0.1 (slightly richer than the original three-question sketch):
 1. `npm create blit386@latest my-game` (or no folder argument - the wizard asks for a name).
 2. "Which language do you want?" - JavaScript (recommended) or TypeScript. Both ship (the TS layer landed in phase 2);
    `--ts` skips this prompt.
-3. "Which AI coding assistants do you use?" - multi-select checkboxes for Claude Code (adds `CLAUDE.md` + `.claude/`)
-   and/or Cursor (adds `.cursor/`). Leave both unchecked for none. "None" still emits `AGENTS.md` + local `docs/` (see
-   4.9).
+3. "Which AI coding assistants do you use?" - multi-select checkboxes for Claude Code (adds `CLAUDE.md` + `.claude/`),
+   Cursor (adds `.cursor/`), OpenCode (adds `opencode.json` and `.opencode/`), and/or Zed (adds `.zed/settings.json`).
+   Leave all unchecked for none. "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
 4. "Add GitHub Actions CI (build + format check)?" - optional, default no.
 5. Scaffold, `git init` + first commit (skippable), install, print the next steps.
 

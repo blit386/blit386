@@ -15,15 +15,15 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
-   (multi-select: none, or any mix of Claude / Cursor / Antigravity / Zed), optional CI.
+   (multi-select: none, or any mix of Claude / Cursor / Antigravity / OpenCode / Zed), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
 4. The chosen AI assistants' config is generated from the kit IR in one call, `generateAgentFiles(kit, vars, agents)`
    from `@blit386/kit/adapters`, which dispatches through the kit's agent registry (`AGENT_ADAPTERS`, keyed by
    `AgentKind` - the wizard's labels and hints come from it too), renders `{{placeholders}}` as it goes, and adds the
-   shared `.agents/skills/` folder once when any chosen assistant reads it (Antigravity and Zed do; Claude and Cursor
-   keep private copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent
-   name. Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
-   `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
+   shared `.agents/skills/` folder once when any chosen assistant reads it (Antigravity, OpenCode, and Zed do; Claude
+   and Cursor keep private copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on
+   an agent name. Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from
+   `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
    `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `shell-safety.cjs` (the
    destructive-git guard, shared with Cursor) and `protect-files.cjs` (the lock-file / `.env` guard), both fail-closed
    over the `guard-core.cjs` they require, a SessionStart hook (`.claude/hooks/session-start.sh`) that installs
@@ -48,7 +48,15 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    `serverUrl`). Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single source both
    packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project
    is decided by `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually
-   references gets copied, together with any sibling `.cjs` it `require()`s (all under `packages/kit/`).
+   references gets copied, together with any sibling `.cjs` it `require()`s (all under `packages/kit/`). OpenCode gets
+   `opencode.json` (a `formatter` entry per tool - Biome for code and JSON, Prettier for Markdown and YAML, each pinned
+   to its own extensions - a `permission` map for lock files, `.env` files and destructive git commands, and the remote
+   `blit386-docs` entry under `mcp`), the plugin `.opencode/plugins/kit-guard.ts` (it asks the guard core in
+   `.opencode/hooks/guard-core.cjs` before each tool call and runs `.opencode/hooks/session-start.sh` on
+   `session.created`), and the shared `.agents/skills/` folder. OpenCode has no trust gate, so the plugin runs the
+   moment the folder opens. `opencode.json` is kit-owned but user-extendable: `blit agents add opencode` merges it key
+   by key (a user value the kit disagrees with is never overridden), and `sync` three-way merges it. The permission
+   lists restate the guard core's policy as globs, and `packages/kit/test/opencode.test.mjs` pins the two together.
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated

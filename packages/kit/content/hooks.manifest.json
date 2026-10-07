@@ -44,6 +44,10 @@
         "command": "node .agents/hooks/antigravity-guard.cjs shell",
         "matcher": "run_command",
         "timeout": 10
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -60,6 +64,10 @@
         "command": "node .agents/hooks/antigravity-guard.cjs files",
         "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
         "timeout": 10
+      },
+      "opencode": {
+        "event": "tool.execute.before",
+        "scripts": ["guard-core.cjs"]
       }
     },
     {
@@ -75,6 +83,10 @@
         "event": "PreInvocation",
         "command": "node .agents/hooks/antigravity-bootstrap.cjs \"{{pmInstall}}\"",
         "timeout": 300
+      },
+      "opencode": {
+        "event": "session.created",
+        "scripts": ["session-start.sh"]
       }
     }
   ]
