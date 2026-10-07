@@ -166,6 +166,7 @@ npx blit agents sync
 npx blit agents add cursor
 npx blit agents add antigravity
 npx blit agents add codex
+npx blit agents add copilot
 npx blit agents add gemini
 npx blit agents add opencode
 npx blit agents add zed
