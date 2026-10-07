@@ -71,12 +71,12 @@ test('classifyFile returns kit-owned for every managed directory and exact path'
         'docs/getting-started.md',
         '.claude/rules/blit386.md',
         '.claude/skills/run/SKILL.md',
-        '.claude/hooks/shell-safety.sh',
+        '.claude/hooks/shell-safety.cjs',
         '.claude/settings.json',
         '.cursor/rules/blit386.mdc',
         '.cursor/hooks.json',
-        '.cursor/hooks/shell-safety.sh',
-        '.cursor/hooks/shell-safety-run.cjs',
+        '.cursor/hooks/shell-safety.cjs',
+        '.cursor/hooks/guard-core.cjs',
         '.cursor/skills/run/SKILL.md',
         SHARED_SKILL,
     ];
@@ -203,7 +203,7 @@ test('the registry has one entry per AgentKind, each emitting its own MCP config
     }
 });
 
-test('Claude ships guard-core.cjs beside protect-files.cjs; Cursor ships neither', () => {
+test('Claude ships guard-core.cjs beside protect-files.cjs; Cursor gets no protect-files.cjs', () => {
     const root = kitRoot();
     const claude = generateClaudeAdapter(root, VARS).map((file) => file.path);
     const cursor = generateCursorAdapter(root, VARS).map((file) => file.path);
@@ -211,12 +211,12 @@ test('Claude ships guard-core.cjs beside protect-files.cjs; Cursor ships neither
     assert.ok(claude.includes('.claude/hooks/protect-files.cjs'));
     assert.ok(claude.includes('.claude/hooks/guard-core.cjs'), 'a required sibling must ship with its hook');
     assert.equal(
-        cursor.some((path) => path.endsWith('guard-core.cjs') || path.endsWith('protect-files.cjs')),
+        cursor.some((path) => path.endsWith('protect-files.cjs')),
         false,
     );
 });
 
-test('Cursor shell safety starts through node and emits both hook files', () => {
+test('Cursor shell safety starts through node and ships the entry with the guard core', () => {
     const root = kitRoot();
     const files = generateCursorAdapter(root, VARS);
     const hooksFile = files.find((file) => file.path === '.cursor/hooks.json');
@@ -224,12 +224,13 @@ test('Cursor shell safety starts through node and emits both hook files', () => 
     const hooksJson = JSON.parse(hooksFile.content);
     const command = hooksJson.hooks.beforeShellExecution[0].command;
 
-    assert.match(command, /^node \.cursor\/hooks\/shell-safety-run\.cjs \.cursor\/hooks\/shell-safety\.sh$/);
-    assert.ok(files.some((file) => file.path === '.cursor/hooks/shell-safety-run.cjs'));
-    assert.ok(files.some((file) => file.path === '.cursor/hooks/shell-safety.sh'));
+    assert.equal(command, 'node .cursor/hooks/shell-safety.cjs');
+    assert.ok(files.some((file) => file.path === '.cursor/hooks/shell-safety.cjs'));
+    assert.ok(files.some((file) => file.path === '.cursor/hooks/guard-core.cjs'));
     assert.equal(
-        generateClaudeAdapter(root, VARS).some((file) => file.path.endsWith('shell-safety-run.cjs')),
+        files.some((file) => file.path.endsWith('.sh')),
         false,
+        'Cursor needs no POSIX sh',
     );
 });
 

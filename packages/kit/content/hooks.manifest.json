@@ -23,13 +23,13 @@
       "intent": "Block risky destructive git commands that could lose game progress",
       "cursor": {
         "event": "beforeShellExecution",
-        "command": "node .cursor/hooks/shell-safety-run.cjs .cursor/hooks/shell-safety.sh",
+        "command": "node .cursor/hooks/shell-safety.cjs",
         "timeout": 10,
         "failClosed": true
       },
       "claude": {
         "event": "PreToolUse",
-        "command": "sh .claude/hooks/shell-safety.sh",
+        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.cjs\"",
         "matcher": "Bash",
         "timeout": 10
       }
