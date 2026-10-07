@@ -100,12 +100,13 @@ check.
 
 ## packages/kit and packages/create-blit386
 
-Seven `node --test` suites, 57 cases total. No Vitest, no Playwright, no top-level `tests/` directory - each package
-owns its own `test/` folder.
+`node --test` suites only. No Vitest, no Playwright, no top-level `tests/` directory - each package owns its own `test/`
+folder. The table below lists the suites that existed when it was last rewritten and is behind the kit's current folder
+(BT-583 tracks the recount); `ls packages/kit/test packages/create-blit386/test` is the truth.
 
 | Suite | Cases | Covers |
 | --- | --- | --- |
-| `packages/create-blit386/test/scaffold.test.mjs` | 22 | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI and agent files, the `.blit/` ownership manifest, `blit agents sync` (drift, full sync, `--force`, note and merge preservation), `blit agents add` (including collision safety), and `blit migrate` preview + `--write` |
+| `packages/create-blit386/test/scaffold.test.mjs`, `kit-parity.test.mjs`, `agents-sync.test.mjs`, `agents-add.test.mjs`, `migrate.test.mjs`, `agent-*.test.mjs` | 68 | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI; the scaffolder's single-source guards against `@blit386/kit` (`kit-parity`); `blit agents sync` (drift, full sync, `--force`, note and merge preservation); `blit agents add` (collision safety, the `.mcp.json` merge); `blit migrate` preview + `--write`; and one `agent-<name>` suite per assistant adapter (what its scaffold ships, its `add` and `sync` merges). Shared fixtures live in `helpers.mjs` |
 | `packages/create-blit386/test/env.test.mjs` | 4 | `meetsNodeFloor`: the Node version floor guard, including pre-release and custom-floor strings |
 | `packages/kit/test/codemod.test.mjs` | 13 | The migration registry and the anchored codemod engine behind `blit migrate`: auto-applied renames vs. names reported for review, receiver anchoring, idempotence, and registry field completeness |
 | `packages/kit/test/enable-hot-reload.test.mjs` | 9 | `enableHotReloadInViteConfig`: wiring `blit386/vite` into a game's `vite.config.js`, no-op and unsupported-shape detection, plus `hasBlit386VitePlugin` |

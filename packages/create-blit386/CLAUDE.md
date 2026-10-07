@@ -41,8 +41,8 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    Codex gets a `[mcp_servers.blit386-docs]` table in `.codex/config.toml`, and Antigravity gets
    `.agents/mcp_config.json`. Antigravity also gets `.agents/hooks.json` (hook groups named `blit-<id>`, from the
    manifest's `antigravity` keys) and `.agents/hooks/` (`antigravity-guard.cjs` over `guard-core.cjs`,
-   `format-file.cjs`, and the once-per-conversation `antigravity-bootstrap.cjs`, because Antigravity has no
-   session-start event); it owns those exact paths, never the bare `.agents/` prefix. Gemini CLI gets
+   `format-file.cjs`, and the once-per-conversation `antigravity-bootstrap.cjs` over `bootstrap-core.cjs`, because
+   Antigravity has no session-start event); it owns those exact paths, never the bare `.agents/` prefix. Gemini CLI gets
    `.gemini/settings.json` and `.gemini/hooks/` - no `GEMINI.md` (`context.fileName` points it at `AGENTS.md`), no
    private skills (it reads `.agents/skills/`), and no `.gemini/policies/` (workspace policies do not work). The
    settings file carries the docs server, the persona pointer, and four hooks, with timeouts in milliseconds; its hook
@@ -60,9 +60,9 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    `AGENTS.md` teaches both steps. `blit agents add codex` appends the kit's table to an existing `.codex/config.toml`
    when that file does not name the docs server yet (`sync` three-way merges it like the JSON configs). GitHub Copilot
    gets `.github/hooks/blit.json` and its scripts beside it in `.github/hooks/` (`copilot-hook.cjs`, one Node entry with
-   `pre-tool` / `post-tool` / `session-start` modes, over `guard-core.cjs` and `format-file.cjs`),
-   `.github/workflows/copilot-setup-steps.yml` (the cloud agent's environment; the job must be named
-   `copilot-setup-steps`), and the shared root `.mcp.json`, which the Copilot CLI and VS Code both read - no
+   `pre-tool` / `post-tool` / `session-start` modes, over `guard-core.cjs`, `format-file.cjs`, and
+   `bootstrap-core.cjs`), `.github/workflows/copilot-setup-steps.yml` (the cloud agent's environment; the job must be
+   named `copilot-setup-steps`), and the shared root `.mcp.json`, which the Copilot CLI and VS Code both read - no
    `.vscode/mcp.json` (it would register the server a second time in VS Code), no private persona or skills, since every
    Copilot surface reads `AGENTS.md` and `.agents/skills/`, no `.github/prompts/` (deprecated), and no
    `chat.tools.*.autoApprove` settings (they only prompt). `copilot-hook.cjs` reads both payload dialects: the CLI's and

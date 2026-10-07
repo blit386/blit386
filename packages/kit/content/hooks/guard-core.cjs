@@ -11,12 +11,13 @@
 //
 // Decision (BT-564, BT-576): the shell classification is a Node port of the kit's former
 // shell-safety.sh, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
-// Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs.
-// Antigravity's entry (antigravity-guard.cjs) runs the same port.
+// Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs; Gemini CLI
+// (shell-guard.cjs), Antigravity (antigravity-guard.cjs), Codex (codex-guard.cjs), GitHub Copilot
+// (copilot-hook.cjs), and the OpenCode plugin (opencode-kit-guard.ts) each have their own.
 //
-// `patchPaths` exists for Codex (codex-guard.cjs, format-file.cjs), whose edits reach a hook as raw
-// apply_patch text rather than a file path. Nothing else needs it, but it is easy to get subtly wrong,
-// so it lives here beside its tests.
+// `patchPaths` exists for the agents whose edits reach a hook as raw apply_patch text rather than a
+// file path: Codex (codex-guard.cjs, format-file.cjs) and Copilot's VS Code Local harness
+// (copilot-hook.cjs). It is easy to get subtly wrong, so it lives here beside its tests.
 
 const path = require('node:path');
 
@@ -152,8 +153,12 @@ function isDangerousCommand(command) {
     return null;
 }
 
-/** An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. */
-const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): ([\s\S]+)$/;
+/**
+ * An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. The
+ * space after the colon is optional, as in OpenCode's parser (`*** Update File:.env` names `.env`); a header Codex
+ * would not read only ever adds a path, so a guard errs toward a deny.
+ */
+const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to):([\s\S]+)$/;
 
 /**
  * What Codex's parser trims from both ends of a line before it looks for a header: Rust's `str::trim`, every Unicode

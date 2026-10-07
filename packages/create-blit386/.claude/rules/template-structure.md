@@ -16,7 +16,7 @@
   templates. That includes the documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's
   `.github/workflows/copilot-setup-steps.yml` - do not add a static template for them. That workflow copies the action
   pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` / `ACTIONS_SETUP_NODE` in the kit's
-  `src/adapters.ts`); bump both together - `test/scaffold.test.mjs` fails when they drift.
+  `src/adapters.ts`); bump both together - `test/agent-copilot.test.mjs` fails when they drift.
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
 - Rename `gitignore` → `.gitignore`, `editorconfig` → `.editorconfig`, `gitattributes` → `.gitattributes`,
   `node-version` → `.node-version`, and `prettierignore` → `.prettierignore`, and strip `.tmpl` extensions, during the

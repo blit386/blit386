@@ -1,7 +1,8 @@
 // Formats the one file an AI assistant just edited, instead of the whole project.
-// Shared by the Claude Code PostToolUse hook, the Cursor afterFileEdit hook, and the Antigravity and
-// Codex PostToolUse hooks: each sends a JSON payload on stdin that names the file (Claude:
-// tool_input.file_path, Cursor: file_path, Antigravity: toolCall.args.TargetFile). Codex sends the
+// Shared by the Claude Code PostToolUse hook, the Cursor afterFileEdit hook, the Gemini CLI AfterTool
+// hook, and the Antigravity and Codex PostToolUse hooks: each sends a JSON payload on stdin that names
+// the file (Claude and Gemini: tool_input.file_path, Cursor: file_path, Antigravity:
+// toolCall.args.TargetFile). Codex sends the
 // raw apply_patch text in tool_input.command instead, so its files are parsed out of the patch and
 // resolved against the payload's cwd (the session's working directory, not always the project root).
 // GitHub Copilot's entry (copilot-hook.cjs) requires this file instead of running it, because only it knows
@@ -58,7 +59,8 @@ function formatFile(root, file) {
     }
 }
 
-// .claude/hooks/, .cursor/hooks/, .agents/hooks/, .codex/hooks/ or .github/hooks/ - the project root is two levels up.
+// .claude/hooks/, .cursor/hooks/, .gemini/hooks/, .agents/hooks/, .codex/hooks/ or .github/hooks/ - the project root
+// is two levels up.
 const root = realpathSync(path.resolve(__dirname, '..', '..'));
 
 /** Read the edited file from the hook payload on stdin and format it. Never throws. */

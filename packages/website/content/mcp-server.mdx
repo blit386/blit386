@@ -99,6 +99,58 @@ Add to `.codex/config.toml` in your project (Codex reads it only once you trust 
 url = "https://blit386.dev/mcp"
 ```
 
+### GitHub Copilot
+
+The Copilot CLI and VS Code read the same project `.mcp.json` as Claude Code, so the entry above covers both. The cloud
+agent reads no project file - add the server in the repository's Copilot settings on github.com instead.
+
+### Gemini CLI
+
+Add to `.gemini/settings.json` in your project (Gemini CLI reads it only once you trust the folder). Use `httpUrl`: for
+Gemini CLI, `url` means an SSE server, and this one is streamable HTTP:
+
+```json
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "httpUrl": "https://blit386.dev/mcp"
+    }
+  }
+}
+```
+
+### OpenCode
+
+Add to `opencode.json` in your project. OpenCode calls the key `mcp`, not `mcpServers`, and marks a remote server with
+`type`:
+
+```json
+{
+  "mcp": {
+    "blit386-docs": {
+      "type": "remote",
+      "url": "https://blit386.dev/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+### Zed
+
+Add to `.zed/settings.json` in your project (Zed ignores project settings until you trust the project), or to your own
+Zed settings for every project:
+
+```json
+{
+  "context_servers": {
+    "blit386-docs": {
+      "url": "https://blit386.dev/mcp"
+    }
+  }
+}
+```
+
 ## Testing with curl
 
 ```bash

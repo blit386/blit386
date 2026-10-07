@@ -68,10 +68,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Keys whose children are whole MCP server entries: `mcpServers` in `.mcp.json` / `.cursor/mcp.json`, `mcp` in
- * `opencode.json`, `context_servers` in `.zed/settings.json`. An entry is trusted as a unit - a server the user already registered under the kit's name is kept
- * only when it is identical to the kit's, never extended or edited key by key, because one extra `command`, `env`, or
- * `headers` changes what the assistant runs or sends.
+ * Keys whose children are whole MCP server entries: `mcpServers` in `.mcp.json` / `.cursor/mcp.json` /
+ * `.agents/mcp_config.json`, `mcp` in `opencode.json`, `context_servers` in `.zed/settings.json`. An entry is trusted
+ * as a unit - a server the user already registered under the kit's name is kept only when it is identical to the
+ * kit's, never extended or edited key by key, because one extra `command`, `env`, or `headers` changes what the
+ * assistant runs or sends.
  */
 const MCP_SERVER_MAP_KEYS: readonly string[] = ['mcpServers', 'mcp', 'context_servers'];
 
@@ -123,11 +124,11 @@ function mergeJsonObjects(
 }
 
 /**
- * Merge the kit's generated JSON config (an MCP config, `opencode.json`, or `.zed/settings.json`) into a pre-existing hand-written one, key by
- * key: the user's entries stay and only what the file lacks is added after them. Order matters for OpenCode - its last
- * matching permission rule wins - so the user's rules keep their place. Returns null - not a crash - when the existing
- * file is not a JSON object or the two disagree on a value (a user's setting is never overridden): the caller falls
- * back to the collision (`.new` + abort) path.
+ * Merge the kit's generated JSON config (an MCP config, `opencode.json`, or `.zed/settings.json`) into a pre-existing
+ * hand-written one, key by key: the user's entries stay and only what the file lacks is added after them. Order
+ * matters for OpenCode - its last matching permission rule wins - so the user's rules keep their place. Returns null -
+ * not a crash - when the existing file is not a JSON object or the two disagree on a value (a user's setting is never
+ * overridden): the caller falls back to the collision (`.new` + abort) path.
  */
 function tryMergeJsonConfig(existingContent: string, generatedContent: string): string | null {
     let existing: unknown;
@@ -852,12 +853,10 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
 /**
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
- * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `opencode.json`, `.zed/settings.json`) is the one
- * exception: a clean structural merge with the user's existing file is written and tracked like any other generated
- * file instead of counting as a
- * collision. Returns the number of colliding files that need the user's attention; 0 means the
- * assistant was set up cleanly.
+ * untouched (so a later `sync` cannot clobber the user files). A config path in `CONFIG_MERGES` (the MCP
+ * and settings files, JSON or TOML) is the one exception: a clean merge with the user's existing file is
+ * written and tracked like any other generated file instead of counting as a collision. Returns the
+ * number of colliding files that need the user's attention; 0 means the assistant was set up cleanly.
  */
 function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void): number {
     const result = readManifest(root, out);

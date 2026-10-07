@@ -482,6 +482,7 @@ interface HookManifestEntry {
     intent: string;
     cursor?: HookManifestCursorBlock;
     claude?: HookManifestCommandBlock;
+    /** Same shape as Claude's block; `.agents/hooks.json` groups it under `blit-<id>`, tool events in a matcher group. */
     antigravity?: HookManifestCommandBlock;
     opencode?: HookManifestOpenCodeBlock;
     /** Same shape as Claude's block; `.codex/hooks.json` nests it the same way. */
@@ -624,7 +625,6 @@ interface McpConfigJson {
  *
  * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
  * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).
-
  */
 const MCP_SERVER_ENTRY: Record<McpJsonAgent, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
@@ -956,7 +956,7 @@ function buildCopilotHooks(
 /**
  * GitHub Actions pins shared with create-blit386's optional CI template (`templates/optional/ci/github/workflows/ci.yml`).
  * MANUAL-SYNC HAZARD: the kit cannot read that template, so bump both together (Renovate updates the template only);
- * create-blit386's `test/scaffold.test.mjs` compares the two and fails when they drift.
+ * create-blit386's `test/agent-copilot.test.mjs` compares the two and fails when they drift.
  */
 const ACTIONS_CHECKOUT = 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6';
 const ACTIONS_SETUP_NODE = 'actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6';
@@ -1161,7 +1161,8 @@ export function generateOpenCodeAdapter(root: string, vars: TemplateVars): Gener
  *
  * Zed's built-in agent reads `AGENTS.md` and the shared `.agents/skills/` folder natively, so the persona and skills
  * need nothing here. The settings turn format-on-save on (the agent's edits are formatted on save too), name Biome as
- * the JavaScript, TypeScript, and JSON formatter, matching the starter's `format` script (needs the Biome extension), and register the docs MCP server.
+ * the JavaScript, TypeScript, and JSON formatter, matching the starter's `format` script (needs the Biome extension),
+ * and register the docs MCP server.
  *
  * Deliberately absent: an `agent` key (`agent.tool_permissions` is honored only in the user's own settings, so a
  * project copy would be silently ignored - `AGENTS.md` teaches the hard rules and a paste-in snippet instead), and the

@@ -40,9 +40,11 @@ to copy, this kit's guides and skills, and complete examples, all readable with 
 version printed at their top.
 
 In Claude Code the server is configured in `.mcp.json` and pre-approved in `.claude/settings.json`
-(`enabledMcpjsonServers`), so it is on without a separate prompt once the project folder is trusted. In Cursor it is
-configured in `.cursor/mcp.json`. In Codex it is the `[mcp_servers.blit386-docs]` table in `.codex/config.toml`, which
-Codex reads once the project is trusted.
+(`enabledMcpjsonServers`), so it is on without a separate prompt once the project folder is trusted. The GitHub Copilot
+CLI and VS Code read that same `.mcp.json`. In Cursor it is configured in `.cursor/mcp.json`, in Antigravity in
+`.agents/mcp_config.json`, in Gemini CLI in `.gemini/settings.json`, in OpenCode in `opencode.json`, and in Zed in
+`.zed/settings.json`. In Codex it is the `[mcp_servers.blit386-docs]` table in `.codex/config.toml`, which Codex reads
+once the project is trusted.
 
 ### 2. The plain-text summary
 
