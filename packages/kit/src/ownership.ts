@@ -244,7 +244,7 @@ export interface AgentSpec {
     readonly dirs: readonly string[];
     /** Where the agent's docs-MCP config lives, so `blit doctor` can check every agent without hardcoding one. */
     readonly mcpConfig: string;
-    /** Does the agent read `SHARED_SKILLS_DIR`? Antigravity does; Claude Code does not and Cursor is unverified, so those two keep private copies. */
+    /** Does the agent read `SHARED_SKILLS_DIR`? Six do; Claude Code does not and Cursor is unverified, so those two keep private copies. */
     readonly readsSharedSkills: boolean;
     /**
      * Exact root paths this agent reads that another agent's adapter emits too (`ROOT_MCP_JSON`: Claude Code and
