@@ -57,7 +57,13 @@ describe('.agents/hooks.json', () => {
     it('ships every script it runs, plus the guard core, and nothing Claude-only', () => {
         const paths = files.map((file) => file.path);
 
-        for (const script of ['antigravity-guard', 'antigravity-bootstrap', 'format-file', 'guard-core']) {
+        for (const script of [
+            'antigravity-guard',
+            'antigravity-bootstrap',
+            'bootstrap-core',
+            'format-file',
+            'guard-core',
+        ]) {
             assert.ok(paths.includes(`.agents/hooks/${script}.cjs`), script);
         }
 

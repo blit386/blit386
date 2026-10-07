@@ -98,7 +98,12 @@ describe('.github/hooks/blit.json', () => {
             .filter((f) => f.path.startsWith('.github/hooks/') && !f.path.endsWith('.json'))
             .map((f) => f.path.split('/').pop());
 
-        assert.deepEqual(scripts.sort(), ['copilot-hook.cjs', 'format-file.cjs', 'guard-core.cjs']);
+        assert.deepEqual(scripts.sort(), [
+            'bootstrap-core.cjs',
+            'copilot-hook.cjs',
+            'format-file.cjs',
+            'guard-core.cjs',
+        ]);
 
         for (const { path } of files) {
             assert.equal(classifyFile(path), 'kit-owned', path);

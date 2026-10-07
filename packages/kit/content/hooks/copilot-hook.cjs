@@ -22,9 +22,9 @@
 // post-tool and session-start never fail: a formatter or install problem leaves the session as it was.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
-const { spawnSync } = require('node:child_process');
-const { existsSync, readFileSync } = require('node:fs');
+const { readFileSync } = require('node:fs');
 const path = require('node:path');
+const { bootstrapReport } = require('./bootstrap-core.cjs');
 const { failClosed, isDangerousCommand, isProtectedPath, parsePayload, patchPaths } = require('./guard-core.cjs');
 const { formatFile } = require('./format-file.cjs');
 
@@ -168,30 +168,15 @@ function postTool() {
 }
 
 /**
- * Install dependencies when `node_modules` is missing, then run `blit doctor`, and hand the report to the session as
- * `additionalContext`. Relative paths are the project's: hooks run with `cwd: "."`, the repository root.
+ * Install dependencies when `node_modules` is missing, then run `blit doctor` (`bootstrap-core.cjs`), and hand the
+ * report to the session as `additionalContext`. The project root is the working directory: hooks run with
+ * `cwd: "."`, the repository root.
  */
 function sessionStart(install) {
-    const run = (command) => spawnSync(command, { shell: true, encoding: 'utf8', windowsHide: true, timeout: 280_000 });
-    const report = [];
+    let report = [];
 
     try {
-        if (!existsSync('node_modules')) {
-            const result = run(install);
-
-            report.push(
-                result.status === 0
-                    ? `[session-start] Installed dependencies with \`${install}\`.`
-                    : `[session-start] \`${install}\` failed; continuing without a warmed toolchain.`,
-            );
-        }
-
-        const blit = path.join('node_modules', '.bin', 'blit');
-        if (existsSync(blit)) {
-            const doctor = run(`${blit} doctor`);
-
-            report.push(`[session-start] blit doctor:\n${`${doctor.stdout}${doctor.stderr}`.trim()}`);
-        }
+        report = bootstrapReport(process.cwd(), install);
     } catch {
         // The bootstrap is a convenience; a failure leaves the session as it was.
     }
