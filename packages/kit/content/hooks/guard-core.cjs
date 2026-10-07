@@ -153,8 +153,12 @@ function isDangerousCommand(command) {
     return null;
 }
 
-/** An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. */
-const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to): ([\s\S]+)$/;
+/**
+ * An apply_patch file header: `*** Add File: <path>`, `*** Update File:`, `*** Delete File:`, or `*** Move to:`. The
+ * space after the colon is optional, as in OpenCode's parser (`*** Update File:.env` names `.env`); a header Codex
+ * would not read only ever adds a path, so a guard errs toward a deny.
+ */
+const PATCH_HEADER = /^\*\*\* (?:Add File|Update File|Delete File|Move to):([\s\S]+)$/;
 
 /**
  * What Codex's parser trims from both ends of a line before it looks for a header: Rust's `str::trim`, every Unicode
