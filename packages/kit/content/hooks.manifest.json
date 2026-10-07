@@ -34,6 +34,12 @@
         "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
         "matcher": "write_file|replace",
         "timeout": 30000
+      },
+      "copilot": {
+        "event": "postToolUse",
+        "command": "node .github/hooks/copilot-hook.cjs post-tool",
+        "matcher": "edit|create",
+        "timeout": 30
       }
     },
     {
@@ -72,6 +78,12 @@
       "opencode": {
         "event": "tool.execute.before",
         "scripts": ["guard-core.cjs"]
+      },
+      "copilot": {
+        "event": "preToolUse",
+        "command": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "matcher": "bash|powershell",
+        "timeout": 10
       }
     },
     {
@@ -104,6 +116,12 @@
       "opencode": {
         "event": "tool.execute.before",
         "scripts": ["guard-core.cjs"]
+      },
+      "copilot": {
+        "event": "preToolUse",
+        "command": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "matcher": "edit|create",
+        "timeout": 10
       }
     },
     {
@@ -135,6 +153,11 @@
       "opencode": {
         "event": "session.created",
         "scripts": ["session-start.sh"]
+      },
+      "copilot": {
+        "event": "sessionStart",
+        "command": "node .github/hooks/copilot-hook.cjs session-start \"{{pmInstall}}\"",
+        "timeout": 300
       }
     }
   ]

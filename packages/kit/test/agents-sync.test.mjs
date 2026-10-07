@@ -250,3 +250,75 @@ test('add antigravity merges the docs server into an existing .agents/mcp_config
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+const addAgent = (root, agent) =>
+    spawnSync(process.execPath, [blitCli, 'agents', 'add', agent], { cwd: root, encoding: 'utf8' });
+
+test('add copilot on a no-agent game writes its paths, the shared skills, and both MCP configs, then sync is clean', () => {
+    const root = makeBareGame();
+
+    try {
+        assert.equal(addAgent(root, 'copilot').status, 0);
+
+        const tracked = trackedPaths(root);
+
+        for (const path of [
+            '.github/hooks/blit.json',
+            '.github/hooks/copilot-hook.cjs',
+            '.github/workflows/copilot-setup-steps.yml',
+            '.mcp.json',
+        ]) {
+            assert.ok(tracked.includes(path), `${path} should be tracked`);
+            assert.ok(existsSync(join(root, path)), `${path} should be on disk`);
+        }
+
+        assert.ok(tracked.some((path) => path.startsWith(SHARED_SKILLS_DIR)));
+        assert.ok(
+            !existsSync(join(root, '.claude')) && !existsSync(join(root, 'CLAUDE.md')),
+            'Claude is not dragged in',
+        );
+        assert.equal(spawnSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], { cwd: root }).status, 0);
+
+        // A second sync must not treat the tracked, shared .mcp.json as a sign that Claude is set up.
+        assert.equal(runSync(root).status, 0);
+        assert.ok(!existsSync(join(root, 'CLAUDE.md')));
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('add copilot merges the docs server into an existing .mcp.json', () => {
+    const own = { command: 'node', args: ['mine.js'] };
+    const root = makeBareGame({ '.mcp.json': JSON.stringify({ mcpServers: { mine: own } }) });
+
+    try {
+        assert.equal(addAgent(root, 'copilot').status, 0);
+
+        const { mcpServers } = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf8'));
+
+        assert.deepEqual(mcpServers.mine, own);
+        assert.deepEqual(mcpServers['blit386-docs'], { type: 'http', url: 'https://blit386.dev/mcp' });
+        assert.ok(!existsSync(join(root, '.vscode')), 'no .vscode/mcp.json beside it');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('add copilot on a Claude game leaves the .mcp.json Claude set up alone, edits included', () => {
+    const root = makeBareGame();
+
+    try {
+        assert.equal(addAgent(root, 'claude').status, 0);
+        assert.ok(trackedPaths(root).includes('.mcp.json'));
+
+        const edited = `${JSON.stringify({ mcpServers: { mine: { type: 'http', url: 'https://example.com' } } })}\n`;
+        writeFileSync(join(root, '.mcp.json'), edited);
+
+        assert.equal(addAgent(root, 'copilot').status, 0, 'a tracked shared path is not a collision');
+        assert.equal(readFileSync(join(root, '.mcp.json'), 'utf8'), edited, 'the edit must survive');
+        assert.ok(!existsSync(join(root, '.mcp.json.new')));
+        assert.equal(trackedPaths(root).filter((path) => path === '.mcp.json').length, 1, 'tracked once');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});

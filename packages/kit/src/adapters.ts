@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code, Cursor, Antigravity, Codex, Gemini CLI, OpenCode, and Zed.
+ * Shared agent adapters for Claude Code, Cursor, Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenCode, and Zed.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -25,6 +25,9 @@ import {
     CODEX_CONFIG_TOML,
     CODEX_HOOKS_DIR,
     CODEX_HOOKS_JSON,
+    COPILOT_HOOKS_DIR,
+    COPILOT_HOOKS_JSON,
+    COPILOT_SETUP_STEPS_YML,
     CURSOR_HOOKS_DIR,
     CURSOR_HOOKS_JSON,
     CURSOR_RULES_DIR,
@@ -485,6 +488,8 @@ interface HookManifestEntry {
     codex?: HookManifestCommandBlock;
     /** Same shape as Claude's block, except `timeout` is in milliseconds. */
     gemini?: HookManifestCommandBlock;
+    /** Same shape as Claude's block; `timeout` is seconds (Copilot's `timeoutSec`), and `command` must be Node only. */
+    copilot?: HookManifestCommandBlock;
 }
 
 interface HooksManifest {
@@ -588,9 +593,9 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
 
 /**
  * The assistants whose docs-MCP config is an `mcpServers` JSON file of their own. OpenCode's lives in `opencode.json`,
- * and Codex's is a TOML table (`codexConfigFile`).
+ * Codex's is a TOML table (`codexConfigFile`), and Copilot reads Claude Code's root `.mcp.json`.
  */
-type McpJsonAgent = Exclude<HookedAgent, 'opencode' | 'codex'>;
+type McpJsonAgent = Exclude<HookedAgent, 'opencode' | 'codex' | 'copilot'>;
 
 /** One remote MCP server entry. */
 interface McpServerEntry {
@@ -619,6 +624,7 @@ interface McpConfigJson {
  *
  * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
  * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).
+
  */
 const MCP_SERVER_ENTRY: Record<McpJsonAgent, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
@@ -900,6 +906,150 @@ export function generateCodexAdapter(root: string, vars: TemplateVars): Generate
     ];
 }
 
+/** One command entry in a Copilot hooks file (`.github/hooks/*.json`). */
+interface CopilotHookCommand {
+    type: 'command';
+    /** Always the repository root: Copilot resolves `cwd` against it, so the relative script paths hold wherever the session started. */
+    cwd: '.';
+    bash: string;
+    /** The same Node command: Windows runs this key, and the cloud agent runs only `bash`. */
+    powershell: string;
+    timeoutSec?: number;
+    matcher?: string;
+}
+
+/**
+ * Translate the canonical hooks manifest into Copilot's hooks file, rendering template vars. One flat list per event:
+ * Copilot anchors `matcher` itself (`^(?:PATTERN)$`) and tests it against the tool name. Only `.github/hooks/*.json`
+ * is read by every Copilot surface (CLI, cloud agent, VS Code), which is why this is not a `.claude/settings.json`
+ * copy even though the CLI reads that too.
+ */
+function buildCopilotHooks(
+    manifest: HooksManifest,
+    vars: TemplateVars,
+): { version: number; hooks: Record<string, CopilotHookCommand[]> } {
+    const hooks: Record<string, CopilotHookCommand[]> = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.copilot) {
+            continue;
+        }
+
+        const { event, command, matcher, timeout } = hook.copilot;
+        const rendered = render(command, vars);
+        const entry: CopilotHookCommand = { type: 'command', cwd: '.', bash: rendered, powershell: rendered };
+
+        if (timeout !== undefined) {
+            entry.timeoutSec = timeout;
+        }
+
+        if (matcher !== undefined) {
+            entry.matcher = matcher;
+        }
+
+        hooks[event] = [...(hooks[event] ?? []), entry];
+    }
+
+    return { version: 1, hooks };
+}
+
+/**
+ * GitHub Actions pins shared with create-blit386's optional CI template (`templates/optional/ci/github/workflows/ci.yml`).
+ * MANUAL-SYNC HAZARD: the kit cannot read that template, so bump both together (Renovate updates the template only);
+ * create-blit386's `test/scaffold.test.mjs` compares the two and fails when they drift.
+ */
+const ACTIONS_CHECKOUT = 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6';
+const ACTIONS_SETUP_NODE = 'actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6';
+
+/**
+ * `.github/workflows/copilot-setup-steps.yml`: what the Copilot cloud agent runs before it starts work on an issue, so
+ * its sandbox has Node and the game's dependencies. GitHub requires the job to be named exactly `copilot-setup-steps`,
+ * and it allows only a few job keys (`steps`, `permissions`, `runs-on`, `services`, `snapshot`, `timeout-minutes`).
+ * Corepack provides the pinned npm/pnpm/yarn from `packageManager`; Bun, which Corepack does not manage, is installed
+ * through npm instead.
+ */
+function copilotSetupStepsFile(vars: TemplateVars): GeneratedFile {
+    const install = vars.pmInstall;
+    if (!install) {
+        throw new Error('The Copilot setup workflow needs the pmInstall template variable.');
+    }
+
+    // `pmInstall` leads with the manager: `npm install`, `pnpm install`, `yarn`, `bun install`.
+    const toolchain = install.startsWith('bun ')
+        ? ['      - name: Install Bun', '        run: npm install --global bun']
+        : ['      - name: Enable Corepack', '        run: corepack enable'];
+
+    const lines = [
+        "# Prepares the GitHub Copilot cloud agent's environment before it works on this game.",
+        '# Source: @blit386/kit (generated by `npx blit agents sync`).',
+        'name: Copilot setup steps',
+        '',
+        'on:',
+        '  workflow_dispatch:',
+        '  push:',
+        '    paths:',
+        `      - ${COPILOT_SETUP_STEPS_YML}`,
+        '  pull_request:',
+        '    paths:',
+        `      - ${COPILOT_SETUP_STEPS_YML}`,
+        '',
+        'jobs:',
+        '  copilot-setup-steps:',
+        '    runs-on: ubuntu-latest',
+        '    permissions:',
+        '      contents: read',
+        '',
+        '    steps:',
+        '      - name: Checkout code',
+        `        uses: ${ACTIONS_CHECKOUT}`,
+        '',
+        '      - name: Setup Node.js',
+        `        uses: ${ACTIONS_SETUP_NODE}`,
+        '        with:',
+        "          node-version-file: '.node-version'",
+        '',
+        ...toolchain,
+        '',
+        '      - name: Install dependencies',
+        `        run: ${install}`,
+        '',
+    ];
+
+    return { path: COPILOT_SETUP_STEPS_YML, content: lines.join('\n') };
+}
+
+/**
+ * Generate the GitHub Copilot adapter files from the kit IR. Persona is `AGENTS.md` and skills are the shared
+ * `.agents/skills/` folder, both read natively by the Copilot CLI, the cloud agent, and VS Code, so neither needs a copy:
+ *   - `.github/hooks/blit.json`                 (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.github/hooks/{script}`                  (kit-owned; copied verbatim)
+ *   - `.github/workflows/copilot-setup-steps.yml` (kit-owned; the cloud agent's environment setup)
+ *   - `.mcp.json`                               (kit-owned, shared with Claude Code; the docs MCP server for the
+ *                                                 Copilot CLI and VS Code)
+ *
+ * Deliberately absent: `.vscode/mcp.json` (VS Code reads the root `.mcp.json`, so a copy would register the server
+ * twice), `.github/prompts/` (prompt files are deprecated and the VS Code Agent Host does not load them),
+ * and `.vscode/settings.json` `chat.tools.*.autoApprove` rules (they only prompt, and the Agent Host ignores the
+ * terminal one in workspace scope - the hooks are the enforcement).
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns The generated Copilot files and their contents.
+ */
+export function generateCopilotAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
+    const contentRoot = join(root, 'content');
+    const manifest = readHooksManifest(contentRoot);
+
+    return [
+        { path: COPILOT_HOOKS_JSON, content: `${JSON.stringify(buildCopilotHooks(manifest, vars), null, 2)}\n` },
+        ...collectHookScripts(contentRoot, manifest, 'copilot', COPILOT_HOOKS_DIR),
+        copilotSetupStepsFile(vars),
+        // Claude Code's root `.mcp.json`, shared: the Copilot CLI and VS Code both read it, and `generateAgentFiles`
+        // emits it once. The cloud agent reads no project MCP config; its servers live in the repository's settings.
+        mcpConfigFile('claude'),
+    ];
+}
+
 /**
  * The `permission` half of `opencode.json`: OpenCode's declarative deny rules. The last matching rule wins and `*`
  * crosses `/`, so a leading `*` covers nested files and `*.env.example` has to come after `*.env.*`. There is no
@@ -1047,6 +1197,7 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     gemini: { ...AGENT_SPECS.gemini, generate: generateGeminiAdapter },
     antigravity: { ...AGENT_SPECS.antigravity, generate: generateAntigravityAdapter },
     codex: { ...AGENT_SPECS.codex, generate: generateCodexAdapter },
+    copilot: { ...AGENT_SPECS.copilot, generate: generateCopilotAdapter },
     opencode: { ...AGENT_SPECS.opencode, generate: generateOpenCodeAdapter },
     zed: { ...AGENT_SPECS.zed, generate: generateZedAdapter },
 };
@@ -1054,7 +1205,9 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
 /**
  * Every agent file the kit emits for a set of assistants: each one's private files, plus the shared skills folder
  * once when any of them reads it. The single place shared output is deduplicated - scaffold, sync, and add all call
- * this rather than the per-agent generators.
+ * this rather than the per-agent generators. A shared exact path (`AgentSpec.readsSharedFiles`, e.g. `.mcp.json` from
+ * both Claude Code and Copilot) is generated byte-identically by each reader and kept once; two readers disagreeing on
+ * its content is a kit bug, so it throws rather than picking one.
  *
  * @param root - The kit root directory.
  * @param vars - Template variables used when rendering generated content.
@@ -1062,7 +1215,18 @@ export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
  * @returns The generated files, each path at most once.
  */
 export function generateAgentFiles(root: string, vars: TemplateVars, agents: readonly AgentKind[]): GeneratedFile[] {
-    const files = agents.flatMap((agent) => AGENT_ADAPTERS[agent].generate(root, vars));
+    const byPath = new Map<string, GeneratedFile>();
+
+    for (const file of agents.flatMap((agent) => AGENT_ADAPTERS[agent].generate(root, vars))) {
+        const earlier = byPath.get(file.path);
+        if (earlier !== undefined && earlier.content !== file.content) {
+            throw new Error(`Two agent adapters generate ${file.path} with different content.`);
+        }
+
+        byPath.set(file.path, file);
+    }
+
+    const files = [...byPath.values()];
 
     return sharedSkillsWanted(agents) ? [...files, ...generateSharedSkills(root, vars)] : files;
 }

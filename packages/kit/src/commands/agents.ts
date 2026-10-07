@@ -48,7 +48,6 @@ import {
     AGENT_KINDS,
     type AgentKind,
     ANTIGRAVITY_MCP_JSON,
-    CLAUDE_MCP_JSON,
     classifyFile,
     CODEX_CONFIG_TOML,
     CURSOR_MCP_JSON,
@@ -56,6 +55,7 @@ import {
     hasAgentFiles,
     isKitManaged,
     OPENCODE_JSON,
+    ROOT_MCP_JSON,
     ZED_SETTINGS_JSON,
 } from '../ownership';
 
@@ -255,7 +255,7 @@ function tryMergeCodexConfig(existingContent: string, generatedContent: string):
 
 /** Config paths `runAddAgent` merges into an untracked existing copy instead of colliding with it. */
 const CONFIG_MERGES: Readonly<Record<string, ConfigMerge>> = {
-    [CLAUDE_MCP_JSON]: tryMergeJsonConfig,
+    [ROOT_MCP_JSON]: tryMergeJsonConfig,
     [CURSOR_MCP_JSON]: tryMergeJsonConfig,
     [GEMINI_SETTINGS_JSON]: tryMergeGeminiSettings,
     [ANTIGRAVITY_MCP_JSON]: tryMergeJsonConfig,

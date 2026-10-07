@@ -83,11 +83,12 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, Antigravity, OpenCode, or Zed, it is already
-  configured (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `.agents/mcp_config.json` for Antigravity,
-  `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your assistant three tools: `search_docs`
-  (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs`
-  returned), and `get_docs_summary` (the whole site's contents in one compact block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, GitHub Copilot, Antigravity, OpenCode, or Zed,
+  it is already configured (`.mcp.json` for Claude Code and Copilot, `.cursor/mcp.json` for Cursor,
+  `.agents/mcp_config.json` for Antigravity, `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your
+  assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's
+  full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's contents in one compact
+  block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
@@ -208,11 +209,20 @@ commands) and formats each file after an edit. Codex ignores both files at first
 Some git commands (`git push --force`, `git branch -D`, `git stash drop`) need your go-ahead under other assistants;
 Codex cannot ask, so it refuses them. Run those yourself when you mean to.
 
-For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
+If you use GitHub Copilot (in VS Code, the Copilot CLI, or the cloud agent you assign issues to on github.com), it reads
+this file and the skills in `.agents/skills/` on its own. `.github/hooks/blit.json` adds the safety checks (it refuses
+edits to lock files and `.env`, and destructive git commands), formats each file after an edit, and installs
+dependencies when a session starts. `.mcp.json` points both VS Code and the Copilot CLI at the documentation server.
+Trust the folder when VS Code or the Copilot CLI asks: until you do, the hooks and the documentation server stay off.
+The cloud agent prepares its sandbox with `.github/workflows/copilot-setup-steps.yml`, but it cannot read an MCP server
+from project files - add `blit386-docs` (`https://blit386.dev/mcp`) in the repository's Copilot settings on github.com
+if you want it there.
+
+For other assistants (Windsurf and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-`npx blit agents add antigravity`, `npx blit agents add codex`, `npx blit agents add gemini`,
-`npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
+`npx blit agents add copilot`, `npx blit agents add antigravity`, `npx blit agents add codex`,
+`npx blit agents add gemini`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 
