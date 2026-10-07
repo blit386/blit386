@@ -51,59 +51,68 @@ import {
     CURSOR_MCP_JSON,
     hasAgentFiles,
     isKitManaged,
+    OPENCODE_JSON,
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, OPENCODE_JSON];
 
-interface McpConfigLike {
-    mcpServers?: Record<string, unknown>;
-    [key: string]: unknown;
-}
-
-/** True for a plain JSON object - the only shape `mcpServers` is allowed to have. */
-function isMcpServerMap(value: unknown): value is Record<string, unknown> {
+/** True for a plain JSON object - the only shape a JSON config map is allowed to have. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/**
- * Merge the kit's generated MCP config into a pre-existing hand-written one. Adds the kit's server(s)
- * under `mcpServers` next to whatever the user already registered. Returns null - not a crash - when
- * the existing file isn't a mergeable JSON object, its `mcpServers` isn't a plain object, or a server
- * key the kit wants to add already exists with different content: all three cases fall back to the
- * existing collision (`.new` + abort) path.
- */
-function tryMergeMcpConfig(existingContent: string, generatedContent: string): string | null {
-    let existing: McpConfigLike;
+/** Deep-merge `generated` into `existing`; returns null at the first key both define with different non-object values. */
+function mergeJsonObjects(
+    existing: Record<string, unknown>,
+    generated: Record<string, unknown>,
+): Record<string, unknown> | null {
+    const merged = { ...existing };
 
-    try {
-        existing = JSON.parse(existingContent) as McpConfigLike;
-    } catch {
-        return null;
-    }
+    for (const [key, value] of Object.entries(generated)) {
+        const current = existing[key];
 
-    if (!isMcpServerMap(existing)) {
-        return null;
-    }
+        if (current === undefined) {
+            merged[key] = value;
+        } else if (isPlainObject(current) && isPlainObject(value)) {
+            const inner = mergeJsonObjects(current, value);
 
-    if (existing.mcpServers !== undefined && !isMcpServerMap(existing.mcpServers)) {
-        return null;
-    }
+            if (inner === null) {
+                return null;
+            }
 
-    const generated = JSON.parse(generatedContent) as McpConfigLike;
-    const generatedServers = generated.mcpServers ?? {};
-    const existingServers = existing.mcpServers ?? {};
-
-    for (const [name, entry] of Object.entries(generatedServers)) {
-        const existingEntry = existingServers[name];
-        if (existingEntry !== undefined && !isDeepStrictEqual(existingEntry, entry)) {
+            merged[key] = inner;
+        } else if (!isDeepStrictEqual(current, value)) {
             return null;
         }
     }
 
-    const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
+    return merged;
+}
 
-    return `${JSON.stringify(merged, null, 2)}\n`;
+/**
+ * Merge the kit's generated JSON config (an MCP config or `opencode.json`) into a pre-existing hand-written one, key by
+ * key: the user's entries stay and only what the file lacks is added after them. Order matters for OpenCode - its last
+ * matching permission rule wins - so the user's rules keep their place. Returns null - not a crash - when the existing
+ * file is not a JSON object or the two disagree on a value (a user's setting is never overridden): the caller falls
+ * back to the collision (`.new` + abort) path.
+ */
+function tryMergeJsonConfig(existingContent: string, generatedContent: string): string | null {
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(existingContent);
+    } catch {
+        return null;
+    }
+
+    if (!isPlainObject(existing)) {
+        return null;
+    }
+
+    const merged = mergeJsonObjects(existing, JSON.parse(generatedContent) as Record<string, unknown>);
+
+    return merged === null ? null : `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -695,7 +704,7 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`) is the one exception: a clean structural merge with the
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `opencode.json`) is the one exception: a clean structural merge with the
  * user's existing file is written and tracked like any other generated file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
@@ -749,7 +758,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         const onDisk = readFileSync(resolve(root, file.path), 'utf8');
-        const mergedContent = tryMergeMcpConfig(onDisk, file.content);
+        const mergedContent = tryMergeJsonConfig(onDisk, file.content);
 
         if (mergedContent === null) {
             return file;

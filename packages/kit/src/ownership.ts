@@ -57,6 +57,20 @@ export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 /** Cursor's MCP server configuration. */
 export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
+/**
+ * OpenCode's project configuration: permission map, formatter, and docs MCP server in one JSON file at the project
+ * root. A file a user may extend, so sync merges it like `.mcp.json` rather than replacing it.
+ */
+export const OPENCODE_JSON = 'opencode.json';
+
+/**
+ * Root of OpenCode's generated configuration. Only the paths below are the kit's: a user's own plugins, commands, and
+ * agents under `.opencode/` stay user-owned.
+ */
+export const OPENCODE_DIR = '.opencode/';
+export const OPENCODE_HOOKS_DIR = `${OPENCODE_DIR}hooks/`;
+export const OPENCODE_KIT_GUARD = `${OPENCODE_DIR}plugins/kit-guard.ts`;
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -83,7 +97,14 @@ export type FileClass = 'kit-owned' | 'shared' | 'user-owned';
 const SHARED_FILES: readonly string[] = [AGENTS_MD, CLAUDE_MD];
 
 /** Exact paths the kit owns outright. */
-const KIT_OWNED_FILES: readonly string[] = [CLAUDE_SETTINGS_JSON, CLAUDE_MCP_JSON, CURSOR_HOOKS_JSON, CURSOR_MCP_JSON];
+const KIT_OWNED_FILES: readonly string[] = [
+    CLAUDE_SETTINGS_JSON,
+    CLAUDE_MCP_JSON,
+    CURSOR_HOOKS_JSON,
+    CURSOR_MCP_JSON,
+    OPENCODE_JSON,
+    OPENCODE_KIT_GUARD,
+];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
 const KIT_OWNED_DIRS: readonly string[] = [
@@ -94,6 +115,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CURSOR_RULES_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_SKILLS_DIR,
+    OPENCODE_HOOKS_DIR,
     SHARED_SKILLS_DIR,
 ];
 
@@ -140,10 +162,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor';
+export type AgentKind = 'claude' | 'cursor' | 'opencode';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'opencode'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -167,7 +189,7 @@ export interface AgentSpec {
  * `files` and `dirs` are the agent's private paths: every path an adapter emits must match them (or be a shared path
  * the agent reads), or a sync skips it - `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
  * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json` is already covered
- * by the `CURSOR_DIR` prefix.
+ * by the `CURSOR_DIR` prefix; OpenCode's `opencode.json` is a root file too.
  */
 export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
     claude: {
@@ -185,6 +207,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [CURSOR_DIR],
         mcpConfig: CURSOR_MCP_JSON,
         readsSharedSkills: false,
+    },
+    opencode: {
+        label: 'OpenCode',
+        setupHint: `adds ${OPENCODE_JSON}`,
+        files: [OPENCODE_JSON],
+        dirs: [OPENCODE_DIR],
+        mcpConfig: OPENCODE_JSON,
+        readsSharedSkills: true,
     },
 };
 
