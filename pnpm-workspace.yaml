@@ -41,8 +41,16 @@ overrides:
   # runtime bundle - but `security:audit` covers dev + prod, so it fails CI. No wrangler
   # release (checked up to the latest 5.x alpha pulled by wrangler@4.130.0) bundles a
   # patched miniflare - every version still pins sharp@0.35.2 - so this overrides the
-  # transitive dependency directly. 0.35.4 is the patch.
-  sharp@<0.35.4: ^0.35.4
+  # transitive dependency directly. 0.35.4 is the patch for the libheif advisories, and
+  # 0.35.5 for the librsvg one (GHSA-wq5f-xc86-pv6w, high), which also reaches
+  # packages/website through fumapress.
+  sharp@<0.35.5: ^0.35.5
+  # GHSA-pqg4-j6r4-53mv (critical): quote() command injection via a line terminator in a
+  # token after a { comment } token. Dev-only, reached through concurrently
+  # (packages/demos), but `security:audit` covers dev + prod, so it fails CI. concurrently
+  # still pins a vulnerable range, so this overrides the transitive dependency. 1.11.0 is
+  # the patch.
+  shell-quote@>=1.8.4 <1.11.0: ^1.11.0
   # GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p / GHSA-q2hr-2g5m-vwhr (high/moderate):
   # brace-expansion denial of service via crafted patterns. Dev-only, reached through
   # minimatch via eslint, @typescript-eslint, and vite-plugin-dts (@vue/language-core), so
