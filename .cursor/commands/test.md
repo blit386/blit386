@@ -92,8 +92,9 @@ check.
 
 ## packages/kit and packages/create-blit386
 
-Seven `node --test` suites, 57 cases total. No Vitest, no Playwright, no top-level `tests/` directory - each package
-owns its own `test/` folder.
+`node --test` suites only. No Vitest, no Playwright, no top-level `tests/` directory - each package owns its own `test/`
+folder. The table below lists the suites that existed when it was last rewritten and is behind the kit's current folder
+(BT-583 tracks the recount); `ls packages/kit/test packages/create-blit386/test` is the truth.
 
 | Suite | Cases | Covers |
 | --- | --- | --- |

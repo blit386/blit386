@@ -11,7 +11,7 @@ import { test } from 'node:test';
 
 import { scaffold } from '../dist/scaffold.js';
 import { MCP_SERVER_NAME } from '@blit386/kit/adapters';
-import { runBlit, PNPM_SCAFFOLD_COMMANDS } from './helpers.mjs';
+import { hasGit, runBlit, PNPM_SCAFFOLD_COMMANDS } from './helpers.mjs';
 
 test('scaffolding with Zed only writes settings and the shared skills, and sync is clean', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-zed-'));
@@ -58,7 +58,8 @@ test('scaffolding with Zed and Claude keeps one shared skills folder', () => {
     }
 });
 
-test('blit agents add zed sets up a no-agent game and merges the user .zed/settings.json', () => {
+// The full sync after a merged add three-way merges through `git merge-file`; skip where git is unavailable.
+test('blit agents add zed sets up a no-agent game and merges the user .zed/settings.json', { skip: !hasGit }, () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-zed-add-'));
 
     try {
@@ -92,7 +93,9 @@ test('blit agents add zed sets up a no-agent game and merges the user .zed/setti
     }
 });
 
-test('blit agents sync keeps a user-edited .zed/settings.json and merges kit changes into it', () => {
+test('blit agents sync keeps a user-edited .zed/settings.json and merges kit changes into it', {
+    skip: !hasGit,
+}, () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-zed-sync-'));
 
     try {
