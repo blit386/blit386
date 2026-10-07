@@ -52,17 +52,23 @@ import {
     GEMINI_SETTINGS_JSON,
     hasAgentFiles,
     isKitManaged,
+    ZED_SETTINGS_JSON,
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, GEMINI_SETTINGS_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [
+    CLAUDE_MCP_JSON,
+    CURSOR_MCP_JSON,
+    GEMINI_SETTINGS_JSON,
+    ZED_SETTINGS_JSON,
+];
 
 interface McpConfigLike {
     mcpServers?: Record<string, unknown>;
     [key: string]: unknown;
 }
 
-/** True for a plain JSON object - the only shape `mcpServers` (and every key the Gemini merge descends into) may have. */
+/** True for a plain JSON object (not an array or null) - the only shape `mcpServers` and the merged settings allow. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -105,6 +111,60 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
     const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
 
     return `${JSON.stringify(merged, null, 2)}\n`;
+}
+
+/** Returned by `deepMergeJson` when both sides set the same key to different non-object values. */
+const MERGE_CONFLICT = Symbol('merge-conflict');
+
+/**
+ * Deep-merge `generated` into `existing`: objects merge key by key, and a key both sides set to different
+ * non-object values is a conflict, reported as `MERGE_CONFLICT` so the caller can treat it as a collision.
+ */
+function deepMergeJson(existing: unknown, generated: unknown): unknown {
+    if (existing === undefined) {
+        return generated;
+    }
+
+    if (isPlainObject(existing) && isPlainObject(generated)) {
+        const merged: Record<string, unknown> = { ...existing };
+
+        for (const [key, value] of Object.entries(generated)) {
+            const result = deepMergeJson(existing[key], value);
+
+            if (result === MERGE_CONFLICT) {
+                return MERGE_CONFLICT;
+            }
+
+            merged[key] = result;
+        }
+
+        return merged;
+    }
+
+    return isDeepStrictEqual(existing, generated) ? existing : MERGE_CONFLICT;
+}
+
+/**
+ * Merge the kit's generated `.zed/settings.json` into a pre-existing one: the kit's keys are added next to the
+ * user's own. Returns null when the existing file is not plain JSON (Zed also accepts comments, which this does not
+ * parse) or any key the kit sets is already set to something else - the user's choice wins, via the collision path.
+ */
+function tryMergeZedSettings(existingContent: string, generatedContent: string): string | null {
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(existingContent);
+    } catch {
+        return null;
+    }
+
+    if (!isPlainObject(existing)) {
+        return null;
+    }
+
+    const merged = deepMergeJson(existing, JSON.parse(generatedContent));
+
+    return merged === MERGE_CONFLICT ? null : `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -185,11 +245,17 @@ function tryMergeGeminiSettings(existingContent: string, generatedContent: strin
     return `${JSON.stringify(merged, null, 2)}\n`;
 }
 
-/** The structural merge for a mergeable path: Gemini's settings file has its own shape, the MCP configs share one. */
+/** The structural merge for a mergeable path: Gemini's and Zed's settings files have their own shapes, the MCP configs share one. */
 function tryMergeJsonConfig(path: string, existingContent: string, generatedContent: string): string | null {
-    return path === GEMINI_SETTINGS_JSON
-        ? tryMergeGeminiSettings(existingContent, generatedContent)
-        : tryMergeMcpConfig(existingContent, generatedContent);
+    if (path === GEMINI_SETTINGS_JSON) {
+        return tryMergeGeminiSettings(existingContent, generatedContent);
+    }
+
+    if (path === ZED_SETTINGS_JSON) {
+        return tryMergeZedSettings(existingContent, generatedContent);
+    }
+
+    return tryMergeMcpConfig(existingContent, generatedContent);
 }
 
 /**
@@ -781,8 +847,8 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
  * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
- * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`) is the one exception: a clean structural
- * merge with the user's existing file is written and tracked like any other generated file instead of counting as a
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`, `.gemini/settings.json`, `.zed/settings.json`) is the one exception: a
+ * clean structural merge with the user's existing file is written and tracked like any other generated file instead of counting as a
  * collision. Returns the number of colliding files that need the user's attention; 0 means the
  * assistant was set up cleanly.
  */

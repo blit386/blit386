@@ -35,11 +35,12 @@ the scripts in `hooks/` + `hooks.manifest.json`. Skills and rules are discovered
 `.cursor/skills/<name>/SKILL.md`, frontmatter kept, so it loads the skill from the description and still answers
 `/name`. Most other agents read one shared folder, `.agents/skills/<name>/SKILL.md` (`SHARED_SKILLS_DIR`), so the kit
 emits it once (`generateSharedSkills`) while at least one set-up agent has `readsSharedSkills` in its registry entry.
-Gemini CLI sets that flag; Claude Code does not read the shared folder and Cursor is unverified, so both keep their
-private copies and a Claude- or Cursor-only game gets no `.agents/`. `test/skills-frontmatter.test.mjs` enforces the
-cross-agent limits every skill must meet: `name` lowercase-hyphen, at most 64 characters, equal to its folder;
-`description` at most 1024 characters; a flat layout. The two always-on convention files in `content/rules/` stay
-`.cursor/rules/*.mdc`; they are not skills.
+Gemini CLI and Zed set that flag (Zed's adapter ships only `.zed/settings.json`; the skills come from the shared
+folder). Claude Code does not read the shared folder and Cursor is unverified, so both keep their private copies. A
+Claude- or Cursor-only game gets no `.agents/`. `test/skills-frontmatter.test.mjs` enforces the cross-agent limits every
+skill must meet: `name` lowercase-hyphen, at most 64 characters, equal to its folder; `description` at most 1024
+characters; a flat layout. The two always-on convention files in `content/rules/` stay `.cursor/rules/*.mdc`; they are
+not skills.
 
 Kit content must be self-contained. Skills and docs may reference only `packages/blit386` (the engine) and other local
 kit files. Do not reference the `packages/demos` package, its demo slugs, or its URLs - that package may be archived in
@@ -98,6 +99,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude Code and Gemini CLI; Cursor has no SessionStart-equivalent event). Under Gemini its plain stdout is delivered as a system message (`hookRunner.ts` wraps non-JSON exit-0 output), so it is left on stdout. The `cd ... && VAR=... sh` command is POSIX-only, as Claude's is: Gemini runs hooks through PowerShell on Windows, where the bootstrap fails without blocking the session |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json`, Claude `settings.json`, and Gemini `.gemini/settings.json` (timeouts in milliseconds) derive from it |
 | `src/adapters.ts` (docs-MCP config, `MCP_SERVER_ENTRY`; Gemini's `httpUrl` entry inside `buildGeminiSettings`) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
+| `src/adapters.ts` (`generateZedAdapter`, `.zed/settings.json`) | Zed's settings keys change (`format_on_save`, the `formatter.language_server` shape, `context_servers`), or Zed starts honoring an `agent` key from project settings (then guardrails become shippable - see the hard-rule snippet in `content/AGENTS.md`) |
 | `src/adapters.ts` (`launchConfigFile`, `.claude/launch.json`) | The starter's dev port or `server.open` (`packages/create-blit386/templates/base/vite.config.js`), a new package manager, or the Claude desktop app's `launch.json` fields change |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` - that is the only human-facing

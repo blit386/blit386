@@ -67,6 +67,13 @@ export const GEMINI_HOOKS_DIR = `${GEMINI_DIR}hooks/`;
  */
 export const GEMINI_SETTINGS_JSON = `${GEMINI_DIR}settings.json`;
 
+/**
+ * Zed's generated configuration. `settings.json` is user-extendable JSON (Zed also allows comments), so like the MCP
+ * configs it is merged structurally by `blit agents add` and three-way merged by `sync`.
+ */
+export const ZED_DIR = '.zed/';
+export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -99,6 +106,7 @@ const KIT_OWNED_FILES: readonly string[] = [
     CURSOR_HOOKS_JSON,
     CURSOR_MCP_JSON,
     GEMINI_SETTINGS_JSON,
+    ZED_SETTINGS_JSON,
 ];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
@@ -157,10 +165,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor' | 'gemini';
+export type AgentKind = 'claude' | 'cursor' | 'gemini' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'gemini'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'gemini', 'zed'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -209,6 +217,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         files: [],
         dirs: [GEMINI_DIR],
         mcpConfig: GEMINI_SETTINGS_JSON,
+        readsSharedSkills: true,
+    },
+    zed: {
+        label: 'Zed',
+        setupHint: `adds ${ZED_SETTINGS_JSON}`,
+        files: [],
+        dirs: [ZED_DIR],
+        mcpConfig: ZED_SETTINGS_JSON,
         readsSharedSkills: true,
     },
 };
