@@ -490,15 +490,20 @@ function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHo
     return { version: 1, hooks };
 }
 
-/** One manifest command block as a matcher group (matcher, then a single command handler), template vars rendered. */
-function matcherGroup(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeMatcherGroup {
-    const commandHook: ClaudeHookCommand = { type: 'command', command: render(block.command, vars) };
+/** One manifest command block as a command handler, template vars rendered. */
+function commandHandler(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeHookCommand {
+    const handler: ClaudeHookCommand = { type: 'command', command: render(block.command, vars) };
 
     if (block.timeout !== undefined) {
-        commandHook.timeout = block.timeout;
+        handler.timeout = block.timeout;
     }
 
-    const group: ClaudeMatcherGroup = { hooks: [commandHook] };
+    return handler;
+}
+
+/** One manifest command block as a matcher group (matcher, then a single command handler), template vars rendered. */
+function matcherGroup(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeMatcherGroup {
+    const group: ClaudeMatcherGroup = { hooks: [commandHandler(block, vars)] };
 
     if (block.matcher !== undefined) {
         group.matcher = block.matcher;
@@ -649,12 +654,18 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     return files;
 }
 
-/** Antigravity's `.agents/hooks.json`: hook-group name, then event, then matcher groups. */
-type AntigravityHooksJson = Record<string, Record<string, ClaudeMatcherGroup[]>>;
+/**
+ * Antigravity's `.agents/hooks.json`: hook-group name, then event, then handlers. Tool events (`PreToolUse`,
+ * `PostToolUse`) nest handlers under matcher groups; every other event lists its handlers directly.
+ */
+type AntigravityHooksJson = Record<string, Record<string, (ClaudeMatcherGroup | ClaudeHookCommand)[]>>;
+
+/** The Antigravity events that take a tool matcher. The rest ignore it and expect bare handlers. */
+const ANTIGRAVITY_TOOL_EVENTS: ReadonlySet<string> = new Set(['PreToolUse', 'PostToolUse']);
 
 /**
  * Translate the canonical hooks manifest into Antigravity's `.agents/hooks.json`. One group per manifest hook,
- * named `blit-<id>` so a user's own groups never collide with ours; the handler shape matches Claude's.
+ * named `blit-<id>` so a user's own groups never collide with ours; tool events use Claude's matcher-group shape.
  */
 function buildAntigravityHooks(manifest: HooksManifest, vars: TemplateVars): AntigravityHooksJson {
     const groups: AntigravityHooksJson = {};
@@ -665,9 +676,11 @@ function buildAntigravityHooks(manifest: HooksManifest, vars: TemplateVars): Ant
         }
 
         const { event } = hook.antigravity;
-        const group = matcherGroup(hook.antigravity, vars);
+        const entry = ANTIGRAVITY_TOOL_EVENTS.has(event)
+            ? matcherGroup(hook.antigravity, vars)
+            : commandHandler(hook.antigravity, vars);
 
-        groups[`blit-${hook.id}`] = { [event]: [group] };
+        groups[`blit-${hook.id}`] = { [event]: [entry] };
     }
 
     return groups;

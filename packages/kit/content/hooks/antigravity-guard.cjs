@@ -37,7 +37,9 @@ try {
     });
 
     if (!verdict) {
-        reply('allow');
+        // Not `allow`: Antigravity defines that as automatic approval, which would skip the permission prompt
+        // the user would otherwise see. `ask` hands the call back to the normal approval flow.
+        reply('ask');
     } else if (verdict.message) {
         reply('deny', verdict.message);
     } else {

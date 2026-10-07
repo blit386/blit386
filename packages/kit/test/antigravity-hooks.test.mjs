@@ -45,8 +45,13 @@ describe('.agents/hooks.json', () => {
         assert.equal(handler('blit-block-dangerous-shell', 'PreToolUse').matcher, 'run_command');
         assert.equal(handler('blit-protect-generated-and-secret-files', 'PreToolUse').matcher, WRITE_TOOLS);
         assert.equal(handler('blit-format-on-edit', 'PostToolUse').matcher, WRITE_TOOLS);
-        assert.equal(handler('blit-session-start-bootstrap', 'PreInvocation').matcher, undefined);
-        assert.match(handler('blit-session-start-bootstrap', 'PreInvocation').hooks[0].command, /"pnpm install"$/);
+
+        // PreInvocation takes bare handlers, not a matcher group around a `hooks` array.
+        const bootstrap = handler('blit-session-start-bootstrap', 'PreInvocation');
+
+        assert.equal(bootstrap.type, 'command');
+        assert.equal(bootstrap.hooks, undefined);
+        assert.match(bootstrap.command, /"pnpm install"$/);
     });
 
     it('ships every script it runs, plus the guard core, and nothing Claude-only', () => {
@@ -62,16 +67,16 @@ describe('.agents/hooks.json', () => {
 });
 
 describe('antigravity-guard.cjs', () => {
-    it('denies lock files and .env, allows an ordinary edit', () => {
+    it('denies lock files and .env, and hands an ordinary edit back to the approval flow', () => {
         assert.equal(guard('files', writeCall('/game/pnpm-lock.yaml')).decision, 'deny');
         assert.equal(guard('files', writeCall('/game/.env')).decision, 'deny');
-        assert.deepEqual(guard('files', writeCall('/game/src/game.ts')), { decision: 'allow' });
+        assert.deepEqual(guard('files', writeCall('/game/src/game.ts')), { decision: 'ask' });
     });
 
-    it('denies a hard reset, asks on force push, allows ordinary commands', () => {
+    it('denies a hard reset, asks on force push, never auto-approves an ordinary command', () => {
         assert.equal(guard('shell', shellCall('git reset --hard HEAD~1')).decision, 'deny');
         assert.equal(guard('shell', shellCall('git push --force')).decision, 'ask');
-        assert.equal(guard('shell', shellCall('git status')).decision, 'allow');
+        assert.equal(guard('shell', shellCall('git status')).decision, 'ask');
     });
 
     it('fails closed on every unreadable request', () => {
