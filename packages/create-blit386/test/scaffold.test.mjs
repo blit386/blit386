@@ -1380,6 +1380,33 @@ test('blit agents add opencode merges into an existing opencode.json and refuses
         assert.equal(readFileSync(join(clash, 'opencode.json'), 'utf8'), stricter, "the user's file is untouched");
         assert.ok(existsSync(join(clash, 'opencode.json.new')), 'the kit version is saved beside it');
         assert.ok(!existsSync(join(clash, '.opencode')), 'nothing else is written');
+
+        // A server the user registered under the kit's name is never extended: one extra key (`headers`, `env`,
+        // `command`) changes what the assistant sends or runs, so only an identical entry is accepted.
+        const extended = join(work, 'extended');
+        scaffold(openCodeOptions(extended, []));
+        const extra = `${JSON.stringify(
+            {
+                mcp: {
+                    [MCP_SERVER_NAME]: {
+                        type: 'remote',
+                        url: 'https://blit386.dev/mcp',
+                        enabled: true,
+                        headers: { 'X-Mine': '1' },
+                    },
+                },
+            },
+            null,
+            2,
+        )}\n`;
+        writeFileSync(join(extended, 'opencode.json'), extra);
+
+        assert.notEqual(
+            runBlit(extended, ['agents', 'add', 'opencode']).exitCode,
+            0,
+            'an extended kit server is refused',
+        );
+        assert.equal(readFileSync(join(extended, 'opencode.json'), 'utf8'), extra, "the user's file is untouched");
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

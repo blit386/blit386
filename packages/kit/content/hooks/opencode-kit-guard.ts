@@ -24,13 +24,20 @@ const { failClosed, isDangerousCommand, isProtectedPath } = guardCore;
 const EDIT_TOOLS = new Set(['edit', 'write', 'multiedit']);
 const PATCH_TOOLS = new Set(['apply_patch', 'patch']);
 
-/** The file lines of a patch: `*** Update File: path`, `*** Add File: path`, `*** Delete File: path`, `*** Move to: path`. */
-const PATCH_FILE_LINE = /^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)$/gm;
+/**
+ * The file lines of a patch: `*** Update File: path`, `*** Add File: path`, `*** Delete File: path`, `*** Move to: path`.
+ * Matches OpenCode's own parser, which takes everything after the colon and trims it, so the space is optional here
+ * too (`*** Update File:.env` is a valid header). Leading whitespace is tolerated, which OpenCode does not need, so
+ * this can only ever see more files than it does.
+ */
+const PATCH_FILE_LINE = /^\s*\*\*\* (?:Add File|Update File|Delete File|Move to):(.*)$/gm;
 
 /** Every file a tool call would write, or throws when there is none to find (so the guard fails closed). */
 function editedFiles(tool, args) {
     if (PATCH_TOOLS.has(tool)) {
-        const files = [...args.patchText.matchAll(PATCH_FILE_LINE)].map((match) => match[1].trim());
+        const files = [...args.patchText.matchAll(PATCH_FILE_LINE)]
+            .map((match) => match[1].trim())
+            .filter((file) => file !== '');
 
         if (files.length === 0) {
             throw new Error('the patch names no file');

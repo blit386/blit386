@@ -62,7 +62,32 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** Deep-merge `generated` into `existing`; returns null at the first key both define with different non-object values. */
+/**
+ * Keys whose children are whole MCP server entries: `mcpServers` in `.mcp.json` / `.cursor/mcp.json`, `mcp` in
+ * `opencode.json`. An entry is trusted as a unit - a server the user already registered under the kit's name is kept
+ * only when it is identical to the kit's, never extended or edited key by key, because one extra `command`, `env`, or
+ * `headers` changes what the assistant runs or sends.
+ */
+const MCP_SERVER_MAP_KEYS: readonly string[] = ['mcpServers', 'mcp'];
+
+/** Merge two server maps: the kit's entries are added, and a same-named entry must already be identical. */
+function mergeServerMaps(
+    existing: Record<string, unknown>,
+    generated: Record<string, unknown>,
+): Record<string, unknown> | null {
+    for (const [name, entry] of Object.entries(generated)) {
+        if (existing[name] !== undefined && !isDeepStrictEqual(existing[name], entry)) {
+            return null;
+        }
+    }
+
+    return { ...existing, ...generated };
+}
+
+/**
+ * Deep-merge `generated` into `existing`; returns null at the first key both define with different non-object values,
+ * or when a server map (`MCP_SERVER_MAP_KEYS`) holds a same-named entry that differs.
+ */
 function mergeJsonObjects(
     existing: Record<string, unknown>,
     generated: Record<string, unknown>,
@@ -75,7 +100,9 @@ function mergeJsonObjects(
         if (current === undefined) {
             merged[key] = value;
         } else if (isPlainObject(current) && isPlainObject(value)) {
-            const inner = mergeJsonObjects(current, value);
+            const inner = MCP_SERVER_MAP_KEYS.includes(key)
+                ? mergeServerMaps(current, value)
+                : mergeJsonObjects(current, value);
 
             if (inner === null) {
                 return null;

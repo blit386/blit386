@@ -262,6 +262,15 @@ describe('the kit-guard.ts plugin', () => {
                 /package manager/,
             );
             await assert.rejects(tool(hooks, 'apply_patch', patch('*** Move to: .env')), /secrets/);
+
+            // OpenCode's parser takes whatever follows the colon, trimmed, so a header need not have a space.
+            for (const header of [
+                '*** Update File:.env',
+                '*** Add File:\t.env.local',
+                '  *** Delete File:pnpm-lock.yaml',
+            ]) {
+                await assert.rejects(tool(hooks, 'apply_patch', patch(header)), /secrets|package manager/, header);
+            }
         } finally {
             dispose();
         }
