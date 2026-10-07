@@ -52,23 +52,24 @@ import {
     hasAgentFiles,
     isKitManaged,
     OPENCODE_JSON,
+    ZED_SETTINGS_JSON,
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, OPENCODE_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, OPENCODE_JSON, ZED_SETTINGS_JSON];
 
-/** True for a plain JSON object - the only shape a JSON config map is allowed to have. */
+/** True for a plain JSON object (not an array or null) - the only shape a JSON config map allows. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
  * Keys whose children are whole MCP server entries: `mcpServers` in `.mcp.json` / `.cursor/mcp.json`, `mcp` in
- * `opencode.json`. An entry is trusted as a unit - a server the user already registered under the kit's name is kept
+ * `opencode.json`, `context_servers` in `.zed/settings.json`. An entry is trusted as a unit - a server the user already registered under the kit's name is kept
  * only when it is identical to the kit's, never extended or edited key by key, because one extra `command`, `env`, or
  * `headers` changes what the assistant runs or sends.
  */
-const MCP_SERVER_MAP_KEYS: readonly string[] = ['mcpServers', 'mcp'];
+const MCP_SERVER_MAP_KEYS: readonly string[] = ['mcpServers', 'mcp', 'context_servers'];
 
 /** Merge two server maps: the kit's entries are added, and a same-named entry must already be identical. */
 function mergeServerMaps(
@@ -118,7 +119,7 @@ function mergeJsonObjects(
 }
 
 /**
- * Merge the kit's generated JSON config (an MCP config or `opencode.json`) into a pre-existing hand-written one, key by
+ * Merge the kit's generated JSON config (an MCP config, `opencode.json`, or `.zed/settings.json`) into a pre-existing hand-written one, key by
  * key: the user's entries stay and only what the file lacks is added after them. Order matters for OpenCode - its last
  * matching permission rule wins - so the user's rules keep their place. Returns null - not a crash - when the existing
  * file is not a JSON object or the two disagree on a value (a user's setting is never overridden): the caller falls
@@ -774,6 +775,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     // their entries. Only a real conflict (same server key, different content) or an existing file
     // that fails to parse as JSON falls through to the collision path below.
     const mergedPaths = new Set<string>();
+
+    // The kit's own content for each merged file: it, not the merged text, is the ancestor a later `sync` merges from.
+    // With the merged text as the base, an untouched file would look like the kit's pristine copy and `sync` would
+    // replace it with the generated one, dropping the user's own entries.
+    const kitContentByPath = new Map<string, string>();
     const preparedGenerated = generated.map((file) => {
         if (
             !MERGEABLE_JSON_PATHS.includes(file.path) ||
@@ -792,6 +798,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         mergedPaths.add(file.path);
+        kitContentByPath.set(file.path, file.content);
 
         return { ...file, content: mergedContent };
     });
@@ -847,7 +854,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
         writeRel(root, relPath, file.content);
         if (isKitManaged(fileClass)) {
-            writeBase(root, relPath, file.content, out);
+            writeBase(root, relPath, kitContentByPath.get(relPath) ?? file.content, out);
         }
         entryByPath.set(relPath, {
             path: relPath,

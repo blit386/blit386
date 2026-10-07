@@ -56,6 +56,10 @@ bootstrap(Game);
 - Sound waits for the player. Browsers refuse to play audio until someone clicks, taps, or presses a key, so a game is
   silent until then - that is the web's rule, not a bug. `BT.musicPlay` is remembered and starts on the first
   interaction; `BT.soundPlay` before it is dropped. See `docs/audio.md`.
+- Never edit lock files by hand (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`). Only the
+  package manager writes them; a hand edit breaks the next install.
+- Never edit `.env` files (`.env`, `.env.local`, `.env.production`, and similar). They hold secrets. `.env.example` is a
+  template and is fine to edit.
 - No emoji anywhere in code, comments, or text.
 
 ## When you need detail, open the right doc
@@ -79,10 +83,11 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, or OpenCode, it is already configured
-  (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `opencode.json` for OpenCode) and gives your assistant
-  three tools: `search_docs` (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's full text,
-  from a URL `search_docs` returned), and `get_docs_summary` (the whole site's contents in one compact block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, OpenCode, or Zed, it is already configured
+  (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `opencode.json` for OpenCode, `.zed/settings.json` for
+  Zed) and gives your assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts),
+  `get_doc_page` (one page's full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's
+  contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
@@ -137,10 +142,55 @@ same documentation server, turns on the formatters (Biome for code, Prettier for
 editing lock files and `.env` files or running destructive git commands. OpenCode has no trust prompt, so it loads
 `.opencode/plugins/kit-guard.ts` the moment you open the project - the file's first lines say exactly what it does.
 
-For other assistants (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
+If you use Zed, `.zed/settings.json` turns on format on save, formats JavaScript, TypeScript, and JSON with Biome, and
+points Zed at the same documentation server. Zed reads this file and the skills in `.agents/skills/` on its own. To use
+it:
+
+- Trust the project when Zed asks (Restricted Mode). Until you do, Zed ignores everything in `.zed/`.
+- Install the Biome extension (`zed: extensions`, search for Biome), or the formatter setting has nothing to run.
+- Zed cannot take safety rules from project files, so the hard rules above are all its agent has, and they are only
+  instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
+  It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus a few
+  destructive git commands. It does not stop the agent from changing those files through a terminal command, so keep
+  terminal approval on if you need that boundary:
+
+```json
+{
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "edit_file": {
+          "always_deny": [
+            { "pattern": "(^|/)(package-lock\\.json|pnpm-lock\\.yaml|bun\\.lockb)$|\\.lock$" },
+            { "pattern": "(^|/)\\.env(\\.(local|development|production|test))?(\\.local)?$" }
+          ]
+        },
+        "write_file": {
+          "always_deny": [
+            { "pattern": "(^|/)(package-lock\\.json|pnpm-lock\\.yaml|bun\\.lockb)$|\\.lock$" },
+            { "pattern": "(^|/)\\.env(\\.(local|development|production|test))?(\\.local)?$" }
+          ]
+        },
+        "terminal": {
+          "always_deny": [
+            { "pattern": "git\\s+reset\\s+--hard" },
+            { "pattern": "git\\s+clean\\s+-\\w*f" },
+            { "pattern": "git\\s+push\\s+.*--force" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
+others. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
+
+For other assistants (Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-or `npx blit agents add opencode` to add its files now.
+`npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

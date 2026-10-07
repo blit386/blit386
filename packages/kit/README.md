@@ -26,9 +26,9 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     to take the kit version. Use `--check` to report drift without writing (CI-safe; `blit doctor` runs it too), or
     `--force [path...]` to take the kit version back. Once sync has merged your edits into a kit file, `--check` treats
     that file as settled - it will not keep reporting it as drifted.
-  - `blit agents add <claude|cursor|opencode>` - set up the files for one AI assistant in a game that did not pick it at
-    the start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a
-    file you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
+  - `blit agents add <claude|cursor|opencode|zed>` - set up the files for one AI assistant in a game that did not pick
+    it at the start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never
+    overwrites a file you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
   - `blit clean` - replace `src/game.ts` (or `src/game.js`) with an empty skeleton: the same `init`/`update`/`render`
     shape, no drawing, no input handling, ready for your own code. No other project file is touched other than
     `.blit/manifest.json`'s tracked hash for it, kept in step so later drift checks do not flag the skeleton as
@@ -37,8 +37,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit help` - list the commands.
 - `content/` - everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and
-  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/OpenCode file generation lives in `src/adapters.ts` and
-  is exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` / `blit agents add` share one
+  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/OpenCode/Zed file generation lives in `src/adapters.ts`
+  and is exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` / `blit agents add` share one
   implementation; the paths it emits and their sync ownership classes are defined once in `src/ownership.ts`. The same
   manifest drives Cursor's `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit, which formats
   only the file that was edited, + block-dangerous-shell). Claude Code also gets a hook that blocks hand edits to lock
@@ -67,9 +67,15 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it - you do not have to
 name them. In Claude Code they live in `.claude/skills/<name>/SKILL.md`. In Cursor they live in
 `.cursor/skills/<name>/SKILL.md`, with the same name and description, so Cursor loads one on its own too, and you can
-still invoke one by name (`/add-sprite`). In OpenCode they live in `.agents/skills/<name>/SKILL.md`, the shared folder
-OpenCode reads. A game set up for several assistants ships each one's copy. Cursor also reads `.claude/skills/`, so the
-same skill can show up twice there; both copies are the same text.
+still invoke one by name (`/add-sprite`). A game set up for several assistants ships each one's copy. Cursor also reads
+`.claude/skills/`, so the same skill can show up twice there; both copies are the same text. OpenCode, Zed (and most
+other assistants) read one shared folder, `.agents/skills/<name>/SKILL.md`, which the kit writes once whenever such an
+assistant is set up.
+
+Zed gets `.zed/settings.json` (format on save, Biome as the JavaScript, TypeScript, and JSON formatter, and the
+`blit386-docs` MCP server), merged with any settings you already have. Zed's agent cannot take guardrails from project
+files, so the hard rules live in `AGENTS.md` as instructions, with a snippet to paste into your own Zed settings for
+real enforcement. Zed ignores `.zed/` until you trust the project, and the Biome formatter needs the Biome extension.
 
 | Skill | What it is for |
 | --- | --- |
@@ -117,6 +123,7 @@ npx blit migrate --write
 npx blit agents sync
 npx blit agents add cursor
 npx blit agents add opencode
+npx blit agents add zed
 npx blit clean
 npx blit clean --yes
 npx blit help

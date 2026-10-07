@@ -304,12 +304,12 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | OpenCode | Zed (planned) |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | OpenCode | Zed |
 | --- | --- | --- | --- | --- | --- |
 | Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` |
 | On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
 | Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (planned; not yet in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only (planned) |
+| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
 | Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.sh`) | `beforeShellExecution` (`failClosed`) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
 | Bootstrap | none | SessionStart hook | none | plugin `event` handler on `session.created` | none |
 | Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
@@ -317,13 +317,13 @@ Capability matrix (what each adapter emits from the same source):
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
-The planned adapters (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, and a surveyed long tail) are
-specified per agent under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also
-carries their planned capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply
-to all of them. Each implementation ticket adds its column here when the adapter ships - a column describes what the kit
-emits, not what an agent could do. Two findings change this section's model: most new agents read one shared
-`.agents/skills/` folder, so a skill there is not owned by a single adapter; and Zed, which this matrix once credited
-with `tool_permissions` guardrails, ignores that setting in project files.
+The planned adapters (Gemini CLI, Codex, Antigravity, GitHub Copilot, and a surveyed long tail) are specified per agent
+under [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
+capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of them. Each
+implementation ticket adds its column here when the adapter ships - a column describes what the kit emits, not what an
+agent could do. Two findings change this section's model: most new agents read one shared `.agents/skills/` folder, so a
+skill there is not owned by a single adapter; and Zed, which this matrix once credited with `tool_permissions`
+guardrails, ignores that setting in project files.
 
 The foundation those adapters build on (BT-564) is in place:
 
@@ -337,9 +337,9 @@ The foundation those adapters build on (BT-564) is in place:
   regenerating it, so pass 2 drops it from the manifest with the usual "no longer part of the kit" note. Two rules keep
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
-  Antigravity owns exact files beside the skills folder. OpenCode is the first agent to read the folder, so an OpenCode
-  game gets `.agents/skills/`; Claude Code does not read it and Cursor is unverified, so a game without OpenCode has no
-  `.agents/`.
+  Antigravity owns exact files beside the skills folder. OpenCode and Zed read the folder (`readsSharedSkills`), so a
+  game with either set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those
+  two gets no `.agents/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
@@ -376,8 +376,8 @@ Canonical intent (`kit/hooks.manifest.json`):
 ```
 
 - AGENTS.md (generic): a prose line under hard rules - "Never modify pnpm-lock.yaml, \*.lock, or .env files."
-  Instruction only; most generic readers cannot enforce. Not yet in `content/AGENTS.md` - BT-297 (Zed) adds it, since
-  that line is all Zed's agent gets.
+  Instruction only; most generic readers cannot enforce. It is in `content/AGENTS.md` as two hard rules (lock files,
+  `.env` files), since that is all Zed's agent gets.
 - Claude Code: a `.claude/settings.json` PreToolUse hook matching `Write|Edit` that blocks those paths, and blocks any
   request it cannot read (the guard core fails closed).
 - Cursor: planned as a `.cursor/hooks.json` entry with `failClosed: true`, but Cursor has no pre-edit hook event, so the
@@ -390,7 +390,7 @@ Canonical intent (`kit/hooks.manifest.json`):
   OpenCode has no trust gate, so the plugin is kept to those two jobs plus the bootstrap, and its header comment says
   so.
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
-  the user's own settings, so the generated game can only document a paste-in snippet.
+  the user's own settings, so the generated game documents a paste-in snippet in `AGENTS.md` (Zed adapter, BT-297).
 
 Same intent; five formats; differing enforcement power (AGENTS.md and Zed only instruct; Cursor blocks shell commands
 but not edits; Claude Code and OpenCode block both). Rules and skills follow the same pattern: a "rule" becomes an
@@ -478,9 +478,9 @@ As built in v0.1 (slightly richer than the original three-question sketch):
 1. `npm create blit386@latest my-game` (or no folder argument - the wizard asks for a name).
 2. "Which language do you want?" - JavaScript (recommended) or TypeScript. Both ship (the TS layer landed in phase 2);
    `--ts` skips this prompt.
-3. "Which AI coding assistants do you use?" - multi-select checkboxes for Claude Code (adds `CLAUDE.md` + `.claude/`)
-   Cursor (adds `.cursor/`), and/or OpenCode (adds `opencode.json` and `.opencode/`). Leave all unchecked for none.
-   "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
+3. "Which AI coding assistants do you use?" - multi-select checkboxes for Claude Code (adds `CLAUDE.md` + `.claude/`),
+   Cursor (adds `.cursor/`), OpenCode (adds `opencode.json` and `.opencode/`), and/or Zed (adds `.zed/settings.json`).
+   Leave all unchecked for none. "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
 4. "Add GitHub Actions CI (build + format check)?" - optional, default no.
 5. Scaffold, `git init` + first commit (skippable), install, print the next steps.
 

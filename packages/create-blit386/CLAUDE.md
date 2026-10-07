@@ -15,15 +15,15 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
-   (multi-select: none / Claude / Cursor / OpenCode, any combination), optional CI.
+   (multi-select: none, or any mix of Claude / Cursor / OpenCode / Zed), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
 4. The chosen AI assistants' config is generated from the kit IR in one call, `generateAgentFiles(kit, vars, agents)`
    from `@blit386/kit/adapters`, which dispatches through the kit's agent registry (`AGENT_ADAPTERS`, keyed by
    `AgentKind` - the wizard's labels and hints come from it too), renders `{{placeholders}}` as it goes, and adds the
-   shared `.agents/skills/` folder once when any chosen assistant reads it (OpenCode does; Claude Code and Cursor keep
-   private skill copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent
-   name. Choosing several assistants installs each one's tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from
-   `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
+   shared `.agents/skills/` folder once when any chosen assistant reads it (OpenCode and Zed do; Claude and Cursor keep
+   private copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent name.
+   Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
+   `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
    `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `protect-files.cjs` plus the
    `guard-core.cjs` it requires (the lock-file / `.env` guard, fail-closed), a SessionStart hook
    (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
@@ -34,7 +34,12 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    has no SessionStart-equivalent event, so it does not get the bootstrap hook, and no pre-edit event, so it does not
    get the lock-file / `.env` guard (`protect-files.cjs`). Each adapter also emits a documentation-MCP config
    registering the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets
-   `.cursor/mcp.json`. The two entries differ by one key on purpose - Claude Code skips a remote entry that has a `url`
+   `.cursor/mcp.json`. Zed gets `.zed/settings.json` (kit-owned, merged with the user's own settings by `add` and by
+   `sync`): `format_on_save`, Biome as the JavaScript, TypeScript, and JSON formatter, and
+   `context_servers.blit386-docs` - no `agent` key (project settings have none; `agent.tool_permissions` is
+   user-settings only), no hooks, and never a `.rules` / `.cursorrules` / `.windsurfrules` / `.clinerules` file (Zed
+   reads only the first match, which would hide `AGENTS.md`). Its persona and lock-file / `.env` rules are `AGENTS.md`
+   prose. The Claude and Cursor entries differ by one key on purpose - Claude Code skips a remote entry that has a `url`
    but no `type`, while for Cursor a `type` marks a local stdio server. Every path an adapter emits is built from
    `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/` /
    `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only a
