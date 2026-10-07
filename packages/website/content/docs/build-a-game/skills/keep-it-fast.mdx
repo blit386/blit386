@@ -76,7 +76,7 @@ The engine also gives you no-litter versions of the calls that would otherwise h
 argument - the object to write the answer into:
 
 - `Vector2i.lerpTo(a, b, t, out)` instead of `Vector2i.lerp(a, b, t)`
-- `Rect2i.intersectTo(other, out)` instead of making a new rectangle
+- `rect.intersectTo(other, out)` instead of making a new rectangle
 - `vec.set(x, y)` and `vec.copyFrom(other)` instead of `new Vector2i(...)`
 - `BT.pointerPosTo(out, slot?)` and `BT.pointerDeltaTo(out, slot?)` instead of `BT.pointerPos(slot?)` /
   `BT.pointerDelta(slot?)` (engine 1.7.0+) - the destination vector comes first, and is returned for chaining
@@ -153,7 +153,7 @@ rule 3, not a bigger budget.
 ## Key calls
 
 - `BT.assignTag(label)` (method) - mark a moment on the overlay timing chart. Needs `isOverlayTimingChartEnabled`.
-- `Vector2i.lerpTo(a, b, t, out)` / `Rect2i.intersectTo(other, out)` (methods) - the no-litter versions.
+- `Vector2i.lerpTo(a, b, t, out)` / `rect.intersectTo(other, out)` (methods) - the no-litter versions.
 - `rect.set(x, y, w, h)` / `vec.set(x, y)` / `vec.copyFrom(other)` (methods) - reuse an object instead of making one.
 - `BT.pointerPosTo(out, slot?)` / `BT.pointerDeltaTo(out, slot?)` (methods, engine 1.7.0+) - the no-litter pointer
   reads; see the `read-pointer` skill.
