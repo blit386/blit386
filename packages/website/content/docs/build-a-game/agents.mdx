@@ -144,7 +144,9 @@ it:
 - Install the Biome extension (`zed: extensions`, search for Biome), or the formatter setting has nothing to run.
 - Zed cannot take safety rules from project files, so the hard rules above are all its agent has, and they are only
   instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
-  It denies edits and writes to lock files and `.env` files (but not `.env.example`) and a few destructive git commands:
+  It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus a few
+  destructive git commands. It does not stop the agent from changing those files through a terminal command, so keep
+  terminal approval on if you need that boundary:
 
 ```json
 {

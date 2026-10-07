@@ -334,8 +334,9 @@ The foundation those adapters build on (BT-564) is in place:
   regenerating it, so pass 2 drops it from the manifest with the usual "no longer part of the kit" note. Two rules keep
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
-  Antigravity owns exact files beside the skills folder. No shipped agent reads the folder yet - Claude Code does not,
-  and Cursor is unverified - so no generated game gets `.agents/` until the first such adapter flips its flag.
+  Antigravity owns exact files beside the skills folder. Zed reads the folder (`readsSharedSkills`), so a game with Zed
+  set up gets it once; Claude Code does not read it and Cursor is unverified, so a game with only those two gets no
+  `.agents/`.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each

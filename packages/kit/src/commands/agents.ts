@@ -793,6 +793,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     // their entries. Only a real conflict (same server key, different content) or an existing file
     // that fails to parse as JSON falls through to the collision path below.
     const mergedPaths = new Set<string>();
+
+    // The kit's own content for each merged file: it, not the merged text, is the ancestor a later `sync` merges from.
+    // With the merged text as the base, an untouched file would look like the kit's pristine copy and `sync` would
+    // replace it with the generated one, dropping the user's own entries.
+    const kitContentByPath = new Map<string, string>();
     const preparedGenerated = generated.map((file) => {
         if (
             !MERGEABLE_JSON_PATHS.includes(file.path) ||
@@ -814,6 +819,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         mergedPaths.add(file.path);
+        kitContentByPath.set(file.path, file.content);
 
         return { ...file, content: mergedContent };
     });
@@ -869,7 +875,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
         writeRel(root, relPath, file.content);
         if (isKitManaged(fileClass)) {
-            writeBase(root, relPath, file.content, out);
+            writeBase(root, relPath, kitContentByPath.get(relPath) ?? file.content, out);
         }
         entryByPath.set(relPath, {
             path: relPath,

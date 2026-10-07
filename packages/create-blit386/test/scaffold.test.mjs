@@ -1547,6 +1547,8 @@ test('blit agents add claude merges a pre-existing .mcp.json', () => {
 
         const check = runBlit(project, ['agents', 'sync', '--check']);
         assert.equal(check.exitCode, 0, 'a clean-merged .mcp.json must not be reported as drift');
+        assert.equal(runBlit(project, ['agents', 'sync']).exitCode, 0, 'full sync should succeed');
+        assert.ok(JSON.parse(readFileSync(mcpPath, 'utf8')).mcpServers.mine, 'full sync must keep the user server');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
@@ -1624,6 +1626,8 @@ test('blit agents add zed sets up a no-agent game and merges the user .zed/setti
         assert.ok(merged.context_servers[MCP_SERVER_NAME]);
 
         assert.equal(runBlit(project, ['agents', 'sync', '--check']).exitCode, 0, 'the merge is not drift');
+        assert.equal(runBlit(project, ['agents', 'sync']).exitCode, 0, 'full sync should succeed');
+        assert.equal(JSON.parse(readFileSync(settingsPath, 'utf8')).theme, 'One Dark', 'full sync keeps the user key');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
