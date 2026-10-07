@@ -1,17 +1,14 @@
 /**
  * The guard core (content/hooks/guard-core.cjs): the pure path and shell classifiers every agent's hook
  * entry shares, and the fail-closed wrapper around them.
- *
- * The shell table runs through both `isDangerousCommand` and shell-safety.sh (which Claude Code and Cursor
- * still run), so the Node port and the script cannot disagree on a case without failing here.
  */
 
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { SHELL_CASES } from './shell-cases.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const hooksDir = join(here, '..', 'content', 'hooks');
@@ -19,77 +16,10 @@ const { failClosed, isDangerousCommand, isProtectedPath, parsePayload } = create
     join(hooksDir, 'guard-core.cjs'),
 );
 
-/** @type {[command: string, expected: 'deny' | 'ask' | 'allow'][]} */
-const SHELL_CASES = [
-    ['git status', 'allow'],
-    ['ls -la && npm run build', 'allow'],
-    ['', 'allow'],
-    ['git reset --hard', 'deny'],
-    ['git reset --hard HEAD~1', 'deny'],
-    ["git 'reset' --hard", 'deny'],
-    ['git \\reset --hard', 'deny'],
-    ['git -C game reset --hard', 'deny'],
-    ['git --no-pager reset --hard', 'deny'],
-    ['git reset --soft HEAD~1', 'allow'],
-    ['git checkout -- src/game.js', 'deny'],
-    ['git checkout "--" .', 'deny'],
-    ['git checkout -b feature', 'allow'],
-    ['git restore src/game.js', 'deny'],
-    ['git restore .', 'deny'],
-    ['git restore --staged src/game.js', 'allow'],
-    ['git restore -S src/game.js', 'allow'],
-    ['git restore --staged --worktree src/game.js', 'deny'],
-    ['git restore -S -W src/game.js', 'deny'],
-    ['git clean', 'deny'],
-    ['git clean -fd', 'deny'],
-    ['git clean -n', 'allow'],
-    ['git clean --dry-run', 'allow'],
-    ['git clean -nfd', 'deny'],
-    ['git -c clean.requireForce=false clean -d', 'deny'],
-    ['git clean -n && rm -f build.log', 'allow'],
-    ['git push', 'allow'],
-    ['git push origin foo-feature', 'allow'],
-    ['git push --force', 'ask'],
-    ['git push -f origin main', 'ask'],
-    ['git push --force-with-lease=main origin main', 'ask'],
-    ['git push origin +main', 'ask'],
-    ['git push --force>out.log', 'ask'],
-    ['git branch -D old', 'ask'],
-    ['git branch -Dq old', 'ask'],
-    ['git branch --delete --force old', 'ask'],
-    ['git branch -d old', 'allow'],
-    ['git branch --delete old', 'allow'],
-    ['git stash drop', 'ask'],
-    ['git stash clear', 'ask'],
-    ['git stash pop', 'allow'],
-    ['echo hi\ngit reset --hard', 'deny'],
-    ['git clean -fd\ngit clean -n', 'deny'],
-    ['git status\ngit push --force', 'ask'],
-];
-
-/** What shell-safety.sh answers for a Claude Code PreToolUse Bash payload. */
-function scriptVerdict(command) {
-    const payload = JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } });
-    const result = spawnSync('sh', [join(hooksDir, 'shell-safety.sh')], { input: payload, encoding: 'utf8' });
-
-    if (result.status === 2) {
-        return 'deny';
-    }
-
-    assert.equal(result.status, 0, `shell-safety.sh failed on ${JSON.stringify(command)}: ${result.stderr}`);
-
-    return result.stdout.includes('"permissionDecision": "ask"') ? 'ask' : 'allow';
-}
-
 describe('isDangerousCommand', () => {
-    it('classifies every case the same way shell-safety.sh does', () => {
+    it('classifies every case in the policy table', () => {
         for (const [command, expected] of SHELL_CASES) {
-            assert.equal(
-                isDangerousCommand(command)?.decision ?? 'allow',
-                expected,
-                `core: ${JSON.stringify(command)}`,
-            );
-            assert.equal(scriptVerdict(command), expected, `shell-safety.sh: ${JSON.stringify(command)}`);
+            assert.equal(isDangerousCommand(command)?.decision ?? 'allow', expected, JSON.stringify(command));
         }
     });
 
