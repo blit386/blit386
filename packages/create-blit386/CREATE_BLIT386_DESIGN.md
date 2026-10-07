@@ -304,16 +304,16 @@ stays - `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
-| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | Codex | Gemini CLI | OpenCode | Zed |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` (32 KiB cap) | `.gemini/settings.json` `context.fileName: ["AGENTS.md", "GEMINI.md"]` (no `GEMINI.md` emitted) | reads `AGENTS.md` | reads `AGENTS.md` |
-| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
-| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | `.codex/hooks.json` (PreToolUse on `Bash` and `apply_patch`, PostToolUse on `apply_patch`, SessionStart `startup`; edits arrive as raw `apply_patch` text, parsed by the guard core's `patchPaths`; every guard command fails closed, exit 2 with a message) | `.gemini/settings.json` hooks (BeforeTool / AfterTool / SessionStart; timeouts in ms; every entry exits 2 to block and fails closed) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
-| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | PreToolUse `apply_patch` runs `codex-guard.cjs patch` (hard deny on any protected `Add` / `Update` / `Delete` / `Move to` path; `codex-guard.cjs shell` also checks an `apply_patch` heredoc) | BeforeTool `write_file\|replace` runs `protect-files.cjs` (hard deny) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
-| Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.cjs`) | `beforeShellExecution` (`failClosed`) | `.agents/hooks.json` PreToolUse on `run_command` (`antigravity-guard.cjs shell`; deny, or ask for a force push) | PreToolUse `Bash` runs `codex-guard.cjs shell` (hard deny; the confirm tier denies too, since Codex rejects an ask) | BeforeTool `run_shell_command` runs `shell-guard.cjs` (hard deny; the confirm tier denies too, since Gemini has no ask answer) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
-| Bootstrap | none | SessionStart hook | none | `.agents/hooks.json` PreInvocation (`antigravity-bootstrap.cjs`, once per conversation through a marker file; Antigravity has no session-start event) | SessionStart `startup` hook (`session-start.sh`; stdout reaches the model) | SessionStart `startup` hook (`session-start.sh`) | plugin `event` handler on `session.created` | none |
-| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `.codex/config.toml` `[mcp_servers.blit386-docs]` `url` (one table; `add` appends it to an existing file) | `.gemini/settings.json` `mcpServers.blit386-docs.httpUrl` (`url` would mean SSE) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
-| Trust gate | n/a | yes | yes | yes | yes, twice - Codex ignores `.codex/` in an untrusted project, and runs each project hook only after its approval in `/hooks` | yes - Gemini CLI ignores `.gemini/settings.json` in an untrusted folder | **none** - project plugins run on open | yes |
+| Capability | AGENTS.md (generic) | Claude Code | Cursor | Antigravity | Codex | GitHub Copilot | Gemini CLI | OpenCode | Zed |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Persona / hard rules | the file itself | `CLAUDE.md` (symlink or generated copy) + `.claude/rules/*.md` | `.cursor/rules/*.mdc` (globs, `alwaysApply`) | reads `AGENTS.md` | reads `AGENTS.md` (32 KiB cap) | reads `AGENTS.md` (CLI, cloud agent, VS Code) | `.gemini/settings.json` `context.fileName: ["AGENTS.md", "GEMINI.md"]` (no `GEMINI.md` emitted) | reads `AGENTS.md` | reads `AGENTS.md` |
+| On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) | `.agents/skills/<name>/SKILL.md` (shared) |
+| Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) | `.agents/hooks.json` (PreToolUse on `run_command` and the three write tools, PostToolUse on the write tools, PreInvocation bootstrap; JSON `decision` replies) | `.codex/hooks.json` (PreToolUse on `Bash` and `apply_patch`, PostToolUse on `apply_patch`, SessionStart `startup`; edits arrive as raw `apply_patch` text, parsed by the guard core's `patchPaths`; every guard command fails closed, exit 2 with a message) | `.github/hooks/blit.json` (version 1; preToolUse on `bash\|powershell` and `edit\|create`, postToolUse on `edit\|create`, sessionStart; `cwd: "."`; one Node `copilot-hook.cjs` (modes `pre-tool` / `post-tool` / `session-start`) for both the `{toolName, toolArgs}` and the VS Code Local harness `{tool_name, tool_input}` payloads; deny is exit 2, which Copilot never overrides; a timeout fails open) | `.gemini/settings.json` hooks (BeforeTool / AfterTool / SessionStart; timeouts in ms; every entry exits 2 to block and fails closed) | `opencode.json` `formatter` (Biome for code, Prettier for Markdown and YAML, each pinned to its extensions; formatters are off by default), `.opencode/plugins/kit-guard.ts` (`tool.execute.before` throws, over the guard core) | none from project files (`tool_permissions` is user-settings only); format-on-edit is native via `format_on_save` |
+| Lockfile / .env block | prose warning (a hard rule in `content/AGENTS.md`) | settings.json PreToolUse (`protect-files.cjs` over the fail-closed guard core) | not emitted (Cursor has no pre-edit hook event) | `.agents/hooks.json` PreToolUse (`antigravity-guard.cjs files` over the fail-closed guard core) | PreToolUse `apply_patch` runs `codex-guard.cjs patch` (hard deny on any protected `Add` / `Update` / `Delete` / `Move to` path; `codex-guard.cjs shell` also checks an `apply_patch` heredoc) | preToolUse `edit\|create` runs `copilot-hook.cjs pre-tool` (hard deny; also VS Code Local edit tools and `apply_patch` headers) | BeforeTool `write_file\|replace` runs `protect-files.cjs` (hard deny) | `opencode.json` `permission.edit` / `permission.read` (last match wins; `.env.example` allowed) plus the plugin | `AGENTS.md` prose only, plus a paste-in user-settings `tool_permissions` snippet |
+| Destructive git block | prose warning | settings.json PreToolUse (`shell-safety.cjs`) | `beforeShellExecution` (`failClosed`) | `.agents/hooks.json` PreToolUse on `run_command` (`antigravity-guard.cjs shell`; deny, or ask for a force push) | PreToolUse `Bash` runs `codex-guard.cjs shell` (hard deny; the confirm tier denies too, since Codex rejects an ask) | preToolUse `bash\|powershell` runs `copilot-hook.cjs pre-tool` (deny, or ask for the confirm tier; the cloud agent turns ask into deny) | BeforeTool `run_shell_command` runs `shell-guard.cjs` (hard deny; the confirm tier denies too, since Gemini has no ask answer) | `permission.bash` deny/ask patterns plus the plugin (deny only; a plugin cannot ask) | none |
+| Bootstrap | none | SessionStart hook | none | `.agents/hooks.json` PreInvocation (`antigravity-bootstrap.cjs`, once per conversation through a marker file; Antigravity has no session-start event) | SessionStart `startup` hook (`session-start.sh`; stdout reaches the model) | sessionStart hook (`copilot-hook.cjs session-start`, Node, so Windows too; report as `additionalContext`) plus `.github/workflows/copilot-setup-steps.yml` for the cloud agent | SessionStart `startup` hook (`session-start.sh`) | plugin `event` handler on `session.created` | none |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | `.agents/mcp_config.json` (`serverUrl` only; `url` and `httpUrl` are rejected) | `.codex/config.toml` `[mcp_servers.blit386-docs]` `url` (one table; `add` appends it to an existing file) | the shared root `.mcp.json`, which the Copilot CLI and VS Code both read (no `.vscode/mcp.json`: VS Code would register the server twice); the cloud agent reads MCP from repository settings only | `.gemini/settings.json` `mcpServers.blit386-docs.httpUrl` (`url` would mean SSE) | `opencode.json` `mcp` (`type: remote`) | `.zed/settings.json` `context_servers` |
+| Trust gate | n/a | yes | yes | yes | yes, twice - Codex ignores `.codex/` in an untrusted project, and runs each project hook only after its approval in `/hooks` | yes - hooks and MCP stay off until the folder is trusted in VS Code or the CLI | yes - Gemini CLI ignores `.gemini/settings.json` in an untrusted folder | **none** - project plugins run on open | yes |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
@@ -325,8 +325,13 @@ trusting the project and approving each hook once in `/hooks` (again after a kit
 teaches both. Codex runs a hook in the session directory with no project variable and lets a call through on any
 failure, so each `.codex/hooks.json` command walks up to the project and turns every failure into exit 2 with a message.
 Not emitted for Codex: `.codex/rules/` (experimental prefix rules, and one rules file that fails to parse disables every
-user and project rule) and `.codex/environments/environment.toml` (no documented schema). The planned adapters (GitHub
-Copilot and a surveyed long tail) are specified per agent under
+user and project rule) and `.codex/environments/environment.toml` (no documented schema). GitHub Copilot (BT-565) emits
+`.github/hooks/blit.json` with its scripts beside it, because `.github/hooks/*.json` is the one hooks location every
+Copilot surface loads (the CLI also reads `.claude/settings.json`, so a game set up for both runs each guard twice
+there - harmless, since deny and format are idempotent). Not emitted for Copilot: `.github/prompts/` (prompt files are
+deprecated and the VS Code Agent Host does not load them) and `.vscode/settings.json` `chat.tools.*.autoApprove` rules
+(they only prompt, and the Agent Host ignores the terminal one in workspace scope, microsoft/vscode#336715). The
+remaining planned adapters (a surveyed long tail) are specified per agent under
 [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support), which also carries their planned
 capability matrix; [BT-564](https://linear.app/vancura/issue/BT-564) holds the findings that apply to all of them. Each
 implementation ticket adds its column here when the adapter ships - a column describes what the kit emits, not what an
@@ -347,9 +352,14 @@ The foundation those adapters build on (BT-564) is in place:
   this sound. First, only an agent's private paths count as evidence that it is set up (`hasAgentFiles`): a tracked
   shared skill says some reader exists, not which one. Second, no agent may claim the bare `.agents/` prefix, because
   Antigravity owns exact files beside the skills folder (`.agents/hooks.json`, `.agents/hooks/`,
-  `.agents/mcp_config.json`). Antigravity, Codex (BT-567), Gemini CLI (BT-298), OpenCode, and Zed read the folder
-  (`readsSharedSkills`), so a game with any of them set up gets it once; Claude Code does not read it and Cursor is
-  unverified, so a game with only those two gets no `.agents/skills/`.
+  `.agents/mcp_config.json`). Antigravity, Codex (BT-567), GitHub Copilot (BT-565), Gemini CLI (BT-298), OpenCode, and
+  Zed read the folder (`readsSharedSkills`), so a game with any of them set up gets it once; Claude Code does not read
+  it and Cursor is unverified, so a game with only those two gets no `.agents/skills/`. The same model covers an exact
+  file (BT-565): the root `.mcp.json` is read by Claude Code, the Copilot CLI, and VS Code in one shape, so both list it
+  in `readsSharedFiles` rather than as a private path. `generateAgentFiles` emits it once, `hasAgentFiles` never counts
+  it (a Copilot-only game tracking it must not pull Claude in on sync), and `blit agents add` leaves it alone once
+  another reader tracks it. A shared path has to be generated byte-identically by every reader, which
+  `packages/kit/test/ownership.test.mjs` checks.
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
@@ -405,15 +415,20 @@ Canonical intent (`kit/hooks.manifest.json`):
   coarser restatement of the guard core, pinned together by one case table in `packages/kit/test/opencode.test.mjs`.
   OpenCode has no trust gate, so the plugin is kept to those two jobs plus the bootstrap, and its header comment says
   so.
+- GitHub Copilot: a `.github/hooks/blit.json` preToolUse entry matching `edit|create` that runs
+  `copilot-hook.cjs pre-tool`. The same script reads VS Code's older Local harness payload (`tool_name` / `tool_input`,
+  VS Code's own edit tool names, `apply_patch` headers), which may ignore the matcher, so it picks the tools it guards
+  itself and allows the rest. A deny is exit 2 plus the decision in both dialects; Copilot denies on exit 2 and on any
+  crash, and fails open only on a timeout.
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
   the user's own settings, so the generated game documents a paste-in snippet in `AGENTS.md` (Zed adapter, BT-297).
 
-Same intent; six formats; differing enforcement power (AGENTS.md and Zed only instruct; Cursor blocks shell commands but
-not edits; Claude Code, Antigravity, and OpenCode block both). Rules and skills follow the same pattern: a "rule"
-becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a glob-scoped `.cursor/rules/*.mdc`; a "skill" becomes a
-`.claude/skills/<name>/SKILL.md`, a `.cursor/skills/<name>/SKILL.md`, and a "read docs/<topic>.md" pointer for agents
-without a skill mechanism. Adding a new agent = writing one adapter that maps these intent types to that agent's files
-and capabilities.
+Same intent; seven formats; differing enforcement power (AGENTS.md and Zed only instruct; Cursor blocks shell commands
+but not edits; Claude Code, Antigravity, GitHub Copilot, and OpenCode block both). Rules and skills follow the same
+pattern: a "rule" becomes an AGENTS.md bullet, a `.claude/rules/*.md`, and a glob-scoped `.cursor/rules/*.mdc`; a
+"skill" becomes a `.claude/skills/<name>/SKILL.md`, a `.cursor/skills/<name>/SKILL.md`, and a "read docs/<topic>.md"
+pointer for agents without a skill mechanism. Adding a new agent = writing one adapter that maps these intent types to
+that agent's files and capabilities.
 
 ### 4.4 Progressive disclosure (the "good student" model)
 

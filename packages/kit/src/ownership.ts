@@ -41,11 +41,11 @@ export const CLAUDE_SETTINGS_JSON = `${CLAUDE_DIR}settings.json`;
 export const CLAUDE_LAUNCH_JSON = `${CLAUDE_DIR}launch.json`;
 
 /**
- * Claude Code's MCP server configuration. Project root, not under `.claude/` - that is Claude Code's
- * own convention, so this is the one Claude path the `CLAUDE_DIR` prefix does not cover and
- * `AGENT_PATHS` has to name outright.
+ * The project-root MCP server configuration. Claude Code, the GitHub Copilot CLI, and VS Code (Copilot's chat, both
+ * harnesses) all read it in the same `mcpServers` shape, so it is a shared path (`AgentSpec.readsSharedFiles`), emitted
+ * once while Claude Code or Copilot is set up.
  */
-export const CLAUDE_MCP_JSON = '.mcp.json';
+export const ROOT_MCP_JSON = '.mcp.json';
 
 /** Root of Cursor's generated configuration. */
 export const CURSOR_DIR = '.cursor/';
@@ -106,6 +106,16 @@ export const CODEX_HOOKS_DIR = `${CODEX_DIR}hooks/`;
 export const CODEX_HOOKS_JSON = `${CODEX_DIR}hooks.json`;
 export const CODEX_CONFIG_TOML = `${CODEX_DIR}config.toml`;
 
+/**
+ * GitHub Copilot's generated configuration. `.github/hooks/` is where the Copilot CLI, the cloud agent, and VS Code load
+ * hook files from - only `*.json` is loaded, so the entry scripts sit beside `blit.json`. Only these paths are the kit's:
+ * a user's own `.github/workflows/` stay user-owned. No `.vscode/mcp.json`: VS Code reads the root `.mcp.json` too, so a
+ * second copy would register the docs server twice.
+ */
+export const COPILOT_HOOKS_DIR = '.github/hooks/';
+export const COPILOT_HOOKS_JSON = `${COPILOT_HOOKS_DIR}blit.json`;
+export const COPILOT_SETUP_STEPS_YML = '.github/workflows/copilot-setup-steps.yml';
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -134,7 +144,7 @@ const SHARED_FILES: readonly string[] = [AGENTS_MD, CLAUDE_MD];
 /** Exact paths the kit owns outright. */
 const KIT_OWNED_FILES: readonly string[] = [
     CLAUDE_SETTINGS_JSON,
-    CLAUDE_MCP_JSON,
+    ROOT_MCP_JSON,
     CURSOR_HOOKS_JSON,
     CURSOR_MCP_JSON,
     GEMINI_SETTINGS_JSON,
@@ -145,6 +155,7 @@ const KIT_OWNED_FILES: readonly string[] = [
     ZED_SETTINGS_JSON,
     CODEX_HOOKS_JSON,
     CODEX_CONFIG_TOML,
+    COPILOT_SETUP_STEPS_YML,
 ];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
@@ -160,6 +171,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     ANTIGRAVITY_HOOKS_DIR,
     OPENCODE_HOOKS_DIR,
     CODEX_HOOKS_DIR,
+    COPILOT_HOOKS_DIR,
     SHARED_SKILLS_DIR,
 ];
 
@@ -206,7 +218,7 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'codex' | 'gemini' | 'opencode' | 'zed';
+export type AgentKind = 'claude' | 'cursor' | 'antigravity' | 'codex' | 'copilot' | 'gemini' | 'opencode' | 'zed';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
 export const AGENT_KINDS: readonly AgentKind[] = [
@@ -214,6 +226,7 @@ export const AGENT_KINDS: readonly AgentKind[] = [
     'cursor',
     'antigravity',
     'codex',
+    'copilot',
     'gemini',
     'opencode',
     'zed',
@@ -233,24 +246,31 @@ export interface AgentSpec {
     readonly mcpConfig: string;
     /** Does the agent read `SHARED_SKILLS_DIR`? Antigravity does; Claude Code does not and Cursor is unverified, so those two keep private copies. */
     readonly readsSharedSkills: boolean;
+    /**
+     * Exact root paths this agent reads that another agent's adapter emits too (`ROOT_MCP_JSON`: Claude Code and
+     * Copilot). Like a shared skill, such a path belongs to every agent that lists it and never counts as evidence
+     * that any one of them is set up (`hasAgentFiles`).
+     */
+    readonly readsSharedFiles: readonly string[];
 }
 
 /**
  * Every assistant's registry data.
  *
  * `files` and `dirs` are the agent's private paths: every path an adapter emits must match them (or be a shared path
- * the agent reads), or a sync skips it - `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
- * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json` is already covered
- * by the `CURSOR_DIR` prefix; OpenCode's `opencode.json` is a root file too.
+ * the agent reads), or a sync skips it - `test/ownership.test.mjs` pins that invariant. Claude and Copilot share
+ * `ROOT_MCP_JSON` through `readsSharedFiles`; Cursor's `mcp.json` is already covered by the `CURSOR_DIR` prefix;
+ * OpenCode's `opencode.json` is a root file of its own.
  */
 export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
     claude: {
         label: 'Claude Code',
         setupHint: `adds ${CLAUDE_MD}`,
-        files: [CLAUDE_MD, CLAUDE_MCP_JSON],
+        files: [CLAUDE_MD],
         dirs: [CLAUDE_DIR],
-        mcpConfig: CLAUDE_MCP_JSON,
+        mcpConfig: ROOT_MCP_JSON,
         readsSharedSkills: false,
+        readsSharedFiles: [ROOT_MCP_JSON],
     },
     cursor: {
         label: 'Cursor',
@@ -259,6 +279,7 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [CURSOR_DIR],
         mcpConfig: CURSOR_MCP_JSON,
         readsSharedSkills: false,
+        readsSharedFiles: [],
     },
     antigravity: {
         label: 'Antigravity',
@@ -267,6 +288,7 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [ANTIGRAVITY_HOOKS_DIR],
         mcpConfig: ANTIGRAVITY_MCP_JSON,
         readsSharedSkills: true,
+        readsSharedFiles: [],
     },
     codex: {
         label: 'Codex',
@@ -275,6 +297,16 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [CODEX_HOOKS_DIR],
         mcpConfig: CODEX_CONFIG_TOML,
         readsSharedSkills: true,
+        readsSharedFiles: [],
+    },
+    copilot: {
+        label: 'GitHub Copilot',
+        setupHint: `adds ${COPILOT_HOOKS_JSON}`,
+        files: [COPILOT_SETUP_STEPS_YML],
+        dirs: [COPILOT_HOOKS_DIR],
+        mcpConfig: ROOT_MCP_JSON,
+        readsSharedSkills: true,
+        readsSharedFiles: [ROOT_MCP_JSON],
     },
     gemini: {
         label: 'Gemini CLI',
@@ -283,6 +315,7 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [GEMINI_DIR],
         mcpConfig: GEMINI_SETTINGS_JSON,
         readsSharedSkills: true,
+        readsSharedFiles: [],
     },
     opencode: {
         label: 'OpenCode',
@@ -291,6 +324,7 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [OPENCODE_DIR],
         mcpConfig: OPENCODE_JSON,
         readsSharedSkills: true,
+        readsSharedFiles: [],
     },
     zed: {
         label: 'Zed',
@@ -299,6 +333,7 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [ZED_DIR],
         mcpConfig: ZED_SETTINGS_JSON,
         readsSharedSkills: true,
+        readsSharedFiles: [],
     },
 };
 
@@ -328,6 +363,7 @@ export function isAgentPath(relPath: string, agent: AgentKind): boolean {
 
     return (
         isPrivateAgentPath(normalized, agent) ||
+        AGENT_SPECS[agent].readsSharedFiles.includes(normalized) ||
         (AGENT_SPECS[agent].readsSharedSkills && normalized.startsWith(SHARED_SKILLS_DIR))
     );
 }

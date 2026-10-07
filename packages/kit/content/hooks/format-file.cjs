@@ -4,6 +4,9 @@
 // tool_input.file_path, Cursor: file_path, Antigravity: toolCall.args.TargetFile). Codex sends the
 // raw apply_patch text in tool_input.command instead, so its files are parsed out of the patch and
 // resolved against the payload's cwd (the session's working directory, not always the project root).
+// GitHub Copilot's entry (copilot-hook.cjs) requires this file instead of running it, because only it knows
+// which Copilot tools edit files; `formatFile` is exported for that, and the stdin handling below runs only
+// when this file is the script node was started with.
 // Biome formats code and JSON, Prettier formats Markdown and YAML - the same split as the
 // project's `format` script. Never fails the edit: a formatter problem leaves the file as written.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
@@ -55,24 +58,33 @@ function formatFile(root, file) {
     }
 }
 
-// .claude/hooks/, .cursor/hooks/, .agents/hooks/ or .codex/hooks/ - the project root is two levels up.
+// .claude/hooks/, .cursor/hooks/, .agents/hooks/, .codex/hooks/ or .github/hooks/ - the project root is two levels up.
 const root = realpathSync(path.resolve(__dirname, '..', '..'));
 
-try {
-    const payload = JSON.parse(readFileSync(0, 'utf8'));
-    const file = payload?.tool_input?.file_path ?? payload?.file_path ?? payload?.toolCall?.args?.TargetFile;
+/** Read the edited file from the hook payload on stdin and format it. Never throws. */
+function formatFromPayload() {
+    try {
+        const payload = JSON.parse(readFileSync(0, 'utf8'));
+        const file = payload?.tool_input?.file_path ?? payload?.file_path ?? payload?.toolCall?.args?.TargetFile;
 
-    if (typeof file === 'string') {
-        formatFile(root, file);
-    } else if (typeof payload?.tool_input?.command === 'string') {
-        // Codex apply_patch: every Codex payload carries `cwd`, and `path.resolve` throws without it (nothing is
-        // formatted). A deleted file, or the old name of a moved one, no longer exists and is skipped.
-        const { patchPaths } = require('./guard-core.cjs');
+        if (typeof file === 'string') {
+            formatFile(root, file);
+        } else if (typeof payload?.tool_input?.command === 'string') {
+            // Codex apply_patch: every Codex payload carries `cwd`, and `path.resolve` throws without it (nothing is
+            // formatted). A deleted file, or the old name of a moved one, no longer exists and is skipped.
+            const { patchPaths } = require('./guard-core.cjs');
 
-        for (const patched of patchPaths(payload.tool_input.command)) {
-            formatFile(root, path.resolve(payload.cwd, patched));
+            for (const patched of patchPaths(payload.tool_input.command)) {
+                formatFile(root, path.resolve(payload.cwd, patched));
+            }
         }
+    } catch {
+        // No readable payload, or no usable file path in it - nothing to format.
     }
-} catch {
-    // No readable payload, or no usable file path in it - nothing to format.
 }
+
+if (require.main === module) {
+    formatFromPayload();
+}
+
+module.exports = { formatFile: (file) => formatFile(root, file) };

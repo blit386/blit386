@@ -11,10 +11,12 @@
 - `templates/js/` - JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
 - `templates/ts/` - TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic,
   typed.
-- `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). Cursor and Claude
-  configs are generated from the kit IR (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static
-  templates. That includes the documentation-MCP configs (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) -
-  do not add a static template for them.
+- `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). Every AI assistant's
+  config is generated from the kit IR (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static
+  templates. That includes the documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's
+  `.github/workflows/copilot-setup-steps.yml` - do not add a static template for them. That workflow copies the action
+  pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` / `ACTIONS_SETUP_NODE` in the kit's
+  `src/adapters.ts`); bump both together - `test/scaffold.test.mjs` fails when they drift.
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
 - Rename `gitignore` → `.gitignore`, `editorconfig` → `.editorconfig`, `gitattributes` → `.gitattributes`,
   `node-version` → `.node-version`, and `prettierignore` → `.prettierignore`, and strip `.tmpl` extensions, during the
