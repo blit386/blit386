@@ -14,6 +14,7 @@
 // Claude Code and Cursor still run shell-safety.sh itself until BT-576 moves them onto this
 // module; until then test/guard-core.test.mjs runs one case table through both implementations,
 // so a policy change made in only one of them fails the kit tests. Keep the two in step.
+// Antigravity's entry (antigravity-guard.cjs) already runs the Node port, so it needs no such sync.
 
 const path = require('node:path');
 

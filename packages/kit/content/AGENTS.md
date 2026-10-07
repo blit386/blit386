@@ -72,10 +72,11 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code or Cursor, it is already configured (`.mcp.json` for
-  Claude Code, `.cursor/mcp.json` for Cursor) and gives your assistant three tools: `search_docs` (full-text search -
-  page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs` returned), and
-  `get_docs_summary` (the whole site's contents in one compact block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, or Antigravity, it is already configured
+  (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor, `.agents/mcp_config.json` for Antigravity) and gives your
+  assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's
+  full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's contents in one compact
+  block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
@@ -125,10 +126,15 @@ project folder your assistant can search the live docs without a further prompt.
 If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
 it at the same documentation server.
 
+If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses
+edits to lock files and `.env`, and destructive git commands) and formats each file after an edit, and
+`.agents/mcp_config.json` points it at the documentation server. Antigravity ignores all of that until you trust the
+workspace, so choose "trust" when it asks the first time you open the project.
+
 For other assistants (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
 
-Did not set up an assistant when you started the game? Run `npx blit agents add claude` or `npx blit agents add cursor`
-to add its files now.
+Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
+or `npx blit agents add antigravity` to add its files now.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 

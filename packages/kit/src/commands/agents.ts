@@ -46,6 +46,7 @@ import { ui } from '../messages';
 import {
     AGENT_KINDS,
     type AgentKind,
+    ANTIGRAVITY_MCP_JSON,
     CLAUDE_MCP_JSON,
     classifyFile,
     CURSOR_MCP_JSON,
@@ -54,7 +55,7 @@ import {
 } from '../ownership';
 
 /** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
-const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON];
+const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON, ANTIGRAVITY_MCP_JSON];
 
 interface McpConfigLike {
     mcpServers?: Record<string, unknown>;

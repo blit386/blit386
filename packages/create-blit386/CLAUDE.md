@@ -15,15 +15,15 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
-   (multi-select: none / Claude / Cursor / both), optional CI.
+   (multi-select: none / Claude / Cursor / Antigravity, any combination), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
 4. The chosen AI assistants' config is generated from the kit IR in one call, `generateAgentFiles(kit, vars, agents)`
    from `@blit386/kit/adapters`, which dispatches through the kit's agent registry (`AGENT_ADAPTERS`, keyed by
    `AgentKind` - the wizard's labels and hints come from it too), renders `{{placeholders}}` as it goes, and adds the
-   shared `.agents/skills/` folder once when any chosen assistant reads it (none of the shipped ones does yet, so no
-   game gets it today). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent
-   name. Choosing both Claude and Cursor installs both trees. Claude gets `CLAUDE.md`, `.claude/rules/` (from
-   `content/rules/`), `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
+   shared `.agents/skills/` folder once when any chosen assistant reads it (Antigravity does; Claude and Cursor keep
+   private copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent name.
+   Choosing several assistants installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
+   `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
    `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `protect-files.cjs` plus the
    `guard-core.cjs` it requires (the lock-file / `.env` guard, fail-closed), a SessionStart hook
    (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
@@ -34,11 +34,15 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    has no SessionStart-equivalent event, so it does not get the bootstrap hook, and no pre-edit event, so it does not
    get the lock-file / `.env` guard (`protect-files.cjs`). Each adapter also emits a documentation-MCP config
    registering the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets
-   `.cursor/mcp.json`. The two entries differ by one key on purpose - Claude Code skips a remote entry that has a `url`
-   but no `type`, while for Cursor a `type` marks a local stdio server. Every path an adapter emits is built from
-   `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/` /
-   `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only a
-   script one of that adapter's own hook entries actually references gets copied, together with any sibling `.cjs` it
+   `.cursor/mcp.json`, and Antigravity gets `.agents/mcp_config.json`. The entries differ on purpose - Claude Code skips
+   a remote entry that has a `url` but no `type`, for Cursor a `type` marks a local stdio server, and Antigravity
+   accepts only `serverUrl`. Antigravity also gets `.agents/hooks.json` (hook groups named `blit-<id>`, from the
+   manifest's `antigravity` keys) and `.agents/hooks/` (`antigravity-guard.cjs` over `guard-core.cjs`,
+   `format-file.cjs`, and the once-per-conversation `antigravity-bootstrap.cjs`, because Antigravity has no
+   session-start event); it owns those exact paths, never the bare `.agents/` prefix. Every path an adapter emits is
+   built from `packages/kit/src/ownership.ts`, the single source both packages classify against. Within `.claude/hooks/`
+   / `.cursor/hooks/`, which specific scripts land in a given project is decided by `content/hooks.manifest.json` - only
+   a script one of that adapter's own hook entries actually references gets copied, together with any sibling `.cjs` it
    `require()`s (all under `packages/kit/`).
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`

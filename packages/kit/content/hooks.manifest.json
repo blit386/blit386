@@ -16,6 +16,12 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format-file.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 30
+      },
+      "antigravity": {
+        "event": "PostToolUse",
+        "command": "node .agents/hooks/format-file.cjs",
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "timeout": 30
       }
     },
     {
@@ -32,6 +38,12 @@
         "command": "sh .claude/hooks/shell-safety.sh",
         "matcher": "Bash",
         "timeout": 10
+      },
+      "antigravity": {
+        "event": "PreToolUse",
+        "command": "node .agents/hooks/antigravity-guard.cjs shell",
+        "matcher": "run_command",
+        "timeout": 10
       }
     },
     {
@@ -42,6 +54,12 @@
         "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
+      },
+      "antigravity": {
+        "event": "PreToolUse",
+        "command": "node .agents/hooks/antigravity-guard.cjs files",
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "timeout": 10
       }
     },
     {
@@ -51,6 +69,11 @@
         "event": "SessionStart",
         "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
         "matcher": "startup|resume|clear|compact|fork",
+        "timeout": 300
+      },
+      "antigravity": {
+        "event": "PreInvocation",
+        "command": "node .agents/hooks/antigravity-bootstrap.cjs \"{{pmInstall}}\"",
         "timeout": 300
       }
     }

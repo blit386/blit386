@@ -34,9 +34,10 @@ the scripts in `hooks/` + `hooks.manifest.json`. Skills and rules are discovered
 `.claude/skills/<name>/SKILL.md` with the frontmatter kept. Cursor gets the same file as
 `.cursor/skills/<name>/SKILL.md`, frontmatter kept, so it loads the skill from the description and still answers
 `/name`. Most other agents read one shared folder, `.agents/skills/<name>/SKILL.md` (`SHARED_SKILLS_DIR`), so the kit
-emits it once (`generateSharedSkills`) while at least one set-up agent has `readsSharedSkills` in its registry entry. No
-shipped agent sets that flag yet - Claude Code does not read the shared folder and Cursor is unverified, so both keep
-their private copies and no generated game gets `.agents/` today; the first adapter that reads it flips the flag.
+emits it once (`generateSharedSkills`) while at least one set-up agent has `readsSharedSkills` in its registry entry.
+Antigravity sets that flag; Claude Code does not read the shared folder and Cursor is unverified, so both keep their
+private copies. Antigravity's own files sit beside the shared folder at exact paths (`.agents/hooks.json`,
+`.agents/hooks/`, `.agents/mcp_config.json`) - never claim the bare `.agents/` prefix.
 `test/skills-frontmatter.test.mjs` enforces the cross-agent limits every skill must meet: `name` lowercase-hyphen, at
 most 64 characters, equal to its folder; `description` at most 1024 characters; a flat layout. The two always-on
 convention files in `content/rules/` stay `.cursor/rules/*.mdc`; they are not skills.
@@ -91,11 +92,12 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols). Cursor invokes it via `shell-safety-run.cjs` because Windows hook PATH has `git.exe` but not `sh`. Mirror any policy change in `guard-core.cjs` |
-| `content/hooks/format-file.cjs` | The starter's `format` script changes which tool owns which file type (`packages/create-blit386/templates/*/package.json.tmpl`), or the Claude `PostToolUse` / Cursor `afterFileEdit` payload shape changes |
+| `content/hooks/format-file.cjs` | The starter's `format` script changes which tool owns which file type (`packages/create-blit386/templates/*/package.json.tmpl`), or the Claude `PostToolUse` / Cursor `afterFileEdit` / Antigravity `PostToolUse` payload shape changes |
 | `content/hooks/guard-core.cjs` | The lock-file / `.env` rule (`isProtectedPath`) or the shell policy (`isDangerousCommand`, a Node port of `shell-safety.sh` - change both together; `test/guard-core.test.mjs` runs one case table through both). Shared by every agent's hook entry, each of which owns its own payload shape and block protocol; `failClosed` + `parsePayload` turn an unreadable request into a deny |
+| `content/hooks/antigravity-guard.cjs`, `antigravity-bootstrap.cjs` | Antigravity's payload (`toolCall.args.TargetFile` / `CommandLine`, `conversationId`, `workspacePaths`) or reply protocol (`decision` / `reason`, `injectSteps`) changes; docs at antigravity.google/docs/hooks. The guard is one script with a `files` / `shell` argument and denies on any error; the bootstrap runs once per conversation through a temp-dir marker because Antigravity has no session-start event |
 | `content/hooks/protect-files.cjs` | Claude's `PreToolUse` payload shape changes. A thin wrapper over `guard-core.cjs` (shipped beside it because it `require()`s it). Fails closed: an unreadable payload, or one with no `tool_input.file_path`, blocks the edit (Claude-only; Cursor has no pre-edit event) |
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
-| `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
+| `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json`, Claude `settings.json`, and Antigravity `.agents/hooks.json` derive from it (`antigravity` key per hook) |
 | `src/adapters.ts` (docs-MCP config, `MCP_SERVER_ENTRY`) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
 | `src/adapters.ts` (`launchConfigFile`, `.claude/launch.json`) | The starter's dev port or `server.open` (`packages/create-blit386/templates/base/vite.config.js`), a new package manager, or the Claude desktop app's `launch.json` fields change |
 

@@ -1,6 +1,7 @@
 // Formats the one file an AI assistant just edited, instead of the whole project.
-// Shared by the Claude Code PostToolUse hook and the Cursor afterFileEdit hook: both send a
-// JSON payload on stdin that names the file (Claude: tool_input.file_path, Cursor: file_path).
+// Shared by the Claude Code PostToolUse hook, the Cursor afterFileEdit hook, and the Antigravity
+// PostToolUse hook: each sends a JSON payload on stdin that names the file (Claude:
+// tool_input.file_path, Cursor: file_path, Antigravity: toolCall.args.TargetFile).
 // Biome formats code and JSON, Prettier formats Markdown and YAML - the same split as the
 // project's `format` script. Never fails the edit: a formatter problem leaves the file as written.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
@@ -40,12 +41,15 @@ function runTool(root, packageName, binName, args) {
     }
 }
 
-// .claude/hooks/ or .cursor/hooks/ - the project root is two levels up.
+// .claude/hooks/, .cursor/hooks/ or .agents/hooks/ - the project root is two levels up.
 const root = realpathSync(path.resolve(__dirname, '..', '..'));
 
 try {
     const payload = JSON.parse(readFileSync(0, 'utf8'));
-    const target = insideProject(root, payload?.tool_input?.file_path ?? payload?.file_path ?? '');
+    const target = insideProject(
+        root,
+        payload?.tool_input?.file_path ?? payload?.file_path ?? payload?.toolCall?.args?.TargetFile ?? '',
+    );
     const extension = target === null ? '' : path.extname(target).toLowerCase();
 
     if (BIOME_EXTENSIONS.has(extension)) {

@@ -57,6 +57,14 @@ export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 /** Cursor's MCP server configuration. */
 export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
+/**
+ * Antigravity's exact paths under `.agents/`. Never the bare `.agents/` prefix: the shared skills folder
+ * (`SHARED_SKILLS_DIR`) lives beside these and belongs to many agents.
+ */
+export const ANTIGRAVITY_HOOKS_JSON = '.agents/hooks.json';
+export const ANTIGRAVITY_HOOKS_DIR = '.agents/hooks/';
+export const ANTIGRAVITY_MCP_JSON = '.agents/mcp_config.json';
+
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
 
@@ -83,7 +91,14 @@ export type FileClass = 'kit-owned' | 'shared' | 'user-owned';
 const SHARED_FILES: readonly string[] = [AGENTS_MD, CLAUDE_MD];
 
 /** Exact paths the kit owns outright. */
-const KIT_OWNED_FILES: readonly string[] = [CLAUDE_SETTINGS_JSON, CLAUDE_MCP_JSON, CURSOR_HOOKS_JSON, CURSOR_MCP_JSON];
+const KIT_OWNED_FILES: readonly string[] = [
+    CLAUDE_SETTINGS_JSON,
+    CLAUDE_MCP_JSON,
+    CURSOR_HOOKS_JSON,
+    CURSOR_MCP_JSON,
+    ANTIGRAVITY_HOOKS_JSON,
+    ANTIGRAVITY_MCP_JSON,
+];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
 const KIT_OWNED_DIRS: readonly string[] = [
@@ -94,6 +109,7 @@ const KIT_OWNED_DIRS: readonly string[] = [
     CURSOR_RULES_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_SKILLS_DIR,
+    ANTIGRAVITY_HOOKS_DIR,
     SHARED_SKILLS_DIR,
 ];
 
@@ -140,10 +156,10 @@ export function isKitManaged(fileClass: FileClass): boolean {
  * `AgentKind` directly. Adding a kind is one `AGENT_SPECS` entry here plus one generator in `AGENT_ADAPTERS`
  * (`src/adapters.ts`) - both are `Record<AgentKind, ...>`, so the compiler rejects a kind missing from either.
  */
-export type AgentKind = 'claude' | 'cursor';
+export type AgentKind = 'claude' | 'cursor' | 'antigravity';
 
 /** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
-export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor'];
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor', 'antigravity'];
 
 /** The data half of one agent's registry entry; `AGENT_ADAPTERS` in `src/adapters.ts` adds the generator. */
 export interface AgentSpec {
@@ -157,7 +173,7 @@ export interface AgentSpec {
     readonly dirs: readonly string[];
     /** Where the agent's docs-MCP config lives, so `blit doctor` can check every agent without hardcoding one. */
     readonly mcpConfig: string;
-    /** Does the agent read `SHARED_SKILLS_DIR`? Claude Code does not, and Cursor is unverified, so both keep private copies. */
+    /** Does the agent read `SHARED_SKILLS_DIR`? Antigravity does; Claude Code does not and Cursor is unverified, so those two keep private copies. */
     readonly readsSharedSkills: boolean;
 }
 
@@ -185,6 +201,14 @@ export const AGENT_SPECS: Record<AgentKind, AgentSpec> = {
         dirs: [CURSOR_DIR],
         mcpConfig: CURSOR_MCP_JSON,
         readsSharedSkills: false,
+    },
+    antigravity: {
+        label: 'Antigravity',
+        setupHint: `adds ${ANTIGRAVITY_HOOKS_JSON}`,
+        files: [ANTIGRAVITY_HOOKS_JSON, ANTIGRAVITY_MCP_JSON],
+        dirs: [ANTIGRAVITY_HOOKS_DIR],
+        mcpConfig: ANTIGRAVITY_MCP_JSON,
+        readsSharedSkills: true,
     },
 };
 

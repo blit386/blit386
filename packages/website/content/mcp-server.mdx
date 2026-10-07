@@ -74,6 +74,21 @@ Add to `.cursor/mcp.json` in your project:
 }
 ```
 
+### Antigravity
+
+Add to `.agents/mcp_config.json` in your project. Antigravity reads only `serverUrl` for a remote server - `url` and
+`httpUrl` are rejected:
+
+```json
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "serverUrl": "https://blit386.dev/mcp"
+    }
+  }
+}
+```
+
 ## Testing with curl
 
 ```bash

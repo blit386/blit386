@@ -1,5 +1,5 @@
 /**
- * Shared agent adapters for Claude Code and Cursor.
+ * Shared agent adapters for Claude Code, Cursor, and Antigravity.
  *
  * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
  * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
@@ -12,6 +12,8 @@ import { join } from 'node:path';
 import {
     AGENT_SPECS,
     AGENTS_MD,
+    ANTIGRAVITY_HOOKS_DIR,
+    ANTIGRAVITY_HOOKS_JSON,
     type AgentKind,
     type AgentSpec,
     CLAUDE_HOOKS_DIR,
@@ -430,7 +432,7 @@ interface ClaudeSettingsJson {
     enabledMcpjsonServers: string[];
 }
 
-interface HookManifestClaudeBlock {
+interface HookManifestCommandBlock {
     event: string;
     command: string;
     matcher?: string;
@@ -441,7 +443,8 @@ interface HookManifestEntry {
     id: string;
     intent: string;
     cursor?: HookManifestCursorBlock;
-    claude?: HookManifestClaudeBlock;
+    claude?: HookManifestCommandBlock;
+    antigravity?: HookManifestCommandBlock;
 }
 
 interface HooksManifest {
@@ -487,6 +490,23 @@ function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHo
     return { version: 1, hooks };
 }
 
+/** One manifest command block as a matcher group (matcher, then a single command handler), template vars rendered. */
+function matcherGroup(block: HookManifestCommandBlock, vars: TemplateVars): ClaudeMatcherGroup {
+    const commandHook: ClaudeHookCommand = { type: 'command', command: render(block.command, vars) };
+
+    if (block.timeout !== undefined) {
+        commandHook.timeout = block.timeout;
+    }
+
+    const group: ClaudeMatcherGroup = { hooks: [commandHook] };
+
+    if (block.matcher !== undefined) {
+        group.matcher = block.matcher;
+    }
+
+    return group;
+}
+
 /**
  * Translate the canonical hooks manifest into Claude Code's `.claude/settings.json` hooks structure,
  * rendering template vars. Claude nests command handlers under matcher groups per event.
@@ -499,20 +519,8 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
             continue;
         }
 
-        const { event, command, matcher, timeout } = hook.claude;
-        const commandHook: ClaudeHookCommand = {
-            type: 'command',
-            command: render(command, vars),
-        };
-
-        if (timeout !== undefined) {
-            commandHook.timeout = timeout;
-        }
-
-        const group: ClaudeMatcherGroup = { hooks: [commandHook] };
-        if (matcher !== undefined) {
-            group.matcher = matcher;
-        }
+        const { event } = hook.claude;
+        const group = matcherGroup(hook.claude, vars);
 
         if (!hooks[event]) {
             hooks[event] = [];
@@ -530,10 +538,12 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
 interface McpServerEntry {
     /** Transport marker. Required by Claude Code, omitted for Cursor - see `MCP_SERVER_ENTRY`. */
     type?: string;
-    url: string;
+    url?: string;
+    /** Antigravity's key for a remote server; it rejects `url` and `httpUrl`. */
+    serverUrl?: string;
 }
 
-/** The `mcpServers` wrapper both assistants read. */
+/** The `mcpServers` wrapper every assistant reads. */
 interface McpConfigJson {
     mcpServers: Record<string, McpServerEntry>;
 }
@@ -541,14 +551,15 @@ interface McpConfigJson {
 /**
  * The documentation-MCP server entry each assistant gets.
  *
- * The two entries differ by one key on purpose, and the difference is not cosmetic:
+ * The entries differ on purpose, and the difference is not cosmetic:
  * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
- * misread a remote HTTP endpoint. Do not harmonize the two shapes.
+ * misread a remote HTTP endpoint. Antigravity accepts only `serverUrl` for a remote server. Do not harmonize the shapes.
  */
 const MCP_SERVER_ENTRY: Record<AgentKind, McpServerEntry> = {
     claude: { type: 'http', url: MCP_SERVER_URL },
     cursor: { url: MCP_SERVER_URL },
+    antigravity: { serverUrl: MCP_SERVER_URL },
 };
 
 /** The MCP configuration file for one assistant, at that assistant's conventional path. */
@@ -638,6 +649,51 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     return files;
 }
 
+/** Antigravity's `.agents/hooks.json`: hook-group name, then event, then matcher groups. */
+type AntigravityHooksJson = Record<string, Record<string, ClaudeMatcherGroup[]>>;
+
+/**
+ * Translate the canonical hooks manifest into Antigravity's `.agents/hooks.json`. One group per manifest hook,
+ * named `blit-<id>` so a user's own groups never collide with ours; the handler shape matches Claude's.
+ */
+function buildAntigravityHooks(manifest: HooksManifest, vars: TemplateVars): AntigravityHooksJson {
+    const groups: AntigravityHooksJson = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.antigravity) {
+            continue;
+        }
+
+        const { event } = hook.antigravity;
+        const group = matcherGroup(hook.antigravity, vars);
+
+        groups[`blit-${hook.id}`] = { [event]: [group] };
+    }
+
+    return groups;
+}
+
+/**
+ * Generate the Antigravity adapter files from the kit IR. Persona is `AGENTS.md` and skills are the shared
+ * `.agents/skills/` folder, so neither is emitted here:
+ *   - `.agents/hooks.json`        (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.agents/hooks/{script}`    (kit-owned; copied verbatim)
+ *   - `.agents/mcp_config.json`   (kit-owned; the blit386.dev documentation MCP server)
+ */
+export function generateAntigravityAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
+    const contentRoot = join(root, 'content');
+    const manifest = readHooksManifest(contentRoot);
+
+    return [
+        {
+            path: ANTIGRAVITY_HOOKS_JSON,
+            content: `${JSON.stringify(buildAntigravityHooks(manifest, vars), null, 2)}\n`,
+        },
+        mcpConfigFile('antigravity'),
+        ...collectHookScripts(contentRoot, manifest, 'antigravity', ANTIGRAVITY_HOOKS_DIR),
+    ];
+}
+
 /** One agent's registry entry: its data from `AGENT_SPECS` plus the generator that renders its private files. */
 export interface AgentAdapter extends AgentSpec {
     /** Render the agent's private files from the kit IR (shared files come from `generateAgentFiles`). */
@@ -651,6 +707,7 @@ export interface AgentAdapter extends AgentSpec {
 export const AGENT_ADAPTERS: Record<AgentKind, AgentAdapter> = {
     claude: { ...AGENT_SPECS.claude, generate: generateClaudeAdapter },
     cursor: { ...AGENT_SPECS.cursor, generate: generateCursorAdapter },
+    antigravity: { ...AGENT_SPECS.antigravity, generate: generateAntigravityAdapter },
 };
 
 /**
