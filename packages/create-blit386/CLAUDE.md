@@ -24,35 +24,36 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    keep private copies). The scaffolder writes those `{ path, content }` pairs to disk and never branches on an agent
    name. Choosing several installs each tree. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
    `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
-   `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `protect-files.cjs` plus the
-   `guard-core.cjs` it requires (the lock-file / `.env` guard, fail-closed), a SessionStart hook
-   (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
-   starts - and `.claude/launch.json`, the Claude desktop app's preview-server config (Vite on port 5173 through the
-   chosen package manager), which is user-owned: no `.blit/base/` copy, and sync never rewrites it. Cursor gets
-   `.cursor/rules/*.mdc`, `.cursor/skills/<name>/SKILL.md` (the same skills, frontmatter kept), `.cursor/hooks.json`,
-   `.cursor/hooks/format-file.cjs`, `.cursor/hooks/shell-safety-run.cjs`, and `.cursor/hooks/shell-safety.sh` - Cursor
-   has no SessionStart-equivalent event, so it does not get the bootstrap hook, and no pre-edit event, so it does not
-   get the lock-file / `.env` guard (`protect-files.cjs`). Gemini CLI gets `.gemini/settings.json` and
-   `.gemini/hooks/` - no `GEMINI.md` (`context.fileName` points it at `AGENTS.md`), no private skills (it reads
-   `.agents/skills/`), and no `.gemini/policies/` (workspace policies do not work). The settings file carries the docs
-   server, the persona pointer, and four hooks, with timeouts in milliseconds; its hook entries are `protect-files.cjs`
-   and the Node `shell-guard.cjs` over `guard-core.cjs` (both exit 2 to block, since Gemini lets a call through on any
-   other exit), `format-file.cjs`, and the session-start script. Gemini CLI ignores `.gemini/settings.json` in an
-   untrusted folder, so `AGENTS.md` tells the user to trust it. `blit agents add gemini` structurally merges into an
-   existing `.gemini/settings.json` instead of colliding (`sync` is what three-way merges). Zed gets
-   `.zed/settings.json` (kit-owned, merged with the user's own settings by `add` and by `sync`): `format_on_save`, Biome
-   as the JavaScript, TypeScript, and JSON formatter, and `context_servers.blit386-docs` - no `agent` key (project
-   settings have none; `agent.tool_permissions` is user-settings only), no hooks, and never a `.rules` / `.cursorrules`
-   / `.windsurfrules` / `.clinerules` file (Zed reads only the first match, which would hide `AGENTS.md`). Its persona
-   and lock-file / `.env` rules are `AGENTS.md` prose. Each adapter also emits a documentation-MCP config registering
-   the `blit386-docs` server at `https://blit386.dev/mcp`: Claude gets `.mcp.json`, Cursor gets `.cursor/mcp.json`,
-   Gemini CLI gets an `mcpServers` entry in `.gemini/settings.json`, and Zed gets `context_servers` in
-   `.zed/settings.json`. The Claude, Cursor, and Gemini entries differ on purpose - Claude Code skips a remote entry
-   that has a `url` but no `type`, for Cursor a `type` marks a local stdio server, and for Gemini CLI `url` means SSE,
-   so streamable HTTP is `httpUrl`. Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the
-   single source both packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land
-   in a given project is decided by `content/hooks.manifest.json` - only a script one of that adapter's own hook entries
-   actually references gets copied, together with any sibling `.cjs` it `require()`s (all under `packages/kit/`).
+   `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) - including `shell-safety.cjs` (the
+   destructive-git guard, shared with Cursor) and `protect-files.cjs` (the lock-file / `.env` guard), both fail-closed
+   over the `guard-core.cjs` they require, a SessionStart hook (`.claude/hooks/session-start.sh`) that installs
+   dependencies and runs `blit doctor` when a fresh remote/web session starts - and `.claude/launch.json`, the Claude
+   desktop app's preview-server config (Vite on port 5173 through the chosen package manager), which is user-owned: no
+   `.blit/base/` copy, and sync never rewrites it. Cursor gets `.cursor/rules/*.mdc`, `.cursor/skills/<name>/SKILL.md`
+   (the same skills, frontmatter kept), `.cursor/hooks.json`, `.cursor/hooks/format-file.cjs`, and
+   `.cursor/hooks/shell-safety.cjs` plus the `guard-core.cjs` it requires - Cursor has no SessionStart-equivalent event,
+   so it does not get the bootstrap hook, and no pre-edit event, so it does not get the lock-file / `.env` guard
+   (`protect-files.cjs`). Gemini CLI gets `.gemini/settings.json` and `.gemini/hooks/` - no `GEMINI.md`
+   (`context.fileName` points it at `AGENTS.md`), no private skills (it reads `.agents/skills/`), and no
+   `.gemini/policies/` (workspace policies do not work). The settings file carries the docs server, the persona pointer,
+   and four hooks, with timeouts in milliseconds; its hook entries are `protect-files.cjs` and the Node
+   `shell-guard.cjs` over `guard-core.cjs` (both exit 2 to block, since Gemini lets a call through on any other exit),
+   `format-file.cjs`, and the session-start script. Gemini CLI ignores `.gemini/settings.json` in an untrusted folder,
+   so `AGENTS.md` tells the user to trust it. `blit agents add gemini` structurally merges into an existing
+   `.gemini/settings.json` instead of colliding (`sync` is what three-way merges). Zed gets `.zed/settings.json`
+   (kit-owned, merged with the user's own settings by `add` and by `sync`): `format_on_save`, Biome as the JavaScript,
+   TypeScript, and JSON formatter, and `context_servers.blit386-docs` - no `agent` key (project settings have none;
+   `agent.tool_permissions` is user-settings only), no hooks, and never a `.rules` / `.cursorrules` / `.windsurfrules` /
+   `.clinerules` file (Zed reads only the first match, which would hide `AGENTS.md`). Its persona and lock-file / `.env`
+   rules are `AGENTS.md` prose. Each adapter also emits a documentation-MCP config registering the `blit386-docs` server
+   at `https://blit386.dev/mcp`: Claude gets `.mcp.json`, Cursor gets `.cursor/mcp.json`, Gemini CLI gets an
+   `mcpServers` entry in `.gemini/settings.json`, and Zed gets `context_servers` in `.zed/settings.json`. The Claude,
+   Cursor, and Gemini entries differ on purpose - Claude Code skips a remote entry that has a `url` but no `type`, for
+   Cursor a `type` marks a local stdio server, and for Gemini CLI `url` means SSE, so streamable HTTP is `httpUrl`.
+   Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single source both packages classify
+   against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project is decided by
+   `content/hooks.manifest.json` - only a script one of that adapter's own hook entries actually references gets copied,
+   together with any sibling `.cjs` it `require()`s (all under `packages/kit/`).
 5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) - the kit npm installed beside
    this package - and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated

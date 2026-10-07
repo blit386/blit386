@@ -343,10 +343,12 @@ The foundation those adapters build on (BT-564) is in place:
 - **Guard core.** `content/hooks/guard-core.cjs` holds the pure classifiers `isProtectedPath` and `isDangerousCommand`,
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
-  agent's entry owns its own payload shape and block protocol. Claude's `protect-files.cjs` is now such an entry and
-  fails closed. The shell classifier is a Node port of `shell-safety.sh`, so new agents need neither `sh` nor `python3`.
-  Claude Code and Cursor keep running the script until BT-576 retires it, and `test/guard-core.test.mjs` runs one case
-  table through both implementations so they cannot drift.
+  agent's entry owns its own payload shape and block protocol. Claude's `protect-files.cjs` is such an entry and fails
+  closed. The shell classifier is a Node port of the kit's former `shell-safety.sh`, so no agent needs `sh` or
+  `python3`. Claude Code and Cursor share one entry over it, `shell-safety.cjs` (BT-576): only
+  `hook_event_name == "PreToolUse"` means Claude (Cursor sends its own event name), and it answers each agent in its own
+  protocol. A payload it cannot read is denied in both, because the agent cannot be told from it. One case table
+  (`test/shell-cases.mjs`) drives both the classifier test and the entry test for each protocol.
 
 The "Live docs lookup" row (the `blit386-docs` MCP server at `https://blit386.dev/mcp`, teaching an assistant the
 `search_docs` / `get_doc_page` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks)

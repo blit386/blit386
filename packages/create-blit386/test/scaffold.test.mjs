@@ -300,11 +300,11 @@ test('scaffold copies optional CI and agent files when requested', () => {
         // The description may be inline or folded across lines, so match the key only.
         assert.ok(/\ndescription:/.test(runSkill), 'Claude skill frontmatter should include a description');
 
-        // Claude adapter: settings.json hooks and shell-safety script (parity with Cursor).
+        // Claude adapter: settings.json hooks and the shell-safety entry (shared with Cursor).
         assert.ok(existsSync(join(project, '.claude', 'settings.json')), '.claude/settings.json should be generated');
         assert.ok(
-            existsSync(join(project, '.claude', 'hooks', 'shell-safety.sh')),
-            '.claude/hooks/shell-safety.sh should be generated',
+            existsSync(join(project, '.claude', 'hooks', 'shell-safety.cjs')),
+            '.claude/hooks/shell-safety.cjs should be generated',
         );
         assert.ok(
             existsSync(join(project, '.claude', 'hooks', 'session-start.sh')),
@@ -351,8 +351,8 @@ test('scaffold copies optional CI and agent files when requested', () => {
         );
         assert.equal(safetyGroup.hooks[0].type, 'command', 'shell safety hook should be type command');
         assert.ok(
-            safetyGroup.hooks[0].command.includes('shell-safety.sh'),
-            'shell safety hook should reference shell-safety.sh',
+            safetyGroup.hooks[0].command.includes('shell-safety.cjs'),
+            'shell safety hook should reference shell-safety.cjs',
         );
         assert.ok(
             !('continueOnError' in safetyGroup.hooks[0]),
@@ -430,8 +430,8 @@ test('scaffold copies optional CI and agent files when requested', () => {
         );
         assert.ok(existsSync(join(cursorProject, '.cursor', 'hooks.json')), '.cursor/hooks.json should be generated');
         assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'hooks', 'shell-safety.sh')),
-            '.cursor/hooks/shell-safety.sh should be generated',
+            existsSync(join(cursorProject, '.cursor', 'hooks', 'shell-safety.cjs')),
+            '.cursor/hooks/shell-safety.cjs should be generated',
         );
         assert.ok(
             existsSync(join(cursorProject, '.cursor', 'skills', 'run', 'SKILL.md')),
@@ -597,7 +597,7 @@ test('a Claude scaffold ships a user-owned .claude/launch.json for its package m
     }
 });
 
-test('a Claude scaffold ships the guard core beside protect-files.cjs; no scaffold emits .agents/', () => {
+test('Claude and Cursor scaffolds ship the guard core beside their hooks; no scaffold emits .agents/', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-guard-core-'));
     const make = (agents) => {
         const project = join(work, agents.join('-') || 'none');
@@ -624,7 +624,14 @@ test('a Claude scaffold ships the guard core beside protect-files.cjs; no scaffo
         assert.equal(blocked.status, 2, 'the generated protect-files hook still blocks a lock file');
 
         const cursor = make(['cursor']);
-        assert.ok(!existsSync(join(cursor, '.cursor', 'hooks', 'guard-core.cjs')), 'Cursor has no pre-edit guard');
+        assert.ok(existsSync(join(cursor, '.cursor', 'hooks', 'guard-core.cjs')), 'shell-safety.cjs needs its core');
+        assert.ok(!existsSync(join(cursor, '.cursor', 'hooks', 'protect-files.cjs')), 'Cursor has no pre-edit guard');
+
+        const denied = spawnSync(process.execPath, [join(cursor, '.cursor', 'hooks', 'shell-safety.cjs')], {
+            input: JSON.stringify({ hook_event_name: 'beforeShellExecution', command: 'git clean -fd' }),
+            encoding: 'utf8',
+        });
+        assert.equal(JSON.parse(denied.stdout).permission, 'deny', 'the generated shell-safety entry still blocks');
 
         // No shipped agent reads the shared skills folder yet, so nothing may emit it.
         for (const project of [claude, cursor, make(['claude', 'cursor']), make([])]) {
@@ -1162,8 +1169,8 @@ test('blit agents add claude sets up Claude files in a project that did not pick
         );
         assert.ok(existsSync(join(project, '.claude', 'settings.json')), '.claude/settings.json should be created');
         assert.ok(
-            existsSync(join(project, '.claude', 'hooks', 'shell-safety.sh')),
-            '.claude/hooks/shell-safety.sh should be created',
+            existsSync(join(project, '.claude', 'hooks', 'shell-safety.cjs')),
+            '.claude/hooks/shell-safety.cjs should be created',
         );
         assert.ok(existsSync(join(project, '.mcp.json')), '.mcp.json should be created');
 

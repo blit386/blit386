@@ -9,11 +9,9 @@
 // an entry that cannot read its request blocks it instead of letting it through, because several
 // agents treat a crashed hook as "allow".
 //
-// Decision (BT-564): the shell classification is a Node port of shell-safety.sh, so a new agent's
-// entry needs neither `sh` nor `python3` (neither is on every hook PATH; Windows has no `sh`).
-// Claude Code and Cursor still run shell-safety.sh itself until BT-576 moves them onto this
-// module; until then test/guard-core.test.mjs runs one case table through both implementations,
-// so a policy change made in only one of them fails the kit tests. Keep the two in step.
+// Decision (BT-564, BT-576): the shell classification is a Node port of the kit's former
+// shell-safety.sh, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
+// Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs.
 
 const path = require('node:path');
 
@@ -56,10 +54,9 @@ const ARG_END = `(${SPACE}|[;&|<>]|$)`;
 // never count), then the space before the flag being looked for.
 const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 
-// shell-safety.sh's GIT_PREFIX, matching the same commands with two ambiguities removed, because a
-// backtracking engine (unlike grep's) goes exponential on them for a long run of options: the separate
-// `--option` branch is gone (`-\S+` already matches every `--option`), and an option value may not start
-// with whitespace (the script's `[^-]` also matched a space, which let a value swallow the next option).
+// `git` plus any global options (`-C dir`, `-c key=value`, `--no-pager`) before the subcommand. Written so
+// a backtracking engine cannot go exponential on a long run of options: one `-\S+` branch covers short and
+// long options alike, and an option value may not start with whitespace, so it cannot swallow the next option.
 const GIT_PREFIX = `git(${SPACE}+-${NON_SPACE}+(${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*)?)*${SPACE}+`;
 
 const RESET_OR_CHECKOUT = new RegExp(`${GIT_PREFIX}reset${SPACE}+--hard|${GIT_PREFIX}checkout${SPACE}+--`);
@@ -101,17 +98,27 @@ const ASK_STASH = {
 };
 
 /**
- * Classify a shell command the assistant wants to run. Same two tiers as shell-safety.sh, whose header
- * explains the policy: deny what git cannot recover (reset --hard, checkout --, restore, clean), ask
- * for what reflog can still bring back (force push, branch -D, stash drop/clear).
+ * Classify a shell command the assistant wants to run. Two tiers, split by whether git itself can still recover
+ * what the command would discard:
+ *
+ * - Deny (no override): `git reset --hard`, `git checkout --`, `git restore` in any form that touches the worktree,
+ *   and `git clean` unless it is a dry run with no force flag. Each destroys content no git object was ever
+ *   created for (uncommitted changes, untracked files), so no approval after the fact can bring it back.
+ *   `git restore --staged` without `--worktree` only resets the index and leaves the files alone, so it is the
+ *   one safe restore. `git clean` is denied by default rather than by force flag, because
+ *   `git -c clean.requireForce=false clean -d` deletes without naming one.
+ * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`, `git branch -D`, and
+ *   `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits reachable
+ *   for a while, so approving one is not approving something irreversible.
+ *
+ * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
  *
  * @param {string} command - The raw command text.
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
  */
 function isDangerousCommand(command) {
-    // Quotes and backslashes are dropped first, as in the shell script, so `git "reset" --hard` and
-    // `git \reset --hard` cannot dodge the word checks. grep -E matches line by line, so each check
-    // asks "does any line match", exactly as each `grep -Eq` in the script did.
+    // Quotes and backslashes are dropped first, so `git "reset" --hard` and `git \reset --hard` cannot dodge
+    // the word checks. Each check asks "does any line match", so a multi-line command is caught on any line.
     const lines = command.replace(/['"\\]/g, '').split('\n');
     const any = (pattern) => lines.some((line) => pattern.test(line));
 
@@ -176,4 +183,4 @@ function failClosed(check) {
     }
 }
 
-module.exports = { failClosed, isDangerousCommand, isProtectedPath, parsePayload };
+module.exports = { failClosed, isDangerousCommand, isProtectedPath, parsePayload, UNREADABLE };
