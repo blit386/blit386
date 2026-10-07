@@ -317,7 +317,7 @@ function readHooksManifest(contentRoot: string): HooksManifest {
 const LOCAL_REQUIRE = /require\(\s*['"]\.\/([\w.-]+\.cjs)['"]\s*\)/g;
 
 /**
- * Basenames of hook scripts (e.g. `session-start.sh`, `shell-safety-run.cjs`) that one adapter's manifest entries
+ * Basenames of hook scripts (e.g. `session-start.sh`, `shell-safety.cjs`) that one adapter's manifest entries
  * actually invoke, extracted from each entry's `command` string, plus every sibling `.cjs` those scripts `require()`
  * (so `protect-files.cjs` never ships without `guard-core.cjs`). A script absent from this set is not wired into that
  * adapter's settings/hooks file, so the adapter must not emit it.
