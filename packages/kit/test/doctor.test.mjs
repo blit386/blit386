@@ -228,6 +228,25 @@ test('blit doctor names both assistants when they share one missing docs config'
     }
 });
 
+test('blit doctor skips manifest entries that have no path', () => {
+    const root = makeGame('1.7.1');
+    mkdirSync(join(root, '.blit'), { recursive: true });
+    writeFileSync(
+        join(root, '.blit', 'manifest.json'),
+        JSON.stringify({ files: [{}, { path: 1 }, { path: 'CLAUDE.md' }] }),
+    );
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(
+            output.includes('No .mcp.json file, so Claude Code cannot look up the BLIT386 docs.'),
+            `expected the docs warning to survive bad entries, got:\n${output}`,
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
 test('blit doctor stays quiet about the docs server when the game tracks no assistant', () => {
     const root = makeGame('1.7.1');
     writeManifest(root, ['AGENTS.md', 'docs/getting-started.md']);

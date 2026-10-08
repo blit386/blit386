@@ -37,16 +37,21 @@ function checkDocsMcp(root: string, out: (line: string) => void): void {
         return;
     }
 
-    if (!Array.isArray(manifest.files)) {
+    if (typeof manifest !== 'object' || manifest === null || !Array.isArray(manifest.files)) {
         return;
     }
+
+    // JSON can carry entries with no string path. hasAgentFiles normalizes that path, so skip them.
+    const files = manifest.files.filter(
+        (entry) => typeof entry === 'object' && entry !== null && typeof entry.path === 'string',
+    );
 
     const missing = new Map<string, string[]>();
 
     for (const kind of AGENT_KINDS) {
         const mcpPath = AGENT_SPECS[kind].mcpConfig;
 
-        if (!hasAgentFiles(manifest.files, kind) || existsSync(join(root, mcpPath))) {
+        if (!hasAgentFiles(files, kind) || existsSync(join(root, mcpPath))) {
             continue;
         }
 
