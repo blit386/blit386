@@ -1,13 +1,17 @@
 // @ts-nocheck
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const WRANGLER_CONFIG = 'dist/server/wrangler.json';
 const REQUIRED_FLAG = 'nodejs_compat';
 const SERVER_DIR = 'dist/server';
-const PATTERN = /createRequire\s*\(\s*import\s*\.\s*meta\s*\.\s*url\s*\)/g;
-const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
+const CREATE_REQUIRE_PATTERN = /createRequire\s*\(\s*import\s*\.\s*meta\s*\.\s*url\s*\)/g;
+const CREATE_REQUIRE_REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
+const BUILD_METADATA_FILE = 'dist/server/__waku_build_metadata.js';
+const BUILD_METADATA_PATTERN = /^export const buildMetadata = new Map\((.*)\);$/su;
+const CACHED_ELEMENTS_KEY = 'defineRouter:cachedElements';
+const PAGE_SLOT_PREFIX = 'slot/page:';
 
 /**
  * Inject `nodejs_compat` compatibility flag and `run_worker_first: true` into a
@@ -69,7 +73,39 @@ export const patchWranglerConfig = (config, options = {}) => {
  * call succeeds in Cloudflare Workers where `import.meta.url` is undefined for
  * bundled sub-modules. Returns a new string; the input is not mutated.
  */
-export const patchRequireMetaUrl = (content) => content.replace(PATTERN, REPLACEMENT);
+export const patchRequireMetaUrl = (content) => content.replace(CREATE_REQUIRE_PATTERN, CREATE_REQUIRE_REPLACEMENT);
+
+/**
+ * Drop each prerendered page's RSC payload from Waku's build metadata (BT-586). Waku keeps
+ * a base64 copy of every static page in `defineRouter:cachedElements`, which with Twoslash
+ * on was ~27 MiB of a Worker that Cloudflare caps at 64 MiB uncompressed. The Worker never
+ * serves those pages: `markdownNegotiationPlugin` answers every HTML and `RSC/` request from
+ * the ASSETS binding, and only asset-less paths (`/mcp`, unknown URLs) reach Waku.
+ *
+ * Safe because the cache is only a cache: in waku 1.0.0-beta.6 `addEntry` in
+ * `waku/dist/router/define-router.js` renders a static slot on a miss. Layout and route
+ * template entries stay cached; every page, the 404 page included, renders on demand if a
+ * request ever reaches Waku. Throws on any other file shape, so a Waku upgrade that changes
+ * it fails the build instead of shipping the bloat.
+ *
+ * @param {string} source Contents of `dist/server/__waku_build_metadata.js`.
+ * @returns {string}
+ */
+export const stripPrerenderedPages = (source) => {
+    const match = BUILD_METADATA_PATTERN.exec(source.trim());
+    if (!match) throw new Error(`${BUILD_METADATA_FILE} is not the "new Map([...])" module this patch expects`);
+    /** @type {[string, string][]} */
+    const entries = JSON.parse(match[1]);
+    if (!entries.some(([key]) => key === CACHED_ELEMENTS_KEY)) {
+        throw new Error(`${BUILD_METADATA_FILE} has no ${CACHED_ELEMENTS_KEY} entry`);
+    }
+    const stripped = entries.map(([key, value]) => {
+        if (key !== CACHED_ELEMENTS_KEY) return [key, value];
+        const kept = Object.entries(JSON.parse(value)).filter(([cacheId]) => !cacheId.startsWith(PAGE_SLOT_PREFIX));
+        return [key, JSON.stringify(Object.fromEntries(kept))];
+    });
+    return `export const buildMetadata = new Map(${JSON.stringify(stripped)});`;
+};
 
 const main = () => {
     const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
@@ -80,23 +116,19 @@ const main = () => {
     });
     writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(patchedConfig, null, 2)}\n`);
 
+    const bytesBefore = statSync(BUILD_METADATA_FILE).size;
+    writeFileSync(BUILD_METADATA_FILE, stripPrerenderedPages(readFileSync(BUILD_METADATA_FILE, 'utf8')));
+    const toMiB = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MiB`;
+    console.log(
+        `stripped prerendered pages: ${BUILD_METADATA_FILE} ${toMiB(bytesBefore)} -> ${toMiB(statSync(BUILD_METADATA_FILE).size)}`,
+    );
+
     // Scan the whole server bundle recursively, not just dist/server/assets: the
     // crashing module lives in dist/server/ssr/assets (loaded on the dynamic-render
     // path, e.g. the not-found page) and the bundle also emits non-`chunk-` files
     // (such as export-*.js) that contain the same call. Missing either turned every
     // unhandled route into a 500 instead of a clean 404.
-    let entries;
-    try {
-        entries = readdirSync(SERVER_DIR, { recursive: true });
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            entries = [];
-        } else {
-            throw error;
-        }
-    }
-
-    for (const entry of entries) {
+    for (const entry of readdirSync(SERVER_DIR, { recursive: true })) {
         if (!entry.endsWith('.js') && !entry.endsWith('.mjs')) continue;
         const filePath = join(SERVER_DIR, entry);
         const content = readFileSync(filePath, 'utf8');

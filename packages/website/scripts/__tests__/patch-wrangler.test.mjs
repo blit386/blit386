@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { patchRequireMetaUrl, patchWranglerConfig } from '../patch-wrangler.mjs';
+import { patchRequireMetaUrl, patchWranglerConfig, stripPrerenderedPages } from '../patch-wrangler.mjs';
 
 describe('patchWranglerConfig', () => {
     test('adds nodejs_compat when compatibility_flags is an empty array', () => {
@@ -139,5 +139,55 @@ describe('patchRequireMetaUrl', () => {
     test('returns input unchanged when pattern is absent', () => {
         const input = 'no relevant code here';
         assert.equal(patchRequireMetaUrl(input), input);
+    });
+});
+
+describe('stripPrerenderedPages', () => {
+    /** @param {[string, string][]} entries */
+    const metadataModule = (entries) => `export const buildMetadata = new Map(${JSON.stringify(entries)});`;
+    /** @param {string} source @returns {Map<string, string>} */
+    const parseModule = (source) =>
+        new Map(JSON.parse(source.slice('export const buildMetadata = new Map('.length, -');'.length)));
+
+    const cachedElements = {
+        'slot/root': 'root-payload',
+        'pathSpec/[{"type":"literal","name":"docs"}]': 'template-payload',
+        'slot/page:/docs/api/rendering': 'page-payload',
+        'slot/page:/404': 'not-found-payload',
+    };
+    const source = metadataModule([
+        ['defineRouter:cachedElements', JSON.stringify(cachedElements)],
+        ['defineRouter:path2moduleIds', '{"/":["a"]}'],
+        ['defineRouter:serializableConfigs', '[{"type":"route"}]'],
+    ]);
+
+    test('drops every page slot and keeps the layout and route template entries', () => {
+        const result = parseModule(stripPrerenderedPages(source));
+        assert.deepEqual(JSON.parse(result.get('defineRouter:cachedElements') ?? ''), {
+            'slot/root': 'root-payload',
+            'pathSpec/[{"type":"literal","name":"docs"}]': 'template-payload',
+        });
+    });
+
+    test('keeps the other metadata entries verbatim', () => {
+        const result = parseModule(stripPrerenderedPages(source));
+        assert.equal(result.get('defineRouter:path2moduleIds'), '{"/":["a"]}');
+        assert.equal(result.get('defineRouter:serializableConfigs'), '[{"type":"route"}]');
+    });
+
+    test('is idempotent', () => {
+        const once = stripPrerenderedPages(source);
+        assert.equal(stripPrerenderedPages(once), once);
+    });
+
+    test('throws when the module is not the shape Waku emits', () => {
+        assert.throws(() => stripPrerenderedPages('export default new Map();'), /not the "new Map/u);
+    });
+
+    test('throws when the cachedElements entry is missing', () => {
+        assert.throws(
+            () => stripPrerenderedPages(metadataModule([['defineRouter:path2moduleIds', '{}']])),
+            /no defineRouter:cachedElements entry/u,
+        );
     });
 });

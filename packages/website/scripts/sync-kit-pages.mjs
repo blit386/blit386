@@ -39,9 +39,9 @@ const DEMOS_SITE = 'https://demos.blit386.dev';
 const DEMOS_SHARED_SOURCE = 'https://github.com/blit386/blit386/tree/main/packages/demos/src/shared';
 const DESCRIPTION_MAX_LENGTH = 160;
 
-// The demos published as examples. Not all of them: every page is prerendered into the Worker
-// bundle at roughly 3.5x its source size after gzip, and all 48 demos took the Worker from 4.1 MB
-// to 8.9 MB gzip against Cloudflare's 10 MiB limit (measured for BT-557). These cover what a first
+// The demos published as examples. Not all of them: every page's compiled MDX module ships in the
+// Worker, and Cloudflare caps it at 64 MiB uncompressed (when BT-557 picked this set, all 48 demos
+// took the Worker from 4.1 MB to 8.9 MB gzip against a since-dropped 10 MiB limit). These cover what a first
 // game needs - program structure, drawing, each input device, a complete game, sprites, animation,
 // camera, tilemaps, sound, palette, and random - in DEMO_ORDER. After adding one, `pnpm run build`
 // and `pnpm run check:deploy-size` must still pass.
