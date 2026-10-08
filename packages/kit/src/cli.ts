@@ -21,7 +21,7 @@ Usage: blit <command>
 Commands:
   ${color.cyan('run')}        Start your game in the browser
   ${color.cyan('play')}       Play-test your game in a browser and print its state (--help for steps)
-  ${color.cyan('doctor')}     Check your setup (Node, git, blit386 version)
+  ${color.cyan('doctor')}     Check your setup (Node, git, blit386 version, docs)
   ${color.cyan('upgrade')}    Update blit386 to the latest version (then offers migrate)
   ${color.cyan('migrate')}    Update old names + enable hot reload (--write to apply)
   ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
