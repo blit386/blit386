@@ -5,12 +5,14 @@
  * - Every static asset under `dist/public` must stay under Cloudflare's 25 MiB per-asset
  *   cap. The client search index `/api/search` is the one at risk - BT-557's kit pages
  *   briefly pushed it to 28.8 MiB, and only a manual dry-run caught it.
- * - The Worker upload (`dist/server`) must stay under an 8 MiB gzip budget, 80% of the
- *   10 MiB paid-plan limit, so growth shows up as a failing check with headroom left.
+ * - The Worker upload (`dist/server`) must stay under a 51 MiB budget, 80% of Cloudflare's
+ *   64 MiB uncompressed limit, so growth shows up as a failing check with headroom left.
+ *   Twoslash-heavy API pages are what grow it (BT-586). There is no compressed limit:
+ *   Cloudflare dropped it on 2026-09-04, so wrangler's gzip figure is not checked.
  *
- * The gzip number is wrangler's own (`wrangler deploy --dry-run`, no auth or network
- * needed), not a re-measurement: it is the figure Cloudflare enforces, and wrangler
- * decides which `dist/server` files are modules.
+ * The Worker number is wrangler's own `Total Upload` (`wrangler deploy --dry-run`, no auth
+ * or network needed), not a re-measurement: it is the figure Cloudflare enforces, and
+ * wrangler decides which `dist/server` files are modules.
  *
  * Requires a build to have already run (`pnpm run build`) - see `preflight` in
  * package.json for the ordering.
@@ -32,9 +34,9 @@ const DIST_SERVER_WRANGLER_CONFIG = join(PACKAGE_ROOT, 'dist', 'server', 'wrangl
 const KIB = 1024;
 const MIB = 1024 * KIB;
 export const MAX_ASSET_BYTES = 25 * MIB;
-const WORKER_GZIP_BUDGET_BYTES = 8 * MIB;
+const WORKER_BUDGET_BYTES = 51 * MIB;
 
-const TOTAL_UPLOAD_PATTERN = /Total Upload:\s*([\d.]+)\s*KiB\s*\/\s*gzip:\s*([\d.]+)\s*KiB/u;
+const TOTAL_UPLOAD_PATTERN = /Total Upload:\s*([\d.]+)\s*KiB/u;
 
 /** @param {number} bytes @returns {string} */
 function formatMiB(bytes) {
@@ -42,14 +44,26 @@ function formatMiB(bytes) {
 }
 
 /**
- * Extracts the gzip upload size from `wrangler deploy --dry-run` output.
+ * Extracts the uncompressed `Total Upload` size from `wrangler deploy --dry-run` output.
  *
  * @param {string} output
  * @returns {number | null} Bytes, or null when the summary line is missing.
  */
-export function parseWranglerGzipBytes(output) {
+export function parseWranglerUploadBytes(output) {
     const match = TOTAL_UPLOAD_PATTERN.exec(stripVTControlCharacters(output));
-    return match ? Math.round(Number(match[2]) * KIB) : null;
+    return match ? Math.round(Number(match[1]) * KIB) : null;
+}
+
+/**
+ * @param {number} uploadBytes Uncompressed Worker upload size.
+ * @returns {string[]} A failure message when the upload is over budget, otherwise none.
+ */
+export function findOversizedWorker(uploadBytes) {
+    return uploadBytes > WORKER_BUDGET_BYTES
+        ? [
+              `Worker upload is ${formatMiB(uploadBytes)}, over the ${formatMiB(WORKER_BUDGET_BYTES)} budget (Cloudflare's uncompressed limit is 64 MiB)`,
+          ]
+        : [];
 }
 
 /**
@@ -88,6 +102,7 @@ function fail(failures) {
     process.exit(1);
 }
 
+/** Checks every `dist/public` asset, then the Worker upload, and exits 1 when either is over its limit. */
 function main() {
     for (const required of [DIST_SERVER_WRANGLER_CONFIG, DIST_PUBLIC_DIR]) {
         if (!existsSync(required)) {
@@ -125,17 +140,14 @@ function main() {
     );
     if (wrangler.error) fail([`could not run wrangler: ${wrangler.error.message}`]);
     const output = wrangler.stdout + wrangler.stderr;
-    const gzipBytes = parseWranglerGzipBytes(output);
-    if (wrangler.status !== 0 || gzipBytes === null) {
+    const uploadBytes = parseWranglerUploadBytes(output);
+    if (wrangler.status !== 0 || uploadBytes === null) {
         fail([`wrangler deploy --dry-run did not report an upload size (exit ${wrangler.status}):\n${output}`]);
     }
 
-    console.log(`Worker upload: ${formatMiB(gzipBytes)} gzip (budget ${formatMiB(WORKER_GZIP_BUDGET_BYTES)})`);
-    if (gzipBytes > WORKER_GZIP_BUDGET_BYTES) {
-        fail([
-            `Worker upload is ${formatMiB(gzipBytes)} gzip, over the ${formatMiB(WORKER_GZIP_BUDGET_BYTES)} budget (Cloudflare's paid-plan limit is 10 MiB)`,
-        ]);
-    }
+    console.log(`Worker upload: ${formatMiB(uploadBytes)} (budget ${formatMiB(WORKER_BUDGET_BYTES)})`);
+    const oversizedWorker = findOversizedWorker(uploadBytes);
+    if (oversizedWorker.length > 0) fail(oversizedWorker);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

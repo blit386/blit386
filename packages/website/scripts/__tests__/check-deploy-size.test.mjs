@@ -6,27 +6,46 @@ import { describe, test } from 'node:test';
 
 import {
     findOversizedAssets,
+    findOversizedWorker,
     listFilesBySize,
     MAX_ASSET_BYTES,
-    parseWranglerGzipBytes,
+    parseWranglerUploadBytes,
 } from '../check-deploy-size.mjs';
 
+const MIB = 1024 * 1024;
+
 describe('check-deploy-size', () => {
-    describe('parseWranglerGzipBytes', () => {
-        test('reads the gzip figure from the dry-run summary line', () => {
+    describe('parseWranglerUploadBytes', () => {
+        test('reads the uncompressed Total Upload figure, not the gzip one', () => {
             const output = 'Read 639 files\nTotal Upload: 63641.83 KiB / gzip: 6247.42 KiB\n--dry-run: exiting now.';
-            assert.equal(parseWranglerGzipBytes(output), Math.round(6247.42 * 1024));
+            assert.equal(parseWranglerUploadBytes(output), Math.round(63641.83 * 1024));
         });
 
         test('ignores ANSI color codes around the numbers', () => {
             assert.equal(
-                parseWranglerGzipBytes('Total Upload: \u001b[1m10.00\u001b[0m KiB / gzip: \u001b[1m2.00\u001b[0m KiB'),
-                2048,
+                parseWranglerUploadBytes(
+                    'Total Upload: \u001b[1m10.00\u001b[0m KiB / gzip: \u001b[1m2.00\u001b[0m KiB',
+                ),
+                10240,
             );
         });
 
         test('returns null when the summary line is missing', () => {
-            assert.equal(parseWranglerGzipBytes('Asset too large.'), null);
+            assert.equal(parseWranglerUploadBytes('Asset too large.'), null);
+        });
+    });
+
+    describe('findOversizedWorker', () => {
+        test('passes an upload at exactly the budget', () => {
+            assert.deepEqual(findOversizedWorker(51 * MIB), []);
+        });
+
+        test('reports the 66.3 MiB Worker Cloudflare rejected in BT-586', () => {
+            const uploadBytes = parseWranglerUploadBytes('Total Upload: 67845.43 KiB / gzip: 6509.83 KiB');
+            assert.ok(uploadBytes !== null);
+            const [failure, ...rest] = findOversizedWorker(uploadBytes);
+            assert.deepEqual(rest, []);
+            assert.match(failure ?? '', /Worker upload is 66\.26 MiB, over the 51\.00 MiB budget/u);
         });
     });
 

@@ -49,7 +49,7 @@ exploration.
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
-| Cloudflare size limits (25 MiB per asset, Worker gzip budget) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
+| Cloudflare size limits (25 MiB per asset, 64 MiB uncompressed Worker) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
 | Cloudflare security headers | `public/_headers` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
 
@@ -244,10 +244,12 @@ until `sync:docs` runs again. CI's `quality-website` job runs on changes to thos
 
 Two size limits shaped it, both measured with `wrangler deploy --dry-run`:
 
-- Every page is prerendered into the Worker (`__waku_build_metadata.js` plus the page's MDX module) at roughly 3.5x its
-  source size after gzip. All 48 demos took the Worker from 4.1 MB to 8.9 MB gzip against the 10 MiB limit; the 15 in
-  `FIRST_GAME_EXAMPLES` keep it near 6.2 MB. `pnpm run check:deploy-size` fails if adding demos breaks the budget (see
-  Deploy).
+- Every page's compiled MDX module ships in the Worker. When these pages landed, each page was also prerendered into
+  `__waku_build_metadata.js`, which put them at roughly 3.5x their source size after gzip: all 48 demos took the Worker
+  from 4.1 MB to 8.9 MB gzip against what was then a 10 MiB compressed limit, and the 15 in `FIRST_GAME_EXAMPLES` kept
+  it near 6.2 MB. Cloudflare has since dropped the compressed limit and that second copy is now stripped after the build
+  (see Deploy, Size limits), but the selection stands. `pnpm run check:deploy-size` fails if adding demos breaks the
+  Worker budget.
 - The client search index `/api/search` is a single static asset, capped at 25 MiB per asset; it was 17.1 MiB before
   these pages and their prose alone pushed it to 27 MiB. `flexsearchPlugin({ buildIndex })` in `press.config.tsx`
   indexes the subpages by title and description only (`KIT_PAGES_PREFIX`, a manual-sync copy of the script's `SECTION`).
@@ -485,12 +487,27 @@ Cloudflare rejects a deploy on two size limits, and nothing short of `wrangler d
 `preflight` and in CI's `build-website` job, checks the assets first (an oversized one makes the dry-run itself fail),
 and prints each measured size:
 
-| Limit | Cloudflare | Budget the check enforces | Measured 2026-10-04 on `main` | With BT-557's kit pages |
+| Limit | Cloudflare | Budget the check enforces | Measured 2026-10-08, before BT-586 | After BT-586 |
 | --- | --- | --- | --- | --- |
-| Any single file under `dist/public` | 25 MiB per asset | 25 MiB (`MAX_ASSET_BYTES`) | `/api/search` 17.07 MiB | ~17.9 MiB; briefly 28.8 MiB before the index dropped their prose |
-| Worker upload (`dist/server`), gzip | 10 MiB (paid plan) | 8 MiB, 80% (`WORKER_GZIP_BUDGET_BYTES`) | 3.86 MiB | ~6.2 MiB |
+| Any single file under `dist/public` | 25 MiB per asset | 25 MiB (`MAX_ASSET_BYTES`) | `/api/search` 19.13 MiB | unchanged |
+| Worker upload (`dist/server`), uncompressed | 64 MiB, all plans | 51 MiB, 80% (`WORKER_BUDGET_BYTES`) | 66.26 MiB, rejected by Cloudflare | 39.22 MiB |
 
-The gzip figure is parsed from `wrangler deploy --dry-run` (the `Total Upload: ... / gzip: ...` line, no auth needed).
-That is the number Cloudflare enforces, and wrangler decides which `dist/server` files count as modules. The per-asset
-sizes are a direct walk of `dist/public`. Raise the Worker budget only after you have measured what is growing; every
-prerendered page adds to `__waku_build_metadata.js`.
+The Worker figure is the uncompressed `Total Upload` from `wrangler deploy --dry-run` (no auth needed). That is the
+number Cloudflare enforces, and wrangler decides which `dist/server` files count as modules. The per-asset sizes are a
+direct walk of `dist/public`. There is no compressed limit any more: Cloudflare
+[dropped it on 2026-09-04](https://developers.cloudflare.com/changelog/post/2026-09-04-increased-worker-size-limit/),
+and wrangler's gzip figure (2.83 MiB after BT-586) is reference only. The check used to gate gzip against an 8 MiB
+budget, which is why it stayed green while every `deploy-website-next` run from #715 to BT-586 failed on 64 MiB:
+Twoslash output is roughly ten times smaller gzipped.
+
+**The Worker used to carry every page twice** (BT-586). Waku saves a base64 RSC payload of each prerendered page into
+`dist/server/__waku_build_metadata.js` (`defineRouter:cachedElements`), 27.2 MiB of the 66.3 with Twoslash on, on top of
+the page's compiled MDX module in `dist/server/assets/`. The Worker never serves that copy: `markdownNegotiationPlugin`
+answers every page's HTML and its `RSC/` payload from the `ASSETS` binding, and only asset-less paths (`/mcp`, unknown
+URLs) reach Waku. So `scripts/patch-wrangler.mjs` (`stripPrerenderedPages`) drops every `slot/page:` entry after the
+build, leaving the layout and route-template entries; Waku renders a static slot on a cache miss, so a page that does
+reach it still renders. The patch throws if a Waku upgrade changes the file's shape. The MDX modules have to stay:
+`core:get-text` reads each page's markdown from them for markdown negotiation and the MCP server's `get_doc_page` and
+`search_docs`. They are now the bulk of the Worker, and Twoslash's hover markup is the bulk of them (the largest,
+`assets/input-*.js` and `assets/rendering-*.js`, are 3.7 and 3.5 MiB), so every Twoslash-heavy API doc grows the
+uncompressed figure. Raise a budget only after you have measured what is growing.
