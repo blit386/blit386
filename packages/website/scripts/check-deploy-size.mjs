@@ -102,6 +102,7 @@ function fail(failures) {
     process.exit(1);
 }
 
+/** Checks every `dist/public` asset, then the Worker upload, and exits 1 when either is over its limit. */
 function main() {
     for (const required of [DIST_SERVER_WRANGLER_CONFIG, DIST_PUBLIC_DIR]) {
         if (!existsSync(required)) {

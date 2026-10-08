@@ -107,6 +107,7 @@ export const stripPrerenderedPages = (source) => {
     return `export const buildMetadata = new Map(${JSON.stringify(stripped)});`;
 };
 
+/** Patches the built Worker in place: the deployed wrangler.json, Waku's build metadata, and every createRequire call. */
 const main = () => {
     const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
     const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === '1';
