@@ -4,11 +4,14 @@ const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_VERSION = '1.0.0';
 
-// Query tokens shorter than this ("a", "i", "do") are dropped: they prefix-match nearly every page.
-const MIN_TERM_LENGTH = 3;
-// Function words long enough to survive MIN_TERM_LENGTH that agents put in natural-language queries.
+// Query terms shorter than this match only whole words, so `ui` finds "UI" but not "uint" (BT-585).
+const MIN_PREFIX_LENGTH = 3;
+// A word character for startsWord and endsWord. No `g` flag, so `.test()` keeps no state between calls.
+const ALPHANUMERIC = /[A-Za-z0-9]/;
+// Function words agents put in natural-language queries. They occur as whole words on every page.
 const STOPWORDS = new Set(
     (
+        'a i an as at be by do if in is it me my no of on or so to up we ' +
         'about all and any are but can could does for from had has have how into its need not should ' +
         'some than that the then there these this those use using want was were what when where which ' +
         'who why will with would you your'
@@ -107,27 +110,35 @@ function isToolCallParams(v: unknown): v is ToolCallParams {
     return typeof v === 'object' && v !== null && 'name' in v && typeof (v as { name: unknown }).name === 'string';
 }
 
-// Distinct alphanumeric query terms worth matching: no stopwords, nothing under MIN_TERM_LENGTH.
+// Distinct alphanumeric query terms worth matching: no stopwords.
 // A camelCase identifier stays one term, so `drawSprite` finds that API rather than "draw" and "sprite".
 function toTerms(query: string): string[] {
     const words = query.toLowerCase().split(/[^a-z0-9]+/);
-    return [...new Set(words)].filter((word) => word.length >= MIN_TERM_LENGTH && !STOPWORDS.has(word));
+    return [...new Set(words)].filter((word) => word !== '' && !STOPWORDS.has(word));
 }
 
 // Whether `text[index]` begins a word: the start of the text, the first character after a
 // non-alphanumeric one, or a camelCase hump (the `S` in `drawSprite`).
 function startsWord(text: string, index: number): boolean {
     const before = text.charAt(index - 1);
-    return index === 0 || !/[A-Za-z0-9]/.test(before) || (/[a-z0-9]/.test(before) && /[A-Z]/.test(text.charAt(index)));
+    return index === 0 || !ALPHANUMERIC.test(before) || (/[a-z0-9]/.test(before) && /[A-Z]/.test(text.charAt(index)));
+}
+
+// Whether `text[index]` ends the word before it: the end of the text, a non-alphanumeric
+// character, or a camelCase hump (`ui` ends at the `B` in `uiButton`).
+function endsWord(text: string, index: number): boolean {
+    return !ALPHANUMERIC.test(text.charAt(index)) || startsWord(text, index);
 }
 
 // Every index where `term` begins a word in `text`, so `sprite` matches `sprites` and `drawSprite`
-// while `put` skips `input`. `lower` is `text` lowercased, which keeps the indices aligned. Scoring
-// and excerpts both match through this, so an excerpt always shows a hit that was scored.
+// while `put` skips `input`. A term under MIN_PREFIX_LENGTH must also end the word. `lower` is
+// `text` lowercased, which keeps the indices aligned. Scoring and excerpts both match through
+// this, so an excerpt always shows a hit that was scored.
 function wordStarts(text: string, lower: string, term: string): number[] {
     const found: number[] = [];
+    const wholeWord = term.length < MIN_PREFIX_LENGTH;
     for (let index = lower.indexOf(term); index !== -1; index = lower.indexOf(term, index + term.length)) {
-        if (startsWord(text, index)) {
+        if (startsWord(text, index) && (!wholeWord || endsWord(text, index + term.length))) {
             found.push(index);
         }
     }
