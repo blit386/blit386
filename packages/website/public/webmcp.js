@@ -50,14 +50,15 @@
         {
             name: 'search_documentation',
             title: 'Search documentation',
+            // Repeats the search_docs description in src/mcp-server.ts; keep the two in step.
             description:
-                'Full-text search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts.',
+                'Keyword search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts. Use short keywords, not a sentence: "sprite", "keyboard input", "palette animation".',
             inputSchema: {
                 type: 'object',
                 properties: {
                     query: {
                         type: 'string',
-                        description: 'Search query, e.g. "palette animation" or "WebGPU renderer"',
+                        description: 'A few keywords, e.g. "palette animation" or "WebGPU renderer"',
                     },
                 },
                 required: ['query'],
