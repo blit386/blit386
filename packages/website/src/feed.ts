@@ -1,5 +1,6 @@
 import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
 import { getPostDate } from './blog-post-date';
+import { HTTP_HEAD, isGetOrHead } from './http-methods';
 
 const FEED_URL = '/feed.xml';
 const CHANNEL_TITLE = 'BLIT386 Blog';
@@ -126,7 +127,7 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
 
             return [
                 async (c, next) => {
-                    if (c.req.path !== FEED_URL || (c.req.method !== 'GET' && c.req.method !== 'HEAD')) {
+                    if (c.req.path !== FEED_URL || !isGetOrHead(c.req.method)) {
                         return next();
                     }
 
@@ -138,7 +139,7 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
                         return new Response('Internal error: feed unavailable', { status: 500 });
                     }
 
-                    return new Response(c.req.method === 'HEAD' ? null : xml, {
+                    return new Response(c.req.method === HTTP_HEAD ? null : xml, {
                         headers: { 'content-type': 'application/rss+xml; charset=utf-8' },
                     });
                 },

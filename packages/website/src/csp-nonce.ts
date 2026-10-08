@@ -1,5 +1,6 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { buildCsp, generateNonce } from './csp';
+import { HTTP_GET } from './http-methods';
 
 /**
  * The slice of Cloudflare's `HTMLRewriter` this plugin uses.
@@ -63,7 +64,7 @@ function resolveRewriterFactory(override?: () => HtmlRewriterLike): (() => HtmlR
  * is stamped too.
  */
 function isStampableHtml(response: Response, method: string): boolean {
-    if (method !== 'GET' || response.body === null || response.status === 304) {
+    if (method !== HTTP_GET || response.body === null || response.status === 304) {
         return false;
     }
 

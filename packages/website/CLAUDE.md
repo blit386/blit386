@@ -53,12 +53,12 @@ exploration.
 | Cloudflare security headers | `public/_headers` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
 
-Five Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),
+Six Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),
 `channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin` (`src/markdown-negotiation.ts`),
-`mcpServerPlugin` (`src/mcp-server.ts`), and `feedPlugin` (`src/feed.ts`) - plus the `blog-post-date` helper
-(`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a post's `date` frontmatter). The
-rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG images, and link
-validation.
+`mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and `methodGuardPlugin` (`src/method-guard.ts`) -
+plus the `blog-post-date` helper (`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a
+post's `date` frontmatter). The rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap,
+takumi OG images, and link validation.
 
 ## Content-Security-Policy
 
@@ -154,7 +154,7 @@ at request time, and `markdown-negotiation.ts` forwarding to `ASSETS` and fallin
 either, expect those tests to be the ones that stop you.
 
 `src/webmcp.test.ts` covers `public/webmcp.js`, the browser-side WebMCP bridge - a different shape of problem from the
-four `ServerPlugin`s above, since it is a plain `<script defer>` (`press.config.tsx`), not `type="module"`, with no
+six `ServerPlugin`s above, since it is a plain `<script defer>` (`press.config.tsx`), not `type="module"`, with no
 `import`/`export` of its own. It is deliberately outside `tsconfig.json`'s `include` (it targets `document.modelContext`
 / `navigator.modelContext`, an experimental API with no `lib.dom.d.ts` types), so the test reads the file as text and
 runs it with `vm.runInThisContext({ filename })` against stubbed `document` / `navigator` / `window` / `fetch` rather
@@ -349,7 +349,7 @@ fumapress bump and a waku bump as two PRs, neither installable on its own.
 **Do not move `waku` past beta.6 while `fumapress` is on 0.7.x.** waku beta.8 is sanctioned only by `fumapress` 1.0.0
 beta.1 or beta.2, and nothing published sanctions beta.9 at all. That release is a rewrite rather than a bump: it
 renames `ServerPlugin` to `PressPlugin` and `ConfigContext` to `AppShape`, and moves layouts onto the config object. All
-four local plugins in `src/` plus every `createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would
+six local plugins in `src/` plus every `createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would
 need reworking.
 
 Two behavioral changes came in with 0.7.x and are already absorbed. Takumi went v1 to v2 (0.7.2), which re-tuned the
@@ -390,6 +390,15 @@ requests. With the Worker first, the plugin re-implements assets-first by forwar
 `run_worker_first` there; the root `wrangler.jsonc` carries it only for parity. Cloudflare's managed "Markdown for
 Agents" feature is not used - it needs Pro+ and only rewrites origin HTML on proxied zones, not Worker-rendered
 responses.
+
+**Non-GET/HEAD requests are refused, not rendered** (BT-587). `markdownNegotiationPlugin` only forwards GET and HEAD to
+`ASSETS`, so a `POST /docs/api/rendering` used to fall through to Waku and render the whole page on demand (2.2 MB, 100+
+ms against 5 ms static; costlier since BT-586 stripped the prerendered payloads). `methodGuardPlugin` is registered
+**last** in the `press.config.tsx` chain and answers every non-GET/HEAD request that reaches it with `405` and
+`Allow: GET, HEAD`. Last, rather than an `/mcp` exception beside the method check, so a future POST route works once its
+plugin is registered, with no path list to forget. `POST /mcp` is claimed by `mcpServerPlugin` before the guard.
+`OPTIONS` gets the same 405: nothing serves CORS (not even `/mcp`) and Claude Code and Cursor are not browsers, so no
+preflight is sent. Do not register a plugin after `methodGuardPlugin`.
 
 ## MCP server
 
