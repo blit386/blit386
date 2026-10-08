@@ -4,8 +4,16 @@ const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_VERSION = '1.0.0';
 
-// Matches in the title/description count for more than matches in the body.
-const TITLE_WEIGHT = 10;
+// Query tokens shorter than this ("a", "i", "do") are dropped: they prefix-match nearly every page.
+const MIN_TERM_LENGTH = 3;
+// Function words long enough to survive MIN_TERM_LENGTH that agents put in natural-language queries.
+const STOPWORDS = new Set(
+    (
+        'about all and any are but can could does for from had has have how into its need not should ' +
+        'some than that the then there these this those use using want was were what when where which ' +
+        'who why will with would you your'
+    ).split(' '),
+);
 // Cap returned hits so the response stays compact for an LLM context window.
 const MAX_RESULTS = 10;
 // Characters of context to show on each side of the first matched term.
@@ -39,11 +47,13 @@ interface CorpusEntry {
     title: string;
     url: string;
     description: string;
-    // Lowercased `${title} ${description}`, pre-computed for scoring.
+    // `${title} ${description}`, scored as one field.
     heading: string;
+    // `heading` lowercased, pre-computed for scoring.
+    headingLower: string;
     // Original-case body text, used to build excerpts.
     body: string;
-    // Lowercased body text, pre-computed for scoring.
+    // `body` lowercased, pre-computed for scoring.
     bodyLower: string;
 }
 
@@ -57,12 +67,13 @@ interface AssetsBinding {
 const MCP_TOOLS = [
     {
         name: 'search_docs',
+        // public/webmcp.js repeats this description for its search_documentation tool; keep the two in step.
         description:
-            'Full-text search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts.',
+            'Keyword search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts. Use short keywords, not a sentence: "sprite", "keyboard input", "palette animation".',
         inputSchema: {
             type: 'object',
             properties: {
-                query: { type: 'string', description: 'Search query, e.g. "palette animation"' },
+                query: { type: 'string', description: 'A few keywords, e.g. "palette animation"' },
             },
             required: ['query'],
         },
@@ -96,45 +107,48 @@ function isToolCallParams(v: unknown): v is ToolCallParams {
     return typeof v === 'object' && v !== null && 'name' in v && typeof (v as { name: unknown }).name === 'string';
 }
 
-function countMatches(haystack: string, needle: string): number {
-    if (needle.length === 0) {
-        return 0;
-    }
-    let count = 0;
-    let from = haystack.indexOf(needle);
-    while (from !== -1) {
-        count += 1;
-        from = haystack.indexOf(needle, from + needle.length);
-    }
-    return count;
+// Distinct alphanumeric query terms worth matching: no stopwords, nothing under MIN_TERM_LENGTH.
+// A camelCase identifier stays one term, so `drawSprite` finds that API rather than "draw" and "sprite".
+function toTerms(query: string): string[] {
+    const words = query.toLowerCase().split(/[^a-z0-9]+/);
+    return [...new Set(words)].filter((word) => word.length >= MIN_TERM_LENGTH && !STOPWORDS.has(word));
 }
 
-// Build a short excerpt centered on the earliest matched term so results show
-// where the query was found rather than just the start of the page.
-function buildExcerpt(text: string, terms: readonly string[]): string {
-    const trimmed = text.trim();
-    if (trimmed.length === 0) {
-        return '';
-    }
+// Whether `text[index]` begins a word: the start of the text, the first character after a
+// non-alphanumeric one, or a camelCase hump (the `S` in `drawSprite`).
+function startsWord(text: string, index: number): boolean {
+    const before = text.charAt(index - 1);
+    return index === 0 || !/[A-Za-z0-9]/.test(before) || (/[a-z0-9]/.test(before) && /[A-Z]/.test(text.charAt(index)));
+}
 
-    const lower = trimmed.toLowerCase();
-    let first = -1;
-    for (const term of terms) {
-        const idx = lower.indexOf(term);
-        if (idx !== -1 && (first === -1 || idx < first)) {
-            first = idx;
+// Every index where `term` begins a word in `text`, so `sprite` matches `sprites` and `drawSprite`
+// while `put` skips `input`. `lower` is `text` lowercased, which keeps the indices aligned. Scoring
+// and excerpts both match through this, so an excerpt always shows a hit that was scored.
+function wordStarts(text: string, lower: string, term: string): number[] {
+    const found: number[] = [];
+    for (let index = lower.indexOf(term); index !== -1; index = lower.indexOf(term, index + term.length)) {
+        if (startsWord(text, index)) {
+            found.push(index);
         }
     }
+    return found;
+}
 
-    if (first === -1) {
-        return trimmed.slice(0, EXCERPT_RADIUS * 2);
+// A window of the body around the earliest scored hit, or the start of the body when the
+// terms only hit the title or description.
+function buildExcerpt(body: string, bodyLower: string, terms: readonly string[]): string {
+    const firstHits = terms.flatMap((term) => wordStarts(body, bodyLower, term).slice(0, 1));
+    if (firstHits.length === 0) {
+        return body.trim().slice(0, EXCERPT_RADIUS * 2);
     }
 
+    const first = Math.min(...firstHits);
     const start = Math.max(0, first - EXCERPT_RADIUS);
-    const end = Math.min(trimmed.length, first + EXCERPT_RADIUS);
-    const prefix = start > 0 ? '...' : '';
-    const suffix = end < trimmed.length ? '...' : '';
-    return `${prefix}${trimmed.slice(start, end).trim()}${suffix}`;
+    const end = first + EXCERPT_RADIUS;
+    // Mark a cut only where it drops text, not where it drops leading or trailing whitespace.
+    const prefix = body.slice(0, start).trim() ? '...' : '';
+    const suffix = body.slice(end).trim() ? '...' : '';
+    return `${prefix}${body.slice(start, end).trim()}${suffix}`;
 }
 
 // Reduce a get_doc_page argument to the site path the corpus is keyed by, or undefined when it
@@ -175,12 +189,12 @@ const MAX_ECHOED_INPUT = 200;
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
  *
- * search_docs scans the loader pages in-process, scoring substring matches against a
+ * search_docs scans the loader pages in-process, scoring word-prefix matches against a
  * corpus that is extracted once per loader and cached for the isolate. It deliberately
  * does NOT build a FlexSearch index: in static mode that index ships as a multi-megabyte
  * asset and rebuilding it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare
  * error 1102) - the same reason the site itself moved search client-side (see
- * press.config.tsx). A substring scan of every page stays well within the Worker budget;
+ * press.config.tsx). A linear scan of every page stays well within the Worker budget;
  * re-measure the first search on a cold isolate if the corpus grows by an order of magnitude.
  *
  * get_doc_page returns one page's full markdown from the same cached corpus. It is a lookup
@@ -230,11 +244,13 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                 }
                             }
 
+                            const heading = `${title} ${description}`;
                             return {
                                 title,
                                 url: page.url,
                                 description,
-                                heading: `${title} ${description}`.toLowerCase(),
+                                heading,
+                                headingLower: heading.toLowerCase(),
                                 body,
                                 bodyLower: body.toLowerCase(),
                             };
@@ -255,33 +271,44 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
             };
 
             const searchDocs = async (query: string, origin: string): Promise<SearchResult[]> => {
-                const terms = query
-                    .toLowerCase()
-                    .split(/\s+/)
-                    .filter((term) => term.length > 0);
+                const terms = toTerms(query);
                 if (terms.length === 0) {
                     return [];
                 }
 
-                // Per request, only the cheap substring matching and scoring run;
+                // Per request, only the cheap word matching and scoring run;
                 // the corpus extraction above is amortized across the isolate.
                 const corpus = await getCorpus();
                 return corpus
                     .map((entry) => {
-                        let score = 0;
+                        // Ranked in this order, each a tiebreaker for the one before: how many query
+                        // terms the page matches at all, how many hit its title or description, then
+                        // the body counts. Those are log-damped per term and summed, so a long page
+                        // repeating one term cannot outrank one covering every term evenly.
+                        let termsMatched = 0;
+                        let termsInHeading = 0;
+                        let dampedBodyHits = 0;
                         for (const term of terms) {
-                            score += countMatches(entry.heading, term) * TITLE_WEIGHT;
-                            score += countMatches(entry.bodyLower, term);
+                            const inHeading = wordStarts(entry.heading, entry.headingLower, term).length;
+                            const inBody = wordStarts(entry.body, entry.bodyLower, term).length;
+                            termsMatched += inHeading + inBody > 0 ? 1 : 0;
+                            termsInHeading += inHeading > 0 ? 1 : 0;
+                            dampedBodyHits += Math.log1p(inBody);
                         }
-                        return { entry, score };
+                        return { entry, termsMatched, termsInHeading, dampedBodyHits };
                     })
-                    .filter((scored) => scored.score > 0)
-                    .sort((a, b) => b.score - a.score)
+                    .filter((scored) => scored.termsMatched > 0)
+                    .sort(
+                        (a, b) =>
+                            b.termsMatched - a.termsMatched ||
+                            b.termsInHeading - a.termsInHeading ||
+                            b.dampedBodyHits - a.dampedBodyHits,
+                    )
                     .slice(0, MAX_RESULTS)
                     .map(({ entry }) => ({
                         title: entry.title,
                         url: new URL(entry.url, origin).href,
-                        excerpt: buildExcerpt(entry.body, terms) || entry.description,
+                        excerpt: buildExcerpt(entry.body, entry.bodyLower, terms),
                     }));
             };
 

@@ -2,12 +2,11 @@
  * Covers `mcpServerPlugin`: the public JSON-RPC 2.0 endpoint at `POST /mcp`.
  *
  * This is an external contract - agents call it, so its envelope, error codes, and tool schemas
- * are as public as the site's HTML. `search_docs` ranking is asserted at the exact weight rather
- * than as "title beats body", because the documented contract is that a title or description match
- * counts for ten body matches, and a test that only checks the ordering would still pass if that
- * multiplier drifted.
+ * are as public as the site's HTML. `search_docs` ranking is asserted one tier at a time - distinct
+ * terms matched, then title or description hits, then log-damped body counts - each with a fixture
+ * where a raw substring count or a raw body total would order the pages the other way.
  *
- * The module's pure helpers (`countMatches`, `buildExcerpt`, `MCP_TOOLS`) stay unexported: every
+ * The module's pure helpers (`toTerms`, `wordStarts`, `buildExcerpt`, `MCP_TOOLS`) stay unexported: every
  * behavior is observable through `tools/call`, so a test-only export would widen the module's
  * surface for nothing.
  */
@@ -220,11 +219,11 @@ describe('mcpServerPlugin', () => {
                     {
                         name: 'search_docs',
                         description:
-                            'Full-text search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts.',
+                            'Keyword search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts. Use short keywords, not a sentence: "sprite", "keyboard input", "palette animation".',
                         inputSchema: {
                             type: 'object',
                             properties: {
-                                query: { type: 'string', description: 'Search query, e.g. "palette animation"' },
+                                query: { type: 'string', description: 'A few keywords, e.g. "palette animation"' },
                             },
                             required: ['query'],
                         },
@@ -376,36 +375,80 @@ describe('mcpServerPlugin', () => {
         });
 
         describe('ranking', () => {
-            it('weighs a title match at exactly ten body matches', async () => {
-                // Title match scores 10. Sorting it between an 11-match body and a 9-match body
-                // pins the multiplier: at 5 the title page would sink to last, at 20 it would rise
-                // to first.
-                const results = await searchCorpus('palette', [
-                    { url: '/title', title: 'Palette cycling', body: 'unrelated text' },
-                    { url: '/eleven', title: 'Sprites', body: 'palette '.repeat(11) },
-                    { url: '/nine', title: 'Fonts', body: 'palette '.repeat(9) },
+            it('ranks a page matching more query terms above one repeating a single term', async () => {
+                const results = await searchCorpus('palette sprite', [
+                    { url: '/one', title: 'Guide', body: 'palette '.repeat(50) },
+                    { url: '/both', title: 'Guide', body: 'palette sprite' },
                 ]);
 
-                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/eleven', '/title', '/nine']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/both', '/one']);
+            });
+
+            it('ranks a title hit above any number of body hits for the same terms', async () => {
+                const results = await searchCorpus('palette', [
+                    { url: '/many', title: 'Sprites', body: 'palette '.repeat(50) },
+                    { url: '/title', title: 'Palette cycling', body: 'unrelated text' },
+                ]);
+
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/title', '/many']);
             });
 
             it('weighs a description match the same as a title match', async () => {
                 // The heading scored against is `${title} ${description}`, so both halves count.
                 const results = await searchCorpus('palette', [
+                    { url: '/many', title: 'Fonts', body: 'palette '.repeat(50) },
                     { url: '/described', title: 'Colors', description: 'Palette control.', body: 'nothing here' },
-                    { url: '/nine', title: 'Fonts', body: 'palette '.repeat(9) },
                 ]);
 
-                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/described', '/nine']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/described', '/many']);
             });
 
-            it('sums the score across every query term', async () => {
+            it('damps body counts per term, so even coverage beats one repeated term', async () => {
+                // Raw totals are 11 against 8, which would put /lopsided first. Damped per term the
+                // order flips: log(11) + log(2) is less than log(5) + log(5).
                 const results = await searchCorpus('palette sprite', [
-                    { url: '/both', title: 'Guide', body: 'palette sprite' },
-                    { url: '/one', title: 'Guide', body: 'palette' },
+                    { url: '/lopsided', title: 'Guide', body: `${'palette '.repeat(10)}sprite` },
+                    { url: '/even', title: 'Guide', body: 'palette sprite '.repeat(4) },
                 ]);
 
-                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/both', '/one']);
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/even', '/lopsided']);
+            });
+
+            it('matches at the start of a word, prefixes and camelCase humps included', async () => {
+                const results = await searchCorpus('put', [
+                    { url: '/inside', title: 'X', body: 'input and output' },
+                    { url: '/prefix', title: 'X', body: 'putting pixels' },
+                    { url: '/camel', title: 'X', body: 'call BT.putPixel()' },
+                ]);
+
+                expect(results.map((r) => new URL(r.url).pathname).sort()).toEqual(['/camel', '/prefix']);
+            });
+
+            it('keeps a camelCase identifier in the query as one term', async () => {
+                const results = await searchCorpus('drawSprite', [
+                    { url: '/api', title: 'X', body: 'call BT.drawSprite()' },
+                    { url: '/apart', title: 'X', body: 'draw a sprite' },
+                ]);
+
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/api']);
+            });
+
+            it('ignores stopwords and tokens shorter than three characters', async () => {
+                // Every one of these words occurs in /noise; only "palette" counts.
+                const results = await searchCorpus('how do I use the palette with a sprite', [
+                    { url: '/noise', title: 'X', body: 'how do i use the thing with a lot of words' },
+                    { url: '/hit', title: 'X', body: 'palette' },
+                ]);
+
+                expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/hit']);
+            });
+
+            it('returns nothing when every word is a stopword or too short', async () => {
+                const results = await searchCorpus('how do I do it', [
+                    { url: '/p', title: 'How to', body: 'how do i do it' },
+                ]);
+
+                expect(results).toEqual([]);
             });
 
             it('matches case-insensitively', async () => {
@@ -444,6 +487,62 @@ describe('mcpServerPlugin', () => {
             });
         });
 
+        describe('natural-language queries (BT-556)', () => {
+            // Modeled on the live pages these queries used to bury: a long changelog whose filler
+            // is full of "a", "i", "and", and "with", next to the short pages that answer the question.
+            const filler = 'Fixed a crash in the audio mixer when a channel was paused and resumed within one frame. ';
+            const pages = [
+                {
+                    url: '/changelog',
+                    title: 'Changelog',
+                    description: 'Release history.',
+                    body: `${'- Faster `BT.drawSprite` batching, keyboard input with edge detection, moved the unlock into init. '.repeat(3)}${filler.repeat(40)}`,
+                },
+                {
+                    url: '/input',
+                    title: 'Input',
+                    description: 'Keyboard, mouse, touch, and gamepad input.',
+                    body: 'Read the keyboard with `BT.isKeyDown`. Move the player when input arrives, then draw its sprite.',
+                },
+                {
+                    url: '/rendering',
+                    title: 'Rendering',
+                    description: 'Primitives, sprites, text, post-process effects, and frame capture.',
+                    body: 'Draw sprites with `BT.drawSprite`. '.repeat(20),
+                },
+                {
+                    url: '/structure',
+                    title: 'Skill: Structure a game',
+                    description: 'Where your game logic goes.',
+                    body: 'No physics or collision is built in. Check collisions in update(). Collision: test overlap yourself. Collisions are yours.',
+                },
+                {
+                    url: '/browser-support',
+                    title: 'Browser Support',
+                    description: 'What works where.',
+                    body: 'Detection works everywhere. Orientation detection needs a user gesture on some browsers.',
+                },
+            ];
+            const paths = async (query: string) =>
+                (await searchCorpus(query, pages)).map((r) => new URL(r.url).pathname);
+
+            it('ranks the input guide above the changelog for a how-do-I sentence', async () => {
+                // Rendering trails the changelog: it matches 2 of the 6 content terms (draw, sprite),
+                // the changelog 5. Distinct terms rank first, so that order is the contract.
+                expect(await paths('how do I draw a sprite and move a paddle with keyboard input')).toEqual([
+                    '/input',
+                    '/changelog',
+                    '/rendering',
+                ]);
+            });
+
+            it('ranks the page about collisions above the changelog and browser support', async () => {
+                // Pins the order only: the old substring scorer happens to pass this too. Live, the
+                // query failed because no collision page existed yet, which no ranking can fix.
+                expect(await paths('collision detection')).toEqual(['/structure', '/changelog', '/browser-support']);
+            });
+        });
+
         describe('excerpts', () => {
             it('returns a short body verbatim', async () => {
                 const results = await searchCorpus('palette', [
@@ -467,27 +566,22 @@ describe('mcpServerPlugin', () => {
             });
 
             it('centers on the earliest matched term, not the first term given', async () => {
-                const body = `zebra${'x'.repeat(300)}palette`;
+                const body = `zebra ${'x'.repeat(300)} palette`;
 
                 const results = await searchCorpus('palette zebra', [{ url: '/p', title: 'X', body }]);
 
                 expect(results[0]?.excerpt.startsWith('zebra')).toBe(true);
             });
 
-            it('falls back to the description when the page has no body', async () => {
-                const results = await searchCorpus('palette', [
-                    { url: '/p', title: 'Palette', description: 'The palette guide.' },
-                ]);
+            it('centers on a word-start hit, never on the term inside another word', async () => {
+                // Scoring skips `input` for `put`; the excerpt must skip it too and show `putPixel`.
+                const body = `input ${'x '.repeat(100)}call BT.putPixel() here`;
 
-                expect(results[0]?.excerpt).toBe('The palette guide.');
-            });
+                const results = await searchCorpus('put', [{ url: '/p', title: 'X', body }]);
+                const excerpt = results[0]?.excerpt ?? '';
 
-            it('falls back to the description when the body is only whitespace', async () => {
-                const results = await searchCorpus('palette', [
-                    { url: '/p', title: 'Palette', description: 'The palette guide.', body: '   \n  ' },
-                ]);
-
-                expect(results[0]?.excerpt).toBe('The palette guide.');
+                expect(excerpt.startsWith('...')).toBe(true);
+                expect(excerpt).toContain('putPixel');
             });
         });
 
