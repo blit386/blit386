@@ -11,7 +11,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit play` - play-test the game from the terminal: open it in the Chrome or Edge already installed, run steps (hold
     keys, wait, read the game's `testState()` or `window.__game.state()`, save frames), and print one JSON line per
     step. Needs `playwright-core` in the game (an optional peer dependency; the command prints the line that adds it).
-  - `blit doctor` - check Node, git, and the installed `blit386` version.
+  - `blit doctor` - check Node, git, the installed `blit386` version, and whether a set-up assistant can look up the
+    docs.
   - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
     a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
   - `blit migrate` - update old BLIT386 names in your game to the current ones, and (on blit386 1.4.0+) enable hot

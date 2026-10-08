@@ -1,5 +1,6 @@
 /**
- * CLI tests for `blit doctor`, focused on the D14 kit-engine range check and the .gitattributes check.
+ * CLI tests for `blit doctor`, focused on the D14 kit-engine range check, the .gitattributes check,
+ * and the docs-server config check.
  *
  * Each case is a hand-rolled game folder with a fake `node_modules/blit386` version. Requires
  * `pnpm run build` first (the package `pretest` script does that).
@@ -12,6 +13,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+
+import { AGENT_KINDS, AGENT_SPECS } from '../dist/ownership.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const blitCli = join(here, '..', 'dist', 'cli.js');
@@ -150,6 +153,110 @@ test('blit doctor warns when there is no game package.json', () => {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
         assert.ok(output.includes('No game found here'), `expected no-game warn, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+function agentSetupPath(kind) {
+    const spec = AGENT_SPECS[kind];
+    const path = [...spec.files, ...spec.dirs.map((dir) => `${dir}kit-marker.txt`)].find(
+        (candidate) => candidate !== spec.mcpConfig,
+    );
+    assert.ok(path, `${kind} has no private path besides ${spec.mcpConfig}`);
+    return path;
+}
+
+/**
+ * @param {string} root
+ * @param {string[]} paths
+ */
+function writeManifest(root, paths) {
+    mkdirSync(join(root, '.blit'), { recursive: true });
+    writeFileSync(join(root, '.blit', 'manifest.json'), JSON.stringify({ files: paths.map((path) => ({ path })) }));
+}
+
+test('blit doctor warns for every assistant missing its docs server config, and stays quiet once it is there', () => {
+    for (const kind of AGENT_KINDS) {
+        const root = makeGame('1.7.1');
+        const spec = AGENT_SPECS[kind];
+        writeManifest(root, [agentSetupPath(kind)]);
+        try {
+            const missing = runDoctor(root);
+            assert.equal(missing.exitCode, 0);
+            assert.ok(
+                missing.output.includes(`No ${spec.mcpConfig} file, so ${spec.label} cannot look up the BLIT386 docs.`),
+                `expected a docs warning for ${kind}, got:\n${missing.output}`,
+            );
+            assert.ok(
+                missing.output.includes('Run `npx blit agents sync` to add it.'),
+                `expected the sync hint for ${kind}, got:\n${missing.output}`,
+            );
+
+            const mcpFile = join(root, spec.mcpConfig);
+            mkdirSync(dirname(mcpFile), { recursive: true });
+            writeFileSync(mcpFile, '{}\n');
+            const present = runDoctor(root);
+            assert.equal(present.exitCode, 0);
+            assert.ok(
+                !present.output.includes('cannot look up the BLIT386 docs'),
+                `did not expect a docs warning for ${kind}, got:\n${present.output}`,
+            );
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    }
+});
+
+test('blit doctor names both assistants when they share one missing docs config', () => {
+    const root = makeGame('1.7.1');
+    writeManifest(root, [agentSetupPath('claude'), agentSetupPath('copilot')]);
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(
+            output.includes('No .mcp.json file, so Claude Code and GitHub Copilot cannot look up the BLIT386 docs.'),
+            `expected one shared warning, got:\n${output}`,
+        );
+        assert.equal(
+            output.split('No .mcp.json file').length - 1,
+            1,
+            `expected the shared config to be warned about once, got:\n${output}`,
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor skips manifest entries that have no path', () => {
+    const root = makeGame('1.7.1');
+    mkdirSync(join(root, '.blit'), { recursive: true });
+    writeFileSync(
+        join(root, '.blit', 'manifest.json'),
+        JSON.stringify({ files: [{}, { path: 1 }, { path: 'CLAUDE.md' }] }),
+    );
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(
+            output.includes('No .mcp.json file, so Claude Code cannot look up the BLIT386 docs.'),
+            `expected the docs warning to survive bad entries, got:\n${output}`,
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor stays quiet about the docs server when the game tracks no assistant', () => {
+    const root = makeGame('1.7.1');
+    writeManifest(root, ['AGENTS.md', 'docs/getting-started.md']);
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(
+            !output.includes('cannot look up the BLIT386 docs'),
+            `did not expect a docs warning, got:\n${output}`,
+        );
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

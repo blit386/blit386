@@ -51,8 +51,8 @@ More detail: `docs/hot-reload.md`.
 
 ## If something seems wrong
 
-Run `npx blit doctor`. It checks your Node version, whether your work is saved with git, and which version of BLIT386
-you have, then tells you what to do in plain language.
+Run `npx blit doctor`. It checks your Node version, whether your work is saved with git, which version of BLIT386 you
+have, and whether your assistant can look up the docs, then tells you what to do in plain language.
 
 If the game itself misbehaves - a blank screen, red errors, a change that did something strange - open
 `when-something-breaks.md` in this folder. It walks through the most common problems one by one.

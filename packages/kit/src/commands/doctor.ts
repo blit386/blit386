@@ -1,6 +1,6 @@
 /** `blit doctor` - a friendly checkup of the things a BLIT386 game needs. */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
     compareVersions,
@@ -15,8 +15,58 @@ import {
     readProject,
     satisfiesCaretRange,
 } from '../env';
+import { hasSymlinkedSegment } from '../fs-safety';
+import { BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest } from '../manifest';
 import { NO_GIT_NAG, ui } from '../messages';
+import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { checkSyncDrift } from './agents';
+
+/** Drift never sees a file the manifest did not track. */
+function checkDocsMcp(root: string, out: (line: string) => void): void {
+    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+
+    if (hasSymlinkedSegment(manifestPath, root) || !existsSync(manifestPath)) {
+        return;
+    }
+
+    let manifest: ReadBlitManifest;
+
+    try {
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
+    } catch {
+        return;
+    }
+
+    if (typeof manifest !== 'object' || manifest === null || !Array.isArray(manifest.files)) {
+        return;
+    }
+
+    // JSON can carry entries with no string path. hasAgentFiles normalizes that path, so skip them.
+    const files = manifest.files.filter(
+        (entry) => typeof entry === 'object' && entry !== null && typeof entry.path === 'string',
+    );
+
+    const missing = new Map<string, string[]>();
+
+    for (const kind of AGENT_KINDS) {
+        const mcpPath = AGENT_SPECS[kind].mcpConfig;
+
+        if (!hasAgentFiles(files, kind) || existsSync(join(root, mcpPath))) {
+            continue;
+        }
+
+        missing.set(mcpPath, [...(missing.get(mcpPath) ?? []), AGENT_SPECS[kind].label]);
+    }
+
+    for (const [mcpPath, labels] of missing) {
+        out(
+            ui.warn(
+                `No ${mcpPath} file, so ${new Intl.ListFormat('en', { type: 'conjunction' }).format(labels)} cannot look up the BLIT386 docs.`,
+            ),
+        );
+        out(ui.info('Run `npx blit agents sync` to add it.'));
+    }
+}
 
 /**
  * Runs a BLIT386 environment and project checkup, reporting configuration issues and compatibility warnings to standard output.
@@ -103,4 +153,5 @@ export function runDoctor(): void {
     // Sync drift check (D13): warn when kit-managed files have been modified since they were generated.
     out('');
     checkSyncDrift(root, out);
+    checkDocsMcp(root, out);
 }
