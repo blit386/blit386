@@ -1,4 +1,5 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
+import { HTTP_HEAD, isGetOrHead } from './http-methods';
 
 const NOINDEX_ROBOTS_TXT = 'User-agent: *\nDisallow: /\n';
 
@@ -34,8 +35,8 @@ export function channelHeadersPlugin<C extends ConfigContext = ConfigContext>():
 
                     const { method } = c.req;
 
-                    if (c.req.path === '/robots.txt' && (method === 'GET' || method === 'HEAD')) {
-                        return new Response(method === 'HEAD' ? null : NOINDEX_ROBOTS_TXT, {
+                    if (c.req.path === '/robots.txt' && isGetOrHead(method)) {
+                        return new Response(method === HTTP_HEAD ? null : NOINDEX_ROBOTS_TXT, {
                             headers: {
                                 'content-type': 'text/plain; charset=utf-8',
                                 'x-robots-tag': 'noindex',

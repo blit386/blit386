@@ -1,6 +1,7 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { isMarkdownPreferred } from 'fumadocs-core/negotiation';
 import { isHtmlAssetPath } from './csp';
+import { HTTP_HEAD, isGetOrHead } from './http-methods';
 
 // Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
 // Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
@@ -58,7 +59,7 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
             return [
                 async (c, next) => {
                     const { method } = c.req;
-                    if (method !== 'GET' && method !== 'HEAD') {
+                    if (!isGetOrHead(method)) {
                         return next();
                     }
 
@@ -79,7 +80,7 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                             }
 
                             if (markdown !== undefined) {
-                                return new Response(method === 'HEAD' ? null : markdown, {
+                                return new Response(method === HTTP_HEAD ? null : markdown, {
                                     headers: {
                                         'content-type': 'text/markdown; charset=utf-8',
                                         'x-markdown-tokens': String(estimateTokens(markdown)),

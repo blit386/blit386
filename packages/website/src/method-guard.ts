@@ -1,4 +1,5 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
+import { isGetOrHead } from './http-methods';
 
 const ALLOWED_METHODS = 'GET, HEAD';
 
@@ -22,7 +23,7 @@ export function methodGuardPlugin<C extends ConfigContext = ConfigContext>(): Se
             return [
                 async (c, next) => {
                     const { method } = c.req;
-                    if (method === 'GET' || method === 'HEAD') {
+                    if (isGetOrHead(method)) {
                         return next();
                     }
 
