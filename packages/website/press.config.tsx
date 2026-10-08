@@ -18,6 +18,7 @@ import { blogPostDateAdapter } from './src/blog-post-date';
 import { CHANNEL_DESCRIPTION, feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
+import { methodGuardPlugin } from './src/method-guard';
 import { channelHeadersPlugin } from './src/channel-headers';
 import { cspNoncePlugin } from './src/csp-nonce';
 import { AuthorByline } from './src/components/author-byline';
@@ -511,6 +512,9 @@ export default defineConfig({
         blogIndexOgImagePlugin(),
 
         linkValidationPlugin(),
+
+        // Last on purpose: it must see only requests no plugin above claimed (see method-guard.ts).
+        methodGuardPlugin(),
     )
 
     .adapters(
