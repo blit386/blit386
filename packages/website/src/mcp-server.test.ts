@@ -433,7 +433,7 @@ describe('mcpServerPlugin', () => {
                 expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/api']);
             });
 
-            it('ignores stopwords and tokens shorter than three characters', async () => {
+            it('ignores stopwords, two-letter function words included', async () => {
                 // Every one of these words occurs in /noise; only "palette" counts.
                 const results = await searchCorpus('how do I use the palette with a sprite', [
                     { url: '/noise', title: 'X', body: 'how do i use the thing with a lot of words' },
@@ -443,8 +443,19 @@ describe('mcpServerPlugin', () => {
                 expect(results.map((r) => new URL(r.url).pathname)).toEqual(['/hit']);
             });
 
-            it('returns nothing when every word is a stopword or too short', async () => {
-                const results = await searchCorpus('how do I do it', [
+            it('matches a two-letter term only as a whole word (BT-585)', async () => {
+                const results = await searchCorpus('ui', [
+                    { url: '/word', title: 'X', body: 'The shared UI layer.' },
+                    { url: '/dotted', title: 'X', body: 'call ui.button()' },
+                    { url: '/camel', title: 'X', body: 'call uiButton()' },
+                    { url: '/inside', title: 'X', body: 'build a uint array' },
+                ]);
+
+                expect(results.map((r) => new URL(r.url).pathname).sort()).toEqual(['/camel', '/dotted', '/word']);
+            });
+
+            it('returns nothing when every word is a stopword', async () => {
+                const results = await searchCorpus('how do I', [
                     { url: '/p', title: 'How to', body: 'how do i do it' },
                 ]);
 

@@ -408,10 +408,12 @@ page's full markdown, looked up by site path or URL in the same cached corpus - 
 links) is absolute, resolved against the request's own origin so a preview deployment links to its own pages. Page
 bodies are returned verbatim - rewriting links in them safely would mean parsing markdown in the Worker - and their
 site-relative links work in `get_doc_page` as written. `search_docs` scans loader pages in-process, matching word
-prefixes (camelCase humps count as word starts) with stopwords and words under three characters dropped, and ranks by
-distinct query terms matched, then title and description hits, then log-damped body counts (BT-556). It deliberately
-does **not** build a FlexSearch index in-process - that exceeds the Worker CPU limit (error 1102), the same reason site
-search runs in static mode.
+prefixes (camelCase humps count as word starts) with stopwords dropped, and ranks by distinct query terms matched, then
+title and description hits, then log-damped body counts (BT-556). A term under three characters matches only a whole
+word, so `ui` finds `UI` and `ui.button` but not `uint`; two-letter function words (`do`, `in`, `to`) are stopwords
+rather than a length cutoff, which used to drop real terms like `UI` and `2D` (BT-585). It deliberately does **not**
+build a FlexSearch index in-process - that exceeds the Worker CPU limit (error 1102), the same reason site search runs
+in static mode.
 
 `public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
 into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the
