@@ -144,9 +144,10 @@ it:
 - Install the Biome extension (`zed: extensions`, search for Biome), or the formatter setting has nothing to run.
 - Zed cannot take safety rules from project files, so the hard rules above are all its agent has, and they are only
   instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
-  It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus a few
-  destructive git commands. It does not stop the agent from changing those files through a terminal command, so keep
-  terminal approval on if you need that boundary:
+  It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
+  destructive git commands (`git reset --hard`, `git checkout --`, `git restore`, `git clean`, and force push). It does
+  not stop the agent from changing those files through a terminal command, so keep terminal approval on if you need that
+  boundary:
 
 ```json
 {
@@ -168,7 +169,9 @@ it:
         "terminal": {
           "always_deny": [
             { "pattern": "git\\s+reset\\s+--hard" },
-            { "pattern": "git\\s+clean\\s+-\\w*f" },
+            { "pattern": "git\\s+checkout\\s+--" },
+            { "pattern": "git\\s+restore\\b" },
+            { "pattern": "git\\s+clean\\b" },
             { "pattern": "git\\s+push\\s+.*--force" }
           ]
         }
@@ -179,7 +182,9 @@ it:
 ```
 
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
-others. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
+others. For the same reason the git patterns are blunter than the hooks other assistants get: every `git restore` is
+denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. Zed's "Test Your
+Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
 
 If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses
 edits to lock files and `.env`, and destructive git commands) and formats each file after an edit, and
