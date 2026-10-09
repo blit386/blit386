@@ -93,18 +93,47 @@ check.
 ## packages/kit and packages/create-blit386
 
 `node --test` suites only. No Vitest, no Playwright, no top-level `tests/` directory - each package owns its own `test/`
-folder. The table below lists the suites that existed when it was last rewritten and is behind the kit's current folder
-(BT-583 tracks the recount); `ls packages/kit/test packages/create-blit386/test` is the truth.
+folder. Every file opens with a doc comment saying what it covers; `ls packages/kit/test packages/create-blit386/test`
+is the truth if a row here drifts. Totals as of 2026-10-09: 200 cases in `packages/kit`, 76 in
+`packages/create-blit386`.
 
-| Suite | Cases | Covers |
-| --- | --- | --- |
-| `packages/create-blit386/test/scaffold.test.mjs`, `kit-parity.test.mjs`, `agents-sync.test.mjs`, `agents-add.test.mjs`, `migrate.test.mjs`, `agent-*.test.mjs` | 68 | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI; the scaffolder's single-source guards against `@blit386/kit` (`kit-parity`); `blit agents sync` (drift, full sync, `--force`, note and merge preservation); `blit agents add` (collision safety, the `.mcp.json` merge); `blit migrate` preview + `--write`; and one `agent-<name>` suite per assistant adapter (what its scaffold ships, its `add` and `sync` merges). Shared fixtures live in `helpers.mjs` |
-| `packages/create-blit386/test/env.test.mjs` | 4 | `meetsNodeFloor`: the Node version floor guard, including pre-release and custom-floor strings |
-| `packages/kit/test/codemod.test.mjs` | 13 | The migration registry and the anchored codemod engine behind `blit migrate`: auto-applied renames vs. names reported for review, receiver anchoring, idempotence, and registry field completeness |
-| `packages/kit/test/enable-hot-reload.test.mjs` | 9 | `enableHotReloadInViteConfig`: wiring `blit386/vite` into a game's `vite.config.js`, no-op and unsupported-shape detection, plus `hasBlit386VitePlugin` |
-| `packages/kit/test/doctor.test.mjs` | 4 | `blit doctor`: engine range compatible, installed engine older or newer than the kit range, and a missing game `package.json` |
-| `packages/kit/test/env.test.mjs` | 3 | `satisfiesCaretRange` / `exceedsCaretRange`: the caret-range comparison behind `doctor` and `upgrade` |
-| `packages/kit/test/upgrade.test.mjs` | 2 | `blit upgrade`: the not-under-git abort, and the offline bump that offers `migrate` when renames are pending |
+`packages/kit/test` (`hook-harness.mjs` and `shell-cases.mjs` are shared fixtures, not suites):
+
+| Suite | Covers |
+| --- | --- |
+| `agents-sync.test.mjs` | `blit agents sync` when a file the kit newly ships already exists, untracked, on disk |
+| `antigravity-hooks.test.mjs` | The Antigravity adapter's hooks: `hooks.json` shape, the fail-closed guard entry, the once-per-conversation bootstrap, format-on-edit payloads |
+| `clean.test.mjs` | `blit clean`: language detection, the scaffolded-vs-modified safety check, the confirm prompt and `--yes`, the manifest hash update |
+| `codemod.test.mjs` | The migration registry and anchored codemod engine behind `blit migrate`: auto-applied renames vs. names left for review |
+| `codex-adapter.test.mjs` | The Codex adapter: `.codex/hooks.json` and `config.toml`, shipped scripts, and that the hooks block the way Codex needs |
+| `copilot-adapter.test.mjs` | The GitHub Copilot adapter: `.github/hooks/blit.json`, the setup workflow, the root `.mcp.json`, both payload shapes |
+| `doctor.test.mjs` | `blit doctor`: the kit-engine range check, the `.gitattributes` check, the docs-server config check |
+| `enable-hot-reload.test.mjs` | The vite.config hot-reload enabler and `hasBlit386VitePlugin` |
+| `env.test.mjs` | `satisfiesCaretRange` / `exceedsCaretRange`, the caret-range helpers behind `doctor` and `upgrade` |
+| `gemini-adapter.test.mjs` | The Gemini CLI adapter: `.gemini/settings.json`, shipped scripts, exit-code-2 blocking |
+| `guard-core.test.mjs` | `guard-core.cjs`: the pure path and shell classifiers every agent's hook entry shares, and the fail-closed wrapper |
+| `hook-scripts.test.mjs` | The `format-file.cjs` and `protect-files.cjs` hook scripts every generated game gets |
+| `kit-root.test.mjs` | `kitRoot()` and `resolveKitRoot()`: both ways of finding a kit package root, checked on the emitted artifacts |
+| `mcp-config.test.mjs` | The documentation-MCP config the adapters emit, compared against the website package's canonical definition |
+| `opencode.test.mjs` | The OpenCode adapter: emitted files, `opencode.json` permission lists in step with the guard core, the `kit-guard.ts` plugin |
+| `ownership.test.mjs` | The shared ownership module: which generated files the kit owns and which paths each assistant occupies |
+| `play.test.mjs` | `blit play` paths that fail before a browser opens: help, argument checks, no game folder, the missing `playwright-core` hint |
+| `shell-safety.test.mjs` | The `shell-safety.cjs` entry Claude Code and Cursor run: every case in the policy table in each agent's protocol, plus payload edge cases. Slow - spawns a process per case |
+| `skills-frontmatter.test.mjs` | Every shipped skill's frontmatter parses and stays within the cross-agent limits; flat skills layout; shared `.agents/skills/` copies byte-equal |
+| `upgrade.test.mjs` | `blit upgrade`: the not-under-git abort, and the offline bump that offers `migrate` |
+
+`packages/create-blit386/test` (`helpers.mjs` is the shared fixture, not a suite):
+
+| Suite | Covers |
+| --- | --- |
+| `scaffold.test.mjs` | The scaffold path end to end (JS and TS): expected files, no leftover placeholders, no leaked `workspace:*`, the non-TTY `--yes` fallback, optional CI |
+| `kit-parity.test.mjs` | Single-source guards against `@blit386/kit`: the resolved kit, written agent files vs. the adapters' output, manifest classes vs. `classifyFile` |
+| `agents-sync.test.mjs` | `blit agents sync` on a scaffolded game: drift check, full write path, symlink guards |
+| `agents-add.test.mjs` | `blit agents add` on a scaffolded game: Claude Code and Cursor after the fact, the all-or-nothing collision rule, the `.mcp.json` merge |
+| `agent-*.test.mjs` | One suite per assistant adapter (antigravity, claude-cursor, codex, copilot, gemini, opencode, zed): what its scaffold ships and how its `add` and `sync` merges behave |
+| `migrate.test.mjs` | `blit migrate` on a scaffolded game: the old-name preview and rewrite, the hot-reload upgrade of an older vite.config |
+| `env.test.mjs` | `meetsNodeFloor`, the Node version floor guard |
+| `pkgManager.test.mjs` | The Corepack `packageManager` field |
 
 Prerequisites: a build for the scaffolder suite - it shells out to `packages/create-blit386/dist/index.js` and
 `packages/kit/dist/cli.js`. The kit package rebuilds itself through a `pretest` script; the scaffolder package does not,
@@ -120,4 +149,5 @@ a generated project, npm publish or registry propagation. Some `agents sync` cas
 
 Root-level script tests that exercise shared tooling (part of the relevant package's `preflight`, not this suite):
 `test:agent-config` (`.agents/skills` symlink integrity), `test:compact-tables` (the compact Markdown table Prettier
-plugin), `test:shell-safety` (both `shell-safety.sh` hook variants).
+plugin), `test:shell-safety` (this repo's own `.claude/hooks/shell-safety.sh` only; the kit's `shell-safety.cjs` entry
+is covered by `packages/kit/test/shell-safety.test.mjs`).
