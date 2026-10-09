@@ -1,5 +1,6 @@
 // @pageTitle BLIT386 Demo – Music Playback
 // @description Crossfade two looping tracks with different fade profiles, plus a third with a seamless loop point.
+// @ogScale integer
 
 /**
  * Music Demo - crossfading between two tracks and playing one with a seamless loop point.
