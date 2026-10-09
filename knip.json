@@ -34,9 +34,10 @@
       }
     },
     "packages/kit": {
+      "entry": ["content/hooks/*.ts"],
       "project": ["src/**/*.ts"],
       "typescript": {
-        "config": ["tsconfig.json"]
+        "config": ["tsconfig.json", "content/hooks/tsconfig.json"]
       }
     }
   }

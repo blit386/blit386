@@ -64,7 +64,7 @@
   "scripts": {
     "build": "tsup",
     "prepack": "tsup",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p content/hooks/tsconfig.json",
     "pretest": "pnpm run build",
     "test": "node --test \"test/**/*.test.mjs\""
   },
@@ -81,6 +81,7 @@
     }
   },
   "devDependencies": {
+    "@opencode-ai/plugin": "^1.18.34",
     "@types/node": "^22.20.1",
     "playwright-core": "^1.62.1",
     "tsup": "^8.5.1",
