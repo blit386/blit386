@@ -40,6 +40,7 @@ export const DEMO_ORDER = [
     'snake-game',
     'input-map-remapping',
     'gamepad-input',
+    'any-input',
     'named-colors',
     'basics-enhanced',
     'logo-lowres',
