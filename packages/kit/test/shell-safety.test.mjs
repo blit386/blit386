@@ -4,21 +4,14 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { runHook } from './hook-harness.mjs';
 import { SHELL_CASES } from './shell-cases.mjs';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const entry = join(here, '..', 'content', 'hooks', 'shell-safety.cjs');
 
 /**
  * @param {string} payload
  */
-function runRaw(payload) {
-    return spawnSync(process.execPath, [entry], { input: payload, encoding: 'utf8' });
-}
+const runRaw = (payload) => runHook('shell-safety.cjs', { input: payload });
 
 /** What the entry answers a Claude Code PreToolUse Bash payload, read through Claude's protocol. */
 function claudeVerdict(command) {

@@ -4,25 +4,17 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { generateAntigravityAdapter, kitRoot } from '../dist/adapters.js';
+import { hooksDir, runHook } from './hook-harness.mjs';
 
-const hooksDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'content', 'hooks');
 const WRITE_TOOLS = 'write_to_file|replace_file_content|multi_replace_file_content';
 
-/** Run an entry script with `input` on stdin (a string is sent as-is, anything else as JSON). */
-function run(script, args, input) {
-    return spawnSync(process.execPath, [join(hooksDir, script), ...args], {
-        input: typeof input === 'string' ? input : JSON.stringify(input),
-        encoding: 'utf8',
-    });
-}
+const run = (script, args, input) => runHook(script, { args, input });
 
 const guard = (mode, input) => {
     const result = run('antigravity-guard.cjs', [mode], input);
@@ -155,9 +147,8 @@ describe('format-file.cjs under .agents/hooks/', () => {
             );
             writeFileSync(join(root, 'src', 'game.js'), 'edited');
 
-            const result = spawnSync(process.execPath, [join(root, '.agents', 'hooks', 'format-file.cjs')], {
-                input: JSON.stringify(writeCall(join(root, 'src', 'game.js'))),
-                encoding: 'utf8',
+            const result = runHook(join(root, '.agents', 'hooks', 'format-file.cjs'), {
+                input: writeCall(join(root, 'src', 'game.js')),
             });
 
             assert.equal(result.status, 0);

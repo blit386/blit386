@@ -4,23 +4,11 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { fileURLToPath } from 'node:url';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const hooksDir = join(here, '..', 'content', 'hooks');
-
-/**
- * @param {string} script
- * @param {unknown} payload
- */
-function runHook(script, payload) {
-    return spawnSync(process.execPath, [script], { input: JSON.stringify(payload), encoding: 'utf8' });
-}
+import { hooksDir, runHook } from './hook-harness.mjs';
 
 /**
  * A throwaway project with format-file.cjs in `.claude/hooks/` and a fake Biome that upper-cases the file it is given.
@@ -53,7 +41,7 @@ describe('format-file.cjs', () => {
             const root = makeProject();
 
             try {
-                const result = runHook(join(root, '.claude', 'hooks', 'format-file.cjs'), payload);
+                const result = runHook(join(root, '.claude', 'hooks', 'format-file.cjs'), { input: payload });
 
                 assert.equal(result.status, 0);
                 assert.equal(readFileSync(join(root, 'src', 'game.js'), 'utf8'), 'EDITED');
@@ -73,13 +61,17 @@ describe('format-file.cjs', () => {
             writeFileSync(outside, 'outside');
             writeFileSync(join(root, 'notes.md'), 'no prettier installed');
 
-            assert.equal(runHook(script, { file_path: outside }).status, 0);
+            assert.equal(runHook(script, { input: { file_path: outside } }).status, 0);
             assert.equal(readFileSync(outside, 'utf8'), 'outside', 'a file outside the project is never formatted');
             rmSync(outside);
 
-            assert.equal(runHook(script, { file_path: 'notes.md' }).status, 0, 'a missing formatter is not an error');
-            assert.equal(runHook(script, { file_path: 'src/missing.js' }).status, 0);
-            assert.equal(spawnSync(process.execPath, [script], { input: 'not json' }).status, 0);
+            assert.equal(
+                runHook(script, { input: { file_path: 'notes.md' } }).status,
+                0,
+                'a missing formatter is not an error',
+            );
+            assert.equal(runHook(script, { input: { file_path: 'src/missing.js' } }).status, 0);
+            assert.equal(runHook(script, { input: 'not json' }).status, 0);
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
@@ -88,7 +80,7 @@ describe('format-file.cjs', () => {
 
 describe('protect-files.cjs', () => {
     const script = join(hooksDir, 'protect-files.cjs');
-    const edit = (/** @type {string} */ file) => runHook(script, { tool_input: { file_path: file } });
+    const edit = (/** @type {string} */ file) => runHook(script, { input: { tool_input: { file_path: file } } });
 
     it('blocks lock files and .env files with exit code 2', () => {
         for (const file of [
@@ -116,7 +108,7 @@ describe('protect-files.cjs', () => {
 
     it('fails closed: a payload it cannot read, or one without a file path, blocks the edit', () => {
         for (const input of ['not json', JSON.stringify({ tool_input: {} })]) {
-            const result = spawnSync(process.execPath, [script], { input, encoding: 'utf8' });
+            const result = runHook(script, { input });
 
             assert.equal(result.status, 2, input);
             assert.match(result.stderr, /\[BLOCKED\] The guard could not read the request/);
