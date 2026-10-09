@@ -1,0 +1,74 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "biome": {
+      "extensions": [
+        ".js",
+        ".cjs",
+        ".mjs",
+        ".ts",
+        ".json",
+        ".jsonc"
+      ]
+    },
+    "prettier": {
+      "extensions": [
+        ".md",
+        ".mdx",
+        ".mdc",
+        ".yml",
+        ".yaml"
+      ]
+    }
+  },
+  "permission": {
+    "edit": {
+      "pnpm-lock.yaml": "deny",
+      "*/pnpm-lock.yaml": "deny",
+      "package-lock.json": "deny",
+      "*/package-lock.json": "deny",
+      "bun.lockb": "deny",
+      "*/bun.lockb": "deny",
+      "*.lock": "deny",
+      ".env": "deny",
+      "*/.env": "deny",
+      ".env.*": "deny",
+      "*/.env.*": "deny",
+      ".env.example": "allow",
+      "*/.env.example": "allow"
+    },
+    "read": {
+      ".env": "deny",
+      "*/.env": "deny",
+      ".env.*": "deny",
+      "*/.env.*": "deny",
+      ".env.example": "allow",
+      "*/.env.example": "allow"
+    },
+    "bash": {
+      "git reset --hard*": "deny",
+      "git checkout -- *": "deny",
+      "git restore *": "deny",
+      "git restore --staged *": "allow",
+      "git clean": "deny",
+      "git clean *": "deny",
+      "git clean -n*": "allow",
+      "git clean --dry-run*": "allow",
+      "git push -f*": "ask",
+      "git push * -f*": "ask",
+      "git push *--force*": "ask",
+      "git push * +*": "ask",
+      "git branch -D *": "ask",
+      "git branch * -D*": "ask",
+      "git stash drop*": "ask",
+      "git stash clear*": "ask"
+    }
+  },
+  "mcp": {
+    "blit386-docs": {
+      "type": "remote",
+      "url": "https://blit386.dev/mcp",
+      "enabled": true
+    }
+  }
+}

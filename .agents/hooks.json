@@ -1,0 +1,53 @@
+{
+  "blit-format-on-edit": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agents/hooks/format-file.cjs",
+            "timeout": 30
+          }
+        ],
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content"
+      }
+    ]
+  },
+  "blit-block-dangerous-shell": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agents/hooks/antigravity-guard.cjs shell",
+            "timeout": 10
+          }
+        ],
+        "matcher": "run_command"
+      }
+    ]
+  },
+  "blit-protect-generated-and-secret-files": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agents/hooks/antigravity-guard.cjs files",
+            "timeout": 10
+          }
+        ],
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content"
+      }
+    ]
+  },
+  "blit-session-start-bootstrap": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node .agents/hooks/antigravity-bootstrap.cjs \"pnpm install\"",
+        "timeout": 300
+      }
+    ]
+  }
+}

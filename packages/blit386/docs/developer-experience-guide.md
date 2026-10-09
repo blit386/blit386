@@ -51,9 +51,11 @@ package).
 | `pnpm run bench:compare` | Compare `benchmark-results.json` against `benchmark-baseline.json`, 25% regression threshold |
 | `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:bench-compare`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
-| `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`, cursor rules parity, cursor `.mcp.json`) |
+| `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`, cursor rules parity, cursor `.mcp.json`, maintainer dogfood for Antigravity/Codex/Gemini/Copilot/OpenCode) |
 | `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
 | `pnpm run sync:cursor-commands:check` | Check `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md` |
+| `pnpm run sync:maintainer-agents` | Generate Antigravity/Codex/Gemini/Copilot/OpenCode hooks and docs-MCP config from the kit adapters |
+| `pnpm run sync:maintainer-agents:check` | Check those maintainer dogfood files for byte drift against the kit adapters |
 | `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
 | `pnpm run sync:doc-banners:check` | Check doc site banner drift |
 | `pnpm run api:history` | Regenerate API version-history manifest (`docs/_api-history.json`) |
@@ -277,6 +279,13 @@ invoked by filename, so the frontmatter would otherwise render as literal text) 
 `generateCursorAdapter` applies for scaffolded projects. Run `pnpm run sync:cursor-commands` after adding, renaming, or
 removing a `.claude/skills/*` skill; `pnpm run sync:cursor-commands:check` reports drift (wired into the `quality-root`
 CI job and lint-staged) and a retired skill's stale command file is removed automatically.
+
+`scripts/sync-maintainer-agents.mjs` is the counterpart for the five adapters this monorepo does not hand-maintain:
+Antigravity, Codex, Gemini CLI, GitHub Copilot, and OpenCode. It calls the kit's `generate*Adapter` builders (never
+`blit agents add`, which would install the generated-game persona) and writes their hooks and docs-MCP config at the
+repo root, with verbatim hook scripts as symlinks into `packages/kit/content/hooks/`. Run
+`pnpm run sync:maintainer-agents` after an adapter shape change; `pnpm run sync:maintainer-agents:check` and
+`pnpm run agents:check` both gate on those files in `quality-root` and pre-push.
 
 ---
 

@@ -1,0 +1,1 @@
+../../packages/kit/content/hooks/antigravity-bootstrap.cjs

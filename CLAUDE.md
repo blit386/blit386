@@ -4,7 +4,10 @@ A pnpm workspace holding the BLIT386 engine, its demos, its published docs site,
 `.claude/` (hooks, skills, rules), one root `.mcp.json`, and one root `CLAUDE.md` govern every package; each package's
 own `CLAUDE.md` (read together with this one, nearest-file-wins for anything package-specific) carries what is genuinely
 local to it. Open Claude Code at this repo root, not a parent directory - that is what activates hooks, skills, and
-rules at all.
+rules at all. Hooks and docs-MCP config for Antigravity, Codex, Gemini CLI, GitHub Copilot, and OpenCode are generated
+from the kit adapters by `scripts/sync-maintainer-agents.mjs` (`pnpm run sync:maintainer-agents`) and drift-checked by
+`pnpm run agents:check` / `pnpm run sync:maintainer-agents:check` - do not run `blit agents add` against this root (the
+kit's `content/` is the generated-game persona, not these maintainer skills).
 
 ## Packages
 

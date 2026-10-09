@@ -23,7 +23,7 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 - Node.js >= 22.18.0 (`engines` in the root `package.json`)
 - pnpm 11.20.0 (`packageManager` in the root `package.json`)
 
-## docs:links, agents:check, and sync:cursor-commands:check are root-only
+## docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
 
 `docs:links` and `agents:check` are not package-scoped - each package's copy of the script
 (`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
@@ -31,12 +31,13 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 `.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
 one push - most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
 `preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`,
-`pnpm run sync:cursor-commands:check`) or via `/preflight root` when checking a package in isolation.
-`sync:cursor-commands:check` is the same kind of root-only, whole-repo check - it never had a per-package copy to begin
-with, since it generates against `.claude/skills/*/SKILL.md` and `.cursor/commands/*.md` at the repo root regardless of
-which package changed. The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes
-`.husky/pre-push` skip `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, and `bump:check`
-entirely, so a push only exercises them once the per-package checks are clean. That gating is local to pre-push: in CI,
+`pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a
+package in isolation. `sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only,
+whole-repo check - they never had a per-package copy to begin with, since they generate against root `.claude/skills/` /
+`.cursor/commands/` and the maintainer dogfood agent configs regardless of which package changed. The root-level pass
+only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip `format:check`,
+`docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, and `bump:check` entirely,
+so a push only exercises them once the per-package checks are clean. That gating is local to pre-push: in CI,
 `quality-root` declares only `needs: changes`, so it runs regardless of whether the per-package quality jobs pass.
 
 ## Steps
@@ -140,25 +141,29 @@ No combined `preflight` script exists at root; run what does:
 - `pnpm run docs:links` - Markdown link checker
 - `pnpm run agents:check` - skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, root
   `.mcp.json` (declared server, URL parity with the website discovery card, `.gitignore` negation), cursor rules parity,
-  cursor `.mcp.json`
+  cursor `.mcp.json`, and the maintainer dogfood configs for Antigravity/Codex/Gemini/Copilot/OpenCode
 - `pnpm run sync:cursor-commands:check` - checks `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md`
+- `pnpm run sync:maintainer-agents:check` - checks Antigravity/Codex/Gemini/Copilot/OpenCode dogfood files for byte
+  drift against the kit adapters (`scripts/sync-maintainer-agents.mjs`)
 - `pnpm run bump:check` - lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`
   and fails when a checked-in value differs
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref]" --if-present run preflight`), then - only if that succeeds - runs these five root-level
-checks unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under
-`packages/*` and would otherwise miss a root-only change entirely. `bump:check` (BT-317) also runs in `quality-root` in
+(`pnpm --filter "...[ref]" --if-present run preflight`), then - only if that succeeds - runs these six root-level checks
+unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under `packages/*` and
+would otherwise miss a root-only change entirely. `bump:check` (BT-317) also runs in `quality-root` in
 `.github/workflows/ci.yml`, so a lockstep drift fails both the push and CI, on top of the existing per-commit gates
 below.
 
-The following are not part of that pre-push gate - run them directly when auditing. All four do run in CI, so a
+The following are not part of that pre-push gate - run them directly when auditing. All five do run in CI, so a
 regression they would catch surfaces on the PR rather than at push time:
 
 - `pnpm run test:agent-config` - unit tests for the `agents:check` script itself. Runs in `quality-root` in
   `.github/workflows/ci.yml`, which is gated only on the run not being a label event
 - `pnpm run test:cursor-commands` - unit tests for the `sync-cursor-commands.mjs` script itself. Runs in `quality-root`
   in `.github/workflows/ci.yml`, alongside the repo-wide `sync:cursor-commands:check` run described above
+- `pnpm run test:maintainer-agents` - unit tests for the `sync-maintainer-agents.mjs` script itself. Runs in
+  `quality-root` alongside `sync:maintainer-agents:check`
 - `pnpm run test:bump-lockstep` - unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
   `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`). Runs in `build-test-scaffolder`, the one CI job that
   exercises it - and that job is path-filtered, so it only fires when the `scaffolder` or `shared` filter matches

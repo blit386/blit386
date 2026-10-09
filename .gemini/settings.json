@@ -1,0 +1,65 @@
+{
+  "context": {
+    "fileName": [
+      "AGENTS.md",
+      "GEMINI.md"
+    ]
+  },
+  "mcpServers": {
+    "blit386-docs": {
+      "httpUrl": "https://blit386.dev/mcp"
+    }
+  },
+  "hooks": {
+    "AfterTool": [
+      {
+        "hooks": [
+          {
+            "name": "format-on-edit",
+            "type": "command",
+            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
+            "timeout": 30000
+          }
+        ],
+        "matcher": "write_file|replace"
+      }
+    ],
+    "BeforeTool": [
+      {
+        "hooks": [
+          {
+            "name": "block-dangerous-shell",
+            "type": "command",
+            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
+            "timeout": 10000
+          }
+        ],
+        "matcher": "run_shell_command"
+      },
+      {
+        "hooks": [
+          {
+            "name": "protect-generated-and-secret-files",
+            "type": "command",
+            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
+            "timeout": 10000
+          }
+        ],
+        "matcher": "write_file|replace"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "name": "session-start-bootstrap",
+            "type": "command",
+            "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='pnpm install' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
+            "timeout": 300000
+          }
+        ],
+        "matcher": "startup"
+      }
+    ]
+  }
+}

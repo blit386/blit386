@@ -22,6 +22,12 @@
  *     one side must exist on the other, by basename).
  *   - `.cursor/mcp.json` declares the blit386.dev docs server using Cursor's
  *     own remote-server schema (no `type` field), pinned to the same URL.
+ *   - Maintainer dogfood configs for Antigravity, Codex, Gemini CLI, Copilot, and
+ *     OpenCode (installed by `scripts/sync-maintainer-agents.mjs`): each config
+ *     file exists and parses, the docs server uses that agent's URL key, guards
+ *     are wired, on-disk hook scripts under the agent `hooks/` dirs symlink into
+ *     `packages/kit/content/hooks/`, and git does not ignore `.codex/hooks.json`.
+ *     Missing scripts and byte drift are `sync:maintainer-agents:check`.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
@@ -34,7 +40,7 @@
  *   node scripts/check-agent-config.mjs
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -296,8 +302,15 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
  * @param {string} repoRoot Absolute path to the repository root.
  * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
  */
-export function isRootMcpIgnoredByGit(repoRoot) {
-    const result = spawnSync('git', ['check-ignore', '--no-index', '--quiet', '--', '.mcp.json'], {
+/**
+ * Whether git would ignore `relPath` if it were removed and re-added.
+ *
+ * @param {string} repoRoot Absolute path to the repository root.
+ * @param {string} relPath Project-relative path (forward slashes).
+ * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
+ */
+export function isPathIgnoredByGit(repoRoot, relPath) {
+    const result = spawnSync('git', ['check-ignore', '--no-index', '--quiet', '--', relPath], {
         cwd: repoRoot,
     });
 
@@ -307,6 +320,11 @@ export function isRootMcpIgnoredByGit(repoRoot) {
     }
 
     return result.status === 0;
+}
+
+/** @param {string} repoRoot Absolute path to the repository root. */
+export function isRootMcpIgnoredByGit(repoRoot) {
+    return isPathIgnoredByGit(repoRoot, '.mcp.json');
 }
 
 /**
@@ -458,6 +476,322 @@ export function findCursorMcpFailures(cursorMcpContent) {
     }
 
     return failures;
+}
+
+/**
+ * Agent hook directories the monorepo dogfoods. Presence of individual scripts is
+ * `sync:maintainer-agents:check`; this check only asserts each on-disk `*.cjs` /
+ * `*.sh` under these dirs is a symlink into `packages/kit/content/hooks/`.
+ * MANUAL-SYNC HAZARD: prefixes match `packages/kit/src/ownership.ts`.
+ */
+export const MAINTAINER_HOOK_DIRS = [
+    '.agents/hooks',
+    '.codex/hooks',
+    '.gemini/hooks',
+    '.github/hooks',
+    '.opencode/hooks',
+];
+
+/**
+ * One dogfood config file's structural contract. Byte drift is
+ * `sync-maintainer-agents.mjs --check`; this only asserts shape.
+ * `format` defaults to `'json'`.
+ *
+ * @typedef {{ text: string, missing: string }} MaintainerNeedle
+ * @typedef {{
+ *   path: string,
+ *   format?: 'json' | 'raw',
+ *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[] },
+ *   needles?: MaintainerNeedle[],
+ *   requireAll?: { texts: string[], missing: string },
+ *   bashDeny?: string,
+ *   forbidSymlink?: boolean,
+ * }} MaintainerConfigSpec
+ */
+
+/** @type {readonly MaintainerConfigSpec[]} */
+export const MAINTAINER_CONFIG_SPECS = [
+    {
+        path: '.agents/mcp_config.json',
+        mcp: { container: 'mcpServers', urlKey: 'serverUrl', forbidKeys: ['url', 'httpUrl'] },
+    },
+    {
+        path: '.agents/hooks.json',
+        needles: [
+            {
+                text: 'antigravity-guard.cjs',
+                missing: '.agents/hooks.json does not wire antigravity-guard.cjs',
+            },
+        ],
+    },
+    {
+        path: '.codex/config.toml',
+        format: 'raw',
+        needles: [
+            {
+                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
+                missing: `.codex/config.toml does not declare [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
+            },
+            {
+                text: `url = "${PROJECT_MCP_SERVER_URL}"`,
+                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+            },
+        ],
+    },
+    {
+        path: '.codex/hooks.json',
+        needles: [{ text: 'codex-guard.cjs', missing: '.codex/hooks.json does not wire codex-guard.cjs' }],
+    },
+    {
+        path: '.gemini/settings.json',
+        mcp: { container: 'mcpServers', urlKey: 'httpUrl', forbidKeys: ['url'] },
+        needles: [{ text: 'shell-guard.cjs', missing: '.gemini/settings.json does not wire shell-guard.cjs' }],
+    },
+    {
+        path: '.github/hooks/blit.json',
+        needles: [{ text: 'copilot-hook.cjs', missing: '.github/hooks/blit.json does not wire copilot-hook.cjs' }],
+        requireAll: {
+            texts: ['"bash"', '"powershell"'],
+            missing: '.github/hooks/blit.json must declare both bash and powershell commands',
+        },
+    },
+    {
+        path: 'opencode.json',
+        mcp: { container: 'mcp', urlKey: 'url', type: 'remote' },
+        bashDeny: 'git reset --hard*',
+    },
+    {
+        path: '.opencode/plugins/kit-guard.ts',
+        format: 'raw',
+        forbidSymlink: true,
+        needles: [
+            {
+                text: 'pnpm install',
+                missing: '.opencode/plugins/kit-guard.ts does not contain the rendered `pnpm install` command',
+            },
+        ],
+    },
+];
+
+/**
+ * Structural failures for one maintainer config file against its {@link MaintainerConfigSpec}.
+ *
+ * @param {MaintainerConfigSpec} spec
+ * @param {string | null} content File contents, or `null` when missing.
+ * @param {{ isSymlink?: boolean | null }} [disk] Optional on-disk facts (symlink bit for kit-guard).
+ * @returns {string[]}
+ */
+export function findMaintainerConfigFailures(spec, content, disk = {}) {
+    if (content === null) {
+        return [`${spec.path} is missing`];
+    }
+
+    /** @type {string[]} */
+    const failures = [];
+
+    if (spec.forbidSymlink === true && disk.isSymlink === true) {
+        failures.push(`${spec.path} must be a regular file (the adapter renders {{pmInstall}} into it)`);
+    }
+
+    if (spec.format !== 'raw') {
+        /** @type {Record<string, unknown>} */
+        let parsed;
+
+        try {
+            parsed = JSON.parse(content);
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : String(error);
+
+            return [`${spec.path} is not parseable as JSON: ${detail}`];
+        }
+
+        if (spec.mcp) {
+            const container = parsed[spec.mcp.container];
+
+            if (container === null || typeof container !== 'object') {
+                failures.push(`${spec.path} has no ${spec.mcp.container} object`);
+
+                return failures;
+            }
+
+            if (!Object.hasOwn(container, PROJECT_MCP_SERVER_NAME)) {
+                failures.push(`${spec.path} does not declare the \`${PROJECT_MCP_SERVER_NAME}\` server`);
+
+                return failures;
+            }
+
+            const server = /** @type {Record<string, unknown>} */ (container[PROJECT_MCP_SERVER_NAME] ?? {});
+            const urlValue = server[spec.mcp.urlKey];
+
+            if (urlValue !== PROJECT_MCP_SERVER_URL) {
+                failures.push(
+                    `${spec.path} declares ${spec.mcp.urlKey} ${JSON.stringify(urlValue)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+                );
+            }
+
+            if (spec.mcp.type !== undefined && server.type !== spec.mcp.type) {
+                failures.push(
+                    `${spec.path} entry \`${PROJECT_MCP_SERVER_NAME}\` has type ${JSON.stringify(server.type)}, expected ${JSON.stringify(spec.mcp.type)}`,
+                );
+            }
+
+            for (const key of spec.mcp.forbidKeys ?? []) {
+                if (Object.hasOwn(server, key)) {
+                    failures.push(
+                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`)`,
+                    );
+                }
+            }
+        }
+
+        if (spec.bashDeny !== undefined) {
+            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed.permission?.bash);
+
+            if (bash?.[spec.bashDeny] !== 'deny') {
+                failures.push(`${spec.path} permission.bash does not deny \`${spec.bashDeny}\``);
+            }
+        }
+    }
+
+    for (const needle of spec.needles ?? []) {
+        if (!content.includes(needle.text)) {
+            failures.push(needle.missing);
+        }
+    }
+
+    if (spec.requireAll?.texts.some((text) => !content.includes(text))) {
+        failures.push(spec.requireAll.missing);
+    }
+
+    return failures;
+}
+
+/**
+ * Verifies each maintainer hook script is a working symlink into `packages/kit/content/hooks/<same-name>`.
+ *
+ * @param {Array<{ path: string, isSymlink: boolean, resolvedBasename: string | null }>} entries
+ * @returns {string[]}
+ */
+export function findMaintainerHookSymlinkFailures(entries) {
+    const failures = [];
+
+    for (const entry of entries) {
+        if (!entry.isSymlink) {
+            failures.push(`${entry.path} is not a symlink`);
+            continue;
+        }
+
+        if (entry.resolvedBasename === null) {
+            failures.push(`${entry.path} is a broken symlink or does not resolve under packages/kit/content/hooks/`);
+            continue;
+        }
+
+        const expectedBasename = basename(entry.path);
+
+        if (entry.resolvedBasename !== expectedBasename) {
+            failures.push(
+                `${entry.path} resolves to ${entry.resolvedBasename}, expected packages/kit/content/hooks/${expectedBasename}`,
+            );
+        }
+    }
+
+    return failures.sort();
+}
+
+/**
+ * @param {string} root Absolute repo root.
+ * @param {string} kitHooksDir Absolute path to `packages/kit/content/hooks`.
+ * @param {string} relPath Project-relative hook script path.
+ * @returns {{ path: string, isSymlink: boolean, resolvedBasename: string | null }}
+ */
+function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
+    const abs = join(root, relPath);
+
+    try {
+        const stat = lstatSync(abs);
+
+        if (!stat.isSymbolicLink()) {
+            return { path: relPath, isSymlink: false, resolvedBasename: null };
+        }
+
+        const target = realpathSync(abs);
+
+        if (dirname(target) !== kitHooksDir) {
+            return { path: relPath, isSymlink: true, resolvedBasename: null };
+        }
+
+        return { path: relPath, isSymlink: true, resolvedBasename: basename(target) };
+    } catch {
+        return { path: relPath, isSymlink: false, resolvedBasename: null };
+    }
+}
+
+/**
+ * Structural checks for the maintainer dogfood configs. Byte drift against the kit
+ * adapters is `scripts/sync-maintainer-agents.mjs --check`. Returns unprefixed
+ * messages; the caller tags them with {@link collect}.
+ *
+ * @param {string} root Absolute repo root.
+ * @returns {string[]}
+ */
+export function checkMaintainerAgentConfigs(root) {
+    const kitHooksDir = join(root, 'packages', 'kit', 'content', 'hooks');
+    /** @type {string[]} */
+    const failures = [];
+
+    if (isPathIgnoredByGit(root, '.codex/hooks.json') === true) {
+        failures.push(
+            '.codex/hooks.json is ignored by git - check .gitignore for a rule matching it after the `!.codex/hooks.json` negation',
+        );
+    }
+
+    for (const spec of MAINTAINER_CONFIG_SPECS) {
+        const abs = join(root, spec.path);
+        const content = readFileIfExists(abs);
+        /** @type {{ isSymlink?: boolean | null }} */
+        const disk = {};
+
+        if (spec.forbidSymlink === true && existsSync(abs)) {
+            disk.isSymlink = lstatSync(abs).isSymbolicLink();
+        }
+
+        failures.push(...findMaintainerConfigFailures(spec, content, disk));
+    }
+
+    const hookEntries = listMaintainerHookScriptPaths(root).map((relPath) =>
+        readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath),
+    );
+
+    failures.push(...findMaintainerHookSymlinkFailures(hookEntries));
+
+    return failures;
+}
+
+/**
+ * Project-relative `*.cjs` / `*.sh` paths currently under {@link MAINTAINER_HOOK_DIRS}.
+ *
+ * @param {string} root Absolute repo root.
+ * @returns {string[]}
+ */
+function listMaintainerHookScriptPaths(root) {
+    /** @type {string[]} */
+    const paths = [];
+
+    for (const dir of MAINTAINER_HOOK_DIRS) {
+        const absDir = join(root, dir);
+
+        if (!existsSync(absDir)) {
+            continue;
+        }
+
+        for (const name of readdirSync(absDir)) {
+            if (/\.(?:cjs|sh)$/u.test(name)) {
+                paths.push(`${dir}/${name}`);
+            }
+        }
+    }
+
+    return paths.sort();
 }
 
 /**
@@ -622,6 +956,8 @@ function runAllChecks() {
 
     collect(failures, '.', findCursorMcpFailures(readFileIfExists(join(REPO_ROOT, '.cursor', 'mcp.json'))));
 
+    collect(failures, '.', checkMaintainerAgentConfigs(REPO_ROOT));
+
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
         collect(failures, `packages/${packageName}`, checkAgentsPointer(root));
@@ -644,7 +980,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, cursor .mcp.json).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, cursor .mcp.json, maintainer agent dogfood).',
     );
 }
 

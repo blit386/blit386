@@ -57,7 +57,13 @@ export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
 /** Cursor's MCP server configuration. */
 export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
-/** Root of Gemini CLI's generated configuration. */
+/**
+ * Root of Gemini CLI's generated configuration.
+ *
+ * MANUAL-SYNC HAZARD: the monorepo dogfoods these paths via `scripts/sync-maintainer-agents.mjs` /
+ * `scripts/check-agent-config.mjs`, which restate the same path strings (root `.mjs` scripts cannot import this
+ * module without a kit build). Rename here and update both scripts together.
+ */
 export const GEMINI_DIR = '.gemini/';
 export const GEMINI_HOOKS_DIR = `${GEMINI_DIR}hooks/`;
 
@@ -70,6 +76,8 @@ export const GEMINI_SETTINGS_JSON = `${GEMINI_DIR}settings.json`;
 /**
  * Antigravity's exact paths under `.agents/`. Never the bare `.agents/` prefix: the shared skills folder
  * (`SHARED_SKILLS_DIR`) lives beside these and belongs to many agents.
+ *
+ * MANUAL-SYNC HAZARD: see the Gemini block above - restated in the monorepo maintainer sync/check scripts.
  */
 export const ANTIGRAVITY_HOOKS_JSON = '.agents/hooks.json';
 export const ANTIGRAVITY_HOOKS_DIR = '.agents/hooks/';
@@ -78,6 +86,8 @@ export const ANTIGRAVITY_MCP_JSON = '.agents/mcp_config.json';
 /**
  * OpenCode's project configuration: permission map, formatter, and docs MCP server in one JSON file at the project
  * root. A file a user may extend, so sync merges it like `.mcp.json` rather than replacing it.
+ *
+ * MANUAL-SYNC HAZARD: see the Gemini block above - restated in the monorepo maintainer sync/check scripts.
  */
 export const OPENCODE_JSON = 'opencode.json';
 
@@ -100,6 +110,8 @@ export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;
  * Codex's generated configuration. Only these exact paths are the kit's: a user's own `.codex/rules/`,
  * `.codex/environments/`, or skills stay user-owned. `config.toml` is user-extendable TOML, so `blit agents add` appends
  * the kit's one table to an existing copy and `sync` three-way merges it like the JSON configs.
+ *
+ * MANUAL-SYNC HAZARD: see the Gemini block above.
  */
 export const CODEX_DIR = '.codex/';
 export const CODEX_HOOKS_DIR = `${CODEX_DIR}hooks/`;
@@ -111,6 +123,8 @@ export const CODEX_CONFIG_TOML = `${CODEX_DIR}config.toml`;
  * hook files from - only `*.json` is loaded, so the entry scripts sit beside `blit.json`. Only these paths are the kit's:
  * a user's own `.github/workflows/` stay user-owned. No `.vscode/mcp.json`: VS Code reads the root `.mcp.json` too, so a
  * second copy would register the docs server twice.
+ *
+ * MANUAL-SYNC HAZARD: see the Gemini block above.
  */
 export const COPILOT_HOOKS_DIR = '.github/hooks/';
 export const COPILOT_HOOKS_JSON = `${COPILOT_HOOKS_DIR}blit.json`;

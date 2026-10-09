@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/format-file.cjs\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; node \"$d/.codex/hooks/format-file.cjs\"'",
+            "timeout": 30
+          }
+        ],
+        "matcher": "apply_patch"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/codex-guard.cjs\" ]; do d=${d%/*}; done; node \"$d/.codex/hooks/codex-guard.cjs\" shell; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
+            "timeout": 10
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/codex-guard.cjs\" ]; do d=${d%/*}; done; node \"$d/.codex/hooks/codex-guard.cjs\" patch; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
+            "timeout": 10
+          }
+        ],
+        "matcher": "apply_patch"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=$PWD; while [ -n \"$d\" ] && [ ! -f \"$d/.codex/hooks/session-start.sh\" ]; do d=${d%/*}; done; [ -n \"$d\" ] || exit 0; cd \"$d\" && BLIT_PM_INSTALL=\"pnpm install\" sh .codex/hooks/session-start.sh'",
+            "timeout": 300
+          }
+        ],
+        "matcher": "startup"
+      }
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "cwd": ".",
+        "bash": "node .github/hooks/copilot-hook.cjs post-tool",
+        "powershell": "node .github/hooks/copilot-hook.cjs post-tool",
+        "timeoutSec": 30,
+        "matcher": "edit|create"
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "cwd": ".",
+        "bash": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "powershell": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "timeoutSec": 10,
+        "matcher": "bash|powershell"
+      },
+      {
+        "type": "command",
+        "cwd": ".",
+        "bash": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "powershell": "node .github/hooks/copilot-hook.cjs pre-tool",
+        "timeoutSec": 10,
+        "matcher": "edit|create"
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "cwd": ".",
+        "bash": "node .github/hooks/copilot-hook.cjs session-start \"pnpm install\"",
+        "powershell": "node .github/hooks/copilot-hook.cjs session-start \"pnpm install\"",
+        "timeoutSec": 300
+      }
+    ]
+  }
+}
