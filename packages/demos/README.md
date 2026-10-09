@@ -145,6 +145,9 @@ to these URLs via `VINTAGE_URLS`.
 - [gamepad-input](https://demos.blit386.dev/gamepad-input) - Tiny hover-pod playground showing gamepad connect status,
   analog sticks, triggers, and face button masks (`BT.BTN_A | BT.BTN_B`) with `BT.getAxis` / `BT.isGamepadConnected` /
   `BT.gamepadCount`
+- [any-input](https://demos.blit386.dev/any-input) - "Press any key" gate plus `BT.isAnyKeyPressed` (with tick repeat),
+  `BT.isAnyKeyReleased` versus per-key `BT.isKeyReleased`, and `BT.isAnyButtonDown` / `Pressed` / `Released` for four
+  gamepad slots, with an event log
 
 ### Accessibility
 
