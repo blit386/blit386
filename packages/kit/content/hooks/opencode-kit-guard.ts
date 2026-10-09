@@ -16,6 +16,8 @@
 // The "ask first" commands (force push, branch -D, stash drop) are left to the permission list in opencode.json,
 // because a plugin can only block, not ask.
 
+import type { Plugin } from '@opencode-ai/plugin';
+
 import guardCore from '../hooks/guard-core.cjs';
 
 const { failClosed, isDangerousCommand, isProtectedPath, patchPaths } = guardCore;
@@ -24,13 +26,21 @@ const { failClosed, isDangerousCommand, isProtectedPath, patchPaths } = guardCor
 const EDIT_TOOLS = new Set(['edit', 'write', 'multiedit']);
 const PATCH_TOOLS = new Set(['apply_patch', 'patch']);
 
+/** The fields this guard reads. OpenCode types a tool call's arguments as `any`. */
+interface ToolCallArgs {
+    command?: unknown;
+    filePath?: unknown;
+    patchText?: unknown;
+}
+
 /** Every file a tool call would write, or throws when there is none to find (so the guard fails closed). */
-function editedFiles(tool, args) {
+function editedFiles(tool: string, args: ToolCallArgs): string[] {
     if (PATCH_TOOLS.has(tool)) {
         // The guard core reads the `*** Add File:` / `Update File:` / `Delete File:` / `Move to:` headers the way
         // OpenCode's own parser does (space after the colon optional, edges trimmed), and tolerates an indented header
-        // OpenCode would not read, so it can only ever see more files than OpenCode does.
-        const files = patchPaths(args.patchText);
+        // OpenCode would not read, so it can only ever see more files than OpenCode does. A patch that is not
+        // text names nothing, the same as one whose headers name no file.
+        const files = typeof args.patchText === 'string' ? patchPaths(args.patchText) : [];
 
         if (files.length === 0) {
             throw new Error('the patch names no file');
@@ -47,7 +57,7 @@ function editedFiles(tool, args) {
 }
 
 /** The verdict for one tool call: null to allow it, otherwise something with a message. */
-function classifyCall(tool, args) {
+function classifyCall(tool: string, args: ToolCallArgs): { message: string } | null {
     if (tool === 'bash') {
         if (typeof args.command !== 'string') {
             throw new Error('the shell command is not text');
@@ -72,7 +82,7 @@ function classifyCall(tool, args) {
     return null;
 }
 
-export const KitGuard = async ({ $, directory }) => ({
+export const KitGuard: Plugin = async ({ $, directory }) => ({
     'tool.execute.before': async (input, output) => {
         const verdict = failClosed(() => classifyCall(input.tool, output.args));
 
@@ -84,11 +94,18 @@ export const KitGuard = async ({ $, directory }) => ({
     event: async ({ event }) => {
         // A subagent's session has a parent; only the session the person opened needs the bootstrap.
         if (event.type === 'session.created' && event.properties.info.parentID === undefined) {
-            await $`sh .opencode/hooks/session-start.sh`
-                .cwd(directory)
-                .env({ ...process.env, BLIT_PM_INSTALL: '{{pmInstall}}' })
-                .quiet()
-                .throws(false);
+            // Bun's shell types every variable as a string. An unset variable is not an own property of
+            // `process.env`, so copying only strings keeps the script's environment. The install command
+            // is set first so a variable of the same name already in the environment does not replace it.
+            const env: Record<string, string> = { BLIT_PM_INSTALL: '{{pmInstall}}' };
+
+            for (const [key, value] of Object.entries(process.env)) {
+                if (value !== undefined && key !== 'BLIT_PM_INSTALL') {
+                    env[key] = value;
+                }
+            }
+
+            await $`sh .opencode/hooks/session-start.sh`.cwd(directory).env(env).quiet().throws(false);
         }
     },
 });

@@ -86,6 +86,10 @@ overrides:
   # (@vitest/coverage-v8), so it never enters a runtime bundle - but `security:audit` covers
   # dev + prod, so it fails CI. 1.2.2 is the patch.
   source-map-js@<1.2.2: ^1.2.2
+  # @opencode-ai/plugin is a type-only devDependency of packages/kit. It declares
+  # effect@4.0.0-beta.83, which trustPolicy rejects, and the published root .d.ts
+  # never imports effect. Drop that one edge instead of installing either pin.
+  '@opencode-ai/plugin>effect': '-'
 
 allowBuilds:
   esbuild: true
