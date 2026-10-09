@@ -94,13 +94,18 @@ export const KitGuard: Plugin = async ({ $, directory }) => ({
     event: async ({ event }) => {
         // A subagent's session has a parent; only the session the person opened needs the bootstrap.
         if (event.type === 'session.created' && event.properties.info.parentID === undefined) {
-            // Bun types the environment as strings. `process.env` may hold `undefined`, and dropping those keys would
-            // change what the script sees.
-            await $`sh .opencode/hooks/session-start.sh`
-                .cwd(directory)
-                .env({ ...process.env, BLIT_PM_INSTALL: '{{pmInstall}}' } as Record<string, string>)
-                .quiet()
-                .throws(false);
+            // Bun's shell types every variable as a string. An unset variable is not an own property of
+            // `process.env`, so copying only strings keeps the script's environment. The install command
+            // is set first so a variable of the same name already in the environment does not replace it.
+            const env: Record<string, string> = { BLIT_PM_INSTALL: '{{pmInstall}}' };
+
+            for (const [key, value] of Object.entries(process.env)) {
+                if (value !== undefined && key !== 'BLIT_PM_INSTALL') {
+                    env[key] = value;
+                }
+            }
+
+            await $`sh .opencode/hooks/session-start.sh`.cwd(directory).env(env).quiet().throws(false);
         }
     },
 });
