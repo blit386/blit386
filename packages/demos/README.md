@@ -10,7 +10,7 @@ Want to build your own game with the engine? Start with the
 [create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) scaffolder
 (`npm create blit386@latest my-game`).
 
-There are 46 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
+There are 50 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
 gamepad), audio, and seeded randomness. Each demo lives in a single number-free kebab-case file under `src/` (for
 example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most
 demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
@@ -173,10 +173,15 @@ to these URLs via `VINTAGE_URLS`.
   sliders, per-bus mute toggles that preserve the stored volume, and an alert button that ducks the music bus with
   `BT.audioVolumeSet()`
 
+### Testing
+
+- [test-state](https://demos.blit386.dev/test-state) - Live `BT.testState()` snapshot (`ticks`, `backend`, `state`,
+  `error`) and `BT.ticksReset()`, which sends `BT.ticks` back to zero while the game's own score stays put
+
 ## Shared UI kit
 
 All on-screen demo UI - panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
-D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 42 of the 46 demos.
+D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 46 of the 50 demos.
 Four demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay),
 `hello-world` (a bare-bones starter kept as a minimal reference, with no demo UI at all), `hypercube` (a full-canvas
 tesseract with no shared UI kit), and `logo-lowres` (a full-canvas showcase with no demo HUD):

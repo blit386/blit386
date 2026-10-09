@@ -57,4 +57,5 @@ export const DEMO_ORDER = [
     'reduced-motion',
     'bunnymark',
     'nine-slice-panels',
+    'test-state',
 ];

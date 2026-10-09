@@ -164,7 +164,7 @@ sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX 
 
 All demo UI - panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, tap
 zones - comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current widget list and options.
-Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 48 demos, 44 import it; the intentional exceptions
+Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 50 demos, 46 import it; the intentional exceptions
 are `flurry`, `hello-world`, `hypercube`, `logo-lowres` (a bare-bones starter plus three immersive/showcase pieces, none
 with a demo HUD).
 
