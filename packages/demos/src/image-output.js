@@ -1,11 +1,22 @@
-// Image Output: demonstrates BT.downloadFrame().
-// @description Take a screenshot of whatever is on screen with BT.downloadFrame and save it straight out as a PNG.
+// Image Output: demonstrates BT.downloadFrame() and BT.captureFrame().
+// @description Capture frames as PNG with BT.downloadFrame and BT.captureFrame, at output or display size.
+// @ogScale integer
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Click or tap the "Save PNG" button from the
 // shared UI kit (or press S) to download the current frame - so the demo works on
 // touch screens too. Note: the kit panel is drawn on screen, so it appears in the
 // saved PNG as well. That is fine for this demo - see the comment in render().
+//
+// BT.captureFrame() does the same screenshot but hands you the PNG as a Blob (a
+// chunk of file data in memory) instead of saving it. Your game decides what to do
+// with it: upload it, show it, keep it. The "Capture Blob" button (key B) captures a
+// Blob and this demo reads its size and picture dimensions to show on screen.
+//
+// Both functions take an options object with a size: 'output' (the default) gives
+// the full drawing buffer, 'display' gives exactly one PNG pixel per game pixel.
+// The "Size" button (key Z) switches between them. This demo draws into a 320x240
+// display on a 640x480 drawing buffer, so the two choices produce different images.
 //
 // Dev-mode extras, built into the engine itself (every demo gets these for free,
 // not just this one): while BT.isDevMode is true (running from `pnpm run dev`, not
@@ -16,8 +27,8 @@
 // BT.displaySize, not BT.outputSize, so they stay pixel-for-pixel even when a demo
 // sets a larger drawingBufferSize for display-tier post-process effects (CRT,
 // vignette, and the like) - those effects are not included in either shortcut's
-// output. This demo has no drawingBufferSize, so its own shortcut output is
-// unaffected and still matches the Save PNG button above.
+// output. This demo does set a drawingBufferSize (640x480), so its shortcuts
+// match the Save PNG button only while the Size button is on 'display'.
 // The engine also exposes the whole BT namespace as window.BT in dev mode
 // (BootstrapOptions.exposeGlobal, on by default), so you can run
 // window.BT.downloadFrame('my-file.png') straight from the browser console at any time.
@@ -49,6 +60,11 @@ const C_BG = 2; // Very dark blue-gray: the background color
 const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
+// The two capture sizes the engine understands (the FrameCaptureSize type).
+// We keep them in named constants so a typo cannot silently pick the wrong one.
+const SIZE_OUTPUT = 'output'; // the whole drawing buffer, including display effects
+const SIZE_DISPLAY = 'display'; // exact game pixels, one PNG pixel per game pixel
+
 /**
  * Image output demo.
  * Draws a colorful test pattern and saves the frame to PNG when the kit's
@@ -76,13 +92,18 @@ class Demo {
     // 'accent' (green) for a successful save, 'warm' (orange) for an error.
     lastCaptureColor = 'accent';
 
+    // captureSize is the size option we pass to BT.downloadFrame() and BT.captureFrame().
+    // 'output' means the full drawing buffer (640x480 here); 'display' means one PNG
+    // pixel per game pixel (320x240 here). The Size button switches between them.
+    captureSize = SIZE_OUTPUT;
+
     // messageTimer counts down how many more frames to show lastCaptureMessage before hiding it.
     // 180 frames is 3 seconds at 60 FPS, then the message disappears.
     messageTimer = 0;
 
     /**
-     * Hides the overlay toggle hint so saved screenshots stay clean, and pins the
-     * display size so BT.downloadFrame() saves raw, 1:1 pixels.
+     * Hides the overlay toggle hint so saved screenshots stay clean, and sets a
+     * 320x240 display on a 640x480 drawing buffer so the two capture sizes differ.
      *
      * @returns {Partial<HardwareSettings>} Demo hardware settings.
      */
@@ -102,17 +123,19 @@ class Demo {
             isOverlayToggleHintVisible: false,
 
             // Most demos leave displaySize unset and let the engine fill in its
-            // default hardware profile, which includes a 640x480 "drawing buffer" -
-            // an internal 2x upscale so the picture looks crisp on screen. Save PNG
-            // would then download that upscaled 640x480 buffer instead of the demo's
-            // real 320x240 canvas. Declaring displaySize here (even though 320x240 is
-            // already the default value) tells the engine "this demo picked its own
-            // sizes on purpose," which turns that automatic upscale off. The picture
-            // still looks sharp on screen - your browser scales the smaller image up
-            // using the same nearest-neighbor technique the engine used internally -
-            // but the saved PNG now has exactly one file pixel per canvas pixel,
-            // which is what "pixel-perfect" means for retro pixel art.
+            // default hardware profile, which already includes a 640x480 "drawing
+            // buffer" - an internal 2x upscale so the picture looks crisp on screen.
+            // Here we declare both sizes ourselves so the demo is easy to read:
+            // displaySize is the grid the game draws on (320x240 pixels).
             displaySize: new Vector2i(320, 240),
+
+            // Now we ask for a bigger drawing buffer on purpose. This is the
+            // "scaled display" case: the game still draws on a 320x240 grid, but the
+            // engine keeps a 640x480 picture for the screen. BT.outputSize is that
+            // 640x480 size, so a capture with size 'output' is 640x480 and a capture
+            // with size 'display' is 320x240. Declaring it explicitly keeps the
+            // choice visible in this demo instead of depending on engine defaults.
+            drawingBufferSize: new Vector2i(640, 480),
         };
     }
 
@@ -263,7 +286,20 @@ class Demo {
             this.saveFrame();
         }
 
-        // One status row below the button. We always draw a row (even when idle) so
+        // The Size button flips between the two FrameCaptureSize choices. It shows
+        // the choice that is active right now, so you can see what the next
+        // capture will use.
+        if (ui.button(`Size: ${this.captureSize} (Z)`, { key: 'KeyZ', id: 'size' })) {
+            this.captureSize = this.captureSize === SIZE_OUTPUT ? SIZE_DISPLAY : SIZE_OUTPUT;
+        }
+
+        // The Capture Blob button calls BT.captureFrame() instead of downloadFrame().
+        // Nothing is saved to disk - the demo gets the PNG data and reads it itself.
+        if (ui.button('Capture Blob (B)', { key: 'KeyB' }) && !this.capturing) {
+            this.captureBlob();
+        }
+
+        // One status row below the buttons. We always draw a row (even when idle) so
         // the panel does not jump in size when a message appears or disappears.
         if (this.capturing) {
             // A save is in flight - the browser is busy reading the canvas.
@@ -298,27 +334,70 @@ class Demo {
         // and render() shows the "Capturing..." status row.
         this.capturing = true;
 
+        // Remember which size we asked for. The player may press Size while we wait.
+        const size = this.captureSize;
+
         // BT.downloadFrame() reads the canvas and asks the browser to save a file.
         // Most browsers open a "Save as" dialog or drop the file straight into your
         // Downloads folder (depends on your browser settings). The demo cannot pick
         // the folder for you - that is normal browser security.
-        BT.downloadFrame('blit386-capture.png')
+        BT.downloadFrame('blit386-capture.png', { size })
             .then(() => {
-                // Success: remember a friendly message and show it in green.
-                this.lastCaptureMessage = 'Saved: blit386-capture.png';
-                this.lastCaptureColor = 'accent';
-                this.messageTimer = 180; // 3 seconds at 60 FPS
-                this.capturing = false;
+                // Success: show a friendly message in green.
+                this.showMessage(`Saved: blit386-capture.png (${size})`, 'accent');
                 return null;
             })
             .catch((err) => {
                 // Failure: show the error in orange and log details for developers.
-                this.lastCaptureMessage = `Error: ${err.message}`;
-                this.lastCaptureColor = 'warm';
-                this.messageTimer = 180;
-                this.capturing = false;
+                this.showMessage(`Error: ${err.message}`, 'warm');
                 console.error('[Demo] Capture failed:', err);
             });
+    }
+
+    /**
+     * Captures the current frame as a Blob with BT.captureFrame() and reads the
+     * Blob's byte count and picture dimensions for the status row.
+     */
+    captureBlob() {
+        // Same "in flight" flag as saveFrame(), so only one capture runs at a time.
+        this.capturing = true;
+
+        // Remember which size we asked for. The player may press Size while we wait.
+        const size = this.captureSize;
+
+        // BT.captureFrame() resolves with a Blob: the PNG file held in memory.
+        // The options object picks the size, exactly like BT.downloadFrame().
+        BT.captureFrame({ size })
+            .then(async (blob) => {
+                // createImageBitmap() decodes the PNG so we can read its real width and
+                // height. This proves the Blob holds the size we asked for.
+                const image = await createImageBitmap(blob);
+                const message = `Blob ${size}: ${image.width}x${image.height}, ${blob.size} bytes`;
+
+                // Free the decoded picture; we only needed its dimensions.
+                image.close();
+
+                this.showMessage(message, 'accent');
+                return null;
+            })
+            .catch((err) => {
+                // Failure: show the error in orange and log details for developers.
+                this.showMessage(`Error: ${err.message}`, 'warm');
+                console.error('[Demo] Blob capture failed:', err);
+            });
+    }
+
+    /**
+     * Ends a capture: shows a status message for three seconds and unlocks the buttons.
+     *
+     * @param {string} text - The message to show.
+     * @param {string} color - UI color role: 'accent' (green) for success, 'warm' (orange) for an error.
+     */
+    showMessage(text, color) {
+        this.lastCaptureMessage = text;
+        this.lastCaptureColor = color;
+        this.messageTimer = 180; // 3 seconds at 60 FPS
+        this.capturing = false;
     }
 }
 

@@ -119,7 +119,8 @@ to these URLs via `VINTAGE_URLS`.
 
 ### Putting It All Together
 
-- [image-output](https://demos.blit386.dev/image-output) - Frame capture and PNG export
+- [image-output](https://demos.blit386.dev/image-output) - Frame capture as a download or a Blob, at output or display
+  size
 - [game-scene](https://demos.blit386.dev/game-scene) - Capstone: tilemap ground, patterns, sprites, camera, animation,
   frame capture, and looping background music with a real intro/loop point in one scene
 
