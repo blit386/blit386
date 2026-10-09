@@ -18,7 +18,7 @@ Use this when you need to run the game to test a change, or when the user says "
 ## Steps
 
 1. In the project folder, run `{{pmRunDev}}` (or `npx blit run`).
-2. The browser opens automatically at `http://localhost:5173` (or the next free port).
+2. The dev server does not open a browser. Open `http://localhost:5173` (or the next free port it prints).
 3. Edit and save - with the starter's `blit386` Vite plugin, most code and `public/` asset edits keep the game running
    (hot reload) instead of wiping state. Full detail: `docs/hot-reload.md`. There is no need to restart the server after
    each edit.
@@ -27,8 +27,8 @@ Use this when you need to run the game to test a change, or when the user says "
 ## Notes
 
 - If the port is in use, read `docs/when-something-breaks.md` for the "port already in use" fix.
-- If the browser does not open, open the address the dev server printed in the terminal (`http://localhost:5173` unless
-  that port was taken).
+- The dev server never opens a browser itself; use the address it printed in the terminal (`http://localhost:5173`
+  unless that port was taken).
 - If your editor has a built-in preview pane that reads `.claude/launch.json` (the Claude desktop app does), it can
   start the game and show it there, with no terminal step. That file is yours to edit, for example to change the port.
 - The game works without WebGPU (the engine falls back to Canvas 2D), so it runs in any modern browser.

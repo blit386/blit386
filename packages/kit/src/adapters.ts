@@ -661,8 +661,8 @@ const VITE_RUNNER_ARGS: Record<string, readonly string[] | undefined> & { npm: r
 
 /**
  * `.claude/launch.json`: one preview-server configuration, so the Claude desktop app's browser pane
- * can start the game with no setup. `--no-open` overrides the starter's `server.open: true`, which
- * would otherwise pop a system browser window next to the pane. Not `--open false`: Vite reads that
+ * can start the game with no setup. `--no-open` keeps older games (whose `vite.config` still sets
+ * `server.open: true`) from popping a system browser window next to the pane. Not `--open false`: Vite reads that
  * `false` as a path and opens `/false`.
  */
 function launchConfigFile(vars: TemplateVars): GeneratedFile {

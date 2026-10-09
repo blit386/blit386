@@ -7,8 +7,4 @@ import { blit386 } from 'blit386/vite';
 // You usually do not need to change anything else here.
 export default defineConfig({
     plugins: [blit386()],
-    server: {
-        // Open the game in your browser automatically when you run `npm run dev`.
-        open: true,
-    },
 });

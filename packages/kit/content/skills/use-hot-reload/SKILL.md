@@ -29,7 +29,6 @@ import { blit386 } from 'blit386/vite';
 
 export default defineConfig({
   plugins: [blit386()],
-  server: { open: true },
 });
 ```
 
