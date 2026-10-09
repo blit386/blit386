@@ -1,0 +1,1 @@
+../../packages/kit/content/hooks/codex-guard.cjs

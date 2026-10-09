@@ -285,7 +285,7 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | Job | Gated on | What it runs |
 | --- | --- | --- |
 | `changes` | always | Path filters; emits the per-package booleans every job below reads |
-| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check` - repo-wide, so they run once rather than per package |
+| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check` - repo-wide, so they run once rather than per package |
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check` |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |

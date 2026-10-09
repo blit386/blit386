@@ -198,12 +198,12 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Spellcheck coverage tests (`test:spellcheck-coverage`)
 - Security preflight tests (`test:security-preflight`)
 
-`docs:links`, `agents:check`, and `sync:cursor-commands:check` are **not** part of any package's `preflight`. Each is a
-root-only script that walks (or generates against) the whole repo regardless of which `package.json` invoked it, so all
-three were pulled out of the per-package chains to stop a single push running the same full-repo check two to four
-times. Run them once from the repo root (`pnpm run docs:links`, `pnpm run agents:check`,
-`pnpm run sync:cursor-commands:check`); `.husky/pre-push` runs them there, alongside the rest of the root gate, after
-every changed package's `preflight` passes.
+`docs:links`, `agents:check`, `sync:cursor-commands:check`, and `sync:maintainer-agents:check` are **not** part of any
+package's `preflight`. Each is a root-only script that walks (or generates against) the whole repo regardless of which
+`package.json` invoked it, so they were pulled out of the per-package chains to stop a single push running the same
+full-repo check two to four times. Run them once from the repo root (`pnpm run docs:links`, `pnpm run agents:check`,
+`pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`); `.husky/pre-push` runs them there,
+alongside the rest of the root gate, after every changed package's `preflight` passes.
 
 ### Available Commands
 
@@ -223,9 +223,11 @@ pnpm run typecheck                  # Run TypeScript checks
 pnpm run spellcheck                 # Check spelling
 pnpm run knip                       # Find unused exports and dependencies
 pnpm run docs:links                 # Check Markdown links
-pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer, root .mcp.json, cursor rules parity, cursor .mcp.json)
+pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer, root .mcp.json, cursor rules parity, cursor .mcp.json, maintainer dogfood)
 pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
 pnpm run sync:cursor-commands:check # Check .cursor/commands/*.md for drift against .claude/skills/*/SKILL.md
+pnpm run sync:maintainer-agents     # Generate Antigravity/Codex/Gemini/Copilot/OpenCode hooks + docs-MCP from kit adapters
+pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
 pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
 pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run api:history                # Regenerate API version-history manifest

@@ -8,7 +8,22 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.jsonc", "!.blit"]
+    "includes": [
+      "**/*.ts",
+      "**/*.js",
+      "**/*.mjs",
+      "**/*.cjs",
+      "**/*.json",
+      "**/*.jsonc",
+      "!.blit",
+      "!.agents/hooks.json",
+      "!.agents/mcp_config.json",
+      "!.codex/hooks.json",
+      "!.gemini",
+      "!.github/hooks/blit.json",
+      "!opencode.json",
+      "!.opencode/plugins/kit-guard.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

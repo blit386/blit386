@@ -48,8 +48,15 @@ benchmark-comparison.md
 mcp.json
 !/.mcp.json
 
-# Other AI assistants (local only)
-.codex/
+# Other AI assistants (local only). Ignore everything under `.codex/` then
+# un-ignore the maintainer dogfood files from `scripts/sync-maintainer-agents.mjs`
+# - same `dir/*` + negation pattern as `.cursor/` below (a bare `.codex/` would
+# make git skip the directory so the negations never apply).
+.codex/*
+!.codex/hooks.json
+!.codex/config.toml
+!.codex/hooks/
+!.codex/hooks/**
 .aider*
 .continue/
 .windsurf/

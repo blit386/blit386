@@ -223,8 +223,10 @@ bump from step 2 actually took effect.
 
 When the release touches agents or hot reload, spend two extra minutes:
 
-- Scaffold once with Claude or Cursor selected and confirm the generated agent files look right (for Claude: hooks under
-  `.claude/` / `settings.json`; for Cursor: `.cursor/skills` and hooks).
+- Every adapter is already exercised by the scaffolder's per-agent tests
+  (`packages/create-blit386/test/agent-claude-cursor.test.mjs`, `agent-antigravity.test.mjs`, `agent-codex.test.mjs`,
+  `agent-copilot.test.mjs`, `agent-gemini.test.mjs`, `agent-opencode.test.mjs`, `agent-zed.test.mjs`) - run
+  `pnpm --filter create-blit386 run test` and confirm they pass rather than hand-scaffolding one assistant.
 - Run `npx blit agents sync` on the smoke project and confirm it reports clean (or only expected drift).
 - If the starter ships `blit386/vite`, edit a `render()` line and confirm hot reload without a full page reload.
 

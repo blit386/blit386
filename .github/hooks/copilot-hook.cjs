@@ -1,0 +1,1 @@
+../../packages/kit/content/hooks/copilot-hook.cjs

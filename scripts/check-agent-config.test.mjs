@@ -2,22 +2,36 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
+    MAINTAINER_CONFIG_SPECS,
     checkRootSkillsLayout,
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
     findCursorMcpFailures,
+    findMaintainerConfigFailures,
+    findMaintainerHookSymlinkFailures,
     findProjectMcpFailures,
     findRulesParityFailures,
     findSkillsSymlinkFailures,
     findZedSettingsFailures,
+    isPathIgnoredByGit,
     isRootMcpIgnoredByGit,
     resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
+
+/** @param {string} path */
+function maintainerSpec(path) {
+    const spec = MAINTAINER_CONFIG_SPECS.find((entry) => entry.path === path);
+    if (!spec) {
+        throw new Error(`missing MAINTAINER_CONFIG_SPECS entry for ${path}`);
+    }
+    return spec;
+}
 
 describe('check-agent-config', () => {
     describe('findSkillsSymlinkFailures', () => {
@@ -313,6 +327,188 @@ describe('check-agent-config', () => {
 
         it('does not fail when git could not answer whether the file is ignored', () => {
             assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, null), []);
+        });
+    });
+
+    describe('findMaintainerConfigFailures', () => {
+        it('passes Antigravity MCP when serverUrl is pinned', () => {
+            const content = JSON.stringify({
+                mcpServers: { 'blit386-docs': { serverUrl: 'https://blit386.dev/mcp' } },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.agents/mcp_config.json'), content), []);
+        });
+
+        it('fails Antigravity MCP when the file is missing', () => {
+            assert.match(findMaintainerConfigFailures(maintainerSpec('.agents/mcp_config.json'), null)[0], /missing/);
+        });
+
+        it('fails Antigravity MCP when url is used instead of serverUrl', () => {
+            const content = JSON.stringify({
+                mcpServers: { 'blit386-docs': { url: 'https://blit386.dev/mcp' } },
+            });
+            const failures = findMaintainerConfigFailures(maintainerSpec('.agents/mcp_config.json'), content);
+            assert.ok(failures.some((failure) => /serverUrl/.test(failure)));
+        });
+
+        it('passes Antigravity hooks when antigravity-guard.cjs is wired', () => {
+            const content = JSON.stringify({
+                'blit-block': {
+                    PreToolUse: [{ type: 'command', command: 'node .agents/hooks/antigravity-guard.cjs shell' }],
+                },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.agents/hooks.json'), content), []);
+        });
+
+        it('fails Antigravity hooks when the guard is absent', () => {
+            assert.match(
+                findMaintainerConfigFailures(maintainerSpec('.agents/hooks.json'), '{"ok":true}\n')[0],
+                /antigravity-guard/,
+            );
+        });
+
+        it('passes Codex config.toml when the TOML table is pinned', () => {
+            const content = `[mcp_servers.blit386-docs]\nurl = "https://blit386.dev/mcp"\n`;
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.codex/config.toml'), content), []);
+        });
+
+        it('fails Codex config.toml when the URL drifts', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.codex/config.toml'),
+                    `[mcp_servers.blit386-docs]\nurl = "https://evil.example/mcp"\n`,
+                )[0],
+                /does not pin url/,
+            );
+        });
+
+        it('passes Codex hooks when codex-guard.cjs is wired', () => {
+            const content = JSON.stringify({
+                hooks: {
+                    PreToolUse: [
+                        {
+                            matcher: 'Bash',
+                            hooks: [{ type: 'command', command: 'node .codex/hooks/codex-guard.cjs shell' }],
+                        },
+                    ],
+                },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.codex/hooks.json'), content), []);
+        });
+
+        it('fails Codex hooks when missing', () => {
+            assert.match(findMaintainerConfigFailures(maintainerSpec('.codex/hooks.json'), null)[0], /missing/);
+        });
+
+        it('passes Gemini settings when httpUrl is pinned and shell-guard is wired', () => {
+            const content = JSON.stringify({
+                mcpServers: { 'blit386-docs': { httpUrl: 'https://blit386.dev/mcp' } },
+                hooks: { BeforeTool: [{ hooks: [{ command: 'node shell-guard.cjs' }] }] },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.gemini/settings.json'), content), []);
+        });
+
+        it('fails Gemini settings when url is used instead of httpUrl', () => {
+            const content = JSON.stringify({
+                mcpServers: { 'blit386-docs': { url: 'https://blit386.dev/mcp' } },
+                hooks: {},
+            });
+            const failures = findMaintainerConfigFailures(maintainerSpec('.gemini/settings.json'), content);
+            assert.ok(failures.some((failure) => /httpUrl/.test(failure)));
+        });
+
+        it('passes Copilot hooks when both shells wire copilot-hook.cjs', () => {
+            const content = JSON.stringify({
+                version: 1,
+                hooks: {
+                    preToolUse: [
+                        {
+                            type: 'command',
+                            bash: 'node .github/hooks/copilot-hook.cjs pre-tool',
+                            powershell: 'node .github/hooks/copilot-hook.cjs pre-tool',
+                        },
+                    ],
+                },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.github/hooks/blit.json'), content), []);
+        });
+
+        it('fails Copilot hooks when powershell is absent', () => {
+            const content = JSON.stringify({
+                hooks: { preToolUse: [{ bash: 'node .github/hooks/copilot-hook.cjs pre-tool' }] },
+            });
+            assert.ok(
+                findMaintainerConfigFailures(maintainerSpec('.github/hooks/blit.json'), content).some((failure) =>
+                    /powershell/.test(failure),
+                ),
+            );
+        });
+
+        it('passes OpenCode when remote MCP and bash deny are present', () => {
+            const content = JSON.stringify({
+                permission: { bash: { 'git reset --hard*': 'deny' } },
+                mcp: { 'blit386-docs': { type: 'remote', url: 'https://blit386.dev/mcp', enabled: true } },
+            });
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('opencode.json'), content), []);
+        });
+
+        it('fails OpenCode when type is not remote', () => {
+            const content = JSON.stringify({
+                permission: { bash: { 'git reset --hard*': 'deny' } },
+                mcp: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp' } },
+            });
+            assert.match(
+                findMaintainerConfigFailures(maintainerSpec('opencode.json'), content)[0],
+                /expected "remote"/,
+            );
+        });
+
+        it('passes kit-guard for a regular file containing pnpm install', () => {
+            assert.deepEqual(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.opencode/plugins/kit-guard.ts'),
+                    "BLIT_PM_INSTALL: 'pnpm install'",
+                    { isSymlink: false },
+                ),
+                [],
+            );
+        });
+
+        it('fails kit-guard when the file is a symlink', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.opencode/plugins/kit-guard.ts'),
+                    "BLIT_PM_INSTALL: 'pnpm install'",
+                    { isSymlink: true },
+                )[0],
+                /regular file/,
+            );
+        });
+    });
+
+    describe('findMaintainerHookSymlinkFailures', () => {
+        it('passes when every entry resolves to the same basename under the kit hooks dir', () => {
+            assert.deepEqual(
+                findMaintainerHookSymlinkFailures([
+                    { path: '.codex/hooks/guard-core.cjs', isSymlink: true, resolvedBasename: 'guard-core.cjs' },
+                ]),
+                [],
+            );
+        });
+
+        it('fails when an entry is not a symlink', () => {
+            assert.match(
+                findMaintainerHookSymlinkFailures([
+                    { path: '.codex/hooks/guard-core.cjs', isSymlink: false, resolvedBasename: null },
+                ])[0],
+                /is not a symlink/,
+            );
+        });
+    });
+
+    describe('isPathIgnoredByGit', () => {
+        it('reports .codex/hooks.json as not ignored in this repository', () => {
+            const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+            assert.equal(isPathIgnoredByGit(repoRoot, '.codex/hooks.json'), false);
         });
     });
 

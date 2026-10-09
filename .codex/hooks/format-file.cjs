@@ -1,0 +1,1 @@
+../../packages/kit/content/hooks/format-file.cjs
