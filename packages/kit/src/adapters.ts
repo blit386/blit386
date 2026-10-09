@@ -55,7 +55,6 @@ export {
     type FileClass,
     classifyFile,
     hasAgentFiles,
-    isAgentPath,
     isKitManaged,
     SHARED_SKILLS_DIR,
 } from './ownership';
