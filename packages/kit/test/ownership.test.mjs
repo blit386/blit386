@@ -31,13 +31,9 @@ import {
     CLAUDE_LAUNCH_JSON,
     classifyFile,
     hasAgentFiles,
-    isAgentPath,
     isKitManaged,
     SHARED_SKILLS_DIR,
 } from '../dist/ownership.js';
-
-/** Every assistant a project-relative path belongs to, in `AGENT_KINDS` order. */
-const owners = (path) => AGENT_KINDS.filter((kind) => isAgentPath(path, kind));
 
 /** A path in the shared skills folder, which several agents may read at once. */
 const SHARED_SKILL = `${SHARED_SKILLS_DIR}run/SKILL.md`;
@@ -120,7 +116,6 @@ test('.agents/ is claimed by exact paths only, never by its bare prefix', () => 
 
     for (const path of ['.agents/hooks.json', '.agents/hooks/antigravity-guard.cjs', '.agents/mcp_config.json']) {
         assert.equal(classifyFile(path), 'kit-owned', path);
-        assert.deepEqual(owners(path), ['antigravity'], `${path} belongs to Antigravity alone`);
     }
 
     for (const path of [
@@ -130,14 +125,12 @@ test('.agents/ is claimed by exact paths only, never by its bare prefix', () => 
         '.agents/plugins/p.json',
     ]) {
         assert.equal(classifyFile(path), 'user-owned', `${path} must not be claimed through a .agents/ prefix`);
-        assert.deepEqual(owners(path), [], `${path} must belong to no agent`);
     }
 });
 
 test('.mcp.json belongs to Claude Code and Copilot alike, and makes neither look set up', () => {
     // Both read the root `.mcp.json` in the same shape; claiming it privately for either would make a game with only
     // the other drag the first one's files in on the next sync.
-    assert.deepEqual(owners('.mcp.json'), ['claude', 'copilot']);
     assert.equal(classifyFile('.mcp.json'), 'kit-owned');
 
     for (const kind of AGENT_KINDS) {
@@ -156,7 +149,6 @@ test('Copilot claims .github/hooks/ and its setup workflow, never the rest of .g
         '.github/workflows/copilot-setup-steps.yml',
     ]) {
         assert.equal(classifyFile(path), 'kit-owned', path);
-        assert.deepEqual(owners(path), ['copilot'], `${path} belongs to Copilot alone`);
     }
 
     for (const path of [
@@ -166,7 +158,6 @@ test('Copilot claims .github/hooks/ and its setup workflow, never the rest of .g
         '.vscode/settings.json',
     ]) {
         assert.equal(classifyFile(path), 'user-owned', path);
-        assert.deepEqual(owners(path), [], `${path} must belong to no agent`);
     }
 
     assert.equal(hasAgentFiles([{ path: '.github/hooks/blit.json' }], 'copilot'), true);
@@ -195,17 +186,6 @@ test('hasAgentFiles is false for an empty or user-owned-only file list', () => {
     assert.equal(hasAgentFiles([], 'claude'), false);
     assert.equal(hasAgentFiles([], 'cursor'), false);
     assert.equal(hasAgentFiles([{ path: 'src/game.js' }, { path: 'AGENTS.md' }], 'claude'), false);
-});
-
-test('a shared skill belongs to exactly the agents that read the shared folder', () => {
-    for (const kind of AGENT_KINDS) {
-        assert.equal(isAgentPath(SHARED_SKILL, kind), AGENT_SPECS[kind].readsSharedSkills, kind);
-    }
-
-    assert.deepEqual(
-        owners(SHARED_SKILL),
-        AGENT_KINDS.filter((kind) => AGENT_SPECS[kind].readsSharedSkills),
-    );
 });
 
 test('a tracked shared skill never makes any agent look set up', () => {
@@ -362,38 +342,6 @@ test('every file the kit emits classifies as kit-owned or shared, except the use
             classifyFile(file.path),
             'user-owned',
             `${file.path} classifies user-owned, so sync would never regenerate it`,
-        );
-    }
-});
-
-test('every adapter-emitted path belongs to the agent that emitted it', () => {
-    const root = kitRoot();
-
-    for (const file of generateClaudeAdapter(root, VARS)) {
-        assert.ok(isAgentPath(file.path, 'claude'), `${file.path} is not recognized as a Claude file`);
-    }
-
-    for (const file of generateCursorAdapter(root, VARS)) {
-        assert.ok(isAgentPath(file.path, 'cursor'), `${file.path} is not recognized as a Cursor file`);
-    }
-
-    for (const file of generateAntigravityAdapter(root, VARS)) {
-        assert.ok(isAgentPath(file.path, 'antigravity'), `${file.path} is not recognized as an Antigravity file`);
-    }
-
-    for (const file of generateCopilotAdapter(root, VARS)) {
-        assert.ok(isAgentPath(file.path, 'copilot'), `${file.path} is not recognized as a Copilot file`);
-    }
-
-    for (const file of generateAgentFiles(root, VARS, ['zed'])) {
-        assert.ok(isAgentPath(file.path, 'zed'), `${file.path} is not recognized as a Zed file`);
-    }
-
-    for (const file of generateSharedSkills(root, VARS)) {
-        assert.deepEqual(
-            owners(file.path),
-            AGENT_KINDS.filter((kind) => AGENT_SPECS[kind].readsSharedSkills),
-            `${file.path} should belong to exactly the shared-folder readers`,
         );
     }
 });

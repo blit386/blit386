@@ -364,25 +364,6 @@ function isPrivateAgentPath(normalized: string, agent: AgentKind): boolean {
 }
 
 /**
- * Is this project-relative path part of `agent`'s generated file set?
- *
- * True for the agent's private paths and for shared paths it reads - so a shared skill belongs to several agents at once.
- *
- * @param relPath - Path relative to the project root; Windows separators are normalized.
- * @param agent - The assistant to test against.
- * @returns True when the path is one the assistant reads from the kit's output.
- */
-export function isAgentPath(relPath: string, agent: AgentKind): boolean {
-    const normalized = normalize(relPath);
-
-    return (
-        isPrivateAgentPath(normalized, agent) ||
-        AGENT_SPECS[agent].readsSharedFiles.includes(normalized) ||
-        (AGENT_SPECS[agent].readsSharedSkills && normalized.startsWith(SHARED_SKILLS_DIR))
-    );
-}
-
-/**
  * Should the kit emit the shared skills folder for this set of assistants? Yes while at least one of them reads it;
  * once none does, sync stops regenerating it and drops it from the manifest like any other retired file.
  *
