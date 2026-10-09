@@ -61,12 +61,15 @@ export const SKIP_PATHS = new Set(['.mcp.json', '.github/workflows/copilot-setup
  * files outside these dirs are listed in {@link OWNED_EXACT_FILES}.
  * MANUAL-SYNC HAZARD: prefixes match `packages/kit/src/ownership.ts` path constants.
  */
-export const OWNED_DIRS = ['.agents/hooks/', '.codex/', '.gemini/', '.github/hooks/', '.opencode/hooks/'];
+export const OWNED_DIRS = ['.agents/hooks/', '.codex/hooks/', '.gemini/hooks/', '.github/hooks/', '.opencode/hooks/'];
 
 /** Exact files this script owns that do not live under {@link OWNED_DIRS}. */
 export const OWNED_EXACT_FILES = [
     '.agents/hooks.json',
     '.agents/mcp_config.json',
+    '.codex/config.toml',
+    '.codex/hooks.json',
+    '.gemini/settings.json',
     'opencode.json',
     '.opencode/plugins/kit-guard.ts',
 ];

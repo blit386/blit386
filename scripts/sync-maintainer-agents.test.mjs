@@ -98,6 +98,8 @@ describe('sync-maintainer-agents', () => {
                 [
                     '.codex/hooks/old.cjs',
                     '.codex/hooks/guard-core.cjs',
+                    '.codex/rules/local.md',
+                    '.gemini/tmp-local.json',
                     '.agents/hooks.json',
                     '.agents/skills/format/SKILL.md',
                     'README.md',
@@ -107,6 +109,7 @@ describe('sync-maintainer-agents', () => {
                 OWNED_EXACT_FILES,
             );
 
+            // Local Codex/Gemini files outside hooks/ + exact configs stay untouched.
             assert.deepEqual(orphans, ['.agents/hooks.json', '.codex/hooks/old.cjs']);
         });
 
