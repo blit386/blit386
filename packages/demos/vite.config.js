@@ -188,16 +188,11 @@ export default defineConfig(({ command }) => {
         },
 
         server: {
-            open: '/demos/basics.html',
             hmr: true,
             watch: {
                 // pnpm links ../blit386; watch its dist output during `dev:watch`.
                 ignored: ['**/node_modules/**', '!**/blit386/dist/**'],
             },
-        },
-
-        preview: {
-            open: true,
         },
     };
 });

@@ -259,11 +259,10 @@ cd packages/demos
 pnpm run dev
 ```
 
-The dev server opens `http://localhost:5173/demos/basics.html` in your browser (configured by `server.open` in
-`vite.config.js`). Every demo is served at `http://localhost:5173/demos/<slug>.html`, and the index listing all of them
-is at `http://localhost:5173/demos/`. Vintage numbered paths redirect to the current slug in both dev (301 from the Vite
-plugin) and production (`dist/_redirects`). For the public build, open the flat URLs on
-[demos.blit386.dev](https://demos.blit386.dev/).
+The dev server does not open a browser; go to `http://localhost:5173/demos/basics.html` yourself. Every demo is served
+at `http://localhost:5173/demos/<slug>.html`, and the index listing all of them is at `http://localhost:5173/demos/`.
+Vintage numbered paths redirect to the current slug in both dev (301 from the Vite plugin) and production
+(`dist/_redirects`). For the public build, open the flat URLs on [demos.blit386.dev](https://demos.blit386.dev/).
 
 Editing a demo's `src/<slug>.js` file usually avoids a full page reload: a method-only edit (`render()`/`update()`)
 keeps state in place, while an edit to `init()` or the constructor re-initializes the demo instead. A `configure()`
