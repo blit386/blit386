@@ -14,18 +14,10 @@ import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { classifyFile, generateCodexAdapter, kitRoot } from '../dist/adapters.js';
+import { runHook, VARS } from './hook-harness.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const hooksDir = join(here, '..', 'content', 'hooks');
 const WEBSITE_CARD = join(here, '..', '..', 'website', 'public', '.well-known', 'mcp', 'server-card.json');
-
-const VARS = {
-    pmInstall: 'pnpm install',
-    pmRunDev: 'pnpm run dev',
-    pmRunBuild: 'pnpm run build',
-    pmRunFormat: 'pnpm run format',
-    pmRunLint: 'pnpm run lint',
-};
 
 const files = generateCodexAdapter(kitRoot(), VARS);
 const hooksJson = JSON.parse(files.find((f) => f.path === '.codex/hooks.json').content);
@@ -50,10 +42,7 @@ const updatePatch = (file) => `*** Begin Patch\n*** Update File: ${file}\n@@\n-a
 
 /** Run `codex-guard.cjs <mode>` from the kit's content with `input` on stdin (a string is sent raw). */
 function guard(mode, input) {
-    return spawnSync(process.execPath, [join(hooksDir, 'codex-guard.cjs'), ...(mode ? [mode] : [])], {
-        input: typeof input === 'string' ? input : JSON.stringify(input),
-        encoding: 'utf8',
-    });
+    return runHook('codex-guard.cjs', { args: mode ? [mode] : [], input });
 }
 
 describe('.codex/hooks.json', () => {

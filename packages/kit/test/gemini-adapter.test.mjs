@@ -4,36 +4,21 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { classifyFile, generateGeminiAdapter, kitRoot } from '../dist/adapters.js';
+import { runHook, VARS } from './hook-harness.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const hooksDir = join(here, '..', 'content', 'hooks');
 const WEBSITE_CARD = join(here, '..', '..', 'website', 'public', '.well-known', 'mcp', 'server-card.json');
-
-const VARS = {
-    pmInstall: 'pnpm install',
-    pmRunDev: 'pnpm run dev',
-    pmRunBuild: 'pnpm run build',
-    pmRunFormat: 'pnpm run format',
-    pmRunLint: 'pnpm run lint',
-};
 
 const files = generateGeminiAdapter(kitRoot(), VARS);
 const settings = JSON.parse(files.find((f) => f.path === '.gemini/settings.json').content);
 
-/** Run an entry script with `input` on stdin (a string is sent raw, anything else as JSON). */
-function run(script, input) {
-    return spawnSync(process.execPath, [join(hooksDir, script)], {
-        input: typeof input === 'string' ? input : JSON.stringify(input),
-        encoding: 'utf8',
-    });
-}
+const run = (script, input) => runHook(script, { input });
 
 describe('.gemini/settings.json', () => {
     it('points Gemini at AGENTS.md without emitting a GEMINI.md', () => {

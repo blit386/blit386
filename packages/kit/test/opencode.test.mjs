@@ -14,19 +14,12 @@ import { describe, it } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { classifyFile, generateAgentFiles, generateOpenCodeAdapter, kitRoot } from '../dist/adapters.js';
+import { VARS } from './hook-harness.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const { isDangerousCommand, isProtectedPath } = createRequire(import.meta.url)(
     join(here, '..', 'content', 'hooks', 'guard-core.cjs'),
 );
-
-const VARS = {
-    pmInstall: 'pnpm install',
-    pmRunDev: 'pnpm run dev',
-    pmRunBuild: 'pnpm run build',
-    pmRunFormat: 'pnpm run format',
-    pmRunLint: 'pnpm run lint',
-};
 
 const files = generateOpenCodeAdapter(kitRoot(), VARS);
 const byPath = new Map(files.map((file) => [file.path, file.content]));

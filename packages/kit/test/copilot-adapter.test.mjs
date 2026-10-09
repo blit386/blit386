@@ -15,18 +15,10 @@ import { after, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { classifyFile, generateCopilotAdapter, kitRoot } from '../dist/adapters.js';
+import { runHook, VARS } from './hook-harness.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const hooksDir = join(here, '..', 'content', 'hooks');
 const WEBSITE_CARD = join(here, '..', '..', 'website', 'public', '.well-known', 'mcp', 'server-card.json');
-
-const VARS = {
-    pmInstall: 'pnpm install',
-    pmRunDev: 'pnpm run dev',
-    pmRunBuild: 'pnpm run build',
-    pmRunFormat: 'pnpm run format',
-    pmRunLint: 'pnpm run lint',
-};
 
 const files = generateCopilotAdapter(kitRoot(), VARS);
 const contentOf = (path) => files.find((f) => f.path === path).content;
@@ -49,10 +41,7 @@ const from = (cwd, payload) => ({ ...payload, cwd });
 
 /** Run `copilot-hook.cjs pre-tool` with `input` on stdin (a string is sent raw); returns status and the parsed decision. */
 function guard(input) {
-    const result = spawnSync(process.execPath, [join(hooksDir, 'copilot-hook.cjs'), 'pre-tool'], {
-        input: typeof input === 'string' ? input : JSON.stringify(input),
-        encoding: 'utf8',
-    });
+    const result = runHook('copilot-hook.cjs', { args: ['pre-tool'], input });
     const reply = result.stdout.trim() === '' ? null : JSON.parse(result.stdout);
 
     return { ...result, reply };
@@ -227,9 +216,9 @@ describe('copilot-hook.cjs pre-tool', () => {
     });
 
     it('denies on an unknown mode, so a broken hooks file never allows a call', () => {
-        const result = spawnSync(process.execPath, [join(hooksDir, 'copilot-hook.cjs'), 'pre-tol'], {
-            input: JSON.stringify(copilot('edit', { path: 'src/game.js' })),
-            encoding: 'utf8',
+        const result = runHook('copilot-hook.cjs', {
+            args: ['pre-tol'],
+            input: copilot('edit', { path: 'src/game.js' }),
         });
 
         assert.equal(result.status, 2);
