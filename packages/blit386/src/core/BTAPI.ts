@@ -662,7 +662,7 @@ export class BTAPI {
                 // Must run AFTER demo.update + demo.render have read the current
                 // state, so prev = "state when update last looked", letting any
                 // event that arrives before the next tick be visible as a transition.
-                this.pointer?.endFrame();
+                this.pointer?.endFrame(this.pendingUpdateSteps > 0);
 
                 const tick = this.loop?.getTicks() ?? 0;
 

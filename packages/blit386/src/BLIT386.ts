@@ -2040,7 +2040,7 @@ export const BT = {
 
                 if (
                     pointerCode !== null &&
-                    (BTAPI.instance.getPointer()?.isButtonPressed(pointerCode, player) ?? false)
+                    (BTAPI.instance.getPointer()?.isButtonPressedLatched(pointerCode, player) ?? false)
                 ) {
                     return true;
                 }

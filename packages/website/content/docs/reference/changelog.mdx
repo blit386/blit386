@@ -93,6 +93,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `BT.captureFrame()` called while `BT.renderAt` holds the loop stopped re-renders the seeked frame instead of waiting
   for a loop frame that never comes.
 
+### Fixed
+
+- A pointer press is no longer lost on a display faster than `targetFPS`. A click that landed in a render frame with no
+  fixed update used to roll over before `update()` could read it, so `BT.isPressed(BT.BTN_POINTER_A)` and the other
+  pointer buttons missed it. The press now carries to the next frame that runs `update()`. See
+  [Frame-timing semantics](/docs/guides/input#frame-timing-semantics).
+
 ## 1.7.1 - 2026-09-27
 
 ### Added

@@ -938,6 +938,24 @@ describe('BTAPI', () => {
 
             expect(describePalette(palette)).toBe(afterSteps);
         });
+
+        it('tells the pointer whether the frame ran an update step', async () => {
+            const { loop } = await bootForClock();
+            const pointer = BTAPI.instance.getPointer();
+
+            expect(pointer).not.toBeNull();
+
+            const endFrameSpy = vi.spyOn(pointer as NonNullable<typeof pointer>, 'endFrame');
+
+            loop.stop();
+            loop.step(0);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(false);
+
+            loop.step(1);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(true);
+        });
     });
 
     describe('renderAt', () => {

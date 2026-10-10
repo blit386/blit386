@@ -548,6 +548,9 @@ Pointer and gamepad previous-state rollover happens at the end of each animation
 Pointer transitions:
 
 - Any pointer event that fires between two animation frames is visible as a transition on the next `update()` call.
+- A pointer button press that lands in a frame that runs no update (a display faster than `targetFPS`) is carried to the
+  next frame that does, so `BT.isPressed` never misses a click. Only `update()` sees the carried press; the engine
+  overlay and other render-side readers still see each press once.
 
 ## Page-interaction guards
 
