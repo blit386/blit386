@@ -26,8 +26,16 @@ timed() {
 # worktree/session with a bad local .git/config override.
 ZERO_SHA="0000000000000000000000000000000000000000"
 AUTHOR_SCAN_START=$(date +%s)
+# The tip being pushed, which is not necessarily HEAD: `git push origin other-branch`
+# from a different checkout pushes other-branch. One pushed ref -> filter on its sha;
+# several -> no single range describes them, so every package runs (see below).
+PUSH_TIP="HEAD"
+PUSH_COUNT=0
 while read -r local_ref local_sha remote_ref remote_sha; do
     [ "$local_sha" = "$ZERO_SHA" ] && continue # deleting the remote ref
+
+    PUSH_TIP=$local_sha
+    PUSH_COUNT=$((PUSH_COUNT + 1))
 
     if [ "$remote_sha" = "$ZERO_SHA" ]; then
         push_range="$local_sha"
@@ -48,8 +56,8 @@ done
 echo "[timing] author scan: $(($(date +%s) - AUTHOR_SCAN_START))s"
 
 # Monorepo: dispatch preflight per changed package rather than running everything.
-# pnpm's "...[ref...HEAD]" filter selects a package plus anything downstream of it that
-# changed in the committed range ref..HEAD - the explicit "...HEAD" end matters: a bare
+# pnpm's "...[ref...tip]" filter selects a package plus anything downstream of it that
+# changed in the committed range ref..tip - the explicit "...tip" end matters: a bare
 # "[ref]" also counts uncommitted working-tree changes, so unrelated dirty files widened
 # a push of a few committed files into the full preflight of every package. Only
 # committed work is being pushed, so only committed work is checked; --if-present skips packages with no "preflight" script
@@ -104,9 +112,12 @@ fi
 unset GIT_LOCAL_ENV_VARS GIT_CEILING_DIRECTORIES GIT_NAMESPACE GIT_QUARANTINE_PATH
 
 PREFLIGHT_STATUS=0
-if [ -n "$BASE_REF" ]; then
+if [ -n "$BASE_REF" ] && [ "$PUSH_COUNT" -gt 1 ]; then
+    echo "Pushing $PUSH_COUNT refs; running preflight for every package..."
+    timed "package preflight" pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
+elif [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."
-    timed "package preflight" pnpm --filter "...[$BASE_REF...HEAD]" --if-present run preflight || PREFLIGHT_STATUS=$?
+    timed "package preflight" pnpm --filter "...[$BASE_REF...$PUSH_TIP]" --if-present run preflight || PREFLIGHT_STATUS=$?
 else
     echo "No valid base ref (neither upstream/origin/main nor HEAD~1); running preflight for every package..."
     timed "package preflight" pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
