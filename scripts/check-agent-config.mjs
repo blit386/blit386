@@ -172,7 +172,8 @@ export function findCopilotPointerFailures(copilotContent, agentsMdExists, claud
 }
 
 /**
- * Verifies `.zed/settings.json` exists, parses as JSON, and that the `.agents/skills`
+ * Verifies `.zed/settings.json` exists, parses as JSON, declares the project MCP server at the
+ * pinned `PROJECT_MCP_SERVER_URL` (Zed does not read `.mcp.json`), and that the `.agents/skills`
  * layout is present when the settings file exists. JSON parsing runs on the passed-in
  * string so the function stays unit-testable without touching disk; parse errors become
  * failure messages rather than throws. Full-line `//` comments are stripped first so
@@ -194,7 +195,14 @@ export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutEx
             .split('\n')
             .filter((line) => !/^\s*\/\//u.test(line))
             .join('\n');
-        JSON.parse(withoutLineComments);
+        const settings = JSON.parse(withoutLineComments);
+        const zedUrl = settings?.context_servers?.[PROJECT_MCP_SERVER_NAME]?.url;
+
+        if (zedUrl !== PROJECT_MCP_SERVER_URL) {
+            failures.push(
+                `.zed/settings.json context_servers.${PROJECT_MCP_SERVER_NAME}.url is ${JSON.stringify(zedUrl)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+            );
+        }
     } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         failures.push(`.zed/settings.json is not parseable as JSON: ${detail}`);
@@ -229,8 +237,9 @@ const PROJECT_MCP_SERVER_TYPE = 'http';
  * landing in agent context. Changing it therefore has to touch this file too, where the
  * diff reads as what it is.
  *
- * Changing the endpoint is a deliberate three-file edit: here, the root `.mcp.json`, and
- * `packages/website/public/.well-known/mcp/server-card.json`.
+ * Changing the endpoint is a deliberate four-file edit: here, the root `.mcp.json`,
+ * `packages/website/public/.well-known/mcp/server-card.json`, and `.zed/settings.json`
+ * (`context_servers`, since Zed does not read `.mcp.json`).
  */
 const PROJECT_MCP_SERVER_URL = 'https://blit386.dev/mcp';
 

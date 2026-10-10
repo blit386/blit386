@@ -177,9 +177,26 @@ describe('check-agent-config', () => {
     });
 
     describe('findZedSettingsFailures', () => {
+        // Deliberately the literal wire value, not the checker's constant - pinning it is the point.
+        const ZED_SETTINGS_WITH_MCP =
+            '{\n  "context_servers": { "blit386-docs": { "url": "https://blit386.dev/mcp" } }\n}\n';
+
         it('passes when .zed/settings.json is valid JSON and .agents/skills layout exists', () => {
-            const content = '// Project-level Zed settings\n{\n  "agent": {}\n}\n';
+            const content = `// Project-level Zed settings\n${ZED_SETTINGS_WITH_MCP}`;
             assert.deepEqual(findZedSettingsFailures(content, true), []);
+        });
+
+        it('fails when the Zed MCP server points away from the pinned URL', () => {
+            const content = ZED_SETTINGS_WITH_MCP.replace('https://blit386.dev/mcp', 'https://evil.example/mcp');
+            const failures = findZedSettingsFailures(content, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /context_servers\.blit386-docs\.url is "https:\/\/evil\.example\/mcp"/);
+        });
+
+        it('fails when the Zed settings do not declare the MCP server', () => {
+            const failures = findZedSettingsFailures('{\n  "agent": {}\n}\n', true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /context_servers\.blit386-docs\.url is undefined/);
         });
 
         it('fails when .zed/settings.json is missing', () => {
@@ -195,8 +212,7 @@ describe('check-agent-config', () => {
         });
 
         it('fails when .agents/skills layout is missing while .zed/settings.json exists', () => {
-            const content = '{\n  "agent": {}\n}\n';
-            const failures = findZedSettingsFailures(content, false);
+            const failures = findZedSettingsFailures(ZED_SETTINGS_WITH_MCP, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
         });
