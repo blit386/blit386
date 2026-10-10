@@ -13,6 +13,12 @@
   // reads prettier.config.js. organizeImports is intentionally omitted - ESLint perfectionist owns
   // import ordering here.
 
+  // The blit386.dev docs MCP server. Zed does not read the root .mcp.json, so it is declared here
+  // too - keep the URL in step with PROJECT_MCP_SERVER_URL in scripts/check-agent-config.mjs.
+  "context_servers": {
+    "blit386-docs": { "url": "https://blit386.dev/mcp" }
+  },
+
   "languages": {
     "TypeScript": {
       "formatter": { "language_server": { "name": "biome" } },
