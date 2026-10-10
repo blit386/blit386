@@ -69,7 +69,9 @@ so a push only exercises them once the per-package checks are clean. That gating
 - `check:demo-registry` - `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
 - `check:demo-comment-links` - no `vancura.dev` links in `src/*.js` header comments, and every `blit386.dev/docs/...` /
   `demos.blit386.dev/<slug>` link there resolves against `_sitemap.json` / `DEMO_ORDER`
-- `build` - production build succeeds (CI and Cloudflare Pages depend on this)
+
+The production build is not part of `preflight` - CI's `build-demos` job gates it. Run `pnpm run build` by hand to check
+it locally.
 
 No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 
@@ -82,10 +84,11 @@ No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 - `test` - `node --test scripts/__tests__/*.test.mjs`
 - `spellcheck` - cspell on `content/` and `src/`
 - `knip` - unused exports/deps
-- `build` - `CLOUDFLARE=1 waku build`
-- `check:deploy-size` - fails when any `dist/public` file exceeds Cloudflare's 25 MiB per-asset limit or the Worker
-  upload (uncompressed `Total Upload` from `wrangler deploy --dry-run`) exceeds its 51 MiB budget
 - `sync:docs:check` - regenerates `content/docs` from `packages/blit386/docs/` and fails when the mirror drifted
+
+Not in `preflight` (CI's `build-website` job runs them, in this order): `build` (`CLOUDFLARE=1 waku build`),
+`check:deploy-size` (fails when any `dist/public` file exceeds Cloudflare's 25 MiB per-asset limit or the Worker upload
+exceeds its 51 MiB budget), and `check:well-known-urls`. Run them by hand for a change that touches the build output.
 
 `sync:docs:check` is deliberately last: it rewrites `content/docs` in the working tree, so any gate after it would be
 reading regenerated rather than committed content. The `quality-website` CI job places it last for the same reason
@@ -141,11 +144,11 @@ No combined `preflight` script exists at root; run what does:
   and fails when a checked-in value differs
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref]" --if-present run preflight`), then - only if that succeeds - runs these six root-level checks
-unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under `packages/*` and
-would otherwise miss a root-only change entirely. `bump:check` (BT-317) also runs in `quality-root` in
-`.github/workflows/ci.yml`, so a lockstep drift fails both the push and CI, on top of the existing per-commit gates
-below.
+(`pnpm --filter "...[ref...HEAD]" --if-present run preflight` - committed changes only, so uncommitted files never widen
+the scope), then - only if that succeeds - runs these six root-level checks unconditionally on every push, since pnpm's
+per-package `--filter` dispatch only looks at files under `packages/*` and would otherwise miss a root-only change
+entirely. `bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails
+both the push and CI, on top of the existing per-commit gates below.
 
 The following are not part of that pre-push gate - run them directly when auditing. All five do run in CI, so a
 regression they would catch surfaces on the PR rather than at push time:

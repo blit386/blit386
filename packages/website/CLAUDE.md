@@ -8,11 +8,11 @@ Shared monorepo conventions (no emoji, dash typography, American English, commit
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together with this file.
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-website run <script>` from the
-repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it includes the build and, last of
-all, the docs-mirror check - see Documentation mirror). Production builds require `CLOUDFLARE=1`, which `pnpm run build`
-already sets; `WORKERS_CI` works too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test, lint, and git-diff
-shell commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep for
-exploration.
+repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it ends with the docs-mirror check -
+see Documentation mirror; the build, `check:deploy-size`, and `check:well-known-urls` run only in CI's `build-website`
+job). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets; `WORKERS_CI` works too, and
+`BLIT386_TWOSLASH` overrides either (see Twoslash). Test, lint, and git-diff shell commands are rewritten by
+`rtk hook claude`; search and read tools are not - use the native Read/Grep for exploration.
 
 ## Critical Rules
 
@@ -494,9 +494,9 @@ package's `wrangler` devDependency exactly; a Renovate bump to one without the o
 ### Size limits
 
 Cloudflare rejects a deploy on two size limits, and nothing short of `wrangler deploy` used to notice either.
-`pnpm run check:deploy-size` (`scripts/check-deploy-size.mjs`) fails first. It runs right after `pnpm run build` in
-`preflight` and in CI's `build-website` job, checks the assets first (an oversized one makes the dry-run itself fail),
-and prints each measured size:
+`pnpm run check:deploy-size` (`scripts/check-deploy-size.mjs`) fails first. It runs right after `pnpm run build` in CI's
+`build-website` job (not in `preflight`), checks the assets first (an oversized one makes the dry-run itself fail), and
+prints each measured size:
 
 | Limit | Cloudflare | Budget the check enforces | Measured 2026-10-08, before BT-586 | After BT-586 |
 | --- | --- | --- | --- | --- |
