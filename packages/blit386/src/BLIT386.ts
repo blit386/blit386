@@ -2037,11 +2037,19 @@ export const BT = {
                 }
 
                 const pointerCode = pointerFlagToPointerCode(pointerFlag);
+                const pointer = BTAPI.instance.getPointer();
 
-                if (
-                    pointerCode !== null &&
-                    (BTAPI.instance.getPointer()?.isButtonPressedLatched(pointerCode, player) ?? false)
-                ) {
+                if (pointerCode === null || pointer === null) {
+                    continue;
+                }
+
+                // A press carried over a frame with no update() is for update() alone; render() would
+                // otherwise read the same edge again on every following render-only frame.
+                const isPressed = BTAPI.instance.isUpdating
+                    ? pointer.isButtonPressedLatched(pointerCode, player)
+                    : pointer.isButtonPressed(pointerCode, player);
+
+                if (isPressed) {
                     return true;
                 }
             }

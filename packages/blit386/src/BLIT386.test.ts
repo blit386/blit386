@@ -1143,12 +1143,24 @@ describe('BT.isPressed', () => {
         expect(BT.isPressed(BT.BTN_B, 1)).toBe(false);
     });
 
-    it('delegates pointer buttons to the pointer subsystem', () => {
+    it('reads pointer buttons with the carried press inside update()', () => {
         const isButtonPressedLatched = vi.fn().mockReturnValue(true);
         vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressedLatched } as never);
+        vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
 
         expect(BT.isPressed(BT.BTN_POINTER_B, 0)).toBe(true);
         expect(isButtonPressedLatched).toHaveBeenCalledWith(21, 0);
+    });
+
+    it('reads pointer buttons without the carried press outside update()', () => {
+        const isButtonPressed = vi.fn().mockReturnValue(true);
+        const isButtonPressedLatched = vi.fn().mockReturnValue(true);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressed, isButtonPressedLatched } as never);
+        vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(false);
+
+        expect(BT.isPressed(BT.BTN_POINTER_B, 0)).toBe(true);
+        expect(isButtonPressed).toHaveBeenCalledWith(21, 0);
+        expect(isButtonPressedLatched).not.toHaveBeenCalled();
     });
 
     it('forwards repeatRate to keyboard/gamepad face-button queries', () => {
