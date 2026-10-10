@@ -263,6 +263,9 @@ export class BTAPI {
     /** Number of fixed-step updates accumulated for the current render frame. */
     private pendingUpdateSteps = 0;
 
+    /** True only while the demo's `update()` runs; lets `BT.isPressed` hand carried pointer presses to update alone. */
+    private updating = false;
+
     /** Number of demo draw API calls issued since the last rendered frame. */
     private pendingDrawCalls = 0;
 
@@ -400,9 +403,6 @@ export class BTAPI {
      */
     private constructor() {}
 
-    // TODO: Additional subsystems for future implementation:
-    // AssetManager
-
     /**
      * Gets the lazily created singleton instance.
      *
@@ -414,6 +414,18 @@ export class BTAPI {
         }
 
         return BTAPI._instance;
+    }
+
+    // TODO: Additional subsystems for future implementation:
+    // AssetManager
+
+    /**
+     * Whether the demo's `update()` is running right now (false during `render()` and between frames).
+     *
+     * @returns `true` only inside `update()`.
+     */
+    public get isUpdating(): boolean {
+        return this.updating;
     }
 
     /**
@@ -581,7 +593,14 @@ export class BTAPI {
             () => {
                 const updateStartMs = performance.now();
                 this.commitPendingCameraReset();
-                this.demo?.update();
+                this.updating = true;
+
+                try {
+                    this.demo?.update();
+                } finally {
+                    this.updating = false;
+                }
+
                 this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
                 this.pendingUpdateSteps++;
 
@@ -662,7 +681,7 @@ export class BTAPI {
                 // Must run AFTER demo.update + demo.render have read the current
                 // state, so prev = "state when update last looked", letting any
                 // event that arrives before the next tick be visible as a transition.
-                this.pointer?.endFrame();
+                this.pointer?.endFrame(this.pendingUpdateSteps > 0);
 
                 const tick = this.loop?.getTicks() ?? 0;
 

@@ -938,6 +938,39 @@ describe('BTAPI', () => {
 
             expect(describePalette(palette)).toBe(afterSteps);
         });
+
+        it('reports isUpdating only while the demo update() runs', async () => {
+            const { loop, demo } = await bootForClock();
+            const seen: boolean[] = [];
+
+            vi.spyOn(demo, 'update').mockImplementation(() => {
+                seen.push(BTAPI.instance.isUpdating);
+            });
+
+            loop.stop();
+            loop.step(1);
+
+            expect(seen).toEqual([true]);
+            expect(BTAPI.instance.isUpdating).toBe(false);
+        });
+
+        it('tells the pointer whether the frame ran an update step', async () => {
+            const { loop } = await bootForClock();
+            const pointer = BTAPI.instance.getPointer();
+
+            expect(pointer).not.toBeNull();
+
+            const endFrameSpy = vi.spyOn(pointer as NonNullable<typeof pointer>, 'endFrame');
+
+            loop.stop();
+            loop.step(0);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(false);
+
+            loop.step(1);
+
+            expect(endFrameSpy).toHaveBeenLastCalledWith(true);
+        });
     });
 
     describe('renderAt', () => {

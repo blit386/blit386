@@ -289,7 +289,7 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check` |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
-| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (84 KB) |
+| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (90 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |

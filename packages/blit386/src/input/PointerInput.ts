@@ -83,6 +83,12 @@ interface Slot {
 
     /** Snapshot of `d` taken at `endFrame()`. */
     prevD: boolean;
+
+    /**
+     * Press edges (A..D) seen by a frame that ran no `update()` step, kept until the next frame that does.
+     * Read only by {@link PointerInput.isButtonPressedLatched}.
+     */
+    latchedPress: [boolean, boolean, boolean, boolean];
 }
 
 /**
@@ -350,9 +356,23 @@ export class PointerInput {
      * (~16 ms at 60 fps) while still cutting reads from once per pointer
      * event (up to 500-1000/s for a high-poll-rate mouse) down to once per
      * rendered frame.
+     *
+     * @param didUpdate - Whether this frame ran at least one `update()` step; `false` carries press edges forward
+     * for {@link isButtonPressedLatched}.
      */
-    public endFrame(): void {
+    public endFrame(didUpdate = true): void {
         for (const slot of this.slots) {
+            // A frame with no update() step (display faster than the update rate) would otherwise swallow a
+            // press edge before update() could read it. Carry it, for update-side readers only, to the next one.
+            if (didUpdate) {
+                slot.latchedPress.fill(false);
+            } else {
+                slot.latchedPress[0] ||= slot.a && !slot.prevA;
+                slot.latchedPress[1] ||= slot.b && !slot.prevB;
+                slot.latchedPress[2] ||= slot.c && !slot.prevC;
+                slot.latchedPress[3] ||= slot.d && !slot.prevD;
+            }
+
             slot.prevPos.copyFrom(slot.pos);
             slot.prevA = slot.a;
             slot.prevB = slot.b;
@@ -595,6 +615,27 @@ export class PointerInput {
             default:
                 return false;
         }
+    }
+
+    /**
+     * Like {@link isButtonPressed}, but also true for a press that landed in an earlier frame which ran no
+     * `update()` step. For `update()`-side readers only: render-side readers (the overlay) must keep using
+     * {@link isButtonPressed}, or they would see the same edge twice.
+     *
+     * @param button - One of `BTN_A..D`.
+     * @param slot - Pointer slot index.
+     * @returns `true` if the button went down since the last frame that ran `update()`.
+     */
+    public isButtonPressedLatched(button: number, slot: number): boolean {
+        const s = this.getSlotOrNull(slot);
+
+        if (s === null) {
+            return false;
+        }
+
+        const latched = button >= BTN_A && button <= BTN_D ? s.latchedPress[button - BTN_A] : false;
+
+        return latched || this.isButtonPressed(button, slot);
     }
 
     /**
@@ -897,6 +938,7 @@ export class PointerInput {
             b: false,
             c: false,
             d: false,
+            latchedPress: [false, false, false, false],
             prevA: false,
             prevB: false,
             prevC: false,
@@ -920,6 +962,7 @@ export class PointerInput {
         slot.b = false;
         slot.c = false;
         slot.d = false;
+        slot.latchedPress.fill(false);
         slot.prevA = false;
         slot.prevB = false;
         slot.prevC = false;

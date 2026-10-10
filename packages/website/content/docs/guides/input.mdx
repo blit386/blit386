@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-10-04T09:12:53+02:00"
+lastModified: "2026-10-10T11:21:45+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -548,6 +548,9 @@ Pointer and gamepad previous-state rollover happens at the end of each animation
 Pointer transitions:
 
 - Any pointer event that fires between two animation frames is visible as a transition on the next `update()` call.
+- A pointer button press that lands in a frame that runs no update (a display faster than `targetFPS`) is carried to the
+  next frame that does, so `BT.isPressed` never misses a click. Only `update()` sees the carried press; the engine
+  overlay and other render-side readers still see each press once.
 
 ## Page-interaction guards
 

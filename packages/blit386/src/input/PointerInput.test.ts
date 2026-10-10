@@ -818,6 +818,35 @@ describe('PointerInput', () => {
             expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(true);
         });
 
+        it.each([
+            [BTN_POINTER_A, 0],
+            [BTN_POINTER_B, 2],
+            [BTN_POINTER_C, 1],
+            [BTN_POINTER_D, 3],
+        ])('carries a press of button %i from a no-update frame to update-side readers only', (button, domButton) => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: domButton,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            // A frame that ran no update(): render-side readers see the edge once, then it is gone.
+            input.endFrame(false);
+
+            expect(input.isButtonPressed(button, 0)).toBe(false);
+
+            // The update-side reader still gets it on the next frame that runs update().
+            expect(input.isButtonPressedLatched(button, 0)).toBe(true);
+
+            input.endFrame(true);
+
+            expect(input.isButtonPressedLatched(button, 0)).toBe(false);
+        });
+
         it('reports isButtonReleased only on the tick after the button transitions to up', () => {
             // Tick 1 inter-frame: button goes down.
             canvas.dispatchEvent(
