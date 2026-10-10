@@ -1,0 +1,178 @@
+[
+  {
+    "label": "root: format",
+    "command": "pnpm",
+    "args": ["run", "format"],
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "root: agents:check",
+    "command": "pnpm",
+    "args": ["run", "agents:check"],
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "root: bump:check",
+    "command": "pnpm",
+    "args": ["run", "bump:check"],
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "blit386: preflight",
+    "command": "pnpm",
+    "args": ["run", "preflight"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "blit386: test:unit",
+    "command": "pnpm",
+    "args": ["run", "test:unit"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "blit386: test:unit:watch",
+    "command": "pnpm",
+    "args": ["run", "test:unit:watch"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+  {
+    "label": "blit386: test:visual",
+    "command": "pnpm",
+    "args": ["run", "test:visual"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "blit386: typecheck",
+    "command": "pnpm",
+    "args": ["run", "typecheck"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "blit386: build",
+    "command": "pnpm",
+    "args": ["run", "build"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "blit386: bench",
+    "command": "pnpm",
+    "args": ["run", "bench"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/blit386"
+  },
+  {
+    "label": "demos: dev",
+    "command": "pnpm",
+    "args": ["run", "dev"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/demos",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+  {
+    "label": "demos: dev:watch",
+    "command": "pnpm",
+    "args": ["run", "dev:watch"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/demos",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+  {
+    "label": "demos: preflight",
+    "command": "pnpm",
+    "args": ["run", "preflight"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/demos"
+  },
+  {
+    "label": "demos: test",
+    "command": "pnpm",
+    "args": ["run", "test"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/demos"
+  },
+  {
+    "label": "demos: build",
+    "command": "pnpm",
+    "args": ["run", "build"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/demos"
+  },
+  {
+    "label": "website: dev",
+    "command": "pnpm",
+    "args": ["run", "dev"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website",
+    "use_new_terminal": true,
+    "allow_concurrent_runs": true
+  },
+  {
+    "label": "website: preflight",
+    "command": "pnpm",
+    "args": ["run", "preflight"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "website: test:unit",
+    "command": "pnpm",
+    "args": ["run", "test:unit"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "website: typecheck",
+    "command": "pnpm",
+    "args": ["run", "typecheck"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "website: build",
+    "command": "pnpm",
+    "args": ["run", "build"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "website: sync:docs",
+    "command": "pnpm",
+    "args": ["run", "sync:docs"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "website: sync:docs:check",
+    "command": "pnpm",
+    "args": ["run", "sync:docs:check"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
+  },
+  {
+    "label": "kit: test",
+    "command": "pnpm",
+    "args": ["run", "test"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/kit"
+  },
+  {
+    "label": "kit: typecheck",
+    "command": "pnpm",
+    "args": ["run", "typecheck"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/kit"
+  },
+  {
+    "label": "kit: build",
+    "command": "pnpm",
+    "args": ["run", "build"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/kit"
+  },
+  {
+    "label": "create-blit386: test",
+    "command": "pnpm",
+    "args": ["run", "test"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/create-blit386"
+  },
+  {
+    "label": "create-blit386: typecheck",
+    "command": "pnpm",
+    "args": ["run", "typecheck"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/create-blit386"
+  },
+  {
+    "label": "create-blit386: build",
+    "command": "pnpm",
+    "args": ["run", "build"],
+    "cwd": "$ZED_WORKTREE_ROOT/packages/create-blit386"
+  }
+]
