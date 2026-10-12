@@ -12,7 +12,7 @@ overrides:
   undici@>=7.0.0 <7.29.0: ^7.29.1
   nanoid@<3.3.17: ^3.3.19
   fast-uri@<3.1.6: ^3.1.8
-  hono@<4.13.5: ^4.13.9
+  hono@<4.13.5: ^4.13.13
   sharp@<0.35.5: ^0.35.5
   shell-quote@>=1.8.4 <1.11.0: ^1.11.0
   brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
@@ -1172,7 +1172,7 @@ packages:
     resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: ^4.13.9
+      hono: ^4.13.13
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3915,7 +3915,7 @@ packages:
       fumadocs-mdx: ^15.0.0
       fumadocs-openapi: ^11.0.0
       fumadocs-ui: ^16.10.0
-      hono: ^4.13.9
+      hono: ^4.13.13
       react: ^19.2.0
       react-dom: ^19.2.0
       sharp: ^0.35.5
