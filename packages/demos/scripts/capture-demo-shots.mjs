@@ -13,7 +13,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
@@ -92,6 +92,10 @@ export function parseArgs(argv) {
 
     const slugs = options.demos ? options.demos.split(',').filter(Boolean) : options.all ? [...DEMO_ORDER] : [];
 
+    if (options.demos && slugs.length === 0) {
+        throw new Error('--demos requires at least one slug.');
+    }
+
     for (const slug of slugs) {
         if (!DEMO_ORDER.includes(slug)) {
             throw new Error(`Unknown demo slug: ${slug}`);
@@ -150,6 +154,19 @@ export function buildAutoUrl(baseUrl, slugs, variants) {
     return `${baseUrl.replace(/\/$/u, '')}/${SHOTS_PATH}?auto&${params.toString()}`;
 }
 
+/**
+ * Resolve an image path from the page against the output directory.
+ *
+ * @param {string} outDir - Absolute output directory.
+ * @param {string} imagePath - Path reported by the page, relative to outDir.
+ * @returns {string | null} The absolute target, or null when it would land outside outDir.
+ */
+export function resolveImageTarget(outDir, imagePath) {
+    const target = resolve(outDir, imagePath);
+
+    return target.startsWith(outDir + sep) ? target : null;
+}
+
 // #endregion
 
 // #region Main
@@ -174,7 +191,12 @@ async function runPage(url) {
     const { browser, page } = await launchCaptureBrowser();
 
     try {
-        await page.goto(url);
+        try {
+            await page.goto(url);
+        } catch (error) {
+            console.error(`Could not reach ${new URL(url).origin} - is the dev server running? (${error.message})`);
+            process.exit(1);
+        }
 
         try {
             await page.waitForFunction('window.__shotsResult !== undefined', null, { timeout: RESULT_TIMEOUT_MS });
@@ -220,15 +242,24 @@ async function main() {
         process.exit(1);
     }
 
-    if (result.manifest === null) {
-        console.error(`The capture run failed:\n  ${result.failures.join('\n  ')}`);
+    const failures = [...(result.failures ?? [])];
+
+    if (!Array.isArray(result.manifest?.entries) || !Array.isArray(result.images)) {
+        console.error(
+            `The capture run failed:\n  ${failures.length > 0 ? failures.join('\n  ') : 'malformed __shotsResult'}`,
+        );
         process.exit(1);
     }
 
     mkdirSync(outDir, { recursive: true });
 
     for (const image of result.images) {
-        const target = join(outDir, image.path);
+        const target = resolveImageTarget(outDir, image.path);
+
+        if (target === null) {
+            failures.push(`refused path outside output dir: ${image.path}`);
+            continue;
+        }
 
         mkdirSync(dirname(target), { recursive: true });
         writeFileSync(target, Buffer.from(image.base64, 'base64'));
@@ -240,8 +271,8 @@ async function main() {
     writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     console.log(`\n${result.images.length} image(s), manifest with ${manifest.entries.length} entries in ${outDir}`);
 
-    if (result.failures.length > 0) {
-        console.error(`${result.failures.length} failed:\n  ${result.failures.join('\n  ')}`);
+    if (failures.length > 0) {
+        console.error(`${failures.length} failed:\n  ${failures.join('\n  ')}`);
         process.exit(1);
     }
 }

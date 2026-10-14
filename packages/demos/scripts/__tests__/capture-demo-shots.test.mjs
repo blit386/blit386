@@ -2,10 +2,11 @@
  * Unit tests for the pure helpers in scripts/capture-demo-shots.mjs.
  */
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
-import { buildAutoUrl, DEFAULTS, parseArgs, selectChanged } from '../capture-demo-shots.mjs';
+import { buildAutoUrl, DEFAULTS, parseArgs, resolveImageTarget, selectChanged } from '../capture-demo-shots.mjs';
 
 describe('parseArgs', () => {
     it('captures every demo with the committed variants by default', () => {
@@ -30,6 +31,14 @@ describe('parseArgs', () => {
         assert.throws(() => parseArgs([]), /Pass --all, --demos, or --changed/);
         assert.throws(() => parseArgs(['--all', '--demos', 'basics']), /only one of/);
         assert.throws(() => parseArgs(['--out']), /--out requires a value/);
+    });
+
+    it('rejects an empty slug list', () => {
+        assert.throws(() => parseArgs(['--demos', ',']), /--demos requires at least one slug/);
+    });
+
+    it('skips the literal -- that pnpm forwards', () => {
+        assert.deepEqual(parseArgs(['--', '--all']), parseArgs(['--all']));
     });
 });
 
@@ -62,5 +71,21 @@ describe('buildAutoUrl', () => {
             buildAutoUrl('http://localhost:5173/', ['basics', 'sprites'], ['display']),
             'http://localhost:5173/shots?auto&demos=basics%2Csprites&variants=display',
         );
+    });
+});
+
+describe('resolveImageTarget', () => {
+    const outDir = resolve('/tmp/shots-out');
+
+    it('resolves a normal image path inside the output directory', () => {
+        assert.equal(
+            resolveImageTarget(outDir, 'basics/start.display.png'),
+            resolve(outDir, 'basics/start.display.png'),
+        );
+    });
+
+    it('refuses a parent-relative or absolute path', () => {
+        assert.equal(resolveImageTarget(outDir, '../escape.png'), null);
+        assert.equal(resolveImageTarget(outDir, '/abs/x.png'), null);
     });
 });
