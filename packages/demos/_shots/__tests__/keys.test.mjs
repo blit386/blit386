@@ -4,7 +4,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { isTypingTarget, KEY_HELP, resolveKey } from '../keys.js';
+import { GALLERY_ACTIONS } from '../gallery.js';
+import { BINDINGS, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS } from '../keys.js';
+import { LIGHTBOX_ACTIONS } from '../lightbox.js';
 
 const press = (code, extra = {}) => ({ code, key: code, shiftKey: false, target: { tagName: 'MAIN' }, ...extra });
 
@@ -97,5 +99,30 @@ describe('isTypingTarget', () => {
         assert.ok(isTypingTarget({ tagName: 'INPUT' }));
         assert.ok(isTypingTarget({ tagName: 'TEXTAREA' }));
         assert.ok(!isTypingTarget({ tagName: 'MAIN' }));
+    });
+});
+
+describe('every bound action has a handler', () => {
+    const unhandled = (actions, handled) =>
+        actions.filter((action) => action && !handled.includes(action) && !SHARED_ACTIONS.includes(action));
+
+    it('in the gallery', () => {
+        assert.deepEqual(
+            unhandled(
+                BINDINGS.map(([, , action]) => action),
+                GALLERY_ACTIONS,
+            ),
+            [],
+        );
+    });
+
+    it('in the lightbox', () => {
+        assert.deepEqual(
+            unhandled(
+                BINDINGS.map(([, , , action]) => action),
+                LIGHTBOX_ACTIONS,
+            ),
+            [],
+        );
     });
 });

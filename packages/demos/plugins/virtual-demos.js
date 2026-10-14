@@ -90,16 +90,14 @@ export function renderDemoHtml({
  * @param {string} options.template - Raw contents of `_shots/shots.html`.
  * @param {string} options.demoListJson - JSON array of every registry entry's slug, navLabel, title.
  * @param {boolean} options.isDevMode - True under `vite dev`.
- * @param {string} options.robotsMeta - Channel noindex tag, or ''.
  * @param {string} [options.engineVersion] - Engine version stamped on `<body>` for capture mode.
  * @returns {string}
  */
-export function renderShotsHtml({ template, demoListJson, isDevMode, robotsMeta, engineVersion = '' }) {
+export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersion = '' }) {
     return template
         .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
         .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
         .replaceAll('{{engineVersion}}', engineVersion)
-        .replace('{{robotsMeta}}', () => robotsMeta)
         .replace('{{demoList}}', () => demoListJson);
 }
 
@@ -275,13 +273,7 @@ export function virtualDemos() {
             readFileSync(resolve(rootDir, '..', 'blit386', 'package.json'), 'utf-8'),
         ).version;
 
-        return renderShotsHtml({
-            template,
-            demoListJson,
-            isDevMode,
-            engineVersion,
-            robotsMeta: IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : '',
-        });
+        return renderShotsHtml({ template, demoListJson, isDevMode, engineVersion });
     }
 
     return {

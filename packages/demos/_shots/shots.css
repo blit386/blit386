@@ -209,6 +209,7 @@ body {
     }
 }
 
+/* Off-screen, never display: none or hidden - the engine needs animation frames (that already bit once). */
 #shots-frame {
     border: 0;
     height: 720px;

@@ -69,6 +69,20 @@ const BINDINGS = [
     ['key:/', null, 'filter', null],
 ];
 
+// Actions shots.js answers itself in either mode, before the gallery or the lightbox sees them.
+const SHARED_ACTIONS = [
+    'help',
+    'info-toggle',
+    'open-live',
+    'copy-path',
+    'flag',
+    'note',
+    'export',
+    'diff-toggle',
+    'diff-cycle',
+    'filter',
+];
+
 /**
  * Does one binding's trigger match this event? A `key:` trigger compares `event.key`,
  * anything else compares `event.code`.
@@ -129,4 +143,4 @@ const KEY_HELP = [
     { keys: '?', gallery: 'this help', lightbox: 'this help' },
 ];
 
-export { isTypingTarget, KEY_HELP, resolveKey };
+export { BINDINGS, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS };

@@ -206,9 +206,9 @@ phone without a keyboard.
 
 ## Demo shots
 
-`/shots` ([next.demos.blit386.dev/shots](https://next.demos.blit386.dev/shots)) shows pixel-perfect captures of every
-demo at deterministic moments, with the shared UI kit's layout lint. Captures are generated on the dev server and
-committed under `public/shots/` with `pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`).
+`/shots` (on `next.demos.blit386.dev`) shows pixel-perfect captures of every demo at deterministic moments, with the
+shared UI kit's layout lint. Captures are generated on the dev server and committed under `public/shots/` with
+`pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`).
 
 In dev, the page itself has capture controls; in a build it is a read-only gallery. Keyboard: `?` lists everything.
 Poses live in `_shots/poses.js`, lint rules in `src/shared/ui-lint.js`. The `/demos-shots` skill walks the workflow.

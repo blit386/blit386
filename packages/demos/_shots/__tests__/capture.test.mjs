@@ -114,6 +114,25 @@ describe('runPose', () => {
         assert.equal(frame.ui().touchSeen, true);
     });
 
+    it('moves the pointer as a mouse, the only pointer type the engine tracks without a press', async () => {
+        const events = [];
+        const frame = fakeFrame();
+        const canvas = frame.canvas();
+
+        canvas.dispatchEvent = (event) => events.push(event);
+        await runPose(frame, { id: 'hover', at: 1, pointer: { x: 10, y: 20 } }, 'display', { url: 'u' });
+
+        assert.equal(events[0].type, 'pointermove');
+        assert.equal(events[0].pointerType, 'mouse');
+    });
+
+    it('marks touch seen for the touch variant even when the pose does not ask for it', async () => {
+        const frame = fakeFrame();
+
+        await runPose(frame, { id: 'start', at: 0 }, 'touch', { url: 'u' });
+        assert.equal(frame.ui().touchSeen, true);
+    });
+
     it('lints the snapshot taken before capture, which re-renders and duplicates groups', async () => {
         const group = {
             anchor: 'top-bar',

@@ -157,7 +157,6 @@ describe('resolveVintageRedirect', () => {
 describe('renderShotsHtml', () => {
     const template =
         '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}" data-engine-version="{{engineVersion}}">' +
-        '{{robotsMeta}}' +
         '<script id="demo-list" type="application/json">{{demoList}}</script></body>';
 
     it('stamps the dev demo base and page suffix', () => {
@@ -165,7 +164,6 @@ describe('renderShotsHtml', () => {
             template,
             demoListJson: '[{"slug":"basics"}]',
             isDevMode: true,
-            robotsMeta: '',
             engineVersion: '1.9.0',
         });
 
@@ -175,21 +173,15 @@ describe('renderShotsHtml', () => {
         assert.match(html, /\[{"slug":"basics"}\]/);
     });
 
-    it('stamps the flattened build base, an empty suffix, and the noindex tag', () => {
-        const html = renderShotsHtml({
-            template,
-            demoListJson: '[]',
-            isDevMode: false,
-            robotsMeta: '<meta name="robots" content="noindex">',
-        });
+    it('stamps the flattened build base and an empty suffix', () => {
+        const html = renderShotsHtml({ template, demoListJson: '[]', isDevMode: false });
 
         assert.match(html, /data-demo-base="\.\/"/);
         assert.match(html, /data-page-suffix=""/);
-        assert.match(html, /noindex/);
     });
 
     it('does not interpret replacement patterns inside the demo list', () => {
-        const html = renderShotsHtml({ template, demoListJson: '["$&"]', isDevMode: true, robotsMeta: '' });
+        const html = renderShotsHtml({ template, demoListJson: '["$&"]', isDevMode: true });
 
         assert.match(html, /\["\$&"\]/);
     });

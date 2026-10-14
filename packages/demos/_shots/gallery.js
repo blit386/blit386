@@ -4,12 +4,64 @@
  * lives in layout-model.js; this file only touches the DOM.
  */
 
-import { LINT_RULES } from '../src/shared/ui-lint.js';
 import { buildRows, demoNeighbor, moveFocus, visibleOrder } from './layout-model.js';
 import { entryKey } from './manifest.js';
-import { VARIANTS } from './poses.js';
+import { OUTPUT_VARIANT, VARIANTS } from './poses.js';
 
 const ROW_SCROLL_FRACTION = 0.9;
+
+const FOCUS_MOVES = {
+    'focus-left': 'left',
+    'focus-right': 'right',
+    'focus-up': 'up',
+    'focus-down': 'down',
+    'focus-home': 'home',
+    'focus-end': 'end',
+};
+
+// Every action handleAction() answers; keys.test.mjs checks the key map against it.
+const GALLERY_ACTIONS = [
+    ...Object.keys(FOCUS_MOVES),
+    'page-up',
+    'page-down',
+    'demo-next',
+    'demo-prev',
+    'extend-left',
+    'extend-right',
+    'extend-up',
+    'extend-down',
+    'toggle-select',
+    'select-all',
+    'select-none',
+    'escape',
+    'stack-all',
+    'stack-focused',
+    'variant-next',
+    'lint-toggle',
+    'open',
+    'capture-selected',
+    'capture-all',
+];
+
+/**
+ * Size an image to its entry. An output capture is stored at drawing-buffer size, not the
+ * manifest's display size, so it takes its own pixel size once loaded.
+ *
+ * @param {HTMLImageElement} img
+ * @param {{ width: number, height: number }} entry
+ * @param {string} variant
+ */
+function sizeImage(img, entry, variant) {
+    if (variant === OUTPUT_VARIANT) {
+        img.addEventListener('load', () => {
+            img.width = img.naturalWidth;
+            img.height = img.naturalHeight;
+        });
+    } else {
+        img.width = entry.width;
+        img.height = entry.height;
+    }
+}
 
 /**
  * Wait for the tile's diff against the baseline, then show it: swap the image for the baseline,
@@ -31,9 +83,8 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
             } else if (view.diff === 'diff') {
                 const overlay = document.createElement('img');
 
+                sizeImage(overlay, entry, variant);
                 overlay.src = diff.url;
-                overlay.width = entry.width;
-                overlay.height = entry.height;
                 overlay.style.position = 'absolute';
                 overlay.style.left = '4px';
                 overlay.style.top = '4px';
@@ -45,15 +96,6 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
         (error) => addBadge(`diff: ${error.message}`, true),
     );
 }
-
-const FOCUS_MOVES = {
-    'focus-left': 'left',
-    'focus-right': 'right',
-    'focus-up': 'up',
-    'focus-down': 'down',
-    'focus-home': 'home',
-    'focus-end': 'end',
-};
 
 /**
  * @param {HTMLElement} root - The #shots-gallery element.
@@ -118,9 +160,8 @@ function createGallery(root, hooks) {
         } else if (url) {
             img = document.createElement('img');
 
+            sizeImage(img, entry, variant);
             img.src = url;
-            img.width = entry.width;
-            img.height = entry.height;
             img.alt = `${tile.slug} ${tile.pose} ${variant}`;
             img.draggable = false;
             element.append(img);
@@ -246,8 +287,8 @@ function createGallery(root, hooks) {
         focused = next.key;
     }
 
-    function nextVariant() {
-        const entry = byKey.get(focused);
+    function nextVariant(key = focused) {
+        const entry = byKey.get(key);
 
         const available = entry ? VARIANTS.filter((variant) => entry.variants[variant]) : [];
 
@@ -384,6 +425,10 @@ function createGallery(root, hooks) {
         visibleKeys: order,
         entryFor: (key) => byKey.get(key) ?? null,
         currentVariant: (key) => variantFor(byKey.get(key)),
+        cycleVariant(key) {
+            nextVariant(key);
+            refresh();
+        },
         toggleFlag(key) {
             toggleIn(flagged, key);
             refresh();
@@ -399,8 +444,7 @@ function createGallery(root, hooks) {
         },
         handleAction,
         refresh,
-        lintRules: LINT_RULES,
     };
 }
 
-export { createGallery };
+export { createGallery, GALLERY_ACTIONS };

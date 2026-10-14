@@ -7,7 +7,7 @@
  */
 
 import { createGallery } from './gallery.js';
-import { KEY_HELP, resolveKey } from './keys.js';
+import { KEY_HELP, resolveKey, SHARED_ACTIONS } from './keys.js';
 import { createLightbox } from './lightbox.js';
 import { emptyManifest, entryKey } from './manifest.js';
 import { startReviewMode } from './review-mode.js';
@@ -63,6 +63,7 @@ const lightbox = createLightbox(lightboxRoot, {
     order: () => gallery.visibleKeys(),
     entryFor: (key) => gallery.entryFor(key),
     variantFor: (key) => gallery.currentVariant(key),
+    cycleVariant: (key) => gallery.cycleVariant(key),
     onClose: (key) => {
         if (key) {
             gallery.focusKey(key);
@@ -104,12 +105,21 @@ function copyPath(key) {
     const variant = gallery.currentVariant(key);
     const path = entry?.variants[variant];
 
-    if (path) {
-        navigator.clipboard
-            .writeText(`packages/demos/public/shots/${path}`)
-            .catch(() => setStatus('clipboard blocked'));
-        setStatus(`copied ${path}`);
+    if (!path) {
+        return;
     }
+
+    // Undefined outside a secure context, e.g. the dev server opened on a LAN IP.
+    if (!navigator.clipboard) {
+        setStatus(`clipboard unavailable here (needs https or localhost): ${path}`);
+
+        return;
+    }
+
+    navigator.clipboard.writeText(`packages/demos/public/shots/${path}`).then(
+        () => setStatus(`copied ${path}`),
+        () => setStatus('clipboard blocked'),
+    );
 }
 
 function openLive(key) {
@@ -140,6 +150,10 @@ function handleShared(action) {
         window.__shotsFindings?.exportMarkdown();
     } else if (action === 'diff-toggle' || action === 'diff-cycle') {
         window.__shotsDiff?.(action);
+
+        if (lightbox.isOpen()) {
+            lightbox.rerender();
+        }
     } else {
         return false;
     }
@@ -183,8 +197,11 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
-    const handled =
-        handleShared(action) || (mode === 'lightbox' ? lightbox.handleAction(action) : gallery.handleAction(action));
+    const handled = SHARED_ACTIONS.includes(action)
+        ? handleShared(action)
+        : mode === 'lightbox'
+          ? lightbox.handleAction(action)
+          : gallery.handleAction(action);
 
     if (handled) {
         event.preventDefault();
@@ -227,13 +244,15 @@ renderHelp();
 const { manifest, failed } = await loadManifest();
 
 gallery.setEntries(manifest.entries);
-startReviewMode({ gallery, imageUrl, setStatus, renderInfo });
 
 if (!failed) {
     setStatus(
         `${manifest.entries.length} tiles from ${demos.length} demos${manifest.generatedAt ? `, captured ${manifest.generatedAt.slice(0, 10)}` : ''}`,
     );
 }
+
+// After the summary, so a refused ?baseline status is the one left on screen.
+startReviewMode({ gallery, imageUrl, setStatus, renderInfo });
 
 galleryRoot.focus();
 

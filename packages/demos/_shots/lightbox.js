@@ -4,6 +4,9 @@
  * walks the gallery's visible order.
  */
 
+import { demoNeighbor } from './layout-model.js';
+import { OUTPUT_VARIANT } from './poses.js';
+
 const ZOOM_LEVELS = [1, 2, 4];
 const PAN_STEP_PX = 40;
 const PAN_FAST_PX = 200;
@@ -12,13 +15,30 @@ const GRID_ZOOM = 4;
 const PANS = {
     'pan-up': [0, -PAN_STEP_PX],
     'pan-down': [0, PAN_STEP_PX],
-    'pan-left': [-PAN_STEP_PX, 0],
-    'pan-right': [PAN_STEP_PX, 0],
     'pan-fast-up': [0, -PAN_FAST_PX],
     'pan-fast-down': [0, PAN_FAST_PX],
     'pan-fast-left': [-PAN_FAST_PX, 0],
     'pan-fast-right': [PAN_FAST_PX, 0],
 };
+
+// Every action handleAction() answers; keys.test.mjs checks the key map against it.
+const LIGHTBOX_ACTIONS = [
+    ...Object.keys(PANS),
+    'prev',
+    'next',
+    'first',
+    'last',
+    'demo-prev',
+    'demo-next',
+    'zoom-in',
+    'zoom-out',
+    'zoom-1',
+    'zoom-2',
+    'zoom-4',
+    'grid-toggle',
+    'variant-next',
+    'close',
+];
 
 /**
  * @param {HTMLElement} root - The #shots-lightbox element.
@@ -27,6 +47,7 @@ const PANS = {
  *   order: () => string[],
  *   entryFor: (key: string) => object | null,
  *   variantFor: (key: string) => string,
+ *   cycleVariant: (key: string) => void,
  *   onClose: (lastKey: string | null) => void,
  * }} hooks
  */
@@ -59,18 +80,30 @@ function createLightbox(root, hooks) {
         const variant = hooks.variantFor(key);
 
         img.src = hooks.imageUrl(entry, variant) ?? '';
-        img.width = entry.width * zoom;
-        img.height = entry.height * zoom;
         img.alt = `${entry.slug} ${entry.pose} ${variant} at ${zoom * 100} percent`;
+        img.onload = null;
 
+        // An output capture is stored at drawing-buffer size, not the manifest's display size.
+        if (variant !== OUTPUT_VARIANT) {
+            sizeTo(entry.width, entry.height, zoom);
+        } else if (img.complete && img.naturalWidth > 0) {
+            sizeTo(img.naturalWidth, img.naturalHeight, zoom);
+        } else {
+            img.onload = () => sizeTo(img.naturalWidth, img.naturalHeight, zoom);
+        }
+
+        caption.textContent = `${entry.slug} / ${entry.pose} / ${variant}  ${zoom * 100}%  ${entry.width}x${entry.height}`;
+    }
+
+    function sizeTo(width, height, zoom) {
+        img.width = width * zoom;
+        img.height = height * zoom;
         gridLayer.hidden = !(grid && zoom === GRID_ZOOM);
         gridLayer.style.backgroundSize = `${zoom}px ${zoom}px`;
         gridLayer.style.width = `${img.width}px`;
         gridLayer.style.height = `${img.height}px`;
         gridLayer.style.left = `${img.offsetLeft}px`;
         gridLayer.style.top = `${img.offsetTop}px`;
-
-        caption.textContent = `${entry.slug} / ${entry.pose} / ${variant}  ${zoom * 100}%  ${entry.width}x${entry.height}`;
     }
 
     function step(delta) {
@@ -83,22 +116,6 @@ function createLightbox(root, hooks) {
 
         key = keys[Math.min(keys.length - 1, Math.max(0, index + delta))];
         render();
-    }
-
-    function stepDemo(delta) {
-        const keys = hooks.order();
-        const slugOf = (item) => item.slice(0, item.indexOf('/'));
-        let index = keys.indexOf(key);
-        const slug = slugOf(key);
-
-        while (index >= 0 && index < keys.length && slugOf(keys[index]) === slug) {
-            index += delta;
-        }
-
-        if (index >= 0 && index < keys.length) {
-            key = keys[index];
-            render();
-        }
     }
 
     function jumpTo(action) {
@@ -133,7 +150,8 @@ function createLightbox(root, hooks) {
         } else if (action === 'first' || action === 'last') {
             jumpTo(action);
         } else if (action === 'demo-prev' || action === 'demo-next') {
-            stepDemo(action === 'demo-next' ? 1 : -1);
+            key = demoNeighbor(hooks.order(), key, action === 'demo-next' ? 1 : -1);
+            render();
         } else {
             return false;
         }
@@ -154,6 +172,9 @@ function createLightbox(root, hooks) {
             zoomBy(action);
         } else if (action === 'grid-toggle') {
             grid = !grid;
+            render();
+        } else if (action === 'variant-next') {
+            hooks.cycleVariant(key);
             render();
         } else if (action === 'close') {
             close();
@@ -184,4 +205,4 @@ function createLightbox(root, hooks) {
     };
 }
 
-export { createLightbox };
+export { createLightbox, LIGHTBOX_ACTIONS };

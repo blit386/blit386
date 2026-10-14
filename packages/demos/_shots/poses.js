@@ -56,7 +56,7 @@ const POSES_BY_SLUG = {
     ],
     'pointer-paint': [
         { id: 'start', at: 1 },
-        { id: 'hover-clear', at: 1, pointer: { x: 40, y: 180 } },
+        { id: 'hover-clear', at: 1, pointer: { x: 240, y: 217 } },
     ],
     'gamepad-input': [
         { id: 'start', at: 1 },
@@ -70,7 +70,8 @@ const INPUT_KEYS = ['keys', 'pointer', 'touch'];
 // display: the native palette buffer, crisp, the default. output: the drawing buffer with
 // display-tier effects (CRT), possibly larger. uidebug: display plus the kit's layout boxes.
 // software: display under ?backend=software. touch: display after a touch contact.
-const VARIANTS = ['display', 'output', 'uidebug', 'software', 'touch'];
+const OUTPUT_VARIANT = 'output';
+const VARIANTS = ['display', OUTPUT_VARIANT, 'uidebug', 'software', 'touch'];
 const COMMITTED_VARIANTS = ['display', 'uidebug'];
 
 /**
@@ -129,4 +130,4 @@ function validatePoses(posesBySlug, knownSlugs) {
     return problems;
 }
 
-export { COMMITTED_VARIANTS, DEFAULT_POSES, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS };
+export { COMMITTED_VARIANTS, DEFAULT_POSES, OUTPUT_VARIANT, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS };

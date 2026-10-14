@@ -7,6 +7,7 @@
  */
 
 import { lintSnapshot } from '../src/shared/ui-lint.js';
+import { OUTPUT_VARIANT } from './poses.js';
 
 const CANVAS_ID = 'blit386-canvas';
 // The browser's default canvas size, before the engine resizes it (see playwright-session.mjs).
@@ -109,9 +110,13 @@ async function injectInput(frame, engine, pose) {
     if (pose.keys) {
         dispatchKeys(frame, pose.keys, 'keydown');
     } else {
-        const point = pointerClientPoint(frame.canvas().getBoundingClientRect(), engine.displaySize, pose.pointer);
+        const canvas = frame.canvas();
+        const point = pointerClientPoint(canvas.getBoundingClientRect(), engine.displaySize, pose.pointer);
 
-        frame.canvas().dispatchEvent(new PointerEvent('pointermove', { ...point, bubbles: true, pointerId: 1 }));
+        // pointerType 'mouse': the engine drops a touch or pen move that has no pointerdown.
+        canvas.dispatchEvent(
+            new PointerEvent('pointermove', { ...point, bubbles: true, pointerId: 1, pointerType: 'mouse' }),
+        );
     }
 
     const target = stepAfterInput(pose.at, engine.targetFPS);
@@ -126,18 +131,20 @@ async function injectInput(frame, engine, pose) {
 /**
  * BT.renderAt, retried while the engine's loop has not started yet. The canvas is resized and
  * window.BT exists a little before init() finishes, and BT has no ready flag to wait on, so the
- * engine's own "hasn't started yet" rejection is the readiness signal. The 'seek' stage owns the
- * timeout; a loop that outlives it can only run on until the iframe is replaced.
+ * engine's own "hasn't started yet" rejection is the readiness signal. The loop gives up at the
+ * same deadline as the 'seek' stage, so it never outlives the stage that started it.
  *
  * @param {{ renderAt: Function }} engine
  * @param {number} seconds
  */
 async function seekWhenReady(engine, seconds) {
+    const deadline = Date.now() + STEP_TIMEOUT_MS;
+
     for (;;) {
         try {
             return await engine.renderAt(seconds);
         } catch (error) {
-            if (!NOT_READY_PATTERN.test(errorText(error))) {
+            if (!NOT_READY_PATTERN.test(errorText(error)) || Date.now() >= deadline) {
                 throw error;
             }
 
@@ -178,7 +185,7 @@ async function runPose(frame, pose, variant, options) {
     if (ui) {
         ui.recording = true;
         ui.debug = variant === 'uidebug';
-        ui.touchSeen = ui.touchSeen || Boolean(pose.touch);
+        ui.touchSeen = ui.touchSeen || Boolean(pose.touch) || variant === 'touch';
     }
 
     await stage('seek', () => seekWhenReady(engine, pose.at), STEP_TIMEOUT_MS);
@@ -190,7 +197,7 @@ async function runPose(frame, pose, variant, options) {
     // Before capture: BT.captureFrame re-renders the parked frame without an update tick, so the kit
     // would record every group a second time and each widget would overlap its own copy.
     const snapshot = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
-    const size = variant === 'output' ? 'output' : 'display';
+    const size = variant === OUTPUT_VARIANT ? 'output' : 'display';
     const blob = await stage('capture', () => captureOwnedBlob(engine, size), STEP_TIMEOUT_MS);
     const bitmap = size === 'output' ? await createImageBitmap(blob) : null;
     const width = bitmap ? bitmap.width : engine.displaySize.x;

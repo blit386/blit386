@@ -33,7 +33,8 @@ pnpm run capture:shots -- --all
 ```
 
 `--changed` and `--demos a,b` select subsets; `--variants display,uidebug,output,software,touch` picks variants
-(default: the committed pair). `--changed` selects every demo whenever any file under `src/shared/` differs from
+(default: the committed pair). `output` images are stored at drawing-buffer size, so they differ from the display size
+and depend on the capturing machine. `--changed` selects every demo whenever any file under `src/shared/` differs from
 `origin/main`, tests included. The driver opens `/shots?auto...` in Chrome, waits for the page to finish, and writes
 `public/shots/<slug>/<pose>.<variant>.png` plus a merged `manifest.json`. It refuses to write outside `public/shots/`.
 Exit code 1 means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
@@ -53,9 +54,10 @@ Order of operations for an agent:
 
 ### 3. Compare against main
 
-Serve main's `public/shots` on another port (a second worktree's dev server, or `npx serve public/shots -l 5174`) and
-open `/shots?baseline=http://localhost:5174`. The baseline must be an http(s) URL or a same-origin path; anything else
-is refused. `d` toggles the diff overlay, `b` cycles current, baseline, diff.
+Serve main's `public/shots` on another port (a second worktree's dev server, or
+`pnpm dlx serve --cors public/shots -l 5174`) and open `/shots?baseline=http://localhost:5174`. The baseline must be an
+http(s) URL or a same-origin path; anything else is refused. In production the CSP allows only same-origin baselines.
+`d` toggles the diff overlay, `b` cycles current, baseline, diff.
 
 ### 4. Add a pose
 

@@ -30,12 +30,17 @@ function exportMarkdown(findings, setStatus) {
     const markdown = findings.toMarkdown();
     const link = document.createElement('a');
 
-    navigator.clipboard.writeText(markdown).catch(() => undefined);
+    // Download first: the clipboard is undefined outside a secure context and must never block it.
     link.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
     link.download = EXPORT_FILE;
     link.click();
     URL.revokeObjectURL(link.href);
-    setStatus('findings copied and downloaded');
+    setStatus(`findings downloaded as ${EXPORT_FILE}`);
+
+    navigator.clipboard?.writeText(markdown).then(
+        () => setStatus(`findings downloaded as ${EXPORT_FILE} and copied`),
+        () => setStatus(`findings downloaded as ${EXPORT_FILE}, clipboard blocked`),
+    );
 }
 
 function startFindings({ gallery, setStatus, renderInfo }) {
