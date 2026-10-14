@@ -114,6 +114,32 @@ describe('runPose', () => {
         assert.equal(frame.ui().touchSeen, true);
     });
 
+    it('lints the snapshot taken before capture, which re-renders and duplicates groups', async () => {
+        const group = {
+            anchor: 'top-bar',
+            margin: 0,
+            rows: [],
+            rect: { x: 0, y: 0, w: 10, h: 10 },
+            widgets: [{ id: 'J - Jump', rect: { x: 0, y: 0, w: 10, h: 10 } }],
+        };
+        const groups = [group];
+        const frame = fakeFrame();
+        const engine = frame.engine();
+        const ui = frame.ui();
+
+        ui.snapshot = () => ({ display: { w: 320, h: 200 }, groups: [...groups] });
+        engine.captureFrame = async () => {
+            groups.push(group);
+
+            return new Blob(['png'], { type: 'image/png' });
+        };
+
+        const result = await runPose(frame, { id: 'start', at: 0 }, 'display', { url: 'u' });
+
+        assert.equal(result.snapshot.groups.length, 1);
+        assert.deepEqual(result.lint, []);
+    });
+
     it('names the failing step', async () => {
         const frame = fakeFrame({
             load: async () => {

@@ -7,7 +7,7 @@
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { captureAll, createFrameAdapter } from './capture.js';
 import { createCapturePanel } from './capture-panel.js';
-import { mergeManifest } from './manifest.js';
+import { imagePath, mergeManifest } from './manifest.js';
 import { posesFor } from './poses.js';
 import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
@@ -78,10 +78,14 @@ async function startCaptureMode(shell) {
                 );
 
                 if (result.ok) {
-                    liveImages.set(
-                        liveImageKey(result.slug, result.pose, result.variant),
-                        URL.createObjectURL(result.blob),
-                    );
+                    const key = liveImageKey(result.slug, result.pose, result.variant);
+                    const previous = liveImages.get(key);
+
+                    if (previous) {
+                        URL.revokeObjectURL(previous);
+                    }
+
+                    liveImages.set(key, URL.createObjectURL(result.blob));
                 }
 
                 gallery.setEntries(mergedWith(results).entries);
@@ -117,7 +121,13 @@ async function startCaptureMode(shell) {
     const params = new URLSearchParams(location.search);
 
     if (params.has('auto')) {
-        await runAuto(params);
+        try {
+            await runAuto(params);
+        } catch (error) {
+            // Fail fast: the driver polls __shotsResult and would otherwise wait out its timeout.
+            window.__shotsResult = { manifest: null, images: [], failures: [`auto: ${error?.message ?? error}`] };
+            throw error;
+        }
     }
 
     // Headless protocol for scripts/capture-demo-shots.mjs: /shots?auto&demos=a,b&variants=display,uidebug
@@ -133,7 +143,7 @@ async function startCaptureMode(shell) {
 
         for (const result of results.filter((item) => item.ok)) {
             images.push({
-                path: `${result.slug}/${result.pose}.${result.variant}.png`,
+                path: imagePath(result.slug, result.pose, result.variant),
                 base64: await toBase64(result.blob),
             });
         }

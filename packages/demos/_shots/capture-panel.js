@@ -76,14 +76,36 @@ function createCapturePanel(root, hooks) {
         );
     }
 
+    let running = false;
+
+    function setButtons(disabled) {
+        for (const button of root.querySelectorAll('[data-role="run"], [data-role="run-all"]')) {
+            button.disabled = disabled;
+        }
+    }
+
+    // One run at a time: two loops would fight over the single iframe and mislabel frames.
     async function run(slugs) {
+        if (running) {
+            progress.textContent = 'capture already running';
+            return;
+        }
+
         if (slugs.length === 0) {
             progress.textContent = 'pick at least one demo';
             return;
         }
 
-        await hooks.onRun(jobsFor(slugs));
-        saveButton.disabled = false;
+        running = true;
+        setButtons(true);
+
+        try {
+            await hooks.onRun(jobsFor(slugs));
+            saveButton.disabled = false;
+        } finally {
+            running = false;
+            setButtons(false);
+        }
     }
 
     async function save() {

@@ -126,19 +126,18 @@ async function injectInput(frame, engine, pose) {
 /**
  * BT.renderAt, retried while the engine's loop has not started yet. The canvas is resized and
  * window.BT exists a little before init() finishes, and BT has no ready flag to wait on, so the
- * engine's own "hasn't started yet" rejection is the readiness signal. The stage timeout bounds it.
+ * engine's own "hasn't started yet" rejection is the readiness signal. The 'seek' stage owns the
+ * timeout; a loop that outlives it can only run on until the iframe is replaced.
  *
  * @param {{ renderAt: Function }} engine
  * @param {number} seconds
  */
 async function seekWhenReady(engine, seconds) {
-    const deadline = Date.now() + STEP_TIMEOUT_MS;
-
     for (;;) {
         try {
             return await engine.renderAt(seconds);
         } catch (error) {
-            if (!NOT_READY_PATTERN.test(errorText(error)) || Date.now() > deadline) {
+            if (!NOT_READY_PATTERN.test(errorText(error))) {
                 throw error;
             }
 
@@ -188,15 +187,21 @@ async function runPose(frame, pose, variant, options) {
         await injectInput(frame, engine, pose);
     }
 
+    // Before capture: BT.captureFrame re-renders the parked frame without an update tick, so the kit
+    // would record every group a second time and each widget would overlap its own copy.
+    const snapshot = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
     const size = variant === 'output' ? 'output' : 'display';
     const blob = await stage('capture', () => captureOwnedBlob(engine, size), STEP_TIMEOUT_MS);
-    const snapshot = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
     const bitmap = size === 'output' ? await createImageBitmap(blob) : null;
+    const width = bitmap ? bitmap.width : engine.displaySize.x;
+    const height = bitmap ? bitmap.height : engine.displaySize.y;
+
+    bitmap?.close();
 
     return {
         blob,
-        width: bitmap ? bitmap.width : engine.displaySize.x,
-        height: bitmap ? bitmap.height : engine.displaySize.y,
+        width,
+        height,
         snapshot,
         lint: lintSnapshot(snapshot),
     };

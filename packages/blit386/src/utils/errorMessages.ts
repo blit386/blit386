@@ -932,7 +932,10 @@ export function randomIntInclusiveRangeError(min: number, max: number): string {
     );
 }
 
-/** `BT.renderAt()` called before the game loop exists - before init() finished, or while the splash is up. */
+/**
+ * `BT.renderAt()` called before the game loop exists - before init() finished, or while the splash is up.
+ * Manual-sync hazard: packages/demos/_shots/capture.js matches this text (NOT_READY_PATTERN) to detect readiness.
+ */
 export const RENDER_AT_NOT_READY_MESSAGE =
     "Can't seek with BT.renderAt() because the game loop hasn't started yet. Call it after init() has finished and the splash is gone";
 
