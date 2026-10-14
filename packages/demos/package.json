@@ -49,6 +49,7 @@
     "check:demo-comment-links": "node scripts/check-demo-comment-links.mjs",
     "capture:demo": "node scripts/capture-demo-clip.mjs",
     "capture:og": "node scripts/capture-og-image.mjs",
+    "capture:shots": "node scripts/capture-demo-shots.mjs",
     "generate:audio-loops": "node scripts/generate-audio-loops.mjs",
     "test": "node ../../scripts/ensure-engine-built.mjs && node --test \"scripts/__tests__/*.test.mjs\" \"plugins/__tests__/*.test.mjs\" \"src/shared/__tests__/*.test.mjs\" \"_shots/__tests__/*.test.mjs\"",
     "preflight": "pnpm run format:check && pnpm run lint && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run check:demo-registry && pnpm run check:demo-comment-links",

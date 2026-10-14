@@ -1,0 +1,253 @@
+#!/usr/bin/env node
+/**
+ * Headless driver for the /shots capture page.
+ *
+ * Opens `/shots?auto&demos=...&variants=...` in installed Chrome through Playwright (the same
+ * session helpers the OG and clip scripts use), waits for the page to finish its run, and
+ * writes the PNGs plus a merged manifest.json into public/shots/. The page is the capture
+ * engine; this script only ferries bytes to disk, so a capture made here is byte-identical
+ * to one saved from the page.
+ *
+ * Usage: pnpm run capture:shots -- --all | --demos a,b | --changed [--variants display,uidebug]
+ *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
+ */
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
+import { DEMO_ORDER } from '../plugins/demo-order.js';
+import { launchCaptureBrowser } from './playwright-session.mjs';
+
+// #region Configuration
+
+const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
+export const PACKAGE_ROOT = resolve(SCRIPTS_DIR, '..');
+export const DEFAULT_OUT_DIR = join('public', 'shots');
+const SHOTS_PATH = 'shots';
+const RESULT_TIMEOUT_MS = 20 * 60 * 1000;
+// A src/shared change can move every panel, so every demo is re-captured.
+const SHARED_PREFIX = 'packages/demos/src/shared/';
+const DEMO_SOURCE_PATTERN = /^packages\/demos\/src\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
+
+export const DEFAULTS = {
+    out: '',
+    baseUrl: 'http://localhost:5173',
+};
+
+const STRING_OPTIONS = { '--out': 'out', '--base-url': 'baseUrl', '--demos': 'demos', '--variants': 'variantList' };
+const BOOLEAN_OPTIONS = { '--all': 'all', '--changed': 'changed', '--dry-run': 'dryRun' };
+
+// #endregion
+
+// #region Pure helpers
+
+/* eslint-disable complexity, security/detect-object-injection */
+
+/**
+ * @param {string[]} argv
+ * @returns {{ slugs: string[], variants: string[], out: string, baseUrl: string, all: boolean, changed: boolean, dryRun: boolean }}
+ */
+export function parseArgs(argv) {
+    const options = { ...DEFAULTS, all: false, changed: false, dryRun: false, demos: '', variantList: '' };
+
+    for (let index = 0; index < argv.length; index += 1) {
+        const arg = argv[index];
+
+        // pnpm forwards the separator of `pnpm run capture:shots -- --all` to the script.
+        if (arg === '--') {
+            continue;
+        }
+
+        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
+            options[BOOLEAN_OPTIONS[arg]] = true;
+            continue;
+        }
+
+        if (Object.hasOwn(STRING_OPTIONS, arg)) {
+            const value = argv[index + 1];
+
+            if (value === undefined || value.startsWith('--')) {
+                throw new Error(`${arg} requires a value.`);
+            }
+
+            options[STRING_OPTIONS[arg]] = value;
+            index += 1;
+            continue;
+        }
+
+        throw new Error(`Unknown option: ${arg}`);
+    }
+
+    const selections = [options.all, options.changed, options.demos !== ''].filter(Boolean).length;
+
+    if (selections === 0) {
+        throw new Error('Pass --all, --demos, or --changed.');
+    }
+
+    if (selections > 1) {
+        throw new Error('Pass only one of --all, --demos, --changed.');
+    }
+
+    const slugs = options.demos ? options.demos.split(',').filter(Boolean) : options.all ? [...DEMO_ORDER] : [];
+
+    for (const slug of slugs) {
+        if (!DEMO_ORDER.includes(slug)) {
+            throw new Error(`Unknown demo slug: ${slug}`);
+        }
+    }
+
+    const variants = options.variantList ? options.variantList.split(',').filter(Boolean) : [...COMMITTED_VARIANTS];
+
+    for (const variant of variants) {
+        if (!VARIANTS.includes(variant)) {
+            throw new Error(`Unknown variant: ${variant}`);
+        }
+    }
+
+    return {
+        slugs,
+        variants,
+        out: options.out,
+        baseUrl: options.baseUrl,
+        all: options.all,
+        changed: options.changed,
+        dryRun: options.dryRun,
+    };
+}
+
+/* eslint-enable complexity, security/detect-object-injection */
+
+/**
+ * Demos to re-capture for a set of changed files (repo-relative paths).
+ *
+ * @param {string[]} changedPaths
+ * @param {string[]} order - DEMO_ORDER.
+ * @returns {string[]}
+ */
+export function selectChanged(changedPaths, order) {
+    if (changedPaths.some((path) => path.startsWith(SHARED_PREFIX))) {
+        return [...order];
+    }
+
+    const changed = new Set(
+        changedPaths.map((path) => path.match(DEMO_SOURCE_PATTERN)?.[1]).filter((slug) => slug !== undefined),
+    );
+
+    return order.filter((slug) => changed.has(slug));
+}
+
+/**
+ * @param {string} baseUrl
+ * @param {string[]} slugs
+ * @param {string[]} variants
+ * @returns {string}
+ */
+export function buildAutoUrl(baseUrl, slugs, variants) {
+    const params = new URLSearchParams({ demos: slugs.join(','), variants: variants.join(',') });
+
+    return `${baseUrl.replace(/\/$/u, '')}/${SHOTS_PATH}?auto&${params.toString()}`;
+}
+
+// #endregion
+
+// #region Main
+
+function changedPathsFromGit() {
+    const output = execFileSync('git', ['diff', '--name-only', 'origin/main'], { cwd: PACKAGE_ROOT, encoding: 'utf8' });
+
+    return output.split('\n').filter(Boolean);
+}
+
+function engineVersion() {
+    return JSON.parse(readFileSync(resolve(PACKAGE_ROOT, '../blit386/package.json'), 'utf8')).version;
+}
+
+/**
+ * Open the auto URL and return the page's `window.__shotsResult`, or null on timeout.
+ *
+ * @param {string} url
+ * @returns {Promise<{ manifest: object | null, images: { path: string, base64: string }[], failures: string[] } | null>}
+ */
+async function runPage(url) {
+    const { browser, page } = await launchCaptureBrowser();
+
+    try {
+        await page.goto(url);
+
+        try {
+            await page.waitForFunction('window.__shotsResult !== undefined', null, { timeout: RESULT_TIMEOUT_MS });
+        } catch {
+            return null;
+        }
+
+        return await page.evaluate('window.__shotsResult');
+    } finally {
+        await browser.close();
+    }
+}
+
+async function main() {
+    let options;
+
+    try {
+        options = parseArgs(process.argv.slice(2));
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
+
+    const slugs = options.changed ? selectChanged(changedPathsFromGit(), DEMO_ORDER) : options.slugs;
+    const outDir = options.out ? resolve(process.cwd(), options.out) : resolve(PACKAGE_ROOT, DEFAULT_OUT_DIR);
+
+    if (slugs.length === 0) {
+        console.log('Nothing changed - no demos to capture.');
+        return;
+    }
+
+    const url = buildAutoUrl(options.baseUrl, slugs, options.variants);
+
+    if (options.dryRun) {
+        console.log(`Would open ${url} and write into ${outDir}`);
+        return;
+    }
+
+    const result = await runPage(url);
+
+    if (result === null) {
+        console.error(`The page never produced window.__shotsResult within ${RESULT_TIMEOUT_MS / 1000}s (${url}).`);
+        process.exit(1);
+    }
+
+    if (result.manifest === null) {
+        console.error(`The capture run failed:\n  ${result.failures.join('\n  ')}`);
+        process.exit(1);
+    }
+
+    mkdirSync(outDir, { recursive: true });
+
+    for (const image of result.images) {
+        const target = join(outDir, image.path);
+
+        mkdirSync(dirname(target), { recursive: true });
+        writeFileSync(target, Buffer.from(image.base64, 'base64'));
+        console.log(`  wrote ${image.path}`);
+    }
+
+    const manifest = { ...result.manifest, engineVersion: engineVersion() };
+
+    writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+    console.log(`\n${result.images.length} image(s), manifest with ${manifest.entries.length} entries in ${outDir}`);
+
+    if (result.failures.length > 0) {
+        console.error(`${result.failures.length} failed:\n  ${result.failures.join('\n  ')}`);
+        process.exit(1);
+    }
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+    await main();
+}
+
+// #endregion

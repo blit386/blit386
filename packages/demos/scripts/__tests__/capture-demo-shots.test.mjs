@@ -1,0 +1,66 @@
+/**
+ * Unit tests for the pure helpers in scripts/capture-demo-shots.mjs.
+ */
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { DEMO_ORDER } from '../../plugins/demo-order.js';
+import { buildAutoUrl, DEFAULTS, parseArgs, selectChanged } from '../capture-demo-shots.mjs';
+
+describe('parseArgs', () => {
+    it('captures every demo with the committed variants by default', () => {
+        const options = parseArgs(['--all']);
+
+        assert.deepEqual(options.slugs, [...DEMO_ORDER]);
+        assert.deepEqual(options.variants, ['display', 'uidebug']);
+        assert.equal(options.baseUrl, DEFAULTS.baseUrl);
+        assert.equal(options.out, '');
+    });
+
+    it('reads a slug list and a variant list', () => {
+        const options = parseArgs(['--demos', 'basics,sprites', '--variants', 'display,output']);
+
+        assert.deepEqual(options.slugs, ['basics', 'sprites']);
+        assert.deepEqual(options.variants, ['display', 'output']);
+    });
+
+    it('rejects an unknown slug, an unknown variant, and a missing selection', () => {
+        assert.throws(() => parseArgs(['--demos', 'ghost']), /Unknown demo slug: ghost/);
+        assert.throws(() => parseArgs(['--all', '--variants', 'huge']), /Unknown variant: huge/);
+        assert.throws(() => parseArgs([]), /Pass --all, --demos, or --changed/);
+        assert.throws(() => parseArgs(['--all', '--demos', 'basics']), /only one of/);
+        assert.throws(() => parseArgs(['--out']), /--out requires a value/);
+    });
+});
+
+describe('selectChanged', () => {
+    it('picks demos whose source changed', () => {
+        const slugs = selectChanged(['packages/demos/src/basics.js', 'packages/demos/README.md'], DEMO_ORDER);
+
+        assert.deepEqual(slugs, ['basics']);
+    });
+
+    it('picks every demo when the shared kit changed', () => {
+        const slugs = selectChanged(['packages/demos/src/shared/ui-core.js'], ['basics', 'sprites']);
+
+        assert.deepEqual(slugs, ['basics', 'sprites']);
+    });
+
+    it('keeps demo order and ignores unknown files', () => {
+        const slugs = selectChanged(
+            ['packages/demos/src/sprites.js', 'packages/demos/src/basics.js', 'x.js'],
+            ['basics', 'sprites'],
+        );
+
+        assert.deepEqual(slugs, ['basics', 'sprites']);
+    });
+});
+
+describe('buildAutoUrl', () => {
+    it('targets the shots page in auto mode', () => {
+        assert.equal(
+            buildAutoUrl('http://localhost:5173/', ['basics', 'sprites'], ['display']),
+            'http://localhost:5173/shots?auto&demos=basics%2Csprites&variants=display',
+        );
+    });
+});
