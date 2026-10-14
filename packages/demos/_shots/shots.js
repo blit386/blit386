@@ -10,6 +10,7 @@ import { createGallery } from './gallery.js';
 import { KEY_HELP, resolveKey } from './keys.js';
 import { createLightbox } from './lightbox.js';
 import { emptyManifest, entryKey } from './manifest.js';
+import { startReviewMode } from './review-mode.js';
 
 const MANIFEST_URL = 'shots/manifest.json';
 const SHOTS_DIR = 'shots/';
@@ -93,7 +94,9 @@ function renderInfo() {
 
     const lint = entry.lint.map((finding) => `${finding.rule}: ${finding.message}`).join('\n') || 'no lint findings';
 
-    infoRoot.textContent = `${entry.slug} / ${entry.pose}\n${entry.width}x${entry.height}\nvariants: ${Object.keys(entry.variants).join(', ')}\n${entry.error ? `error: ${entry.error}\n` : ''}${lint}`;
+    const notes = (window.__shotsFindings?.notesFor(key) ?? []).map((note) => `\nnote: ${note}`).join('');
+
+    infoRoot.textContent = `${entry.slug} / ${entry.pose}\n${entry.width}x${entry.height}\nvariants: ${Object.keys(entry.variants).join(', ')}\n${entry.error ? `error: ${entry.error}\n` : ''}${lint}${notes}`;
 }
 
 function copyPath(key) {
@@ -224,6 +227,7 @@ renderHelp();
 const { manifest, failed } = await loadManifest();
 
 gallery.setEntries(manifest.entries);
+startReviewMode({ gallery, imageUrl, setStatus, renderInfo });
 
 if (!failed) {
     setStatus(

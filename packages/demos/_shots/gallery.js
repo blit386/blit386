@@ -11,6 +11,41 @@ import { VARIANTS } from './poses.js';
 
 const ROW_SCROLL_FRACTION = 0.9;
 
+/**
+ * Wait for the tile's diff against the baseline, then show it: swap the image for the baseline,
+ * lay the magenta diff over it, and add a badge with the changed-pixel count (or the failure).
+ */
+function attachDiff(view, { entry, variant, img, element, caption }) {
+    const addBadge = (text, isError) => {
+        const badge = document.createElement('span');
+
+        badge.className = isError ? 'shots-badge shots-badge-error' : 'shots-badge';
+        badge.textContent = text;
+        caption.append(badge);
+    };
+
+    view.diffFor(entry, variant).then(
+        (diff) => {
+            if (view.diff === 'baseline') {
+                img.src = diff.baselineUrl;
+            } else if (view.diff === 'diff') {
+                const overlay = document.createElement('img');
+
+                overlay.src = diff.url;
+                overlay.width = entry.width;
+                overlay.height = entry.height;
+                overlay.style.position = 'absolute';
+                overlay.style.left = '4px';
+                overlay.style.top = '4px';
+                element.append(overlay);
+            }
+
+            addBadge(`diff ${diff.changed}`, false);
+        },
+        (error) => addBadge(`diff: ${error.message}`, true),
+    );
+}
+
 const FOCUS_MOVES = {
     'focus-left': 'left',
     'focus-right': 'right',
@@ -65,6 +100,7 @@ function createGallery(root, hooks) {
         const element = document.createElement('figure');
         const variant = variantFor(entry);
         const url = hooks.imageUrl(entry, variant);
+        let img = null;
 
         element.className = 'shots-tile';
         element.dataset.key = tile.key;
@@ -80,7 +116,7 @@ function createGallery(root, hooks) {
             error.textContent = entry.error;
             element.append(error);
         } else if (url) {
-            const img = document.createElement('img');
+            img = document.createElement('img');
 
             img.src = url;
             img.width = entry.width;
@@ -113,6 +149,10 @@ function createGallery(root, hooks) {
         }
 
         element.append(caption);
+
+        if (view.diffFor && img) {
+            attachDiff(view, { entry, variant, img, element, caption });
+        }
 
         if (tile.stackSize > 1) {
             const count = document.createElement('span');
