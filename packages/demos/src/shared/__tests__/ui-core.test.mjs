@@ -236,11 +236,21 @@ describe('UiContext snapshot', () => {
 
         const ctx = createReadyContext();
 
-        ctx.begin(UI_ANCHORS.TOP_LEFT);
-        ctx.addRow(40, 10);
-        ctx.addHit('a', 5, 0, 40, 10, 'button');
-        ctx.end();
+        const { frameGroups, groupRows, groupWidgets } = ctx;
 
+        for (let frame = 0; frame < 2; frame++) {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            ctx.addRow(40, 10);
+            ctx.addHit('a', 5, 0, 40, 10, 'button');
+            ctx.end();
+            ctx.tick();
+        }
+
+        // Same array objects (never reassigned) and still empty.
+        assert.equal(ctx.frameGroups, frameGroups);
+        assert.equal(ctx.groupRows, groupRows);
+        assert.equal(ctx.groupWidgets, groupWidgets);
+        assert.equal(frameGroups.length + groupRows.length + groupWidgets.length, 0);
         assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [] });
     });
 

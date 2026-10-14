@@ -393,7 +393,7 @@ class UiContext {
         // that stopped being declared drops out of hitRects instead of leaving a dead zone.
         if (!this.renderedSinceTick) {
             this.pruneHitRects();
-            this.frameGroups = [];
+            this.frameGroups.length = 0;
         }
 
         this.refreshPointerSnapshot();
@@ -414,8 +414,8 @@ class UiContext {
         this.hasPanel = false;
         this.commandCount = 0;
         this.pendingHitCount = 0;
-        this.groupRows = [];
-        this.groupWidgets = [];
+        this.groupRows.length = 0;
+        this.groupWidgets.length = 0;
     }
 
     /**
@@ -600,7 +600,13 @@ class UiContext {
         this.flushRect.set(originX, originY, groupW, groupH);
         BT.drawRect(this.flushRect, T.accent);
 
-        this.flushRect.set(originX + this.pad, originY + this.pad, groupW - 2 * this.pad, groupH - 2 * this.pad);
+        // Clamp so a group narrower than two pads never gets a negative-size box.
+        this.flushRect.set(
+            originX + this.pad,
+            originY + this.pad,
+            Math.max(0, groupW - 2 * this.pad),
+            Math.max(0, groupH - 2 * this.pad),
+        );
         BT.drawRect(this.flushRect, T.dim);
 
         for (let i = 0; i < this.pendingHitCount; i++) {
