@@ -156,7 +156,8 @@ describe('resolveVintageRedirect', () => {
 
 describe('renderShotsHtml', () => {
     const template =
-        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">{{robotsMeta}}<script id="demo-list" type="application/json">{{demoList}}</script></body>';
+        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">{{robotsMeta}}' +
+        '<script id="demo-list" type="application/json">{{demoList}}</script></body>';
 
     it('stamps the dev demo base and page suffix', () => {
         const html = renderShotsHtml({

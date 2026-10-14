@@ -169,8 +169,8 @@ body {
     }
 
     & img {
-        image-rendering: pixelated;
         display: block;
+        image-rendering: pixelated;
     }
 
     & .shots-grid {
