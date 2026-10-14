@@ -61,6 +61,19 @@ describe('mergeManifest', () => {
         );
     });
 
+    it('lets the incoming pose order win over the existing order for the same keys', () => {
+        const existing = {
+            ...emptyManifest(),
+            entries: [entry('basics', 'start'), entry('basics', 'settled')],
+        };
+        const merged = mergeManifest(existing, [entry('basics', 'settled'), entry('basics', 'start')], order);
+
+        assert.deepEqual(
+            merged.entries.map((item) => item.pose),
+            ['settled', 'start'],
+        );
+    });
+
     it('stamps generatedAt and never mutates its inputs', () => {
         const existing = emptyManifest();
         const merged = mergeManifest(existing, [entry('basics', 'start')], order);

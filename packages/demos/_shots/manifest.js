@@ -73,7 +73,16 @@ function mergeManifest(existing, incoming, order, meta = {}) {
     }
 
     const rank = new Map(order.map((slug, index) => [slug, index]));
-    const poseRank = new Map([...incomingKeys, ...byKey.keys()].map((key, index) => [key, index]));
+    // Incoming keys rank first; a repeated key in a Map keeps its first position but takes the LAST
+    // value, so existing keys are added only when absent.
+    const poseRank = new Map(incomingKeys.map((key, index) => [key, index]));
+
+    for (const key of byKey.keys()) {
+        if (!poseRank.has(key)) {
+            poseRank.set(key, poseRank.size);
+        }
+    }
+
     const entries = [...byKey.values()].sort((a, b) => {
         const bySlug = (rank.get(a.slug) ?? order.length) - (rank.get(b.slug) ?? order.length);
 
