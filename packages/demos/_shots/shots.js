@@ -9,7 +9,7 @@
 import { createGallery } from './gallery.js';
 import { KEY_HELP, resolveKey } from './keys.js';
 import { createLightbox } from './lightbox.js';
-import { emptyManifest } from './manifest.js';
+import { emptyManifest, entryKey } from './manifest.js';
 
 const MANIFEST_URL = 'shots/manifest.json';
 const SHOTS_DIR = 'shots/';
@@ -31,8 +31,12 @@ function setStatus(text) {
     statusLine.textContent = text;
 }
 
+function liveImageKey(slug, pose, variant) {
+    return `${entryKey(slug, pose)}/${variant}`;
+}
+
 function imageUrl(entry, variant) {
-    const live = liveImages.get(`${entry.slug}/${entry.pose}/${variant}`);
+    const live = liveImages.get(liveImageKey(entry.slug, entry.pose, variant));
 
     if (live) {
         return live;
@@ -50,7 +54,6 @@ function demoUrl(slug, extra = '') {
 const gallery = createGallery(galleryRoot, {
     imageUrl,
     onOpen: (key) => lightbox.open(key),
-    onOpenLive: (slug) => window.open(demoUrl(slug), '_blank', 'noopener'),
     onCapture: (keys) => window.__shotsCapture?.(keys),
 });
 
@@ -59,7 +62,13 @@ const lightbox = createLightbox(lightboxRoot, {
     order: () => gallery.visibleKeys(),
     entryFor: (key) => gallery.entryFor(key),
     variantFor: (key) => gallery.currentVariant(key),
-    onClose: () => galleryRoot.focus(),
+    onClose: (key) => {
+        if (key) {
+            gallery.focusKey(key);
+        }
+
+        galleryRoot.focus();
+    },
 });
 
 function renderHelp() {
@@ -191,22 +200,37 @@ async function loadManifest() {
             throw new Error(`manifest ${response.status}`);
         }
 
-        return await response.json();
+        const parsed = await response.json();
+
+        if (!Array.isArray(parsed?.entries)) {
+            throw new Error('manifest has no entries array');
+        }
+
+        // A bad row is skipped and defaults are filled in, so one bad entry never blanks the gallery.
+        const entries = parsed.entries
+            .filter((entry) => typeof entry?.slug === 'string' && typeof entry?.pose === 'string')
+            .map((entry) => ({ variants: {}, lint: [], error: null, ...entry }));
+
+        return { manifest: { ...parsed, entries }, failed: false };
     } catch (error) {
         setStatus(`No captures yet (${error.message}). Run a capture in dev or pnpm run capture:shots.`);
 
-        return emptyManifest();
+        return { manifest: emptyManifest(), failed: true };
     }
 }
 
 renderHelp();
 
-const manifest = await loadManifest();
+const { manifest, failed } = await loadManifest();
 
 gallery.setEntries(manifest.entries);
-setStatus(
-    `${manifest.entries.length} tiles from ${demos.length} demos${manifest.generatedAt ? `, captured ${manifest.generatedAt.slice(0, 10)}` : ''}`,
-);
+
+if (!failed) {
+    setStatus(
+        `${manifest.entries.length} tiles from ${demos.length} demos${manifest.generatedAt ? `, captured ${manifest.generatedAt.slice(0, 10)}` : ''}`,
+    );
+}
+
 galleryRoot.focus();
 
-export { demoUrl, gallery, imageUrl, lightbox, liveImages, setStatus };
+export { demoUrl, gallery, imageUrl, lightbox, liveImageKey, liveImages, setStatus };

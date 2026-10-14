@@ -27,7 +27,7 @@ const PANS = {
  *   order: () => string[],
  *   entryFor: (key: string) => object | null,
  *   variantFor: (key: string) => string,
- *   onClose: () => void,
+ *   onClose: (lastKey: string | null) => void,
  * }} hooks
  */
 function createLightbox(root, hooks) {
@@ -119,9 +119,11 @@ function createLightbox(root, hooks) {
     }
 
     function close() {
+        const lastKey = key;
+
         root.hidden = true;
         key = null;
-        hooks.onClose();
+        hooks.onClose(lastKey);
     }
 
     /** @returns {boolean} True when the action was a navigation action. */

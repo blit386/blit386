@@ -25,7 +25,6 @@ const FOCUS_MOVES = {
  * @param {{
  *   imageUrl: (entry: object, variant: string) => string | null,
  *   onOpen: (key: string) => void,
- *   onOpenLive: (slug: string, pose: string) => void,
  *   onCapture: (keys: string[]) => void,
  * }} hooks
  */
@@ -210,11 +209,12 @@ function createGallery(root, hooks) {
     function nextVariant() {
         const entry = byKey.get(focused);
 
-        if (!entry) {
+        const available = entry ? VARIANTS.filter((variant) => entry.variants[variant]) : [];
+
+        if (available.length === 0) {
             return;
         }
 
-        const available = VARIANTS.filter((variant) => entry.variants[variant]);
         const index = available.indexOf(variantFor(entry));
 
         view.variant = available[(index + 1) % available.length];
@@ -249,8 +249,10 @@ function createGallery(root, hooks) {
             anchorKey ??= focused;
             extendSelectionTo(moveFocus(rows(), focused, action.slice('extend-'.length)));
         } else if (action === 'toggle-select') {
-            toggleIn(selected, focused);
-            anchorKey = focused;
+            if (focused) {
+                toggleIn(selected, focused);
+                anchorKey = focused;
+            }
         } else if (action === 'select-all') {
             for (const key of order()) {
                 selected.add(key);
@@ -333,6 +335,10 @@ function createGallery(root, hooks) {
             refresh();
         },
         getView: () => ({ ...view, expanded: new Set(view.expanded) }),
+        focusKey(key) {
+            focused = key;
+            refresh();
+        },
         focusedKey: () => focused,
         selectedKeys: () => [...selected],
         visibleKeys: order,
