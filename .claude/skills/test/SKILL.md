@@ -52,17 +52,19 @@ What to do instead: verify a new demo with `pnpm run dev` + manual exercise; con
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with
 `/deep-review demos`.
 
-Tooling _scripts_, _plugins_, and the shared UI kit are different. `pnpm run test` runs `node --test` over three
-directories - `scripts/__tests__/*.test.mjs`, `plugins/__tests__/*.test.mjs`, and `src/shared/__tests__/*.test.mjs` -
-covering pure helpers that need no browser or WebGPU. The shared UI kit's tests do import the real `blit386` package
-(for `Rect2i`/`Vector2i` and to unit-test `ui-core.js` etc. against it), so `pnpm --filter blit386 run build` must have
-produced `packages/blit386/dist/` first - `pnpm run test` builds it automatically via
-`../../scripts/ensure-engine-built.mjs` when missing or stale, same as `dev`/`build`/`preview`/`knip` already do.
+Tooling _scripts_, _plugins_, the shared UI kit, and the `/shots` page are different. `pnpm run test` runs `node --test`
+over four directories - `scripts/__tests__/*.test.mjs`, `plugins/__tests__/*.test.mjs`,
+`src/shared/__tests__/*.test.mjs`, and `_shots/__tests__/*.test.mjs` - covering pure helpers that need no browser or
+WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rect2i`/`Vector2i` and to unit-test
+`ui-core.js` etc. against it), so `pnpm --filter blit386 run build` must have produced `packages/blit386/dist/` first -
+`pnpm run test` builds it automatically via `../../scripts/ensure-engine-built.mjs` when missing or stale, same as
+`dev`/`build`/`preview`/`knip` already do.
 
 | Test file | Covers |
 | --- | --- |
 | `scripts/__tests__/capture-demo-clip.test.mjs` | Argument parsing, URL/dimension math, ffmpeg and browser-script builders |
 | `scripts/__tests__/capture-og-image.test.mjs` | OG card argument parsing, scale-mode resolution, integer/fit/auto scale math, the ffmpeg filter graph, the `!important` canvas-prep script |
+| `scripts/__tests__/capture-demo-shots.test.mjs` | The `capture:shots` driver: argument parsing, variant validation, `/shots?auto` URL building, output-path containment, failure reporting |
 | `plugins/__tests__/demo-registry.test.mjs` | `@description` and `@ogScale` header-tag parsing across both comment styles |
 | `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
 | `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, out-of-range guards, the fresh-copy-vs-singleton distinction |
@@ -70,6 +72,13 @@ produced `packages/blit386/dist/` first - `pnpm run test` builds it automaticall
 | `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping |
 | `src/shared/__tests__/ui-gestures.test.mjs` | Swipe direction/threshold/time-window recognition, the widget-exclusion gate, the dominant-axis tie-break |
 | `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating |
+| `_shots/__tests__/poses.test.mjs` | The pose table: ids, one trigger per pose, every slug known to the registry |
+| `_shots/__tests__/manifest.test.mjs` | Manifest shape, merging a partial run into the committed manifest |
+| `_shots/__tests__/layout-model.test.mjs` | The gallery's stack and tile layout model |
+| `_shots/__tests__/keys.test.mjs` | The `/shots` keyboard map |
+| `_shots/__tests__/capture.test.mjs` | The capture engine's pure helpers |
+| `_shots/__tests__/diff.test.mjs` | Baseline URL validation and the pixel diff |
+| `_shots/__tests__/findings.test.mjs` | Collecting lint findings from the manifest |
 
 The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
 verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM

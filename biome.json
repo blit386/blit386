@@ -16,6 +16,7 @@
       "**/*.json",
       "**/*.jsonc",
       "!.blit",
+      "!packages/demos/public/shots",
       "!.agents/hooks.json",
       "!.agents/mcp_config.json",
       "!.codex/hooks.json",
