@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { CMD_RECT_FILL, UI_ANCHORS } from '../ui-core.js';
-import { checkbox, meter, pip, slider } from '../ui-widgets.js';
+import { checkbox, meter, pip, slider, spacer } from '../ui-widgets.js';
 import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
@@ -255,5 +255,23 @@ describe('meter', () => {
         assert.equal(ctx.commandCount, 2);
 
         ctx.end();
+    });
+});
+
+describe('spacer', () => {
+    it('records a zero-width row so the layout lint can tell it from a gap', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        ctx.recording = true;
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        spacer(ctx, 7);
+        ctx.end();
+
+        const [row] = ctx.snapshot().groups[0].rows;
+
+        assert.equal(row.w, 0);
+        assert.equal(row.h, 7);
     });
 });

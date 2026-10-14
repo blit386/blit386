@@ -412,7 +412,8 @@ function spacer(ctx, px = 6) {
         throw new Error('ui.spacer: call ui.begin() first.');
     }
 
-    ctx.cursorY += px;
+    // A zero-width row, so the layout lint sees a deliberate spacer instead of a gap.
+    ctx.addRow(0, px);
 }
 
 export { audioUnlockHint, button, caption, checkbox, kv, label, meter, panel, pip, separator, slider, spacer };
