@@ -190,7 +190,7 @@ function checkbox(ctx, text, value, opts = {}) {
     drawPipRow(ctx, rowY, value, text, value || res.hover ? T.text : T.dim);
 
     // The full row is the touch target, not just the little pip.
-    ctx.addHit(id, ctx.pad, rowY, contentW, ROW_H);
+    ctx.addHit(id, ctx.pad, rowY, contentW, ROW_H, 'checkbox');
 
     return res.activated || keyFired ? !value : value;
 }
@@ -268,7 +268,7 @@ function button(ctx, text, opts = {}) {
 
     ctx.addCommand(CMD_TEXT, textX, rowY + 2, 0, 0, res.held ? T.bg : T.text, text);
 
-    ctx.addHit(id, ctx.pad, rowY, w, BUTTON_H);
+    ctx.addHit(id, ctx.pad, rowY, w, BUTTON_H, 'button');
 
     return res.activated || keyFired;
 }
@@ -328,7 +328,7 @@ function slider(ctx, text, value, opts = {}) {
 
     ctx.addCommand(CMD_RECT_STROKE, ctx.pad, barY, barW, SLIDER_BAR_H, T.border);
 
-    ctx.addHit(id, ctx.pad, barY, barW, SLIDER_BAR_H);
+    ctx.addHit(id, ctx.pad, barY, barW, SLIDER_BAR_H, 'slider');
 
     return nextValue;
 }

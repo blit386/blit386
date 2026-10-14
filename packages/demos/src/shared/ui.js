@@ -56,6 +56,11 @@ import {
 // The one shared context. Demos run one at a time, so a single instance serves them all.
 const ctx = new UiContext();
 
+// The /shots capture page reaches into the running demo's kit through this handle to switch on
+// the debug overlay and read the layout snapshot. A bare reference: no listener, no work, and
+// nothing reads it unless that page is driving the demo.
+globalThis.__blitDemoUi = ctx;
+
 const ui = {
     /**
      * Update-side housekeeping: latches keyboard shortcuts, tracks touch contacts, and
