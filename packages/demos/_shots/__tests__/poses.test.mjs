@@ -1,0 +1,57 @@
+/**
+ * The pose table drives every capture; a malformed entry would silently produce wrong tiles.
+ */
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { DEMO_ORDER } from '../../plugins/demo-order.js';
+import { COMMITTED_VARIANTS, DEFAULT_POSES, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS } from '../poses.js';
+
+describe('posesFor', () => {
+    it('falls back to the defaults for a demo without an entry', () => {
+        assert.deepEqual(posesFor('no-such-demo'), DEFAULT_POSES);
+    });
+
+    it('returns the per-slug list when one exists', () => {
+        const [slug, poses] = Object.entries(POSES_BY_SLUG)[0];
+
+        assert.equal(posesFor(slug), poses);
+    });
+});
+
+describe('validatePoses', () => {
+    it('accepts the shipped table against the live registry', () => {
+        assert.deepEqual(validatePoses(POSES_BY_SLUG, new Set(DEMO_ORDER)), []);
+    });
+
+    it('rejects an unknown slug, a duplicate id, a bad id, and two input kinds', () => {
+        const problems = validatePoses(
+            {
+                ghost: [{ id: 'start', at: 0 }],
+                basics: [
+                    { id: 'start', at: 0 },
+                    { id: 'start', at: 1 },
+                    { id: 'Bad Id', at: 1 },
+                    { id: 'two', at: 1, keys: ['KeyA'], touch: true },
+                    { id: 'neg', at: -1 },
+                ],
+            },
+            new Set(['basics']),
+        );
+
+        assert.deepEqual(problems, [
+            'ghost: not a demo slug',
+            'basics/start: duplicate pose id',
+            'basics/Bad Id: id must be kebab-case',
+            'basics/two: at most one of keys, pointer, touch',
+            'basics/neg: at must be a number >= 0',
+        ]);
+    });
+});
+
+describe('variants', () => {
+    it('commits display and uidebug only', () => {
+        assert.deepEqual(COMMITTED_VARIANTS, ['display', 'uidebug']);
+        assert.ok(COMMITTED_VARIANTS.every((variant) => VARIANTS.includes(variant)));
+    });
+});

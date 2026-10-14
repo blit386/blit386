@@ -15,8 +15,15 @@
       }
     },
     "packages/demos": {
-      "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs", "postcss.config.js"],
-      "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs"],
+      "entry": [
+        "src/**/*.js",
+        "plugins/*.js",
+        "_partials/*.js",
+        "_shots/*.js",
+        "scripts/**/*.mjs",
+        "postcss.config.js"
+      ],
+      "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "_shots/*.js", "scripts/**/*.mjs"],
       "ignoreExportsUsedInFile": true,
       "ignoreBinaries": ["ffmpeg"]
     },
