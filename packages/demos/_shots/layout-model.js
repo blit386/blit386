@@ -62,6 +62,7 @@ function buildRows(boxes) {
     for (const box of sorted) {
         const row = rows[rows.length - 1];
 
+        // Compare against the row's first box, the anchor, so a row cannot drift down step by step.
         if (row && Math.abs(row[0].y - box.y) <= ROW_TOLERANCE_PX) {
             row.push(box);
         } else {
@@ -69,7 +70,8 @@ function buildRows(boxes) {
         }
     }
 
-    return rows;
+    // Grouping sorts by top edge first, so x order is only correct after each row is finished.
+    return rows.map((row) => row.sort((a, b) => a.x - b.x));
 }
 
 /**

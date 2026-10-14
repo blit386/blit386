@@ -76,6 +76,18 @@ describe('buildRows and nearestInRow', () => {
         );
     });
 
+    it('sorts each row by x even when a fractional top edge comes first', () => {
+        const rows = buildRows([
+            { key: 'p', x: 300, y: 0, w: 50, h: 50 },
+            { key: 'q', x: 220, y: 0.5, w: 50, h: 50 },
+        ]);
+
+        assert.deepEqual(
+            rows.map((row) => row.map((box) => box.key)),
+            [['q', 'p']],
+        );
+    });
+
     it('picks the box whose center is nearest', () => {
         const [row] = buildRows(boxes);
 
@@ -96,6 +108,10 @@ describe('buildRows and nearestInRow', () => {
         it('moves down to the nearest center in the next row', () => {
             assert.equal(moveFocus(rows, 'c', 'down'), 'e');
             assert.equal(moveFocus(rows, 'a', 'down'), 'd');
+        });
+
+        it('moves up to the nearest center in the row above', () => {
+            assert.equal(moveFocus(rows, 'e', 'up'), 'c');
         });
 
         it('stays put on down from the last row and up from the first', () => {
@@ -130,5 +146,15 @@ describe('demoNeighbor', () => {
     it('stops at the ends', () => {
         assert.equal(demoNeighbor(order, 'camera/pan', 1), 'camera/pan');
         assert.equal(demoNeighbor(order, 'basics/start', -1), 'basics/start');
+    });
+
+    it('returns the demo first tile when only one demo is shown', () => {
+        const solo = ['solo/start', 'solo/pan'];
+
+        assert.equal(demoNeighbor(solo, 'solo/pan', -1), 'solo/start');
+    });
+
+    it('returns the current key when it is not in the order', () => {
+        assert.equal(demoNeighbor(order, 'zzz/start', 1), 'zzz/start');
     });
 });
