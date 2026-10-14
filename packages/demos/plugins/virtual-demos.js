@@ -91,12 +91,14 @@ export function renderDemoHtml({
  * @param {string} options.demoListJson - JSON array of every registry entry's slug, navLabel, title.
  * @param {boolean} options.isDevMode - True under `vite dev`.
  * @param {string} options.robotsMeta - Channel noindex tag, or ''.
+ * @param {string} [options.engineVersion] - Engine version stamped on `<body>` for capture mode.
  * @returns {string}
  */
-export function renderShotsHtml({ template, demoListJson, isDevMode, robotsMeta }) {
+export function renderShotsHtml({ template, demoListJson, isDevMode, robotsMeta, engineVersion = '' }) {
     return template
         .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
         .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+        .replaceAll('{{engineVersion}}', engineVersion)
         .replace('{{robotsMeta}}', () => robotsMeta)
         .replace('{{demoList}}', () => demoListJson);
 }
@@ -269,10 +271,15 @@ export function virtualDemos() {
             registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
         ).replaceAll('<', '\\u003c');
 
+        const engineVersion = JSON.parse(
+            readFileSync(resolve(rootDir, '..', 'blit386', 'package.json'), 'utf-8'),
+        ).version;
+
         return renderShotsHtml({
             template,
             demoListJson,
             isDevMode,
+            engineVersion,
             robotsMeta: IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : '',
         });
     }

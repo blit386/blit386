@@ -156,7 +156,8 @@ describe('resolveVintageRedirect', () => {
 
 describe('renderShotsHtml', () => {
     const template =
-        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">{{robotsMeta}}' +
+        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}" data-engine-version="{{engineVersion}}">' +
+        '{{robotsMeta}}' +
         '<script id="demo-list" type="application/json">{{demoList}}</script></body>';
 
     it('stamps the dev demo base and page suffix', () => {
@@ -165,8 +166,10 @@ describe('renderShotsHtml', () => {
             demoListJson: '[{"slug":"basics"}]',
             isDevMode: true,
             robotsMeta: '',
+            engineVersion: '1.9.0',
         });
 
+        assert.match(html, /data-engine-version="1\.9\.0"/);
         assert.match(html, /data-demo-base="\/demos\/"/);
         assert.match(html, /data-page-suffix="\.html"/);
         assert.match(html, /\[{"slug":"basics"}\]/);

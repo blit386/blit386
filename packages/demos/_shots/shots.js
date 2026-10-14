@@ -2,7 +2,7 @@
  * Entry for the /shots gallery.
  *
  * View mode (every build): fetch public/shots/manifest.json and render it. Capture mode (dev
- * server only, Task 9): add the capture panel and the iframe driver on top. Everything keyed
+ * server only): add the capture panel and the iframe driver on top. Everything keyed
  * goes through keys.js, so one listener here dispatches to the gallery or the lightbox.
  */
 
@@ -232,5 +232,16 @@ if (!failed) {
 }
 
 galleryRoot.focus();
+
+if (import.meta.env.DEV) {
+    const { startCaptureMode } = await import('./capture-mode.js');
+
+    startCaptureMode({ manifest, demos, demoBase, pageSuffix, gallery, liveImages, liveImageKey, setStatus }).catch(
+        (error) => {
+            console.error(error);
+            setStatus(`capture mode failed: ${error?.message ?? error}`);
+        },
+    );
+}
 
 export { demoUrl, gallery, imageUrl, lightbox, liveImageKey, liveImages, setStatus };
