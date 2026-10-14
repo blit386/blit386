@@ -89,6 +89,11 @@
     // `scriptFile` is a root-absolute `/src/<slug>` path so Vite can resolve this import
     // from the HTML proxy module in dev (relative `../src/...` fails there).
     if (window.__blit386IsEmbedded) {
+        // The /shots capture page adds &capture so it can drive the engine from outside.
+        if (new URLSearchParams(location.search).has('capture')) {
+            await import('/_partials/capture-expose.js');
+        }
+
         await import('{{scriptFile}}.js');
     }
 </script>

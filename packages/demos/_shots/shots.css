@@ -1,0 +1,219 @@
+/*
+ * /shots gallery. Builds on layout.css (black page, DepartureMono) and keeps every image at
+ * integer scale: tiles are 1x, the lightbox is 1x/2x/4x, always image-rendering: pixelated.
+ */
+
+:root {
+    --shots-gap: 12px;
+    --shots-panel: #141414;
+    --shots-border: #333;
+    --shots-text: #ddd;
+    --shots-dim: #888;
+    --shots-warn: #f5c518;
+    --shots-bad: #ff5c5c;
+}
+
+body {
+    color: var(--shots-text);
+    font-family: 'DepartureMono', ui-monospace, monospace;
+    font-size: 13px;
+    padding: 0 var(--shots-gap) var(--shots-gap);
+}
+
+#shots-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--shots-gap);
+    padding: var(--shots-gap) 0;
+
+    & h1 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    & #shots-status {
+        color: var(--shots-dim);
+        flex: 1;
+        margin: 0;
+    }
+
+    & input,
+    & button {
+        background: var(--shots-panel);
+        border: 1px solid var(--shots-border);
+        color: var(--shots-text);
+        font: inherit;
+        padding: 4px 8px;
+    }
+}
+
+#shots-capture {
+    border: 1px solid var(--shots-border);
+    margin-bottom: var(--shots-gap);
+    padding: var(--shots-gap);
+
+    & .shots-demos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        max-height: 160px;
+        overflow-y: auto;
+    }
+
+    & .shots-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    & button {
+        background: var(--shots-panel);
+        border: 1px solid var(--shots-border);
+        color: var(--shots-text);
+        font: inherit;
+        padding: 4px 10px;
+    }
+}
+
+#shots-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--shots-gap);
+    outline: none;
+}
+
+.shots-tile {
+    background: var(--shots-panel);
+    border: 1px solid var(--shots-border);
+    padding: 4px;
+    position: relative;
+
+    & img,
+    & canvas {
+        display: block;
+        image-rendering: pixelated;
+    }
+
+    & .shots-caption {
+        color: var(--shots-dim);
+        display: flex;
+        gap: 8px;
+        padding-top: 4px;
+    }
+
+    & .shots-badge {
+        background: var(--shots-warn);
+        color: black;
+        padding: 0 4px;
+    }
+
+    & .shots-badge-error {
+        background: var(--shots-bad);
+    }
+
+    & .shots-stack-count {
+        background: var(--shots-border);
+        padding: 0 4px;
+        position: absolute;
+        right: 4px;
+        top: 4px;
+    }
+
+    & .shots-error {
+        color: var(--shots-bad);
+        padding: 8px;
+    }
+
+    &[data-focused='true'] {
+        border-color: var(--color-accent);
+    }
+
+    &[data-selected='true'] {
+        outline: 2px solid var(--color-accent);
+    }
+
+    &[data-flagged='true'] .shots-caption::before {
+        color: var(--shots-warn);
+        content: 'x';
+    }
+}
+
+#shots-info {
+    background: var(--shots-panel);
+    border: 1px solid var(--shots-border);
+    bottom: var(--shots-gap);
+    max-width: 360px;
+    padding: var(--shots-gap);
+    position: fixed;
+    right: var(--shots-gap);
+    white-space: pre-wrap;
+}
+
+#shots-lightbox,
+#shots-help-overlay {
+    background: rgb(0 0 0 / 92%);
+    inset: 0;
+    overflow: auto;
+    position: fixed;
+    z-index: 10;
+}
+
+#shots-lightbox {
+    & .shots-stage {
+        display: grid;
+        min-height: 100%;
+        place-items: center;
+        position: relative;
+    }
+
+    & img {
+        image-rendering: pixelated;
+        display: block;
+    }
+
+    & .shots-grid {
+        background-image:
+            linear-gradient(to right, rgb(255 255 255 / 15%) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 255 255 / 15%) 1px, transparent 1px);
+        inset: 0;
+        pointer-events: none;
+        position: absolute;
+    }
+
+    & .shots-lightbox-caption {
+        bottom: var(--shots-gap);
+        color: var(--shots-dim);
+        left: var(--shots-gap);
+        position: fixed;
+    }
+}
+
+#shots-help-overlay {
+    padding: 32px;
+
+    & table {
+        border-collapse: collapse;
+    }
+
+    & td {
+        padding: 2px 16px 2px 0;
+        vertical-align: top;
+    }
+
+    & kbd {
+        background: var(--shots-panel);
+        border: 1px solid var(--shots-border);
+        padding: 0 4px;
+    }
+}
+
+#shots-frame {
+    border: 0;
+    height: 720px;
+    left: -10000px;
+    position: fixed;
+    top: 0;
+    width: 960px;
+}

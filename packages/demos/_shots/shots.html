@@ -1,0 +1,47 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+
+    <title>BLIT386 Demo Shots</title>
+    <meta name="robots" content="noindex"/>
+    {{robotsMeta}}
+
+    <link rel="stylesheet" href="../styles/layout.css"/>
+    <link rel="stylesheet" href="../_shots/shots.css"/>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml"/>
+</head>
+
+<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">
+
+<script id="demo-list" type="application/json">{{demoList}}</script>
+
+<header id="shots-header">
+    <h1>Demo shots</h1>
+    <p id="shots-status" aria-live="polite"></p>
+    <input id="shots-filter" type="search" placeholder="Filter demos (/)" autocomplete="off"/>
+    <button id="shots-help" type="button" title="Keyboard shortcuts (?)">?</button>
+</header>
+
+<section id="shots-capture" hidden aria-label="Capture controls"></section>
+
+<main id="shots-gallery" tabindex="0" aria-label="Captured frames"></main>
+
+<aside id="shots-info" hidden aria-label="Tile details"></aside>
+
+<div id="shots-lightbox" hidden role="dialog" aria-modal="true" aria-label="Zoomed capture"></div>
+
+<div id="shots-help-overlay" hidden role="dialog" aria-label="Keyboard shortcuts"></div>
+
+<iframe id="shots-frame" title="Capture frame" hidden></iframe>
+
+<script type="module">
+    await import('/_shots/shots.js');
+</script>
+
+</body>
+
+</html>
