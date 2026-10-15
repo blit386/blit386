@@ -186,7 +186,9 @@ const KEYBOARD_ROWS = [
             { code: 'Comma', label: ',' },
             { code: 'Period', label: '.' },
             { code: 'Slash', label: '/' },
-            { code: 'ShiftRight', label: 'Shift', w: 14 },
+            // 32 px fits the 30 px "Shift" label; the up arrow is pinned at x=268, so a
+            // cap that starts at the flowing x (~234) still clears it.
+            { code: 'ShiftRight', label: 'Shift', w: 32 },
             { code: 'ArrowUp', label: '^', x: 268 },
         ],
     },

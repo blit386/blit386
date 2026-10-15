@@ -70,7 +70,8 @@ describe('slider', () => {
             isPointerActive: (slot) => slot === 0,
             isPressed: () => true,
             isDown: () => true,
-            pointerPos: () => ({ x: 59, y: 14 }),
+            // Bar sits under the label row (ROW_H = 16), so absolute y is margin(4) + 16.
+            pointerPos: () => ({ x: 59, y: 20 }),
         });
 
         const ctx = createReadyContext();

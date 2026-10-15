@@ -710,10 +710,11 @@ class Demo {
 
     /**
      * The "how you would load a real PNG" cheat sheet, as a bordered kit panel anchored
-     * to the bottom-left corner of the screen.
+     * to the bottom-left corner of the screen. Unpinned so the panel grows upward from
+     * the margin as its rows get taller, instead of spilling off the bottom edge.
      */
     renderCodeSnippet() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { y: DISPLAY_H - 62 });
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Production PNG load:');
         ui.label('const indexed = await SpriteSheet', { color: 'info' });
         ui.label("  .loadIndexed('/sprites/test.png', palette, 10);", { color: 'info' });

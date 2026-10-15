@@ -58,7 +58,8 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
-const DISPLAY_H = 240;
+// Tall enough for the status panel after ROW_H grew back to the font cell (16 px).
+const DISPLAY_H = 288;
 
 const PLAYER = BT.PLAYER_ONE;
 
@@ -80,7 +81,7 @@ const C_AIM = 10; // Right-stick crosshair color.
 const ARENA_X = 8;
 const ARENA_Y = 108;
 const ARENA_W = 200;
-const ARENA_H = 124;
+const ARENA_H = 168;
 
 const POD_BASE_SIZE = 10;
 const POD_MAX_EXTRA_SIZE = 10;
@@ -509,9 +510,11 @@ class Demo {
     /**
      * The "no gamepad yet" prompt, shown inside the empty arena. Same wording as the
      * old hand-drawn warning, restyled as warm kit labels in a borderless group.
+     * Pinned near the top of the arena so the idle pod and aim crosshair (arena center)
+     * do not sit on the text.
      */
     renderEmptyState() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: ARENA_X + 12, y: ARENA_Y + 42 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: ARENA_X + 12, y: ARENA_Y + 8 });
         ui.label('Connect a gamepad and press', { color: 'warm' });
         ui.label('any button to wake it.', { color: 'warm' });
         ui.end();

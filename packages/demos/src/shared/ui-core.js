@@ -38,7 +38,7 @@ const FONT_W = 6;
 
 // Standard row height: one font cell plus two pixels of breathing room. Buttons are a
 // little taller so they read as pressable and give fingers a bigger target.
-const ROW_H = 10;
+const ROW_H = 16;
 const BUTTON_H = 18;
 
 // Default inner padding between a panel's border and its content, and default margin
