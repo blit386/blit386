@@ -44,6 +44,8 @@ import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSyn
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { gitEnv } from '../packages/website/scripts/git-env.mjs';
+
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** @param {string} path @returns {string | null} File contents, or `null` when the file does not exist. */
@@ -319,8 +321,11 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
  * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
  */
 export function isPathIgnoredByGit(repoRoot, relPath) {
+    // gitEnv(): under `.husky/pre-push`, GIT_DIR outranks cwd and would check the pushing
+    // worktree instead of the throwaway fixture (or the real root when called from main()).
     const result = spawnSync('git', ['check-ignore', '--no-index', '--quiet', '--', relPath], {
         cwd: repoRoot,
+        env: gitEnv(),
     });
 
     // 0 = ignored, 1 = not ignored, anything else (or a spawn failure) = git could not answer.
