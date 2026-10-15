@@ -99,7 +99,7 @@ pnpm-debug.log*
 # Temporary folders
 tmp/
 temp/
-scripts/.tmp-agent-config-mcp-/
+scripts/.tmp-agent-config-mcp-*/
 
 # Cross-process build locks (scripts/build-lock.mjs, used by ensure-engine-built.mjs and
 # ensure-kit-built.mjs) - created and removed at runtime; a crashed process can leave one behind
