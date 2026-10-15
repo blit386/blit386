@@ -158,7 +158,8 @@ bootstrap(Game);
   interpolation for smooth motion between ticks, bitmap fonts, a camera, and one-call PNG frame capture.
 - Jump to any moment: `BT.renderAt(3.2)` replays your game on its tick clock and draws exactly the frame at 3.2 seconds,
   with no `requestAnimationFrame` - the same pixels live play shows on that tick, ready for a screenshot, a test, or a
-  timeline scrubber.
+  timeline scrubber. Poll `BT.isReady` first when driving the page from outside - it is `true` only once init finished
+  and the game loop exists.
 - Sound that plays, not just routes: Fire off sound effects and crossfading music through a three-bus mixer (sfx, music,
   main) with volume, mute, and fades, synthesize blips and booms from scratch or reach for a built-in preset, and read
   live levels off the overlay's audio meters - all while tracking the browser's autoplay-gesture unlock honestly instead

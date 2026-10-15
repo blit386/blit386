@@ -794,6 +794,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isReady": {
+      "kind": "getter",
+      "since": "1.8.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.isReducedMotionPreferred": {
       "kind": "getter",
       "since": "1.7.0",
@@ -1988,6 +1995,7 @@
       "BT.drawingBufferSize",
       "BT.init",
       "BT.isDevMode",
+      "BT.isReady",
       "BT.isReducedMotionPreferred",
       "BT.isSplashVisible",
       "BT.outputSize",
