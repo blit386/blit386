@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T19:41:35.572Z",
+  "generatedAt": "2026-10-15T15:36:17.329Z",
   "engineVersion": "1.7.1",
   "entries": [
     {
@@ -603,28 +603,28 @@
       "height": 240
     },
     {
-      "slug": "pointer-paint",
-      "pose": "start",
       "variants": {
         "display": "pointer-paint/start.display.png",
         "uidebug": "pointer-paint/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-paint",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-paint",
-      "pose": "hover-clear",
       "variants": {
         "display": "pointer-paint/hover-clear.display.png",
         "uidebug": "pointer-paint/hover-clear.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-paint",
+      "pose": "hover-clear",
+      "width": 320,
+      "height": 240
     },
     {
       "variants": {
@@ -732,7 +732,7 @@
       "slug": "gamepad-input",
       "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 288
     },
     {
       "variants": {
@@ -744,7 +744,7 @@
       "slug": "gamepad-input",
       "pose": "touch",
       "width": 320,
-      "height": 240
+      "height": 288
     },
     {
       "variants": {
@@ -915,52 +915,52 @@
       "height": 240
     },
     {
+      "slug": "audio-buses",
+      "pose": "start",
       "variants": {
         "display": "audio-buses/start.display.png",
         "uidebug": "audio-buses/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "audio-buses",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 280,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "audio-buses",
+      "pose": "settled",
       "variants": {
         "display": "audio-buses/settled.display.png",
         "uidebug": "audio-buses/settled.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "audio-buses",
-      "pose": "settled",
       "width": 320,
-      "height": 240
+      "height": 280,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "synth-toy",
+      "pose": "start",
       "variants": {
         "display": "synth-toy/start.display.png",
         "uidebug": "synth-toy/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "synth-toy",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "synth-toy",
+      "pose": "playing",
       "variants": {
         "display": "synth-toy/playing.display.png",
         "uidebug": "synth-toy/playing.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "synth-toy",
-      "pose": "playing",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {

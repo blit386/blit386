@@ -45,7 +45,8 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
-const DISPLAY_H = 240;
+// Tall enough for the mixer after ROW_H grew back to the font cell (16 px).
+const DISPLAY_H = 280;
 
 // One entry per bus: which engine bus it controls, the slider label, the keyboard shortcut
 // that toggles its mute, and the letter shown in the checkbox label as a hint.
@@ -167,15 +168,17 @@ class Demo {
     render() {
         BT.clear(this.theme.bg);
 
-        // The full-width title strip along the top edge.
+        // Title on the top bar; the instruction lives inside the mixer so the strip stays
+        // one line and the full sentence is not clipped at the right edge.
         ui.begin(UI_ANCHORS.TOP_BAR);
-        ui.panel('Audio Buses - drag a slider, toggle a Mute, try the Alert');
+        ui.panel('Audio Buses');
         ui.end();
 
         // The mixer panel, pinned just below the title strip. Width and height size
         // themselves to the widest row and the number of rows - no layout math here.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 30 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 26 });
         ui.panel('Mixer');
+        ui.label('drag a slider, toggle a Mute, try the Alert', { color: 'dim' });
 
         for (const row of BUSES) {
             this.renderBusRow(row);
