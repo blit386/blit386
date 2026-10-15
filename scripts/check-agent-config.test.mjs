@@ -589,11 +589,11 @@ describe('check-agent-config', () => {
          * @returns {string} Absolute path to the repository root.
          */
         function makeRepo(rules) {
-            const root = mkdtempSync(join(tmpdir(), 'agent-config-mcp-'));
+            // Workspace-local: Cursor's agent sandbox blocks writing .git under os.tmpdir().
+            const root = mkdtempSync(join(dirname(fileURLToPath(import.meta.url)), '.tmp-agent-config-mcp-'));
             // gitEnv(): husky pre-push exports GIT_DIR; without scrubbing, `git init` hits the real repo.
             const run = (...args) => spawnSync('git', args, { cwd: root, env: gitEnv() });
 
-            // --template=: skip sample hooks; sandboxed agents cannot write them under os.tmpdir().
             run('init', '--quiet', '--template=');
             run('config', 'user.email', 'test@example.com');
             run('config', 'user.name', 'Test');
