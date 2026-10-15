@@ -593,7 +593,8 @@ describe('check-agent-config', () => {
             // gitEnv(): husky pre-push exports GIT_DIR; without scrubbing, `git init` hits the real repo.
             const run = (...args) => spawnSync('git', args, { cwd: root, env: gitEnv() });
 
-            run('init', '--quiet');
+            // --template=: skip sample hooks; sandboxed agents cannot write them under os.tmpdir().
+            run('init', '--quiet', '--template=');
             run('config', 'user.email', 'test@example.com');
             run('config', 'user.name', 'Test');
             writeFileSync(join(root, '.gitignore'), rules);
