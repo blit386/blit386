@@ -28,10 +28,13 @@ One demo per file under `src/`, and that file is the single source of truth - no
 `data-page-suffix` onto `<body>` (`.html` in dev, empty in the build) and `_partials/demo-shell.js` appends it in
 `urlFor()`, so the shell's `history.pushState` URL and its iframe `?embed&source` src are extensionless in production.
 `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets (including `favicon.svg` and the
-committed `social/` OG cards), `_partials/` the shared HTML template and shell scripts, `plugins/` the Vite plugin plus
-the order and vintage-URL registries, the social/SEO head builder (`social-meta.js`) and its shared `html-escape.js`,
-`scripts/` the check, generate, and capture scripts plus the `playwright-session.mjs` helpers the two capture scripts
-share.
+committed `social/` OG cards and the `shots/` captures), `_partials/` the shared HTML template and shell scripts,
+`plugins/` the Vite plugin plus the order and vintage-URL registries, the social/SEO head builder (`social-meta.js`) and
+its shared `html-escape.js`, `scripts/` the check, generate, and capture scripts plus the `playwright-session.mjs`
+helpers the capture scripts share, and `_shots/` the `/shots` capture gallery page: its template, styles, pose table,
+and the in-browser capture engine (`shots.js` is the entry, `capture.js` the engine, `capture-mode.js` the dev-only
+wiring, `review-mode.js` the diff and findings aids). `virtual-demos` serves it at `/shots`, the build emits
+`dist/shots.html`, and it is never a demo.
 
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
 letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename - it comes
@@ -49,6 +52,7 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 4. Run `pnpm run check:demo-registry` so disk, order, vintage, and nav-hidden sets stay consistent.
 5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL. Enforced, not
    merely expected: `check:demo-registry` fails on a missing, duplicated, or dangling README entry, naming the slug.
+6. Run `pnpm run capture:shots -- --demos <slug>` and commit the PNGs so the gallery and any future index page show it.
 
 The demos listed in `FIRST_GAME_EXAMPLES` (`packages/website/scripts/sync-kit-pages.mjs`) are also published, full
 source and `@description`, as example pages on blit386.dev for agents building a first game. Editing, renaming, or
@@ -179,6 +183,11 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   what makes keyboard bindings edge-safe - never read `BT.isKeyPressed` in `render()` yourself
 - `ui.begin(anchor)` / widgets / `ui.end()` in `render()`. Widget identity is the label; pass `{ id }` for duplicates.
   The kit allocates nothing per frame, so calling it at 60 FPS is fine
+- `ui-core.js` carries a `debug` overlay (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by
+  default so the allocates-nothing rule holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`,
+  `margin`, `row-gap`). `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page only. The page takes
+  `snapshot()` before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do
+  not "fix" that order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use literal slot numbers (240 + offset)
   with a comment, or dedicated scene slots
 - Every demo must be usable on touch: key-triggered actions get a `ui.button` with a `{ key }` binding, directional
@@ -240,7 +249,9 @@ convention. Full detail: `.claude/rules/file-structure.md`.
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-demos run <script>` from the
 repo root); `package.json` is the list and `pnpm run preflight` is the gating set. Test, lint, and git-diff shell
-commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep.
+commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep. `pnpm run test`
+also runs `_shots/__tests__/*.test.mjs`. `pnpm run capture:shots` (beside `capture:og`) writes the committed /shots PNGs
+and manifest; the dev server must be running.
 
 Biome owns JS/JSON/CSS, Prettier owns Markdown/YAML: 4-space indent (2 for JSON/YAML/Markdown), 120 columns, single
 quotes, semicolons, trailing commas. Markdown tables are compact by design via the shared root

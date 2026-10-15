@@ -181,6 +181,7 @@
     "tsup",
     "twoslash",
     "typecheck",
+    "uidebug",
     "Uints",
     "unflushed",
     "ungated",

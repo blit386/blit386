@@ -204,6 +204,15 @@ The kit is immediate mode: a demo declares its widgets every frame inside `rende
 tap, or its bound key on the spot. Because every action is reachable by tap as well as by key, the demos are usable on a
 phone without a keyboard.
 
+## Demo shots
+
+`/shots` (on `next.demos.blit386.dev`) shows pixel-perfect captures of every demo at deterministic moments, with the
+shared UI kit's layout lint. Captures are generated on the dev server and committed under `public/shots/` with
+`pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`).
+
+In dev, the page itself has capture controls; in a build it is a read-only gallery. Keyboard: `?` lists everything.
+Poses live in `_shots/poses.js`, lint rules in `src/shared/ui-lint.js`. The `/demos-shots` skill walks the workflow.
+
 ## Browser and Renderer
 
 The BLIT386 splash plays on [demos.blit386.dev](https://demos.blit386.dev) and in any local production build

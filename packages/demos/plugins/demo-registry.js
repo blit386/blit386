@@ -30,6 +30,12 @@ export const HEADER_SCAN_BYTES = 2000;
 // Exported so `scripts/check-demo-registry.mjs` can flag stale entries.
 export const NAV_HIDDEN_SLUGS = new Set();
 
+// The one non-demo page the site serves at a slug-shaped path: the /shots capture gallery
+// (served by plugins/virtual-demos.js). A demo file with this name would build to the same
+// dist/<slug>.html, so scripts/check-demo-registry.mjs refuses it.
+export const SHOTS_SLUG = 'shots';
+export const RESERVED_SLUGS = new Set([SHOTS_SLUG]);
+
 /**
  * Build the list of demos by scanning src/*.js for number-free kebab-case files.
  * Order comes from `DEMO_ORDER` (not filenames). Each entry's title defaults to

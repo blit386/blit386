@@ -229,3 +229,107 @@ describe('UiContext layout anchor math', () => {
         assert.equal(captured.y, 7);
     });
 });
+
+describe('UiContext snapshot', () => {
+    it('records nothing and allocates nothing while recording is off', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        const { frameGroups, groupRows, groupWidgets } = ctx;
+
+        for (let frame = 0; frame < 2; frame++) {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            ctx.addRow(40, 10);
+            ctx.addHit('a', 5, 0, 40, 10, 'button');
+            ctx.end();
+            ctx.tick();
+        }
+
+        // Same array objects (never reassigned) and still empty.
+        assert.equal(ctx.frameGroups, frameGroups);
+        assert.equal(ctx.groupRows, groupRows);
+        assert.equal(ctx.groupWidgets, groupWidgets);
+        assert.equal(frameGroups.length + groupRows.length + groupWidgets.length, 0);
+        assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [] });
+    });
+
+    it('captures groups, rows, and widgets in absolute coordinates', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        ctx.recording = true;
+        ctx.begin(UI_ANCHORS.BOTTOM_RIGHT);
+        const rowY = ctx.addRow(40, 10);
+        ctx.addHit('Play', ctx.pad, rowY, 40, 10, 'button');
+        ctx.addRow(0, 4);
+        ctx.end();
+
+        const snap = ctx.snapshot();
+        const [group] = snap.groups;
+
+        assert.equal(snap.groups.length, 1);
+        assert.equal(group.anchor, UI_ANCHORS.BOTTOM_RIGHT);
+        assert.equal(group.pinnedX, false);
+        assert.equal(group.margin, 4);
+        assert.equal(group.panel, false);
+        // Width = content + 2 * pad (5); height = cursor (pad - 5 + 10 + 4).
+        assert.deepEqual(group.rect, { x: 320 - 4 - 50, y: 180 - 4 - 14, w: 50, h: 14 });
+        assert.equal(group.rows.length, 2);
+        assert.equal(group.rows[1].w, 0);
+        assert.deepEqual(group.widgets, [
+            { id: 'Play', kind: 'button', rect: { x: group.rect.x + 5, y: group.rect.y + rowY, w: 40, h: 10 } },
+        ]);
+    });
+
+    it('starts a fresh group list on the first begin() after a tick', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        ctx.recording = true;
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        ctx.end();
+        ctx.tick();
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        ctx.end();
+
+        assert.equal(ctx.snapshot().groups.length, 1);
+    });
+
+    it('returns a copy the caller cannot use to mutate kit state', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        ctx.recording = true;
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        ctx.end();
+
+        const first = ctx.snapshot();
+        first.groups[0].rect.x = 999;
+
+        assert.notEqual(ctx.snapshot().groups[0].rect.x, 999);
+    });
+
+    it('draws overlay strokes only when debug is on', (t) => {
+        const strokes = [];
+        stubBt(t, { drawRect: (rect) => strokes.push(rect.width) });
+
+        const ctx = createReadyContext();
+
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        ctx.addRow(40, 10);
+        ctx.end();
+        const quiet = strokes.length;
+
+        ctx.debug = true;
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        ctx.addRow(40, 10);
+        ctx.addHit('a', 5, 0, 40, 10, 'button');
+        ctx.end();
+
+        assert.ok(strokes.length > quiet);
+    });
+});

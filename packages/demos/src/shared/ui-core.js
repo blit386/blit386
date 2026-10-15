@@ -230,6 +230,23 @@ class UiContext {
 
     warnedPoolGrowth = false;
 
+    // Capture-page hooks (see _shots/capture.js). Both default off, so the steady-state
+    // "allocates nothing" rule holds for every demo: `debug` draws group, pad, and widget
+    // boxes over the UI; `recording` collects them so snapshot() can hand the layout to the
+    // lint rules as plain data.
+    debug = false;
+
+    recording = false;
+
+    /** @type {Array<object>} Groups recorded this frame (absolute coordinates). */
+    frameGroups = [];
+
+    /** @type {Array<{ x: number, y: number, w: number, h: number }>} Rows of the open group. */
+    groupRows = [];
+
+    /** @type {Array<{ id: string, kind: string, x: number, y: number, w: number, h: number }>} */
+    groupWidgets = [];
+
     constructor() {
         // Fill every pool up front so steady-state frames allocate nothing.
         for (let i = 0; i < INITIAL_COMMAND_POOL; i++) {
@@ -376,6 +393,7 @@ class UiContext {
         // that stopped being declared drops out of hitRects instead of leaving a dead zone.
         if (!this.renderedSinceTick) {
             this.pruneHitRects();
+            this.frameGroups.length = 0;
         }
 
         this.refreshPointerSnapshot();
@@ -396,6 +414,8 @@ class UiContext {
         this.hasPanel = false;
         this.commandCount = 0;
         this.pendingHitCount = 0;
+        this.groupRows.length = 0;
+        this.groupWidgets.length = 0;
     }
 
     /**
@@ -542,6 +562,71 @@ class UiContext {
 
             this.frameHitIds.add(pending.id);
         }
+
+        if (this.recording) {
+            this.frameGroups.push({
+                anchor: this.anchor,
+                pinnedX: this.groupOptX !== null,
+                pinnedY: this.groupOptY !== null,
+                margin: this.margin,
+                pad: this.pad,
+                panel: this.hasPanel,
+                rect: { x: originX, y: originY, w: groupW, h: groupH },
+                rows: this.groupRows.map((row) => ({ x: originX + row.x, y: originY + row.y, w: row.w, h: row.h })),
+                widgets: this.groupWidgets.map((hit) => ({
+                    id: hit.id,
+                    kind: hit.kind,
+                    rect: { x: originX + hit.x, y: originY + hit.y, w: hit.w, h: hit.h },
+                })),
+            });
+        }
+
+        if (this.debug) {
+            this.drawDebugOverlay(originX, originY, groupW, groupH);
+        }
+    }
+
+    /**
+     * Draws the layout boxes the capture page's debug variant shows: the group in the
+     * accent color, the pad inset in the dim color, and every widget hit rectangle in the warm
+     * color. Drawn after the queued commands so they sit on top of the panel.
+     *
+     * @param {number} originX - Group left edge.
+     * @param {number} originY - Group top edge.
+     * @param {number} groupW - Group width.
+     * @param {number} groupH - Group height.
+     */
+    drawDebugOverlay(originX, originY, groupW, groupH) {
+        this.flushRect.set(originX, originY, groupW, groupH);
+        BT.drawRect(this.flushRect, T.accent);
+
+        // Clamp so a group narrower than two pads never gets a negative-size box.
+        this.flushRect.set(
+            originX + this.pad,
+            originY + this.pad,
+            Math.max(0, groupW - 2 * this.pad),
+            Math.max(0, groupH - 2 * this.pad),
+        );
+        BT.drawRect(this.flushRect, T.dim);
+
+        for (let i = 0; i < this.pendingHitCount; i++) {
+            const pending = this.pendingHits[i];
+
+            this.flushRect.set(originX + pending.x, originY + pending.y, pending.w, pending.h);
+            BT.drawRect(this.flushRect, T.warm);
+        }
+    }
+
+    /**
+     * The layout of the last rendered frame as plain data, for the capture page's lint rules.
+     * Empty until `recording` is switched on. Returns a fresh copy every call.
+     *
+     * @returns {{ display: { w: number, h: number }, groups: Array<object> }}
+     */
+    snapshot() {
+        const display = BT.displaySize;
+
+        return { display: { w: display.x, h: display.y }, groups: structuredClone(this.frameGroups) };
     }
 
     /**
@@ -577,6 +662,10 @@ class UiContext {
 
         this.cursorY += advance;
         this.maxGroupW = Math.max(this.maxGroupW, contentW + 2 * this.pad);
+
+        if (this.recording) {
+            this.groupRows.push({ x: this.pad, y: rowY, w: contentW, h: advance });
+        }
 
         return rowY;
     }
@@ -622,8 +711,9 @@ class UiContext {
      * @param {number} y - Y relative to the group origin.
      * @param {number} w - Width in pixels.
      * @param {number} h - Height in pixels.
+     * @param {string} [kind] - Widget kind for the layout snapshot ('button', 'checkbox', 'slider').
      */
-    addHit(id, x, y, w, h) {
+    addHit(id, x, y, w, h, kind = 'widget') {
         if (this.pendingHitCount === this.pendingHits.length) {
             this.pendingHits.push(createPendingHit());
         }
@@ -635,6 +725,10 @@ class UiContext {
         pending.y = y;
         pending.w = w;
         pending.h = h;
+
+        if (this.recording) {
+            this.groupWidgets.push({ id, kind, x, y, w, h });
+        }
     }
 
     /**

@@ -7,7 +7,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { renderDemoHtml, resolveVintageRedirect } from '../virtual-demos.js';
+import { renderDemoHtml, renderShotsHtml, resolveVintageRedirect, SHOTS_SLUG } from '../virtual-demos.js';
 
 const LAYOUT_TEMPLATE = [
     '<!doctype html>',
@@ -151,5 +151,42 @@ describe('resolveVintageRedirect', () => {
     it('returns null when the requested slug is not a vintage key at all', () => {
         const vintageUrls = { '001-palette-cycling': 'palette-cycling' };
         assert.equal(resolveVintageRedirect('basics', vintageUrls, registry), null);
+    });
+});
+
+describe('renderShotsHtml', () => {
+    const template =
+        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}" data-engine-version="{{engineVersion}}">' +
+        '<script id="demo-list" type="application/json">{{demoList}}</script></body>';
+
+    it('stamps the dev demo base and page suffix', () => {
+        const html = renderShotsHtml({
+            template,
+            demoListJson: '[{"slug":"basics"}]',
+            isDevMode: true,
+            engineVersion: '1.9.0',
+        });
+
+        assert.match(html, /data-engine-version="1\.9\.0"/);
+        assert.match(html, /data-demo-base="\/demos\/"/);
+        assert.match(html, /data-page-suffix="\.html"/);
+        assert.match(html, /\[{"slug":"basics"}\]/);
+    });
+
+    it('stamps the flattened build base and an empty suffix', () => {
+        const html = renderShotsHtml({ template, demoListJson: '[]', isDevMode: false });
+
+        assert.match(html, /data-demo-base="\.\/"/);
+        assert.match(html, /data-page-suffix=""/);
+    });
+
+    it('does not interpret replacement patterns inside the demo list', () => {
+        const html = renderShotsHtml({ template, demoListJson: '["$&"]', isDevMode: true });
+
+        assert.match(html, /\["\$&"\]/);
+    });
+
+    it('reserves the shots slug', () => {
+        assert.equal(SHOTS_SLUG, 'shots');
     });
 });

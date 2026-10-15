@@ -11,7 +11,9 @@ import {
     findDescriptionFailures,
     findOgScaleFailure,
     findReadmeListFailures,
+    findReservedSlugFailures,
     findVintageUrlFailures,
+    RESERVED_SLUGS,
 } from '../check-demo-registry.mjs';
 
 describe('findDescriptionFailures', () => {
@@ -267,5 +269,21 @@ describe('findReadmeListFailures', () => {
         assert.ok(failures.some((message) => /src\/sprites\.js is missing/.test(message)));
         assert.ok(failures.some((message) => /ghost-demo" but src\/ghost-demo\.js is missing/.test(message)));
         assert.ok(failures.some((message) => /"basics" 2 times/.test(message)));
+    });
+});
+
+describe('findReservedSlugFailures', () => {
+    it('passes when no demo uses a reserved slug', () => {
+        assert.deepEqual(findReservedSlugFailures(['basics', 'sprites'], RESERVED_SLUGS), []);
+    });
+
+    it('names the colliding file when a demo takes a reserved slug', () => {
+        assert.deepEqual(findReservedSlugFailures(['basics', 'shots'], new Set(['shots'])), [
+            'src/shots.js collides with the reserved page path /shots - rename the demo',
+        ]);
+    });
+
+    it('reserves exactly the shots page path', () => {
+        assert.deepEqual([...RESERVED_SLUGS], ['shots']);
     });
 });

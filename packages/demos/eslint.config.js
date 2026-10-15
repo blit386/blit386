@@ -121,12 +121,12 @@ export default [
         },
     },
 
-    // Browser-context client scripts served directly to the page (_partials/*.js). Not demo source
+    // Browser-context client scripts served directly to the page (_partials/*.js, _shots/*.js). Not demo source
     // (no beginner-comment requirement - see CLAUDE.md), but not Node either, so it needs DOM globals.
     // Inherits the Node/tooling block above except where overridden: shell chrome indexes the
     // build-time demo list and DOM nodes (same false-positive class as src/** demos).
     {
-        files: ['_partials/*.js'],
+        files: ['_partials/*.js', '_shots/*.js'],
         languageOptions: {
             globals: {
                 ...globals.browser,

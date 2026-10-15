@@ -11,6 +11,7 @@
  *   elsewhere (would steal that demo's public path).
  * - Every VINTAGE_URLS target is either a live slug or listed in RETIRED_SLUGS.
  * - Every NAV_HIDDEN_SLUGS / RETIRED_SLUGS entry is still meaningful (no stale rows).
+ * - No demo may use a reserved page path (RESERVED_SLUGS: the /shots gallery).
  * - Every demo carries a one-line `@description` header tag of a length that survives every
  *   social-card consumer intact (see DESCRIPTION_MIN_CHARS / DESCRIPTION_MAX_CHARS).
  * - Every live slug appears exactly once in the `## Demos` list in README.md, and every
@@ -21,9 +22,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import { buildRegistry, HEADER_SCAN_BYTES, NAV_HIDDEN_SLUGS } from '../plugins/demo-registry.js';
+import { buildRegistry, HEADER_SCAN_BYTES, NAV_HIDDEN_SLUGS, RESERVED_SLUGS } from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
 import { OG_IMAGE_DIR, OG_SCALE_MODES } from '../plugins/social-meta.js';
+
+export { RESERVED_SLUGS };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Mirrors plugins/demo-registry.js - kept local so this script can list files without
@@ -276,6 +279,19 @@ export function findReadmeListFailures(diskSlugs, readmeSlugs) {
 }
 
 /**
+ * Flag demo slugs that collide with a reserved, non-demo page path. Exported so it can be
+ * unit-tested without touching disk.
+ * @param {string[]} diskSlugs - Slugs found in `src/`.
+ * @param {Set<string>} reservedSlugs - Reserved page paths.
+ * @returns {string[]} Failure messages, empty when clean.
+ */
+export function findReservedSlugFailures(diskSlugs, reservedSlugs) {
+    return diskSlugs
+        .filter((slug) => reservedSlugs.has(slug))
+        .map((slug) => `src/${slug}.js collides with the reserved page path /${slug} - rename the demo`);
+}
+
+/**
  * Validate that no live slug collides with a vintage URL key mapping elsewhere, which would
  * steal that demo's public path.
  * @param {string[]} diskSlugs - Slugs found on disk.
@@ -373,6 +389,7 @@ function main() {
         ...findOrderBijectionFailures(diskSlugs, diskSlugSet),
         ...findReadmeListFailures(diskSlugs, readmeSlugs),
         ...findVintageKeyCollisions(diskSlugs, VINTAGE_URLS),
+        ...findReservedSlugFailures(diskSlugs, RESERVED_SLUGS),
         ...findVintageUrlFailures(VINTAGE_URLS, diskSlugSet, RETIRED_SLUGS),
         ...[...NAV_HIDDEN_SLUGS]
             .filter((slug) => !diskSlugSet.has(slug))

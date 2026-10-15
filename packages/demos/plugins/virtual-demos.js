@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
-import { buildRegistry } from './demo-registry.js';
+import { buildRegistry, SHOTS_SLUG } from './demo-registry.js';
 import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { escapeHtml } from './html-escape.js';
@@ -16,6 +16,12 @@ const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
 
 const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
+
+// The one non-demo page this plugin serves: the capture gallery at /shots (dev: /shots and
+// /shots.html; build: dist/shots.html, which Pages serves at /shots). check-demo-registry.mjs
+// refuses a demo file with this name. The slug itself is defined in demo-registry.js.
+export { SHOTS_SLUG };
+const SHOTS_TEMPLATE_PATH = ['_shots', 'shots.html'];
 
 // id="channel-banner" lets layout.css hide this in embed mode (styles/layout.css,
 // html[data-embed='true']) - the shell iframe loads this same page at ?embed, so without
@@ -76,6 +82,26 @@ export function renderDemoHtml({
 }
 
 /**
+ * Substitute the shots gallery's values into its template. Pure and exported for unit tests.
+ *
+ * `demoBase` is where demo pages live relative to the gallery: `/demos/` under the dev
+ * middleware, `./` once the build flattens everything to the dist root.
+ * @param {object} options
+ * @param {string} options.template - Raw contents of `_shots/shots.html`.
+ * @param {string} options.demoListJson - JSON array of every registry entry's slug, navLabel, title.
+ * @param {boolean} options.isDevMode - True under `vite dev`.
+ * @param {string} [options.engineVersion] - Engine version stamped on `<body>` for capture mode.
+ * @returns {string}
+ */
+export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersion = '' }) {
+    return template
+        .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
+        .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+        .replaceAll('{{engineVersion}}', engineVersion)
+        .replace('{{demoList}}', () => demoListJson);
+}
+
+/**
  * Resolve a requested `/demos/<slug>.html` dev URL against VINTAGE_URLS: if the slug is a
  * vintage key whose target demo is still live in the registry, return that demo's canonical
  * urlPath for a 301 redirect. Pure and exported so it can be unit-tested without a real dev
@@ -117,6 +143,7 @@ export function virtualDemos() {
     let partialsDir = resolve(rootDir, '_partials');
     let demosDir = resolve(rootDir, 'demos');
     let srcDir = resolve(rootDir, 'src');
+    let shotsDir = resolve(rootDir, '_shots');
     let registry = [];
     let layoutTemplate = '';
     let isDevMode = false;
@@ -231,6 +258,24 @@ export function virtualDemos() {
         });
     }
 
+    /**
+     * Render the /shots gallery page. Every registry entry is listed, nav-hidden ones included:
+     * the gallery exists to look at all of them.
+     * @returns {string}
+     */
+    function renderShots() {
+        const template = readFileSync(resolve(rootDir, ...SHOTS_TEMPLATE_PATH), 'utf-8');
+        const demoListJson = JSON.stringify(
+            registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
+        ).replaceAll('<', '\\u003c');
+
+        const engineVersion = JSON.parse(
+            readFileSync(resolve(rootDir, '..', 'blit386', 'package.json'), 'utf-8'),
+        ).version;
+
+        return renderShotsHtml({ template, demoListJson, isDevMode, engineVersion });
+    }
+
     return {
         name: 'virtual-demos',
         enforce: 'pre',
@@ -240,11 +285,12 @@ export function virtualDemos() {
             partialsDir = resolve(rootDir, '_partials');
             demosDir = resolve(rootDir, 'demos');
             srcDir = resolve(rootDir, 'src');
+            shotsDir = resolve(rootDir, '_shots');
 
             reloadTemplate();
             reload();
 
-            const input = {};
+            const input = { [SHOTS_SLUG]: resolve(demosDir, `${SHOTS_SLUG}.html`) };
             for (const entry of registry) {
                 const key = entry.slug.replace(/-/g, '_');
                 // `key` is derived from a lowercase slug and can contain only letters, digits, and underscores.
@@ -264,6 +310,7 @@ export function virtualDemos() {
             partialsDir = resolve(rootDir, '_partials');
             demosDir = resolve(rootDir, 'demos');
             srcDir = resolve(rootDir, 'src');
+            shotsDir = resolve(rootDir, '_shots');
             isDevMode = config.command === 'serve';
         },
 
@@ -272,7 +319,7 @@ export function virtualDemos() {
                 return null;
             }
 
-            if (findEntryByAbsPath(source)) {
+            if (findEntryByAbsPath(source) || source === resolve(demosDir, `${SHOTS_SLUG}.html`)) {
                 return source;
             }
 
@@ -280,6 +327,10 @@ export function virtualDemos() {
         },
 
         async load(id) {
+            if (id === resolve(demosDir, `${SHOTS_SLUG}.html`)) {
+                return renderShots();
+            }
+
             const entry = findEntryByAbsPath(id);
 
             if (!entry) {
@@ -302,13 +353,15 @@ export function virtualDemos() {
             // stopped reporting edits entirely once this was added). The root recursive watch
             // already covers `src/**` on its own, so these calls were both redundant and unsafe.
             server.watcher.add(partialsDir);
+            server.watcher.add(shotsDir);
 
             server.watcher.on('change', async (changedPath) => {
                 // `relative` is separator-safe: partialsDir itself and files under it match;
                 // siblings (e.g. `_partials-other/...`) resolve to a `..` path and are skipped.
                 const partialsRel = relative(partialsDir, changedPath);
+                const shotsRel = relative(shotsDir, changedPath);
 
-                if (partialsRel === '' || (!partialsRel.startsWith('..') && !isAbsolute(partialsRel))) {
+                if (isInsideDir(partialsRel) || isInsideDir(shotsRel)) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                     return;
@@ -392,6 +445,18 @@ export function virtualDemos() {
                     return;
                 }
 
+                if (url === `/${SHOTS_SLUG}` || url === `/${SHOTS_SLUG}.html`) {
+                    try {
+                        let html = renderShots();
+                        html = await server.transformIndexHtml(`/${SHOTS_SLUG}.html`, html);
+                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                        res.end(html);
+                    } catch (error) {
+                        next(error);
+                    }
+                    return;
+                }
+
                 const demoMatch = url.match(URL_PATTERN);
 
                 if (!demoMatch) {
@@ -425,6 +490,15 @@ export function virtualDemos() {
             });
         },
     };
+}
+
+/**
+ * True when a `path.relative(dir, file)` result means the file is the dir itself or under it.
+ * @param {string} rel - Result of `relative(dir, file)`.
+ * @returns {boolean}
+ */
+function isInsideDir(rel) {
+    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 }
 
 /**
