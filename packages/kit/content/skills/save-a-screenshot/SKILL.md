@@ -50,15 +50,20 @@ display-tier effects, since those only exist in the upscaled buffer.
 
 ## Capture the frame at a given time (engine 1.8.0+)
 
-To screenshot what the game shows at second 3.2 - for a thumbnail, a test, or to check an animation - seek there first,
-then capture:
+To screenshot what the game shows at second 3.2 - for a thumbnail, a test, or to check an animation - wait until the
+engine is ready, seek there, then capture:
 
 ```js
+while (!BT.isReady) {
+  await new Promise((r) => setTimeout(r, 16));
+}
 await BT.renderAt(3.2); // replays from the start and stops on tick 192
 const shot = await BT.captureFrame({ size: 'display' }); // the frame at 3.2 s
 BT.resume(); // optional: keep playing from there
 ```
 
+`BT.isReady` is `false` until `init()` has finished and the game loop exists - poll it when you drive the page from
+outside (a screenshot tool, a play-testing harness). Inside `update()` / `render()` the engine is already ready.
 `renderAt` replays your game from the beginning (it re-runs `init()`), so it only lands on the right frame if everything
 that moves is driven by `BT.timeSeconds`, `BT.ticks`, or `BT.random` - never `performance.now()` or `Date.now()`.
 
@@ -89,6 +94,8 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 - `BT.downloadFrame(filename?, options?)` (method, async) - capture and download.
 - `BT.captureFrame(options?)` (method, async) - resolve to a PNG `Blob`.
 - `{ size: 'display' }` (options, engine 1.7.1+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
+- `BT.isReady` (getter, engine 1.8.0+) - `true` once init finished and the loop exists; wait for it before seeking from
+  outside the game.
 - `BT.renderAt(seconds)` (method, async, engine 1.8.0+) - jump to a time and render that exact frame; then
   `captureFrame`.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.

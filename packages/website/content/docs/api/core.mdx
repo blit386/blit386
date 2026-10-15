@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-10-07T12:32:16+02:00"
+lastModified: "2026-10-15T19:36:03+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -539,6 +539,27 @@ const snapshot = BT.testState();
   and comes back as `state: null` with the message in `error`.
 - The engine never calls `testState()` on its own, so the hook costs nothing unless something reads it. `BT.testState()`
   also exists in release builds; only the `window.BT` global is dev-only (see `BootstrapOptions.exposeGlobal`).
+
+### Engine readiness
+
+<Since symbol="BT.isReady" />
+
+`BT.isReady` is `true` only once `BT.init()` (or `bootstrap()`) has resolved and the game loop exists - the same moment
+`BT.renderAt`, `BT.captureFrame`, and `BT.testState` become safe to call. It stays `false` before init, while the splash
+is still covering the screen (the loop is created only after the splash handoff), and after a failed init. A parked seek
+does not flip it back to `false`: the loop object is still there.
+
+Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
+matching the error text from a premature `renderAt`.
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+while (!BT.isReady) {
+  await new Promise((r) => setTimeout(r, 16));
+}
+await BT.renderAt(3.2);
+```
 
 ### Seeking a frame with renderAt
 

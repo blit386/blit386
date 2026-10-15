@@ -544,6 +544,19 @@ describe('BT.isDevMode', () => {
     });
 });
 
+describe('BT.isReady', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.isInitialized', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+
+        expect(BT.isReady).toBe(true);
+        expect(spy).toHaveBeenCalledWith();
+    });
+});
+
 describe('BT.testState', () => {
     /** Minimal demo with an optional `testState` hook; `init()` resolves so `hotReplaceDemo` accepts it. */
     function makeDemo(testState?: () => unknown): IBTDemo {

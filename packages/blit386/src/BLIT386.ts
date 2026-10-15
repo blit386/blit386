@@ -826,6 +826,27 @@ export const BT = {
     },
 
     /**
+     * Whether the engine has finished `init()` and the game loop exists.
+     *
+     * `true` only after a successful {@link BT.init} (or {@link bootstrap}) has assigned
+     * both the demo and the loop - the same moment `BT.renderAt`, `BT.captureFrame`, and
+     * `BT.testState` become safe to call. Stays `false` before init, during splash (the
+     * loop is not created until after the splash handoff), and after a failed init.
+     * Remains `true` while a seek parks the loop: the loop object still exists, so a
+     * parked `renderAt` does not flip this back to `false`.
+     *
+     * Poll this from an external driver (a screenshot tool, a play-testing harness) that
+     * loads the page and needs to wait before seeking or reading state. Prefer it over
+     * matching the error text from a premature `renderAt`.
+     *
+     * @since 1.8.0
+     * @returns `true` when a demo and the game loop are live.
+     */
+    get isReady(): boolean {
+        return BTAPI.instance.isInitialized();
+    },
+
+    /**
      * JSON readout of the running game for automated play-testing.
      *
      * Returns the current tick and active backend plus a deep copy of the game's optional

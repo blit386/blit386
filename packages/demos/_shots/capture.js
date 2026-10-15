@@ -15,8 +15,6 @@ const DEFAULT_CANVAS = { width: 300, height: 150 };
 const READY_TIMEOUT_MS = 10_000;
 const STEP_TIMEOUT_MS = 10_000;
 const CANVAS_POLL_MS = 16;
-// Matches RENDER_AT_NOT_READY_MESSAGE in the engine's errorMessages.ts.
-const NOT_READY_PATTERN = /game loop hasn't started/;
 // Ticks stepped after an input: one for ui.tick() to latch it, one for the widget to show it.
 const INPUT_TICKS = 2;
 
@@ -129,28 +127,25 @@ async function injectInput(frame, engine, pose) {
 }
 
 /**
- * BT.renderAt, retried while the engine's loop has not started yet. The canvas is resized and
- * window.BT exists a little before init() finishes, and BT has no ready flag to wait on, so the
- * engine's own "hasn't started yet" rejection is the readiness signal. The loop gives up at the
- * same deadline as the 'seek' stage, so it never outlives the stage that started it.
+ * Wait until BT.isReady, then seek. The canvas is resized and window.BT exists a little before
+ * init() finishes; isReady flips only once the game loop exists. Gives up at the same deadline
+ * as the 'seek' stage, so the wait never outlives the stage that started it.
  *
- * @param {{ renderAt: Function }} engine
+ * @param {{ isReady: boolean, renderAt: Function }} engine
  * @param {number} seconds
  */
 async function seekWhenReady(engine, seconds) {
     const deadline = Date.now() + STEP_TIMEOUT_MS;
 
-    for (;;) {
-        try {
-            return await engine.renderAt(seconds);
-        } catch (error) {
-            if (!NOT_READY_PATTERN.test(errorText(error)) || Date.now() >= deadline) {
-                throw error;
-            }
-
-            await new Promise((tick) => setTimeout(tick, CANVAS_POLL_MS));
+    while (!engine.isReady) {
+        if (Date.now() >= deadline) {
+            throw new Error('engine was not ready before the seek deadline');
         }
+
+        await new Promise((tick) => setTimeout(tick, CANVAS_POLL_MS));
     }
+
+    return engine.renderAt(seconds);
 }
 
 /**

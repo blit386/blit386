@@ -6,6 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { gitEnv } from '../packages/website/scripts/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
     checkRootSkillsLayout,
@@ -589,9 +590,11 @@ describe('check-agent-config', () => {
          */
         function makeRepo(rules) {
             const root = mkdtempSync(join(tmpdir(), 'agent-config-mcp-'));
-            const run = (...args) => spawnSync('git', args, { cwd: root });
+            // gitEnv(): husky pre-push exports GIT_DIR; without scrubbing, `git init` hits the real repo.
+            // --template=: skip sample-hook copies (not needed for check-ignore).
+            const run = (...args) => spawnSync('git', args, { cwd: root, env: gitEnv() });
 
-            run('init', '--quiet');
+            run('init', '--quiet', '--template=');
             run('config', 'user.email', 'test@example.com');
             run('config', 'user.name', 'Test');
             writeFileSync(join(root, '.gitignore'), rules);

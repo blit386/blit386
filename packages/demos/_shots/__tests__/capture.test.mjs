@@ -48,6 +48,7 @@ describe('pointerClientPoint', () => {
 function fakeFrame(overrides = {}) {
     const calls = [];
     const engine = {
+        isReady: true,
         targetFPS: 60,
         displaySize: { x: 320, y: 200 },
         renderAt: async (seconds, options) => calls.push(['renderAt', seconds, options?.from ?? 'start']),
@@ -167,6 +168,26 @@ describe('runPose', () => {
         });
 
         await assert.rejects(runPose(frame, { id: 'start', at: 0 }, 'display', { url: 'u' }), /load: never resized/);
+    });
+
+    it('waits for isReady before the first renderAt', async () => {
+        const frame = fakeFrame();
+        const engine = frame.engine();
+        let readyReads = 0;
+
+        Object.defineProperty(engine, 'isReady', {
+            get() {
+                readyReads += 1;
+
+                return readyReads > 1;
+            },
+            configurable: true,
+        });
+
+        await runPose(frame, { id: 'settled', at: 4 }, 'display', { url: 'u' });
+
+        assert.ok(readyReads > 1);
+        assert.deepEqual(frame.calls.slice(1), [['renderAt', 4, 'start']]);
     });
 });
 

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-10-10T11:21:45+02:00"
+lastModified: "2026-10-15T19:36:03+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -80,6 +80,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   and re-runs the game's `init()`; `from: 'current'` steps forward. `BT.resume()` restarts the loop from the seeked
   tick, and `BT.captureFrame()` after a seek captures the seeked frame. See
   [Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
+- `BT.isReady`: a public readiness flag that becomes `true` only once `init()` has resolved and the game loop exists, so
+  an external driver (screenshot tool, play-testing harness) can wait before seeking or reading state instead of
+  matching an error message. See [Engine readiness](/docs/api/core#engine-readiness).
 
 ### Changed
 
