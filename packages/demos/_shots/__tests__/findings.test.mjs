@@ -44,4 +44,40 @@ describe('createFindings', () => {
         findings.addNote('basics/start', '   ');
         assert.deepEqual(findings.notesFor('basics/start'), []);
     });
+
+    it('starts empty from corrupt JSON', () => {
+        const storage = fakeStorage();
+
+        storage.setItem('blit386-shots-findings', '{not json');
+
+        const findings = createFindings(storage);
+
+        assert.deepEqual(findings.flaggedKeys(), []);
+        assert.equal(findings.toMarkdown(), '\n');
+    });
+
+    it('drops stored values of the wrong shape and keeps the valid ones', () => {
+        const storage = fakeStorage();
+
+        storage.setItem(
+            'blit386-shots-findings',
+            JSON.stringify({ flagged: ['basics/start', 7, null], notes: ['not', 'an', 'object'] }),
+        );
+
+        const findings = createFindings(storage);
+
+        assert.deepEqual(findings.flaggedKeys(), ['basics/start']);
+        assert.deepEqual(findings.notesFor('basics/start'), []);
+
+        storage.setItem(
+            'blit386-shots-findings',
+            JSON.stringify({ flagged: 'x', notes: { 'a/b': ['ok', 3], 'c/d': 'no' } }),
+        );
+
+        const again = createFindings(storage);
+
+        assert.deepEqual(again.flaggedKeys(), []);
+        assert.deepEqual(again.notesFor('a/b'), ['ok']);
+        assert.deepEqual(again.notesFor('c/d'), []);
+    });
 });

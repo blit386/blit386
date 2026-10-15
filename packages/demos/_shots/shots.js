@@ -188,7 +188,8 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
-    if (action === 'escape' && document.activeElement === filterBox) {
+    // Escape clears the filter first (whether the box has focus or not), then the selection.
+    if (action === 'escape' && mode === 'gallery' && (document.activeElement === filterBox || filterBox.value)) {
         filterBox.value = '';
         gallery.setView({ filter: '' });
         galleryRoot.focus();

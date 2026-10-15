@@ -34,7 +34,8 @@ function exportMarkdown(findings, setStatus) {
     link.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
     link.download = EXPORT_FILE;
     link.click();
-    URL.revokeObjectURL(link.href);
+    // Some browsers start the download asynchronously; revoking in the same tick can empty it.
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
     setStatus(`findings downloaded as ${EXPORT_FILE}`);
 
     navigator.clipboard?.writeText(markdown).then(

@@ -6,6 +6,29 @@
 const STORAGE_KEY = 'blit386-shots-findings';
 
 /**
+ * Keep only the parts of a stored value that have the expected shape: a wrong-shaped entry
+ * (an older format, a hand edit) falls back to empty rather than breaking every later call.
+ *
+ * @param {unknown} parsed
+ * @returns {{ flagged: string[], notes: Record<string, string[]> }}
+ */
+function sanitize(parsed) {
+    const stored = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    const flagged = Array.isArray(stored.flagged) ? stored.flagged.filter((key) => typeof key === 'string') : [];
+    const notes = {};
+
+    if (stored.notes && typeof stored.notes === 'object' && !Array.isArray(stored.notes)) {
+        for (const [key, list] of Object.entries(stored.notes)) {
+            if (Array.isArray(list)) {
+                notes[key] = list.filter((note) => typeof note === 'string');
+            }
+        }
+    }
+
+    return { flagged, notes };
+}
+
+/**
  * @param {{ getItem: (key: string) => string | null, setItem: (key: string, value: string) => void }} storage
  */
 function createFindings(storage) {
@@ -16,7 +39,7 @@ function createFindings(storage) {
         const raw = storage.getItem(STORAGE_KEY);
 
         if (raw) {
-            state = { ...state, ...JSON.parse(raw) };
+            state = sanitize(JSON.parse(raw));
         }
     } catch {
         // A corrupt entry is not worth a crash; start empty and overwrite on the next change.
