@@ -74,6 +74,29 @@ describe('mergeManifest', () => {
         );
     });
 
+    it('keeps the previous display size when an output-only entry has no size', () => {
+        const existing = {
+            ...emptyManifest(),
+            entries: [entry('basics', 'start', { width: 320, height: 240, lint: [{ rule: 'margin' }] })],
+        };
+        const merged = mergeManifest(
+            existing,
+            [
+                entry('basics', 'start', {
+                    width: 0,
+                    height: 0,
+                    lint: [],
+                    variants: { output: 'basics/start.output.png' },
+                }),
+            ],
+            order,
+        );
+
+        assert.equal(merged.entries[0].width, 320);
+        assert.equal(merged.entries[0].height, 240);
+        assert.deepEqual(merged.entries[0].lint, [{ rule: 'margin' }]);
+    });
+
     it('stamps generatedAt and never mutates its inputs', () => {
         const existing = emptyManifest();
         const merged = mergeManifest(existing, [entry('basics', 'start')], order);

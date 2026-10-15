@@ -33,11 +33,13 @@ pnpm run capture:shots -- --all
 ```
 
 `--changed` and `--demos a,b` select subsets; `--variants display,uidebug,output,software,touch` picks variants
-(default: the committed pair). `output` images are stored at drawing-buffer size, so they differ from the display size
-and depend on the capturing machine. `--changed` selects every demo whenever any file under `src/shared/` differs from
-`origin/main`, tests included. The driver opens `/shots?auto...` in Chrome, waits for the page to finish, and writes
-`public/shots/<slug>/<pose>.<variant>.png` plus a merged `manifest.json`. It refuses to write outside `public/shots/`.
-Exit code 1 means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
+(default: the committed pair). `output` is the drawing buffer from `configure()` (default 640x480), not device pixel
+ratio, and stays out of `COMMITTED_VARIANTS`. The manifest keeps one display `width`/`height`; an output tile and its
+lightbox size from `naturalWidth`/`naturalHeight`, so at 1x `img.width` equals `img.naturalWidth`. `--changed` selects
+every demo whenever any file under `src/shared/` differs from `origin/main`, tests included. The driver opens
+`/shots?auto...` in Chrome, waits for the page to finish, and writes `public/shots/<slug>/<pose>.<variant>.png` plus a
+merged `manifest.json`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit code 1
+means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
 
 ### 2. Inspect
 

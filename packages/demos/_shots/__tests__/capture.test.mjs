@@ -214,4 +214,49 @@ describe('entriesFromResults', () => {
         assert.deepEqual(Object.keys(entries[0].variants), ['display', 'uidebug']);
         assert.equal(entries[0].error, 'software: no gpu');
     });
+
+    it('keeps the display size when output is captured and software can fill it in', () => {
+        const blob = new Blob([]);
+        const withSoftware = entriesFromResults([
+            {
+                slug: 'crt-toggle',
+                pose: 'crt',
+                variant: 'output',
+                ok: true,
+                blob,
+                width: 1280,
+                height: 960,
+                lint: [{ rule: 'margin', message: 'tight' }],
+            },
+            {
+                slug: 'crt-toggle',
+                pose: 'crt',
+                variant: 'software',
+                ok: true,
+                blob,
+                width: 320,
+                height: 240,
+                lint: [],
+            },
+        ]);
+
+        assert.equal(withSoftware[0].width, 320);
+        assert.equal(withSoftware[0].height, 240);
+
+        const outputOnly = entriesFromResults([
+            {
+                slug: 'crt-toggle',
+                pose: 'crt',
+                variant: 'output',
+                ok: true,
+                blob,
+                width: 1280,
+                height: 960,
+                lint: [],
+            },
+        ]);
+
+        assert.equal(outputOnly[0].width, 0);
+        assert.equal(outputOnly[0].height, 0);
+    });
 });

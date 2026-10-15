@@ -48,8 +48,10 @@ function emptyManifest() {
 /**
  * Merge freshly captured entries into an existing manifest. An incoming entry replaces the
  * existing one with the same key but keeps variants the new capture did not produce, so a
- * display-only run never deletes a committed uidebug image. Entries are ordered by `order`
- * (DEMO_ORDER), then by incoming pose order, then existing pose order.
+ * display-only run never deletes a committed uidebug image. An incoming width of 0 means the
+ * run had no display-sized variant (an output-only capture); the previous display size and lint
+ * stay. Entries are ordered by `order` (DEMO_ORDER), then by incoming pose order, then existing
+ * pose order.
  *
  * @param {Manifest} existing
  * @param {ManifestEntry[]} incoming
@@ -68,6 +70,9 @@ function mergeManifest(existing, incoming, order, meta = {}) {
         incomingKeys.push(key);
         byKey.set(key, {
             ...entry,
+            width: entry.width || previous?.width || 0,
+            height: entry.width ? entry.height : (previous?.height ?? 0),
+            lint: entry.width ? entry.lint : (previous?.lint ?? entry.lint),
             variants: { ...(previous ? previous.variants : {}), ...entry.variants },
         });
     }

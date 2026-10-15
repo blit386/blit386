@@ -5,6 +5,7 @@
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { entryKey, imagePath, mergeManifest } from './manifest.js';
+import { OUTPUT_VARIANT } from './poses.js';
 
 const MANIFEST_NAME = 'manifest.json';
 
@@ -58,7 +59,7 @@ function entriesFromResults(results) {
         if (result.ok) {
             entry.variants[result.variant] = imagePath(result.slug, result.pose, result.variant);
 
-            if (result.variant === 'display' || entry.width === 0) {
+            if (result.variant !== OUTPUT_VARIANT && (result.variant === 'display' || entry.width === 0)) {
                 entry.width = result.width;
                 entry.height = result.height;
                 entry.lint = result.lint;
