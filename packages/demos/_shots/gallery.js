@@ -471,13 +471,11 @@ function createGallery(root, hooks) {
             Object.assign(view, partial);
             refresh();
         },
-        getView: () => ({ ...view, expanded: new Set(view.expanded) }),
         focusKey(key) {
             focused = key;
             refresh();
         },
         focusedKey: () => focused,
-        selectedKeys: () => [...selected],
         visibleKeys: order,
         entryFor: (key) => byKey.get(key) ?? null,
         currentVariant: (key) => variantFor(byKey.get(key)),

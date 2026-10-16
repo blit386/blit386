@@ -88,10 +88,6 @@ function createFindings(storage) {
                 .join('\n')
                 .concat('\n');
         },
-        clear() {
-            state = { flagged: [], notes: {} };
-            persist();
-        },
     };
 }
 

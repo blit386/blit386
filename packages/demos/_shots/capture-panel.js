@@ -123,7 +123,6 @@ function createCapturePanel(root, hooks) {
             progress.textContent = text;
         },
         runSlugs: run,
-        selectedVariants,
     };
 }
 
