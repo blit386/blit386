@@ -1475,6 +1475,31 @@ describe('BTAPI', () => {
             expect(await BTAPI.instance.init(makeMockDemo(60, true, 64), makeMockCanvas())).toBe(true);
         });
 
+        it('should reject an overlapping init and keep isInitialized false until the new init finishes', async () => {
+            await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+            expect(BTAPI.instance.isInitialized()).toBe(true);
+
+            const secondDemo = makeMockDemo();
+            const second = BTAPI.instance.init(secondDemo, makeMockCanvas());
+
+            expect(BTAPI.instance.isInitialized()).toBe(false);
+
+            const third = await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+            expect(third).toBe(false);
+            expect(BTAPI.instance.getDemo()).toBe(secondDemo);
+            expect(BTAPI.instance.isInitialized()).toBe(false);
+
+            expect(await second).toBe(true);
+            expect(BTAPI.instance.isInitialized()).toBe(true);
+        });
+
+        it('should clear the in-progress guard after a failed init', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(NaN), makeMockCanvas())).toBe(false);
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+        });
+
         describe('?seed URL parameter', () => {
             afterEach(() => {
                 vi.unstubAllGlobals();

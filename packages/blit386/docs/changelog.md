@@ -89,6 +89,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- `BT.init`: a call made while another `init()` is still running now resolves to `false` without touching engine state,
+  and `BT.isReady` stays `false` for the whole of any `init()`, including a re-init after an earlier success. A second
+  `bootstrap()` during init is refused with a logged error instead of racing the first. See
+  [Engine readiness](api-core.md#engine-readiness).
 - Palette effects (`paletteCycle`, fades, flashes) now advance once per fixed update, right after the game's `update()`,
   on the tick clock (`ticks * 1000 / targetFPS`) instead of once per rendered frame on `performance.now()`. They follow
   the fixed-step loop rather than wall time or the display's refresh rate, and `BT.ticksReset()` pauses them for an

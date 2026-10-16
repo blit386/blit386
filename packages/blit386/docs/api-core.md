@@ -556,6 +556,9 @@ const snapshot = BT.testState();
 is still covering the screen (the loop is created only after the splash handoff), and after a failed init. A parked seek
 does not flip it back to `false`: the loop object is still there.
 
+A second `BT.init()` call made while one is still in flight is rejected (it resolves to `false` and changes nothing),
+and `BT.isReady` stays `false` for the whole duration of any `init()`, including a re-init after an earlier success.
+
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`.
 
