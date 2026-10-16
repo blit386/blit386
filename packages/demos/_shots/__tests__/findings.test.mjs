@@ -80,4 +80,20 @@ describe('createFindings', () => {
         assert.deepEqual(again.notesFor('a/b'), ['ok']);
         assert.deepEqual(again.notesFor('c/d'), []);
     });
+
+    it('keeps working in memory when storage refuses a write', () => {
+        const storage = {
+            getItem: () => null,
+            setItem: () => {
+                throw new Error('QuotaExceededError');
+            },
+        };
+        const findings = createFindings(storage);
+
+        findings.toggleFlag('basics/start');
+        findings.addNote('basics/start', 'tight');
+
+        assert.deepEqual(findings.flaggedKeys(), ['basics/start']);
+        assert.deepEqual(findings.notesFor('basics/start'), ['tight']);
+    });
 });
