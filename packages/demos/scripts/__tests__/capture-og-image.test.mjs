@@ -13,14 +13,15 @@ import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins
 import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
+    buildCaptureUrl,
     buildNativeImagePath,
     buildOgFfmpegArgs,
     buildOgFilterGraph,
     buildOgImagePath,
+    buildSeekScript,
     computeOgScale,
     DEFAULT_OUT_DIR,
     DEFAULTS,
-    OG_CAPTURE_OVERRIDES,
     parseArgs,
     resolveOutDir,
     resolveScaleMode,
@@ -35,7 +36,6 @@ describe('parseArgs', () => {
         // Empty means "not passed", so resolveOutDir can anchor it to the package.
         assert.equal(options.out, '');
         assert.equal(options.baseUrl, DEFAULTS.baseUrl);
-        assert.equal(options.settle, DEFAULTS.settle);
         // Empty means "no CLI override" - each demo's own @ogScale tag gets to decide.
         assert.equal(options.scaleMode, '');
     });
@@ -50,15 +50,13 @@ describe('parseArgs', () => {
         assert.ok(options.slugs.length > 0);
     });
 
-    it('parses string, numeric, and boolean overrides', () => {
+    it('parses string and boolean overrides', () => {
         const options = parseArgs([
             'flurry',
             '--out',
             'tmp/cards',
             '--base-url',
             'http://localhost:4173',
-            '--settle',
-            '4.5',
             '--scale-mode',
             'fit',
             '--force',
@@ -68,7 +66,6 @@ describe('parseArgs', () => {
 
         assert.equal(options.out, 'tmp/cards');
         assert.equal(options.baseUrl, 'http://localhost:4173');
-        assert.equal(options.settle, 4.5);
         assert.equal(options.scaleMode, 'fit');
         assert.equal(options.force, true);
         assert.equal(options.keepIntermediate, true);
@@ -99,13 +96,10 @@ describe('parseArgs', () => {
         // Otherwise `--out --force` writes every card into a directory named "--force".
         assert.throws(() => parseArgs(['basics', '--out', '--force']), /--out requires a value/);
         assert.throws(() => parseArgs(['basics', '--base-url', '--force']), /--base-url requires a value/);
-        assert.throws(() => parseArgs(['basics', '--settle', '--dry-run']), /--settle requires a value/);
     });
 
-    it('rejects a non-numeric or non-positive --settle', () => {
-        assert.throws(() => parseArgs(['basics', '--settle', 'soon']), /must be a positive number/);
-        assert.throws(() => parseArgs(['basics', '--settle', '0']), /must be a positive number/);
-        assert.throws(() => parseArgs(['basics', '--settle', '-2']), /must be a positive number/);
+    it('no longer accepts --settle', () => {
+        assert.throws(() => parseArgs(['basics', '--settle', '4']), /Unknown option/);
     });
 
     it('rejects an unknown --scale-mode', () => {
@@ -290,10 +284,23 @@ describe('buildWebGPUProbeScript', () => {
     });
 });
 
-describe('OG_CAPTURE_OVERRIDES', () => {
-    it('only names slugs that still exist, so a rename cannot leave a stale entry', () => {
-        for (const slug of Object.keys(OG_CAPTURE_OVERRIDES)) {
-            assert.ok(DEMO_ORDER.includes(slug), `stale override for "${slug}"`);
-        }
+describe('buildCaptureUrl', () => {
+    it('loads the embed page with the engine exposed on window.BT and the seed pinned', () => {
+        assert.equal(
+            buildCaptureUrl('https://demos.blit386.dev/', 'basics'),
+            'https://demos.blit386.dev/basics?embed&capture&seed=1',
+        );
+    });
+});
+
+describe('buildSeekScript', () => {
+    it('waits for BT.isReady before seeking to the given second', () => {
+        const script = buildSeekScript(4.5, 10_000);
+
+        assert.match(script, /window\.BT\?\.isReady/);
+        assert.match(script, /renderAt\(4\.5\)/);
+        assert.ok(script.indexOf('isReady') < script.indexOf('renderAt'));
+        // The screenshot must not race the compositor: frames pass after the seek, not before.
+        assert.ok(script.indexOf('renderAt') < script.indexOf('requestAnimationFrame'));
     });
 });

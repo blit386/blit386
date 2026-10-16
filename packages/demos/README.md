@@ -324,9 +324,11 @@ Two things to know:
 - **It must be `preview`, not `dev`.** `--base-url` has to serve flattened, extensionless URLs - production, the `next`
   channel, or `pnpm run preview`. The dev server routes demos at `/demos/<slug>.html` and will not work.
 
-Then look at the PNG before committing it. If the frame is unrepresentative (too dark, caught mid-transition), add a
-settle override to `OG_CAPTURE_OVERRIDES` in `scripts/capture-og-image.mjs`; if the framing is the problem, set
-`// @ogScale fit` or `// @ogScale integer` in the demo header instead.
+The card shows the frame at the first pose of the demo in `_shots/poses.js` (also the site-index tile), seeked with
+`BT.renderAt` with the random stream pinned by `?seed=1`, so the result does not depend on how fast your machine is.
+Look at the PNG before committing it. If the frame is unrepresentative (too dark, caught mid-transition), change that
+demo's first pose `at`; if the framing is the problem, set `// @ogScale fit` or `// @ogScale integer` in the demo header
+instead.
 
 Swap the slug for `--all` to redo every card. The default `auto` scaling takes a whole-number factor when that already
 fills the card and fills the frame otherwise. Because PNGs do not delta-compress in git, prefer re-capturing only what

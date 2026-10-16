@@ -32,23 +32,38 @@ const DEFAULT_POSES = [
 const POSES_BY_SLUG = {
     // Types its terminal text out character by character; nothing to see before 9 s.
     'crt-pipboy': [{ id: 'typed', at: 9 }],
-    // Cycles clean/CRT output every two seconds; land mid-CRT and mid-clean.
+    // Cycles clean/CRT output every two seconds; land mid-CRT and mid-clean. The first pose is
+    // the one the OG card and the site-index tile show.
     'crt-toggle': [
-        { id: 'clean', at: 1 },
         { id: 'crt', at: 3.5 },
+        { id: 'clean', at: 1 },
     ],
     'palette-exposure-fade': [
-        { id: 'start', at: 0 },
         { id: 'bright', at: 7 },
+        { id: 'start', at: 0 },
     ],
     'snake-game': [
-        { id: 'start', at: 0 },
         { id: 'crawl', at: 7 },
+        { id: 'start', at: 0 },
     ],
     starfield: [{ id: 'spread', at: 6 }],
+    // The sprite starts at an edge and needs time to travel somewhere interesting; the first
+    // pose is the one the OG card shows.
+    basics: [
+        { id: 'moving', at: 6 },
+        { id: 'start', at: 0 },
+    ],
+    'basics-enhanced': [
+        { id: 'moving', at: 6 },
+        { id: 'start', at: 0 },
+    ],
+    'audio-basics': [
+        { id: 'playing', at: 5 },
+        { id: 'start', at: 0 },
+    ],
     'reduced-motion': [
-        { id: 'cruise', at: 1 },
         { id: 'warp', at: 4.5 },
+        { id: 'cruise', at: 1 },
     ],
     'synth-toy': [
         { id: 'start', at: 1 },

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T15:36:17.329Z",
+  "generatedAt": "2026-10-16T07:01:10.903Z",
   "engineVersion": "1.7.1",
   "entries": [
     {
@@ -27,16 +27,28 @@
       "height": 240
     },
     {
+      "slug": "basics",
+      "pose": "moving",
+      "variants": {
+        "display": "basics/moving.display.png",
+        "uidebug": "basics/moving.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "basics",
+      "pose": "start",
       "variants": {
         "display": "basics/start.display.png",
         "uidebug": "basics/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "basics",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -555,28 +567,28 @@
       "height": 240
     },
     {
-      "variants": {
-        "display": "crt-toggle/clean.display.png",
-        "uidebug": "crt-toggle/clean.uidebug.png"
-      },
-      "lint": [],
-      "error": null,
       "slug": "crt-toggle",
-      "pose": "clean",
-      "width": 320,
-      "height": 240
-    },
-    {
+      "pose": "crt",
       "variants": {
         "display": "crt-toggle/crt.display.png",
         "uidebug": "crt-toggle/crt.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "crt-toggle",
-      "pose": "crt",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "crt-toggle",
+      "pose": "clean",
+      "variants": {
+        "display": "crt-toggle/clean.display.png",
+        "uidebug": "crt-toggle/clean.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -675,28 +687,28 @@
       "height": 240
     },
     {
-      "variants": {
-        "display": "snake-game/start.display.png",
-        "uidebug": "snake-game/start.uidebug.png"
-      },
-      "lint": [],
-      "error": null,
       "slug": "snake-game",
-      "pose": "start",
-      "width": 160,
-      "height": 120
-    },
-    {
+      "pose": "crawl",
       "variants": {
         "display": "snake-game/crawl.display.png",
         "uidebug": "snake-game/crawl.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "snake-game",
-      "pose": "crawl",
       "width": 160,
-      "height": 120
+      "height": 120,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "snake-game",
+      "pose": "start",
+      "variants": {
+        "display": "snake-game/start.display.png",
+        "uidebug": "snake-game/start.uidebug.png"
+      },
+      "width": 160,
+      "height": 120,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -795,16 +807,28 @@
       "height": 240
     },
     {
+      "slug": "basics-enhanced",
+      "pose": "moving",
+      "variants": {
+        "display": "basics-enhanced/moving.display.png",
+        "uidebug": "basics-enhanced/moving.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "basics-enhanced",
+      "pose": "start",
       "variants": {
         "display": "basics-enhanced/start.display.png",
         "uidebug": "basics-enhanced/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "basics-enhanced",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -867,16 +891,28 @@
       "height": 240
     },
     {
+      "slug": "audio-basics",
+      "pose": "playing",
+      "variants": {
+        "display": "audio-basics/playing.display.png",
+        "uidebug": "audio-basics/playing.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "audio-basics",
+      "pose": "start",
       "variants": {
         "display": "audio-basics/start.display.png",
         "uidebug": "audio-basics/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "audio-basics",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -915,52 +951,52 @@
       "height": 240
     },
     {
-      "slug": "audio-buses",
-      "pose": "start",
       "variants": {
         "display": "audio-buses/start.display.png",
         "uidebug": "audio-buses/start.uidebug.png"
       },
-      "width": 320,
-      "height": 280,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-buses",
+      "pose": "start",
+      "width": 320,
+      "height": 280
     },
     {
-      "slug": "audio-buses",
-      "pose": "settled",
       "variants": {
         "display": "audio-buses/settled.display.png",
         "uidebug": "audio-buses/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 280,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-buses",
+      "pose": "settled",
+      "width": 320,
+      "height": 280
     },
     {
-      "slug": "synth-toy",
-      "pose": "start",
       "variants": {
         "display": "synth-toy/start.display.png",
         "uidebug": "synth-toy/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "synth-toy",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "synth-toy",
-      "pose": "playing",
       "variants": {
         "display": "synth-toy/playing.display.png",
         "uidebug": "synth-toy/playing.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "synth-toy",
+      "pose": "playing",
+      "width": 320,
+      "height": 240
     },
     {
       "variants": {
@@ -1083,52 +1119,52 @@
       "height": 240
     },
     {
-      "variants": {
-        "display": "palette-exposure-fade/start.display.png",
-        "uidebug": "palette-exposure-fade/start.uidebug.png"
-      },
-      "lint": [],
-      "error": null,
       "slug": "palette-exposure-fade",
-      "pose": "start",
-      "width": 480,
-      "height": 480
-    },
-    {
+      "pose": "bright",
       "variants": {
         "display": "palette-exposure-fade/bright.display.png",
         "uidebug": "palette-exposure-fade/bright.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "palette-exposure-fade",
-      "pose": "bright",
       "width": 480,
-      "height": 480
-    },
-    {
-      "variants": {
-        "display": "reduced-motion/cruise.display.png",
-        "uidebug": "reduced-motion/cruise.uidebug.png"
-      },
+      "height": 480,
       "lint": [],
-      "error": null,
-      "slug": "reduced-motion",
-      "pose": "cruise",
-      "width": 320,
-      "height": 240
+      "error": null
     },
     {
+      "slug": "palette-exposure-fade",
+      "pose": "start",
+      "variants": {
+        "display": "palette-exposure-fade/start.display.png",
+        "uidebug": "palette-exposure-fade/start.uidebug.png"
+      },
+      "width": 480,
+      "height": 480,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "reduced-motion",
+      "pose": "warp",
       "variants": {
         "display": "reduced-motion/warp.display.png",
         "uidebug": "reduced-motion/warp.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "reduced-motion",
-      "pose": "warp",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "reduced-motion",
+      "pose": "cruise",
+      "variants": {
+        "display": "reduced-motion/cruise.display.png",
+        "uidebug": "reduced-motion/cruise.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
