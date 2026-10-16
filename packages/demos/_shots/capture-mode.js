@@ -51,6 +51,8 @@ async function startCaptureMode(shell) {
     const { demos, gallery, liveImages, liveImageKey, setStatus } = shell;
     const frame = createFrameAdapter(document.getElementById('shots-frame'));
     let currentManifest = shell.manifest;
+    // What the last save wrote: a failed image is in currentManifest (the gallery shows it) but not here.
+    let savedManifest = shell.manifest;
     /** @type {Array<object>} */
     let unsaved = [];
     let directory = null;
@@ -105,9 +107,24 @@ async function startCaptureMode(shell) {
         onRun: runJobs,
         onSave: async () => {
             directory ??= await pickShotsDirectory();
-            currentManifest = await saveRun(directory, unsaved, currentManifest, { engineVersion: engineVersion() });
-            unsaved = [];
-            setStatus(`saved ${currentManifest.entries.length} entries to public/shots`);
+
+            const { manifest, failed } = await saveRun(directory, unsaved, savedManifest, {
+                engineVersion: engineVersion(),
+            });
+
+            savedManifest = manifest;
+            // A failed image stays unsaved so the next Save retries it; a failed manifest is rewritten then too.
+            unsaved = failed.flatMap((item) => (item.result ? [item.result] : []));
+
+            if (failed.length > 0) {
+                throw new Error(`could not write ${failed.map((item) => `${item.path} (${item.error})`).join(', ')}`);
+            }
+
+            setStatus(
+                directory
+                    ? `saved ${savedManifest.entries.length} entries to public/shots`
+                    : 'downloaded the images and manifest.json; move them into public/shots',
+            );
         },
     });
 

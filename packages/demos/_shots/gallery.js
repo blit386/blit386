@@ -85,9 +85,7 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
 
                 sizeImage(overlay, entry, variant);
                 overlay.src = diff.url;
-                overlay.style.position = 'absolute';
-                overlay.style.left = '4px';
-                overlay.style.top = '4px';
+                overlay.className = 'shots-diff-overlay';
                 element.append(overlay);
             }
 

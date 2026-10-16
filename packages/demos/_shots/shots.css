@@ -85,10 +85,18 @@ body {
 }
 
 .shots-tile {
+    --shots-tile-pad: 4px;
+
     background: var(--shots-panel);
     border: 1px solid var(--shots-border);
-    padding: 4px;
+    padding: var(--shots-tile-pad);
     position: relative;
+
+    & .shots-diff-overlay {
+        left: var(--shots-tile-pad);
+        position: absolute;
+        top: var(--shots-tile-pad);
+    }
 
     & img,
     & canvas {

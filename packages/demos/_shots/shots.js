@@ -282,5 +282,3 @@ if (import.meta.env.DEV) {
         },
     );
 }
-
-export { demoUrl, gallery, imageUrl, lightbox, liveImageKey, liveImages, setStatus };

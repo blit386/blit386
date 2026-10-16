@@ -3,28 +3,12 @@
  * Installs the `window.__shotsFindings` and `window.__shotsDiff` hooks that shots.js routes keys to.
  */
 
+import { BASELINE_REFUSED, parseBaseline } from './baseline.js';
 import { diffPixels, loadPixels } from './diff.js';
 import { createFindings } from './findings.js';
 
 const DIFF_CYCLE = ['current', 'baseline', 'diff'];
 const EXPORT_FILE = 'shots-findings.md';
-
-/**
- * Resolve `?baseline=` to an absolute http(s) base URL without a trailing slash. A relative value
- * resolves against the page, so a same-origin path works; `javascript:` and `data:` are refused.
- *
- * @param {string} value
- * @returns {string | null}
- */
-function parseBaseline(value) {
-    try {
-        const url = new URL(value, location.href);
-
-        return url.protocol === 'http:' || url.protocol === 'https:' ? url.href.replace(/\/$/, '') : null;
-    } catch {
-        return null;
-    }
-}
 
 function exportMarkdown(findings, setStatus) {
     const markdown = findings.toMarkdown();
@@ -68,25 +52,32 @@ function startFindings({ gallery, setStatus, renderInfo }) {
 }
 
 function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
-    const baseline = rawBaseline === null ? null : parseBaseline(rawBaseline);
+    const baseline = rawBaseline === null ? null : parseBaseline(rawBaseline, location.href);
     const cache = new Map();
     const state = { show: 'current' };
 
     const baselineUrlFor = (entry, variant) => `${baseline}/${entry.variants[variant]}`;
 
-    async function diffFor(entry, variant) {
+    async function computeDiff(entry, variant) {
+        const baselineUrl = baselineUrlFor(entry, variant);
+        const current = await loadPixels(imageUrl(entry, variant));
+        const result = diffPixels(current, await loadPixels(baselineUrl));
+        const canvas = document.createElement('canvas');
+
+        canvas.width = current.width;
+        canvas.height = current.height;
+        canvas.getContext('2d').putImageData(new ImageData(result.data, current.width, current.height), 0, 0);
+
+        return { changed: result.changed, url: canvas.toDataURL(), baselineUrl };
+    }
+
+    // The promise is cached, failures included: a missing baseline is not re-fetched on every
+    // refresh(), and concurrent callers share one decode.
+    function diffFor(entry, variant) {
         const cacheKey = `${entry.slug}/${entry.pose}/${variant}`;
 
         if (!cache.has(cacheKey)) {
-            const baselineUrl = baselineUrlFor(entry, variant);
-            const current = await loadPixels(imageUrl(entry, variant));
-            const result = diffPixels(current, await loadPixels(baselineUrl));
-            const canvas = document.createElement('canvas');
-
-            canvas.width = current.width;
-            canvas.height = current.height;
-            canvas.getContext('2d').putImageData(new ImageData(result.data, current.width, current.height), 0, 0);
-            cache.set(cacheKey, { changed: result.changed, url: canvas.toDataURL(), baselineUrl });
+            cache.set(cacheKey, computeDiff(entry, variant));
         }
 
         return cache.get(cacheKey);
@@ -100,7 +91,7 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
         }
 
         if (baseline === null) {
-            setStatus('baseline refused: it must be an http(s) URL or a same-origin path');
+            setStatus(BASELINE_REFUSED);
 
             return;
         }
@@ -120,7 +111,7 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
     window.__shotsDiff.current = () => ({ show: state.show, diffFor, baselineUrlFor });
 
     if (rawBaseline !== null && baseline === null) {
-        setStatus('baseline refused: it must be an http(s) URL or a same-origin path');
+        setStatus(BASELINE_REFUSED);
     }
 }
 

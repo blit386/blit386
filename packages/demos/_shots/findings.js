@@ -46,7 +46,11 @@ function createFindings(storage) {
     }
 
     function persist() {
-        storage.setItem(STORAGE_KEY, JSON.stringify(state));
+        try {
+            storage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch {
+            // Quota or private mode: keep the findings in memory for this page load rather than fail the key press.
+        }
     }
 
     const label = (key) => key.replace('/', ' / ');

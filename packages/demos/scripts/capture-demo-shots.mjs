@@ -16,7 +16,7 @@
  *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -173,6 +173,61 @@ export function resolveImageTarget(outDir, imagePath) {
     return target.startsWith(outDir + sep) ? target : null;
 }
 
+/**
+ * One line per captured tile plus the lint total, for the demos of this run.
+ *
+ * @param {Array<{ slug: string, pose: string, variants: object, lint: unknown[], error?: string | null }>} entries
+ * @param {string[]} slugs
+ * @returns {string[]}
+ */
+export function summarizeEntries(entries, slugs) {
+    const lines = [];
+    let total = 0;
+
+    for (const entry of entries.filter((item) => slugs.includes(item.slug))) {
+        const count = entry.lint.length;
+        const variants = Object.keys(entry.variants).join(', ');
+
+        total += count;
+        lines.push(
+            `  ${entry.slug}/${entry.pose}: ${variants || 'no variants'}, lint ${count}${entry.error ? `, ${entry.error}` : ''}`,
+        );
+    }
+
+    lines.push(`lint findings in total: ${total}`);
+
+    return lines;
+}
+
+/**
+ * Whether a path really lives inside outDir once symlinks are followed, which the lexical check in
+ * resolveImageTarget cannot see. The path need not exist yet: its nearest existing parent decides,
+ * so nothing has to be created before the check. A dangling symlink counts as outside, because
+ * writing through it would create its target.
+ *
+ * @param {string} outDir - Existing directory.
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function isInsideRealDir(outDir, path) {
+    let existing = path;
+
+    while (!existsSync(existing)) {
+        try {
+            lstatSync(existing);
+
+            return false;
+        } catch {
+            existing = dirname(existing);
+        }
+    }
+
+    const root = realpathSync(outDir);
+    const real = realpathSync(existing);
+
+    return real === root || real.startsWith(root + sep);
+}
+
 // #endregion
 
 // #region Main
@@ -203,8 +258,10 @@ async function runPage(url) {
         try {
             await page.goto(url);
         } catch (error) {
-            console.error(`Could not reach ${new URL(url).origin} - is the dev server running? (${error.message})`);
-            process.exit(1);
+            // Thrown, not process.exit: the finally below still closes the browser.
+            throw new Error(`Could not reach ${new URL(url).origin} - is the dev server running? (${error.message})`, {
+                cause: error,
+            });
         }
 
         try {
@@ -216,6 +273,42 @@ async function runPage(url) {
         return await page.evaluate('window.__shotsResult');
     } finally {
         await browser.close();
+    }
+}
+
+/**
+ * Write the page's images under outDir, adding each refused or unwritable one to `failures`.
+ *
+ * @param {string} outDir
+ * @param {{ path: string, base64: string }[]} images
+ * @param {string[]} failures
+ */
+function writeImages(outDir, images, failures) {
+    for (const image of images) {
+        if (typeof image?.path !== 'string' || typeof image.base64 !== 'string') {
+            failures.push('refused a malformed image entry (it needs a string path and a string base64)');
+            continue;
+        }
+
+        const target = resolveImageTarget(outDir, image.path);
+
+        if (target === null) {
+            failures.push(`refused path outside output dir: ${image.path}`);
+            continue;
+        }
+
+        if (!isInsideRealDir(outDir, target)) {
+            failures.push(`refused path that leaves the output dir through a symlink: ${image.path}`);
+            continue;
+        }
+
+        try {
+            mkdirSync(dirname(target), { recursive: true });
+            writeFileSync(target, Buffer.from(image.base64, 'base64'));
+            console.log(`  wrote ${image.path}`);
+        } catch (error) {
+            failures.push(`could not write ${image.path}: ${error.message}`);
+        }
     }
 }
 
@@ -244,7 +337,14 @@ async function main() {
         return;
     }
 
-    const result = await runPage(url);
+    let result;
+
+    try {
+        result = await runPage(url);
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
 
     if (result === null) {
         console.error(`The page never produced window.__shotsResult within ${RESULT_TIMEOUT_MS / 1000}s (${url}).`);
@@ -262,23 +362,13 @@ async function main() {
 
     mkdirSync(outDir, { recursive: true });
 
-    for (const image of result.images) {
-        const target = resolveImageTarget(outDir, image.path);
-
-        if (target === null) {
-            failures.push(`refused path outside output dir: ${image.path}`);
-            continue;
-        }
-
-        mkdirSync(dirname(target), { recursive: true });
-        writeFileSync(target, Buffer.from(image.base64, 'base64'));
-        console.log(`  wrote ${image.path}`);
-    }
+    writeImages(outDir, result.images, failures);
 
     const manifest = { ...result.manifest, engineVersion: engineVersion() };
 
     writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     console.log(`\n${result.images.length} image(s), manifest with ${manifest.entries.length} entries in ${outDir}`);
+    console.log(summarizeEntries(manifest.entries, slugs).join('\n'));
 
     if (failures.length > 0) {
         console.error(`${failures.length} failed:\n  ${failures.join('\n  ')}`);

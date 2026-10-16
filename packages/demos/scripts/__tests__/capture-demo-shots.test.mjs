@@ -2,11 +2,21 @@
  * Unit tests for the pure helpers in scripts/capture-demo-shots.mjs.
  */
 import assert from 'node:assert/strict';
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
-import { buildAutoUrl, DEFAULTS, parseArgs, resolveImageTarget, selectChanged } from '../capture-demo-shots.mjs';
+import {
+    buildAutoUrl,
+    DEFAULTS,
+    isInsideRealDir,
+    parseArgs,
+    resolveImageTarget,
+    selectChanged,
+    summarizeEntries,
+} from '../capture-demo-shots.mjs';
 
 describe('parseArgs', () => {
     it('captures every demo with the committed variants by default', () => {
@@ -93,5 +103,57 @@ describe('resolveImageTarget', () => {
     it('refuses a parent-relative or absolute path', () => {
         assert.equal(resolveImageTarget(outDir, '../escape.png'), null);
         assert.equal(resolveImageTarget(outDir, '/abs/x.png'), null);
+    });
+});
+
+describe('resolveImageTarget at the output directory itself', () => {
+    const outDir = resolve('/tmp/shots-out');
+
+    it('refuses a path that resolves to outDir, which is not a file inside it', () => {
+        assert.equal(resolveImageTarget(outDir, '.'), null);
+        assert.equal(resolveImageTarget(outDir, ''), null);
+        assert.equal(resolveImageTarget(outDir, 'basics/..'), null);
+    });
+});
+
+describe('isInsideRealDir', () => {
+    it('follows symlinks, so a link out of outDir is refused', (t) => {
+        const root = mkdtempSync(join(tmpdir(), 'shots-real-'));
+
+        t.after(() => rmSync(root, { recursive: true, force: true }));
+        const outDir = join(root, 'out');
+        const elsewhere = join(root, 'elsewhere');
+
+        mkdirSync(join(outDir, 'inside'), { recursive: true });
+        mkdirSync(elsewhere);
+        symlinkSync(elsewhere, join(outDir, 'link'));
+
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'inside')), true);
+        assert.equal(isInsideRealDir(outDir, outDir), true);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'link')), false);
+        // A folder that does not exist yet is judged by its nearest existing parent.
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'new', 'deeper')), true);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'link', 'new')), false);
+
+        // A dangling link would create its target when written through.
+        symlinkSync(join(root, 'missing', 'file.png'), join(outDir, 'dangling.png'));
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'dangling.png')), false);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'plain.png')), true);
+    });
+});
+
+describe('summarizeEntries', () => {
+    it('lists the tiles of the run with their lint counts and a total', () => {
+        const entries = [
+            { slug: 'basics', pose: 'start', variants: { display: 'a', uidebug: 'b' }, lint: [{}, {}] },
+            { slug: 'sprites', pose: 'start', variants: {}, lint: [], error: 'display: boom' },
+            { slug: 'other', pose: 'start', variants: { display: 'c' }, lint: [{}] },
+        ];
+
+        assert.deepEqual(summarizeEntries(entries, ['basics', 'sprites']), [
+            '  basics/start: display, uidebug, lint 2',
+            '  sprites/start: no variants, lint 0, display: boom',
+            'lint findings in total: 2',
+        ]);
     });
 });
