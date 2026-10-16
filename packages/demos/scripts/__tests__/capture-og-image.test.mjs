@@ -300,5 +300,7 @@ describe('buildSeekScript', () => {
         assert.match(script, /window\.BT\?\.isReady/);
         assert.match(script, /renderAt\(4\.5\)/);
         assert.ok(script.indexOf('isReady') < script.indexOf('renderAt'));
+        // The screenshot must not race the compositor: frames pass after the seek, not before.
+        assert.ok(script.indexOf('renderAt') < script.indexOf('requestAnimationFrame'));
     });
 });

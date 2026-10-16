@@ -378,7 +378,8 @@ export function buildCaptureUrl(baseUrl, slug) {
 /**
  * Browser-side script that waits for the engine to finish init, then seeks it to `at` seconds.
  * The canvas is resized and `window.BT` exists a little before `BT.isReady` flips, and
- * `renderAt` needs the game loop.
+ * `renderAt` needs the game loop. Resolves after the seeked frame has had two animation frames
+ * to reach the screen.
  *
  * @param {number} at Seconds on the engine clock.
  * @param {number} timeoutMs How long to wait for the engine before failing.
@@ -393,6 +394,9 @@ export function buildSeekScript(at, timeoutMs) {
         await new Promise((tick) => setTimeout(tick, 16));
     }
     await window.BT.renderAt(${at});
+    // renderAt resolves once the frame is submitted to the GPU, not once it is presented. Two
+    // animation frames let the compositor show it before the element screenshot.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 })();
 `.trim();
 }
