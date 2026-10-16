@@ -173,6 +173,16 @@ body {
         image-rendering: pixelated;
     }
 
+    & .shots-diff-overlay {
+        pointer-events: none;
+        position: absolute;
+
+        /* The img display rule above would otherwise beat the [hidden] attribute. */
+        &[hidden] {
+            display: none;
+        }
+    }
+
     & .shots-grid {
         background-image:
             linear-gradient(to right, rgb(255 255 255 / 15%) 1px, transparent 1px),
@@ -183,10 +193,11 @@ body {
     }
 
     & .shots-lightbox-caption {
-        bottom: var(--shots-gap);
         color: var(--shots-dim);
-        left: var(--shots-gap);
-        position: fixed;
+        font-size: 11px;
+        position: absolute;
+        transform: translateX(-50%);
+        white-space: nowrap;
     }
 }
 

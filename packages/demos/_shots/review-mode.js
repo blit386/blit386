@@ -114,6 +114,9 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
         setStatus(`diff view: ${state.show}`);
     };
 
+    // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
+    window.__shotsDiff.current = () => ({ show: state.show, diffFor });
+
     if (rawBaseline !== null && baseline === null) {
         setStatus('baseline refused: it must be an http(s) URL or a same-origin path');
     }

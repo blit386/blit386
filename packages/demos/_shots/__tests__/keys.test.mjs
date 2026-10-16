@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { GALLERY_ACTIONS } from '../gallery.js';
-import { BINDINGS, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS } from '../keys.js';
+import { BINDINGS, closesHelp, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS } from '../keys.js';
 import { LIGHTBOX_ACTIONS } from '../lightbox.js';
 
 const press = (code, extra = {}) => ({ code, key: code, shiftKey: false, target: { tagName: 'MAIN' }, ...extra });
@@ -124,5 +124,14 @@ describe('every bound action has a handler', () => {
             ),
             [],
         );
+    });
+});
+
+describe('closesHelp', () => {
+    it('lets only ? and Escape through while help is open', () => {
+        assert.equal(closesHelp({ key: '?' }), true);
+        assert.equal(closesHelp({ key: 'Escape' }), true);
+        assert.equal(closesHelp({ key: 'j' }), false);
+        assert.equal(closesHelp({ key: 'ArrowRight' }), false);
     });
 });

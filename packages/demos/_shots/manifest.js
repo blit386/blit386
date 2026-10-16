@@ -105,4 +105,7 @@ function mergeManifest(existing, incoming, order, meta = {}) {
     };
 }
 
-export { emptyManifest, entryKey, imagePath, mergeManifest };
+/** Joins the parts of a tile or lightbox caption. */
+const CAPTION_SEPARATOR = ' \u2022 ';
+
+export { CAPTION_SEPARATOR, emptyManifest, entryKey, imagePath, mergeManifest };
