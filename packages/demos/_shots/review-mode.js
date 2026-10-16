@@ -1,10 +1,11 @@
 /**
  * Review aids for the /shots page: findings (flags and notes) and the baseline pixel diff.
- * Installs the `window.__shotsFindings` and `window.__shotsDiff` hooks that shots.js routes keys to.
+ * startReviewMode returns the two hooks that shots.js routes keys to.
  */
 
 import { BASELINE_REFUSED, parseBaseline } from './baseline.js';
 import { diffPixels, loadPixels } from './diff.js';
+import { downloadBlob } from './download.js';
 import { createFindings } from './findings.js';
 
 const DIFF_CYCLE = ['current', 'baseline', 'diff'];
@@ -12,14 +13,9 @@ const EXPORT_FILE = 'shots-findings.md';
 
 function exportMarkdown(findings, setStatus) {
     const markdown = findings.toMarkdown();
-    const link = document.createElement('a');
 
     // Download first: the clipboard is undefined outside a secure context and must never block it.
-    link.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
-    link.download = EXPORT_FILE;
-    link.click();
-    // Some browsers start the download asynchronously; revoking in the same tick can empty it.
-    setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    downloadBlob(EXPORT_FILE, new Blob([markdown], { type: 'text/markdown' }));
     setStatus(`findings downloaded as ${EXPORT_FILE}`);
 
     navigator.clipboard?.writeText(markdown).then(
@@ -31,7 +27,7 @@ function exportMarkdown(findings, setStatus) {
 function startFindings({ gallery, setStatus, renderInfo }) {
     const findings = createFindings(localStorage);
 
-    window.__shotsFindings = {
+    const hooks = {
         toggleFlag(key) {
             findings.toggleFlag(key);
             gallery.setFlagged(findings.flaggedKeys());
@@ -49,6 +45,8 @@ function startFindings({ gallery, setStatus, renderInfo }) {
     };
 
     gallery.setFlagged(findings.flaggedKeys());
+
+    return hooks;
 }
 
 function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
@@ -72,9 +70,10 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
     }
 
     // The promise is cached, failures included: a missing baseline is not re-fetched on every
-    // refresh(), and concurrent callers share one decode.
+    // refresh(), and concurrent callers share one decode. The current image's URL is part of the
+    // key: a recapture in dev swaps in a new object URL, which must not reuse the old diff.
     function diffFor(entry, variant) {
-        const cacheKey = `${entry.slug}/${entry.pose}/${variant}`;
+        const cacheKey = `${entry.slug}/${entry.pose}/${variant}|${imageUrl(entry, variant)}`;
 
         if (!cache.has(cacheKey)) {
             cache.set(cacheKey, computeDiff(entry, variant));
@@ -83,7 +82,7 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
         return cache.get(cacheKey);
     }
 
-    window.__shotsDiff = (action) => {
+    function apply(action) {
         if (rawBaseline === null) {
             setStatus('no baseline: open /shots?baseline=<url of another public/shots>');
 
@@ -105,14 +104,17 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
 
         gallery.setView({ diff: state.show, diffFor: state.show === 'current' ? null : diffFor });
         setStatus(`diff view: ${state.show}`);
-    };
-
-    // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
-    window.__shotsDiff.current = () => ({ show: state.show, diffFor, baselineUrlFor });
+    }
 
     if (rawBaseline !== null && baseline === null) {
         setStatus(BASELINE_REFUSED);
     }
+
+    return {
+        apply,
+        // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
+        current: () => ({ show: state.show, diffFor, baselineUrlFor }),
+    };
 }
 
 /**
@@ -122,10 +124,16 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
  *   setStatus: (text: string) => void,
  *   renderInfo: () => void,
  * }} context
+ * @returns {{
+ *   findings: ReturnType<typeof startFindings>,
+ *   diff: ReturnType<typeof startDiff>,
+ * }}
  */
 function startReviewMode(context) {
-    startFindings(context);
-    startDiff(context, new URLSearchParams(location.search).get('baseline'));
+    return {
+        findings: startFindings(context),
+        diff: startDiff(context, new URLSearchParams(location.search).get('baseline')),
+    };
 }
 
 export { startReviewMode };

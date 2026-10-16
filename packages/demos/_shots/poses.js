@@ -98,6 +98,30 @@ function posesFor(slug) {
 }
 
 /**
+ * Every (demo, pose, variant) capture job for the given demos, in pose-then-variant order.
+ *
+ * @param {string[]} slugs
+ * @param {string[]} variants
+ * @returns {Array<{ slug: string, pose: Pose, variant: string }>}
+ */
+function jobsFor(slugs, variants) {
+    return slugs.flatMap((slug) =>
+        posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
+    );
+}
+
+/**
+ * Is `pose` still a pose of `slug`? False for a pose that was renamed or removed from the table.
+ *
+ * @param {string} slug
+ * @param {string} pose
+ * @returns {boolean}
+ */
+function isKnownPose(slug, pose) {
+    return posesFor(slug).some((candidate) => candidate.id === pose);
+}
+
+/**
  * Problems in a pose table, as messages. Empty when the table is sound.
  *
  * @param {Record<string, Pose[]>} posesBySlug
@@ -145,4 +169,14 @@ function validatePoses(posesBySlug, knownSlugs) {
     return problems;
 }
 
-export { COMMITTED_VARIANTS, DEFAULT_POSES, OUTPUT_VARIANT, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS };
+export {
+    COMMITTED_VARIANTS,
+    DEFAULT_POSES,
+    isKnownPose,
+    jobsFor,
+    OUTPUT_VARIANT,
+    POSES_BY_SLUG,
+    posesFor,
+    validatePoses,
+    VARIANTS,
+};

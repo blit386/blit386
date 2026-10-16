@@ -208,7 +208,9 @@ phone without a keyboard.
 
 `/shots` (on `next.demos.blit386.dev`) shows pixel-perfect captures of every demo at deterministic moments, with the
 shared UI kit's layout lint. Captures are generated on the dev server and committed under `public/shots/` with
-`pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`).
+`pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`). After a clean run the script also
+deletes `.png` files in the captured demos' folders that the new manifest no longer lists, such as the image of a
+renamed pose; review them in `git status` before committing.
 
 In dev, the page itself has capture controls; in a build it is a read-only gallery. Keyboard: `?` lists everything.
 

@@ -105,3 +105,25 @@ describe('mergeManifest', () => {
         assert.match(merged.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     });
 });
+
+describe('mergeManifest with isKnownPose', () => {
+    const order = ['basics'];
+    const known = (slug, pose) => pose !== 'start';
+
+    it('drops an existing entry whose pose no longer exists, so a rename leaves no ghost tile', () => {
+        const existing = { ...emptyManifest(), entries: [entry('basics', 'start')] };
+        const merged = mergeManifest(existing, [entry('basics', 'idle')], order, { isKnownPose: known });
+
+        assert.deepEqual(
+            merged.entries.map((item) => entryKey(item.slug, item.pose)),
+            ['basics/idle'],
+        );
+    });
+
+    it('keeps the entries of poses that still exist, and everything when no check is passed', () => {
+        const existing = { ...emptyManifest(), entries: [entry('basics', 'start'), entry('basics', 'settled')] };
+
+        assert.equal(mergeManifest(existing, [], order, { isKnownPose: known }).entries.length, 1);
+        assert.equal(mergeManifest(existing, [], order).entries.length, 2);
+    });
+});

@@ -6,8 +6,10 @@
  */
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
+import { errorText } from './capture.js';
+import { downloadBlob } from './download.js';
 import { entryKey, imagePath, mergeManifest } from './manifest.js';
-import { OUTPUT_VARIANT } from './poses.js';
+import { isKnownPose, OUTPUT_VARIANT } from './poses.js';
 
 const MANIFEST_NAME = 'manifest.json';
 
@@ -76,20 +78,12 @@ function entriesFromResults(results) {
     return [...byKey.values()];
 }
 
-const errorMessage = (error) => (error instanceof Error ? error.message : String(error));
-
 /**
  * @param {string} path
  * @param {Blob} data
  */
 async function downloadFile(path, data) {
-    const link = document.createElement('a');
-
-    link.href = URL.createObjectURL(data);
-    link.download = path.replaceAll('/', '__');
-    link.click();
-    // Some browsers start the download asynchronously; revoking in the same tick can empty it.
-    setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    downloadBlob(path.replaceAll('/', '__'), data);
 }
 
 /**
@@ -115,18 +109,18 @@ async function saveRun(dir, results, existingManifest, meta) {
             await write(path, result.blob);
             written.push(result);
         } catch (error) {
-            failed.push({ path, error: errorMessage(error), result });
+            failed.push({ path, error: errorText(error), result });
         }
     }
 
-    const manifest = mergeManifest(existingManifest, entriesFromResults(written), DEMO_ORDER, meta);
+    const manifest = mergeManifest(existingManifest, entriesFromResults(written), DEMO_ORDER, { ...meta, isKnownPose });
 
     try {
         await write(MANIFEST_NAME, new Blob([`${JSON.stringify(manifest, null, 2)}\n`], { type: 'application/json' }));
     } catch (error) {
         failed.push({
             path: MANIFEST_NAME,
-            error: errorMessage(error),
+            error: errorText(error),
             result: null,
         });
     }

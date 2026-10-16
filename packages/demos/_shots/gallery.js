@@ -140,6 +140,41 @@ function createGallery(root, hooks) {
         return VARIANTS.find((variant) => entry.variants[variant]) ?? 'display';
     }
 
+    /** A collapsed stack shows its size; the first tile of an expanded stack shows a collapse mark. Either toggles it. */
+    function createStackBadge(tile) {
+        const group = entries.filter((candidate) => candidate.slug === tile.slug);
+        const stackLabel =
+            tile.stackSize > 1 ? `${tile.stackSize}` : group[0]?.pose === tile.pose && group.length > 1 ? '-' : null;
+
+        if (!stackLabel || !view.stacked) {
+            return null;
+        }
+
+        const count = document.createElement('button');
+        const collapsed = tile.stackSize > 1;
+
+        count.type = 'button';
+        count.className = 'shots-stack-count';
+        count.textContent = stackLabel;
+        count.title = 'Expand or collapse this stack (G)';
+        count.setAttribute('aria-expanded', String(!collapsed));
+        count.setAttribute(
+            'aria-label',
+            collapsed ? `Expand ${tile.stackSize} poses of ${tile.slug}` : `Collapse the poses of ${tile.slug}`,
+        );
+        count.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleIn(view.expanded, tile.slug);
+            focused = tile.key;
+            refresh();
+            // refresh() replaced the tile, and the button with it; a keyboard user keeps their place.
+            tileElement(tile.key)?.querySelector('.shots-stack-count')?.focus();
+            hooks.onSelect?.();
+        });
+
+        return count;
+    }
+
     function renderTile(tile) {
         const entry = byKey.get(tile.key);
         const element = document.createElement('figure');
@@ -166,7 +201,8 @@ function createGallery(root, hooks) {
 
             sizeImage(img, entry, variant);
             img.src = url;
-            img.alt = link ? link.label : `${tile.slug} ${tile.pose} ${variant}`;
+            // In link mode the caption inside the same link already names it; a label here would be read twice.
+            img.alt = link ? '' : `${tile.slug} ${tile.pose} ${variant}`;
             img.draggable = false;
 
             if (link) {
@@ -208,14 +244,6 @@ function createGallery(root, hooks) {
             attachDiff(view, { entry, variant, img, element, caption });
         }
 
-        if (tile.stackSize > 1) {
-            const count = document.createElement('span');
-
-            count.className = 'shots-stack-count';
-            count.textContent = `${tile.stackSize}`;
-            element.append(count);
-        }
-
         if (link) {
             const anchor = document.createElement('a');
 
@@ -227,7 +255,20 @@ function createGallery(root, hooks) {
             return element;
         }
 
+        const stackBadge = createStackBadge(tile);
+
+        if (stackBadge) {
+            element.append(stackBadge);
+        }
+
         element.addEventListener('click', (event) => {
+            // The first click re-renders every tile, so the browser never sends a dblclick: use the click count.
+            if (event.detail === 2) {
+                hooks.onOpen(tile.key);
+
+                return;
+            }
+
             if (event.shiftKey) {
                 extendSelectionTo(tile.key);
             } else {
@@ -238,7 +279,6 @@ function createGallery(root, hooks) {
             refresh();
             hooks.onSelect?.();
         });
-        element.addEventListener('dblclick', () => hooks.onOpen(tile.key));
 
         return element;
     }
@@ -440,13 +480,11 @@ function createGallery(root, hooks) {
             Object.assign(view, partial);
             refresh();
         },
-        getView: () => ({ ...view, expanded: new Set(view.expanded) }),
         focusKey(key) {
             focused = key;
             refresh();
         },
         focusedKey: () => focused,
-        selectedKeys: () => [...selected],
         visibleKeys: order,
         entryFor: (key) => byKey.get(key) ?? null,
         currentVariant: (key) => variantFor(byKey.get(key)),

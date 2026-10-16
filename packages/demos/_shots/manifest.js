@@ -56,7 +56,8 @@ function emptyManifest() {
  * @param {Manifest} existing
  * @param {ManifestEntry[]} incoming
  * @param {string[]} order
- * @param {{ engineVersion?: string, now?: Date }} [meta]
+ * @param {{ engineVersion?: string, now?: Date, isKnownPose?: (slug: string, pose: string) => boolean }} [meta] -
+ *   `isKnownPose` drops entries of poses that no longer exist, so a renamed pose leaves no ghost tile.
  * @returns {Manifest}
  */
 function mergeManifest(existing, incoming, order, meta = {}) {
@@ -75,6 +76,14 @@ function mergeManifest(existing, incoming, order, meta = {}) {
             lint: entry.width ? entry.lint : (previous?.lint ?? entry.lint),
             variants: { ...(previous ? previous.variants : {}), ...entry.variants },
         });
+    }
+
+    if (meta.isKnownPose) {
+        for (const [key, entry] of byKey) {
+            if (!meta.isKnownPose(entry.slug, entry.pose)) {
+                byKey.delete(key);
+            }
+        }
     }
 
     const rank = new Map(order.map((slug, index) => [slug, index]));

@@ -3,7 +3,8 @@
  * through capture.js, show progress, and save through save.js.
  */
 
-import { COMMITTED_VARIANTS, posesFor, VARIANTS } from './poses.js';
+import { errorText } from './capture.js';
+import { COMMITTED_VARIANTS, jobsFor, VARIANTS } from './poses.js';
 
 /**
  * @param {string} value
@@ -32,13 +33,16 @@ function checkboxLabel(value, checked) {
  */
 function createCapturePanel(root, hooks) {
     root.hidden = false;
+
     root.innerHTML = `
         <div class="shots-row">
-            <strong>Capture</strong>
+            <span>Capture:</span>
             <label><input type="checkbox" data-role="all-demos"/> all demos</label>
             <span data-role="variants"></span>
         </div>
+
         <div class="shots-demos" data-role="demos"></div>
+
         <div class="shots-row">
             <button type="button" data-role="run">Capture selected (c)</button>
             <button type="button" data-role="run-all">Capture all (Shift+C)</button>
@@ -68,14 +72,6 @@ function createCapturePanel(root, hooks) {
         return [...variantBox.querySelectorAll('input:checked')].map((box) => box.value);
     }
 
-    function jobsFor(slugs) {
-        const variants = selectedVariants();
-
-        return slugs.flatMap((slug) =>
-            posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
-        );
-    }
-
     let running = false;
 
     function setButtons(disabled) {
@@ -100,7 +96,7 @@ function createCapturePanel(root, hooks) {
         setButtons(true);
 
         try {
-            await hooks.onRun(jobsFor(slugs));
+            await hooks.onRun(jobsFor(slugs, selectedVariants()));
             saveButton.disabled = false;
         } finally {
             running = false;
@@ -112,7 +108,7 @@ function createCapturePanel(root, hooks) {
         try {
             await hooks.onSave();
         } catch (error) {
-            progress.textContent = `save failed: ${error instanceof Error ? error.message : String(error)}`;
+            progress.textContent = `save failed: ${errorText(error)}`;
         }
     }
 
@@ -127,7 +123,6 @@ function createCapturePanel(root, hooks) {
             progress.textContent = text;
         },
         runSlugs: run,
-        selectedVariants,
     };
 }
 

@@ -5,13 +5,16 @@
  */
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import { captureAll, createFrameAdapter } from './capture.js';
+import { captureAll, createFrameAdapter, errorText } from './capture.js';
 import { createCapturePanel } from './capture-panel.js';
 import { imagePath, mergeManifest } from './manifest.js';
-import { posesFor } from './poses.js';
+import { isKnownPose, jobsFor } from './poses.js';
 import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
 const DEFAULT_AUTO_VARIANTS = 'display,uidebug';
+
+// Rebuilding every tile per result would cost more than the capture itself; repaint at most this often.
+const GALLERY_REFRESH_MS = 250;
 
 function csv(value) {
     return (value ?? '').split(',').filter(Boolean);
@@ -64,11 +67,13 @@ async function startCaptureMode(shell) {
     function mergedWith(results) {
         return mergeManifest(currentManifest, entriesFromResults(results), DEMO_ORDER, {
             engineVersion: engineVersion(),
+            isKnownPose,
         });
     }
 
     async function runJobs(jobs) {
         const results = [];
+        let lastRefresh = 0;
 
         await captureAll(
             frame,
@@ -90,12 +95,19 @@ async function startCaptureMode(shell) {
                     liveImages.set(key, URL.createObjectURL(result.blob));
                 }
 
-                gallery.setEntries(mergedWith(results).entries);
+                const now = performance.now();
+
+                if (now - lastRefresh >= GALLERY_REFRESH_MS) {
+                    lastRefresh = now;
+                    gallery.setEntries(mergedWith(results).entries);
+                }
             },
             { demoBase: shell.demoBase, pageSuffix: shell.pageSuffix },
         );
 
         currentManifest = mergedWith(results);
+        // The throttle may have skipped the last results; show the final state.
+        gallery.setEntries(currentManifest.entries);
         unsaved = [...unsaved, ...results];
         setStatus(`${results.filter((result) => result.ok).length}/${results.length} captured, unsaved`);
 
@@ -142,7 +154,7 @@ async function startCaptureMode(shell) {
             await runAuto(params);
         } catch (error) {
             // Fail fast: the driver polls __shotsResult and would otherwise wait out its timeout.
-            window.__shotsResult = { manifest: null, images: [], failures: [`auto: ${error?.message ?? error}`] };
+            window.__shotsResult = { manifest: null, images: [], failures: [`auto: ${errorText(error)}`] };
             throw error;
         }
     }
@@ -152,10 +164,7 @@ async function startCaptureMode(shell) {
         const slugs = csv(query.get('demos'));
         const variants = csv(query.get('variants') ?? DEFAULT_AUTO_VARIANTS);
         const targets = slugs.length > 0 ? slugs : demos.map((demo) => demo.slug);
-        const jobs = targets.flatMap((slug) =>
-            posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
-        );
-        const results = await runJobs(jobs);
+        const results = await runJobs(jobsFor(targets, variants));
         const images = [];
 
         for (const result of results.filter((item) => item.ok)) {

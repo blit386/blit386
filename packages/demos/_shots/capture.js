@@ -10,11 +10,13 @@ import { lintSnapshot } from '../src/shared/ui-lint.js';
 import { OUTPUT_VARIANT } from './poses.js';
 
 const CANVAS_ID = 'blit386-canvas';
+
 // The browser's default canvas size, before the engine resizes it (see playwright-session.mjs).
 const DEFAULT_CANVAS = { width: 300, height: 150 };
 const READY_TIMEOUT_MS = 10_000;
 const STEP_TIMEOUT_MS = 10_000;
 const CANVAS_POLL_MS = 16;
+
 // Ticks stepped after an input: one for ui.tick() to latch it, one for the widget to show it.
 const INPUT_TICKS = 2;
 
@@ -292,4 +294,4 @@ function createFrameAdapter(iframe) {
     };
 }
 
-export { captureAll, captureUrl, createFrameAdapter, pointerClientPoint, runPose, stepAfterInput };
+export { captureAll, captureUrl, createFrameAdapter, errorText, pointerClientPoint, runPose, stepAfterInput };

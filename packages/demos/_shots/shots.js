@@ -52,6 +52,9 @@ function demoUrl(slug, extra = '') {
     return `${demoBase}${slug}${pageSuffix}${extra}`;
 }
 
+// Set once the manifest is loaded; the key handler and the lightbox only reach it after tiles exist.
+let review = null;
+
 const gallery = createGallery(galleryRoot, {
     imageUrl,
     onOpen: (key) => lightbox.open(key),
@@ -65,7 +68,7 @@ const lightbox = createLightbox(lightboxRoot, {
     entryFor: (key) => gallery.entryFor(key),
     variantFor: (key) => gallery.currentVariant(key),
     cycleVariant: (key) => gallery.cycleVariant(key),
-    diffState: () => window.__shotsDiff.current(),
+    diffState: () => review.diff.current(),
     onClose: (key) => {
         if (key) {
             gallery.focusKey(key);
@@ -104,7 +107,7 @@ function renderInfo() {
 
     const lint = entry.lint.map((finding) => `${finding.rule}: ${finding.message}`).join('\n') || 'no lint findings';
 
-    const notes = (window.__shotsFindings?.notesFor(key) ?? []).map((note) => `\nnote: ${note}`).join('');
+    const notes = (review?.findings.notesFor(key) ?? []).map((note) => `\nnote: ${note}`).join('');
 
     infoRoot.textContent = `${entry.slug} / ${entry.pose}\n${entry.width}x${entry.height}\nvariants: ${Object.keys(entry.variants).join(', ')}\n${entry.error ? `error: ${entry.error}\n` : ''}${lint}${notes}`;
 }
@@ -139,32 +142,46 @@ function openLive(key) {
     }
 }
 
-function handleShared(action) {
-    const key = currentKey();
+/** Actions on one tile; they need a tile to act on. @returns {boolean} True when the action was handled. */
+function handleKeyed(action, key) {
+    if (!key) {
+        return false;
+    }
 
+    if (action === 'copy-path') {
+        copyPath(key);
+    } else if (action === 'flag') {
+        review?.findings.toggleFlag(key);
+    } else if (action === 'note') {
+        review?.findings.addNote(key);
+    } else if (action === 'capture-current') {
+        // The lightbox shows the new frame once the run ends; outside dev there is no hook and nothing happens.
+        window.__shotsCapture?.([key])?.then(() => lightbox.isOpen() && lightbox.rerender());
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+function handleShared(action) {
     if (action === 'help') {
         helpRoot.hidden = !helpRoot.hidden;
     } else if (action === 'info-toggle') {
         infoRoot.hidden = !infoRoot.hidden;
         renderInfo();
     } else if (action === 'open-live') {
-        openLive(key);
-    } else if (action === 'copy-path' && key) {
-        copyPath(key);
-    } else if (action === 'flag' && key) {
-        window.__shotsFindings?.toggleFlag(key);
-    } else if (action === 'note' && key) {
-        window.__shotsFindings?.addNote(key);
+        openLive(currentKey());
     } else if (action === 'export') {
-        window.__shotsFindings?.exportMarkdown();
+        review?.findings.exportMarkdown();
     } else if (action === 'diff-toggle' || action === 'diff-cycle') {
-        window.__shotsDiff?.(action);
+        review?.diff.apply(action);
 
         if (lightbox.isOpen()) {
             lightbox.rerender();
         }
     } else {
-        return false;
+        return handleKeyed(action, currentKey());
     }
 
     return true;
@@ -268,7 +285,7 @@ if (!failed) {
 }
 
 // After the summary, so a refused ?baseline status is the one left on screen.
-startReviewMode({ gallery, imageUrl, setStatus, renderInfo });
+review = startReviewMode({ gallery, imageUrl, setStatus, renderInfo });
 
 galleryRoot.focus();
 

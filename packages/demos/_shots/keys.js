@@ -8,6 +8,8 @@
  */
 
 const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+const ACTIVATION_TAGS = new Set(['BUTTON', 'A']);
+const ACTIVATION_CODES = new Set(['Enter', 'Space']);
 const KEY_PREFIX = 'key:';
 const GALLERY_COLUMN = 2;
 const LIGHTBOX_COLUMN = 3;
@@ -56,7 +58,7 @@ const BINDINGS = [
     ['KeyM', false, 'note', 'note'],
     ['KeyE', false, 'export', null],
     ['KeyY', false, 'copy-path', 'copy-path'],
-    ['KeyC', false, 'capture-selected', null],
+    ['KeyC', false, 'capture-selected', 'capture-current'],
     ['KeyC', true, 'capture-all', null],
     ['Digit1', false, null, 'zoom-1'],
     ['Digit2', false, null, 'zoom-2'],
@@ -81,6 +83,7 @@ const SHARED_ACTIONS = [
     'diff-toggle',
     'diff-cycle',
     'filter',
+    'capture-current',
 ];
 
 /**
@@ -111,6 +114,11 @@ function resolveKey(event, mode) {
         return event.code === 'Escape' ? 'escape' : null;
     }
 
+    // A focused button or link keeps Enter and Space: they activate it, and a binding would swallow them.
+    if (ACTIVATION_CODES.has(event.code) && ACTIVATION_TAGS.has(event.target?.tagName)) {
+        return null;
+    }
+
     const column = mode === 'gallery' ? GALLERY_COLUMN : LIGHTBOX_COLUMN;
     const hit = BINDINGS.find((binding) => binding[column] && matchesBinding(binding, event));
 
@@ -139,7 +147,7 @@ const KEY_HELP = [
     { keys: 'y', gallery: 'copy PNG path', lightbox: 'copy PNG path' },
     { keys: 'Shift+O', gallery: 'open the live demo in a new tab', lightbox: 'same' },
     { keys: '/', gallery: 'focus filter', lightbox: '' },
-    { keys: 'c Shift+C', gallery: 'capture selected / all (dev only)', lightbox: '' },
+    { keys: 'c Shift+C', gallery: 'capture selected / all (dev only)', lightbox: 'c: capture this demo (dev only)' },
     { keys: '?', gallery: 'this help', lightbox: 'this help' },
 ];
 
