@@ -7,7 +7,7 @@
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { entryKey, imagePath, mergeManifest } from './manifest.js';
-import { OUTPUT_VARIANT } from './poses.js';
+import { isKnownPose, OUTPUT_VARIANT } from './poses.js';
 
 const MANIFEST_NAME = 'manifest.json';
 
@@ -119,7 +119,7 @@ async function saveRun(dir, results, existingManifest, meta) {
         }
     }
 
-    const manifest = mergeManifest(existingManifest, entriesFromResults(written), DEMO_ORDER, meta);
+    const manifest = mergeManifest(existingManifest, entriesFromResults(written), DEMO_ORDER, { ...meta, isKnownPose });
 
     try {
         await write(MANIFEST_NAME, new Blob([`${JSON.stringify(manifest, null, 2)}\n`], { type: 'application/json' }));

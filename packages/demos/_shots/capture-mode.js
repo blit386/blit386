@@ -8,7 +8,7 @@ import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { captureAll, createFrameAdapter } from './capture.js';
 import { createCapturePanel } from './capture-panel.js';
 import { imagePath, mergeManifest } from './manifest.js';
-import { posesFor } from './poses.js';
+import { isKnownPose, posesFor } from './poses.js';
 import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
 const DEFAULT_AUTO_VARIANTS = 'display,uidebug';
@@ -64,6 +64,7 @@ async function startCaptureMode(shell) {
     function mergedWith(results) {
         return mergeManifest(currentManifest, entriesFromResults(results), DEMO_ORDER, {
             engineVersion: engineVersion(),
+            isKnownPose,
         });
     }
 

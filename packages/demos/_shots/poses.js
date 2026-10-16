@@ -98,6 +98,17 @@ function posesFor(slug) {
 }
 
 /**
+ * Is `pose` still a pose of `slug`? False for a pose that was renamed or removed from the table.
+ *
+ * @param {string} slug
+ * @param {string} pose
+ * @returns {boolean}
+ */
+function isKnownPose(slug, pose) {
+    return posesFor(slug).some((candidate) => candidate.id === pose);
+}
+
+/**
  * Problems in a pose table, as messages. Empty when the table is sound.
  *
  * @param {Record<string, Pose[]>} posesBySlug
@@ -145,4 +156,13 @@ function validatePoses(posesBySlug, knownSlugs) {
     return problems;
 }
 
-export { COMMITTED_VARIANTS, DEFAULT_POSES, OUTPUT_VARIANT, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS };
+export {
+    COMMITTED_VARIANTS,
+    DEFAULT_POSES,
+    isKnownPose,
+    OUTPUT_VARIANT,
+    POSES_BY_SLUG,
+    posesFor,
+    validatePoses,
+    VARIANTS,
+};

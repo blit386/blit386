@@ -5,7 +5,15 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
-import { COMMITTED_VARIANTS, DEFAULT_POSES, POSES_BY_SLUG, posesFor, validatePoses, VARIANTS } from '../poses.js';
+import {
+    COMMITTED_VARIANTS,
+    DEFAULT_POSES,
+    isKnownPose,
+    POSES_BY_SLUG,
+    posesFor,
+    validatePoses,
+    VARIANTS,
+} from '../poses.js';
 
 describe('posesFor', () => {
     it('falls back to the defaults for a demo without an entry', () => {
@@ -16,6 +24,15 @@ describe('posesFor', () => {
         const [slug, poses] = Object.entries(POSES_BY_SLUG)[0];
 
         assert.equal(posesFor(slug), poses);
+    });
+});
+
+describe('isKnownPose', () => {
+    it('accepts a listed pose and the defaults, and refuses a renamed or unknown one', () => {
+        assert.ok(isKnownPose('basics', 'moving'));
+        assert.ok(isKnownPose('no-such-demo', 'start'));
+        assert.ok(!isKnownPose('basics', 'wandering'));
+        assert.ok(!isKnownPose('no-such-demo', 'moving'));
     });
 });
 

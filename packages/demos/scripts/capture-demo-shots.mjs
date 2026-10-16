@@ -16,7 +16,16 @@
  *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import {
+    existsSync,
+    lstatSync,
+    mkdirSync,
+    readdirSync,
+    readFileSync,
+    realpathSync,
+    rmSync,
+    writeFileSync,
+} from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -200,6 +209,19 @@ export function summarizeEntries(entries, slugs) {
 }
 
 /**
+ * PNGs on disk that no manifest entry points to any more, such as the image of a renamed pose.
+ *
+ * @param {string[]} files - Paths relative to the output dir, like `basics/start.display.png`.
+ * @param {Array<{ variants: Record<string, string> }>} entries
+ * @returns {string[]}
+ */
+export function staleImages(files, entries) {
+    const referenced = new Set(entries.flatMap((entry) => Object.values(entry.variants)));
+
+    return files.filter((file) => !referenced.has(file));
+}
+
+/**
  * Whether a path really lives inside outDir once symlinks are followed, which the lexical check in
  * resolveImageTarget cannot see. The path need not exist yet: its nearest existing parent decides,
  * so nothing has to be created before the check. A dangling symlink counts as outside, because
@@ -312,6 +334,33 @@ function writeImages(outDir, images, failures) {
     }
 }
 
+/**
+ * Delete the PNGs of the captured demos that the new manifest no longer lists. Only the demos of
+ * this run are touched, and only `.png` files inside their own folder.
+ *
+ * @param {string} outDir
+ * @param {Array<{ variants: Record<string, string> }>} entries
+ * @param {string[]} slugs
+ */
+function removeStaleImages(outDir, entries, slugs) {
+    for (const slug of slugs) {
+        const folder = join(outDir, slug);
+
+        if (!existsSync(folder) || !isInsideRealDir(outDir, folder)) {
+            continue;
+        }
+
+        const files = readdirSync(folder)
+            .filter((name) => name.endsWith('.png'))
+            .map((name) => `${slug}/${name}`);
+
+        for (const file of staleImages(files, entries)) {
+            rmSync(join(outDir, file));
+            console.log(`  removed ${file}`);
+        }
+    }
+}
+
 async function main() {
     let options;
 
@@ -367,6 +416,12 @@ async function main() {
     const manifest = { ...result.manifest, engineVersion: engineVersion() };
 
     writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+
+    // Only after the manifest is on disk, and never after a failed run: a missing image is not a stale one.
+    if (failures.length === 0) {
+        removeStaleImages(outDir, manifest.entries, slugs);
+    }
+
     console.log(`\n${result.images.length} image(s), manifest with ${manifest.entries.length} entries in ${outDir}`);
     console.log(summarizeEntries(manifest.entries, slugs).join('\n'));
 

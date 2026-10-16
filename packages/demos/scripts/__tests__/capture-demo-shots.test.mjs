@@ -15,6 +15,7 @@ import {
     parseArgs,
     resolveImageTarget,
     selectChanged,
+    staleImages,
     summarizeEntries,
 } from '../capture-demo-shots.mjs';
 
@@ -155,5 +156,20 @@ describe('summarizeEntries', () => {
             '  sprites/start: no variants, lint 0, display: boom',
             'lint findings in total: 2',
         ]);
+    });
+});
+
+describe('staleImages', () => {
+    it('lists the files no manifest entry points to', () => {
+        const entries = [{ variants: { display: 'basics/idle.display.png', uidebug: 'basics/idle.uidebug.png' } }];
+        const files = ['basics/idle.display.png', 'basics/start.display.png', 'basics/start.uidebug.png'];
+
+        assert.deepEqual(staleImages(files, entries), ['basics/start.display.png', 'basics/start.uidebug.png']);
+    });
+
+    it('keeps every file that is still referenced', () => {
+        const entries = [{ variants: { display: 'basics/start.display.png' } }];
+
+        assert.deepEqual(staleImages(['basics/start.display.png'], entries), []);
     });
 });
