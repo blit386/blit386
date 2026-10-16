@@ -85,6 +85,9 @@ order, and prints one JSON line per step.
      canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA', bubbles: true }));
      ```
 
+   Synthetic pointer events need a `pointerType` (`'mouse'`, `'touch'`, or `'pen'`); an empty one is treated as the
+   mouse, and touch or pen contacts are only tracked when the event says so.
+
    The game runs in real time (about 60 steps a second), so read the state afterward instead of assuming how far
    something moved.
 

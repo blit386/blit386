@@ -542,6 +542,8 @@ const snapshot = BT.testState();
   objects; class instances such as `Vector2i` arrive as `{ x, y }`, and functions and `undefined` fields are dropped.
 - `BT.testState()` never throws. A throwing hook, a cycle, or a `BigInt` logs `[BT] testState() threw:` to the console
   and comes back as `state: null` with the message in `error`.
+- Synthetic pointer events dispatched on the canvas need a `pointerType` (`'mouse'`, `'touch'`, or `'pen'`); an empty
+  one is treated as the mouse, and touch or pen contacts are only tracked when the event says so.
 - The engine never calls `testState()` on its own, so the hook costs nothing unless something reads it. `BT.testState()`
   also exists in release builds; only the `window.BT` global is dev-only (see `BootstrapOptions.exposeGlobal`).
 

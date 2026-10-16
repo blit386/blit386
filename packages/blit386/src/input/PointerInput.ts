@@ -23,6 +23,16 @@ import { clientToDisplayPos } from './clientToDisplayPos';
 /** Maximum number of simultaneously tracked pointers (slot 0 = mouse, 1-3 = touch / pen). */
 export const POINTER_SLOT_COUNT = 4;
 
+/**
+ * True for mouse events. An empty `pointerType` (synthetic events from test
+ * harnesses that omit it, or a browser that cannot detect the device) counts
+ * as the mouse; synthetic touch / pen events must set `pointerType` explicitly.
+ *
+ * @param event - DOM pointer event from the canvas.
+ * @returns `true` when the event should be routed to the mouse slot.
+ */
+const isMousePointer = (event: PointerEvent): boolean => event.pointerType === 'mouse' || event.pointerType === '';
+
 /** Pixels-per-line conversion for `WheelEvent.deltaMode === DOM_DELTA_LINE`. */
 const WHEEL_LINE_HEIGHT_PX = 16;
 
@@ -697,7 +707,7 @@ export class PointerInput {
      * @param event - DOM pointer event from the canvas.
      */
     private handleMove(event: PointerEvent): void {
-        if (event.pointerType === 'mouse') {
+        if (isMousePointer(event)) {
             const slot = this.slots[0];
             const isPreviouslyActive = slot.isActive;
 
@@ -735,7 +745,7 @@ export class PointerInput {
      * @param event - DOM pointer event from the canvas.
      */
     private handleDown(event: PointerEvent): void {
-        if (event.pointerType === 'mouse') {
+        if (isMousePointer(event)) {
             const slot = this.slots[0];
             const isPreviouslyActive = slot.isActive;
 
@@ -801,7 +811,7 @@ export class PointerInput {
      * @param event - DOM pointer event from the canvas.
      */
     private handleUp(event: PointerEvent): void {
-        if (event.pointerType === 'mouse') {
+        if (isMousePointer(event)) {
             const slot = this.slots[0];
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
@@ -834,7 +844,7 @@ export class PointerInput {
      * @param event - DOM pointer event from the canvas.
      */
     private handleCancel(event: PointerEvent): void {
-        if (event.pointerType === 'mouse') {
+        if (isMousePointer(event)) {
             this.deactivateMouseSlot();
 
             return;
@@ -857,7 +867,7 @@ export class PointerInput {
      * @param event - DOM pointer event from the canvas.
      */
     private handlePointerLeave(event: PointerEvent): void {
-        if (event.pointerType === 'mouse') {
+        if (isMousePointer(event)) {
             this.deactivateMouseSlot();
 
             return;
