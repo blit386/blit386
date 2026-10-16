@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-10-16T10:26:40+02:00"
+lastModified: "2026-10-16T16:11:01+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -550,6 +550,9 @@ const snapshot = BT.testState();
 `BT.renderAt`, `BT.captureFrame`, and `BT.testState` become safe to call. It stays `false` before init, while the splash
 is still covering the screen (the loop is created only after the splash handoff), and after a failed init. A parked seek
 does not flip it back to `false`: the loop object is still there.
+
+A second `BT.init()` call made while one is still in flight is rejected (it resolves to `false` and changes nothing),
+and `BT.isReady` stays `false` for the whole duration of any `init()`, including a re-init after an earlier success.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`.

@@ -221,6 +221,9 @@ export class BTAPI {
     /** Game loop managing fixed-timestep updates and variable-rate rendering. */
     private loop: GameLoop | null = null;
 
+    /** True while an `init()` call is running; rejects overlapping inits and keeps {@link isInitialized} false. */
+    private isInitInProgress = false;
+
     /** Milliseconds per fixed update (`1000 / targetFPS`); set by {@link init}, `0` before. */
     private updateIntervalMs = 0;
 
@@ -484,248 +487,24 @@ export class BTAPI {
      *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
-     * @returns `true` when initialization succeeds; otherwise `false`.
+     * @returns `true` when initialization succeeds; otherwise `false`, including when
+     *   another `init()` call is still in flight (the second call is rejected without side effects).
      * @throws Error when a splash frame throws while the splash is on screen.
      */
     public async init(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
-        console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
+        if (this.isInitInProgress) {
+            console.error('[BT] init() ignored: another init() is still in progress');
 
-        this.demo = demo;
-        this.canvas = canvas;
-        this.isDevGuardActive = isDevMode();
-
-        // Hardware settings: demo hook or defaults from defaultConfig() (320x240 logical, 640x480 buffer, 60 FPS).
-        console.log('[BT] Reading hardware configuration');
-
-        if (!this.loadHardwareSettings(demo)) {
             return false;
         }
 
-        const hwSettings = this.hwSettings;
-        if (!hwSettings) {
-            return false;
+        this.isInitInProgress = true;
+
+        try {
+            return await this.runInit(demo, canvas);
+        } finally {
+            this.isInitInProgress = false;
         }
-
-        const updateInterval = 1000 / hwSettings.targetFPS;
-
-        this.updateIntervalMs = updateInterval;
-
-        this.isCollectAudioMetersEnabled =
-            hwSettings.isOverlayEnabled !== false && hwSettings.isOverlayAudioMetersEnabled === true;
-
-        console.log('[BT] Hardware settings:', {
-            displaySize: `${hwSettings.displaySize.x}x${hwSettings.displaySize.y}`,
-            targetFPS: hwSettings.targetFPS,
-        });
-
-        if (!(await this.initRenderer(canvas, hwSettings))) {
-            return false;
-        }
-
-        // Create the built-in system font (synchronous, no GPU needed yet).
-        this.systemFont = createSystemFont();
-        this.setupOverlay();
-        this.attachInputSubsystems(canvas);
-        this.attachAudioSubsystem(canvas);
-
-        // Splash gating resolves here, before the game's init() is invoked, so
-        // init() observes 'disabled' or 'fadingIn' and never an undecided state.
-        this.splash = createSplashIfEnabled(hwSettings);
-
-        // `?seed=N` lands here, before the game's init(), so a BT.randomSeed() call in init()
-        // still wins. Read in release builds too: a seed in a shared URL is the point. Not
-        // repeated by hotReplaceDemo() - a hot-reload swap keeps the running stream.
-        const urlSeed = readSeedUrlParam();
-
-        if (urlSeed !== null) {
-            this.random.seed(urlSeed);
-            console.log(`[BT] Seeded BT.random from ?seed=${urlSeed}`);
-        }
-
-        console.log('[BT] Initializing demo');
-
-        // Captured after ?seed and before the game's init(), so a 'start' seek replays init() against
-        // the same stream the boot run saw - whether that stream was time-seeded or URL-seeded.
-        this.bootRandomState = this.random.getState();
-        this.bootRandomSeed = this.random.seedValue;
-        this.isSeekParked = false;
-
-        if (!(await this.runDemoInitWithSplash(demo, hwSettings))) {
-            return false;
-        }
-
-        // Start the loop. The GameLoop's double-RAF delay ensures the canvas is
-        // fully ready before the first tick.
-        const isFrameDropCallbackNeeded =
-            hwSettings.isDetectingDroppedFrames === true || hwSettings.isOverlayTimingChartEnabled === true;
-        const onFrameDrop: FrameDropCallback | undefined = isFrameDropCallbackNeeded
-            ? (event) => this.handleFrameDrop(event, hwSettings.isDetectingDroppedFrames === true)
-            : undefined;
-
-        this.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
-
-        this.pendingUpdateMs = 0;
-        this.lastRenderClockMs = 0;
-        this.pendingUpdateSteps = 0;
-        this.pendingDrawCalls = 0;
-        this.lastCameraOffset = Vector2i.zero();
-        this.overlayTiming.frameMs = 0;
-        this.overlayTiming.updateMs = 0;
-        this.overlayTiming.renderMs = 0;
-        this.overlayTiming.updateSteps = 0;
-        this.overlayTiming.drawCalls = 0;
-        this.overlayTiming.droppedFrames = 0;
-        this.overlayTiming.primitiveOverflowCount = 0;
-        this.overlayTiming.spriteOverflowCount = 0;
-        this.overlayTiming.primitiveSubmittedVertices = 0;
-        this.overlayTiming.spriteSubmittedVertices = 0;
-        this.resetPendingRendererDiagnostics();
-
-        this.audioSnapshot.levels = { main: 0, music: 0, sfx: 0 };
-        this.audioSnapshot.activeVoices = 0;
-        this.audioSnapshot.totalVoices = 0;
-        this.audioSnapshot.voiceStealCount = 0;
-        this.audioSnapshot.voiceDropCount = 0;
-        this.audioSnapshot.preUnlockDropCount = 0;
-
-        this.loop = new GameLoop(
-            updateInterval,
-            () => {
-                const updateStartMs = performance.now();
-                this.commitPendingCameraReset();
-                this.updating = true;
-
-                try {
-                    this.demo?.update();
-                } finally {
-                    this.updating = false;
-                }
-
-                this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
-                this.pendingUpdateSteps++;
-
-                // Palette effects advance once per fixed update, after the game's update(), on the
-                // tick clock. Per update rather than per render is what makes BT.renderAt exact: a
-                // seek runs the same palette updates as live play instead of one catch-up update at
-                // the end (a flash would only take its snapshot then), and the look no longer depends
-                // on the display's refresh rate.
-                if (this.palette && this.paletteEffects.activeCount > 0) {
-                    this.paletteEffects.update(this.palette);
-                }
-
-                const tick = this.loop?.getTicks() ?? 0;
-
-                // Sample the overlay toggle key's press edge before endUpdate clears it below.
-                // The overlay itself is only checked later, during the render phase (beginRenderFrame),
-                // by which point this tick's edge would otherwise already be gone.
-                if (this.keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, tick)) {
-                    this.pendingOverlayTogglePress = true;
-                }
-
-                // Dev-mode default: Shift+F9 saves a screenshot in every demo, no demo
-                // code needed. Unlike the overlay toggle above, this doesn't need to wait
-                // for the render phase - it just kicks off an async capture-and-download.
-                // Bare F9 (no Shift) instead copies to the OS clipboard, but that path is
-                // NOT handled here - see handleClipboardShortcutKeydown's doc comment for
-                // why it runs from a dedicated keydown listener instead of this tick.
-                if (!this.isFrameCaptureShortcutInFlight && this.isShiftF9ShortcutPressed(tick)) {
-                    void this.captureFrameViaShortcut();
-                }
-
-                // Keyboard edges and text buffer align with fixed update rate, not display
-                // refresh rate (render may run 2x update on 120 Hz / 60 FPS setups).
-                this.keyboard?.endUpdate(tick);
-            },
-            () => {
-                const frameStartMs = performance.now();
-                let renderMs = 0;
-
-                if (this.renderer) {
-                    this.beginRenderFrame();
-
-                    this.renderer.beginFrame();
-
-                    // Re-prime the world camera before the demo draws, in case this render
-                    // frame has zero fixed-update steps (see lastCameraOffset doc comment).
-                    this.renderer.setCameraOffset(this.lastCameraOffset);
-
-                    const renderStartMs = performance.now();
-
-                    this.demo?.render();
-
-                    renderMs = Math.max(0, performance.now() - renderStartMs);
-
-                    // Overlay: screen-space HUD after demo content (top/bottom bars).
-                    if (this.overlay && this.systemFont) {
-                        this.overlay.updateAndRender(
-                            this.renderer,
-                            this.systemFont,
-                            this.pointer,
-                            this.keyboard,
-                            this.loop?.getTicks() ?? 0,
-                            this.getDemoOverlayRows,
-                            this.overlayTiming,
-                            this.palette,
-                            this.framePaletteUsageMask,
-                            this.audioSnapshot,
-                        );
-                    }
-
-                    this.captureRendererDiagnostics();
-                    this.captureAudioDiagnostics();
-
-                    this.renderer.endFrame(this.consumeFrameDeltaMs());
-                }
-
-                // Snapshot pointer state for next frame's edge detection / delta.
-                // Must run AFTER demo.update + demo.render have read the current
-                // state, so prev = "state when update last looked", letting any
-                // event that arrives before the next tick be visible as a transition.
-                this.pointer?.endFrame(this.pendingUpdateSteps > 0);
-
-                const tick = this.loop?.getTicks() ?? 0;
-
-                this.gamepad?.endFrame(tick);
-
-                this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);
-                this.overlayTiming.updateMs = this.pendingUpdateMs;
-                this.overlayTiming.renderMs = renderMs;
-                this.overlayTiming.updateSteps = this.pendingUpdateSteps;
-                this.overlayTiming.drawCalls = this.pendingDrawCalls;
-                this.overlayTiming.droppedFrames = 0;
-                this.overlayTiming.primitiveOverflowCount = this.pendingRendererDiagnostics.primitiveOverflowCount;
-                this.overlayTiming.spriteOverflowCount = this.pendingRendererDiagnostics.spriteOverflowCount;
-                this.overlayTiming.primitiveSubmittedVertices =
-                    this.pendingRendererDiagnostics.primitiveSubmittedVertices;
-                this.overlayTiming.spriteSubmittedVertices = this.pendingRendererDiagnostics.spriteSubmittedVertices;
-
-                this.pendingUpdateMs = 0;
-                this.pendingUpdateSteps = 0;
-                this.pendingDrawCalls = 0;
-                this.resetPendingRendererDiagnostics();
-            },
-            onFrameDrop,
-        );
-
-        this.loop.start();
-
-        this.wakeLock?.detach();
-        this.wakeLock = null;
-
-        if (hwSettings.isWakeLockEnabled === true) {
-            this.wakeLock = new WakeLock();
-            this.wakeLock.attach();
-        }
-
-        this.orientation?.detach();
-        this.orientation = new Orientation();
-        this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
-
-        this.attachReducedMotion(demo);
-
-        console.log('[BT] Initialization complete');
-
-        return true;
     }
 
     /**
@@ -932,12 +711,21 @@ export class BTAPI {
     }
 
     /**
+     * Reports whether an {@link init} call is currently running.
+     *
+     * @returns `true` from the start of `init()` until it settles.
+     */
+    public isInitializing(): boolean {
+        return this.isInitInProgress;
+    }
+
+    /**
      * Reports whether the engine has completed initialization.
      *
-     * @returns `true` when both a demo and the game loop are live.
+     * @returns `true` when both a demo and the game loop are live and no `init()` is in flight.
      */
     public isInitialized(): boolean {
-        return this.demo !== null && this.loop !== null;
+        return !this.isInitInProgress && this.demo !== null && this.loop !== null;
     }
 
     /**
@@ -2153,6 +1941,253 @@ export class BTAPI {
         }
 
         this.renderer.clearEffects();
+    }
+
+    /**
+     * Runs the init sequence; callers go through {@link init} for the overlap guard.
+     * @param demo - Demo to initialize.
+     * @param canvas - Render target canvas.
+     * @returns `true` when initialization succeeds; otherwise `false`.
+     */
+    private async runInit(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
+        console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
+
+        this.demo = demo;
+        this.canvas = canvas;
+        this.isDevGuardActive = isDevMode();
+
+        // Hardware settings: demo hook or defaults from defaultConfig() (320x240 logical, 640x480 buffer, 60 FPS).
+        console.log('[BT] Reading hardware configuration');
+
+        if (!this.loadHardwareSettings(demo)) {
+            return false;
+        }
+
+        const hwSettings = this.hwSettings;
+        if (!hwSettings) {
+            return false;
+        }
+
+        const updateInterval = 1000 / hwSettings.targetFPS;
+
+        this.updateIntervalMs = updateInterval;
+
+        this.isCollectAudioMetersEnabled =
+            hwSettings.isOverlayEnabled !== false && hwSettings.isOverlayAudioMetersEnabled === true;
+
+        console.log('[BT] Hardware settings:', {
+            displaySize: `${hwSettings.displaySize.x}x${hwSettings.displaySize.y}`,
+            targetFPS: hwSettings.targetFPS,
+        });
+
+        if (!(await this.initRenderer(canvas, hwSettings))) {
+            return false;
+        }
+
+        // Create the built-in system font (synchronous, no GPU needed yet).
+        this.systemFont = createSystemFont();
+        this.setupOverlay();
+        this.attachInputSubsystems(canvas);
+        this.attachAudioSubsystem(canvas);
+
+        // Splash gating resolves here, before the game's init() is invoked, so
+        // init() observes 'disabled' or 'fadingIn' and never an undecided state.
+        this.splash = createSplashIfEnabled(hwSettings);
+
+        // `?seed=N` lands here, before the game's init(), so a BT.randomSeed() call in init()
+        // still wins. Read in release builds too: a seed in a shared URL is the point. Not
+        // repeated by hotReplaceDemo() - a hot-reload swap keeps the running stream.
+        const urlSeed = readSeedUrlParam();
+
+        if (urlSeed !== null) {
+            this.random.seed(urlSeed);
+            console.log(`[BT] Seeded BT.random from ?seed=${urlSeed}`);
+        }
+
+        console.log('[BT] Initializing demo');
+
+        // Captured after ?seed and before the game's init(), so a 'start' seek replays init() against
+        // the same stream the boot run saw - whether that stream was time-seeded or URL-seeded.
+        this.bootRandomState = this.random.getState();
+        this.bootRandomSeed = this.random.seedValue;
+        this.isSeekParked = false;
+
+        if (!(await this.runDemoInitWithSplash(demo, hwSettings))) {
+            return false;
+        }
+
+        // Start the loop. The GameLoop's double-RAF delay ensures the canvas is
+        // fully ready before the first tick.
+        const isFrameDropCallbackNeeded =
+            hwSettings.isDetectingDroppedFrames === true || hwSettings.isOverlayTimingChartEnabled === true;
+        const onFrameDrop: FrameDropCallback | undefined = isFrameDropCallbackNeeded
+            ? (event) => this.handleFrameDrop(event, hwSettings.isDetectingDroppedFrames === true)
+            : undefined;
+
+        this.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
+
+        this.pendingUpdateMs = 0;
+        this.lastRenderClockMs = 0;
+        this.pendingUpdateSteps = 0;
+        this.pendingDrawCalls = 0;
+        this.lastCameraOffset = Vector2i.zero();
+        this.overlayTiming.frameMs = 0;
+        this.overlayTiming.updateMs = 0;
+        this.overlayTiming.renderMs = 0;
+        this.overlayTiming.updateSteps = 0;
+        this.overlayTiming.drawCalls = 0;
+        this.overlayTiming.droppedFrames = 0;
+        this.overlayTiming.primitiveOverflowCount = 0;
+        this.overlayTiming.spriteOverflowCount = 0;
+        this.overlayTiming.primitiveSubmittedVertices = 0;
+        this.overlayTiming.spriteSubmittedVertices = 0;
+        this.resetPendingRendererDiagnostics();
+
+        this.audioSnapshot.levels = { main: 0, music: 0, sfx: 0 };
+        this.audioSnapshot.activeVoices = 0;
+        this.audioSnapshot.totalVoices = 0;
+        this.audioSnapshot.voiceStealCount = 0;
+        this.audioSnapshot.voiceDropCount = 0;
+        this.audioSnapshot.preUnlockDropCount = 0;
+
+        this.loop = new GameLoop(
+            updateInterval,
+            () => {
+                const updateStartMs = performance.now();
+                this.commitPendingCameraReset();
+                this.updating = true;
+
+                try {
+                    this.demo?.update();
+                } finally {
+                    this.updating = false;
+                }
+
+                this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
+                this.pendingUpdateSteps++;
+
+                // Palette effects advance once per fixed update, after the game's update(), on the
+                // tick clock. Per update rather than per render is what makes BT.renderAt exact: a
+                // seek runs the same palette updates as live play instead of one catch-up update at
+                // the end (a flash would only take its snapshot then), and the look no longer depends
+                // on the display's refresh rate.
+                if (this.palette && this.paletteEffects.activeCount > 0) {
+                    this.paletteEffects.update(this.palette);
+                }
+
+                const tick = this.loop?.getTicks() ?? 0;
+
+                // Sample the overlay toggle key's press edge before endUpdate clears it below.
+                // The overlay itself is only checked later, during the render phase (beginRenderFrame),
+                // by which point this tick's edge would otherwise already be gone.
+                if (this.keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, tick)) {
+                    this.pendingOverlayTogglePress = true;
+                }
+
+                // Dev-mode default: Shift+F9 saves a screenshot in every demo, no demo
+                // code needed. Unlike the overlay toggle above, this doesn't need to wait
+                // for the render phase - it just kicks off an async capture-and-download.
+                // Bare F9 (no Shift) instead copies to the OS clipboard, but that path is
+                // NOT handled here - see handleClipboardShortcutKeydown's doc comment for
+                // why it runs from a dedicated keydown listener instead of this tick.
+                if (!this.isFrameCaptureShortcutInFlight && this.isShiftF9ShortcutPressed(tick)) {
+                    void this.captureFrameViaShortcut();
+                }
+
+                // Keyboard edges and text buffer align with fixed update rate, not display
+                // refresh rate (render may run 2x update on 120 Hz / 60 FPS setups).
+                this.keyboard?.endUpdate(tick);
+            },
+            () => {
+                const frameStartMs = performance.now();
+                let renderMs = 0;
+
+                if (this.renderer) {
+                    this.beginRenderFrame();
+
+                    this.renderer.beginFrame();
+
+                    // Re-prime the world camera before the demo draws, in case this render
+                    // frame has zero fixed-update steps (see lastCameraOffset doc comment).
+                    this.renderer.setCameraOffset(this.lastCameraOffset);
+
+                    const renderStartMs = performance.now();
+
+                    this.demo?.render();
+
+                    renderMs = Math.max(0, performance.now() - renderStartMs);
+
+                    // Overlay: screen-space HUD after demo content (top/bottom bars).
+                    if (this.overlay && this.systemFont) {
+                        this.overlay.updateAndRender(
+                            this.renderer,
+                            this.systemFont,
+                            this.pointer,
+                            this.keyboard,
+                            this.loop?.getTicks() ?? 0,
+                            this.getDemoOverlayRows,
+                            this.overlayTiming,
+                            this.palette,
+                            this.framePaletteUsageMask,
+                            this.audioSnapshot,
+                        );
+                    }
+
+                    this.captureRendererDiagnostics();
+                    this.captureAudioDiagnostics();
+
+                    this.renderer.endFrame(this.consumeFrameDeltaMs());
+                }
+
+                // Snapshot pointer state for next frame's edge detection / delta.
+                // Must run AFTER demo.update + demo.render have read the current
+                // state, so prev = "state when update last looked", letting any
+                // event that arrives before the next tick be visible as a transition.
+                this.pointer?.endFrame(this.pendingUpdateSteps > 0);
+
+                const tick = this.loop?.getTicks() ?? 0;
+
+                this.gamepad?.endFrame(tick);
+
+                this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);
+                this.overlayTiming.updateMs = this.pendingUpdateMs;
+                this.overlayTiming.renderMs = renderMs;
+                this.overlayTiming.updateSteps = this.pendingUpdateSteps;
+                this.overlayTiming.drawCalls = this.pendingDrawCalls;
+                this.overlayTiming.droppedFrames = 0;
+                this.overlayTiming.primitiveOverflowCount = this.pendingRendererDiagnostics.primitiveOverflowCount;
+                this.overlayTiming.spriteOverflowCount = this.pendingRendererDiagnostics.spriteOverflowCount;
+                this.overlayTiming.primitiveSubmittedVertices =
+                    this.pendingRendererDiagnostics.primitiveSubmittedVertices;
+                this.overlayTiming.spriteSubmittedVertices = this.pendingRendererDiagnostics.spriteSubmittedVertices;
+
+                this.pendingUpdateMs = 0;
+                this.pendingUpdateSteps = 0;
+                this.pendingDrawCalls = 0;
+                this.resetPendingRendererDiagnostics();
+            },
+            onFrameDrop,
+        );
+
+        this.loop.start();
+
+        this.wakeLock?.detach();
+        this.wakeLock = null;
+
+        if (hwSettings.isWakeLockEnabled === true) {
+            this.wakeLock = new WakeLock();
+            this.wakeLock.attach();
+        }
+
+        this.orientation?.detach();
+        this.orientation = new Orientation();
+        this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
+
+        this.attachReducedMotion(demo);
+
+        console.log('[BT] Initialization complete');
+
+        return true;
     }
 
     /**

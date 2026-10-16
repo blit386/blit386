@@ -223,6 +223,14 @@ async function initDemo(
  *   guarded); `null` when a cold boot should proceed instead.
  */
 async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<boolean | null> {
+    if (BTAPI.instance.isInitializing()) {
+        console.error(
+            '[BT] bootstrap() was called while the engine is still initializing. Wait for the first call to settle.',
+        );
+
+        return false;
+    }
+
     if (!BTAPI.instance.isInitialized()) {
         return null;
     }

@@ -299,6 +299,24 @@ describe('bootstrap', () => {
             expect(initSpy).not.toHaveBeenCalled();
         });
 
+        it('rejects a bootstrap call made while init is still in flight, without error UI', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+
+            vi.spyOn(BTAPI.instance, 'isInitializing').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(true);
+
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const initSpy = vi.spyOn(BTAPI.instance, 'init');
+            const onError = vi.fn();
+
+            const result = await bootstrap(MockDemo, { isWaitingForDOMReady: false, onError });
+
+            expect(result).toBe(false);
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('still initializing'));
+            expect(initSpy).not.toHaveBeenCalled();
+            expect(onError).not.toHaveBeenCalled();
+        });
+
         it('logs an error and returns false when already initialized with no hot context (double-bootstrap guard)', async () => {
             const { isHotActive } = await import('../hot/HotRuntime');
 

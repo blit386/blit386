@@ -628,6 +628,7 @@ export const BT = {
      * `canvas.focus()` so keyboard events reach the canvas.
      *
      * @since 0.1.0
+     * @changed 1.8.0 A call made while another `init()` is still running resolves to `false` and changes nothing.
      * @param demo - Demo implementation that provides lifecycle hooks.
      * @param canvas - Canvas used as the engine render target.
      * @returns `true` when initialization succeeds; otherwise `false`.
