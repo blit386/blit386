@@ -7,7 +7,7 @@
  */
 
 import { createGallery } from './gallery.js';
-import { KEY_HELP, resolveKey, SHARED_ACTIONS } from './keys.js';
+import { closesHelp, KEY_HELP, resolveKey, SHARED_ACTIONS } from './keys.js';
 import { createLightbox } from './lightbox.js';
 import { emptyManifest, entryKey } from './manifest.js';
 import { startReviewMode } from './review-mode.js';
@@ -55,6 +55,7 @@ function demoUrl(slug, extra = '') {
 const gallery = createGallery(galleryRoot, {
     imageUrl,
     onOpen: (key) => lightbox.open(key),
+    onSelect: renderInfo,
     onCapture: (keys) => window.__shotsCapture?.(keys),
 });
 
@@ -64,6 +65,7 @@ const lightbox = createLightbox(lightboxRoot, {
     entryFor: (key) => gallery.entryFor(key),
     variantFor: (key) => gallery.currentVariant(key),
     cycleVariant: (key) => gallery.cycleVariant(key),
+    diffState: () => window.__shotsDiff.current(),
     onClose: (key) => {
         if (key) {
             gallery.focusKey(key);
@@ -89,7 +91,14 @@ function renderInfo() {
     const key = currentKey();
     const entry = key ? gallery.entryFor(key) : null;
 
-    if (!entry || infoRoot.hidden) {
+    if (infoRoot.hidden) {
+        return;
+    }
+
+    // A filter with no matches leaves nothing focused; clear the panel instead of showing a stale tile.
+    if (!entry) {
+        infoRoot.textContent = '';
+
         return;
     }
 
@@ -166,9 +175,12 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
-    if (!helpRoot.hidden && (event.key === '?' || event.key === 'Escape')) {
-        helpRoot.hidden = true;
-        event.preventDefault();
+    if (!helpRoot.hidden) {
+        // The help overlay swallows every key but the two that close it.
+        if (closesHelp(event)) {
+            helpRoot.hidden = true;
+            event.preventDefault();
+        }
 
         return;
     }
@@ -210,7 +222,10 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-filterBox.addEventListener('input', () => gallery.setView({ filter: filterBox.value }));
+filterBox.addEventListener('input', () => {
+    gallery.setView({ filter: filterBox.value });
+    renderInfo();
+});
 document.getElementById('shots-help').addEventListener('click', () => handleShared('help'));
 
 async function loadManifest() {

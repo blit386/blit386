@@ -5,12 +5,14 @@
  */
 
 import { demoNeighbor } from './layout-model.js';
+import { CAPTION_SEPARATOR } from './manifest.js';
 import { OUTPUT_VARIANT } from './poses.js';
 
 const ZOOM_LEVELS = [1, 2, 4];
 const PAN_STEP_PX = 40;
 const PAN_FAST_PX = 200;
 const GRID_ZOOM = 4;
+const CAPTION_GAP_PX = 8;
 
 const PANS = {
     'pan-up': [0, -PAN_STEP_PX],
@@ -48,6 +50,7 @@ const LIGHTBOX_ACTIONS = [
  *   entryFor: (key: string) => object | null,
  *   variantFor: (key: string) => string,
  *   cycleVariant: (key: string) => void,
+ *   diffState: () => { show: string, diffFor: (entry: object, variant: string) => Promise<{ changed: number, url: string }>, baselineUrlFor: (entry: object, variant: string) => string },
  *   onClose: (lastKey: string | null) => void,
  * }} hooks
  */
@@ -55,19 +58,24 @@ function createLightbox(root, hooks) {
     let key = null;
     let zoomIndex = 0;
     let grid = false;
+    let renderToken = 0;
 
     const stage = document.createElement('div');
     const img = document.createElement('img');
     const gridLayer = document.createElement('div');
+    const diffLayer = document.createElement('img');
     const caption = document.createElement('div');
 
     stage.className = 'shots-stage';
     gridLayer.className = 'shots-grid';
     gridLayer.hidden = true;
+    diffLayer.className = 'shots-diff-overlay';
+    diffLayer.hidden = true;
+    diffLayer.draggable = false;
     caption.className = 'shots-lightbox-caption';
     img.draggable = false;
-    stage.append(img, gridLayer);
-    root.append(stage, caption);
+    stage.append(img, diffLayer, gridLayer, caption);
+    root.append(stage);
 
     function render() {
         const entry = hooks.entryFor(key);
@@ -92,7 +100,52 @@ function createLightbox(root, hooks) {
             img.onload = () => sizeTo(img.naturalWidth, img.naturalHeight, zoom);
         }
 
-        caption.textContent = `${entry.slug} / ${entry.pose} / ${variant}  ${zoom * 100}%  ${entry.width}x${entry.height}`;
+        caption.textContent = [
+            entry.slug,
+            entry.pose,
+            variant,
+            `${zoom * 100}%`,
+            `${entry.width}x${entry.height}`,
+        ].join(CAPTION_SEPARATOR);
+        renderDiff(entry, variant);
+    }
+
+    /** Show the baseline or lay the cached diff over the image, per the diff state; a newer render cancels a stale one. */
+    function renderDiff(entry, variant) {
+        const token = ++renderToken;
+        const { show, diffFor, baselineUrlFor } = hooks.diffState();
+
+        diffLayer.hidden = true;
+
+        // Stays 'current' until a usable ?baseline= is set, so diffFor is only called with a baseline.
+        if (show === 'current') {
+            return;
+        }
+
+        // The baseline image does not depend on the diff, so it shows even if the current capture fails to load.
+        if (show === 'baseline') {
+            img.src = baselineUrlFor(entry, variant);
+        }
+
+        diffFor(entry, variant).then(
+            (diff) => {
+                if (token !== renderToken) {
+                    return;
+                }
+
+                if (show === 'diff') {
+                    diffLayer.src = diff.url;
+                    diffLayer.hidden = false;
+                }
+
+                caption.textContent += `${CAPTION_SEPARATOR}diff ${diff.changed}`;
+            },
+            (error) => {
+                if (token === renderToken) {
+                    caption.textContent += `${CAPTION_SEPARATOR}diff: ${error.message}`;
+                }
+            },
+        );
     }
 
     function sizeTo(width, height, zoom) {
@@ -100,10 +153,20 @@ function createLightbox(root, hooks) {
         img.height = height * zoom;
         gridLayer.hidden = !(grid && zoom === GRID_ZOOM);
         gridLayer.style.backgroundSize = `${zoom}px ${zoom}px`;
-        gridLayer.style.width = `${img.width}px`;
-        gridLayer.style.height = `${img.height}px`;
-        gridLayer.style.left = `${img.offsetLeft}px`;
-        gridLayer.style.top = `${img.offsetTop}px`;
+        placeLayers();
+    }
+
+    /** Line the grid and diff layers up with the image; the stage centers it, so a resize moves it. */
+    function placeLayers() {
+        for (const layer of [gridLayer, diffLayer]) {
+            layer.style.width = `${img.width}px`;
+            layer.style.height = `${img.height}px`;
+            layer.style.left = `${img.offsetLeft}px`;
+            layer.style.top = `${img.offsetTop}px`;
+        }
+
+        caption.style.left = `${img.offsetLeft + img.width / 2}px`;
+        caption.style.top = `${img.offsetTop + img.height + CAPTION_GAP_PX}px`;
     }
 
     function step(delta) {
@@ -140,6 +203,8 @@ function createLightbox(root, hooks) {
 
         root.hidden = true;
         key = null;
+        renderToken++;
+        window.removeEventListener('resize', placeLayers);
         hooks.onClose(lastKey);
     }
 
@@ -195,6 +260,7 @@ function createLightbox(root, hooks) {
         open(nextKey) {
             key = nextKey;
             root.hidden = false;
+            window.addEventListener('resize', placeLayers);
             render();
         },
         close,

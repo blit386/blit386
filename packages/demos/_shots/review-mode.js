@@ -72,11 +72,13 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
     const cache = new Map();
     const state = { show: 'current' };
 
+    const baselineUrlFor = (entry, variant) => `${baseline}/${entry.variants[variant]}`;
+
     async function diffFor(entry, variant) {
         const cacheKey = `${entry.slug}/${entry.pose}/${variant}`;
 
         if (!cache.has(cacheKey)) {
-            const baselineUrl = `${baseline}/${entry.variants[variant]}`;
+            const baselineUrl = baselineUrlFor(entry, variant);
             const current = await loadPixels(imageUrl(entry, variant));
             const result = diffPixels(current, await loadPixels(baselineUrl));
             const canvas = document.createElement('canvas');
@@ -113,6 +115,9 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
         gallery.setView({ diff: state.show, diffFor: state.show === 'current' ? null : diffFor });
         setStatus(`diff view: ${state.show}`);
     };
+
+    // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
+    window.__shotsDiff.current = () => ({ show: state.show, diffFor, baselineUrlFor });
 
     if (rawBaseline !== null && baseline === null) {
         setStatus('baseline refused: it must be an http(s) URL or a same-origin path');

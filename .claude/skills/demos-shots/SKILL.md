@@ -53,7 +53,9 @@ Order of operations for an agent:
 3. When a single pixel matters, make a 4x nearest-neighbor crop before reading:
    `ffmpeg -i public/shots/<slug>/<pose>.display.png -vf "crop=120:60:0:140,scale=iw*4:ih*4:flags=neighbor" /tmp/crop.png`
 4. Open `/shots` in the built-in browser for the human view: `g` toggles the focused stack, `Shift+G` all stacks,
-   `Enter` opens the lightbox, `1` `2` `4` `+` `-` zoom it, `#` shows the pixel grid, `?` lists every key.
+   `Enter` opens the lightbox, `1` `2` `4` `+` `-` zoom it, `#` shows the pixel grid, `d` and `b` show the diff overlay
+   and the baseline in the lightbox too, `?` lists every key (and while that list is open only `?` and `Esc` do
+   anything).
 
 ### 3. Compare against main
 

@@ -5,7 +5,7 @@
  */
 
 import { buildRows, demoNeighbor, moveFocus, visibleOrder } from './layout-model.js';
-import { entryKey } from './manifest.js';
+import { CAPTION_SEPARATOR, entryKey } from './manifest.js';
 import { OUTPUT_VARIANT, VARIANTS } from './poses.js';
 
 const ROW_SCROLL_FRACTION = 0.9;
@@ -103,6 +103,7 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
  *   imageUrl: (entry: object, variant: string) => string | null,
  *   onOpen?: (key: string) => void,
  *   onCapture?: (keys: string[]) => void,
+ *   onSelect?: () => void,
  *   tileLink?: (entry: object) => { href: string, label: string },
  * }} hooks - `tileLink` switches a tile to link mode for the public sheet: the tile becomes a
  *   plain link labeled `label`, with no focus or selection clicks. Link mode never
@@ -183,7 +184,7 @@ function createGallery(root, hooks) {
         if (link) {
             caption.append(link.label);
         } else {
-            caption.append(`${tile.slug} / ${tile.pose}`, ` ${entry.width}x${entry.height}`, ` ${variant}`);
+            caption.append([tile.slug, tile.pose, `${entry.width}x${entry.height}`, variant].join(CAPTION_SEPARATOR));
         }
 
         if (view.lint && entry.lint.length > 0) {
@@ -237,6 +238,7 @@ function createGallery(root, hooks) {
             }
 
             refresh();
+            hooks.onSelect?.();
         });
         element.addEventListener('dblclick', () => hooks.onOpen(tile.key));
 

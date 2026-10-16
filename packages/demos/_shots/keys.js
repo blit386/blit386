@@ -143,4 +143,9 @@ const KEY_HELP = [
     { keys: '?', gallery: 'this help', lightbox: 'this help' },
 ];
 
-export { BINDINGS, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS };
+/** While the help overlay is open, only these keys do anything: they close it. */
+function closesHelp(event) {
+    return event.key === '?' || event.key === 'Escape';
+}
+
+export { BINDINGS, closesHelp, isTypingTarget, KEY_HELP, resolveKey, SHARED_ACTIONS };
