@@ -203,8 +203,10 @@ async function runPage(url) {
         try {
             await page.goto(url);
         } catch (error) {
-            console.error(`Could not reach ${new URL(url).origin} - is the dev server running? (${error.message})`);
-            process.exit(1);
+            // Thrown, not process.exit: the finally below still closes the browser.
+            throw new Error(`Could not reach ${new URL(url).origin} - is the dev server running? (${error.message})`, {
+                cause: error,
+            });
         }
 
         try {
@@ -216,6 +218,28 @@ async function runPage(url) {
         return await page.evaluate('window.__shotsResult');
     } finally {
         await browser.close();
+    }
+}
+
+/**
+ * Write the page's images under outDir, adding each refused or unwritable one to `failures`.
+ *
+ * @param {string} outDir
+ * @param {{ path: string, base64: string }[]} images
+ * @param {string[]} failures
+ */
+function writeImages(outDir, images, failures) {
+    for (const image of images) {
+        const target = resolveImageTarget(outDir, image.path);
+
+        if (target === null) {
+            failures.push(`refused path outside output dir: ${image.path}`);
+            continue;
+        }
+
+        mkdirSync(dirname(target), { recursive: true });
+        writeFileSync(target, Buffer.from(image.base64, 'base64'));
+        console.log(`  wrote ${image.path}`);
     }
 }
 
@@ -244,7 +268,14 @@ async function main() {
         return;
     }
 
-    const result = await runPage(url);
+    let result;
+
+    try {
+        result = await runPage(url);
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
 
     if (result === null) {
         console.error(`The page never produced window.__shotsResult within ${RESULT_TIMEOUT_MS / 1000}s (${url}).`);
@@ -262,18 +293,7 @@ async function main() {
 
     mkdirSync(outDir, { recursive: true });
 
-    for (const image of result.images) {
-        const target = resolveImageTarget(outDir, image.path);
-
-        if (target === null) {
-            failures.push(`refused path outside output dir: ${image.path}`);
-            continue;
-        }
-
-        mkdirSync(dirname(target), { recursive: true });
-        writeFileSync(target, Buffer.from(image.base64, 'base64'));
-        console.log(`  wrote ${image.path}`);
-    }
+    writeImages(outDir, result.images, failures);
 
     const manifest = { ...result.manifest, engineVersion: engineVersion() };
 
