@@ -1,20 +1,16 @@
-/*
- * Public demo sheet (the site index). Builds on layout.css (black page, DepartureMono, the
- * #demo-banner bar) and nothing else: the gallery.js markup it styles is shared with /shots, but
- * shots.css is not loaded, so review-page styling never leaks onto the public page.
- */
-
 :root {
-    --sheet-gap: 12px;
+    --sheet-gap: 8px;
     --sheet-text: #ddd;
 }
 
 body {
     color: var(--sheet-text);
     font-family: 'DepartureMono', ui-monospace, monospace;
+    font-size: 11px;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: none;
 }
 
-/* Under #demo-banner to outrank layout.css's #demo-banner .demo-banner-nav (gap: 2px). */
 #demo-banner .sheet-banner-title {
     flex-direction: column;
     gap: 6px;
@@ -22,29 +18,22 @@ body {
 
     & h1,
     & p {
-        font-size: inherit;
         margin: 0;
     }
 
     & h1 {
-        font-size: 13px;
         font-weight: normal;
+        font-size: 22px;
     }
 
     & h1 a {
         color: inherit;
         text-decoration: underline;
-        /* One pixel lower than DepartureMono's auto position (a 2px gap under the glyphs). */
-        text-underline-offset: 2px;
-    }
-
-    & p {
-        opacity: 0.7;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
     }
 }
 
-/* Half the demo pages' combobox width (30vw, at most 420px there). Under #demo-banner to outrank
-   layout.css's #demo-banner .demo-banner-combobox. */
 #demo-banner .sheet-banner-filter {
     grid-column: 3;
     justify-self: end;
@@ -56,20 +45,15 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: var(--sheet-gap);
+    gap: 2px;
     padding: var(--sheet-gap);
 }
 
-/* Tiles come from gallery.js, so they keep its shots-* class names. */
 .shots-tile {
-    /* Tiles are <figure>s; drop the browser's default 40px side margin. */
     margin: 0;
     padding: 4px;
-
-    /* No card: the border is always 2px but transparent, so the hover stroke never shifts the grid. */
     border: 2px solid transparent;
 
-    /* Keyboard focus gets the same stroke as hover, so the link itself needs no outline. */
     &:has(.shots-tile-link:hover),
     &:has(.shots-tile-link:focus-visible) {
         border-color: var(--color-accent);
@@ -81,8 +65,8 @@ body {
     }
 
     & .shots-caption {
-        font-size: 11px;
         padding-top: 4px;
+        text-align: center;
     }
 }
 
