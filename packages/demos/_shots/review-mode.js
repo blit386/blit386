@@ -1,6 +1,6 @@
 /**
  * Review aids for the /shots page: findings (flags and notes) and the baseline pixel diff.
- * Installs the `window.__shotsFindings` and `window.__shotsDiff` hooks that shots.js routes keys to.
+ * startReviewMode returns the two hooks that shots.js routes keys to.
  */
 
 import { BASELINE_REFUSED, parseBaseline } from './baseline.js';
@@ -27,7 +27,7 @@ function exportMarkdown(findings, setStatus) {
 function startFindings({ gallery, setStatus, renderInfo }) {
     const findings = createFindings(localStorage);
 
-    window.__shotsFindings = {
+    const hooks = {
         toggleFlag(key) {
             findings.toggleFlag(key);
             gallery.setFlagged(findings.flaggedKeys());
@@ -45,6 +45,8 @@ function startFindings({ gallery, setStatus, renderInfo }) {
     };
 
     gallery.setFlagged(findings.flaggedKeys());
+
+    return hooks;
 }
 
 function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
@@ -80,7 +82,7 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
         return cache.get(cacheKey);
     }
 
-    window.__shotsDiff = (action) => {
+    function apply(action) {
         if (rawBaseline === null) {
             setStatus('no baseline: open /shots?baseline=<url of another public/shots>');
 
@@ -102,14 +104,17 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
 
         gallery.setView({ diff: state.show, diffFor: state.show === 'current' ? null : diffFor });
         setStatus(`diff view: ${state.show}`);
-    };
-
-    // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
-    window.__shotsDiff.current = () => ({ show: state.show, diffFor, baselineUrlFor });
+    }
 
     if (rawBaseline !== null && baseline === null) {
         setStatus(BASELINE_REFUSED);
     }
+
+    return {
+        apply,
+        // The lightbox reads the live diff state through this, the way the gallery gets it from setView.
+        current: () => ({ show: state.show, diffFor, baselineUrlFor }),
+    };
 }
 
 /**
@@ -119,10 +124,16 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
  *   setStatus: (text: string) => void,
  *   renderInfo: () => void,
  * }} context
+ * @returns {{
+ *   findings: ReturnType<typeof startFindings>,
+ *   diff: ReturnType<typeof startDiff>,
+ * }}
  */
 function startReviewMode(context) {
-    startFindings(context);
-    startDiff(context, new URLSearchParams(location.search).get('baseline'));
+    return {
+        findings: startFindings(context),
+        diff: startDiff(context, new URLSearchParams(location.search).get('baseline')),
+    };
 }
 
 export { startReviewMode };
