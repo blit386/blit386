@@ -9,7 +9,7 @@ live at next.demos.blit386.dev/shots). Captures are committed under `packages/de
 
 ```text
 /demos-shots                 # capture every demo with the committed variants, then inspect
-/demos-shots changed         # only demos whose source differs from origin/main (every demo if src/shared changed)
+/demos-shots changed         # only demos whose source differs from the merge base with origin/main, plus untracked files (every demo if src/shared or _shots/poses.js changed)
 /demos-shots basics,sprites  # a slug list
 ```
 
@@ -28,10 +28,11 @@ pnpm run capture:shots -- --all
 (default: the committed pair). `output` is the drawing buffer from `configure()` (default 640x480), not device pixel
 ratio, and stays out of `COMMITTED_VARIANTS`. The manifest keeps one display `width`/`height`; an output tile and its
 lightbox size from `naturalWidth`/`naturalHeight`, so at 1x `img.width` equals `img.naturalWidth`. `--changed` selects
-every demo whenever any file under `src/shared/` differs from `origin/main`, tests included. The driver opens
-`/shots?auto...` in Chrome, waits for the page to finish, and writes `public/shots/<slug>/<pose>.<variant>.png` plus a
-merged `manifest.json`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit code 1
-means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
+every demo whenever any file under `src/shared/` (tests included) or `_shots/poses.js` differs from the merge base of
+`origin/main` and `HEAD`; untracked files count as changed, and commits that only landed on `main` do not. The driver
+opens `/shots?auto...` in Chrome, waits for the page to finish, and writes `public/shots/<slug>/<pose>.<variant>.png`
+plus a merged `manifest.json`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit
+code 1 means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
 
 ### 2. Inspect
 
