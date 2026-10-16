@@ -105,9 +105,24 @@ async function startCaptureMode(shell) {
         onRun: runJobs,
         onSave: async () => {
             directory ??= await pickShotsDirectory();
-            currentManifest = await saveRun(directory, unsaved, currentManifest, { engineVersion: engineVersion() });
-            unsaved = [];
-            setStatus(`saved ${currentManifest.entries.length} entries to public/shots`);
+
+            const { manifest, failed } = await saveRun(directory, unsaved, currentManifest, {
+                engineVersion: engineVersion(),
+            });
+
+            currentManifest = manifest;
+            // A failed image stays unsaved so the next Save retries it; a failed manifest is rewritten then too.
+            unsaved = failed.flatMap((item) => (item.result ? [item.result] : []));
+
+            if (failed.length > 0) {
+                throw new Error(`could not write ${failed.map((item) => `${item.path} (${item.error})`).join(', ')}`);
+            }
+
+            setStatus(
+                directory
+                    ? `saved ${currentManifest.entries.length} entries to public/shots`
+                    : 'downloaded the images and manifest.json; move them into public/shots',
+            );
         },
     });
 
