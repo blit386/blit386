@@ -36,6 +36,8 @@ The engine tracks four pointer slots (indices `0`-`3`). Overflow contacts beyond
 - Stays valid while the mouse remains over the canvas; cleared on `pointerleave`.
 - Tracks all four buttons (A, B, C, D).
 - Position is preserved after the mouse leaves; a new `pointermove` re-syncs it.
+- A pointer event with an empty `pointerType` counts as the mouse, so synthetic events from test scripts work without
+  it. Synthetic touch or pen events must set `pointerType` to `'touch'` or `'pen'`.
 
 ### Touch / pen slots (slots 1-3)
 

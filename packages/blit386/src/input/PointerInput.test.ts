@@ -74,7 +74,7 @@ const pointerEvent = (
     type: string,
     init: {
         pointerId: number;
-        pointerType?: 'mouse' | 'touch' | 'pen';
+        pointerType?: 'mouse' | 'touch' | 'pen' | '';
         button?: number;
         clientX?: number;
         clientY?: number;
@@ -305,6 +305,41 @@ describe('PointerInput', () => {
             );
 
             expect(input.isActive(0)).toBe(true);
+        });
+
+        it('treats an empty pointerType (synthetic events) as the mouse', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: '', clientX: 50, clientY: 50 }),
+            );
+
+            expect(input.isActive(0)).toBe(true);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', { pointerId: 1, pointerType: '', button: 0, clientX: 50, clientY: 50 }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(true);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', { pointerId: 1, pointerType: '', button: 0, clientX: 50, clientY: 50 }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerleave', { pointerId: 1, pointerType: '', clientX: 50, clientY: 50 }),
+            );
+
+            expect(input.isActive(0)).toBe(false);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: '', clientX: 50, clientY: 50 }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointercancel', { pointerId: 1, pointerType: '', clientX: 50, clientY: 50 }),
+            );
+
+            expect(input.isActive(0)).toBe(false);
         });
 
         it('clears all four mouse buttons and deactivates slot 0 on pointerleave', () => {
