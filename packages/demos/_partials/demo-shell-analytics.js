@@ -1,9 +1,10 @@
 /**
- * Plausible analytics bootstrap for the demo shell document.
+ * Plausible analytics bootstrap for the demo shell document and the site-index sheet.
  *
- * Loaded on the shell document and on standalone `?embed` pages (docs-site and third-party
- * iframes), but not inside the shell's own same-origin content iframe, so pageviews are not
- * double-counted. See `demo-shell.js` for how this is wired into the bootstrap.
+ * Loaded on the shell document, on standalone `?embed` pages (docs-site and third-party
+ * iframes), and on the demo sheet at `/` (`_shots/sheet.js`), but not inside the shell's own
+ * same-origin content iframe, so pageviews are not double-counted. See `demo-shell.js` for how
+ * this is wired into the shell bootstrap.
  */
 
 /**

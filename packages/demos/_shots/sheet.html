@@ -1,0 +1,53 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+
+    <title>BLIT386 Demos</title>
+    {{robotsMeta}}
+    {{socialMeta}}
+
+    <link rel="stylesheet" href="../styles/layout.css"/>
+    <link rel="stylesheet" href="../_shots/sheet.css"/>
+
+    <link rel="me" href="https://mastodon.gamedev.place/@blit386"/>
+</head>
+
+<!-- The public demo sheet served at the site index: the /shots gallery's tiles as plain links. -->
+<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">
+{{channelBanner}}
+
+<script id="sheet-entries" type="application/json">{{sheetEntries}}</script>
+
+<!--
+  Same bar as the demo pages' #demo-banner (styles/layout.css), static here: logo left, title
+  centered, and a filter on the right styled like the demo pages' combobox input.
+-->
+<header id="demo-banner">
+    <!-- Manual-sync hazard: the same logo as buildLogo() in _partials/demo-shell-banner.js. Change both together. -->
+    <a class="demo-banner-logo" href="/" aria-label="BLIT386 Demos">
+        <img class="demo-banner-logo-light" src="/sprites/favicon-light-32.png" width="64" height="64" alt="BLIT386"/>
+        <img class="demo-banner-logo-dark" src="/sprites/favicon-dark-32.png" width="64" height="64" alt="BLIT386"/>
+    </a>
+    <div class="demo-banner-nav sheet-banner-title">
+        <h1><a href="https://blit386.dev">BLIT386</a> Demos</h1>
+        <p id="sheet-status" aria-live="polite">Every demo at a glance. Pick one to run it.</p>
+    </div>
+    <div class="demo-banner-combobox sheet-banner-filter">
+        <input id="sheet-filter" class="demo-banner-combobox-input" type="text" placeholder="Filter demos"
+               aria-label="Filter demos" aria-controls="sheet-gallery" autocomplete="off" spellcheck="false"/>
+    </div>
+</header>
+
+<main id="sheet-gallery" aria-label="Demos"></main>
+
+<!-- A src module script, not shots.html's inline await import(): the load event waits for it, so the tiles exist
+     before the browser restores the scroll position on reload or Back. -->
+<script type="module" src="/_shots/sheet.js"></script>
+
+</body>
+
+</html>

@@ -60,9 +60,10 @@ function flattenDemosPlugin() {
 }
 
 /**
- * Write `dist/_redirects` as the single authoritative Cloudflare Pages redirect artifact:
- * site-index rule (first nav-visible demo) plus 301s for every vintage slug whose current
- * target still exists in the live registry. Overwrites any `public/` copy.
+ * Write `dist/_redirects` as the single authoritative Cloudflare Pages redirect artifact: 301s
+ * for every vintage slug whose current target still exists in the live registry. The site index
+ * needs no rule - it is the public demo sheet, built to `dist/index.html` by virtual-demos.
+ * Overwrites any `public/` copy.
  * @returns {import('vite').Plugin}
  */
 function demoRedirectsPlugin() {
@@ -73,23 +74,12 @@ function demoRedirectsPlugin() {
             const distDir = resolve(__dirname, 'dist');
             const registry = buildRegistry(__dirname);
             const liveSlugs = new Set(registry.map((entry) => entry.slug));
-            const firstVisible = registry.find((entry) => !entry.isNavHidden);
 
             const lines = [
                 '# Generated at build time - do not edit dist/_redirects by hand.',
-                '# Sources: plugins/demo-vintage-urls.js + first nav-visible demo from the registry.',
-                '# Cloudflare Pages: first match wins; static/index rules before vintage 301s.',
+                '# Source: plugins/demo-vintage-urls.js, filtered to targets live in the registry.',
                 '',
             ];
-
-            if (firstVisible) {
-                // A 200 rewrite names the asset, so this one keeps `.html`. Pages then applies
-                // its own clean-URL handling on top and 308s `/` to `/basics`, which is where
-                // the visitor should land anyway.
-                lines.push('# Serve the first nav-visible demo as the site index.');
-                lines.push(`/ /${firstVisible.slug}.html 200`);
-                lines.push('');
-            }
 
             lines.push('# Vintage (historical) slugs → current slugs (301 permanent).');
 

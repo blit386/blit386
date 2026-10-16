@@ -17,14 +17,18 @@ import {
 /**
  * Build the light/dark BLIT386 logo link. Both images are always in the DOM;
  * CSS toggles which one is visible via `prefers-color-scheme`.
+ *
+ * Manual-sync hazard: `_shots/sheet.html` writes the same logo as static markup (href, label,
+ * image paths, sizes, classes). Change both together.
  * @returns {HTMLAnchorElement}
  */
 function buildLogo() {
     const logoLink = document.createElement('a');
 
     logoLink.className = 'demo-banner-logo';
-    logoLink.href = 'https://blit386.dev';
-    logoLink.setAttribute('aria-label', 'BLIT386');
+    // The site index, the all-demos sheet (dev and build both serve it at /).
+    logoLink.href = '/';
+    logoLink.setAttribute('aria-label', 'BLIT386 Demos');
 
     const logoLight = document.createElement('img');
 

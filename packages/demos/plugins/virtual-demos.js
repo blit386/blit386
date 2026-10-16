@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
-import { buildRegistry, SHOTS_SLUG } from './demo-registry.js';
+import { sheetEntries } from '../_shots/sheet-entries.js';
+import { buildRegistry, INDEX_SLUG, SHOTS_SLUG } from './demo-registry.js';
 import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { escapeHtml } from './html-escape.js';
@@ -22,6 +23,19 @@ const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
 // refuses a demo file with this name. The slug itself is defined in demo-registry.js.
 export { SHOTS_SLUG };
 const SHOTS_TEMPLATE_PATH = ['_shots', 'shots.html'];
+
+// The public demo sheet at the site index (dev: /; build: dist/index.html), built
+// on the /shots gallery. Indexable, unlike /shots, so it carries the social/SEO head block.
+const SHEET_TEMPLATE_PATH = ['_shots', 'sheet.html'];
+const SHOTS_MANIFEST_PATH = ['public', 'shots', 'manifest.json'];
+
+// `slug: ''` makes buildSocialMeta's canonical and og:url the bare origin, and with no card of its
+// own the page falls back to the shared OG image.
+const SHEET_META_ENTRY = {
+    slug: '',
+    title: 'BLIT386 Demos',
+    description: 'Every BLIT386 demo on one page: palette-first WebGPU retro rendering that runs in your browser.',
+};
 
 // id="channel-banner" lets layout.css hide this in embed mode (styles/layout.css,
 // html[data-embed='true']) - the shell iframe loads this same page at ?embed, so without
@@ -99,6 +113,32 @@ export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersi
         .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
         .replaceAll('{{engineVersion}}', engineVersion)
         .replace('{{demoList}}', () => demoListJson);
+}
+
+/**
+ * Substitute the public demo sheet's values into its template: the same base and suffix as the
+ * shots gallery, the tiles, and the head block and next-channel extras a demo page carries. Pure
+ * and exported for unit tests.
+ * @param {object} options
+ * @param {string} options.template - Raw contents of `_shots/sheet.html`.
+ * @param {string} options.entriesJson - JSON array of the tiles, from `sheetEntries()`.
+ * @param {boolean} options.isDevMode - True under `vite dev`.
+ * @param {string} options.robotsMeta - `<meta name="robots">` tag on the next channel, else ''.
+ * @param {string} options.channelBanner - Unreleased-work banner HTML on the next channel, else ''.
+ * @param {string} options.socialMeta - The social/SEO head block from `buildSocialMeta`.
+ * @returns {string}
+ */
+export function renderSheetHtml({ template, entriesJson, isDevMode, robotsMeta, channelBanner, socialMeta }) {
+    return (
+        template
+            .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
+            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+            .replace('{{sheetEntries}}', () => entriesJson)
+            .replace('{{robotsMeta}}', () => robotsMeta)
+            .replace('{{channelBanner}}', () => channelBanner)
+            // Last, for the same reason as in renderDemoHtml.
+            .replace('{{socialMeta}}', () => socialMeta)
+    );
 }
 
 /**
@@ -276,6 +316,38 @@ export function virtualDemos() {
         return renderShotsHtml({ template, demoListJson, isDevMode, engineVersion });
     }
 
+    /**
+     * Render the public demo sheet served at the site index. Nav-visible demos only, like the
+     * shell's own list. The tiles are picked from the committed manifest here and inlined, not
+     * fetched by the page: they then render before the load event, so the browser can restore the
+     * scroll position on reload or Back. A missing or malformed manifest fails the render.
+     * @returns {string}
+     */
+    function renderSheet() {
+        const template = readFileSync(resolve(rootDir, ...SHEET_TEMPLATE_PATH), 'utf-8');
+        const manifest = JSON.parse(readFileSync(resolve(rootDir, ...SHOTS_MANIFEST_PATH), 'utf-8'));
+
+        if (!Array.isArray(manifest?.entries)) {
+            throw new Error(`${SHOTS_MANIFEST_PATH.join('/')} has no entries array`);
+        }
+
+        const entriesJson = JSON.stringify(
+            sheetEntries(
+                manifest.entries,
+                registry.filter((e) => !e.isNavHidden),
+            ),
+        ).replaceAll('<', '\\u003c');
+
+        return renderSheetHtml({
+            template,
+            entriesJson,
+            isDevMode,
+            robotsMeta: IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : '',
+            channelBanner: IS_NEXT_CHANNEL ? CHANNEL_BANNER_HTML : '',
+            socialMeta: buildSocialMeta({ entry: SHEET_META_ENTRY, isNextChannel: IS_NEXT_CHANNEL }),
+        });
+    }
+
     return {
         name: 'virtual-demos',
         enforce: 'pre',
@@ -290,7 +362,10 @@ export function virtualDemos() {
             reloadTemplate();
             reload();
 
-            const input = { [SHOTS_SLUG]: resolve(demosDir, `${SHOTS_SLUG}.html`) };
+            const input = {
+                [SHOTS_SLUG]: resolve(demosDir, `${SHOTS_SLUG}.html`),
+                [INDEX_SLUG]: resolve(demosDir, `${INDEX_SLUG}.html`),
+            };
             for (const entry of registry) {
                 const key = entry.slug.replace(/-/g, '_');
                 // `key` is derived from a lowercase slug and can contain only letters, digits, and underscores.
@@ -319,7 +394,11 @@ export function virtualDemos() {
                 return null;
             }
 
-            if (findEntryByAbsPath(source) || source === resolve(demosDir, `${SHOTS_SLUG}.html`)) {
+            if (
+                findEntryByAbsPath(source) ||
+                source === resolve(demosDir, `${SHOTS_SLUG}.html`) ||
+                source === resolve(demosDir, `${INDEX_SLUG}.html`)
+            ) {
                 return source;
             }
 
@@ -329,6 +408,10 @@ export function virtualDemos() {
         async load(id) {
             if (id === resolve(demosDir, `${SHOTS_SLUG}.html`)) {
                 return renderShots();
+            }
+
+            if (id === resolve(demosDir, `${INDEX_SLUG}.html`)) {
+                return renderSheet();
             }
 
             const entry = findEntryByAbsPath(id);
@@ -422,21 +505,9 @@ export function virtualDemos() {
                 const url = req.url.split('?')[0];
 
                 if (url === '/') {
-                    const firstVisible = registry.find((entry) => !entry.isNavHidden);
-
-                    if (firstVisible) {
-                        res.statusCode = 302;
-                        res.setHeader('Location', firstVisible.urlPath);
-                        res.end();
-                        return;
-                    }
-                }
-
-                if (url === '/demos/' || url === '/demos') {
                     try {
-                        // Same Vite HTML/CSS pipeline as demo pages (PostCSS, hashed assets).
-                        let html = renderIndexPage(registry);
-                        html = await server.transformIndexHtml('/demos/', html);
+                        let html = renderSheet();
+                        html = await server.transformIndexHtml(`/${INDEX_SLUG}.html`, html);
                         res.setHeader('Content-Type', 'text/html; charset=utf-8');
                         res.end(html);
                     } catch (error) {
@@ -499,35 +570,4 @@ export function virtualDemos() {
  */
 function isInsideDir(rel) {
     return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
-}
-
-/**
- * Render the dev-only auto-generated index page listing every demo (served at /demos/).
- * Not part of the production build; see plugins/virtual-demos.js's configureServer middleware.
- * @param {Array<object>} registry - Full demo registry, as returned by buildRegistry.
- * @returns {string}
- */
-function renderIndexPage(registry) {
-    const items = registry
-        .map(
-            (entry) =>
-                `            <li><a href="${escapeHtml(entry.urlPath)}">${escapeHtml(entry.slug)} &mdash; ${escapeHtml(entry.title)}</a></li>`,
-        )
-        .join('\n');
-
-    return `<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>BLIT386 Demos</title>
-        <link rel="stylesheet" href="../styles/demos-index.css" />
-    </head>
-    <body>
-        <h1>BLIT386 Demos</h1>
-        <ul>
-${items}
-        </ul>
-    </body>
-</html>
-`;
 }
