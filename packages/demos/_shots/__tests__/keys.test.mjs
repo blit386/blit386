@@ -57,6 +57,18 @@ describe('resolveKey in the gallery', () => {
         assert.equal(resolveKey(press('KeyG', { target: input }), 'gallery'), null);
         assert.equal(resolveKey(press('Escape', { target: input }), 'gallery'), 'escape');
     });
+
+    it('leaves Enter and Space to a focused button or link, but keeps every other key', () => {
+        for (const tagName of ['BUTTON', 'A']) {
+            for (const mode of ['gallery', 'lightbox']) {
+                assert.equal(resolveKey(press('Enter', { target: { tagName } }), mode), null);
+                assert.equal(resolveKey(press('Space', { target: { tagName } }), mode), null);
+            }
+        }
+
+        assert.equal(resolveKey(press('ArrowLeft', { target: { tagName: 'BUTTON' } }), 'gallery'), 'focus-left');
+        assert.equal(resolveKey(press('Escape', { target: { tagName: 'BUTTON' } }), 'gallery'), 'escape');
+    });
 });
 
 describe('resolveKey in the lightbox', () => {

@@ -8,6 +8,8 @@
  */
 
 const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+const ACTIVATION_TAGS = new Set(['BUTTON', 'A']);
+const ACTIVATION_CODES = new Set(['Enter', 'Space']);
 const KEY_PREFIX = 'key:';
 const GALLERY_COLUMN = 2;
 const LIGHTBOX_COLUMN = 3;
@@ -109,6 +111,11 @@ function resolveKey(event, mode) {
     // Text fields keep every key except Escape, which still leaves the field.
     if (isTypingTarget(event.target)) {
         return event.code === 'Escape' ? 'escape' : null;
+    }
+
+    // A focused button or link keeps Enter and Space: they activate it, and a binding would swallow them.
+    if (ACTIVATION_CODES.has(event.code) && ACTIVATION_TAGS.has(event.target?.tagName)) {
+        return null;
     }
 
     const column = mode === 'gallery' ? GALLERY_COLUMN : LIGHTBOX_COLUMN;
