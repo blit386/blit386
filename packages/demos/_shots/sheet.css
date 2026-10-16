@@ -24,13 +24,19 @@ body {
     & h1 {
         font-weight: normal;
         font-size: 22px;
+
+        & a {
+            color: inherit;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+        }
     }
 
-    & h1 a {
-        color: inherit;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 4px;
+    & p {
+        @media (max-width: 700px) {
+            display: none;
+        }
     }
 }
 
@@ -39,6 +45,7 @@ body {
     justify-self: end;
     width: 15vw;
     max-width: 210px;
+    padding-right: 14px;
 }
 
 #sheet-gallery {

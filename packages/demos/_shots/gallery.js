@@ -140,6 +140,32 @@ function createGallery(root, hooks) {
         return VARIANTS.find((variant) => entry.variants[variant]) ?? 'display';
     }
 
+    /** A collapsed stack shows its size; the first tile of an expanded stack shows a collapse mark. Either toggles it. */
+    function createStackBadge(tile) {
+        const group = entries.filter((candidate) => candidate.slug === tile.slug);
+        const stackLabel =
+            tile.stackSize > 1 ? `${tile.stackSize}` : group[0]?.pose === tile.pose && group.length > 1 ? '-' : null;
+
+        if (!stackLabel || !view.stacked) {
+            return null;
+        }
+
+        const count = document.createElement('span');
+
+        count.className = 'shots-stack-count';
+        count.textContent = stackLabel;
+        count.title = 'Expand or collapse this stack (G)';
+        count.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleIn(view.expanded, tile.slug);
+            focused = tile.key;
+            refresh();
+            hooks.onSelect?.();
+        });
+
+        return count;
+    }
+
     function renderTile(tile) {
         const entry = byKey.get(tile.key);
         const element = document.createElement('figure');
@@ -208,12 +234,10 @@ function createGallery(root, hooks) {
             attachDiff(view, { entry, variant, img, element, caption });
         }
 
-        if (tile.stackSize > 1) {
-            const count = document.createElement('span');
+        const stackBadge = createStackBadge(tile);
 
-            count.className = 'shots-stack-count';
-            count.textContent = `${tile.stackSize}`;
-            element.append(count);
+        if (stackBadge && !link) {
+            element.append(stackBadge);
         }
 
         if (link) {
@@ -228,6 +252,13 @@ function createGallery(root, hooks) {
         }
 
         element.addEventListener('click', (event) => {
+            // The first click re-renders every tile, so the browser never sends a dblclick: use the click count.
+            if (event.detail === 2) {
+                hooks.onOpen(tile.key);
+
+                return;
+            }
+
             if (event.shiftKey) {
                 extendSelectionTo(tile.key);
             } else {
@@ -238,7 +269,6 @@ function createGallery(root, hooks) {
             refresh();
             hooks.onSelect?.();
         });
-        element.addEventListener('dblclick', () => hooks.onOpen(tile.key));
 
         return element;
     }

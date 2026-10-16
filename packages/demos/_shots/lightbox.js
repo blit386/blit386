@@ -14,6 +14,9 @@ const PAN_FAST_PX = 200;
 const GRID_ZOOM = 4;
 const CAPTION_GAP_PX = 8;
 
+// Trackpads fire many wheel events per swipe; one zoom step per gate keeps three levels from flying past.
+const WHEEL_GATE_MS = 150;
+
 const PANS = {
     'pan-up': [0, -PAN_STEP_PX],
     'pan-down': [0, PAN_STEP_PX],
@@ -59,6 +62,7 @@ function createLightbox(root, hooks) {
     let zoomIndex = 0;
     let grid = false;
     let renderToken = 0;
+    let lastWheel = 0;
 
     const stage = document.createElement('div');
     const img = document.createElement('img');
@@ -202,6 +206,7 @@ function createLightbox(root, hooks) {
         const lastKey = key;
 
         root.hidden = true;
+        document.documentElement.style.overflow = '';
         key = null;
         renderToken++;
         window.removeEventListener('resize', placeLayers);
@@ -256,10 +261,29 @@ function createLightbox(root, hooks) {
         }
     });
 
+    // Not passive: preventDefault stops the wheel from scrolling the lightbox or the page behind it.
+    root.addEventListener(
+        'wheel',
+        (event) => {
+            event.preventDefault();
+
+            const now = performance.now();
+
+            if (event.deltaY === 0 || now - lastWheel < WHEEL_GATE_MS) {
+                return;
+            }
+
+            lastWheel = now;
+            zoomBy(event.deltaY < 0 ? 'zoom-in' : 'zoom-out');
+        },
+        { passive: false },
+    );
+
     return {
         open(nextKey) {
             key = nextKey;
             root.hidden = false;
+            document.documentElement.style.overflow = 'hidden';
             window.addEventListener('resize', placeLayers);
             render();
         },

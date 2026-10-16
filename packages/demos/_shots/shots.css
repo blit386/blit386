@@ -16,60 +16,89 @@
 body {
     color: var(--shots-text);
     font-family: 'DepartureMono', ui-monospace, monospace;
-    font-size: 13px;
-    padding: 0 var(--shots-gap) var(--shots-gap);
+    font-size: 11px;
+    padding: 0 0 var(--shots-gap);
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: none;
 }
 
-#shots-header {
-    display: flex;
-    align-items: baseline;
-    gap: var(--shots-gap);
-    padding: var(--shots-gap) 0;
+#demo-banner .shots-banner-title {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+
+    & h1,
+    & p {
+        margin: 0;
+    }
 
     & h1 {
-        font-size: 16px;
-        margin: 0;
+        font-weight: normal;
+        font-size: 22px;
     }
 
-    & #shots-status {
-        color: var(--shots-dim);
-        flex: 1;
-        margin: 0;
+    & h1 a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 4px;
     }
 
-    & input,
+    & p {
+        @media (max-width: 740px) {
+            display: none;
+        }
+    }
+}
+
+#demo-banner .shots-banner-tools {
+    display: flex;
+    grid-column: 3;
+    gap: 8px;
+    justify-self: end;
+
     & button {
-        background: var(--shots-panel);
-        border: 1px solid var(--shots-border);
-        color: var(--shots-text);
+        background: transparent;
+        border: 2px solid currentColor;
+        color: inherit;
         font: inherit;
-        padding: 4px 8px;
+        padding: 6px 10px;
     }
+}
+
+#demo-banner .shots-banner-filter {
+    width: 15vw;
+    max-width: 210px;
 }
 
 #shots-capture {
-    border: 1px solid var(--shots-border);
-    margin-bottom: var(--shots-gap);
+    border: 2px solid var(--shots-border);
+    margin: var(--shots-gap);
     padding: var(--shots-gap);
 
     & .shots-demos {
         display: flex;
         flex-wrap: wrap;
         gap: 4px 12px;
-        max-height: 160px;
         overflow-y: auto;
+        margin-bottom: 8px;
     }
 
     & .shots-row {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        margin-top: 8px;
+        margin-bottom: 8px;
+        align-items: baseline;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
     }
 
     & button {
         background: var(--shots-panel);
-        border: 1px solid var(--shots-border);
+        border: 2px solid var(--shots-border);
         color: var(--shots-text);
         font: inherit;
         padding: 4px 10px;
@@ -80,15 +109,16 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: var(--shots-gap);
+    gap: 2px;
     outline: none;
+    padding: 0 var(--shots-gap);
 }
 
 .shots-tile {
     --shots-tile-pad: 4px;
 
-    background: var(--shots-panel);
-    border: 1px solid var(--shots-border);
+    border: 2px solid transparent;
+    margin: 0;
     padding: var(--shots-tile-pad);
     position: relative;
 
@@ -105,9 +135,9 @@ body {
     }
 
     & .shots-caption {
-        color: var(--shots-dim);
         display: flex;
         gap: 8px;
+        justify-content: center;
         padding-top: 4px;
     }
 
@@ -123,6 +153,7 @@ body {
 
     & .shots-stack-count {
         background: var(--shots-border);
+        cursor: pointer;
         padding: 0 4px;
         position: absolute;
         right: 4px;
@@ -161,7 +192,7 @@ body {
 
 #shots-lightbox,
 #shots-help-overlay {
-    background: rgb(0 0 0 / 92%);
+    background: rgb(0 0 0 / 95%);
     inset: 0;
     overflow: auto;
     position: fixed;
@@ -193,8 +224,8 @@ body {
 
     & .shots-grid {
         background-image:
-            linear-gradient(to right, rgb(255 255 255 / 15%) 1px, transparent 1px),
-            linear-gradient(to bottom, rgb(255 255 255 / 15%) 1px, transparent 1px);
+            linear-gradient(to right, rgb(255 255 255 / 5%) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 255 255 / 5%) 1px, transparent 1px);
         inset: 0;
         pointer-events: none;
         position: absolute;

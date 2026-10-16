@@ -32,13 +32,16 @@ function checkboxLabel(value, checked) {
  */
 function createCapturePanel(root, hooks) {
     root.hidden = false;
+
     root.innerHTML = `
         <div class="shots-row">
-            <strong>Capture</strong>
+            <span>Capture:</span>
             <label><input type="checkbox" data-role="all-demos"/> all demos</label>
             <span data-role="variants"></span>
         </div>
+
         <div class="shots-demos" data-role="demos"></div>
+
         <div class="shots-row">
             <button type="button" data-role="run">Capture selected (c)</button>
             <button type="button" data-role="run-all">Capture all (Shift+C)</button>
