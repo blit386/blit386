@@ -55,6 +55,12 @@ describe('selectChanged', () => {
         assert.deepEqual(slugs, ['basics', 'sprites']);
     });
 
+    it('picks every demo when the pose table changed', () => {
+        const slugs = selectChanged(['packages/demos/_shots/poses.js'], ['basics', 'sprites']);
+
+        assert.deepEqual(slugs, ['basics', 'sprites']);
+    });
+
     it('keeps demo order and ignores unknown files', () => {
         const slugs = selectChanged(
             ['packages/demos/src/sprites.js', 'packages/demos/src/basics.js', 'x.js'],

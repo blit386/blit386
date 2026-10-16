@@ -8,6 +8,10 @@
  * engine; this script only ferries bytes to disk, so a capture made here is byte-identical
  * to one saved from the page.
  *
+ * --changed compares the working tree against the merge base of origin/main and HEAD (so commits that
+ * only landed on main do not count) and includes untracked files. A change under src/shared/ or to
+ * _shots/poses.js selects every demo; otherwise only the demos whose src/<slug>.js changed.
+ *
  * Usage: pnpm run capture:shots -- --all | --demos a,b | --changed [--variants display,uidebug]
  *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
  */
@@ -29,6 +33,8 @@ const SHOTS_PATH = 'shots';
 const RESULT_TIMEOUT_MS = 20 * 60 * 1000;
 // A src/shared change can move every panel, so every demo is re-captured.
 const SHARED_PREFIX = 'packages/demos/src/shared/';
+// The pose table decides what every demo captures, so an edit to it re-captures every demo.
+const POSES_PATH = 'packages/demos/_shots/poses.js';
 const DEMO_SOURCE_PATTERN = /^packages\/demos\/src\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 
 export const DEFAULTS = {
@@ -131,7 +137,7 @@ export function parseArgs(argv) {
  * @returns {string[]}
  */
 export function selectChanged(changedPaths, order) {
-    if (changedPaths.some((path) => path.startsWith(SHARED_PREFIX))) {
+    if (changedPaths.some((path) => path.startsWith(SHARED_PREFIX) || path === POSES_PATH)) {
         return [...order];
     }
 
@@ -172,9 +178,12 @@ export function resolveImageTarget(outDir, imagePath) {
 // #region Main
 
 function changedPathsFromGit() {
-    const output = execFileSync('git', ['diff', '--name-only', 'origin/main'], { cwd: PACKAGE_ROOT, encoding: 'utf8' });
+    const git = (args) => execFileSync('git', args, { cwd: PACKAGE_ROOT, encoding: 'utf8' });
+    const mergeBase = git(['merge-base', 'origin/main', 'HEAD']).trim();
+    // --full-name keeps untracked paths repo-relative, like diff --name-only.
+    const untracked = git(['ls-files', '--others', '--exclude-standard', '--full-name']);
 
-    return output.split('\n').filter(Boolean);
+    return [...git(['diff', '--name-only', mergeBase]).split('\n'), ...untracked.split('\n')].filter(Boolean);
 }
 
 function engineVersion() {
