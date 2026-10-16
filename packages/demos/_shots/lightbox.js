@@ -50,7 +50,7 @@ const LIGHTBOX_ACTIONS = [
  *   entryFor: (key: string) => object | null,
  *   variantFor: (key: string) => string,
  *   cycleVariant: (key: string) => void,
- *   diffState: () => { show: string, diffFor: (entry: object, variant: string) => Promise<{ changed: number, url: string, baselineUrl: string }> },
+ *   diffState: () => { show: string, diffFor: (entry: object, variant: string) => Promise<{ changed: number, url: string }>, baselineUrlFor: (entry: object, variant: string) => string },
  *   onClose: (lastKey: string | null) => void,
  * }} hooks
  */
@@ -113,7 +113,7 @@ function createLightbox(root, hooks) {
     /** Show the baseline or lay the cached diff over the image, per the diff state; a newer render cancels a stale one. */
     function renderDiff(entry, variant) {
         const token = ++renderToken;
-        const { show, diffFor } = hooks.diffState();
+        const { show, diffFor, baselineUrlFor } = hooks.diffState();
 
         diffLayer.hidden = true;
 
@@ -122,15 +122,18 @@ function createLightbox(root, hooks) {
             return;
         }
 
+        // The baseline image does not depend on the diff, so it shows even if the current capture fails to load.
+        if (show === 'baseline') {
+            img.src = baselineUrlFor(entry, variant);
+        }
+
         diffFor(entry, variant).then(
             (diff) => {
                 if (token !== renderToken) {
                     return;
                 }
 
-                if (show === 'baseline') {
-                    img.src = diff.baselineUrl;
-                } else {
+                if (show === 'diff') {
                     diffLayer.src = diff.url;
                     diffLayer.hidden = false;
                 }

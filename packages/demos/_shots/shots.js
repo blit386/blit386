@@ -91,7 +91,14 @@ function renderInfo() {
     const key = currentKey();
     const entry = key ? gallery.entryFor(key) : null;
 
-    if (!entry || infoRoot.hidden) {
+    if (infoRoot.hidden) {
+        return;
+    }
+
+    // A filter with no matches leaves nothing focused; clear the panel instead of showing a stale tile.
+    if (!entry) {
+        infoRoot.textContent = '';
+
         return;
     }
 
