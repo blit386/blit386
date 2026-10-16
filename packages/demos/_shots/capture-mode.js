@@ -5,10 +5,10 @@
  */
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import { captureAll, createFrameAdapter } from './capture.js';
+import { captureAll, createFrameAdapter, errorText } from './capture.js';
 import { createCapturePanel } from './capture-panel.js';
 import { imagePath, mergeManifest } from './manifest.js';
-import { isKnownPose, posesFor } from './poses.js';
+import { isKnownPose, jobsFor } from './poses.js';
 import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
 const DEFAULT_AUTO_VARIANTS = 'display,uidebug';
@@ -143,7 +143,7 @@ async function startCaptureMode(shell) {
             await runAuto(params);
         } catch (error) {
             // Fail fast: the driver polls __shotsResult and would otherwise wait out its timeout.
-            window.__shotsResult = { manifest: null, images: [], failures: [`auto: ${error?.message ?? error}`] };
+            window.__shotsResult = { manifest: null, images: [], failures: [`auto: ${errorText(error)}`] };
             throw error;
         }
     }
@@ -153,10 +153,7 @@ async function startCaptureMode(shell) {
         const slugs = csv(query.get('demos'));
         const variants = csv(query.get('variants') ?? DEFAULT_AUTO_VARIANTS);
         const targets = slugs.length > 0 ? slugs : demos.map((demo) => demo.slug);
-        const jobs = targets.flatMap((slug) =>
-            posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
-        );
-        const results = await runJobs(jobs);
+        const results = await runJobs(jobsFor(targets, variants));
         const images = [];
 
         for (const result of results.filter((item) => item.ok)) {

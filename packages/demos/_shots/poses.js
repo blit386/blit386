@@ -98,6 +98,19 @@ function posesFor(slug) {
 }
 
 /**
+ * Every (demo, pose, variant) capture job for the given demos, in pose-then-variant order.
+ *
+ * @param {string[]} slugs
+ * @param {string[]} variants
+ * @returns {Array<{ slug: string, pose: Pose, variant: string }>}
+ */
+function jobsFor(slugs, variants) {
+    return slugs.flatMap((slug) =>
+        posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
+    );
+}
+
+/**
  * Is `pose` still a pose of `slug`? False for a pose that was renamed or removed from the table.
  *
  * @param {string} slug
@@ -160,6 +173,7 @@ export {
     COMMITTED_VARIANTS,
     DEFAULT_POSES,
     isKnownPose,
+    jobsFor,
     OUTPUT_VARIANT,
     POSES_BY_SLUG,
     posesFor,

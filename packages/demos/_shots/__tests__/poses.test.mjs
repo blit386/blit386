@@ -9,6 +9,7 @@ import {
     COMMITTED_VARIANTS,
     DEFAULT_POSES,
     isKnownPose,
+    jobsFor,
     POSES_BY_SLUG,
     posesFor,
     validatePoses,
@@ -33,6 +34,28 @@ describe('isKnownPose', () => {
         assert.ok(isKnownPose('no-such-demo', 'start'));
         assert.ok(!isKnownPose('basics', 'wandering'));
         assert.ok(!isKnownPose('no-such-demo', 'moving'));
+    });
+});
+
+describe('jobsFor', () => {
+    it('lists every pose of every demo once per variant, demo then pose then variant', () => {
+        const jobs = jobsFor(['no-such-demo', 'basics'], ['display', 'uidebug']);
+
+        assert.deepEqual(
+            jobs.slice(0, 4).map((job) => `${job.slug}/${job.pose.id}/${job.variant}`),
+            [
+                'no-such-demo/start/display',
+                'no-such-demo/start/uidebug',
+                'no-such-demo/settled/display',
+                'no-such-demo/settled/uidebug',
+            ],
+        );
+        assert.equal(jobs.length, (DEFAULT_POSES.length + posesFor('basics').length) * 2);
+    });
+
+    it('returns nothing without demos or without variants', () => {
+        assert.deepEqual(jobsFor([], ['display']), []);
+        assert.deepEqual(jobsFor(['basics'], []), []);
     });
 });
 

@@ -3,7 +3,8 @@
  * through capture.js, show progress, and save through save.js.
  */
 
-import { COMMITTED_VARIANTS, posesFor, VARIANTS } from './poses.js';
+import { errorText } from './capture.js';
+import { COMMITTED_VARIANTS, jobsFor, VARIANTS } from './poses.js';
 
 /**
  * @param {string} value
@@ -71,14 +72,6 @@ function createCapturePanel(root, hooks) {
         return [...variantBox.querySelectorAll('input:checked')].map((box) => box.value);
     }
 
-    function jobsFor(slugs) {
-        const variants = selectedVariants();
-
-        return slugs.flatMap((slug) =>
-            posesFor(slug).flatMap((pose) => variants.map((variant) => ({ slug, pose, variant }))),
-        );
-    }
-
     let running = false;
 
     function setButtons(disabled) {
@@ -103,7 +96,7 @@ function createCapturePanel(root, hooks) {
         setButtons(true);
 
         try {
-            await hooks.onRun(jobsFor(slugs));
+            await hooks.onRun(jobsFor(slugs, selectedVariants()));
             saveButton.disabled = false;
         } finally {
             running = false;
@@ -115,7 +108,7 @@ function createCapturePanel(root, hooks) {
         try {
             await hooks.onSave();
         } catch (error) {
-            progress.textContent = `save failed: ${error instanceof Error ? error.message : String(error)}`;
+            progress.textContent = `save failed: ${errorText(error)}`;
         }
     }
 

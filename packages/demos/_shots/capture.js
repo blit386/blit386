@@ -294,4 +294,4 @@ function createFrameAdapter(iframe) {
     };
 }
 
-export { captureAll, captureUrl, createFrameAdapter, pointerClientPoint, runPose, stepAfterInput };
+export { captureAll, captureUrl, createFrameAdapter, errorText, pointerClientPoint, runPose, stepAfterInput };

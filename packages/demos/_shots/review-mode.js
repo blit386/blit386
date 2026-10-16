@@ -5,6 +5,7 @@
 
 import { BASELINE_REFUSED, parseBaseline } from './baseline.js';
 import { diffPixels, loadPixels } from './diff.js';
+import { downloadBlob } from './download.js';
 import { createFindings } from './findings.js';
 
 const DIFF_CYCLE = ['current', 'baseline', 'diff'];
@@ -12,14 +13,9 @@ const EXPORT_FILE = 'shots-findings.md';
 
 function exportMarkdown(findings, setStatus) {
     const markdown = findings.toMarkdown();
-    const link = document.createElement('a');
 
     // Download first: the clipboard is undefined outside a secure context and must never block it.
-    link.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
-    link.download = EXPORT_FILE;
-    link.click();
-    // Some browsers start the download asynchronously; revoking in the same tick can empty it.
-    setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    downloadBlob(EXPORT_FILE, new Blob([markdown], { type: 'text/markdown' }));
     setStatus(`findings downloaded as ${EXPORT_FILE}`);
 
     navigator.clipboard?.writeText(markdown).then(
