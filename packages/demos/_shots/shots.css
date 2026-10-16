@@ -167,7 +167,10 @@ body {
 
     &[data-focused='true'] {
         border-color: var(--color-accent);
+        border: 0;
+        color: inherit;
     }
+    font: inherit;
 
     &[data-selected='true'] {
         outline: 2px solid var(--color-accent);

@@ -150,16 +150,25 @@ function createGallery(root, hooks) {
             return null;
         }
 
-        const count = document.createElement('span');
+        const count = document.createElement('button');
+        const collapsed = tile.stackSize > 1;
 
+        count.type = 'button';
         count.className = 'shots-stack-count';
         count.textContent = stackLabel;
         count.title = 'Expand or collapse this stack (G)';
+        count.setAttribute('aria-expanded', String(!collapsed));
+        count.setAttribute(
+            'aria-label',
+            collapsed ? `Expand ${tile.stackSize} poses of ${tile.slug}` : `Collapse the poses of ${tile.slug}`,
+        );
         count.addEventListener('click', (event) => {
             event.stopPropagation();
             toggleIn(view.expanded, tile.slug);
             focused = tile.key;
             refresh();
+            // refresh() replaced the tile, and the button with it; a keyboard user keeps their place.
+            tileElement(tile.key)?.querySelector('.shots-stack-count')?.focus();
             hooks.onSelect?.();
         });
 
