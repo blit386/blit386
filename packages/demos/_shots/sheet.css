@@ -25,6 +25,10 @@ body {
         font-weight: normal;
         font-size: 22px;
 
+        @media (max-width: 700px) {
+            font-size: 16px;
+        }
+
         & a {
             color: inherit;
             text-decoration: underline;
@@ -35,7 +39,17 @@ body {
 
     & p {
         @media (max-width: 700px) {
-            display: none;
+            font-size: 10px;
+            line-height: 1.2;
+            max-width: 50vw;
+            overflow: hidden;
+            text-wrap: balance;
+
+            /* Two lines fit under the title inside the banner; the first words carry the message. */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
         }
     }
 }

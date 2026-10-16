@@ -35,6 +35,10 @@ body {
     & h1 {
         font-weight: normal;
         font-size: 22px;
+
+        @media (max-width: 740px) {
+            font-size: 16px;
+        }
     }
 
     & h1 a {
@@ -46,7 +50,17 @@ body {
 
     & p {
         @media (max-width: 740px) {
-            display: none;
+            font-size: 10px;
+            line-height: 1.2;
+            max-width: 50vw;
+            overflow: hidden;
+            text-wrap: balance;
+
+            /* Two lines fit under the title inside the banner; the first words carry the message. */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
         }
     }
 }
@@ -100,7 +114,6 @@ body {
         background: var(--shots-panel);
         border: 2px solid var(--shots-border);
         color: var(--shots-text);
-        font: inherit;
         padding: 4px 10px;
     }
 }
@@ -153,7 +166,10 @@ body {
 
     & .shots-stack-count {
         background: var(--shots-border);
+        border: 0;
+        color: inherit;
         cursor: pointer;
+        font: inherit;
         padding: 0 4px;
         position: absolute;
         right: 4px;
@@ -167,8 +183,6 @@ body {
 
     &[data-focused='true'] {
         border-color: var(--color-accent);
-        border: 0;
-        color: inherit;
     }
     font: inherit;
 
