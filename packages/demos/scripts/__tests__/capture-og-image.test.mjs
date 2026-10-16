@@ -10,7 +10,6 @@ import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins/social-meta.js';
-import { posesFor } from '../../_shots/poses.js';
 import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
@@ -24,7 +23,6 @@ import {
     DEFAULT_OUT_DIR,
     DEFAULTS,
     parseArgs,
-    resolveCardTime,
     resolveOutDir,
     resolveScaleMode,
 } from '../capture-og-image.mjs';
@@ -287,19 +285,11 @@ describe('buildWebGPUProbeScript', () => {
 });
 
 describe('buildCaptureUrl', () => {
-    it('loads the embed page with the engine exposed on window.BT', () => {
+    it('loads the embed page with the engine exposed on window.BT and the seed pinned', () => {
         assert.equal(
             buildCaptureUrl('https://demos.blit386.dev/', 'basics'),
-            'https://demos.blit386.dev/basics?embed&capture',
+            'https://demos.blit386.dev/basics?embed&capture&seed=1',
         );
-    });
-});
-
-describe('resolveCardTime', () => {
-    it('uses the first pose of the shared pose table', () => {
-        for (const slug of DEMO_ORDER) {
-            assert.equal(resolveCardTime(slug), posesFor(slug)[0].at);
-        }
     });
 });
 

@@ -357,25 +357,22 @@ export function buildOgFfmpegArgs(input, output, target) {
 
 // #region Browser scripts
 
+// Pins `BT.random` so a demo that scatters things randomly (starfield, seeded worlds) draws the
+// same card on every run. `renderAt` replays from the boot seed, but without `?seed=` that seed
+// is fresh per page load.
+export const OG_CAPTURE_SEED = 1;
+
 /**
- * URL of the demo page with the engine exposed on `window.BT`.
+ * URL of the demo page with the engine exposed on `window.BT` and its random stream pinned.
+ * Keep the `capture` flag in step with `captureUrl` in `_shots/capture.js`, which builds the
+ * same page for the /shots gallery (that one runs in the browser, so they cannot share code).
  *
  * @param {string} baseUrl Site origin.
  * @param {string} slug Demo slug.
- * @returns {string} `${baseUrl}/${slug}?embed&capture`.
+ * @returns {string} `${baseUrl}/${slug}?embed&capture&seed=${OG_CAPTURE_SEED}`.
  */
 export function buildCaptureUrl(baseUrl, slug) {
-    return `${buildEmbedUrl(baseUrl, slug)}&capture`;
-}
-
-/**
- * The second the card shows: the first pose of the demo in the shared `/shots` pose table.
- *
- * @param {string} slug Demo slug.
- * @returns {number} Seconds on the engine clock.
- */
-export function resolveCardTime(slug) {
-    return posesFor(slug)[0].at;
+    return `${buildEmbedUrl(baseUrl, slug)}&capture&seed=${OG_CAPTURE_SEED}`;
 }
 
 /**
@@ -503,7 +500,15 @@ function runFfmpeg(args) {
  * @returns {Promise<void>}
  */
 async function captureOne(page, slug, options) {
-    const scaleMode = resolveScaleMode(options.scaleMode, options.ogScaleBySlug.get(slug) ?? '');
+    const demoScaleMode = options.ogScaleBySlug.get(slug);
+
+    // Strict: every ordered slug has a registry entry (check:demo-registry enforces it), so a
+    // miss means the registry read is broken, not "use the default".
+    if (demoScaleMode === undefined) {
+        throw new Error(`No registry entry for demo "${slug}".`);
+    }
+
+    const scaleMode = resolveScaleMode(options.scaleMode, demoScaleMode);
 
     const nativePath = buildNativeImagePath(options.out, slug);
     const cardPath = buildOgImagePath(options.out, slug);
@@ -517,8 +522,9 @@ async function captureOne(page, slug, options) {
 
     const dimensions = await page.evaluate(buildCanvasPrepScript(CANVAS_ID));
 
-    // Seek after the restyle so the frame on screen was rendered for the final canvas box.
-    const at = resolveCardTime(slug);
+    // Seek after the restyle so the frame on screen was rendered for the final canvas box. The
+    // first pose of the demo is the moment the card shows (the site-index tile uses it too).
+    const [{ at }] = posesFor(slug);
 
     console.log(`  canvas ${dimensions.width}x${dimensions.height}, seeking to ${at}s...`);
     await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS));

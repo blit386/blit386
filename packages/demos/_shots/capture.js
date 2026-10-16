@@ -19,6 +19,8 @@ const CANVAS_POLL_MS = 16;
 const INPUT_TICKS = 2;
 
 /**
+ * Keep the `capture` flag in step with `buildCaptureUrl` in `scripts/capture-og-image.mjs`.
+ *
  * @param {string} demoBase
  * @param {string} pageSuffix
  * @param {string} slug

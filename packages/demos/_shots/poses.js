@@ -33,7 +33,7 @@ const POSES_BY_SLUG = {
     // Types its terminal text out character by character; nothing to see before 9 s.
     'crt-pipboy': [{ id: 'typed', at: 9 }],
     // Cycles clean/CRT output every two seconds; land mid-CRT and mid-clean. The first pose is
-    // the one the OG card shows.
+    // the one the OG card and the site-index tile show.
     'crt-toggle': [
         { id: 'crt', at: 3.5 },
         { id: 'clean', at: 1 },
