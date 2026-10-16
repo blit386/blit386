@@ -192,7 +192,8 @@ function createGallery(root, hooks) {
 
             sizeImage(img, entry, variant);
             img.src = url;
-            img.alt = link ? link.label : `${tile.slug} ${tile.pose} ${variant}`;
+            // In link mode the caption inside the same link already names it; a label here would be read twice.
+            img.alt = link ? '' : `${tile.slug} ${tile.pose} ${variant}`;
             img.draggable = false;
 
             if (link) {
