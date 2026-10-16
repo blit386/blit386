@@ -72,9 +72,10 @@ function startDiff({ gallery, imageUrl, setStatus }, rawBaseline) {
     }
 
     // The promise is cached, failures included: a missing baseline is not re-fetched on every
-    // refresh(), and concurrent callers share one decode.
+    // refresh(), and concurrent callers share one decode. The current image's URL is part of the
+    // key: a recapture in dev swaps in a new object URL, which must not reuse the old diff.
     function diffFor(entry, variant) {
-        const cacheKey = `${entry.slug}/${entry.pose}/${variant}`;
+        const cacheKey = `${entry.slug}/${entry.pose}/${variant}|${imageUrl(entry, variant)}`;
 
         if (!cache.has(cacheKey)) {
             cache.set(cacheKey, computeDiff(entry, variant));
