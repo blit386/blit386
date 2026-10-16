@@ -254,30 +254,35 @@ async function waitForCanvasResize(canvas) {
  * @param {HTMLIFrameElement} iframe
  */
 function createFrameAdapter(iframe) {
+    // At most one load listener lives at a time: a pose that timed out leaves its listener
+    // waiting, and the next load would otherwise run it too.
+    let onLoad = null;
+
     return {
         load(url) {
+            if (onLoad) {
+                iframe.removeEventListener('load', onLoad);
+            }
+
             return new Promise((resolve, reject) => {
-                iframe.addEventListener(
-                    'load',
-                    async () => {
-                        const canvas = iframe.contentDocument?.getElementById(CANVAS_ID);
+                onLoad = async () => {
+                    const canvas = iframe.contentDocument?.getElementById(CANVAS_ID);
 
-                        if (!canvas) {
-                            reject(new Error('canvas not found'));
-                            return;
-                        }
+                    if (!canvas) {
+                        reject(new Error('canvas not found'));
+                        return;
+                    }
 
-                        await waitForCanvasResize(canvas);
+                    await waitForCanvasResize(canvas);
 
-                        if (!iframe.contentWindow.BT) {
-                            reject(new Error('window.BT missing - is ?capture in the URL?'));
-                            return;
-                        }
+                    if (!iframe.contentWindow.BT) {
+                        reject(new Error('window.BT missing - is ?capture in the URL?'));
+                        return;
+                    }
 
-                        resolve();
-                    },
-                    { once: true },
-                );
+                    resolve();
+                };
+                iframe.addEventListener('load', onLoad, { once: true });
                 iframe.src = url;
             });
         },
