@@ -134,6 +134,11 @@ describe('isInsideRealDir', () => {
         // A folder that does not exist yet is judged by its nearest existing parent.
         assert.equal(isInsideRealDir(outDir, join(outDir, 'new', 'deeper')), true);
         assert.equal(isInsideRealDir(outDir, join(outDir, 'link', 'new')), false);
+
+        // A dangling link would create its target when written through.
+        symlinkSync(join(root, 'missing', 'file.png'), join(outDir, 'dangling.png'));
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'dangling.png')), false);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'plain.png')), true);
     });
 });
 

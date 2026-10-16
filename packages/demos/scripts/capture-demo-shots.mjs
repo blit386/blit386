@@ -16,7 +16,7 @@
  *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -200,19 +200,26 @@ export function summarizeEntries(entries, slugs) {
 }
 
 /**
- * Whether a directory really lives inside outDir once symlinks are followed, which the lexical
- * check in resolveImageTarget cannot see. The directory need not exist yet: its nearest existing
- * parent decides, so nothing has to be created before the check.
+ * Whether a path really lives inside outDir once symlinks are followed, which the lexical check in
+ * resolveImageTarget cannot see. The path need not exist yet: its nearest existing parent decides,
+ * so nothing has to be created before the check. A dangling symlink counts as outside, because
+ * writing through it would create its target.
  *
  * @param {string} outDir - Existing directory.
- * @param {string} dir
+ * @param {string} path
  * @returns {boolean}
  */
-export function isInsideRealDir(outDir, dir) {
-    let existing = dir;
+export function isInsideRealDir(outDir, path) {
+    let existing = path;
 
     while (!existsSync(existing)) {
-        existing = dirname(existing);
+        try {
+            lstatSync(existing);
+
+            return false;
+        } catch {
+            existing = dirname(existing);
+        }
     }
 
     const root = realpathSync(outDir);
@@ -290,14 +297,18 @@ function writeImages(outDir, images, failures) {
             continue;
         }
 
-        if (!isInsideRealDir(outDir, dirname(target))) {
+        if (!isInsideRealDir(outDir, target)) {
             failures.push(`refused path that leaves the output dir through a symlink: ${image.path}`);
             continue;
         }
 
-        mkdirSync(dirname(target), { recursive: true });
-        writeFileSync(target, Buffer.from(image.base64, 'base64'));
-        console.log(`  wrote ${image.path}`);
+        try {
+            mkdirSync(dirname(target), { recursive: true });
+            writeFileSync(target, Buffer.from(image.base64, 'base64'));
+            console.log(`  wrote ${image.path}`);
+        } catch (error) {
+            failures.push(`could not write ${image.path}: ${error.message}`);
+        }
     }
 }
 
