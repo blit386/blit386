@@ -71,6 +71,7 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `_shots/__tests__/keys.test.mjs` | The `/shots` keyboard map |
 | `_shots/__tests__/capture.test.mjs` | The capture engine's pure helpers |
 | `_shots/__tests__/diff.test.mjs` | `diffPixels`: changed pixels marked magenta, the rest transparent, and the size-mismatch refusal |
+| `_shots/__tests__/baseline.test.mjs` | `parseBaseline`: which `?baseline=` values the page accepts (http(s) and same-origin paths) and refuses |
 | `_shots/__tests__/findings.test.mjs` | Review findings: flags, notes, and the Markdown export |
 | `_shots/__tests__/sheet-entries.test.mjs` | The public site-index sheet's tile pick: one clean `display` capture per nav-visible demo, in nav order |
 
