@@ -131,6 +131,9 @@ describe('isInsideRealDir', () => {
         assert.equal(isInsideRealDir(outDir, join(outDir, 'inside')), true);
         assert.equal(isInsideRealDir(outDir, outDir), true);
         assert.equal(isInsideRealDir(outDir, join(outDir, 'link')), false);
+        // A folder that does not exist yet is judged by its nearest existing parent.
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'new', 'deeper')), true);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'link', 'new')), false);
     });
 });
 
