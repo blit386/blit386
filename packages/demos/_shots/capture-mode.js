@@ -13,6 +13,9 @@ import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
 const DEFAULT_AUTO_VARIANTS = 'display,uidebug';
 
+// Rebuilding every tile per result would cost more than the capture itself; repaint at most this often.
+const GALLERY_REFRESH_MS = 250;
+
 function csv(value) {
     return (value ?? '').split(',').filter(Boolean);
 }
@@ -70,6 +73,7 @@ async function startCaptureMode(shell) {
 
     async function runJobs(jobs) {
         const results = [];
+        let lastRefresh = 0;
 
         await captureAll(
             frame,
@@ -91,12 +95,19 @@ async function startCaptureMode(shell) {
                     liveImages.set(key, URL.createObjectURL(result.blob));
                 }
 
-                gallery.setEntries(mergedWith(results).entries);
+                const now = performance.now();
+
+                if (now - lastRefresh >= GALLERY_REFRESH_MS) {
+                    lastRefresh = now;
+                    gallery.setEntries(mergedWith(results).entries);
+                }
             },
             { demoBase: shell.demoBase, pageSuffix: shell.pageSuffix },
         );
 
         currentManifest = mergedWith(results);
+        // The throttle may have skipped the last results; show the final state.
+        gallery.setEntries(currentManifest.entries);
         unsaved = [...unsaved, ...results];
         setStatus(`${results.filter((result) => result.ok).length}/${results.length} captured, unsaved`);
 
