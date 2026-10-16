@@ -72,6 +72,11 @@ describe('resolveKey in the gallery', () => {
 });
 
 describe('resolveKey in the lightbox', () => {
+    it('captures the open image with c, a shared action the page answers in either mode', () => {
+        assert.equal(resolveKey(press('KeyC'), 'lightbox'), 'capture-current');
+        assert.ok(SHARED_ACTIONS.includes('capture-current'));
+    });
+
     it('navigates and closes', () => {
         assert.equal(resolveKey(press('ArrowRight'), 'lightbox'), 'next');
         assert.equal(resolveKey(press('KeyJ'), 'lightbox'), 'prev');

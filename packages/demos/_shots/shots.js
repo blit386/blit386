@@ -142,22 +142,36 @@ function openLive(key) {
     }
 }
 
-function handleShared(action) {
-    const key = currentKey();
+/** Actions on one tile; they need a tile to act on. @returns {boolean} True when the action was handled. */
+function handleKeyed(action, key) {
+    if (!key) {
+        return false;
+    }
 
+    if (action === 'copy-path') {
+        copyPath(key);
+    } else if (action === 'flag') {
+        review?.findings.toggleFlag(key);
+    } else if (action === 'note') {
+        review?.findings.addNote(key);
+    } else if (action === 'capture-current') {
+        // The lightbox shows the new frame once the run ends; outside dev there is no hook and nothing happens.
+        window.__shotsCapture?.([key])?.then(() => lightbox.isOpen() && lightbox.rerender());
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+function handleShared(action) {
     if (action === 'help') {
         helpRoot.hidden = !helpRoot.hidden;
     } else if (action === 'info-toggle') {
         infoRoot.hidden = !infoRoot.hidden;
         renderInfo();
     } else if (action === 'open-live') {
-        openLive(key);
-    } else if (action === 'copy-path' && key) {
-        copyPath(key);
-    } else if (action === 'flag' && key) {
-        review?.findings.toggleFlag(key);
-    } else if (action === 'note' && key) {
-        review?.findings.addNote(key);
+        openLive(currentKey());
     } else if (action === 'export') {
         review?.findings.exportMarkdown();
     } else if (action === 'diff-toggle' || action === 'diff-cycle') {
@@ -167,7 +181,7 @@ function handleShared(action) {
             lightbox.rerender();
         }
     } else {
-        return false;
+        return handleKeyed(action, currentKey());
     }
 
     return true;
