@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
 import { captureAll, captureUrl, pointerClientPoint, runPose, stepAfterInput } from '../capture.js';
-import { entriesFromResults } from '../save.js';
+import { entriesFromResults, saveRun } from '../save.js';
 
 // Node has no DOM events; the fake canvas only reads `type`, `code`, and `clientX` from them.
 globalThis.KeyboardEvent ??= class {
@@ -247,6 +247,61 @@ describe('captureAll errors', () => {
         );
 
         assert.equal(results[0].error, 'load: foreign boom');
+    });
+});
+
+describe('saveRun', () => {
+    // A directory handle whose files all write, except those named in `failing`.
+    function fakeDir(failing, written) {
+        const folder = {
+            getDirectoryHandle: async () => folder,
+            getFileHandle: async (name) => ({
+                createWritable: async () => ({
+                    write: async () => {
+                        if (failing.includes(name)) {
+                            throw new Error('disk full');
+                        }
+
+                        written.push(name);
+                    },
+                    close: async () => {},
+                }),
+            }),
+        };
+
+        return folder;
+    }
+
+    const ok = (variant) => ({
+        slug: 'basics',
+        pose: 'start',
+        variant,
+        ok: true,
+        blob: new Blob(['png']),
+        width: 320,
+        height: 200,
+        lint: [],
+    });
+
+    it('names a file that failed, keeps going, and leaves it out of the manifest', async () => {
+        const written = [];
+        const existing = { entries: [] };
+        const failing = ['start.uidebug.png'];
+        const { manifest, failed } = await saveRun(
+            fakeDir(failing, written),
+            [ok('display'), ok('uidebug')],
+            existing,
+            {
+                engineVersion: '1.0.0',
+            },
+        );
+
+        assert.deepEqual(
+            failed.map((item) => [item.path, item.error]),
+            [['basics/start.uidebug.png', 'disk full']],
+        );
+        assert.ok(written.includes('start.display.png'));
+        assert.deepEqual(Object.keys(manifest.entries[0].variants), ['display']);
     });
 });
 
