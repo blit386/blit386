@@ -261,10 +261,16 @@ function createLightbox(root, hooks) {
         }
     });
 
-    // Not passive: preventDefault stops the wheel from scrolling the lightbox or the page behind it.
+    // Ctrl or Cmd plus wheel zooms, which is also what a trackpad pinch sends; a plain wheel scrolls
+    // the lightbox so a zoomed capture can be panned. Not passive: preventDefault keeps the browser's
+    // own page zoom from taking the pinch.
     root.addEventListener(
         'wheel',
         (event) => {
+            if (!event.ctrlKey && !event.metaKey) {
+                return;
+            }
+
             event.preventDefault();
 
             const now = performance.now();
