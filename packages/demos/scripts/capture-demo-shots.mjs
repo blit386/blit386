@@ -176,7 +176,7 @@ export function resolveImageTarget(outDir, imagePath) {
 /**
  * One line per captured tile plus the lint total, for the demos of this run.
  *
- * @param {Array<{ slug: string, pose: string, variants: object, lint?: unknown[], error?: string | null }>} entries
+ * @param {Array<{ slug: string, pose: string, variants: object, lint: unknown[], error?: string | null }>} entries
  * @param {string[]} slugs
  * @returns {string[]}
  */
@@ -185,7 +185,7 @@ export function summarizeEntries(entries, slugs) {
     let total = 0;
 
     for (const entry of entries.filter((item) => slugs.includes(item.slug))) {
-        const count = entry.lint?.length ?? 0;
+        const count = entry.lint.length;
         const variants = Object.keys(entry.variants).join(', ');
 
         total += count;

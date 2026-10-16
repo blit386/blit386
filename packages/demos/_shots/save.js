@@ -76,14 +76,16 @@ function entriesFromResults(results) {
     return [...byKey.values()];
 }
 
+const errorMessage = (error) => (error instanceof Error ? error.message : String(error));
+
 /**
  * @param {string} path
- * @param {Blob | string} data
+ * @param {Blob} data
  */
 async function downloadFile(path, data) {
     const link = document.createElement('a');
 
-    link.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: 'application/json' }));
+    link.href = URL.createObjectURL(data);
     link.download = path.replace('/', '__');
     link.click();
     // Some browsers start the download asynchronously; revoking in the same tick can empty it.
@@ -113,18 +115,18 @@ async function saveRun(dir, results, existingManifest, meta) {
             await write(path, result.blob);
             written.push(result);
         } catch (error) {
-            failed.push({ path, error: error instanceof Error ? error.message : String(error), result });
+            failed.push({ path, error: errorMessage(error), result });
         }
     }
 
     const manifest = mergeManifest(existingManifest, entriesFromResults(written), DEMO_ORDER, meta);
 
     try {
-        await write(MANIFEST_NAME, `${JSON.stringify(manifest, null, 2)}\n`);
+        await write(MANIFEST_NAME, new Blob([`${JSON.stringify(manifest, null, 2)}\n`], { type: 'application/json' }));
     } catch (error) {
         failed.push({
             path: MANIFEST_NAME,
-            error: error instanceof Error ? error.message : String(error),
+            error: errorMessage(error),
             result: null,
         });
     }
