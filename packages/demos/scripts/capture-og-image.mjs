@@ -3,12 +3,15 @@
  * Capture a per-demo OpenGraph card: a still frame of the running demo, nearest-neighbor
  * upscaled and centered on a 1200x630 black canvas, written to public/social/og-<slug>.png.
  *
- * Why an element screenshot rather than the engine's own PNG export: `BT.captureFrame()` is
- * reachable only from inside a demo module - there is no `window.BT` global - and a WebGPU
- * swap chain does not reliably read back through `canvas.toDataURL()`, which is exactly why
- * WebGPUContext configures the canvas with COPY_SRC for the engine's own capture path.
- * Playwright's element screenshot goes through CDP and captures the composited surface, so it
- * works without touching engine or demo source.
+ * The frame is deterministic: the page loads under `?embed&capture` (which puts the engine on
+ * `window.BT`), and the script seeks it with `BT.renderAt(at)`, where `at` is the first pose of
+ * the demo in `_shots/poses.js` - the same table the /shots gallery uses, so the two cannot
+ * drift apart and no wall-clock sleep decides what the card shows.
+ *
+ * Why an element screenshot rather than `BT.captureFrame()`: a WebGPU swap chain does not
+ * reliably read back through `canvas.toDataURL()`, and the card needs the CSS-sized canvas
+ * rather than the readback path's pixels (BT-468). Playwright's element screenshot goes
+ * through CDP and captures the composited surface.
  *
  * Crispness comes from doing no resampling until ffmpeg: the page is restyled so the canvas
  * occupies exactly its own drawing-buffer size in CSS pixels at deviceScaleFactor 1, making
@@ -44,13 +47,13 @@ import {
     OG_SCALE_DEFAULT,
     OG_SCALE_MODES,
 } from '../plugins/social-meta.js';
+import { posesFor } from '../_shots/poses.js';
 import {
     buildCanvasReadyScript,
     buildEmbedUrl,
     buildWebGPUProbeScript,
     CANVAS_ID,
     launchCaptureBrowser,
-    sleep,
 } from './playwright-session.mjs';
 
 // #region Configuration
@@ -80,39 +83,12 @@ export const DEFAULTS = {
     // caller's cwd. An explicit --out stays cwd-relative, which is what passing a path implies.
     out: '',
     baseUrl: SITE_URL,
-    settle: 2.5,
     // Empty means "no CLI override" - each demo's own `@ogScale` tag decides, falling back to
     // OG_SCALE_DEFAULT. An explicit --scale-mode wins over both, for one-off experiments.
     scaleMode: '',
     force: false,
     keepIntermediate: false,
     dryRun: false,
-};
-
-// Demos that need longer to reach a representative frame, or an input nudge to show anything
-// interesting at all. Populated empirically by reviewing a full --all run, not guessed.
-export const OG_CAPTURE_OVERRIDES = {
-    // Types its terminal text out character by character, so the default settle catches a
-    // near-black screen.
-    'crt-pipboy': { settle: 9 },
-    // Cycles clean/CRT output every two seconds; land mid-CRT rather than on the plain frame.
-    'crt-toggle': { settle: 3.5 },
-    // The sprite starts at an edge and needs time to travel somewhere interesting.
-    basics: { settle: 6 },
-    'basics-enhanced': { settle: 6 },
-    // Runs a long fade cycle; the default lands during the darkest phase.
-    'palette-exposure-fade': { settle: 7 },
-    // Slow crawl from a nearly empty board.
-    'snake-game': { settle: 7 },
-    // Stars need time to spread across the field.
-    starfield: { settle: 6 },
-    // Cruises for the first 2.5 seconds; land mid-warp so the card shows the streaks.
-    'reduced-motion': { settle: 4.5 },
-    'audio-basics': { settle: 5 },
-};
-
-const NUMERIC_OPTIONS = {
-    '--settle': 'settle',
 };
 
 const STRING_OPTIONS = {
@@ -141,8 +117,8 @@ const BOOLEAN_OPTIONS = {
  * @param {string[]} argv Arguments after the script name, i.e. `process.argv.slice(2)`.
  * @returns {object} Parsed options, with `slugs` resolved to the list to capture.
  * @throws {Error} When the slug is missing or unknown, `--all` is combined with a slug, an
- *   option lacks its value, a numeric option is not a positive number, `--scale-mode` is not a
- *   known mode, an option is unrecognized, or a second positional argument appears.
+ *   option lacks its value, `--scale-mode` is not a known mode, an option is unrecognized, or a
+ *   second positional argument appears.
  */
 export function parseArgs(argv) {
     const options = { ...DEFAULTS, all: false };
@@ -156,7 +132,7 @@ export function parseArgs(argv) {
             continue;
         }
 
-        if (Object.hasOwn(NUMERIC_OPTIONS, arg) || Object.hasOwn(STRING_OPTIONS, arg)) {
+        if (Object.hasOwn(STRING_OPTIONS, arg)) {
             const value = argv[index + 1];
 
             // A following long option is a forgotten value, not the value itself. Without this,
@@ -168,17 +144,7 @@ export function parseArgs(argv) {
 
             index += 1;
 
-            if (Object.hasOwn(NUMERIC_OPTIONS, arg)) {
-                const numeric = Number(value);
-
-                if (!Number.isFinite(numeric) || numeric <= 0) {
-                    throw new Error(`${arg} must be a positive number, got "${value}".`);
-                }
-
-                options[NUMERIC_OPTIONS[arg]] = numeric;
-            } else {
-                options[STRING_OPTIONS[arg]] = value;
-            }
+            options[STRING_OPTIONS[arg]] = value;
 
             continue;
         }
@@ -392,6 +358,49 @@ export function buildOgFfmpegArgs(input, output, target) {
 // #region Browser scripts
 
 /**
+ * URL of the demo page with the engine exposed on `window.BT`.
+ *
+ * @param {string} baseUrl Site origin.
+ * @param {string} slug Demo slug.
+ * @returns {string} `${baseUrl}/${slug}?embed&capture`.
+ */
+export function buildCaptureUrl(baseUrl, slug) {
+    return `${buildEmbedUrl(baseUrl, slug)}&capture`;
+}
+
+/**
+ * The second the card shows: the first pose of the demo in the shared `/shots` pose table.
+ *
+ * @param {string} slug Demo slug.
+ * @returns {number} Seconds on the engine clock.
+ */
+export function resolveCardTime(slug) {
+    return posesFor(slug)[0].at;
+}
+
+/**
+ * Browser-side script that waits for the engine to finish init, then seeks it to `at` seconds.
+ * The canvas is resized and `window.BT` exists a little before `BT.isReady` flips, and
+ * `renderAt` needs the game loop.
+ *
+ * @param {number} at Seconds on the engine clock.
+ * @param {number} timeoutMs How long to wait for the engine before failing.
+ * @returns {string} JavaScript source. Resolves once the frame is rendered.
+ */
+export function buildSeekScript(at, timeoutMs) {
+    return `
+(async () => {
+    const deadline = Date.now() + ${timeoutMs};
+    while (!window.BT?.isReady) {
+        if (Date.now() >= deadline) throw new Error('engine was not ready before the seek deadline');
+        await new Promise((tick) => setTimeout(tick, 16));
+    }
+    await window.BT.renderAt(${at});
+})();
+`.trim();
+}
+
+/**
  * Browser-side script that restyles the page so an element screenshot of the canvas is exactly
  * its drawing-buffer size, with no browser resampling.
  *
@@ -457,7 +466,6 @@ Usage: pnpm run capture:og -- <slug> [options]
   --out <dir>            Output directory, relative to your cwd
                          (default: ${DEFAULT_OUT_DIR}, resolved against packages/demos)
   --base-url <url>       Site origin (default: ${DEFAULTS.baseUrl})
-  --settle <seconds>     Wait after engine init before the shot (default: ${DEFAULTS.settle})
   --scale-mode <mode>    auto | integer | fit. Overrides every demo's own @ogScale tag;
                          omit it to let each demo decide (default: ${OG_SCALE_DEFAULT})
   --keep-intermediate    Keep the native-resolution screenshot
@@ -495,15 +503,12 @@ function runFfmpeg(args) {
  * @returns {Promise<void>}
  */
 async function captureOne(page, slug, options) {
-    // eslint-disable-next-line security/detect-object-injection
-    const override = Object.hasOwn(OG_CAPTURE_OVERRIDES, slug) ? OG_CAPTURE_OVERRIDES[slug] : {};
-    const settle = override.settle ?? options.settle;
     const scaleMode = resolveScaleMode(options.scaleMode, options.ogScaleBySlug.get(slug) ?? '');
 
     const nativePath = buildNativeImagePath(options.out, slug);
     const cardPath = buildOgImagePath(options.out, slug);
 
-    await page.goto(buildEmbedUrl(options.baseUrl, slug));
+    await page.goto(buildCaptureUrl(options.baseUrl, slug));
 
     // Strict: a card rendered from the browser's 300x150 default would be a silently wrong
     // image rather than a visible failure, and this runs unattended across 46 demos.
@@ -512,9 +517,11 @@ async function captureOne(page, slug, options) {
 
     const dimensions = await page.evaluate(buildCanvasPrepScript(CANVAS_ID));
 
-    console.log(`  canvas ${dimensions.width}x${dimensions.height}, settling ${settle}s...`);
-    // Time-based demos need a moment so the card shows motion, not frame zero.
-    await sleep(settle);
+    // Seek after the restyle so the frame on screen was rendered for the final canvas box.
+    const at = resolveCardTime(slug);
+
+    console.log(`  canvas ${dimensions.width}x${dimensions.height}, seeking to ${at}s...`);
+    await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS));
 
     await page.locator(`#${CANVAS_ID}`).screenshot({ path: nativePath });
 
