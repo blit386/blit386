@@ -31,7 +31,9 @@ lightbox size from `naturalWidth`/`naturalHeight`, so at 1x `img.width` equals `
 every demo whenever any file under `src/shared/` (tests included) or `_shots/poses.js` differs from the merge base of
 `origin/main` and `HEAD`; untracked files count as changed, and commits that only landed on `main` do not. The driver
 opens `/shots?auto...` in Chrome, waits for the page to finish, and writes `public/shots/<slug>/<pose>.<variant>.png`
-plus a merged `manifest.json`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit
+plus a merged `manifest.json`. After a clean run it deletes `.png` files in the captured demos' folders that the
+manifest no longer lists (a renamed or removed pose leaves none behind); only those demos' folders are touched, so check
+the deletions in `git status`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit
 code 1 means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
 
 ### 2. Inspect
