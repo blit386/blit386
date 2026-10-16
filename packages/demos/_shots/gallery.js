@@ -235,12 +235,6 @@ function createGallery(root, hooks) {
             attachDiff(view, { entry, variant, img, element, caption });
         }
 
-        const stackBadge = createStackBadge(tile);
-
-        if (stackBadge && !link) {
-            element.append(stackBadge);
-        }
-
         if (link) {
             const anchor = document.createElement('a');
 
@@ -250,6 +244,12 @@ function createGallery(root, hooks) {
             element.append(anchor);
 
             return element;
+        }
+
+        const stackBadge = createStackBadge(tile);
+
+        if (stackBadge) {
+            element.append(stackBadge);
         }
 
         element.addEventListener('click', (event) => {
