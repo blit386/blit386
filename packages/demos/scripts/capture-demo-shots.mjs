@@ -174,6 +174,32 @@ export function resolveImageTarget(outDir, imagePath) {
 }
 
 /**
+ * One line per captured tile plus the lint total, for the demos of this run.
+ *
+ * @param {Array<{ slug: string, pose: string, variants: object, lint?: unknown[], error?: string | null }>} entries
+ * @param {string[]} slugs
+ * @returns {string[]}
+ */
+export function summarizeEntries(entries, slugs) {
+    const lines = [];
+    let total = 0;
+
+    for (const entry of entries.filter((item) => slugs.includes(item.slug))) {
+        const count = entry.lint?.length ?? 0;
+        const variants = Object.keys(entry.variants).join(', ');
+
+        total += count;
+        lines.push(
+            `  ${entry.slug}/${entry.pose}: ${variants || 'no variants'}, lint ${count}${entry.error ? `, ${entry.error}` : ''}`,
+        );
+    }
+
+    lines.push(`lint findings in total: ${total}`);
+
+    return lines;
+}
+
+/**
  * Whether an existing directory really lives inside outDir once symlinks are followed, which the
  * lexical check in resolveImageTarget cannot see.
  *
@@ -325,6 +351,7 @@ async function main() {
 
     writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     console.log(`\n${result.images.length} image(s), manifest with ${manifest.entries.length} entries in ${outDir}`);
+    console.log(summarizeEntries(manifest.entries, slugs).join('\n'));
 
     if (failures.length > 0) {
         console.error(`${failures.length} failed:\n  ${failures.join('\n  ')}`);

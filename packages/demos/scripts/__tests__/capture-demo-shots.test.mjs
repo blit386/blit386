@@ -15,6 +15,7 @@ import {
     parseArgs,
     resolveImageTarget,
     selectChanged,
+    summarizeEntries,
 } from '../capture-demo-shots.mjs';
 
 describe('parseArgs', () => {
@@ -130,5 +131,21 @@ describe('isInsideRealDir', () => {
         assert.equal(isInsideRealDir(outDir, join(outDir, 'inside')), true);
         assert.equal(isInsideRealDir(outDir, outDir), true);
         assert.equal(isInsideRealDir(outDir, join(outDir, 'link')), false);
+    });
+});
+
+describe('summarizeEntries', () => {
+    it('lists the tiles of the run with their lint counts and a total', () => {
+        const entries = [
+            { slug: 'basics', pose: 'start', variants: { display: 'a', uidebug: 'b' }, lint: [{}, {}] },
+            { slug: 'sprites', pose: 'start', variants: {}, lint: [], error: 'display: boom' },
+            { slug: 'other', pose: 'start', variants: { display: 'c' }, lint: [{}] },
+        ];
+
+        assert.deepEqual(summarizeEntries(entries, ['basics', 'sprites']), [
+            '  basics/start: display, uidebug, lint 2',
+            '  sprites/start: no variants, lint 0, display: boom',
+            'lint findings in total: 2',
+        ]);
     });
 });
