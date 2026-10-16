@@ -283,7 +283,7 @@ describe('findReservedSlugFailures', () => {
         ]);
     });
 
-    it('reserves exactly the shots page path', () => {
-        assert.deepEqual([...RESERVED_SLUGS], ['shots']);
+    it('reserves exactly the shots gallery and the site index page paths', () => {
+        assert.deepEqual([...RESERVED_SLUGS], ['shots', 'index']);
     });
 });

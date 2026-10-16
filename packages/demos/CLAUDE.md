@@ -34,7 +34,15 @@ its shared `html-escape.js`, `scripts/` the check, generate, and capture scripts
 helpers the capture scripts share, and `_shots/` the `/shots` capture gallery page: its template, styles, pose table,
 and the in-browser capture engine (`shots.js` is the entry, `capture.js` the engine, `capture-mode.js` the dev-only
 wiring, `review-mode.js` the diff and findings aids). `virtual-demos` serves it at `/shots`, the build emits
-`dist/shots.html`, and it is never a demo.
+`dist/shots.html`, and it is never a demo. The same directory holds the public demo sheet at the site index
+(`sheet.html`, `sheet.js`, `sheet.css`, and the pure, tested `sheet-entries.js`): one committed `display` capture per
+nav-visible demo, each tile a link into the shell, under the demo pages' banner with a name filter on the right,
+rendered by `gallery.js` in link mode (its optional `tileLink` hook) with none of the capture, lint, diff, or findings
+features loaded. `sheet.css` builds on `layout.css` alone and never loads `shots.css`, so review-page styling cannot
+leak onto the public page. `virtual-demos` picks the tiles from the committed `manifest.json` and embeds them in the
+page, so there is no runtime fetch and a broken manifest fails the build; it serves the page at `/` in dev and the build
+emits `dist/index.html`; unlike `/shots` it is indexable and carries the `buildSocialMeta` head block. `index` and
+`shots` are both in `RESERVED_SLUGS`.
 
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
 letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename - it comes
@@ -52,7 +60,8 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 4. Run `pnpm run check:demo-registry` so disk, order, vintage, and nav-hidden sets stay consistent.
 5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL. Enforced, not
    merely expected: `check:demo-registry` fails on a missing, duplicated, or dangling README entry, naming the slug.
-6. Run `pnpm run capture:shots -- --demos <slug>` and commit the PNGs so the gallery and any future index page show it.
+6. Run `pnpm run capture:shots -- --demos <slug>` and commit the PNGs so the `/shots` gallery and the site index show
+   it. A demo without a clean `display` capture is silently missing from the site index.
 
 The demos listed in `FIRST_GAME_EXAMPLES` (`packages/website/scripts/sync-kit-pages.mjs`) are also published, full
 source and `@description`, as example pages on blit386.dev for agents building a first game. Editing, renaming, or
@@ -261,10 +270,9 @@ Commit scopes (convention only - prefer one already in this package's history): 
 `skills`, `deps`. Husky runs lint-staged on pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
 
 The build copies each virtual demo to `dist/<slug>.html` at the site root and generates `dist/_redirects` from
-`VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics` and `/001-basics.html`) 301 to the
-current extensionless slug everywhere. The site-index rule is the one entry that still names `dist/<slug>.html`, because
-a `200` rewrite has to name the asset. Cloudflare Pages serves each `dist/<slug>.html` at `/<slug>` and 308s
-`/<slug>.html` to it, which is why nothing else should emit the extension.
+`VINTAGE_URLS`, so vintage numbered paths (`/001-basics` and `/001-basics.html`) 301 to the current extensionless slug
+everywhere. The site index needs no rule: it is `dist/index.html`, the public demo sheet. Cloudflare Pages serves each
+`dist/<slug>.html` at `/<slug>` and 308s `/<slug>.html` to it, which is why nothing should emit the extension.
 
 `.github/workflows/deploy.yml` runs two jobs against this package: `deploy-demos` deploys to the `blit386-demos` Pages
 project (`demos.blit386.dev`) on a release tag push (`x.y.z`, no `v` prefix, no prerelease suffix) or a manual

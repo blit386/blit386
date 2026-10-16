@@ -93,8 +93,8 @@ cd packages/demos
 pnpm run dev
 ```
 
-Opens the browser at `http://localhost:5173/demos/basics.html` (or visit `/demos/` for the full index). Vintage numbered
-paths such as `/demos/001-basics.html` 301 to the current slug.
+Visit `http://localhost:5173/` for the demo sheet, or a demo directly at `http://localhost:5173/demos/<slug>.html`.
+Vintage numbered paths such as `/demos/001-basics.html` 301 to the current slug.
 
 ### Development with Auto-Rebuild
 

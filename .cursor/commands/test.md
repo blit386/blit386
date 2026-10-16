@@ -72,6 +72,7 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `_shots/__tests__/capture.test.mjs` | The capture engine's pure helpers |
 | `_shots/__tests__/diff.test.mjs` | `diffPixels`: changed pixels marked magenta, the rest transparent, and the size-mismatch refusal |
 | `_shots/__tests__/findings.test.mjs` | Review findings: flags, notes, and the Markdown export |
+| `_shots/__tests__/sheet-entries.test.mjs` | The public site-index sheet's tile pick: one clean `display` capture per nav-visible demo, in nav order |
 
 The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
 verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM

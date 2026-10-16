@@ -98,12 +98,16 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
 }
 
 /**
- * @param {HTMLElement} root - The #shots-gallery element.
+ * @param {HTMLElement} root - The gallery's container: `#shots-gallery` on /shots, `#sheet-gallery` on the sheet.
  * @param {{
  *   imageUrl: (entry: object, variant: string) => string | null,
- *   onOpen: (key: string) => void,
- *   onCapture: (keys: string[]) => void,
- * }} hooks
+ *   onOpen?: (key: string) => void,
+ *   onCapture?: (keys: string[]) => void,
+ *   tileLink?: (entry: object) => { href: string, label: string },
+ * }} hooks - `tileLink` switches a tile to link mode for the public sheet: the tile becomes a
+ *   plain link labeled `label`, with no focus or selection clicks. Link mode never
+ *   reaches `onOpen` or `onCapture`, so the sheet omits them; the review page passes both and
+ *   never passes `tileLink`.
  */
 function createGallery(root, hooks) {
     /** @type {Array<object>} */
@@ -142,6 +146,7 @@ function createGallery(root, hooks) {
         const element = document.createElement('figure');
         const variant = variantFor(entry);
         const url = hooks.imageUrl(entry, variant);
+        const link = hooks.tileLink?.(entry) ?? null;
         let img = null;
 
         element.className = 'shots-tile';
@@ -162,15 +167,24 @@ function createGallery(root, hooks) {
 
             sizeImage(img, entry, variant);
             img.src = url;
-            img.alt = `${tile.slug} ${tile.pose} ${variant}`;
+            img.alt = link ? link.label : `${tile.slug} ${tile.pose} ${variant}`;
             img.draggable = false;
+
+            if (link) {
+                img.loading = 'lazy';
+            }
+
             element.append(img);
         }
 
         const caption = document.createElement('figcaption');
 
         caption.className = 'shots-caption';
-        caption.append(`${tile.slug} / ${tile.pose}`, ` ${entry.width}x${entry.height}`, ` ${variant}`);
+        if (link) {
+            caption.append(link.label);
+        } else {
+            caption.append(`${tile.slug} / ${tile.pose}`, ` ${entry.width}x${entry.height}`, ` ${variant}`);
+        }
 
         if (view.lint && entry.lint.length > 0) {
             const badge = document.createElement('span');
@@ -201,6 +215,17 @@ function createGallery(root, hooks) {
             count.className = 'shots-stack-count';
             count.textContent = `${tile.stackSize}`;
             element.append(count);
+        }
+
+        if (link) {
+            const anchor = document.createElement('a');
+
+            anchor.className = 'shots-tile-link';
+            anchor.href = link.href;
+            anchor.append(...element.childNodes);
+            element.append(anchor);
+
+            return element;
         }
 
         element.addEventListener('click', (event) => {

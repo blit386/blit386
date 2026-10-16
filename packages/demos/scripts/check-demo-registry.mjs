@@ -11,7 +11,7 @@
  *   elsewhere (would steal that demo's public path).
  * - Every VINTAGE_URLS target is either a live slug or listed in RETIRED_SLUGS.
  * - Every NAV_HIDDEN_SLUGS / RETIRED_SLUGS entry is still meaningful (no stale rows).
- * - No demo may use a reserved page path (RESERVED_SLUGS: the /shots gallery).
+ * - No demo may use a reserved page path (RESERVED_SLUGS: the /shots gallery, the site index).
  * - Every demo carries a one-line `@description` header tag of a length that survives every
  *   social-card consumer intact (see DESCRIPTION_MIN_CHARS / DESCRIPTION_MAX_CHARS).
  * - Every live slug appears exactly once in the `## Demos` list in README.md, and every

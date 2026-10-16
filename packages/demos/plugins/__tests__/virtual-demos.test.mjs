@@ -7,7 +7,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { renderDemoHtml, renderShotsHtml, resolveVintageRedirect, SHOTS_SLUG } from '../virtual-demos.js';
+import {
+    renderDemoHtml,
+    renderSheetHtml,
+    renderShotsHtml,
+    resolveVintageRedirect,
+    SHOTS_SLUG,
+} from '../virtual-demos.js';
 
 const LAYOUT_TEMPLATE = [
     '<!doctype html>',
@@ -188,5 +194,60 @@ describe('renderShotsHtml', () => {
 
     it('reserves the shots slug', () => {
         assert.equal(SHOTS_SLUG, 'shots');
+    });
+});
+
+describe('renderSheetHtml', () => {
+    const template =
+        '<head>{{robotsMeta}}{{socialMeta}}</head>' +
+        '<body data-demo-base="{{demoBase}}" data-page-suffix="{{pageSuffix}}">{{channelBanner}}' +
+        '<script id="sheet-entries" type="application/json">{{sheetEntries}}</script></body>';
+    const head = { robotsMeta: '', channelBanner: '', socialMeta: '<link rel="canonical">' };
+
+    it('stamps the dev demo base and page suffix', () => {
+        const html = renderSheetHtml({ template, entriesJson: '[]', isDevMode: true, ...head });
+
+        assert.match(html, /data-demo-base="\/demos\/"/);
+        assert.match(html, /data-page-suffix="\.html"/);
+    });
+
+    it('stamps the flattened build base and an empty suffix', () => {
+        const html = renderSheetHtml({ template, entriesJson: '[]', isDevMode: false, ...head });
+
+        assert.match(html, /data-demo-base="\.\/"/);
+        assert.match(html, /data-page-suffix=""/);
+    });
+
+    it('substitutes the head block, robots meta, and channel banner', () => {
+        const html = renderSheetHtml({
+            template,
+            entriesJson: '[]',
+            isDevMode: false,
+            robotsMeta: '<meta name="robots" content="noindex">',
+            channelBanner: '<div id="channel-banner"></div>',
+            socialMeta: '<link rel="canonical">',
+        });
+
+        assert.match(html, /<head><meta name="robots" content="noindex"><link rel="canonical"><\/head>/);
+        assert.match(html, /<div id="channel-banner"><\/div>/);
+    });
+
+    it('passes $& in every substituted value through byte-for-byte', () => {
+        const html = renderSheetHtml({
+            template,
+            entriesJson: '["$&"]',
+            isDevMode: false,
+            robotsMeta: 'r$&',
+            channelBanner: 'b$1',
+            socialMeta: 's$&',
+        });
+
+        assert.match(html, /\["\$&"\]/);
+        assert.ok(html.includes('r$&s$&'));
+        assert.ok(html.includes('b$1'));
+    });
+
+    it('leaves no unsubstituted template placeholder behind', () => {
+        assert.doesNotMatch(renderSheetHtml({ template, entriesJson: '[]', isDevMode: false, ...head }), /\{\{/);
     });
 });
