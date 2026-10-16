@@ -4,6 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { runInNewContext } from 'node:vm';
 
 import { captureAll, captureUrl, pointerClientPoint, runPose, stepAfterInput } from '../capture.js';
 import { entriesFromResults } from '../save.js';
@@ -219,6 +220,33 @@ describe('captureAll', () => {
         assert.equal(results[0].ok, false);
         assert.match(results[0].error, /boom/);
         assert.equal(results[1].ok, true);
+    });
+});
+
+describe('captureAll errors', () => {
+    it('reports the message of an error thrown in another realm', async () => {
+        // An iframe's errors are not `instanceof Error` here, which is why errorText reads `.message`.
+        const foreign = runInNewContext('new Error("foreign boom")');
+        const frame = fakeFrame({
+            load: async () => {
+                throw foreign;
+            },
+        });
+        const results = [];
+
+        assert.equal(foreign instanceof Error, false);
+
+        await captureAll(
+            frame,
+            [{ slug: 'a', pose: { id: 'start', at: 0 }, variant: 'display' }],
+            (r) => results.push(r),
+            {
+                demoBase: '/demos/',
+                pageSuffix: '',
+            },
+        );
+
+        assert.equal(results[0].error, 'load: foreign boom');
     });
 });
 
