@@ -19,7 +19,9 @@
         "src/**/*.js",
         "plugins/*.js",
         "_partials/*.js",
-        "_shots/*.js",
+        "_shots/shots.js",
+        "_shots/sheet.js",
+        "_shots/__tests__/*.test.mjs",
         "scripts/**/*.mjs",
         "postcss.config.js"
       ],
