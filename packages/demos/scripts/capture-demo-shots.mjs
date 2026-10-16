@@ -16,7 +16,7 @@
  *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -173,6 +173,21 @@ export function resolveImageTarget(outDir, imagePath) {
     return target.startsWith(outDir + sep) ? target : null;
 }
 
+/**
+ * Whether an existing directory really lives inside outDir once symlinks are followed, which the
+ * lexical check in resolveImageTarget cannot see.
+ *
+ * @param {string} outDir
+ * @param {string} dir - Existing directory.
+ * @returns {boolean}
+ */
+export function isInsideRealDir(outDir, dir) {
+    const root = realpathSync(outDir);
+    const real = realpathSync(dir);
+
+    return real === root || real.startsWith(root + sep);
+}
+
 // #endregion
 
 // #region Main
@@ -230,6 +245,11 @@ async function runPage(url) {
  */
 function writeImages(outDir, images, failures) {
     for (const image of images) {
+        if (typeof image?.path !== 'string' || typeof image.base64 !== 'string') {
+            failures.push('refused a malformed image entry (it needs a string path and a string base64)');
+            continue;
+        }
+
         const target = resolveImageTarget(outDir, image.path);
 
         if (target === null) {
@@ -238,6 +258,12 @@ function writeImages(outDir, images, failures) {
         }
 
         mkdirSync(dirname(target), { recursive: true });
+
+        if (!isInsideRealDir(outDir, dirname(target))) {
+            failures.push(`refused path that leaves the output dir through a symlink: ${image.path}`);
+            continue;
+        }
+
         writeFileSync(target, Buffer.from(image.base64, 'base64'));
         console.log(`  wrote ${image.path}`);
     }

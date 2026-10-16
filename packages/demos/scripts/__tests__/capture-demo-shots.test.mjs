@@ -2,11 +2,20 @@
  * Unit tests for the pure helpers in scripts/capture-demo-shots.mjs.
  */
 import assert from 'node:assert/strict';
-import { resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
-import { buildAutoUrl, DEFAULTS, parseArgs, resolveImageTarget, selectChanged } from '../capture-demo-shots.mjs';
+import {
+    buildAutoUrl,
+    DEFAULTS,
+    isInsideRealDir,
+    parseArgs,
+    resolveImageTarget,
+    selectChanged,
+} from '../capture-demo-shots.mjs';
 
 describe('parseArgs', () => {
     it('captures every demo with the committed variants by default', () => {
@@ -93,5 +102,33 @@ describe('resolveImageTarget', () => {
     it('refuses a parent-relative or absolute path', () => {
         assert.equal(resolveImageTarget(outDir, '../escape.png'), null);
         assert.equal(resolveImageTarget(outDir, '/abs/x.png'), null);
+    });
+});
+
+describe('resolveImageTarget at the output directory itself', () => {
+    const outDir = resolve('/tmp/shots-out');
+
+    it('refuses a path that resolves to outDir, which is not a file inside it', () => {
+        assert.equal(resolveImageTarget(outDir, '.'), null);
+        assert.equal(resolveImageTarget(outDir, ''), null);
+        assert.equal(resolveImageTarget(outDir, 'basics/..'), null);
+    });
+});
+
+describe('isInsideRealDir', () => {
+    it('follows symlinks, so a link out of outDir is refused', (t) => {
+        const root = mkdtempSync(join(tmpdir(), 'shots-real-'));
+
+        t.after(() => rmSync(root, { recursive: true, force: true }));
+        const outDir = join(root, 'out');
+        const elsewhere = join(root, 'elsewhere');
+
+        mkdirSync(join(outDir, 'inside'), { recursive: true });
+        mkdirSync(elsewhere);
+        symlinkSync(elsewhere, join(outDir, 'link'));
+
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'inside')), true);
+        assert.equal(isInsideRealDir(outDir, outDir), true);
+        assert.equal(isInsideRealDir(outDir, join(outDir, 'link')), false);
     });
 });
