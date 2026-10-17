@@ -59,6 +59,14 @@ function applyFilter() {
 
 filterBox.addEventListener('input', applyFilter);
 
+// The "/" hint is for keyboards; narrow screens are touch-first, so they get the plain label.
+function updateFilterPlaceholder() {
+    filterBox.placeholder = isSheetGalleryNavEnabled() ? 'Filter demos (/)' : 'Filter demos';
+}
+
+updateFilterPlaceholder();
+sheetNavMq.addEventListener('change', updateFilterPlaceholder);
+
 document.addEventListener('keydown', (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) {
         return;
