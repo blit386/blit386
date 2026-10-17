@@ -141,12 +141,12 @@ body {
     }
 }
 
-/* One column is a plain list, with no hover or keyboard focus ring to show. */
+/* One column is a plain list: no hover ring, but a keyboard-focused link keeps its border. */
 @media (max-width: 520px) {
     #sheet-gallery {
         grid-template-columns: minmax(0, 1fr);
 
-        & .shots-tile {
+        & .shots-tile[data-focused='true']:not(:has(.shots-tile-link:focus-visible)) {
             border-color: transparent;
         }
     }
