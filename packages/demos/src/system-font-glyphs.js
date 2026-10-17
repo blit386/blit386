@@ -1,31 +1,86 @@
-/**
- * System Font Glyphs Demo - browse every glyph the built-in system font covers.
- * @description Browse every glyph the built-in system font defines, and click one to copy it to your clipboard.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites:
- *   Fonts        https://demos.blit386.dev/fonts
- *   Bitmap Font  https://demos.blit386.dev/bitmap-font
- *
- * Live version: https://demos.blit386.dev/system-font-glyphs
- *
- * BT.systemFont is a live reference to the exact BitmapFont object BT.systemPrint() draws
- * with internally. Its codePoints property lists every Unicode character the font can draw
- * - that list is what turns into the grid below, so this file never hardcodes "there are
- * 174 of them" anywhere, and never needs updating if the built-in font gains or loses a
- * glyph. Hover a cell to see its code point; click it to copy the actual character to your
- * system clipboard, ready to paste anywhere.
- *
- * This mirrors an interaction the engine's own debug overlay already has for its color
- * palette grid (hover for a tooltip, click to copy) - reimplemented here in plain demo code
- * with the public BT API, since the overlay's version is engine-internal.
- */
+/*
+
+System Font Glyphs: browse every glyph the built-in system font covers.
+@description Browse every glyph the built-in system font defines, and click one to copy it to your clipboard.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Fonts: https://demos.blit386.dev/fonts
+  - Bitmap Font: https://demos.blit386.dev/bitmap-font
+
+Live version: https://demos.blit386.dev/system-font-glyphs
+
+Guides:
+  - Bitmap Fonts: https://blit386.dev/docs/guides/bitmap-fonts#built-in-system-font
+  - Input: https://blit386.dev/docs/guides/input#pointer-slot-model
+  - Overlay: https://blit386.dev/docs/guides/overlay#visibility-model
+
+Reference:
+  - Assets: https://blit386.dev/docs/api/assets#system-font
+  - Rendering: https://blit386.dev/docs/api/rendering#system-font
+  - Core: https://blit386.dev/docs/api/core#hardware-settings
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 600x315 screen with a title bar across the top that reads "174 glyphs - Click one to
+copy to the clipboard" (the number is read from the font, so it follows whatever the
+engine ships). Below it sits a grid of 16 columns of small button-shaped cells, each
+holding one white glyph of the built-in 6x14 system font, in the order the font lists
+them: printable ASCII first, then the extra characters (dashes, accented letters, arrows,
+Greek capitals, and so on). The last row is only partly filled.
+
+Move the pointer over a cell and it lights up, with a tooltip above it showing the code
+point, like "U+00E9 (233) é". Click it and the tooltip switches to "Copied é" with a
+green rim on the cell for three quarters of a second, or to "Copy failed" with an orange
+rim when the browser refused. The engine overlay is switched off for this demo.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- BT.systemFont is the real BitmapFont object BT.systemPrint() draws with, so everything
+  the Bitmap Font demo did with a loaded font works on it too.
+- font.codePoints lists every Unicode code point the font has a glyph for, in ascending
+  order. The grid is built from that list, so nothing here hardcodes the glyph count.
+- BT.printFont(BT.systemFont, pos, char, 0) draws one glyph anywhere. The system font's
+  pixels live at palette index 1, so offset 0 draws slot 1 - which is why init() paints
+  that slot white.
+- BT.systemPrintMeasure('M') gives the glyph size instead of hardcoding 6x14.
+- Pointer input across all four slots: BT.isPointerActive(slot), BT.pointerPos(slot), and
+  BT.isPressed(BT.BTN_POINTER_A, slot) for the press edge, read in update() rather than
+  render().
+- navigator.clipboard.writeText() - the browser's own clipboard API, called from an async
+  method whose result arrives later and is shown through a short status message.
+- The shared UI kit's ui.drawButtonFace(), ui.tooltip(), and ui.overWidget().
+- configure() returning displaySize and isOverlayEnabled: false.
+
+WHY 600 BY 315?
+---------------
+
+That is exactly half of the 1200x630 social card the demo site generates, so the card
+shows the screen at a clean 2x scale with no blurry resampling. It also leaves room for 16
+columns of 23-pixel cells with 2-pixel gaps.
+
+TRY THIS
+--------
+
+- Hover any cell to read its code point in both hex and decimal.
+- Click a cell (or tap it on a touch screen - touches use pointer slots 1-3), then paste
+  somewhere: the character itself lands on the clipboard, not its number.
+- Click a cell in the top row: the tooltip has no room above, so it drops below the cell
+  instead of covering the title bar.
+- Copying can fail when the page has not been focused or clipboard permission was denied -
+  the cell rim turns orange and the tooltip says "Copy failed".
+
+*/
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').BitmapFont} BitmapFont */
 
@@ -43,14 +98,18 @@ const C_TOOLTIP_BORDER = 7; // Tooltip border
 // atlas layout (16 glyphs per row), so the demo's grid echoes how the font stores its
 // pixels internally. Rows are NOT fixed - see gridRows below, computed from however many
 // glyphs the font actually reports.
+
+// The grid layout. GRID_COLS = 16 deliberately matches the font's own texture atlas (16
+// glyphs per row), so the grid echoes how the font stores its pixels. The row count is
+// not fixed - see gridRows below, computed from however many glyphs the font reports.
 const GRID_COLS = 16;
 const CELL_SIZE = 16; // Each cell is 16x16 pixels - comfortable click/tap padding around a small glyph
 const CELL_GAP = 2; // Gap between cells, so borders don't touch
 const CELL_PITCH = CELL_SIZE + CELL_GAP; // Distance from one cell's corner to the next
 const GRID_ORIGIN_Y = 26; // Top of the grid, just below the title bar
 
-// How long the "Copied" / "Copy failed" tooltip message stays up before reverting to
-// showing whatever is under the pointer again.
+// How long the "Copied" / "Copy failed" message stays up before the tooltip goes back to
+// following the pointer.
 const COPY_STATUS_SECONDS = 0.75;
 
 /**
@@ -64,24 +123,28 @@ const COPY_STATUS_SECONDS = 0.75;
  * @param {number} glyphCount - How many real glyphs the grid holds.
  * @returns {number}
  */
+// Tests whether a display-pixel position lands inside a real grid cell. `localX` and
+// `localY` are already offset so 0 is the grid's top-left corner. Returns the glyph index
+// at that position, or -1 when the position is outside every cell - including the thin
+// gaps between cells and the empty cells past the last real glyph in the final row.
 function hitTestGlyphCell(localX, localY, glyphCount) {
     // A negative position is above or to the left of the grid entirely.
     if (localX < 0 || localY < 0) {
         return -1;
     }
 
-    // Dividing by the pitch and rounding down tells us which column/row we landed in.
-    // Think of it like figuring out which square of a checkerboard your finger is over.
+    // Dividing by the pitch and rounding down tells which column and row we landed in,
+    // like working out which square of a checkerboard a finger is over.
     const col = Math.floor(localX / CELL_PITCH);
     const row = Math.floor(localY / CELL_PITCH);
 
-    // A column past the last one means we're off the right edge of the grid.
+    // A column past the last one means we are off the right edge of the grid.
     if (col >= GRID_COLS) {
         return -1;
     }
 
-    // Figure out how far into this column/row's pitch we landed. If that's past CELL_SIZE,
-    // the pointer is in the thin gap between two cells, not on a cell at all.
+    // How far into this column's pitch did we land? Past CELL_SIZE means the pointer is
+    // in the gap between two cells, not on a cell. Then the same check for the row.
     if (localX - col * CELL_PITCH >= CELL_SIZE) {
         return -1;
     }
@@ -90,30 +153,25 @@ function hitTestGlyphCell(localX, localY, glyphCount) {
         return -1;
     }
 
-    // Cells are numbered left-to-right, top-to-bottom, the same order codePoints lists them.
+    // Cells are numbered left to right, top to bottom - the order codePoints lists them.
     const index = row * GRID_COLS + col;
 
-    // The last row may have a few empty cells past the final real glyph - reject those.
+    // The last row may have empty cells past the final real glyph - reject those.
     return index < glyphCount ? index : -1;
 }
 
-/**
- * Demonstrates BT.systemFont's codePoints property by drawing every glyph it lists in a
- * grid, and mirrors the engine overlay's palette-swatch click-to-copy interaction using
- * only public BT API: BT.pointerPos, BT.isPressed(BT.BTN_POINTER_A, slot), BT.printFont,
- * and the browser's own navigator.clipboard.
- *
- * @implements {IBTDemo}
- */
+// Draws every glyph BT.systemFont lists in a grid and mirrors the engine overlay's
+// palette-swatch click-to-copy using only public API: BT.pointerPos, BT.isPressed with
+// BT.BTN_POINTER_A, BT.printFont, and the browser's navigator.clipboard.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // theme holds the palette slot numbers of the shared UI kit colors, filled in by
-    // applyTheme() in init(). We use theme.bg to clear the screen.
+    // Palette slot numbers of the shared UI kit colors, filled in by applyTheme() in
+    // init(). theme.bg clears the screen.
     theme = null;
 
-    // font and codePoints are filled in by init() from BT.systemFont - see there for why.
+    // Filled in by init() from BT.systemFont - see there for why.
     /** @type {BitmapFont | null} */
     font = null;
 
@@ -134,9 +192,9 @@ class Demo {
     glyphWidth = 6;
     glyphHeight = 14;
 
-    // A running clock, in seconds, used to time how long the "Copied" / "Copy failed"
-    // message stays on screen. BT.deltaSeconds is how much time passed since the last
-    // update - adding it up every tick gives us a stopwatch.
+    // A running clock in seconds, used to time how long the "Copied" / "Copy failed"
+    // message stays up. BT.deltaSeconds is the time one fixed update covers - adding it
+    // up every tick gives a stopwatch.
     elapsed = 0;
 
     // Tracks whether we just tried to copy a glyph, and whether it worked.
@@ -151,6 +209,8 @@ class Demo {
      *
      * @returns {Promise<boolean>}
      */
+
+    // Sets up the palette and reads BT.systemFont's glyph list.
     async init() {
         this.palette = BT.paletteCreate(256);
 
@@ -163,23 +223,23 @@ class Demo {
         this.palette.set(C_TOOLTIP_BORDER, new Color32(200, 200, 200));
 
         // Install the shared UI kit colors (slots 240-251) before BT.paletteSet().
+        // ui.tooltip() and the button faces draw with those.
         this.theme = applyTheme(this.palette);
         BT.paletteSet(this.palette);
 
         // BT.systemFont hands back the exact BitmapFont object BT.systemPrint() draws
-        // with internally - it is a real object we can ask questions of. codePoints is
-        // the whole point of this demo: it lists every Unicode character the font can
-        // draw, live, so the grid below is always accurate even if the font's glyph set
-        // changes later.
+        // with - a real object we can ask questions of. codePoints is the point of this
+        // demo: it lists every Unicode character the font can draw, live, so the grid
+        // stays accurate even if the font's glyph set changes later.
         this.font = BT.systemFont;
         this.codePoints = this.font.codePoints;
 
-        // Math.ceil rounds up: 174 glyphs / 16 columns = 10.875, which rounds up to 11
-        // rows because that last, partly-empty row still needs to exist.
+        // Math.ceil rounds up: 174 glyphs / 16 columns = 10.875, which becomes 11 rows
+        // because the last, partly empty row still needs to exist.
         this.gridRows = Math.ceil(this.codePoints.length / GRID_COLS);
 
-        // Measure one glyph so we can center it inside its cell below, instead of
-        // hardcoding the font's pixel dimensions here.
+        // Measure one glyph so it can be centered inside its cell, instead of hardcoding
+        // the font's pixel dimensions here.
         const glyphSize = BT.systemPrintMeasure('M');
         this.glyphWidth = glyphSize.x;
         this.glyphHeight = glyphSize.y;
@@ -193,8 +253,8 @@ class Demo {
     }
 
     // Runs at a fixed rate (60 times per second). Advances the copy-status clock and
-    // handles clicks/taps - reading the press EDGE here, not in render(), matches how
-    // every other pointer demo in this series (see pointer-drag-flick.js) handles clicks.
+    // handles clicks and taps. Reading the press edge here, not in render(), matches how
+    // every other pointer demo in the series handles clicks.
     update() {
         this.elapsed += BT.deltaSeconds;
 
@@ -206,8 +266,8 @@ class Demo {
         }
 
         // Walk every pointer slot. Slot 0 is the mouse; slots 1-3 are up to three
-        // simultaneous touches. BTN_POINTER_A being "just pressed" means a mouse click
-        // or a touch just landed, on any of them.
+        // simultaneous touches. BTN_POINTER_A "just pressed" means a mouse click or a
+        // touch just landed on any of them.
         for (let slot = 0; slot < 4; slot++) {
             if (BT.isPressed(BT.BTN_POINTER_A, slot)) {
                 this.tryCopyAt(slot);
@@ -215,12 +275,8 @@ class Demo {
         }
     }
 
-    /**
-     * If this pointer slot landed on a real glyph cell (and not on the UI panel above the
-     * grid), starts copying that glyph to the clipboard.
-     *
-     * @param {number} slot - Pointer slot that was just pressed.
-     */
+    // If this pointer slot landed on a real glyph cell (and not on the title panel above
+    // the grid), starts copying that glyph to the clipboard.
     tryCopyAt(slot) {
         if (!BT.isPointerActive(slot)) {
             return;
@@ -228,7 +284,7 @@ class Demo {
 
         const pos = BT.pointerPos(slot);
 
-        // Don't let a click on the title panel fall through to the grid underneath it.
+        // Do not let a click on the title panel fall through to the grid underneath it.
         if (ui.overWidget(pos.x, pos.y)) {
             return;
         }
@@ -236,23 +292,19 @@ class Demo {
         const index = hitTestGlyphCell(pos.x - this.gridOriginX, pos.y - GRID_ORIGIN_Y, this.codePoints.length);
 
         if (index !== -1) {
-            // void tells readers (and linters) we're deliberately not waiting for this
-            // promise to finish before update() moves on - it updates copyStatus itself
+            // `void` tells readers (and linters) we are deliberately not waiting for this
+            // promise before update() moves on - copyGlyph() updates copyStatus itself
             // once the clipboard write settles.
             void this.copyGlyph(index);
         }
     }
 
-    /**
-     * Writes one glyph's actual character to the system clipboard.
-     *
-     * @param {number} index - Index into this.codePoints of the glyph to copy.
-     * @returns {Promise<void>}
-     */
+    // Writes one glyph's actual character to the system clipboard. `index` points into
+    // this.codePoints.
     async copyGlyph(index) {
         // String.fromCodePoint turns a numeric code point (like 233) back into the real
-        // character (like 'é') so what lands on the clipboard is the letter itself, ready
-        // to paste - not a number.
+        // character (like 'é'), so the letter itself lands on the clipboard, not a
+        // number.
         const char = String.fromCodePoint(this.codePoints[index]);
 
         try {
@@ -270,20 +322,15 @@ class Demo {
         }
     }
 
-    /**
-     * Records the outcome of a copy attempt, and schedules when its tooltip message
-     * should disappear.
-     *
-     * @param {'copied' | 'failed'} status
-     * @param {number} index
-     */
+    // Records the outcome of a copy attempt (COPY_STATUS.COPIED or COPY_STATUS.FAILED)
+    // and schedules when its tooltip message disappears.
     setCopyStatus(status, index) {
         this.copyStatus = status;
         this.copyStatusIndex = index;
         this.copyStatusExpiry = this.elapsed + COPY_STATUS_SECONDS;
     }
 
-    // Runs once per screen refresh: clears the screen, draws the title panel, figures out
+    // Runs once per screen refresh: clears the screen, draws the title panel, works out
     // which cell (if any) the pointer is over, then draws the grid and its tooltip.
     render() {
         BT.clear(this.theme.bg);
@@ -292,8 +339,8 @@ class Demo {
         ui.panel(`${this.codePoints.length} glyphs - click one to copy it to your clipboard`);
         ui.end();
 
-        // Reading pointer POSITION (as opposed to a press edge) is safe from render() -
-        // pointer-drag-flick.js's renderCursors() does the same thing for the same reason.
+        // Reading the pointer position (as opposed to a press edge) is safe from
+        // render().
         let hoveredIndex = -1;
 
         for (let slot = 0; slot < 4; slot++) {
@@ -311,7 +358,7 @@ class Demo {
 
             if (index !== -1) {
                 hoveredIndex = index;
-                break; // First active pointer that lands on a cell wins.
+                break; // first active pointer that lands on a cell wins
             }
         }
 

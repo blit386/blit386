@@ -1,154 +1,190 @@
-// Palette Animation: change palette entries every tick for instant visual effects.
-// @description Change palette entries every tick to animate a whole scene at once, without redrawing any pixels.
-//
-// Part of the BLIT386 series.
-//
-// Prerequisites:
-//   Basics          https://demos.blit386.dev/basics
-//   Primitives      https://demos.blit386.dev/primitives
-//   Colors          https://demos.blit386.dev/colors
-//   Palette Presets https://demos.blit386.dev/palette-presets
-//     (guide: https://blit386.dev/docs/guides/palette-presets)
-//
-// Live version: https://demos.blit386.dev/palette-animation
-// Guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects
-//
-// WHAT IS PALETTE ANIMATION?
-//
-// Old game hardware (Super Nintendo, Sega Genesis, Commodore 64) had strict rules:
-// each pixel only stored a small number - a "palette index" pointing to one color slot.
-// To animate colors, programmers changed what color was IN the slot, not what was on screen.
-//
-// Imagine 16 buckets of paint, each numbered. A painting only records the bucket number
-// for every spot, not the actual color. To change the sky from blue to red, you just
-// repaint bucket 5. Every sky-colored spot changes instantly - without touching the painting!
-//
-// That trick is called "palette animation". Modern engines don't need it, but it's a
-// beautiful technique to understand, and BLIT386 lets you do it the same way.
-//
-// THE KEY RULE:
-//   render() writes palette indices (numbers) - never Color32 objects.
-//   update() computes new Color32 values and stores them in palette slots.
-//
-// The section headings and panels are drawn with the shared UI kit (src/shared/ui.js);
-// its theme colors live in high palette slots (240 and up), far away from every slot
-// this demo animates.
-//
-// WHAT YOU WILL SEE (four panels):
-//   1. Scrolling gradient bar  - 32 color slots hold a rainbow; the base hue rotates.
-//   2. Fire column             - colors stack up from black to red to yellow to white.
-//   3. Flashing health bar     - one slot alternates red / white every 8 ticks.
-//   4. Cycling water strip     - three blue-green slots ripple in sequence.
+/*
+
+Palette Animation: change palette entries every tick for instant visual effects.
+@description Change palette entries every tick to animate a whole scene at once, without redrawing any pixels.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Primitives: https://demos.blit386.dev/primitives
+  - Colors: https://demos.blit386.dev/colors
+
+Live version: https://demos.blit386.dev/palette-animation
+
+Guides:
+  - Palette: https://blit386.dev/docs/guides/palette#draw-using-absolute-palette-indices
+  - Palette patterns: https://blit386.dev/docs/guides/palette#practical-palette-first-patterns
+  - Overlay: https://blit386.dev/docs/guides/overlay#optional-bands
+
+Reference:
+  - Active palette: https://blit386.dev/docs/api/palette#active-palette
+  - Overlay: https://blit386.dev/docs/api/overlay#palette-grid-sizing
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 520 by 390 pixel screen with four stacked kit panels. Each one is animated by changing
+palette slot colors in update() while render() draws the same rectangles every frame:
+
+  1. Scrolling Gradient - 32 thin swatches, one per slot (10-41), holding a rainbow whose
+     base hue turns 60 degrees per second, so the colors slide along the bar.
+  2. Fire Column - a 60 by 80 pixel column of 20 bands (slots 50-69), black at the bottom
+     through red and orange to pale yellow at the top, with a gentle sine-wave flicker.
+  3. Flashing Health Bar - a 200 pixel bar filled with one slot (80). Simulated health
+     drains from 100 toward 0 over 6 seconds and then starts over; at 30 or below the slot
+     alternates between red and white every 8 ticks.
+  4. Cycling Water Strip - 15 tiles using three slots (90-92). Every 8 ticks the bright
+     highlight moves to the next slot, so a ripple seems to travel along the strip.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- The palette-animation rule: render() writes palette indices only, update() computes
+  Color32 values and stores them with palette.set(slot, color).
+- The engine notices a changed palette on its own - no second BT.paletteSet() is needed.
+- Color32.fromHSL(hue, saturation, lightness) for walking around the color wheel.
+- Math.sin() for a flicker, `%` (remainder) for wrapping counters, BT.deltaSeconds and
+  BT.ticks for timing.
+- Keeping animated slots clear of the slots other code owns (the UI kit theme in 240-251,
+  the overlay colors in 2-5).
+
+WHAT IS PALETTE ANIMATION?
+--------------------------
+
+Old game hardware (Super Nintendo, Sega Genesis, Commodore 64) had strict rules: each
+pixel only stored a small number - a "palette index" pointing to one color slot. To
+animate colors, programmers changed what color was IN the slot, not what was on screen.
+
+Imagine 16 numbered buckets of paint. A painting only records the bucket number for every
+spot, not the actual color. To change the sky from blue to red, you repaint bucket 5, and
+every sky spot changes at once - without touching the painting.
+
+That trick is called "palette animation". Modern engines do not need it, but it is a
+beautiful technique to understand, and BLIT386 lets you do it the same way.
+
+UPDATE VS RENDER
+----------------
+
+  - init() builds one palette: fixed colors for the engine overlay and the shared UI kit
+    theme, placeholders for every animated slot, then BT.paletteSet(). It calls update()
+    once so the first frame already has real colors.
+  - update() computes new Color32 values and writes them into slots 10-41, 50-69, 80, and
+    90-92 every tick.
+  - render() draws the four panels with palette indices only. The picture moves because
+    the colors behind the indices changed, not because render() passes new colors.
+
+The panels are drawn with the shared UI kit (src/shared/ui.js); its theme colors live in
+slots 240-251, far away from every slot this demo animates.
+
+TRY THIS
+--------
+
+- Press the backquote key (`) to open the engine overlay. Its palette grid is turned on
+  with 64 columns: watch slots 10-41 rotate, 50-69 flicker, 80 flash, and 90-92 ripple
+  while slots 240-251 stay put.
+- The overlay's gap color is slot 80, the health-bar slot, so the thin dividers in the
+  overlay flash along with the bar when health runs low.
+
+*/
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// Gradient bar
-// How many color slots the scrolling gradient uses.
-// More slots = smoother rainbow; fewer slots = more "chunky".
+// Gradient bar: how many color slots the scrolling gradient uses. More slots make a
+// smoother rainbow; fewer make it chunkier.
 const GRAD_SLOTS = 32;
 
-// Width of each gradient swatch rectangle in pixels. The swatches sit inside a UI kit
-// panel, so they share the panel's 308-pixel content width (320 minus the borders).
-const GRAD_SWATCH_W = Math.floor(308 / GRAD_SLOTS); // ~9 px each
+// Width of each gradient swatch in pixels. The swatches sit inside a UI kit panel, so
+// they share the panel's 308-pixel content width (320 minus the borders).
+const GRAD_SWATCH_W = Math.floor(308 / GRAD_SLOTS); // 9 px each
 
-// Fire column
-// How many color slots make up the fire gradient.
-// The bottom of the fire is dark/black; the top is bright yellow-white.
+// Fire column: how many color slots make up the fire gradient. The bottom of the fire is
+// black; the top is pale yellow.
 const FIRE_SLOTS = 20;
 
-// Height of each fire "band" rectangle in pixels.
+// Height of each fire band in pixels.
 const FIRE_BAND_H = 4;
 
 // Width of the fire column in pixels.
 const FIRE_COL_W = 60;
 
-// Water strip
-// Three slots cycle in sequence to create a ripple shimmer.
+// Water strip: three slots take turns being the bright highlight, which reads as a
+// ripple.
 const WATER_SLOTS = 3;
 
-// Health bar
-// The health bar flashes every N ticks (8 ticks = about 0.13 seconds at 60 FPS).
+// Health bar: the slot flips between red and white every FLASH_PERIOD ticks. A tick is
+// one fixed update; 8 ticks is about 0.13 seconds at 60 ticks per second.
 const FLASH_PERIOD = 8;
 
-// How low "health" must fall before the bar starts flashing.
-// (Simulated health: counts down from HEALTH_MAX to 0, then loops.)
+// How low the simulated health must fall before the bar starts flashing. Health counts
+// down from HEALTH_MAX toward 0, then starts over.
 const HEALTH_LOW = 30;
 const HEALTH_MAX = 100;
 
-// How many ticks for one full health drain cycle.
-const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
+// How many ticks one full health drain takes.
+const HEALTH_DRAIN_TICKS = 360; // 6 seconds at 60 ticks per second
 
-// Palette slot constants - we group our palette like compartments in a paint box.
-// Each animated section owns a range of slots that it fills in update() every tick.
-// The shared UI kit adds its own 12 theme colors in slots 240..251 (see init()),
-// safely above everything listed here.
-
-// Slot 0:   always transparent - reserved by the engine.
+// Palette slot constants. We group the palette like compartments in a paint box: each
+// animated panel owns a range of slots that it refills in update() every tick. The shared
+// UI kit adds its own 12 theme colors in slots 240-251 (see init()), safely above
+// everything listed here. Slot 0 is always transparent - reserved by the engine.
 
 // Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
 // theme, so the overlay style cannot use theme slots - instead it points at these four
 // low slots, which init() fills by hand with fixed colors.
-const C_OVERLAY_BAR = 2; // Overlay bar background (very dark navy).
-const C_OVERLAY_ERR = 3; // Timing chart error bars (dark blue).
-const C_OVERLAY_TEXT = 4; // Overlay text and chart update bars (golden yellow).
-const C_OVERLAY_DIM = 5; // Chart render/warning bars (cool gray-blue).
+const C_OVERLAY_BAR = 2; // overlay bar background (very dark navy)
+const C_OVERLAY_ERR = 3; // timing chart error bars (dark blue)
+const C_OVERLAY_TEXT = 4; // overlay text and chart update bars (golden yellow)
+const C_OVERLAY_DIM = 5; // chart render and warning bars (cool gray-blue)
 
-// Gradient section: 32 slots, one per swatch column.
-// We update all 32 every tick to scroll the hue.
-const C_GRAD_BASE = 10; // Slots 10..41.
+// Gradient section: 32 slots, one per swatch column. update() rewrites all 32 every tick
+// to scroll the hue.
+const C_GRAD_BASE = 10; // slots 10-41
 
-// Fire section: 20 slots, one per horizontal band.
-// Slot 10+GRAD_SLOTS = 42 might overlap, so we start fire at 50.
-const C_FIRE_BASE = 50; // Slots 50..69.
+// Fire section: 20 slots, one per horizontal band. The gradient ends at slot 41, so the
+// fire starts at a round 50 to leave a gap.
+const C_FIRE_BASE = 50; // slots 50-69
 
-// Health bar: one slot. We toggle it between red and white.
-const C_HEALTH_BAR = 80; // Slot 80.
+// Health bar: one slot that flips between red and white.
+const C_HEALTH_BAR = 80; // slot 80
 
-// Water strip: three slots that cycle.
-const C_WATER_BASE = 90; // Slots 90..92.
+// Water strip: three slots that take turns being bright.
+const C_WATER_BASE = 90; // slots 90-92
 
-/**
- * Demonstrates the "palette animation" technique: change palette entries every tick
- * to create scrolling gradients, fire, flashing effects, and rippling water
- * all without touching the geometry drawn in render().
- *
- * @implements {IBTDemo}
- */
+// Demonstrates palette animation: changing palette entries every tick to make a scrolling
+// gradient, a fire column, a flashing health bar, and rippling water, all without
+// touching the rectangles drawn in render().
 class Demo {
     // The single palette used for all drawing.
     /** @type {Palette | null} */
     palette = null;
 
     // Palette slot map for the shared UI kit theme, filled in init() by applyTheme().
-    // theme.bg, theme.border, theme.header, ... are palette indices ready for BT calls.
+    // theme.bg, theme.border, theme.header, and friends are palette indices ready for BT
+    // draw calls.
     theme = null;
 
-    // Counts up by 1/60 every frame (in seconds).
-    // Used to drive continuous animation in update().
+    // Seconds since the demo started, advanced by BT.deltaSeconds every tick. Drives the
+    // continuous animation in update().
     animTime = 0;
 
-    // Simulated health value (0..100), drained over time.
+    // Simulated health value (0-100), drained over time.
     health = HEALTH_MAX;
 
-    // Which water slot is currently "brightest" (0, 1, or 2).
+    // Which water slot is currently the bright one (0, 1, or 2).
     waterPhase = 0;
 
-    // How many ticks since the water last advanced one step.
+    // Tick when the water ripple last advanced one step.
     waterTick = 0;
 
-    /**
-     * Wider canvas, overlay palette grid (64 columns), and overlay style colors from
-     * the dedicated low slots (plus the animated health slot as a playful gap color).
-     *
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A wider canvas, the overlay's palette grid (64 columns), and overlay colors from
+    // the dedicated low slots - plus the animated health slot as a playful gap color.
     configure() {
         return {
             displaySize: new Vector2i(520, 390),
@@ -172,38 +208,37 @@ class Demo {
         };
     }
 
-    /**
-     * Builds the palette with overlay slots, zeroed dynamic slots, and the shared UI
-     * theme, then primes one update() so every animated slot has real colors before
-     * the first render().
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Builds the palette (overlay slots, placeholders for the animated slots, the shared
+    // UI theme), activates it, then runs update() once so every animated slot has real
+    // colors before the first render().
     async init() {
         console.log('[PaletteAnimationDemo] Initializing...');
 
-        // Build the main palette
-        // Think of this like setting up your paint box before you start painting.
-        // Static entries (overlay colors, UI theme) go in now and never change.
-        // Dynamic entries (gradient, fire, health, water) start as black and get
-        // overwritten in update() every tick.
+        // Build the main palette. Think of this as setting up the paint box before you
+        // start painting. Static entries (overlay colors, UI theme) go in now and never
+        // change. Dynamic entries (gradient, fire, health, water) start as placeholders
+        // and get overwritten in update() every tick.
         this.palette = BT.paletteCreate(256);
 
-        // Colors for the engine overlay (the stats HUD). These match the shared UI
-        // theme's look but live in low slots so configure() could reference them.
-        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20)); // Very dark navy.
-        this.palette.set(C_OVERLAY_ERR, new Color32(20, 24, 36)); // Dark blue.
-        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80)); // Golden yellow.
-        this.palette.set(C_OVERLAY_DIM, new Color32(120, 130, 160)); // Cool gray-blue.
+        // Colors for the engine overlay (the stats HUD). They match the shared UI theme's
+        // look but live in low slots so configure() could name them before the theme
+        // existed.
+        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20)); // very dark navy
+        this.palette.set(C_OVERLAY_ERR, new Color32(20, 24, 36)); // dark blue
+        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80)); // golden yellow
+        this.palette.set(C_OVERLAY_DIM, new Color32(120, 130, 160)); // cool gray-blue
 
-        // Initialize all dynamic slots to black (invisible for now).
-        // They will be filled with real colors on the very first update() call.
+        // Placeholders for the animated slots: black for the gradient and fire, red for
+        // the health bar, dark blue for the water. The first update() call below replaces
+        // them all.
         for (let i = 0; i < GRAD_SLOTS; i++) {
             this.palette.set(C_GRAD_BASE + i, new Color32(0, 0, 0));
         }
+
         for (let i = 0; i < FIRE_SLOTS; i++) {
             this.palette.set(C_FIRE_BASE + i, new Color32(0, 0, 0));
         }
+
         this.palette.set(C_HEALTH_BAR, new Color32(220, 40, 40));
 
         for (let i = 0; i < WATER_SLOTS; i++) {
@@ -211,61 +246,54 @@ class Demo {
         }
 
         // Install the shared UI kit colors (panel fills, borders, headings, dim text).
-        // applyTheme() writes 12 colors into slots 240..251 - far above every range this
-        // demo animates (gradient 10..41, fire 50..69, health 80, water 90..92), so the
-        // palette animation can never overwrite the UI theme. The returned map remembers
-        // where each color landed (this.theme.bg, this.theme.header, ...).
+        // applyTheme() writes 12 colors into slots 240-251 - far above every range this
+        // demo animates (gradient 10-41, fire 50-69, health 80, water 90-92), so the
+        // animation can never overwrite the UI theme. The returned map remembers where
+        // each color landed (this.theme.bg, this.theme.header, ...).
         this.theme = applyTheme(this.palette);
 
-        // Activate palette
-        // Tell the engine to use our palette from this point forward.
+        // Tell the engine to draw with this palette from now on.
         BT.paletteSet(this.palette);
 
-        // Run one update cycle so all dynamic slots have real colors before the first render.
-        // update() takes no arguments - this priming call still advances animTime by one tick,
-        // same as every regular call from the engine's game loop.
+        // Run one update so every animated slot has real colors before the first render.
+        // update() takes no arguments; this priming call also advances animTime by one
+        // tick, the same as every regular call from the engine's game loop.
         this.update();
 
         console.log('[PaletteAnimationDemo] Initialized');
+
         return true;
     }
 
-    /**
-     * Called 60 times per second. Computes new Color32 values for every dynamic slot.
-     * render() will never see Color32 - it only reads slot indices we set here.
-     */
+    // Runs once per tick, 60 times per second. Computes new Color32 values for every
+    // animated slot. render() never sees a Color32 - it only uses the slot numbers.
     update() {
-        // Advance the clock. animTime grows by 1/60 each frame.
+        // Advance the clock. BT.deltaSeconds is the length of one tick in seconds (1/60).
         this.animTime += BT.deltaSeconds;
 
-        // Advance health drain.
-        // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,
-        // then resets to full so the demo loops forever.
+        // Simulated health: drains from HEALTH_MAX toward 0 over HEALTH_DRAIN_TICKS
+        // ticks, then jumps back to full so the demo loops forever. `%` is the remainder
+        // after division, so tick % HEALTH_DRAIN_TICKS counts 0-359 and wraps.
         const tick = BT.ticks;
         this.health = HEALTH_MAX - Math.floor((tick % HEALTH_DRAIN_TICKS) * (HEALTH_MAX / HEALTH_DRAIN_TICKS));
 
-        // Panel 1: Scrolling gradient
-        // We rotate a base hue forward every frame so the gradient appears to scroll.
-        // animTime * 60 gives us degrees per second (one full rotation per ~6 seconds).
+        // Panel 1: the scrolling gradient. The base hue turns a little every tick so the
+        // rainbow appears to slide along the bar.
         this.updateGradient();
 
-        // Panel 2: Fire column
-        // Each slot maps to a position along the fire column.
-        // Lower slots = closer to the bottom = darker/cooler colors.
+        // Panel 2: the fire column. Each slot is one band of the flame; lower slots are
+        // closer to the bottom and darker.
         this.updateFire();
 
-        // Panel 3: Flashing health bar
-        // The slot alternates between red and white based on the tick count.
+        // Panel 3: the flashing health bar. One slot flips between red and white based on
+        // the tick count.
         this.updateHealthBar(tick);
 
-        // Panel 4: Cycling water
-        // Three slots take turns being the bright highlight.
+        // Panel 4: the water strip. Three slots take turns being the bright highlight.
         this.updateWater(tick);
     }
 
-    /**
-     * Draws all four panels. Only palette indices appear here - no Color32 objects.
-     */
+    // Draws all four panels. Only palette indices appear here - no Color32 objects.
     render() {
         // Clear the screen with the UI theme's dark background.
         BT.clear(this.theme.bg);
@@ -277,64 +305,54 @@ class Demo {
         this.renderWaterPanel();
     }
 
-    /**
-     * Scrolling gradient: rotates 32 hue slots so the rainbow appears to slide across.
-     * The "base hue" advances each frame; each slot gets a hue slightly ahead of the previous.
-     */
+    // Scrolling gradient: rewrites the 32 hue slots so the rainbow appears to slide. The
+    // base hue advances every tick, and each slot gets a hue a little ahead of the one
+    // before it.
     updateGradient() {
-        // Base hue grows over time. Math.floor() converts to a whole number of degrees.
-        // % 360 keeps hue in the 0..359 range (a full color wheel).
+        // The base hue grows over time: 60 degrees per second, so one full turn of the
+        // color wheel takes 6 seconds. Math.floor() rounds down to whole degrees, and
+        // % 360 keeps the hue in the 0-359 range.
         const baseHue = Math.floor(this.animTime * 60) % 360;
 
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            // Each slot is spread evenly around the color wheel.
-            // (i / GRAD_SLOTS) * 360 spaces 32 hues evenly over 360 degrees.
+            // Spread the slots evenly around the color wheel: (i / GRAD_SLOTS) * 360
+            // spaces 32 hues over 360 degrees.
             const hue = (baseHue + (i / GRAD_SLOTS) * 360) % 360;
 
-            // Color32.fromHSL(hue, saturation, lightness):
-            //   hue        0..360  = position on the color wheel (0=red, 120=green, 240=blue)
-            //   saturation 0..100  = how vivid the color is (0=gray, 100=pure rainbow)
-            //   lightness  0..100  = how bright (0=black, 50=pure color, 100=white)
+            // Color32.fromHSL(hue, saturation, lightness): hue 0-360 is the position on
+            // the color wheel (0 red, 120 green, 240 blue), saturation 0-100 is how vivid
+            // the color is (0 gray, 100 pure), lightness 0-100 is how bright (0 black,
+            // 50 pure color, 100 white).
             this.palette.set(C_GRAD_BASE + i, Color32.fromHSL(hue, 90, 55));
         }
     }
 
-    /**
-     * Fire column: each slot represents a horizontal band of flame.
-     * The bottom is black/dark red; moving up transitions through orange to bright yellow-white.
-     * We shift the transition point over time so the flame flickers.
-     */
+    // Fire column: each slot is one horizontal band of flame. The bottom is black and
+    // dark red; moving up it turns orange and then pale yellow. A sine wave nudges each
+    // band's position a little over time so the flame flickers.
     updateFire() {
         for (let i = 0; i < FIRE_SLOTS; i++) {
-            // t is 0 at the bottom slot, 1 at the top slot.
+            // t is 0 at the bottom slot and 1 at the top slot.
             const t = i / (FIRE_SLOTS - 1);
 
-            // Add a gentle flicker by modulating the transition with a sine wave.
-            // Math.sin() returns -1..1; we scale and shift it to 0..0.15 for a subtle wobble.
+            // Math.sin() returns a value between -1 and 1 that swings back and forth over
+            // time. Adding 1 and scaling by 0.075 turns that into a 0-0.15 wobble.
             const flicker = (Math.sin(this.animTime * 7 + i * 0.8) + 1) * 0.075;
 
-            // Apply flicker to t, clamped between 0 and 1.
+            // Add the wobble to t and clamp the result between 0 and 1.
             const ft = Math.min(1, Math.max(0, t + flicker));
 
             this.palette.set(C_FIRE_BASE + i, this.fireColor(ft));
         }
     }
 
-    /**
-     * Maps one band position ft (0..1) to a fire color.
-     * We blend through a four-color gradient:
-     *   0.0 = black        (cold, no flame)
-     *   0.3 = dark red     (embers just starting)
-     *   0.6 = bright orange (active flame)
-     *   1.0 = pale yellow  (hottest, near the tip)
-     *
-     * @param {number} ft - Position along the flame, 0 at the bottom, 1 at the top.
-     * @returns {Color32} The blended color for that position.
-     */
+    // Maps a position along the flame (`ft`, 0 at the bottom, 1 at the top) to a fire
+    // color by blending through four stops: black at 0, dark red at 0.3, bright orange at
+    // 0.6, pale yellow at 1.
     fireColor(ft) {
         if (ft < 0.3) {
             // Black to dark red.
-            const s = ft / 0.3; // Rescales 0..0.3 to 0..1.
+            const s = ft / 0.3; // rescales 0-0.3 to 0-1
             return new Color32(Math.floor(s * 160), 0, 0);
         }
 
@@ -344,21 +362,18 @@ class Demo {
             return new Color32(160 + Math.floor(s * 95), Math.floor(s * 100), 0);
         }
 
-        // Orange to pale yellow-white.
+        // Orange to pale yellow.
         const s = (ft - 0.6) / 0.4;
         return new Color32(255, 100 + Math.floor(s * 155), Math.floor(s * 120));
     }
 
-    /**
-     * Health bar: toggles one slot between red and near-white every FLASH_PERIOD ticks.
-     * Only flashes when health is critically low.
-     *
-     * @param {number} tick - Current tick count from BT.ticks.
-     */
+    // Health bar: flips one slot between red and white every FLASH_PERIOD ticks, but only
+    // while health is critically low. Otherwise the slot holds a steady red.
     updateHealthBar(tick) {
         if (this.health <= HEALTH_LOW) {
-            // Flash! % is the remainder operator: tick % FLASH_PERIOD gives 0..(FLASH_PERIOD-1).
-            // Math.floor(tick / FLASH_PERIOD) % 2 alternates between 0 and 1 every FLASH_PERIOD ticks.
+            // Math.floor(tick / FLASH_PERIOD) counts up by one every FLASH_PERIOD ticks,
+            // and % 2 turns that count into 0, 1, 0, 1, ... - so the color flips every 8
+            // ticks.
             const flashOn = Math.floor(tick / FLASH_PERIOD) % 2 === 0;
             this.palette.set(C_HEALTH_BAR, flashOn ? new Color32(255, 50, 50) : new Color32(255, 255, 255));
         } else {
@@ -367,30 +382,26 @@ class Demo {
         }
     }
 
-    /**
-     * Water strip: three slots take turns being the brightest highlight.
-     * Each slot cycles: bright -> medium -> dim -> bright -> ...
-     * The phases are offset by one slot so the bright spot appears to travel.
-     *
-     * @param {number} tick - Current tick count from BT.ticks.
-     */
+    // Water strip: three slots take turns being the brightest. Each slot cycles bright,
+    // medium, dark, bright, ... and the three are offset by one step, so the bright spot
+    // appears to travel along the strip.
     updateWater(tick) {
-        // Advance the ripple every 8 ticks (about 7 ripples per second).
+        // Advance the ripple every 8 ticks - 7.5 steps per second.
         if (tick - this.waterTick >= 8) {
             this.waterPhase = (this.waterPhase + 1) % WATER_SLOTS;
             this.waterTick = tick;
         }
 
         for (let i = 0; i < WATER_SLOTS; i++) {
-            // The ripple highlights one slot at a time.
-            // phase distance: how far is slot i from the current bright spot?
+            // How far slot i is from the current bright spot: 0, 1, or 2 steps. Adding
+            // WATER_SLOTS before the % keeps the result from going negative.
             const dist = (i - this.waterPhase + WATER_SLOTS) % WATER_SLOTS;
 
-            // dist == 0 -> brightest, dist == 1 -> medium, dist == 2 -> darkest
+            // dist 0 is the brightest, 1 medium, 2 the darkest.
             let color;
 
             if (dist === 0) {
-                // Bright highlight - the "wave crest".
+                // Bright highlight - the wave crest.
                 color = new Color32(80, 200, 255);
             } else if (dist === 1) {
                 // Medium shade - just before or after the crest.
@@ -404,37 +415,36 @@ class Demo {
         }
     }
 
-    /**
-     * Panel 1: Scrolling gradient bar.
-     * A UI kit panel holds the heading; 32 thin rectangles sit inside it, each using a
-     * different palette slot. Because update() rotates the hues in those slots, the bar
-     * appears to scroll.
-     */
+    // Panel 1: the scrolling gradient bar. A kit panel holds the heading; 32 thin
+    // rectangles sit inside it, each using a different palette slot. Because update()
+    // rotates the hues in those slots, the bar appears to scroll.
     renderGradientPanel() {
         const bandY = 6;
 
         // The heading and subtitle live in a kit panel pinned to the band position.
-        // ui.end() draws the panel right away, so the swatches drawn after it land ON TOP
-        // of the panel background. ui.spacer() reserves empty rows for that artwork.
+        // ui.end() draws the panel right away, and ui.spacer() reserves empty rows for
+        // the swatches we draw after it. The swatches use ui.drawRectFill(), not
+        // BT.drawRectFill(): kit panels are sprites, and the engine draws every
+        // BT.drawRectFill() before any sprite - so a plain one would hide under the
+        // panel. ui.drawRectFill() takes the same rectangle and palette slot, but draws a
+        // sprite, which lands on top in the order we call it.
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Scrolling Gradient');
         ui.label('Hues rotate in update() each tick', { color: 'dim' });
         ui.spacer(18);
         ui.end();
 
-        // Draw one rectangle per gradient slot, side by side inside the panel.
+        // One rectangle per gradient slot, side by side inside the panel.
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            // Each swatch is GRAD_SWATCH_W pixels wide and 14 pixels tall, starting
-            // 6 pixels in so the strip clears the panel border.
+            // Each swatch is GRAD_SWATCH_W pixels wide and 14 tall, starting 6 pixels in
+            // so the strip clears the panel border.
             const x = 6 + i * GRAD_SWATCH_W;
             BT.drawRectFill(new Rect2i(x, bandY + 38, GRAD_SWATCH_W, 14), C_GRAD_BASE + i);
         }
     }
 
-    /**
-     * Panel 2: Fire column.
-     * FIRE_SLOTS horizontal bands stacked vertically; the colors change in update() to flicker.
-     */
+    // Panel 2: the fire column. FIRE_SLOTS horizontal bands stacked vertically; their
+    // colors change in update() to flicker.
     renderFirePanel() {
         const bandY = 70;
 
@@ -445,32 +455,30 @@ class Demo {
         ui.spacer(86);
         ui.end();
 
-        // Fire bands, from bottom (slot 0 = darkest) to top (slot FIRE_SLOTS-1 = brightest).
-        // We draw them from bottom up so slot 0 is at the base of the column.
+        // Fire bands from the bottom (band 0, darkest) to the top (band FIRE_SLOTS - 1,
+        // brightest). We draw them bottom-up so band 0 sits at the base of the column.
         const colX = 6;
         const colBottom = bandY + 118;
 
         for (let i = 0; i < FIRE_SLOTS; i++) {
-            // i=0 -> bottom of column, i=FIRE_SLOTS-1 -> top.
-            // Each band is FIRE_BAND_H pixels tall.
+            // i = 0 is the bottom of the column, i = FIRE_SLOTS - 1 the top. Each band is
+            // FIRE_BAND_H pixels tall.
             const y = colBottom - (i + 1) * FIRE_BAND_H;
             BT.drawRectFill(new Rect2i(colX, y, FIRE_COL_W, FIRE_BAND_H), C_FIRE_BASE + i);
         }
 
-        // Explanatory notes beside the column, lined up with the parts they describe:
-        // the brightest band is at the top of the column, the darkest at the bottom.
-        // "Band" here means the position in the fire stack (0..19), not the palette
-        // slot number - the actual slots are C_FIRE_BASE + band, i.e. 50..69.
+        // Notes beside the column, lined up with the parts they describe: the brightest
+        // band at the top, the darkest at the bottom. "Band" means the position in the
+        // fire stack (0-19), not the palette slot number - the slots are C_FIRE_BASE +
+        // band, that is 50-69.
         const noteX = colX + FIRE_COL_W + 6;
         BT.systemPrint(new Vector2i(noteX, bandY + 44), this.theme.dim, 'band 19 = white');
         BT.systemPrint(new Vector2i(noteX, bandY + 74), this.theme.dim, '...     = red');
         BT.systemPrint(new Vector2i(noteX, bandY + 104), this.theme.dim, 'band 0  = black');
     }
 
-    /**
-     * Panel 3: Flashing health bar.
-     * One palette slot toggles between red and white when health is critically low.
-     */
+    // Panel 3: the flashing health bar. One palette slot flips between red and white when
+    // health is critically low.
     renderHealthPanel() {
         const bandY = 202;
 
@@ -486,8 +494,9 @@ class Demo {
         });
         ui.end();
 
-        // Compute the width of the filled portion from the current health value.
-        // health / HEALTH_MAX is a fraction from 0 to 1; multiply by max bar width (200 px).
+        // Width of the filled part from the current health: health / HEALTH_MAX is a
+        // fraction from 0 to 1, multiplied by the full bar width (200 pixels). Math.max
+        // keeps at least 1 pixel visible.
         const barMaxW = 200;
         const barW = Math.max(1, Math.floor((this.health / HEALTH_MAX) * barMaxW));
 
@@ -498,15 +507,12 @@ class Demo {
         // Filled bar - uses C_HEALTH_BAR, which flashes in update() when health is low.
         BT.drawRectFill(new Rect2i(6, bandY + 22, barW, 12), C_HEALTH_BAR);
 
-        // Health value as text, in the theme's amber heading color.
+        // The health value as text, in the theme's amber heading color.
         BT.systemPrint(new Vector2i(212, bandY + 21), this.theme.header, `HP: ${this.health}`);
     }
 
-    /**
-     * Panel 4: Cycling water strip.
-     * Three adjacent rectangles each use one of the three water palette slots.
-     * The brightness cycles across them to look like a ripple.
-     */
+    // Panel 4: the water strip. Fifteen tiles each use one of the three water slots, so
+    // the brightness cycles across them like a ripple.
     renderWaterPanel() {
         const bandY = 266;
 
@@ -517,13 +523,13 @@ class Demo {
         ui.spacer(18);
         ui.end();
 
-        // Draw 15 water tiles (5 repetitions of the 3-slot cycle) to make a wide strip.
+        // 15 water tiles (five repeats of the 3-slot cycle) make a wide strip.
         const tileW = 18;
         const tileH = 14;
         const totalTiles = 15;
 
         for (let i = 0; i < totalTiles; i++) {
-            // Map tile index to one of the 3 water slots using remainder (%).
+            // i % WATER_SLOTS maps the tile index to one of the three water slots.
             const slot = C_WATER_BASE + (i % WATER_SLOTS);
             BT.drawRectFill(new Rect2i(6 + i * tileW, bandY + 38, tileW - 1, tileH), slot);
         }

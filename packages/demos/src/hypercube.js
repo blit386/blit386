@@ -1,58 +1,115 @@
-/**
- * Hypercube - Fez-style rotating tesseract wireframe.
- * @description A Fez-style rotating tesseract: watch a four-dimensional cube turn on a 256x256 PICO-8 sized canvas.
- *
- * A tesseract is a 4D cube: two 3D cubes linked along a fourth axis (W).
- * We rotate in 4D, then project down to 2D so you can see the links stretch
- * and the "inner" cube pass through the "outer" one - like the Fez logo.
- *
- * Drag (mouse or touch) spins it like a trackball: horizontal = yaw around Y,
- * vertical = pitch around X. On release the spin keeps the finger's 2D velocity
- * (inertia), then that spin vector slowly fades back to the automatic tumble.
- */
+/*
+
+Hypercube: a Fez-style rotating tesseract wireframe you can spin by dragging.
+@description A Fez-style rotating tesseract: a four-dimensional cube turning in PICO-8 colors on a 320x320 canvas.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Primitives: https://demos.blit386.dev/primitives
+  - Palette Presets: https://demos.blit386.dev/palette-presets
+  - Pointer Basics: https://demos.blit386.dev/pointer-basics
+  - Pointer Drag Flick: https://demos.blit386.dev/pointer-drag-flick
+
+Live version: https://demos.blit386.dev/hypercube
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input#pointer-slot-model
+  - Input: https://blit386.dev/docs/guides/input#position-and-delta
+  - Palette Presets: https://blit386.dev/docs/guides/palette-presets#pico8-16-slots
+  - Random: https://blit386.dev/docs/guides/random#deterministic-by-default
+  - Overlay: https://blit386.dev/docs/guides/overlay#optional-bands
+
+Reference:
+  - Rendering: https://blit386.dev/docs/api/rendering#primitives
+  - Palette: https://blit386.dev/docs/api/palette#built-in-presets
+  - Core: https://blit386.dev/docs/api/core#hardware-settings
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 320x320 canvas, cleared to PICO-8 slot 1 (dark blue), with a wireframe tesseract turning
+in the middle: two cubes drawn in two colors, eight struts linking matching corners, and a
+dot on each of the 16 corners. The four line colors drift around the hue wheel at 28
+degrees per second with a slow lightness pulse. Edges are drawn farthest first, so the
+"inner" cube visibly passes through the "outer" one as the 4D rotation carries it around.
+
+The engine overlay is open from the first frame with its palette grid switched on, drawn
+in white bars (slot 7) with dark text (slot 1).
+
+WHAT YOU WILL LEARN
+-------------------
+
+- A 4D rotation as a sequence of plane rotations (XW, YZ, XY, ZW, then a screen-space XZ
+  yaw), each one an ordinary 2D rotation of two coordinates.
+- Two perspective divides: 4D to 3D with DIST_4, then 3D to 2D with DIST_3, followed by
+  scaling and centering on the canvas.
+- The painter's algorithm: every tick the 32 edges are sorted by averaged depth, with a
+  stable tie-break so two edges at equal depth never swap colors.
+- Palette.pico8() as the palette, and Color32.fromHSL() rewriting four slots per tick.
+- Pointer slots: BT.isPointerActive(slot), BT.pointerDelta(slot), and
+  BT.isDown(BT.BTN_POINTER_A, 0) for the mouse button.
+- Frame-rate-independent integration with BT.deltaSeconds, and BT.timeSeconds as the clock
+  for the color drift.
+- Exponential smoothing, 1 - Math.exp(-k * dt), both for filtering the drag velocity and
+  for easing the spin back to its home value.
+- BT.random.float() for the starting hue, and configure() for displaySize, maxCanvasSize,
+  and the overlay palette grid.
+
+HOW THE DRAG WORKS
+------------------
+
+Any of the four pointer slots can steer. The mouse (slot 0) counts as held while
+BT.BTN_POINTER_A is down; a touch slot counts as held while its contact is active. The
+first held slot is claimed and kept until it releases. While a slot is held, each tick
+reads BT.pointerDelta(slot): horizontal pixels turn the XZ plane (yaw around Y) and
+vertical pixels turn the YZ plane (pitch around X), DRAG_SENSITIVITY radians per pixel.
+The automatic tumble pauses for the duration of the drag.
+
+The per-tick angular velocity is smoothed with an exponential moving average
+(VELOCITY_SMOOTH) so a single noisy frame does not decide the throw. On release the
+smoothed velocity becomes spin.xz and spin.yz, clamped to MAX_FLICK_SPIN, and the three
+4D tumble planes are zeroed. From then on the spin eases toward HOME_SPIN at rate
+SPIN_FADE, so the flick coasts and the Fez tumble gradually returns.
+
+TRY THIS
+--------
+
+- Drag with the mouse or a finger to spin the tesseract; flick and let go to make it
+  coast.
+- Watch the palette grid in the engine overlay: slots 8-11 change color every tick while
+  the rest of the PICO-8 palette holds still. Press the backquote key (`) to hide the
+  overlay.
+
+*/
 
 import { bootstrap, BT, Color32, Palette, Vector2i } from 'blit386';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} PaletteType */
 /** @typedef {import('blit386').Vector2i} Vector2iType */
+/** @typedef {{ i: number, j: number, depth: number, color: number }} Edge */
+/** @typedef {{ xw: number, yz: number, xy: number, zw: number, xz: number }} Spin */
 
-/**
- * One wire of the tesseract. `color` is a fixed palette slot so painter's-order
- * sorting never swaps which cube an edge belongs to.
- *
- * @typedef {object} Edge
- * @property {number} i
- * @property {number} j
- * @property {number} depth
- * @property {number} color
- */
-
-/**
- * Angular velocity in each rotation plane (radians per second).
- *
- * @typedef {object} Spin
- * @property {number} xw
- * @property {number} yz
- * @property {number} xy
- * @property {number} zw
- * @property {number} xz
- */
-
+// Canvas size in pixels and the projection scale: half the tesseract's projected extent,
+// in pixels, before perspective.
 const SIZE = 320;
 const SCALE = 36;
 
-/** Perspective distance for the 4D → 3D step (larger = flatter). */
+// Perspective distance for the 4D to 3D step (larger = flatter).
 const DIST_4 = 2.6;
 
-/** Perspective distance for the 3D → 2D step. */
+// Perspective distance for the 3D to 2D step.
 const DIST_3 = 3.2;
 
+// PICO-8 slots: dark blue background, white overlay bars.
 const C_BG = 1;
 const C_NEAR = 7;
 
-/** Fixed slots - stable colors that do not swap when edges are depth-sorted. */
+// One fixed slot per wire kind. An Edge carries its slot, so depth-sorting the edges
+// never swaps which cube a wire belongs to.
 const C_CUBE_A = 8;
 const C_CUBE_B = 9;
 const C_LINK = 10;
@@ -60,19 +117,18 @@ const C_DOT = 11;
 
 const LINE_SLOTS = [C_CUBE_A, C_CUBE_B, C_LINK, C_DOT];
 
-/** Hue drift in degrees per second. */
+// Hue drift in degrees per second, the fixed saturation and base lightness of the four
+// line colors, and the amplitude and rate of the lightness pulse.
 const HUE_SPEED = 28;
 const LINE_SAT = 88;
 const LINE_LIGHT = 58;
 const LIGHT_PULSE = 10;
 const LIGHT_PULSE_RATE = 1.1;
 
-/**
- * The automatic Fez tumble - the "home" spin vector we always fade back to.
- * `xz` stays 0 at rest; drag/flick uses it for screen-space yaw.
- *
- * @type {Readonly<Spin>}
- */
+// The automatic Fez tumble: angular velocity in each rotation plane, in radians per
+// second. This is the "home" spin the demo always eases back to. `xz` stays 0 at rest;
+// drag and flick use it for screen-space yaw.
+/** @type {Readonly<Spin>} */
 const HOME_SPIN = Object.freeze({
     xw: 0.55,
     yz: 0.38,
@@ -81,34 +137,24 @@ const HOME_SPIN = Object.freeze({
     xz: 0,
 });
 
-/**
- * Radians of trackball turn per pixel of drag.
- * Horizontal pixels yaw (XZ); vertical pixels pitch (YZ).
- */
+// Radians of trackball turn per pixel of drag. Horizontal pixels yaw (XZ); vertical
+// pixels pitch (YZ).
 const DRAG_SENSITIVITY = 0.01;
 
-/**
- * How quickly we smooth the finger's instantaneous velocity while dragging
- * (higher = snappier, lower = softer). Used so a noisy last frame does not
- * become a wild flick.
- */
+// How quickly the finger's instantaneous velocity is smoothed while dragging (higher =
+// snappier, lower = softer), so a noisy last frame does not become a wild flick.
 const VELOCITY_SMOOTH = 14;
 
-/**
- * How quickly free spin eases back toward HOME_SPIN after release (per second).
- * Lower = longer coast on the flick before the Fez tumble returns.
- */
+// How quickly free spin eases back toward HOME_SPIN after release, per second. Lower =
+// a longer coast on the flick before the Fez tumble returns.
 const SPIN_FADE = 1.15;
 
-/** Cap on flick spin so a frantic swipe cannot spin forever. */
+// Cap on flick spin so a frantic swipe cannot spin forever.
 const MAX_FLICK_SPIN = 8;
 
-/**
- * The 16 corners of a unit tesseract (±1 on x, y, z, w).
- * Built once at load; never mutated - each frame copies into a scratch vector.
- *
- * @type {number[][]}
- */
+// The 16 corners of a unit tesseract (+1 or -1 on x, y, z, w). Built once at load and
+// never mutated; each tick copies a corner into a scratch vector before rotating it.
+/** @type {number[][]} */
 const VERTICES = [];
 
 for (let i = 0; i < 16; i++) {
@@ -116,52 +162,46 @@ for (let i = 0; i < 16; i++) {
     VERTICES.push([(i & 1) !== 0 ? 1 : -1, (i & 2) !== 0 ? 1 : -1, (i & 4) !== 0 ? 1 : -1, (i & 8) !== 0 ? 1 : -1]);
 }
 
-/**
- * Farther edges first. Tie-break on endpoints so equal depths stay stable
- * (avoids color flicker when two edges share a depth).
- *
- * @param {Edge} a
- * @param {Edge} b
- * @returns {number}
- */
+// Sort comparator: farther edges first. Ties break on the endpoint indices so equal
+// depths keep a stable order, which avoids color flicker when two edges share a depth.
 function compareEdgeDepth(a, b) {
     return a.depth - b.depth || a.i - b.i || a.j - b.j;
 }
 
-/**
- * Clamp one spin component into ±MAX_FLICK_SPIN.
- *
- * @param {number} value
- * @returns {number}
- */
+// Clamps one spin component into the range -MAX_FLICK_SPIN..MAX_FLICK_SPIN.
 function clampFlick(value) {
     return Math.max(-MAX_FLICK_SPIN, Math.min(MAX_FLICK_SPIN, value));
 }
 
-/** @implements {IBTDemo} */
+// A tesseract wireframe rotated in 4D, projected to 2D, and drawn with the painter's
+// algorithm. A pointer drag spins it like a trackball; a flick coasts and eases back to
+// the automatic tumble.
 class Demo {
     /** @type {PaletteType | null} */
     palette = null;
 
-    /** Screen positions after 4D → 2D projection (reused every frame). */
+    // Screen positions after the 4D to 2D projection, reused every tick.
     /** @type {Vector2iType[]} */
     projected = [];
 
-    /** Per-vertex depth for painter's algorithm. */
+    // Per-vertex depth for the painter's algorithm.
     /** @type {number[]} */
     depths = [];
 
+    // The 32 edges, kept sorted farthest first.
     /** @type {Edge[]} */
     edgeOrder = [];
 
-    /** Starting hues for cube A / cube B / link / dot (degrees). */
+    // Starting hues for cube A, cube B, the links, and the dots, in degrees.
     /** @type {number[]} */
     baseHues = [];
 
-    /** Scratch 4D point reused while rotating each corner (avoids per-frame arrays). */
+    // Scratch 4D point reused while rotating each corner, so no array is allocated per
+    // tick.
     /** @type {number[]} */
     scratch = [0, 0, 0, 0];
 
+    // Current rotation angle in each 4D plane, in radians.
     /** @type {number} */
     angleXW = 0.35;
 
@@ -174,26 +214,25 @@ class Demo {
     /** @type {number} */
     angleZW = 0.2;
 
-    /** Screen-space yaw (XZ plane - around Y). @type {number} */
+    // Screen-space yaw (XZ plane, around Y), driven by drag and flick.
+    /** @type {number} */
     angleXZ = 0;
 
-    /** Free-motion angular velocity; eases toward HOME_SPIN. @type {Spin} */
+    // Free-motion angular velocity; eases toward HOME_SPIN.
+    /** @type {Spin} */
     spin = { ...HOME_SPIN };
 
-    /**
-     * Smoothed finger yaw/pitch (radians / sec) while dragging.
-     * On release these become spin.xz / spin.yz so the model coasts.
-     *
-     * @type {{ xz: number, yz: number }}
-     */
+    // Smoothed finger yaw and pitch in radians per second while dragging. On release
+    // these become spin.xz and spin.yz so the model coasts.
+    /** @type {{ xz: number, yz: number }} */
     fingerSpin = { xz: 0, yz: 0 };
 
-    /** Pointer slot currently steering (−1 = none). @type {number} */
+    // Pointer slot currently steering (-1 = none).
+    /** @type {number} */
     dragSlot = -1;
 
-    /**
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A square canvas with the engine overlay open from the start, palette grid included,
+    // so the four animated slots can be watched alongside the picture.
     configure() {
         return {
             displaySize: new Vector2i(SIZE, SIZE),
@@ -210,16 +249,13 @@ class Demo {
         };
     }
 
-    /**
-     * @returns {Promise<boolean>}
-     */
+    // Loads the PICO-8 palette, picks the starting hues, and builds the vertex and edge
+    // tables.
     async init() {
         this.palette = Palette.pico8();
 
-        // Spread the four line colors around the wheel; randomize the starting angle.
-        // BT.random is the engine's shared random number generator.
-        // Its float() method returns a decimal from the first value up to (but not including) the second,
-        // so this lands anywhere on the 360-degree color wheel.
+        // Spread the four line colors evenly around the hue wheel from a random starting
+        // angle. BT.random.float(min, max) returns a value in [min, max).
         const start = BT.random.float(0, 360);
 
         this.baseHues = [start, start + 90, start + 180, start + 270];
@@ -232,16 +268,17 @@ class Demo {
             this.depths.push(0);
         }
 
-        // Two corners form an edge when their indices differ in exactly one bit
-        // (they are neighbors on the 4D hypercube).
+        // Two corners form an edge when their indices differ in exactly one bit: they are
+        // neighbors on the 4D hypercube.
         for (let i = 0; i < 16; i++) {
             for (let j = i + 1; j < 16; j++) {
                 const axis = i ^ j;
 
                 // Exactly one bit set: axis is a power of two.
                 if (axis !== 0 && (axis & (axis - 1)) === 0) {
-                    // Bit 3 (value 8) means the edge spans W - a strut between the two cubes.
-                    // Otherwise the edge lives on the cube whose W sign matches endpoint i.
+                    // Bit 3 (value 8) means the edge spans W - a strut between the two
+                    // cubes. Otherwise the edge lives on the cube whose W sign matches
+                    // endpoint i.
                     const color = axis === 8 ? C_LINK : (i & 8) !== 0 ? C_CUBE_B : C_CUBE_A;
 
                     this.edgeOrder.push({ i, j, depth: 0, color });
@@ -252,10 +289,8 @@ class Demo {
         return true;
     }
 
-    /**
-     * @param {number} timeSeconds
-     * @returns {void}
-     */
+    // Rewrites the four line slots for the given time: each hue drifts at HUE_SPEED and
+    // the lightness pulses on a sine, phase-shifted per slot.
     applyLineColors(timeSeconds) {
         for (let i = 0; i < LINE_SLOTS.length; i++) {
             const hue = (this.baseHues[i] + timeSeconds * HUE_SPEED) % 360;
@@ -266,17 +301,9 @@ class Demo {
         }
     }
 
-    /**
-     * Rotate a 4D point in the plane of axes `a` and `b` (0=X, 1=Y, 2=Z, 3=W).
-     * `c` / `s` are cos/sin of the angle - precomputed once per frame.
-     *
-     * @param {number[]} v
-     * @param {number} c
-     * @param {number} s
-     * @param {number} a
-     * @param {number} b
-     * @returns {void}
-     */
+    // Rotates the 4D point `v` in the plane of axes `a` and `b` (0 = X, 1 = Y, 2 = Z,
+    // 3 = W). `c` and `s` are the cosine and sine of the angle, precomputed once per
+    // tick.
     rotatePlane(v, c, s, a, b) {
         const x = v[a];
         const y = v[b];
@@ -285,13 +312,9 @@ class Demo {
         v[b] = x * s + y * c;
     }
 
-    /**
-     * Mouse (slot 0): primary button held. Touch slots: contact active.
-     * Same rule as pointer-paint.
-     *
-     * @param {number} slot
-     * @returns {boolean}
-     */
+    // True while a pointer slot should steer. The mouse (slot 0) counts while its primary
+    // button is held; a touch slot counts while its contact is active. Same rule as the
+    // Pointer Paint demo.
     isDragHeld(slot) {
         if (!BT.isPointerActive(slot)) {
             return false;
@@ -300,10 +323,7 @@ class Demo {
         return slot === 0 ? BT.isDown(BT.BTN_POINTER_A, 0) : true;
     }
 
-    /**
-     * @param {number} dt
-     * @returns {void}
-     */
+    // Advances every plane angle by its angular velocity over `dt` seconds.
     integrateSpin(dt) {
         this.angleXW += this.spin.xw * dt;
         this.angleYZ += this.spin.yz * dt;
@@ -312,12 +332,7 @@ class Demo {
         this.angleXZ += this.spin.xz * dt;
     }
 
-    /**
-     * Exponential ease of `spin` toward HOME_SPIN (soft settle, no hard stop).
-     *
-     * @param {number} dt
-     * @returns {void}
-     */
+    // Exponential ease of `spin` toward HOME_SPIN: a soft settle with no hard stop.
     fadeSpinToHome(dt) {
         const t = 1 - Math.exp(-SPIN_FADE * dt);
 
@@ -328,14 +343,9 @@ class Demo {
         this.spin.xz += (HOME_SPIN.xz - this.spin.xz) * t;
     }
 
-    /**
-     * Trackball drag + flick inertia. While held: yaw/pitch from pointer delta
-     * and EMA the finger velocity. On release: that velocity becomes `spin`,
-     * then fades back to HOME_SPIN.
-     *
-     * @param {number} dt
-     * @returns {void}
-     */
+    // Trackball drag plus flick inertia. While held: yaw and pitch from the pointer
+    // delta, and an exponential moving average of the finger velocity. On release: that
+    // velocity becomes `spin`, which then fades back to HOME_SPIN.
     updateDrag(dt) {
         const wasDragging = this.dragSlot >= 0;
 
@@ -359,7 +369,8 @@ class Demo {
         if (this.dragSlot >= 0) {
             const delta = BT.pointerDelta(this.dragSlot);
 
-            // Trackball: horizontal → yaw (XZ / around Y); vertical → pitch (YZ / around X).
+            // Trackball: horizontal pixels yaw (XZ, around Y); vertical pixels pitch (YZ,
+            // around X).
             const dYaw = delta.x * DRAG_SENSITIVITY;
             const dPitch = delta.y * DRAG_SENSITIVITY;
 
@@ -374,10 +385,11 @@ class Demo {
                 this.fingerSpin.yz += (dPitch / dt - this.fingerSpin.yz) * alpha;
             }
 
+            // The automatic tumble pauses while a drag is in progress.
             return;
         }
 
-        // Coast on the flick (trackball axes only); fade restores the Fez planes.
+        // Coast on the flick (trackball axes only); the fade restores the Fez planes.
         if (wasDragging) {
             this.spin.xz = clampFlick(this.fingerSpin.xz);
             this.spin.yz = clampFlick(this.fingerSpin.yz);
@@ -390,9 +402,8 @@ class Demo {
         this.fadeSpinToHome(dt);
     }
 
-    /**
-     * @returns {void}
-     */
+    // Advances the drag/spin state, rotates and projects all 16 corners, and re-sorts the
+    // edges by depth.
     update() {
         const dt = BT.deltaSeconds;
 
@@ -403,6 +414,8 @@ class Demo {
         const cx = SIZE / 2;
         const cy = SIZE / 2;
 
+        // Sine and cosine of each plane angle, computed once per tick rather than once
+        // per corner.
         const cXW = Math.cos(this.angleXW);
         const sXW = Math.sin(this.angleXW);
         const cYZ = Math.cos(this.angleYZ);
@@ -424,21 +437,21 @@ class Demo {
             v[2] = src[2];
             v[3] = src[3];
 
-            // 4D tumble planes, then screen-space yaw (XZ) so a horizontal drag
-            // turns the projected object like a solid in front of you.
+            // The 4D tumble planes first, then the screen-space yaw (XZ), so a horizontal
+            // drag turns the projected object like a solid in front of the viewer.
             this.rotatePlane(v, cXW, sXW, 0, 3);
             this.rotatePlane(v, cYZ, sYZ, 1, 2);
             this.rotatePlane(v, cXY, sXY, 0, 1);
             this.rotatePlane(v, cZW, sZW, 2, 3);
             this.rotatePlane(v, cXZ, sXZ, 0, 2);
 
-            // 4D → 3D perspective: points farther in W shrink toward the origin.
+            // 4D to 3D perspective: points farther along W shrink toward the origin.
             const w = DIST_4 / (DIST_4 - v[3]);
             const x3 = v[0] * w;
             const y3 = v[1] * w;
             const z3 = v[2] * w;
 
-            // 3D → 2D perspective, then center on the canvas.
+            // 3D to 2D perspective, then scale and center on the canvas.
             const p = DIST_3 / (DIST_3 - z3);
             const x2 = x3 * p * SCALE + cx;
             const y2 = y3 * p * SCALE + cy;
@@ -449,8 +462,8 @@ class Demo {
             this.depths[i] = z3 + v[3] * 0.35;
         }
 
-        // Update depth on each edge in place. Do NOT rebuild edges from a sorted
-        // index list - that pairs the wrong color with the wrong endpoints and flashes.
+        // Update the depth on each edge in place. Rebuilding the edges from a sorted
+        // index list would pair the wrong color with the wrong endpoints and flash.
         for (let e = 0; e < this.edgeOrder.length; e++) {
             const edge = this.edgeOrder[e];
 
@@ -460,9 +473,7 @@ class Demo {
         this.edgeOrder.sort(compareEdgeDepth);
     }
 
-    /**
-     * @returns {void}
-     */
+    // Draws the edges farthest first, then a dot on every corner.
     render() {
         BT.clear(C_BG);
 

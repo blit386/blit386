@@ -1,60 +1,108 @@
-/**
- * Keyboard Input Demo - face buttons, raw keys, and typed text.
- * @description Face buttons for two players, raw key state with optional tick repeat, and text from BT.inputString.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites:
- *   Basics        https://demos.blit386.dev/basics
- *   Pointer Basics https://demos.blit386.dev/pointer-basics
- *
- * Live version: https://demos.blit386.dev/keyboard-input
- *
- * This page shows three layers of keyboard support:
- * - Face buttons (BT.BTN_UP through BT.BTN_SELECT) for players 0 and 1. Each
- *   button can map to one or more physical keys. The engine uses
- *   KeyboardEvent.code strings (like KeyW, ArrowUp) so labels stay the
- *   same even when the OS keyboard layout changes (unlike event.key, which
- *   might print different letters).
- * - Raw keys (BT.isKeyDown, BT.isKeyPressed, BT.isKeyReleased) when you need
- *   a specific key, optional fixed-tick repeats with BT.isKeyPressed(code, rate),
- *   and release edges. When you do NOT care which key, BT.isAnyKeyDown and
- *   BT.isAnyKeyReleased ask about the whole keyboard instead.
- * - Text input (BT.inputString) for characters in one frame. The buffer clears
- *   once per fixed-update tick, and that tick always finishes before render()
- *   runs, so read it in update(), not render(), or you can miss characters.
- *
- * The panels and readouts are drawn with the shared demo UI kit (src/shared/ui.js),
- * so this page looks like every other demo in the series. The inputs themselves stay
- * deliberately keyboard-only - there is no touch stand-in for a physical keyboard,
- * so on a touch device the page shows a "needs a keyboard" notice instead.
- *
- * Try this:
- * - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
- * - Tap the same letter repeatedly and watch the press counter climb (edge-only
- *   BT.isKeyPressed, no repeat rate). Press a different key and the counter resets.
- * - Hold Q to see isKeyDown; tap F and watch the release readout.
- * - Hold two keys, then let go of one: "Any key held" stays lit. Let go of the last
- *   one and the "All up" tick updates - isAnyKeyReleased means EVERYTHING is up.
- * - Type letters into the buffer line at the bottom.
- * - If keys stop responding, click the canvas - focus may have moved to another
- *   part of the page after you tabbed away.
- */
+/*
+
+Keyboard Input: face buttons, raw keys, and typed text.
+@description Face buttons for two players, raw key state with optional tick repeat, and text from BT.inputString.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Pointer Basics: https://demos.blit386.dev/pointer-basics
+
+Live version: https://demos.blit386.dev/keyboard-input
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input#keyboard
+  - Input: https://blit386.dev/docs/guides/input#frame-timing-semantics
+  - Overlay: https://blit386.dev/docs/guides/overlay#optional-bands
+
+Reference:
+  - Overlay: https://blit386.dev/docs/api/overlay#event-tags
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A title strip across the top, and right under it one dim line listing the default keys
+(on a touch screen it turns into a warm "This demo needs a keyboard" notice instead). On
+the left, two small panels sit side by side like two little gamepads: "Player 0" and
+"Player 1", with one pip per mapped face button. A pip fills while its button is held.
+
+To the right of them is a column of two panels. "isKeyPressed counter" shows which key you
+tapped last and how many times in a row. "Raw keys" has a pip for Q, the engine tick of
+the last F release, a pip that lights while any key at all is held, and the tick when the
+last key came up. Along the bottom edge, a wide panel shows the last 48 characters you
+typed.
+
+Every panel and pip is drawn with the shared UI kit (src/shared/ui.js). The inputs stay
+deliberately keyboard-only: there is no touch stand-in for a physical keyboard.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- Face buttons BT.BTN_UP through BT.BTN_SELECT, read with BT.isDown(button, player) for
+  players 0 and 1. Each button maps to one or more physical keys through the keyboard
+  map; the defaults live in BT.DEFAULT_KEYBOARD_PLAYER1 and BT.DEFAULT_KEYBOARD_PLAYER2,
+  and BT.inputMapReset() restores them.
+- Raw keys by KeyboardEvent.code string: BT.isKeyDown(code) for held state,
+  BT.isKeyPressed(code) for the press edge, BT.isKeyPressed(code, repeatTicks) for a
+  fixed-tick repeat, and BT.isKeyReleased(code) for the release edge.
+- Whole-keyboard checks: BT.isAnyKeyDown() and BT.isAnyKeyReleased().
+- BT.inputString, the characters typed since the last update tick.
+- Edges (pressed, released, inputString) are read in update(); held state is safe to
+  read in render().
+- BT.assignTag(label) drops a marker on the overlay timing chart, and
+  isCapturingKeyboardScroll keeps arrow keys and Space from scrolling the page.
+
+THREE LAYERS OF KEYBOARD SUPPORT
+--------------------------------
+
+- Face buttons (BT.BTN_UP through BT.BTN_SELECT) for players 0 and 1. Each button can map
+  to one or more physical keys. The engine uses KeyboardEvent.code strings (like KeyW,
+  ArrowUp) so labels stay the same even when the OS keyboard layout changes (unlike
+  event.key, which might print different letters).
+- Raw keys (BT.isKeyDown, BT.isKeyPressed, BT.isKeyReleased) when you need a specific key,
+  optional fixed-tick repeats with BT.isKeyPressed(code, rate), and release edges. When
+  you do NOT care which key, BT.isAnyKeyDown and BT.isAnyKeyReleased ask about the whole
+  keyboard instead.
+- Text input (BT.inputString) for characters typed since the last tick. The buffer clears
+  once per fixed-update tick, and that tick always finishes before render() runs, so read
+  it in update(), not render(), or you can miss characters.
+
+TRY THIS
+--------
+
+- Hold W, A, S, D, Space (or B), N, 5, and Esc for player 0; the arrow keys, ; (or
+  Numpad 1), ' (or Numpad 2), and Backspace (or Numpad /) for player 1. Player 1 has no
+  Select key by default, so its panel has one row fewer.
+- Tap the same letter repeatedly and watch the press counter climb (edge-only
+  BT.isKeyPressed, no repeat rate). Tap a different key and the counter resets to 1. The
+  counter listens to letters, Space, and the arrow keys.
+- Hold Q to see isKeyDown; tap F and watch the "F rel" readout.
+- Hold two keys, then let go of one: "Any key held" stays lit. Let go of the last one and
+  the "All up" tick updates - isAnyKeyReleased means EVERYTHING is up.
+- Type letters into the buffer line at the bottom.
+- Press the backquote key (`) to open the engine overlay. Its timing chart gets a tag
+  each time you release F.
+- If keys stop responding, click the canvas - focus may have moved to another part of the
+  page after you tabbed away.
+
+*/
 
 import { bootstrap, BT } from 'blit386';
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// How many characters we keep in the typed-text demo line (rolling window). The line
-// lives in a 308-pixel-wide panel and the system font is 6 pixels per character, so
-// 48 characters fill the panel without spilling over its border.
+// How many characters the typed-text line keeps (a rolling window). The line lives in a
+// 308-pixel-wide panel and the system font is 6 pixels per character, so 48 characters
+// fill the panel without spilling over its border.
 const TYPED_BUFFER_MAX = 48;
 
-// Keys the press counter listens to (KeyboardEvent.code strings).
+// Keys the press counter listens to (KeyboardEvent.code strings): every letter, Space,
+// and the four arrow keys.
 const PRESS_COUNTER_KEYS = [
     ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => `Key${letter}`),
     'Space',
@@ -75,20 +123,16 @@ const THEME_ACCENT_SLOT = 247;
 
 // Fixed vertical layout, in display pixels. The kit normally stacks panels on its own,
 // but this page places several groups side by side, so each one gets a pinned x/y.
-const NOTICE_Y = 24; // The hint / touch-notice line right under the title strip.
-const PANEL_TOP_Y = 42; // Top edge of the face-button panels and the press counter.
-const RAW_PANEL_Y = 134; // Top edge of the raw-key panel (below the press counter).
-const PLAYER0_PANEL_X = 6; // Left edge of the player 0 panel.
-const PLAYER1_PANEL_X = 68; // Left edge of the player 1 panel (next to player 0).
-const READOUT_COLUMN_X = 130; // Left edge of the press-counter / raw-key column.
-const TYPED_PANEL_WIDTH = 308; // The typed-text panel spans almost the full screen.
+const NOTICE_Y = 24; // the hint / touch-notice line right under the title strip
+const PANEL_TOP_Y = 42; // top edge of the face-button panels and the press counter
+const RAW_PANEL_Y = 134; // top edge of the raw-key panel (below the press counter)
+const PLAYER0_PANEL_X = 6; // left edge of the player 0 panel
+const PLAYER1_PANEL_X = 68; // left edge of the player 1 panel (next to player 0)
+const READOUT_COLUMN_X = 130; // left edge of the press-counter / raw-key column
+const TYPED_PANEL_WIDTH = 308; // the typed-text panel spans almost the full screen
 
-/**
- * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
- *
- * @param {string} code - KeyboardEvent.code value.
- * @returns {string}
- */
+// Turns `KeyH` into `H` and `Digit5` into `5`; other codes (Space, ArrowUp) are already
+// readable and pass through unchanged.
 function formatKeyCode(code) {
     if (code.startsWith('Key')) {
         return code.slice(3);
@@ -101,11 +145,7 @@ function formatKeyCode(code) {
     return code;
 }
 
-/**
- * Shows keyboard face-button maps, low-level key queries, and `inputString`.
- *
- * @implements {IBTDemo}
- */
+// Shows keyboard face-button maps, raw key queries, and BT.inputString side by side.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
@@ -114,38 +154,35 @@ class Demo {
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
-    /**
-     * Face buttons that have at least one key in each player's default map, built once
-     * in init(). Index 0 is player 0's list, index 1 is player 1's.
-     *
-     * @type {Array<Array<{ label: string, code: number }>>}
-     */
+    // Face buttons that have at least one key in each player's default map, built once in
+    // init(). Index 0 is player 0's list, index 1 is player 1's.
+    /** @type {Array<Array<{ label: string, code: number }>>} */
     faceButtons = [];
 
-    /** @type {number | null} Engine tick when `BT.isKeyReleased('KeyF')` last fired. */
+    // Engine tick when BT.isKeyReleased('KeyF') last fired.
+    /** @type {number | null} */
     lastFReleaseTick = null;
 
-    /** @type {number | null} Engine tick when `BT.isAnyKeyReleased()` last fired (every key up). */
+    // Engine tick when BT.isAnyKeyReleased() last fired (every key up).
+    /** @type {number | null} */
     lastAllUpTick = null;
 
-    /** @type {string | null} KeyboardEvent.code for the key we are counting presses on. */
+    // KeyboardEvent.code of the key we are counting presses on.
+    /** @type {string | null} */
     activePressKey = null;
 
-    // How many edge-only `BT.isKeyPressed` events fired for `activePressKey` this run.
+    // How many edge-only BT.isKeyPressed events fired for activePressKey in a row.
     keyPressCount = 0;
 
-    // Text built from `BT.inputString` over time (capped).
+    // Text built from BT.inputString over time (capped at TYPED_BUFFER_MAX).
     typedBuffer = '';
 
-    /**
-     * Timing chart on so key-release milestones show on the overlay HUD.
-     *
-     * @returns {Partial<HardwareSettings>}
-     */
+    // Turns the timing chart on so key-release milestones show on the overlay.
     configure() {
         return {
-            // Arrow keys and Space scroll the host page by default. This demo maps those keys
-            // (player 1 uses arrows), so opt in so pressing them does not move the page.
+            // Arrow keys and Space scroll the host page by default. This demo maps those
+            // keys (player 1 uses arrows), so opt in so pressing them does not move the
+            // page.
             isCapturingKeyboardScroll: true,
 
             isOverlayTimingChartEnabled: true,
@@ -157,15 +194,11 @@ class Demo {
         };
     }
 
-    /**
-     * Install the shared UI theme and build the face-button lists once at startup.
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Installs the shared UI theme and builds the face-button lists once at startup.
     async init() {
-        // inputMapReset() restores the engine's default player-1 / player-2 key bindings.
-        // Other demos (for example input-map remapping) may change those maps; we reset here
-        // so W/A/S/D and arrow keys always match what this page describes.
+        // inputMapReset() restores the engine's default player 0 / player 1 key bindings.
+        // Other demos (for example Input Map Remapping) may change those maps; we reset
+        // here so W/A/S/D and the arrow keys always match what this page describes.
         BT.inputMapReset();
 
         this.palette = BT.paletteCreate(256);
@@ -178,8 +211,8 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
-        // The full face-button roster, in the order the panels list them. Each entry pairs
-        // a short on-screen label with the engine's button constant.
+        // The full face-button roster, in the order the panels list them. Each entry
+        // pairs a short on-screen label with the engine's button constant.
         const allButtons = [
             { label: 'Up', code: BT.BTN_UP },
             { label: 'Dn', code: BT.BTN_DOWN },
@@ -192,7 +225,7 @@ class Demo {
         ];
 
         // Keep only the buttons that actually have keys in each player's default map
-        // (player 2's Select slot is empty, for example, so its row would never light).
+        // (player 1's Select slot is empty, for example, so its row would never light).
         // .map() walks the two default maps and .filter() drops the empty slots.
         this.faceButtons = [BT.DEFAULT_KEYBOARD_PLAYER1, BT.DEFAULT_KEYBOARD_PLAYER2].map((map) =>
             allButtons.filter((button) => (map[button.code] ?? []).length > 0),
@@ -201,41 +234,43 @@ class Demo {
         return true;
     }
 
-    /**
-     * Read keyboard state after the engine has updated input for this tick.
-     */
+    // Reads keyboard state after the engine has updated input for this tick.
     update() {
         // The UI kit's once-per-tick housekeeping. This demo has no kit buttons, but
         // ui.tick() is also where the kit notices touch contacts - ui.hasTouch() in
         // render() relies on it to know when to show the "needs a keyboard" notice.
         ui.tick();
 
-        // --- Raw keys (KeyboardEvent.code strings, layout-independent) ---
+        // Raw keys (KeyboardEvent.code strings, layout-independent):
         //
-        // BT.isKeyDown(code)     = true EVERY tick while the key is held (like holding a door shut).
-        // BT.isKeyPressed(code)  = true only on the FIRST tick the key goes down (one-shot "tap").
-        // BT.isKeyPressed(code, repeatTicks) = first tick down, then again every repeatTicks fixed
-        //     engine ticks while still held (repeat on the game clock, not the OS key-repeat rate).
-        // BT.isKeyReleased(code) = true only on the FIRST tick the key comes up (one-shot "let go").
+        // BT.isKeyDown(code) is true EVERY tick while the key is held (like holding a
+        // door shut). BT.isKeyPressed(code) is true only on the FIRST tick the key goes
+        // down (a one-shot "tap"). BT.isKeyPressed(code, repeatTicks) is true on that
+        // first tick and then again every repeatTicks fixed engine ticks while still held
+        // (repeat on the game clock, not the OS key-repeat rate). BT.isKeyReleased(code)
+        // is true only on the FIRST tick the key comes up (a one-shot "let go").
         //
-        // Face buttons (BT.BTN_UP, BT.isDown, …) are separate: they go through the input map.
-        // Use raw keys when you need a specific key regardless of player slot or remapping.
+        // Face buttons (BT.BTN_UP, BT.isDown, ...) are separate: they go through the
+        // input map. Use raw keys when you need a specific key regardless of player slot
+        // or remapping.
 
-        // Release edge for F: fires once when you let go of F. We remember the engine tick
-        // it happened on so the raw-key panel can show it.
+        // Release edge for F: fires once when you let go of F. We remember the engine
+        // tick it happened on so the raw-key panel can show it.
         if (BT.isKeyReleased('KeyF')) {
             this.lastFReleaseTick = BT.ticks;
             BT.assignTag('Key F released');
         }
 
-        // Every key up: unlike isKeyReleased('KeyF') above, this does NOT fire when you let go
-        // of one key while another is still down - only when nothing is held any more. Like the
-        // other edges it must be read here in update(), so we remember the tick for render().
+        // Every key up: unlike isKeyReleased('KeyF') above, this does NOT fire when you
+        // let go of one key while another is still down - only when nothing is held any
+        // more. Like the other edges it must be read here in update(), so we remember the
+        // tick for render().
         if (BT.isAnyKeyReleased()) {
             this.lastAllUpTick = BT.ticks;
         }
 
-        // Q held: we only read isKeyDown in render() for a live lit/unlit pip (no state here).
+        // Q held: we only read isKeyDown in render() for a live lit/unlit pip (no state
+        // here).
 
         // Edge-only press counter: tap the same key to climb; another key resets to 1.
         for (let i = 0; i < PRESS_COUNTER_KEYS.length; i++) {
@@ -255,23 +290,22 @@ class Demo {
             break;
         }
 
-        // Text buffer
-        // Characters arrive for this frame only; concat now or they are gone next frame.
+        // Text buffer: the characters typed since the last tick arrive here once, so add
+        // them to our own string now or they are gone next tick.
         const chunk = BT.inputString;
 
         if (chunk.length > 0) {
             this.typedBuffer += chunk;
 
             if (this.typedBuffer.length > TYPED_BUFFER_MAX) {
-                // Keep the most recent characters so long paste tests still show the tail.
+                // Keep the most recent characters so long paste tests still show the
+                // tail.
                 this.typedBuffer = this.typedBuffer.slice(-TYPED_BUFFER_MAX);
             }
         }
     }
 
-    /**
-     * Clear the frame and declare every kit panel.
-     */
+    // Clears the frame and declares every kit panel.
     render() {
         // Paint the whole screen with the theme's deep navy background.
         BT.clear(this.theme.bg);
@@ -307,12 +341,9 @@ class Demo {
         this.renderTypedLine();
     }
 
-    /**
-     * One player's mapped face buttons as a panel of lit/unlit pip rows.
-     *
-     * @param {number} player - 0 or 1 (`BT.isDown` player index).
-     * @param {number} x - Left edge of the panel in display pixels.
-     */
+    // Draws one player's mapped face buttons as a panel of lit/unlit pip rows. `player`
+    // is 0 or 1 (the BT.isDown player index), `x` the panel's left edge in display
+    // pixels.
     renderFacePanel(player, x) {
         // Pin the panel to its column; both player panels share the same top edge.
         ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: PANEL_TOP_Y });
@@ -321,8 +352,8 @@ class Demo {
         const buttons = this.faceButtons[player];
 
         // One read-only pip per button: filled while the button is held, hollow when it
-        // is up. BT.isDown() reports held state (not a press edge), so reading it here
-        // in render() is safe - only press/release EDGES must stay in update().
+        // is up. BT.isDown() reports held state (not a press edge), so reading it here in
+        // render() is safe - only press/release EDGES must stay in update().
         for (let i = 0; i < buttons.length; i++) {
             const { label, code } = buttons[i];
 
@@ -332,9 +363,7 @@ class Demo {
         ui.end();
     }
 
-    /**
-     * Readout for edge-only press counting on one key at a time.
-     */
+    // Draws the readout for edge-only press counting on one key at a time.
     renderPressCounter() {
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: PANEL_TOP_Y });
         ui.panel('isKeyPressed counter');
@@ -350,9 +379,8 @@ class Demo {
         ui.end();
     }
 
-    /**
-     * Panel for Q held state and the last F release.
-     */
+    // Draws the panel for Q held state, the last F release, and the whole-keyboard
+    // checks.
     renderRawKeyPanel() {
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: RAW_PANEL_Y });
         ui.panel('Raw keys');
@@ -360,23 +388,23 @@ class Demo {
         // Held state is safe to read in render() (see renderFacePanel above).
         ui.pip('Q held (isKeyDown)', BT.isKeyDown('KeyQ'));
 
-        // The release EDGE was caught in update(); here we only display the remembered tick.
+        // The release EDGE was caught in update(); here we only display the remembered
+        // tick.
         ui.kv('F rel', this.lastFReleaseTick === null ? 'tap F' : `tick ${this.lastFReleaseTick}`);
 
         // Held state again, but for the whole keyboard: lit while ANY key is down.
         ui.pip('Any key held (isAnyKeyDown)', BT.isAnyKeyDown());
 
-        // The "all keys up" edge was caught in update(); here we only show the remembered tick.
+        // The "all keys up" edge was caught in update(); here we only show the remembered
+        // tick.
         ui.kv('All up', this.lastAllUpTick === null ? 'press, release' : `tick ${this.lastAllUpTick}`);
         ui.end();
     }
 
-    /**
-     * Shows text accumulated from `BT.inputString`.
-     */
+    // Draws the text accumulated from BT.inputString.
     renderTypedLine() {
         // A fixed width keeps the panel spanning the screen even while the buffer is
-        // short; bottomLeft anchors it just above the bottom edge.
+        // short; the bottom-left anchor sits it just above the bottom edge.
         ui.begin(UI_ANCHORS.BOTTOM_LEFT, { width: TYPED_PANEL_WIDTH });
         ui.panel('BT.inputString (typed this session)');
 

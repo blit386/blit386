@@ -1,60 +1,115 @@
-// Nine-Slice Panels: one piece of panel art that fills a box of any size.
-// @description Draw one nine-slice panel at any size: stretch or tile its edges, crop corners, recolor, build bars.
-//
-// Prerequisites: Basics (https://demos.blit386.dev/basics),
-// Sprites (https://demos.blit386.dev/sprites).
-// Guide: https://blit386.dev/docs/api/rendering#nine-slice-panels
-//
-// Games draw a lot of boxes: dialog windows, buttons, health bars. You could paint a new picture
-// for every size, but there is a smarter way. A "nine-slice" cuts ONE small picture into a 3x3 grid:
-//
-//     +--------+--------+--------+
-//     | corner |  edge  | corner |      Corners are copied 1:1, so they never get squashed.
-//     +--------+--------+--------+      Edges and the center are stretched (blown up to fit)
-//     |  edge  | center |  edge  |      or tiled (repeated like bathroom tiles) to fill the box.
-//     +--------+--------+--------+
-//     | corner |  edge  | corner |
-//     +--------+--------+--------+
-//
-// You build the nine-slice ONCE, in init(), with NineSlice.fromSheet(). Then you draw it into any
-// box you like with BT.drawNineSlice(). Drawing allocates nothing, so this demo also builds every
-// NineSlice and every Rect2i it reuses in init() instead of making new ones every frame.
-//
-// This demo draws its panel art on an offscreen canvas (the same trick as the Sprites demo), then shows:
-//   1. One asset, any box - the same panel drawn at five different sizes.
-//   2. Stretch vs tile vs mixed - tiled edges with a stretched center, the common UI case.
-//   3. Open from 0x0 - a panel growing from nothing, with its corners cropped instead of squashed.
-//   4. Palette offsets - the same panel recolored, like an idle, hovered, and alert button.
-//   5. A three-slice bar - a bar with only left and right caps, for health bars.
-//
-// A word of warning: each tile is one quad (one little rectangle the graphics card draws). Tiling a
-// 1-pixel strip across a big box costs one quad per pixel and can fill the engine's sprite buffer.
-// So tile PATTERNED art that is a few pixels wide (like the 8-pixel strips here), and stretch flat fills.
-//
-// Recoloring works exactly as it does for sprites: palette offsets shift every pixel's palette index.
-// There is no tint. Palette Presets explores the palette system: https://demos.blit386.dev/palette-presets
+/*
+
+Nine-Slice Panels: one piece of panel art that fills a box of any size.
+@description Draw one nine-slice panel at any size: stretch or tile its edges, crop corners, recolor, build bars.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Sprites: https://demos.blit386.dev/sprites
+
+Live version: https://demos.blit386.dev/nine-slice-panels
+
+Guides:
+  - Palette: https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
+
+Reference:
+  - Rendering: https://blit386.dev/docs/api/rendering#nine-slice-panels
+  - Assets: https://blit386.dev/docs/api/assets#loading-assets
+  - Palette: https://blit386.dev/docs/api/palette#fill-a-block-of-slots
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 640x400 screen split into two columns of small sections, each with a dim caption:
+
+  1. One asset, any box (top-left) - the same blue panel drawn at five sizes, from 20x20
+     to 100x52, with its size printed under each one.
+  2. Stretch vs tile vs mixed (left, middle) - three boxes of exactly the same size,
+     filled three ways. Stretch smears the dashes into fat bars, tile keeps them crisp,
+     mixed tiles the border around a stretched center.
+  3. Open from 0x0 (top-right) - a panel that grows from nothing to 140x90 in one second,
+     holds, and starts over every three seconds. A "Replay (R)" button restarts it.
+  4. Palette offsets (right, middle) - the same panel recolored three ways, labeled Idle,
+     Hover, and Alert.
+  5. Three-slice bar (right, lower) - two fixed bars plus one whose width swings between
+     20 and 200 pixels.
+  6. Panel from public/sprites/panel.png (left, lower) - a rounded panel loaded from a
+     real PNG file, slowly growing and shrinking between 40x24 and 180x64.
+
+A bordered kit panel in the bottom-left corner shows the two calls that matter.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- NineSlice.fromSheet(sheet, outer, inner, options) cuts one sheet region into a 3x3 grid
+  once, in init(). The options are { edges, center }, each 'stretch' (the default) or
+  'tile'.
+- BT.drawNineSlice(panel, destRect, paletteOffset) draws it into any box, allocating
+  nothing, so the demo builds every NineSlice and every reused Rect2i in init().
+- When inner touches the top and bottom of outer, there are no top or bottom edges: a
+  three-slice bar with a left cap, a middle, and a right cap.
+- A box smaller than its two corners crops the corners instead of squashing them, so a
+  panel can animate open from 0x0 and keep its outline.
+- Recoloring is paletteOffset only, exactly as for sprites. palette.fillBlock() writes the
+  recolored copies of the art's colors into later slots.
+- SpriteSheet.loadIndexed() loads a PNG and registers its colors in the palette in one
+  call.
+- Painting pixel art on an OffscreenCanvas and turning it into an indexed sprite sheet,
+  the same trick as the Sprites demo.
+
+WHAT IS A NINE-SLICE?
+---------------------
+
+Games draw a lot of boxes: dialog windows, buttons, health bars. You could paint a new
+picture for every size, but there is a smarter way. A nine-slice cuts ONE small picture
+into a 3x3 grid:
+
+  +--------+--------+--------+
+  | corner |  edge  | corner |  Corners are copied 1:1, so they never get squashed.
+  +--------+--------+--------+  Edges and the center are stretched (blown up to fit)
+  |  edge  | center |  edge  |  or tiled (repeated like bathroom tiles) to fill the box.
+  +--------+--------+--------+
+  | corner |  edge  | corner |
+  +--------+--------+--------+
+
+A word of warning: each tile is one quad (one little rectangle the graphics card draws).
+Tiling a 1-pixel strip across a big box costs one quad per pixel and can fill the engine's
+sprite buffer. So tile PATTERNED art that is a few pixels wide (like the 8-pixel strips
+here), and stretch flat fills.
+
+TRY THIS
+--------
+
+- Press R (or tap "Replay (R)") to restart the "Open from 0x0" animation and watch the
+  corners share the tiny box instead of squashing.
+- Compare the dashes in section 2: the Stretch box turns them into long bars, the Tile box
+  keeps them crisp and cuts the last tile off at the box edge.
+
+*/
 
 import { applyEasing, bootstrap, BT, Color32, NineSlice, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 
-// Display size: twice the usual 320x200 each way, which leaves room for two columns of sections.
+// Display size: twice the usual 320x200 each way, which leaves room for two columns of
+// sections.
 const DISPLAY_W = 640;
 const DISPLAY_H = 400;
 
-// Where in the palette the panel's original colors start. The recolored copies stack right after
-// them, and the shared UI theme lives far above at slots 240-251.
+// Where in the palette the panel's original colors start. The recolored copies stack
+// right after them, and the shared UI theme lives far above at slots 240-251.
 const COLOR_BASE = 10;
 
-// The panel art is 18x18 pixels: a 5-pixel border on every side around an 8x8 center.
-// The strips are 8 pixels wide on purpose - the patterns repeat every 4 pixels, so an 8-pixel
+// The panel art is 18x18 pixels: a 5-pixel border on every side around an 8x8 center. The
+// strips are 8 pixels wide on purpose - the patterns repeat every 4 pixels, so an 8-pixel
 // strip tiles without a visible seam.
 const PANEL_SIZE = 18;
 const PANEL_CAP = 5;
@@ -72,6 +127,9 @@ const SHEET_H = PANEL_SIZE;
 
 // The seven flat colors of the art. Every pixel uses exactly one of them, so the sheet maps
 // onto the palette without any blending (we never use smooth, anti-aliased canvas drawing).
+// The seven flat colors of the art. Every pixel uses exactly one of them, so the sheet
+// maps onto the palette without any blending (the demo never uses smooth, anti-aliased
+// canvas drawing).
 const ART_COLORS = {
     outline: new Color32(0x14, 0x16, 0x3a),
     edgeLight: new Color32(0x9a, 0xa8, 0xff),
@@ -103,34 +161,23 @@ const SIZES = [
     { w: 40, h: 52 },
 ];
 
-// The three box modes of section 2, in the order they are drawn and labelled.
+// The three box modes of section 2, in the order they are drawn and labeled.
 const MODE_NAMES = ['Stretch', 'Tile', 'Mixed'];
 
-// The three recolors of section 4. Each name sits under one panel; the offset is a multiple
-// of the art's color count, so offset 0 is the original and the others jump to a recolored block.
+// The three recolors of section 4. Each name sits under one panel; the offset is a
+// multiple of the art's color count, so offset 0 is the original and the others jump to a
+// recolored block.
 const RECOLOR_NAMES = ['Idle', 'Hover', 'Alert'];
 
-/**
- * Draws one pixel of the sheet with a flat color.
- *
- * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} x
- * @param {number} y
- * @param {Color32} color
- */
+// Draws one pixel of the sheet with a flat color.
 function plot(ctx, x, y, color) {
     ctx.fillStyle = color.toHex();
     ctx.fillRect(x, y, 1, 1);
 }
 
-/**
- * Picks the color of one panel corner pixel: a dark outline, a gold stud, and a mid-blue body.
- * dx and dy are the distance from the nearest left/right and top/bottom outer edge.
- *
- * @param {number} dx
- * @param {number} dy
- * @returns {Color32}
- */
+// Picks the color of one panel corner pixel: a dark outline, a gold stud, and a mid-blue
+// body. `dx` and `dy` are the distance from the nearest left/right and top/bottom outer
+// edge.
 function cornerColorAt(dx, dy) {
     if (dx === 0 || dy === 0) {
         return ART_COLORS.outline;
@@ -139,15 +186,10 @@ function cornerColorAt(dx, dy) {
     return dx >= 2 && dx <= 3 && dy >= 2 && dy <= 3 ? ART_COLORS.stud : ART_COLORS.edgeMid;
 }
 
-/**
- * Picks the color of one panel edge pixel. `depth` is how far the pixel is from the outer edge
- * and `along` is how far it is along the edge. The dashes repeat every 4 pixels ALONG the edge.
- * Stretching smears them into long bars; tiling repeats them crisply. That is the difference you will see.
- *
- * @param {number} depth
- * @param {number} along
- * @returns {Color32}
- */
+// Picks the color of one panel edge pixel. `depth` is how far the pixel is from the outer
+// edge and `along` is how far it is along the edge. The dashes repeat every 4 pixels
+// ALONG the edge. Stretching smears them into long bars; tiling repeats them crisply.
+// That is the difference you will see.
 function edgeColorAt(depth, along) {
     if (depth === 0) {
         return ART_COLORS.outline;
@@ -160,15 +202,9 @@ function edgeColorAt(depth, along) {
     return (along - PANEL_CAP) % 4 < 2 ? ART_COLORS.dash : ART_COLORS.edgeMid;
 }
 
-/**
- * Picks the color of one pixel of the 18x18 panel.
- * dx and dy are the distance from the nearest left/right and top/bottom outer edge, which lets the
- * same rules paint all four corners and all four edges.
- *
- * @param {number} x
- * @param {number} y
- * @returns {Color32}
- */
+// Picks the color of one pixel of the 18x18 panel. `dx` and `dy` are the distance from
+// the nearest left/right and top/bottom outer edge, which lets the same rules paint all
+// four corners and all four edges.
 function panelColorAt(x, y) {
     const dx = Math.min(x, PANEL_SIZE - 1 - x);
     const dy = Math.min(y, PANEL_SIZE - 1 - y);
@@ -188,17 +224,13 @@ function panelColorAt(x, y) {
         return edgeColorAt(dx, y);
     }
 
-    // Center: a diagonal dot pattern, so a stretched center shows fat blocks and a tiled one stays fine.
+    // Center: a diagonal dot pattern, so a stretched center shows fat blocks and a tiled
+    // one stays fine.
     return (x + y) % 4 === 0 ? ART_COLORS.fillDot : ART_COLORS.fill;
 }
 
-/**
- * Picks the color of one pixel of the bar. lx and y are measured inside the bar's own 18x10 box.
- *
- * @param {number} lx
- * @param {number} y
- * @returns {Color32}
- */
+// Picks the color of one pixel of the bar. `lx` and `y` are measured inside the bar's own
+// 18x10 box.
 function barColorAt(lx, y) {
     const dx = Math.min(lx, BAR_W - 1 - lx);
     const dy = Math.min(y, BAR_H - 1 - y);
@@ -225,11 +257,8 @@ function barColorAt(lx, y) {
     return (lx - PANEL_CAP + y) % 4 < 2 ? ART_COLORS.dash : ART_COLORS.edgeMid;
 }
 
-/**
- * Paints the whole sheet - the panel on the left and the bar on the right - on an offscreen canvas.
- *
- * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D }}
- */
+// Paints the whole sheet - the panel on the left and the bar on the right - on an
+// offscreen canvas. Returns the canvas and its 2D context.
 function buildArtSheet() {
     const canvas = new OffscreenCanvas(SHEET_W, SHEET_H);
     const ctx = canvas.getContext('2d');
@@ -256,22 +285,20 @@ function buildArtSheet() {
     return { canvas, ctx };
 }
 
-/**
- * Demonstrates nine-slice panels: one asset, stretch vs tile, corner crop, recolor, and a three-slice bar.
- *
- * @implements {IBTDemo}
- */
+// Demonstrates nine-slice panels: one asset, stretch vs tile, corner crop, recolor, and a
+// three-slice bar.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
+
     /** @type {SpriteSheet | null} */
     sheet = null;
 
     // Slot map for the shared UI kit theme, filled in init() by applyTheme().
     theme = null;
 
-    // How many colors the art uses. Each recolored block is this many slots further along,
-    // so this number is also the palette offset step.
+    // How many colors the art uses. Each recolored block is this many slots further
+    // along, so this number is also the palette offset step.
     colorCount = 0;
 
     // The nine-slices. All are built once in init(). They are frozen, finished assets.
@@ -280,42 +307,38 @@ class Demo {
     mixedPanel = null;
     bar = null;
 
-    // Every box this demo draws more than once is built in init() too, never inside render().
+    // Every box this demo draws more than once is built in init() too, never inside
+    // render().
     sizeRects = [];
     modeRects = [];
     recolorRects = [];
     staticBarRects = [];
 
-    // The two boxes whose size changes every frame. render() rewrites them with set(), so no
+    // The boxes whose size changes every frame. render() rewrites them with set(), so no
     // new Rect2i is made per frame.
     tweenRect = null;
     liveBarRect = null;
 
-    // Text that never changes, built once so render() does not glue strings together every frame.
+    // Text that never changes, built once so render() does not glue strings together
+    // every frame.
     sizeLabels = [];
     recolorLabels = [];
 
     // The tick the open animation started on. The Replay button sets it to "now".
     tweenStart = 0;
 
-    /**
-     * @returns {Partial<HardwareSettings>}
-     */
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
         };
     }
 
-    /**
-     * Builds the art, the palette blocks, every NineSlice, and every reused Rect2i.
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Builds the art, the palette blocks, every NineSlice, and every reused Rect2i.
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        // Install the shared UI colors into slots 240-251, far above the art at slots 10-30.
+        // Install the shared UI colors into slots 240-251, far above the art at slots
+        // 10-30.
         this.theme = applyTheme(this.palette);
 
         try {
@@ -325,7 +348,8 @@ class Demo {
             const baseColors = registerCanvasColors(this.palette, ctx, SHEET_W, SHEET_H, COLOR_BASE);
             this.colorCount = baseColors.length;
 
-            // Hover block: every color a little lighter, like a button lit up under the mouse.
+            // Hover block: every color a little lighter, like a button lit up under the
+            // mouse.
             this.palette.fillBlock(
                 COLOR_BASE + this.colorCount,
                 baseColors,
@@ -370,10 +394,9 @@ class Demo {
         this.renderCodeSnippet();
     }
 
-    /**
-     * Cuts the sheet into nine-slices. fromSheet() takes two rectangles in sheet pixels: `outer` is the
-     * whole picture and `inner` is the center. Everything between them is the border - corners and edges.
-     */
+    // Cuts the sheet into nine-slices. fromSheet() takes two rectangles in sheet pixels:
+    // `outer` is the whole picture and `inner` is the center. Everything between them is
+    // the border - corners and edges.
     buildNineSlices() {
         const outer = new Rect2i(0, 0, PANEL_SIZE, PANEL_SIZE);
         const inner = new Rect2i(PANEL_CAP, PANEL_CAP, PANEL_INNER, PANEL_INNER);
@@ -381,22 +404,24 @@ class Demo {
         // The default for edges and center is 'stretch'.
         this.stretchPanel = NineSlice.fromSheet(this.sheet, outer, inner);
 
-        // 'tile' repeats the strip at its real size, starting from the box's top-left corner.
+        // 'tile' repeats the strip at its real size, starting from the box's top-left
+        // corner.
         this.tilePanel = NineSlice.fromSheet(this.sheet, outer, inner, { edges: 'tile', center: 'tile' });
 
-        // The common UI case: a patterned border that tiles around a center that stretches.
+        // The common UI case: a patterned border that tiles around a center that
+        // stretches.
         this.mixedPanel = NineSlice.fromSheet(this.sheet, outer, inner, { edges: 'tile', center: 'stretch' });
 
-        // A three-slice bar: `inner` touches the top AND bottom of `outer`, so there are no top or
-        // bottom edges - only a left cap, a middle, and a right cap. The middle tiles along the bar.
+        // A three-slice bar: `inner` touches the top AND bottom of `outer`, so there are
+        // no top or bottom edges - only a left cap, a middle, and a right cap. The middle
+        // tiles along the bar.
         const barOuter = new Rect2i(BAR_X, 0, BAR_W, BAR_H);
         const barInner = new Rect2i(BAR_X + PANEL_CAP, 0, BAR_W - PANEL_CAP * 2, BAR_H);
         this.bar = NineSlice.fromSheet(this.sheet, barOuter, barInner, { center: 'tile' });
     }
 
-    /**
-     * Makes every destination box once. A Rect2i is just four numbers (x, y, width, height).
-     */
+    // Makes every destination box once. A Rect2i is just four numbers (x, y, width,
+    // height).
     buildRects() {
         // Section 1: five boxes in a row, 12 pixels apart.
         let x = 12;
@@ -421,14 +446,14 @@ class Demo {
             this.recolorLabels.push(`${RECOLOR_NAMES[i]} +${this.colorCount * i}`);
         }
 
-        // Section 5: two fixed bars and one whose width changes, all with the art's own height.
+        // Section 5: two fixed bars and one whose width changes, all with the art's own
+        // height.
         this.staticBarRects.push(new Rect2i(RIGHT_X, 284, 48, BAR_H), new Rect2i(RIGHT_X, 300, 96, BAR_H));
         this.liveBarRect = new Rect2i(RIGHT_X, 316, 20, BAR_H);
     }
 
-    /**
-     * Section 1: the same panel, five different boxes. Corners stay the same size; only the middle grows.
-     */
+    // Section 1: the same panel, five different boxes. Corners stay the same size; only
+    // the middle grows.
     renderSizes() {
         ui.caption(12, 8, 'One asset, any box', { color: 'dim' });
 
@@ -438,11 +463,10 @@ class Demo {
         }
     }
 
-    /**
-     * Section 2: three boxes of exactly the same size, filled three ways. Stretch blows each strip up to fit,
-     * so the dashes turn into fat bars. Tile repeats the strip at its real size, so the dashes stay crisp - and
-     * the last tile is cut off at the box edge. Mixed tiles the border and stretches the center.
-     */
+    // Section 2: three boxes of exactly the same size, filled three ways. Stretch blows
+    // each strip up to fit, so the dashes turn into fat bars. Tile repeats the strip at
+    // its real size, so the dashes stay crisp - and the last tile is cut off at the box
+    // edge. Mixed tiles the border and stretches the center.
     renderModes() {
         ui.caption(12, 100, 'Stretch vs tile vs mixed', { color: 'dim' });
 
@@ -456,24 +480,25 @@ class Demo {
         ui.caption(12, 198, 'Mixed: tiled edges, stretched center', { color: 'dim' });
     }
 
-    /**
-     * Section 3: a panel growing from nothing. While the box is smaller than the two corners together, the
-     * corners share it and are cropped from their outer side - so you see a growing outline, not a squashed frame.
-     */
+    // Section 3: a panel growing from nothing. While the box is smaller than the two
+    // corners together, the corners share it and are cropped from their outer side - so
+    // you see a growing outline, not a squashed frame.
     renderTween() {
         ui.caption(RIGHT_X, 8, 'Open from 0x0', { color: 'dim' });
 
-        // How far into the animation are we? Count ticks since the start, and wrap around so it loops.
+        // How far into the animation are we? Count ticks since the start, and wrap around
+        // so it loops.
         const elapsed = (BT.ticks - this.tweenStart) % TWEEN_CYCLE_TICKS;
 
-        // Turn that into a number from 0 (closed) to 1 (fully open), then ease it so it slows
-        // down as it arrives, like a drawer closing softly.
+        // Turn that into a number from 0 (closed) to 1 (fully open), then ease it so it
+        // slows down as it arrives, like a drawer closing softly.
         const progress = applyEasing(Math.min(1, elapsed / TWEEN_OPEN_TICKS), 'ease-out');
         const w = Math.round(progress * TWEEN_MAX_W);
         const h = Math.round(progress * TWEEN_MAX_H);
 
-        // Grow from the middle of the stage: shift the top-left back by half the missing size.
-        // The `>> 1` is "divide by two and drop the fraction", which keeps every coordinate a whole number.
+        // Grow from the middle of the stage: shift the top-left back by half the missing
+        // size. The `>> 1` is "divide by two and drop the fraction", which keeps every
+        // coordinate a whole number.
         this.tweenRect.set(RIGHT_X + ((TWEEN_MAX_W - w) >> 1), 24 + ((TWEEN_MAX_H - h) >> 1), w, h);
 
         BT.drawNineSlice(this.mixedPanel, this.tweenRect);
@@ -489,10 +514,8 @@ class Demo {
         ui.end();
     }
 
-    /**
-     * Section 4: no tint exists, only paletteOffset - the same shift sprites use. Offset 0 is the original
-     * art; adding colorCount jumps to the next recolored block.
-     */
+    // Section 4: no tint exists, only paletteOffset - the same shift sprites use. Offset
+    // 0 is the original art; adding colorCount jumps to the next recolored block.
     renderRecolor() {
         ui.caption(RIGHT_X, 140, 'Palette offsets - one panel, three looks', { color: 'dim' });
 
@@ -502,10 +525,8 @@ class Demo {
         }
     }
 
-    /**
-     * Section 5: a three-slice bar. Its height is fixed by the art; only the width is free, so a
-     * health bar is one draw call whose width follows the health.
-     */
+    // Section 5: a three-slice bar. Its height is fixed by the art; only the width is
+    // free, so a health bar is one draw call whose width follows the health.
     renderBars() {
         ui.caption(RIGHT_X, 268, 'Three-slice bar - width is free', { color: 'dim' });
 
@@ -513,8 +534,8 @@ class Demo {
             BT.drawNineSlice(this.bar, rect);
         }
 
-        // The live bar swings between 20 and 200 pixels wide. 20 is the smallest that still
-        // shows both caps in full (each is 5 pixels wide).
+        // The live bar swings between 20 and 200 pixels wide. 20 is the smallest that
+        // still shows both caps in full (each is 5 pixels wide).
         const swing = (Math.sin(BT.ticks / 40) + 1) / 2;
         this.liveBarRect.width = Math.round(20 + swing * 180);
         BT.drawNineSlice(this.bar, this.liveBarRect);
