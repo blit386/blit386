@@ -379,7 +379,8 @@ function convertBMFont(fntPath, outputPath, embedTexture = false) {
  * conversion process or exits the process with a relevant status code.
  */
 function main() {
-    const args = process.argv.slice(2);
+    // pnpm forwards the separator of `pnpm run convert-font -- <args>` to the script.
+    const args = process.argv.slice(2).filter((arg) => arg !== '--');
 
     // Check for the help flag.
     if (args.includes('--help') || args.includes('-h') || args.length === 0) {

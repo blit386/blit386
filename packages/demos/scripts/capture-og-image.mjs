@@ -127,6 +127,11 @@ export function parseArgs(argv) {
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
 
+        // pnpm forwards the separator of `pnpm run capture:og -- <slug>` to the script.
+        if (arg === '--') {
+            continue;
+        }
+
         if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
             options[BOOLEAN_OPTIONS[arg]] = true;
             continue;

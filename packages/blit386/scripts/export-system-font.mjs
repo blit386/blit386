@@ -134,7 +134,8 @@ function buildPNG(bitmaps) {
 }
 
 function main() {
-    const args = process.argv.slice(2);
+    // pnpm forwards the separator of `pnpm run system-font:export -- <args>` to the script.
+    const args = process.argv.slice(2).filter((arg) => arg !== '--');
 
     if (args.includes('--help') || args.includes('-h')) {
         console.log(`

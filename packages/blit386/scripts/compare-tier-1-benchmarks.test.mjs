@@ -31,6 +31,10 @@ function makeReport(benchmarks, options = {}) {
 }
 
 describe('parseArgs', () => {
+    it('ignores the `--` separator pnpm forwards', () => {
+        assert.equal(parseArgs(['--', '--current', 'current.json']).current, 'current.json');
+    });
+
     it('parses required and defaulted options', () => {
         const args = parseArgs(['--current', 'current.json']);
 

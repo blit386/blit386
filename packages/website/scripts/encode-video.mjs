@@ -166,6 +166,11 @@ export function parseArgs(argv) {
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
 
+        // pnpm forwards the separator of `pnpm run encode:video -- <args>` to the script.
+        if (arg === '--') {
+            continue;
+        }
+
         if (BOOLEAN_OPTIONS[arg] !== undefined) {
             options[BOOLEAN_OPTIONS[arg]] = true;
             continue;

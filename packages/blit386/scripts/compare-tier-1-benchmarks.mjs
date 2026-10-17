@@ -47,7 +47,8 @@ export function parseArgs(argv) {
         const value = argv[index];
         const nextValue = argv[index + 1];
 
-        if (!value.startsWith('--')) {
+        // pnpm forwards the separator of `pnpm run bench:compare -- <args>` to the script.
+        if (value === '--' || !value.startsWith('--')) {
             continue;
         }
 

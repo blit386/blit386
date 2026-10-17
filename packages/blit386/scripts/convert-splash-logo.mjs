@@ -118,7 +118,8 @@ ${rows.join('\n')}
 `;
 }
 
-const inputPath = process.argv[2] ?? DEFAULT_INPUT;
+// pnpm forwards the separator of `pnpm run splash-logo:convert -- <args>` to the script.
+const inputPath = process.argv.slice(2).find((arg) => arg !== '--') ?? DEFAULT_INPUT;
 const data = extractIndices(inputPath);
 
 writeFileSync(OUTPUT_PATH, renderModule(data), 'utf-8');
