@@ -10,37 +10,93 @@ description: "Grid snake with walls, food, keyboard, D-pad, and swipe steering, 
 Live version: https://demos.blit386.dev/snake-game. This is the demo-site source, not a standalone file: it imports and calls helpers from `./shared/` (themed panels, on-screen D-pad, post-process fallbacks), which are not part of blit386 and are not on npm. To run it as is, keep those files from https://github.com/blit386/blit386/tree/main/packages/demos/src/shared at the same relative path. To adapt it, remove or replace the helper imports and every call to them.
 
 ```js title="snake-game.js"
-/**
- * Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
- * @description Grid snake with walls, food, keyboard, D-pad, and swipe steering, plus PipBoy CRT post-processing.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites:
- *   Basics         https://demos.blit386.dev/basics
- *   PipBoy CRT     https://demos.blit386.dev/crt-pipboy
- *   Keyboard Input https://demos.blit386.dev/keyboard-input
- *
- * Live version: https://demos.blit386.dev/snake-game
- *
- * Move with WASD or the arrow keys (both are mapped to player 0 face buttons). On a phone
- * or tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
- * first touch) or simply swipe anywhere in the direction you want to go - both come from
- * the shared UI kit in src/shared/ui.js. Each food dot grows the snake and makes it
- * one step faster. Hitting the boundary wall or your own body ends the run; the game
- * restarts after two seconds.
- * Gameplay uses rectangles; a short systemPrint note appears in software mode.
- *
- * Post-processing matches the PipBoy CRT demo when WebGPU is active. In software fallback mode the
- * snake game still runs; CRT effects are skipped and a short note is shown on canvas.
- *
- * WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
- * then display-tier barrel distortion, chromatic aberration, interference, rolling scan
- * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
- *
- * Eating food and dying both play a synthesized sound effect (built with AudioClip.synth(),
- * the same technique Synth Toy explores in depth). An upbeat music loop plays in the
- * background; each food multiplies its playback rate so the beat climbs with snake length.
- */
+/*
+
+Snake Game: grid snake with walls, food, three ways to steer, and a PipBoy CRT finish.
+@description Grid snake with walls, food, keyboard, D-pad, and swipe steering, plus PipBoy CRT post-processing.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Primitives: https://demos.blit386.dev/primitives
+  - PipBoy CRT: https://demos.blit386.dev/crt-pipboy
+  - Keyboard Input: https://demos.blit386.dev/keyboard-input
+
+Live version: https://demos.blit386.dev/snake-game
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input#keyboard
+  - Post-Process Effects: https://blit386.dev/docs/guides/post-process-effects#display-tier-effects
+  - Audio: https://blit386.dev/docs/guides/audio#playing-sfx
+  - Random: https://blit386.dev/docs/guides/random#deterministic-by-default
+  - Overlay: https://blit386.dev/docs/guides/overlay#colors-and-hud-palette-slots
+
+Reference:
+  - Audio: https://blit386.dev/docs/api/audio#playback-sfx
+  - Overlay: https://blit386.dev/docs/api/overlay#event-tags
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A small 160x120 playfield, shown at 4x size, framed by a sand-colored wall. A green snake
+three cells long starts in the middle heading right, and a red food dot sits somewhere on
+the grid. Eating the dot grows the snake by one cell and shortens the wait between steps
+by one tick (from 20 ticks down to a floor of 4), so the snake gets faster and faster.
+Hitting the wall or your own body ends the round; two seconds later a new one starts.
+
+When WebGPU is active, the whole picture goes through the PipBoy CRT chain from the
+PipBoy CRT demo: a pixel-tier PixelGlitch on the index buffer, then palette resolve and
+upscale, then display-tier barrel distortion, chromatic aberration, interference, a
+rolling scan line, scanlines, an RGB mask, vignette, noise, flicker, and bloom. Every few
+seconds a random glitch burst (horizontal tear, chroma split, snow, brightness waver, or
+ghosting) sweeps the screen. In software fallback mode the game runs without the
+effects, and a short note at the bottom of the playfield says so.
+
+Eating and dying each play a synthesized sound effect, and an upbeat music loop plays in
+the background. Each food eaten nudges the loop's playback rate up by 3 percent, so the
+beat climbs with the snake's length. On a touchscreen a D-pad appears in the bottom-right
+corner after the first touch.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp') and friends fold WASD and the arrow keys
+  onto player 0, after BT.inputMapReset() clears any earlier remapping.
+- BT.isPressed(button, 0) as an edge (true once per key press), combined with the shared
+  UI kit's ui.dpad.isPressed(dir) and ui.swipe() so one check covers all three inputs.
+- A tick-driven game: BT.ticks for the restart timer, a step cooldown that shrinks as the
+  snake grows, and a pending direction that blocks 180-degree turns.
+- The same CRT effect chain as the PipBoy CRT demo (BT.effectAdd per effect), gated on
+  isAvailable() from src/shared/post-process-backend.js so the game still runs in
+  software mode.
+- A glitch state machine driven by BT.random.int(), BT.random.pick(), and
+  BT.random.float(), with the glitch types and tuning shared through
+  src/shared/crt-glitch.js.
+- BT.synthPreset.pickup() and BT.synthPreset.explosion() rendered once with
+  AudioClip.synth(), then played with BT.soundPlay().
+- Music through BT.soundPlay(clip, { loop, volume, pitch, priority }) instead of
+  BT.musicPlay(), because only the SFX path exposes pitch, changed live with
+  BT.soundPitchSet(ref, rate, { fadeMs }).
+- configure() flags: isCapturingKeyboardScroll so the arrows do not scroll the page,
+  isWakeLockEnabled so phones stay awake, isOverlayToggleHintVisible: false to hide the
+  overlay hint, and overlayStyle to color the overlay bars with scene slots.
+
+TRY THIS
+--------
+
+- Steer with W, A, S, D or the arrow keys. A key press counts once, so tap, do not hold.
+- On a phone or tablet, tap the D-pad keys in the bottom-right corner, or swipe anywhere
+  on the playfield in the direction you want to go.
+- Eat a few dots and listen: the music speeds up a little with every one, and resets
+  when a new round starts.
+- Press the backquote key (`) to open the engine overlay (its corner hint is hidden
+  here). "Round start" and "Game over" tags land on the timing chart.
+- Add ?backend=software to the URL to see the game without the CRT chain.
+
+*/
 
 import {
     AudioClip,
@@ -80,11 +136,9 @@ import {
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// Palette indices (slot 0 reserved).
+// Palette slots for the scene (slot 0 is reserved as transparent).
 const C_BG = 1;
 const C_WALL = 2;
 const C_SNAKE = 3;
@@ -92,17 +146,18 @@ const C_FOOD = 4;
 const C_FOOTER_DIM = 5;
 const C_FOOTER_WHITE = 6;
 
-// Logical resolution: small playfield as requested.
+// Logical resolution: a small playfield.
 const DISPLAY_W = 160;
 const DISPLAY_H = 120;
 
-// Canvas output size: 4x logical resolution so display-tier CRT effects have enough pixels.
+// Canvas output size: 4x the logical resolution, so the display-tier CRT effects have
+// enough pixels to work with.
 const OUTPUT_W = 640;
 const OUTPUT_H = 480;
 
 const TARGET_FPS = 60;
 
-// Wall thickness in pixels (also one grid cell tall/wide).
+// Wall thickness in pixels (also one grid cell tall and wide).
 const WALL = 8;
 
 // Snake and food are drawn on a coarse grid so movement stays chunky and readable.
@@ -119,8 +174,8 @@ const CELLS_X = INNER_W / CELL;
 const CELLS_Y = INNER_H / CELL;
 
 // Ticks between snake steps (lower = faster). A new round starts slow, then each food
-// shortens the wait by MOVE_INTERVAL_STEP until MOVE_INTERVAL_MIN. At 60 FPS, 20 ticks
-// is three steps per second; 4 ticks is fifteen steps per second.
+// shortens the wait by MOVE_INTERVAL_STEP until MOVE_INTERVAL_MIN. At 60 ticks per
+// second, 20 ticks is three steps per second; 4 ticks is fifteen steps per second.
 const MOVE_INTERVAL_START = 20;
 const MOVE_INTERVAL_MIN = 4;
 const MOVE_INTERVAL_STEP = 1;
@@ -128,7 +183,7 @@ const MOVE_INTERVAL_STEP = 1;
 // Background-loop playback rate (Web Audio pitch). 1.0 is the file's natural tempo;
 // higher values play faster and higher, like speeding up a cassette.
 // MUSIC_PITCH_AT_START is the rate on a fresh round; each food multiplies that rate by
-// MUSIC_PITCH_SCALE_PER_GROWTH (for example 0.57, then 0.57 * 1.03, then 0.57 * 1.03^2, ...).
+// MUSIC_PITCH_SCALE_PER_GROWTH (so 0.57, then 0.57 * 1.03, then 0.57 * 1.03 * 1.03, ...).
 const MUSIC_PITCH_AT_START = 0.57;
 const MUSIC_PITCH_SCALE_PER_GROWTH = 1.03;
 
@@ -136,8 +191,8 @@ const MUSIC_PITCH_SCALE_PER_GROWTH = 1.03;
 // the same ceiling so the loop stops speeding up once the snake is already at top speed.
 const MUSIC_PITCH_GROWTH_CAP = (MOVE_INTERVAL_START - MOVE_INTERVAL_MIN) / MOVE_INTERVAL_STEP;
 
-// High enough that short eat / death blips never steal the looping music voice from the
-// SFX pool (BT.soundPlay uses priority stealing when every voice is busy).
+// High enough that short eat and death blips never steal the looping music voice from
+// the SFX pool (BT.soundPlay uses priority stealing when every voice is busy).
 const MUSIC_VOICE_PRIORITY = 100;
 
 // Soft glide when the loop speeds up or slows down after a food eat or a new round.
@@ -146,74 +201,71 @@ const MUSIC_PITCH_FADE_MS = 120;
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
 
-/**
- * Minimal snake with PipBoy CRT post-processing from crt-pipboy demo.
- *
- * @implements {IBTDemo}
- */
+// Minimal snake with the PipBoy CRT post-processing stack from the PipBoy CRT demo.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    /** @type {AudioClip | null} Sound played when the snake eats food. */
+    // Sound played when the snake eats food.
+    /** @type {AudioClip | null} */
     eatClip = null;
 
-    /** @type {AudioClip | null} Sound played when the snake dies. */
+    // Sound played when the snake dies.
+    /** @type {AudioClip | null} */
     gameOverClip = null;
 
-    /** @type {AudioClip | null} Looping background music. */
+    // Looping background music.
+    /** @type {AudioClip | null} */
     musicClip = null;
 
-    /**
-     * Live handle for the looping music voice, or null before unlock / if music failed to
-     * load. We use BT.soundPlay (not BT.musicPlay) so we can change pitch each time the
-     * snake speeds up - the music player has volume and crossfade controls, but no pitch.
-     *
-     * @type {import('blit386').SoundRef | null}
-     */
+    // Live handle for the looping music voice, or null before unlock or if the music
+    // failed to load. We use BT.soundPlay (not BT.musicPlay) so we can change pitch each
+    // time the snake speeds up - the music player has volume and crossfade controls, but
+    // no pitch.
+    /** @type {import('blit386').SoundRef | null} */
     musicRef = null;
 
-    /** @type {{ x: number; y: number }[]} Head first, tail last (grid coords). */
+    // Head first, tail last (grid coordinates).
+    /** @type {{ x: number; y: number }[]} */
     snake = [];
 
-    /** @type {{ x: number; y: number }} Food cell in grid coords. */
+    // Food cell in grid coordinates.
+    /** @type {{ x: number; y: number }} */
     food = { x: 0, y: 0 };
 
-    /** Current step direction (grid units per move). */
+    // Current step direction (grid units per move).
     dx = 1;
 
     dy = 0;
 
-    /** Next direction chosen by the player (applied when the snake steps). */
+    // Next direction chosen by the player (applied when the snake steps).
     pendingDx = 1;
 
     pendingDy = 0;
 
-    /** Counts ticks until the next snake step while the game is running. */
+    // Counts ticks until the next snake step while the game is running.
     moveCooldown = 0;
 
-    /**
-     * Current ticks between steps. Starts at MOVE_INTERVAL_START each round and drops
-     * toward MOVE_INTERVAL_MIN every time the snake eats food.
-     */
+    // Current ticks between steps. Starts at MOVE_INTERVAL_START each round and drops
+    // toward MOVE_INTERVAL_MIN every time the snake eats food.
     moveInterval = MOVE_INTERVAL_START;
 
-    /**
-     * How many food dots the snake has eaten this round. Music pitch uses this count
-     * capped at MUSIC_PITCH_GROWTH_CAP so tempo plateaus with move speed.
-     */
+    // How many food dots the snake has eaten this round. Music pitch uses this count
+    // capped at MUSIC_PITCH_GROWTH_CAP so tempo plateaus with move speed.
     growthCount = 0;
 
-    /** When true, the snake does not move until restart. */
+    // When true, the snake does not move until restart.
     gameOver = false;
 
-    /** @type {number | null} Tick index when the snake died (`BT.ticks`); null while playing. */
+    // Tick index when the snake died (BT.ticks); null while playing.
+    /** @type {number | null} */
     deathTick = null;
 
-    /** True when the WebGPU backend is active, so the CRT effect chain can run (set in init()). */
+    // True when the WebGPU backend is active, so the CRT effect chain can run (set in
+    // init()).
     effectsAvailable = false;
 
-    // CRT effects (initialized in setupCrtEffects(), called from init())
+    // CRT effects, created in setupCrtEffects(), which init() calls only under WebGPU.
     /** @type {PixelGlitch} */
     pixelGlitch;
 
@@ -247,23 +299,23 @@ class Demo {
     /** @type {Bloom} */
     bloom;
 
+    // Ticks until the next glitch burst may start.
     glitchCooldown = 0;
 
-    /** How many ticks remain in the current glitch burst; 0 means no glitch is running. */
+    // How many ticks remain in the current glitch burst; 0 means no glitch is running.
     glitchTicksLeft = 0;
 
+    // Total length of the current burst in ticks, used to shape its envelope.
     glitchDuration = 0;
 
+    // Which glitch is running - a key from GLITCH_TYPES_CHROMA, or 'none'.
     /** @type {string} */
     glitchType = 'none';
 
+    // Peak intensity of the current burst, from GLITCH_INTENSITY_MIN to MAX.
     glitchPeak = 0;
 
-    /**
-     * 160x120 framebuffer, 4x upscale for CRT chain, 60 fixed updates per second.
-     *
-     * @returns {Partial<HardwareSettings>}
-     */
+    // 160x120 framebuffer, 4x upscale for the CRT chain, 60 fixed updates per second.
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -272,22 +324,26 @@ class Demo {
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
 
-            // Phones and tablets dim, then lock, the screen after 30-60 seconds without a touch -
-            // annoying mid-game when you are only pressing arrow keys or swiping every few seconds.
-            // This asks the browser to keep the screen on while you are playing. Browsers that do
-            // not support the request just ignore it, so this is safe everywhere.
+            // Phones and tablets dim, then lock, the screen after 30-60 seconds without a
+            // touch - annoying mid-game when you are only pressing arrow keys or swiping
+            // every few seconds. This asks the browser to keep the screen on while you
+            // are playing. Browsers that do not support the request just ignore it, so
+            // this is safe everywhere.
             isWakeLockEnabled: true,
 
-            // Arrow keys (and Space) normally scroll the page. This demo maps those keys to move
-            // the snake, so opt in so the browser does not scroll the demo page while you play.
+            // Arrow keys normally scroll the page. This demo maps them to steer the
+            // snake, so opt in so the browser does not scroll the demo page while you
+            // play.
             isCapturingKeyboardScroll: true,
 
-            // Hide the small "~" toggle hint in the bottom-left corner so the game
-            // board stays clean. Players who want the stats overlay can still press
-            // the Backquote key (`) to show it and press ` again to hide it - hiding
-            // the hint does not turn the overlay off.
+            // Hide the small "~" toggle hint in the bottom-left corner so the game board
+            // stays clean. Players who want the stats overlay can still press the
+            // backquote key (`) to show it and press ` again to hide it - hiding the hint
+            // does not turn the overlay off.
             isOverlayToggleHintVisible: false,
 
+            // The overlay bars and the timing chart borrow the scene's own palette slots
+            // so the overlay matches the game's look.
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_FOOTER_WHITE,
@@ -304,36 +360,36 @@ class Demo {
         };
     }
 
-    /**
-     * Palette, PipBoy CRT stack (crt-pipboy), glitch machine, then first round.
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Key maps, sounds, palette, the PipBoy CRT stack, the glitch machine, then the first
+    // round.
     async init() {
-        // Start from default keyboard maps so this demo stays independent from remapping demos.
+        // Start from the default keyboard maps so this demo stays independent from the
+        // remapping demos.
         BT.inputMapReset();
 
-        // Engine defaults put WASD on player 0 and arrows on player 1. This is a single-player
-        // game, so fold both layouts into player 0: either set of keys steers the same snake.
-        // BT.inputMap replaces the whole key list for that button; listing both codes means
-        // either key counts (logical OR), the same pattern input-map-remapping demo shows with Q|E for LEFT.
+        // Engine defaults put WASD on player 0 and arrows on player 1. This is a
+        // single-player game, so fold both layouts into player 0: either set of keys
+        // steers the same snake. BT.inputMap replaces the whole key list for that button;
+        // listing both codes means either key counts, the same pattern the Input Map
+        // Remapping demo shows with Q and E for LEFT.
         BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp');
         BT.inputMap(0, BT.BTN_DOWN, 'KeyS', 'ArrowDown');
         BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft');
         BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight');
 
         // BT.synthPreset bundles ready-tuned sound recipes (Synth Toy explores all six).
-        // Rendering them once here means eating and dying play back with zero delay later.
+        // Rendering them once here means eating and dying play back with zero delay
+        // later.
         this.eatClip = await AudioClip.synth(BT.synthPreset.pickup());
         this.gameOverClip = await AudioClip.synth(BT.synthPreset.explosion());
 
-        // The background music file is loaded separately from the sound effects above, and
-        // wrapped in its own try/catch. Unlike the effects (built on the spot by the synth
-        // engine, so they cannot fail), this loads an actual audio file over the network -
-        // if it is missing or the browser cannot decode it, we do not want that one file to
-        // stop the whole game from starting. Catching the error here means Snake stays fully
-        // playable with sound effects but no music, instead of getting stuck on a blank
-        // screen.
+        // The background music file is loaded separately from the sound effects above,
+        // and wrapped in its own try/catch. Unlike the effects (built on the spot by the
+        // synth engine, so they cannot fail), this loads an actual audio file over the
+        // network - if it is missing or the browser cannot decode it, we do not want that
+        // one file to stop the whole game from starting. Catching the error here means
+        // Snake stays fully playable with sound effects but no music, instead of getting
+        // stuck on a blank screen.
         //
         // We only load here - we do not call BT.soundPlay yet. Browsers keep audio locked
         // until the first click or key press, and unlike BT.musicPlay (which remembers a
@@ -347,6 +403,8 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
+        // The six scene colors: dark blue-gray background, sand wall, green snake, red
+        // food, and two footer text shades.
         this.palette.set(C_BG, new Color32(25, 35, 45));
         this.palette.set(C_WALL, new Color32(180, 170, 140));
         this.palette.set(C_SNAKE, new Color32(90, 220, 120));
@@ -355,8 +413,8 @@ class Demo {
         this.palette.set(C_FOOTER_WHITE, new Color32(220, 230, 240));
 
         // The shared UI kit draws the touch D-pad, and it needs its theme colors in the
-        // palette. applyTheme() writes them into high slots (240 and up), far away from the
-        // six scene colors above, so the game's look does not change at all.
+        // palette. applyTheme() writes them into high slots (240 and up), far away from
+        // the six scene colors above, so the game's look does not change at all.
         applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
@@ -374,9 +432,8 @@ class Demo {
         return true;
     }
 
-    /**
-     * Drive CRT animation and glitch machine every tick; run snake logic when alive.
-     */
+    // Drives the CRT animation and glitch machine every tick; runs snake logic when
+    // alive.
     update() {
         // The UI kit's once-per-tick housekeeping: it tracks touch contacts for the D-pad
         // and watches for swipe gestures. Always the first line of update().
@@ -401,6 +458,7 @@ class Demo {
 
         this.pollDirectionInput(swipe);
 
+        // Count down to the next step; nothing else happens until the cooldown runs out.
         this.moveCooldown -= 1;
 
         if (this.moveCooldown > 0) {
@@ -410,6 +468,8 @@ class Demo {
         // Use the live interval so food-driven speed-ups take effect on the next step.
         this.moveCooldown = this.moveInterval;
 
+        // Apply the player's pending direction, unless it is the exact opposite of the
+        // current one - a snake cannot reverse into its own neck.
         if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
             this.dx = this.pendingDx;
             this.dy = this.pendingDy;
@@ -418,18 +478,19 @@ class Demo {
         this.step();
     }
 
-    /**
-     * Clear to background, draw walls, food, snake segments.
-     */
+    // Clears to the background, then draws the walls, the food, the snake segments, the
+    // software-mode note, the audio hint, and the touch D-pad.
     render() {
         BT.clear(C_BG);
 
         this.renderWalls();
 
+        // (-1, -1) is the "board is full" sentinel from placeFood(); skip the dot then.
         if (this.food.x >= 0 && this.food.y >= 0) {
             BT.drawRectFill(this.gridRect(this.food.x, this.food.y), C_FOOD);
         }
 
+        // One filled cell per segment, head first.
         for (let i = 0; i < this.snake.length; i++) {
             const seg = this.snake[i];
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
@@ -441,32 +502,34 @@ class Demo {
 
         // Browsers keep all sound muted until the player clicks or presses a key. This
         // shared row shows a warm "enable sound" hint only while audio is still locked,
-        // then disappears on its own the moment a first move unlocks it - which is also
-        // the same gesture that starts the snake moving, so the hint is usually only
-        // visible for a single frame. The default sentence is too long for this 160-wide
-        // playfield, so we pass a short override.
+        // then disappears on its own the moment the first key press or tap unlocks it.
+        // The default sentence is too long for this 160-wide playfield, so we pass a
+        // short override.
         ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 3 });
         ui.audioUnlockHint({ text: 'Click for sound' });
         ui.end();
 
         // The touch D-pad, drawn over the playfield in the bottom-right corner. It stays
-        // invisible until the first touch contact, so mouse-and-keyboard players never see
-        // it. This playfield is only 160x120 logical pixels, so the keys are scaled down
-        // from the kit's phone-sized default.
+        // invisible until the first touch contact, so mouse-and-keyboard players never
+        // see it. This playfield is only 160x120 logical pixels, so the keys are scaled
+        // down from the kit's phone-sized default.
         ui.dpadWidget({ size: 22, gap: 3, margin: 4 });
     }
 
-    /**
-     * Builds the WebGPU CRT effect chain (same stack and tuning as crt-pipboy demo) and seeds
-     * the glitch state machine. Called from init() only when WebGPU is active.
-     */
+    // Builds the WebGPU CRT effect chain (same stack and tuning as the PipBoy CRT demo)
+    // and seeds the glitch state machine. Called from init() only when WebGPU is active.
     setupCrtEffects() {
-        // Pixel-tier glitch (same role as crt-pipboy demo).
+        // Pixel-tier glitch: shifts horizontal bands of the index buffer before the
+        // palette is resolved. It starts at zero intensity; the glitch machine turns it
+        // up.
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT;
         this.pixelGlitch.intensity = 0;
         BT.effectAdd(this.pixelGlitch);
 
+        // Display-tier effects, each with its resting value. The glitch machine raises
+        // aberration, interference, noise, and flicker during a burst and resets them
+        // after.
         this.barrel = new BarrelDistortion();
         this.barrel.curvature = 0.2;
 
@@ -503,6 +566,7 @@ class Demo {
         this.bloom.spread = 3.0;
         this.bloom.glow = 0.18;
 
+        // Register them in this order; the chain runs top to bottom.
         for (const fx of [
             this.barrel,
             this.aberration,
@@ -518,9 +582,9 @@ class Demo {
             BT.effectAdd(fx);
         }
 
-        // BT.random is the engine's shared random number generator.
-        // Its int() method returns a whole number from the first value up to (but not including) the second,
-        // so this picks how many ticks to wait before the first glitch burst.
+        // BT.random is the engine's shared random number generator. Its int() method
+        // returns a whole number from the first value up to (but not including) the
+        // second, so this picks how many ticks to wait before the first glitch burst.
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
@@ -528,11 +592,8 @@ class Demo {
         this.glitchPeak = 0;
     }
 
-    /**
-     * While game over, waits for the restart delay then starts a new round.
-     *
-     * @returns {boolean} True when the snake should not move this tick.
-     */
+    // While game over, waits for the restart delay and then starts a new round. Returns
+    // true when the snake should not move this tick.
     tickRestartAfterDeath() {
         if (!this.gameOver) {
             return false;
@@ -543,21 +604,18 @@ class Demo {
         if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
             this.startRound();
         }
+
         return true;
     }
 
-    /**
-     * Reads all three steering inputs and updates pending direction (no instant reverse):
-     * player 0 face buttons (WASD, arrows, or gamepad), the on-screen touch D-pad, and swipes.
-     *
-     * We use BT.isPressed (edge: up -> down this tick), not BT.isDown (held every tick),
-     * and the D-pad's matching ui.dpad.isPressed. That way one tap per direction per move
-     * interval feels like a classic D-pad. The `this.dy !== 1` checks block a 180-degree
-     * turn: you cannot go straight back into your body on the next step.
-     *
-     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this
-     *   tick, if any (from ui.swipe() in update()).
-     */
+    // Reads all three steering inputs and updates the pending direction (no instant
+    // reverse): player 0 face buttons (WASD, arrows, or gamepad), the on-screen touch
+    // D-pad, and swipes. We use BT.isPressed (edge: up -> down this tick), not BT.isDown
+    // (held every tick), and the D-pad's matching ui.dpad.isPressed. That way one tap per
+    // direction per move interval feels like a classic D-pad. The `this.dy !== 1` checks
+    // block a 180-degree turn: you cannot go straight back into your body on the next
+    // step. `swipe` is the swipe finished this tick, if any (from ui.swipe() in
+    // update()).
     pollDirectionInput(swipe) {
         // Up: only if we are not currently moving down (would reverse into the tail).
         if (this.isSteerPressed(BT.BTN_UP, 'up', swipe) && this.dy !== 1) {
@@ -584,22 +642,15 @@ class Demo {
         }
     }
 
-    /**
-     * Combines the three ways to steer in one direction: the engine face button (keyboard
-     * or gamepad), the on-screen touch D-pad key, and a swipe that way.
-     *
-     * @param {number} button - The engine face button mask (BT.BTN_UP and friends).
-     * @param {'up' | 'down' | 'left' | 'right'} dir - The D-pad/swipe direction name.
-     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this tick.
-     * @returns {boolean} True when any of the three pressed that direction this tick.
-     */
+    // Combines the three ways to steer in one direction: the engine face button (keyboard
+    // or gamepad), the on-screen touch D-pad key, and a swipe that way. `button` is the
+    // face button mask (BT.BTN_UP and friends), `dir` the D-pad and swipe direction name.
+    // Returns true when any of the three pressed that direction this tick.
     isSteerPressed(button, dir, swipe) {
         return BT.isPressed(button, 0) || ui.dpad.isPressed(dir) || swipe === dir;
     }
 
-    /**
-     * Updates time-driven uniforms for rolling noise, interference, and roll line.
-     */
+    // Updates the time-driven values for the roll line, noise, and interference effects.
     tickCrtClock() {
         const seconds = BT.ticks / TARGET_FPS;
 
@@ -608,12 +659,14 @@ class Demo {
         this.interference.time = seconds;
     }
 
-    /**
-     * Same state machine as crt-pipboy demo: cooldown, burst envelope, random glitch type.
-     */
+    // Same state machine as the PipBoy CRT demo: cooldown, burst envelope, random glitch
+    // type.
     tickGlitchMachine() {
         // A burst is running while there are ticks left on its countdown.
         if (this.glitchTicksLeft > 0) {
+            // `t` runs from 0 at the start of the burst to 1 at its end; sin(t * PI)
+            // turns that into a hump that rises, peaks in the middle, and falls back to
+            // zero.
             const t = 1 - this.glitchTicksLeft / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
 
@@ -621,8 +674,8 @@ class Demo {
 
             this.glitchTicksLeft--;
 
-            // Countdown just hit zero: the burst is over, so calm the effects down
-            // and roll a fresh cooldown until the next burst.
+            // Countdown just hit zero: the burst is over, so calm the effects down and
+            // roll a fresh cooldown until the next burst.
             if (this.glitchTicksLeft === 0) {
                 resetGlitchUniforms(this);
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
@@ -634,8 +687,9 @@ class Demo {
         this.glitchCooldown--;
 
         if (this.glitchCooldown <= 0) {
-            // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
-            // float() is the decimal cousin of int(), for values that are not whole numbers.
+            // pick() draws one item out of a list, like taking a card off the top of a
+            // shuffled deck. float() is the decimal cousin of int(), for values that are
+            // not whole numbers.
             this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
@@ -644,13 +698,7 @@ class Demo {
         }
     }
 
-    /**
-     * Pixel rectangle for one grid cell at (gx, gy), inside the inner playfield.
-     *
-     * @param {number} gx
-     * @param {number} gy
-     * @returns {Rect2i}
-     */
+    // Pixel rectangle for one grid cell at (gx, gy), inside the inner playfield.
     gridRect(gx, gy) {
         const px = INNER_X0 + gx * CELL;
         const py = INNER_Y0 + gy * CELL;
@@ -658,9 +706,7 @@ class Demo {
         return new Rect2i(px, py, CELL, CELL);
     }
 
-    /**
-     * Four filled bars form the boundary the snake must not cross.
-     */
+    // Four filled bars form the boundary the snake must not cross.
     renderWalls() {
         BT.drawRectFill(new Rect2i(0, 0, DISPLAY_W, WALL), C_WALL);
         BT.drawRectFill(new Rect2i(0, DISPLAY_H - WALL, DISPLAY_W, WALL), C_WALL);
@@ -668,31 +714,26 @@ class Demo {
         BT.drawRectFill(new Rect2i(DISPLAY_W - WALL, WALL, WALL, DISPLAY_H - 2 * WALL), C_WALL);
     }
 
-    /**
-     * Playback rate for the background loop from the starting pitch and how many times
-     * the snake has grown this round. One food is start * scale, two foods is
-     * start * scale * scale, and so on; zero growths leaves the rate at the start pitch.
-     * Growth above MUSIC_PITCH_GROWTH_CAP no longer raises the rate (matches top speed).
-     *
-     * @returns {number} Playback rate to pass to BT.soundPlay / BT.soundPitchSet.
-     */
+    // Playback rate for the background loop from the starting pitch and how many times
+    // the snake has grown this round. One food is start * scale, two foods is
+    // start * scale * scale, and so on; zero growths leaves the rate at the start pitch.
+    // Growth above MUSIC_PITCH_GROWTH_CAP no longer raises the rate (matches top speed).
+    // Returns the rate to pass to BT.soundPlay or BT.soundPitchSet.
     currentMusicPitch() {
-        // The ** operator is "to the power of": a ** b means a multiplied by itself b times.
-        // growthCount 0 gives 1, so the rate stays at MUSIC_PITCH_AT_START on a fresh round.
-        // Cap at MUSIC_PITCH_GROWTH_CAP so pitch plateaus with moveInterval at top speed.
+        // The ** operator is "to the power of": a ** b means a multiplied by itself b
+        // times. growthCount 0 gives 1, so the rate stays at MUSIC_PITCH_AT_START on a
+        // fresh round. Cap at MUSIC_PITCH_GROWTH_CAP so pitch plateaus with moveInterval
+        // at top speed.
         const growthForPitch = Math.min(this.growthCount, MUSIC_PITCH_GROWTH_CAP);
 
         return MUSIC_PITCH_AT_START * MUSIC_PITCH_SCALE_PER_GROWTH ** growthForPitch;
     }
 
-    /**
-     * Starts the looping music voice once audio is unlocked, or restarts it if the voice
-     * was somehow lost. Safe to call every tick - it no-ops while already playing.
-     *
-     * Why BT.soundPlay instead of BT.musicPlay: only the SFX path exposes pitch (playback
-     * rate), which is how we keep the beat tied to snake growth. The tradeoff is that
-     * soundPlay is dropped before unlock, so we wait for BT.isAudioUnlocked here.
-     */
+    // Starts the looping music voice once audio is unlocked, or restarts it if the voice
+    // was somehow lost. Safe to call every tick - it does nothing while already playing.
+    // Why BT.soundPlay instead of BT.musicPlay: only the SFX path exposes pitch (playback
+    // rate), which is how we keep the beat tied to snake growth. The tradeoff is that
+    // soundPlay is dropped before unlock, so we wait for BT.isAudioUnlocked here.
     ensureBackgroundMusic() {
         if (this.musicClip === null || !BT.isAudioUnlocked) {
             return;
@@ -712,10 +753,8 @@ class Demo {
         });
     }
 
-    /**
-     * Glides the live music loop to the playback rate for the current growth count.
-     * No-op before the loop has started (still locked, or music failed to load).
-     */
+    // Glides the live music loop to the playback rate for the current growth count. Does
+    // nothing before the loop has started (still locked, or music failed to load).
     syncMusicTempo() {
         if (this.musicRef === null || !BT.isSoundPlaying(this.musicRef)) {
             return;
@@ -726,15 +765,14 @@ class Demo {
         });
     }
 
-    /**
-     * Places a short snake in the middle, resets speed to the slow start, and spawns
-     * the first food dot.
-     */
+    // Places a short snake in the middle, resets speed to the slow start, and spawns the
+    // first food dot.
     startRound() {
         this.gameOver = false;
         this.deathTick = null;
 
-        // Every new round begins at the slow pace; eating food will speed things up again.
+        // Every new round begins at the slow pace; eating food will speed things up
+        // again.
         this.moveInterval = MOVE_INTERVAL_START;
         this.moveCooldown = this.moveInterval;
 
@@ -742,6 +780,7 @@ class Demo {
         this.growthCount = 0;
         this.syncMusicTempo();
 
+        // Three cells in the middle row, head on the right, heading right.
         const midX = Math.floor(CELLS_X / 2);
         const midY = Math.floor(CELLS_Y / 2);
 
@@ -760,10 +799,10 @@ class Demo {
         BT.assignTag('Round start');
     }
 
-    /**
-     * Picks a random empty grid cell for food.
-     */
+    // Picks a random empty grid cell for food.
     placeFood() {
+        // Collect every cell the snake covers as "x,y" text keys, so a quick Set lookup
+        // tells us whether a candidate cell is free.
         const occupied = new Set();
 
         for (let i = 0; i < this.snake.length; i++) {
@@ -772,8 +811,8 @@ class Demo {
         }
 
         for (let attempt = 0; attempt < 4000; attempt++) {
-            // int() with a single argument counts from 0, so int(CELLS_X) lands on any column from 0 to CELLS_X - 1
-            // - exactly the valid grid positions.
+            // int() with a single argument counts from 0, so int(CELLS_X) lands on any
+            // column from 0 to CELLS_X - 1 - exactly the valid grid positions.
             const x = BT.random.int(CELLS_X);
             const y = BT.random.int(CELLS_Y);
             const key = `${x},${y}`;
@@ -785,18 +824,18 @@ class Demo {
             }
         }
 
-        // Board full - no free cell found; (-1, -1) is a sentinel that render() sees and skips drawing the food dot.
+        // Board full - no free cell found. (-1, -1) is a sentinel that render() sees and
+        // skips drawing the food dot.
         this.food = { x: -1, y: -1 };
     }
 
-    /**
-     * One grid step: wall check, self check, grow or shift tail.
-     */
+    // One grid step: wall check, self check, grow or shift the tail.
     step() {
         const head = this.snake[0];
         const nx = head.x + this.dx;
         const ny = head.y + this.dy;
 
+        // Off the grid means into the wall.
         if (nx < 0 || nx >= CELLS_X || ny < 0 || ny >= CELLS_Y) {
             this.endGame();
 
@@ -805,6 +844,8 @@ class Demo {
 
         const eating = nx === this.food.x && ny === this.food.y;
 
+        // Self check. The tail cell is about to move away unless we are eating, so it
+        // does not count as a collision in that case.
         const limit = eating ? this.snake.length : this.snake.length - 1;
 
         for (let i = 0; i < limit; i++) {
@@ -817,30 +858,32 @@ class Demo {
             }
         }
 
+        // Add the new head cell at the front of the list.
         this.snake.unshift({ x: nx, y: ny });
 
         if (eating) {
             BT.soundPlay(this.eatClip);
 
             // Shorter wait between steps = faster snake. Clamp so it never goes below
-            // MOVE_INTERVAL_MIN; Math.max picks the larger of the floor and the stepped-down
-            // value, which is how we stop the interval from dropping into the negatives.
+            // MOVE_INTERVAL_MIN; Math.max picks the larger of the floor and the
+            // stepped-down value, which is how we stop the interval from dropping into
+            // the negatives.
             this.moveInterval = Math.max(MOVE_INTERVAL_MIN, this.moveInterval - MOVE_INTERVAL_STEP);
 
-            // Keep counting every food for length / UI; currentMusicPitch() caps the exponent
-            // at MUSIC_PITCH_GROWTH_CAP so tempo stops climbing once speed has already maxed out.
+            // Keep counting every food; currentMusicPitch() caps the exponent at
+            // MUSIC_PITCH_GROWTH_CAP so tempo stops climbing once speed has already maxed
+            // out.
             this.growthCount += 1;
             this.syncMusicTempo();
 
             this.placeFood();
         } else {
+            // Not eating: drop the tail cell so the snake keeps its length.
             this.snake.pop();
         }
     }
 
-    /**
-     * Freeze movement and remember when to restart.
-     */
+    // Freezes movement and remembers when to restart.
     endGame() {
         this.gameOver = true;
         this.deathTick = BT.ticks;

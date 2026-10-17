@@ -10,80 +10,132 @@ description: "Draw sprites from a sheet: pick cells, recolor, flip, rotate, scal
 Live version: https://demos.blit386.dev/sprites. This is the demo-site source, not a standalone file: it imports and calls helpers from `./shared/` (themed panels, on-screen D-pad, post-process fallbacks), which are not part of blit386 and are not on npm. To run it as is, keep those files from https://github.com/blit386/blit386/tree/main/packages/demos/src/shared at the same relative path. To adapt it, remove or replace the helper imports and every call to them.
 
 ```js title="sprites.js"
-// Sprites: how to draw images (sprites) on screen using BLIT386.
-// @description Draw sprites from a sheet: pick cells, recolor, flip, rotate, scale, pivot, and stretch to any size.
-//
-// Prerequisites: Basics (https://demos.blit386.dev/basics),
-// Primitives (https://demos.blit386.dev/primitives),
-// Colors (https://demos.blit386.dev/colors).
-// Guide: https://blit386.dev/docs/api/rendering#sprites
-//
-// A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
-// In BLIT386, sprites are stored in a "sprite sheet": one big image that
-// contains many small sprites arranged in a grid. You draw one sprite by telling
-// the engine which part of the sheet to copy. BT.drawSprite() takes that part as a
-// rectangle (a Rect2i "source rect"). When every sprite sits in an equal-sized cell,
-// you can instead give the sheet its cell size once (sheet.tileSize) and use
-// BT.drawTile(), which takes just the cell number.
-//
-// This demo builds a six-shape sheet on an offscreen canvas, then shows:
-//   1. BT.drawTile() - one shape per grid cell, picked by cell number.
-//   2. Palette offsets - shifting every pixel index to a different color block.
-//   3. Flip and quarter-turn flags - one triangle drawn facing four ways, plus one you
-//      turn around with the Turn button or Space (BT.drawSprite with a params object).
-//   4. Scale - the same star drawn 1x to 4x, plus uneven scales like 3x wide (params.scale).
-//   5. Pivot - place a sprite by its center or by a corner instead of its top-left (params.pivot).
-//   6. Stretch - a heart squeezed into a Rect2i box whose width keeps changing.
-//
-// Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
-// installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
-//
-// In a real project you would load PNGs from disk instead:
-//   await SpriteSheet.load('/sprites/hero.png')
-//   await SpriteSheet.loadIndexed('/sprites/hero.png', palette, startSlot)
-//
-// HOW PALETTE OFFSETS WORK FOR SPRITES:
-//
-// After calling sheet.indexize(palette), each pixel in the sprite is stored
-// as a palette index number. When you draw the sprite:
-//
-//   BT.drawTile(sheet, cell, pos, 0)           - uses original colors
-//   BT.drawTile(sheet, cell, pos, colorCount)  - shifts ALL pixel indices up by colorCount
-//
-// BT.drawSprite() takes the same last argument, so this works with either call.
-//
-// If the original colors are at palette[10..14], offset=5 shifts every pixel
-// to use palette[15..19] - a completely different color theme!
-// This is how retro games did "team colors" and environmental lighting.
-//
-// Palette Presets demo explores the palette system in depth:
-// https://demos.blit386.dev/palette-presets
+/*
+
+Sprites: draw images from a sprite sheet and transform them on the way to the screen.
+@description Draw sprites from a sheet: pick cells, recolor, flip, rotate, scale, pivot, and stretch to any size.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Primitives: https://demos.blit386.dev/primitives
+  - Colors: https://demos.blit386.dev/colors
+
+Live version: https://demos.blit386.dev/sprites
+
+Guides:
+  - Palette (index sprites): https://blit386.dev/docs/guides/palette#index-sprites-preferred-and-manual-flows
+  - Palette (per-draw offsets): https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
+
+Reference:
+  - Rendering (sprites): https://blit386.dev/docs/api/rendering#flipping-rotating-and-scaling-sprites
+  - Rendering (tiles): https://blit386.dev/docs/api/rendering#drawing-tiles
+  - Assets: https://blit386.dev/docs/api/assets#loading-assets
+  - Palette: https://blit386.dev/docs/api/palette#fill-a-block-of-slots
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 640x400 screen on the UI kit's navy background, split into captioned sections:
+
+- Top-left: six shapes from a 3x2 sprite sheet - Square, Circle, Tri, Star, Heart, Gem -
+  each picked by its cell number.
+- Below them: the same star four times, recolored by palette offset - Original, Fire, Ice,
+  Void.
+- Below that: the triangle facing Up, Right, Down, and Left using flip and rotate flags,
+  then a fifth triangle with a Turn button beside it.
+- Bottom-left: the Pivot section. Four triangles planted by their center on marked dots
+  (small white squares), then two pairs comparing pivot (0, 0) with no pivot.
+- Top-right: the Scale section. Stars at 1x, 2x, 3x, and 4x standing on one baseline, then
+  uneven scales - Vector2i(3, 1), Vector2i(1, 3), and a quarter-turned triangle at (3, 1).
+- Lower right: the Stretch section. A heart squeezed into a box whose width swings between
+  20 and 200 pixels, next to a fixed 30x50 heart.
+- Along the bottom: a full-width code panel showing how a real PNG would be loaded.
+
+The engine overlay is turned off in this demo (isOverlayEnabled: false).
+
+WHAT YOU WILL LEARN
+-------------------
+
+- A "sprite" is a 2D image used in a game - a character, a coin, an enemy. A "sprite
+  sheet" is one big image holding many small sprites in a grid. You draw one by telling
+  the engine which part of the sheet to copy.
+- BT.drawSprite(sheet, srcRect, dest, params) copies the Rect2i source rectangle to dest.
+  BT.drawTile(sheet, cell, pos, paletteOffset) does the same by cell number once the sheet
+  knows its cell size (sheet.tileSize); sheet.tileRect(cell) gives the matching Rect2i.
+- Building a sheet on an OffscreenCanvas, registering its colors in the palette with
+  registerCanvasColors(), and calling sheet.indexize(palette) so every pixel becomes a
+  palette slot number.
+- palette.fillBlock(start, source, transform) writes a recolored copy of a color block;
+  a palette offset then picks that block at draw time.
+- The params object: flags (BT.FLIP_H, BT.FLIP_V, BT.ROT_90_CW, BT.ROT_180_CW,
+  BT.ROT_270_CW, combined with |), scale (a whole number or a Vector2i), pivot (a Vector2i
+  in source pixels), and paletteOffset. One object is created once and reused.
+- A Rect2i destination stretches the sprite to any size; pivot must be undefined and scale
+  must be 1 there.
+- UI kit pieces: ui.caption() for labels, ui.button() with a { key } binding, and
+  ui.tick() as the first line of update() so the key press is never missed.
+
+HOW PALETTE OFFSETS WORK FOR SPRITES
+------------------------------------
+
+After sheet.indexize(palette), each pixel in the sprite is stored as a palette slot
+number. When you draw the sprite:
+
+  BT.drawTile(sheet, cell, pos, 0)           - uses the original colors
+  BT.drawTile(sheet, cell, pos, colorCount)  - shifts every pixel's slot up by colorCount
+
+BT.drawSprite() takes the same number as its 4th argument, or as params.paletteOffset
+when you pass a params object. If the original colors sit in slots 10-14, an offset of 5
+makes every pixel use slots 15-19 instead - a completely different color theme from the
+same pixels. This is how retro games did "team colors" and environmental lighting.
+
+In a real project you would load PNGs from disk instead of building a canvas:
+
+  await SpriteSheet.load('/sprites/hero.png')
+  await SpriteSheet.loadIndexed('/sprites/hero.png', palette, startSlot)
+
+The Palette Presets demo explores the palette system in depth:
+https://demos.blit386.dev/palette-presets
+
+TRY THIS
+--------
+
+- Click or tap the Turn button, or press Space, to flip the fifth triangle between facing
+  right and facing left.
+- Watch the stretched heart: its box width changes every frame, yet the edges stay crisp,
+  because each screen pixel copies exactly one sprite pixel - no blur.
+- Compare the two Pivot pairs: with no pivot the sprite starts at the dot; with pivot
+  (0, 0) the flag has moved the source's top-left corner, so the sprite lands on the other
+  side of the dot.
+
+*/
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 
 // Where in the palette the sprite's original colors start. The sprite uses two colors
-// (fill + stroke), and the recolored theme blocks below stack up to about slot 17, so
+// (fill and stroke), and the three recolored blocks below stack up to slot 17, so
 // everything above that stays free for the shared UI theme (slots 240-251).
 const COLOR_BASE = 10;
 
-// Each shape cell in the programmatic sheet is 20x20 pixels.
+// Each shape cell in the programmatic sheet is 20x20 pixels, in a 3-by-2 grid.
 const SHAPE_CELL = 20;
 const SHAPE_COLS = 3;
 const SHAPE_ROWS = 2;
 
-// One name per shape cell, in the same order drawShapeInCell() paints them.
-// This single list drives both the sheet builder (how many cells to draw) and the
-// captions under each shape in render(). The captions sit 50 pixels apart, so the
-// longer names are shortened ('Tri', 'Gem') to keep each label inside its column.
+// One name per shape cell, in the same order drawShapeInCell() paints them. This single
+// list drives both the sheet builder (how many cells to draw) and the captions under each
+// shape in render(). The captions sit 50 pixels apart, so the longer names are shortened
+// ('Tri', 'Gem') to keep each label inside its column.
 const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 
 // Cell number of the star in the sheet (cells count left to right, then top to bottom).
@@ -93,10 +145,10 @@ const STAR_TILE = 3;
 // Cell number of the triangle - the one shape that looks different when turned.
 const TRIANGLE_TILE = 2;
 
-// The triangle points up in the sheet. These flags turn it to face each way.
-// Each flag is one bit of a number, so several can be combined with | ("bitwise or",
-// which keeps every bit that is set in either side). The engine always applies them in
-// the same order, whichever way round you write them: flips first, then the turn. So
+// The triangle points up in the sheet. These flags turn it to face each way. Each flag is
+// one bit of a number, so several can be combined with | ("bitwise or", which keeps every
+// bit that is set on either side). The engine always applies them in the same order,
+// whichever way round you write them: flips first, then the turn. So
 // BT.ROT_90_CW | BT.FLIP_V mirrors the triangle top to bottom, then turns it a quarter
 // turn clockwise.
 const FACINGS = [
@@ -106,8 +158,8 @@ const FACINGS = [
     { name: 'Left', flags: BT.ROT_270_CW },
 ];
 
-// Display size for this demo. 640x400 is twice the usual 320x200 in each direction, which leaves room for
-// the scale and stretch sections next to the original rows.
+// Display size for this demo. 640x400 is double the usual 320-pixel width, which leaves
+// room for the scale and stretch sections next to the original rows.
 const DISPLAY_W = 640;
 const DISPLAY_H = 400;
 
@@ -117,13 +169,14 @@ const HEART_TILE = 4;
 // Whole-number scales drawn side by side in the Scale section.
 const UNIFORM_SCALES = [1, 2, 3, 4];
 
-// Where the Pivot section sits: its title row, the y of the planted triangles' marked dots,
-// and the row where the pivot (0, 0) comparison is drawn.
+// Where the Pivot section sits: its title row, the y of the planted triangles' marked
+// dots, and the row where the pivot (0, 0) comparison is drawn.
 const PIVOT_TOP = 214;
 const PIVOT_PLANTED_Y = 252;
 const PIVOT_CORNER_Y = 298;
 
-// Part 1 of the Pivot section: the same triangle, drawn with a different flag and scale each time.
+// Part 1 of the Pivot section: the same triangle, drawn with a different flag and scale
+// each time.
 const PLANTED_POSES = [
     { flags: 0, scale: 1 },
     { flags: BT.ROT_90_CW, scale: 1 },
@@ -147,30 +200,22 @@ const UI_DIM = 245; // 'ui_text_dim' - secondary gray text
 const UI_BAR = 246; // 'ui_bar' - bar chart color
 const UI_INFO = 248; // 'ui_info' - code blue
 
-// The exact two colors drawShapeInCell() paints with (see fill/stroke below).
-// The canvas smooths shape edges automatically (anti-aliasing), which blends these two
-// colors - and the transparent background - together one pixel at a time. Read back from
-// the canvas, that blending produces dozens of barely-different colors along every curve,
-// which would each want their own palette slot. Since our palette can only hold 256 colors
-// total, and this demo needs room for several recolored copies of the same shape, we snap
-// every blended edge pixel back to whichever of these two colors it is closer to. This
-// keeps the palette usage small and predictable no matter how smooth the edges look.
-// drawShapeInCell() reads these same two Color32 values (via toHex()) for its canvas
-// fillStyle/strokeStyle, so the paint colors and the quantization targets can never drift apart.
+// The exact two colors drawShapeInCell() paints with. The canvas smooths shape edges
+// automatically (anti-aliasing), which blends these two colors - and the transparent
+// background - together one pixel at a time. Read back from the canvas, that blending
+// produces dozens of barely-different colors along every curve, and each would want its
+// own palette slot. Since the palette holds only 256 colors and this demo needs room for
+// several recolored copies of the same shape, every blended edge pixel is snapped back to
+// whichever of these two colors it is closer to. drawShapeInCell() reads these same two
+// Color32 values (via toHex()) for its canvas fillStyle/strokeStyle, so the paint colors
+// and the snapping targets can never drift apart.
 const FILL_COLOR = new Color32(0x55, 0x99, 0xee);
 const STROKE_COLOR = new Color32(0xff, 0xff, 0xff);
 
-/**
- * Finds whichever of FILL_COLOR/STROKE_COLOR is closer to a given pixel color.
- * "Closer" here means smaller distance in RGB space - treating red, green, and blue like
- * three coordinates and measuring the straight-line distance between two colors, the same
- * way you would measure distance between two points on a map.
- *
- * @param {number} r
- * @param {number} g
- * @param {number} b
- * @returns {Color32}
- */
+// Finds whichever of FILL_COLOR/STROKE_COLOR is closer to a given pixel color. "Closer"
+// means a smaller distance in RGB space - treating red, green, and blue like three
+// coordinates and measuring the straight-line distance between two colors, the same way
+// you would measure the distance between two points on a map.
 function nearestShapeColor(r, g, b) {
     const distanceToFill = (r - FILL_COLOR.r) ** 2 + (g - FILL_COLOR.g) ** 2 + (b - FILL_COLOR.b) ** 2;
     const distanceToStroke = (r - STROKE_COLOR.r) ** 2 + (g - STROKE_COLOR.g) ** 2 + (b - STROKE_COLOR.b) ** 2;
@@ -182,22 +227,20 @@ function nearestShapeColor(r, g, b) {
 // transparent instead of a faint smudge of shape color.
 const ALPHA_OPAQUE_THRESHOLD = 128;
 
-/**
- * Rewrites every pixel of the canvas so it is either fully transparent or one of the exact
- * design colors (see FILL_COLOR/STROKE_COLOR above). sheet.indexize() later requires each
- * pixel to match a palette entry exactly, so the smooth, blended edges anti-aliasing draws
- * must be snapped to flat colors here - otherwise indexize() would reject every blended
- * edge pixel as "not in the palette".
- *
- * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} w
- * @param {number} h
- */
+// Rewrites every pixel of the canvas so it is either fully transparent or one of the
+// exact design colors (see FILL_COLOR/STROKE_COLOR above). sheet.indexize() later
+// requires each pixel to match a palette entry exactly, so the smooth, blended edges
+// anti-aliasing draws must be snapped to flat colors here - otherwise indexize() would
+// reject every blended edge pixel as "not in the palette". `w` and `h` are the canvas
+// size in pixels.
 function quantizeCanvasToShapeColors(ctx, w, h) {
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
 
+    // The pixel data is one flat list of numbers, four per pixel: red, green, blue,
+    // alpha. Stepping by 4 visits one pixel at a time.
     for (let i = 0; i < data.length; i += 4) {
+        // Mostly transparent: make it fully transparent and move on.
         if (data[i + 3] < ALPHA_OPAQUE_THRESHOLD) {
             data[i] = 0;
             data[i + 1] = 0;
@@ -206,6 +249,7 @@ function quantizeCanvasToShapeColors(ctx, w, h) {
             continue;
         }
 
+        // Otherwise snap to the nearest design color and make it fully opaque.
         const { r, g, b } = nearestShapeColor(data[i], data[i + 1], data[i + 2]);
         data[i] = r;
         data[i + 1] = g;
@@ -216,14 +260,9 @@ function quantizeCanvasToShapeColors(ctx, w, h) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-/**
- * Draws one filled shape centered inside a square cell.
- *
- * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} cellX - Left edge of the cell in sheet pixels.
- * @param {number} cellY - Top edge of the cell in sheet pixels.
- * @param {number} kind - 0 square, 1 circle, 2 triangle, 3 star, 4 heart, 5 diamond.
- */
+// Draws one filled shape centered inside a square cell. `cellX` and `cellY` are the
+// cell's top-left corner in sheet pixels; `kind` is 0 square, 1 circle, 2 triangle,
+// 3 star, 4 heart, 5 diamond.
 function drawShapeInCell(ctx, cellX, cellY, kind) {
     const cx = cellX + SHAPE_CELL / 2;
     const cy = cellY + SHAPE_CELL / 2;
@@ -233,17 +272,17 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
     ctx.lineWidth = 1;
 
     if (kind === 0) {
-        // Square
+        // Square.
         ctx.fillRect(cellX + 4, cellY + 4, SHAPE_CELL - 8, SHAPE_CELL - 8);
         ctx.strokeRect(cellX + 4, cellY + 4, SHAPE_CELL - 8, SHAPE_CELL - 8);
     } else if (kind === 1) {
-        // Circle
+        // Circle.
         ctx.beginPath();
         ctx.arc(cx, cy, SHAPE_CELL / 2 - 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
     } else if (kind === 2) {
-        // Triangle
+        // Triangle, pointing up.
         ctx.beginPath();
         ctx.moveTo(cx, cellY + 3);
         ctx.lineTo(cellX + SHAPE_CELL - 3, cellY + SHAPE_CELL - 3);
@@ -252,7 +291,8 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
         ctx.fill();
         ctx.stroke();
     } else if (kind === 3) {
-        // Five-point star
+        // Five-point star: alternate between an outer and an inner radius around the
+        // circle.
         ctx.beginPath();
 
         for (let i = 0; i < 5; i++) {
@@ -269,7 +309,7 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
         ctx.fill();
         ctx.stroke();
     } else if (kind === 4) {
-        // Heart (two circles plus a triangle wedge)
+        // Heart: two circles plus a triangle wedge below them.
         ctx.beginPath();
         ctx.arc(cx - 4, cy - 2, 5, 0, Math.PI * 2);
         ctx.arc(cx + 4, cy - 2, 5, 0, Math.PI * 2);
@@ -283,7 +323,7 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
         ctx.fill();
         ctx.stroke();
     } else {
-        // Diamond
+        // Diamond.
         ctx.beginPath();
         ctx.moveTo(cx, cellY + 3);
         ctx.lineTo(cellX + SHAPE_CELL - 3, cy);
@@ -295,11 +335,8 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
     }
 }
 
-/**
- * Builds a 3x2 sprite sheet with six shapes on an offscreen canvas.
- *
- * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D }}
- */
+// Builds a 3x2 sprite sheet with six shapes on an offscreen canvas. Returns the canvas
+// and its 2D drawing context.
 function buildShapeSheet() {
     const sheetW = SHAPE_COLS * SHAPE_CELL;
     const sheetH = SHAPE_ROWS * SHAPE_CELL;
@@ -313,7 +350,9 @@ function buildShapeSheet() {
     // Clear to transparent so unused pixels stay invisible.
     ctx.clearRect(0, 0, sheetW, sheetH);
 
-    // One cell per entry in the shared SHAPE_NAMES list (the same list captions use).
+    // One cell per entry in the shared SHAPE_NAMES list (the same list the captions use).
+    // `i % SHAPE_COLS` is the remainder after dividing by 3 - the column; dividing and
+    // rounding down gives the row.
     for (let i = 0; i < SHAPE_NAMES.length; i++) {
         const col = i % SHAPE_COLS;
         const row = Math.floor(i / SHAPE_COLS);
@@ -330,21 +369,20 @@ function buildShapeSheet() {
     return { canvas, ctx };
 }
 
-/**
- * Demonstrates sprite sheets, source rectangles, palette offsets, and flip/rotate flags.
- *
- * @implements {IBTDemo}
- */
+// Sprite sheets, cell picking, palette offsets, flip and rotate flags, scale, pivot, and
+// stretching into a Rect2i - all on one 640x400 screen.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
+
     /** @type {SpriteSheet | null} */
     sheet = null;
 
-    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
-    // theme.bg, theme.text, and friends are palette indices for our own drawing.
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme(). theme.bg,
+    // theme.text, and friends are palette indices for our own drawing.
     theme = null;
 
+    // How many distinct colors the sheet uses (two), and the Color32 list behind them.
     colorCount = 0;
     baseColors = [];
 
@@ -356,38 +394,41 @@ class Demo {
     starRect = null;
     heartRect = null;
 
-    // Uneven scales, built once: a Vector2i scale stretches the width and height by different whole numbers.
+    // Uneven scales, built once: a Vector2i scale stretches the width and height by
+    // different whole numbers.
     wideScale = new Vector2i(3, 1);
     tallScale = new Vector2i(1, 3);
 
-    // The animated stretch box. render() changes only its width each frame - no new Rect2i per frame.
+    // The animated stretch box. render() changes only its width each frame - no new
+    // Rect2i per frame.
     stretchBox = new Rect2i(330, 250, 20, 40);
 
     // A fixed, uneven stretch to compare against the animated one: 20x20 into 30x50.
     fixedStretchBox = new Rect2i(560, 250, 30, 50);
 
-    // Pivot points are in SOURCE pixels, measured from the source rect's top-left, before any flags.
-    // Both are built once in init(): centerPivot is the middle of the 20x20 cell, cornerPivot
-    // is its top-left corner (the same corner as no pivot - until a flag moves it).
+    // Pivot points are in source pixels, measured from the source rect's top-left, before
+    // any flags. Both are built once in init(): centerPivot is the middle of the 20x20
+    // cell, cornerPivot is its top-left corner (the same corner as no pivot - until a
+    // flag moves it).
     centerPivot = null;
     cornerPivot = null;
 
-    // Scratch values for the Pivot section: a dest point and a small square that marks it. render()
-    // rewrites them with set() instead of creating new ones every frame.
+    // Scratch values for the Pivot section: a dest point and a small square that marks
+    // it. render() rewrites them with set() instead of creating new ones every frame.
     pivotDest = new Vector2i(0, 0);
     pivotMark = new Rect2i(0, 0, 3, 3);
 
     // One reusable params object for BT.drawSprite. Create it with every field present
-    // (flags, pivot, scale, paletteOffset) and rewrite the fields between draws - the engine reads
-    // it and never keeps it. pivot: undefined means "place by the top-left".
+    // (flags, pivot, scale, paletteOffset) and rewrite the fields between draws - the
+    // engine reads it during the call and never keeps it. pivot: undefined means "place
+    // by the top-left".
     drawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
 
-    // Which way the turnable triangle faces; the Turn button (or Space) toggles it in render().
+    // Which way the turnable triangle faces; the Turn button (or Space) toggles it in
+    // render().
     isFacingLeft = false;
 
-    /**
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A wider 640x400 screen, no engine overlay, and Space reserved for the Turn button.
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -414,33 +455,33 @@ class Demo {
         };
     }
 
-    /**
-     * Builds the shape sheet on a canvas, registers colors, and calls sheet.indexize().
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Builds the shape sheet on a canvas, registers its colors, and calls
+    // sheet.indexize().
     async init() {
         console.log('[SpriteDemo] Initializing...');
 
         this.palette = BT.paletteCreate(256);
 
         // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
-        // high palette slots (240-251), far above this demo's sprite colors (slots 10-19),
-        // and returns a map of friendly names to those slots (this.theme.bg, .text, ...).
-        // Every caption and the code panel below draw with these shared colors.
+        // high palette slots (240-251), far above this demo's sprite colors (slots
+        // 10-17), and returns a map of friendly names to those slots (this.theme.bg,
+        // .text, ...). Every caption and the code panel draw with these shared colors.
         this.theme = applyTheme(this.palette);
 
         try {
             const { canvas, ctx } = buildShapeSheet();
 
+            // Read every distinct color off the canvas into palette slots starting at
+            // COLOR_BASE, and remember them so the recolored blocks can be derived.
             this.baseColors = registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, COLOR_BASE);
             this.colorCount = this.baseColors.length;
 
             const colorCount = this.colorCount;
 
-            // Build theme blocks: Fire, Ice, and Void are static once written here.
-            // palette.fillBlock(start, source, transform) writes transform(baseColor) into one
-            // slot per base color, starting at `start` - it replaces a hand-written for loop.
+            // Build the theme blocks: Fire, Ice, and Void are static once written here.
+            // palette.fillBlock(start, source, transform) writes transform(baseColor)
+            // into one slot per base color, starting at `start` - it replaces a
+            // hand-written for loop.
 
             // Fire: push red up and pull blue down.
             this.palette.fillBlock(
@@ -463,12 +504,14 @@ class Demo {
                 (base) => new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
             );
 
+            // Turn the canvas into an image the engine can use, then convert its pixels
+            // to palette slot numbers.
             const image = await canvasToImage(canvas);
             this.sheet = new SpriteSheet(image);
             this.sheet.indexize(this.palette);
 
-            // The sheet is a SHAPE_COLS x SHAPE_ROWS grid of SHAPE_CELL squares, so BT.drawTile can
-            // find each shape by its number - no Rect2i bookkeeping.
+            // The sheet is a SHAPE_COLS x SHAPE_ROWS grid of SHAPE_CELL squares, so
+            // BT.drawTile can find each shape by its number - no Rect2i bookkeeping.
             this.sheet.tileSize = SHAPE_CELL;
             this.triangleRect = this.sheet.tileRect(TRIANGLE_TILE);
             this.starRect = this.sheet.tileRect(STAR_TILE);
@@ -489,19 +532,23 @@ class Demo {
         return true;
     }
 
+    // Nothing moves on its own here; update() only feeds the UI kit.
     update() {
-        // Always first: this latches the Turn button's Space shortcut, so a quick key press
-        // is never missed (the button itself is declared in render()).
+        // Always first: this latches the Turn button's Space shortcut, so a quick key
+        // press is never missed (the button itself is declared in render()).
         ui.tick();
     }
 
+    // Draws every section. The left column holds the shape grid, palette offsets, flags,
+    // and pivot; the right column holds scale and stretch; the code panel runs along the
+    // bottom.
     render() {
         // Clear the whole screen with the shared UI theme's background color.
         BT.clear(this.theme.bg);
 
         const params = this.drawParams;
 
-        // ---- Left column ----
+        // Left column.
 
         // Row 1: six shapes - each draw call picks a different cell number.
         const shapeY = 24;
@@ -515,7 +562,8 @@ class Demo {
             ui.caption(destX, shapeY + 24, SHAPE_NAMES[i], { color: 'dim' });
         }
 
-        // Row 2: palette offsets on the star shape (offset shifts every pixel index).
+        // Row 2: palette offsets on the star shape. Offset n * i shifts every pixel's
+        // slot into the i-th color block (0 = original, 1 = Fire, 2 = Ice, 3 = Void).
         const n = this.colorCount;
         const themeY = 100;
         const themeSpacing = 72;
@@ -529,7 +577,7 @@ class Demo {
         }
 
         // Row 3: flags. The same triangle cell, turned by params.flags instead of being
-        // drawn four times in the PNG.
+        // drawn four times in the sheet.
         const facingY = 176;
 
         ui.caption(12, facingY - 16, 'Flags - flip and quarter turns', { color: 'dim' });
@@ -542,11 +590,12 @@ class Demo {
             ui.caption(destX, facingY + 24, FACINGS[i].name, { color: 'dim' });
         }
 
-        // The turnable one: right or left, with a 20-pixel gap after the four fixed examples.
+        // The turnable one: right or left, with a 20-pixel gap after the four fixed
+        // examples.
         const playerX = 12 + 4 * shapeSpacing + 20;
 
-        // The Turn button sits just right of the 20-pixel-wide triangle. Tapping it, clicking it, or
-        // pressing Space flips which way the triangle faces.
+        // The Turn button sits just right of the 20-pixel-wide triangle. Tapping it,
+        // clicking it, or pressing Space flips which way the triangle faces.
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: playerX + 24, y: facingY });
 
         if (ui.button('Turn', { key: 'Space' })) {
@@ -574,23 +623,21 @@ class Demo {
         this.renderCodeSnippet();
     }
 
-    /**
-     * params.scale takes whole numbers. A plain number scales both ways; a Vector2i scales width and
-     * height separately. Scaling happens after the flags, in screen directions, so scale.x is always the
-     * on-screen width - even for a sprite turned a quarter turn.
-     *
-     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
-     */
+    // The Scale section. params.scale takes whole numbers. A plain number scales both
+    // ways; a Vector2i scales width and height separately. Scaling happens after the
+    // flags, in screen directions, so scale.x is always the on-screen width - even for a
+    // sprite turned a quarter turn.
     renderScale(params) {
         const left = 330;
 
-        // Every y below hangs off this one line - the bottom edge the 1x-4x stars stand on - so the whole
-        // section moves together if you change it.
+        // Every y below hangs off this one line - the bottom edge the 1x-4x stars stand
+        // on - so the whole section moves together if you change it.
         const baselineY = 104;
 
         ui.caption(left, 8, 'Scale - whole numbers only', { color: 'dim' });
 
-        // 1x, 2x, 3x, 4x side by side: 20, 40, 60, 80 pixels wide, all sitting on one baseline.
+        // 1x, 2x, 3x, 4x side by side: 20, 40, 60, 80 pixels wide, all sitting on one
+        // baseline.
         params.flags = 0;
         let x = left;
 
@@ -601,7 +648,7 @@ class Demo {
             x += SHAPE_CELL * s + 12;
         }
 
-        // Uneven whole-number scales: 3x wide, 3x tall.
+        // Uneven whole-number scales: 3x wide, then 3x tall.
         params.scale = this.wideScale;
         BT.drawSprite(this.sheet, this.starRect, new Vector2i(left, baselineY + 36), params);
         ui.caption(left, baselineY + 60, 'Vector2i(3, 1)', { color: 'dim' });
@@ -616,34 +663,28 @@ class Demo {
         BT.drawSprite(this.sheet, this.triangleRect, new Vector2i(left + 160, baselineY + 36), params);
         ui.caption(left + 160, baselineY + 60, 'ROT_90_CW + (3, 1)', { color: 'dim' });
 
+        // Leave the shared params object neutral for the next section.
         params.flags = 0;
         params.scale = 1;
     }
 
-    /**
-     * Marks the dest point with a small square so you can see where the sprite is planted.
-     *
-     * @param {number} x
-     * @param {number} y
-     */
+    // Marks the dest point with a small square so you can see where the sprite is
+    // planted.
     markPivotDest(x, y) {
         BT.drawRectFill(this.pivotMark.set(x - 1, y - 1, 3, 3), this.theme.text);
     }
 
-    /**
-     * Normally dest is where the sprite's top-left lands. params.pivot picks a different point of the
-     * sprite - in source pixels, before flags - to put on dest instead. Part 1 plants a triangle by its
-     * center: flags and scale change, but the marked point never moves. Part 2 shows that pivot
-     * (0, 0) is NOT the same as no pivot: it is the source's top-left corner, and a flip or turn moves
-     * that corner to the other side of the sprite.
-     *
-     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
-     */
+    // The Pivot section. Normally dest is where the sprite's top-left lands. params.pivot
+    // picks a different point of the sprite - in source pixels, before flags - to put on
+    // dest instead. Part 1 plants a triangle by its center: flags and scale change, but
+    // the marked point never moves. Part 2 shows that pivot (0, 0) is not the same as no
+    // pivot: it is the source's top-left corner, and a flip or turn moves that corner to
+    // the other side of the sprite.
     renderPivot(params) {
         ui.caption(12, PIVOT_TOP, 'Pivot - place a sprite by a point', { color: 'dim' });
 
-        // Part 1: the center pivot. Each triangle uses the same pivot but a different flag and scale,
-        // and each is drawn at its own marked point.
+        // Part 1: the center pivot. Each triangle uses the same pivot but a different
+        // flag and scale, and each is drawn at its own marked point.
         params.pivot = this.centerPivot;
 
         for (let i = 0; i < PLANTED_POSES.length; i++) {
@@ -657,9 +698,10 @@ class Demo {
 
         ui.caption(12, PIVOT_PLANTED_Y + 26, 'pivot (10, 10): the dot never moves', { color: 'dim' });
 
-        // Part 2: no pivot vs pivot (0, 0), drawn at the same marked point. With no pivot the sprite's
-        // footprint starts at the dot; with (0, 0) the source's top-left corner is on the dot, and the
-        // flag has moved that corner, so the footprint ends up on the other side.
+        // Part 2: no pivot vs pivot (0, 0), drawn at the same marked point. With no pivot
+        // the sprite's footprint starts at the dot; with (0, 0) the source's top-left
+        // corner is on the dot, and the flag has moved that corner, so the footprint ends
+        // up on the other side.
         params.scale = 1;
 
         for (let i = 0; i < PIVOT_COMPARISONS.length; i++) {
@@ -681,19 +723,18 @@ class Demo {
         }
     }
 
-    /**
-     * A Rect2i destination stretches the sprite to any size, even one that is not a whole multiple. Each
-     * screen pixel copies the sprite pixel under its center, so the result stays crisp - no blur - and looks
-     * the same on every backend. scale must stay 1 here: the box already sets the size.
-     *
-     * @param {{ flags: number, pivot: Vector2i | undefined, scale: number | Vector2i, paletteOffset: number }} params
-     */
+    // The Stretch section. A Rect2i destination stretches the sprite to any size, even
+    // one that is not a whole multiple. Each screen pixel copies the sprite pixel under
+    // its center, so the result stays crisp - no blur - and looks the same on every
+    // backend. scale must stay 1 here: the box already sets the size.
     renderStretch(params) {
         const top = this.stretchBox.y;
 
         ui.caption(330, top - 16, 'Stretch to a Rect2i - any size', { color: 'dim' });
 
-        // The box width swings between 20 and 200 pixels and back, about every four seconds.
+        // The box width swings between 20 and 200 pixels and back, about every four
+        // seconds. Math.sin() wanders between -1 and +1; adding 1 and halving turns that
+        // into 0 to 1.
         const swing = (Math.sin(BT.ticks / 40) + 1) / 2;
         this.stretchBox.width = Math.round(20 + swing * 180);
 
@@ -701,6 +742,7 @@ class Demo {
         params.pivot = undefined;
         params.flags = 0;
         params.scale = 1;
+
         BT.drawSprite(this.sheet, this.heartRect, this.stretchBox, params);
         ui.caption(330, top + 44, `20x20 into ${this.stretchBox.width}x40`, { color: 'dim' });
 
@@ -708,11 +750,8 @@ class Demo {
         ui.caption(this.fixedStretchBox.x, top + 54, '30x50', { color: 'dim' });
     }
 
-    /**
-     * The "how you would load a real PNG" cheat sheet, as a bordered kit panel anchored
-     * to the bottom-left corner of the screen. Unpinned so the panel grows upward from
-     * the margin as its rows get taller, instead of spilling off the bottom edge.
-     */
+    // The "how you would load a real PNG" cheat sheet, as a full-width kit panel along
+    // the bottom edge of the screen.
     renderCodeSnippet() {
         ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Production PNG load:');
