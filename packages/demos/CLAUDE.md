@@ -14,8 +14,11 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together wit
 - Beginner-friendly comments - see Documentation Style below. This is the point of the package, not a nicety
 - Mutation is fine here - demo classes mutate instance state in `update()` / `render()` for performance. The general
   prefer-immutability default does not apply to per-frame demo state
-- Relaxed linting versus the engine: JSDoc is not required (though class-level `@implements {IBTDemo}` is encouraged)
-  and console logging is allowed. Clarity beats ceremony
+- No JSDoc in demo content: these files are tutorials, not library code. The only `/** */` forms allowed in `src/*.js`
+  are one-line type annotations (`/** @type {Palette | null} */`) and `/** @typedef {import('blit386').X} X */` lines,
+  kept so editors still offer completion. Everything else - descriptions, `@param`, `@returns`, `@throws`,
+  `@implements` - is written as plain `//` comments in human language (see Documentation Style). Console logging is
+  allowed. Clarity beats ceremony
 - Shared literals live in `src/shared/` - plain JS has no compiler backstop, so a label, state name, or type string
   compared in more than one demo gets one exported constant beside `ui-theme.js` and `post-process-backend.js`, never a
   re-typed copy per demo. Shared policy: root `.claude/rules/named-constants.md`
@@ -156,6 +159,30 @@ if (this.pos.x >= BT.displaySize.x - this.size.x) {
 When reviewing a demo, check that the comments would make sense to someone who has never written code. A block with no
 comment, or a comment that only restates the code, is a quality issue.
 
+Tone: relaxed plain language in most demos. The genuinely complex pieces (`crt-pipboy`, `flurry`, `hypercube`,
+`bunnymark`, `game-scene`, `sprite-effects`, `reduced-motion`, `test-state`, `keyboard-diagnostic`, `basics-enhanced`,
+`logo-lowres`, `palette-exposure-fade`) use standard technical writing instead. Never mention an age or an audience in
+the text itself.
+
+### Comment format
+
+- The file header is one `/* ... */` block: a blank line, the title line (`Demo Name: one-sentence summary.`), the
+  `@description` line (plus `@pageTitle` / `@ogScale` when needed), a blank line, `Part of the BLIT386 demo series.`,
+  then `Prerequisites:` (two-space `- Name: URL` bullets, series order), `Live version:`, `Guides:` (real
+  `blit386.dev/docs/guides/` pages, list form even for one), `Reference:` (`blit386.dev/docs/api/` pages), a `---`
+  separator, and the body. The body uses UPPERCASE headings underlined with hyphens of the same length, in the order
+  `WHAT YOU WILL SEE`, `WHAT YOU WILL LEARN`, any explanatory sections, `TRY THIS` last. A heading that is a question
+  ends in `?`. `palette-fade.js` is the reference shape.
+- Every comment line wraps at 90 columns (the column of the last character, indentation included). URLs and the
+  `@description` line may overflow. Code lines keep Biome's 120.
+- Inside the code, multi-line comments are runs of `//` lines, never `/* */` blocks.
+- Standalone comments are sentences: capitalized, ending in a period. A trailing comment (after code on the same line)
+  is only for a short, simple note: lowercase first letter unless it starts with an identifier, no final period, and the
+  whole line within 90 columns - `return base; // original colors - no tint`.
+- One blank line separates logical blocks: between class fields, between methods, between groups of related constants,
+  before a comment that opens a new step inside a function, before a `return` that ends a longer body. Never two blank
+  lines in a row, and none directly inside braces.
+
 ## Engine API in demos
 
 Current signatures live in the engine: `packages/blit386/src/BLIT386.ts`, `packages/blit386/src/core/BTAPI.ts`,
@@ -254,11 +281,12 @@ server startup, so a rebuilt `dist/vite.js` is not picked up by a running server
 
 ## File Organization
 
-Section order: header comment (`// Demo Topic - …`, prerequisites, hosted links, optional `// @pageTitle`) → imports →
-`@typedef` JSDoc → configuration constants → module state → helper functions → the `Demo` class → `bootstrap(Demo);`
-last. Class member order: instance fields → `configure()` → `init()` → `update()` → `render()` → helpers. Region markers
-(`// #region`) are banned in demo content (`src/*.js`) - `scripts/*.mjs` may use them, matching `encode-video.mjs`'s
-convention. Full detail: `.claude/rules/file-structure.md`.
+Section order: header comment (the `/* ... */` block described under Comment format: title, `@description`,
+prerequisites, hosted links, optional `@pageTitle`) → imports → `@typedef` lines → configuration constants → module
+state → helper functions → the `Demo` class → `bootstrap(Demo);` last. Class member order: instance fields →
+`configure()` → `init()` → `update()` → `render()` → helpers. Region markers (`// #region`) are banned in demo content
+(`src/*.js`) - `scripts/*.mjs` may use them, matching `encode-video.mjs`'s convention. Full detail:
+`.claude/rules/file-structure.md`.
 
 ## Commands, formatting, git
 

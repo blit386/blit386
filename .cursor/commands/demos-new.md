@@ -26,27 +26,53 @@ touch controls - `packages/demos/CLAUDE.md` forbids hand-rolling panels, buttons
 demo to be usable on touch. Start from this shape:
 
 ```js
-// Demo Topic - one-sentence summary of what this shows.
-//
-// What you will see:
-//   - ...
-//
-// Prerequisites: Basics (https://demos.blit386.dev/basics)
-// Live version: https://demos.blit386.dev/<slug>
+/*
+
+Demo Topic: one-sentence summary of what this shows.
+@description One line of 60-104 characters ending in a period, written for a shared link preview.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+
+Live version: https://demos.blit386.dev/<slug>
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+Plain-language description of the screen, wrapped at 90 columns.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- The engine calls this demo introduces, one per bullet.
+
+TRY THIS
+--------
+
+- Press R to reset.
+
+*/
 
 import { bootstrap, BT } from 'blit386';
 
 import { applyTheme, ui } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
 
-/** @implements {IBTDemo} */
+// One-paragraph plain comment describing the demo class. No JSDoc in demo files beyond
+// the `@type` and `@typedef` one-liners (see packages/demos/CLAUDE.md, Comment format).
 class Demo {
   /** @type {Palette | null} */
   palette = null;
 
-  /** Palette slots of the shared UI colors, filled by applyTheme() in init(). */
+  // Palette slots of the shared UI colors, filled by applyTheme() in init().
   theme = null;
 
   // configure() {}            // optional; omit for the 320x240 / 640x480 / 60 FPS default
@@ -111,19 +137,21 @@ bootstrap(Demo);
 - The page title defaults to `BLIT386 Demo - Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
   first ~20 lines) when that default is wrong for the demo.
 - **Required:** a `@description` tag in the header - one line, 60-104 characters, ending in a period, within the first
-  ~20 lines. It becomes the page's meta description and `og:description`, so write the sentence you would want to read
-  under a shared link, not a restatement of the title. `check:demo-registry` fails without it and enforces every one of
-  those rules, the 60-character floor included, so a short placeholder will not pass:
+  2000 bytes of the file (directly under the title line, as above). It becomes the page's meta description and
+  `og:description`, so write the sentence you would want to read under a shared link, not a restatement of the title.
+  `check:demo-registry` fails without it and enforces every one of those rules, the 60-character floor included, so a
+  short placeholder will not pass:
 
-  ```js
-  // @description Fade old frames through the palette instead of clearing them, leaving sprite trails.
+  ```text
+  @description Fade old frames through the palette instead of clearing them, leaving sprite trails.
   ```
 
 - Optional: `// @ogScale fit` or `// @ogScale integer` overrides how this demo's OpenGraph card is framed. The default
   (`auto`) scales by a whole number when that already fills the card and fills the frame otherwise, which suits nearly
   every demo - only add the tag after looking at the captured card.
-- If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing demos do (slug
-  plus hosted URL).
+- If the demo builds on earlier ones, list them under `Prerequisites:` in series order (`DEMO_ORDER`), each as
+  `- Name: https://demos.blit386.dev/<slug>`. Link the guides the demo exercises under `Guides:` and API pages under
+  `Reference:`; `packages/demos/src/palette-fade.js` is the reference header.
 
 ### 3. Register it in DEMO_ORDER
 
@@ -139,14 +167,15 @@ keep working.
 
 A hard rule for `src/*.js`: every logical block gets a plain-English comment explaining what it does and why, as if the
 reader has never written code before. Use analogies; never assume familiarity with math functions or language features.
-Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Match the bar set by `src/basics.js`;
-see `packages/demos/CLAUDE.md` (Documentation Style) for the full rules.
+Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Comments are `//` lines wrapped at 90
+columns, never JSDoc or `/* */` blocks inside the code; a short trailing note is lowercase with no period. Match the bar
+set by `src/basics.js`; see `packages/demos/CLAUDE.md` (Documentation Style and Comment format) for the full rules.
 
 ### 5. Verify it runs
 
 - `pnpm run check:demo-registry` (from `packages/demos`) - confirms disk, order, vintage, and nav-hidden sets agree.
 - `pnpm run check:demo-comment-links` (from `packages/demos`) - catches a dead `vancura.dev` link, or a
-  `Prerequisites:`/`Guide:` link to a docs page or demo slug that does not actually exist.
+  `Prerequisites:`/`Guides:`/`Reference:` link to a docs page or demo slug that does not actually exist.
 - `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. Demo content has no automated tests;
   `scripts/*.mjs` tooling does (see `/test demos`).
 - `pnpm run build` to confirm the production build still succeeds (the Cloudflare Pages deploy gate).
