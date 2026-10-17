@@ -1,45 +1,120 @@
-// Sprite Effects: shows how to use palette offsets to create game effects.
-// @description Palette offsets as game effects: damage flash, silhouette, ghost fade, team colors, and day or night.
-//
-// Prerequisites: Basics (https://demos.blit386.dev/basics),
-// Sprites (https://demos.blit386.dev/sprites).
-// Guide: https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
-//
-// In the palette-based rendering system, each sprite pixel stores a palette index.
-// By drawing the same sprite with a different palette offset (the fourth argument
-// to BT.drawSprite), every pixel shifts to a different color block in the palette.
-// This replaces what older APIs called "tinting" (multiplying pixels by a color).
-//
-// Common uses in retro games:
-//   - Damage flash: swap to a block of reds, then back to normal after 30 ticks
-//   - Silhouette: use a block where all colors are black
-//   - Ghost: a block where all colors have low alpha
-//   - Team colors: separate pre-built blocks for red/blue/green teams
-//   - Status effects: frozen (all shifted to cold blues), poisoned (pulsing greens)
-//   - Day/night: a block dynamically updated every tick to reflect ambient light
-//
-// For STATIC effects (normal, silhouette, team red/blue/green, frozen): we build color
-// blocks once in init() and never change them.
-//
-// For DYNAMIC effects (damage flash, ghost pulse, invincibility, poison, day/night):
-// we update the color block in update() every tick and draw with that offset in render().
-//
-// We learned about palette offsets in Sprites demo:
-// https://demos.blit386.dev/sprites
-//
-// FULLSCREEN CRT (Tesla Orava TV)
-// The sprite grid is drawn at 640x400, then the engine resolves and upscales it and runs
-// a display-tier stack tuned for 1970s Czechoslovak B/W CRT sets (Tesla Orava 131/226/229):
-// curved tube, soft phosphor halation, scanlines, light bezel vignette, a roll band
-// scrolling top-to-bottom, subtle offset-band wobble, and occasional TV faults (tear,
-// snow, dim, ghost, roll). Same building blocks as basics-enhanced demo; chroma split is omitted (B/W).
-// Post-process needs WebGPU; the software renderer still shows the sprite effects without CRT.
-//
-// We learned about composing effects in PipBoy CRT and Basics Enhanced.
-//
-// Captions, the day/night legend, and the software fallback note are drawn with the shared
-// UI kit (src/shared/ui.js), which installs its twelve UI colors high in the palette
-// (slots 240-251) via applyTheme().
+/*
+
+Sprite Effects: palette offsets as free sprite color variants, under a Tesla Orava CRT.
+@description Palette offsets as game effects: damage flash, silhouette, ghost fade, team colors, and day or night.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Sprites: https://demos.blit386.dev/sprites
+
+Live version: https://demos.blit386.dev/sprite-effects
+
+Guides:
+  - Palette: https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
+  - Post-process effects: https://blit386.dev/docs/guides/post-process-effects#display-tier-effects
+  - Overlay: https://blit386.dev/docs/guides/overlay#custom-rows
+
+Reference:
+  - Palette: https://blit386.dev/docs/api/palette#per-draw-offset
+  - Palette: https://blit386.dev/docs/api/palette#fill-a-block-of-slots
+  - Assets: https://blit386.dev/docs/api/assets#register-colors-into-the-palette
+  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows-optional
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 640x400 screen with the same 44x44 test sprite drawn eleven times, each copy recolored
+through a different palette offset:
+
+  - Row 1 (static): Normal, Silhouette, Team Red, Team Blue, Team Green, Frozen. Each has
+    a caption and a one-line note on when a game would use it.
+  - Row 2 (dynamic): Damage (flashes white and red for 30 ticks, once every 3 seconds),
+    Ghost (alpha pulsing between 40 and 180), Invincible (hue rotating through the
+    rainbow), Poisoned (green tint pulsing 5 times per second).
+  - Bottom: a day/night cycle. The sprite dims toward a cool blue night tint and back over
+    20 seconds, and a marker in the current ambient color crosses a 240-pixel bar labeled
+    Day, Sunset, Night, Dawn.
+
+The engine overlay is visible from the start, with the palette grid, a 64-pixel timing
+chart in 'rich' diagnostics mode, the renderer diagnostics bar, and two custom rows:
+"Tesla Orava: ON" and "TV fault: <fault> <strength>%".
+
+On WebGPU the whole picture runs through a display-tier stack tuned for 1970s
+Czechoslovak black-and-white Tesla Orava CRT sets. On the software renderer the sprite
+effects still work; a two-line warm note in the top-left corner says the CRT look is
+missing, and the overlay row reads "Tesla Orava: CRT OFF (software)".
+
+WHAT YOU WILL LEARN
+-------------------
+
+- Palette offsets: BT.drawSprite(sheet, srcRect, position, paletteOffset) shifts every
+  pixel's palette index by paletteOffset, so one sprite image yields any number of color
+  variants with no extra textures and no per-pixel work.
+- Registering a sprite's colors with SpriteSheet.loadColorsIntoPalette() and
+  SpriteSheet.loadIndexed(), and reading the registered Color32 list back.
+- palette.fillBlock(start, source, transform) to write one recolored copy of the base
+  colors per theme block.
+- Static blocks built once in init() versus dynamic blocks rewritten every tick in
+  update(), with plain loops to avoid allocating a closure per tick.
+- Color32.luminance, Color32.fromHSL(), and Color32.lerp() as recoloring tools.
+- BT.effectAdd() with a pixel-tier effect (PixelGlitch) and a display-tier chain, plus a
+  tick-driven fault state machine timed with BT.random.
+- Custom overlay rows via overlayRows(), overlay styles from configure(), and
+  BT.timeSeconds-driven effect uniforms.
+
+HOW THE THEME BLOCKS WORK
+-------------------------
+
+Every pixel of an indexed sprite stores a palette index. SpriteSheet.loadIndexed()
+registers the sprite's unique opaque colors at COLOR_BASE (slot 12) - six colors for the
+test sprite, so block 0 occupies slots 12-17. Each further block is a recolored copy of
+those six colors, colorCount slots higher: block k starts at COLOR_BASE + k * colorCount.
+Drawing with paletteOffset = k * colorCount makes every pixel land in block k instead of
+block 0. Thirteen blocks fit in slots 12-89, far below the shared UI theme at 240-251.
+
+Blocks 0-7 (original, silhouette, damage white, damage red, team red, team blue, team
+green, frozen) are filled once in init(). Blocks 8-12 (damage flash, ghost, invincible,
+poison, day/night) are rewritten every tick in update(); render() only changes the offset
+it draws with.
+
+FULLSCREEN CRT
+--------------
+
+The sprite grid is drawn at 640x400. The engine resolves the indexed buffer, upscales it
+3x, and runs a display-tier stack: BarrelDistortion (curved tube), Interference,
+RollLine (an always-on bright band scrolling top to bottom), Scanlines, RGBMask (a faint
+grille), Vignette (light bezel darkening), Noise, Flicker, and Bloom (soft phosphor
+halation). A pixel-tier PixelGlitch adds an occasional subtle horizontal band wobble.
+
+TV faults fire every 150-420 ticks and last 4-24 ticks each, with a sine envelope that
+ramps the chosen fault in and out: H-HOLD (band tear), SNOW (noise), DIM (flicker), GHOST
+(interference), V-ROLL (a faster, brighter roll band). The fault list and labels come from
+src/shared/crt-glitch.js; the chroma split used by the color CRT demos is left out
+because a black-and-white tube has no color channels to split. The same building blocks
+are explained in the PipBoy CRT and Basics Enhanced demos:
+https://demos.blit386.dev/crt-pipboy and https://demos.blit386.dev/basics-enhanced.
+
+Post-process needs WebGPU. The software renderer draws the sprite effects without the CRT
+stack and shows the shared fallback note instead.
+
+Captions, the day/night legend, and the fallback note are drawn with the shared UI kit
+(src/shared/ui.js), which installs its twelve UI colors in slots 240-251 via applyTheme().
+
+TRY THIS
+--------
+
+- Watch the "TV fault" overlay row: it names the active fault and its strength in percent,
+  and reads "NONE 00%" between bursts.
+- Press the backquote key (`) to hide the overlay and see the full CRT picture; press it
+  again to bring the overlay back.
+- Add ?backend=software to the URL to force the software renderer and compare the bare
+  sprite effects with the CRT version.
+
+*/
 
 import {
     BarrelDistortion,
@@ -64,9 +139,6 @@ import { GLITCH_LABELS, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
@@ -89,36 +161,36 @@ const COLOR_BASE = 12;
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
 // the overlay styles below cannot read this.theme yet - these constants spell out where
-// each theme color will land once init() runs.
-const UI_BG = 240; // 'ui_bg' - deep navy screen background.
-const UI_TEXT = 244; // 'ui_text' - off-white primary text.
-const UI_DIM = 245; // 'ui_text_dim' - secondary gray text.
-const UI_GAP = 252; // gray gap between UI elements; a static slot outside both the sprite
-// theme range (12-89) and the applyTheme() range (240-251), set directly in init().
-const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart warnings).
-const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars).
-const UI_WARM = 248; // 'ui_accent_warm' - orange (chart error frames).
-const UI_INFO = 249; // 'ui_info' - light blue (chart tags).
+// each theme color will land once init() runs. UI_GAP is a static slot outside both the
+// sprite theme range (12-89) and the applyTheme() range (240-251), set directly in
+// init().
+const UI_BG = 240; // 'ui_bg' - deep navy screen background
+const UI_TEXT = 244; // 'ui_text' - off-white primary text
+const UI_DIM = 245; // 'ui_text_dim' - secondary gray text
+const UI_GAP = 252; // gray gap between overlay bands
+const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart warnings)
+const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars)
+const UI_WARM = 248; // 'ui_accent_warm' - orange (chart error frames)
+const UI_INFO = 249; // 'ui_info' - light blue (chart tags)
 
-// Theme block indices (as palette offsets from COLOR_BASE).
-// Each block contains one entry per unique sprite color - that count lives in
-// this.colorCount, extracted in init(). Offset = blockIndex * colorCount.
-// Blocks 0..7 are static; blocks 8..12 are dynamic (updated in update()).
+// Theme block indices (as palette offsets from COLOR_BASE). Each block contains one entry
+// per unique sprite color - that count lives in this.colorCount, read in init(). Offset =
+// blockIndex * colorCount. Blocks 0-7 are static; blocks 8-12 are dynamic (rewritten in
+// update()).
 //
-// Block 0 (offset 0):                 Original stone colors.
-// Block 1 (offset colorCount):        Silhouette - all colors near-black.
-// Block 2 (offset 2 * colorCount):    Damage white - all colors bright white.
-// Block 3 (offset 3 * colorCount):    Damage red - all colors shifted red.
-// Block 4 (offset 4 * colorCount):    Team red.
-// Block 5 (offset 5 * colorCount):    Team blue.
-// Block 6 (offset 6 * colorCount):    Team green.
-// Block 7 (offset 7 * colorCount):    Frozen (cool blue).
-// Block 8 (offset 8 * colorCount):    Damage flash (dynamic: toggling white/red).
-// Block 9 (offset 9 * colorCount):    Ghost (dynamic: pulsing low alpha).
-// Block 10 (offset 10 * colorCount):  Invincibility (dynamic: hue rotation).
-// Block 11 (offset 11 * colorCount):  Poison (dynamic: pulsing green brightness).
-// Block 12 (offset 12 * colorCount):  Day/night ambient (dynamic: brightness cycle).
-
+//   Block 0 (offset 0):                 Original sprite colors.
+//   Block 1 (offset colorCount):        Silhouette - all colors near-black.
+//   Block 2 (offset 2 * colorCount):    Damage white - all colors bright white.
+//   Block 3 (offset 3 * colorCount):    Damage red - all colors shifted red.
+//   Block 4 (offset 4 * colorCount):    Team red.
+//   Block 5 (offset 5 * colorCount):    Team blue.
+//   Block 6 (offset 6 * colorCount):    Team green.
+//   Block 7 (offset 7 * colorCount):    Frozen (cool blue).
+//   Block 8 (offset 8 * colorCount):    Damage flash (dynamic: alternating white/red).
+//   Block 9 (offset 9 * colorCount):    Ghost (dynamic: pulsing low alpha).
+//   Block 10 (offset 10 * colorCount):  Invincibility (dynamic: hue rotation).
+//   Block 11 (offset 11 * colorCount):  Poison (dynamic: pulsing green brightness).
+//   Block 12 (offset 12 * colorCount):  Day/night ambient (dynamic: brightness cycle).
 const BLOCK_ORIGINAL = 0;
 const BLOCK_SILHOUETTE = 1;
 const BLOCK_DAMAGE_WHITE = 2;
@@ -127,13 +199,14 @@ const BLOCK_TEAM_RED = 4;
 const BLOCK_TEAM_BLUE = 5;
 const BLOCK_TEAM_GREEN = 6;
 const BLOCK_FROZEN = 7;
-const BLOCK_DAMAGE_FLASH = 8; // Dynamic.
-const BLOCK_GHOST = 9; // Dynamic.
-const BLOCK_INVINCIBLE = 10; // Dynamic.
-const BLOCK_POISON = 11; // Dynamic.
-const BLOCK_DAYNIGHT = 12; // Dynamic.
+const BLOCK_DAMAGE_FLASH = 8; // dynamic
+const BLOCK_GHOST = 9; // dynamic
+const BLOCK_INVINCIBLE = 10; // dynamic
+const BLOCK_POISON = 11; // dynamic
+const BLOCK_DAYNIGHT = 12; // dynamic
 
-// Logical game resolution (where render() draws). The demos page scales this up on screen.
+// Logical game resolution (where render() draws). The demos page scales this up on
+// screen.
 const DISPLAY_W = 640;
 const DISPLAY_H = 400;
 
@@ -141,11 +214,12 @@ const DISPLAY_H = 400;
 const MAX_CANVAS_W = DISPLAY_W * 3;
 const MAX_CANVAS_H = DISPLAY_H * 3;
 
-// Display-tier CRT runs on the upscaled RGBA buffer (3x logical, like basics-enhanced demo).
+// The display-tier CRT runs on the upscaled RGBA buffer (3x logical, like the Basics
+// Enhanced demo).
 const OUTPUT_W = DISPLAY_W * 3;
 const OUTPUT_H = DISPLAY_H * 3;
 
-// Analog-TV glitch bursts (ticks at default 60 FPS).
+// Analog-TV fault bursts (ticks at the default 60 ticks per second).
 const GLITCH_COOLDOWN_MIN = 150;
 const GLITCH_COOLDOWN_MAX = 420;
 const GLITCH_ACTIVE_MIN = 4;
@@ -154,10 +228,11 @@ const GLITCH_INTENSITY_MIN = 0.3;
 const GLITCH_INTENSITY_MAX = 0.95;
 
 // The shared fallback note is one long sentence. split('. ') cuts the string at the
-// sentence break, giving us an array of two shorter lines the UI kit can draw one under
-// the other when the software renderer is active (same pattern as basics-enhanced demo).
+// sentence break, giving an array of two shorter lines the UI kit draws one under the
+// other when the software renderer is active (same pattern as the Basics Enhanced demo).
 const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
+// Resting values for the fault-driven display effects.
 const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.78;
 const NOISE_BASE = 0.038;
@@ -167,20 +242,17 @@ const ROLL_BASE = 0.26;
 const ROLL_SPEED = 0.92;
 const INTERFERENCE_BASE = 0;
 
-// Occasional subtle horizontal band offset (PixelGlitch), separate from TV fault bursts.
+// Occasional subtle horizontal band offset (PixelGlitch), separate from the TV fault
+// bursts.
 const BAND_WOBBLE_COOLDOWN_MIN = 100;
 const BAND_WOBBLE_COOLDOWN_MAX = 280;
 const BAND_WOBBLE_ACTIVE_MIN = 3;
 const BAND_WOBBLE_ACTIVE_MAX = 10;
 const BAND_WOBBLE_INTENSITY = 0.11;
 
-/**
- * Spins the CPU until roughly `ms` milliseconds have passed.
- * The timing chart maps bar height from real update()/render() time; this demo adds
- * a gentle pulse so the scrolling bars are easy to see while you watch the effects.
- *
- * @param {number} ms - Target delay in milliseconds.
- */
+// Spins the CPU until roughly `ms` milliseconds have passed. The timing chart maps bar
+// height from real update()/render() time; this demo adds a gentle pulse so the scrolling
+// bars are easy to see while you watch the effects.
 function burnCpuMs(ms) {
     if (ms <= 0) {
         return;
@@ -190,16 +262,12 @@ function burnCpuMs(ms) {
     const deadline = performance.now() + ms;
 
     while (performance.now() < deadline) {
-        // Empty loop on purpose: we are waiting for the clock, not doing useful work.
+        // Empty loop on purpose: waiting for the clock, not doing useful work.
     }
 }
 
-/**
- * Demonstrates palette-offset based sprite effects.
- * Static effects are pre-built in init(); dynamic effects update in update().
- *
- * @implements {IBTDemo}
- */
+// Palette-offset sprite effects under a Tesla Orava CRT stack. Static effects are
+// pre-built in init(); dynamic effects are rewritten in update().
 class Demo {
     // The palette holds all colors for this demo.
     /** @type {Palette | null} */
@@ -209,25 +277,25 @@ class Demo {
     /** @type {SpriteSheet | null} */
     sheet = null;
 
-    // The source rectangle for the rock sprite.
+    // The source rectangle covering the whole test sprite.
     /** @type {Rect2i | null} */
     charRect = null;
 
-    // How many unique colors the sprite has - every theme block is this many
-    // palette slots wide. Computed in init() after the colors are extracted.
+    // How many unique colors the sprite has - every theme block is this many palette
+    // slots wide. Set in init() after the colors are registered.
     colorCount = 0;
 
-    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
-    // theme.bg, theme.panel, and friends are palette indices for our own drawing.
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme(). theme.bg,
+    // theme.panel, and friends are palette indices for this demo's own drawing.
     theme = null;
 
-    // The extracted original Color32 objects (used to build theme blocks).
+    // The sprite's original Color32 objects, darkest first (used to build theme blocks).
     baseColors = [];
 
-    // animTime drives all dynamic effects.
+    // Seconds elapsed; drives the ghost, invincibility, and poison animations.
     animTime = 0;
 
-    // Which tick the last "damage event" occurred on (for the damage flash).
+    // The tick of the last "damage event" (for the damage flash).
     damageFlashTick = 0;
 
     /** @type {PixelGlitch | null} */
@@ -260,32 +328,46 @@ class Demo {
     /** @type {Bloom | null} */
     bloom = null;
 
+    // True when the WebGPU backend is active and the CRT stack was built.
     effectsAvailable = false;
+
+    // Ticks until the next TV fault burst may start.
     glitchCooldown = 0;
 
     // How many ticks the current TV fault burst still has to run (0 = no burst active).
     glitchTicksLeft = 0;
+
+    // Total length of the current burst in ticks, for the sine envelope.
     glitchDuration = 0;
+
+    // Which fault is running: a GLITCH_TYPES_VROLL key, or 'none'.
     glitchType = 'none';
+
+    // Peak strength of the current burst, 0 to 1.
     glitchPeak = 0;
 
+    // Ticks until the next band wobble may start.
     bandWobbleCooldown = 0;
 
     // How many ticks the current band wobble still has to run (0 = no wobble active).
     bandWobbleTicksLeft = 0;
+
+    // Total length of the current wobble in ticks, for the sine envelope.
     bandWobbleDuration = 0;
+
+    // PixelGlitch seed for the current wobble, so its bands stay put for its duration.
     bandWobbleSeed = 0;
 
+    // Reused every frame for the two overlay rows, so no new array or object is
+    // allocated. overlayRows() rewrites both leftText values.
     overlayRowData = [
         { leftText: 'Tesla Orava CRT: OFF', textPaletteIndex: UI_TEXT },
         { leftText: 'TV fault: NONE', textPaletteIndex: UI_HEADER },
     ];
 
-    /**
-     * Wider logical screen for the sprite grid; display-tier Tesla Orava runs at 3x upscale.
-     *
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A wider logical screen for the sprite grid; the display-tier Tesla Orava stack runs
+    // at a 3x upscale. The overlay starts visible with the palette grid, a tall timing
+    // chart, and the renderer diagnostics bar.
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -296,7 +378,7 @@ class Demo {
             isOverlayVisibleAtStart: true,
 
             // Opt in to the engine timing chart band under the title row.
-            // overlayTimingChartHeight sets band height in pixels (default 22).
+            // overlayTimingChartHeight sets the band height in pixels (default 22).
             isOverlayTimingChartEnabled: true,
             overlayTimingChartHeight: 64,
             overlayTimingChartDiagnostics: 'rich',
@@ -318,11 +400,8 @@ class Demo {
         };
     }
 
-    /**
-     * Sets up the palette, builds all 13 theme blocks, and loads the sprite.
-     *
-     * @returns {Promise<boolean>} Returns true when everything is ready.
-     */
+    // Sets up the palette, builds all 13 theme blocks, loads the sprite, and builds the
+    // CRT stack when WebGPU is active. Returns false when the sprite fails to load.
     async init() {
         console.log('[SpriteEffectsDemo] Initializing...');
 
@@ -334,25 +413,26 @@ class Demo {
         // slots (this.theme.bg, .panel, ...). All captions and legends draw with these.
         this.theme = applyTheme(this.palette);
 
-        // The overlay gap color lives outside the theme's own range, so we set it directly.
+        // The overlay gap color lives outside the theme's own range, so it is set
+        // directly.
         this.palette.set(UI_GAP, new Color32(60, 60, 70));
 
-        // Extract sprite colors
-        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
-        // starting at COLOR_BASE. The returned array is the same colors in palette-write order
-        // (sorted darkest-first by brightness). We keep them so the theme-block builders can
-        // tint each base color and write the result into a higher slot.
+        // Register the sprite colors: scan the PNG and write every unique opaque color
+        // into the palette starting at COLOR_BASE. The returned array is the same colors
+        // in palette-write order (sorted darkest-first by luminance). The theme-block
+        // builders below recolor each base color and write the result into a higher
+        // block.
         this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, COLOR_BASE);
         const colorCount = this.baseColors.length;
         this.colorCount = colorCount;
 
-        // Build the 8 static theme blocks
-        // Each block sits at COLOR_BASE + blockIndex * colorCount.
+        // Build the 8 static theme blocks. Each block sits at COLOR_BASE + blockIndex *
+        // colorCount.
         this.buildStaticThemeBlocks();
 
-        // Dynamic blocks (8..12) start as copies of the original.
-        // update() will replace them each tick. palette.fillBlock(start, source, transform)
-        // writes transform(baseColor) into one slot per base color, starting at `start`.
+        // Dynamic blocks (8-12) start as copies of the original. update() replaces them
+        // each tick. palette.fillBlock(start, source, transform) writes
+        // transform(baseColor) into one slot per base color, starting at `start`.
         for (let block = BLOCK_DAMAGE_FLASH; block <= BLOCK_DAYNIGHT; block++) {
             this.palette.fillBlock(
                 COLOR_BASE + block * colorCount,
@@ -361,7 +441,9 @@ class Demo {
             );
         }
 
-        // Load and indexize sprite
+        // Load and indexize the sprite. loadIndexed() registers the colors again at
+        // COLOR_BASE, in image scan order this time (sort: 'none'), overwriting block 0,
+        // then converts the sheet's pixels to palette indices against that block.
         try {
             const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE, {
                 sort: 'none',
@@ -375,10 +457,9 @@ class Demo {
             return false;
         }
 
-        // Glitch state is shared by both backends - initialize once before the CRT check.
-        // BT.random is the engine's shared random number generator.
-        // Its int() method returns a whole number from the first value up to (but not including) the second,
-        // so this waits a random number of ticks before the first burst.
+        // Fault state is shared by both backends - initialize it once before the CRT
+        // check. BT.random.int(min, max) returns a whole number in [min, max), so this
+        // waits a random number of ticks before the first burst.
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
@@ -392,7 +473,7 @@ class Demo {
             return true;
         }
 
-        // Build the full Tesla Orava effect chain (see setupCrtStack() below render()).
+        // Build the full Tesla Orava effect chain (see setupCrtStack() below).
         this.setupCrtStack();
 
         this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
@@ -403,15 +484,11 @@ class Demo {
         return true;
     }
 
-    /**
-     * Advances animTime and updates all five dynamic theme blocks.
-     *
-     * The damage flash toggles between Block 2 (white) and Block 3 (red) every 3 ticks.
-     * Ghost pulses alpha between 40 and 180.
-     * Invincibility rotates hue around the color wheel.
-     * Poison pulses brightness up and down.
-     * Day/night smoothly cycles brightness over 20 seconds.
-     */
+    // Advances animTime and rewrites all five dynamic theme blocks, then steps the CRT
+    // fault machine when the stack is active. The damage flash alternates the
+    // damage-white and damage-red recipes every 3 ticks for 30 ticks after each damage
+    // event; ghost pulses alpha between 40 and 180; invincibility rotates hue around the
+    // color wheel; poison pulses brightness; day/night cycles brightness over 20 seconds.
     update() {
         this.animTime += BT.deltaSeconds;
 
@@ -435,22 +512,21 @@ class Demo {
         }
 
         // Extra update() work so the overlay timing chart shows green scrolling bars.
-        // Math.sin swings between -1 and 1; * 0.5 + 0.5 remaps that to 0..1 for a smooth pulse.
-        // Keep the combined update+render busy-wait well under a 60 FPS frame (~16 ms)
-        // so low-power devices stay responsive while the timing chart still shows a pulse.
+        // Math.sin swings between -1 and 1; * 0.5 + 0.5 remaps that to 0-1 for a smooth
+        // pulse of 0.5-2.5 ms. The combined update+render busy-wait stays well under a
+        // 60 FPS frame (~16 ms) so low-power devices stay responsive.
         const chartUpdateLoadMs = 0.5 + (Math.sin(BT.timeSeconds * 1.5) * 0.5 + 0.5) * 2;
         burnCpuMs(chartUpdateLoadMs);
     }
 
-    /**
-     * Runs once per screen refresh to draw all the sprite effect demonstrations.
-     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
-     */
+    // Runs once per screen refresh and draws all the sprite effect demonstrations. No
+    // Color32 objects appear in draw calls - only palette indices and offsets.
     render() {
         // Clear the whole screen with the shared UI theme's background color.
         BT.clear(this.theme.bg);
 
-        // Extra render() work so the timing chart shows yellow scrolling bars.
+        // Extra render() work so the timing chart shows amber scrolling bars (0.3-1.8
+        // ms).
         const chartRenderLoadMs = 0.3 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 1.5;
         burnCpuMs(chartRenderLoadMs);
 
@@ -462,8 +538,8 @@ class Demo {
         this.renderDayNightCycle();
 
         // Software renderer: warn on-canvas that the Tesla Orava look is missing. A small
-        // borderless kit group in the top-left corner; the shared note was split into
-        // two lines up top (FALLBACK_LINES) so it stays short and easy to read.
+        // borderless kit group in the top-left corner; the shared note was split into two
+        // lines up top (FALLBACK_LINES) so it stays short.
         if (!this.effectsAvailable) {
             ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 2, pad: 2 });
 
@@ -475,11 +551,8 @@ class Demo {
         }
     }
 
-    /**
-     * Tesla Orava stack and current analog-TV fault (overlay custom rows).
-     *
-     * @returns {readonly { leftText: string }[]}
-     */
+    // Two custom overlay rows: the Tesla Orava stack state and the current analog-TV
+    // fault with its strength in percent. Returns the reused overlayRowData array.
     overlayRows() {
         if (this.effectsAvailable) {
             this.overlayRowData[0].leftText = 'Tesla Orava: ON';
@@ -498,10 +571,8 @@ class Demo {
         return this.overlayRowData;
     }
 
-    /**
-     * Builds the Tesla Orava effect chain once in init(): the pixel-tier band tear plus
-     * the display-tier tube look, in back-to-front order.
-     */
+    // Builds the Tesla Orava effect chain once in init(): the pixel-tier band tear plus
+    // the display-tier tube look, in back-to-front order.
     setupCrtStack() {
         // Pixel tier: indexed-buffer horizontal band tear (V-hold style).
         this.pixelGlitch = new PixelGlitch();
@@ -558,9 +629,8 @@ class Demo {
         }
     }
 
-    /**
-     * Drives RollLine scroll, TV fault bursts, and occasional subtle band offset wobble.
-     */
+    // Drives the RollLine scroll, the TV fault bursts, and the occasional subtle band
+    // offset wobble. A fault burst takes priority: while one runs, the wobble is skipped.
     updateCrtEffects() {
         const seconds = BT.timeSeconds;
         this.rollLine.time = seconds;
@@ -568,6 +638,7 @@ class Demo {
         this.interference.time = seconds;
 
         if (this.glitchTicksLeft > 0) {
+            // t runs 0 to 1 over the burst; sin(t * PI) is a 0 -> 1 -> 0 envelope.
             const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
 
@@ -587,6 +658,7 @@ class Demo {
         this.applyRestingCrtUniforms();
 
         if (this.bandWobbleTicksLeft > 0) {
+            // Same sine envelope as the fault bursts, scaled to the wobble's intensity.
             const t = 1 - (this.bandWobbleTicksLeft - 1) / this.bandWobbleDuration;
             const envelope = Math.sin(t * Math.PI);
 
@@ -609,9 +681,10 @@ class Demo {
         }
 
         this.glitchCooldown--;
+
         if (this.glitchCooldown <= 0) {
-            // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
-            // float() is the decimal cousin of int().
+            // Start a burst: BT.random.pick() chooses one fault type from the list,
+            // float() picks its peak strength and a fresh band seed.
             this.glitchType = BT.random.pick(GLITCH_TYPES_VROLL);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
@@ -620,7 +693,7 @@ class Demo {
         }
     }
 
-    /** Resting Tesla Orava look: scrolling roll band plus calm noise/flicker. */
+    // Resting Tesla Orava look: scrolling roll band plus calm noise and flicker.
     applyRestingCrtUniforms() {
         this.pixelGlitch.intensity = 0;
         this.noise.amount = NOISE_BASE;
@@ -630,9 +703,8 @@ class Demo {
         this.rollLine.speed = ROLL_SPEED;
     }
 
-    /**
-     * @param {number} envelope
-     */
+    // Layers the active fault onto the resting uniforms. `envelope` runs 0 -> 1 -> 0 over
+    // the burst, so every fault ramps in and out instead of snapping.
     applyGlitchUniforms(envelope) {
         const peak = this.glitchPeak * envelope;
 
@@ -650,23 +722,23 @@ class Demo {
         }
     }
 
-    /**
-     * Builds the 8 static theme blocks by transforming the base colors.
-     * Called once in init() - these never change after setup.
-     */
+    // Builds the 7 static recolored blocks (1-7) from the base colors. Called once in
+    // init() - these never change after setup.
     buildStaticThemeBlocks() {
-        // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
-        // n is how many unique colors the sprite has - every block is n slots wide.
+        // Block 0 (original) holds the sprite's own colors, written by the loaders in
+        // init(). n is how many unique colors the sprite has - every block is n slots
+        // wide.
         const n = this.colorCount;
 
-        // Each block below is a palette.fillBlock(start, source, transform) call: it walks
-        // this.baseColors once and writes transform(baseColor) into one slot per color,
-        // starting at `start`. That replaces a hand-written for loop over the same colors.
+        // Each block below is a palette.fillBlock(start, source, transform) call: it
+        // walks this.baseColors once and writes transform(baseColor) into one slot per
+        // color, starting at `start`. That replaces a hand-written for loop over the same
+        // colors.
 
         // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
-        // Floor channels like blocks 4-7 so every recipe hands Color32 whole bytes.
+        // Channels are floored like blocks 4-7 so every recipe hands Color32 whole bytes.
         this.palette.fillBlock(COLOR_BASE + BLOCK_SILHOUETTE * n, this.baseColors, (base) => {
-            // The average brightness of this pixel (0..255 range).
+            // The perceived brightness of this color (0-255).
             const lum = Math.floor(base.luminance);
 
             return new Color32(Math.floor(lum * 0.08), Math.floor(lum * 0.08), Math.floor(lum * 0.1), base.a);
@@ -687,7 +759,7 @@ class Demo {
             return new Color32(Math.min(255, lum + 80), Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a);
         });
 
-        // Block 4: Team red - multiply base colors with a red tint.
+        // Block 4: Team red - multiply the base colors with a red tint.
         this.palette.fillBlock(
             COLOR_BASE + BLOCK_TEAM_RED * n,
             this.baseColors,
@@ -726,7 +798,7 @@ class Demo {
                 ),
         );
 
-        // Block 7: Frozen - push toward cold blue-white.
+        // Block 7: Frozen - push toward a cold blue-white.
         this.palette.fillBlock(COLOR_BASE + BLOCK_FROZEN * n, this.baseColors, (base) => {
             const lum = Math.floor(base.luminance);
 
@@ -734,17 +806,16 @@ class Demo {
         });
     }
 
-    // The 5 update*Block() methods below run every tick (called from update() above), unlike
-    // buildStaticThemeBlocks() which only runs once in init(). They stay as plain for loops
-    // instead of palette.fillBlock(start, source, transform) calls on purpose: fillBlock takes
-    // a transform function, and writing `(base) => ...` inline at each call site would create a
-    // brand-new function 60 times a second. A raw loop reuses the same code without allocating
-    // anything extra per tick.
+    // The 5 update*Block() methods below run every tick (called from update()), unlike
+    // buildStaticThemeBlocks() which runs once in init(). They stay as plain for loops
+    // instead of palette.fillBlock(start, source, transform) calls on purpose: fillBlock
+    // takes a transform function, and writing `(base) => ...` inline at each call site
+    // would create a new closure 60 times a second. A raw loop allocates nothing extra
+    // per tick beyond the Color32 it writes.
 
-    /**
-     * Damage flash: alternates between "all white" and "all red" every 3 ticks
-     * for the first 30 ticks after damage. Fades back to normal after that.
-     */
+    // Damage flash: alternates between the damage-white and damage-red recipes every 3
+    // ticks for the first 30 ticks after a damage event, then returns to the original
+    // colors.
     updateDamageFlashBlock() {
         const flashAge = BT.ticks - this.damageFlashTick;
         const n = this.colorCount;
@@ -756,8 +827,8 @@ class Demo {
             let color;
 
             if (flashAge < 30) {
-                // Math.floor(flashAge / 3) % 2 alternates 0 and 1 every 3 ticks.
-                // 0 = show white flash; 1 = show red.
+                // Math.floor(flashAge / 3) % 2 alternates 0 and 1 every 3 ticks: 0 =
+                // white, 1 = red.
                 const phase = Math.floor(flashAge / 3) % 2;
                 const whitened = Math.floor(128 + lum * 0.5);
                 const redShift = Math.min(255, lum + 80);
@@ -767,7 +838,7 @@ class Demo {
                         ? new Color32(whitened, whitened, whitened, base.a)
                         : new Color32(redShift, Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a);
             } else {
-                // Outside the flash window: use the original color.
+                // Outside the flash window: the original color.
                 color = new Color32(base.r, base.g, base.b, base.a);
             }
 
@@ -775,14 +846,12 @@ class Demo {
         }
     }
 
-    /**
-     * Ghost: the sprite appears semi-transparent with a blue-white tint.
-     * Alpha pulses between 40 and 180 using a sine wave.
-     */
+    // Ghost: the sprite appears semi-transparent with a blue-white tint. Alpha pulses
+    // between 40 and 180 on a sine wave, three radians per second.
     updateGhostBlock() {
-        // Math.sin oscillates between -1 and 1; we shift it to 0..1.
+        // Math.sin oscillates between -1 and 1; * 0.5 + 0.5 shifts it to 0-1.
         const pulse = Math.sin(this.animTime * 3) * 0.5 + 0.5;
-        const alpha = Math.floor(40 + pulse * 140); // 40..180
+        const alpha = Math.floor(40 + pulse * 140); // 40-180
         const n = this.colorCount;
 
         for (let i = 0; i < n; i++) {
@@ -797,10 +866,8 @@ class Demo {
         }
     }
 
-    /**
-     * Invincibility: cycles the entire sprite through the rainbow.
-     * The hue rotates 200 degrees per second.
-     */
+    // Invincibility: cycles the entire sprite through the rainbow. The hue rotates 200
+    // degrees per second.
     updateInvincibleBlock() {
         const hue = (this.animTime * 200) % 360;
         const n = this.colorCount;
@@ -808,10 +875,11 @@ class Demo {
         for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
 
-            // fromHSL takes hue (0-360), saturation (0-100), lightness (0-100).
-            // We use varying lightness so darker parts stay darker.
+            // Color32.fromHSL(hue, saturation, lightness) takes hue in degrees (0-360)
+            // and saturation and lightness as percentages (0-100). Lightness follows the
+            // base color's luminance so darker parts stay darker.
             const lum = base.luminance;
-            const lightness = 30 + (lum / 255) * 40; // 30..70%
+            const lightness = 30 + (lum / 255) * 40; // 30-70 percent
             const rainbow = Color32.fromHSL(hue, 100, lightness);
 
             this.palette.set(
@@ -821,11 +889,9 @@ class Demo {
         }
     }
 
-    /**
-     * Poison: a green tint that pulses brighter and darker 5 times per second.
-     */
+    // Poison: a green tint whose brightness pulses, five radians per second.
     updatePoisonBlock() {
-        const pulse = Math.sin(this.animTime * 5) * 0.2 + 0.8; // 0.6..1.0
+        const pulse = Math.sin(this.animTime * 5) * 0.2 + 0.8; // 0.6-1.0
         const n = this.colorCount;
 
         for (let i = 0; i < n; i++) {
@@ -842,29 +908,26 @@ class Demo {
         }
     }
 
-    /**
-     * Day/night: a brightness multiplier that cycles over 20 seconds (1200 ticks).
-     * At midday the multiplier is ~1.0; at midnight it drops to ~0.3.
-     */
+    // Day/night: a brightness factor that cycles over 20 seconds (1200 ticks). At midday
+    // the factor is 1.0; at midnight it drops to 0.3.
     updateDayNightBlock() {
-        const cycle = (BT.ticks % 1200) / 1200; // 0..1
-        const brightness = (Math.cos(cycle * Math.PI * 2) + 1) * 0.35 + 0.3; // 0.3..1.0
+        const cycle = (BT.ticks % 1200) / 1200; // 0-1
+        const brightness = (Math.cos(cycle * Math.PI * 2) + 1) * 0.35 + 0.3; // 0.3-1.0
         const n = this.colorCount;
 
         for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
-            // Blend from a fixed cool night tint (slight blue) toward the sprite's daylight
-            // colors as brightness approaches 1.
-            // Color32.lerp(a, b, t): t=0 is all `a`, t=1 is all `b`; matches the old per-channel formula.
+
+            // Blend from a fixed cool night tint (slight blue) toward the sprite's
+            // daylight color as brightness approaches 1. Color32.lerp(a, b, t): t = 0 is
+            // all `a`, t = 1 is all `b`.
             const nightTint = new Color32(0, 0, 30, base.a);
             this.palette.set(COLOR_BASE + BLOCK_DAYNIGHT * n + i, Color32.lerp(nightTint, base, brightness));
         }
     }
 
-    /**
-     * Draws the first row: six static palette-offset effects.
-     * Normal, Silhouette, Team Red/Blue/Green, Frozen.
-     */
+    // Draws the first row: six static palette-offset effects - Normal, Silhouette, Team
+    // Red, Team Blue, Team Green, Frozen.
     renderStaticEffects() {
         const row1Y = 130;
         const spacing = 100;
@@ -897,10 +960,8 @@ class Demo {
         ui.caption(6 + spacing * 5, row1Y + 50, 'Slow freeze status', { color: 'dim' });
     }
 
-    /**
-     * Draws the second row: four dynamic palette-offset effects (updated in update()).
-     * Damage Flash, Ghost, Invincibility, Poison.
-     */
+    // Draws the second row: four dynamic palette-offset effects (rewritten in update()) -
+    // Damage Flash, Ghost, Invincibility, Poison.
     renderDynamicEffects() {
         const row2Y = 190;
         const spacing = 100;
@@ -923,10 +984,8 @@ class Demo {
         ui.caption(6 + spacing * 3, row2Y + 50, 'Poison time', { color: 'dim' });
     }
 
-    /**
-     * Shows a day/night cycle effect: the sprite dims at night and brightens at noon.
-     * A progress bar shows the current phase.
-     */
+    // Draws the day/night cycle: the sprite dims at night and brightens at noon, and a
+    // progress bar shows the current phase.
     renderDayNightCycle() {
         const baseY = 260;
         const n = this.colorCount;
@@ -937,8 +996,9 @@ class Demo {
         // Draw the sprite with the day/night block.
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 18), BLOCK_DAYNIGHT * n);
 
-        // Progress bar showing time of day. The bar stays hand-drawn (a kit meter shows a
-        // 0..1 fill, not a moving marker) but its track and outline use theme colors.
+        // Progress bar showing the time of day. The bar stays hand-drawn (a kit meter
+        // shows a 0-1 fill, not a moving marker) but its track and outline use theme
+        // colors.
         const barX = 60;
         const barY = baseY + 30;
         const barWidth = 240;
@@ -949,8 +1009,8 @@ class Demo {
         const cycle = (BT.ticks % 1200) / 1200;
         const indicatorX = barX + Math.floor(barWidth * cycle);
 
-        // The indicator rectangle uses the current day/night color (block 12, first color).
-        // We compute the actual index: COLOR_BASE + 12 * n + 0 = first slot in the day/night block.
+        // The marker uses the current day/night color (block 12, first color). The actual
+        // index is COLOR_BASE + 12 * n + 0: the first slot in the day/night block.
         BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), COLOR_BASE + BLOCK_DAYNIGHT * n);
         BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), this.theme.border);
 
