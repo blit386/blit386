@@ -72,8 +72,8 @@ body {
 #demo-banner .sheet-banner-filter {
     grid-column: 3;
     justify-self: end;
-    width: 15vw;
-    max-width: 210px;
+    width: 29vw;
+    max-width: 300px;
     padding-right: 14px;
 }
 
