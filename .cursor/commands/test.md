@@ -59,10 +59,11 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `scripts/__tests__/capture-demo-shots.test.mjs` | The `capture:shots` driver: argument parsing, variant validation, `/shots?auto` URL building, output-path containment |
 | `plugins/__tests__/demo-registry.test.mjs` | `@description` and `@ogScale` header-tag parsing across both comment styles |
 | `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
-| `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, out-of-range guards, the fresh-copy-vs-singleton distinction |
+| `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, the nine-slice sets it builds, out-of-range guards, the fresh-copy-vs-singleton distinction |
 | `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, and the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy) |
 | `src/shared/__tests__/ui-lint.test.mjs` | The layout lint rules (`overlap`, `out-of-display`, `margin`, `row-gap`) over recorded snapshots, including the zero-width spacer exemption |
-| `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `spacer()` recording a zero-width row |
+| `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `tooltip()` docking and clamping, `spacer()` recording a zero-width row |
+| `src/shared/__tests__/key-names.test.mjs` | `keyLabel()`: letter, digit, arrow, named-key, and numpad labels, and the pass-through for any other code |
 | `src/shared/__tests__/ui-gestures.test.mjs` | Swipe direction/threshold/time-window recognition, the widget-exclusion gate, the dominant-axis tie-break |
 | `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating |
 | `_shots/__tests__/poses.test.mjs` | The pose table: ids, one trigger per pose, every slug known to the registry |

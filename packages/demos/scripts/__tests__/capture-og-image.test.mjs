@@ -10,6 +10,7 @@ import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins/social-meta.js';
+import { INPUT_TICKS } from '../../_shots/poses.js';
 import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
@@ -19,12 +20,15 @@ import {
     buildOgFilterGraph,
     buildOgImagePath,
     buildSeekScript,
+    captureViewportFor,
     computeOgScale,
     DEFAULT_OUT_DIR,
     DEFAULTS,
     parseArgs,
     resolveOutDir,
     resolveScaleMode,
+    VIEWPORT_HEIGHT,
+    VIEWPORT_WIDTH,
 } from '../capture-og-image.mjs';
 
 describe('parseArgs', () => {
@@ -113,6 +117,24 @@ describe('parseArgs', () => {
 
     it('rejects an unrecognized option', () => {
         assert.throws(() => parseArgs(['basics', '--upscale', '3']), /Unknown option/);
+    });
+});
+
+describe('captureViewportFor', () => {
+    it('keeps the starting viewport for a canvas that fits inside it', () => {
+        assert.deepEqual(captureViewportFor(640, 480), { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
+    });
+
+    // Regression guard: sprite-effects runs a 1920x1200 drawing buffer, wider and taller than
+    // the starting viewport, and its card came back cropped left and right and black at the
+    // bottom because only the in-viewport part of the canvas was painted.
+    it('grows to a canvas larger than the starting viewport', () => {
+        assert.deepEqual(captureViewportFor(1920, 1200), { width: 1920, height: 1200 });
+    });
+
+    it('grows each dimension on its own', () => {
+        assert.deepEqual(captureViewportFor(1920, 400), { width: 1920, height: VIEWPORT_HEIGHT });
+        assert.deepEqual(captureViewportFor(400, 1800), { width: VIEWPORT_WIDTH, height: 1800 });
     });
 });
 
@@ -307,5 +329,39 @@ describe('buildSeekScript', () => {
         assert.ok(script.indexOf('isReady') < script.indexOf('renderAt'));
         // The screenshot must not race the compositor: frames pass after the seek, not before.
         assert.ok(script.indexOf('renderAt') < script.indexOf('requestAnimationFrame'));
+    });
+
+    it('presses no keys when the pose has none', () => {
+        assert.doesNotMatch(buildSeekScript(4.5, 10_000), /KeyboardEvent/);
+    });
+
+    // The card must match the /shots capture of the same pose (the site-index tile), so a
+    // pose's keys go down after the seek, the engine steps INPUT_TICKS on, and they come up.
+    it('presses, steps INPUT_TICKS, and releases the pose keys on the canvas', () => {
+        const script = buildSeekScript(1, 10_000, ['KeyB', 'Digit3']);
+
+        assert.ok(script.includes(`getElementById('${CANVAS_ID}')`));
+        assert.ok(script.includes('["KeyB","Digit3"]'));
+        assert.ok(script.includes(`renderAt(1 + ${INPUT_TICKS} / window.BT.targetFPS, { from: 'current' })`));
+
+        const down = script.indexOf("'keydown'");
+        const step = script.indexOf("{ from: 'current' }");
+        const up = script.indexOf("'keyup'");
+
+        assert.ok(script.indexOf('renderAt(1)') < down);
+        assert.ok(down < step && step < up);
+        assert.ok(up < script.indexOf('requestAnimationFrame'));
+    });
+
+    // The /shots capture grabs its image with captureFrame(), which renders the seeked frame
+    // a second time; the card does the same after the keys come up, so a button lit by the
+    // press shows on both.
+    it('renders the frame once more after the keys come up, and only when there are keys', () => {
+        const script = buildSeekScript(1, 10_000, ['KeyB']);
+        const up = script.indexOf("'keyup'");
+        const again = script.indexOf('captureFrame()');
+
+        assert.ok(up < again && again < script.indexOf('requestAnimationFrame'));
+        assert.doesNotMatch(buildSeekScript(1, 10_000), /captureFrame/);
     });
 });

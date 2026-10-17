@@ -6,7 +6,8 @@
  * The frame is deterministic: the page loads under `?embed&capture` (which puts the engine on
  * `window.BT`), and the script seeks it with `BT.renderAt(at)`, where `at` is the first pose of
  * the demo in `_shots/poses.js` - the same table the /shots gallery uses, so the two cannot
- * drift apart and no wall-clock sleep decides what the card shows.
+ * drift apart and no wall-clock sleep decides what the card shows. A first pose with `keys`
+ * also has them pressed and released after the seek, the same way the /shots capture does.
  *
  * Why an element screenshot rather than `BT.captureFrame()`: a WebGPU swap chain does not
  * reliably read back through `canvas.toDataURL()`, and the card needs the CSS-sized canvas
@@ -48,7 +49,7 @@ import {
     OG_SCALE_DEFAULT,
     OG_SCALE_MODES,
 } from '../plugins/social-meta.js';
-import { posesFor } from '../_shots/poses.js';
+import { INPUT_TICKS, posesFor } from '../_shots/poses.js';
 import {
     buildCanvasReadyScript,
     buildEmbedUrl,
@@ -67,9 +68,12 @@ export const PACKAGE_ROOT = resolve(SCRIPTS_DIR, '..');
 // Shown in the usage text and used as the fallback when --out is omitted.
 export const DEFAULT_OUT_DIR = join('public', OG_IMAGE_DIR);
 
-// Comfortably larger than the engine's 960x720 maximum canvas, so the restyled canvas is never
-// clipped by the viewport. deviceScaleFactor must be 1: at 2 the element screenshot comes back
-// twice the CSS box and every scale calculation below would be off by that factor.
+// The starting viewport, comfortably larger than the engine's default 960x720 maximum canvas.
+// A demo can raise its own limit through `maxCanvasSize` and `drawingBufferSize`
+// (sprite-effects runs a 1920x1200 buffer), so captureOne grows the viewport to the canvas
+// with captureViewportFor before restyling. deviceScaleFactor must be 1: at 2 the element
+// screenshot comes back twice the CSS box and every scale calculation below would be off by
+// that factor.
 export const VIEWPORT_WIDTH = 1600;
 export const VIEWPORT_HEIGHT = 1000;
 export const DEVICE_SCALE_FACTOR = 1;
@@ -263,6 +267,23 @@ export function resolveScaleMode(cliMode, demoMode) {
 }
 
 /**
+ * The viewport a canvas of this drawing-buffer size needs so the element screenshot gets all
+ * of it: the starting viewport, grown in either dimension the canvas exceeds.
+ *
+ * The page centers the canvas, so a canvas wider than the viewport starts at a negative x and
+ * one taller runs past the bottom. The browser only paints what is inside the viewport, so the
+ * screenshot keeps the canvas size but comes back cropped on the left and right and black at
+ * the bottom.
+ *
+ * @param {number} width Canvas drawing-buffer width in pixels.
+ * @param {number} height Canvas drawing-buffer height in pixels.
+ * @returns {{ width: number, height: number }} Viewport size for `page.setViewportSize`.
+ */
+export function captureViewportFor(width, height) {
+    return { width: Math.max(VIEWPORT_WIDTH, width), height: Math.max(VIEWPORT_HEIGHT, height) };
+}
+
+/**
  * How far to scale a captured canvas so it fits the card.
  *
  * `integer` mode picks the largest whole-number factor that fits, which is the point of the
@@ -387,11 +408,35 @@ export function buildCaptureUrl(baseUrl, slug) {
  * `renderAt` needs the game loop. Resolves after the seeked frame has had two animation frames
  * to reach the screen.
  *
+ * When the pose has `keys`, they go down on the canvas after the seek, the engine steps
+ * INPUT_TICKS further, and they come up - the same steps `injectInput` in `_shots/capture.js`
+ * takes. Then `BT.captureFrame()` renders that frame once more, as the /shots capture does
+ * when it grabs the image: a widget that reacts to a press partway through `render()` (a
+ * button lighting up as it switches something on) shows it from the second render on. So
+ * the card matches the pose's /shots capture (the site-index tile).
+ *
  * @param {number} at Seconds on the engine clock.
  * @param {number} timeoutMs How long to wait for the engine before failing.
+ * @param {string[]} [keys] KeyboardEvent.code strings to press, or none.
  * @returns {string} JavaScript source. Resolves once the frame is rendered.
  */
-export function buildSeekScript(at, timeoutMs) {
+export function buildSeekScript(at, timeoutMs, keys = []) {
+    const input =
+        keys.length === 0
+            ? ''
+            : `
+    const canvas = document.getElementById('${CANVAS_ID}');
+    const keys = ${JSON.stringify(keys)};
+    const send = (type) => {
+        for (const code of keys) {
+            canvas.dispatchEvent(new KeyboardEvent(type, { code, key: code, bubbles: true }));
+        }
+    };
+    send('keydown');
+    await window.BT.renderAt(${at} + ${INPUT_TICKS} / window.BT.targetFPS, { from: 'current' });
+    send('keyup');
+    await window.BT.captureFrame();`;
+
     return `
 (async () => {
     const deadline = Date.now() + ${timeoutMs};
@@ -399,7 +444,7 @@ export function buildSeekScript(at, timeoutMs) {
         if (Date.now() >= deadline) throw new Error('engine was not ready before the seek deadline');
         await new Promise((tick) => setTimeout(tick, 16));
     }
-    await window.BT.renderAt(${at});
+    await window.BT.renderAt(${at});${input}
     // renderAt resolves once the frame is submitted to the GPU, not once it is presented. Two
     // animation frames let the compositor show it before the element screenshot.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -523,6 +568,9 @@ async function captureOne(page, slug, options) {
     const nativePath = buildNativeImagePath(options.out, slug);
     const cardPath = buildOgImagePath(options.out, slug);
 
+    // Every demo loads at the starting viewport: under --all the page is reused, and a demo
+    // after a large one (sprite-effects) would otherwise boot inside its grown viewport.
+    await page.setViewportSize({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
     await page.goto(buildCaptureUrl(options.baseUrl, slug));
 
     // Strict: a card rendered from the browser's 300x150 default would be a silently wrong
@@ -530,14 +578,21 @@ async function captureOne(page, slug, options) {
     await page.evaluate(buildCanvasReadyScript(CANVAS_ID, CANVAS_READY_TIMEOUT_MS, true));
     await page.evaluate(buildWebGPUProbeScript(CANVAS_ID));
 
+    // Grow the viewport to the canvas when the canvas is bigger (see captureViewportFor).
+    const bufferSize = await page.locator(`#${CANVAS_ID}`).evaluate((canvas) => ({
+        width: canvas.width,
+        height: canvas.height,
+    }));
+    await page.setViewportSize(captureViewportFor(bufferSize.width, bufferSize.height));
+
     const dimensions = await page.evaluate(buildCanvasPrepScript(CANVAS_ID));
 
     // Seek after the restyle so the frame on screen was rendered for the final canvas box. The
     // first pose of the demo is the moment the card shows (the site-index tile uses it too).
-    const [{ at }] = posesFor(slug);
+    const [{ at, keys }] = posesFor(slug);
 
     console.log(`  canvas ${dimensions.width}x${dimensions.height}, seeking to ${at}s...`);
-    await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS));
+    await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS, keys));
 
     await page.locator(`#${CANVAS_ID}`).screenshot({ path: nativePath });
 

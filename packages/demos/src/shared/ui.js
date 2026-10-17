@@ -34,10 +34,19 @@
  * so steady-state frames allocate nothing - safe to call from render() at 60 FPS.
  */
 
-import { UI_ANCHORS, UiContext } from './ui-core.js';
+import { FONT_W, UI_ANCHORS, UiContext } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
-import { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET } from './ui-theme.js';
+import {
+    applyTheme,
+    BUTTON_LOOK,
+    litRimColor,
+    THEME_DEFAULT_START_SLOT,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    THEME_PANEL_OFFSET,
+    THEME_TEXT_OFFSET,
+} from './ui-theme.js';
 import {
     audioUnlockHint,
     button,
@@ -48,9 +57,11 @@ import {
     meter,
     panel,
     pip,
+    PIP_SIZE,
     separator,
     slider,
     spacer,
+    tooltip,
 } from './ui-widgets.js';
 
 // The one shared context. Demos run one at a time, so a single instance serves them all.
@@ -122,6 +133,77 @@ const ui = {
     },
 
     /**
+     * A small label box docked above `anchor` (a cell, a swatch, a sprite), drawn
+     * with the shared tooltip nine-slice. Self-contained: call it on its own,
+     * outside ui.begin()/ui.end(), and after the thing it describes so the box
+     * draws on top.
+     *
+     * Centered on the anchor, then clamped inside the display. Pass `minY` to
+     * keep it out of a title strip: if there is no room above the anchor, the
+     * box drops down to `minY` instead of covering that strip.
+     *
+     * @param {import('blit386').Rect2i} anchor - The box the tooltip sits above.
+     * @param {string} label - Text inside the box. An empty string draws nothing.
+     * @param {{ minY?: number, gap?: number }} [opts] - minY is the topmost the
+     *   box may sit (default 0). gap is the space above the anchor (default 2).
+     */
+    tooltip(anchor, label, opts) {
+        tooltip(ctx, anchor, label, opts);
+    },
+
+    /**
+     * Fills a rectangle with any palette slot - the same as BT.drawRectFill(), but drawn as a
+     * sprite. Use it for artwork that sits on top of a ui.panel(): the engine draws every
+     * BT.drawRectFill() before every sprite, and kit panels are sprites, so a plain
+     * BT.drawRectFill() would end up hidden underneath the panel. Self-contained: call it
+     * on its own, after the panel's ui.end().
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    drawRectFill(rect, slot) {
+        ctx.drawRectFill(rect, slot);
+    },
+
+    /**
+     * Draws a button face - the same rounded nine-slice ui.button() uses - over any
+     * rectangle, for demos that lay out their own button-shaped cells (a grid of glyphs,
+     * say) and handle the clicks themselves. Self-contained, drawn right away as a sprite.
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {'rest' | 'hover' | 'held' | 'warn'} look - One of BUTTON_LOOK's values.
+     */
+    drawButtonFace(rect, look) {
+        ctx.drawButtonFace(rect, look);
+    },
+
+    /**
+     * Draws the same rounded button face with its fill in any palette slot - for
+     * button-shaped cells that light up in a scene color, like a key cap flashing yellow.
+     * The rim is the theme border unless `rimSlot` names another slot (a lighter shade of
+     * the fill reads best). Self-contained, drawn right away as a sprite.
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot for the fill, 1-255.
+     * @param {number} [rimSlot] - Palette slot for the rim, 1-255. Defaults to the theme
+     *   border.
+     */
+    drawButtonFill(rect, slot, rimSlot) {
+        ctx.drawButtonFill(rect, slot, rimSlot);
+    },
+
+    /**
+     * Outlines a rectangle with any palette slot - the same as BT.drawRect(), but drawn as
+     * sprites, so it stays visible on top of a ui.panel() (see ui.drawRectFill()).
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    drawRect(rect, slot) {
+        ctx.drawRect(rect, slot);
+    },
+
+    /**
      * The standard "click or press a key to enable sound" row for audio demos.
      * Draws only while audio is still locked; call it inside a group each frame.
      * Pass `{ text }` to shorten the wording on tiny playfields.
@@ -166,9 +248,12 @@ const ui = {
 
     /**
      * A push button. True on the frame it is clicked, tapped, or its key was pressed.
+     * Pass `lit: { fill, rim }` (two palette slots) to show it switched on: filled with
+     * `fill`, rimmed with `rim` (see litRimColor()), and labeled in the dark background
+     * color.
      *
      * @param {string} text
-     * @param {{ key?: string, width?: number, id?: string }} [opts]
+     * @param {{ key?: string, width?: number, id?: string, lit?: { fill: number, rim: number } }} [opts]
      * @returns {boolean}
      */
     button(text, opts) {
@@ -176,11 +261,12 @@ const ui = {
     },
 
     /**
-     * A draggable value bar. Returns the next value: `v = ui.slider('Vol', v);`
+     * A draggable value bar, drawn with the meter art. Returns the next value:
+     * `v = ui.slider('Vol', v);`
      *
      * @param {string} text
      * @param {number} value
-     * @param {{ min?: number, max?: number, width?: number, id?: string }} [opts]
+     * @param {{ min?: number, max?: number, width?: number, id?: string, decimals?: number }} [opts]
      * @returns {number}
      */
     slider(text, value, opts) {
@@ -284,4 +370,17 @@ const ui = {
     },
 };
 
-export { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui, UI_ANCHORS };
+export {
+    applyTheme,
+    BUTTON_LOOK,
+    FONT_W,
+    litRimColor,
+    PIP_SIZE,
+    THEME_DEFAULT_START_SLOT,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    THEME_PANEL_OFFSET,
+    THEME_TEXT_OFFSET,
+    ui,
+    UI_ANCHORS,
+};
