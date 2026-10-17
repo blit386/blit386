@@ -82,15 +82,16 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
-    if (!isSheetGalleryNavEnabled()) {
-        return;
-    }
-
+    // The filter box stays on narrow screens, so its shortcut does too.
     if (action === 'filter') {
         filterBox.focus();
         filterBox.select();
         event.preventDefault();
 
+        return;
+    }
+
+    if (!isSheetGalleryNavEnabled()) {
         return;
     }
 
