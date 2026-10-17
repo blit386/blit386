@@ -1,55 +1,92 @@
-/**
- * Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
- * @description Remap face buttons at runtime with BT.inputMap: defaults, custom OR keys, and clearing a binding.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites: Basics (https://demos.blit386.dev/basics),
- * Keyboard Input (https://demos.blit386.dev/keyboard-input).
- *
- * Live version: https://demos.blit386.dev/input-map-remapping
- *
- * The engine stores two runtime keyboard tables (players 0 and 1). Each
- * face button (`BT.BTN_UP` through `BT.BTN_SELECT`) can list zero or more
- * `KeyboardEvent.code` strings. If any listed key is held, the logical
- * button counts as down (OR). This demo switches presets so you can feel
- * defaults, a custom map, and a cleared binding.
- *
- * Important: `BT.isKeyDown('KeyW')` only watches the real W key. Changing the map
- * does not rename keys - it changes which keys feed face buttons through
- * `BT.isDown(BT.BTN_*, player)`.
- *
- * The preset switches are shared-UI-kit buttons (src/shared/ui.js), so on a phone
- * you can tap them; on a keyboard the number keys printed on each button still work.
- *
- * Try this:
- * - Press 1 (or tap the button) for built-in defaults (`BT.inputMapReset()`).
- * - Press 2 for a custom layout (see on-screen text).
- * - Press 3 to clear player 0's A button until you pick another preset.
- * - Press 0 or R anytime to restore defaults (same idea as 1).
- * - Click the canvas if preset keys stop responding (focus left the page).
- */
+/*
+
+Input Map Remapping: rebind face buttons at runtime with BT.inputMap and BT.inputMapReset.
+@description Remap face buttons at runtime with BT.inputMap: defaults, custom OR keys, and clearing a binding.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Keyboard Input: https://demos.blit386.dev/keyboard-input
+
+Live version: https://demos.blit386.dev/input-map-remapping
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input#keyboard
+  - Overlay: https://blit386.dev/docs/guides/overlay#colors-and-hud-palette-slots
+
+Reference:
+  - Overlay: https://blit386.dev/docs/api/overlay#event-tags
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A wide 640x480 screen with a title strip and two dim lines of intro text at the top. Below
+them, two equal panels sit side by side: "Player 0" on the left and "Player 1" on the
+right. Each lists that player's default keys, then a column of eight pips, one per face
+button (Up, Down, Left, Right, A, B, Start, Select). A pip fills while its button is held.
+
+In the bottom-left corner, a "Presets" panel holds four kit buttons that switch between
+key maps, and an "Active" row names the map in use right now. Each switch also drops a tag
+on the engine overlay's timing chart.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- The engine keeps two runtime keyboard tables, one for player 0 and one for player 1.
+  Each face button (BT.BTN_UP through BT.BTN_SELECT) lists zero or more KeyboardEvent.code
+  strings; if any listed key is held, the button counts as down (OR).
+- BT.inputMap(player, button, ...keys) replaces the key list for one button. Passing
+  several keys makes either one count; passing none clears the binding.
+- BT.inputMapReset() restores the shipped defaults (copies of BT.DEFAULT_KEYBOARD_PLAYER1
+  and BT.DEFAULT_KEYBOARD_PLAYER2) for both players.
+- BT.isDown(BT.BTN_*, player) reads through the map; BT.isKeyDown('KeyW') does not.
+  Changing the map does not rename keys - it changes which keys feed face buttons.
+- UI kit buttons with a { key } binding, so one click, tap, or key press all do the same
+  thing, and BT.isKeyPressed('KeyR') as an extra alias read in update().
+- overlayStyle and overlayTimingChartStyle in configure() take literal palette slot
+  numbers, because configure() runs before applyTheme() in init().
+
+TRY THIS
+--------
+
+- Press 1 (or tap the button) for the built-in defaults (BT.inputMapReset()).
+- Press 2 for the custom map: player 0's A moves to Z, player 0's Left listens to Q or E,
+  and player 1's Up moves to I. Hold Q or E and watch player 0's Left pip light either
+  way (the A key no longer does); the up arrow no longer lights player 1's Up pip, but I
+  does.
+- Press 3 to clear player 0's A button until you pick another preset - Space and B stop
+  lighting the A pip.
+- Press 0 or R anytime to restore defaults (same idea as 1).
+- Press the backquote key (`) to open the engine overlay and see a tag on the timing
+  chart for each preset switch.
+- Click the canvas if the preset keys stop responding (focus left the page).
+
+*/
 
 import { bootstrap, BT, Vector2i } from 'blit386';
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// Layout for a 640x480 logical framebuffer (set in configure(); wider than engine default).
+// Layout for a 640x480 logical screen (set in configure(); wider than the engine default)
+// so two panels of key maps fit comfortably side by side.
 const DISPLAY_W = 640;
 const DISPLAY_H = 480;
 const MARGIN_X = 24;
 const GAP_PANELS = 24;
+
 // Two equal columns: margin + panel + gap + panel + margin == DISPLAY_W.
 const PANEL_W = Math.floor((DISPLAY_W - 2 * MARGIN_X - GAP_PANELS) / 2);
 const PANEL0_X = MARGIN_X;
 const PANEL1_X = MARGIN_X + PANEL_W + GAP_PANELS;
 
 // Where the intro text and the two player panels start, measured from the top of the
-// screen in pixels. The top bar strip drawn by the kit is 22 pixels tall, so 28 clears it.
+// screen in pixels. The top bar strip drawn by the kit is 22 pixels tall, so 28 clears
+// it.
 const INTRO_Y = 28;
 const PANEL_TOP_Y = 88;
 
@@ -58,14 +95,16 @@ const PRESET_BUTTON_W = 200;
 
 // The engine overlay (configured below) needs palette slot numbers, but configure() runs
 // BEFORE init(), where applyTheme() installs the shared UI colors. applyTheme() always
-// writes its twelve colors into slots 240..251 (its default start slot), so we can write
+// writes its twelve colors into slots 240-251 (its default start slot), so we can write
 // the slot numbers out here as named constants instead of magic numbers.
-const THEME_SLOT_PANEL = 242; // Panel fill (dark blue).
-const THEME_SLOT_TEXT = 244; // Primary text (off-white).
-const THEME_SLOT_HEADER = 246; // Panel titles (warm amber).
-const THEME_SLOT_ACCENT = 247; // Lit / active (phosphor green).
-const THEME_SLOT_WARM = 248; // Warnings (warm orange).
+const THEME_SLOT_PANEL = 242; // panel fill (dark blue)
+const THEME_SLOT_TEXT = 244; // primary text (off-white)
+const THEME_SLOT_HEADER = 246; // panel titles (warm amber)
+const THEME_SLOT_ACCENT = 247; // lit / active (phosphor green)
+const THEME_SLOT_WARM = 248; // warnings (warm orange)
 
+// The eight face buttons in the order the panels list them, each pairing an on-screen
+// label with the engine's button constant.
 /** @type {Array<{ label: string, code: number }>} */
 const FACE_BUTTONS = [
     { label: 'Up', code: BT.BTN_UP },
@@ -78,11 +117,7 @@ const FACE_BUTTONS = [
     { label: 'Select', code: BT.BTN_SELECT },
 ];
 
-/**
- * Cycles keyboard face-button maps with `BT.inputMap` / `BT.inputMapReset`.
- *
- * @implements {IBTDemo}
- */
+// Cycles keyboard face-button maps with BT.inputMap and BT.inputMapReset.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
@@ -91,17 +126,13 @@ class Demo {
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
-    // Human-readable name for the active preset (we track it ourselves - the
-    // engine does not expose a "get current map" API).
+    // Human-readable name for the active preset. We track it ourselves - the engine does
+    // not expose a "get current map" API.
     presetLabel = '1 Defaults (engine tables)';
 
-    /**
-     * Wider logical canvas than `defaultConfig()` so two panels of key maps fit comfortably.
-     * No post-process effects, so we upscale 2x in the browser (maxCanvasSize) instead
-     * of allocating a larger drawing buffer (drawingBufferSize).
-     *
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A wider logical screen than the engine default so two panels of key maps fit. No
+    // post-process effects, so we upscale 2x in the browser (maxCanvasSize) instead of
+    // allocating a larger drawing buffer (drawingBufferSize).
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -124,53 +155,47 @@ class Demo {
                 tagPaletteIndex: THEME_SLOT_ACCENT,
             },
 
-            // Arrow keys and Space scroll the host page by default. This demo maps those keys
-            // (player 1 uses arrows), so opt in so pressing them does not move the page.
+            // Arrow keys and Space scroll the host page by default. This demo maps those
+            // keys (player 1 uses arrows), so opt in so pressing them does not move the
+            // page.
             isCapturingKeyboardScroll: true,
         };
     }
 
-    /**
-     * Palette setup and a clean slate for keyboard maps when the page loads.
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Palette setup and a clean slate for the keyboard maps when the page loads.
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        // Install the shared UI theme (twelve colors in slots 240..251) before handing
-        // the palette to the engine. Every panel, button, and pip below draws with these.
+        // Install the shared UI theme (twelve colors in slots 240-251) before handing the
+        // palette to the engine. Every panel, button, and pip below draws with these.
         this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
-        // Copy fresh maps from `BT.DEFAULT_KEYBOARD_PLAYER1` / `...PLAYER2`
-        // so hot reload or revisiting this URL does not inherit another demo's edits.
+        // Copy fresh maps from BT.DEFAULT_KEYBOARD_PLAYER1 / ...PLAYER2 so hot reload or
+        // revisiting this URL does not inherit another demo's edits.
         BT.inputMapReset();
         this.presetLabel = '1 Defaults (engine tables)';
+
         return true;
     }
 
-    /**
-     * Update-side housekeeping for the UI kit, plus one extra keyboard alias.
-     */
+    // Update-side housekeeping for the UI kit, plus one extra keyboard alias.
     update() {
         // Let the kit latch keyboard shortcuts and touch contacts for this frame's
         // buttons. This must be the first line of update() when buttons use { key }.
         ui.tick();
 
-        // The reset button below is bound to Digit0, but the original demo also accepted
-        // R as a second reset key. A kit button can only carry one key binding, so this
-        // alias stays here in update() (keyboard edges are safe to read here - never in
-        // render()). `isKeyPressed` without a repeat rate only fires once per press.
+        // The reset button below is bound to Digit0, but this demo also accepts R as a
+        // second reset key. A kit button can only carry one key binding, so this alias
+        // stays here in update() (keyboard edges are safe to read here - never in
+        // render()). isKeyPressed without a repeat rate only fires once per press.
         if (BT.isKeyPressed('KeyR')) {
             this.applyPresetDefaults();
         }
     }
 
-    /**
-     * Draw the intro text, the preset buttons, and both player panels.
-     */
+    // Draws the intro text, the preset buttons, and both player panels.
     render() {
         // Wipe the whole screen with the theme's deep-navy background color.
         BT.clear(this.theme.bg);
@@ -219,56 +244,49 @@ class Demo {
         ui.end();
     }
 
-    /**
-     * Restore the shipped tables (`BT.DEFAULT_KEYBOARD_PLAYER1` / PLAYER2 copies).
-     */
+    // Restores the shipped tables (copies of BT.DEFAULT_KEYBOARD_PLAYER1 / PLAYER2).
     applyPresetDefaults() {
         BT.inputMapReset();
         this.presetLabel = '1 Defaults (BT.inputMapReset)';
         BT.assignTag('Map: defaults');
     }
 
-    /**
-     * Custom layout: remap a few buttons, and give **two** keys for one direction
-     * so either key counts (OR) - hold Q **or** E and player 0 left should light.
-     */
+    // Custom layout: remaps a few buttons, and gives TWO keys to one direction so either
+    // key counts (OR) - hold Q or E and player 0's Left pip should light.
     applyPresetCustom() {
         // Start from known defaults, then layer edits (order matters only for clarity).
         BT.inputMapReset();
 
-        // Player 0: A is **Z** only for this preset (Space no longer maps here until reset).
+        // Player 0: A is Z only for this preset (Space and B no longer map here until
+        // reset).
         BT.inputMap(0, BT.BTN_A, 'KeyZ');
 
-        // Player 1: move **up** to **I** so arrow keys no longer drive UP for this preset
+        // Player 1: move Up to I so the up arrow no longer drives it for this preset
         // until we reset (we replace the whole key list for that button).
         BT.inputMap(1, BT.BTN_UP, 'KeyI');
 
-        // Player 0: LEFT listens to **two** keys at once - first **or** second held counts.
+        // Player 0: Left listens to TWO keys at once - either one held counts.
         BT.inputMap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
 
         this.presetLabel = '2 Custom (P0: Z=A, Q|E=Lft | P1: I=Up)';
         BT.assignTag('Map: custom');
     }
 
-    /**
-     * Defaults everywhere, then **remove** keyboard bindings for player 0's A button.
-     * Passing **no** key strings clears that slot until you map again.
-     */
+    // Defaults everywhere, then REMOVES the keyboard bindings for player 0's A button.
+    // Passing no key strings clears that slot until you map again.
     applyPresetClearPlayer0A() {
         BT.inputMapReset();
-        // Empty rest arguments -> empty list stored -> no key lights BTN_A for player 0.
+
+        // No keys after the button means an empty list is stored, so no key lights BTN_A
+        // for player 0.
         BT.inputMap(0, BT.BTN_A);
         this.presetLabel = '3 Cleared P0 A (BT.inputMap(0, BTN_A) with no keys)';
         BT.assignTag('Map: cleared A');
     }
 
-    /**
-     * One player's panel: title, default-key hints, and a column of live face-button pips.
-     *
-     * @param {number} player - 0 or 1.
-     * @param {number} originX - Left edge (pixels).
-     * @param {number} originY - Top edge (pixels).
-     */
+    // Draws one player's panel: title, default-key hints, and a column of live
+    // face-button pips. `player` is 0 or 1; `originX` and `originY` are the panel's
+    // top-left corner in pixels.
     renderPlayerPanel(player, originX, originY) {
         // Pin the group at an exact position and force both panels to the same width so
         // the two columns line up regardless of how long each panel's text rows are.
@@ -295,6 +313,7 @@ class Demo {
         // render().
         for (let i = 0; i < FACE_BUTTONS.length; i++) {
             const { label, code } = FACE_BUTTONS[i];
+
             ui.pip(label, BT.isDown(code, player));
         }
 
