@@ -184,19 +184,20 @@ to these URLs via `VINTAGE_URLS`.
 
 ## Shared UI kit
 
-All on-screen demo UI - panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
-D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 46 of the 50 demos.
-Four demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay),
-`hello-world` (a bare-bones starter kept as a minimal reference, with no demo UI at all), `hypercube` (a full-canvas
-tesseract with no shared UI kit), and `logo-lowres` (a full-canvas showcase with no demo HUD):
+All on-screen demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters,
+a virtual touch D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 46 of
+the 50 demos. Four demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine
+overlay), `hello-world` (a bare-bones starter kept as a minimal reference, with no demo UI at all), `hypercube` (a
+full-canvas tesseract with no shared UI kit), and `logo-lowres` (a full-canvas showcase with no demo HUD):
 
 | File | What it provides |
 | --- | --- |
 | `ui.js` | The single entry point demos import: `applyTheme()` and the `ui` object |
 | `ui-core.js` | Immediate-mode context: layout anchors, pooled draw commands, hit testing |
-| `ui-widgets.js` | Panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters |
-| `ui-theme.js` | `applyTheme(palette)` - installs the 12 shared UI colors (slots 240-251 by default) |
+| `ui-widgets.js` | Panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters |
+| `ui-theme.js` | `applyTheme(palette)` - installs the 12 shared UI colors (slots 240-251 by default) and builds the panel, button, meter, and tooltip nine-slices from them; also `THEME_OVERLAY_STYLE` and `THEME_OVERLAY_AUDIO_METER_STYLE` for `configure()` |
 | `ui-dpad.js` | The virtual touch D-pad (`ui.dpadWidget()`, `ui.dpad.isDown` / `ui.dpad.isPressed`) |
+| `key-names.js` | `keyLabel(code)` - short on-screen names for `KeyboardEvent.code` strings |
 | `ui-gestures.js` | Swipe recognition (`ui.swipe()`) and invisible tap zones (`ui.tapIn()`) |
 | `post-process-backend.js` | `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` for effect demos that need WebGPU |
 

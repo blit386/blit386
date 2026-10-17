@@ -6,7 +6,19 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { applyTheme, T, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET } from '../ui-theme.js';
+import { Color32 } from 'blit386';
+
+import {
+    applyTheme,
+    BUTTON_LOOK,
+    litRimColor,
+    T,
+    THEME_DEFAULT_START_SLOT,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    THEME_PANEL_OFFSET,
+    THEME_TEXT_OFFSET,
+} from '../ui-theme.js';
 
 /**
  * A minimal fake palette: just enough surface for applyTheme() to write into (`size`,
@@ -26,6 +38,9 @@ function createFakePalette(size = 256) {
         named,
         set(slot, color) {
             slots.set(slot, color);
+        },
+        get(slot) {
+            return slots.get(slot);
         },
         setNamed(name, slot) {
             named.set(name, slot);
@@ -62,6 +77,22 @@ describe('applyTheme', () => {
             'text',
             'warm',
         ]);
+    });
+
+    it('points the overlay styles at the slots the default applyTheme() writes', () => {
+        const theme = applyTheme(createFakePalette());
+
+        assert.deepEqual(THEME_OVERLAY_STYLE, {
+            barPaletteIndex: theme.text,
+            textPaletteIndex: theme.shadow,
+            gapPaletteIndex: theme.bg,
+        });
+        assert.deepEqual(THEME_OVERLAY_AUDIO_METER_STYLE, {
+            levelBarPaletteIndex: theme.accent,
+            trackPaletteIndex: theme.bg,
+            warningPaletteIndex: theme.header,
+            clipPaletteIndex: theme.warm,
+        });
     });
 
     it('shifts the whole block when a custom startSlot is passed', () => {
@@ -127,5 +158,109 @@ describe('applyTheme', () => {
 
         applyTheme(palette, 150);
         assert.equal(T.bg, 150);
+    });
+});
+
+describe('applyTheme nine-slices', () => {
+    it('maps the panel art onto the theme slots and follows a moved startSlot', () => {
+        for (const startSlot of [THEME_DEFAULT_START_SLOT, 100]) {
+            applyTheme(createFakePalette(), startSlot);
+
+            // indexedPixels is TypeScript-private but readable at runtime; row-major 14x14.
+            const pixels = T.panelSlice.sheet.indexedPixels;
+
+            assert.equal(pixels[0], 0, 'rounded corner is see-through');
+            assert.equal(pixels[5], T.shadow, 'outer ring is the shadow color');
+            assert.equal(pixels[14 + 5], T.border, 'inner rim is the border color');
+            assert.equal(pixels[7 * 14 + 7], T.panel, 'center is the panel fill');
+        }
+    });
+
+    it('builds one button nine-slice per look: hover changes the fill, held and warn change the rim', () => {
+        applyTheme(createFakePalette());
+
+        const looks = [
+            [T.buttonSlices[BUTTON_LOOK.REST], T.button, T.border],
+            [T.buttonSlices[BUTTON_LOOK.HOVER], T.buttonHover, T.border],
+            [T.buttonSlices[BUTTON_LOOK.HELD], T.button, T.accent],
+            [T.buttonSlices[BUTTON_LOOK.WARN], T.button, T.warm],
+        ];
+
+        for (const [slice, fill, rim] of looks) {
+            const pixels = slice.sheet.indexedPixels;
+
+            assert.equal(pixels[0], 0, 'rounded corner is see-through');
+            assert.equal(pixels[5], T.shadow, 'outer ring is the shadow color');
+            assert.equal(pixels[2 * 14 + 5], rim, "top shine is the look's rim");
+            assert.equal(pixels[7 * 14 + 7], fill, "center is the look's fill");
+        }
+    });
+
+    it('builds the meter trough and one fill per color role', () => {
+        applyTheme(createFakePalette());
+
+        // 9x9 art: the trough's center pixel is the panel fill, its edge-middle the rim.
+        const trough = T.meterTroughSlice.sheet.indexedPixels;
+
+        assert.equal(trough[0], 0, 'rounded corner is see-through');
+        assert.equal(trough[4], T.shadow, 'outer ring is the shadow color');
+        assert.equal(trough[9 + 4], T.border, 'rim is the border color');
+        assert.equal(trough[4 * 9 + 4], T.panel, 'center is the panel fill');
+
+        const roleSlots = [T.text, T.dim, T.header, T.accent, T.warm, T.info];
+
+        assert.equal(T.meterFillSlices.size, roleSlots.length);
+
+        for (const slot of roleSlots) {
+            const fill = T.meterFillSlices.get(slot).sheet.indexedPixels;
+
+            assert.equal(fill[9 + 4], 0, 'margin row is see-through');
+            assert.equal(fill[4 * 9 + 4], slot, "center is the role's color");
+        }
+    });
+
+    it('builds the tooltip nine-slice with 4x4 top corners and 4x5 bottom corners', () => {
+        applyTheme(createFakePalette());
+
+        const slice = T.tooltipSlice;
+
+        // 9x10 art. The center left between the corners is the single pixel at (4, 4).
+        assert.equal(slice.outer.width, 9);
+        assert.equal(slice.outer.height, 10);
+        assert.equal(slice.inner.x, 4);
+        assert.equal(slice.inner.y, 4);
+        assert.equal(slice.inner.width, 1);
+        assert.equal(slice.inner.height, 1);
+
+        const pixels = slice.sheet.indexedPixels;
+
+        assert.equal(pixels[0], 0, 'top-left corner is see-through');
+        assert.equal(pixels[4], T.shadow, 'top point is the shadow outline');
+        assert.equal(pixels[4 * 9 + 4], T.text, 'center is the text white');
+        assert.equal(pixels[9 * 9 + 4], T.shadow, 'bottom point is the shadow outline');
+    });
+});
+
+describe('litRimColor', () => {
+    it('brightens a fill by the step from the resting button fill to the border', () => {
+        const palette = createFakePalette();
+        const theme = applyTheme(palette);
+        const button = palette.get(theme.button);
+        const border = palette.get(theme.border);
+        const rim = litRimColor(palette, new Color32(75, 210, 120));
+
+        assert.equal(rim.r, 75 + border.r - button.r);
+        assert.equal(rim.g, 210 + border.g - button.g);
+        assert.equal(rim.b, 120 + border.b - button.b);
+    });
+
+    it('keeps every channel within 0-255', () => {
+        const palette = createFakePalette();
+
+        applyTheme(palette);
+
+        const rim = litRimColor(palette, new Color32(255, 255, 255));
+
+        assert.deepEqual([rim.r, rim.g, rim.b], [255, 255, 255]);
     });
 });

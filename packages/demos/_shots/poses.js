@@ -22,6 +22,11 @@
 
 const POSE_ID_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
+// Ticks stepped after a pose's input: one for ui.tick() to latch it, one for the widget to
+// show it. Shared by the /shots capture (capture.js) and the OG card script
+// (scripts/capture-og-image.mjs), so a pose with keys looks the same in both.
+const INPUT_TICKS = 2;
+
 /** @type {Pose[]} */
 const DEFAULT_POSES = [
     { id: 'start', at: 0 },
@@ -47,6 +52,12 @@ const POSES_BY_SLUG = {
         { id: 'start', at: 0 },
     ],
     starfield: [{ id: 'spread', at: 6 }],
+    // At 0 s nothing has spawned yet. 4.85 s lands on the second hop with one spark burst
+    // rising, the previous one falling, and the cooldown meter part full.
+    animation: [
+        { id: 'jump', at: 4.85 },
+        { id: 'start', at: 0 },
+    ],
     // The sprite starts at an edge and needs time to travel somewhere interesting; the first
     // pose is the one the OG card shows.
     basics: [
@@ -61,13 +72,80 @@ const POSES_BY_SLUG = {
         { id: 'playing', at: 5 },
         { id: 'start', at: 0 },
     ],
+    // Four seconds in with A pressed: the clock is running, the square is partway round,
+    // and the snapshot shows a score of 1. It comes first so it also drives the OG card.
+    'test-state': [
+        { id: 'scored', at: 4, keys: ['KeyA'] },
+        { id: 'start', at: 0 },
+    ],
+    // Pressing J jumps 4000 tiles away: a whole new stretch of ground, while "stored"
+    // still reads 0 tiles. It comes first so it also drives the OG card.
+    'coordinate-patterns': [
+        { id: 'far', at: 1, keys: ['KeyJ'] },
+        { id: 'start', at: 0 },
+    ],
+    // Pressing E copies the left seed over, so the two worlds match and the status line
+    // turns green. It comes first so it also drives the OG card. The right seed is picked
+    // from a clock-seeded generator, so only a copied pose is the same on every capture.
+    'seeded-worlds': [
+        { id: 'copied', at: 1, keys: ['KeyE'] },
+        { id: 'start', at: 0 },
+    ],
+    // Pressing C shuffles a copy, so the two card rows differ - the whole point of the
+    // first scene. It comes first so it also drives the OG card.
+    'random-basics': [
+        { id: 'shuffled', at: 1, keys: ['KeyC'] },
+        { id: 'start', at: 0 },
+    ],
+    // Pressing Space ducks the music: the Music slider drops to 0.25 and the Hold meter
+    // starts draining. It comes first so it also drives the OG card.
+    'audio-buses': [
+        { id: 'duck', at: 1, keys: ['Space'] },
+        { id: 'start', at: 0 },
+    ],
+    // Pressing 2 switches the crossfade chart to Track B's eased blend, the most telling of
+    // the three profiles; it comes first so it also drives the OG card.
+    music: [
+        { id: 'blend', at: 1, keys: ['Digit2'] },
+        { id: 'start', at: 0 },
+    ],
     'reduced-motion': [
         { id: 'warp', at: 4.5 },
         { id: 'cruise', at: 1 },
     ],
+    // E plays the Explosion preset and R rolls a recipe in the same step, so the "Last"
+    // row and the randomizer readout are both filled. It comes first so it also drives
+    // the OG card.
     'synth-toy': [
+        { id: 'played', at: 1, keys: ['KeyE', 'KeyR'] },
         { id: 'start', at: 1 },
-        { id: 'playing', at: 1, keys: ['Digit1'] },
+    ],
+    // The crosshair must draw on top of the kit panels; 'hover' parks the pointer over
+    // the readouts panel to show it.
+    // 'custom' presses 2 for the custom preset: green changed keys and its four calls.
+    // 'blit386' presses B, L, I, T, 3, 8, and 6, so the OG card and the site-index tile show
+    // those caps lit and the edge panels filled in.
+    'keyboard-diagnostic': [
+        { id: 'blit386', at: 1, keys: ['KeyB', 'KeyL', 'KeyI', 'KeyT', 'Digit3', 'Digit8', 'Digit6'] },
+        { id: 'start', at: 0 },
+        { id: 'settled', at: 4 },
+    ],
+    'input-map-remapping': [
+        { id: 'start', at: 0 },
+        { id: 'settled', at: 4 },
+        { id: 'custom', at: 1, keys: ['Digit2'] },
+    ],
+    'pointer-basics': [
+        { id: 'start', at: 0 },
+        { id: 'settled', at: 4 },
+        { id: 'hover', at: 1, pointer: { x: 120, y: 60 } },
+    ],
+    // 'hover' parks the mouse on the red ball, which draws its amber hover ring and the
+    // crosshair on top of it.
+    'pointer-drag-flick': [
+        { id: 'start', at: 0 },
+        { id: 'settled', at: 4 },
+        { id: 'hover', at: 0, pointer: { x: 81, y: 61 } },
     ],
     'pointer-paint': [
         { id: 'start', at: 1 },
@@ -172,6 +250,7 @@ function validatePoses(posesBySlug, knownSlugs) {
 export {
     COMMITTED_VARIANTS,
     DEFAULT_POSES,
+    INPUT_TICKS,
     isKnownPose,
     jobsFor,
     OUTPUT_VARIANT,

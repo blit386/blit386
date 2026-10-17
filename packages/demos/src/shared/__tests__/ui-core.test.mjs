@@ -6,7 +6,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { hitContains, UI_ANCHORS } from '../ui-core.js';
+import { Rect2i } from 'blit386';
+
+import { CMD_RECT_FILL, CMD_RECT_STROKE, hitContains, UI_ANCHORS } from '../ui-core.js';
+import { BUTTON_LOOK, buttonFillSlice, solidSlice, T } from '../ui-theme.js';
 import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
@@ -54,7 +57,7 @@ describe('UiContext draw-command pool', () => {
         ctx.begin(UI_ANCHORS.TOP_LEFT);
 
         for (let i = 0; i < 192; i++) {
-            ctx.addCommand(0, i, 0, 1, 1, 0);
+            ctx.addCommand(CMD_RECT_FILL, i, 0, 1, 1, T.panel);
         }
 
         assert.strictEqual(ctx.commands, commandsArray);
@@ -76,7 +79,7 @@ describe('UiContext draw-command pool', () => {
         ctx.begin(UI_ANCHORS.TOP_LEFT);
 
         for (let i = 0; i < 193; i++) {
-            ctx.addCommand(0, i, 0, 1, 1, 0);
+            ctx.addCommand(CMD_RECT_FILL, i, 0, 1, 1, T.panel);
         }
 
         assert.equal(ctx.commands.length, 193);
@@ -85,7 +88,7 @@ describe('UiContext draw-command pool', () => {
 
         // A second overflow must not warn again - it is logged once per context, not once
         // per overflow.
-        ctx.addCommand(0, 0, 0, 1, 1, 0);
+        ctx.addCommand(CMD_RECT_FILL, 0, 0, 1, 1, T.panel);
         assert.equal(warnCalls.length, 1);
     });
 
@@ -95,7 +98,7 @@ describe('UiContext draw-command pool', () => {
         const ctx = createReadyContext();
 
         ctx.begin(UI_ANCHORS.TOP_LEFT);
-        ctx.addCommand(0, 0, 0, 1, 1, 0);
+        ctx.addCommand(CMD_RECT_FILL, 0, 0, 1, 1, T.panel);
         ctx.end();
 
         const commandsArray = ctx.commands;
@@ -141,7 +144,8 @@ describe('UiContext begin()/end() invariants', () => {
 describe('UiContext layout anchor math', () => {
     /**
      * Runs one begin()/addCommand()/end() cycle for `anchor` against a stubbed 320x180
-     * display and returns the absolute x/y the flush handed to the stubbed drawRectFill.
+     * display and returns the absolute x/y the flush handed to the stubbed drawNineSlice (kit
+     * rectangles draw as stretched one-color slices).
      *
      * @param {string} anchor - One of UI_ANCHORS.
      * @param {import('node:test').TestContext} t - The running test's context.
@@ -151,7 +155,7 @@ describe('UiContext layout anchor math', () => {
         let captured = null;
 
         stubBt(t, {
-            drawRectFill: (rect) => {
+            drawNineSlice: (_slice, rect) => {
                 captured = { x: rect.x, y: rect.y };
             },
         });
@@ -165,7 +169,7 @@ describe('UiContext layout anchor math', () => {
         // (therefore groupH). A bare addCommand() with no addRow() would leave both at 0.
         const rowY = ctx.addRow(10, 10);
 
-        ctx.addCommand(0, 0, rowY, 10, 10, 0);
+        ctx.addCommand(CMD_RECT_FILL, 0, rowY, 10, 10, T.panel);
         ctx.end();
 
         return captured;
@@ -214,7 +218,7 @@ describe('UiContext layout anchor math', () => {
         let captured = null;
 
         stubBt(t, {
-            drawRectFill: (rect) => {
+            drawNineSlice: (_slice, rect) => {
                 captured = { x: rect.x, y: rect.y };
             },
         });
@@ -222,7 +226,7 @@ describe('UiContext layout anchor math', () => {
         const ctx = createReadyContext();
 
         ctx.begin(UI_ANCHORS.TOP_RIGHT, { x: 42, y: 7 });
-        ctx.addCommand(0, 0, 0, 10, 10, 0);
+        ctx.addCommand(CMD_RECT_FILL, 0, 0, 10, 10, T.panel);
         ctx.end();
 
         assert.equal(captured.x, 42);
@@ -315,7 +319,7 @@ describe('UiContext snapshot', () => {
 
     it('draws overlay strokes only when debug is on', (t) => {
         const strokes = [];
-        stubBt(t, { drawRect: (rect) => strokes.push(rect.width) });
+        stubBt(t, { drawNineSlice: (_slice, rect) => strokes.push(rect.width) });
 
         const ctx = createReadyContext();
 
@@ -331,5 +335,105 @@ describe('UiContext snapshot', () => {
         ctx.end();
 
         assert.ok(strokes.length > quiet);
+    });
+});
+
+describe('UiContext rectangles', () => {
+    it('strokes a rectangle as four one-color sprite edges, never with BT.drawRect', (t) => {
+        const edges = [];
+        let drawRectCalls = 0;
+
+        stubBt(t, {
+            drawNineSlice: (slice, rect) => {
+                edges.push({ slice, x: rect.x, y: rect.y, w: rect.width, h: rect.height });
+            },
+            drawRect: () => {
+                drawRectCalls++;
+            },
+        });
+
+        const ctx = createReadyContext();
+
+        ctx.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: 0 });
+        ctx.addRow(10, 6);
+        ctx.addCommand(CMD_RECT_STROKE, 0, 0, 10, 6, T.border);
+        ctx.end();
+
+        assert.equal(drawRectCalls, 0);
+        assert.ok(edges.every((edge) => edge.slice === solidSlice(T.border)));
+        assert.deepEqual(
+            edges.map(({ x, y, w, h }) => [x, y, w, h]),
+            [
+                [0, 0, 10, 1],
+                [0, 5, 10, 1],
+                [0, 1, 1, 4],
+                [9, 1, 1, 4],
+            ],
+        );
+    });
+});
+
+describe('UiContext.drawButtonFace', () => {
+    it('draws the slice for the requested look and rejects an unknown one', (t) => {
+        const drawn = [];
+
+        stubBt(t, {
+            drawNineSlice: (slice) => {
+                drawn.push(slice);
+            },
+        });
+
+        const ctx = createReadyContext();
+        const rect = new Rect2i(0, 0, 16, 16);
+
+        ctx.drawButtonFace(rect, BUTTON_LOOK.WARN);
+        assert.deepEqual(drawn, [T.buttonSlices[BUTTON_LOOK.WARN]]);
+        assert.throws(() => ctx.drawButtonFace(rect, 'pressed'), /unknown look "pressed"/);
+    });
+});
+
+describe('UiContext.drawButtonFill', () => {
+    it('draws a button face filled with the given slot, cached per slot', (t) => {
+        const drawn = [];
+
+        stubBt(t, {
+            drawNineSlice: (slice) => {
+                drawn.push(slice);
+            },
+        });
+
+        const ctx = createReadyContext();
+        const rect = new Rect2i(0, 0, 23, 23);
+
+        ctx.drawButtonFill(rect, 5);
+        ctx.drawButtonFill(rect, 5);
+        ctx.drawButtonFill(rect, 6);
+
+        assert.equal(drawn[0], buttonFillSlice(5));
+        assert.equal(drawn[1], drawn[0]);
+        assert.notEqual(drawn[2], drawn[0]);
+        assert.throws(() => ctx.drawButtonFill(rect, 0), /integer from 1 to 255/);
+    });
+
+    it('uses the theme border for the rim unless a rim slot is given', (t) => {
+        const drawn = [];
+
+        stubBt(t, {
+            drawNineSlice: (slice) => {
+                drawn.push(slice);
+            },
+        });
+
+        const ctx = createReadyContext();
+        const rect = new Rect2i(0, 0, 23, 23);
+
+        ctx.drawButtonFill(rect, 5);
+        ctx.drawButtonFill(rect, 5, T.border);
+        ctx.drawButtonFill(rect, 5, 7);
+
+        assert.equal(drawn[1], drawn[0]);
+        assert.equal(drawn[2], buttonFillSlice(5, 7));
+        assert.notEqual(drawn[2], drawn[0]);
+        assert.throws(() => ctx.drawButtonFill(rect, 5, 256), /integer from 1 to 255/);
     });
 });
