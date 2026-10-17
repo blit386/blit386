@@ -4,6 +4,8 @@ import { mkdirSync, rmSync, statSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
+
 /**
  * Encode a screen capture into the two renditions `VideoEmbed` expects, plus a poster.
  *
@@ -167,7 +169,7 @@ export function parseArgs(argv) {
         const arg = argv[index];
 
         // pnpm forwards the separator of `pnpm run encode:video -- <args>` to the script.
-        if (arg === '--') {
+        if (arg === PNPM_ARG_SEPARATOR) {
             continue;
         }
 

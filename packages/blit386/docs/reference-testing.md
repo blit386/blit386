@@ -82,7 +82,8 @@ baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software b
 ### Tier 4: CPU benchmarks (Vitest bench)
 
 Hot-path performance checks for methods and allocation patterns. Benchmarks run locally only - compare a feature branch
-against a `main` baseline with `pnpm run bench:compare`; see [Performance Testing](performance-testing.md).
+against a `main` baseline with `pnpm run bench:compare`; see [Performance Testing](performance-testing.md). Extra flags
+go after `--` (`pnpm run bench:compare -- --threshold 10`); the separator itself is ignored.
 
 ## Declaration tooling checks
 

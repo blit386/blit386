@@ -27,6 +27,8 @@ import { fileURLToPath } from 'node:url';
 
 import { PNG } from 'pngjs';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
+
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(scriptDir, '..');
 const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
@@ -119,7 +121,7 @@ ${rows.join('\n')}
 }
 
 // pnpm forwards the separator of `pnpm run splash-logo:convert -- <args>` to the script.
-const inputPath = process.argv.slice(2).find((arg) => arg !== '--') ?? DEFAULT_INPUT;
+const inputPath = process.argv.slice(2).find((arg) => arg !== PNPM_ARG_SEPARATOR) ?? DEFAULT_INPUT;
 const data = extractIndices(inputPath);
 
 writeFileSync(OUTPUT_PATH, renderModule(data), 'utf-8');

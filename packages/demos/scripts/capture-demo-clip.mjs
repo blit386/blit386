@@ -21,6 +21,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
 import {
@@ -89,7 +90,7 @@ export function parseArgs(argv) {
         const arg = argv[index];
 
         // pnpm forwards the separator of `pnpm run capture:demo -- <slug>` to the script.
-        if (arg === '--') {
+        if (arg === PNPM_ARG_SEPARATOR) {
             continue;
         }
 

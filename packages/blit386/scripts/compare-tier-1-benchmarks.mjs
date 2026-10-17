@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
+
 const COMMENT_MARKER = '<!-- benchmark-comparison -->';
 const DEFAULT_THRESHOLD = 10;
 const PACKAGE_MARKER = '/packages/blit386/';
@@ -48,7 +50,7 @@ export function parseArgs(argv) {
         const nextValue = argv[index + 1];
 
         // pnpm forwards the separator of `pnpm run bench:compare -- <args>` to the script.
-        if (value === '--' || !value.startsWith('--')) {
+        if (value === PNPM_ARG_SEPARATOR || !value.startsWith('--')) {
             continue;
         }
 
