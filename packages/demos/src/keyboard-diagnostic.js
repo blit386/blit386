@@ -1,93 +1,104 @@
-/**
- * Keyboard Diagnostic - visual keyboard with press / hold / release feedback.
- * @description A full on-screen keyboard with press, hold, and release feedback, to verify fast taps on any display.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites: Keyboard Input (https://demos.blit386.dev/keyboard-input)
- *
- * Port of a standalone blit386 keyboard test: every key is drawn on screen and
- * lights up green while held, yellow on `BT.isKeyPressed` (edge), red on
- * `BT.isKeyReleased`. Use this page to verify that fast repeated taps are not
- * dropped on high-refresh displays (120 Hz monitor with `targetFPS: 60`).
- *
- * The title strip and the status readouts (last event, tick, press/release
- * counts) come from the shared UI kit; the keyboard drawing itself stays
- * hand-rolled. On touch devices the kit shows a warm notice that this demo
- * needs a physical keyboard.
- *
- * Live version: https://demos.blit386.dev/keyboard-diagnostic
- */
+/*
+
+Keyboard Diagnostic: a visual keyboard with press, hold, and release feedback.
+@description A full on-screen keyboard with press, hold, and release feedback, to verify fast taps on any display.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Keyboard Input: https://demos.blit386.dev/keyboard-input
+
+Live version: https://demos.blit386.dev/keyboard-diagnostic
+
+Guides:
+  - Input: https://blit386.dev/docs/guides/input#keyboard
+  - Input: https://blit386.dev/docs/guides/input#frame-timing-semantics
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A 320x240 picture of a full keyboard: six rows of key caps from the function row down to
+the modifier row, with an arrow cluster on the right. Each cap is a filled rectangle with
+a border and a centered label. A cap turns green while its key is held, flashes yellow for
+12 ticks on the press edge, and flashes red for 12 ticks on the release edge. A legend
+under the keyboard prints the three colors.
+
+A title strip runs across the top with a one-line hint under it (a warm "This demo needs
+a keyboard" notice on touch devices). Two small panels sit in the bottom corners: on the
+left the most recent edge and the engine tick it fired on, on the right the running press
+and release counts.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- BT.isKeyDown(code) is held state and can be read from render(); BT.isKeyPressed(code)
+  and BT.isKeyReleased(code) are one-tick edges that clear at the end of every fixed
+  update, so they are read in update() and remembered in per-key flash timers.
+- Keyboard edges are buffered on the DOM events and consumed by the next fixed update, so
+  a tap shorter than one tick still produces one press and one release.
+- KeyboardEvent.code strings (KeyQ, ShiftLeft, ArrowUp) name physical keys independent of
+  the OS layout.
+- A keyboard layout described as data: a row table that addKeyRow() walks to place caps,
+  with per-key overrides for width, extra gaps, and fixed columns.
+- Hardware settings: a 320x240 display drawn into a 960x720 drawing buffer with
+  outputUpscaleFilter 'nearest' and targetFPS 60, plus isCapturingKeyboardScroll.
+- BT.systemPrint and BT.systemPrintMeasure for centering a label on a cap.
+
+TRY THIS
+--------
+
+- Tap a key as fast as you can, several times in a row. Every tap must show a yellow
+  flash followed by a red one, and the "Presses" and "Releases" counts in the bottom-right
+  panel must stay equal. A mismatch means an edge was dropped.
+- Run the page on a high-refresh display (120 Hz or more). targetFPS is 60, so some drawn
+  frames run no update at all; the edge buffering keeps fast taps from falling into those
+  frames.
+- Hold a key and watch it stay green; the yellow flash ends after 12 ticks while the key
+  is still held.
+- Press Shift, Ctrl, Alt, and the OS key on both sides to see that left and right have
+  separate codes.
+- Click the canvas if keys stop responding - focus has moved elsewhere on the page.
+
+*/
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
+/** @typedef {{ code: string, label: string, x: number, y: number, w: number, h: number, pressTimer: number, releaseTimer: number }} KeyDef */
+/** @typedef {{ code: string, label: string, w?: number, gapBefore?: number, x?: number }} KeyRowEntry */
+/** @typedef {{ startX: number, y: number, keys: KeyRowEntry[] }} KeyRow */
 
-/**
- * @typedef {Object} KeyDef
- * @property {string} code KeyboardEvent.code string.
- * @property {string} label Short label drawn on the key cap.
- * @property {number} x Left edge in display pixels.
- * @property {number} y Top edge in display pixels.
- * @property {number} w Width in pixels.
- * @property {number} h Height in pixels.
- * @property {number} pressTimer Frames left to show the press flash.
- * @property {number} releaseTimer Frames left to show the release flash.
- */
+// Scene palette slots for the three key-cap flash states. These stay demo-owned (not
+// shared UI theme colors) because the legend and the key caps must show the exact same
+// green / yellow / red the diagnostic is about. Everything else (panel fills, borders,
+// text) comes from the shared UI theme installed in init().
+const C_LIT_HELD = 1; // key-cap color while BT.isKeyDown is true (green)
+const C_LIT_PRESS = 2; // key-cap color during the press flash (yellow)
+const C_LIT_RELEASE = 3; // key-cap color during the release flash (red)
 
-/**
- * One key inside a row descriptor. Most keys are standard-sized and sit one key width
- * plus one KEY_GAP apart, so each entry only spells out its quirks (a wider cap, an extra gap, a jump
- * to a fixed column) and everything else falls back to the standard measurements.
- *
- * @typedef {Object} KeyRowEntry
- * @property {string} code KeyboardEvent.code string.
- * @property {string} label Short label drawn on the key cap.
- * @property {number} [w] Width in pixels, when the cap is wider or narrower than standard.
- * @property {number} [gapBefore] Extra empty pixels before this key (for cluster gaps).
- * @property {number} [x] Absolute left edge, when the key jumps to a fixed column.
- */
-
-/**
- * One horizontal row of the on-screen keyboard picture.
- *
- * @typedef {Object} KeyRow
- * @property {number} startX Left edge of the first key in the row, in display pixels.
- * @property {number} y Top edge of every key in the row, in display pixels.
- * @property {KeyRowEntry[]} keys The keys, left to right.
- */
-
-// Scene palette slots for the three key-cap flash states. These stay demo-owned
-// (not shared UI theme colors) because the legend and the key caps must show the
-// exact same green / yellow / red the diagnostic is about. Everything else (panel
-// fills, borders, text) now comes from the shared UI theme installed in init().
-const C_LIT_HELD = 1; // Key-cap color while BT.isKeyDown is true (green).
-const C_LIT_PRESS = 2; // Key-cap color during the press flash (yellow).
-const C_LIT_RELEASE = 3; // Key-cap color during the release flash (red).
-
-/** How many fixed ticks a press or release flash stays visible. */
+// How many fixed ticks a press or release flash stays visible.
 const FLASH_TICKS = 12;
 
-const KEY_WIDTH = 18; // Width of a standard 1u key cap, in pixels.
-const KEY_HEIGHT = 18; // Height of a standard key cap, in pixels.
-const KEY_GAP = 2; // Empty space between adjacent key caps, in pixels.
+const KEY_WIDTH = 18; // width of a standard key cap, in pixels
+const KEY_HEIGHT = 18; // height of a standard key cap, in pixels
+const KEY_GAP = 2; // empty space between adjacent key caps, in pixels
 
-/**
- * The whole keyboard picture as data: six rows of key descriptors, top to bottom.
- * addKeyRow() walks each row like laying tiles on a shelf - it keeps a running x
- * position, places a key, then moves right by the key's width plus KEY_GAP. A key
- * only needs extra fields when it breaks the pattern: `w` for wide caps (Backspace,
- * Enter, Space), `gapBefore` for the small gaps between F-key clusters, and `x`
- * when a key jumps to a fixed column (the arrow cluster on the right).
- *
- * @type {KeyRow[]}
- */
+// The whole keyboard picture as data: six rows, top to bottom. Each row has a `startX`
+// (left edge of its first key), a `y` (top edge of every key in the row), and a `keys`
+// list. Each key has a `code` (KeyboardEvent.code string) and a `label` drawn on the cap.
+// addKeyRow() walks each row like laying tiles on a shelf: it keeps a running x position,
+// places a key, then moves right by the key's width plus KEY_GAP. A key only needs extra
+// fields when it breaks the pattern: `w` for wide or narrow caps (Backspace, Enter,
+// Space), `gapBefore` for the small gaps between F-key clusters, and `x` when a key jumps
+// to a fixed column (the arrow cluster on the right).
+/** @type {KeyRow[]} */
 const KEYBOARD_ROWS = [
-    // Function row: Esc is a little wider, and the twelve F-keys sit in three
-    // clusters of four with a 6-pixel breather between clusters (F4|F5 and F8|F9).
+    // Function row: Esc is a little wider, and the twelve F-keys sit in three clusters of
+    // four with a 6-pixel breather between clusters (F4|F5 and F8|F9).
     {
         startX: 10,
         y: 50,
@@ -169,8 +180,8 @@ const KEYBOARD_ROWS = [
             { code: 'Enter', label: 'Enter', w: 44 },
         ],
     },
-    // Bottom letter row: wide left Shift, standard keys, a narrow right Shift, and
-    // the up arrow pinned to its own column on the right edge.
+    // Bottom letter row: wide left Shift, standard keys, a narrow right Shift, and the up
+    // arrow pinned to its own column on the right edge.
     {
         startX: 10,
         y: 132,
@@ -187,13 +198,13 @@ const KEYBOARD_ROWS = [
             { code: 'Period', label: '.' },
             { code: 'Slash', label: '/' },
             // 32 px fits the 30 px "Shift" label; the up arrow is pinned at x=268, so a
-            // cap that starts at the flowing x (~234) still clears it.
+            // cap that starts at the flowing x (about 234) still clears it.
             { code: 'ShiftRight', label: 'Shift', w: 32 },
             { code: 'ArrowUp', label: '^', x: 268 },
         ],
     },
-    // Modifier row: every cap has its own width, and the left/down/right arrows jump
-    // to a fixed column so they line up under the up arrow above.
+    // Modifier row: every cap has its own width, and the left/down/right arrows jump to a
+    // fixed column so they line up under the up arrow above.
     {
         startX: 10,
         y: 152,
@@ -212,11 +223,7 @@ const KEYBOARD_ROWS = [
     },
 ];
 
-/**
- * Full keyboard layout diagnostic for edge-trigger testing.
- *
- * @implements {IBTDemo}
- */
+// Full keyboard layout diagnostic for edge-trigger testing.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
@@ -225,24 +232,28 @@ class Demo {
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
+    // One entry per on-screen key cap, built by initKeyboardLayout(): `code`, `label`,
+    // the cap rectangle (`x`, `y`, `w`, `h`), and two countdowns in ticks, `pressTimer`
+    // and `releaseTimer`, for the press and release flashes.
     /** @type {KeyDef[]} */
     keys = [];
 
-    /** Human-readable description of the most recent key edge, shown in the status panel. */
+    // Human-readable description of the most recent key edge, shown in the status panel.
     lastEvent = 'press any key';
 
-    /** Engine tick of the most recent key edge, or null before the first one. */
+    // Engine tick of the most recent key edge, or null before the first one.
     lastTick = null;
 
-    /** How many press edges we have seen in total. Fast-tap test: this must match releases. */
+    // How many press edges we have seen in total. Fast-tap test: this must match
+    // releases.
     pressCount = 0;
 
-    /** How many release edges we have seen in total. */
+    // How many release edges we have seen in total.
     releaseCount = 0;
 
-    /**
-     * @returns {Partial<HardwareSettings>}
-     */
+    // A 320x240 display rendered into a 960x720 buffer with nearest-neighbor upscaling,
+    // locked to 60 ticks per second so the display refresh rate and the tick rate differ
+    // on fast monitors.
     configure() {
         return {
             displaySize: new Vector2i(320, 240),
@@ -251,45 +262,45 @@ class Demo {
             outputUpscaleFilter: 'nearest',
             targetFPS: 60,
 
-            // This page lights up arrow keys and Space on the on-screen keyboard. Opt in so
-            // those keys do not scroll the demo page while you are testing them.
+            // This page lights up arrow keys and Space on the on-screen keyboard. Opt in
+            // so those keys do not scroll the demo page while you are testing them.
             isCapturingKeyboardScroll: true,
         };
     }
 
-    /**
-     * @returns {Promise<boolean>}
-     */
+    // Palette setup, shared UI theme, and the key cap layout.
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        // The three flash colors live in low scene slots; the legend and the key
-        // caps both draw with them so the colors always match.
+        // The three flash colors live in low scene slots; the legend and the key caps
+        // both draw with them so the colors always match.
         this.palette.set(C_LIT_HELD, new Color32(75, 210, 120, 255));
         this.palette.set(C_LIT_PRESS, new Color32(255, 230, 80, 255));
         this.palette.set(C_LIT_RELEASE, new Color32(240, 80, 80, 255));
 
-        // applyTheme() installs the twelve shared UI colors (background, panel,
-        // border, text, ...) high in the palette and reports their slots, so the
-        // key caps and the kit widgets all draw from one consistent theme.
+        // applyTheme() installs the twelve shared UI colors (background, panel, border,
+        // text, ...) high in the palette and reports their slots, so the key caps and the
+        // kit widgets all draw from one consistent theme.
         this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
         this.initKeyboardLayout();
+
         return true;
     }
 
+    // Reads the press and release edges for every key and runs the flash countdowns.
     update() {
-        // Let the UI kit track touch contacts first - ui.hasTouch() in render()
-        // relies on this housekeeping running every update tick.
+        // Let the UI kit track touch contacts first - ui.hasTouch() in render() relies on
+        // this housekeeping running every update tick.
         ui.tick();
 
         for (let i = 0; i < this.keys.length; i++) {
             const key = this.keys[i];
 
             // Whichever edge fires most recently owns the flash: starting one flash
-            // cancels the other, so a fast tap cannot let two competing countdowns
-            // reach zero together and skip the release color entirely.
+            // cancels the other, so a fast tap cannot let two competing countdowns reach
+            // zero together and skip the release color entirely.
             if (BT.isKeyPressed(key.code)) {
                 key.pressTimer = FLASH_TICKS;
                 key.releaseTimer = 0;
@@ -306,6 +317,7 @@ class Demo {
                 this.releaseCount += 1;
             }
 
+            // Count both flashes down by one tick.
             if (key.pressTimer > 0) {
                 key.pressTimer -= 1;
             }
@@ -316,6 +328,7 @@ class Demo {
         }
     }
 
+    // Draws the key caps, the legend, and the kit panels.
     render() {
         BT.clear(this.theme.bg);
 
@@ -324,15 +337,15 @@ class Demo {
             this.renderKey(this.keys[i]);
         }
 
-        // The color legend stays hand-drawn: each word is printed in the actual
-        // scene flash color it describes, which the kit's fixed theme roles cannot do.
+        // The color legend stays hand-drawn: each word is printed in the actual scene
+        // flash color it describes, which the kit's fixed theme roles cannot do.
         BT.systemPrint(new Vector2i(10, 173), C_LIT_HELD, 'HELD (green)');
         BT.systemPrint(new Vector2i(104, 173), C_LIT_PRESS, 'PRESS (yellow)');
         BT.systemPrint(new Vector2i(210, 173), C_LIT_RELEASE, 'RELEASE (red)');
 
         // Full-width title strip. The second row is contextual: touch devices get a
-        // warning that the demo is pointless without a keyboard, everyone else gets
-        // the fast-tap testing hint.
+        // warning that the demo is pointless without a keyboard, everyone else gets the
+        // fast-tap testing hint.
         ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('BLIT386 Keyboard Diagnostic');
 
@@ -351,8 +364,8 @@ class Demo {
         ui.kv('Tick', this.lastTick === null ? '-' : this.lastTick);
         ui.end();
 
-        // Edge counters: after a burst of fast taps both numbers must match - a
-        // mismatch means an edge was dropped somewhere.
+        // Edge counters: after a burst of fast taps both numbers must match - a mismatch
+        // means an edge was dropped somewhere.
         ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel();
         ui.kv('Presses', this.pressCount);
@@ -360,16 +373,15 @@ class Demo {
         ui.end();
     }
 
-    /**
-     * @param {KeyDef} key
-     */
+    // Draws one key cap in its current state: held wins over the press flash, which wins
+    // over the release flash.
     renderKey(key) {
         const isDown = BT.isKeyDown(key.code);
         const isPressed = key.pressTimer > 0;
         const isReleased = key.releaseTimer > 0;
 
-        // Resting keys use the shared theme's panel / dim-text colors; lit keys
-        // switch to the scene flash colors with a contrasting label.
+        // Resting keys use the shared theme's panel / dim-text colors; lit keys switch to
+        // the scene flash colors with a contrasting label.
         let color = this.theme.panel;
         let textColor = this.theme.dim;
 
@@ -385,9 +397,11 @@ class Demo {
         }
 
         const rect = new Rect2i(key.x, key.y, key.w, key.h);
+
         BT.drawRectFill(rect, color);
         BT.drawRect(rect, this.theme.border);
 
+        // Center the label on the cap; the +1 nudges it down to sit optically centered.
         const labelSize = BT.systemPrintMeasure(key.label);
         const lx = key.x + Math.floor((key.w - labelSize.x) / 2);
         const ly = key.y + Math.floor((key.h - labelSize.y) / 2) + 1;
@@ -395,30 +409,16 @@ class Demo {
         BT.systemPrint(new Vector2i(lx, ly), textColor, key.label);
     }
 
-    /**
-     * Appends one key definition to `this.keys` with its flash timers reset to zero.
-     *
-     * @param {string} code KeyboardEvent.code string.
-     * @param {string} label Short label drawn on the key cap.
-     * @param {number} x Left edge in display pixels.
-     * @param {number} y Top edge in display pixels.
-     * @param {number} w Width in pixels.
-     * @param {number} h Height in pixels.
-     */
+    // Appends one key definition to `this.keys` with its flash timers reset to zero.
+    // `x`, `y`, `w`, `h` are the cap rectangle in display pixels.
     addKey(code, label, x, y, w, h) {
         this.keys.push({ code, label, x, y, w, h, pressTimer: 0, releaseTimer: 0 });
     }
 
-    /**
-     * Lays out one row of key caps from its descriptor, left to right.
-     *
-     * The running x position starts at the row's startX. For each key we first honor
-     * its quirks - jump to an absolute column (`x`) or skip a few extra pixels
-     * (`gapBefore`) - then place the cap and step right by its width plus the
-     * standard KEY_GAP, ready for the next key.
-     *
-     * @param {KeyRow} row One entry of KEYBOARD_ROWS.
-     */
+    // Lays out one row of KEYBOARD_ROWS, left to right. The running x position starts at
+    // the row's startX. For each key we first honor its quirks - jump to an absolute
+    // column (`x`) or skip a few extra pixels (`gapBefore`) - then place the cap and step
+    // right by its width plus the standard KEY_GAP, ready for the next key.
     addKeyRow(row) {
         let x = row.startX;
 
@@ -442,10 +442,10 @@ class Demo {
         }
     }
 
-    /** Builds the on-screen key cap list (positions only; state lives on each KeyDef). */
+    // Builds the on-screen key cap list (positions only; state lives on each entry).
     initKeyboardLayout() {
-        // The layout itself lives in KEYBOARD_ROWS near the top of the file; here we
-        // just walk the six rows and let addKeyRow() place every cap.
+        // The layout itself lives in KEYBOARD_ROWS near the top of the file; here we just
+        // walk the six rows and let addKeyRow() place every cap.
         for (const row of KEYBOARD_ROWS) {
             this.addKeyRow(row);
         }
