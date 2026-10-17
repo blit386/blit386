@@ -22,6 +22,8 @@ body {
     -webkit-font-smoothing: none;
 }
 
+/* Banner. The narrow-screen breakpoint (740px) is its own; sheet.css has a separate set. */
+
 #demo-banner .shots-banner-title {
     flex-direction: column;
     gap: 6px;
@@ -39,13 +41,13 @@ body {
         @media (max-width: 740px) {
             font-size: 16px;
         }
-    }
 
-    & h1 a {
-        color: inherit;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 4px;
+        & a {
+            color: inherit;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+        }
     }
 
     & p {
@@ -84,6 +86,8 @@ body {
     width: 15vw;
     max-width: 210px;
 }
+
+/* Capture panel and tiles */
 
 #shots-capture {
     border: 2px solid var(--shots-border);
@@ -184,7 +188,6 @@ body {
     &[data-focused='true'] {
         border-color: var(--color-accent);
     }
-    font: inherit;
 
     &[data-selected='true'] {
         outline: 2px solid var(--color-accent);
@@ -195,6 +198,8 @@ body {
         content: 'x';
     }
 }
+
+/* Overlays */
 
 #shots-info {
     background: var(--shots-panel);

@@ -37,12 +37,21 @@
     </div>
 
     <div class="demo-banner-combobox sheet-banner-filter">
-        <input id="sheet-filter" class="demo-banner-combobox-input" type="text" placeholder="Filter demos"
+        <input id="sheet-filter" class="demo-banner-combobox-input" type="text" placeholder="Filter demos (/)"
                aria-label="Filter demos" aria-controls="sheet-gallery" autocomplete="off" spellcheck="false"/>
     </div>
 </header>
 
-<main id="sheet-gallery" aria-label="Demos"></main>
+<main id="sheet-gallery" tabindex="0" aria-label="Demos"></main>
+
+<footer class="sheet-footer">
+    <p class="sheet-footer-cta">Read more about BLIT386 on <a href="https://blit386.dev">blit386.dev</a></p>
+
+    <p class="sheet-footer-blurb">BLIT386 is a palette-first retro game engine for the web. You draw with indexed
+        palette colors, not fixed RGBA, so changing what a slot means recolors every pixel that uses it in one shot.
+        The API is TypeScript; rendering uses WebGPU when the browser supports it and falls back to Canvas 2D when it
+        does not.</p>
+</footer>
 
 <script type="module" src="/_shots/sheet.js"></script>
 

@@ -1,6 +1,15 @@
+/*
+ * The public demo sheet. Breakpoints (media queries cannot read custom properties):
+ *   682px - two-column grid, smaller banner text
+ *   520px - one column, banner title hidden; keep in step with SHEET_NAV_MAX_PX in sheet.js,
+ *           which turns hover and keyboard focus off at the same width
+ */
+
 :root {
     --sheet-gap: 8px;
     --sheet-text: #ddd;
+    --sheet-tile-w: 320px;
+    --sheet-tile-h: 240px;
 }
 
 body {
@@ -10,6 +19,8 @@ body {
     -moz-osx-font-smoothing: grayscale;
     -webkit-font-smoothing: none;
 }
+
+/* Banner */
 
 #demo-banner .sheet-banner-title {
     flex-direction: column;
@@ -25,7 +36,7 @@ body {
         font-weight: normal;
         font-size: 22px;
 
-        @media (max-width: 700px) {
+        @media (max-width: 682px) {
             font-size: 16px;
         }
 
@@ -38,10 +49,10 @@ body {
     }
 
     & p {
-        @media (max-width: 700px) {
+        @media (max-width: 682px) {
             font-size: 10px;
             line-height: 1.2;
-            max-width: 50vw;
+            max-width: 40vw;
             overflow: hidden;
             text-wrap: balance;
 
@@ -51,6 +62,10 @@ body {
             -webkit-line-clamp: 2;
             line-clamp: 2;
         }
+    }
+
+    @media (max-width: 520px) {
+        display: none;
     }
 }
 
@@ -62,27 +77,26 @@ body {
     padding-right: 14px;
 }
 
-#sheet-gallery {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 2px;
-    padding: var(--sheet-gap);
-}
+/* Tiles */
 
 .shots-tile {
-    margin: 0;
+    margin: 0 0 7px;
     padding: 4px;
     border: 2px solid transparent;
 
-    &:has(.shots-tile-link:hover),
-    &:has(.shots-tile-link:focus-visible) {
+    &:has(.shots-tile-link:focus-visible),
+    &[data-focused='true'] {
         border-color: var(--color-accent);
     }
 
     & img {
+        aspect-ratio: 4 / 3;
+        background: black;
         display: block;
+        height: var(--sheet-tile-h);
         image-rendering: pixelated;
+        object-fit: contain;
+        width: var(--sheet-tile-w);
     }
 
     & .shots-caption {
@@ -96,4 +110,72 @@ body {
     display: block;
     outline: none;
     text-decoration: none;
+}
+
+/* Gallery */
+
+#sheet-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    outline: none;
+    padding: 17px var(--sheet-gap) 53px;
+}
+
+@media (max-width: 682px) {
+    #sheet-gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        & .shots-tile {
+            box-sizing: border-box;
+            width: 100%;
+
+            & img {
+                height: auto;
+                width: 100%;
+            }
+        }
+    }
+}
+
+/* One column is a plain list, with no hover or keyboard focus ring to show. */
+@media (max-width: 520px) {
+    #sheet-gallery {
+        grid-template-columns: minmax(0, 1fr);
+
+        & .shots-tile {
+            border-color: transparent;
+        }
+    }
+}
+
+/* Footer */
+
+.sheet-footer {
+    margin: 0 auto;
+    max-width: 42em;
+    padding: 0 var(--sheet-gap) 53px;
+    text-align: center;
+}
+
+.sheet-footer-cta {
+    color: white;
+    margin: 0 0 13px;
+
+    & a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 4px;
+    }
+}
+
+.sheet-footer-blurb {
+    color: rgb(255 255 255 / 70%);
+    line-height: 1.45;
+    margin: 0 auto;
+    text-wrap: balance;
 }

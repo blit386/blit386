@@ -103,6 +103,7 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
  *   onCapture?: (keys: string[]) => void,
  *   onSelect?: () => void,
  *   tileLink?: (entry: object) => { href: string, label: string },
+ *   focusInteractionEnabled?: () => boolean,
  * }} hooks - `tileLink` switches a tile to link mode for the public sheet: the tile becomes a
  *   plain link labeled `label`, with no focus or selection clicks. Link mode never
  *   reaches `onOpen` or `onCapture`, so the sheet omits them; the review page passes both and
@@ -251,6 +252,18 @@ function createGallery(root, hooks) {
             anchor.href = link.href;
             anchor.append(...element.childNodes);
             element.append(anchor);
+
+            // Hover moves the keyboard focus ring, unless the host disables it (the sheet does on narrow screens).
+            element.addEventListener('mouseenter', () => {
+                if (hooks.focusInteractionEnabled && !hooks.focusInteractionEnabled()) {
+                    return;
+                }
+
+                if (focused !== tile.key) {
+                    focused = tile.key;
+                    refresh();
+                }
+            });
 
             return element;
         }
