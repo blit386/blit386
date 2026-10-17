@@ -1,133 +1,156 @@
-/**
- * Bitmap Font Demo - load a proportional .btfont and compare it to the built-in system font.
- * @description Load a proportional .btfont file and draw rainbow, alpha-pulsing, and measured text with it.
- *
- * Part of the BLIT386 demo series.
- * Prerequisites:
- *   Basics  https://demos.blit386.dev/basics
- *   Fonts   https://demos.blit386.dev/fonts
- *
- * Live version: https://demos.blit386.dev/bitmap-font
- *
- * Earlier demos use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
- * This demo shows the ALTERNATIVE: loading a proportional bitmap font from a .btfont file.
- *
- * A "bitmap font" is a font where every letter is pre-drawn as a small picture
- * (a grid of pixels), rather than being drawn from mathematical curves.
- * This gives text a crisp, retro look that matches pixel art perfectly.
- *
- * When would you choose a bitmap font over the system font?
- *   - You want a proportional font (each letter has its own width, like real typography).
- *   - You need a specific visual style (blocky, cursive, monospace, etc.).
- *   - You want fine control over per-character color effects (like the rainbow below).
- *   - You need to measure text width precisely before drawing it (font.measureText()).
- *
- * When should you stick with BT.systemPrint()?
- *   - You just need a quick debug overlay (FPS, position, counters).
- *   - You don't want the extra complexity of loading a font asset.
- *   - Startup speed matters more than visual style.
- *
- * This demo shows how to load a font, draw text in different colors,
- * make text that changes color over time (rainbow), text that pulses in opacity (alpha),
- * and how to measure how wide a piece of text will be before drawing it.
- *
- * The font-metadata caption in the bottom-right corner is drawn with the shared demo UI kit
- * (src/shared/ui.js), so it looks the same as the info panels in every other demo. The
- * showcase lines themselves are hand-drawn on purpose - they ARE the lesson.
- */
+/*
+
+Bitmap Font: load a .btfont file and compare it to the built-in system font.
+@description Load a .btfont bitmap font and draw rainbow, alpha-pulsing, and measured text with it.
+
+Part of the BLIT386 demo series.
+
+Prerequisites:
+  - Basics: https://demos.blit386.dev/basics
+  - Colors: https://demos.blit386.dev/colors
+  - Fonts: https://demos.blit386.dev/fonts
+
+Live version: https://demos.blit386.dev/bitmap-font
+
+Guides:
+  - Bitmap Fonts: https://blit386.dev/docs/guides/bitmap-fonts#custom-bitmap-fonts-btfont
+  - Palette: https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
+
+Reference:
+  - Assets: https://blit386.dev/docs/api/assets#bitmap-fonts
+  - Rendering: https://blit386.dev/docs/api/rendering#bitmap-fonts
+  - Core Types: https://blit386.dev/docs/api/core-types#color32
+
+---
+
+WHAT YOU WILL SEE
+-----------------
+
+A dark screen with a column of text down the left side. The first two lines are the same
+title drawn twice: "A:" marks the loaded .btfont (PragmataPro at 14 pt), "B:" marks the
+built-in 6x14 system font, so you can compare the two shapes directly. Below them come
+four lines in red, green, blue, and yellow, then "Rainbow Animation!" with every letter in
+its own color and the colors sliding left over time, then "Pulsing Text" fading in and out
+three times a second, then "Special: 3 × 4 = 12" using a real multiplication sign, and
+finally "Measured Width" in light gray with an orange underline exactly as wide as the
+text.
+
+A small "Font Info" panel in the bottom-right corner lists the font's name, point size,
+and glyph count, read straight from the loaded font object.
+
+WHAT YOU WILL LEARN
+-------------------
+
+- BitmapFont.load(url) downloads a .btfont file - a JSON glyph table plus a PNG atlas -
+  and init() awaits it before the demo loop starts.
+- font.getSpriteSheet().indexize(palette) must run before the first draw: the atlas holds
+  white pixels, and indexize swaps each one for the palette slot that holds white (slot 1
+  here).
+- BT.printFont(font, pos, text, paletteOffset) adds the offset to every glyph pixel's
+  slot, so offset 0 draws slot 1, offset 2 draws slot 3, and so on. BT.systemPrint(pos,
+  slot, text) takes the slot number directly instead.
+- font.getGlyph(char).advance says how far to step right after a character. PragmataPro is
+  monospaced, so every glyph here advances 7 pixels; a proportional font would return a
+  different advance per letter, and the same loop would still work.
+- font.measureText(text) returns the pixel width of a string before you draw it. The
+  system font has the same idea in BT.systemPrintMeasure(text).
+- font.name, font.size, font.lineHeight, and font.glyphCount describe the loaded font.
+- Text color animates by rewriting palette slots in update() - Color32.fromHSL() for the
+  rainbow, an alpha value for the pulse - while render() keeps passing the same offsets.
+
+WHY LOAD A FONT AT ALL?
+-----------------------
+
+A bitmap font is a font where every letter is a small pre-drawn picture, not a set of
+curves. That is what gives pixel-art text its crisp look. The built-in system font is one
+too, and BT.systemPrint() needs no file, which makes it the right pick for quick labels
+and debug readouts.
+
+Load a .btfont instead when you want a different size or style, a glyph set you choose
+yourself, or proportional spacing. The loading step is the only extra cost: one await in
+init(), and a short wait before the first frame.
+
+*/
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-// The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
-// palette (slots 240-251, far above this demo's slots 1-38), and ui.* draws the small
-// "Font Info" panel in the bottom-right corner of the screen.
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
-
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').BitmapFont} BitmapFont */
 
-// The x position where the rainbow text row starts.
-// Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
+// The x position where the rainbow text row starts. update() (hue calculation) and
+// renderRainbowText() (glyph drawing) both use it so the two stay in sync.
 const RAINBOW_ORIGIN_X = 10;
 
-// Every color used for drawing is stored in a numbered palette slot.
-// Index 0 is always transparent. Custom colors start at 1.
-// The screen background and the Font Info panel use the shared UI theme instead
-// (installed by applyTheme() in init()), so there are no background slots here.
-const C_WHITE = 1; // Pure white: title, special characters, 'A'/'B' labels
-const C_RED_TEXT = 3; // Soft red: "Red Text" sample line
-const C_GREEN_TEXT = 4; // Soft green: "Green Text" sample line
-const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
-const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
-const C_GRAY_TEXT = 7; // Light gray: "Measured Width" text
-const C_ORANGE_LINE = 8; // Orange: underline below the measured-width text
+// Every color used for drawing lives in a numbered palette slot. Slot 0 is always
+// transparent, so custom colors start at 1. The screen background and the Font Info panel
+// use the shared UI theme instead (installed by applyTheme() in init()), so there are no
+// background slots here. Slot 2 is simply left unused.
+const C_WHITE = 1; // pure white: title, special characters, 'A' / 'B' labels
+const C_RED_TEXT = 3; // soft red: "Red Text" sample line
+const C_GREEN_TEXT = 4; // soft green: "Green Text" sample line
+const C_BLUE_TEXT = 5; // soft blue: "Blue Text" sample line
+const C_YELLOW_TEXT = 6; // yellow: "Yellow Text" sample line
+const C_GRAY_TEXT = 7; // light gray: "Measured Width" text
+const C_ORANGE_LINE = 8; // orange: underline below the measured-width text
 
-// We define the rainbow text string before the slot constants so C_PULSE can be derived from it.
-// If you change this string, update() will compute the right number of palette colors automatically.
+// The rainbow text string comes before the slot constants that depend on it, so C_PULSE
+// can be derived from its length. Change the string and update() computes the right
+// number of palette colors automatically.
 const RAINBOW_TEXT = 'Rainbow Animation!';
 
-// Dynamic slots: each character in RAINBOW_TEXT gets its own animated color slot.
-// We start at C_RAINBOW_BASE and reserve one slot per character.
-// update() computes each character's current hue and stores it here.
-// render() then reads the slot index - no Color32 math happens during drawing!
+// Dynamic slots: each character in RAINBOW_TEXT gets its own animated color slot,
+// starting at C_RAINBOW_BASE. update() computes each character's current hue and stores
+// it there; render() only passes the slot offset, so no Color32 math happens while
+// drawing.
 const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 
-// Dynamic slot: placed immediately after the rainbow slots so it can never overlap them
-// even if RAINBOW_TEXT changes length. C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length.
-const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
+// Dynamic slot for the pulsing-text color. It sits right after the rainbow slots, so it
+// can never overlap them even if RAINBOW_TEXT changes length (20 + 18 = slot 38 today).
+const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length;
 
-// Left margin for labels and body text (filled in init() for the gap after "A: " / "B: ").
+// Left margin for the "A: " / "B: " labels and the sample text below them.
 const LABEL_X = 10;
 
-/**
- * Demonstrates bitmap font loading and rendering with various text effects.
- * Shows static colors, animated rainbow effects, text measurement, and font metadata.
- * Contrast this approach with BT.systemPrint() used in the Fonts demo.
- *
- * @implements {IBTDemo}
- */
+// Loads a bitmap font and draws text with it in several ways: static colors, an animated
+// rainbow, alpha pulsing, text measurement, and a font metadata panel. Compare it with
+// BT.systemPrint() in the Fonts demo.
 class Demo {
-    // font will hold the loaded bitmap font once it is downloaded.
-    // It starts as null because nothing is loaded yet.
+    // The loaded bitmap font. Starts as null because nothing is loaded yet.
     /** @type {BitmapFont | null} */
     font = null;
 
-    // palette holds all the colors this demo uses.
+    // All the colors this demo uses.
     /** @type {Palette | null} */
     palette = null;
 
-    // theme holds the palette slot numbers of the shared UI kit colors, filled in by
-    // applyTheme() in init(). We use theme.bg to clear the screen so this demo's
-    // background matches every other demo in the series.
+    // Palette slot numbers of the shared UI kit colors, filled in by applyTheme() in
+    // init(). theme.bg clears the screen so this demo's background matches the rest of
+    // the series.
     theme = null;
 
-    // animTime is a timer that counts up in seconds.
-    // We use it to control the speed of color animations.
+    // A timer that counts up in seconds. It drives the speed of the color animations.
     animTime = 0;
 
-    // Measured in init() from BT.systemPrintMeasure('M') - built-in system font is 6x14.
+    // Size of one system-font glyph, measured in init() with BT.systemPrintMeasure('M').
+    // The built-in font is 6x14, but measuring keeps the demo honest if that ever
+    // changes.
     systemCharWidth = 6;
     systemLineHeight = 14;
 
-    // Pixel width of the "A: " prefix so title text lines up after the label.
+    // Pixel width of the "A: " prefix, so the title text lines up after the label.
     labelPrefixWidth = 18;
 
-    /**
-     * Sets up the color palette and downloads the bitmap font.
-     * Screen size and FPS use engine defaultConfig() (no configure() in this demo).
-     * Notice the "await" keyword - we wait here until the font file is fully downloaded.
-     * The built-in system font (BT.systemPrint) skips this step entirely.
-     * Returns true when the font has loaded successfully, or false if loading fails.
-     *
-     * @returns {Promise<boolean>}
-     */
+    // Sets up the palette and downloads the bitmap font. Screen size and FPS come from
+    // the engine's defaultConfig(), since this demo has no configure(). Returns true when
+    // the font loaded and false when it did not - the engine only starts the demo loop on
+    // true.
     async init() {
         console.log('[BitmapFontDemo] Initializing...');
 
-        // Set up the color palette
-        // We pick every color before drawing anything, like an artist mixing paint.
+        // Set up the color palette. Every color is picked before anything is drawn, like
+        // an artist mixing paint first.
         this.palette = BT.paletteCreate(256);
 
         // Static colors that never change from frame to frame.
@@ -137,36 +160,38 @@ class Demo {
         this.palette.set(C_BLUE_TEXT, new Color32(100, 100, 255)); // soft blue
         this.palette.set(C_YELLOW_TEXT, new Color32(255, 255, 100)); // yellow
         this.palette.set(C_GRAY_TEXT, new Color32(200, 200, 200)); // light gray
-        this.palette.set(C_ORANGE_LINE, new Color32(255, 200, 100)); // orange for underlines
+        this.palette.set(C_ORANGE_LINE, new Color32(255, 200, 100)); // orange underline
 
-        // Pre-fill dynamic rainbow slots with gray so they're not empty on the first frame.
+        // Pre-fill the dynamic rainbow slots with gray so they are not empty on the first
+        // frame.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             this.palette.set(C_RAINBOW_BASE + i, new Color32(128, 128, 128));
         }
-        // Pre-fill pulse slot.
+
+        // Pre-fill the pulse slot too.
         this.palette.set(C_PULSE, new Color32(100, 100, 255));
 
-        // Install the shared UI kit colors. They land in palette slots 240-251, well above
-        // this demo's highest slot (C_PULSE = 38), so the two can never collide. The
-        // returned map remembers which slot each UI color went to (theme.bg, theme.text, ...).
+        // Install the shared UI kit colors. They land in slots 240-251, well above this
+        // demo's highest slot (C_PULSE = 38), so the two can never collide. The returned
+        // map remembers which slot each UI color went to (theme.bg, theme.text, ...).
         this.theme = applyTheme(this.palette);
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
 
-        // Measure the built-in system font once (same helper as demo fonts).
+        // Measure the built-in system font once, the same way the Fonts demo does.
         const glyphSize = BT.systemPrintMeasure('M');
         this.systemCharWidth = glyphSize.x;
         this.systemLineHeight = glyphSize.y;
         this.labelPrefixWidth = BT.systemPrintMeasure('A: ').x;
 
-        // Load the font file from the server.
-        // .btfont is BLIT386's custom font format that includes glyph images.
-        // This is the step that BT.systemPrint() skips - the system font is built in.
+        // Load the font file from the server. A .btfont is a JSON glyph table next to a
+        // PNG atlas of the glyph images. This is the step BT.systemPrint() skips - the
+        // system font is built in. `await` pauses here until the download finishes.
         try {
             this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
-            // The font object exposes useful metadata you can read and display.
+            // The font object exposes metadata you can read and display.
             console.log(`[BitmapFontDemo] Loaded font: ${this.font.name}`);
             console.log(`  Size: ${this.font.size}pt`);
             console.log(`  Line height: ${this.font.lineHeight}px`);
@@ -176,91 +201,93 @@ class Demo {
             return false;
         }
 
-        // Tell the font about our palette. Font glyphs are stored as white pixels in the
-        // font's sprite sheet. indexize() maps those white pixels to palette slot C_WHITE (1).
-        // After this call, BT.printFont() can recolor the glyphs by shifting the palette index.
+        // Tell the font about the palette. Glyphs are stored as white pixels in the
+        // font's sprite sheet; indexize() replaces each one with the slot that holds
+        // white, C_WHITE (1). After this call BT.printFont() can recolor the glyphs by
+        // shifting that index.
         this.font.getSpriteSheet().indexize(this.palette);
 
         console.log('[BitmapFontDemo] Font loaded successfully!');
+
         return true;
     }
 
-    // Runs at a fixed rate (60 times per second).
-    // We learned about the demo loop in the Basics demo: https://demos.blit386.dev/basics
-    // We advance the animation timer AND update dynamic palette colors here.
+    // Runs at a fixed rate (60 times per second, as the Basics demo explains). Advances
+    // the animation timer and rewrites the dynamic palette colors.
     update() {
-        // Move the animation clock forward by one fixed update step in seconds.
+        // Move the animation clock forward by one fixed update step, in seconds.
         this.animTime += BT.deltaSeconds;
 
-        // Update the pulsing text color
-        // Math.sin returns a wave that smoothly oscillates between -1 and +1.
-        // The formula "2 * Math.PI * frequency" converts seconds into radians, which is what
-        // Math.sin expects. With frequency=3 the wave completes exactly 3 full cycles per second.
-        // Multiplying by 0.5 and adding 0.5 shifts the output from [-1,1] to [0,1].
+        // The pulse: Math.sin returns a wave that swings smoothly between -1 and +1. The
+        // "2 * Math.PI * frequency" part converts seconds into radians, which is what
+        // Math.sin expects; with frequency 3 the wave completes three full cycles per
+        // second. Multiplying by 0.5 and adding 0.5 moves the output from [-1, 1] to [0,
+        // 1].
         const pulse = Math.sin(2 * Math.PI * 3 * this.animTime) * 0.5 + 0.5;
 
-        // The alpha channel controls how opaque (visible) the text is.
-        // At pulse=0 the text is nearly invisible; at pulse=1 it is fully opaque.
-        // RGB stays fixed at (100, 100, 255) - a medium blue - so only opacity changes.
+        // The alpha channel controls how opaque the text is. At pulse 0 the text
+        // disappears; at pulse 1 it is solid. RGB stays fixed at (100, 100, 255), a
+        // medium blue, so only the opacity changes.
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
-        // Update the rainbow text character colors
-        // We compute hue (color wheel position) for each character based on its x position
-        // and animTime. The font is always loaded here: the demo loop only starts after
-        // init() finished successfully, and init() returns false when the font fails.
-        // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
-        // https://demos.blit386.dev/colors
-        let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
+        // The rainbow: compute a hue (a position on the color wheel) for each character
+        // from its x position and animTime. The font is always loaded here, because the
+        // demo loop only starts after init() returned true. HSL colors were introduced in
+        // the Colors demo: https://demos.blit386.dev/colors
+        let charX = RAINBOW_ORIGIN_X; // same x where render() draws the rainbow text
+
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
-            // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
-            // Using charX (actual x position) matches the visual rhythm of the rainbow.
-            // Adding animTime*100 scrolls the rainbow to the left over time.
-            // The % 360 keeps hue within the 0-359 range so it cycles smoothly around the
-            // color wheel instead of growing unbounded as animTime increases.
+            // hue is a position on the color wheel: 0 is red, 120 green, 240 blue, 360
+            // back to red. Using the character's real x position gives the rainbow its
+            // spacing; adding animTime * 100 scrolls it left over time. `%` is the
+            // remainder after division, so `% 360` keeps hue in 0-359 and the wheel
+            // cycles instead of growing forever.
             const hue = (charX * 3 + this.animTime * 100) % 360;
             this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
 
-            // Advance charX by this character's actual pixel width in the font.
-            // This is specific to BitmapFont - the system font advances a fixed systemCharWidth per character.
+            // Step charX by this character's advance from the font. PragmataPro is
+            // monospaced, so this is always 7 here; a proportional font would vary.
             const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
             charX += glyph ? glyph.advance : 7;
         }
     }
 
-    // Runs once per screen refresh to draw all the text demonstrations on screen.
+    // Runs once per screen refresh and draws every text sample.
     render() {
         // Fill the screen with the shared UI theme's deep navy background.
         BT.clear(this.theme.bg);
 
-        // Start drawing from near the top of the screen.
+        // Start drawing near the top of the screen.
         let y = 10;
 
-        // X where title text starts after the "A: " / "B: " labels (measured in init()).
+        // Where the title text starts after the "A: " / "B: " labels (measured in
+        // init()).
         const textX = LABEL_X + this.labelPrefixWidth;
 
-        // lineHeight tells us how many pixels tall one line of text is.
-        // Bitmap font line height comes from the .btfont file; system font uses systemLineHeight.
+        // How many pixels tall one line of text is, plus a little breathing room. The
+        // bitmap font's line height comes from the .btfont file; the system font's was
+        // measured.
         const bitmapLineHeight = this.font.lineHeight + 2;
         const systemLineHeight = this.systemLineHeight + 2;
 
-        // BT.printFont() arguments: (font, position, text, colorOffset)
-        // The colorOffset is a 0-based index FROM palette slot 1.
-        // So offset 0 = slot 1 (C_WHITE), offset 2 = slot 3 (C_RED_TEXT), etc.
-        // This is different from BT.systemPrint() which takes the palette slot number directly.
-        // We learned about palette offset math in demo palette-presets and the palette guides.
+        // BT.printFont() takes (font, position, text, paletteOffset). The offset is added
+        // to the slot the glyph pixels were indexized to (slot 1), so offset 0 draws slot
+        // 1 (C_WHITE), offset 2 draws slot 3 (C_RED_TEXT), and so on. BT.systemPrint()
+        // takes the palette slot number directly instead.
 
-        // Draw the title in both fonts, one below the other, so you can compare them side-by-side.
-        // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
-        // "B:" marks the built-in system font (every character is a fixed 6x14 pixel block).
+        // Draw the title in both fonts, one below the other. "A:" marks the bitmap font
+        // (7 pixels per character at 14 pt), "B:" the built-in system font (a fixed 6x14
+        // block per character).
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'A:');
         BT.printFont(this.font, new Vector2i(textX, y), 'BLIT386 Bitmap Font Demo', 0);
         y += bitmapLineHeight;
 
-        // The same title text in the system font so the visual difference is obvious.
+        // The same title in the system font, so the difference is easy to see.
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'B:');
         BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'BLIT386 Bitmap Font Demo');
 
-        // Move down past both title lines, with a little extra gap before the next section.
+        // Move down past both title lines, with a little extra gap before the next
+        // section.
         y += systemLineHeight + 4;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
@@ -270,27 +297,22 @@ class Demo {
         y = this.renderSpecialCharacters(y, bitmapLineHeight);
         this.renderTextMeasurement(y, bitmapLineHeight);
 
-        // Draw a small panel of font metadata (name, size, glyph count) in the bottom-right
-        // corner using the shared UI kit. Measured FPS and the demo title are drawn by the
-        // engine overlay.
+        // The font metadata panel in the bottom-right corner. FPS and the demo title are
+        // drawn by the engine overlay, not here.
         this.renderFontInfo();
     }
 
-    // Draws the same four words, each in a different color.
-    // This shows how passing different palette offsets changes the text color.
-    // Compare to BT.systemPrint() where you pass the palette slot directly.
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
-    // Returns the Y position after the last line drawn.
+    // Draws four sample lines, each in a different color, to show how the palette offset
+    // picks the color. `y` is where the first line starts and `lineHeight` how far to
+    // move down between lines. Returns the y position after the last line.
     renderColoredText(y, lineHeight) {
-        // Use a local variable so we don't modify the original parameter.
-        // In JavaScript, changing a parameter's value inside a function can confuse readers
-        // because they expect the original value to stay the same throughout the function.
+        // A local copy, so the parameter itself is never modified - readers expect a
+        // parameter to keep its value throughout the function.
         let currentY = y;
 
-        // Each color is looked up by offset: palette[1 + offset] = the desired color.
-        // C_RED_TEXT = 3, so offset = 3 - 1 = 2. That means palette[1 + 2] = palette[3] = red.
-        // With BT.systemPrint() you would just write: BT.systemPrint(pos, C_RED_TEXT, text).
+        // Each color is reached by offset: slot = 1 + offset, so offset = slot - 1. For
+        // C_RED_TEXT (slot 3) that is offset 2. With BT.systemPrint() you would simply
+        // pass C_RED_TEXT.
         BT.printFont(this.font, new Vector2i(10, currentY), 'Red Text', C_RED_TEXT - 1);
         currentY += lineHeight;
 
@@ -302,39 +324,34 @@ class Demo {
 
         BT.printFont(this.font, new Vector2i(10, currentY), 'Yellow Text', C_YELLOW_TEXT - 1);
 
-        // Add extra space after this section.
+        // Extra space after this section.
         currentY += lineHeight + 4;
 
         return currentY;
     }
 
-    // Draws text where each character has a different color, and the colors
-    // shift over time to create a flowing rainbow animation.
-    // The colors were pre-computed in update() and stored in palette slots C_RAINBOW_BASE+i.
-    // This technique works with BT.printFont() because it draws one character at a time
-    // with a different palette offset for each glyph.
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
-    // Returns the Y position after the text.
+    // Draws text where every character has its own color, pre-computed in update() and
+    // stored in slots C_RAINBOW_BASE + i. Drawing one character per BT.printFont() call
+    // lets each glyph take a different palette offset. Returns the y position after the
+    // text.
     renderRainbowText(y, lineHeight) {
-        // Start drawing from the left margin (must match RAINBOW_ORIGIN_X used in update()).
+        // Start at the left margin (must match RAINBOW_ORIGIN_X used in update()).
         let x = RAINBOW_ORIGIN_X;
         let slotIndex = 0;
 
-        // Loop through each character in the string one at a time.
+        // Loop through the string one character at a time.
         for (const char of RAINBOW_TEXT) {
-            // The palette offset for character i = C_RAINBOW_BASE + i - 1.
-            // This is because printFont offset N means palette[1 + N].
-            // We want palette[C_RAINBOW_BASE + i], so offset = C_RAINBOW_BASE + i - 1.
+            // The offset for character i is C_RAINBOW_BASE + i - 1, because offset N
+            // draws slot 1 + N and we want slot C_RAINBOW_BASE + i.
             BT.printFont(this.font, new Vector2i(x, y), char, C_RAINBOW_BASE - 1 + slotIndex);
 
-            // Look up how wide this character is in the font's glyph table.
-            // "advance" is the number of pixels to move right before drawing the next character.
-            // This is unique to BitmapFont - each letter has its own width in a proportional font.
-            // The built-in system font always advances systemCharWidth pixels per character (6 by default).
+            // Look up how wide this character is. "advance" is how many pixels to move
+            // right before drawing the next one - 7 for every glyph in this monospaced
+            // font, but a proportional font would give each letter its own value. The
+            // system font always advances systemCharWidth (6).
             const glyph = this.font.getGlyph(char);
 
-            // If the glyph exists, use its advance width; otherwise fall back to 7 pixels.
+            // If the glyph exists use its advance, otherwise fall back to 7 pixels.
             x += glyph ? glyph.advance : 7;
             slotIndex++;
         }
@@ -342,52 +359,43 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Draws text that pulses in opacity - it fades in and out in a smooth rhythm (alpha pulsing).
-    // The alpha value is pre-computed in update() using Math.sin and stored in palette slot C_PULSE.
-    // This palette animation technique works exactly the same with BT.systemPrint().
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
-    // Returns the Y position after the text.
+    // Draws text that fades in and out. The alpha was pre-computed in update() with
+    // Math.sin and stored in slot C_PULSE; the same palette trick works with
+    // BT.systemPrint(). Returns the y position after the text.
     renderPulsingText(y, lineHeight) {
-        // C_PULSE - 1 = 37. That means palette[1 + 37] = palette[38] = C_PULSE (the animated color).
+        // C_PULSE - 1 = 37, so the glyphs draw slot 1 + 37 = 38, the animated color.
         BT.printFont(this.font, new Vector2i(10, y), 'Pulsing Text', C_PULSE - 1);
 
         return y + lineHeight + 4;
     }
 
-    // Shows that the font can draw special characters like multiplication signs.
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
-    // Returns the Y position after the text.
+    // Shows that the font can draw characters outside plain ASCII. Returns the y position
+    // after the text.
     renderSpecialCharacters(y, lineHeight) {
-        // Offset 0 = palette[1] = C_WHITE = white text.
-        // The '\u00D7' is the Unicode multiplication sign (×), which is a non-ASCII character.
-        // This tests that the font includes glyphs outside the basic Latin alphabet.
+        // Offset 0 draws slot 1 (C_WHITE). '\u00D7' is the Unicode multiplication sign
+        // (×), a non-ASCII character, so this line only shows the sign if the
+        // .btfont includes a glyph for it.
         BT.printFont(this.font, new Vector2i(10, y), 'Special: 3 \u00D7 4 = 12', 0);
 
         return y + lineHeight;
     }
 
-    // Demonstrates font.measureText() - which tells you exactly how wide a string will
-    // be before you draw it. We draw an underline that is exactly the right length.
-    // BT.systemPrint() does not have a measureText() equivalent; this is a BitmapFont-only feature.
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
-    // Returns the Y position after the text and underline.
+    // Shows font.measureText(): the exact pixel width of a string before you draw it. The
+    // width is used for an underline that ends exactly under the last letter. The system
+    // font has the same idea in BT.systemPrintMeasure(). Returns the y position after the
+    // text and underline.
     renderTextMeasurement(y, lineHeight) {
         const measureText = 'Measured Width';
 
-        // Ask the font how many pixels wide this string will be when drawn.
-        // The system font doesn't support this - it's a BitmapFont-specific feature.
+        // Ask the font how many pixels wide this string will be.
         const textWidth = this.font.measureText(measureText);
 
-        // Draw the text in light gray.
-        // C_GRAY_TEXT - 1 = 6. That means palette[1 + 6] = palette[7] = C_GRAY_TEXT.
+        // Draw the text in light gray: C_GRAY_TEXT - 1 = 6, so the glyphs draw slot 7.
         BT.printFont(this.font, new Vector2i(10, y), measureText, C_GRAY_TEXT - 1);
 
-        // Draw an orange underline that is exactly as wide as the text we measured.
-        // The underline sits 2 pixels above the bottom of the line.
-        // BT.drawLine() takes start point, end point, and a palette slot number (not an offset).
+        // Draw an orange underline exactly as wide as the measured text, 2 pixels above
+        // the bottom of the line. BT.drawLine() takes a start point, an end point, and a
+        // palette slot number (not an offset).
         BT.drawLine(
             new Vector2i(10, y + lineHeight - 2),
             new Vector2i(10 + textWidth, y + lineHeight - 2),
@@ -397,17 +405,17 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Draws a small panel of BitmapFont metadata: the font's name, point size, and how many
-    // glyphs (letter pictures) it contains. This is demo-specific info that only BitmapFont
-    // exposes; the built-in system font has no name or glyph count you can print this way.
-    // The panel is drawn with the shared UI kit: everything between ui.begin() and ui.end()
-    // stacks into one bordered group that the kit sizes and anchors for us.
+    // Draws a small panel of font metadata: name, point size, and glyph count, all read
+    // from the loaded BitmapFont. (The built-in font is a BitmapFont too, reachable as
+    // BT.systemFont, so the same fields exist there.) The panel uses the shared UI kit:
+    // everything between ui.begin() and ui.end() stacks into one bordered group that the
+    // kit sizes and anchors.
     renderFontInfo() {
-        // Anchor the group to the bottom-right corner of the screen, away from the showcase
-        // text on the left and the engine overlay's toggle hint in the bottom-left corner.
+        // Anchor the group to the bottom-right corner, away from the sample text on the
+        // left and the engine overlay's toggle hint in the bottom-left corner.
         ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
 
-        // Give the group a background, border, and an amber title.
+        // Give the group a background, a border, and an amber title.
         ui.panel('Font Info');
 
         // ui.kv() draws an aligned "KEY: value" row - the key dim, the value bright.
@@ -415,7 +423,8 @@ class Demo {
         ui.kv('SIZE', `${this.font.size}pt`);
         ui.kv('GLYPHS', this.font.glyphCount);
 
-        // end() closes the group: the kit measures the rows, places the panel, and draws it.
+        // end() closes the group: the kit measures the rows, places the panel, and draws
+        // it.
         ui.end();
     }
 }
