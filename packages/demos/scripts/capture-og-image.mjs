@@ -36,6 +36,7 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { buildRegistry } from '../plugins/demo-registry.js';
 import { SITE_URL } from '../plugins/sitemap.js';
@@ -126,6 +127,11 @@ export function parseArgs(argv) {
 
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
+
+        // pnpm forwards the separator of `pnpm run capture:og -- <slug>` to the script.
+        if (arg === PNPM_ARG_SEPARATOR) {
+            continue;
+        }
 
         if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
             options[BOOLEAN_OPTIONS[arg]] = true;

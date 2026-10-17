@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 import { PNG } from 'pngjs';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { SYSTEM_FONT_EXTRA_CHARS } from './system-font-extra-chars.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -134,7 +135,8 @@ function buildPNG(bitmaps) {
 }
 
 function main() {
-    const args = process.argv.slice(2);
+    // pnpm forwards the separator of `pnpm run system-font:export -- <args>` to the script.
+    const args = process.argv.slice(2).filter((arg) => arg !== PNPM_ARG_SEPARATOR);
 
     if (args.includes('--help') || args.includes('-h')) {
         console.log(`

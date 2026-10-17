@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Bitmap Fonts"
 description: "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-10-17T12:01:02+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-bitmap-fonts.md"
 ---
 
@@ -175,8 +175,8 @@ the included conversion script to convert these to `.btfont`:
 # From project root
 node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]
 
-# Or via pnpm:
-pnpm run convert-font <input.fnt> <output.btfont> [--embed]
+# Or via pnpm. Arguments after `--` are forwarded; the separator itself is ignored:
+pnpm run convert-font -- <input.fnt> <output.btfont> [--embed]
 
 # Examples:
 node scripts/convert-bmfont.mjs tmp/MyFont.fnt examples/fonts/MyFont.btfont

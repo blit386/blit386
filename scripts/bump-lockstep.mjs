@@ -17,6 +17,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from './lib/pnpm-arg-separator.mjs';
+
 /** Repo root, resolved from this script's own location at repo-root `scripts/`. */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -530,7 +532,7 @@ export function checkLockstep(options = {}) {
  * @returns {{ mode: 'check' } | { mode: 'bump', version: string, dryRun: boolean }} The parsed command-line arguments.
  */
 export function parseArgv(argv) {
-    const args = argv.slice(2).filter((arg) => arg !== '--');
+    const args = argv.slice(2).filter((arg) => arg !== PNPM_ARG_SEPARATOR);
     const check = args.includes('--check');
     const dryRun = args.includes('--dry-run');
     const positional = args.filter((arg) => arg !== '--dry-run' && arg !== '--check');

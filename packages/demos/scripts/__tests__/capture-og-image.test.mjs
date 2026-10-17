@@ -28,6 +28,11 @@ import {
 } from '../capture-og-image.mjs';
 
 describe('parseArgs', () => {
+    it('ignores the `--` separator pnpm forwards from `pnpm run capture:og -- <slug>`', () => {
+        assert.deepEqual(parseArgs(['--', 'basics']).slugs, ['basics']);
+        assert.equal(parseArgs(['--', '--all']).all, true);
+    });
+
     it('reads a single slug and applies the defaults', () => {
         const options = parseArgs(['basics']);
 

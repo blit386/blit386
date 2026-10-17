@@ -178,8 +178,8 @@ the included conversion script to convert these to `.btfont`:
 # From project root
 node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]
 
-# Or via pnpm:
-pnpm run convert-font <input.fnt> <output.btfont> [--embed]
+# Or via pnpm. Arguments after `--` are forwarded; the separator itself is ignored:
+pnpm run convert-font -- <input.fnt> <output.btfont> [--embed]
 
 # Examples:
 node scripts/convert-bmfont.mjs tmp/MyFont.fnt examples/fonts/MyFont.btfont

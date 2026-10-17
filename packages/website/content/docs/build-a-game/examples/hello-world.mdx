@@ -10,11 +10,31 @@ description: "The smallest possible BLIT386 program: one line of text, nothing e
 Live version: https://demos.blit386.dev/hello-world.
 
 ```js title="hello-world.js"
-// Hello World: the smallest possible BLIT386 program - one line of text, nothing else.
-// @description The smallest possible BLIT386 program: one line of text, nothing else on screen.
+/*
+
+Hello World: the smallest possible BLIT386 program - one line of text, nothing else.
+@description The smallest possible BLIT386 program: one line of text, nothing else on screen.
+
+Part of the BLIT386 demo series.
+
+Live version: https://demos.blit386.dev/hello-world
+
+Guides:
+  - Palette: https://blit386.dev/docs/guides/palette#create-and-activate-a-palette
+
+Reference:
+  - Rendering: https://blit386.dev/docs/api/rendering#system-font
+
+---
+
+A dark blue screen with "Hello, World!" centered on it in the built-in system font. That
+is the whole program: a palette with two colors, one clear, one print.
+
+*/
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
+// Palette slots. Slot 0 is always transparent, so our colors start at 1.
 const C_BG = 1;
 const C_TEXT = 2;
 
@@ -22,20 +42,25 @@ class Demo {
     palette = null;
 
     async init() {
+        // A palette is a numbered list of colors. Draw calls name a slot number,
+        // not a color.
         this.palette = BT.paletteCreate(16);
         this.palette.set(C_BG, new Color32(18, 22, 40));
         this.palette.set(C_TEXT, Color32.white);
 
+        // Make this palette the one the engine draws with.
         BT.paletteSet(this.palette);
 
         return true;
     }
 
+    // Nothing moves, so there is no game logic to run each tick.
     update() {}
 
     render() {
         BT.clear(C_BG);
 
+        // Measure the text first, then place its top-left corner so the text is centered.
         const text = 'Hello, World!';
         const size = BT.systemPrintMeasure(text);
         const x = Math.round(BT.displaySize.x / 2 - size.x / 2);

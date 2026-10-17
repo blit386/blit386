@@ -37,6 +37,10 @@ const valueAfter = (args, flag) => {
 };
 
 describe('parseArgs', () => {
+    test('ignores the `--` separator pnpm forwards', () => {
+        assert.equal(parseArgs(['--', 'clip.mov', '--out', 'out']).input, 'clip.mov');
+    });
+
     test('reads the positional input and --out', () => {
         const result = parseArgs(['clip.mov', '--out', 'public/media/blog/1-4-0']);
         assert.equal(result.input, 'clip.mov');

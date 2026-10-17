@@ -244,6 +244,13 @@ path inside `packages/blit386/`, so a baseline recorded in another checkout or w
 and the current run share no benchmark at all, the command exits nonzero with a message instead of reporting an empty
 comparison.
 
+To compare different files or use another threshold, pass those flags after `--`. pnpm forwards them and the script
+ignores the separator, overriding the defaults baked into the `bench:compare` script:
+
+```bash
+pnpm run bench:compare -- --baseline other-baseline.json --current other-results.json --threshold 10
+```
+
 </Step>
 
 <Step>

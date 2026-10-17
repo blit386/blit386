@@ -9,6 +9,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
+import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
+
 /**
  * Extracts the value of a specified attribute from an XML tag.
  *
@@ -379,7 +381,8 @@ function convertBMFont(fntPath, outputPath, embedTexture = false) {
  * conversion process or exits the process with a relevant status code.
  */
 function main() {
-    const args = process.argv.slice(2);
+    // pnpm forwards the separator of `pnpm run convert-font -- <args>` to the script.
+    const args = process.argv.slice(2).filter((arg) => arg !== PNPM_ARG_SEPARATOR);
 
     // Check for the help flag.
     if (args.includes('--help') || args.includes('-h') || args.length === 0) {
