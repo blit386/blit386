@@ -10,7 +10,7 @@
  * `mock.module()` API, which still requires the `--experimental-test-module-mocks` flag on
  * Node 22 and has open upstream bugs affecting ESM interop - not worth the fragility here.
  *
- * `drawRectFill`/`drawRect`/`systemPrint` MUST always be stubbed: an un-booted real `BT`
+ * `drawRectFill`/`drawRect`/`drawNineSlice`/`systemPrint` MUST always be stubbed: an un-booted real `BT`
  * does not no-op them, it falls into a DOM-touching "engine not ready" error path. The
  * pointer/keyboard query methods are safe to leave un-stubbed (they default to `false`/
  * zero pre-boot), but stubbing them too gives every test full control over simulated input.
@@ -26,6 +26,7 @@ const STUB_KEYS = [
     'displaySize',
     'drawRectFill',
     'drawRect',
+    'drawNineSlice',
     'systemPrint',
 ];
 
@@ -38,6 +39,7 @@ const SAFE_DEFAULTS = {
     displaySize: { x: 320, y: 180 },
     drawRectFill: () => {},
     drawRect: () => {},
+    drawNineSlice: () => {},
     systemPrint: () => {},
 };
 

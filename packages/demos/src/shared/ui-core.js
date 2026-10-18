@@ -30,21 +30,36 @@
 
 import { BT, Rect2i, Vector2i } from 'blit386';
 
-import { T } from './ui-theme.js';
+import { buttonFillSlice, solidSlice, T } from './ui-theme.js';
 
 // System font metric. The built-in font is a fixed 6x14 grid - every character advances
 // exactly FONT_W pixels, so a string's pixel width is simply text.length * FONT_W.
 const FONT_W = 6;
+const FONT_H = 14;
 
-// Standard row height: one font cell plus two pixels of breathing room. Buttons are a
-// little taller so they read as pressable and give fingers a bigger target.
-const ROW_H = 16;
-const BUTTON_H = 18;
+// Standard row height: 10px. The 14px font cell (FONT_H) has empty space above and below
+// the glyphs, so text rows sit closer than the cell height. Buttons are taller so they
+// read as pressable and give fingers a bigger target: the label's cell plus
+// BUTTON_TEXT_PAD_Y pixels above and below it.
+const ROW_H = 10;
+const BUTTON_TEXT_PAD_Y = 4;
+const BUTTON_H = FONT_H + BUTTON_TEXT_PAD_Y * 2;
 
 // Default inner padding between a panel's border and its content, and default margin
 // between a panel and the screen edge.
 const PAD = 5;
 const MARGIN = 4;
+
+// Extra breathing room ui.panel() adds on every side, inside its rim. It applies only to
+// groups using the default PAD: a demo that passes its own `pad` (like a tight frame around
+// a tilemap) keeps exactly the box it asked for, and the top bar keeps its fixed strip.
+const PANEL_INSET = 4;
+// The bottom gets this much more, so the last row does not look pressed against the rim.
+const PANEL_INSET_BOTTOM_EXTRA = 1;
+
+// Height of a title-only ui.begin('topBar') strip after ui.panel(title). panel() leaves
+// cursorY at 18; end() pads out to this so the header line is not pressed to the rim.
+const TOP_BAR_MIN_H = 22;
 
 // Interactive rectangles grow by this many pixels on every side for hit-testing only.
 // Fingers are far less precise than a mouse cursor; the visuals stay compact.
@@ -54,6 +69,7 @@ const HIT_INFLATE = 3;
 const CMD_RECT_FILL = 0;
 const CMD_RECT_STROKE = 1;
 const CMD_TEXT = 2;
+const CMD_NINE_SLICE = 3;
 
 // Width sentinel: a command with this width is stretched to the group's content width at
 // flush time (used by ui.separator(), which cannot know the final width when declared).
@@ -80,10 +96,11 @@ const INITIAL_COMMAND_POOL = 192;
 /**
  * Creates one reusable draw-command record for the pool.
  *
- * @returns {{ kind: number, x: number, y: number, w: number, h: number, color: number, text: string }}
+ * @returns {{ kind: number, x: number, y: number, w: number, h: number, color: number, text: string,
+ *   slice: import('blit386').NineSlice | null }}
  */
 function createCommand() {
-    return { kind: CMD_RECT_FILL, x: 0, y: 0, w: 0, h: 0, color: 0, text: '' };
+    return { kind: CMD_RECT_FILL, x: 0, y: 0, w: 0, h: 0, color: 0, text: '', slice: null };
 }
 
 /**
@@ -152,6 +169,9 @@ class UiContext {
     // one instance across many calls is safe.
     flushRect = new Rect2i(0, 0, 0, 0);
 
+    // One edge of a stroked rectangle, while the caller's rect still holds the whole box.
+    edgeRect = new Rect2i(0, 0, 0, 0);
+
     flushVec = new Vector2i(0, 0);
 
     /**
@@ -217,6 +237,9 @@ class UiContext {
     margin = MARGIN;
 
     pad = PAD;
+
+    // How much ui.panel() will grow this group's padding by; 0 when the demo set its own pad.
+    panelInset = 0;
 
     kvCols = 8;
 
@@ -408,6 +431,7 @@ class UiContext {
         this.groupOptWidth = typeof opts.width === 'number' ? opts.width : null;
         this.margin = typeof opts.margin === 'number' ? opts.margin : MARGIN;
         this.pad = typeof opts.pad === 'number' ? opts.pad : PAD;
+        this.panelInset = typeof opts.pad === 'number' || this.isTopBar ? 0 : PANEL_INSET;
         this.kvCols = typeof opts.kvCols === 'number' ? opts.kvCols : 8;
         this.cursorY = this.isTopBar ? 0 : this.pad - 5;
         this.maxGroupW = 0;
@@ -443,13 +467,14 @@ class UiContext {
         }
 
         // Final height: where the cursor ended up, plus a little bottom padding inside
-        // panels. A title-only top bar keeps the classic 22-pixel strip height.
+        // panels. A title-only top bar keeps the classic TOP_BAR_MIN_H strip height.
         let bottomPad = 0;
 
         if (this.isTopBar) {
-            bottomPad = this.cursorY > 22 ? 4 : 0;
+            bottomPad = this.cursorY > TOP_BAR_MIN_H ? 4 : TOP_BAR_MIN_H - this.cursorY;
         } else if (this.hasPanel) {
-            bottomPad = 6;
+            // The bottom edge gets one pixel more inset than the others (see PANEL_INSET_BOTTOM_EXTRA).
+            bottomPad = 6 + (this.panelInset === 0 ? 0 : this.panelInset + PANEL_INSET_BOTTOM_EXTRA);
         }
 
         const groupH = this.cursorY + bottomPad;
@@ -515,12 +540,11 @@ class UiContext {
      * @param {number} groupH - Final group height.
      */
     flushGroup(originX, originY, groupW, groupH) {
-        // Panel background and border draw first so every queued command lands on top.
+        // The panel's nine-slice (fill plus rim) draws first so every queued command lands on top.
         if (this.hasPanel) {
             this.flushRect.set(originX, originY, groupW, groupH);
 
-            BT.drawRectFill(this.flushRect, T.panel);
-            BT.drawRect(this.flushRect, T.border);
+            BT.drawNineSlice(T.panelSlice, this.flushRect);
         }
 
         // Replay the queued commands, now that the group origin is known.
@@ -536,10 +560,15 @@ class UiContext {
 
                 this.flushRect.set(originX + cmd.x, originY + cmd.y, w, cmd.h);
 
-                if (cmd.kind === CMD_RECT_FILL) {
-                    BT.drawRectFill(this.flushRect, cmd.color);
+                // Rectangles draw as stretched one-color sprites, not BT.drawRectFill: the
+                // engine draws primitives before all sprites, which would hide them under
+                // the nine-slice panel.
+                if (cmd.kind === CMD_NINE_SLICE) {
+                    BT.drawNineSlice(cmd.slice, this.flushRect);
+                } else if (cmd.kind === CMD_RECT_FILL) {
+                    this.drawRectFill(this.flushRect, cmd.color);
                 } else {
-                    BT.drawRect(this.flushRect, cmd.color);
+                    this.drawRect(this.flushRect, cmd.color);
                 }
             }
         }
@@ -598,7 +627,7 @@ class UiContext {
      */
     drawDebugOverlay(originX, originY, groupW, groupH) {
         this.flushRect.set(originX, originY, groupW, groupH);
-        BT.drawRect(this.flushRect, T.accent);
+        this.drawRect(this.flushRect, T.accent);
 
         // Clamp so a group narrower than two pads never gets a negative-size box.
         this.flushRect.set(
@@ -607,13 +636,13 @@ class UiContext {
             Math.max(0, groupW - 2 * this.pad),
             Math.max(0, groupH - 2 * this.pad),
         );
-        BT.drawRect(this.flushRect, T.dim);
+        this.drawRect(this.flushRect, T.dim);
 
         for (let i = 0; i < this.pendingHitCount; i++) {
             const pending = this.pendingHits[i];
 
             this.flushRect.set(originX + pending.x, originY + pending.y, pending.w, pending.h);
-            BT.drawRect(this.flushRect, T.warm);
+            this.drawRect(this.flushRect, T.warm);
         }
     }
 
@@ -671,17 +700,86 @@ class UiContext {
     }
 
     /**
+     * Fills `rect` with palette slot `slot`, drawn as a stretched one-color sprite so it lands
+     * on top of any nine-slice drawn before it (see solidSlice() in ui-theme.js).
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    drawRectFill(rect, slot) {
+        BT.drawNineSlice(solidSlice(slot), rect);
+    }
+
+    /**
+     * Draws a button face - the same nine-slice ui.button() uses - over `rect`, for demos
+     * that lay out their own button-shaped cells. Drawn right away, as a sprite.
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {string} look - One of BUTTON_LOOK's values.
+     */
+    drawButtonFace(rect, look) {
+        if (!T.ready) {
+            throw new Error('ui.drawButtonFace: call applyTheme(palette) in init() before drawing any UI.');
+        }
+
+        const slice = T.buttonSlices[look];
+
+        if (slice === undefined) {
+            throw new Error(`ui.drawButtonFace: unknown look "${look}". Use one of BUTTON_LOOK's values.`);
+        }
+
+        BT.drawNineSlice(slice, rect);
+    }
+
+    /**
+     * Draws a button face with its fill in any palette slot - the same rounded shape as
+     * drawButtonFace(), for cells that light up in a scene color. Drawn right away, as a
+     * sprite.
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot for the fill, 1-255.
+     * @param {number} [rimSlot] - Palette slot for the rim, 1-255. Defaults to the theme
+     *   border.
+     */
+    drawButtonFill(rect, slot, rimSlot) {
+        BT.drawNineSlice(buttonFillSlice(slot, rimSlot), rect);
+    }
+
+    /**
+     * Outlines `rect` with a one-pixel line in palette slot `slot`, as sprites: top and
+     * bottom edges full width, left and right edges between them, so no corner is drawn twice.
+     *
+     * @param {import('blit386').Rect2i} rect - Box in display pixels.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    drawRect(rect, slot) {
+        const solid = solidSlice(slot);
+        const { x, y, width, height } = rect;
+
+        this.edgeRect.set(x, y, width, 1);
+        BT.drawNineSlice(solid, this.edgeRect);
+        this.edgeRect.set(x, y + height - 1, width, 1);
+        BT.drawNineSlice(solid, this.edgeRect);
+        this.edgeRect.set(x, y + 1, 1, height - 2);
+        BT.drawNineSlice(solid, this.edgeRect);
+        this.edgeRect.set(x + width - 1, y + 1, 1, height - 2);
+        BT.drawNineSlice(solid, this.edgeRect);
+    }
+
+    /**
      * Appends one draw command to the pool (growing it permanently on overflow).
      *
-     * @param {number} kind - CMD_RECT_FILL, CMD_RECT_STROKE, or CMD_TEXT.
+     * @param {number} kind - CMD_RECT_FILL, CMD_RECT_STROKE, CMD_TEXT, or CMD_NINE_SLICE.
      * @param {number} x - X relative to the group origin.
      * @param {number} y - Y relative to the group origin.
      * @param {number} w - Width in pixels (rects), or 0 for text.
      * @param {number} h - Height in pixels (rects), or 0 for text.
      * @param {number} color - Palette index to draw with.
      * @param {string} text - Text content (CMD_TEXT only).
+     * @param {import('blit386').NineSlice | null} slice - The nine-slice to stretch over the box
+     *   (CMD_NINE_SLICE only).
      */
-    addCommand(kind, x, y, w, h, color, text = '') {
+    addCommand(kind, x, y, w, h, color, text = '', slice = null) {
         if (this.commandCount === this.commands.length) {
             this.commands.push(createCommand());
 
@@ -700,6 +798,7 @@ class UiContext {
         cmd.h = h;
         cmd.color = color;
         cmd.text = text;
+        cmd.slice = slice;
     }
 
     /**
@@ -863,9 +962,12 @@ class UiContext {
 
 export {
     BUTTON_H,
+    BUTTON_TEXT_PAD_Y,
+    CMD_NINE_SLICE,
     CMD_RECT_FILL,
     CMD_RECT_STROKE,
     CMD_TEXT,
+    FONT_H,
     FONT_W,
     FULL_WIDTH,
     hitContains,
