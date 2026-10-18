@@ -77,9 +77,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   [Drawing tiles](/docs/api/rendering#drawing-tiles).
 - Deterministic seek: `BT.renderAt(seconds, { from })` stops the loop and renders exactly the frame at that tick with no
   `requestAnimationFrame`, so it works in hidden and headless pages. `from: 'start'` (default) resets engine-owned state
-  and re-runs the game's `init()`; `from: 'current'` steps forward. `BT.resume()` restarts the loop from the seeked
-  tick, and `BT.captureFrame()` after a seek captures the seeked frame. See
-  [Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
+  and replays into a fresh instance of the game class (`init()` runs on a new object, so counters, clocks, and arrays
+  from the replaced run cannot leak in; an object-literal game re-runs `init()` on itself); `from: 'current'` steps
+  forward. If the fresh instance's constructor or `init()` fails, the previous instance stays active. `BT.resume()`
+  restarts the loop from the seeked tick, and `BT.captureFrame()` after a seek captures the seeked frame. The audio
+  context is suspended while a seek holds the loop stopped, and a gesture that unlocks audio mid-seek stays suspended
+  until `BT.resume()`. See [Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
 - `BT.isReady`: a public readiness flag that becomes `true` only once `init()` has resolved and the game loop exists, so
   an external driver (screenshot tool, play-testing harness) can wait before seeking or reading state instead of
   matching an error message. See [Engine readiness](/docs/api/core#engine-readiness).
@@ -94,7 +97,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   on the tick clock (`ticks * 1000 / targetFPS`) instead of once per rendered frame on `performance.now()`. They follow
   the fixed-step loop rather than wall time or the display's refresh rate, and `BT.ticksReset()` pauses them for an
   update instead of running them backwards. A palette write made in `render()` now lands after the effects rather than
-  before them.
+  before them. An effect's time counts from when it was added, so the first update after an idle gap sees only the time
+  since `add`, including at tick 0.
+- `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.0 with no engine API change of their own: new agent
+  adapters (Zed, Antigravity, Gemini CLI, Codex, GitHub Copilot, OpenCode), a shared skills folder, extra `blit doctor`
+  checks, Windows fixes for scaffolded games, and a `get_doc_page` tool on the blit386.dev docs MCP server. See
+  [GitHub Releases](https://github.com/blit386/blit386/releases) for the full notes.
 - The `deltaMs` passed to post-process effects is tick-clock time since the previous rendered frame, not
   `performance.now()`. No built-in effect reads it.
 - `BT.captureFrame()` called while `BT.renderAt` holds the loop stopped re-renders the seeked frame instead of waiting
@@ -128,6 +136,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   touch input, and a stuck in-flight guard dropped every gesture after the first failed attempt. Audio now unlocks on
   `pointerdown`, `pointerup`, `touchend`, or `keydown`, retrying on each gesture. See
   [Locked vs. unlocked](/docs/guides/audio#locked-vs-unlocked).
+- The software backend now rejects display-size and shortcut captures still pending when it re-initializes, matching the
+  WebGPU backend, instead of settling them from the rebuilt scene.
 
 ## 1.7.0 - 2026-09-11
 

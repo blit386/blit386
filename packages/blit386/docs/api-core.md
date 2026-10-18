@@ -592,19 +592,26 @@ BT.resume(); // keep playing from tick 192
 
 | `from` | What happens |
 | --- | --- |
-| `'start'` (default) | Stops the loop, resets engine-owned state, re-runs your `init()`, steps `update()` from tick 0 to the target, renders once |
+| `'start'` (default) | Stops the loop, resets engine-owned state, builds a fresh instance of your game class and runs its `init()`, steps `update()` from tick 0 to the target, renders once |
 | `'current'` | Stops the loop and steps forward from the current tick; rejects a target in the past |
 
 - The target tick is `Math.round(seconds * BT.targetFPS)`. After `BT.ticksReset()`, a `'start'` seek still counts
   `seconds` from the boot run's tick 0 (it replays `init()`), not from the reset point.
 - A `'start'` seek resets the `BT.random` stream (back to where it was before the boot `init()`, so a time-seeded or
   `?seed=` stream replays identically), palette effects, post-process effects, camera, pending input edges, and ticks.
-  Everything your game keeps in its own fields must be set up by `init()` - a field initialized in the constructor and
-  only mutated afterwards keeps its mutated value. That includes the palette: a seek does not restore slot colors, so
-  build the `Palette` you pass to `BT.paletteSet()` inside `init()` (or reset its slots there). Reusing one object from
-  a constant or the constructor carries over whatever a palette cycle already rotated. The splash and its fade-in are
-  not replayed. As in the live run, palette effects that `init()` starts behind the splash are dropped, so start a
-  palette cycle you want to see from `update()` (for example on tick 0) when the splash is on.
+- A `'start'` seek replays into a new instance of your game class (`new YourGame()`, then `init()`), so every field
+  starts from its initializer exactly as in the boot run - a counter, a clock, or an array the old run filled cannot
+  carry over. The new instance becomes the one `update()`, `render()`, and the orientation and reduced-motion hooks
+  reach. If its constructor throws or its `init()` fails, `renderAt` rejects and the previous instance stays active. The
+  constructor must take no arguments, as it does for `bootstrap()`.
+- An object literal passed to `BT.init(demo, canvas)` has no class to build from, so its `init()` re-runs on the same
+  object and must reset every field itself.
+- State outside the instance is still yours to reset: module-level variables, objects shared between runs, DOM
+  listeners, and the palette. A seek does not restore slot colors, so build the `Palette` you pass to `BT.paletteSet()`
+  inside `init()` (or reset its slots there). Reusing one object from a module constant carries over whatever a palette
+  cycle already rotated. The splash and its fade-in are not replayed. As in the live run, palette effects that `init()`
+  starts behind the splash are dropped, so start a palette cycle you want to see from `update()` (for example on tick 0)
+  when the splash is on.
 - A seek costs one `update()` per tick: three minutes at 60 FPS is 10,800 calls. A game whose animation is a function of
   `BT.timeSeconds` seeks instantly; heavy per-tick simulation seeks slowly by design. For an export that renders many
   frames in order, seek once with `'start'`, then step forward with `'current'` - repeated `'start'` seeks replay from

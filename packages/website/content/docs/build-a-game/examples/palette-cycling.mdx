@@ -37,18 +37,20 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-Three kit panels stacked down the screen, each filled with rectangles that never move but
-whose colors flow:
+Three kit panels stacked down the screen, each titled with the exact BT.paletteCycle()
+call that drives it and filled with rectangles that never move but whose colors flow:
 
-  1. Sky (top) - a stack of thin purple-to-pink stripes from 10 slots (10-19), cycling
+  1. Sky (top) - ten full-width purple-to-pink stripes, one per slot (10-19), cycling
      very slowly at 0.5 steps per second.
-  2. Fire (middle) - 6 columns of 8 small blocks from 6 slots (30-35), dark red to bright
-     yellow, cycling at 6 steps per second with a negative speed, so the other way round.
-  3. Water (bottom) - a grid of 8 by 10 small blocks from 8 slots (50-57), dark blue to
+  2. Fire (middle) - 24 narrow columns of 8 blocks from 6 slots (30-35), dark red to
+     bright yellow. Each column starts a little further along the gradient than its
+     neighbor, following a sine wave, so the bands bend into flame tongues. They cycle at
+     6 steps per second with a negative speed, so the other way round.
+  3. Water (bottom) - a grid of 36 by 8 small blocks from 8 slots (50-57), dark blue to
      cyan, laid out diagonally and cycling at 4 steps per second.
 
-Every 3 seconds the demo also swaps two fire slots with BT.paletteSwap() and shows a
-caption naming them for about a second.
+Every 3 seconds the demo also swaps two fire slots with BT.paletteSwap() and names them
+for about a second in orange, on the right of the fire panel's title row.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -97,9 +99,9 @@ TRY THIS
 
 - Press the backquote key (`) to open the engine overlay. The timing chart shows that
   update() does almost nothing - the rotation happens inside the engine.
-- Watch the fire panel: every 3 seconds a caption names the two slots that just swapped.
-  The two colors trade places in the rotating ring for good, so the fire gradient slowly
-  gets scrambled.
+- Watch the fire panel's title row: every 3 seconds it names the two slots that just
+  swapped. The two colors trade places in the rotating ring for good, so the fire
+  gradient slowly gets scrambled.
 
 */
 
@@ -125,6 +127,37 @@ const SKY_SPEED = 0.5;
 // BT.paletteSwap(). A tick is one fixed update; 180 ticks is 3 seconds at 60 ticks per
 // second.
 const SWAP_INTERVAL = 180;
+
+// Layout of the three kit panels on the 320x240 screen, 4 pixels from the edges and 8
+// apart, stacked top to bottom. The bottom 13 pixels stay clear for the overlay's toggle
+// hint.
+const EDGE = 4;
+const PANEL_GAP = 8;
+const PANEL_W = 320 - 2 * EDGE;
+
+// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
+// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
+// in from the panel edge.
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM = 11;
+const PANEL_TEXT_INSET = 10;
+
+// How tall the artwork band inside each panel is, and where each panel starts.
+const SKY_ART_H = 32;
+const FIRE_ART_H = 40;
+const WATER_ART_H = 40;
+const SKY_PANEL_Y = EDGE;
+const FIRE_PANEL_Y = SKY_PANEL_Y + PANEL_CONTENT_TOP + SKY_ART_H + PANEL_BOTTOM + PANEL_GAP;
+const WATER_PANEL_Y = FIRE_PANEL_Y + PANEL_CONTENT_TOP + FIRE_ART_H + PANEL_BOTTOM + PANEL_GAP;
+
+// The fire and water grids: 24 fire columns 12 pixels apart and 36 water columns 8 pixels
+// apart, both 288 pixels wide, with rows of 5-pixel-tall blocks.
+const FIRE_COLS = 24;
+const FIRE_COL_STEP = 12;
+const WATER_COLS = 36;
+const WATER_COL_STEP = 8;
+const BLOCK_H = 5;
+const GRID_W = 288;
 
 // Slot 0 is always transparent (reserved by the engine).
 
@@ -180,23 +213,21 @@ class Demo {
     // Whether the swap caption is currently shown.
     showSwapLabel = false;
 
+    // Reused for every rectangle drawn in render(), so drawing allocates no new Rect2i.
+    tempRect = new Rect2i(0, 0, 0, 0);
+
     // Palette cycling runs in the engine every tick; the timing chart shows update vs
     // render time. The overlay style colors come from the dedicated low slots set in
     // init().
     configure() {
         return {
-            isOverlayTimingChartEnabled: true,
+            isOverlayPaletteEnabled: true,
+            isOverlayVisibleAtStart: true,
+            overlayPaletteRowsVisible: 2,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_TEXT,
                 gapPaletteIndex: C_OVERLAY_BAR,
-            },
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_OVERLAY_TEXT,
-                renderBarPaletteIndex: C_OVERLAY_RENDER,
-                warningPaletteIndex: C_OVERLAY_WARN,
-                errorPaletteIndex: C_OVERLAY_ERR,
-                tagPaletteIndex: C_OVERLAY_TAG,
             },
         };
     }
@@ -304,96 +335,88 @@ class Demo {
         this.renderWaterPanel();
     }
 
-    // Sky band: thin horizontal stripes at the top, each using one sky slot. The slow
-    // cycling makes the twilight colors gently shift.
+    // Opens and closes a titled kit panel with an empty body `artH` pixels tall. The
+    // artwork is drawn after it with ui.drawRectFill(), not BT.drawRectFill(): kit panels
+    // are sprites, and the engine draws every BT.drawRectFill() before any sprite - so a
+    // plain one would hide under the panel. ui.drawRectFill() takes the same rectangle
+    // and palette slot, but draws a sprite, which lands on top in call order.
+    renderPanel(y, artH, title) {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y, width: PANEL_W });
+        ui.panel(title);
+        ui.spacer(artH);
+        ui.end();
+    }
+
+    // Fills one block of artwork on top of a panel.
+    fillBlock(x, y, width, height, slot) {
+        this.tempRect.set(x, y, width, height);
+        ui.drawRectFill(this.tempRect, slot);
+    }
+
+    // Sky: ten full-width stripes, one per sky slot, 3 pixels tall. The slow cycling
+    // makes the twilight colors creep up the band. The panel title is the exact call
+    // from init() that drives it.
     renderSkyPanel() {
-        const bandY = 6;
-        const stripeH = 5;
+        this.renderPanel(SKY_PANEL_Y, SKY_ART_H, 'BT.paletteCycle(10, 19, 0.5)');
 
-        // The heading lives in a kit panel pinned to the band position. ui.end() draws
-        // the panel right away, and ui.spacer() reserves empty rows for the stripes we
-        // draw after it. The stripes use ui.drawRectFill(), not BT.drawRectFill(): kit
-        // panels are sprites, and the engine draws every BT.drawRectFill() before any
-        // sprite - so a plain one would hide under the panel. ui.drawRectFill() takes the
-        // same rectangle and palette slot, but draws a sprite, which lands on top in call
-        // order.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Sky (0.5 steps/sec, forward)');
-        ui.spacer(40);
-        ui.end();
+        const x = EDGE + PANEL_TEXT_INSET;
+        const top = SKY_PANEL_Y + PANEL_CONTENT_TOP + 1;
 
-        // Two passes of 10 stripes. The second pass starts 25 pixels down, so it overlaps
-        // the tail of the first, and the check inside skips any stripe that would poke
-        // out of the 40-pixel band.
-        for (let row = 0; row < 2; row++) {
-            for (let i = 0; i < SKY_SLOTS; i++) {
-                const y = bandY + 20 + (row * (stripeH * SKY_SLOTS)) / 2 + i * stripeH;
-
-                // Only draw stripes that fit inside the panel's content area.
-                if (y + stripeH <= bandY + 60) {
-                    BT.drawRectFill(new Rect2i(6, y, 308, stripeH), C_SKY_BASE + (i % SKY_SLOTS));
-                }
-            }
+        for (let i = 0; i < SKY_SLOTS; i++) {
+            this.fillBlock(x, top + i * 3, PANEL_W - 2 * PANEL_TEXT_INSET, 3, C_SKY_BASE + i);
         }
     }
 
-    // Fire band: 6 columns in the middle section. The negative speed cycles the colors
-    // the other way from the water.
+    // Fire: 24 narrow columns of 8 blocks. Down each column the slot goes up by one per
+    // row, so every column is a copy of the gradient, but each column starts a little
+    // further along it than its neighbor. The start point follows a sine wave, so it
+    // rises and falls smoothly across the panel and the color bands bend into flame
+    // tongues instead of lying flat.
     renderFirePanel() {
-        const bandY = 76;
-        const colW = Math.floor(308 / FIRE_SLOTS);
+        this.renderPanel(FIRE_PANEL_Y, FIRE_ART_H, 'BT.paletteCycle(30, 35, -6)');
 
-        // Kit panel with the heading; the spacer reserves room for the fire columns.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Fire (-6 steps/sec, backward)');
-        ui.spacer(40);
-        ui.end();
+        const x0 = EDGE + (PANEL_W - GRID_W) / 2;
+        const top = FIRE_PANEL_Y + PANEL_CONTENT_TOP;
 
-        // The fire columns: 8 rows of small blocks per column. The slot shifts by one per
-        // row, so each column is a stack of the gradient.
-        for (let i = 0; i < FIRE_SLOTS; i++) {
-            for (let row = 0; row < 8; row++) {
-                const x = 6 + i * colW;
-                const y = bandY + 20 + row * 5;
+        for (let col = 0; col < FIRE_COLS; col++) {
+            // Math.sin() swings between -1 and 1; + 1 makes that 0 to 2, and * 1.5 makes
+            // it 0 to 3. Math.floor() turns it into a whole step: 0, 1, 2, or 3.
+            const phase = Math.floor((Math.sin(col * 0.8) + 1) * 1.5);
 
-                BT.drawRectFill(new Rect2i(x, y, colW - 1, 5), C_FIRE_BASE + ((i + row) % FIRE_SLOTS));
+            for (let row = 0; row < FIRE_ART_H / BLOCK_H; row++) {
+                const slot = C_FIRE_BASE + ((row + phase) % FIRE_SLOTS);
+
+                this.fillBlock(x0 + col * FIRE_COL_STEP, top + row * BLOCK_H, FIRE_COL_STEP - 1, BLOCK_H, slot);
             }
         }
 
-        // The swap caption, while it is active (shared caption helper from the UI kit).
+        // The swap caption, while it is active: right-aligned in the panel's title row,
+        // clear of the artwork. Every character of the system font is 6 pixels wide, so
+        // the text is label.length * 6 pixels wide.
         if (this.showSwapLabel) {
-            ui.caption(6, bandY + 44, `Swapped slots ${this.swappedA} <-> ${this.swappedB}`);
+            const label = `swapped ${this.swappedA} <-> ${this.swappedB}`;
+            const labelX = EDGE + PANEL_W - PANEL_TEXT_INSET - label.length * 6;
+
+            ui.caption(labelX, FIRE_PANEL_Y + 11, label, { color: 'warm' });
         }
     }
 
-    // Water band: a grid of 8 columns by 10 rows at the bottom. Forward cycling at 4
-    // steps per second makes the colors flow like water.
+    // Water: a grid of 36 columns by 8 rows. The slot goes up by one per column and one
+    // per row, so the gradient runs diagonally, and the forward cycling makes the
+    // diagonal waves roll across the grid.
     renderWaterPanel() {
-        const bandY = 146;
-        const colW = Math.floor(308 / WATER_SLOTS);
+        this.renderPanel(WATER_PANEL_Y, WATER_ART_H, 'BT.paletteCycle(50, 57, 4)');
 
-        // Kit panel with the heading; the spacer reserves room for the water tiles.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Water (4 steps/sec, forward)');
-        ui.spacer(54);
-        ui.end();
+        const x0 = EDGE + (PANEL_W - GRID_W) / 2;
+        const top = WATER_PANEL_Y + PANEL_CONTENT_TOP;
 
-        // The water tiles in a grid.
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < WATER_SLOTS; col++) {
-                const x = 6 + col * colW;
-                const y = bandY + 20 + row * 5;
-
-                // Shift the slot by the row so the gradient runs diagonally across the
-                // grid.
+        for (let row = 0; row < WATER_ART_H / BLOCK_H; row++) {
+            for (let col = 0; col < WATER_COLS; col++) {
                 const slot = C_WATER_BASE + ((col + row) % WATER_SLOTS);
 
-                BT.drawRectFill(new Rect2i(x, y, colW - 1, 5), slot);
+                this.fillBlock(x0 + col * WATER_COL_STEP, top + row * BLOCK_H, WATER_COL_STEP - 1, BLOCK_H, slot);
             }
         }
-
-        // A caption over the tiles (shared caption helper from the UI kit).
-        ui.caption(6, bandY + 58, 'BT.paletteCycle() runs automatically');
     }
 }
 
