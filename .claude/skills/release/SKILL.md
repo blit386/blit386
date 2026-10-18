@@ -21,11 +21,11 @@ one GitHub Release, no separate per-package flow to pick between.
 Covers `blit386`, `@blit386/kit`, and `create-blit386` together. A package name passed as an argument is accepted but
 ignored - there is only one release now.
 
-The `RELEASE.md` generation itself (steps 1-9 below) does not modify `package.json`, `src/core/BTAPI.ts`,
-`packages/kit/src/scaffold.ts`, or any other source file, and does not create branches, commits, or tags. When the user
-asks for more than `RELEASE.md` - "do the whole release", "bump the version", "publish it" - see
-[After RELEASE.md](#after-releasemd-the-rest-of-the-release) below; that part does touch other files and publish
-packages, but only when asked.
+The `RELEASE.md` generation itself (steps 1-9 below) does not modify any `package.json`,
+`packages/blit386/src/core/BTAPI.ts`, `packages/create-blit386/src/scaffold.ts`, or any other source file, and does not
+create branches, commits, or tags. When the user asks for more than `RELEASE.md` - "do the whole release", "bump the
+version", "publish it" - see [After RELEASE.md](#after-releasemd-the-rest-of-the-release) below; that part does touch
+other files and publish packages, but only when asked.
 
 All commands below run from the repo root unless a step says otherwise.
 

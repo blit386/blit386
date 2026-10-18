@@ -122,13 +122,14 @@ Signed-off-by: Your Name <your.email@example.com>
 - `chore` - Other changes
 - `revert` - Revert a previous commit
 
-Suggested scopes are conventions only - commitlint does not enforce a scope enum. The canonical list (frequency order)
-lives in [`CLAUDE.md`](CLAUDE.md) under Git:
+Suggested scopes are conventions only - commitlint does not enforce a scope enum. Each package's own `CLAUDE.md` lists
+the scopes its history uses; for the engine (`packages/blit386/CLAUDE.md`, "Git scopes") that is, by frequency:
 
 `docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`, `release`, `security`,
 `input`, `deps` / `deps-dev`, `visual`, `camera`. Rare/legacy: `examples`.
 
-Prefer an existing scope from that list over inventing a new one.
+Prefer an existing scope from that list over inventing a new one. Files outside every package (root configs, `.claude/`,
+`.husky/`, `.github/`) use the `repo` scope.
 
 ### Example Commits
 
@@ -187,12 +188,15 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - API `@since` tag check (`api:since:check`)
 - API history manifest check (`api:history:check`)
 - `BT.*` getter documentation drift check (`api:getters:check`)
+- Deprecation timeline drift check against the kit's migration registry (`api:deprecations:check`)
 - Unit tests (`test:unit`)
 - Declaration tooling tests (`test:declarations`)
 - Agent config drift checker tests (`test:agent-config`)
 - API history generator tests (`test:api-history`)
 - API getter drift checker tests (`test:api-getters`)
+- Deprecation timeline generator tests (`test:api-deprecations`)
 - Benchmark comparison script tests (`test:bench-compare`)
+- Benchmark coverage reminder tests (`test:check-bench-coverage`)
 - Compact-table Prettier plugin tests (`test:compact-tables`)
 - Shell safety hook tests (`test:shell-safety`)
 - Spellcheck coverage tests (`test:spellcheck-coverage`)
@@ -224,15 +228,13 @@ pnpm run spellcheck                 # Check spelling
 pnpm run knip                       # Find unused exports and dependencies
 pnpm run docs:links                 # Check Markdown links
 pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer, root .mcp.json, cursor rules parity, cursor .mcp.json, maintainer dogfood)
-pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
-pnpm run sync:cursor-commands:check # Check .cursor/commands/*.md for drift against .claude/skills/*/SKILL.md
-pnpm run sync:maintainer-agents     # Generate Antigravity/Codex/Gemini/Copilot/OpenCode hooks + docs-MCP from kit adapters
-pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
 pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
 pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run api:history                # Regenerate API version-history manifest
 pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
 pnpm run api:history:check          # Check API version-history manifest drift
+pnpm run api:deprecations           # Regenerate docs/reference-deprecations.md from the kit's migration registry
+pnpm run api:deprecations:check     # Check the deprecation timeline for drift
 pnpm run security:audit             # Dependency security audit (moderate+)
 pnpm run security:audit:prod        # Production-deps-only security audit
 pnpm run security:mcp-preflight     # MCP security preflight checks
@@ -240,12 +242,28 @@ pnpm run test                       # Run unit tests (alias for test:unit)
 pnpm run test:unit                  # Run unit tests
 pnpm run test:declarations          # Declaration tooling checker tests
 pnpm run test:agent-config          # Agent config drift checker tests
-pnpm run test:cursor-commands       # Cursor commands drift checker tests
 pnpm run test:api-history           # API history generator tests
+pnpm run test:api-deprecations      # Deprecation timeline generator tests
 pnpm run test:security-preflight    # Security preflight tests
 pnpm run test:visual                # Playwright visual regression (local; not in preflight)
 pnpm run bench                      # CPU benchmarks (Vitest bench)
+pnpm run bench:baseline             # Benchmarks into benchmark-baseline.json (run on main)
+pnpm run bench:json                 # Benchmarks into benchmark-results.json (run on the branch)
+pnpm run bench:compare              # Compare the two with a 25% regression threshold
 pnpm run preflight                  # Run all quality checks
+```
+
+Root-only scripts, run from the repo root (`package.json` there), that no package defines:
+
+```bash
+pnpm run sync:cursor-commands         # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
+pnpm run sync:cursor-commands:check   # Check .cursor/commands/*.md for drift against .claude/skills/*/SKILL.md
+pnpm run sync:maintainer-agents       # Generate Antigravity/Codex/Gemini/Copilot/OpenCode hooks + docs-MCP from kit adapters
+pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
+pnpm run bump -- X.Y.Z                # Lockstep version bump across blit386, @blit386/kit, create-blit386
+pnpm run bump:check                   # Check lockstep versions and the derived engine ranges
+pnpm run test:cursor-commands         # Cursor commands sync script tests
+pnpm run test:maintainer-agents       # Maintainer agents sync script tests
 ```
 
 ## Pull Request Process
@@ -264,7 +282,8 @@ that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight
 tests when renderer output could change.
 
 All pull requests will be reviewed by maintainers. The DCO check and other CI checks must pass before a PR can be
-merged.
+merged. `main` is protected and squash merging is disabled, so PRs land as merge commits - your branch's own commits
+keep their SHAs and sign-offs on `main`, which is also why every one of them needs the DCO line, not just the last.
 
 ## AI-Assisted Contributions
 

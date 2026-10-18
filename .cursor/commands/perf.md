@@ -45,9 +45,14 @@ regression threshold).
 - on a clean checkout of `main`: `pnpm run bench:baseline`, which writes `benchmark-baseline.json`
 - on the feature branch: `pnpm run bench:json`, which writes `benchmark-results.json`
 - `pnpm run bench:compare` runs `scripts/compare-tier-1-benchmarks.mjs` against those two files with a 25% regression
-  threshold and writes `benchmark-comparison.json` / `benchmark-comparison.md`; it exits nonzero on a regression or a
-  missing benchmark
-- paste `benchmark-comparison.md` into the PR description by hand when the change is performance-sensitive
+  threshold and writes `benchmark-comparison.json` / `benchmark-comparison.md`; it exits nonzero on a regression, a
+  missing benchmark, or when the two files share no benchmark at all. Benchmarks are matched by their path inside
+  `packages/blit386/`, so a baseline captured in another checkout or worktree still compares
+- other files or another threshold go after `--`, which pnpm forwards and the script ignores:
+  `pnpm run bench:compare -- --baseline other.json --current results.json --threshold 10`
+- paste `benchmark-comparison.md` into the PR description by hand when the change is performance-sensitive, then delete
+  the generated files - they are gitignored but not in `.prettierignore`, so a leftover `benchmark-comparison.md` fails
+  `format:check` and with it preflight
 
 New `*.bench.ts` files are picked up automatically the next time someone captures a baseline. No allowlist change is
 required. Recommend quiet-machine discipline (close heavy apps, stay plugged in, repeat a marginal run) since local runs

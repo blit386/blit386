@@ -10,7 +10,7 @@ scanner availability is uncertain.
 ```
 
 Where `<package>` is `blit386` or `demos`. `website`, `kit`, and `create-blit386` have no MCP-backed security scanning -
-run their `security:audit` script directly (see `/deep-review <package>` step 3) instead of this skill.
+run the root `pnpm run security:audit` directly (see `/deep-review <package>` step 3) instead of this skill.
 
 ## Prerequisites
 

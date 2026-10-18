@@ -52,10 +52,15 @@ skills are hand-authored beginner prose, so they drift silently when the engine 
    While you are here, confirm every skill directory appears in the skills table in `packages/kit/README.md` - that is
    the only human-facing list of what ships, and it has no automated guard.
 
-4. Check the version pin
+4. Check the version pin and the review stamp
 
-   If new games should pin a newer engine, update `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` (and
-   `engineRange` in the kit if present).
+   `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` and `blit386.engineRange` in `packages/kit/package.json`
+   are derived from the engine version by `scripts/bump-lockstep.mjs` - never hand-edit them; `pnpm run bump:check`
+   fails when either drifts. If new games should pin a newer engine, that is a lockstep release (`/release`), not an
+   audit edit. What this audit does own is `blit386.docsReviewedAt` in `packages/kit/package.json`: set it to the engine
+   version you just checked the docs against. `blit doctor` compares it with the installed engine, and
+   `scripts/check-kit-docs-drift.mjs` (root, `.github/workflows/kit-docs-drift.yml`) compares it with
+   `docs/_api-history.json` to decide when to file a drift issue.
 
 5. Keep kit content self-contained
 
