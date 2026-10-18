@@ -233,6 +233,9 @@ class Demo {
     // on so BT.assignTag() has somewhere to put its marks.
     configure() {
         return {
+            isOverlayVisibleAtStart: true,
+            isOverlayPaletteEnabled: true,
+            overlayPaletteRowsVisible: 1,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_LABEL,

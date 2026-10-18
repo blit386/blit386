@@ -23,17 +23,20 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-Five small scenes, one at a time. Press 1-5, or tap the "< Prev" and "Next >" buttons in
-the bottom-left panel, to switch between them. Each scene shows one way of asking the
-engine for a random answer:
+Five small scenes, one at a time, with the engine overlay turned off so they get the whole
+screen. Every scene has the same bottom row: the "Scene 1/5" picker on the left, with Prev
+and Next buttons marked with arrows (press 1-5 to jump straight to a scene), and that
+scene's own panel on the right. Each scene shows one way of asking the engine for a
+random answer:
 
   1. Shuffle - two rows of eight colored cards: the list itself, and a shuffled copy.
-  2. Weighted - a treasure chest dropping gems in four colors; rare ones really are rare.
+  2. Weighted - a treasure chest dropping gems in four colors, and a bar chart of every
+     drop so far, with a white line on each bar at the share the code asked for.
   3. Gaussian - small squares landing near a target of four nested rings, not anywhere.
-  4. Sign - a dot walking along a line, stepping left or right on a coin flip.
+     The panel spells out the exact call each one makes.
+  4. Sign - a dot walking along a line, stepping left or right on a coin flip, with the
+     spots it stood on before trailing down underneath.
   5. Directions - two bugs wandering their own squares, one allowed 4 ways, the other 8.
-
-Each scene adds its own controls and readouts in the bottom-right corner.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -60,21 +63,23 @@ pointInRange() to scatter buildings: https://demos.blit386.dev/camera
 TRY THIS
 --------
 
-- Press 1-5, or tap "< Prev" / "Next >", to change scene.
+- Press 1-5, or tap the Prev and Next buttons, to change scene.
 - Scene 1: press C ("shuffle() a copy") and only the bottom row changes. Press P
   ("shuffleInPlace()") and the top row changes too - the old order is gone for good.
-- Scene 2: wait a while, then compare the four meters with the 70 / 20 / 9 / 1 the code
-  asked for.
+- Scene 2: wait a while, then compare each bar with its white line, and the "Got" row
+  with the 70 / 20 / 9 / 1 the code asked for.
 - Scene 3: press G or tap "Use gaussian()" to switch to float(). The green clump becomes
-  an evenly filled red square. Drag the "Spread" slider (4 to 40) to tighten or widen it.
-- Scene 4: watch the "Coin flips" tally stay close to even, but never exactly even.
+  an evenly filled red square. Drag the "Spread" slider (4 to 40) to tighten or widen it,
+  and watch the call under it change.
+- Scene 4: watch the "Coin flips" tally stay close to even, but never exactly even, and
+  the trail under the line wander off to one side and back.
 - Scene 5: compare the blocky blue trail (4 ways) with the rounder orange one (8 ways).
 
 */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -106,12 +111,16 @@ const C_BUG_B = 8; // the 8-direction bug
 const C_CARD_BASE = 10;
 const CARD_COUNT = 8;
 
-// Card size, and how far apart their left edges sit. Eight cards at 34 pixels apart,
-// starting 22 pixels in, reach x = 294 - just inside the 320-pixel screen.
+// Card size, and how far apart their left edges sit. Eight cards at 34 pixels apart span
+// 264 pixels, so starting 28 pixels in centers the row on the 320-pixel screen.
 const CARD_W = 26;
 const CARD_H = 34;
 const CARD_STRIDE = 34;
-const CARD_LEFT = 22;
+const CARD_LEFT = 28;
+
+// Top edges of the two card rows; each row's caption sits just above it.
+const CARD_ROW_TOP_Y = 20;
+const CARD_ROW_BOTTOM_Y = 74;
 
 // The four treasure tiers each get their own color, in slots 20-23.
 const C_TIER_BASE = 20;
@@ -126,8 +135,19 @@ const TIER_WEIGHTS = [70, 20, 9, 1];
 // How many update ticks pass between automatic treasure drops.
 const DROP_EVERY_TICKS = 8;
 
-// The falling gems disappear once they reach this line.
-const DROP_FLOOR_Y = 132;
+// The chest, where gems start falling from it, and the line where they disappear.
+const CHEST_RECT = new Rect2i(68, 20, 40, 16);
+const DROP_START_Y = 38;
+const DROP_FLOOR_Y = 112;
+
+// The bar chart of drops so far: one bar per tier, as tall as that tier's share of all
+// drops (a 100% share would be BAR_MAX_H tall), with a faint line at the share the code
+// asked for.
+const BAR_W = 20;
+const BAR_GAP = 12;
+const BAR_LEFT = 180;
+const BAR_BOTTOM_Y = 100;
+const BAR_MAX_H = 80;
 
 // How many arrows stay on screen in the Gaussian scene before the oldest is reused.
 const SHOT_COUNT = 120;
@@ -136,21 +156,24 @@ const SHOT_COUNT = 120;
 const SHOT_EVERY_TICKS = 3;
 
 // Where the target sits, and how wide its rings are.
-const TARGET_CENTER = new Vector2i(160, 76);
+const TARGET_CENTER = new Vector2i(160, 62);
 const TARGET_RINGS = [44, 33, 22, 11];
 
-// The Sign scene walks a dot along this line.
-const WALK_Y = 88;
+// The Sign scene walks a dot along this line, and draws where it stood on each of its
+// last WALK_HISTORY steps underneath, newest on top, WALK_HISTORY_GAP pixels apart.
+const WALK_Y = 30;
 const WALK_LEFT = 40;
 const WALK_RIGHT = 280;
+const WALK_HISTORY = 36;
+const WALK_HISTORY_GAP = 2;
 
 // How many update ticks pass between walker steps and bug steps.
 const STEP_EVERY_TICKS = 6;
 
 // The Directions scene gives each bug its own square to wander, and remembers this many
 // of its recent positions as a trail.
-const BUG_AREA_A = new Rect2i(24, 28, 120, 94);
-const BUG_AREA_B = new Rect2i(176, 28, 120, 94);
+const BUG_AREA_A = new Rect2i(24, 20, 120, 94);
+const BUG_AREA_B = new Rect2i(176, 20, 120, 94);
 const TRAIL_LENGTH = 90;
 
 // Each bug is drawn as a small square centered on its position, reaching BUG_REACH pixels
@@ -158,6 +181,40 @@ const TRAIL_LENGTH = 90;
 // edge, or half the marker would hang outside the frame.
 const BUG_REACH = 2;
 const BUG_SIZE = BUG_REACH * 2 + 1;
+
+// Screen layout. Every scene has the same bottom row: the scene picker on the left and
+// that scene's own panel on the right, both PANEL_H tall, so nothing jumps around when
+// you switch. The scene's picture fills the space above.
+const PANEL_H = 111;
+const PANEL_Y = 240 - 4 - PANEL_H;
+const NAV_PANEL_X = 4;
+const NAV_PANEL_W = 100;
+const SCENE_PANEL_X = 110;
+const SCENE_PANEL_W = 206;
+
+// Widgets inside a panel are 20 pixels narrower than the panel itself.
+const PANEL_CONTENT_SHRINK = 20;
+const NAV_BUTTON_W = NAV_PANEL_W - PANEL_CONTENT_SHRINK;
+const SCENE_CONTENT_W = SCENE_PANEL_W - PANEL_CONTENT_SHRINK;
+
+// The scene panels' value column starts after this many characters, so the longest key,
+// "Right (+1)", keeps a space after it.
+const SCENE_KV_COLS = 11;
+
+// Each scene panel's rows fall short of PANEL_H by a different amount. This much empty
+// space (index = MODE_* number) goes in just before each panel's closing note, so every
+// panel is the same height and the note always sits at its bottom.
+const NOTE_GAP = [4, 28, 18, 18, 24];
+
+// The system font's arrows, for the Prev and Next buttons.
+const ARROW_LEFT = '\u2190';
+const ARROW_RIGHT = '\u2192';
+
+// The x to print `text` at so its letters are centered on column `centerX`. The last
+// character's empty spacing column is left out, so the visible letters are what centers.
+function centeredTextX(centerX, text) {
+    return centerX - Math.floor((text.length * FONT_W - 1) / 2);
+}
 
 // Clamps a whole number so it never leaves the range min..max. "Clamp" means "keep it
 // inside the fence": if the value wandered past either end, this pushes it back to the
@@ -225,11 +282,22 @@ class Demo {
     // How many times sign() has answered 1.
     rightCount = 0;
 
+    // Where the walker stood after each of its recent steps, newest first.
+    walkHistory = [];
+
     // Directions scene: the 4-way bug remembers where it is and where it has been.
     bugA = { pos: new Vector2i(0, 0), trail: [] };
 
     // The 8-way bug, same shape.
     bugB = { pos: new Vector2i(0, 0), trail: [] };
+
+    // Turns the engine overlay off: this demo needs the whole screen for its scenes and
+    // panels, and has no timing or audio to watch.
+    configure() {
+        return {
+            isOverlayEnabled: false,
+        };
+    }
 
     // Builds the palette and fills in the starting state of every scene.
     async init() {
@@ -338,9 +406,33 @@ class Demo {
         }
     }
 
-    // Draws the current scene, then the panels on top of it.
+    // Declares both panels, then draws the current scene above them.
+    //
+    // The panels come first because their buttons can change what the scene shows - a new
+    // scene, a reshuffled deck - and the picture drawn after them should already show it.
+    // They never overlap the picture, and the engine draws shapes like the cards and the
+    // target under every panel anyway, so the order costs nothing on screen.
     render() {
         BT.clear(C_BG);
+
+        this.renderNavPanel();
+
+        // Each scene adds its own controls and readouts in the panel beside the picker.
+        ui.begin('topLeft', { x: SCENE_PANEL_X, y: PANEL_Y, width: SCENE_PANEL_W, kvCols: SCENE_KV_COLS });
+
+        if (this.mode === MODE_SHUFFLE) {
+            this.renderShufflePanel();
+        } else if (this.mode === MODE_WEIGHTED) {
+            this.renderWeightedPanel();
+        } else if (this.mode === MODE_GAUSSIAN) {
+            this.renderGaussianPanel();
+        } else if (this.mode === MODE_SIGN) {
+            this.renderSignPanel();
+        } else {
+            this.renderDirectionsPanel();
+        }
+
+        ui.end();
 
         if (this.mode === MODE_SHUFFLE) {
             this.renderShuffle();
@@ -353,40 +445,30 @@ class Demo {
         } else {
             this.renderDirections();
         }
+    }
 
-        // The mode picker sits in the same corner in every scene, so it never moves
-        // around. Two arrow buttons rather than five named ones: at 320x240 a five-row
-        // panel would swallow half the screen, and the number keys still jump straight to
-        // a scene.
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
-        ui.panel(`Scene ${this.mode + 1}/5 (keys 1-5)`);
+    // The scene picker, in the same spot in every scene. Two arrow buttons rather than
+    // five named ones: five rows would not fit, and the number keys still jump straight
+    // to a scene. The buttons are tappable, so someone on a phone can reach every scene
+    // without a keyboard.
+    renderNavPanel() {
+        ui.begin('topLeft', { x: NAV_PANEL_X, y: PANEL_Y, width: NAV_PANEL_W });
+        ui.panel(`Scene ${this.mode + 1}/${MODE_NAMES.length}`);
         ui.label(MODE_NAMES[this.mode], { color: 'accent' });
+        ui.label('or keys 1-5', { color: 'dim' });
+        ui.spacer(4);
 
-        // The two buttons are tappable, so someone on a phone can reach every scene
-        // without a keyboard. Adding MODE_NAMES.length before taking the remainder keeps
-        // the answer positive when stepping back from scene 1.
-        if (ui.button('< Prev')) {
+        // Adding MODE_NAMES.length before taking the remainder keeps the answer positive
+        // when stepping back from scene 1.
+        if (ui.button(`${ARROW_LEFT} Prev`, { width: NAV_BUTTON_W })) {
             this.mode = (this.mode + MODE_NAMES.length - 1) % MODE_NAMES.length;
         }
 
-        if (ui.button('Next >')) {
+        if (ui.button(`Next ${ARROW_RIGHT}`, { width: NAV_BUTTON_W })) {
             this.mode = (this.mode + 1) % MODE_NAMES.length;
         }
 
         ui.end();
-
-        // Each scene adds its own controls and readouts in the opposite corner.
-        if (this.mode === MODE_SHUFFLE) {
-            this.renderShufflePanel();
-        } else if (this.mode === MODE_WEIGHTED) {
-            this.renderWeightedPanel();
-        } else if (this.mode === MODE_GAUSSIAN) {
-            this.renderGaussianPanel();
-        } else if (this.mode === MODE_SIGN) {
-            this.renderSignPanel();
-        } else {
-            this.renderDirectionsPanel();
-        }
     }
 
     // Drops a new gem every few ticks and moves the falling ones down the screen.
@@ -425,8 +507,8 @@ class Demo {
         this.gems.push({
             // int(a, b) gives a whole number from a up to (but not including) b, so this
             // lands somewhere across the middle of the screen.
-            x: BT.random.int(110, 210),
-            y: 40,
+            x: BT.random.int(CHEST_RECT.x + 4, CHEST_RECT.x + CHEST_RECT.width - 10),
+            y: DROP_START_Y,
             tier,
         });
     }
@@ -480,6 +562,15 @@ class Demo {
 
         // Each step is 6 pixels; clampInt keeps the dot on the line.
         this.walkX = clampInt(this.walkX + direction * 6, WALK_LEFT, WALK_RIGHT);
+
+        // Remember the new spot at the front of the history, and let the oldest one fall
+        // off the end. unshift() adds to the front of a list, pop() removes the last
+        // item.
+        this.walkHistory.unshift(this.walkX);
+
+        if (this.walkHistory.length > WALK_HISTORY) {
+            this.walkHistory.pop();
+        }
     }
 
     // Steps both bugs and records where they have been.
@@ -527,11 +618,11 @@ class Demo {
 
     // Draws the two rows of cards.
     renderShuffle() {
-        ui.caption(CARD_LEFT, 10, 'The list itself');
-        ui.caption(CARD_LEFT, 74, 'What shuffle() handed back', { color: 'dim' });
+        ui.caption(CARD_LEFT, CARD_ROW_TOP_Y - 10, 'The list itself');
+        ui.caption(CARD_LEFT, CARD_ROW_BOTTOM_Y - 10, 'What shuffle() handed back', { color: 'dim' });
 
-        this.renderCardRow(this.deck, 24);
-        this.renderCardRow(this.shuffled, 88);
+        this.renderCardRow(this.deck, CARD_ROW_TOP_Y);
+        this.renderCardRow(this.shuffled, CARD_ROW_BOTTOM_Y);
     }
 
     // Draws one row of colored cards. `cards` holds the card numbers in the order they
@@ -547,23 +638,70 @@ class Demo {
         }
     }
 
-    // Draws the chest and the falling gems.
+    // Draws the chest and the falling gems on the left, and a bar chart of every drop so
+    // far on the right.
     renderWeighted() {
-        ui.caption(112, 8, 'Treasure chest');
+        const chestMidX = CHEST_RECT.x + Math.floor(CHEST_RECT.width / 2);
+
+        ui.caption(centeredTextX(chestMidX, 'Treasure chest'), CHEST_RECT.y - 10, 'Treasure chest');
 
         // The chest itself is just a box - the interesting part is what comes out of it.
-        BT.drawRectFill(new Rect2i(140, 22, 40, 16), C_DIM);
-        BT.drawRect(new Rect2i(140, 22, 40, 16), C_INK);
+        BT.drawRectFill(CHEST_RECT, C_DIM);
+        BT.drawRect(CHEST_RECT, C_INK);
 
         // Each gem is a 6x6 square in its tier's color.
         for (const gem of this.gems) {
             BT.drawRectFill(new Rect2i(gem.x, gem.y, 6, 6), C_TIER_BASE + gem.tier);
         }
+
+        this.renderDropChart();
+    }
+
+    // One bar per tier, as tall as that tier's share of all drops, with a faint line at
+    // the share the weights asked for. Above each bar, its share in percent; under it,
+    // the tier's first letter.
+    renderDropChart() {
+        const total = this.totalDrops();
+        const chartW = TIER_NAMES.length * BAR_W + (TIER_NAMES.length - 1) * BAR_GAP;
+        const weightSum = TIER_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
+
+        ui.caption(centeredTextX(BAR_LEFT + Math.floor(chartW / 2), 'Drops so far'), CHEST_RECT.y - 10, 'Drops so far');
+
+        // The floor of the chart.
+        BT.drawLine(new Vector2i(BAR_LEFT - 4, BAR_BOTTOM_Y), new Vector2i(BAR_LEFT + chartW + 3, BAR_BOTTOM_Y), C_DIM);
+
+        for (let i = 0; i < TIER_NAMES.length; i++) {
+            const x = BAR_LEFT + i * (BAR_W + BAR_GAP);
+            const midX = x + Math.floor(BAR_W / 2);
+
+            // A share is a fraction from 0 to 1, so a count is divided by the total.
+            // Guarding against a total of 0 avoids dividing by zero on the very first
+            // frame.
+            const share = total > 0 ? this.tierCounts[i] / total : 0;
+            const barH = Math.round(share * BAR_MAX_H);
+            const askedY = BAR_BOTTOM_Y - Math.round((TIER_WEIGHTS[i] / weightSum) * BAR_MAX_H);
+
+            if (barH > 0) {
+                BT.drawRectFill(new Rect2i(x, BAR_BOTTOM_Y - barH, BAR_W, barH), C_TIER_BASE + i);
+            }
+
+            // The asked-for share, drawn over the bar so it shows either way.
+            BT.drawLine(new Vector2i(x - 2, askedY), new Vector2i(x + BAR_W + 1, askedY), C_INK);
+
+            // The percent sits above whichever is higher, the bar or its white line.
+            const percent = `${Math.round(share * 100)}%`;
+            const labelBottom = Math.min(BAR_BOTTOM_Y - barH, askedY);
+
+            ui.caption(centeredTextX(midX, percent), labelBottom - 10, percent, { color: 'dim' });
+            ui.caption(centeredTextX(midX, TIER_NAMES[i][0]), BAR_BOTTOM_Y + 5, TIER_NAMES[i][0], { color: 'dim' });
+        }
     }
 
     // Draws the target and every arrow currently stuck in it.
     renderGaussian() {
-        ui.caption(96, 8, 'Aim for the middle');
+        const ringTop = TARGET_CENTER.y - TARGET_RINGS[0];
+
+        ui.caption(centeredTextX(TARGET_CENTER.x, 'Aim for the middle'), ringTop - 10, 'Aim for the middle');
 
         // Concentric squares stand in for a round target - the engine draws rectangles,
         // lines, and pixels, so a "ring" here is a square outline.
@@ -580,17 +718,26 @@ class Demo {
         }
     }
 
-    // Draws the walking line and the dot standing on it.
+    // Draws the walking line with the dot standing on it, and under it a column of the
+    // spots the dot stood on before - newest on top, so the walk reads downward in time.
     renderSign() {
-        ui.caption(88, 50, 'Left or right, nothing else');
+        const start = (WALK_LEFT + WALK_RIGHT) / 2;
+        const label = 'Left or right, nothing else';
+
+        ui.caption(centeredTextX(start, label), WALK_Y - 22, label);
 
         BT.drawLine(new Vector2i(WALK_LEFT, WALK_Y), new Vector2i(WALK_RIGHT, WALK_Y), C_DIM);
 
         // A tick mark at the starting point, so it is obvious how far the walker has
-        // drifted.
-        const start = (WALK_LEFT + WALK_RIGHT) / 2;
-
+        // drifted, and the two ends labeled with what sign() answers to get there.
         BT.drawLine(new Vector2i(start, WALK_Y - 6), new Vector2i(start, WALK_Y + 6), C_DIM);
+        ui.caption(WALK_LEFT - 2 * FONT_W - 6, WALK_Y - 2, '-1', { color: 'dim' });
+        ui.caption(WALK_RIGHT + 7, WALK_Y - 2, '+1', { color: 'dim' });
+
+        // The history: one pixel per past step, under the line.
+        for (let i = 0; i < this.walkHistory.length; i++) {
+            BT.drawPixel(new Vector2i(this.walkHistory[i], WALK_Y + 10 + i * WALK_HISTORY_GAP), C_DIM);
+        }
 
         // The walker: a 7x7 square centered on the line.
         BT.drawRectFill(new Rect2i(this.walkX - 3, WALK_Y - 3, 7, 7), C_INK);
@@ -598,8 +745,8 @@ class Demo {
 
     // Draws both bugs and their trails.
     renderDirections() {
-        ui.caption(BUG_AREA_A.x, 12, '4 ways', { color: 'info' });
-        ui.caption(BUG_AREA_B.x, 12, '8 ways', { color: 'warm' });
+        ui.caption(BUG_AREA_A.x, BUG_AREA_A.y - 10, '4 ways', { color: 'info' });
+        ui.caption(BUG_AREA_B.x, BUG_AREA_B.y - 10, '8 ways', { color: 'warm' });
 
         BT.drawRect(BUG_AREA_A, C_DIM);
         BT.drawRect(BUG_AREA_B, C_DIM);
@@ -617,105 +764,99 @@ class Demo {
         BT.drawRectFill(new Rect2i(bug.pos.x - BUG_REACH, bug.pos.y - BUG_REACH, BUG_SIZE, BUG_SIZE), colorSlot);
     }
 
-    // The two shuffle buttons, which are the whole lesson of this scene.
+    // How many gems have dropped so far, all tiers together.
+    totalDrops() {
+        return this.tierCounts.reduce((sum, count) => sum + count, 0);
+    }
+
+    // The two shuffle buttons, which are the whole lesson of this scene. Like every
+    // scene panel, this one only declares rows: render() opens and closes the group.
     renderShufflePanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Shuffle');
 
-        if (ui.button('shuffle() a copy', { key: 'KeyC' })) {
+        if (ui.button('C - shuffle() a copy', { key: 'KeyC', width: SCENE_CONTENT_W })) {
             // shuffle() builds a NEW mixed-up list and hands that back. The original list
             // is untouched, which is why the top row does not move when you press this.
             this.shuffled = BT.random.shuffle(this.deck);
         }
 
-        if (ui.button('shuffleInPlace()', { key: 'KeyP' })) {
+        if (ui.button('P - shuffleInPlace()', { key: 'KeyP', width: SCENE_CONTENT_W })) {
             // shuffleInPlace() mixes up the list you handed it. The top row jumps, and
             // the old order is gone for good - there is no copy to go back to.
             BT.random.shuffleInPlace(this.deck);
         }
 
-        ui.separator();
-        ui.label('Copy leaves the top row alone.', { color: 'dim' });
-        ui.label('In place changes it for real.', { color: 'dim' });
-        ui.end();
+        ui.spacer(NOTE_GAP[MODE_SHUFFLE]);
+        ui.label('Copy: the top row stays put.', { color: 'dim' });
+        ui.label('In place: the top row moves.', { color: 'dim' });
     }
 
-    // The running tally of how often each tier has dropped.
+    // The weights the code asked for, the shares that actually dropped, and the total.
     renderWeightedPanel() {
-        // Adding the counts up gives us something to measure each tier against.
-        let total = 0;
+        const total = this.totalDrops();
 
-        for (const count of this.tierCounts) {
-            total += count;
-        }
+        // Each tier's share of all drops in whole percent, joined with slashes to line up
+        // with the asked-for row above it.
+        const got = this.tierCounts.map((count) => (total > 0 ? Math.round((count / total) * 100) : 0)).join(' / ');
 
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
-        ui.panel('Drops so far');
-
-        for (let i = 0; i < TIER_NAMES.length; i++) {
-            // A meter wants a fraction from 0 to 1, so each count is divided by the
-            // total. Guarding against a total of 0 avoids dividing by zero on the very
-            // first frame.
-            const share = total > 0 ? this.tierCounts[i] / total : 0;
-
-            ui.meter(`${TIER_NAMES[i]} ${this.tierCounts[i]}`, share);
-        }
-
-        ui.separator();
-        ui.label(`Asked for 70 / 20 / 9 / 1`, { color: 'dim' });
-        ui.label(`Total drops: ${total}`, { color: 'dim' });
-        ui.end();
+        ui.panel('Weighted drops');
+        ui.kv('Asked', TIER_WEIGHTS.join(' / '));
+        ui.kv('Got', got);
+        ui.kv('Drops', total);
+        ui.spacer(NOTE_GAP[MODE_WEIGHTED]);
+        ui.label('The white lines mark what the', { color: 'dim' });
+        ui.label('weights asked for. Rare is rare.', { color: 'dim' });
     }
 
-    // The spread slider and the flat-versus-clumped switch.
+    // The flat-versus-clumped switch and the spread slider.
     renderGaussianPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Scatter');
 
         // The checkbox answers true or false; the slider answers a number, rounded to a
-        // whole pixel.
-        this.useGaussian = ui.checkbox('Use gaussian()', this.useGaussian, { key: 'KeyG' });
-        this.shotSpread = Math.round(ui.slider('Spread', this.shotSpread, { min: 4, max: 40 }));
+        // whole pixel and shown without decimals.
+        this.useGaussian = ui.checkbox('G - Use gaussian()', this.useGaussian, { key: 'KeyG' });
+        ui.spacer(4);
+        this.shotSpread = Math.round(
+            ui.slider('Spread', this.shotSpread, { min: 4, max: 40, width: SCENE_CONTENT_W, decimals: 0 }),
+        );
 
-        ui.separator();
+        // The exact call each arrow makes right now, with this spread filled in.
+        const reach = this.shotSpread * 2;
+        const call = this.useGaussian ? `gaussian(0, ${this.shotSpread})` : `float(-${reach}, ${reach})`;
 
-        if (this.useGaussian) {
-            ui.label('Clumped near the middle.', { color: 'dim' });
-        } else {
-            ui.label('Even, edge to edge.', { color: 'dim' });
-        }
-
-        ui.label('Toggle it and watch.', { color: 'dim' });
-        ui.end();
+        ui.label(`Each arrow: ${call}`, { color: 'info' });
+        ui.spacer(NOTE_GAP[MODE_GAUSSIAN]);
+        ui.label(this.useGaussian ? 'Green: clumped near the middle.' : 'Red: even, edge to edge.', {
+            color: 'dim',
+        });
     }
 
     // How many times sign() answered each way.
     renderSignPanel() {
-        const total = this.leftCount + this.rightCount;
-
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Coin flips');
         ui.kv('Left (-1)', this.leftCount);
         ui.kv('Right (+1)', this.rightCount);
-        ui.kv('Total', total);
-        ui.separator();
+        ui.kv('Total', this.leftCount + this.rightCount);
+
+        // How far the walker has drifted from the tick mark, in 6-pixel steps.
+        const drift = (this.walkX - (WALK_LEFT + WALK_RIGHT) / 2) / 6;
+
+        ui.kv('Drift', `${drift > 0 ? '+' : ''}${drift} steps`);
+        ui.spacer(NOTE_GAP[MODE_SIGN]);
         ui.label('Close to even over time,', { color: 'dim' });
         ui.label('but never exactly even.', { color: 'dim' });
-        ui.end();
     }
 
     // A reminder of what separates the two bugs.
     renderDirectionsPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Two bugs');
         ui.label('Blue: direction4()', { color: 'info' });
         ui.label('up, down, left, right', { color: 'dim' });
         ui.spacer(4);
         ui.label('Orange: direction8()', { color: 'warm' });
         ui.label('those four, plus diagonals', { color: 'dim' });
-        ui.separator();
+        ui.spacer(NOTE_GAP[MODE_DIRECTIONS]);
         ui.label('Both hand back a Vector2i.', { color: 'dim' });
-        ui.end();
     }
 }
 

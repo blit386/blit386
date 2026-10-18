@@ -27,15 +27,17 @@ WHAT YOU WILL SEE
 
 A 320x240 cockpit window looking straight down the flight path: a two-tone frame around
 the screen and an instrument housing in the top-right corner with a 12x12 lamp labeled
-"WARP". 140 stars drift out from the center. The flight cycles through four phases:
-cruise (2.5 s), jump (0.75 s), warp (2 s), and drop (0.75 s). At the jump the stars speed
-up and stretch into long radial streaks, the hull kicks sideways by up to 5 pixels, and
-the lamp starts blinking twice a second. The drop reverses it and the cycle repeats.
+"WARP", and under it the current phase and the jump count ("CRUISE  x0"). 140 stars
+drift out from the center. The flight cycles through four phases: cruise (2.5 s), jump
+(0.75 s), warp (2 s), and drop (0.75 s). At the jump the stars speed up and stretch into
+long radial streaks, the hull kicks sideways by up to 5 pixels, and the lamp starts
+blinking twice a second. The drop reverses it and the cycle repeats.
 
 Three UI kit panels sit around the window: "Reduced motion" (top-left) shows the OS
-preference, the local override, the effective state, a counter of change-hook calls, the
-phase, and the jump count; "Controls" (bottom-left) holds the two controls; "When reduced"
-(bottom-right) lists the four damped effects.
+preference, the local override, the effective state, and a counter of change-hook calls;
+"Controls" under it holds the two controls; "When reduced" (bottom-right) lists the four
+damped effects. Everything sits clear of the engine overlay's bars, so opening it with
+the backquote key hides nothing.
 
 When reduced motion is preferred, the demo keeps flying but damps every effect: stars at
 20 percent speed, no streaks, no shake, and a lamp that stays lit instead of blinking. It
@@ -59,6 +61,7 @@ WHAT YOU WILL LEARN
   the UI kit draws.
 - applyEasing(t, 'cubic-in-out') for the speed ramps at the jump and the drop.
 - Degrading motion instead of deleting it: slower, shorter, steadier - not stopped.
+- overlayStyle in configure() picks the engine overlay's colors from the palette.
 
 HOW THIS DIFFERS FROM THE STARFIELD DEMO
 ----------------------------------------
@@ -72,10 +75,12 @@ the division.
 TRY THIS
 --------
 
-- Press M (or tap "Force reduced (M)") to force reduced motion on without touching the OS.
+- Press M (or tap "M Force reduced") to force reduced motion on without touching the OS.
   The checkbox can only add reduced motion on top of the system setting, never remove it.
-- Press J (or tap "Jump / drop (J)") to jump to warp or drop back out right now. The
+- Press J (or tap "J Jump / drop") to jump to warp or drop back out right now. The
   button does nothing while a jump or drop is already in progress.
+- Press the backquote key (`) or click the small icon in the bottom-left corner to open
+  the engine overlay with the frame rate and timings.
 - Turn the system's reduce-motion setting on or off while the page is open and watch the
   "Hook fired" counter and the "Last hook" line change. No reload is needed.
 - Add ?reducedmotion or ?noreducedmotion to the URL to start in either state. A URL flag
@@ -88,7 +93,7 @@ frame instead of fading and dissolving.
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {{ x: number, y: number, z: number, prevZ: number, speedScale: number }} Star */
@@ -176,11 +181,39 @@ const SHAKE_STOP_PX = 0.35;
 const LAMP_PERIOD_TICKS = 30;
 const LAMP_ON_TICKS = 15;
 
-// Where the instrument housing and its lamp sit, in screen pixels.
-const HOUSING_RECT = new Rect2i(262, 10, 48, 30);
-const LAMP_RECT = new Rect2i(268, 16, 12, 12);
-const LAMP_LABEL_X = 284;
-const LAMP_LABEL_Y = 18;
+// Screen layout. The engine overlay (toggled with the backquote key) covers the top 42
+// rows and the bottom 14 when it is open, so everything the reader needs sits between
+// those bands, MARGIN pixels in from the cockpit frame's sides. The left column holds the
+// status panel with the controls under it; the right column holds the instrument housing
+// at the top and the legend at the bottom. The starfield shows through the middle.
+const BAND_TOP = 46;
+const BAND_BOTTOM = 223;
+const MARGIN = 8;
+const PANEL_GAP = 6;
+const LEFT_PANEL_W = 150;
+const STATUS_PANEL_H = 87;
+const CONTROLS_Y = BAND_TOP + STATUS_PANEL_H + PANEL_GAP;
+const LEGEND_W = 120;
+const LEGEND_H = 73;
+const LEGEND_X = DISPLAY_W - MARGIN - LEGEND_W;
+const LEGEND_Y = BAND_BOTTOM - LEGEND_H;
+
+// The status panel's value column starts after this many characters, so the longest key,
+// "Hook fired", keeps a space after it.
+const STATUS_KV_COLS = 11;
+
+// The instrument housing in the top-right corner: the warp lamp with its "WARP" label,
+// and under them the phase and the jump count, printed on the hull like cockpit readouts.
+const HOUSING_RECT = new Rect2i(DISPLAY_W - MARGIN - 74, BAND_TOP, 74, 36);
+const LAMP_RECT = new Rect2i(HOUSING_RECT.x + 6, HOUSING_RECT.y + 5, 12, 12);
+const LAMP_LABEL_X = LAMP_RECT.x + 18;
+const LAMP_LABEL_Y = LAMP_RECT.y + 2;
+const READOUT_X = LAMP_RECT.x;
+const READOUT_Y = LAMP_RECT.y + 18;
+const READOUT_RIGHT_X = HOUSING_RECT.x + HOUSING_RECT.width - 6;
+
+// Every character of the system font is 6 pixels wide; its letters fill 5 of them.
+const FONT_W = 6;
 
 // Depth thresholds picking which of the three star colors to draw with.
 const BAND_FAR_Z = 1.0;
@@ -256,6 +289,15 @@ class Demo {
     headVec = new Vector2i(0, 0);
     tailVec = new Vector2i(0, 0);
     tempRect = new Rect2i(0, 0, 0, 0);
+
+    // Colors the engine overlay (toggled with the backquote key) from the shared UI
+    // theme. Its default colors live in palette slots 1 and 2, which here are empty and
+    // deep space - black bars with black text.
+    configure() {
+        return {
+            overlayStyle: THEME_OVERLAY_STYLE,
+        };
+    }
 
     // Builds the palette, fills the sky, and asks once whether this viewer wants less
     // motion.
@@ -594,8 +636,8 @@ class Demo {
     // The fourth degradation: normally the lamp blinks twice a second, but under reduced
     // motion it simply stays lit for the same phases. Same color, same meaning, no
     // flicker - which is also why the lamp is never the ONLY thing telling you the state.
-    // Blinking alone is a poor way to say anything: the "Phase" line in the panel says it
-    // in words.
+    // Blinking alone is a poor way to say anything: the phase readout under the lamp says
+    // it in words.
     drawLamp() {
         const isWarping = this.phase === PHASE_JUMP || this.phase === PHASE_WARP;
         const isLit = isWarping && (this.reducedNow || this.lampTick < LAMP_ON_TICKS);
@@ -603,28 +645,36 @@ class Demo {
         BT.drawRectFill(LAMP_RECT, isLit ? C_LAMP_ON : C_LAMP_DIM);
         BT.drawRect(LAMP_RECT, C_LAMP_RIM);
 
-        // Drawn inside the camera offset with the rest of the hull, so the label shakes
-        // along with the panel it is printed on instead of floating free of it.
+        // Drawn inside the camera offset with the rest of the hull, so the labels shake
+        // along with the housing they are printed on instead of floating free of it.
         BT.systemPrint(this.headVec.set(LAMP_LABEL_X, LAMP_LABEL_Y), C_LAMP_RIM, 'WARP');
+
+        // The phase in capitals on the left, and the jump count right-aligned under the
+        // label: its letters end on READOUT_RIGHT_X.
+        const jumps = `x${this.jumpCount}`;
+
+        BT.systemPrint(this.headVec.set(READOUT_X, READOUT_Y), C_LAMP_RIM, this.phase.toUpperCase());
+        BT.systemPrint(
+            this.headVec.set(READOUT_RIGHT_X - (jumps.length * FONT_W - 1) + 1, READOUT_Y),
+            C_LAMP_RIM,
+            jumps,
+        );
     }
 
     // Top-left panel: what the system said, what the override says, and proof the hook
-    // fires.
+    // fires. The phase and the jump count are on the instrument housing (see drawLamp()).
     drawStatusPanel() {
-        ui.begin(UI_ANCHORS.TOP_LEFT);
+        ui.begin('topLeft', { x: MARGIN, y: BAND_TOP, width: LEFT_PANEL_W, kvCols: STATUS_KV_COLS });
         ui.panel('Reduced motion');
         ui.kv('OS pref', this.osPrefersReduced ? 'reduce' : 'no-pref');
         ui.kv('Override', this.forceReduced ? 'on' : 'off');
         ui.kv('Effective', this.reducedNow ? 'REDUCED' : 'FULL');
-        ui.separator();
+        ui.spacer(4);
 
         // "0" here is the right answer at startup, not a bug: the hook reports changes
         // only.
         ui.kv('Hook fired', this.hookCallCount);
         ui.kv('Last hook', this.formatLastHook());
-        ui.separator();
-        ui.kv('Phase', this.phase);
-        ui.kv('Jumps', this.jumpCount);
         ui.end();
     }
 
@@ -637,9 +687,9 @@ class Demo {
         return `${this.lastHookValue ? 'reduce' : 'no-pref'} @${this.lastHookTick}`;
     }
 
-    // Bottom-left panel: the two controls, both usable by key and by touch.
+    // Left panel under the status: the two controls, both usable by key and by touch.
     drawControlPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
+        ui.begin('topLeft', { x: MARGIN, y: CONTROLS_Y, width: LEFT_PANEL_W });
         ui.panel('Controls');
 
         // A checkbox, not a button, because this is a lasting on/off state. The { key }
@@ -648,23 +698,23 @@ class Demo {
         //
         // Note the direction: this can only ADD reduced motion on top of the system
         // setting. Nothing here can take it away from someone whose OS asked for it.
-        this.forceReduced = ui.checkbox('Force reduced (M)', this.forceReduced, { key: 'KeyM' });
+        this.forceReduced = ui.checkbox('M Force reduced', this.forceReduced, { key: 'KeyM' });
 
         // A little breathing room: buttons are taller than text rows, and without a gap
         // the button's top edge clips the descenders of the checkbox label above it.
         ui.spacer(4);
 
-        if (ui.button('Jump / drop (J)', { key: 'KeyJ' })) {
+        if (ui.button('J Jump / drop', { key: 'KeyJ', width: LEFT_PANEL_W - 20 })) {
             this.toggleWarp();
         }
 
-        ui.label('Flip the OS setting', { color: 'dim' });
+        ui.label('Or use the OS setting.', { color: 'dim' });
         ui.end();
     }
 
     // Bottom-right panel: exactly what changes when reduced motion is on.
     drawLegendPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
+        ui.begin('topLeft', { x: LEGEND_X, y: LEGEND_Y, width: LEGEND_W });
         ui.panel('When reduced');
         ui.label('Stars   20% speed', { color: 'dim' });
         ui.label('Streaks dots only', { color: 'dim' });

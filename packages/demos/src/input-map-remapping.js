@@ -23,14 +23,20 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A wide 640x480 screen with a title strip and two dim lines of intro text at the top. Below
-them, two equal panels sit side by side: "Player 0" on the left and "Player 1" on the
-right. Each lists that player's default keys, then a column of eight pips, one per face
-button (Up, Down, Left, Right, A, B, Start, Select). A pip fills while its button is held.
+A wide 640x480 screen with the engine overlay open from the start: its title and timing
+chart across the top, its bar along the bottom. Everything the demo draws sits in the
+space between, clear of both, so the chart and the panels are visible together.
 
-In the bottom-left corner, a "Presets" panel holds four kit buttons that switch between
-key maps, and an "Active" row names the map in use right now. Each switch also drops a tag
-on the engine overlay's timing chart.
+Two dim lines of intro text come first. Below them, two equal panels sit side by side:
+"Player 0" on the left and "Player 1" on the right, each a column of eight pips, one per
+face button (Up, Down, Left, Right, A, B, Start, Select). A pip fills while its button is
+held, and next to it are the keys that feed that button right now - in green when the
+active preset changed them from the defaults, "none" in orange when it cleared them.
+
+Along the bottom, a "Presets" panel holds four kit buttons that switch between key maps,
+with an "Active" row naming the map in use, and a "Calls made" panel beside it lists the
+exact BT.inputMapReset() and BT.inputMap() calls that preset ran. Each switch also drops a
+tag on the engine overlay's timing chart.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -68,30 +74,60 @@ TRY THIS
 
 import { bootstrap, BT, Vector2i } from 'blit386';
 
+import { keyLabel } from './shared/key-names.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
-// Layout for a 640x480 logical screen (set in configure(); wider than the engine default)
-// so two panels of key maps fit comfortably side by side.
+// A 640x480 logical screen (set in configure(); wider than the engine default) so two
+// panels of key maps fit comfortably side by side.
 const DISPLAY_W = 640;
 const DISPLAY_H = 480;
-const MARGIN_X = 24;
-const GAP_PANELS = 24;
 
-// Two equal columns: margin + panel + gap + panel + margin == DISPLAY_W.
-const PANEL_W = Math.floor((DISPLAY_W - 2 * MARGIN_X - GAP_PANELS) / 2);
-const PANEL0_X = MARGIN_X;
-const PANEL1_X = MARGIN_X + PANEL_W + GAP_PANELS;
+// The engine overlay is visible from the start and draws on top of everything: its title
+// rows and timing chart cover the top 65 pixels, and its bottom bar the last 14 (measured
+// from a capture of this demo). Everything below is laid out in the band between, so
+// nothing of ours hides under the overlay.
+const OVERLAY_TOP_H = 65;
+const OVERLAY_BOTTOM_H = 14;
+const FREE_TOP = OVERLAY_TOP_H;
+const FREE_H = DISPLAY_H - OVERLAY_TOP_H - OVERLAY_BOTTOM_H;
 
-// Where the intro text and the two player panels start, measured from the top of the
-// screen in pixels. The top bar strip drawn by the kit is 22 pixels tall, so 28 clears
-// it.
-const INTRO_Y = 28;
-const PANEL_TOP_Y = 88;
+// Panels sit 8 pixels from the screen sides and 8 apart, in two equal columns:
+// 8 + 308 + 8 + 308 + 8 = 640.
+const EDGE = 8;
+const GAP = 8;
+const PANEL_W = (DISPLAY_W - 2 * EDGE - GAP) / 2;
+const LEFT_X = EDGE;
+const RIGHT_X = EDGE + PANEL_W + GAP;
 
-// All four preset buttons share one width so the column reads as a tidy block.
-const PRESET_BUTTON_W = 200;
+// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
+// pixels below the last row; text inside starts 9 pixels in from the panel edge.
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM = 11;
+const PANEL_PAD = 9;
+
+// Player panels: eight 10-pixel pip rows, 4 pixels apart.
+const PIP_ROW_GAP = 4;
+const PIP_ROW_PITCH = 10 + PIP_ROW_GAP;
+const PLAYER_PANEL_H = PANEL_CONTENT_TOP + 8 * 10 + 7 * PIP_ROW_GAP + PANEL_BOTTOM;
+
+// The keys column starts after the pip (14 pixels) and the longest label ("Select", 6
+// characters of 6 pixels) plus one character of space.
+const KEYS_X_OFFSET = PANEL_PAD + 14 + 7 * 6;
+
+// Bottom row: the Presets panel holds four 27-pixel button rows, a 4-pixel gap, and the
+// 10-pixel Active row; the Calls made panel beside it is made exactly as tall.
+const PRESETS_PANEL_H = PANEL_CONTENT_TOP + 4 * 27 + 4 + 10 + PANEL_BOTTOM;
+const PRESET_BUTTON_W = PANEL_W - 2 * PANEL_PAD;
+
+// The whole block - two intro lines (20 pixels), the player panels, and the bottom row,
+// 8 pixels apart - is centered in the free band.
+const INTRO_H = 20;
+const BLOCK_H = INTRO_H + GAP + PLAYER_PANEL_H + GAP + PRESETS_PANEL_H;
+const INTRO_Y = FREE_TOP + Math.floor((FREE_H - BLOCK_H) / 2);
+const PANEL_TOP_Y = INTRO_Y + INTRO_H + GAP;
+const BOTTOM_ROW_Y = PANEL_TOP_Y + PLAYER_PANEL_H + GAP;
 
 // The engine overlay (configured below) needs palette slot numbers, but configure() runs
 // BEFORE init(), where applyTheme() installs the shared UI colors. applyTheme() always
@@ -104,18 +140,34 @@ const THEME_SLOT_ACCENT = 247; // lit / active (phosphor green)
 const THEME_SLOT_WARM = 248; // warnings (warm orange)
 
 // The eight face buttons in the order the panels list them, each pairing an on-screen
-// label with the engine's button constant.
-/** @type {Array<{ label: string, code: number }>} */
+// label with the engine's button constant and that constant's name (for the Calls made
+// panel).
+/** @type {Array<{ label: string, code: number, name: string }>} */
 const FACE_BUTTONS = [
-    { label: 'Up', code: BT.BTN_UP },
-    { label: 'Down', code: BT.BTN_DOWN },
-    { label: 'Left', code: BT.BTN_LEFT },
-    { label: 'Right', code: BT.BTN_RIGHT },
-    { label: 'A', code: BT.BTN_A },
-    { label: 'B', code: BT.BTN_B },
-    { label: 'Start', code: BT.BTN_START },
-    { label: 'Select', code: BT.BTN_SELECT },
+    { label: 'Up', code: BT.BTN_UP, name: 'BTN_UP' },
+    { label: 'Down', code: BT.BTN_DOWN, name: 'BTN_DOWN' },
+    { label: 'Left', code: BT.BTN_LEFT, name: 'BTN_LEFT' },
+    { label: 'Right', code: BT.BTN_RIGHT, name: 'BTN_RIGHT' },
+    { label: 'A', code: BT.BTN_A, name: 'BTN_A' },
+    { label: 'B', code: BT.BTN_B, name: 'BTN_B' },
+    { label: 'Start', code: BT.BTN_START, name: 'BTN_START' },
+    { label: 'Select', code: BT.BTN_SELECT, name: 'BTN_SELECT' },
 ];
+
+// The engine's shipped default tables, one per player, in player order.
+const DEFAULT_MAPS = [BT.DEFAULT_KEYBOARD_PLAYER1, BT.DEFAULT_KEYBOARD_PLAYER2];
+
+// Copies one keyboard table so editing the copy never touches the original.
+// Object.entries() lists [button, keys] pairs, [...keys] copies each key list, and
+// Object.fromEntries() builds a new table from the pairs.
+function copyMap(map) {
+    return Object.fromEntries(Object.entries(map).map(([button, keys]) => [button, [...keys]]));
+}
+
+// True when two key lists hold the same keys in the same order.
+function sameKeys(a, b) {
+    return a.length === b.length && a.every((key, i) => key === b[i]);
+}
 
 // Cycles keyboard face-button maps with BT.inputMap and BT.inputMapReset.
 class Demo {
@@ -126,9 +178,22 @@ class Demo {
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
-    // Human-readable name for the active preset. We track it ourselves - the engine does
-    // not expose a "get current map" API.
-    presetLabel = '1 Defaults (engine tables)';
+    // Human-readable name for the active preset.
+    presetLabel = 'Defaults';
+
+    // Our own copy of both players' keyboard tables, kept in step with every
+    // BT.inputMap() / BT.inputMapReset() call - the engine does not expose a "get current
+    // map" API, so this is how the panels can show which keys feed each button.
+    keyMaps = [{}, {}];
+
+    // What the player panels print for each button, rebuilt whenever the map changes
+    // (not every frame): the key text and its color role. Index [player][button].
+    /** @type {Array<Array<{ text: string, color: string }>>} */
+    keyRows = [[], []];
+
+    // The calls the active preset made, in order, for the Calls made panel.
+    /** @type {string[]} */
+    calls = [];
 
     // A wider logical screen than the engine default so two panels of key maps fit. No
     // post-process effects, so we upscale 2x in the browser (maxCanvasSize) instead of
@@ -138,6 +203,8 @@ class Demo {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             maxCanvasSize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
             targetFPS: 60,
+
+            isOverlayVisibleAtStart: true,
 
             overlayStyle: {
                 barPaletteIndex: THEME_SLOT_PANEL,
@@ -174,8 +241,8 @@ class Demo {
 
         // Copy fresh maps from BT.DEFAULT_KEYBOARD_PLAYER1 / ...PLAYER2 so hot reload or
         // revisiting this URL does not inherit another demo's edits.
-        BT.inputMapReset();
-        this.presetLabel = '1 Defaults (engine tables)';
+        this.resetMaps();
+        this.presetLabel = 'Defaults';
 
         return true;
     }
@@ -195,31 +262,165 @@ class Demo {
         }
     }
 
-    // Draws the intro text, the preset buttons, and both player panels.
+    // Draws the intro text, both player panels, the preset buttons, and the calls list.
     render() {
         // Wipe the whole screen with the theme's deep-navy background color.
         BT.clear(this.theme.bg);
 
-        // Full-width 22-pixel title strip across the top of the screen.
+        // Full-width 22-pixel title strip across the top. The overlay covers it while
+        // it is open; press the backquote key (`) to hide the overlay and see it.
         ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Input Map Remapping - BT.inputMap / BT.inputMapReset');
         ui.end();
 
-        // A borderless text group under the title: what the demo is about, plus the
-        // classic "click the canvas" focus tip. No ui.panel() call means no box is drawn.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN_X, y: INTRO_Y });
-        ui.label('Face buttons use BT.isDown(BTN_*, player). Remap at runtime with BT.inputMap.', { color: 'dim' });
-        ui.label('Tap a preset button or press its number key. Click the canvas if keys stop.', { color: 'dim' });
-        ui.end();
+        // Two dim intro lines, lined up with the text inside the panels below them. A
+        // caption's text starts 4 pixels above the y it is given.
+        const textX = LEFT_X + PANEL_PAD;
+
+        ui.caption(
+            textX,
+            INTRO_Y + 4,
+            'Face buttons use BT.isDown(BTN_*, player). Remap them at runtime with BT.inputMap.',
+            {
+                color: 'dim',
+            },
+        );
+        ui.caption(textX, INTRO_Y + 14, 'Tap a preset button or press its number key. Click the canvas if keys stop.', {
+            color: 'dim',
+        });
 
         // One panel of live face-button pips per player, side by side.
-        this.renderPlayerPanel(0, PANEL0_X, PANEL_TOP_Y);
-        this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
+        this.renderPlayerPanel(0, LEFT_X);
+        this.renderPlayerPanel(1, RIGHT_X);
 
-        // The preset switcher lives in its own panel in the bottom-left corner. Each
-        // ui.button() returns true on the one frame it is clicked, tapped, or its bound
-        // key goes down - all three inputs behave exactly the same.
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
+        // The bottom row: the preset buttons on the left, the calls they made on the
+        // right.
+        this.renderPresetsPanel();
+        this.renderCallsPanel();
+    }
+
+    // Restores the shipped tables, both in the engine and in our own copy.
+    resetMaps() {
+        BT.inputMapReset();
+        this.keyMaps = DEFAULT_MAPS.map(copyMap);
+        this.calls = ['BT.inputMapReset()'];
+        this.refreshKeyRows();
+    }
+
+    // Replaces the key list of one button, both in the engine and in our own copy, and
+    // records the call for the Calls made panel. Passing no keys clears the button.
+    remap(player, code, ...keys) {
+        BT.inputMap(player, code, ...keys);
+        this.keyMaps[player][code] = keys;
+
+        // Build the call as it would be written in code: the button constant's name,
+        // then every key in quotes. .find() returns the first FACE_BUTTONS entry with
+        // this code.
+        const name = FACE_BUTTONS.find((button) => button.code === code).name;
+        const keyArgs = keys.map((key) => `, '${key}'`).join('');
+
+        this.calls.push(`BT.inputMap(${player}, BT.${name}${keyArgs})`);
+        this.refreshKeyRows();
+    }
+
+    // Rebuilds what the player panels print for every button: the key labels joined
+    // with " or ", green when they differ from the shipped defaults, and an orange
+    // "none" when the button has no keys at all.
+    refreshKeyRows() {
+        this.keyRows = this.keyMaps.map((map, player) =>
+            FACE_BUTTONS.map(({ code }) => {
+                const keys = map[code] ?? [];
+                const defaults = DEFAULT_MAPS[player][code] ?? [];
+
+                if (keys.length === 0) {
+                    return { text: 'none', color: defaults.length === 0 ? 'dim' : 'warm' };
+                }
+
+                return { text: keys.map(keyLabel).join(' or '), color: sameKeys(keys, defaults) ? 'dim' : 'accent' };
+            }),
+        );
+    }
+
+    // Restores the shipped tables (copies of BT.DEFAULT_KEYBOARD_PLAYER1 / PLAYER2).
+    applyPresetDefaults() {
+        this.resetMaps();
+        this.presetLabel = 'Defaults';
+        BT.assignTag('Map: defaults');
+    }
+
+    // Custom layout: remaps a few buttons, and gives TWO keys to one direction so either
+    // key counts (OR) - hold Q or E and player 0's Left pip should light.
+    applyPresetCustom() {
+        // Start from known defaults, then layer edits (order matters only for clarity).
+        this.resetMaps();
+
+        // Player 0: A is Z only for this preset (Space and B no longer map here until
+        // reset).
+        this.remap(0, BT.BTN_A, 'KeyZ');
+
+        // Player 0: Left listens to TWO keys at once - either one held counts.
+        this.remap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
+
+        // Player 1: move Up to I so the up arrow no longer drives it for this preset
+        // until we reset (we replace the whole key list for that button).
+        this.remap(1, BT.BTN_UP, 'KeyI');
+
+        this.presetLabel = 'Custom';
+        BT.assignTag('Map: custom');
+    }
+
+    // Defaults everywhere, then REMOVES the keyboard bindings for player 0's A button.
+    // Passing no key strings clears that slot until you map again.
+    applyPresetClearPlayer0A() {
+        this.resetMaps();
+
+        // No keys after the button means an empty list is stored, so no key lights BTN_A
+        // for player 0.
+        this.remap(0, BT.BTN_A);
+        this.presetLabel = 'Cleared P0 A';
+        BT.assignTag('Map: cleared A');
+    }
+
+    // Draws one player's panel: a column of live face-button pips, each with the keys
+    // that feed it right now. `player` is 0 or 1; `originX` is the panel's left edge.
+    renderPlayerPanel(player, originX) {
+        // Pin the group at an exact position and force both panels to the same width so
+        // the two columns line up.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: originX, y: PANEL_TOP_Y, width: PANEL_W });
+        ui.panel(player === 0 ? 'Player 0' : 'Player 1');
+
+        // One read-only pip per logical face button. The pip lights up while the button
+        // is held. `code` is a BT.BTN_* constant (Up, A, Start, ...), not a raw key
+        // string - the runtime map (changed by BT.inputMap) decides which physical keys
+        // feed it. BT.isDown reads held state (not a press edge), so it is safe here in
+        // render(). A small spacer after each row spreads the column out.
+        for (let i = 0; i < FACE_BUTTONS.length; i++) {
+            const { label, code } = FACE_BUTTONS[i];
+
+            ui.pip(label, BT.isDown(code, player));
+
+            if (i < FACE_BUTTONS.length - 1) {
+                ui.spacer(PIP_ROW_GAP);
+            }
+        }
+
+        ui.end();
+
+        // The keys column, on the same rows as the pip labels. The kit prints a pip's
+        // label 1 pixel below the top of its row, and a caption 4 pixels above the y it
+        // is given, so y = rowTop + 5 puts both texts on the same line.
+        for (let i = 0; i < FACE_BUTTONS.length; i++) {
+            const { text, color } = this.keyRows[player][i];
+            const rowTop = PANEL_TOP_Y + PANEL_CONTENT_TOP + i * PIP_ROW_PITCH;
+
+            ui.caption(originX + KEYS_X_OFFSET, rowTop + 5, text, { color });
+        }
+    }
+
+    // The preset switcher. Each ui.button() returns true on the one frame it is clicked,
+    // tapped, or its bound key goes down - all three inputs behave exactly the same.
+    renderPresetsPanel() {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LEFT_X, y: BOTTOM_ROW_Y, width: PANEL_W });
         ui.panel('Presets');
 
         if (ui.button('1 - Defaults (inputMapReset)', { key: 'Digit1', width: PRESET_BUTTON_W })) {
@@ -238,85 +439,28 @@ class Demo {
             this.applyPresetDefaults();
         }
 
-        // A thin rule, then the name of whichever preset is active right now.
-        ui.separator();
+        // A small gap, then the name of whichever preset is active right now.
+        ui.spacer(4);
         ui.kv('Active', this.presetLabel);
         ui.end();
     }
 
-    // Restores the shipped tables (copies of BT.DEFAULT_KEYBOARD_PLAYER1 / PLAYER2).
-    applyPresetDefaults() {
-        BT.inputMapReset();
-        this.presetLabel = '1 Defaults (BT.inputMapReset)';
-        BT.assignTag('Map: defaults');
-    }
+    // Lists the calls the active preset made, as code, with a dim note on what the green
+    // and orange key text in the player panels means. A spacer pads the panel to the
+    // Presets panel's height, so the two end on the same line.
+    renderCallsPanel() {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_X, y: BOTTOM_ROW_Y, width: PANEL_W });
+        ui.panel('Calls made');
 
-    // Custom layout: remaps a few buttons, and gives TWO keys to one direction so either
-    // key counts (OR) - hold Q or E and player 0's Left pip should light.
-    applyPresetCustom() {
-        // Start from known defaults, then layer edits (order matters only for clarity).
-        BT.inputMapReset();
-
-        // Player 0: A is Z only for this preset (Space and B no longer map here until
-        // reset).
-        BT.inputMap(0, BT.BTN_A, 'KeyZ');
-
-        // Player 1: move Up to I so the up arrow no longer drives it for this preset
-        // until we reset (we replace the whole key list for that button).
-        BT.inputMap(1, BT.BTN_UP, 'KeyI');
-
-        // Player 0: Left listens to TWO keys at once - either one held counts.
-        BT.inputMap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
-
-        this.presetLabel = '2 Custom (P0: Z=A, Q|E=Lft | P1: I=Up)';
-        BT.assignTag('Map: custom');
-    }
-
-    // Defaults everywhere, then REMOVES the keyboard bindings for player 0's A button.
-    // Passing no key strings clears that slot until you map again.
-    applyPresetClearPlayer0A() {
-        BT.inputMapReset();
-
-        // No keys after the button means an empty list is stored, so no key lights BTN_A
-        // for player 0.
-        BT.inputMap(0, BT.BTN_A);
-        this.presetLabel = '3 Cleared P0 A (BT.inputMap(0, BTN_A) with no keys)';
-        BT.assignTag('Map: cleared A');
-    }
-
-    // Draws one player's panel: title, default-key hints, and a column of live
-    // face-button pips. `player` is 0 or 1; `originX` and `originY` are the panel's
-    // top-left corner in pixels.
-    renderPlayerPanel(player, originX, originY) {
-        // Pin the group at an exact position and force both panels to the same width so
-        // the two columns line up regardless of how long each panel's text rows are.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: originX, y: originY, width: PANEL_W });
-        ui.panel(player === 0 ? 'Player 0' : 'Player 1');
-
-        // Which physical keys feed this player's face buttons out of the box. The custom
-        // preset changes some of these - that is the whole point of the demo.
-        if (player === 0) {
-            ui.label('Default keys: W, A, S, D move', { color: 'dim' });
-            ui.label('Space or B=A, N=B, 5=Start, Esc=Select', { color: 'dim' });
-        } else {
-            ui.label('Default keys: arrows move', { color: 'dim' });
-            ui.label('; or 1=A, quote or 2=B', { color: 'dim' });
-            ui.label('Backspace or Numpad / = Start', { color: 'dim' });
+        for (const call of this.calls) {
+            ui.label(call, { color: 'info' });
         }
 
-        ui.separator();
+        const contentH = PRESETS_PANEL_H - PANEL_CONTENT_TOP - PANEL_BOTTOM;
 
-        // One read-only pip per logical face button. The pip lights up while the button
-        // is held. `code` is a BT.BTN_* constant (Up, A, Start, ...), not a raw key
-        // string - the runtime map (changed by BT.inputMap) decides which physical keys
-        // feed it. BT.isDown reads held state (not a press edge), so it is safe here in
-        // render().
-        for (let i = 0; i < FACE_BUTTONS.length; i++) {
-            const { label, code } = FACE_BUTTONS[i];
-
-            ui.pip(label, BT.isDown(code, player));
-        }
-
+        ui.spacer(contentH - (this.calls.length + 2) * 10);
+        ui.label('Green keys: changed from the defaults', { color: 'dim' });
+        ui.label('Orange "none": the button has no keys', { color: 'dim' });
         ui.end();
     }
 }

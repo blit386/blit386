@@ -28,16 +28,18 @@ WHAT YOU WILL SEE
 -----------------
 
 A 640x400 screen with the same 44x44 test sprite drawn eleven times, each copy recolored
-through a different palette offset:
+through a different palette offset. The copies sit in three UI kit panels, each sprite
+with its effect name and a one-line note on when a game would use it centered under it:
 
-  - Row 1 (static): Normal, Silhouette, Team Red, Team Blue, Team Green, Frozen. Each has
-    a caption and a one-line note on when a game would use it.
-  - Row 2 (dynamic): Damage (flashes white and red for 30 ticks, once every 3 seconds),
-    Ghost (alpha pulsing between 40 and 180), Invincible (hue rotating through the
-    rainbow), Poisoned (green tint pulsing 5 times per second).
-  - Bottom: a day/night cycle. The sprite dims toward a cool blue night tint and back over
-    20 seconds, and a marker in the current ambient color crosses a 240-pixel bar labeled
-    Day, Sunset, Night, Dawn.
+  - Static (full width, top): Normal, Silhouette, Team Red, Team Blue, Team Green, Frozen.
+  - Animated (bottom left): Damage (flashes white and red for 30 ticks, once every 3
+    seconds), Ghost (alpha pulsing between 40 and 180), Invincible (hue rotating through
+    the rainbow), Poisoned (green tint pulsing 5 times per second).
+  - Day/night cycle (bottom right): the sprite dims toward a cool blue night tint and back
+    over 20 seconds, and a marker in the sprite's brightest ambient color crosses a
+    180-pixel bar split into four quarters labeled Day, Sunset, Night, Dawn.
+
+The panels fill the band between the engine overlay's top and bottom strips.
 
 The engine overlay is visible from the start, with the palette grid, a 64-pixel timing
 chart in 'rich' diagnostics mode, the renderer diagnostics bar, and two custom rows:
@@ -101,7 +103,7 @@ https://demos.blit386.dev/crt-pipboy and https://demos.blit386.dev/basics-enhanc
 Post-process needs WebGPU. The software renderer draws the sprite effects without the CRT
 stack and shows the shared fallback note instead.
 
-Captions, the day/night legend, and the fallback note are drawn with the shared UI kit
+The panels, captions, day/night bar, and fallback note are drawn with the shared UI kit
 (src/shared/ui.js), which installs its twelve UI colors in slots 240-251 via applyTheme().
 
 TRY THIS
@@ -137,7 +139,7 @@ import {
 
 import { GLITCH_LABELS, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
@@ -209,6 +211,61 @@ const BLOCK_DAYNIGHT = 12; // dynamic
 // screen.
 const DISPLAY_W = 640;
 const DISPLAY_H = 400;
+
+// Layout of the three kit panels. The overlay starts visible and covers the top 122 and
+// the bottom 82 pixels of the screen, so the panels sit centered in the band between:
+// Static across the full width on top, Animated and Day/night side by side below it.
+const PANEL_X = 8;
+const PANEL_GAP = 8;
+const PANEL_H = 80;
+const STATIC_PANEL_Y = 136;
+const ANIMATED_PANEL_Y = STATIC_PANEL_Y + PANEL_H + PANEL_GAP;
+
+// Every sprite sits in a cell this wide, with its name and note centered under it. Six
+// cells fill the Static panel exactly (6 x 104 = 624 = 640 - 2 x 8).
+const CELL_W = 104;
+
+// The Animated panel holds four cells; the Day/night panel takes the rest of the row.
+const ANIMATED_PANEL_W = 4 * CELL_W;
+const DAYNIGHT_PANEL_X = PANEL_X + ANIMATED_PANEL_W + PANEL_GAP;
+const DAYNIGHT_PANEL_W = DISPLAY_W - PANEL_X - DAYNIGHT_PANEL_X;
+
+// A kit panel with a title is 33 pixels taller than the space a ui.spacer() reserves
+// inside it (22 above the content for the rim and title, 11 below for the bottom rim).
+const PANEL_SPACER = PANEL_H - 33;
+
+// Where things sit inside a panel, measured down from its top edge: the 44x44 sprite
+// frame, then the effect name, then the one-line note.
+const SPRITE_TOP = 14;
+const NAME_Y = 54;
+const NOTE_Y = 64;
+
+// The test sprite's visible pixels span x = 4 to 38 inside its 44-pixel frame, so their
+// middle is 21 pixels in. Centering on that (not on the frame) lines the artwork up with
+// the centered captions.
+const ART_CENTER_X = 21;
+
+// The day/night time bar: 180 pixels wide, so the four phase labels sit 45 pixels apart.
+const DAYNIGHT_BAR_W = 180;
+const DAYNIGHT_PHASES = ['Day', 'Sunset', 'Night', 'Dawn'];
+
+// The cells of the two effect panels: which theme block to draw with, the effect's
+// name and its text color role, and a note on when a game would use it.
+const STATIC_CELLS = [
+    { block: BLOCK_ORIGINAL, name: 'Normal', color: 'text', note: 'Default look' },
+    { block: BLOCK_SILHOUETTE, name: 'Silhouette', color: 'text', note: 'Stealth' },
+    { block: BLOCK_TEAM_RED, name: 'Team Red', color: 'warm', note: 'Your team' },
+    { block: BLOCK_TEAM_BLUE, name: 'Team Blue', color: 'info', note: 'Enemy team' },
+    { block: BLOCK_TEAM_GREEN, name: 'Team Green', color: 'accent', note: 'Ally team' },
+    { block: BLOCK_FROZEN, name: 'Frozen', color: 'info', note: 'Slowed down' },
+];
+
+const ANIMATED_CELLS = [
+    { block: BLOCK_DAMAGE_FLASH, name: 'Damage', color: 'warm', note: 'Hit flash' },
+    { block: BLOCK_GHOST, name: 'Ghost', color: 'info', note: 'Spirit form' },
+    { block: BLOCK_INVINCIBLE, name: 'Invincible', color: 'text', note: 'Power-up' },
+    { block: BLOCK_POISON, name: 'Poisoned', color: 'accent', note: 'Damage over time' },
+];
 
 // How large the canvas may appear in the browser (3x logical, crisp CSS upscale).
 const MAX_CANVAS_W = DISPLAY_W * 3;
@@ -297,6 +354,10 @@ class Demo {
 
     // The tick of the last "damage event" (for the damage flash).
     damageFlashTick = 0;
+
+    // Reused for every sprite position in render(), so drawing allocates no new
+    // Vector2i.
+    drawPos = new Vector2i(0, 0);
 
     /** @type {PixelGlitch | null} */
     pixelGlitch = null;
@@ -530,11 +591,11 @@ class Demo {
         const chartRenderLoadMs = 0.3 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 1.5;
         burnCpuMs(chartRenderLoadMs);
 
-        // Draw both effect rows.
+        // Draw the Static and Animated panels.
         this.renderStaticEffects();
         this.renderDynamicEffects();
 
-        // Day/night cycle at the bottom.
+        // The Day/night panel, right of the Animated one.
         this.renderDayNightCycle();
 
         // Software renderer: warn on-canvas that the Tesla Orava look is missing. A small
@@ -926,99 +987,109 @@ class Demo {
         }
     }
 
-    // Draws the first row: six static palette-offset effects - Normal, Silhouette, Team
-    // Red, Team Blue, Team Green, Frozen.
+    // Draws one kit panel with a title and an empty body tall enough for a row of
+    // sprite cells. The sprites and captions are drawn after ui.end(), so they land on
+    // top of the panel.
+    renderPanel(x, y, width, title) {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y, width });
+        ui.panel(title);
+        ui.spacer(PANEL_SPACER);
+        ui.end();
+    }
+
+    // Draws one effect cell: the sprite drawn with the cell's palette offset, then its
+    // name and note centered under it. Every character of the system font is FONT_W (6)
+    // pixels wide, so a caption is text.length * FONT_W pixels wide, and starting it half
+    // that width left of the middle centers it.
+    renderCell(cellX, panelY, cell) {
+        const centerX = cellX + CELL_W / 2;
+
+        // The palette offset picks the theme block: block k starts k * colorCount slots
+        // above block 0, so every pixel of the sprite lands in that block's colors.
+        this.drawPos.set(centerX - ART_CENTER_X, panelY + SPRITE_TOP);
+        BT.drawSprite(this.sheet, this.charRect, this.drawPos, cell.block * this.colorCount);
+
+        ui.caption(centerX - (cell.name.length * FONT_W) / 2, panelY + NAME_Y, cell.name, { color: cell.color });
+        ui.caption(centerX - (cell.note.length * FONT_W) / 2, panelY + NOTE_Y, cell.note, { color: 'dim' });
+    }
+
+    // Draws the Static panel: six effects whose theme blocks were built once in init() -
+    // Normal, Silhouette, Team Red, Team Blue, Team Green, Frozen.
     renderStaticEffects() {
-        const row1Y = 130;
-        const spacing = 100;
-        const n = this.colorCount;
+        this.renderPanel(PANEL_X, STATIC_PANEL_Y, DISPLAY_W - 2 * PANEL_X, 'Static - blocks built once in init()');
 
-        // Each cell is the same sprite drawn with a different palette offset, with a
-        // named caption and a one-line "when you would use this" note under it.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * n);
-        ui.caption(6, row1Y + 40, 'Normal', { color: 'text' });
-        ui.caption(6, row1Y + 50, 'Default look', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * n);
-        ui.caption(6 + spacing, row1Y + 40, 'Silhouette', { color: 'text' });
-        ui.caption(6 + spacing, row1Y + 50, 'Stealth', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * n);
-        ui.caption(6 + spacing * 2, row1Y + 40, 'Team Red', { color: 'warm' });
-        ui.caption(6 + spacing * 2, row1Y + 50, 'Friendly team', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * n);
-        ui.caption(6 + spacing * 3, row1Y + 40, 'Team Blue', { color: 'info' });
-        ui.caption(6 + spacing * 3, row1Y + 50, 'Enemy team', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_TEAM_GREEN * n);
-        ui.caption(6 + spacing * 4, row1Y + 40, 'Team Green', { color: 'accent' });
-        ui.caption(6 + spacing * 4, row1Y + 50, 'Ally team', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 5, row1Y), BLOCK_FROZEN * n);
-        ui.caption(6 + spacing * 5, row1Y + 40, 'Frozen', { color: 'info' });
-        ui.caption(6 + spacing * 5, row1Y + 50, 'Slow freeze status', { color: 'dim' });
+        for (let i = 0; i < STATIC_CELLS.length; i++) {
+            this.renderCell(PANEL_X + i * CELL_W, STATIC_PANEL_Y, STATIC_CELLS[i]);
+        }
     }
 
-    // Draws the second row: four dynamic palette-offset effects (rewritten in update()) -
-    // Damage Flash, Ghost, Invincibility, Poison.
+    // Draws the Animated panel: four effects whose theme blocks update() rewrites every
+    // tick - Damage, Ghost, Invincible, Poisoned. render() draws them exactly like the
+    // static ones; only the colors in their blocks change.
     renderDynamicEffects() {
-        const row2Y = 190;
-        const spacing = 100;
-        const n = this.colorCount;
+        this.renderPanel(PANEL_X, ANIMATED_PANEL_Y, ANIMATED_PANEL_W, 'Animated - rewritten in update()');
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * n);
-        ui.caption(6, row2Y + 40, 'Damage', { color: 'warm' });
-        ui.caption(6, row2Y + 50, 'Hit flash', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * n);
-        ui.caption(6 + spacing, row2Y + 40, 'Ghost', { color: 'info' });
-        ui.caption(6 + spacing, row2Y + 50, 'Spirit', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * n);
-        ui.caption(6 + spacing * 2, row2Y + 40, 'Invincible', { color: 'text' });
-        ui.caption(6 + spacing * 2, row2Y + 50, 'Power-up mode', { color: 'dim' });
-
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * n);
-        ui.caption(6 + spacing * 3, row2Y + 40, 'Poisoned', { color: 'accent' });
-        ui.caption(6 + spacing * 3, row2Y + 50, 'Poison time', { color: 'dim' });
+        for (let i = 0; i < ANIMATED_CELLS.length; i++) {
+            this.renderCell(PANEL_X + i * CELL_W, ANIMATED_PANEL_Y, ANIMATED_CELLS[i]);
+        }
     }
 
-    // Draws the day/night cycle: the sprite dims at night and brightens at noon, and a
-    // progress bar shows the current phase.
+    // Draws the Day/night panel: the sprite in the current ambient light with a short
+    // label beside it, and a time bar under both with a marker crossing it once every 20
+    // seconds.
     renderDayNightCycle() {
-        const baseY = 260;
-        const n = this.colorCount;
+        const panelX = DAYNIGHT_PANEL_X;
+        const panelY = ANIMATED_PANEL_Y;
 
-        ui.caption(10, baseY, 'Day/Night Cycle:', { color: 'header' });
-        ui.caption(10, baseY + 10, 'Ambient light palette offset', { color: 'dim' });
+        this.renderPanel(panelX, panelY, DAYNIGHT_PANEL_W, 'Day/night cycle');
 
-        // Draw the sprite with the day/night block.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 18), BLOCK_DAYNIGHT * n);
+        // The bar starts 10 pixels in from the panel edge, and the sprite is shifted so
+        // its visible pixels (4 pixels in from its frame) start at the same x.
+        const barX = panelX + 10;
+        const barY = panelY + SPRITE_TOP + 41;
+        const barHeight = 6;
 
-        // Progress bar showing the time of day. The bar stays hand-drawn (a kit meter
-        // shows a 0-1 fill, not a moving marker) but its track and outline use theme
-        // colors.
-        const barX = 60;
-        const barY = baseY + 30;
-        const barWidth = 240;
-        const barHeight = 10;
+        this.drawPos.set(barX - 4, panelY + SPRITE_TOP);
+        BT.drawSprite(this.sheet, this.charRect, this.drawPos, BLOCK_DAYNIGHT * this.colorCount);
 
-        BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), this.theme.panel);
+        // The label sits right of the sprite, level with the middle of its artwork.
+        ui.caption(barX + 46, panelY + SPRITE_TOP + 12, 'Ambient light', { color: 'text' });
+        ui.caption(barX + 46, panelY + SPRITE_TOP + 22, '20-second loop', { color: 'dim' });
 
+        // The bar is drawn inside the panel, so it uses ui.drawRectFill() and
+        // ui.drawRect(): the same arguments as BT.drawRectFill() and BT.drawRect(), but
+        // drawn as sprites so they land on top of the panel instead of under it. The
+        // track is the darker screen background, so it stands out from the panel fill.
+        ui.drawRectFill(new Rect2i(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.bg);
+
+        // The bar is split into four equal quarters, one per phase, by three thin tick
+        // lines in the border color.
+        const quarterW = DAYNIGHT_BAR_W / DAYNIGHT_PHASES.length;
+
+        for (let i = 1; i < DAYNIGHT_PHASES.length; i++) {
+            ui.drawRectFill(new Rect2i(barX + i * quarterW, barY, 1, barHeight), this.theme.border);
+        }
+
+        // cycle runs 0-1 over 1200 ticks, the same clock updateDayNightBlock() uses.
         const cycle = (BT.ticks % 1200) / 1200;
-        const indicatorX = barX + Math.floor(barWidth * cycle);
+        const markerX = barX + Math.floor((DAYNIGHT_BAR_W - 1) * cycle);
 
-        // The marker uses the current day/night color (block 12, first color). The actual
-        // index is COLOR_BASE + 12 * n + 0: the first slot in the day/night block.
-        BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), COLOR_BASE + BLOCK_DAYNIGHT * n);
-        BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), this.theme.border);
+        // The marker is painted with the last slot of the day/night block (COLOR_BASE +
+        // 12 * colorCount + colorCount - 1). The base colors are sorted darkest first, so
+        // that is the sprite's brightest color: bright at noon, a dim blue at midnight,
+        // always visible against the dark track.
+        const markerSlot = COLOR_BASE + BLOCK_DAYNIGHT * this.colorCount + this.colorCount - 1;
 
-        // Phase labels.
-        ui.caption(barX, barY + 14, 'Day', { color: 'dim' });
-        ui.caption(barX + 60, barY + 14, 'Sunset', { color: 'dim' });
-        ui.caption(barX + 120, barY + 14, 'Night', { color: 'dim' });
-        ui.caption(barX + 180, barY + 14, 'Dawn', { color: 'dim' });
+        ui.drawRect(new Rect2i(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.border);
+        ui.drawRectFill(new Rect2i(markerX - 1, barY - 2, 3, barHeight + 4), markerSlot);
+
+        // Phase labels, each centered in its own quarter of the bar.
+        for (let i = 0; i < DAYNIGHT_PHASES.length; i++) {
+            const label = DAYNIGHT_PHASES[i];
+            const labelX = barX + i * quarterW + (quarterW - label.length * FONT_W) / 2;
+
+            ui.caption(labelX, barY + barHeight + 2, label, { color: 'dim' });
+        }
     }
 }
 

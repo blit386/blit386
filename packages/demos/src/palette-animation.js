@@ -26,17 +26,20 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A 520 by 390 pixel screen with four stacked kit panels. Each one is animated by changing
-palette slot colors in update() while render() draws the same rectangles every frame:
+A 520 by 390 pixel screen with four kit panels: the gradient across the full width on
+top, and below it the tall fire panel on the left beside the health bar and water strip
+stacked on the right. Each one is animated by changing palette slot colors in update()
+while render() draws the same rectangles every frame:
 
-  1. Scrolling Gradient - 32 thin swatches, one per slot (10-41), holding a rainbow whose
-     base hue turns 60 degrees per second, so the colors slide along the bar.
-  2. Fire Column - a 60 by 80 pixel column of 20 bands (slots 50-69), black at the bottom
+  1. Scrolling Gradient - 32 swatches, one per slot (10-41), holding a rainbow whose base
+     hue turns 60 degrees per second, so the colors slide along the bar.
+  2. Fire - an 80 by 100 pixel column of 20 bands (slots 50-69), black at the bottom
      through red and orange to pale yellow at the top, with a gentle sine-wave flicker.
-  3. Flashing Health Bar - a 200 pixel bar filled with one slot (80). Simulated health
+     Notes beside it name the top and bottom slots.
+  3. Flashing Health Bar - a 240 pixel bar filled with one slot (80). Simulated health
      drains from 100 toward 0 over 6 seconds and then starts over; at 30 or below the slot
      alternates between red and white every 8 ticks.
-  4. Cycling Water Strip - 15 tiles using three slots (90-92). Every 8 ticks the bright
+  4. Cycling Water Strip - 18 tiles using three slots (90-92). Every 8 ticks the bright
      highlight moves to the next slot, so a ripple seems to travel along the strip.
 
 WHAT YOU WILL LEARN
@@ -100,19 +103,20 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 // smoother rainbow; fewer make it chunkier.
 const GRAD_SLOTS = 32;
 
-// Width of each gradient swatch in pixels. The swatches sit inside a UI kit panel, so
-// they share the panel's 308-pixel content width (320 minus the borders).
-const GRAD_SWATCH_W = Math.floor(308 / GRAD_SLOTS); // 9 px each
+// Size of each gradient swatch in pixels: 32 swatches x 15 pixels = 480, which fits the
+// 484-pixel content width of the full-width gradient panel.
+const GRAD_SWATCH_W = 15;
+const GRAD_SWATCH_H = 22;
 
 // Fire column: how many color slots make up the fire gradient. The bottom of the fire is
 // black; the top is pale yellow.
 const FIRE_SLOTS = 20;
 
-// Height of each fire band in pixels.
-const FIRE_BAND_H = 4;
+// Height of each fire band in pixels: 20 bands x 5 pixels make a 100-pixel column.
+const FIRE_BAND_H = 5;
 
 // Width of the fire column in pixels.
-const FIRE_COL_W = 60;
+const FIRE_COL_W = 80;
 
 // Water strip: three slots take turns being the bright highlight, which reads as a
 // ripple.
@@ -129,6 +133,60 @@ const HEALTH_MAX = 100;
 
 // How many ticks one full health drain takes.
 const HEALTH_DRAIN_TICKS = 360; // 6 seconds at 60 ticks per second
+
+// Layout of the four kit panels on the 520x390 screen, with an 8-pixel margin all round:
+// the gradient across the full width on top, and below it the tall fire panel on the
+// left, beside the health and water panels stacked on the right. The right stack is
+// exactly as tall as the fire panel, so the bottom edges line up.
+const PANEL_X = 8;
+const PANEL_W = 504;
+const PANEL_GAP = 8;
+
+// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
+// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
+// in from the panel edge, and a label row is 10 pixels tall.
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM = 11;
+const PANEL_TEXT_INSET = 10;
+const LABEL_ROW_H = 10;
+
+// Empty bands that ui.spacer() reserves for the artwork drawn inside each panel. Artwork
+// under a dim label row starts ART_GAP pixels below it, so letters that hang below the
+// line (g, p, y) never touch it; the fire column gets the same gap under the title.
+const ART_GAP = 5;
+
+// Height of one water tile, needed here to size the water panel's spacer.
+const WATER_TILE_H = 17;
+const GRAD_SPACER = ART_GAP + GRAD_SWATCH_H + 3;
+const FIRE_SPACER = 3 + FIRE_SLOTS * FIRE_BAND_H + 3;
+const HEALTH_SPACER = 21;
+const WATER_SPACER = ART_GAP + WATER_TILE_H + 2;
+
+// Panel heights, from the rows each one stacks: title, an optional dim label row, the
+// artwork band, and the bottom rim.
+const GRAD_PANEL_H = PANEL_CONTENT_TOP + LABEL_ROW_H + GRAD_SPACER + PANEL_BOTTOM;
+const FIRE_PANEL_H = PANEL_CONTENT_TOP + FIRE_SPACER + PANEL_BOTTOM;
+const HEALTH_PANEL_H = PANEL_CONTENT_TOP + HEALTH_SPACER + LABEL_ROW_H + PANEL_BOTTOM;
+
+// Vertical positions: the whole block (gradient + gap + fire panel) is centered on the
+// 390-pixel screen.
+const BLOCK_H = GRAD_PANEL_H + PANEL_GAP + FIRE_PANEL_H;
+const GRAD_PANEL_Y = Math.floor((390 - BLOCK_H) / 2);
+const LOWER_PANELS_Y = GRAD_PANEL_Y + GRAD_PANEL_H + PANEL_GAP;
+const WATER_PANEL_Y = LOWER_PANELS_Y + HEALTH_PANEL_H + PANEL_GAP;
+
+// The fire panel is 168 pixels wide; the health and water panels fill the rest of the
+// row.
+const FIRE_PANEL_W = 168;
+const RIGHT_PANEL_X = PANEL_X + FIRE_PANEL_W + PANEL_GAP;
+const RIGHT_PANEL_W = PANEL_X + PANEL_W - RIGHT_PANEL_X;
+
+// Health bar size, and the water strip: 18 tiles (six repeats of the 3-slot cycle), each
+// 16 pixels wide with a 1-pixel gap and WATER_TILE_H tall.
+const HEALTH_BAR_W = 240;
+const HEALTH_BAR_H = 12;
+const WATER_TILES = 18;
+const WATER_TILE_STEP = 17;
 
 // Palette slot constants. We group the palette like compartments in a paint box: each
 // animated panel owns a range of slots that it refills in update() every tick. The shared
@@ -182,6 +240,9 @@ class Demo {
 
     // Tick when the water ripple last advanced one step.
     waterTick = 0;
+
+    // Reused for every rectangle drawn in render(), so drawing allocates no new Rect2i.
+    tempRect = new Rect2i(0, 0, 0, 0);
 
     // A wider canvas, the overlay's palette grid (64 columns), and overlay colors from
     // the dedicated low slots - plus the animated health slot as a playful gap color.
@@ -415,123 +476,128 @@ class Demo {
         }
     }
 
-    // Panel 1: the scrolling gradient bar. A kit panel holds the heading; 32 thin
-    // rectangles sit inside it, each using a different palette slot. Because update()
-    // rotates the hues in those slots, the bar appears to scroll.
-    renderGradientPanel() {
-        const bandY = 6;
+    // Opens a titled kit panel at a fixed spot and width. The caller then adds its rows
+    // (labels, spacers) and closes the group with ui.end().
+    beginPanel(x, y, width, title) {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y, width });
+        ui.panel(title);
+    }
 
-        // The heading and subtitle live in a kit panel pinned to the band position.
-        // ui.end() draws the panel right away, and ui.spacer() reserves empty rows for
-        // the swatches we draw after it. The swatches use ui.drawRectFill(), not
-        // BT.drawRectFill(): kit panels are sprites, and the engine draws every
-        // BT.drawRectFill() before any sprite - so a plain one would hide under the
-        // panel. ui.drawRectFill() takes the same rectangle and palette slot, but draws a
-        // sprite, which lands on top in the order we call it.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Scrolling Gradient');
-        ui.label('Hues rotate in update() each tick', { color: 'dim' });
-        ui.spacer(18);
+    // Fills a rectangle on top of a kit panel. Kit panels are sprites, and the engine
+    // draws every BT.drawRectFill() before any sprite - so a plain one would hide under
+    // the panel. ui.drawRectFill() takes the same rectangle and palette slot but draws a
+    // sprite, which lands on top in the order we call it.
+    fillOnPanel(x, y, width, height, slot) {
+        this.tempRect.set(x, y, width, height);
+        ui.drawRectFill(this.tempRect, slot);
+    }
+
+    // Panel 1: the scrolling gradient bar, across the full width. 32 rectangles sit
+    // inside it, each using a different palette slot. Because update() rotates the hues
+    // in those slots, the bar appears to scroll.
+    renderGradientPanel() {
+        // ui.spacer() reserves an empty band under the dim label for the swatches, which
+        // are drawn after ui.end() so they land on top of the panel.
+        this.beginPanel(PANEL_X, GRAD_PANEL_Y, PANEL_W, 'Scrolling Gradient - slots 10-41');
+        ui.label('update() turns every hue a little each tick', { color: 'dim' });
+        ui.spacer(GRAD_SPACER);
         ui.end();
 
-        // One rectangle per gradient slot, side by side inside the panel.
+        // The swatches are centered in the panel, ART_GAP pixels below the label row.
+        const stripW = GRAD_SLOTS * GRAD_SWATCH_W;
+        const x0 = PANEL_X + (PANEL_W - stripW) / 2;
+        const y = GRAD_PANEL_Y + PANEL_CONTENT_TOP + LABEL_ROW_H + ART_GAP;
+
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            // Each swatch is GRAD_SWATCH_W pixels wide and 14 tall, starting 6 pixels in
-            // so the strip clears the panel border.
-            const x = 6 + i * GRAD_SWATCH_W;
-            BT.drawRectFill(new Rect2i(x, bandY + 38, GRAD_SWATCH_W, 14), C_GRAD_BASE + i);
+            this.fillOnPanel(x0 + i * GRAD_SWATCH_W, y, GRAD_SWATCH_W, GRAD_SWATCH_H, C_GRAD_BASE + i);
         }
     }
 
-    // Panel 2: the fire column. FIRE_SLOTS horizontal bands stacked vertically; their
-    // colors change in update() to flicker.
+    // Panel 2: the fire column, on the left. FIRE_SLOTS horizontal bands stacked
+    // vertically; their colors change in update() to flicker.
     renderFirePanel() {
-        const bandY = 70;
-
-        // Kit panel with the heading; the spacer reserves room for the 80-pixel column.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Fire Column');
-        ui.label('Color stack shifts upward in update()', { color: 'dim' });
-        ui.spacer(86);
+        this.beginPanel(PANEL_X, LOWER_PANELS_Y, FIRE_PANEL_W, 'Fire - slots 50-69');
+        ui.spacer(FIRE_SPACER);
         ui.end();
 
         // Fire bands from the bottom (band 0, darkest) to the top (band FIRE_SLOTS - 1,
         // brightest). We draw them bottom-up so band 0 sits at the base of the column.
-        const colX = 6;
-        const colBottom = bandY + 118;
+        const colX = PANEL_X + PANEL_TEXT_INSET;
+        const colTop = LOWER_PANELS_Y + PANEL_CONTENT_TOP + 3;
+        const colBottom = colTop + FIRE_SLOTS * FIRE_BAND_H;
 
         for (let i = 0; i < FIRE_SLOTS; i++) {
-            // i = 0 is the bottom of the column, i = FIRE_SLOTS - 1 the top. Each band is
-            // FIRE_BAND_H pixels tall.
             const y = colBottom - (i + 1) * FIRE_BAND_H;
-            BT.drawRectFill(new Rect2i(colX, y, FIRE_COL_W, FIRE_BAND_H), C_FIRE_BASE + i);
+            this.fillOnPanel(colX, y, FIRE_COL_W, FIRE_BAND_H, C_FIRE_BASE + i);
         }
 
-        // Notes beside the column, lined up with the parts they describe: the brightest
-        // band at the top, the darkest at the bottom. "Band" means the position in the
-        // fire stack (0-19), not the palette slot number - the slots are C_FIRE_BASE +
-        // band, that is 50-69.
-        const noteX = colX + FIRE_COL_W + 6;
-        BT.systemPrint(new Vector2i(noteX, bandY + 44), this.theme.dim, 'band 19 = white');
-        BT.systemPrint(new Vector2i(noteX, bandY + 74), this.theme.dim, '...     = red');
-        BT.systemPrint(new Vector2i(noteX, bandY + 104), this.theme.dim, 'band 0  = black');
+        // Notes beside the column: the slot at the very top, the sin() flicker in the
+        // middle, and the slot at the very bottom. A caption's capital letters cover 7
+        // rows starting 1 row above the y it is given, so labelY = top + 1 lines their
+        // top up with the column top, and labelY = bottom - 6 lines their bottom up with
+        // it.
+        const noteX = colX + FIRE_COL_W + 8;
+
+        ui.caption(noteX, colTop + 1, 'slot 69', { color: 'dim' });
+        ui.caption(noteX, (colTop + colBottom) / 2 - 2, 'flicker', { color: 'dim' });
+        ui.caption(noteX, colBottom - 6, 'slot 50', { color: 'dim' });
     }
 
-    // Panel 3: the flashing health bar. One palette slot flips between red and white when
-    // health is critically low.
+    // Panel 3: the flashing health bar, top right. One palette slot flips between red and
+    // white when health is critically low.
     renderHealthPanel() {
-        const bandY = 202;
-
-        // Kit panel: heading, a spacer for the bar artwork, then the live status line.
-        // The status text turns warm orange when health is critical, dim gray otherwise.
+        // Heading, a spacer for the bar artwork, then the live status line. The status
+        // text turns warm orange when health is critical, dim gray otherwise.
         const isCritical = this.health <= HEALTH_LOW;
 
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Flashing Health Bar');
-        ui.spacer(18);
+        this.beginPanel(RIGHT_PANEL_X, LOWER_PANELS_Y, RIGHT_PANEL_W, 'Flashing Health Bar - slot 80');
+        ui.spacer(HEALTH_SPACER);
         ui.label(isCritical ? 'CRITICAL! slot 80 flashes red/white' : 'Healthy: slot 80 = steady red', {
             color: isCritical ? 'warm' : 'dim',
         });
         ui.end();
 
+        // The bar sits in the middle of the band the spacer reserved.
+        const barX = RIGHT_PANEL_X + PANEL_TEXT_INSET;
+        const barY = LOWER_PANELS_Y + PANEL_CONTENT_TOP + (HEALTH_SPACER - HEALTH_BAR_H) / 2;
+
         // Width of the filled part from the current health: health / HEALTH_MAX is a
-        // fraction from 0 to 1, multiplied by the full bar width (200 pixels). Math.max
-        // keeps at least 1 pixel visible.
-        const barMaxW = 200;
-        const barW = Math.max(1, Math.floor((this.health / HEALTH_MAX) * barMaxW));
+        // fraction from 0 to 1, multiplied by the full bar width. Math.max keeps at least
+        // 1 pixel visible.
+        const barW = Math.max(1, Math.floor((this.health / HEALTH_MAX) * HEALTH_BAR_W));
 
         // Background trough (dark, always full width) with a theme-colored outline.
-        BT.drawRectFill(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.bg);
-        BT.drawRect(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.border);
+        // ui.drawRect() is the sprite version of BT.drawRect(), for the same reason as
+        // fillOnPanel(): it has to show on top of the kit panel.
+        this.fillOnPanel(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H, this.theme.bg);
+        this.tempRect.set(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H);
+        ui.drawRect(this.tempRect, this.theme.border);
 
-        // Filled bar - uses C_HEALTH_BAR, which flashes in update() when health is low.
-        BT.drawRectFill(new Rect2i(6, bandY + 22, barW, 12), C_HEALTH_BAR);
+        // The filled part uses C_HEALTH_BAR, which update() flashes when health is low.
+        this.fillOnPanel(barX, barY, barW, HEALTH_BAR_H, C_HEALTH_BAR);
 
-        // The health value as text, in the theme's amber heading color.
-        BT.systemPrint(new Vector2i(212, bandY + 21), this.theme.header, `HP: ${this.health}`);
+        // The health value as text right of the bar, in the theme's amber heading color.
+        // labelY = barY + 3 puts the 7-pixel-tall digits on rows barY + 2 to barY + 8,
+        // the middle of the 12-pixel bar.
+        ui.caption(barX + HEALTH_BAR_W + 8, barY + 3, `HP ${this.health}`, { color: 'header' });
     }
 
-    // Panel 4: the water strip. Fifteen tiles each use one of the three water slots, so
-    // the brightness cycles across them like a ripple.
+    // Panel 4: the water strip, bottom right. The tiles each use one of the three water
+    // slots, so the brightness cycles across them like a ripple.
     renderWaterPanel() {
-        const bandY = 266;
-
-        // Kit panel with the heading; the spacer reserves room for the tile strip.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
-        ui.panel('Cycling Water Strip');
-        ui.label('3 slots (90..92) ripple in sequence', { color: 'dim' });
-        ui.spacer(18);
+        this.beginPanel(RIGHT_PANEL_X, WATER_PANEL_Y, RIGHT_PANEL_W, 'Cycling Water Strip - slots 90-92');
+        ui.label('Three slots take turns being the bright crest', { color: 'dim' });
+        ui.spacer(WATER_SPACER);
         ui.end();
 
-        // 15 water tiles (five repeats of the 3-slot cycle) make a wide strip.
-        const tileW = 18;
-        const tileH = 14;
-        const totalTiles = 15;
+        const x0 = RIGHT_PANEL_X + PANEL_TEXT_INSET;
+        const y = WATER_PANEL_Y + PANEL_CONTENT_TOP + LABEL_ROW_H + ART_GAP;
 
-        for (let i = 0; i < totalTiles; i++) {
+        for (let i = 0; i < WATER_TILES; i++) {
             // i % WATER_SLOTS maps the tile index to one of the three water slots.
             const slot = C_WATER_BASE + (i % WATER_SLOTS);
-            BT.drawRectFill(new Rect2i(6 + i * tileW, bandY + 38, tileW - 1, tileH), slot);
+
+            this.fillOnPanel(x0 + i * WATER_TILE_STEP, y, WATER_TILE_STEP - 1, WATER_TILE_H, slot);
         }
     }
 }

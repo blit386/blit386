@@ -33,19 +33,25 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A 520 by 390 pixel screen with a title strip across the top. Below it, six rows of small
-7 by 14 pixel swatches, one row per preset, in this order: Game Boy, CGA, C64, PICO-8,
-NES, VGA. Each row shows the preset's slots in order, capped at 32 swatches, with the
-preset name and its slot count written right after the last swatch. The first swatch of
-every row is slot 0, the engine's reserved transparent slot, so it draws nothing.
+A 520 by 390 pixel screen with the engine overlay open, and two UI kit panels stacked in
+the space between its top and bottom strips.
 
-Under the rows sits a "Live view" panel with 16 larger swatches. Every 2 seconds it moves
-on to the next preset and copies that preset's first 16 slots into palette slots 200-215,
-so the big swatches change color while the drawing code stays exactly the same. Two dim
-lines in the panel show the setNamed() and getNamed() calls from init().
+The "Built-in presets" panel has one row per preset, in this order: Game Boy, CGA, C64,
+PICO-8, NES, VGA. Each row starts with the preset name and its slot count in a left
+column, then the preset's slots as small 9 by 12 pixel swatches, all rows starting at the
+same x. Rows stop at 32 swatches; the NES and VGA rows end with a dim "+32" or "+224" for
+the slots not shown. The first swatch of every row is slot 0, the engine's reserved
+transparent slot, drawn as a hollow outline because filling it would draw nothing. The
+name of the preset the live view is showing is lit in green.
 
-The engine overlay gets a custom row naming the current live-view preset and its slot
-count, and its timing chart gets a tag at every switch.
+The "Live view" panel below names the current preset and shows 16 large swatches. Every 2
+seconds it moves on to the next preset and copies that preset's first 16 slots into
+palette slots 200-215, so the big swatches change color while the drawing code stays
+exactly the same. Two dim lines in the panel show the setNamed() and getNamed() calls
+from init().
+
+The engine overlay also gets a custom row naming the current live-view preset and its
+slot count, and its timing chart gets a tag at every switch.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -91,7 +97,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -103,16 +109,44 @@ const LIVE_SWITCH_TICKS = 120;
 // off the screen.
 const MAX_SWATCHES_PER_ROW = 32;
 
-// Swatch size in pixels.
-const SWATCH_W = 7;
-const SWATCH_H = 14;
+// Where the two kit panels sit. The overlay starts visible and covers the top 64 and the
+// bottom 100 pixels of the 390-pixel screen, so the panels stack in the band between:
+// Built-in presets on top, Live view below it, both nearly full width.
+const PANEL_X = 6;
+const PANEL_W = 508;
+const PRESETS_PANEL_Y = 69;
+const PANEL_GAP = 6;
+
+// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
+// pixels below the last row (the rim and the title strip).
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM = 11;
+
+// Inside the presets panel each row is a name column, then the swatches. The text starts
+// 10 pixels in from the panel edge (the same inset as the panel title); the swatches all
+// start at one shared x, 14 characters further right, so every row lines up.
+const ROW_TEXT_X = PANEL_X + 10;
+const SWATCH_X = ROW_TEXT_X + 14 * FONT_W;
+const ROW_PITCH = 15;
+
+// Swatch size in pixels, and the distance from one swatch to the next (a 2-pixel gap).
+const SWATCH_W = 9;
+const SWATCH_H = 12;
+const SWATCH_STEP = SWATCH_W + 2;
+
+// The presets panel is tall enough for six rows; the last row needs no gap under it.
+const PRESETS_PANEL_H = PANEL_CONTENT_TOP + 6 * ROW_PITCH - (ROW_PITCH - SWATCH_H) + PANEL_BOTTOM;
+const LIVE_PANEL_Y = PRESETS_PANEL_Y + PRESETS_PANEL_H + PANEL_GAP;
+
+// The 16 live-view swatches: 28 pixels wide with a 2-pixel gap, centered in the panel.
+const LIVE_SWATCH_COUNT = 16;
+const LIVE_SWATCH_W = 28;
+const LIVE_SWATCH_H = 20;
+const LIVE_SWATCH_STEP = LIVE_SWATCH_W + 2;
+const LIVE_SWATCH_X = PANEL_X + (PANEL_W - (LIVE_SWATCH_COUNT * LIVE_SWATCH_STEP - 2)) / 2;
 
 // First palette slot of the 16 live-view swatches (slots 200-215).
 const LIVE_SWATCH_SLOT = 200;
-
-// Where the live-view panel sits on screen, in pixels from the top-left corner.
-const LIVE_PANEL_X = 6;
-const LIVE_PANEL_Y = 152;
 
 // Shared UI theme slots used by configure(). applyTheme() (see init()) writes the twelve
 // shared UI colors into palette slots 240-251 - its default start slot, safely above this
@@ -150,6 +184,9 @@ class Demo {
     // First palette slot of each preset's swatch row, filled in init().
     swatchOffsets = [];
 
+    // Reused for every swatch rectangle in render(), so drawing allocates no new Rect2i.
+    swatchRect = new Rect2i(0, 0, 0, 0);
+
     // Reused every frame for the overlay row, so no new array or object is allocated.
     overlayRowData = [{ leftText: 'Current Game Boy - 4 colors', textPaletteIndex: THEME_HEADER }];
 
@@ -161,6 +198,7 @@ class Demo {
             displaySize: new Vector2i(520, 390),
             maxCanvasSize: new Vector2i(520 * 2, 390 * 2),
             isOverlayPaletteEnabled: true,
+            isOverlayVisibleAtStart: true,
             overlayPaletteColumns: 64,
             overlayStyle: {
                 barPaletteIndex: THEME_BG,
@@ -229,7 +267,7 @@ class Demo {
 
         // Slots 200-215 are the live-view swatches. Start them black;
         // updateLiveSwatches() fills them with the current preset's colors.
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < LIVE_SWATCH_COUNT; i++) {
             this.palette.set(LIVE_SWATCH_SLOT + i, new Color32(0, 0, 0));
         }
 
@@ -272,11 +310,6 @@ class Demo {
         // Background: the shared theme's deep navy, so every demo looks alike.
         BT.clear(this.theme.bg);
 
-        // Full-width title strip across the top, drawn by the shared UI kit.
-        ui.begin(UI_ANCHORS.TOP_BAR);
-        ui.panel('Palette Presets - six built-in retro color sets');
-        ui.end();
-
         // One row of swatches per preset.
         this.renderSwatchRows();
 
@@ -317,63 +350,99 @@ class Demo {
         }
     }
 
-    // Draws one row of small rectangles per preset. Each rectangle's color comes from the
-    // swatch slots we copied in init(). The caption after each row is a tiny borderless
-    // kit group, pinned exactly where the row's swatches end.
-    renderSwatchRows() {
-        // Row positions: six rows 20 pixels apart, starting below the 22-pixel title
-        // strip.
-        const rowY = [30, 50, 70, 90, 110, 130];
+    // Draws one swatch inside a panel. Slot 0 of every palette is the reserved
+    // transparent slot, so filling it would draw nothing; it gets a hollow outline in the
+    // theme's border color instead, so you can see where it is. Both use the kit's
+    // ui.drawRectFill() / ui.drawRect(): kit panels are sprites, and the engine draws
+    // every BT.drawRectFill() before any sprite - so a plain one would hide under the
+    // panel. The kit versions take the same rectangle and slot but draw sprites, which
+    // land on top in the order we call them.
+    renderSwatch(x, y, width, height, slot, isTransparentSlot) {
+        this.swatchRect.set(x, y, width, height);
 
-        for (let p = 0; p < this.presets.length; p++) {
-            const y = rowY[p];
-
-            // Same math as init(): the preset's real slot count, capped at the row limit.
-            const count = Math.min(this.presets[p].size, MAX_SWATCHES_PER_ROW);
-            const offset = this.swatchOffsets[p];
-
-            // The swatches, 7 pixels wide with a 1-pixel gap between them.
-            for (let c = 0; c < count; c++) {
-                BT.drawRectFill(new Rect2i(6 + c * (SWATCH_W + 1), y, SWATCH_W, SWATCH_H), offset + c);
-            }
-
-            // Caption: preset name and its real slot count. A one-label kit group with
-            // pad 0 draws nothing but the text, pinned right after the last swatch.
-            const label = `${this.presetNames[p]} (${this.presets[p].size})`;
-
-            ui.begin(UI_ANCHORS.TOP_LEFT, { x: 6 + count * (SWATCH_W + 1) + 4, y: y + 1, pad: 0 });
-            ui.label(label, { color: 'dim' });
-            ui.end();
+        if (isTransparentSlot) {
+            ui.drawRect(this.swatchRect, this.theme.border);
+        } else {
+            ui.drawRectFill(this.swatchRect, slot);
         }
     }
 
-    // Draws the live-view panel in the lower part of the screen. The panel frame and text
-    // come from the shared UI kit; the 16 swatches are drawn on top, into space the panel
-    // reserves for them.
-    renderLivePreview() {
-        // The kit panel: a pinned group with a fixed width so the swatches fit.
-        // ui.spacer(28) reserves an empty band inside the panel where the 24-pixel-tall
-        // swatches are drawn AFTER ui.end(). They use ui.drawRectFill(), not
-        // BT.drawRectFill(): kit panels are sprites, and the engine draws every
-        // BT.drawRectFill() before any sprite - so a plain one would hide under the
-        // panel. ui.drawRectFill() takes the same rectangle and palette slot, but draws a
-        // sprite, which lands on top in the order we call it.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LIVE_PANEL_X, y: LIVE_PANEL_Y, width: 298 });
-        ui.panel('Live view (cycles every 2s)');
-        ui.spacer(28);
+    // Draws the Built-in presets panel: one row per preset with its name and slot count
+    // in a left column, then its swatches from the copies made in init(). The row that
+    // the live view is showing right now has its name lit in the accent color.
+    renderSwatchRows() {
+        // The panel frame, with an empty body tall enough for six rows. Everything inside
+        // is drawn after ui.end(), so it lands on top of the panel.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: PANEL_X, y: PRESETS_PANEL_Y, width: PANEL_W });
+        ui.panel('Built-in presets - Palette.gameboy(), .cga(), ...');
+        ui.spacer(PRESETS_PANEL_H - PANEL_CONTENT_TOP - PANEL_BOTTOM);
+        ui.end();
 
-        // Show the named-slot calls from init() - this is real code, not decoration.
+        for (let p = 0; p < this.presets.length; p++) {
+            const y = PRESETS_PANEL_Y + PANEL_CONTENT_TOP + p * ROW_PITCH;
+            const size = this.presets[p].size;
+
+            // Same math as init(): the preset's real slot count, capped at the row limit.
+            const count = Math.min(size, MAX_SWATCHES_PER_ROW);
+            const offset = this.swatchOffsets[p];
+
+            // Name on the left, slot count right-aligned just before the swatches. Every
+            // character of the system font is FONT_W (6) pixels wide, so the count is
+            // text.length * FONT_W wide, and starting it that far left of SWATCH_X - 8
+            // makes it end exactly there.
+            //
+            // Vertical centering: a caption's letters start 1 pixel above the y it is
+            // given (the kit lifts its text 4 pixels, and capital letters begin 3 rows
+            // into the 14-pixel font cell). Passing labelY = y + 3 puts the 7-pixel-tall
+            // capitals on rows y + 2 to y + 8, the middle of the 12-pixel swatch.
+            const labelY = y + 3;
+            const isLive = p === this.currentPresetIndex;
+            const sizeText = String(size);
+
+            ui.caption(ROW_TEXT_X, labelY, this.presetNames[p], { color: isLive ? 'accent' : 'text' });
+            ui.caption(SWATCH_X - 8 - sizeText.length * FONT_W, labelY, sizeText, { color: 'dim' });
+
+            for (let c = 0; c < count; c++) {
+                this.renderSwatch(SWATCH_X + c * SWATCH_STEP, y, SWATCH_W, SWATCH_H, offset + c, c === 0);
+            }
+
+            // The NES and VGA rows stop at 32 swatches; say how many slots are not shown.
+            if (size > count) {
+                ui.caption(SWATCH_X + count * SWATCH_STEP + 4, labelY, `+${size - count}`, { color: 'dim' });
+            }
+        }
+    }
+
+    // Draws the Live view panel: the current preset's name, 16 large swatches from the
+    // live slots (200-215), and the two named-slot calls from init(). The swatches never
+    // change their slot numbers - only the colors stored in those slots change.
+    renderLivePreview() {
+        const name = this.presetNames[this.currentPresetIndex];
+        const size = this.presets[this.currentPresetIndex].size;
+
+        // The kit flows the rows top to bottom: the preset name, then a ui.spacer()
+        // reserves an empty band for the swatches, then the two code lines. These code
+        // lines show real calls from init(), not decoration.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: PANEL_X, y: LIVE_PANEL_Y, width: PANEL_W });
+        ui.panel('Live view - slots 200-215, next preset every 2 seconds');
+        // Game Boy has only 4 slots, so "first 16" would be wrong for it.
+        const shown = size > LIVE_SWATCH_COUNT ? `first ${LIVE_SWATCH_COUNT} of ${size}` : `all ${size}`;
+
+        ui.label(`${name} - ${shown} slots`, { color: 'accent' });
+        ui.spacer(LIVE_SWATCH_H + 6);
         ui.label("palette.setNamed('live-swatch-0', 200)", { color: 'dim' });
         ui.label("palette.getNamed('live-swatch-0') => 200", { color: 'dim' });
         ui.end();
 
-        // 16 large swatches from the live slots (200-215), inside the band the spacer
-        // reserved: 20 pixels down for the panel title, then 2 pixels of breathing room.
-        for (let i = 0; i < 16; i++) {
-            BT.drawRectFill(new Rect2i(LIVE_PANEL_X + 6 + i * 18, LIVE_PANEL_Y + 22, 16, 24), LIVE_SWATCH_SLOT + i);
-        }
+        // The swatches sit in the band the spacer reserved: below the title and the name
+        // row (PANEL_CONTENT_TOP + 10), plus 3 pixels of breathing room.
+        const swatchY = LIVE_PANEL_Y + PANEL_CONTENT_TOP + 10 + 3;
 
-        // The current preset name and slot count live in overlayRows(), not on screen.
+        for (let i = 0; i < LIVE_SWATCH_COUNT; i++) {
+            const x = LIVE_SWATCH_X + i * LIVE_SWATCH_STEP;
+
+            this.renderSwatch(x, swatchY, LIVE_SWATCH_W, LIVE_SWATCH_H, LIVE_SWATCH_SLOT + i, i === 0);
+        }
     }
 }
 

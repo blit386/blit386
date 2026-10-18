@@ -48,12 +48,13 @@ A 640x240 world seen through a 320x240 window. From back to front:
 - A sky of 20 horizontal bands, eased from a deep blue at the top to a pale blue at the
   horizon, with five two-rectangle clouds that scroll at 22 percent of the camera speed
   (the parallax idea from Starfield).
-- Four buildings filled with a 4x4 checker pattern (Patterns) and framed with an outline.
-- A grass strip from y = 188 down, a 3-pixel dirt line on top of it, and above that one
-  row of 16x16 tiles alternating two grass, two dirt, picked by tile ID from an array
-  (Tilemap).
-- The 44x44 rock sprite from Sprites walking left and right across the world at one
-  pixel per tick, bobbing one pixel every 8 ticks, with a soft shadow underfoot. The
+- Four buildings filled with a 4x4 checker pattern (Patterns) and framed with an outline,
+  standing on the far edge of the walkway.
+- A grass strip from y = 188 down, a 3-pixel dark line on top of it, and above that the
+  walkway: one row of 16x16 tiles alternating two grass, two brown dirt, picked by tile
+  ID from an array (Tilemap).
+- The 44x44 rock sprite from Sprites walking left and right along the walkway at one
+  pixel per tick, bobbing one pixel every 8 ticks, with a thin shadow under its feet. The
   camera eases after it (Camera) and is clamped to the world.
 - Three sparkles every 30 ticks around the rock: 3x3 squares that hue-shift and fade out
   over 72 ticks (the particle idea from Animation).
@@ -61,8 +62,10 @@ A 640x240 world seen through a 320x240 window. From back to front:
   back (the palette tinting idea from Sprite Effects).
 - Looping background music with a real intro-then-loop point (Music), a chime on every
   day-phase change, and a blip after a successful PNG capture.
-- A UI kit legend panel in the top-left corner (src/shared/ui.js) with a Save PNG
-  button (Image Output) and, until sound is unlocked, the standard "enable sound" hint.
+- Two small UI kit panels (src/shared/ui.js) along the top: Capstone in the top-left
+  corner with a Save PNG button (Image Output), and Status in the top-right corner with
+  the score and the time of day. Until sound is unlocked, the standard "enable sound"
+  hint sits on the grass in the bottom-left corner.
 - Score, rock position, and day phase as engine overlay rows above the FPS bar.
 
 WHAT YOU WILL LEARN
@@ -139,13 +142,24 @@ const DISPLAY_W = 320;
 const WORLD_W = 640;
 const WORLD_H = 240;
 
-// Where the sidewalk and grass start.
+// Where the walkway ends and the grass starts.
 const GROUND_Y = 188;
 
-// One row of 16 px tiles along the sidewalk (Tilemap: small tile IDs in an array).
+// One row of 16 px tiles along the walkway (Tilemap: small tile IDs in an array).
 const GROUND_TILE_SIZE = 16;
 const TILE_GRASS_ID = 1;
 const TILE_DIRT_ID = 2;
+
+// The buildings stand on the far edge of the walkway, and the rock walks along it 4
+// pixels in from its near edge, so the scene reads front to back: grass, walkway with the
+// rock, buildings, sky.
+const WALKWAY_Y = GROUND_Y - GROUND_TILE_SIZE;
+const WALK_LINE_Y = GROUND_Y - 4;
+
+// test.png is 44x44, but its bottom 8 rows are transparent: the rock's lowest visible
+// pixels are on row 35. Standing the rock on the walk line uses this, not the frame
+// height, so its feet touch the ground instead of hovering 8 pixels above it.
+const HERO_ART_BOTTOM = 36;
 
 // Checker squares inside buildings (Patterns: repeating blocks, no images).
 const BUILDING_PATTERN_CELL = 4;
@@ -191,9 +205,10 @@ const C_BLACK = 2; // black for BT.clear
 // (20 slots).
 const C_SKY_BASE = 10;
 
-// Ground: 30..31.
+// Ground: 30..31, and the walkway's dirt tiles at 47.
 const C_GRASS = 30;
 const C_DIRTLINE = 31;
+const C_DIRT = 47;
 
 // Buildings: 4 buildings x 2 slots (fill + outline) = 8 slots at 32..39.
 const C_BUILDING_BASE = 32;
@@ -316,12 +331,12 @@ class Demo {
     buildings = [];
     clouds = [];
 
-    // Tile IDs for one sidewalk row (Tilemap): each entry is TILE_GRASS_ID or
+    // Tile IDs for the walkway row (Tilemap): each entry is TILE_GRASS_ID or
     // TILE_DIRT_ID.
     groundTileIds = [];
 
-    // PNG capture state (Image Output): the legend's Save button (click, tap, or Space)
-    // triggers BT.downloadFrame() once per press.
+    // PNG capture state (Image Output): the Capstone panel's Save button (click, tap, or
+    // Space) triggers BT.downloadFrame() once per press.
     capturing = false;
     lastCaptureMessage = '';
     messageTimer = 0;
@@ -333,6 +348,7 @@ class Demo {
     cloudBaseColor = new Color32(230, 240, 255, 200);
     grassBaseColor = new Color32(50, 140, 70);
     dirtBaseColor = new Color32(40, 100, 55);
+    walkwayDirtBaseColor = new Color32(130, 100, 70);
 
     // Reused rectangle and vectors to avoid creating new objects every frame.
     tempRect = new Rect2i(0, 0, 0, 0);
@@ -416,7 +432,7 @@ class Demo {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // Build the world decoration and the sidewalk tile-ID row (Tilemap).
+        // Build the world decoration and the walkway tile-ID row (Tilemap).
         this.buildWorldDecor();
         this.buildGroundTileStrip();
 
@@ -452,9 +468,10 @@ class Demo {
         // matches the picture on screen.
         this.heroSize.set(this.heroSheet.size.x, this.heroSheet.size.y);
 
-        // Stand the rock on the ground line: the sprite's top-left y is the ground minus
-        // the sprite's height, so its bottom edge touches GROUND_Y exactly.
-        this.heroPos.y = GROUND_Y - this.heroSize.y;
+        // Stand the rock on the walk line: the sprite's top-left y is the walk line minus
+        // the height of its visible pixels (HERO_ART_BOTTOM), so its lowest pixels sit
+        // right on WALK_LINE_Y.
+        this.heroPos.y = WALK_LINE_Y - HERO_ART_BOTTOM;
 
         // Snap heroPrevPos to match so the very first render does not blend in from the
         // placeholder position the class fields started with.
@@ -469,6 +486,11 @@ class Demo {
         // Snap cameraPrevPos to match the starting camera position so the very first
         // render does not blend in from (0, 0).
         this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
+
+        // Write every ambient-lit color once now. update() rewrites them each tick, but
+        // the first frame can be drawn before the first update() runs, and without this
+        // it would show a black world.
+        this.updateWorldPalette();
 
         // Load and start all sound: music, the day/night chime, and the capture blip.
         await this.initAudio();
@@ -528,7 +550,7 @@ class Demo {
 
         this.updateDayPhaseSound(tick);
 
-        // The PNG capture itself starts from the kit's Save button in renderLegend().
+        // The PNG capture itself starts from the kit's Save button in renderHud().
         // Here only the "Saved: ..." message is counted down so it disappears after a
         // while.
         if (this.messageTimer > 0) {
@@ -586,9 +608,9 @@ class Demo {
         this.renderHero();
         BT.cameraReset();
 
-        // Legend panel and capture controls, in screen space (not scrolled with the
+        // HUD panels and capture controls, in screen space (not scrolled with the
         // world).
-        this.renderLegend();
+        this.renderHud();
 
         // Score, rock position, and day phase are drawn in overlayRows() above the FPS
         // bar.
@@ -620,10 +642,17 @@ class Demo {
     // separate arrays so update() can apply the ambient.
     buildWorldDecor() {
         const rawBuildings = [
-            { x: 40, y: GROUND_Y - 52, w: 36, h: 52, fill: new Color32(140, 90, 70), outline: new Color32(80, 50, 40) },
+            {
+                x: 40,
+                y: WALKWAY_Y - 52,
+                w: 36,
+                h: 52,
+                fill: new Color32(140, 90, 70),
+                outline: new Color32(80, 50, 40),
+            },
             {
                 x: 200,
-                y: GROUND_Y - 70,
+                y: WALKWAY_Y - 70,
                 w: 44,
                 h: 70,
                 fill: new Color32(110, 120, 140),
@@ -631,7 +660,7 @@ class Demo {
             },
             {
                 x: 380,
-                y: GROUND_Y - 46,
+                y: WALKWAY_Y - 46,
                 w: 32,
                 h: 46,
                 fill: new Color32(160, 100, 100),
@@ -639,7 +668,7 @@ class Demo {
             },
             {
                 x: 500,
-                y: GROUND_Y - 60,
+                y: WALKWAY_Y - 60,
                 w: 40,
                 h: 60,
                 fill: new Color32(120, 130, 100),
@@ -647,11 +676,13 @@ class Demo {
             },
         ];
 
-        for (const b of rawBuildings) {
-            this.buildings.push({ x: b.x, y: b.y, w: b.w, h: b.h });
-            this.buildingFills.push(b.fill);
-            this.buildingOutlines.push(b.outline);
-        }
+        // Fresh arrays every call, never push() onto the old ones: a second call would
+        // leave 8 buildings whose palette slots spill past slot 39 into the cloud,
+        // overlay, and walkway colors. Array.map returns a new array with one result per
+        // entry.
+        this.buildings = rawBuildings.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h }));
+        this.buildingFills = rawBuildings.map((b) => b.fill);
+        this.buildingOutlines = rawBuildings.map((b) => b.outline);
 
         this.clouds = [
             { x: 30, y: 24, w: 42, h: 14 },
@@ -703,6 +734,7 @@ class Demo {
         // Ground.
         this.palette.set(C_GRASS, this.grassBaseColor.multiply(ambient));
         this.palette.set(C_DIRTLINE, this.dirtBaseColor.multiply(ambient));
+        this.palette.set(C_DIRT, this.walkwayDirtBaseColor.multiply(ambient));
 
         // Buildings.
         for (let i = 0; i < this.buildings.length; i++) {
@@ -714,7 +746,7 @@ class Demo {
         this.palette.set(C_CLOUD, this.cloudBaseColor.multiply(ambient));
 
         // Engine overlay text: a subtle night tint on the score / position / phase rows.
-        // The kit legend panel keeps its fixed theme colors and does not dim at night.
+        // The kit HUD panels keep their fixed theme colors and does not dim at night.
         this.palette.set(C_HUD_TITLE, this.hudTitleBase.multiply(ambient));
         this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
         this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
@@ -770,7 +802,7 @@ class Demo {
         this.tempRect.set(0, GROUND_Y, WORLD_W, 3);
         BT.drawRectFill(this.tempRect, C_DIRTLINE);
 
-        // Sidewalk tile row: each cell is a tile ID mapped to a palette color (Tilemap).
+        // Walkway tile row: each cell is a tile ID mapped to a palette color (Tilemap).
         this.renderGroundTileStrip();
 
         // Buildings: checker fill (Patterns) plus an outline frame.
@@ -790,7 +822,7 @@ class Demo {
 
         for (let col = 0; col < this.groundTileIds.length; col++) {
             const tileId = this.groundTileIds[col];
-            const colorIndex = tileId === TILE_GRASS_ID ? C_GRASS : C_DIRTLINE;
+            const colorIndex = tileId === TILE_GRASS_ID ? C_GRASS : C_DIRT;
             const worldX = col * GROUND_TILE_SIZE;
 
             this.tempRect.set(worldX, rowY, GROUND_TILE_SIZE, GROUND_TILE_SIZE);
@@ -869,9 +901,11 @@ class Demo {
         // The ambient offset shifts all pixel indices into the pre-lit block.
         BT.drawSprite(this.heroSheet, this.heroSprite, this.tempVec, this.spriteColorCount);
 
-        // Shadow underfoot.
-        const shadowY = this.heroRenderPos.y + this.heroSprite.height - 2;
-        this.tempRect.set(this.heroRenderPos.x + 2, shadowY, this.heroSprite.width - 4, 3);
+        // Shadow underfoot: a 2-pixel strip on the walk line, as wide as the rock's
+        // visible pixels (x = 4 to 38 in the frame) minus a little at each end. It uses
+        // heroRenderPos, not tempVec, so it stays on the ground while the rock bobs.
+        // The engine draws rectangles before sprites, so the rock covers its top row.
+        this.tempRect.set(this.heroRenderPos.x + 6, WALK_LINE_Y - 1, 30, 2);
         BT.drawRectFill(this.tempRect, C_HERO_SHADOW);
     }
 
@@ -964,19 +998,17 @@ class Demo {
         }
     }
 
-    // The legend panel in the top-left corner (screen space), built with the shared UI
-    // kit. The Save button also listens for the Space key, so keyboard, mouse, and touch
-    // all trigger the same PNG capture (Image Output).
-    renderLegend() {
+    // The HUD in screen space, built with the shared UI kit: a small Capstone panel with
+    // the Save button in the top-left corner, a Score and time-of-day panel in the
+    // top-right corner, and the "enable sound" hint down on the grass. The two panels
+    // stay small so most of the sky and clouds stay visible. The Save button also listens
+    // for the Space key, so keyboard, mouse, and touch all trigger the same PNG capture
+    // (Image Output).
+    renderHud() {
         // Anchor the group to the top-left corner; the kit sizes the panel to fit its
-        // rows.
+        // rows. panel() gives the group a background, border, and an amber title line.
         ui.begin(UI_ANCHORS.TOP_LEFT);
-
-        // panel() gives the group a background, border, and an amber title line.
-        ui.panel('Capstone: scroll, tiles, sprite, day/night');
-
-        // A dim (secondary) line pointing back at the demos these visuals come from.
-        ui.label('Tiles + checker = tilemap + patterns', { color: 'dim' });
+        ui.panel('Capstone');
 
         // The Save button returns true only on the frame it is clicked, tapped, or its
         // bound key (Space) is pressed. The `capturing` flag stops a second capture from
@@ -992,11 +1024,23 @@ class Demo {
             ui.label(this.lastCaptureMessage, { color: 'accent' });
         }
 
+        ui.end();
+
+        // Score and time of day, the two things a player of this scene would want to
+        // see. kv() rows line their values up in a column; kvCols: 6 makes the key
+        // column wide enough for "Score" plus a space.
+        ui.begin(UI_ANCHORS.TOP_RIGHT, { kvCols: 6 });
+        ui.panel('Status');
+        ui.kv('Score', this.score);
+        ui.kv('Time', this.getDayPhaseLabel());
+        ui.end();
+
         // Browsers keep all sound muted until the player clicks or presses a key. This
         // kit row shows the standard warm "enable sound" hint only while the audio is
-        // still locked, then disappears on its own.
+        // still locked, then disappears on its own. It sits on the plain grass in the
+        // bottom-left corner, out of the way of the sky and the walking rock.
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.audioUnlockHint();
-
         ui.end();
     }
 

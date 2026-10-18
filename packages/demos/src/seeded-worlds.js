@@ -27,15 +27,16 @@ WHAT YOU WILL SEE
 Two little night-time worlds side by side, each inside a 152x100 frame: sixteen stars,
 rolling hills, four buildings in four shades of blue-gray, and seven trees. Every one of
 them was placed by a random number. Above each world is the number it grew from, called
-its "seed".
+its "seed". The engine overlay is turned off, so the worlds get the whole screen.
 
-Press the buttons in the bottom-left "Seeds" panel to give either side a new seed and
-watch it rebuild. Then press "Copy left seed" and watch the right world turn into an exact
-twin of the left one. Same number in, same world out, every single time. A caption under
-the worlds says "Same seed, same world" whenever the two seeds match.
+Press the buttons in the bottom-left "New seed" panel to give either side a new seed and
+watch it rebuild. Then press "E Copy left -> right" and watch the right world turn into an
+exact twin of the left one. Same number in, same world out, every single time. The line
+under the worlds says "Same seed, same world" whenever the two seeds match.
 
-The bottom-right panel runs a smaller experiment on a separate generator: three numbers
-from the original, three from a clone() of it, and three from a fork() of it.
+The bottom-right panel runs a smaller experiment on a separate generator, titled with the
+call that made it: three numbers from the original, three from a clone() of it, and three
+from a fork() of it.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -50,7 +51,8 @@ WHAT YOU WILL LEARN
 - clone() copies a generator so both continue with the same numbers; fork() splits off a
   new generator that goes its own way, and its seedValue is undefined on purpose.
 - Nothing moves here, so update() only calls ui.tick() to keep the button key shortcuts
-  working. All the drawing happens in render().
+  working. All the drawing happens in render(), and isOverlayEnabled: false in
+  configure() turns the engine overlay off.
 
 WHY IS THIS USEFUL?
 -------------------
@@ -62,11 +64,12 @@ really well, you can write the seed down and play it again.
 TRY THIS
 --------
 
-- Press Q ("New left") or W ("New right") to reroll one side. New seeds are four digits,
+- Press Q ("Q Left") or W ("W Right") to reroll one side. New seeds are four digits,
   from 1000 to 9999.
-- Press E ("Copy left seed") and the right world becomes a twin of the left one.
+- Press E ("E Copy left -> right") and the right world becomes a twin of the left one.
 - Read the bottom-right panel: the clone() row matches the original row exactly, and the
-  fork() row does not.
+  fork() row does not. The fork's seedValue reads "none", because a fork was never given
+  a seed of its own.
 - The engine also takes a seed from the URL. Open the demo page on its own with
   ?embed&seed=4821 added and the left world always starts from 4821, because BT.init()
   applies ?seed= to BT.random right before init() runs. The shell page around the demo
@@ -76,18 +79,55 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Random, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
 // This demo runs at the engine's default screen size of 320x240 "game pixels".
 
 // Each world gets its own framed box. Two boxes, side by side, with a gap between them.
+// The frame is drawn one pixel outside the box, so with these numbers the frames sit 4
+// pixels in from both screen edges and 4 pixels apart.
 const WORLD_W = 152;
 const WORLD_H = 100;
-const WORLD_Y = 18;
-const WORLD_LEFT_X = 4;
-const WORLD_RIGHT_X = 164;
+const WORLD_Y = 19;
+const WORLD_LEFT_X = 5;
+const WORLD_RIGHT_X = 163;
+
+// The caption above each world, and the status line centered under both.
+const SEED_CAPTION_Y = 10;
+const STATUS_Y = 132;
+
+// The two panels along the bottom, the same height. Widgets inside a panel start 9
+// pixels in from its left edge and are 20 pixels narrower than it.
+const PANEL_H = 87;
+const PANEL_Y = 240 - 4 - PANEL_H;
+const SEED_PANEL_X = 4;
+const SEED_PANEL_W = 150;
+const STREAM_PANEL_X = 160;
+const STREAM_PANEL_W = 156;
+const PANEL_CONTENT_X = 9;
+const PANEL_CONTENT_SHRINK = 20;
+
+// The Seeds panel holds two short buttons side by side, then one full-width button.
+// The kit stacks a group's rows, so the panel reserves the space with empty rows and
+// each button is placed with its own tiny group on top of it. A group pinned with pad 0
+// starts its first row 5 pixels above the y it is given, hence PINNED_ROW_SHIFT.
+const SEED_CONTENT_W = SEED_PANEL_W - PANEL_CONTENT_SHRINK;
+const SEED_BUTTON_GAP = 6;
+const SEED_HALF_W = (SEED_CONTENT_W - SEED_BUTTON_GAP) / 2;
+const BUTTON_ROW_H = 27;
+const PANEL_CONTENT_TOP = 22;
+const PINNED_ROW_SHIFT = 5;
+const SEED_GRID_X = SEED_PANEL_X + PANEL_CONTENT_X;
+const SEED_GRID_Y = PANEL_Y + PANEL_CONTENT_TOP;
+
+// The stream panel's value column starts after this many characters, so the longest key,
+// "original", keeps a space after it.
+const STREAM_KV_COLS = 9;
+
+// The system font's right arrow, for the copy button.
+const ARROW_RIGHT = '\u2192';
 
 // How many of each thing lives in a world. Fixed counts keep the two sides comparable:
 // only the positions and sizes change from seed to seed.
@@ -238,6 +278,14 @@ class Demo {
     /** @type {Random | null} */
     seedPicker = null;
 
+    // Turns the engine overlay off: nothing moves here, so there is no timing to watch,
+    // and the worlds and panels need the whole screen.
+    configure() {
+        return {
+            isOverlayEnabled: false,
+        };
+    }
+
     // Builds the palette, then grows both worlds from seeds nobody chose.
     async init() {
         this.palette = BT.paletteCreate(256);
@@ -288,28 +336,48 @@ class Demo {
         ui.tick();
     }
 
-    // Draws both worlds, their seeds, and the control panels.
+    // Draws both worlds, their seeds, the status line, and the control panels.
+    //
+    // The panels come first: their buttons can rebuild a world this very frame, and the
+    // worlds drawn after them should already show the new one. Shapes are drawn under
+    // every panel anyway, so the order costs nothing on screen.
     render() {
         BT.clear(C_SKY);
+
+        this.renderSeedPanel();
+        this.renderStreamPanel();
 
         this.renderWorld(this.left, WORLD_LEFT_X);
         this.renderWorld(this.right, WORLD_RIGHT_X);
 
         // Each world's seed sits directly above it, so there is no doubt which is which.
-        ui.caption(WORLD_LEFT_X, 8, `seed ${this.left.seed}`);
-        ui.caption(WORLD_RIGHT_X, 8, `seed ${this.right.seed}`);
+        ui.caption(WORLD_LEFT_X, SEED_CAPTION_Y, `seed ${this.left.seed}`);
+        ui.caption(WORLD_RIGHT_X, SEED_CAPTION_Y, `seed ${this.right.seed}`);
 
-        // When both seeds match, say so plainly - this is the moment the demo exists for.
+        this.renderStatusLine();
+    }
+
+    // One centered line under the worlds. When both seeds match, say so plainly - this is
+    // the moment the demo exists for.
+    renderStatusLine() {
+        let text = 'Different seeds, different worlds';
+        let color = 'dim';
+
         if (this.left.seed === this.right.seed) {
-            ui.caption(96, WORLD_Y + WORLD_H + 4, 'Same seed, same world', { color: 'accent' });
+            text = 'Same seed, same world';
+            color = 'accent';
         } else if (this.seedsWereAutomatic) {
-            // The left seed is long because nobody typed it: the engine made it from the
-            // clock when the demo started. seedValue is how we can still read it.
-            ui.caption(48, WORLD_Y + WORLD_H + 4, 'Left seed came from the clock', { color: 'dim' });
+            // Nobody typed the left seed: the engine made it from the clock when the demo
+            // started (or took it from ?seed= in the URL). seedValue is how we can still
+            // read it.
+            text = 'The left seed came from the clock';
         }
 
-        this.renderSeedPanel();
-        this.renderStreamPanel();
+        // FONT_W is the width of one character; the last one's empty spacing column is
+        // left out, so the visible letters are what gets centered.
+        const x = Math.floor(BT.displaySize.x / 2) - Math.floor((text.length * FONT_W - 1) / 2);
+
+        ui.caption(x, STATUS_Y, text, { color });
     }
 
     // Draws one world inside its frame. `originX` is the left edge of this world's box on
@@ -355,43 +423,61 @@ class Demo {
         BT.drawRect(new Rect2i(originX - 1, WORLD_Y - 1, WORLD_W + 2, WORLD_H + 2), C_DIM);
     }
 
-    // The three buttons that reseed the worlds.
+    // The three buttons that reseed the worlds: the panel itself with empty rows where
+    // the buttons go, then each button pinned on top of it (see SEED_GRID_X).
     renderSeedPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
-        ui.panel('Seeds');
+        ui.begin('topLeft', { x: SEED_PANEL_X, y: PANEL_Y, width: SEED_PANEL_W });
+        ui.panel('New seed');
+        ui.spacer(2 * BUTTON_ROW_H);
+        ui.end();
 
-        if (ui.button('New left', { key: 'KeyQ' })) {
+        if (this.pinnedButton('Q Left', 'KeyQ', SEED_GRID_X, SEED_GRID_Y, SEED_HALF_W)) {
             this.left = generateWorld(this.rollSeed());
             this.seedsWereAutomatic = false;
         }
 
-        if (ui.button('New right', { key: 'KeyW' })) {
+        const rightX = SEED_GRID_X + SEED_HALF_W + SEED_BUTTON_GAP;
+
+        if (this.pinnedButton('W Right', 'KeyW', rightX, SEED_GRID_Y, SEED_HALF_W)) {
             this.right = generateWorld(this.rollSeed());
             this.seedsWereAutomatic = false;
         }
 
-        if (ui.button('Copy left seed', { key: 'KeyE' })) {
+        const copyLabel = `E Copy left ${ARROW_RIGHT} right`;
+
+        if (this.pinnedButton(copyLabel, 'KeyE', SEED_GRID_X, SEED_GRID_Y + BUTTON_ROW_H, SEED_CONTENT_W)) {
             // Nothing about the right world is copied here - only the number. The world
             // is rebuilt from scratch, and it comes back identical because the number is
             // the same.
             this.right = generateWorld(this.left.seed);
             this.seedsWereAutomatic = false;
         }
-
-        ui.end();
     }
 
-    // The clone-versus-fork comparison.
+    // One button in its own tiny group, with its row starting at (x, y). Returns true on
+    // the frame it is clicked, tapped, or its key is pressed, like ui.button().
+    pinnedButton(label, key, x, y, width) {
+        ui.begin('topLeft', { x, y: y + PINNED_ROW_SHIFT, pad: 0 });
+
+        const pressed = ui.button(label, { key, width });
+
+        ui.end();
+
+        return pressed;
+    }
+
+    // The clone-versus-fork comparison, on a generator of its own.
     renderStreamPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
-        ui.panel(`One more generator (seed ${this.streams.seed})`);
+        ui.begin('topLeft', { x: STREAM_PANEL_X, y: PANEL_Y, width: STREAM_PANEL_W, kvCols: STREAM_KV_COLS });
+        ui.panel(`new Random(${this.streams.seed})`);
         ui.kv('original', this.streams.base.join(' '));
         ui.kv('clone()', this.streams.cloned.join(' '));
         ui.kv('fork()', this.streams.forked.join(' '));
-        ui.separator();
-        ui.label('A clone carries on identically.', { color: 'dim' });
-        ui.label('A fork goes its own way, and its', { color: 'dim' });
-        ui.label(`seedValue reads ${this.streams.forkSeed ?? 'unknown'}.`, { color: 'dim' });
+        ui.spacer(4);
+        ui.label('clone: same numbers', { color: 'dim' });
+
+        // A fork's seedValue is undefined on purpose - see sampleStreams().
+        ui.label(`fork: seedValue ${this.streams.forkSeed ?? 'none'}`, { color: 'dim' });
         ui.end();
     }
 

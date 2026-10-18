@@ -472,8 +472,8 @@ class Demo {
     // Scales the whole tilemap down so each tile is a 3x3 pixel square on the HUD, and
     // draws a yellow rectangle around the area the main camera is showing.
     renderMiniMap() {
-        const mapX = 218;
-        const mapY = 158;
+        const mapX = 221;
+        const mapY = 171;
         const scale = 3; // each world tile becomes a 3 by 3 block on the mini-map
         const mapPixelW = MAP_WIDTH_TILES * scale;
         const mapPixelH = MAP_HEIGHT_TILES * scale;
@@ -485,7 +485,12 @@ class Demo {
         // BT.drawRectFill() before any sprite - so plain ones would hide under the panel.
         // The ui.* versions take the same rectangle and palette slot, but draw sprites,
         // which land on top in call order.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: mapX - 2, y: mapY - 2, width: mapPixelW + 4, margin: 0, pad: 2 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, {
+            x: mapX - 5,
+            y: mapY - 5,
+            width: mapPixelW + 10,
+            pad: 9,
+        });
         ui.panel();
         ui.spacer(mapPixelH);
         ui.end();
@@ -516,7 +521,7 @@ class Demo {
                 }
 
                 this.tileRect.set(px, py, scale, scale);
-                BT.drawRectFill(this.tileRect, c);
+                ui.drawRectFill(this.tileRect, c);
             }
         }
 
@@ -531,7 +536,7 @@ class Demo {
         const vh = Math.max(1, Math.floor((disp.y / WORLD_HEIGHT_PX) * mapPixelH));
 
         this.tileRect.set(vx, vy, vw, vh);
-        BT.drawRect(this.tileRect, C_VIEWPORT);
+        ui.drawRect(this.tileRect, C_VIEWPORT);
     }
 }
 

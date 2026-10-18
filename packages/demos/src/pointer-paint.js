@@ -24,17 +24,18 @@ WHAT YOU WILL SEE
 -----------------
 
 An empty canvas in the shared theme's background color, with a small "Paint" panel in the
-bottom-right corner. Every active pointer shows a crosshair in its own color, and painting
-leaves strokes behind in that color:
+bottom-right corner. Until something is painted, two dim lines in the middle of the
+canvas say how to start. Every active pointer shows a crosshair in its own color, drawn
+on top of the panel too, and painting leaves strokes behind in that color:
 
   - slot 0 = mouse        (white)
   - slot 1 = first touch  (red)
   - slot 2 = second touch (green)
   - slot 3 = third touch  (blue)
 
-The panel has one pip per slot (lit while that mouse or finger is over the canvas), a
-"Brush" row naming the current size, and two buttons: "Brush: Thin/Medium/Thick" cycles
-the size and "Clear" wipes the canvas.
+The panel has one pip per slot (lit while that mouse or finger is over the canvas) with a
+swatch of that slot's paint color at the end of the row, and two full-width buttons:
+"Brush: Thin/Medium/Thick" names and cycles the size, and "Clear" wipes the canvas.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -65,9 +66,9 @@ TRY THIS
 
 */
 
-import { bootstrap, BT, Color32, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, PIP_SIZE, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -96,6 +97,24 @@ const BRUSH_SIZES = [0, 2, 4];
 // Brush row. Same order as BRUSH_SIZES.
 const BRUSH_NAMES = ['Thin', 'Medium', 'Thick'];
 
+// The Paint panel sits in the bottom-right corner, 4 pixels from the edges. Its height
+// comes from the rows it stacks: the 22-pixel title strip, four 10-pixel pip rows, a
+// 5-pixel gap, two 27-pixel button rows, and the 11-pixel bottom rim. Placing it
+// from these numbers (instead of letting the kit anchor it) lets the slot color swatches
+// line up exactly with the pip rows.
+const PANEL_W = 112;
+const PANEL_H = 22 + 4 * 10 + 5 + 2 * 27 + 11;
+const PANEL_X = DISPLAY_W - 4 - PANEL_W;
+const PANEL_Y = DISPLAY_H - 4 - PANEL_H;
+
+// Kit panel content starts 9 pixels in from the panel edge, and the first row starts 22
+// pixels below its top.
+const PANEL_PAD = 9;
+const PANEL_CONTENT_TOP = 22;
+
+// Half the length of each cursor crosshair arm, in pixels.
+const CURSOR_ARM = 5;
+
 // Multi-touch and mouse paint demo. The "canvas" we paint onto is a flat array of palette
 // indices, one entry per display pixel. Each frame, render() copies that array onto the
 // screen as thin filled rectangles so strokes persist between frames. Stroke input comes
@@ -116,6 +135,17 @@ class Demo {
 
     // Index into BRUSH_SIZES; cycled by middle-click or the Brush button.
     brushIndex = 1;
+
+    // One reusable rectangle for renderLayer(), so drawing a run allocates nothing per
+    // frame.
+    runRect = new Rect2i(0, 0, 1, 1);
+
+    // Another reusable rectangle for the cursors and the panel's color swatches.
+    uiRect = new Rect2i(0, 0, 1, 1);
+
+    // True once anything has been painted, so the "how to paint" hint can step aside.
+    // clearCanvas() sets it back to false.
+    hasPaint = false;
 
     // Last known position per slot, recorded the tick the pointer started painting and
     // after every stamp since. Used to draw a stroke from the previous tick's position to
@@ -254,22 +284,24 @@ class Demo {
         }
     }
 
-    // Per-frame render: paint layer first, then live overlays (cursors and the kit
-    // control panel).
+    // Per-frame render: paint layer first, then the kit control panel, the hint, and
+    // the cursors last, so a cursor is never hidden behind the panel.
     render() {
         // Clear to the shared theme's background color so the canvas matches the UI panel
         // and the engine overlay.
         BT.clear(this.theme.bg);
 
         this.renderLayer();
-        this.renderCursors();
         this.renderPanel();
+        this.renderHint();
+        this.renderCursors();
     }
 
     // Wipes every painted pixel back to blank. Shared by right-click and the Clear button
     // so both inputs behave identically.
     clearCanvas() {
         this.layer.fill(0);
+        this.hasPaint = false;
     }
 
     // Steps to the next brush size. Shared by middle-click and the Brush button so both
@@ -326,6 +358,7 @@ class Demo {
         }
 
         this.layer[y * DISPLAY_W + x] = color;
+        this.hasPaint = true;
     }
 
     // Copies the persistent paint layer onto the screen. Pixels with palette index 0 are
@@ -336,11 +369,25 @@ class Demo {
     renderLayer() {
         for (let y = 0; y < DISPLAY_H; y++) {
             const row = y * DISPLAY_W;
-            for (let x = 0; x < DISPLAY_W; x++) {
+            let x = 0;
+
+            while (x < DISPLAY_W) {
                 const c = this.layer[row + x];
-                if (c !== 0) {
-                    BT.drawPixel(new Vector2i(x, y), c);
+
+                // Blank pixel: nothing to draw, move on.
+                if (c === 0) {
+                    x++;
+                    continue;
                 }
+
+                // Find where this run of identical colors ends.
+                const start = x;
+
+                while (x < DISPLAY_W && this.layer[row + x] === c) {
+                    x++;
+                }
+
+                BT.drawRectFill(this.runRect.set(start, y, x - start, 1), c);
             }
         }
     }
@@ -348,6 +395,8 @@ class Demo {
     // Draws a small crosshair at each active pointer so the user can see where each
     // finger or the mouse is, even when not currently painting.
     renderCursors() {
+        const span = CURSOR_ARM * 2 + 1;
+
         for (let slot = 0; slot < 4; slot++) {
             if (!BT.isPointerActive(slot)) {
                 continue;
@@ -356,17 +405,43 @@ class Demo {
             const pos = BT.pointerPos(slot);
             const color = SLOT_PAINT[slot];
 
-            // Two short lines through the pointer position, in the slot's paint color.
-            BT.drawLine(new Vector2i(pos.x - 5, pos.y), new Vector2i(pos.x + 5, pos.y), color);
-            BT.drawLine(new Vector2i(pos.x, pos.y - 5), new Vector2i(pos.x, pos.y + 5), color);
+            // Two 1-pixel-thick arms through the pointer position, in the slot's paint
+            // color. They are drawn with ui.drawRectFill(), the sprite version of
+            // BT.drawRectFill(): the engine draws every BT.drawLine() and
+            // BT.drawRectFill() before any sprite, and the kit panel is a sprite, so a
+            // plain line would vanish whenever the pointer moved over the panel.
+            ui.drawRectFill(this.uiRect.set(pos.x - CURSOR_ARM, pos.y, span, 1), color);
+            ui.drawRectFill(this.uiRect.set(pos.x, pos.y - CURSOR_ARM, 1, span), color);
         }
     }
 
-    // The kit control panel: per-slot activity pips, the current brush, and two
-    // touch-friendly buttons. Anchored bottom-right so it stays clear of the engine
-    // overlay's toggle corner (the bottom-left 17x13 pixels are reserved for that).
+    // Two dim lines in the middle of the open canvas saying how to paint. Shown only
+    // while nothing is painted, so a new visitor is not left facing an empty screen.
+    renderHint() {
+        if (this.hasPaint) {
+            return;
+        }
+
+        // The open canvas is everything left of the panel. Every character of the system
+        // font is FONT_W (6) pixels wide, so starting a line half its width left of the
+        // middle centers it.
+        const centerX = Math.floor(PANEL_X / 2);
+        const centerY = Math.floor(DISPLAY_H / 2);
+        const lines = ['Hold the left mouse button', 'or touch the screen to paint'];
+
+        for (let i = 0; i < lines.length; i++) {
+            ui.caption(centerX - (lines[i].length * FONT_W) / 2, centerY - 8 + i * 12, lines[i], { color: 'dim' });
+        }
+    }
+
+    // The kit control panel: per-slot activity pips with each slot's paint color, and
+    // two touch-friendly buttons. It sits in the bottom-right corner so it stays clear of
+    // the engine overlay's toggle corner (the bottom-left 17x13 pixels are reserved for
+    // that).
     renderPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
+        const buttonW = PANEL_W - 2 * PANEL_PAD;
+
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: PANEL_X, y: PANEL_Y, width: PANEL_W });
         ui.panel('Paint');
 
         // One pip per pointer slot: lit while that mouse or finger is active.
@@ -374,27 +449,43 @@ class Demo {
             ui.pip(SLOT_LABELS[slot], BT.isPointerActive(slot));
         }
 
-        ui.separator();
+        // A small gap between the pips and the buttons.
+        ui.spacer(5);
 
-        // Which brush is selected right now, as a readable name.
+        // The current brush, as a readable name on the Brush button itself.
         const name = BRUSH_NAMES[this.brushIndex];
-        ui.kv('Brush', name);
 
         // The Brush button cycles the size - the touch equivalent of the middle-click
         // shortcut in update(). Its label changes with the brush, and the kit normally
         // recognizes a widget by its label, so we give it a stable id to keep it the
         // "same" button across frames.
-        if (ui.button(`Brush: ${name}`, { id: 'brush' })) {
+        if (ui.button(`Brush: ${name}`, { id: 'brush', width: buttonW })) {
             this.cycleBrush();
         }
 
         // The Clear button wipes the canvas - the touch equivalent of the right-click
         // shortcut in update(). Both paths call clearCanvas().
-        if (ui.button('Clear')) {
+        if (ui.button('Clear', { width: buttonW })) {
             this.clearCanvas();
         }
 
         ui.end();
+
+        // A swatch of each slot's paint color at the right end of its pip row, so you
+        // can see which color each finger paints in. Each swatch mirrors the pip box on
+        // the left: the kit draws that box PIP_SIZE (10) pixels square with a border
+        // outline, 3 pixels below the top of its row, PANEL_PAD pixels in from the panel
+        // edge - so the swatch is the same outline the same distance in from the right
+        // edge, on the same rows, with the color filling its inside. Drawn after ui.end()
+        // with the kit's sprite drawing so it lands on top of the panel.
+        const swatchX = PANEL_X + PANEL_W - PANEL_PAD - PIP_SIZE;
+
+        for (let slot = 0; slot < 4; slot++) {
+            const boxY = PANEL_Y + PANEL_CONTENT_TOP + slot * 10 + 3;
+
+            ui.drawRect(this.uiRect.set(swatchX, boxY, PIP_SIZE, PIP_SIZE), this.theme.border);
+            ui.drawRectFill(this.uiRect.set(swatchX + 1, boxY + 1, PIP_SIZE - 2, PIP_SIZE - 2), SLOT_PAINT[slot]);
+        }
     }
 }
 

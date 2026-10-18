@@ -125,8 +125,25 @@ const BAR_H = 10;
 const SHEET_W = BAR_X + BAR_W;
 const SHEET_H = PANEL_SIZE;
 
-// The seven flat colors of the art. Every pixel uses exactly one of them, so the sheet maps
-// onto the palette without any blending (we never use smooth, anti-aliased canvas drawing).
+// Section 6 loads a real PNG file instead of painting one. The file is 14x14 pixels: 6x6
+// rounded, partly see-through corners around a 2x2 center. Manual-sync hazard:
+// src/shared/ui-theme.js PANEL_ART is the same art, copied as text for the UI kit's
+// panels.
+const FILE_PANEL_URL = '/sprites/panel.png';
+const FILE_PANEL_SIZE = 14;
+const FILE_PANEL_CAP = 6;
+
+// The file panel's box keeps its top-left corner in place and grows and shrinks between
+// the minimum and maximum sizes. One full swing takes about 12 seconds: the sine wave
+// repeats every 2 * PI * 120 ticks.
+const FILE_BOX_X = 12;
+const FILE_BOX_Y = 236;
+const FILE_MIN_W = 40;
+const FILE_MAX_W = 180;
+const FILE_MIN_H = 24;
+const FILE_MAX_H = 64;
+const FILE_SWING_TICKS = 120;
+
 // The seven flat colors of the art. Every pixel uses exactly one of them, so the sheet
 // maps onto the palette without any blending (the demo never uses smooth, anti-aliased
 // canvas drawing).
@@ -301,11 +318,16 @@ class Demo {
     // along, so this number is also the palette offset step.
     colorCount = 0;
 
+    // The sheet loaded from public/sprites/panel.png in init(). Its colors sit in their
+    // own palette slots.
+    fileSheet = null;
+
     // The nine-slices. All are built once in init(). They are frozen, finished assets.
     stretchPanel = null;
     tilePanel = null;
     mixedPanel = null;
     bar = null;
+    filePanel = null;
 
     // Every box this demo draws more than once is built in init() too, never inside
     // render().
@@ -318,6 +340,7 @@ class Demo {
     // new Rect2i is made per frame.
     tweenRect = null;
     liveBarRect = null;
+    fileRect = null;
 
     // Text that never changes, built once so render() does not glue strings together
     // every frame.
@@ -367,6 +390,20 @@ class Demo {
             this.sheet = new SpriteSheet(image);
             this.sheet.indexize(this.palette);
 
+            // Load the PNG file. loadIndexed() reads the file, adds its colors to the
+            // palette starting at the given slot, and maps every pixel to those slots.
+            // The three blocks above take up COLOR_BASE through COLOR_BASE + colorCount *
+            // 3 - 1, so the file starts right after them.
+            const fileArt = await SpriteSheet.loadIndexed(
+                FILE_PANEL_URL,
+                this.palette,
+                COLOR_BASE + this.colorCount * 3,
+                {
+                    sort: 'none',
+                },
+            );
+            this.fileSheet = fileArt.sheet;
+
             this.buildNineSlices();
             this.buildRects();
             BT.paletteSet(this.palette);
@@ -391,6 +428,7 @@ class Demo {
         this.renderTween();
         this.renderRecolor();
         this.renderBars();
+        this.renderFilePanel();
         this.renderCodeSnippet();
     }
 
@@ -418,6 +456,18 @@ class Demo {
         const barOuter = new Rect2i(BAR_X, 0, BAR_W, BAR_H);
         const barInner = new Rect2i(BAR_X + PANEL_CAP, 0, BAR_W - PANEL_CAP * 2, BAR_H);
         this.bar = NineSlice.fromSheet(this.sheet, barOuter, barInner, { center: 'tile' });
+
+        // The file panel: the whole 14x14 picture, with the 2x2 center inside 6-pixel
+        // corners. The defaults stretch the edges and the center, which suits this flat
+        // rim.
+        const fileOuter = new Rect2i(0, 0, FILE_PANEL_SIZE, FILE_PANEL_SIZE);
+        const fileInner = new Rect2i(
+            FILE_PANEL_CAP,
+            FILE_PANEL_CAP,
+            FILE_PANEL_SIZE - FILE_PANEL_CAP * 2,
+            FILE_PANEL_SIZE - FILE_PANEL_CAP * 2,
+        );
+        this.filePanel = NineSlice.fromSheet(this.fileSheet, fileOuter, fileInner);
     }
 
     // Makes every destination box once. A Rect2i is just four numbers (x, y, width,
@@ -450,6 +500,10 @@ class Demo {
         // height.
         this.staticBarRects.push(new Rect2i(RIGHT_X, 284, 48, BAR_H), new Rect2i(RIGHT_X, 300, 96, BAR_H));
         this.liveBarRect = new Rect2i(RIGHT_X, 316, 20, BAR_H);
+
+        // Section 6: the file panel's box. It starts at its smallest size and render()
+        // resizes it every frame.
+        this.fileRect = new Rect2i(FILE_BOX_X, FILE_BOX_Y, FILE_MIN_W, FILE_MIN_H);
     }
 
     // Section 1: the same panel, five different boxes. Corners stay the same size; only
@@ -541,9 +595,28 @@ class Demo {
         BT.drawNineSlice(this.bar, this.liveBarRect);
     }
 
-    /**
-     * The two lines that matter, as a bordered kit panel in the bottom-left corner.
-     */
+    // Section 6: a panel whose art comes from a PNG file, not from code. The box grows
+    // and shrinks slowly, and the rim and rounded corners keep their size at every box
+    // size.
+    renderFilePanel() {
+        ui.caption(FILE_BOX_X, 220, 'Panel from public/sprites/panel.png, scaling', { color: 'dim' });
+
+        // A sine wave swings between -1 and 1. Adding 1 and dividing by 2 turns it into a
+        // number from 0 to 1. Dividing the tick count by a big number makes the wave
+        // slow.
+        const swing = (Math.sin(BT.ticks / FILE_SWING_TICKS) + 1) / 2;
+
+        // Move each size from its minimum toward its maximum, by the share of the swing
+        // reached so far.
+        const w = Math.round(FILE_MIN_W + swing * (FILE_MAX_W - FILE_MIN_W));
+        const h = Math.round(FILE_MIN_H + swing * (FILE_MAX_H - FILE_MIN_H));
+        this.fileRect.set(FILE_BOX_X, FILE_BOX_Y, w, h);
+
+        BT.drawNineSlice(this.filePanel, this.fileRect);
+        ui.caption(FILE_BOX_X, 306, `${w}x${h}`, { color: 'dim' });
+    }
+
+    // The two lines that matter, as a bordered kit panel in the bottom-left corner.
     renderCodeSnippet() {
         ui.begin(UI_ANCHORS.BOTTOM_LEFT, { y: DISPLAY_H - 62 });
         ui.panel('In init(), once:');

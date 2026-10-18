@@ -29,13 +29,14 @@ WHAT YOU WILL SEE
 
 Three colored balls (red, green, blue) bouncing around inside a closed box under gravity.
 The full-width title strip along the top is the ceiling of that box; the floor and side
-walls are the screen edges. A small "Grabs" panel sits in the top-right corner with one
-pip per pointer slot (M for the mouse, T1 to T3 for fingers), lit while that slot holds a
-ball. Each active pointer shows a tiny crosshair. Hovering the mouse over a free ball
-draws a thin amber ring around it; a grabbed ball gets a white ring.
+walls are the screen edges. The right end of the title strip holds
+one small box per pointer slot (M for the mouse, T1 to T3 for fingers), filled green
+while that slot holds a ball, so the whole box below is free for the balls. Each active
+pointer shows a tiny crosshair, drawn on top of the strip too. Hovering the mouse over a
+free ball draws a thin amber ring around it; a grabbed ball gets a white ring.
 
-While sound is still locked, the title strip also shows the shared "enable sound" hint;
-it disappears on the first grab.
+While sound is still locked, the shared "enable sound" hint sits just under the title
+strip; it disappears on the first grab.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -67,9 +68,9 @@ TRY THIS
 
 */
 
-import { AudioClip, bootstrap, BT, Color32, Vector2i } from 'blit386';
+import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {{ x: number, y: number, prevX: number, prevY: number, vx: number, vy: number, color: number, grabbedBy: number }} Ball */
@@ -126,6 +127,18 @@ const WHOOSH_VOLUME_MAX = 1.0;
 const THUD_MIN_SPEED = 0.5;
 const THUD_VOLUME_MAX_SPEED = 10;
 
+// Grab indicators in the right end of the title strip: one small box per pointer slot
+// (M = mouse, T1-T3 = touch fingers) followed by its label. GRAB_BOX is the box size,
+// GRAB_LABEL_GAP the space between a box and its label, and GRAB_ITEM_GAP the space
+// before the next box.
+const GRAB_LABELS = ['M', 'T1', 'T2', 'T3'];
+const GRAB_BOX = 8;
+const GRAB_LABEL_GAP = 3;
+const GRAB_ITEM_GAP = 8;
+
+// Half the length of each cursor crosshair arm, in pixels.
+const CURSOR_ARM = 4;
+
 // Keeps a number from going below `min` or above `max`.
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -161,6 +174,12 @@ class Demo {
     /** @type {Ball[]} */
     balls = [];
 
+    // Reused for every rectangle, line end, and pixel drawn in render(), so drawing
+    // allocates no new objects.
+    tempRect = new Rect2i(0, 0, 0, 0);
+    lineFrom = new Vector2i(0, 0);
+    lineTo = new Vector2i(0, 0);
+
     // Tells the engine the screen size and which palette slots to use for the timing
     // chart overlay. The chart shows update() and render() time side by side so you can
     // see when a ball throw causes a spike.
@@ -175,21 +194,7 @@ class Demo {
             // play; unsupported browsers ignore it.
             isWakeLockEnabled: true,
 
-            // Show the scrolling timing chart in the overlay so each frame's cost is
-            // visible. configure() runs before init(), so the shared theme slots do not
-            // exist yet - the chart uses two dedicated scene slots filled in init()
-            // instead.
-            isOverlayTimingChartEnabled: true,
-
-            overlayTimingChartStyle: {
-                // Dim gray makes update bars subtle so render bars stand out by contrast.
-                updateBarPaletteIndex: C_CHART_UPDATE,
-
-                // White gives render bars and throw tags high contrast against the dark
-                // background.
-                renderBarPaletteIndex: C_CHART_RENDER,
-                tagPaletteIndex: C_CHART_RENDER,
-            },
+            isOverlayEnabled: false,
         };
     }
 
@@ -477,37 +482,65 @@ class Demo {
     }
 
     // The HUD, built from shared UI kit groups: the full-width title strip at the top (it
-    // doubles as the ceiling of the physics box - see HUD_HEIGHT), plus a compact corner
-    // panel with one pip per pointer slot. A pip lights up while that slot (M = mouse,
-    // T1-T3 = touch fingers) is grabbing a ball.
+    // doubles as the ceiling of the physics box - see HUD_HEIGHT) with the grab
+    // indicators in its right end, plus the "enable sound" hint just under it.
     renderHUD() {
-        // The classic full-width 22 px title strip along the top edge.
+        // The classic full-width 22 px title strip along the top edge. Nothing else goes
+        // into this group, so the strip stays exactly HUD_HEIGHT tall and the ceiling
+        // the balls bounce off matches what you see.
         ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Drag a ball, release to flick');
+        ui.end();
+
+        this.renderGrabIndicators();
 
         // Browsers refuse to play any sound until the page is clicked or a key is
         // pressed. This shared row shows the standard warm "enable sound" prompt and
         // disappears on its own the moment audio unlocks - which here happens on the very
-        // first grab.
+        // first grab. Balls fly behind it: kit text is drawn as sprites, and the balls
+        // are plain shapes, which the engine draws first.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: HUD_HEIGHT + 2 });
         ui.audioUnlockHint();
-
         ui.end();
+    }
 
-        // Per-slot grab indicators, tucked into the top-right corner just below the
-        // strip. Balls may fly behind this panel - that is fine, it is a readout, not a
-        // wall. ui.pip() draws a small square that fills in while its state is true.
-        const labels = ['M', 'T1', 'T2', 'T3'];
+    // One small box per pointer slot in the right end of the title strip, filled green
+    // while that slot is grabbing a ball, each followed by its label (M = mouse, T1-T3 =
+    // touch fingers). The boxes and labels are drawn with the kit's sprite helpers so
+    // they land on top of the strip.
+    renderGrabIndicators() {
+        // Work out the row's total width first, so it can end 6 pixels from the right
+        // edge - the same margin the strip's title keeps on the left. Every character of
+        // the system font is FONT_W (6) pixels wide.
+        let rowW = (GRAB_LABELS.length - 1) * GRAB_ITEM_GAP;
 
-        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: HUD_HEIGHT + 6 });
-        ui.panel('Grabs');
-
-        for (let slot = 0; slot < 4; slot++) {
-            // .some() asks: is there at least one ball whose grabbedBy equals this slot?
-            const grabbing = this.balls.some((b) => b.grabbedBy === slot);
-            ui.pip(labels[slot], grabbing);
+        for (const label of GRAB_LABELS) {
+            rowW += GRAB_BOX + GRAB_LABEL_GAP + label.length * FONT_W;
         }
 
-        ui.end();
+        // Line the labels up with the strip's title: its capital letters cover rows 6 to
+        // 12 (the kit prints the title 3 pixels down, and capitals start 3 rows into the
+        // font cell). A caption's capitals start 1 row above the y it is given, so labels
+        // at boxY + 1 land on those same rows, and each 8-pixel box covers rows 6 to 13.
+        const boxY = 6;
+        let x = DISPLAY_W - 6 - rowW;
+
+        for (let slot = 0; slot < GRAB_LABELS.length; slot++) {
+            // .some() asks: is there at least one ball whose grabbedBy equals this slot?
+            const grabbing = this.balls.some((b) => b.grabbedBy === slot);
+
+            this.tempRect.set(x, boxY, GRAB_BOX, GRAB_BOX);
+
+            if (grabbing) {
+                ui.drawRectFill(this.tempRect, this.theme.accent);
+            }
+
+            ui.drawRect(this.tempRect, this.theme.border);
+            x += GRAB_BOX + GRAB_LABEL_GAP;
+
+            ui.caption(x, boxY + 1, GRAB_LABELS[slot], { color: grabbing ? 'text' : 'dim' });
+            x += GRAB_LABELS[slot].length * FONT_W + GRAB_ITEM_GAP;
+        }
     }
 
     // Draws each ball as a filled disc. Highlights the ball under the mouse (for hover
@@ -546,16 +579,16 @@ class Demo {
             const drawX = Math.round(ball.prevX + (ball.x - ball.prevX) * BT.renderAlpha);
             const drawY = Math.round(ball.prevY + (ball.y - ball.prevY) * BT.renderAlpha);
 
-            this.drawDisc(drawX, drawY, BALL_RADIUS, ball.color);
-
+            // A ring is a disc 1 pixel bigger, drawn first in the ring color; the ball
+            // drawn on top of it leaves a 1-pixel outline showing around the edge. White
+            // marks a grabbed ball, amber the topmost free ball under the mouse cursor.
             if (ball.grabbedBy !== -1) {
-                // Outline grabbed balls so you can tell which ones are held.
-                this.drawCircle(drawX, drawY, BALL_RADIUS + 1, C_BALL_OUTLINE);
+                this.drawDisc(drawX, drawY, BALL_RADIUS + 1, C_BALL_OUTLINE);
             } else if (i === hoverIndex) {
-                // Hover highlight: a thin amber ring on the topmost free ball under the
-                // mouse cursor.
-                this.drawCircle(drawX, drawY, BALL_RADIUS + 1, C_BALL_HIGHLIGHT);
+                this.drawDisc(drawX, drawY, BALL_RADIUS + 1, C_BALL_HIGHLIGHT);
             }
+
+            this.drawDisc(drawX, drawY, BALL_RADIUS, ball.color);
         }
     }
 
@@ -568,52 +601,32 @@ class Demo {
             }
 
             const pos = BT.pointerPos(slot);
+            const span = CURSOR_ARM * 2 + 1;
 
-            BT.drawLine(new Vector2i(pos.x - 4, pos.y), new Vector2i(pos.x + 4, pos.y), this.theme.text);
-            BT.drawLine(new Vector2i(pos.x, pos.y - 4), new Vector2i(pos.x, pos.y + 4), this.theme.text);
+            // Two 1-pixel-thick arms, drawn with ui.drawRectFill(), the sprite version of
+            // BT.drawRectFill(): the engine draws every BT.drawLine() and
+            // BT.drawRectFill() before any sprite, and the title strip is a sprite, so a
+            // plain line would vanish whenever the pointer moved over it.
+            ui.drawRectFill(this.tempRect.set(pos.x - CURSOR_ARM, pos.y, span, 1), this.theme.text);
+            ui.drawRectFill(this.tempRect.set(pos.x, pos.y - CURSOR_ARM, 1, span), this.theme.text);
         }
     }
 
     // Filled disc using a row-by-row scan: for each row in the bounding box, draw a
     // horizontal line of the pixels covered by the circle equation. Cheaper than
-    // per-pixel testing and produces clean edges at this scale.
+    // per-pixel testing and produces clean edges at this scale. The equation uses r + 0.5
+    // instead of r: with exactly r, the top, bottom, left, and right rows each come out
+    // as a lone 1-pixel nub, and the extra half pixel rounds those into flat edges.
     drawDisc(cx, cy, r, color) {
-        const r2 = r * r;
+        const r2 = (r + 0.5) * (r + 0.5);
 
         for (let dy = -r; dy <= r; dy++) {
             // Half-width of the row at this y, from x * x + y * y <= r * r solved for x.
             const dx = Math.floor(Math.sqrt(r2 - dy * dy));
 
-            BT.drawLine(new Vector2i(cx - dx, cy + dy), new Vector2i(cx + dx, cy + dy), color);
-        }
-    }
-
-    // Hollow circle outline (the midpoint circle algorithm). Used to ring the grabbed and
-    // hovered balls without splatting a full disc on top. The loop walks one eighth of
-    // the circle and mirrors every point into the other seven octants.
-    drawCircle(cx, cy, r, color) {
-        let x = r;
-        let y = 0;
-        let err = 0;
-
-        while (x >= y) {
-            BT.drawPixel(new Vector2i(cx + x, cy + y), color);
-            BT.drawPixel(new Vector2i(cx + y, cy + x), color);
-            BT.drawPixel(new Vector2i(cx - y, cy + x), color);
-            BT.drawPixel(new Vector2i(cx - x, cy + y), color);
-            BT.drawPixel(new Vector2i(cx - x, cy - y), color);
-            BT.drawPixel(new Vector2i(cx - y, cy - x), color);
-            BT.drawPixel(new Vector2i(cx + y, cy - x), color);
-            BT.drawPixel(new Vector2i(cx + x, cy - y), color);
-
-            // Step along y and let the error term decide when x has to step inward.
-            y += 1;
-            err += 1 + 2 * y;
-
-            if (2 * (err - x) + 1 > 0) {
-                x -= 1;
-                err += 1 - 2 * x;
-            }
+            this.lineFrom.set(cx - dx, cy + dy);
+            this.lineTo.set(cx + dx, cy + dy);
+            BT.drawLine(this.lineFrom, this.lineTo, color);
         }
     }
 }

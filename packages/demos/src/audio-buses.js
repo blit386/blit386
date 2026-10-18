@@ -24,15 +24,19 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A 320x280 screen in the UI theme's deep navy. A title strip reading "Audio Buses" runs
-along the top edge. Below it sits a "Mixer" panel that opens with a dim hint, "drag a
-slider, toggle a Mute, try the Alert", followed by three rows of controls - Main, Music,
-and Sfx - each with a volume slider and a "Mute (Q)", "Mute (W)", or "Mute (E)" checkbox.
+A 320x260 screen in the UI theme's deep navy. The engine overlay is open from the start:
+white bars along the top with live audio level meters, and a hint bar along the bottom.
+Between them, one centered line of text reads "Click or press a key to enable sound" in
+warm orange until you click or press a key; after that it turns into a dim reminder:
+"Drag a slider, toggle a Mute, try the Alert."
 
-Under a separator line comes an "Alert (Space)" button and, until sound is unlocked, the
-orange "Click or press a key to enable sound" prompt. Once sound works that line reads
-"Music at full volume." most of the time and "Music ducked while the alert plays..." for
-about a second and a half after each alert.
+Under that line sit three bus panels side by side - "Main", "Music", and "Sfx". Each says
+what the bus carries here ("All sound", "The loop", "The alert"), then has a "Volume"
+slider and a "Mute (Q)", "Mute (W)", or "Mute (E)" checkbox.
+
+Below them, the "Alert" panel has one button, and the wider "Ducking" panel shows whether
+the music is ducked ("not ducked" or "ducked to 25%"), the volume it will come back to,
+and an amber "Hold" bar that drains while the duck lasts.
 
 A calm music loop starts on its own the moment sound is unlocked.
 
@@ -50,7 +54,8 @@ WHAT YOU WILL LEARN
   checkboxes can never drift out of sync with what the engine is doing.
 - AudioClip.synth(BT.synthPreset.hit()) makes a sound effect from a recipe, with no file.
 - isOverlayAudioMetersEnabled: true adds live bus level bars to the engine overlay, and
-  isCapturingKeyboardScroll: true keeps Space from scrolling the page.
+  overlayStyle / overlayAudioMeterStyle pick its colors from the palette.
+- isCapturingKeyboardScroll: true keeps Space from scrolling the page.
 
 HOW DUCKING WORKS
 -----------------
@@ -79,30 +84,66 @@ TRY THIS
   does not move - muting hides the volume, it does not erase it. Unmute and the level is
   back.
 - Click Alert, or press Space, and listen to the music dip under the alert and then swell
-  back. The status line reads "Music ducked while the alert plays..." while it is dipped.
-- Press the backquote key (`) to open the engine overlay and watch the main, music, and
-  sfx bars follow the sliders and the duck.
+  back. The Music slider drops to a quarter, the Ducking panel says "ducked to 25%", and
+  the Hold bar drains until the music starts coming back.
+- Drag the Music slider while the music is ducked: the "Restore" value follows it, and the
+  music comes back to that level instead.
+- Watch the overlay's main, music, and sfx level bars follow the sliders and the duck.
+  Press the backquote key (`) or click the small icon in the bottom-left corner to hide or
+  show the overlay.
 
 */
 
 import { AudioClip, bootstrap, BT, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, THEME_OVERLAY_AUDIO_METER_STYLE, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
 
-// Taller than the default 240 px so the whole mixer panel fits below the title strip.
-const DISPLAY_H = 280;
+// Taller than the default 240 px, so the mixer and the ducking panels both fit between
+// the overlay's bars.
+const DISPLAY_H = 260;
 
-// One entry per bus: which engine bus it controls, the slider label, the keyboard
-// shortcut that toggles its mute, and the letter shown in the checkbox label as a hint.
+// One entry per bus: which engine bus it controls, its panel title, what it carries in
+// this demo, the keyboard shortcut that toggles its mute, and the letter shown in the
+// checkbox label as a hint.
 const BUSES = [
-    { bus: 'main', label: 'Main', muteKey: 'KeyQ', muteHint: 'Q' },
-    { bus: 'music', label: 'Music', muteKey: 'KeyW', muteHint: 'W' },
-    { bus: 'sfx', label: 'Sfx', muteKey: 'KeyE', muteHint: 'E' },
+    { bus: 'main', label: 'Main', carries: 'All sound', muteKey: 'KeyQ', muteHint: 'Q' },
+    { bus: 'music', label: 'Music', carries: 'The loop', muteKey: 'KeyW', muteHint: 'W' },
+    { bus: 'sfx', label: 'Sfx', carries: 'The alert', muteKey: 'KeyE', muteHint: 'E' },
 ];
+
+// Screen layout, in display pixels. The engine overlay is open from the start: its bars
+// cover the top 56 rows and its hint bar the bottom 14, so everything sits in the band
+// between them. The status line comes first, then a row of three bus panels, then the
+// alert and ducking panels lined up under them.
+const STATUS_Y = 64;
+const MARGIN_X = 4;
+const PANEL_GAP = 6;
+const BUS_PANEL_W = 100;
+const BUS_ROW_Y = 76;
+const BUS_PANEL_H = 81;
+const DUCK_ROW_Y = BUS_ROW_Y + BUS_PANEL_H + PANEL_GAP;
+
+// The ducking panel spans the last two columns.
+const DUCK_PANEL_X = MARGIN_X + BUS_PANEL_W + PANEL_GAP;
+const DUCK_PANEL_W = 2 * BUS_PANEL_W + PANEL_GAP;
+
+// Widgets inside a panel are this wide: the panel minus the kit's 10-pixel text inset on
+// each side.
+const PANEL_TEXT_INSET = 10;
+const BUS_CONTENT_W = BUS_PANEL_W - 2 * PANEL_TEXT_INSET;
+const DUCK_CONTENT_W = DUCK_PANEL_W - 2 * PANEL_TEXT_INSET;
+
+// The ducking panel's value column starts after this many characters, so the longest key,
+// "Restore", keeps a space after it.
+const DUCK_KV_COLS = 9;
+
+// The alert panel's rows are shorter than the ducking panel's, so this much empty space
+// at its bottom makes both panels end on the same line.
+const ALERT_PANEL_FILLER = 2;
 
 // Ducking behavior: how far the music bus dips, how quickly it dips, how long it stays
 // dipped (in ticks - 90 ticks is 1.5 seconds at 60 ticks per second), and how slowly it
@@ -135,14 +176,24 @@ class Demo {
     // Music bus volume captured right before the most recent duck, so it can be restored.
     preDuckMusicVolume = 1;
 
-    // Sets the logical display size, turns on the engine's built-in audio meters in the
-    // overlay, and keeps the Space key from scrolling the page.
+    // Sets the logical display size, opens the overlay with its audio meters colored from
+    // the shared UI theme, and keeps the Space key from scrolling the page.
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+
+            isOverlayVisibleAtStart: true,
+
             // Live per-bus level bars and a voices/steal/drop readout in the overlay. Off
             // by default.
             isOverlayAudioMetersEnabled: true,
+
+            // The overlay's default colors live in palette slots 1 and 2, which this demo
+            // never fills - they would draw solid black. These two shared styles point
+            // the bars, text, and meters at the theme's colors instead.
+            overlayStyle: THEME_OVERLAY_STYLE,
+            overlayAudioMeterStyle: THEME_OVERLAY_AUDIO_METER_STYLE,
+
             // Space is the Alert shortcut - keep the page from scrolling when it is
             // pressed.
             isCapturingKeyboardScroll: true,
@@ -197,8 +248,9 @@ class Demo {
         }
     }
 
-    // Clears the screen and declares the whole UI: a title bar, then one mixer panel with
-    // a slider and a mute checkbox per bus, the alert button, and a status line.
+    // Clears the screen and declares the whole UI: the status line, one panel per bus
+    // with a volume slider and a mute checkbox, then the alert button and the ducking
+    // readout.
     //
     // With the immediate-mode kit there is no separate "handle input" step for the
     // pointer: ui.slider() and ui.checkbox() return the (possibly changed) value right
@@ -206,53 +258,50 @@ class Demo {
     render() {
         BT.clear(this.theme.bg);
 
-        // Title on the top bar. The instruction lives inside the mixer so the strip stays
-        // one line and the full sentence is not clipped at the right edge.
-        ui.begin(UI_ANCHORS.TOP_BAR);
-        ui.panel('Audio Buses');
-        ui.end();
+        this.renderStatusLine();
 
-        // The mixer panel, pinned just below the title strip. Width and height size
-        // themselves to the widest row and the number of rows - no layout math here.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 26 });
-        ui.panel('Mixer');
-        ui.label('drag a slider, toggle a Mute, try the Alert', { color: 'dim' });
+        // The alert panel goes first even though it sits lower on screen: its button may
+        // duck the music this very frame, and the Music slider drawn after it should
+        // already show the dip.
+        this.renderAlertPanel();
 
-        for (const row of BUSES) {
-            this.renderBusRow(row);
-        }
+        BUSES.forEach((row, column) => {
+            this.renderBusPanel(row, MARGIN_X + column * (BUS_PANEL_W + PANEL_GAP));
+        });
 
-        ui.separator();
-
-        // The button reports a click, a tap, or its Space shortcut - all three the same
-        // way.
-        if (ui.button('Alert (Space)', { key: 'Space' })) {
-            this.triggerAlert();
-        }
-
-        // The shared "click to enable sound" row - it draws itself only while sound is
-        // still locked, and disappears on its own after the first click or key press.
-        ui.audioUnlockHint();
-
-        // Once sound works, report whether the music bus is currently ducked instead.
-        if (BT.isAudioUnlocked) {
-            ui.label(this.isDucking ? 'Music ducked while the alert plays...' : 'Music at full volume.', {
-                color: 'dim',
-            });
-        }
-
-        ui.end();
+        this.renderDuckPanel();
     }
 
-    // One bus's controls: a volume slider and a mute checkbox. `row` is a BUSES entry.
+    // One centered line just under the overlay bars: the shared unlock reminder in warm
+    // orange until sound is unlocked, then a dim reminder of what to try.
+    renderStatusLine() {
+        const isLocked = !BT.isAudioUnlocked;
+        const text = isLocked ? 'Click or press a key to enable sound' : 'Drag a slider, toggle a Mute, try the Alert.';
+
+        // FONT_W is the width of one character; the last one's empty spacing column is
+        // left out, so the visible letters are what gets centered.
+        const x = Math.floor(DISPLAY_W / 2) - Math.floor((text.length * FONT_W - 1) / 2);
+
+        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
+    }
+
+    // One bus's panel at column `x`: what the bus carries, a volume slider, and a mute
+    // checkbox. `row` is a BUSES entry.
     //
     // The engine itself is the single source of truth here - every frame we read the
     // current volume and mute state back from the audio system, show them, and only write
     // a new value when the widget reports a change. That way the UI can never drift out
     // of sync with what the engine is actually doing (for example during the alert duck).
-    renderBusRow(row) {
+    renderBusPanel(row, x) {
+        ui.begin('topLeft', { x, y: BUS_ROW_Y, width: BUS_PANEL_W });
+        ui.panel(row.label);
+        ui.label(row.carries, { color: 'dim' });
+        ui.spacer(4);
+
+        // All three sliders are labeled "Volume", so each gets its bus name as its
+        // identity - the kit tells widgets apart by that, not by what they show.
         const volume = BT.audioVolumeGet(row.bus);
-        const nextVolume = ui.slider(row.label, volume);
+        const nextVolume = ui.slider('Volume', volume, { id: row.bus, width: BUS_CONTENT_W });
 
         // The slider returns the dragged value. A different number means the user moved
         // it, so push the new volume to the engine right away, with no fade.
@@ -274,7 +323,38 @@ class Demo {
             BT.audioMuteSet(row.bus, nextMuted);
         }
 
+        ui.end();
+    }
+
+    // The alert panel under the Main column: one button that plays the alert and ducks
+    // the music. It reports a click, a tap, or its Space shortcut - all three the same
+    // way.
+    renderAlertPanel() {
+        ui.begin('topLeft', { x: MARGIN_X, y: DUCK_ROW_Y, width: BUS_PANEL_W });
+        ui.panel('Alert');
+        ui.label('Space or tap', { color: 'dim' });
         ui.spacer(4);
+
+        if (ui.button('Alert', { key: 'Space', width: BUS_CONTENT_W })) {
+            this.triggerAlert();
+        }
+
+        ui.spacer(ALERT_PANEL_FILLER);
+        ui.end();
+    }
+
+    // The ducking panel under the Music and Sfx columns: whether the music is ducked, the
+    // volume it will come back to, and how much of the hold is left.
+    renderDuckPanel() {
+        const holdLeft = this.isDucking ? this.duckHoldTicksLeft / DUCK_HOLD_TICKS : 0;
+        const state = this.isDucking ? `ducked to ${Math.round(DUCK_VOLUME_FACTOR * 100)}%` : 'not ducked';
+
+        ui.begin('topLeft', { x: DUCK_PANEL_X, y: DUCK_ROW_Y, width: DUCK_PANEL_W, kvCols: DUCK_KV_COLS });
+        ui.panel('Ducking');
+        ui.kv('Music', state);
+        ui.kv('Restore', this.preDuckMusicVolume.toFixed(2));
+        ui.meter('Hold', holdLeft, { color: 'header', width: DUCK_CONTENT_W });
+        ui.end();
     }
 
     // Plays the alert sound and ducks the music bus.

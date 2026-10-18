@@ -14,26 +14,24 @@ Live version: https://demos.blit386.dev/keyboard-input
 Guides:
   - Input: https://blit386.dev/docs/guides/input#keyboard
   - Input: https://blit386.dev/docs/guides/input#frame-timing-semantics
-  - Overlay: https://blit386.dev/docs/guides/overlay#optional-bands
-
-Reference:
-  - Overlay: https://blit386.dev/docs/api/overlay#event-tags
 
 ---
 
 WHAT YOU WILL SEE
 -----------------
 
-A title strip across the top, and right under it one dim line listing the default keys
-(on a touch screen it turns into a warm "This demo needs a keyboard" notice instead). On
-the left, two small panels sit side by side like two little gamepads: "Player 0" and
-"Player 1", with one pip per mapped face button. A pip fills while its button is held.
+A title strip across the top. On the left, two panels sit side by side like two little
+gamepads: "Player 0" and "Player 1", each with the same eight face buttons in the same
+order - a pip that fills while the button is held, its short name, and on the right the
+key it is mapped to (arrow characters for player 1's arrow keys). Player 1 has no
+Select key by default, so its last row shows a dash and never lights.
 
-To the right of them is a column of two panels. "isKeyPressed counter" shows which key you
-tapped last and how many times in a row. "Raw keys" has a pip for Q, the engine tick of
-the last F release, a pip that lights while any key at all is held, and the tick when the
-last key came up. Along the bottom edge, a wide panel shows the last 48 characters you
-typed.
+To the right of them is a column of two panels, ending level with the gamepads.
+"isKeyPressed counter" shows which key you tapped last and how many times in a row. "Raw
+keys" has a pip for Q, the engine tick of the last F release, a pip that lights while any
+key at all is held, and the tick when the last key came up. Along the bottom, a wide
+panel shows the last 48 characters you typed (on a touch screen it says "This demo needs
+a keyboard" instead).
 
 Every panel and pip is drawn with the shared UI kit (src/shared/ui.js). The inputs stay
 deliberately keyboard-only: there is no touch stand-in for a physical keyboard.
@@ -52,8 +50,7 @@ WHAT YOU WILL LEARN
 - BT.inputString, the characters typed since the last update tick.
 - Edges (pressed, released, inputString) are read in update(); held state is safe to
   read in render().
-- BT.assignTag(label) drops a marker on the overlay timing chart, and
-  isCapturingKeyboardScroll keeps arrow keys and Space from scrolling the page.
+- isCapturingKeyboardScroll keeps arrow keys and Space from scrolling the page.
 
 THREE LAYERS OF KEYBOARD SUPPORT
 --------------------------------
@@ -74,8 +71,8 @@ TRY THIS
 --------
 
 - Hold W, A, S, D, Space (or B), N, 5, and Esc for player 0; the arrow keys, ; (or
-  Numpad 1), ' (or Numpad 2), and Backspace (or Numpad /) for player 1. Player 1 has no
-  Select key by default, so its panel has one row fewer.
+  Numpad 1), ' (or Numpad 2), and Backspace (or Numpad /) for player 1. Each panel shows
+  the first key of every button's mapping.
 - Tap the same letter repeatedly and watch the press counter climb (edge-only
   BT.isKeyPressed, no repeat rate). Tap a different key and the counter resets to 1. The
   counter listens to letters, Space, and the arrow keys.
@@ -83,8 +80,6 @@ TRY THIS
 - Hold two keys, then let go of one: "Any key held" stays lit. Let go of the last one and
   the "All up" tick updates - isAnyKeyReleased means EVERYTHING is up.
 - Type letters into the buffer line at the bottom.
-- Press the backquote key (`) to open the engine overlay. Its timing chart gets a tag
-  each time you release F.
 - If keys stop responding, click the canvas - focus may have moved to another part of the
   page after you tabbed away.
 
@@ -92,7 +87,8 @@ TRY THIS
 
 import { bootstrap, BT } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { keyLabel } from './shared/key-names.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -112,38 +108,40 @@ const PRESS_COUNTER_KEYS = [
     'ArrowRight',
 ];
 
-// Palette slots of three shared UI theme colors, for the overlay timing chart below.
-// applyTheme() in init() writes the twelve theme colors into slots 240-251 (its default
-// start slot), but configure() runs BEFORE init(), so the chart style cannot read
-// this.theme yet - we spell out where the colors will land: 244 = text, 245 = dim gray,
-// 247 = accent green.
-const THEME_TEXT_SLOT = 244;
-const THEME_DIM_SLOT = 245;
-const THEME_ACCENT_SLOT = 247;
+// Fixed layout, in display pixels, on a 4-pixel grid: 4 pixels from the screen edges and
+// 4 between panels. The kit normally stacks panels on its own, but this page places
+// several groups side by side, so each one gets a pinned x/y.
+//
+//   - Two 76-pixel gamepad panels on the left, a 152-pixel column on the right
+//     (4 + 76 + 4 + 76 + 4 + 152 + 4 = 320).
+//   - The right column holds two 73-pixel panels (22 title + 4 rows of 10 + 11 bottom),
+//     150 pixels with the gap between them, and the gamepad panels are made exactly
+//     that tall too, so every bottom edge lines up.
+//   - The typed-text panel spans the full width under them.
+const EDGE = 4;
+const GAP = 4;
+const PANEL_TOP_Y = 32;
+const PAD_PANEL_W = 76;
+const PLAYER0_PANEL_X = EDGE;
+const PLAYER1_PANEL_X = PLAYER0_PANEL_X + PAD_PANEL_W + GAP;
+const READOUT_COLUMN_X = PLAYER1_PANEL_X + PAD_PANEL_W + GAP;
+const READOUT_COLUMN_W = 320 - EDGE - READOUT_COLUMN_X;
+const READOUT_PANEL_H = 22 + 4 * 10 + 11;
+const RAW_PANEL_Y = PANEL_TOP_Y + READOUT_PANEL_H + GAP;
+const COLUMN_H = 2 * READOUT_PANEL_H + GAP;
+const TYPED_PANEL_Y = PANEL_TOP_Y + COLUMN_H + GAP;
+const TYPED_PANEL_W = 320 - 2 * EDGE;
 
-// Fixed vertical layout, in display pixels. The kit normally stacks panels on its own,
-// but this page places several groups side by side, so each one gets a pinned x/y.
-const NOTICE_Y = 24; // the hint / touch-notice line right under the title strip
-const PANEL_TOP_Y = 42; // top edge of the face-button panels and the press counter
-const RAW_PANEL_Y = 134; // top edge of the raw-key panel (below the press counter)
-const PLAYER0_PANEL_X = 6; // left edge of the player 0 panel
-const PLAYER1_PANEL_X = 68; // left edge of the player 1 panel (next to player 0)
-const READOUT_COLUMN_X = 130; // left edge of the press-counter / raw-key column
-const TYPED_PANEL_WIDTH = 308; // the typed-text panel spans almost the full screen
+// Inside a gamepad panel: eight 10-pixel pip rows with a 5-pixel gap after each of the
+// first seven, plus 2 pixels at the end, fill the 117 pixels between the 22-pixel title
+// strip and the 11-pixel bottom rim (8 x 10 + 7 x 5 + 2 = 117 = 150 - 22 - 11).
+const PAD_ROW_GAP = 5;
+const PAD_ROW_PITCH = 10 + PAD_ROW_GAP;
+const PAD_END_SPACER = COLUMN_H - 22 - 11 - (8 * 10 + 7 * PAD_ROW_GAP);
 
-// Turns `KeyH` into `H` and `Digit5` into `5`; other codes (Space, ArrowUp) are already
-// readable and pass through unchanged.
-function formatKeyCode(code) {
-    if (code.startsWith('Key')) {
-        return code.slice(3);
-    }
-
-    if (code.startsWith('Digit')) {
-        return code.slice(5);
-    }
-
-    return code;
-}
+// Kit panel content starts 9 pixels in from the panel edge and 22 pixels below its top.
+const PANEL_PAD = 9;
+const PANEL_CONTENT_TOP = 22;
 
 // Shows keyboard face-button maps, raw key queries, and BT.inputString side by side.
 class Demo {
@@ -154,9 +152,11 @@ class Demo {
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
-    // Face buttons that have at least one key in each player's default map, built once in
-    // init(). Index 0 is player 0's list, index 1 is player 1's.
-    /** @type {Array<Array<{ label: string, code: number }>>} */
+    // The eight face buttons for each player, built once in init(): the on-screen label,
+    // the engine's button constant, and the short name of the first key mapped to it
+    // ('-' when the player has no key for that button). Index 0 is player 0's list,
+    // index 1 is player 1's.
+    /** @type {Array<Array<{ label: string, code: number, key: string }>>} */
     faceButtons = [];
 
     // Engine tick when BT.isKeyReleased('KeyF') last fired.
@@ -177,7 +177,8 @@ class Demo {
     // Text built from BT.inputString over time (capped at TYPED_BUFFER_MAX).
     typedBuffer = '';
 
-    // Turns the timing chart on so key-release milestones show on the overlay.
+    // Keeps the arrow keys and Space from scrolling the page, and turns the engine
+    // overlay off - the panels already show everything this page is about.
     configure() {
         return {
             // Arrow keys and Space scroll the host page by default. This demo maps those
@@ -185,12 +186,7 @@ class Demo {
             // page.
             isCapturingKeyboardScroll: true,
 
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: THEME_DIM_SLOT,
-                renderBarPaletteIndex: THEME_TEXT_SLOT,
-                tagPaletteIndex: THEME_ACCENT_SLOT,
-            },
+            isOverlayEnabled: false,
         };
     }
 
@@ -224,11 +220,18 @@ class Demo {
             { label: 'Sl', code: BT.BTN_SELECT },
         ];
 
-        // Keep only the buttons that actually have keys in each player's default map
-        // (player 1's Select slot is empty, for example, so its row would never light).
-        // .map() walks the two default maps and .filter() drops the empty slots.
+        // Give every button the short name of the first key in each player's default map
+        // (keyLabel() from src/shared/key-names.js turns KeyW into W and the arrow keys
+        // into arrow characters).
+        // Both players keep all eight rows, so their panels line up row for row; a button
+        // with no key (player 1's Select, for example) shows a dash and never lights.
+        // .map() walks the two default maps, and the inner .map() the eight buttons.
         this.faceButtons = [BT.DEFAULT_KEYBOARD_PLAYER1, BT.DEFAULT_KEYBOARD_PLAYER2].map((map) =>
-            allButtons.filter((button) => (map[button.code] ?? []).length > 0),
+            allButtons.map((button) => {
+                const keys = map[button.code] ?? [];
+
+                return { ...button, key: keys.length > 0 ? keyLabel(keys[0]) : '-' };
+            }),
         );
 
         return true;
@@ -258,7 +261,6 @@ class Demo {
         // tick it happened on so the raw-key panel can show it.
         if (BT.isKeyReleased('KeyF')) {
             this.lastFReleaseTick = BT.ticks;
-            BT.assignTag('Key F released');
         }
 
         // Every key up: unlike isKeyReleased('KeyF') above, this does NOT fire when you
@@ -315,20 +317,6 @@ class Demo {
         ui.panel('Keyboard Input (KeyboardEvent.code)');
         ui.end();
 
-        // One borderless line right under the title. On a touch device it becomes a
-        // warning - this page has no on-screen substitute for a physical keyboard - and
-        // otherwise it lists the default key maps as a quick reference. pad: 0 removes
-        // the group's inner padding so the single line sits snug against its y position.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: NOTICE_Y, pad: 0 });
-
-        if (ui.hasTouch()) {
-            ui.label('This demo needs a keyboard', { color: 'warm' });
-        } else {
-            ui.label('P0: W A S D Space N 5 Esc - P1: arrows ; quote /', { color: 'dim' });
-        }
-
-        ui.end();
-
         // The two face-button panels sit side by side, like two little gamepads.
         this.renderFacePanel(0, PLAYER0_PANEL_X);
         this.renderFacePanel(1, PLAYER1_PANEL_X);
@@ -337,42 +325,63 @@ class Demo {
         this.renderPressCounter();
         this.renderRawKeyPanel();
 
-        // The typed-text line hugs the bottom edge of the screen.
+        // The typed-text line spans the full width under the other panels.
         this.renderTypedLine();
     }
 
-    // Draws one player's mapped face buttons as a panel of lit/unlit pip rows. `player`
-    // is 0 or 1 (the BT.isDown player index), `x` the panel's left edge in display
-    // pixels.
+    // Draws one player's face buttons as a panel of lit/unlit pip rows, each with the key
+    // it is mapped to on the right. `player` is 0 or 1 (the BT.isDown player index), `x`
+    // the panel's left edge in display pixels.
     renderFacePanel(player, x) {
         // Pin the panel to its column; both player panels share the same top edge.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: PANEL_TOP_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: PANEL_TOP_Y, width: PAD_PANEL_W });
         ui.panel(player === 0 ? 'Player 0' : 'Player 1');
 
         const buttons = this.faceButtons[player];
 
         // One read-only pip per button: filled while the button is held, hollow when it
         // is up. BT.isDown() reports held state (not a press edge), so reading it here in
-        // render() is safe - only press/release EDGES must stay in update().
+        // render() is safe - only press/release EDGES must stay in update(). A small
+        // spacer after each row (except the last) spreads the rows out so the panel ends
+        // level with the column beside it.
         for (let i = 0; i < buttons.length; i++) {
             const { label, code } = buttons[i];
 
             ui.pip(label, BT.isDown(code, player));
+
+            if (i < buttons.length - 1) {
+                ui.spacer(PAD_ROW_GAP);
+            }
         }
 
+        ui.spacer(PAD_END_SPACER);
         ui.end();
+
+        // The mapped keys, right-aligned against the panel's right edge, on the same rows
+        // as the pip labels. Every character of the system font is FONT_W (6) pixels
+        // wide. The kit prints a pip's label 1 pixel below the top of its row, and a
+        // caption 4 pixels above the y it is given, so y = rowTop + 5 puts both texts on
+        // the same line.
+        const rightEdge = x + PAD_PANEL_W - PANEL_PAD;
+
+        for (let i = 0; i < buttons.length; i++) {
+            const { key } = buttons[i];
+            const rowTop = PANEL_TOP_Y + PANEL_CONTENT_TOP + i * PAD_ROW_PITCH;
+
+            ui.caption(rightEdge - key.length * FONT_W, rowTop + 5, key, { color: 'dim' });
+        }
     }
 
     // Draws the readout for edge-only press counting on one key at a time.
     renderPressCounter() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: PANEL_TOP_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: PANEL_TOP_Y, width: READOUT_COLUMN_W });
         ui.panel('isKeyPressed counter');
 
         // Before any counted key is tapped there is nothing to show, so both rows fall
         // back to placeholder text.
         const hasKey = this.activePressKey !== null;
 
-        ui.kv('Key', hasKey ? formatKeyCode(this.activePressKey) : 'none yet');
+        ui.kv('Key', hasKey ? keyLabel(this.activePressKey) : 'none yet');
         ui.kv('Count', hasKey ? this.keyPressCount : '-');
         ui.label('Same key: +1', { color: 'dim' });
         ui.label('New key: reset', { color: 'dim' });
@@ -382,18 +391,18 @@ class Demo {
     // Draws the panel for Q held state, the last F release, and the whole-keyboard
     // checks.
     renderRawKeyPanel() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: RAW_PANEL_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: RAW_PANEL_Y, width: READOUT_COLUMN_W });
         ui.panel('Raw keys');
 
         // Held state is safe to read in render() (see renderFacePanel above).
-        ui.pip('Q held (isKeyDown)', BT.isKeyDown('KeyQ'));
+        ui.pip('Q (isKeyDown)', BT.isKeyDown('KeyQ'));
 
         // The release EDGE was caught in update(); here we only display the remembered
         // tick.
         ui.kv('F rel', this.lastFReleaseTick === null ? 'tap F' : `tick ${this.lastFReleaseTick}`);
 
         // Held state again, but for the whole keyboard: lit while ANY key is down.
-        ui.pip('Any key held (isAnyKeyDown)', BT.isAnyKeyDown());
+        ui.pip('Any (isAnyKeyDown)', BT.isAnyKeyDown());
 
         // The "all keys up" edge was caught in update(); here we only show the remembered
         // tick.
@@ -401,16 +410,22 @@ class Demo {
         ui.end();
     }
 
-    // Draws the text accumulated from BT.inputString.
+    // Draws the text accumulated from BT.inputString. On a touch device it shows a
+    // warning instead - this page has no on-screen substitute for a physical keyboard.
     renderTypedLine() {
         // A fixed width keeps the panel spanning the screen even while the buffer is
-        // short; the bottom-left anchor sits it just above the bottom edge.
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { width: TYPED_PANEL_WIDTH });
+        // short.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: TYPED_PANEL_Y, width: TYPED_PANEL_W });
         ui.panel('BT.inputString (typed this session)');
 
         const hasText = this.typedBuffer.length > 0;
 
-        ui.label(hasText ? this.typedBuffer : '...', { color: hasText ? 'text' : 'dim' });
+        if (ui.hasTouch()) {
+            ui.label('This demo needs a keyboard', { color: 'warm' });
+        } else {
+            ui.label(hasText ? this.typedBuffer : '...', { color: hasText ? 'text' : 'dim' });
+        }
+
         ui.end();
     }
 }
