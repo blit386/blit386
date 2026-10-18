@@ -1122,10 +1122,16 @@ describe('BTAPI', () => {
                 const first = new CountingDemo();
 
                 await boot(first);
-                vi.spyOn(CountingDemo.prototype, 'init').mockResolvedValueOnce(false);
+                vi.spyOn(CountingDemo.prototype, 'init').mockImplementationOnce(async () => {
+                    BTAPI.instance.paletteCycle(1, 4, 1);
+
+                    return false;
+                });
 
                 await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
                 expect(BTAPI.instance.getDemo()).toBe(first);
+                // Effects the failed init() started must not run on the restored game.
+                expect(activeEffectCount()).toBe(0);
             });
 
             it('keeps the previous instance running when the constructor throws', async () => {

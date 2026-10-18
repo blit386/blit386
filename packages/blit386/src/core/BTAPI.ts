@@ -3288,6 +3288,8 @@ export class BTAPI {
 
         if (!ok) {
             this.installDemo(demo);
+            // The failed init() may have started effects; the restored game never asked for them.
+            this.paletteEffects.clear();
 
             throw new Error(errorMessages.RENDER_AT_INIT_FAILED_MESSAGE);
         }

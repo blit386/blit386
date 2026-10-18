@@ -41,7 +41,7 @@ in a loop that repeats every 6 seconds:
      second, twice in a row, while its shadow stays on the ground and shrinks as it rises.
 
 Two UI kit panels sit along the top edge. Timers, on the left, shows an ability cooldown
-(a countdown and a meter), the seconds until the next particle spawn, and how many
+(a countdown and a meter), the ticks until the next particle spawn, and how many
 particles are alive. State, on the right, lists the three states with a lit pip next to
 the current one. On the ground strip, a short list names the concepts on show.
 

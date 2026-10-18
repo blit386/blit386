@@ -606,7 +606,7 @@ BT.resume(); // keep playing from tick 192
   and passed to `BT.init(demo, canvas)` replays as a default-built copy, so keep per-run setup in `init()`.
 - If the constructor throws or `init()` fails, `renderAt` rejects and the previous instance stays active, but the engine
   stays reset (random stream, palette, camera, ticks) and anything a failed `init()` already did to the engine stays
-  applied - seek again or reload the page.
+  applied, except palette effects, which are cleared - seek again or reload the page.
 - An object literal passed to `BT.init(demo, canvas)` has no class to build from, so its `init()` re-runs on the same
   object and must reset every field itself.
 - State outside the instance is still yours to reset: module-level variables, objects shared between runs, DOM
