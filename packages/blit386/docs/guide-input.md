@@ -76,7 +76,7 @@ if (BT.isPointerActive(1)) {
 `BT.pointerPos()` returns `Vector2i.zero()` when the slot index is out of `[0, 3]` or the engine is not initialized.
 `BT.pointerDelta()` similarly returns `Vector2i.zero()` for invalid slots.
 
-<DemoEmbed demo="025-pointer-basics" title="BLIT386 pointer basics demo" />
+<DemoEmbed demo="pointer-basics" title="BLIT386 pointer basics demo" />
 
 ### Zero-allocation reads
 
@@ -157,9 +157,9 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 
 </Callout>
 
-<DemoEmbed demo="026-pointer-paint" title="BLIT386 pointer paint demo" />
+<DemoEmbed demo="pointer-paint" title="BLIT386 pointer paint demo" />
 
-<DemoEmbed demo="027-pointer-drag-flick" title="BLIT386 pointer drag-and-flick demo" />
+<DemoEmbed demo="pointer-drag-flick" title="BLIT386 pointer drag-and-flick demo" />
 
 ## Keyboard
 
@@ -203,7 +203,7 @@ under rapid input - the tick already consumed and cleared the edge before render
 
 </Callout>
 
-<DemoEmbed demo="028-keyboard-input" title="BLIT386 keyboard input demo" />
+<DemoEmbed demo="keyboard-input" title="BLIT386 keyboard input demo" />
 
 ### Any key and any button
 
@@ -251,6 +251,8 @@ if (BT.isAnyButtonPressed(0)) {
   edges follow `BT.isPressed` and `BT.isReleased` instead: they roll over once per rendered frame, so on a display
   faster than `targetFPS` a gamepad edge can be missed by a frame that runs no update, and a frame that runs several
   updates reports the same edge to each of them. See [Frame-timing semantics](#frame-timing-semantics).
+
+<DemoEmbed demo="any-input" title="BLIT386 any-input demo" />
 
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
@@ -301,7 +303,7 @@ BT.isDown(BT.BTN_SHOULDER, 1); // L or R shoulder for player 1
 <Callout type="warn" title="Arrow keys belong to player 1 by default">
 
 Out of the box the engine assumes two keyboard players: player 0 steers with W, A, S, D and player 1 with the arrow
-keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does **not** react to the left arrow. Set
+keys. A one-player game that reads `BT.isDown(BT.BTN_LEFT)` does not react to the left arrow. Set
 `keyboardLayout: 'single'` in `configure()` to give player 0 both WASD and the arrows, or remap single buttons with
 [`BT.inputMap(0, ...)`](#remapping-btinputmap--btinputmapreset).
 
@@ -333,6 +335,8 @@ const fire = BT.isPressed(BT.BTN_R2, 0) || BT.isPressed(BT.BTN_A, 0);
 
 ### Keyboard layouts
 
+<Since symbol="KeyboardLayout" />
+
 `HardwareSettings.keyboardLayout` picks which built-in map the two keyboard players start with:
 
 | Layout | Player 0 D-pad | Player 1 D-pad |
@@ -363,7 +367,7 @@ Built-in defaults are exposed as read-only tables (same values the engine starts
 - `BT.DEFAULT_KEYBOARD_PLAYER1` / `BT.DEFAULT_KEYBOARD_PLAYER2` - `'versus'`
 - `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` - `'single'`
 
-<DemoEmbed demo="035-keyboard-diagnostic" title="BLIT386 keyboard diagnostic demo" />
+<DemoEmbed demo="keyboard-diagnostic" title="BLIT386 keyboard diagnostic demo" />
 
 ### Remapping (`BT.inputMap` / `BT.inputMapReset`)
 
@@ -392,7 +396,7 @@ import { BT } from 'blit386';
 BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
 ```
 
-<DemoEmbed demo="030-input-map-remapping" title="BLIT386 input map remapping demo" />
+<DemoEmbed demo="input-map-remapping" title="BLIT386 input map remapping demo" />
 
 ### Gamepad API
 
@@ -433,7 +437,7 @@ Player constants:
 - `PLAYER_THREE` (`2`)
 - `PLAYER_FOUR` (`3`)
 
-<DemoEmbed demo="031-gamepad-input" title="BLIT386 gamepad input demo" />
+<DemoEmbed demo="gamepad-input" title="BLIT386 gamepad input demo" />
 
 <Callout type="warn" title="The default dead zone is large">
 

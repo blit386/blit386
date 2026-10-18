@@ -30,6 +30,10 @@ Use when the game crashes, shows a blank screen, throws an error in the browser 
 - If key or button taps feel randomly missed: `isKeyPressed`/`isKeyReleased`/`inputString`/`isPressed`/`isReleased` must
   be read in `update()`. Reading them in `render()` can miss the one-frame edge; see `docs/input.md`.
 - All screen coordinates must be whole numbers (`Vector2i`, `Rect2i`). Fractions cause off-by-one pixel issues.
+- A sprite that will not stretch into a `Rect2i`, or an error about a `Rect2i` destination: the stretch form of
+  `BT.drawSprite` needs an options object as the 4th argument (`{}` is enough), with `scale` at `1` and no `pivot`
+  (engine 1.8.0+). A palette fade at the wrong speed, or a slot set in `render()` that snaps back: palette effects now
+  step once per `update()`, so change slots in `update()` / `init()`. Both are in `docs/when-something-breaks.md`.
 - If you see `{{` or `}}` in a file, a template placeholder was not substituted - this is a scaffolding bug, not a game
   bug.
 - After a save that breaks `init()`, hot reload should leave the previous game running - fix the typo and save again

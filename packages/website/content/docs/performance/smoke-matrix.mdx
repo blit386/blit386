@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Software Fallback Smoke Matrix"
 description: "Manual smoke-test checklist for the Canvas 2D software renderer."
-lastModified: "2026-07-28T16:49:29+02:00"
+lastModified: "2026-10-18T15:51:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-smoke-matrix.md"
 ---
 
@@ -42,9 +42,9 @@ MVP; updated for auto-fallback and the engine overlay (backend shown on the top 
 
 ## Automated regression
 
-Visual parity for software mode is exercised by Playwright under `tests/visual/` (`primitives`, `camera`, `sprites`,
-`fonts`, `mixed` specs load fixtures with `?backend=software`). Run `pnpm run test:visual` after renderer changes that
-affect pixel output.
+Visual parity for software mode is exercised by Playwright under `tests/visual/` (`primitives`, `camera`, `sprites` -
+including the oriented, stretched, and nine-slice fixtures - `fonts`, `mixed`, and `render-at` specs load fixtures with
+`?backend=software`). Run `pnpm run test:visual` after renderer changes that affect pixel output.
 
 ## Known exclusions (expected in MVP)
 

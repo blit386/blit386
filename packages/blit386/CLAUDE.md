@@ -3,7 +3,7 @@
 A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel-perfect 2D rendering where primitives,
 sprites, and bitmap text resolve color through the active `Palette` before final RGBA output, with a Canvas 2D software
 fallback when WebGPU init fails. All engine functionality is reached through the static `BT` namespace; demos implement
-`IBTDemo` (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
+`IBTDemo` (`configure?`, `init`, `update`, `render`, optional `overlayRows?` and `testState?`).
 
 Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together with this file.
@@ -22,12 +22,18 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` - not docs |
 | What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) - not docs |
 | What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
-| What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio) |
+| What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio), `src/__test__/spriteOrientationFixture.ts` (flip/rotation oracle), `src/overlay/testFixtures.ts` (overlay) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
 | How is `bt-api-getters.md` checked against the real `BT.*` surface? | `scripts/check-api-getters-drift.mjs`, wired into `pnpm run api:getters:check` (this package's own `preflight`) |
 | Which preset has which exact color values? | `docs/guide-palette-presets.md` |
 | How do I fade a palette cinematically, or do color math in linear light? | `BT.paletteFadeExposure`, `Color32#toLinear` / `#toSrgb`; `docs/api-palette.md#exposure-fade`, `docs/guide-palette.md` |
 | How do I smooth motion between fixed `update()` steps? | `BT.renderAlpha`; worked `Vector2i.lerp` pattern in `docs/guide-game-loop.md` |
+| How do I render exactly the frame at second N, or wait until the engine is ready? | `BT.renderAt` / `BT.resume` / `BT.isReady`; `docs/api-core.md#seeking-a-frame-with-renderat`, `docs/guide-game-loop.md#seeking-and-stepping`; machinery is `BTAPI#seek` + `buildReplayDemo` (fresh instance for `from: 'start'`) over `GameLoop.step()` |
+| How does an external driver (agent, test harness) read game state? | `IBTDemo.testState()` hook, `BT.testState()` readout (`window.BT.testState()` in dev builds); `docs/api-core.md#test-state-for-agent-play-testing` |
+| Sprite flips, quarter turns, scale, pivot, stretch? | `SpriteDrawParams` and the orientation table in `src/render/SpriteOrientation.ts`; `docs/api-rendering.md#flipping-rotating-and-scaling-sprites` |
+| Nine-slice panels and grid tiles? | `src/assets/NineSlice.ts` (`BT.drawNineSlice`), `src/utils/TileGrid.ts` (`BT.drawTile`, `Rect2i.fromTile`); `docs/api-rendering.md#nine-slice-panels`, `#drawing-tiles` |
+| Keyboard layouts, trigger buttons, any-key / any-button? | `HardwareSettings.keyboardLayout` + `src/input/keyboardRuntimeMaps.ts`; `BTN_L2` / `BTN_R2` / `BTN_TRIGGER`; `BT.isAnyKey*` / `BT.isAnyButton*`; `docs/guide-input.md#keyboard-layouts`, `#triggers-analog-or-digital`, `#any-key-and-any-button` |
+| Convert a DOM event's `clientX` / `clientY` to display pixels? | `BT.nativeScreenToDisplayPos`; `src/input/clientToDisplayPos.ts` (shared with `PointerInput`); `docs/guide-input.md#converting-your-own-dom-events` |
 | Seeded / deterministic random? | `BT.random` / `BT.randomSeed`; `src/utils/Random.ts`, coordinate hashes in `src/utils/hash.ts`, `docs/api-random.md` |
 | How does hot-reload / HMR work? | `docs/guide-hot-reload.md` is canonical; runtime in `src/hot/`, dev plugin in `src/vite/` |
 | How does the BLIT386 splash work, and how do I turn it off? | `BT.isSplashVisible`, `HardwareSettings.isSplashEnabled`; `src/splash/`, `docs/guide-splash.md` |
@@ -54,6 +60,10 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 - `BTN_*` constants are bit flags (powers of 2), not sequential integers
 - `BT.isDown` / `BT.isPressed` / `BT.isReleased` use ANY-match semantics for masks
 - Face buttons: players `0` and `1` are keyboard OR gamepad; players `2` and `3` are gamepad-only
+- Keyboard face-button tables come from `HardwareSettings.keyboardLayout`: `'versus'` (default) is WASD vs. arrows,
+  `'single'` gives player 0 WASD and the arrows and moves player 1 to IJKL. `BT.inputMap` overrides single buttons;
+  `BT.inputMapReset` restores the active layout's defaults, not `'versus'`
+- `BT.isAnyKey*` cover every key; `BT.isAnyButton*` cover `BTN_UP` through `BTN_SELECT` only - never the triggers
 - Pointer and gamepad previous-state rollover is end-of-render-frame aligned. Keyboard is different: press/release edges
   and `inputString` clear once per fixed-update tick (inside `demo.update()`), which always runs before that frame's
   `render()`. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
@@ -62,6 +72,9 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
   `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and
   the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
   time because the overlay itself read the toggle key's edge from the render phase
+- A pointer press that lands in a render frame with no `update()` step (display faster than `targetFPS`) is carried to
+  the next frame that runs one, so `update()`-side `BT.isPressed` never misses a click; render-side readers (the
+  overlay) still see each press once. Pointer and gamepad hold state is unaffected
 - Default gamepad stick dead zone is `0.75`
 - Triggers are available both as axes (`AXIS_TRIGGER_L/R`) and as gamepad-only digital buttons (`BTN_L2` / `BTN_R2`,
   mask `BTN_TRIGGER`; down at a fixed 0.5 analog value, keyboard never triggers them)
@@ -73,6 +86,13 @@ and methods for actions, parameterized queries, and async work (`BT.cameraSet(..
 `await BT.captureFrame()`). Do not add zero-argument `BT.foo()` functions where a getter fits. `requestedBackend` is the
 resolved init request; `activeBackend` is what actually started (they differ after a WebGPU to software fallback) and is
 what runtime gates such as post-process and capture must check.
+
+Readiness and seeking: `BT.isReady` is `true` only after `init()` resolved and the game loop exists - `false` before
+init, while an init is in flight, during the splash, and after a failed init; it stays `true` while `BT.renderAt` holds
+the loop parked. A `BT.init` call made while another is running resolves to `false` and changes nothing. `renderAt`
+stops the loop, replays `from: 'start'` on a fresh instance of the game's class (an object-literal game is reused), then
+steps to the target tick with no `requestAnimationFrame`; `BT.resume()` restarts the loop. Palette effects advance once
+per fixed update on the tick clock, so a seeked frame matches live play on that tick.
 
 Boolean naming: runtime queries and configure flags use grammatical `is*` / `has*` (`isPointerActive`, `hasGlyph`,
 `isOverlayEnabled`). Side-effect or operation-result booleans use imperative verbs (`Timer.fireIfElapsed()`,
@@ -144,9 +164,10 @@ Coverage lists, snapshot locations, mock usage, and known quirks:
 
 ## Git scopes
 
-Conventional Commits and DCO sign-off are root-level policy (see root `CLAUDE.md`). This package's scopes, by frequency:
-`docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`, `release`, `security`,
-`input`, `deps` / `deps-dev`, `visual`, `camera`.
+Conventional Commits and DCO sign-off are root-level policy (see root `CLAUDE.md`). This package's scopes, by frequency
+(`git log --format=%s -- packages/blit386`): `api`, `core`, `repo`, `deps`, `blit386`, `assets`, `input`, `docs`,
+`render`, `release`, `bench`, `security`, `scripts`, `renderer`, `ci`, `audio`, `visual`, `splash`, `overlay`. Prefer
+`api` for a public `BT` surface change and `core` for engine internals; `renderer` is the older spelling of `render`.
 
 ## Working with Claude
 

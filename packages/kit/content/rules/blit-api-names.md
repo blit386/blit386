@@ -62,7 +62,22 @@ BT.pointerPosTo(out, 0); // same, written into an existing Vector2i (engine 1.7.
 BT.pointerDeltaTo(out, 0); // same for the per-frame delta (engine 1.7.0+)
 BT.nativeScreenToDisplayPos(e.clientX, e.clientY); // DOM event coords to display pixels, or null (engine 1.8.0+)
 BT.randomSeed(1234); // reseed the shared generator (engine 1.5.0+)
+BT.drawTile(sheet, 3, pos); // one grid cell of a sheet loaded with { tileSize } (engine 1.8.0+)
+BT.drawNineSlice(panel, rect); // a NineSlice into any Rect2i (engine 1.8.0+)
+BT.inputMapReset(); // back to the active keyboardLayout's key tables
+await BT.renderAt(3.2); // stop the loop on the frame at 3.2 s (engine 1.8.0+); BT.resume() restarts it
 ```
+
+## Constants (plain values, no parentheses)
+
+- Buttons: `BT.BTN_UP/DOWN/LEFT/RIGHT`, `BT.BTN_A/B/X/Y`, `BT.BTN_L/R`, `BT.BTN_START/SELECT`, pointer
+  `BT.BTN_POINTER_A/B/C/D`; gamepad-only triggers `BT.BTN_L2` / `BT.BTN_R2` and their union `BT.BTN_TRIGGER` (engine
+  1.8.0+; `BT.inputMap` and `BT.isAnyButton*` ignore them). Axes: `BT.AXIS_LEFT_X/Y`, `BT.AXIS_RIGHT_X/Y`,
+  `BT.AXIS_TRIGGER_L/R`.
+- Sprite orientation bits for `SpriteDrawParams.flags` (engine 1.8.0+): `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`,
+  `BT.ROT_180_CW`, `BT.ROT_270_CW`, combined with `|`. See `skills/add-sprite/`.
+- Keyboard tables: `BT.DEFAULT_KEYBOARD_PLAYER1/2` (`'versus'`), `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1/2` (`'single'`,
+  engine 1.8.0+). Read-only; remap with `BT.inputMap`.
 
 The `*To` pointer calls take the destination `Vector2i` first and the slot second, and return that same vector. They
 exist to avoid allocating in a hot loop; `BT.pointerPos` / `BT.pointerDelta` stay the readable default. See

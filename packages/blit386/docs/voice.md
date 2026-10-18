@@ -8,8 +8,6 @@ engine. BLIT386 targets two distinct audiences, and mixing their styles produces
 This guide defines the rules. Before writing any `throw`, `console.error`, `displayError`, or canvas-visible string,
 read the relevant section below.
 
----
-
 ## Two audience tiers
 
 ### Tier 1 - user-facing (canvas-visible or public API errors)
@@ -43,8 +41,6 @@ Rules:
 Where it appears: `throw new Error()` inside private engine methods, guard checks inside `src/core/`, `src/render/`, and
 non-public `src/assets/` paths.
 
----
-
 ## Examples: before and after
 
 | Context | Before (avoid) | After (Tier 1 style) |
@@ -60,8 +56,6 @@ non-public `src/assets/` paths.
 | HUD start slot below 1 | `Invalid startSlot` | `HUD preset slots start from 1 (slot 0 is always transparent). Got ${startSlot}.` |
 | Tier 2 (internal) palette byte missing | _(fine as-is)_ | `Palette byte ${index} is missing` |
 
----
-
 ## Console output rules
 
 - Prefix engine console output with `[BT]`: `console.error('[BT] Palette Error: ...')`.
@@ -69,8 +63,6 @@ non-public `src/assets/` paths.
 - Never use `console.log` in production code paths (benchmarks and debug utilities excepted).
 - Canvas-visible errors (`displayError`) and console output must say the same thing. Do not show a terse console message
   and a friendly canvas message - they must match.
-
----
 
 ## Centralization
 
@@ -89,8 +81,6 @@ Steps when adding a new Tier 1 message:
 
 Tier 2 strings (internal invariants) may be inlined - they are never user-visible and do not need the same stability
 guarantees.
-
----
 
 ## Quick self-check before committing a new message
 

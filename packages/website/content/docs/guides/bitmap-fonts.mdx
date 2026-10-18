@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Bitmap Fonts"
 description: "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
-lastModified: "2026-10-17T12:01:02+02:00"
+lastModified: "2026-10-18T15:51:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-bitmap-fonts.md"
 ---
 
@@ -40,7 +40,7 @@ pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
 White pixels become foreground (palette index 1), black pixels become transparent (palette index 0). Only the top 6 bits
 of each byte are used (6-pixel glyph width within an 8-bit row).
 
-<DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
+<DemoEmbed demo="system-font-glyphs" title="BLIT386 system font glyphs demo" />
 
 ## Custom bitmap fonts (.btfont)
 
@@ -72,7 +72,7 @@ console.log(font.lineHeight); // 15
 console.log(font.glyphCount); // 98
 ```
 
-<DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
+<DemoEmbed demo="bitmap-font" title="BLIT386 bitmap font demo" />
 
 ## Font file format (.btfont)
 

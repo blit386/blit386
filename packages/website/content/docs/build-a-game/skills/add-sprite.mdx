@@ -67,10 +67,15 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   (method) - draw one grid cell, no `Rect2i` needed (engine 1.8.0+).
 - `NineSlice.fromSheet(sheet, outer, inner, { edges, center })` (static) and
   `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)` (method) - draw one piece of panel art into a box of any size
-  (engine 1.8.0+).
+  (engine 1.8.0+). See the draw-a-panel skill.
 - `sheet.fullRect()` (method) - the whole-sheet `Rect2i`.
 - `sheet.tileRect(index)` / `sheet.tileRect(col, row)` (method) - one grid cell as a new `Rect2i`. It makes a new object
   each call, so build frame lists with it in `init()`; in `render()`, call `BT.drawTile` instead.
+- `sheet.tileSize` (property, engine 1.8.0+) - the grid cell size as a `Vector2i`, or `null` for a sheet loaded without
+  one. Assign a number or `Vector2i` to set it after loading. `SpriteSheet.load(url, { tileSize })` takes the same
+  option as `loadIndexed`.
+- `Rect2i.fromTile(col, row, tileSize)` (static, engine 1.8.0+) - the cell rectangle for a grid you describe yourself,
+  with no sheet involved. `tileSize` is a number or a `Vector2i`.
 
 ## Notes
 
@@ -131,22 +136,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   under `BT.FLIP_H`. Set `this.drawParams.pivot = undefined` to go back to top-left placement - a `Rect2i` destination
   takes no pivot, so reset it before stretching.
 
-- For UI panels, buttons, and dialog boxes, use a nine-slice instead of stretching the whole panel (engine 1.8.0+).
-  Corners stay sharp; edges and center stretch or tile. Build it once in `init()`, both rects in sheet pixels - `inner`
-  is the center:
-
-  ```js
-  import { NineSlice } from 'blit386';
-
-  // init()
-  this.panel = NineSlice.fromSheet(this.ui, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
-
-  // render()
-  BT.drawNineSlice(this.panel, new Rect2i(20, 20, 120, 64));
-  ```
-
-  `'stretch'` (the default) suits flat colors; `'tile'` keeps patterned borders crisp. A box smaller than the corners
-  crops them, so a panel can grow from size 0.
+- For UI panels, buttons, and dialog boxes, use a nine-slice instead of stretching the whole panel (engine 1.8.0+):
+  corners stay sharp while edges and center stretch or tile. See the draw-a-panel skill.
 
 - Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the

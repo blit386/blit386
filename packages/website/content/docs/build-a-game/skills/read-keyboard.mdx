@@ -86,7 +86,11 @@ BT.inputMapReset(); // back to the keyboardLayout's defaults
   keyboard).
 - `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods (face buttons).
 - `BT.inputString` - getter (typed characters).
-- `BT.inputMap(player, button, ...keys)` / `BT.inputMapReset()` - methods (players 0-1 only).
+- `BT.inputMap(player, button, ...keys)` / `BT.inputMapReset()` - methods (players 0-1 only). `inputMapReset` restores
+  the active `keyboardLayout`'s tables (engine 1.8.0+), not always the WASD / arrows split.
+- `BT.DEFAULT_KEYBOARD_PLAYER1` / `BT.DEFAULT_KEYBOARD_PLAYER2` (`'versus'`) and `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER1` /
+  `BT.DEFAULT_KEYBOARD_SINGLE_PLAYER2` (`'single'`, engine 1.8.0+) - the default key tables, read-only, for a controls
+  screen that lists the keys.
 
 ## Notes
 

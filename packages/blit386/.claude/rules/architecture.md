@@ -13,9 +13,10 @@ src/
   docs/
     consumer-doc-imports.test.ts # Guards README/docs import paths against BLIT386.ts exports
   core/
-    BTAPI.ts               # Internal singleton managing subsystems (lazy-loads WebGPURenderer on WebGPU init)
-    IBTDemo.ts       # Demo interface + HardwareSettings
-    GameLoop.ts            # Fixed-timestep game loop
+    BTAPI.ts               # Internal singleton managing subsystems (lazy-loads WebGPURenderer on WebGPU init); readiness gate behind BT.isReady, and the BT.renderAt seek path (seek -> stop/park loop -> buildReplayDemo fresh instance for 'start' -> GameLoop.step; restartParkedLoop backs BT.resume)
+    IBTDemo.ts             # Demo interface (incl. optional testState() hook) + HardwareSettings (keyboardLayout, KEYBOARD_LAYOUTS) + TestStateSnapshot
+    GameLoop.ts            # Fixed-timestep game loop; step(n) runs n updates + one render synchronously (the primitive behind BT.renderAt)
+    SeedUrlParam.ts        # ?seed=N URL parameter: pure resolver + reader, seeds BT.random before the game's init()
     WebGPUContext.ts       # WebGPU adapter/device/context setup
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
     WakeLock.ts             # Screen Wake Lock subsystem: acquire/release/re-acquire on visibilitychange (HardwareSettings.isWakeLockEnabled)
@@ -39,6 +40,7 @@ src/
     labels.ts              # Overlay label strings and formatting helpers
     types.ts               # OverlayRow and related types
     index.ts               # Overlay subsystem public exports for BTAPI and unit tests
+    testFixtures.ts        # Shared mock renderer + snapshot helpers for overlay unit tests
     layout/                # layoutPlan, layoutHelpers, layout types/constants
     bars/                  # OverlayBars (Bars.ts)
     timing-chart/          # TimingChart, severity, style, tags, constants
@@ -59,7 +61,7 @@ src/
     WebGPURenderer.ts      # WebGPU concrete renderer implementing IRenderer
     SoftwareRenderer.ts    # Canvas 2D software fallback implementing IRenderer
     PrimitivePipeline.ts   # Batched geometry writing palette indices (pixels, lines, rects)
-    SpritePipeline.ts      # Batched textured quads (sprites, bitmap text)
+    SpritePipeline.ts      # Batched textured quads (sprites, bitmap text); applies SpriteDrawParams flags/scale/pivot/stretch
     SpriteOrientation.ts   # FLIP_*/ROT_* bits, mask -> orientation lookup, the one orientation table both backends read
     PostProcessChain.ts    # Tier-aware fullscreen effect chain
     UpscalePass.ts         # RGBA texture upscale helper (tests / utilities)
@@ -86,10 +88,12 @@ src/
     PaletteEffect.ts       # Palette effect system (cycle, fade, exposure fade, flash, swap)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
   input/
-    PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots)
-    KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, beforeinput text
-    GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone)
-    defaultKeyboardMap.ts  # Default face-button key tables; clone helpers for BT.inputMapReset
+    PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); carries press edges across render-only frames for update() readers
+    clientToDisplayPos.ts  # Pure client -> display-pixel conversion shared by PointerInput and BT.nativeScreenToDisplayPos
+    KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, beforeinput text; any-key queries behind BT.isAnyKey*
+    GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone); digital trigger buttons (BTN_L2/R2 at 0.5 analog) and any-button masks
+    defaultKeyboardMap.ts  # Default face-button key tables for both keyboardLayout values ('versus' and 'single'); clone helpers
+    keyboardRuntimeMaps.ts # Mutable runtime keyboard maps for players 0/1, seeded from HardwareSettings.keyboardLayout; shared by BT and BTAPI without a circular import
   audio/
     AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume, SFX + music playback; lazy opt-in bus metering (enableBusMetering, getBusLevels) backs the overlay audio meter band
     audioDecodeContext.ts  # Module-scoped decode-context registry + AudioClip unload seam (wired to VoicePool)
@@ -118,12 +122,15 @@ src/
     noiseCommon.ts         # Private fade/lerp/fBm/gradient helpers for the noise classes (not exported)
     Rng.ts                 # Deterministic PRNG (mulberry32-style; internal, backs the synth engine's noise generation)
     FrameCapture.ts        # GPU readback + PNG export
+    FrameCaptureShortcut.ts # F9 / Shift+F9 dev-mode capture shortcut gating (pure resolver + reader) and the default download filename
+    globalExpose.ts        # Exposes BT on window for console debugging (dev-only by default; BootstrapOptions.exposeGlobal overrides)
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
     errorMessages.ts       # Centralized user-facing bootstrap/runtime/asset error strings (two-tier voice); imported by Bootstrap and asset/runtime code
     urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
     webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
+    spriteOrientationFixture.ts # Shared ABC/DEF sprite source + grid oracle for every flip/rotation mask (used by both backends' tests)
     setup.ts               # Vitest global setup (GPU constants)
 ```
 

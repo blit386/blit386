@@ -23,32 +23,58 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
-- Sprite flip and quarter turns: `BT.drawSprite(sheet, src, dest, params)` takes a `SpriteDrawParams` object as the 4th
-  argument, with `flags` (any combination of `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`)
-  and `paletteOffset`. The flags compose in a fixed order into 8 orientations, `dest` is the top-left of the turned
-  footprint, and both backends match pixel for pixel. The number form of the 4th argument is unchanged and still
-  allocation-free. See
-  [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
+- `BT.isReady`: a public readiness flag that becomes `true` only once `init()` has resolved and the game loop exists, so
+  an external driver (screenshot tool, play-testing harness) can wait before seeking or reading state instead of
+  matching an error message. See [Engine readiness](api-core.md#engine-readiness).
+- Deterministic seek: `BT.renderAt(seconds, { from })` stops the loop and renders exactly the frame at that tick with no
+  `requestAnimationFrame`, so it works in hidden and headless pages. `from: 'start'` (default) resets engine-owned state
+  and replays into a fresh instance of the game class (`init()` runs on a new object, so counters, clocks, and arrays
+  from the replaced run cannot leak in; an object-literal game re-runs `init()` on itself); `from: 'current'` steps
+  forward. If the fresh instance's constructor or `init()` fails, the call rejects, palette effects are cleared, and the
+  previous instance stays active. `BT.resume()` restarts the loop from the seeked tick, and `BT.captureFrame()` after a
+  seek captures the seeked frame. The audio context is suspended while a seek holds the loop stopped, and a gesture that
+  unlocks audio mid-seek stays suspended until `BT.resume()`. See
+  [Seeking a frame with renderAt](api-core.md#seeking-a-frame-with-renderat).
+- Nine-slice panels: `NineSlice.fromSheet(sheet, outer, inner, { edges, center })` and
+  `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)` draw one piece of panel art into boxes of any size. Corners
+  stay 1:1; edges and center each stretch (with the sprite stretch rule) or tile (1:1, last tile cropped). Boxes smaller
+  than the corners crop them, so panels can animate open from size 0. Both backends match pixel for pixel. See
+  [Nine-slice panels](api-rendering.md#nine-slice-panels).
+- Sprite pivot: `SpriteDrawParams.pivot` places a sprite by any point in source pixels instead of its top-left. The
+  point goes through the flags, then the scale, and lands on the `Vector2i` destination, so a character drawn by its
+  feet stays put when it flips, turns, or grows. An explicit `(0, 0)` is the source origin and moves under flips, unlike
+  no pivot; assign `params.pivot = undefined` to reset a reused object. A `Rect2i` destination with a pivot shows an
+  error. See [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
 - Sprite scale and stretch: `SpriteDrawParams.scale` takes a positive integer or a `Vector2i` of positive integers and
   multiplies the post-flags footprint in screen axes, and the params form of `BT.drawSprite` accepts a `Rect2i`
   destination that the sprite is stretched into. Both use nearest-neighbor sampling at pixel centers, identical on
   WebGPU and software. A `Rect2i` needs the params form (`BT.drawSprite(sheet, src, rect, {})`); development builds show
   an error when one reaches the fast path. See
   [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
-- Sprite pivot: `SpriteDrawParams.pivot` places a sprite by any point in source pixels instead of its top-left. The
-  point goes through the flags, then the scale, and lands on the `Vector2i` destination, so a character drawn by its
-  feet stays put when it flips, turns, or grows. An explicit `(0, 0)` is the source origin and moves under flips, unlike
-  no pivot; assign `params.pivot = undefined` to reset a reused object. A `Rect2i` destination with a pivot shows an
-  error. See [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
-- Nine-slice panels: `NineSlice.fromSheet(sheet, outer, inner, { edges, center })` and
-  `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)` draw one piece of panel art into boxes of any size. Corners
-  stay 1:1; edges and center each stretch (with the sprite stretch rule) or tile (1:1, last tile cropped). Boxes smaller
-  than the corners crop them, so panels can animate open from size 0. Both backends match pixel for pixel. See
-  [Nine-slice panels](api-rendering.md#nine-slice-panels).
+- Sprite flip and quarter turns: `BT.drawSprite(sheet, src, dest, params)` takes a `SpriteDrawParams` object as the 4th
+  argument, with `flags` (any combination of `BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, `BT.ROT_180_CW`, `BT.ROT_270_CW`)
+  and `paletteOffset`. The flags compose in a fixed order into 8 orientations, `dest` is the top-left of the turned
+  footprint, and both backends match pixel for pixel. The number form of the 4th argument is unchanged and still
+  allocation-free. See
+  [Flipping, rotating, and scaling sprites](api-rendering.md#flipping-rotating-and-scaling-sprites).
+- `BT.drawTile`: draw one cell of a grid-shaped sprite sheet by row-major index (`BT.drawTile(sheet, index, destPos)`)
+  or by column and row (`BT.drawTile(sheet, col, row, destPos)`), with an optional `paletteOffset`, using a tile size
+  stored on the sheet. `BT.drawTile(sheet, col, row, tileSize, destPos)` passes the size per call instead. Square or
+  non-square tiles; a partial edge cell is not a tile, and out-of-grid tiles are an error. Allocation-free. Set the grid
+  with the new `tileSize` option of `SpriteSheet.load` / `SpriteSheet.loadIndexed` or the `sheet.tileSize` property;
+  `sheet.tileRect(...)` and `Rect2i.fromTile(...)` return the rectangle. See
+  [Drawing tiles](api-rendering.md#drawing-tiles).
 - `BT.BTN_L2`, `BT.BTN_R2` and `BT.BTN_TRIGGER`: digital trigger buttons for `BT.isDown` / `BT.isPressed` /
   `BT.isReleased`, on at 50% pull or more (fixed threshold). Gamepad only - the keyboard never triggers them and
   `BT.inputMap` ignores them; `BTN_L` / `BTN_R` remain the shoulders, and `BT.isAnyButton*` still covers only `BTN_UP`
   to `BTN_SELECT`. See [Triggers: analog or digital](guide-input.md#triggers-analog-or-digital).
+- `BT.isAnyKeyDown()`, `BT.isAnyKeyPressed(repeatRate?)`, `BT.isAnyKeyReleased()`, and the gamepad twins
+  `BT.isAnyButtonDown(player?)`, `BT.isAnyButtonPressed(player?, repeatRate?)`, `BT.isAnyButtonReleased(player?)`: ask
+  about the whole keyboard or one player's gamepad instead of a named key, for "press any key to start" screens. Pressed
+  fires on every new key or button, even with another held. Released follows RetroBlit and means _everything_ is up now,
+  so letting go of one key while another stays down does not fire it. `isAnyButton*` covers `BTN_UP` to `BTN_SELECT`
+  only (no sticks, triggers, keyboard, or pointers). See
+  [Any key and any button](guide-input.md#any-key-and-any-button).
 - `BT.nativeScreenToDisplayPos(clientX, clientY)`: converts viewport coordinates, such as a DOM event's `clientX` /
   `clientY`, to display coordinates with the same math pointer input uses (floor, then clamp to `[0, displaySize - 1]`).
   Use it for DOM events the engine does not wrap, such as a file dropped onto the canvas. It returns `null` before
@@ -63,32 +89,7 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `testState()` game hook and `BT.testState()` readout: a game can return plain JSON from an optional `testState()`
   method on its class, and an agent play-testing in dev reads it with `window.BT.testState()` instead of a hand-written
   `window.__game` global. The result is `{ ticks, backend, state }`, with an `error` field when the readout threw. See
-  [Core API](api-core.md).
-- `BT.isAnyKeyDown()`, `BT.isAnyKeyPressed(repeatRate?)`, `BT.isAnyKeyReleased()`, and the gamepad twins
-  `BT.isAnyButtonDown(player?)`, `BT.isAnyButtonPressed(player?, repeatRate?)`, `BT.isAnyButtonReleased(player?)`: ask
-  about the whole keyboard or one player's gamepad instead of a named key, for "press any key to start" screens. Pressed
-  fires on every new key or button, even with another held. Released follows RetroBlit and means _everything_ is up now,
-  so letting go of one key while another stays down does not fire it. `isAnyButton*` covers `BTN_UP` to `BTN_SELECT`
-  only (no sticks, triggers, keyboard, or pointers). See
-  [Any key and any button](guide-input.md#any-key-and-any-button).
-- `BT.drawTile`: draw one cell of a grid-shaped sprite sheet by row-major index (`BT.drawTile(sheet, index, destPos)`)
-  or by column and row (`BT.drawTile(sheet, col, row, destPos)`), with an optional `paletteOffset`, using a tile size
-  stored on the sheet. `BT.drawTile(sheet, col, row, tileSize, destPos)` passes the size per call instead. Square or
-  non-square tiles; a partial edge cell is not a tile, and out-of-grid tiles are an error. Allocation-free. Set the grid
-  with the new `tileSize` option of `SpriteSheet.load` / `SpriteSheet.loadIndexed` or the `sheet.tileSize` property;
-  `sheet.tileRect(...)` and `Rect2i.fromTile(...)` return the rectangle. See
-  [Drawing tiles](api-rendering.md#drawing-tiles).
-- Deterministic seek: `BT.renderAt(seconds, { from })` stops the loop and renders exactly the frame at that tick with no
-  `requestAnimationFrame`, so it works in hidden and headless pages. `from: 'start'` (default) resets engine-owned state
-  and replays into a fresh instance of the game class (`init()` runs on a new object, so counters, clocks, and arrays
-  from the replaced run cannot leak in; an object-literal game re-runs `init()` on itself); `from: 'current'` steps
-  forward. If the fresh instance's constructor or `init()` fails, the previous instance stays active. `BT.resume()`
-  restarts the loop from the seeked tick, and `BT.captureFrame()` after a seek captures the seeked frame. The audio
-  context is suspended while a seek holds the loop stopped, and a gesture that unlocks audio mid-seek stays suspended
-  until `BT.resume()`. See [Seeking a frame with renderAt](api-core.md#seeking-a-frame-with-renderat).
-- `BT.isReady`: a public readiness flag that becomes `true` only once `init()` has resolved and the game loop exists, so
-  an external driver (screenshot tool, play-testing harness) can wait before seeking or reading state instead of
-  matching an error message. See [Engine readiness](api-core.md#engine-readiness).
+  [Test state for agent play-testing](api-core.md#test-state-for-agent-play-testing).
 
 ### Changed
 
@@ -96,20 +97,26 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   and `BT.isReady` stays `false` for the whole of any `init()`, including a re-init after an earlier success. A second
   `bootstrap()` during init is refused with a logged error instead of racing the first. See
   [Engine readiness](api-core.md#engine-readiness).
+- `BT.captureFrame()` called while `BT.renderAt` holds the loop stopped re-renders the seeked frame instead of waiting
+  for a loop frame that never comes. See [Frame capture](api-rendering.md#frame-capture).
 - Palette effects (`paletteCycle`, fades, flashes) now advance once per fixed update, right after the game's `update()`,
   on the tick clock (`ticks * 1000 / targetFPS`) instead of once per rendered frame on `performance.now()`. They follow
   the fixed-step loop rather than wall time or the display's refresh rate, and `BT.ticksReset()` pauses them for an
   update instead of running them backwards. A palette write made in `render()` now lands after the effects rather than
   before them. An effect's time counts from when it was added, so the first update after an idle gap sees only the time
-  since `add`, including at tick 0.
-- `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.0 with no engine API change of their own: new agent
-  adapters (Zed, Antigravity, Gemini CLI, Codex, GitHub Copilot, OpenCode), a shared skills folder, extra `blit doctor`
-  checks, Windows fixes for scaffolded games, and a `get_doc_page` tool on the blit386.dev docs MCP server. See
-  [GitHub Releases](https://github.com/blit386/blit386/releases) for the full notes.
+  since `add`, including at tick 0. See [Palette effects](api-palette.md#palette-effects).
 - The `deltaMs` passed to post-process effects is tick-clock time since the previous rendered frame, not
   `performance.now()`. No built-in effect reads it.
-- `BT.captureFrame()` called while `BT.renderAt` holds the loop stopped re-renders the seeked frame instead of waiting
-  for a loop frame that never comes.
+- `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.0 with no engine API change of their own. Generated games
+  gain agent adapters for Zed, Antigravity, Gemini CLI, OpenCode, Codex, and GitHub Copilot on top of Claude Code and
+  Cursor, all sharing one skills folder and one shell-safety guard core (the Zed paste-in snippet also denies
+  `checkout --`, `restore`, and `clean`); Cursor loads the kit skills on its own; a `.claude/launch.json` for the Claude
+  desktop preview; the kit hooks format one file per edit and refuse agent edits to any `.lock` file; the Biome schema
+  version is no longer pinned in scaffolded games; generated Claude settings pre-approve the `blit386-docs` MCP server,
+  and `blit doctor` warns when a set-up assistant has no docs config; scaffolded games and the repo tooling work on
+  Windows. The blit386.dev docs MCP server adds a `get_doc_page` tool with absolute URLs, publishes a build-a-game
+  section, and ranks search by distinct matched terms (two-letter terms such as `ui` and `2d` now match). See
+  [GitHub Releases](https://github.com/blit386/blit386/releases) for the full notes.
 
 ### Fixed
 
@@ -117,6 +124,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   fixed update used to roll over before `update()` could read it, so `BT.isPressed(BT.BTN_POINTER_A)` and the other
   pointer buttons missed it. The press now carries to the next frame that runs `update()`. See
   [Frame-timing semantics](guide-input.md#frame-timing-semantics).
+- A pointer event with an empty `pointerType` (synthetic events from test harnesses and agents usually omit it) is now
+  routed to the mouse slot instead of falling into the touch branch and being dropped. Synthetic touch or pen events
+  must set `pointerType` explicitly. See
+  [Test state for agent play-testing](api-core.md#test-state-for-agent-play-testing).
 
 ## 1.7.1 - 2026-09-27
 

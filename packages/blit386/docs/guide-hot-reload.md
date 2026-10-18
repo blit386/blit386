@@ -148,8 +148,9 @@ import { type IBTDemo, type HardwareSettings, Vector2i } from 'blit386';
 class Demo implements IBTDemo {
   configure(): Partial<HardwareSettings> {
     // Changing displaySize, drawingBufferSize, backend, targetFPS, audioVoices,
-    // outputUpscaleFilter, maxCanvasSize, or any overlay flag forces a full page
-    // reload on save - there is no partial-swap path for hardware settings.
+    // outputUpscaleFilter, maxCanvasSize, keyboardLayout, or any overlay flag
+    // forces a full page reload on save - there is no partial-swap path for
+    // hardware settings.
     return { displaySize: new Vector2i(320, 240) };
   }
 

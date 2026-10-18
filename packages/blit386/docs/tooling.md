@@ -24,7 +24,7 @@ CI details.
 | Command | Description |
 | --- | --- |
 | `pnpm run test:declarations` | Node tests for `scripts/check-declaration-tooling.mjs` (drift patterns and alignment log parsing). Included in `pnpm run preflight`. |
-| `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log` | Manual check after a local build (same assertion CI runs). |
+| `pnpm run build 2>&1 \| tee build.log` then `pnpm run build:check-declarations build.log` | Manual check after a local build (same assertion CI runs; the script is `scripts/check-declaration-tooling.mjs`). |
 
 CI runs the checker after `pnpm run build` in `.github/workflows/ci.yml` - the `build-engine` job. `bundle-size` does
 not repeat it: that job downloads `build-engine`'s `dist/` artifact rather than rebuilding, so the check has already run

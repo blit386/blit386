@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded determinism in practice: reproducible runs, independent streams, and procedural worlds from coordinates."
-lastModified: "2026-09-27T11:21:43+02:00"
+lastModified: "2026-10-18T15:51:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-random.md"
 ---
 
@@ -35,7 +35,9 @@ BT.random.int(0, 100); // same value on every run seeded with 1234
 ```
 
 Prefer `BT.random` for demo and game code. Reach for a standalone `new Random(seed)` only when you need a stream that is
-independent of the shared engine one - see [Independent streams](#independent-streams).
+independent of the shared engine one - see [Independent streams](#independent-streams). A
+[`BT.renderAt`](/docs/api/core#seeking-a-frame-with-renderat) replay from the start rewinds `BT.random` to the state it had
+when `init()` first ran, so a seeded run seeks to the same frames it played.
 
 ### Seeding from the URL
 
@@ -72,6 +74,8 @@ The order of draws is part of the state. Adding a `rng.bool()` call between two 
 that follows, so a saved seed only reproduces a world when the code that consumes it is unchanged. Keep seed-consuming
 setup (level generation, spawn tables) in a stable order, and pull incidental effects (a cosmetic sparkle color) from a
 separate stream so tweaking them never disturbs the layout.
+
+<DemoEmbed demo="seeded-worlds" title="BLIT386 seeded worlds demo" />
 
 ## Independent streams
 
@@ -140,6 +144,8 @@ function hasChest(tileX: number, tileY: number): boolean {
 hasChest(4, 2);
 hasChest(4, 2); // identical - no state, safe to re-ask
 ```
+
+<DemoEmbed demo="coordinate-patterns" title="BLIT386 coordinate patterns demo" />
 
 Hashing gives independent per-cell values; for fields that vary smoothly - terrain height, cloud cover, organic drift -
 use the noise classes. `ValueNoise`, `PerlinNoise`, and `SimplexNoise` sample continuous space in approximately

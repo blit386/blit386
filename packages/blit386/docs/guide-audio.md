@@ -49,6 +49,13 @@ whichever input method a player uses first (mouse, keyboard, or touch) unlocks a
 unlocks immediately; a tap unlocks when the finger lifts, because browsers do not count `touchstart` or a touch
 `pointerdown` as a user activation, only `touchend` / `pointerup`.
 
+### Parked during a seek
+
+While [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) holds the game loop stopped, the audio context is
+suspended so nothing plays out of step with a frozen clock. A gesture that unlocks audio mid-seek flips
+`BT.isAudioUnlocked` but leaves the context suspended until `BT.resume()` restarts the loop; a context that was still
+locked stays locked until the next gesture, as without a seek.
+
 ## Usage example
 
 ```ts twoslash
@@ -153,7 +160,7 @@ function playFootstep() {
 }
 ```
 
-<DemoEmbed demo="036-audio-basics" title="BLIT386 audio basics demo" />
+<DemoEmbed demo="audio-basics" title="BLIT386 audio basics demo" />
 
 ## Playing music
 
@@ -213,7 +220,7 @@ BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
 `loopStart` and `loopEnd` must be given together and satisfy `0 <= loopStart < loopEnd <= duration` - see
 [Loop points](api-audio.md#loop-points) for the exact validation rule and its error.
 
-<DemoEmbed demo="037-music" title="BLIT386 music playback demo" />
+<DemoEmbed demo="music" title="BLIT386 music playback demo" />
 
 ## Design a sound
 
@@ -278,7 +285,7 @@ const restored = JSON.parse(serialized) as SynthParams;
 const explosion = await AudioClip.synth(restored);
 ```
 
-<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
+<DemoEmbed demo="synth-toy" title="BLIT386 synth toy demo" />
 
 ## API history
 

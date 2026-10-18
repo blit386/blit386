@@ -92,6 +92,18 @@ async init() {
 `fillBlock(start, source, transform)` writes `transform(source[i], i)` into slot `start + i` and returns the next free
 slot, so a second block can start where the first ended.
 
+## When the effects move (engine 1.8.0+)
+
+Effects advance once per `update()` step, right after your `update()` returns, on the engine's tick clock - not per
+rendered frame and not by wall time. Two things follow:
+
+- They run at the same speed on a 60 Hz and a 144 Hz display, and `BT.renderAt(seconds)` reproduces them exactly, so a
+  seeked screenshot shows the fade where a live player would see it.
+- Start effects, and write to palette slots, in `init()` or `update()` - never in `render()`. A `palette.set()` in
+  `render()` lands after the effects already ran for that step, and a seek runs `render()` only once at the end.
+- `BT.ticksReset()` pauses every effect for one step instead of running it backwards. An effect's time counts from when
+  you added it, so an effect started after an idle gap begins at its start, not partway through.
+
 ## Notes
 
 - These animate the active palette; set one up first (use-palette skill).

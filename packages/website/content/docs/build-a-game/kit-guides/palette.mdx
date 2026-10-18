@@ -118,4 +118,8 @@ BT.paletteFadeExposure(this.gamePalette, 2000);
 Use the first for a cross-dissolve between themes, the second for a title card or a fade up into the game. The
 `animate-the-palette` skill covers cycling, flashing, and swapping too.
 
+Start a fade (or any palette effect) from `init()` or `update()`, not `render()`. Effects move once per `update()` step,
+right after yours runs (blit386 1.8.0+), so they keep the same pace on every display and `BT.renderAt` can replay them
+for a screenshot. A palette write made in `render()` lands after that step's effects instead of before them.
+
 Next: `docs/drawing.md` for the full list of things you can draw.

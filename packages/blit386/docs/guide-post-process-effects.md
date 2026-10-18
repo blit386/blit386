@@ -65,7 +65,7 @@ class Demo {
 The chain is stable across frames: effects retain their state until removed. Mutate fields directly on the instance each
 frame; the chain re-uploads the uniform block before its `encodePass`.
 
-<DemoEmbed demo="023-crt-pipboy" title="BLIT386 PipBoy CRT demo" />
+<DemoEmbed demo="crt-pipboy" title="BLIT386 PipBoy CRT demo" />
 
 ## Architecture
 
@@ -326,9 +326,9 @@ Recreates the original PipBoy CRT look:
 `BarrelDistortion + ChromaticAberration + Interference + RollLine + Scanlines + RGBMask + Noise + Flicker + Bloom`.
 Demos that want the full kitchen-sink effect should use this.
 
-<DemoEmbed demo="024-crt-toggle" title="BLIT386 CRT toggle demo" />
+<DemoEmbed demo="crt-toggle" title="BLIT386 CRT toggle demo" />
 
-<DemoEmbed demo="034-logo-lowres" title="BLIT386 logo low-res demo" />
+<DemoEmbed demo="logo-lowres" title="BLIT386 logo low-res demo" />
 
 ### `BT.preset.amber()`
 
@@ -439,9 +439,9 @@ pixel + display:  scene -> texA -> [px...] -> sceneTex -> paletteResolve -> texA
 Two demos put the effect chain to work in a complete scene: a hand-built CRT stack layered onto the basics demo, and a
 full CRT-post-processed game.
 
-<DemoEmbed demo="033-basics-enhanced" title="BLIT386 basics enhanced demo" />
+<DemoEmbed demo="basics-enhanced" title="BLIT386 basics enhanced demo" />
 
-<DemoEmbed demo="029-snake-game" title="BLIT386 Snake game demo" />
+<DemoEmbed demo="snake-game" title="BLIT386 Snake game demo" />
 
 ## Attribution
 

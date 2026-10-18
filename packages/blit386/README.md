@@ -154,12 +154,17 @@ bootstrap(Game);
 - Recolor without redrawing: Palette offsets turn one sprite sheet into team colors, day and night, or power-up states -
   no duplicate textures.
 - CRT when you want it: A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
-- Everything a tiny engine needs: Pointer, keyboard, and gamepad input, a fixed-timestep loop with render-time
-  interpolation for smooth motion between ticks, bitmap fonts, a camera, and one-call PNG frame capture.
+- Sprites that turn, stretch, and tile: `BT.drawSprite` takes flips, quarter turns, integer scale, a pivot point, or a
+  destination rect to stretch into; `BT.drawTile` picks a cell of a grid sheet by index; `NineSlice.fromSheet` plus
+  `BT.drawNineSlice` grow one panel graphic to any size without smearing its corners.
+- Everything a tiny engine needs: Pointer, keyboard (one- or two-player layouts), and gamepad input with triggers as
+  buttons or axes, a fixed-timestep loop with render-time interpolation for smooth motion between ticks, bitmap fonts, a
+  camera, and one-call PNG frame capture.
 - Jump to any moment: `BT.renderAt(3.2)` replays your game on its tick clock and draws exactly the frame at 3.2 seconds,
   with no `requestAnimationFrame` - the same pixels live play shows on that tick, ready for a screenshot, a test, or a
   timeline scrubber. Poll `BT.isReady` first when driving the page from outside - it is `true` only once init finished
-  and the game loop exists.
+  and the game loop exists - and read the game's own numbers back through `BT.testState()` once it returns them from an
+  optional `testState()` hook.
 - Sound that plays, not just routes: Fire off sound effects and crossfading music through a three-bus mixer (sfx, music,
   main) with volume, mute, and fades, synthesize blips and booms from scratch or reach for a built-in preset, and read
   live levels off the overlay's audio meters - all while tracking the browser's autoplay-gesture unlock honestly instead

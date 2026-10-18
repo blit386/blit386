@@ -98,8 +98,10 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 - `{ size: 'display' }` (options, engine 1.7.1+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
 - `BT.isReady` (getter, engine 1.8.0+) - `true` once init finished and the loop exists; wait for it before seeking from
   outside the game.
-- `BT.renderAt(seconds)` (method, async, engine 1.8.0+) - jump to a time and render that exact frame; then
-  `captureFrame`.
+- `BT.renderAt(seconds, { from }?)` (method, async, engine 1.8.0+) - jump to a time and render that exact frame; then
+  `captureFrame`. `from: 'start'` (default) replays from tick 0 on a fresh game instance; `from: 'current'` steps on
+  from where the game is and refuses a time in the past. Works in a hidden or headless page.
+- `BT.resume()` (method, async, engine 1.8.0+) - restart the loop from the seeked frame.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.
 
 ## Notes

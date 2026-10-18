@@ -112,6 +112,23 @@ always finishes before `render()` runs each frame, and one-frame events like `BT
   the second keyboard player. Return `keyboardLayout: 'single'` from `configure()` (blit386 1.8.0+) and player 0 gets
   both. See `input.md`.
 
+## A sprite will not stretch, or the console complains about a `Rect2i` destination
+
+`BT.drawSprite` stretches a sprite into a box only in its options form (blit386 1.8.0+): the fourth argument has to be
+an object, even an empty one. `BT.drawSprite(sheet, src, new Rect2i(10, 10, 64, 32))` with no fourth argument, or with a
+number as the fourth argument, is the fast path, which draws at a point - a dev build logs an error for it. Write
+`BT.drawSprite(sheet, src, new Rect2i(10, 10, 64, 32), {})` instead. Two more rules of that form: a `Rect2i` destination
+already fixes the size, so `scale` must be `1` and `pivot` must be unset - set `params.pivot = undefined` on a reused
+options object before stretching. See the `add-sprite` skill.
+
+## A palette fade runs at the wrong speed, or a color I set in `render()` keeps snapping back
+
+Palette effects (`paletteCycle`, the fades, `paletteFlash`) move once per `update()` step, right after yours, on the
+engine's step clock (blit386 1.8.0+; older engines moved them once per drawn frame, so a fade written for one of those
+may now look different on a high-refresh display). That means a `palette.set()` made inside `render()` lands _after_ the
+effects for that step and gets overwritten on the next one. Change slots and start effects in `update()` or `init()`,
+never in `render()`. `BT.ticksReset()` holds the effects still for one step rather than rewinding them.
+
 ## The mouse acts as if it were pressed all the time
 
 `BT.isPointerActive()` does not mean "the button is down." For the mouse it turns `true` as soon as the mouse moves over

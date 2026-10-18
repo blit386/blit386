@@ -73,7 +73,7 @@ import { interpolate, Rect2i } from 'blit386';
 const bounds = interpolate('sine-in-out', new Rect2i(0, 0, 16, 16), new Rect2i(40, 20, 64, 48), 0.5);
 ```
 
-<DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+<DemoEmbed demo="palette-fade" title="BLIT386 palette fade and flash demo" />
 
 ## API history
 

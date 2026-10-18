@@ -11,8 +11,9 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit play` - play-test the game from the terminal: open it in the Chrome or Edge already installed, run steps (hold
     keys, wait, read the game's `testState()` or `window.__game.state()`, save frames), and print one JSON line per
     step. Needs `playwright-core` in the game (an optional peer dependency; the command prints the line that adds it).
-  - `blit doctor` - check Node, git, the installed `blit386` version, and whether a set-up assistant can look up the
-    docs.
+  - `blit doctor` - check Node, git, `.gitattributes`, the installed `blit386` version against the range this kit was
+    written for, kit-managed files that drifted (the same check as `blit agents sync --check`), and whether every set-up
+    assistant has its docs-server config (it names the missing file and the assistants that need it).
   - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
     a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
   - `blit migrate` - update old BLIT386 names in your game to the current ones, and (on blit386 1.4.0+) enable hot
@@ -105,6 +106,27 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   `.github/prompts/` (prompt files are deprecated, and VS Code's Copilot harness does not load them), and no
   `chat.tools.*.autoApprove` settings (they only prompt, so they enforce nothing).
 
+### What each assistant gets
+
+Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants it picks. On top of that, per assistant
+(the registry is `AGENT_SPECS` in `src/ownership.ts`; the generators are `AGENT_ADAPTERS` in `src/adapters.ts`):
+
+| Assistant | Persona and rules | Skills | Hooks and guards | Docs MCP config |
+| --- | --- | --- | --- | --- |
+| Claude Code | `CLAUDE.md` (managed region), `.claude/rules/*.md` | `.claude/skills/` | `.claude/settings.json` + `.claude/hooks/`: format-on-edit, shell guard, lock-file / `.env` guard, session-start bootstrap; `.claude/launch.json` (yours, written once) | `.mcp.json` (shared with Copilot), pre-approved in `settings.json` |
+| Cursor | `.cursor/rules/*.mdc` | `.cursor/skills/` | `.cursor/hooks.json` + `.cursor/hooks/`: format-on-edit, shell guard (no pre-edit or session-start event) | `.cursor/mcp.json` |
+| Antigravity | `AGENTS.md` | `.agents/skills/` (shared) | `.agents/hooks.json` + `.agents/hooks/`: all four, the bootstrap once per conversation | `.agents/mcp_config.json` |
+| Codex | `AGENTS.md` | `.agents/skills/` (shared) | `.codex/hooks.json` + `.codex/hooks/`: all four; confirm-tier git commands are refused outright | `.codex/config.toml` |
+| GitHub Copilot | `AGENTS.md` | `.agents/skills/` (shared) | `.github/hooks/blit.json` + `.github/hooks/`: all four through `copilot-hook.cjs`; `.github/workflows/copilot-setup-steps.yml` | `.mcp.json` (shared with Claude Code) |
+| Gemini CLI | `AGENTS.md` (`context.fileName`) | `.agents/skills/` (shared) | `.gemini/settings.json` + `.gemini/hooks/`: all four; confirm-tier git commands are refused outright | `.gemini/settings.json` |
+| OpenCode | `AGENTS.md` | `.agents/skills/` (shared) | `.opencode/plugins/kit-guard.ts` + `.opencode/hooks/`: shell guard, file guard, session-start bootstrap; `opencode.json` restates the guards as permissions and turns the formatters on | `opencode.json` |
+| Zed | `AGENTS.md` (hard rules as a paste-in snippet for your own settings) | `.agents/skills/` (shared) | none - format on save in `.zed/settings.json` | `.zed/settings.json` |
+
+"All four" is the manifest's set: format-on-edit, block-dangerous-shell, the lock-file / `.env` guard, and the
+session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset,
+`checkout --`, a `restore` onto the worktree, `clean`) and the ask list (force push, `branch -D`, `stash drop/clear`)
+are the same in every assistant that can enforce them.
+
 ## The game-author skills
 
 Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it - you do not have to
@@ -131,6 +153,7 @@ real enforcement. Zed ignores `.zed/` until you trust the project, and the Biome
 | `use-dev-mode` | Gate debug HUDs, cheat keys, and verbose logging on `BT.isDevMode` |
 | `draw-shapes` | Rectangles, lines, pixels, and clearing the screen |
 | `add-sprite` | Load a PNG sprite sheet and draw it, whole or frame by frame |
+| `draw-a-panel` | Panels, dialog boxes, buttons, and bars of any size from one small piece of art, with a nine-slice |
 | `show-a-loading-screen` | Wait for sprites and audio with `BT.loadingAssetsCount` |
 | `add-text` | Scores, labels, and titles with the built-in or a bitmap font |
 | `use-palette` | Set up colors as numbered palette slots |
@@ -179,6 +202,15 @@ npx blit help
 ## Requirements
 
 - Node.js 22.18.0 or newer.
+
+## Versions
+
+`@blit386/kit`, `create-blit386`, and the `blit386` engine share one version number and release together. The kit's
+`package.json` carries two extra fields under `blit386`: `engineRange` is the engine range these guides and skills
+describe (`blit doctor` compares it with the `blit386` you have installed and tells you when to update the kit or the
+engine), and `docsReviewedAt` is the engine version the `docs/` pages were last reviewed against. A game pins the kit
+and the engine it was scaffolded with; `blit upgrade` moves the engine, and a newer kit arrives like any other
+dependency update, followed by `npx blit agents sync` to refresh the generated files.
 
 ## Learn more
 

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Hot Reload"
 description: "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
-lastModified: "2026-09-09T08:29:04+02:00"
+lastModified: "2026-10-18T15:51:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-hot-reload.md"
 ---
 
@@ -145,8 +145,9 @@ import { type IBTDemo, type HardwareSettings, Vector2i } from 'blit386';
 class Demo implements IBTDemo {
   configure(): Partial<HardwareSettings> {
     // Changing displaySize, drawingBufferSize, backend, targetFPS, audioVoices,
-    // outputUpscaleFilter, maxCanvasSize, or any overlay flag forces a full page
-    // reload on save - there is no partial-swap path for hardware settings.
+    // outputUpscaleFilter, maxCanvasSize, keyboardLayout, or any overlay flag
+    // forces a full page reload on save - there is no partial-swap path for
+    // hardware settings.
     return { displaySize: new Vector2i(320, 240) };
   }
 

@@ -47,8 +47,10 @@ sticks, no analog triggers, no keyboard (use `BT.isAnyKeyPressed()` for that). `
 ## Key calls
 
 - `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods. Buttons: `BTN_UP/DOWN/LEFT/RIGHT`,
-  `BTN_A/B/X/Y`, `BTN_L/R` (shoulders), `BTN_L2/R2` (triggers as buttons, gamepad only, down at 50% pull), `BTN_START`,
-  `BTN_SELECT`; masks `BTN_ABXY`, `BTN_SHOULDER`, `BTN_TRIGGER`.
+  `BTN_A/B/X/Y`, `BTN_L/R` (shoulders), `BTN_L2/R2` (engine 1.8.0+: the triggers as buttons, on at 50% pull or more),
+  `BTN_START`, `BTN_SELECT`; masks `BTN_ABXY`, `BTN_SHOULDER`, `BTN_TRIGGER` (either trigger, engine 1.8.0+). `BTN_L2` /
+  `BTN_R2` are gamepad only: no keyboard key triggers them, `BT.inputMap` ignores them, and the 50% threshold is fixed -
+  read `AXIS_TRIGGER_L/R` when you need the amount.
 - `BT.isAnyButtonDown(player?)` / `BT.isAnyButtonPressed(player?, repeat?)` / `BT.isAnyButtonReleased(player?)` -
   methods, engine 1.8.0+. They cover `BTN_UP` to `BTN_SELECT` only, not the trigger buttons.
 - `BT.getAxis(axis, player?)` - method. Axes: `AXIS_LEFT_X/Y`, `AXIS_RIGHT_X/Y`, `AXIS_TRIGGER_L/R`.

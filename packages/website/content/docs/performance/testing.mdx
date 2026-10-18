@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Performance Testing"
 description: "CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow."
-lastModified: "2026-10-17T12:01:02+02:00"
+lastModified: "2026-10-18T15:51:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-testing.md"
 ---
 
@@ -17,6 +17,11 @@ helpers, and allocation patterns.
 
 For visual correctness (not performance), use the visual regression tests: `pnpm run test:visual`. They run Playwright
 with Chromium + WebGPU and produce PNG snapshots. See [Testing](/docs/reference/testing) for details.
+
+For whole-engine sprite throughput in a real browser, rather than one method in Node, open the
+[bunnymark demo](https://demos.blit386.dev/bunnymark): it spawns bouncing sprites by the hundred and counts the ones
+held back by the WebGPU sprite cap, so a renderer change can be judged by how many bunnies a machine moves before a
+frame slips. It is a reference point, not a gate - nothing records its numbers.
 
 ### When to use CPU benchmarks
 
@@ -39,6 +44,7 @@ Current benchmark files:
 - `src/BLIT386.bench.ts`
 - `src/utils/Vector2i.bench.ts`
 - `src/utils/Color32.bench.ts`
+- `src/utils/Random.bench.ts`
 - `src/utils/Rect2i.bench.ts`
 - `src/assets/BitmapFont.bench.ts`
 - `src/assets/Palette.bench.ts`
@@ -47,6 +53,8 @@ Current benchmark files:
 - `src/assets/SystemFont.bench.ts`
 - `src/core/GameLoop.bench.ts`
 - `src/input/GamepadInput.bench.ts`
+- `src/input/KeyboardInput.bench.ts`
+- `src/input/PointerInput.bench.ts`
 - `src/overlay/Overlay.bench.ts`
 - `src/overlay/palette/PaletteView.bench.ts`
 - `src/render/PrimitivePipeline.bench.ts`

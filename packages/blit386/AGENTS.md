@@ -19,7 +19,7 @@ pnpm install                 # from the repo root
 cd packages/blit386
 pnpm run build               # Build the library
 pnpm run test                # Run unit tests
-pnpm run preflight           # Package quality gates (format, lint, typecheck, spellcheck, knip, doc banners, tests)
+pnpm run preflight           # Package quality gates (format, lint, typecheck, spellcheck, knip, doc banners, API-history/getters/deprecations drift, tests)
 ```
 
 `pnpm run preflight` is the one command to run before committing here: it covers every CI check for this package except
@@ -43,7 +43,5 @@ the repository root once the per-package gates pass.
 conventions (getters vs methods, boolean naming), TypeScript file structure, and the complete command list. Condensed,
 always-applicable agent rules also live in `.claude/rules/*.md`.
 
-1.4.0 surface highlights:
-
-- [Hot Reload guide](docs/guide-hot-reload.md) - `blit386/vite` plugin, hot-swap tiers, and asset hot-replace.
-- [API: Assets](docs/api-assets.md#loading-assets) - `BT.loadingAssetsCount` and asset loading progress.
+What the current release added or changed: the top section of [docs/changelog.md](docs/changelog.md), with a link to the
+doc page for each item.
