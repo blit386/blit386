@@ -940,11 +940,11 @@ export const RENDER_AT_NOT_READY_MESSAGE =
 
 /** `BT.renderAt()` re-ran the game's init() for a `from: 'start'` seek and it failed. */
 export const RENDER_AT_INIT_FAILED_MESSAGE =
-    "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. Check the console for the init() error";
+    "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. The seek already reset the engine, so call BT.renderAt() again or reload the page. Check the console for the init() error";
 
 /** `BT.renderAt()` built a fresh game instance for a `from: 'start'` seek and its constructor threw. */
 export const RENDER_AT_CONSTRUCT_FAILED_MESSAGE =
-    'BT.renderAt() builds a fresh copy of your game class to start the seek from the beginning, and its constructor threw. Check the console for the constructor error';
+    'BT.renderAt() builds a fresh copy of your game class to start the seek from the beginning, and its constructor threw. The seek already reset the engine, so call BT.renderAt() again or reload the page. Check the console for the constructor error';
 
 /**
  * `BT.renderAt()` got a time that is not a finite, non-negative number of seconds, or one too large

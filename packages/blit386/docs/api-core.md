@@ -602,8 +602,11 @@ BT.resume(); // keep playing from tick 192
 - A `'start'` seek replays into a new instance of your game class (`new YourGame()`, then `init()`), so every field
   starts from its initializer exactly as in the boot run - a counter, a clock, or an array the old run filled cannot
   carry over. The new instance becomes the one `update()`, `render()`, and the orientation and reduced-motion hooks
-  reach. If its constructor throws or its `init()` fails, `renderAt` rejects and the previous instance stays active. The
-  constructor must take no arguments, as it does for `bootstrap()`.
+  reach. The constructor must take no arguments, as it does for `bootstrap()`: a class instance you built with arguments
+  and passed to `BT.init(demo, canvas)` replays as a default-built copy, so keep per-run setup in `init()`.
+- If the constructor throws or `init()` fails, `renderAt` rejects and the previous instance stays active, but the engine
+  stays reset (random stream, palette, camera, ticks) and anything a failed `init()` already did to the engine stays
+  applied - seek again or reload the page.
 - An object literal passed to `BT.init(demo, canvas)` has no class to build from, so its `init()` re-runs on the same
   object and must reset every field itself.
 - State outside the instance is still yours to reset: module-level variables, objects shared between runs, DOM

@@ -1070,6 +1070,9 @@ describe('BTAPI', () => {
                 /** What init() should resolve to for this instance. */
                 public initResult = true;
 
+                /** Whether this instance was the active game while its own init() ran. */
+                public wasActiveDuringInit = false;
+
                 public constructor() {
                     built.push(this);
                 }
@@ -1079,6 +1082,7 @@ describe('BTAPI', () => {
                 }
 
                 public async init(): Promise<boolean> {
+                    this.wasActiveDuringInit = BTAPI.instance.getDemo() === this;
                     this.items.push(1);
 
                     return this.initResult;
@@ -1109,6 +1113,9 @@ describe('BTAPI', () => {
                 expect(active).not.toBe(first);
                 expect(active.items).toEqual([1]);
                 expect(active.updates).toBe(60);
+
+                // Installed before init() runs, so BT calls made inside init() reach this instance.
+                expect(active.wasActiveDuringInit).toBe(true);
             });
 
             it('keeps the previous instance running when the fresh one fails init()', async () => {
