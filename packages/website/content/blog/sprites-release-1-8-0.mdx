@@ -1,0 +1,212 @@
+---
+title: BLIT386 1.8.0 - a sprite can turn around
+description:
+  The sprite release - flips, turns, scale, stretch, and pivots for drawSprite, grid tiles, nine-slice panels, and
+  deterministic frame seeking with renderAt.
+date: 2026-10-18
+tags: [release, sprites]
+author: vancura
+---
+
+The constants `BT.FLIP_H`, `BT.FLIP_V`, and the three `ROT_*` turns have been sitting in the public API since 0.1.0,
+politely documented, and doing absolutely nothing. You could pass them around, combine them, log them - the renderer
+just never looked at them. So every game drew its hero facing right, and then drew him again in the PNG facing left,
+which is the kind of thing you accept in year one of an engine and stop noticing by year two.
+
+1.8.0 is the release where a sprite can finally turn around. It is also a long one, a little over a hundred pull
+requests, partly because 1.7.1 shipped a few weeks ago without a post of its own, so this one covers both. Sprite
+drawing grew up, panels stopped being rectangles, the engine learned to render any frame you ask for without waiting for
+the browser, and the kit, which used to talk to two coding assistants, now talks to eight.
+
+## Turn, flip, grow, stretch
+
+`BT.drawSprite` takes a params object as its 4th argument now, instead of only a palette offset. Flags flip and turn the
+sprite in quarter turns, `scale` multiplies it by whole numbers, a `Rect2i` destination stretches it into any box, and
+`pivot` places it by a point that is not its top-left corner - its feet, usually, which is where a character actually
+stands:
+
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+import type { SpriteDrawParams } from 'blit386';
+declare const sheet: SpriteSheet;
+declare const isFacingLeft: boolean;
+const srcRect = new Rect2i(0, 0, 16, 16);
+const destPos = new Vector2i(40, 60);
+// ---cut---
+// Allocate once, outside the draw loop, with every field present.
+const params: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 };
+
+params.flags = isFacingLeft ? BT.FLIP_H : 0;
+params.scale = 2;
+BT.drawSprite(sheet, srcRect, destPos, params);
+
+params.flags = 0;
+params.scale = 1;
+BT.drawSprite(sheet, srcRect, new Rect2i(10, 40, 50, 12), params); // stretch into a box
+```
+
+The flags compose in one fixed order into eight orientations, and both backends read the same orientation table, so
+WebGPU and the Canvas 2D fallback agree pixel for pixel. Getting there was less glamorous than it sounds: the first
+version of the spec had two of the eight rows swapped, rotate-then-flip where it said flip-then-rotate, and nobody
+noticed until a review checked all 32 flag masks against the table before any code existed. Stretching had its own small
+trap - sample a destination pixel at its left edge and a GPU will quietly disagree with you on ties, so both backends
+now sample at the pixel center and round exact ties down. Nothing about it is visible, and that is honestly the whole
+point.
+
+The old number form of the 4th argument is untouched and still allocates nothing, so existing games keep drawing exactly
+as before.
+
+Most sprite sheets are grids anyway, and games kept hand-rolling the same `new Rect2i(index * w, 0, w, h)` arithmetic,
+one of them with its own little `SpriteGrid` class. `BT.drawTile` does that math for you:
+
+```ts twoslash
+import { BT, type Palette, SpriteSheet, Vector2i } from 'blit386';
+declare const palette: Palette;
+declare const frame: number;
+// ---cut---
+const { sheet } = await SpriteSheet.loadIndexed('/sprites/hero.png', palette, 1, { tileSize: 16 });
+
+BT.drawTile(sheet, frame, new Vector2i(40, 60)); // row-major index: 0 is top-left
+BT.drawTile(sheet, 2, 1, new Vector2i(40, 60)); // column 2, row 1
+```
+
+The [sprites demo](https://demos.blit386.dev/sprites) walks through all of it, including a triangle that stays planted
+on its dot while the flags and the scale change around it, which is what a pivot is for and is somehow easier to see
+than to explain.
+
+<DemoEmbed demo="sprites" title="BLIT386 sprites demo" />
+
+## One panel, any size
+
+A nine-slice is one of those ideas every UI toolkit since the nineties has had, and I kept not adding it because a
+filled rectangle with an outline is _almost_ a panel. It is not, though. `NineSlice.fromSheet` cuts one piece of panel
+art into four corners, four edges, and a center, and `BT.drawNineSlice` draws it into a box of any size. The corners
+stay 1:1, the edges and center each stretch or tile, and when the box gets smaller than the corners, the corners crop
+instead of overlapping - so a dialog can animate open from nothing and keep its outline the whole way:
+
+```ts twoslash
+import { BT, NineSlice, Rect2i, SpriteSheet } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+const panel = NineSlice.fromSheet(sheet, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), { edges: 'tile' });
+
+BT.drawNineSlice(panel, new Rect2i(20, 20, 120, 64));
+BT.drawNineSlice(panel, new Rect2i(20, 100, 120, 64), 16); // palette offset, as in drawSprite
+```
+
+It draws through the same sprite paths as everything above, so it matches on both backends by construction, and it
+allocates nothing per frame. The best test it got was the demos themselves: the shared UI kit behind most of them used
+to draw panels, buttons, meters, and sliders as flat rectangles, and now every one of them is nine-slice art. If the
+demos look a little more finished this month, that is why.
+
+<DemoEmbed demo="nine-slice-panels" title="BLIT386 nine-slice panels demo" />
+
+## Any frame, on demand
+
+A game loop runs on `requestAnimationFrame`, which is exactly right for a person watching and exactly wrong for anything
+else. A hidden tab gets throttled, a headless browser may never paint, and a screenshot taken "after about three
+seconds" is a different screenshot every time. I wanted a frame I could name.
+
+`BT.renderAt(seconds)` stops the loop, replays the game from tick 0 into a fresh instance of its class, steps the fixed
+update to the target tick, and renders exactly that frame - no rAF involved, so it works in a hidden page. A frame
+reached this way is byte-identical to the one the live loop draws at the same tick, on both backends:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+await BT.renderAt(3.2); // tick 192 at 60 FPS
+const png = await BT.captureFrame({ size: 'display' }); // the seeked frame
+BT.resume(); // keep playing from tick 192
+```
+
+It needed a few smaller pieces around it, and some of them shipped in 1.7.1 already. Opening a page with `?seed=N` seeds
+`BT.random` before your `init()` runs, so a seed in a bug-report URL reproduces the run.
+`captureFrame({ size: 'display' })` captures at the logical display size instead of the upscaled output. `BT.isReady`
+says when the engine has actually finished starting, so a tool can wait for it instead of matching error text. And a
+game can now implement an optional `testState()` that returns plain JSON, which an agent play-testing in dev reads with
+`window.BT.testState()` - the starter games ship one, and the hand-written `window.__game` global they used to carry is
+on its way out.
+
+The honest catch: for a seek to be exact, everything has to run on the tick clock, and palette effects did not. Cycles,
+fades, and flashes used to advance once per rendered frame on `performance.now()`, which a replay cannot rewind. They
+now advance once per fixed update, right after your `update()`, on game time - so they follow the fixed-step loop
+instead of the wall clock, `BT.ticksReset()` pauses them for a tick instead of running them backwards, and a palette
+write you make in `render()` now lands after the effects rather than before them. If a game of yours relied on that old
+order, this is the one place to look.
+
+I built the first real customer for this myself. The demos site has a [shots gallery](https://demos.blit386.dev/shots)
+now, a deterministic capture of every demo at named moments, made by loading each one in a hidden frame and seeking it
+with `renderAt`. It catches layout mistakes in the UI kit before anyone sees them, and the
+[demos front page](https://demos.blit386.dev) is now a sheet of all of them, built from the same captures.
+
+## Other changes
+
+### Press any key
+
+`BT.isAnyKeyPressed()` and its friends answer the question every title screen asks. Pressed fires on every new key, even
+with another one held; released follows RetroBlit and fires only when _everything_ is up, which is what "let go" means
+to a player. There is a gamepad twin for each, per player.
+
+### Triggers are buttons now
+
+`BT.BTN_L2` and `BT.BTN_R2` read the gamepad triggers through the same `BT.isDown` / `BT.isPressed` calls as every other
+button, down at half pull. The browser has its own opinion about when a trigger is pressed - Chromium says about 12% -
+and I ignore it on purpose, because a fixed threshold that changes per browser is not a threshold.
+
+### The arrow keys belong to player one
+
+Until now, player 0 got WASD and player 1 got the arrows, which made sense for a two-player versus game and no sense at
+all for the one-player game almost everybody actually makes. `keyboardLayout: 'single'` in `configure()` gives player 0
+both. The default stays as it was, so nothing changes until you ask.
+
+### Your own DOM events
+
+`BT.nativeScreenToDisplayPos(clientX, clientY)` converts a browser coordinate to a display pixel with the same math the
+pointer input uses, for events the engine does not wrap - a file dropped on the canvas, for example. Pointer input now
+calls the same function, so the two cannot drift apart.
+
+### How many bunnies
+
+[Bunnymark](https://demos.blit386.dev/bunnymark) is the classic sprite stress test, bouncing bunnies by the hundred
+until something gives. On WebGPU, what gives first is the sprite buffer at 8,333 quads, and the demo counts every bunny
+it had to drop past that instead of pretending they were drawn. The software renderer submits every bunny and keeps
+doubling up to 262,144, which is not a recommendation.
+
+<DemoEmbed demo="bunnymark" title="BLIT386 bunnymark demo" />
+
+### Clicks that went missing
+
+On a display faster than your update rate, some rendered frames run no `update()` at all, and a click that landed in one
+of those was gone before your game could read it - on a 144 Hz screen, often enough to feel like a broken mouse. Presses
+now wait for the next frame that runs an update. Three smaller fixes from 1.7.1 belong here too: `BT.cameraReset()`
+actually stays reset into the next frame, touch devices unlock audio (`touchstart` never counted as a user gesture, and
+nobody told me), and a second `BT.init()` while the first is still running is refused instead of racing it.
+
+### Eight assistants
+
+The kit used to set up Claude Code and Cursor. It now also sets up Zed, Antigravity, Gemini CLI, OpenCode, Codex, and
+GitHub Copilot, all reading one shared skills folder and guarded by one policy against lock-file edits and destructive
+git commands, each through whatever hook system that assistant happens to have. Every one of them turned out to have a
+quirk - one sends file edits as patch text, one has no way to say "ask", one lets a crashed hook through - and the guard
+had to fail closed on all of them.
+
+Closer to home, the format hook formats only the file that was just edited, Cursor loads kit skills on its own, the docs
+MCP server is pre-approved in Claude settings, `blit doctor` warns when an assistant has no docs config, there is a
+`.claude/launch.json` for the Claude desktop preview, and scaffolded games work on Windows. From 1.7.1, the
+`test-the-game` skill and `npx blit play` let an agent play-test a game from the terminal, and `blit agents sync`
+stopped overwriting files it did not own.
+
+The [docs MCP server](/mcp-server) got better at being asked things too: a `get_doc_page` tool, absolute URLs, search
+ranked by the words you actually typed, and a [Build a Game](/docs/build-a-game) section that publishes the starter
+project and the kit guides, for an agent that has the docs but no scaffolded game.
+
+Existing games pick all of this up with `npx blit upgrade` and `npx blit agents sync`. Nothing was renamed, so there is
+nothing to migrate.
+
+The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
+
+```bash
+npm create blit386@latest my-game
+```
+
+Go turn something around.

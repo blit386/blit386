@@ -39,7 +39,7 @@ import {
 } from '@blit386/kit/adapters';
 
 /** blit386 version range written into the generated package.json. */
-const BLIT386_RANGE = '^1.7.0';
+const BLIT386_RANGE = '^1.8.0';
 
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';
