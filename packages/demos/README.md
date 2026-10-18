@@ -10,11 +10,11 @@ Want to build your own game with the engine? Start with the
 [create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) scaffolder
 (`npm create blit386@latest my-game`).
 
-There are 50 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
-gamepad), audio, and seeded randomness. Each demo lives in a single number-free kebab-case file under `src/` (for
-example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most
-demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
-[Shared UI kit](#shared-ui-kit) below for the four exceptions). During development, Vite serves the matching page at
+There are 52 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
+gamepad), audio, seeded randomness, and test hooks. Each demo lives in a single number-free kebab-case file under `src/`
+(for example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames.
+Most demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
+[Shared UI kit](#shared-ui-kit) below for the five exceptions). During development, Vite serves the matching page at
 `/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
 persistent shell (navigation banner + iframe). The banner's demo selector is a fuzzy-searchable combobox (type to filter
 by title). The iframe loads the same demo with `?embed&source`, which runs the canvas, keeps the Twoslash source panel
@@ -25,6 +25,17 @@ Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/
 path per slug, for example `https://demos.blit386.dev/basics`. Older numbered (vintage) URLs such as `/001-basics` still
 work: the build writes permanent 301 redirects from every entry in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`) into
 `dist/_redirects`.
+
+To embed a demo in your own page, iframe the `?embed` form - canvas only, no banner or source panel:
+
+```html
+<iframe src="https://demos.blit386.dev/basics?embed" width="640" height="480" allow="clipboard-write"></iframe>
+```
+
+Other URL parameters every demo understands: `?seed=N` pins `BT.random` so a run is repeatable (captures use `seed=1`),
+`?backend=software` forces the Canvas 2D renderer, and `?nosplash` skips the release-build splash. Production only
+allows framing from `blit386.dev` (and `next.blit386.dev`), `vancura.dev`, Framer, and `localhost` - see
+[docs/SECURITY-HEADERS.md](docs/SECURITY-HEADERS.md) to add a host.
 
 The demos build on each other in `DEMO_ORDER` where it matters; later pages assume you have seen the ideas from earlier
 ones.
@@ -210,11 +221,11 @@ phone without a keyboard.
 
 ## Demo shots
 
-`/shots` (on `next.demos.blit386.dev`) shows pixel-perfect captures of every demo at deterministic moments, with the
-shared UI kit's layout lint. Captures are generated on the dev server and committed under `public/shots/` with
-`pnpm run capture:shots -- --all` (or `--changed`, or `--demos basics,sprites`). After a clean run the script also
-deletes `.png` files in the captured demos' folders that the new manifest no longer lists, such as the image of a
-renamed pose; review them in `git status` before committing.
+`/shots` (built into every deploy, `noindex`, so both `demos.blit386.dev/shots` and `next.demos.blit386.dev/shots`)
+shows pixel-perfect captures of every demo at deterministic moments, with the shared UI kit's layout lint. Captures are
+generated on the dev server and committed under `public/shots/` with `pnpm run capture:shots -- --all` (or `--changed`,
+or `--demos basics,sprites`). After a clean run the script also deletes `.png` files in the captured demos' folders that
+the new manifest no longer lists, such as the image of a renamed pose; review them in `git status` before committing.
 
 In dev, the page itself has capture controls; in a build it is a read-only gallery. Keyboard: `?` lists everything.
 
@@ -286,6 +297,12 @@ the flat URLs on [demos.blit386.dev](https://demos.blit386.dev/).
 Editing a demo's `src/<slug>.js` file usually avoids a full page reload: a method-only edit (`render()`/`update()`)
 keeps state in place, while an edit to `init()` or the constructor re-initializes the demo instead. A `configure()`
 hardware-setting change still forces a full reload - see [CLAUDE.md](CLAUDE.md#hot-reload) for the full tier breakdown.
+
+## Adding a demo
+
+Run the `/demos-new` skill, or follow the checklist in
+[`.claude/rules/file-structure.md`](.claude/rules/file-structure.md) ("Beside the file"). `pnpm run check:demo-registry`
+confirms everything agrees; `pnpm run preflight` runs every gate.
 
 ## Social metadata and OG images
 
