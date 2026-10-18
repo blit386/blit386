@@ -40,8 +40,8 @@ BT.drawPixel(new Vector2i(px, py), COLOR);
 
 ## BT getters already return integers
 
-`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` - no conversion needed. So do the grid
-helpers `sheet.tileRect(...)` and `Rect2i.fromTile(col, row, tileSize)` (engine 1.8.0+).
+`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` - no conversion needed. The grid helpers
+`sheet.tileRect(...)` and `Rect2i.fromTile(col, row, tileSize)` (engine 1.8.0+) return `Rect2i` source rectangles.
 
 ## Sprite sizes are whole numbers too
 
