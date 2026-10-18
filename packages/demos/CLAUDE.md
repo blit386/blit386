@@ -115,9 +115,10 @@ committed. The frame on a card is deterministic: `scripts/capture-og-image.mjs` 
 same first pose. When that pose has `keys`, the OG script presses them after the seek, steps `INPUT_TICKS`, and releases
 them, exactly like the `/shots` capture, so the card and the tile agree (keyboard-diagnostic's first pose lights
 B-L-I-T-3-8-6 this way). To change which moment a card shows, reorder that demo's poses or give the first pose keys, not
-the OG script (there is no settle time or override table). The one known exception is `seeded-worlds`, whose right-hand
-world is seeded from the clock on purpose, so its card differs on every run. `buildSocialMeta` falls back to
-`og-default.png` for any slug without one, so `og:image` is never a 404.
+the OG script (there is no settle time or override table). The one known exception is `seeded-worlds`. Its first pose
+copies the left seed to the right, so the pair of worlds is repeatable, but the visible stream panel
+(`new Random(seed)`) draws its seed from a clock-seeded generator on purpose, so the complete card still differs on
+every run. `buildSocialMeta` falls back to `og-default.png` for any slug without one, so `og:image` is never a 404.
 
 ## Documentation Style
 
@@ -212,9 +213,9 @@ sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX 
 
 All demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch
 D-pad, swipes, tap zones - comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current
-widget list and options. Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 50 demos, 46 import it;
-the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres` (a bare-bones starter plus three
-immersive/showcase pieces, none with a demo HUD).
+widget list and options. Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 52 demos, 47 import it;
+the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` (a bare-bones starter
+plus four immersive/showcase pieces, none with a demo HUD).
 
 The invariants below are covered by `node:test` unit tests in `src/shared/__tests__/` (slot allocation and collisions,
 the draw-command pool's allocates-nothing-per-frame claim, layout anchor math, widget value mapping, gesture and D-pad
