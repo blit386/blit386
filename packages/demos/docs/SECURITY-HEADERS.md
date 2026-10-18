@@ -7,8 +7,9 @@ every path (demo pages, `?embed` pages, the `/` sheet, `/shots`, assets), and co
 copy at build time. Nothing else sets a header: [`wrangler.jsonc`](../wrangler.jsonc) only names the Pages project and
 `dist/`, `vite.config.js` has no header plugin, and the only build-time addition is
 [`plugins/channel-headers.js`](../plugins/channel-headers.js), which appends `X-Robots-Tag: noindex` to `dist/_headers`
-on the `next.demos.blit386.dev` channel (`BLIT386_CHANNEL=next`) and never in production. `/shots` and `404.html` stay
-out of search results through a `<meta name="robots" content="noindex">` tag, not a header.
+on the `next.demos.blit386.dev` channel (`BLIT386_CHANNEL=next`) and never in production. In production, `/shots` and
+`404.html` stay out of search results through a `<meta name="robots" content="noindex">` tag, not a header; on the next
+channel they carry both the tag and the header.
 
 ## Baseline
 
