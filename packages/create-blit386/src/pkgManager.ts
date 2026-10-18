@@ -20,6 +20,10 @@ export interface PmHints {
     runFormatCmd: string;
     /** Command a human types to lint source, e.g. "npm run lint". */
     runLintCmd: string;
+    /** CI install that fails on a stale lockfile, e.g. "npm ci". */
+    ciInstallCmd: string;
+    /** CI step that makes the manager available on a runner: Corepack, or a global install for bun. */
+    ciPrepareCmd: string;
     /** Argument list to spawn the manager's install, e.g. ["install"] ([] for yarn). */
     installArgs: string[];
 }
@@ -85,6 +89,8 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'pnpm run build',
                 runFormatCmd: 'pnpm run format',
                 runLintCmd: 'pnpm run lint',
+                ciInstallCmd: 'pnpm install --frozen-lockfile',
+                ciPrepareCmd: 'corepack enable',
                 // --ignore-workspace: the scaffold target may sit under an ancestor directory that has its own
                 // pnpm-workspace.yaml (e.g. a monorepo of unrelated projects). Without this flag pnpm silently
                 // installs for that ancestor workspace instead of the new project, leaving it without a
@@ -99,6 +105,8 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'yarn build',
                 runFormatCmd: 'yarn format',
                 runLintCmd: 'yarn lint',
+                ciInstallCmd: 'yarn install --frozen-lockfile',
+                ciPrepareCmd: 'corepack enable',
                 installArgs: [],
             };
         case 'bun':
@@ -109,6 +117,8 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'bun run build',
                 runFormatCmd: 'bun run format',
                 runLintCmd: 'bun run lint',
+                ciInstallCmd: 'bun install --frozen-lockfile',
+                ciPrepareCmd: 'npm install --global bun',
                 installArgs: ['install'],
             };
         default:
@@ -119,6 +129,8 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'npm run build',
                 runFormatCmd: 'npm run format',
                 runLintCmd: 'npm run lint',
+                ciInstallCmd: 'npm ci',
+                ciPrepareCmd: 'corepack enable',
                 installArgs: ['install'],
             };
     }

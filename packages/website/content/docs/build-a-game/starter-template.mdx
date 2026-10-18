@@ -36,7 +36,7 @@ This is the JavaScript project `npm create blit386@latest my-game` writes, minus
     "@biomejs/biome": "^2.5.7",
     "@blit386/kit": "^1.7.1",
     "prettier": "^3.9.6",
-    "vite": "^8.0.16"
+    "vite": "^8.1.5"
   }
 }
 ```
@@ -137,20 +137,21 @@ export default defineConfig({
 // On a computer: move the mouse, or use the left and right arrow keys (or A and D) as a fallback.
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
-// Every BLIT386 game is one class with up to four methods. We use three of them here:
+// Every BLIT386 game is one class with three required methods:
 //   init()   - runs once at the start (we set up our colors here).
 //   update() - runs about 60 times a second (we move things and check for catches here).
 //   render() - runs about 60 times a second (we draw everything here).
 //
-// Optional hooks you can add later: configure() for screen settings or to turn off the BLIT386
-// splash, onHotReload() to keep score across init() edits while the Vite plugin hot-reloads
-// (see the commented examples below).
+// Plus optional hooks. This file uses testState(), which hands the score, lives, and positions to a play-tester as
+// plain numbers (engine 1.8.0+). Two more you can add later: configure() for screen settings or to turn off the
+// BLIT386 splash, and onHotReload() to keep score across init() edits while the Vite plugin hot-reloads (see the
+// commented examples below).
 //
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
 // Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
 //
 // Testing tip: add `?seed=42` to the page address to get the same falling blocks every run, and open the browser
-// console and type `__game.state()` to see the score, lives, and positions as numbers.
+// console and type `BT.testState()` to see the score, lives, and positions as numbers.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
@@ -251,25 +252,15 @@ class Game {
             BT.randomSeed(seed);
         }
 
-        // Dev builds only: let tests and AI agents read the game state and grab exact frames.
-        // A shipped game (a production build) never has `window.__game`.
+        // Dev builds only: let tests and AI agents grab exact frames, and read the state the old way.
+        // A shipped game (a production build) never has `window.__game`. The state itself comes from
+        // testState() below - `BT.testState()` is the newer way to read it and needs no global at all.
         if (BT.isDevMode) {
             // Object.assign instead of `window.__game = ...`, because the editor's type checker does not know
             // about a `__game` property on `window` in a plain JavaScript file.
             Object.assign(window, {
                 __game: {
-                    state: () => ({
-                        ticks: BT.ticks,
-                        score: this.score,
-                        lives: this.lives,
-                        paddle: {
-                            x: this.paddlePos.x,
-                            y: this.paddlePos.y,
-                            width: PADDLE_WIDTH,
-                            height: PADDLE_HEIGHT,
-                        },
-                        items: this.items.map((item) => ({ x: item.x, y: item.y })),
-                    }),
+                    state: () => this.testState(),
                     frame: async () => blobToDataURL(await BT.captureFrame()),
                 },
             });
@@ -361,6 +352,19 @@ class Game {
         // Show the score and lives in the top-left corner.
         BT.systemPrint(new Vector2i(6, 6), COLOR_TEXT, `Score ${this.score}`);
         BT.systemPrint(new Vector2i(6, 18), COLOR_TEXT, `Lives ${this.lives}`);
+    }
+
+    // The game as plain numbers, for a test or an AI agent that cannot read pixels. The engine never calls this on
+    // its own: while the dev server runs, `BT.testState()` in the browser console (or `npx blit play`) reads it.
+    // Add a field here when you want to check something new, for example `level: this.level`.
+    testState() {
+        return {
+            ticks: BT.ticks,
+            score: this.score,
+            lives: this.lives,
+            paddle: { x: this.paddlePos.x, y: this.paddlePos.y, width: PADDLE_WIDTH, height: PADDLE_HEIGHT },
+            items: this.items.map((item) => ({ x: item.x, y: item.y })),
+        };
     }
 
     // Optional hardware settings. Uncomment to change the screen size or speed, or to

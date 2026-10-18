@@ -1,12 +1,28 @@
 # create-blit386 - Design and Roadmap
 
-> Status (2026-07-24): latest **published** npm release is `1.3.0` (`@blit386/kit@1.3.0` + `create-blit386@1.3.0`;
-> dist-tag `latest`). `blit386.engineRange` and `BLIT386_RANGE` are `^1.4.0`. Hot-reload content ships in this cut
-> (section 12; kit docs/skills `hot-reload.md` / `use-hot-reload`, Catcher `onHotReload` example, starter `blit386()`
-> Vite plugin). Publishing is manual-only (see the 2026-07-14 policy change below) - there is no CI publish workflow. 24
-> skill directories under `packages/kit/content/skills/`. Claude/Cursor agent adapters are a single shared module
-> (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold and `blit agents sync` / `add`
-> (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days. Run
+> Status (2026-10-18): latest **published** release is `1.7.1` (2026-09-27), the same `x.y.z` for `blit386`,
+> `@blit386/kit`, and `create-blit386` - the three have released in lockstep since BT-410, bumped together by
+> `scripts/bump-lockstep.mjs` (`pnpm run bump -- x.y.z` from the repo root, which also derives `BLIT386_RANGE` and the
+> kit's `blit386.engineRange`). `1.8.0` is in preparation. The scaffolder lives in the `blit386/blit386` monorepo at
+> `packages/create-blit386/` (the standalone `blit386/create-blit386` repo named below is history; its releases page
+> moved to <https://github.com/blit386/blit386/releases>). The wizard offers eight assistants - Claude Code, Cursor,
+> Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenCode, Zed - all generated through the kit's agent registry
+> (`AGENT_ADAPTERS`, keyed by `AgentKind` in `packages/kit/src/ownership.ts`); the scaffolder never branches on an agent
+> name, and `blit agents add <kind>` installs any of them later. The `.blit/manifest.json` shape is the kit's
+> `BlitManifest` type, not a local copy. The starter game ships the `testState()` hook (engine 1.8.0+) read by
+> `BT.testState()` and `npx blit play`; `blit clean` replaces a game with the kit's empty skeleton
+> (`packages/kit/content/templates/game.{js,ts}`). The optional CI workflow runs the scaffolding package manager through
+> Corepack instead of pinning pnpm. Everything in the older status blocks below is retained as history; where a numbered
+> section still describes the two-adapter or standalone-repo era, the current `CLAUDE.md`, `PUBLISHING.md`, and
+> `.claude/rules/template-structure.md` next to this file win.
+>
+> Status (2026-07-24, historical): latest **published** npm release is `1.3.0` (`@blit386/kit@1.3.0` +
+> `create-blit386@1.3.0`; dist-tag `latest`). `blit386.engineRange` and `BLIT386_RANGE` are `^1.4.0`. Hot-reload content
+> ships in this cut (section 12; kit docs/skills `hot-reload.md` / `use-hot-reload`, Catcher `onHotReload` example,
+> starter `blit386()` Vite plugin). Publishing is manual-only (see the 2026-07-14 policy change below) - there is no CI
+> publish workflow. 24 skill directories under `packages/kit/content/skills/`. Claude/Cursor agent adapters are a single
+> shared module (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold and `blit agents sync` /
+> `add` (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days. Run
 > `git log --oneline -1` for the current one.)
 >
 > History: first published 2026-06-09 as `@blit-tech/kit@0.1.0` + `create-blit-tech@0.1.0` (section 11); renamed to
@@ -103,8 +119,8 @@
 > ideas.
 
 This is the planning doc: roadmap, decisions, and monetization notes. It moved into the scaffolder repo in PR #34 and
-now lives at the root of `blit386/create-blit386`, which is public - so write it as a doc a stranger may read, and keep
-anything genuinely private out of it.
+now lives at `packages/create-blit386/` in the public `blit386/blit386` monorepo - so write it as a doc a stranger may
+read, and keep anything genuinely private out of it.
 
 ---
 
@@ -510,8 +526,11 @@ As built in v0.1 (slightly richer than the original three-question sketch):
 2. "Which language do you want?" - JavaScript (recommended) or TypeScript. Both ship (the TS layer landed in phase 2);
    `--ts` skips this prompt.
 3. "Which AI coding assistants do you use?" - multi-select checkboxes for Claude Code (adds `CLAUDE.md` + `.claude/`),
-   Cursor (adds `.cursor/`), OpenCode (adds `opencode.json` and `.opencode/`), and/or Zed (adds `.zed/settings.json`).
-   Leave all unchecked for none. "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
+   Cursor (adds `.cursor/`), Antigravity (`.agents/hooks*`, `.agents/mcp_config.json`), Codex (`.codex/`), GitHub
+   Copilot (`.github/hooks/`, `.github/workflows/copilot-setup-steps.yml`), Gemini CLI (`.gemini/`), OpenCode
+   (`opencode.json` and `.opencode/`), and/or Zed (`.zed/settings.json`); the labels and hints come from the kit's
+   `AGENT_ADAPTERS` registry, so a new adapter appears here without a scaffolder change. Leave all unchecked for none.
+   "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
 4. "Add GitHub Actions CI (build + format check)?" - optional, default no.
 5. Scaffold, `git init` + first commit (skippable), install, print the next steps.
 
@@ -532,8 +551,11 @@ Robustness rules (required for agent-driven and CI use; both DONE 2026-06-13, se
 
 A minimal, real game (Catcher per D5), plus:
 
-- `package.json` (blit386 from npm, dev/build scripts), `index.html` (canvas + container per `bootstrap` contract),
-  `vite.config`, `public/`, the starter game file, `.gitignore`, `.editorconfig`, `biome.json`, `jsconfig.json`.
+- `package.json` (blit386 from npm, dev/build scripts, a Corepack `packageManager` pin from the invoking manager),
+  `index.html` (canvas + container per `bootstrap` contract), `vite.config.js` with the `blit386()` hot-reload plugin,
+  `public/`, the starter game file (with `testState()`), `.gitignore`, `.gitattributes` (LF everywhere),
+  `.node-version`, `.editorconfig`, `biome.json`, `prettier.config.js` + `.prettierignore` +
+  `scripts/prettier-plugin-compact-tables.mjs` (Markdown and YAML only), and `jsconfig.json` or `tsconfig.json`.
 - `README.md` written for the chosen persona. Leads with `npm run dev` (D12); includes the overlay-key explanation
   (position-based Backquote + tap-the-corner fallback), a "Share your game" section (`npm run build` + drag `dist/` to a
   static host), and a pointer to `docs/when-something-breaks.md`.
@@ -867,6 +889,11 @@ Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; 
 ---
 
 ## 11. Publishing to npm (procedure + status)
+
+> Superseded (2026-10-18): the procedure below predates lockstep versioning and the monorepo. The live procedure -
+> engine first (`pnpm run release` in `packages/blit386`), then kit, then scaffolder, one `x.y.z` from `pnpm run bump`,
+> one tag without a `v` prefix - is `PUBLISHING.md` next to this file and the root `/release` skill. Kept for the
+> release history it records.
 
 Status (verified 2026-07-24 against the npm registry): `@blit386/kit@1.3.0` and `create-blit386@1.3.0` are published and
 live (`dist-tags.latest = 1.3.0` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`

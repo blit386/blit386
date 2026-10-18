@@ -123,6 +123,8 @@ async function main(): Promise<void> {
         pmRunBuild: pm.runBuildCmd,
         pmRunFormat: pm.runFormatCmd,
         pmRunLint: pm.runLintCmd,
+        pmCiInstall: pm.ciInstallCmd,
+        pmCiPrepare: pm.ciPrepareCmd,
         ...(packageManager === undefined ? {} : { packageManager }),
         includeCi: wizardOptions.includeCi,
         agents: wizardOptions.agents,

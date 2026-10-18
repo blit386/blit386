@@ -17,22 +17,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
-        with:
-          version: 11.20.0
-
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version-file: '.node-version'
-          cache: 'pnpm'
+
+      # Corepack reads the `packageManager` field in package.json, so the runner gets the exact npm, pnpm, or yarn
+      # that scaffolded this game - no second version pin to keep in step. Bun is not managed by Corepack, so a Bun
+      # project installs it globally here instead.
+      - name: Set up package manager
+        run: '{{pmCiPrepare}}'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: '{{pmCiInstall}}'
 
       - name: Check formatting
-        run: pnpm run format:check
+        run: '{{pmRunFormat}}:check'
 
       - name: Build
-        run: pnpm run build
+        run: '{{pmRunBuild}}'

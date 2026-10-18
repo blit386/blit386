@@ -6,7 +6,8 @@
  *                        .node-version, biome.json, prettier.config.js + .prettierignore +
  *                        scripts/prettier-plugin-compact-tables.mjs)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
- *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
+ *   - ../templates/ts    (the TypeScript game + package.json + tsconfig)
+ *   - ../templates/optional/ci (wizard opt-in GitHub Actions workflow; assistant files come from the kit)
  *   - @blit386/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
  *
  * After emitting all files, scaffold writes `.blit/manifest.json` (the ownership manifest) and
@@ -55,6 +56,12 @@ export interface ScaffoldOptions {
     pmRunBuild: string;
     pmRunFormat: string;
     pmRunLint: string;
+
+    /** Lockfile-strict install for the CI workflow. Required when `includeCi` is true. */
+    pmCiInstall?: string;
+
+    /** CI step that provides the package manager on a runner. Required when `includeCi` is true. */
+    pmCiPrepare?: string;
     includeCi?: boolean;
 
     /** AI assistants to generate config for. Empty means none. Each entry writes its own adapter tree. */
@@ -199,6 +206,11 @@ function writeGeneratedFiles(targetDir: string, files: GeneratedFile[], writtenP
 
 /** Generate the project at `targetDir`. The caller guarantees the folder is empty. */
 export function scaffold(options: ScaffoldOptions): void {
+    // A guessed CI command (for example Corepack for Bun) would ship a workflow that cannot install anything.
+    if (options.includeCi === true && (!options.pmCiInstall || !options.pmCiPrepare)) {
+        throw new Error('includeCi requires pmCiInstall and pmCiPrepare (see pmHints in src/pkgManager.ts).');
+    }
+
     // The kit npm installed beside this scaffolder - `resolveKitRoot`, not the kit's own `kitRoot()`.
     // `kitRoot()` answers "the kit containing me", which is the `blit` CLI's question: it ships inside a
     // generated game and must read its own content. The scaffolder's question is "the kit this package
@@ -227,6 +239,8 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
+        pmCiInstall: options.pmCiInstall ?? '',
+        pmCiPrepare: options.pmCiPrepare ?? '',
         packageManager: options.packageManager ?? '',
 
         // Resolved per language so base templates stay language-agnostic.
