@@ -57,17 +57,15 @@ order, and prints one JSON line per step.
 4. Read the state. Run this JavaScript in the page:
 
    ```js
-   window.__game.state();
-   ```
-
-   It returns plain numbers, for example `{ ticks, score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
-   about a second apart: `ticks` should have grown by about 60.
-
-   If the game class has a `testState()` method (engine 1.8.0+), read that instead - it works the same in every game:
-
-   ```js
    window.BT.testState();
    ```
+
+   It returns `{ ticks, backend, state }`, where `state` is whatever the game's `testState()` method returns - the
+   starter game gives plain numbers, for example `{ score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
+   about a second apart: `ticks` should have grown by about 60.
+
+   A game written against an engine before 1.8.0 has no `testState()`; the starter's `window.__game.state()` returns the
+   same plain object there.
 
    It returns `{ ticks, backend, state }`, where `state` is what `testState()` returned (or `null` when the game has no
    such method). See `use-dev-mode`.
@@ -108,6 +106,23 @@ order, and prints one JSON line per step.
 
    See `save-a-screenshot` for the difference between the two sizes.
 
+7. Freeze the game on an exact moment when timing matters (engine 1.8.0+). A live game keeps running between your tool
+   calls, so two reads never describe the same tick. `BT.renderAt` replays the game from the start on a fresh copy of
+   the game class and stops the loop on that frame; nothing moves until you say so:
+
+   ```js
+   while (!window.BT.isReady) await new Promise((r) => setTimeout(r, 16)); // init finished, loop exists
+   await window.BT.renderAt(3.0); // tick 180 at 60 FPS - update() ran 180 times, render() once
+   window.BT.testState(); // the state at exactly tick 180
+   await window.BT.captureFrame({ size: 'display' }); // the frame at exactly tick 180
+   await window.BT.renderAt(3.5, { from: 'current' }); // on to 3.5 s without replaying (never backwards)
+   await window.BT.resume(); // let it play again from there
+   ```
+
+   It works in a hidden or headless page too (no animation frame needed), and the same seed gives the same frame every
+   time. It only lands on the right picture if the game moves from `BT.ticks` / `BT.timeSeconds` / `BT.random`, never
+   `Date.now()` or `performance.now()`. Key presses do not replay - `renderAt` checks what the game does on its own.
+
 ## What a healthy run looks like
 
 - From the terminal: the last line shows `"errors":[]` and the exit code is 0. Any error the page logs fails the run.
@@ -120,12 +135,12 @@ order, and prints one JSON line per step.
 
 ## Notes
 
-- `window.__game` is the starter game's own code in `src/game.*`: look for `window.__game` in `init()`. Add a field to
-  `state()` when you need to check something new, for example `level: this.level`. Keep it plain numbers, strings, and
-  arrays so it can be printed.
-- For a game of your own, a `testState()` method on the game class (engine 1.8.0+) is less code than `window.__game`: no
-  global to assign and no `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints
-  it too, and falls back to `window.__game.state()` for a game without the method.
+- The starter game's `testState()` method lives in `src/game.*`; its dev-only `window.__game.state()` just calls it. Add
+  a field to `testState()` when you need to check something new, for example `level: this.level`. Keep it plain numbers,
+  strings, and arrays so it can be printed.
+- For a game of your own, the same `testState()` method is all you need (engine 1.8.0+): no global to assign and no
+  `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints it too, and falls back
+  to `window.__game.state()` for a game without the method.
 - An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and
   `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.7.1+ for a 1:1 frame) work
   straight away, and the terminal `state` step falls back to `BT.ticks`. See `use-dev-mode`.

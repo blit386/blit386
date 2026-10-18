@@ -54,6 +54,21 @@ BT.systemPrint(new Vector2i(Math.floor(x), 100), 4, 'Game Over');
 
 `BT.displaySize` is the screen size as a `Vector2i` (a property, so no parentheses).
 
+## Sprites, tiles, and panels
+
+Images come from a PNG sprite sheet. The `add-sprite` skill walks through loading one and drawing it; this is the short
+list of what a sprite draw can do:
+
+- `BT.drawSprite(sheet, srcRect, destPos)` - draw a region of the sheet at a position.
+- `BT.drawSprite(sheet, srcRect, destPos, { flags, scale, pivot, paletteOffset })` - the same, flipped or turned a
+  quarter at a time (`BT.FLIP_H`, `BT.FLIP_V`, `BT.ROT_90_CW`, ...), enlarged by a whole number, placed by a point other
+  than its top-left, or recolored (blit386 1.8.0+). Pass a `Rect2i` as the destination to stretch it into a box; that
+  form always needs the options object, even an empty `{}`.
+- `BT.drawTile(sheet, index, destPos)` - one cell of a grid-shaped sheet, no rectangle math (blit386 1.8.0+; load the
+  sheet with `{ tileSize: 16 }`).
+- `BT.drawNineSlice(panel, destRect)` - a bordered UI box of any size from one small piece of art (blit386 1.8.0+; see
+  the `draw-a-panel` skill).
+
 ## A complete render
 
 ```js

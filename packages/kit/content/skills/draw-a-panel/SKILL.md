@@ -1,0 +1,74 @@
+---
+name: draw-a-panel
+description:
+  Draw UI panels, dialog boxes, buttons, window frames, and bars of any size from one small piece of panel art with a
+  nine-slice (NineSlice.fromSheet + BT.drawNineSlice, engine 1.8.0+). Use whenever the user wants a bordered box, menu
+  frame, speech bubble, health bar, or any pixel-art panel that must resize without blurry or stretched corners.
+---
+
+# Draw a panel
+
+Draw a bordered box of any size from one small piece of panel art. A nine-slice cuts the art into 4 corners, 4 edges,
+and a center: corners stay 1:1, edges and center stretch or tile to fill the box.
+
+## When to use
+
+Use for dialog boxes, menus, buttons, speech bubbles, health bars, and window frames - anything with a pixel-art border
+that needs to come in more than one size. For a plain filled box, `BT.drawRectFill` is enough (draw-shapes skill).
+
+## How to do it
+
+Load the sheet the same way as any sprite (add-sprite skill), build the nine-slice once in `init()`, then draw it into
+any `Rect2i` in `render()`:
+
+```js
+import { BT, NineSlice, Rect2i, SpriteSheet } from 'blit386';
+
+async init() {
+    this.palette = BT.paletteCreate(64);
+    const { sheet } = await SpriteSheet.loadIndexed('/sprites/ui.png', this.palette, 1);
+    this.ui = sheet;
+
+    // Both rectangles are in sheet pixels. `outer` is the whole 16x16 panel,
+    // `inner` is its 8x8 middle - the 4-pixel ring around it becomes the corners and edges.
+    this.panel = NineSlice.fromSheet(this.ui, new Rect2i(0, 0, 16, 16), new Rect2i(4, 4, 8, 8), {
+        edges: 'tile', // repeat the edge art 1:1 (default 'stretch')
+        center: 'stretch', // stretch the middle (default)
+    });
+
+    this.dialogBox = new Rect2i(20, 160, 280, 64); // reuse the box instead of making one per frame
+    BT.paletteSet(this.palette);
+    return true;
+}
+
+render() {
+    BT.clear(2);
+    BT.drawNineSlice(this.panel, this.dialogBox);
+    BT.systemPrint(new Vector2i(28, 168), 4, 'Hello, traveler!');
+}
+```
+
+Recolor a panel the same way as a sprite, with a palette offset: `BT.drawNineSlice(this.panel, box, 16)` draws it with
+every slot shifted by 16 (a second set of colors you put there in `init()`).
+
+## Key calls
+
+- `NineSlice.fromSheet(sheet, outer, inner, options?)` (static, engine 1.8.0+) - cut a sheet region into nine parts.
+  `outer` must sit inside the sheet, `inner` inside `outer` and at least 1x1. `options` is `{ edges, center }`, each
+  `'stretch'` (default) or `'tile'`. The result is frozen; build it once in `init()`.
+- `BT.drawNineSlice(nineSlice, destRect, paletteOffset?)` (method, engine 1.8.0+) - draw it into a `Rect2i`. Allocates
+  nothing, so it is fine every frame.
+
+## Notes
+
+- `'stretch'` suits flat colors and gradients; `'tile'` keeps dotted, striped, or riveted borders crisp. Mix them: tiled
+  edges with a stretched center is the usual choice.
+- A box smaller than the two corners crops the corners and drops the edges between them, so a panel can animate open
+  from a zero-size `Rect2i` and keep its outline the whole way.
+- `inner` may touch `outer`. A zero-height top and bottom makes a horizontal three-slice bar - good for health and
+  progress bars.
+- An empty or negative `destRect` draws nothing. There is no tint; recolor with `paletteOffset` only.
+- Tiling a 1-pixel strip across a large box costs one draw per pixel. Stretch flat fills; tile only patterned art.
+- Everything is whole pixels: both sheet rectangles and the destination `Rect2i`.
+
+See `docs/drawing.md` and the add-sprite skill.

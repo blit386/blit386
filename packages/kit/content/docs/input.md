@@ -10,6 +10,9 @@ The button names are constants on `BT`:
 
 - Directions: `BT.BTN_LEFT`, `BT.BTN_RIGHT`, `BT.BTN_UP`, `BT.BTN_DOWN`
 - Action buttons: `BT.BTN_A`, `BT.BTN_B`, `BT.BTN_X`, `BT.BTN_Y`
+- Gamepad extras: `BT.BTN_L` / `BT.BTN_R` (shoulders), `BT.BTN_START`, `BT.BTN_SELECT`, and the triggers as buttons,
+  `BT.BTN_L2` / `BT.BTN_R2` (engine 1.8.0+, on at half pull; gamepad only, no keyboard key). The `read-gamepad` skill
+  covers sticks and analog triggers.
 
 For one-player games, the player number is `0`.
 
@@ -112,6 +115,10 @@ if (BT.isPointerActive(0)) {
 Mouse, touch, and pen positions are already in display pixels. If you listen to a browser event yourself (for example a
 file dropped on the canvas), `BT.nativeScreenToDisplayPos(event.clientX, event.clientY)` converts its coordinates the
 same way, or returns `null` when there is no valid position.
+
+Clicks and taps use the same three questions: `BT.isPressed(BT.BTN_POINTER_A, 0)` is the frame the button or finger went
+down, `BT.isDown` while it is held. Read them in `update()`; a click that lands between two steps on a fast display
+waits for the next `update()` (engine 1.8.0+), so none is lost.
 
 ### Mouse wheel
 

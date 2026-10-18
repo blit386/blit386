@@ -1,8 +1,9 @@
-// Claude Code PreToolUse hook: stops the assistant from hand-editing lock files and .env files.
-// The classification lives in guard-core.cjs, shared with every other agent's entry; this file only
-// knows Claude's payload (`tool_input.file_path`) and protocol (exit code 2 blocks the edit and shows
-// the message to the assistant). Fails closed: a payload it cannot read, or one without a file path,
-// blocks the edit - every tool the manifest matches (Edit, MultiEdit, Write) sends one.
+// Claude Code PreToolUse and Gemini CLI BeforeTool hook: stops the assistant from hand-editing lock
+// files and .env files. The classification lives in guard-core.cjs, shared with every other agent's
+// entry; this file only knows the payload both agents send (`tool_input.file_path`) and their shared
+// protocol (exit code 2 blocks the edit and shows the message to the assistant). Fails closed: a
+// payload it cannot read, or one without a file path, blocks the edit - every tool the manifest
+// matches (Claude's Edit, MultiEdit, Write; Gemini's write_file, replace) sends one.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { readFileSync } = require('node:fs');
