@@ -26,14 +26,16 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A 640x480 screen. Along the top runs a strip of thin blue bars, one per screen column.
-Below it sits a window of 32-pixel tiles in four kinds of ground - water, rock, forest,
-and grass - with small pale dots (the "rocks") scattered over about one tile in five. Two
-panels sit at the bottom: "Travel" on the left and "This world" on the right.
+A 640x480 screen with no engine overlay. Along the top runs a framed strip of thin blue
+bars, one per column. Below it sits a framed window of 32-pixel tiles in four kinds of
+ground - water, rock, forest, and grass - with small pale dots (the "rocks") scattered
+over about one tile in five. Three panels of the same height sit along the bottom:
+"Travel" with the two jump buttons, "This world" with where you are, and "Third number"
+with the Layer slider.
 
 You can scroll around forever with the arrow keys, the on-screen D-pad, or a swipe. Press
-"Jump far" to fling yourself 4000 tiles away, then "Home" to come straight back - and find
-every tile exactly where you left it.
+"J Jump far" to fling yourself 4000 tiles away, then "H Home" to come straight back - and
+find every tile exactly where you left it.
 
 Nothing was saved. The demo stores zero tiles. Each square works out what it is from
 nothing but its own position.
@@ -74,19 +76,19 @@ TRY THIS
 
 - Hold an arrow key or a D-pad direction to scroll 6 pixels per update tick, or swipe to
   jump 320 pixels - half the screen - in one go.
-- Press J ("Jump far") to travel 128000 pixels right and down - 4000 tiles each way - then
-  H ("Home") to return to tile (0, 0). Nothing has moved.
-- Drag the "Layer" slider from 0 to 8 and watch closely. The ground comes from hash2i,
-  which only knows x and y, so the landscape stays put. The dots come from hash3i, which
-  also knows the layer, so they change completely. Same place, different detail: that is
-  the third number at work.
+- Press J ("J Jump far") to travel 128000 pixels right and down - 4000 tiles each way -
+  then H ("H Home") to return to tile (0, 0). Nothing has moved.
+- Drag the "Layer" slider in the "Third number" panel from 0 to 8 and watch closely. The
+  ground comes from hash2i, which only knows x and y, so the landscape stays put. The dots
+  come from hash3i, which also knows the layer, so they change completely. Same place,
+  different detail: that is the third number at work.
 - The "stored" readout says "0 tiles" however far you go.
 
 */
 
 import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -99,14 +101,55 @@ const DISPLAY_H = 480;
 // something else.
 const WORLD_SEED = 20260730;
 
-// The 1D strip along the top: one bar per screen column.
-const STRIP_Y = 28;
-const STRIP_H = 44;
+// Everything sits MARGIN pixels in from the screen edges, and the boxes are GAP apart.
+const MARGIN = 8;
+const GAP = 8;
 
-// The tile grid below it.
+// Three panels along the bottom, side by side and the same height: travel controls, the
+// readout, and the layer slider. The row does not split into three whole-pixel thirds, so
+// the middle panel takes the two leftover pixels.
+const PANEL_H = 84;
+const PANEL_Y = DISPLAY_H - MARGIN - PANEL_H;
+const PANEL_W = 202;
+const MID_PANEL_W = DISPLAY_W - 2 * MARGIN - 2 * GAP - 2 * PANEL_W;
+const MID_PANEL_X = MARGIN + PANEL_W + GAP;
+const RIGHT_PANEL_X = MID_PANEL_X + MID_PANEL_W + GAP;
+
+// Widgets inside a panel start 9 pixels in from its left edge and are 20 pixels narrower
+// than it, and the first row starts 22 pixels down, under the title.
+const PANEL_CONTENT_X = 9;
+const PANEL_CONTENT_SHRINK = 20;
+const PANEL_CONTENT_TOP = 22;
+const PANEL_CONTENT_W = PANEL_W - PANEL_CONTENT_SHRINK;
+
+// The Travel panel's two buttons sit side by side. The kit stacks a group's rows, so the
+// panel reserves one button row and each button is placed with its own tiny group on
+// top. A group pinned with pad 0 starts its first row 5 pixels above the y it is given.
+const BUTTON_ROW_H = 27;
+const TRAVEL_BUTTON_W = (PANEL_CONTENT_W - GAP) / 2;
+const PINNED_ROW_SHIFT = 5;
+
+// Each panel's rows fall short of PANEL_H by a different amount; this much empty space
+// before each panel's closing note makes all three the same height, with the note at the
+// bottom.
+const TRAVEL_NOTE_GAP = 14;
+const WORLD_NOTE_GAP = 11;
+const LAYER_NOTE_GAP = 5;
+
+// The readout panel's value column starts after this many characters.
+const WORLD_KV_COLS = 8;
+
+// The 1D strip along the top, inside a frame: one bar per column. Its caption sits just
+// above the frame.
+const STRIP_RECT = new Rect2i(MARGIN, 22, DISPLAY_W - 2 * MARGIN, 46);
+
+// The tile grid below it, also framed, filling the space down to the panels.
+const GRID_TOP = 90;
+const GRID_RECT = new Rect2i(MARGIN, GRID_TOP, DISPLAY_W - 2 * MARGIN, PANEL_Y - GAP - GRID_TOP);
 const TILE = 32;
-const GRID_Y = 90;
-const GRID_H = 400;
+
+// Captions sit this far above the frame they describe.
+const CAPTION_ABOVE = 10;
 
 // How fast holding a direction scrolls, in pixels per update tick.
 const SCROLL_SPEED = 6;
@@ -191,6 +234,7 @@ class Demo {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             isCapturingKeyboardScroll: true,
+            isOverlayEnabled: false,
         };
     }
 
@@ -259,47 +303,68 @@ class Demo {
         }
     }
 
-    // Draws the 1D strip, the tile grid, and the panels.
+    // Draws the panels, the 1D strip, and the tile grid.
+    //
+    // The panels come first: Jump far, Home, and the Layer slider change what the strip
+    // and grid show, and those drawn after them should already show it. Shapes are drawn
+    // under every panel anyway, so the order costs nothing on screen.
     render() {
         BT.clear(C_BG);
+
+        this.renderTravelPanel();
+        this.renderWorldPanel();
+        this.renderLayerPanel();
+
+        ui.caption(STRIP_RECT.x, STRIP_RECT.y - CAPTION_ABOVE, 'hash1i: one number in');
+        ui.caption(GRID_RECT.x, GRID_RECT.y - CAPTION_ABOVE, 'hash2i and hash3i: a whole world');
 
         this.renderStrip();
         this.renderGrid();
 
-        ui.caption(8, 8, 'hash1i: one number in', { color: 'dim' });
-        ui.caption(8, STRIP_Y + STRIP_H + 8, 'hash2i and hash3i: a whole world', { color: 'dim' });
-
-        this.renderControlPanel();
-        this.renderReadoutPanel();
-
-        // The D-pad draws itself and appears once the demo has seen a touch.
-        ui.dpadWidget();
+        // The D-pad draws itself and appears once the demo has seen a touch. The margin
+        // lifts it off the panels, into the bottom-right corner of the grid.
+        ui.dpadWidget({ margin: DISPLAY_H - (GRID_RECT.y + GRID_RECT.height) + GAP });
     }
 
-    // Draws one bar per screen column, using the 1D hash.
+    // Draws one bar per column inside the strip's frame, using the 1D hash.
     renderStrip() {
-        for (let sx = 0; sx < DISPLAY_W; sx++) {
+        // Inside the 1-pixel frame: the bars stand on the bottom row and can reach the
+        // top.
+        const left = STRIP_RECT.x + 1;
+        const right = STRIP_RECT.x + STRIP_RECT.width - 2;
+        const floorY = STRIP_RECT.y + STRIP_RECT.height - 2;
+        const maxH = STRIP_RECT.height - 2;
+
+        for (let sx = left; sx <= right; sx++) {
             // The bar belongs to a world column, not a screen column, so it scrolls with
             // the view instead of sitting still. Math.floor keeps it a whole number even
             // when the camera is at a negative position.
-            const worldColumn = Math.floor(this.camX) + sx;
+            const worldColumn = Math.floor(this.camX) + sx - left;
 
             // Same trick as the tiles: scramble the coordinate, then squash the huge
             // result down to a height that fits the strip.
-            const height = hash1i(worldColumn, WORLD_SEED) % STRIP_H;
+            const height = hash1i(worldColumn, WORLD_SEED) % maxH;
 
-            BT.drawLine(new Vector2i(sx, STRIP_Y + STRIP_H), new Vector2i(sx, STRIP_Y + STRIP_H - height), C_STRIP);
+            if (height > 0) {
+                BT.drawLine(new Vector2i(sx, floorY), new Vector2i(sx, floorY - height + 1), C_STRIP);
+            }
         }
 
-        // A faint baseline under the strip.
-        BT.drawLine(new Vector2i(0, STRIP_Y + STRIP_H + 1), new Vector2i(DISPLAY_W - 1, STRIP_Y + STRIP_H + 1), C_DIM);
+        BT.drawRect(STRIP_RECT, C_DIM);
     }
 
-    // Draws every tile currently on screen, working each one out from its position.
+    // Draws every tile currently inside the grid's frame, working each one out from its
+    // position.
     renderGrid() {
-        // Which tile is under the top-left corner of the view, and how far into that tile
-        // we are. The leftover is what makes scrolling look smooth instead of jumping a
-        // whole tile at a time.
+        // The window the tiles fill: inside the 1-pixel frame.
+        const left = GRID_RECT.x + 1;
+        const top = GRID_RECT.y + 1;
+        const right = GRID_RECT.x + GRID_RECT.width - 1;
+        const bottom = GRID_RECT.y + GRID_RECT.height - 1;
+
+        // Which tile is under the top-left corner of the window, and how far into that
+        // tile we are. The leftover is what makes scrolling look smooth instead of
+        // jumping a whole tile at a time.
         const firstTileX = Math.floor(this.camX / TILE);
         const firstTileY = Math.floor(this.camY / TILE);
         const offsetX = this.camX - firstTileX * TILE;
@@ -307,20 +372,17 @@ class Demo {
 
         // One extra column and row so the partly-visible tiles at the edges still get
         // drawn.
-        const cols = Math.ceil(DISPLAY_W / TILE) + 1;
-        const rows = Math.ceil(GRID_H / TILE) + 1;
-
-        // The grid is a window cut into the middle of the screen, not the whole screen,
-        // so the rows at its top and bottom have to be trimmed to fit. Skipping this lets
-        // tiles spill over the frame and cover the caption above and the panels below.
-        const gridBottom = GRID_Y + GRID_H;
+        const cols = Math.ceil((right - left) / TILE) + 1;
+        const rows = Math.ceil((bottom - top) / TILE) + 1;
 
         for (let row = 0; row < rows; row++) {
-            const tileTop = GRID_Y + row * TILE - offsetY;
+            const tileTop = top + row * TILE - offsetY;
 
-            // Keep only the slice of this row that lands inside the window.
-            const visibleTop = Math.max(tileTop, GRID_Y);
-            const visibleH = Math.min(tileTop + TILE, gridBottom) - visibleTop;
+            // The grid is a window, not the whole screen, so every tile is trimmed to the
+            // part that lands inside it. Without this, tiles would spill over the frame
+            // and cover the caption above and the panels below.
+            const visibleTop = Math.max(tileTop, top);
+            const visibleH = Math.min(tileTop + TILE, bottom) - visibleTop;
 
             // A row that ended up entirely outside the window has nothing to draw.
             if (visibleH <= 0) {
@@ -328,14 +390,21 @@ class Demo {
             }
 
             for (let col = 0; col < cols; col++) {
+                const tileLeft = left + col * TILE - offsetX;
+                const visibleLeft = Math.max(tileLeft, left);
+                const visibleW = Math.min(tileLeft + TILE, right) - visibleLeft;
+
+                if (visibleW <= 0) {
+                    continue;
+                }
+
                 const tx = firstTileX + col;
                 const ty = firstTileY + row;
 
-                const screenX = col * TILE - offsetX;
-
-                // Left and right need no such care: those edges are the screen itself,
-                // and the engine already ignores whatever hangs off it.
-                BT.drawRectFill(new Rect2i(screenX, visibleTop, TILE, visibleH), C_TERRAIN_BASE + terrainAt(tx, ty));
+                BT.drawRectFill(
+                    new Rect2i(visibleLeft, visibleTop, visibleW, visibleH),
+                    C_TERRAIN_BASE + terrainAt(tx, ty),
+                );
 
                 // The decoration is the only thing that knows about the layer. hash3i
                 // takes a third coordinate, so changing the layer gives a completely
@@ -345,56 +414,81 @@ class Demo {
                 //
                 // A dot is too small to be worth trimming, so one that would poke outside
                 // the window is simply left out.
+                const dotX = tileLeft + 12;
                 const dotY = tileTop + 12;
+                const isDotInside = dotX >= left && dotX + 6 <= right && dotY >= top && dotY + 6 <= bottom;
 
-                if (dotY >= GRID_Y && dotY + 6 <= gridBottom && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
-                    BT.drawRectFill(new Rect2i(screenX + 12, dotY, 6, 6), C_ROCK_DOT);
+                if (isDotInside && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
+                    BT.drawRectFill(new Rect2i(dotX, dotY, 6, 6), C_ROCK_DOT);
                 }
             }
         }
 
-        // A frame around the grid, drawn last so it sits on top of the tiles.
-        BT.drawRect(new Rect2i(0, GRID_Y, DISPLAY_W, GRID_H), C_DIM);
+        // The frame goes on last so it sits on top of the tiles.
+        BT.drawRect(GRID_RECT, C_DIM);
     }
 
-    // The travel buttons.
-    renderControlPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
-        ui.panel('Travel');
+    // The travel panel: Jump far and Home side by side, placed on top of the panel (see
+    // PINNED_ROW_SHIFT), and a reminder of the scroll controls.
+    renderTravelPanel() {
+        const x = MARGIN;
 
-        if (ui.button('Jump far', { key: 'KeyJ' })) {
+        ui.begin('topLeft', { x, y: PANEL_Y, width: PANEL_W });
+        ui.panel('Travel');
+        ui.spacer(BUTTON_ROW_H + TRAVEL_NOTE_GAP);
+        ui.label('Arrows, D-pad, or swipe', { color: 'dim' });
+        ui.end();
+
+        const buttonY = PANEL_Y + PANEL_CONTENT_TOP + PINNED_ROW_SHIFT;
+
+        ui.begin('topLeft', { x: x + PANEL_CONTENT_X, y: buttonY, pad: 0 });
+
+        if (ui.button('J Jump far', { key: 'KeyJ', width: TRAVEL_BUTTON_W })) {
             // Thousands of tiles in one step. A world held in memory could not do this -
             // there would be nothing out there yet. Here there is nothing to prepare.
             this.camX += JUMP_DISTANCE;
             this.camY += JUMP_DISTANCE;
         }
 
-        if (ui.button('Home', { key: 'KeyH' })) {
+        ui.end();
+        ui.begin('topLeft', { x: x + PANEL_CONTENT_X + TRAVEL_BUTTON_W + GAP, y: buttonY, pad: 0 });
+
+        if (ui.button('H Home', { key: 'KeyH', width: TRAVEL_BUTTON_W })) {
             // Coming home proves the point: the tiles are exactly as they were, because
             // they were never stored and never had a chance to drift.
             this.camX = 0;
             this.camY = 0;
         }
 
-        ui.label('Arrows, D-pad, or swipe', { color: 'dim' });
         ui.end();
     }
 
-    // Where we are, what layer we are on, and the number that matters most.
-    renderReadoutPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
+    // Where we are, and the number that matters most.
+    renderWorldPanel() {
+        ui.begin('topLeft', { x: MID_PANEL_X, y: PANEL_Y, width: MID_PANEL_W, kvCols: WORLD_KV_COLS });
         ui.panel('This world');
         ui.kv('tile x', Math.floor(this.camX / TILE));
         ui.kv('tile y', Math.floor(this.camY / TILE));
 
         // The headline. However far you travel, this never moves off zero.
         ui.kv('stored', '0 tiles');
+        ui.spacer(WORLD_NOTE_GAP);
+        ui.label('Every tile is worked out fresh.', { color: 'dim' });
+        ui.end();
+    }
+
+    // The layer slider and what it does.
+    renderLayerPanel() {
+        ui.begin('topLeft', { x: RIGHT_PANEL_X, y: PANEL_Y, width: PANEL_W });
+        ui.panel('Third number');
 
         // The slider answers a number anywhere in its range; rounding snaps it to whole
         // layers, so the knob steps instead of sliding between two different worlds.
-        this.layer = Math.round(ui.slider('Layer', this.layer, { min: 0, max: LAYER_MAX }));
+        this.layer = Math.round(
+            ui.slider('Layer', this.layer, { min: 0, max: LAYER_MAX, width: PANEL_CONTENT_W, decimals: 0 }),
+        );
 
-        ui.separator();
+        ui.spacer(LAYER_NOTE_GAP);
         ui.label('Ground ignores the layer.', { color: 'dim' });
         ui.label('Rocks do not.', { color: 'dim' });
         ui.end();

@@ -164,18 +164,16 @@ class Demo {
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(28, 32, 48)); // deep gray-blue background
-        this.palette.set(C_TAG, new Color32(200, 210, 230)); // pale blue-white overlay bar / chart accent
+        this.palette.set(C_TAG, new Color32(200, 210, 230)); // pale blue-white
 
-        // Heart sprite colors.
-        this.palette.set(C_HEART_OUTLINE, new Color32(110, 10, 30)); // dark red outline
-        this.palette.set(C_HEART_FILL, new Color32(230, 55, 75)); // bright red fill
+        // Heart colors.
+        this.palette.set(C_HEART_OUTLINE, new Color32(110, 10, 30)); // dark red body
+        this.palette.set(C_HEART_FILL, new Color32(230, 55, 75)); // bright red highlights
 
-        // Pre-fill dynamic checker colors with a starting value.
-        // update() will overwrite these on the very first tick.
-        this.palette.set(C_CHECKER_A, new Color32(255, 0, 0)); // start as red
-        this.palette.set(C_CHECKER_B, new Color32(0, 0, 255)); // start as blue
-
-        // The overlay styles in configure() reuse C_TAG and C_BG, both set above.
+        // Starting values for the checker colors. update() overwrites them on the very
+        // first tick.
+        this.palette.set(C_CHECKER_A, new Color32(255, 0, 0)); // starts red
+        this.palette.set(C_CHECKER_B, new Color32(0, 0, 255)); // starts blue
 
         // Install the shared UI theme the captions draw with. It writes 12 colors
         // starting at the slot we pass - 20 through 31 here, which stays clear of the
@@ -273,14 +271,14 @@ class Demo {
 
     // Captions and draws the 8x8 heart.
     renderHeartSection() {
-        // Print the section caption with ui.caption() from the shared UI kit - the same
-        // widget every demo in the series uses, so all captions look identical everywhere.
-        ui.caption(12, 48, 'Heart 8x8 (number grid, no external bitmap used)');
+        // The caption comes from ui.caption() in the shared UI kit, the same widget every
+        // demo in the series uses, so all captions look identical everywhere.
+        ui.caption(12, 52, 'Heart 8x8 (number grid, no external bitmap used)');
 
         // scale 4 makes the 8-cell-wide picture 32 screen pixels wide.
         const scale = 4;
         const originX = 12;
-        const originY = 63;
+        const originY = 62;
 
         this.drawGridWithScaledPixels(HEART_GRID, HEART_PALETTE_MAP, originX, originY, scale);
     }
@@ -289,7 +287,7 @@ class Demo {
     // colors slide around with animTime (advanced in update()) so you can see the clock
     // moving.
     renderCheckerPatternSection() {
-        ui.caption(12, 97, 'Checkerboard (loops + math, no grid array)');
+        ui.caption(12, 102, 'Checkerboard (loops + math, no grid array)');
 
         // How many squares along each side.
         const cells = 8;

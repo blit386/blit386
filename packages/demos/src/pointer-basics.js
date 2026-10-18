@@ -22,13 +22,16 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A dark screen with a title strip across the top. A white crosshair follows your mouse (or
-your finger), trailing a cyan line through its last 24 positions. Two small panels sit
-just below the title strip: on the left, live readouts for pointer slot 0 - whether it is
-active, its position, how far it moved this frame, how far the wheel turned, and a meter
-that fills as you scroll down; on the right, four pips labeled A to D that light up while
-the matching mouse button is held. While no pointer is over the canvas, a dim "Move
-pointer over canvas" hint sits in the middle instead of the crosshair.
+A dark screen with a title strip across the top and two equal panels just below it. On
+the left, live readouts for pointer slot 0 - whether it is active, its position, how far
+it moved this frame, how far the wheel turned, and a meter that fills as you scroll
+down. On the right, four pips labeled A to D that light up while the matching mouse
+button is held, and a count of the touch slots (1-3) in use.
+
+A white crosshair follows your mouse (or your finger), trailing a cyan line through its
+last 24 positions. The crosshair stays on top of the panels; the trail passes behind
+them. While no pointer is over the canvas, a dim "Move pointer over canvas" hint sits in
+the middle of the open space under the panels instead.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -60,9 +63,9 @@ TRY THIS
 
 */
 
-import { bootstrap, BT, Color32, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -83,6 +86,18 @@ const TRAIL_LENGTH = 24;
 // height so the meter fill always stays between empty and full.
 const SCROLL_SENSITIVITY = 0.25;
 
+// Layout: two equal panels, 152 pixels wide and 8 apart, sit 4 pixels below the
+// 22-pixel title strip and 4 pixels from the screen sides (4 + 152 + 8 + 152 + 4 = 320).
+// Both reserve 63 pixels of rows, so they end on the same line. Everything below them is
+// open space for the crosshair.
+const PANEL_Y = 26;
+const READOUTS_W = 152;
+const BUTTONS_W = 152;
+const PANELS_BOTTOM = PANEL_Y + 22 + 63 + 11;
+
+// Half the length of each crosshair arm, in pixels.
+const CROSSHAIR_ARM = 6;
+
 // Demonstrates the basic pointer API: position, delta, scroll wheel, and the four pointer
 // buttons (A, B, C, D) on slot 0 (the mouse).
 class Demo {
@@ -90,12 +105,18 @@ class Demo {
     palette = null;
 
     // Palette slot map returned by applyTheme() - theme.bg, theme.dim, and so on. Filled
-    // in init(); used for the screen clear and the "move pointer" hint.
+    // in init(); used for the screen clear.
     theme = null;
 
     // Recent positions, oldest first. Each tick we push the current position and drop the
     // oldest, so the trail shows the cursor's recent path. Each entry is [x, y].
     trail = [];
+
+    // Reused for the two crosshair arms and the two ends of each trail segment, so
+    // drawing allocates no new objects.
+    armRect = new Rect2i(0, 0, 0, 0);
+    lineFrom = new Vector2i(0, 0);
+    lineTo = new Vector2i(0, 0);
 
     // Accumulated scroll position in display pixels. Centered in init() from
     // BT.displaySize. BT.pointerScrollDelta pushes it up or down, and the scroll meter in
@@ -108,12 +129,7 @@ class Demo {
             // Opt into canvas wheel capture so BT.pointerScrollDelta works and the page
             // does not scroll while the pointer is over the demo.
             isCapturingPointerScroll: true,
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_TRAIL,
-                renderBarPaletteIndex: C_CROSSHAIR,
-                tagPaletteIndex: C_CROSSHAIR,
-            },
+            isOverlayEnabled: false,
         };
     }
 
@@ -186,8 +202,9 @@ class Demo {
     }
 
     // Per-frame render: clear, draw the UI kit panels (readouts and button pips), then
-    // the cursor trail and the crosshair on top so the "cursor" is never hidden behind a
-    // panel.
+    // the cursor trail and the crosshair. The trail is plain lines, which the engine
+    // draws before every sprite, so it passes behind the panels; the crosshair is drawn
+    // as kit sprites after the panels, so the "cursor" is never hidden behind one.
     render() {
         // Clear to the shared theme background so this demo matches the rest of the
         // series.
@@ -217,8 +234,9 @@ class Demo {
         // How far the wheel moved this frame (positive = scrolling down).
         const scroll = BT.pointerScrollDelta;
 
-        // The panel starts below the title strip (y: 28 skips past it).
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
+        // The panel starts just below the title strip, at a fixed width so its edge does
+        // not jump while the numbers in it change length.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: PANEL_Y, width: READOUTS_W });
         ui.panel('Slot 0 (mouse)');
 
         ui.kv('Active', active ? 'yes' : 'no');
@@ -243,16 +261,17 @@ class Demo {
         // The meter fills up as you scroll down and empties as you scroll up. Dividing by
         // the display height turns 0..240 pixels into the 0..1 fraction the meter
         // expects.
-        ui.meter('Scroll pos', this.scrollPos / BT.displaySize.y);
+        ui.meter('Scroll pos', this.scrollPos / BT.displaySize.y, { width: READOUTS_W - 20 });
 
         ui.end();
     }
 
-    // Buttons panel in the top-right: four read-only pips, one per pointer button. A pip
-    // lights up while its button is held and goes hollow when released. BT.isDown()
-    // checks held state, which is safe from render().
+    // Buttons panel in the top-right: four read-only pips, one per pointer button, and
+    // a count of the touch slots in use. A pip lights up while its button is held and
+    // goes hollow when released. BT.isDown() checks held state, which is safe from
+    // render().
     renderButtonPips() {
-        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: PANEL_Y, width: BUTTONS_W });
         ui.panel('Buttons');
 
         // Each pip pairs a label with the live held state of one button code.
@@ -260,6 +279,20 @@ class Demo {
         ui.pip('B (right)', BT.isDown(BT.BTN_POINTER_B, 0));
         ui.pip('C (middle)', BT.isDown(BT.BTN_POINTER_C, 0));
         ui.pip('D (extra)', BT.isDown(BT.BTN_POINTER_D, 0));
+
+        // How many fingers are down right now: slots 1-3 are the touch slots. The
+        // 13-pixel gap above it makes this panel's rows add up to the same 63 pixels as
+        // the readouts panel beside it (4 pips x 10 + 13 + 10).
+        let touches = 0;
+
+        for (let slot = 1; slot < 4; slot++) {
+            if (BT.isPointerActive(slot)) {
+                touches++;
+            }
+        }
+
+        ui.spacer(13);
+        ui.kv('Touches', touches);
 
         ui.end();
     }
@@ -288,7 +321,9 @@ class Demo {
         for (let i = 1; i < this.trail.length; i++) {
             const [ax, ay] = this.trail[i - 1];
             const [bx, by] = this.trail[i];
-            BT.drawLine(new Vector2i(ax, ay), new Vector2i(bx, by), C_TRAIL);
+            this.lineFrom.set(ax, ay);
+            this.lineTo.set(bx, by);
+            BT.drawLine(this.lineFrom, this.lineTo, C_TRAIL);
         }
     }
 
@@ -302,37 +337,39 @@ class Demo {
         }
 
         const pos = BT.pointerPos(slot);
-        const size = 6;
 
-        // Horizontal arm.
-        BT.drawLine(new Vector2i(pos.x - size, pos.y), new Vector2i(pos.x + size, pos.y), C_CROSSHAIR);
+        // Two 1-pixel-thick arms that cross at the pointer, each 13 pixels long (6 on
+        // either side plus the center pixel). They are drawn with ui.drawRectFill(), the
+        // sprite version of BT.drawRectFill(): the engine draws every BT.drawLine() and
+        // BT.drawRectFill() before any sprite, and the kit panels are sprites, so a plain
+        // line would vanish under a panel whenever the pointer moved over one.
+        const span = CROSSHAIR_ARM * 2 + 1;
 
-        // Vertical arm.
-        BT.drawLine(new Vector2i(pos.x, pos.y - size), new Vector2i(pos.x, pos.y + size), C_CROSSHAIR);
-
-        // Center dot.
-        BT.drawPixel(pos, C_CROSSHAIR);
+        this.armRect.set(pos.x - CROSSHAIR_ARM, pos.y, span, 1);
+        ui.drawRectFill(this.armRect, C_CROSSHAIR);
+        this.armRect.set(pos.x, pos.y - CROSSHAIR_ARM, 1, span);
+        ui.drawRectFill(this.armRect, C_CROSSHAIR);
     }
 
-    // "Move pointer over canvas" hint in the middle of the screen. Only shown while no
-    // mouse or touch pointer is over the canvas, so newcomers know what to do. Uses the
-    // theme's dim text color so it matches the rest of the UI.
+    // "Move pointer over canvas" hint, centered in the open space under the panels.
+    // Only shown while no mouse or touch pointer is over the canvas, so newcomers know
+    // what to do. Uses the theme's dim text color so it matches the rest of the UI.
     renderPointerHint() {
         if (this.activePointerSlot() >= 0) {
             return;
         }
 
-        // `screen` holds the full display size; halving it below finds the middle, and
-        // the small offsets nudge the text so its center (not its top-left corner) sits
-        // on that middle point.
+        // The open space runs from the bottom of the panels to the bottom of the screen.
+        // Every character of the system font is FONT_W (6) pixels wide, so starting the
+        // text half its width left of the middle centers it; a caption's capital letters
+        // cover 7 rows starting 1 row above the y it is given, so centerY - 2 centers
+        // them vertically.
+        const text = 'Move pointer over canvas';
         const screen = BT.displaySize;
-        BT.systemPrint(
-            new Vector2i(Math.floor(screen.x / 2) - 60, Math.floor(screen.y / 2) - 7),
-            this.theme.dim,
-            'Move pointer over canvas',
-        );
+        const centerX = Math.floor(screen.x / 2);
+        const centerY = Math.floor((PANELS_BOTTOM + screen.y) / 2);
 
-        // The engine overlay (FPS and demo name) draws on top automatically.
+        ui.caption(centerX - (text.length * FONT_W) / 2, centerY - 2, text, { color: 'dim' });
     }
 
     // First active pointer slot this frame: mouse (0) preferred, then touch (1-3).

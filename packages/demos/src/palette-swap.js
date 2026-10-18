@@ -30,11 +30,13 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A legend of four themes down the left side - Stone, Fire, Ice, Void - each with a small
-color square and its name, and a green box around the one that is active. In the center,
-one sprite (public/sprites/test.png) drawn at its natural size, with the current theme
-name and the palette slots it uses written underneath. Down the right side, a short code
-listing of how a palette swap is done.
+Three UI kit panels on a 320x240 screen. Themes, in the top-left corner, lists the four
+themes - Stone, Fire, Ice, Void - each with a small color square and its name; the active
+one has a green frame around its square and a bright name, and a meter under the list
+fills up toward the next swap. Sprite, beside it, shows public/sprites/test.png at 3
+times its size, with the current theme, the palette slots it reads, and its palette
+offset listed to its right. How it works, across the bottom, shows the three calls the
+demo makes, each under a comment saying when it runs.
 
 Every 2 seconds the demo activates the next theme palette. The sprite changes color
 instantly; the legend squares, the text, and the engine overlay keep their colors because
@@ -114,6 +116,43 @@ const SWATCH_FIRE = 31;
 const SWATCH_ICE = 32;
 const SWATCH_VOID = 33;
 
+// Layout of the three kit panels on the 320x240 screen, 4 pixels from the edges: Themes
+// (top left) and Sprite (top right) side by side and equally tall, then How it works
+// across the full width below them. The bottom 13 pixels stay clear for the overlay's
+// toggle hint.
+const EDGE = 4;
+const PANEL_GAP = 4;
+const TOP_PANELS_Y = EDGE;
+const THEMES_PANEL_W = 88;
+const SPRITE_PANEL_X = EDGE + THEMES_PANEL_W + PANEL_GAP;
+const SPRITE_PANEL_W = 320 - EDGE - SPRITE_PANEL_X;
+const CODE_PANEL_W = 320 - 2 * EDGE;
+
+// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
+// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
+// in from the panel edge.
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM = 11;
+const PANEL_TEXT_INSET = 10;
+
+// The sprite is drawn 3 times its size. Its visible pixels cover x = 4 to 38 and
+// y = 7 to 35 of the 44x44 frame, a 35x29 block that becomes 105x87 at 3x.
+const SPRITE_SCALE = 3;
+const ART_LEFT = 4;
+const ART_TOP = 7;
+const ART_W = 35 * SPRITE_SCALE;
+const ART_H = 29 * SPRITE_SCALE;
+
+// Both top panels reserve the same content height (the 87-pixel artwork plus 1 pixel
+// above and below), so they end on the same line.
+const TOP_CONTENT_H = ART_H + 2;
+const TOP_PANELS_H = PANEL_CONTENT_TOP + TOP_CONTENT_H + PANEL_BOTTOM;
+const CODE_PANEL_Y = TOP_PANELS_Y + TOP_PANELS_H + PANEL_GAP;
+
+// Legend rows inside the Themes panel: a 10x10 swatch and the name, 14 pixels apart.
+const LEGEND_ROW_H = 14;
+const LEGEND_SWATCH = 10;
+
 // Engine overlay color slots (the same in every theme palette). The overlay style is
 // declared in configure(), which runs BEFORE init(), so it needs fixed slot NUMBERS known
 // ahead of time. buildTheme() writes the same colors into these slots in all four
@@ -157,6 +196,12 @@ class Demo {
     // friendly names (bg, text, dim, header, accent, info, ...) to slot numbers.
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
+
+    // Reused for every rectangle and sprite position drawn in render(), so drawing
+    // allocates no new objects. spriteParams draws the sprite 3 times its size.
+    tempRect = new Rect2i(0, 0, 0, 0);
+    spritePos = new Vector2i(0, 0);
+    spriteParams = { scale: SPRITE_SCALE };
 
     // The timing chart helps compare CPU cost while palettes swap on a timer. Its colors
     // come from the fixed overlay slots above.
@@ -275,99 +320,105 @@ class Demo {
         this.renderCodePanel();
     }
 
-    // Draws the four-entry theme legend on the left. Each entry shows a color square
-    // (from a fixed swatch slot) and the theme name; a box marks the active theme. The
-    // squares use this demo's own scene slots (30-33), which the UI kit cannot draw, so
-    // the legend rows are drawn by hand - but their text and outline use the shared theme
-    // slots so the colors match the rest of the UI.
+    // Draws the Themes panel in the top-left corner: one row per theme with a color
+    // square and the name, the active one marked, and a meter filling up toward the next
+    // swap. The squares use this demo's own scene slots (30-33), which hold the same
+    // colors in every theme palette, so the legend never changes when the theme swaps.
     renderThemeLegend() {
-        const startY = 20;
-        const entryH = 20;
-        const entryW = 70;
-        const gap = 4;
+        // The kit flows the rows top to bottom: an empty band for the four legend rows
+        // (drawn after ui.end(), so they land on top of the panel), a small gap, then the
+        // countdown. Its rows add up to TOP_CONTENT_H, so this panel ends exactly where
+        // the Sprite panel beside it ends.
+        const rowsH = this.themes.length * LEGEND_ROW_H;
+
+        // remainingTicks() says how long until the timer fires next; dividing by the
+        // period turns that into a fraction from 1 (just swapped) down to 0, and 1 minus
+        // that is how far along the wait is - the meter fills up toward the next swap.
+        const progress = 1 - this.swapTimer.remainingTicks(BT.ticks) / SWAP_PERIOD_TICKS;
+
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: TOP_PANELS_Y, width: THEMES_PANEL_W });
+        ui.panel('Themes');
+        ui.spacer(rowsH);
+        ui.spacer(9);
+        ui.label('Next swap', { color: 'dim' });
+        ui.meter(null, progress, { width: THEMES_PANEL_W - 2 * PANEL_TEXT_INSET });
+        ui.spacer(TOP_CONTENT_H - rowsH - 9 - 10 - 13);
+        ui.end();
 
         for (let i = 0; i < this.themes.length; i++) {
-            const entryY = startY + i * (entryH + gap);
+            const rowY = TOP_PANELS_Y + PANEL_CONTENT_TOP + i * LEGEND_ROW_H;
+            const swatchX = EDGE + PANEL_TEXT_INSET;
+            const swatchY = rowY + 2;
+            const isActive = i === this.currentTheme;
 
-            // A box around the active theme, in the kit's "active" green accent.
-            if (i === this.currentTheme) {
-                BT.drawRect(new Rect2i(4, entryY - 1, entryW, entryH + 2), this.theme.accent);
+            // The color square, drawn with ui.drawRectFill(): kit panels are sprites, and
+            // the engine draws every BT.drawRectFill() before any sprite - so a plain one
+            // would hide under the panel. The active theme also gets a 1-pixel green
+            // frame around its square, one pixel out.
+            this.tempRect.set(swatchX, swatchY, LEGEND_SWATCH, LEGEND_SWATCH);
+            ui.drawRectFill(this.tempRect, SWATCH_STONE + i);
+
+            if (isActive) {
+                this.tempRect.set(swatchX - 2, swatchY - 2, LEGEND_SWATCH + 4, LEGEND_SWATCH + 4);
+                ui.drawRect(this.tempRect, this.theme.accent);
             }
 
-            // The color square: a small filled rectangle using the theme's swatch slot.
-            // Slots 30-33 hold the same colors in every theme palette, so the squares
-            // never change.
-            BT.drawRectFill(new Rect2i(8, entryY + 4, 12, 12), SWATCH_STONE + i);
-
-            // The theme name. BT.systemPrint takes (position, paletteIndex, text). The
-            // active theme's name is bright; the others are dimmed.
-            const nameSlot = i === this.currentTheme ? this.theme.text : this.theme.dim;
-            BT.systemPrint(new Vector2i(24, entryY + 4), nameSlot, this.themeNames[i]);
+            // The theme name, bright for the active theme and dim for the others. A
+            // caption's capital letters cover 7 rows starting 1 row above the y it is
+            // given, so swatchY + 3 centers them on the 10-pixel square.
+            ui.caption(swatchX + LEGEND_SWATCH + 6, swatchY + 3, this.themeNames[i], {
+                color: isActive ? 'text' : 'dim',
+            });
         }
-
-        // A caption below the legend, drawn as a borderless kit group. Passing x and y to
-        // ui.begin() pins the group's top-left corner exactly there, so the caption sits
-        // right under the last legend entry.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: 113 });
-        ui.label('Themes:', { color: 'header' });
-        ui.label('2 s each', { color: 'dim' });
-        ui.end();
     }
 
-    // Draws the sprite in the center of the screen. It is drawn with palette offset 0, so
-    // it reads slots COLOR_BASE and up - whichever colors the active theme put there.
+    // Draws the Sprite panel in the top-right corner: the sprite 3 times its size on the
+    // left, and beside it the active theme, the slots the sprite reads, and its palette
+    // offset. It is drawn with palette offset 0, so it reads slots COLOR_BASE and up -
+    // whichever colors the active theme put there.
     renderCyclingSprite() {
-        const spriteX = 90;
-        const spriteY = 30;
-
-        // The sprite at its natural size. The last argument is the palette offset; 0
-        // means the sprite's stored slot numbers are used as they are.
-        BT.drawSprite(this.sheet, this.charSprite, new Vector2i(spriteX, spriteY), 0);
-
-        // Captions below the sprite, drawn as a borderless kit group pinned right under
-        // the artwork. The group's inner padding (6 pixels) shifts its text right and
-        // down a little, so the pin point compensates by starting 6 pixels to the left of
-        // the sprite and just 1 pixel below it.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: spriteX - 6, y: spriteY + this.charSprite.height + 1 });
-
-        // Which theme the sprite is drawn with right now.
-        ui.label(`Theme: ${this.themeNames[this.currentTheme]}`, { color: 'header' });
-
-        // Explain the draw call: BT.drawSprite() above passes palette offset 0, so the
-        // sprite reads its colors straight from slots COLOR_BASE and up.
-        ui.label('offset = 0', { color: 'info' });
-        ui.label(`slots ${COLOR_BASE}..${COLOR_BASE + this.colorCount - 1}`, { color: 'info' });
-
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: SPRITE_PANEL_X, y: TOP_PANELS_Y, width: SPRITE_PANEL_W });
+        ui.panel('Sprite - one sheet, four looks');
+        ui.spacer(TOP_CONTENT_H);
         ui.end();
+
+        // Place the frame so its visible pixels (not its transparent border) start 10
+        // pixels in and 1 pixel below the title strip. The params object scales the
+        // sprite; with no paletteOffset in it, the offset is 0.
+        const artX = SPRITE_PANEL_X + PANEL_TEXT_INSET;
+        const artY = TOP_PANELS_Y + PANEL_CONTENT_TOP + 1;
+
+        this.spritePos.set(artX - ART_LEFT * SPRITE_SCALE, artY - ART_TOP * SPRITE_SCALE);
+        BT.drawSprite(this.sheet, this.charSprite, this.spritePos, this.spriteParams);
+
+        // Three key-value lines right of the artwork: a dim key, then the value 7
+        // characters further right.
+        const keyX = artX + ART_W + 12;
+        const valueX = keyX + 7 * 6;
+        // The three rows of capitals span 31 pixels (rows firstY - 1 to firstY + 29), so
+        // starting 14 above the artwork's middle centers the block on it.
+        const firstY = artY + Math.floor(ART_H / 2) - 14;
+        const slots = `${COLOR_BASE}-${COLOR_BASE + this.colorCount - 1}`;
+
+        ui.caption(keyX, firstY, 'Theme', { color: 'dim' });
+        ui.caption(valueX, firstY, this.themeNames[this.currentTheme], { color: 'header' });
+        ui.caption(keyX, firstY + 12, 'Slots', { color: 'dim' });
+        ui.caption(valueX, firstY + 12, slots, { color: 'info' });
+        ui.caption(keyX, firstY + 24, 'Offset', { color: 'dim' });
+        ui.caption(valueX, firstY + 24, '0', { color: 'info' });
     }
 
-    // Draws the code listing on the right. A borderless kit group (no ui.panel() call)
-    // keeps the loose-text look: dim lines are code comments, blue "info" lines are the
-    // code itself.
+    // Draws the How it works panel across the bottom: the three calls this demo really
+    // makes, each under a dim comment saying when it runs.
     renderCodePanel() {
-        ui.begin(UI_ANCHORS.TOP_RIGHT);
-
-        ui.label('How it works:', { color: 'header' });
-        ui.label('// Build palettes', { color: 'dim' });
-        ui.label('stone = clone()', { color: 'info' });
-        ui.label('fire = clone()', { color: 'info' });
-        ui.label('fire.set(10, red)', { color: 'info' });
-        ui.spacer();
-
-        ui.label('// Swap theme', { color: 'dim' });
-        ui.label('BT.paletteSet(', { color: 'info' });
-        ui.label('  firePalette)', { color: 'info' });
-        ui.spacer();
-
-        // spritesRefresh() only matters when the new palette moves colors to DIFFERENT
-        // slot numbers - see the header comment at the top of this file.
-        ui.label('// Sync sprites', { color: 'dim' });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: CODE_PANEL_Y, width: CODE_PANEL_W });
+        ui.panel('How it works - a value swap');
+        ui.label('// Each theme: same slots, tinted colors', { color: 'dim' });
+        ui.label('palette.fillBlock(10, colors, tint)', { color: 'info' });
+        ui.label('// Every 2 seconds', { color: 'dim' });
+        ui.label('BT.paletteSet(this.themes[next])', { color: 'info' });
+        ui.label('// Needed only after a layout swap', { color: 'dim' });
         ui.label('BT.spritesRefresh()', { color: 'info' });
-        ui.spacer();
-
-        ui.label('// Snapshot:', { color: 'dim' });
-        ui.label('copy = pal.clone()', { color: 'info' });
-
         ui.end();
     }
 

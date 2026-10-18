@@ -160,6 +160,7 @@ class Demo {
         return {
             isOverlayPaletteEnabled: true,
             overlayPaletteRowsVisible: 4,
+            isOverlayVisibleAtStart: true,
 
             overlayStyle: {
                 // A dedicated static slot - not one of the lerp slots update() rewrites.
@@ -291,9 +292,9 @@ class Demo {
     drawNamedColorsSection() {
         // Section header, drawn with ui.caption() from the shared UI kit. Every demo in
         // the series uses this same widget, so all headers look identical everywhere.
-        ui.caption(6, 3, '1: NAMED COLORS (shortcuts)');
+        ui.caption(6, 50, '1: NAMED COLORS (shortcuts)');
 
-        const rowY = 16;
+        const rowY = 61;
         const swatchH = 11;
 
         // Each entry: a short label and the palette slot for that color.
@@ -342,9 +343,9 @@ class Demo {
     // Hue is an angle from 0 to 360 on a color wheel. 64 slots cover the whole
     // wheel in steps.
     drawHslRainbowSection() {
-        ui.caption(6, 30, '2: HSL RAINBOW (fromHSL, scrolling hue)');
+        ui.caption(6, 84, '2: HSL RAINBOW (fromHSL, scrolling hue)');
 
-        const stripY = 43;
+        const stripY = 95;
         const stripH = 11;
 
         // Walk every x column on the screen from left to right. Each column maps to one
@@ -368,9 +369,9 @@ class Demo {
     // The wide bar uses 32 palette slots that slide over time (a moving gradient). The
     // thin strip below uses one slot that breathes from A to B and back on a sine wave.
     drawLerpSection() {
-        ui.caption(6, 57, '3: LERP: slide + pulse (see comments)');
+        ui.caption(6, 118, '3: LERP: slide + pulse (see comments)');
 
-        const barY = 70;
+        const barY = 129;
 
         // The two end squares are the "lamps" at full brightness: pure A and pure B.
         BT.drawRectFill(new Rect2i(6, barY, 11, 11), C_LERP_A);
@@ -390,10 +391,10 @@ class Demo {
             BT.drawRectFill(new Rect2i(barX + i, barY, 1, barH), C_LERP_BASE + slot);
         }
 
-        BT.drawRectFill(new Rect2i(24, 82, 268, 11), C_PULSE);
         // The thin strip: one slot whose t value waves back and forth, so the whole
         // strip pulses. In update(), pulseT follows a sine wave, so the dimmer slides A
         // to B to A smoothly.
+        BT.drawRectFill(new Rect2i(24, barY + 15, 268, 11), C_PULSE);
     }
 }
 

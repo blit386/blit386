@@ -23,12 +23,12 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-An amber square circling inside a hollow square frame, with a small green dot marking its
-home position on the frame's right side. The square's place on that circle is computed
-from the engine clock (BT.ticks), so it is a picture of the tick counter. Three UI kit
-panels sit in the corners: "Clock" (top-left) prints BT.ticks and BT.timeSeconds,
-"Snapshot" (top-right) prints the fields of one BT.testState() call, and "Try it"
-(bottom-left) holds the controls.
+Four UI kit panels in two columns. On the left, "Clock" prints BT.ticks and
+BT.timeSeconds, and "Snapshot" under it prints the fields of one BT.testState() call. On
+the right, "BT.ticks, drawn" shows an amber square circling inside a hollow square frame,
+with a small green dot marking its home position on the frame's right side, and "Try it"
+under it holds the controls. The square's place on that circle is computed from the
+engine clock (BT.ticks), so it is a picture of the tick counter.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -48,10 +48,10 @@ WHAT YOU WILL LEARN
 TRY THIS
 --------
 
-- Press A (or tap "Add point (A)") and watch score climb in the snapshot.
-- Press R (or tap "Reset ticks (R)"). The tick numbers drop to zero and the square snaps
+- Press A (or tap "A Add point") and watch score climb in the snapshot.
+- Press R (or tap "R Reset ticks"). The tick numbers drop to zero and the square snaps
   back to the right side of the frame. The score does not change.
-- Press F (or tap "Fail hook (F)") to make testState() throw. The snapshot then shows
+- Press F (or tap "F Fail hook") to make testState() throw. The snapshot then shows
   state null and a short error, and the panel holds that one failed copy so the console is
   not flooded. Press F again to resume live reads.
 
@@ -59,7 +59,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').TestStateSnapshot} TestStateSnapshot */
 
@@ -70,10 +70,40 @@ const C_RING = 2; // dim slate: the box the square orbits inside
 const C_HOME = 3; // quiet green: the spot the square sits on at tick 0
 const C_MARKER = 4; // bright amber: the square itself
 
-// The ring sits in the open middle, clear of the corner panels.
-const ORBIT_CENTER_X = 118;
-const ORBIT_CENTER_Y = 108;
-const ORBIT_RADIUS = 28;
+// Screen layout: two columns, MARGIN pixels in from the screen edges and PANEL_GAP apart.
+// The left column holds the clock with the snapshot under it; the right column holds the
+// orbit, drawn inside its own panel, with the controls under it. In each column the two
+// panels together fill the height, so both columns start and end on the same rows.
+const DISPLAY_W = 320;
+const DISPLAY_H = 240;
+const MARGIN = 8;
+const PANEL_GAP = 6;
+const LEFT_W = 150;
+const RIGHT_X = MARGIN + LEFT_W + PANEL_GAP;
+const RIGHT_W = DISPLAY_W - MARGIN - RIGHT_X;
+const CLOCK_H = 77;
+const SNAPSHOT_Y = MARGIN + CLOCK_H + PANEL_GAP;
+const CONTROLS_H = 97;
+const CONTROLS_Y = DISPLAY_H - MARGIN - CONTROLS_H;
+const ORBIT_PANEL_H = CONTROLS_Y - PANEL_GAP - MARGIN;
+
+// Widgets inside a panel are 20 pixels narrower than the panel itself; the first row
+// starts 22 pixels down, under the title, and the panel keeps 11 pixels below its last.
+const PANEL_CONTENT_SHRINK = 20;
+const PANEL_CONTENT_TOP = 22;
+const PANEL_BOTTOM_PAD = 11;
+
+// The snapshot panel's rows fall short of the column's height, so this much empty space
+// before its closing note makes it end on the same row as the controls. A failed read
+// shows one line where a healthy one shows three, so it gets two rows' worth more.
+const SNAPSHOT_FILLER = 14;
+const ROW_H = 10;
+
+// The ring sits in the middle of the orbit panel's content area.
+const ORBIT_CENTER_X = RIGHT_X + Math.floor(RIGHT_W / 2);
+const ORBIT_CENTER_Y =
+    MARGIN + PANEL_CONTENT_TOP + Math.floor((ORBIT_PANEL_H - PANEL_CONTENT_TOP - PANEL_BOTTOM_PAD) / 2);
+const ORBIT_RADIUS = 34;
 
 // Tick 0 puts the square on the right edge of the ring (cos 0 is 1, sin 0 is 0). That dot
 // stays put so a reset has an obvious home to snap back to.
@@ -124,6 +154,15 @@ class Demo {
     // Text for the clock panel: the tick count just before the latest reset.
     resetNote = 'No reset yet';
 
+    // Colors the engine overlay (toggled with the backquote key) from the shared UI
+    // theme. Its default colors live in palette slots 1 and 2, which here are the page
+    // and the ring - dark bars with dark text.
+    configure() {
+        return {
+            overlayStyle: THEME_OVERLAY_STYLE,
+        };
+    }
+
     async init() {
         // The palette is local because no later frame changes a slot. applyTheme() still
         // has to run before BT.paletteSet(): it paints the shared UI colors into slots
@@ -161,9 +200,8 @@ class Demo {
         this.drawClock();
         this.drawSnapshot();
 
-        // The ring is drawn after the panels. It sits in the gap between them, so
-        // painting it last cannot cover a button, and it still follows a reset that
-        // happened earlier in this same frame.
+        // The orbit last: its panel, then the ring, the home dot, and the square on top,
+        // following a reset that happened earlier in this same frame.
         this.drawOrbit();
     }
 
@@ -184,18 +222,20 @@ class Demo {
         };
     }
 
-    // Bottom-left: the three actions, each with a key and a tap target.
+    // Bottom-right: the three actions, each with a key and a tap target.
     drawControls() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
+        const buttonW = RIGHT_W - PANEL_CONTENT_SHRINK;
+
+        ui.begin('topLeft', { x: RIGHT_X, y: CONTROLS_Y, width: RIGHT_W });
         ui.panel('Try it');
 
-        if (ui.button('Add point (A)', { key: 'KeyA' })) {
+        if (ui.button('A Add point', { key: 'KeyA', width: buttonW })) {
             // One point per press. Held keys do not repeat, because the button listens
             // for the press edge the kit latched in update().
             this.score += 1;
         }
 
-        if (ui.button('Reset ticks (R)', { key: 'KeyR' })) {
+        if (ui.button('R Reset ticks', { key: 'KeyR', width: buttonW })) {
             // Remember the old count first. ticksReset() does not return it.
             this.resetNote = `Was ${BT.ticks}`;
 
@@ -206,14 +246,14 @@ class Demo {
 
         // A checkbox, not a button: the broken hook stays broken until you turn it off,
         // which is what makes the error line readable.
-        this.failReadout = ui.checkbox('Fail hook (F)', this.failReadout, { key: 'KeyF' });
+        this.failReadout = ui.checkbox('F Fail hook', this.failReadout, { key: 'KeyF' });
 
         ui.end();
     }
 
     // Top-left: the live clock, and the tick count from just before the last reset.
     drawClock() {
-        ui.begin(UI_ANCHORS.TOP_LEFT);
+        ui.begin('topLeft', { x: MARGIN, y: MARGIN, width: LEFT_W });
         ui.panel('Clock');
 
         // BT.ticks counts finished update() steps. BT.ticksReset() sets it to 0, and the
@@ -227,11 +267,13 @@ class Demo {
         // prints two digits after the decimal point.
         ui.kv('seconds', BT.timeSeconds.toFixed(2));
 
+        ui.spacer(4);
         ui.label(this.resetNote, { color: 'dim' });
+        ui.label('Press R to reset it.', { color: 'dim' });
         ui.end();
     }
 
-    // Top-right: one TestStateSnapshot, field by field.
+    // Bottom-left: one TestStateSnapshot, field by field.
     drawSnapshot() {
         const snap = this.readSnapshot();
 
@@ -239,7 +281,7 @@ class Demo {
         // score and marker; other values are not reshaped into null.
         const copied = snap.state;
 
-        ui.begin(UI_ANCHORS.TOP_RIGHT);
+        ui.begin('topLeft', { x: MARGIN, y: SNAPSHOT_Y, width: LEFT_W });
         ui.panel('Snapshot');
 
         // Same number as BT.ticks, copied at the moment BT.testState() ran.
@@ -256,9 +298,9 @@ class Demo {
         // or a BigInt).
         ui.kv('error', snap.error ?? '(none)');
 
-        if (copied !== null) {
-            ui.separator();
+        ui.spacer(4);
 
+        if (copied !== null) {
             // These numbers are the copy, not the live fields. score stays put across a
             // tick reset; x and y jump because placeMarker() follows the clock.
             ui.kv('score', copied.score);
@@ -268,6 +310,8 @@ class Demo {
             ui.label('No copied state', { color: 'warm' });
         }
 
+        ui.spacer(copied === null ? SNAPSHOT_FILLER + 2 * ROW_H : SNAPSHOT_FILLER);
+        ui.label('Copied as plain JSON.', { color: 'dim' });
         ui.end();
     }
 
@@ -303,12 +347,19 @@ class Demo {
         this.markerRect.y = this.marker.y - (MARKER_SIZE >> 1);
     }
 
-    // The ring, the home dot, and the square.
+    // Top-right: a panel with the ring, the home dot, and the square inside it. The kit's
+    // ui.drawRect() and ui.drawRectFill() draw as sprites in call order, so they land on
+    // top of the panel; plain BT.drawRect() would be hidden under it.
     drawOrbit() {
+        ui.begin('topLeft', { x: RIGHT_X, y: MARGIN, width: RIGHT_W });
+        ui.panel('BT.ticks, drawn');
+        ui.spacer(ORBIT_PANEL_H - PANEL_CONTENT_TOP - PANEL_BOTTOM_PAD);
+        ui.end();
+
         // Hollow box: the square's path touches the middle of each side.
-        BT.drawRect(this.ringRect, C_RING);
-        BT.drawRectFill(this.homeRect, C_HOME);
-        BT.drawRectFill(this.markerRect, C_MARKER);
+        ui.drawRect(this.ringRect, C_RING);
+        ui.drawRectFill(this.homeRect, C_HOME);
+        ui.drawRectFill(this.markerRect, C_MARKER);
     }
 }
 

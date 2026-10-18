@@ -31,9 +31,10 @@ A wide 600x315 screen with a title strip and four equal panels in a row under it
   - "Pads (press a button)" has one row per gamepad slot, P1 to P4, with press and
     "all up" counts.
 
-Along the bottom, an event log writes each event down with the engine tick it happened on,
-newest at the bottom, so quick edges are easy to read after the fact. The engine overlay
-is switched off for this demo.
+The four panels share one width and one height. Under them, an event log writes each event
+down with the engine tick it happened on, newest at the bottom, so quick edges are easy to
+read after the fact; before the first event it shows a dim "Press a key or a gamepad
+button" line. The engine overlay is switched off for this demo.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -107,24 +108,40 @@ const PLAYER_COUNT = 4;
 
 // How many lines the event log keeps. Older lines scroll away. The four panels above
 // never change height, so the log can take all the room below them.
-const LOG_MAX = 17;
+const LOG_MAX = 16;
 
 // The screen is 600x315 display pixels. That is exactly half of the 1200x630 social card,
 // so the card shows it at a clean 2x scale with no blurry resampling.
 const DISPLAY_W = 600;
 const DISPLAY_H = 315;
 
-// Fixed layout, in display pixels: four panels in a row under the title strip, the log
-// along the bottom. Each panel's left edge is pinned so they sit in even columns.
-const PANEL_TOP_Y = 36;
-// Equal panel widths keep the four columns tidy: 4 x 141 + 3 gaps of 8 = 588.
-const PANEL_WIDTH = 141;
-const GATE_PANEL_X = 4;
-const REPEAT_PANEL_X = 153;
-const RELEASE_PANEL_X = 302;
-const PADS_PANEL_X = 451;
-const LOG_PANEL_WIDTH = 588;
-const SLIDER_WIDTH = 120; // narrow enough to stay inside a 141-pixel panel
+// Fixed layout, in display pixels, on a 4-pixel grid: four equal panels in a row under
+// the 22-pixel title strip, the log under them, 4 pixels from the screen sides and 4
+// between panels (4 + 4 x 145 + 3 x 4 + 4 = 600).
+const EDGE = 4;
+const GAP = 4;
+const PANEL_WIDTH = 145;
+const GATE_PANEL_X = EDGE;
+const REPEAT_PANEL_X = GATE_PANEL_X + PANEL_WIDTH + GAP;
+const RELEASE_PANEL_X = REPEAT_PANEL_X + PANEL_WIDTH + GAP;
+const PADS_PANEL_X = RELEASE_PANEL_X + PANEL_WIDTH + GAP;
+const LOG_PANEL_WIDTH = DISPLAY_W - 2 * EDGE;
+
+// A kit panel with a title adds 22 pixels above its rows and 11 below. Every panel in
+// the top row reserves the same 46 pixels of rows - the Repeat panel's slider (a 10-pixel
+// label row and a 16-pixel bar row), a 10-pixel counter row, and a 10-pixel pip row - so
+// the four end on the same line. The slider fills the panel's content width (the panel
+// minus 9 pixels of padding on each side).
+const TOP_ROWS_H = 46;
+const TOP_PANEL_H = 22 + TOP_ROWS_H + 11;
+const LOG_PANEL_H = 22 + LOG_MAX * 10 + 11;
+const SLIDER_WIDTH = PANEL_WIDTH - 18;
+
+// The top row and the log, 4 pixels apart, are centered in the space under the title
+// strip.
+const BLOCK_H = TOP_PANEL_H + GAP + LOG_PANEL_H;
+const PANEL_TOP_Y = 22 + Math.floor((DISPLAY_H - 22 - BLOCK_H) / 2);
+const LOG_PANEL_Y = PANEL_TOP_Y + TOP_PANEL_H + GAP;
 
 // Shows the six BT.isAny* helpers side by side with their per-key cousins.
 class Demo {
@@ -338,6 +355,8 @@ class Demo {
             ui.label('Any key: title', { color: 'dim' });
         }
 
+        // Pad the four 10-pixel rows to the top row's shared height.
+        ui.spacer(TOP_ROWS_H - 4 * 10);
         ui.end();
     }
 
@@ -347,12 +366,13 @@ class Demo {
         ui.panel('Repeat while held');
 
         // The slider hands back its new value every frame. Rounding keeps it a whole
-        // number of ticks.
+        // number of ticks, and decimals: 0 prints it that way too ("10", not "10.00").
         this.repeatRate = Math.round(
             ui.slider('Ticks', this.repeatRate, {
                 min: REPEAT_MIN,
                 max: REPEAT_MAX,
                 width: SLIDER_WIDTH,
+                decimals: 0,
             }),
         );
 
@@ -373,6 +393,9 @@ class Demo {
         ui.kv('A released', this.watchedKeyReleases);
         ui.kv('All up', this.allUpReleases);
         ui.label('Hold A+S, free A', { color: 'dim' });
+
+        // Pad the four 10-pixel rows to the top row's shared height.
+        ui.spacer(TOP_ROWS_H - 4 * 10);
         ui.end();
     }
 
@@ -389,19 +412,29 @@ class Demo {
             ui.pip(text, BT.isAnyButtonDown(player));
         }
 
+        // Pad the four 10-pixel rows to the top row's shared height.
+        ui.spacer(TOP_ROWS_H - PLAYER_COUNT * 10);
         ui.end();
     }
 
-    // The event log along the bottom edge.
+    // The event log under the top row. It always keeps room for LOG_MAX lines, so its
+    // height never changes as events arrive.
     renderLog() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { width: LOG_PANEL_WIDTH });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: LOG_PANEL_Y, width: LOG_PANEL_WIDTH });
         ui.panel('Event log (tick, event)');
 
-        for (let i = 0; i < LOG_MAX; i++) {
-            // Rows with no event yet show a dim "..." so the log keeps its full height.
-            const line = this.log[i];
+        // Before the first event, one dim line says what to do instead of a column of
+        // placeholders.
+        if (this.log.length === 0) {
+            ui.label('Press a key or a gamepad button', { color: 'dim' });
+            ui.spacer((LOG_MAX - 1) * 10);
+        } else {
+            for (const line of this.log) {
+                ui.label(line);
+            }
 
-            ui.label(line ?? '...', { color: line === undefined ? 'dim' : 'text' });
+            // Empty space for the lines still to come.
+            ui.spacer((LOG_MAX - this.log.length) * 10);
         }
 
         ui.end();

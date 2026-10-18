@@ -24,8 +24,9 @@ WHAT YOU WILL SEE
 -----------------
 
 A deep navy screen with a full-width title strip across the top that reads "Built-in
-lookups + register / update / unregister". Below it sits a framed panel holding four
-labeled color swatches in a row:
+lookups + register / update / unregister". Below it, two UI kit panels share one width.
+The "Named colors" panel holds four color swatches in a row, each with its name and a dim
+"built-in" or "custom" tag centered under it:
 
 - tomato: the built-in named color "tomato", a warm red.
 - cornflower: the built-in named color "cornflowerblue", a soft blue.
@@ -35,8 +36,8 @@ labeled color swatches in a row:
   the name is unregistered the swatch turns gray.
 
 Under the swatches, three lines name the two custom colors and report whether
-"demo-optional" is currently registered (green) or missing (orange). A "Tips" panel in the
-bottom-left corner lists three rules of the registry.
+"demo-optional" is currently registered (green) or missing (orange). A "Tips" panel below
+lists three rules of the registry.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -74,12 +75,12 @@ TRY THIS
 
 */
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
 // palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
 // strip, the captions, and the Tips panel.
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -103,9 +104,41 @@ const C_OPTIONAL_FALLBACK = 9; // gray shown while demo-optional is unregistered
 const CUSTOM_DYNAMIC_NAME = 'demo-dynamic';
 const CUSTOM_OPTIONAL_NAME = 'demo-optional';
 
+// The four swatches: which palette slot each one shows, its label, and whether the name
+// behind it is built into the engine or one this demo registers.
+const SWATCHES = [
+    { slot: C_TOMATO, label: 'tomato', kind: 'built-in' },
+    { slot: C_CORNFLOWER, label: 'cornflower', kind: 'built-in' },
+    { slot: C_CUSTOM_DYNAMIC, label: 'dynamic', kind: 'custom' },
+    { slot: C_OPTIONAL, label: 'optional', kind: 'custom' },
+];
+
 // Swatch size in pixels.
-const SWATCH_W = 64;
-const SWATCH_H = 26;
+const SWATCH_W = 56;
+const SWATCH_H = 24;
+
+// Layout: two panels 4 pixels from the screen sides (312 pixels wide) and 4 pixels apart,
+// centered in the space between the 22-pixel title strip and the bottom 13 pixels the
+// engine overlay keeps for its toggle hint.
+//
+//   - Named colors panel: 22 title + the swatch band (2 + 24 swatch + 3 + two 10-pixel
+//     caption lines + 6) + three 10-pixel status lines + 11 bottom.
+//   - Tips panel: 22 title + three 10-pixel lines + 11 bottom.
+const EDGE = 4;
+const GAP = 4;
+const PANEL_W = 320 - 2 * EDGE;
+const PANEL_PAD = 9;
+const PANEL_CONTENT_TOP = 22;
+const SWATCH_BAND_H = 2 + SWATCH_H + 3 + 2 * 10 + 6;
+const COLORS_PANEL_H = PANEL_CONTENT_TOP + SWATCH_BAND_H + 3 * 10 + 11;
+const TIPS_PANEL_H = PANEL_CONTENT_TOP + 3 * 10 + 11;
+const FREE_TOP = 22;
+const FREE_BOTTOM = 240 - 13;
+const COLORS_PANEL_Y = FREE_TOP + Math.floor((FREE_BOTTOM - FREE_TOP - COLORS_PANEL_H - GAP - TIPS_PANEL_H) / 2);
+const TIPS_PANEL_Y = COLORS_PANEL_Y + COLORS_PANEL_H + GAP;
+
+// The swatches sit in four equal cells across the panel's content width.
+const CELL_W = (PANEL_W - 2 * PANEL_PAD) / SWATCHES.length;
 
 // Shows built-in and custom named colors: four swatches, a live status line, and tips.
 class Demo {
@@ -124,6 +157,10 @@ class Demo {
 
     // A clock that counts up in seconds, driving the blend and the 3-second toggle.
     elapsed = 0;
+
+    // Reused for every swatch rectangle drawn in render(), so drawing allocates no new
+    // Rect2i.
+    swatchRect = new Rect2i(0, 0, 0, 0);
 
     // Opt in to the overlay timing chart, with bar colors that match the UI theme.
     configure() {
@@ -177,6 +214,12 @@ class Demo {
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
 
+        // Run one update so the swatch slots hold real colors before the first render.
+        // Without it, a frame drawn before the first update() shows four black swatches.
+        // This priming call also advances the clock by one tick, the same as every
+        // regular call from the engine's game loop.
+        this.update();
+
         return true;
     }
 
@@ -224,9 +267,8 @@ class Demo {
         this.palette.set(C_OPTIONAL, this.resolveOr(CUSTOM_OPTIONAL_NAME, this.palette.get(C_OPTIONAL_FALLBACK)));
     }
 
-    // Draws the color swatches and the live registry status. The chrome (title strip,
-    // captions, Tips panel) comes from the shared UI kit; the swatch panel and the
-    // swatches stay hand-drawn because their palette slots are what this demo teaches.
+    // Draws the two kit panels: the swatches with the live registry status, and the
+    // tips.
     render() {
         // Fill the screen with the shared UI theme's deep navy background.
         BT.clear(this.theme.bg);
@@ -237,23 +279,11 @@ class Demo {
         ui.panel('Built-in lookups + register / update / unregister');
         ui.end();
 
-        // Upper panel: a hand-drawn background for the four swatches. Kit panels size
-        // themselves around kit rows only, so a frame around hand-drawn artwork keeps
-        // using BT.drawRectFill / BT.drawRect, but with the shared theme's panel colors.
-        BT.drawRectFill(new Rect2i(6, 32, 308, 126), this.theme.panel);
-        BT.drawRect(new Rect2i(6, 32, 308, 126), this.theme.border);
-
-        // Four labeled swatches in one row: tomato, cornflower, animated custom, optional
-        // custom.
-        this.drawSwatch(16, 44, C_TOMATO, 'tomato');
-        this.drawSwatch(96, 44, C_CORNFLOWER, 'cornflower');
-        this.drawSwatch(176, 44, C_CUSTOM_DYNAMIC, 'dynamic');
-        this.drawSwatch(256, 44, C_OPTIONAL, 'optional');
-
-        // Captions under the swatches: a borderless kit group pinned inside the panel.
-        // Passing x and y pins the group's top-left corner; pad: 0 removes the group's
-        // inner padding so the first row starts exactly at (16, 100).
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 16, y: 100, pad: 0 });
+        // The Named colors panel. ui.spacer() reserves the band the swatches are drawn
+        // into after ui.end(); the three status lines follow under it.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: COLORS_PANEL_Y, width: PANEL_W });
+        ui.panel('Named colors');
+        ui.spacer(SWATCH_BAND_H);
         ui.label("Custom dynamic name: 'demo-dynamic'");
         ui.label("Custom optional name: 'demo-optional'");
 
@@ -268,9 +298,13 @@ class Demo {
 
         ui.end();
 
-        // Lower panel: API tips as a kit panel anchored to the bottom-left corner. The
-        // kit sizes the panel to its widest row and keeps a small screen margin.
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
+        // The four swatches, one per cell, on top of the panel.
+        for (let i = 0; i < SWATCHES.length; i++) {
+            this.drawSwatch(EDGE + PANEL_PAD + i * CELL_W, SWATCHES[i]);
+        }
+
+        // The Tips panel below it, the same width.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: TIPS_PANEL_Y, width: PANEL_W });
         ui.panel('Tips');
         ui.label('Names are trim + lowercase normalized.', { color: 'dim' });
         ui.label('registerColor throws if the name exists.', { color: 'dim' });
@@ -297,15 +331,31 @@ class Demo {
         }
     }
 
-    // Draws one labeled color swatch at (x, y). `colorIndex` is the palette slot to fill
-    // it with and `label` the text printed under it.
-    drawSwatch(x, y, colorIndex, label) {
-        // Fill the swatch with the palette slot we are demonstrating: the lesson itself.
-        BT.drawRectFill(new Rect2i(x, y, SWATCH_W, SWATCH_H), colorIndex);
+    // Draws one swatch centered in the cell that starts at `cellX`, with its label and
+    // its built-in / custom tag centered under it. `swatch` is one SWATCHES entry.
+    drawSwatch(cellX, swatch) {
+        const centerX = cellX + CELL_W / 2;
+        const x = Math.round(centerX - SWATCH_W / 2);
+        const y = COLORS_PANEL_Y + PANEL_CONTENT_TOP + 2;
 
-        // The outline and the label are chrome, so they use the shared UI theme colors.
-        BT.drawRect(new Rect2i(x, y, SWATCH_W, SWATCH_H), this.theme.border);
-        BT.systemPrint(new Vector2i(x, y + SWATCH_H + 2), this.theme.text, label);
+        // Fill the swatch with the palette slot we are demonstrating: the lesson itself.
+        // The outline is chrome, so it uses the shared UI theme's border color. Both use
+        // the kit's sprite drawing (ui.drawRectFill / ui.drawRect): the engine draws
+        // every BT.drawRectFill() before any sprite, and the kit panel is a sprite, so a
+        // plain rectangle would hide under it.
+        this.swatchRect.set(x, y, SWATCH_W, SWATCH_H);
+        ui.drawRectFill(this.swatchRect, swatch.slot);
+        ui.drawRect(this.swatchRect, this.theme.border);
+
+        // Two caption lines centered under the swatch. Every character of the system
+        // font is FONT_W (6) pixels wide, so a line starts half its width left of the
+        // middle; a caption's text starts 4 pixels above the y it is given.
+        const textY = y + SWATCH_H + 3;
+
+        ui.caption(Math.round(centerX - (swatch.label.length * FONT_W) / 2), textY + 4, swatch.label, {
+            color: 'text',
+        });
+        ui.caption(Math.round(centerX - (swatch.kind.length * FONT_W) / 2), textY + 14, swatch.kind, { color: 'dim' });
     }
 }
 

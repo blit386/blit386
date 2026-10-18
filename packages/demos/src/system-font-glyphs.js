@@ -79,50 +79,42 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, BUTTON_LOOK, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').BitmapFont} BitmapFont */
 
-// Every color used for drawing is stored in a numbered palette slot.
-// Index 0 is always transparent. Custom colors start at 1.
-const C_WHITE = 1; // Glyph pixels and tooltip text
-const C_CELL_BORDER = 2; // Thin border drawn around every grid cell
-const C_CELL_HOVER_BG = 3; // Fill behind the cell the pointer is currently over
-const C_COPIED_BORDER = 4; // Border color shown briefly after a successful copy
-const C_FAILED_BORDER = 5; // Border color shown briefly after a failed copy
-const C_TOOLTIP_BG = 6; // Tooltip background box
-const C_TOOLTIP_BORDER = 7; // Tooltip border
+// The screen is 600x315 display pixels: exactly half of the 1200x630 social card, so the
+// card shows it at a clean 2x scale with no blurry resampling.
+const DISPLAY_W = 600;
+const DISPLAY_H = 315;
 
-// The grid layout. GRID_COLS=16 deliberately matches the built-in font's own texture
-// atlas layout (16 glyphs per row), so the demo's grid echoes how the font stores its
-// pixels internally. Rows are NOT fixed - see gridRows below, computed from however many
-// glyphs the font actually reports.
+// The built-in system font stores every glyph pixel as palette index 1 (see the Fonts
+// demo). A fresh palette starts that slot black, so the glyphs would vanish on the dark
+// button faces unless it is painted white.
+const C_GLYPH = 1;
 
 // The grid layout. GRID_COLS = 16 deliberately matches the font's own texture atlas (16
 // glyphs per row), so the grid echoes how the font stores its pixels. The row count is
 // not fixed - see gridRows below, computed from however many glyphs the font reports.
 const GRID_COLS = 16;
-const CELL_SIZE = 16; // Each cell is 16x16 pixels - comfortable click/tap padding around a small glyph
-const CELL_GAP = 2; // Gap between cells, so borders don't touch
-const CELL_PITCH = CELL_SIZE + CELL_GAP; // Distance from one cell's corner to the next
-const GRID_ORIGIN_Y = 26; // Top of the grid, just below the title bar
+const CELL_SIZE = 23;
+const CELL_GAP = 2; // gap between cells, so borders do not touch
+const CELL_PITCH = CELL_SIZE + CELL_GAP; // distance from one cell's corner to the next
+const GRID_ORIGIN_Y = 28; // top of the grid, just below the title bar
 
 // How long the "Copied" / "Copy failed" message stays up before the tooltip goes back to
 // following the pointer.
 const COPY_STATUS_SECONDS = 0.75;
 
-/**
- * Tests whether a display-pixel position lands inside a real, defined grid cell.
- * Returns the glyph index at that position, or -1 if the position is outside every cell
- * (including the thin gaps between cells, and the couple of empty cells past the last
- * real glyph in an unfinished final row).
- *
- * @param {number} localX - Pointer X, already offset so 0 is the grid's left edge.
- * @param {number} localY - Pointer Y, already offset so 0 is the grid's top edge.
- * @param {number} glyphCount - How many real glyphs the grid holds.
- * @returns {number}
- */
+// The three states of the copy feedback. Naming them once means a typo in a comparison
+// below fails loudly (an undefined property) instead of silently never matching.
+const COPY_STATUS = Object.freeze({
+    IDLE: 'idle', // nothing copied recently: the tooltip follows the pointer
+    COPIED: 'copied', // the last click copied its glyph
+    FAILED: 'failed', // the last click could not reach the clipboard
+});
+
 // Tests whether a display-pixel position lands inside a real grid cell. `localX` and
 // `localY` are already offset so 0 is the grid's top-left corner. Returns the glyph index
 // at that position, or -1 when the position is outside every cell - including the thin
@@ -182,13 +174,8 @@ class Demo {
     // codePoints.length, never hardcoded - see the comment on GRID_COLS above.
     gridRows = 0;
 
-    // X position of the grid's top-left corner, computed in init() so the grid is
-    // centered on the screen no matter how wide the display is configured to be.
-    gridOriginX = 0;
-
     // Pixel size of one glyph, measured in init() with BT.systemPrintMeasure('M') instead
-    // of being hardcoded here - this way the demo can never drift out of sync with the
-    // font's real dimensions.
+    // of hardcoded, so the demo cannot drift out of sync with the font's real dimensions.
     glyphWidth = 6;
     glyphHeight = 14;
 
@@ -197,30 +184,33 @@ class Demo {
     // up every tick gives a stopwatch.
     elapsed = 0;
 
-    // Tracks whether we just tried to copy a glyph, and whether it worked.
-    // 'idle' means nothing was copied recently, so tooltips just show whatever is hovered.
-    copyStatus = 'idle'; // 'idle' | 'copied' | 'failed'
-    copyStatusIndex = -1; // Which glyph index the status message is about
-    copyStatusExpiry = 0; // this.elapsed value at which the status message should clear
+    // Whether a glyph was just copied, and whether it worked. IDLE means nothing was
+    // copied recently, so the tooltip shows whatever is hovered.
+    copyStatus = COPY_STATUS.IDLE;
+    copyStatusIndex = -1; // which glyph index the status message is about
+    copyStatusExpiry = 0; // this.elapsed value at which the status message clears
 
-    /**
-     * Sets up the palette and reads BT.systemFont's glyph list.
-     * Screen size and FPS use engine defaultConfig() (no configure() in this demo).
-     *
-     * @returns {Promise<boolean>}
-     */
+    // One rectangle, reused every frame, telling ui.tooltip() which cell to sit above.
+    // Building a new one each frame would be wasteful - the widget only reads the
+    // numbers.
+    tooltipAnchor = new Rect2i(0, 0, CELL_SIZE, CELL_SIZE);
+
+    // Picks a display big enough for the whole glyph grid. Runs before init().
+    configure() {
+        return {
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+
+            // Turn the engine's debug overlay off, along with its small corner toggle
+            // mark. This demo has no use for it.
+            isOverlayEnabled: false,
+        };
+    }
 
     // Sets up the palette and reads BT.systemFont's glyph list.
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_CELL_BORDER, new Color32(60, 70, 90));
-        this.palette.set(C_CELL_HOVER_BG, new Color32(50, 90, 140));
-        this.palette.set(C_COPIED_BORDER, new Color32(120, 255, 140));
-        this.palette.set(C_FAILED_BORDER, new Color32(255, 110, 110));
-        this.palette.set(C_TOOLTIP_BG, new Color32(15, 20, 30));
-        this.palette.set(C_TOOLTIP_BORDER, new Color32(200, 200, 200));
+        this.palette.set(C_GLYPH, new Color32(255, 255, 255));
 
         // Install the shared UI kit colors (slots 240-251) before BT.paletteSet().
         // ui.tooltip() and the button faces draw with those.
@@ -244,11 +234,6 @@ class Demo {
         this.glyphWidth = glyphSize.x;
         this.glyphHeight = glyphSize.y;
 
-        // Center the grid horizontally on the display. Subtracting one CELL_GAP accounts
-        // for the fact that the last column has no trailing gap after it.
-        const gridWidth = GRID_COLS * CELL_PITCH - CELL_GAP;
-        this.gridOriginX = Math.floor((BT.displaySize.x - gridWidth) / 2);
-
         return true;
     }
 
@@ -259,9 +244,9 @@ class Demo {
         this.elapsed += BT.deltaSeconds;
 
         // Once the "Copied" / "Copy failed" message has been up long enough, clear it so
-        // the tooltip goes back to showing whatever the pointer is currently hovering.
-        if (this.copyStatus !== 'idle' && this.elapsed >= this.copyStatusExpiry) {
-            this.copyStatus = 'idle';
+        // the tooltip goes back to showing whatever the pointer is hovering.
+        if (this.copyStatus !== COPY_STATUS.IDLE && this.elapsed >= this.copyStatusExpiry) {
+            this.copyStatus = COPY_STATUS.IDLE;
             this.copyStatusIndex = -1;
         }
 
@@ -314,11 +299,11 @@ class Demo {
             }
 
             await navigator.clipboard.writeText(char);
-            this.setCopyStatus('copied', index);
+            this.setCopyStatus(COPY_STATUS.COPIED, index);
         } catch {
-            // Browsers can also refuse this call outright (for example, if the page was
-            // never focused, or the user denied clipboard permission).
-            this.setCopyStatus('failed', index);
+            // Browsers can also refuse the call outright - for example when the page was
+            // never focused, or the user denied clipboard permission.
+            this.setCopyStatus(COPY_STATUS.FAILED, index);
         }
     }
 
@@ -336,7 +321,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         ui.begin(UI_ANCHORS.TOP_BAR);
-        ui.panel(`${this.codePoints.length} glyphs - click one to copy it to your clipboard`);
+        ui.panel(`${this.codePoints.length} glyphs - Click one to copy to the clipboard`);
         ui.end();
 
         // Reading the pointer position (as opposed to a press edge) is safe from
@@ -362,30 +347,39 @@ class Demo {
             }
         }
 
-        // While a copy status message is active, the tooltip talks about THAT glyph
-        // (the one just clicked) instead of whatever the pointer happens to be over now.
-        const tooltipIndex = this.copyStatus === 'idle' ? hoveredIndex : this.copyStatusIndex;
-        const tooltip = tooltipIndex !== -1 ? this.layoutTooltip(tooltipIndex) : null;
+        this.drawGrid(hoveredIndex);
 
-        // Figuring out the tooltip's box BEFORE drawing the grid lets drawGrid() skip any
-        // glyph the box is about to sit on top of - see the comment inside drawGrid() for
-        // why that skip is necessary, not just tidy.
-        this.drawGrid(hoveredIndex, tooltip ? tooltip.rect : null);
+        // While a copy status message is active, the tooltip talks about that glyph (the
+        // one just clicked) instead of whatever the pointer is over now. It is drawn
+        // after the grid, so it covers the cells and glyphs underneath it.
+        const tooltipIndex = this.copyStatus === COPY_STATUS.IDLE ? hoveredIndex : this.copyStatusIndex;
 
-        if (tooltip) {
-            this.drawTooltip(tooltip);
+        if (tooltipIndex !== -1) {
+            this.placeTooltipAnchor(tooltipIndex);
+
+            // minY keeps the box out of the title panel. On the top row, where there is
+            // no room above the cell, ui.tooltip() drops the box down over the grid
+            // instead.
+            ui.tooltip(this.tooltipAnchor, this.tooltipLabel(tooltipIndex), { minY: GRID_ORIGIN_Y });
         }
     }
 
-    /**
-     * Draws every glyph cell: a border, a highlighted background for the hovered cell,
-     * and the glyph itself using BT.printFont() with the font BT.systemFont handed us.
-     *
-     * @param {number} hoveredIndex - Index of the cell under the pointer, or -1 for none.
-     * @param {import('blit386').Rect2i | null} tooltipRect - The tooltip's box this frame,
-     *   if one is showing, so its glyph cell(s) can be skipped (see below).
-     */
-    drawGrid(hoveredIndex, tooltipRect) {
+    // X position of the grid's top-left corner, centered on the display. A getter (worked
+    // out each time it is read, like a tiny function) rather than a number saved in
+    // init(), so it always matches the current CELL_SIZE and display width - even while
+    // you tweak those numbers with hot reload, which does not re-run init() for a
+    // method-only change.
+    get gridOriginX() {
+        // Subtracting one CELL_GAP accounts for the last column having no gap after it.
+        const gridWidth = GRID_COLS * CELL_PITCH - CELL_GAP;
+
+        return Math.floor((BT.displaySize.x - gridWidth) / 2);
+    }
+
+    // Draws every glyph cell: a kit button face (lighter under the pointer, with a
+    // colored rim right after a copy) and the glyph itself via BT.printFont() with the
+    // font BT.systemFont handed us. `hoveredIndex` is the cell under the pointer, or -1.
+    drawGrid(hoveredIndex) {
         for (let index = 0; index < this.codePoints.length; index++) {
             const col = index % GRID_COLS;
             const row = Math.floor(index / GRID_COLS);
@@ -393,37 +387,26 @@ class Demo {
             const cellY = GRID_ORIGIN_Y + row * CELL_PITCH;
             const cellRect = new Rect2i(cellX, cellY, CELL_SIZE, CELL_SIZE);
 
-            // Paint the highlight behind the hovered cell before drawing its border and
-            // glyph, so nothing else covers it up.
-            if (index === hoveredIndex) {
-                BT.drawRectFill(cellRect, C_CELL_HOVER_BG);
-            }
-
-            // The border briefly changes color right after a copy attempt, so clicking a
-            // glyph gives visible feedback even without reading the tooltip text.
-            let borderColor = C_CELL_BORDER;
+            // Each cell wears the same rounded face as a kit button (ui.drawButtonFace),
+            // picked by state. Right after a copy attempt the rim lights up - accent
+            // green when it worked, warm orange when it failed - so clicking gives
+            // visible feedback even without reading the tooltip. Otherwise the cell under
+            // the pointer gets the lighter hover face, and every other cell the resting
+            // one.
+            let look = BUTTON_LOOK.REST;
 
             if (index === this.copyStatusIndex) {
-                borderColor = this.copyStatus === 'copied' ? C_COPIED_BORDER : C_FAILED_BORDER;
+                look = this.copyStatus === COPY_STATUS.COPIED ? BUTTON_LOOK.HELD : BUTTON_LOOK.WARN;
+            } else if (index === hoveredIndex) {
+                look = BUTTON_LOOK.HOVER;
             }
 
-            BT.drawRect(cellRect, borderColor);
-
-            // BLIT386 draws every shape (rects, lines) for the whole frame first, THEN
-            // every piece of text/sprite for the whole frame on top of that - regardless
-            // of which order your own code called them in. That means a rect can never
-            // cover up text just by being drawn "later": text always wins. So instead of
-            // trying to paint over a glyph, we skip drawing the glyph in the first place
-            // for any cell the tooltip box is about to occupy this frame - the tooltip's
-            // OWN rect and text still layer correctly, since that's all decided together.
-            if (tooltipRect && cellRect.isIntersecting(tooltipRect)) {
-                continue;
-            }
+            ui.drawButtonFace(cellRect, look);
 
             // BT.printFont(font, position, text, paletteOffset) draws with any BitmapFont
-            // we hand it - here that's BT.systemFont, the same font BT.systemPrint() uses
-            // internally. Centering math: a 16x16 cell minus a smaller glyph, halved,
-            // rounds down to whole pixels on each side.
+            // - here BT.systemFont, the same font BT.systemPrint() uses internally.
+            // Centering: the cell size minus the glyph size, halved and rounded down to
+            // whole pixels.
             const char = String.fromCodePoint(this.codePoints[index]);
             const glyphX = cellX + Math.floor((CELL_SIZE - this.glyphWidth) / 2);
             const glyphY = cellY + Math.floor((CELL_SIZE - this.glyphHeight) / 2);
@@ -432,67 +415,40 @@ class Demo {
         }
     }
 
-    /**
-     * Works out where a tooltip for the given glyph should sit: a small box docked above
-     * its cell, clamped so it never runs off any edge of the display AND never rises into
-     * the title panel at the top of the screen. Kept separate from drawTooltip() so
-     * render() can know the box's position before the grid is drawn (see drawGrid()).
-     *
-     * @param {number} index - Which glyph the tooltip is about.
-     * @returns {{ rect: import('blit386').Rect2i, label: string }}
-     */
-    layoutTooltip(index) {
+    // Writes this.tooltipAnchor so it covers the cell for `index`. ui.tooltip() docks its
+    // box above whatever rectangle it is given.
+    placeTooltipAnchor(index) {
+        const col = index % GRID_COLS;
+        const row = Math.floor(index / GRID_COLS);
+
+        this.tooltipAnchor.set(
+            this.gridOriginX + col * CELL_PITCH,
+            GRID_ORIGIN_Y + row * CELL_PITCH,
+            CELL_SIZE,
+            CELL_SIZE,
+        );
+    }
+
+    // The words inside the tooltip for one glyph: its code point, or a short note about
+    // the copy that just happened.
+    tooltipLabel(index) {
         const codePoint = this.codePoints[index];
         const char = String.fromCodePoint(codePoint);
 
-        // toString(16) turns the number into hexadecimal (base 16) digits, the way Unicode
-        // code points are normally written. padStart(4, '0') pads short values with
-        // leading zeros so "U+00E9" lines up the same width as "U+2013".
-        const hex = codePoint.toString(16).toUpperCase().padStart(4, '0');
-        let label = `U+${hex} (${codePoint}) ${char}`;
-
-        if (this.copyStatus === 'copied' && this.copyStatusIndex === index) {
-            label = `Copied ${char}`;
-        } else if (this.copyStatus === 'failed' && this.copyStatusIndex === index) {
-            label = 'Copy failed';
+        if (this.copyStatus === COPY_STATUS.COPIED && this.copyStatusIndex === index) {
+            return `Copied ${char}`;
         }
 
-        // BT.systemPrintMeasure tells us exactly how wide this text will be, so the
-        // tooltip box always fits its label with a little padding - no guessing.
-        const textSize = BT.systemPrintMeasure(label);
-        const width = textSize.x + 6;
-        const height = textSize.y + 4;
+        if (this.copyStatus === COPY_STATUS.FAILED && this.copyStatusIndex === index) {
+            return 'Copy failed';
+        }
 
-        const col = index % GRID_COLS;
-        const row = Math.floor(index / GRID_COLS);
-        const cellX = this.gridOriginX + col * CELL_PITCH;
-        const cellY = GRID_ORIGIN_Y + row * CELL_PITCH;
-        const cellCenterX = cellX + Math.floor(CELL_SIZE / 2);
+        // toString(16) turns the number into hexadecimal (base 16) digits, the way
+        // Unicode code points are usually written. padStart(4, '0') adds leading zeros so
+        // "U+00E9" is the same width as "U+2013".
+        const hex = codePoint.toString(16).toUpperCase().padStart(4, '0');
 
-        // Center the tooltip above the cell, then clamp it so it can never be drawn
-        // partly off the edge of the screen, or above GRID_ORIGIN_Y - if there's no room
-        // above the top row, this pushes the tooltip back down over the grid instead of
-        // letting it climb into the title panel above.
-        let x = cellCenterX - Math.floor(width / 2);
-        let y = cellY - height - 2;
-
-        x = Math.max(0, Math.min(x, BT.displaySize.x - width));
-        y = Math.max(GRID_ORIGIN_Y, Math.min(y, BT.displaySize.y - height));
-
-        return { rect: new Rect2i(x, y, width, height), label };
-    }
-
-    /**
-     * Paints a tooltip box already worked out by layoutTooltip().
-     *
-     * @param {{ rect: import('blit386').Rect2i, label: string }} tooltip
-     */
-    drawTooltip(tooltip) {
-        const { rect, label } = tooltip;
-
-        BT.drawRectFill(rect, C_TOOLTIP_BG);
-        BT.drawRect(rect, C_TOOLTIP_BORDER);
-        BT.systemPrint(new Vector2i(rect.x + 3, rect.y + 2), C_WHITE, label);
+        return `U+${hex} (${codePoint}) ${char}`;
     }
 }
 

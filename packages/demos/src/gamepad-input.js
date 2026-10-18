@@ -27,17 +27,21 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A title strip across the top and four dim lines of control hints under it (plus a warm
-"This demo needs a gamepad" line on touch screens). Below the hints, on the left, a dark
-200x168 arena with a border: inside it a small square "hover pod" with a white outline and
-a small crosshair. Until a gamepad is connected, a warm prompt sits near the top of the
-arena.
+A title strip across the top and two columns under it, both ending on the same line.
 
-On the right, a "Gamepad" status panel from the shared UI kit: how many pads the browser
-reports, a pip for player one's connection, pips for A, B, the (A|B) mask, any button, L2
-and R2, then the raw left and right stick numbers (LX, LY, RX, RY) and a "Throttle" meter
-that fills with trigger pressure. When the gamepad connects, a "Gamepad connected" tag
-lands on the engine overlay's timing chart.
+On the left, a "Controls" panel lists what each stick, trigger, and button does. Below it,
+a dark arena with a border fills the rest of the column: inside it a small square "hover
+pod" with a white outline and a small crosshair. Until a gamepad is connected, a warm
+prompt sits near the top of the arena (on a touch screen it says "This demo needs a
+gamepad" instead).
+
+On the right, a status panel from the shared UI kit, titled with how many gamepads the
+browser reports ("Gamepads: 0"): a pip for player one's connection, pips for A, B, the
+(A|B) mask, any button, L2 and R2, then the raw left and right stick numbers (LX, LY, RX,
+RY) and a "Throttle" meter that fills with trigger pressure. Under it, a "Pod" panel
+shows the pod's current color, whether the trail is on, and a "Boost" meter that empties
+as an R2 boost runs out. When the gamepad connects, a "Gamepad connected" tag lands on the
+engine overlay's timing chart.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -113,12 +117,41 @@ const C_POD_C = 8; // third pod color
 const C_TRAIL = 9; // white with a lower alpha value, for the trail pixels
 const C_AIM = 10; // right-stick crosshair color
 
-// The play arena rectangle, in display pixels. It sits below the title strip and the hint
-// text, and stops short of the status panel on the right.
-const ARENA_X = 8;
-const ARENA_Y = 108;
-const ARENA_W = 200;
-const ARENA_H = 168;
+// Layout on a 4-pixel grid: 4 pixels from the screen edges, 4 between panels. Two
+// columns under the 22-pixel title strip, 204 and 104 pixels wide
+// (4 + 204 + 4 + 104 + 4 = 320).
+//
+//   - Right column: the Gamepad panel (22 title + 7 pip rows + 4 axis rows + a 23-pixel
+//     meter + 11 bottom = 166 pixels), then the Pod panel (22 + 2 rows + a meter + 11 =
+//     76 pixels). Both columns end at y = 272, above the bottom-left 17x13 pixels the
+//     engine overlay keeps for its toggle hint.
+//   - Left column: the Controls panel (22 + 4 rows + 11 = 73 pixels), then the arena,
+//     which stretches down to the same bottom line as the right column.
+const EDGE = 4;
+const GAP = 4;
+const TOP_Y = 26;
+const LEFT_W = 204;
+const RIGHT_W = 104;
+const RIGHT_X = DISPLAY_W - EDGE - RIGHT_W;
+const GAMEPAD_PANEL_H = 22 + 7 * 10 + 4 * 10 + 23 + 11;
+const POD_PANEL_Y = TOP_Y + GAMEPAD_PANEL_H + GAP;
+const POD_PANEL_H = 22 + 2 * 10 + 23 + 11;
+const COLUMN_BOTTOM = POD_PANEL_Y + POD_PANEL_H;
+const CONTROLS_PANEL_H = 22 + 4 * 10 + 11;
+
+// Meters in the right column fill the panel's content width (the panel minus 9 pixels of
+// padding on each side).
+const METER_W = RIGHT_W - 18;
+
+// The play arena rectangle, in display pixels: under the Controls panel, down to the
+// bottom of the right column.
+const ARENA_X = EDGE;
+const ARENA_Y = TOP_Y + CONTROLS_PANEL_H + GAP;
+const ARENA_W = LEFT_W;
+const ARENA_H = COLUMN_BOTTOM - ARENA_Y;
+
+// Names of the three pod colors, in the same order A cycles through them.
+const POD_COLOR_NAMES = ['green', 'red', 'blue'];
 
 // Pod size in pixels: 10 at rest, up to 10 more at full trigger pull. POD_SPEED is how
 // many pixels per tick a fully pushed stick moves it.
@@ -134,9 +167,6 @@ const BOOST_FACTOR = 2;
 // Pixels per tick for the right-stick crosshair, and how many trail points we keep.
 const AIM_SPEED = 4;
 const TRAIL_MAX = 28;
-
-// Width in pixels of the trigger pressure meter bar in the status panel.
-const THROTTLE_METER_W = 80;
 
 // Formats a stick axis value (-1 to +1) as a fixed-width string like '+0.50' or '-0.32'.
 // Writing the '+' out keeps every row the same width, so the numbers in the panel do not
@@ -347,6 +377,7 @@ class Demo {
         this.renderHints();
         this.renderArena();
         this.renderStatusPanel();
+        this.renderPodPanel();
 
         // When no gamepad is plugged in yet, show a friendly prompt inside the arena.
         if (!BT.isGamepadConnected(PLAYER)) {
@@ -409,22 +440,15 @@ class Demo {
         this.boostTicks = 0;
     }
 
-    // Control hints under the title bar, drawn as a borderless kit group (labels only, no
-    // panel background). On touch screens an extra warm line explains that this
-    // particular demo cannot work without a physical gamepad.
+    // The Controls panel at the top of the left column: what each stick, trigger, and
+    // button does, as four dim lines.
     renderHints() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
-        ui.label('Left stick move | Right stick aim', { color: 'dim' });
-        ui.label('Triggers = pod size', { color: 'dim' });
-        ui.label('A color | B trail | Start reset', { color: 'dim' });
-        ui.label('R2 = boost', { color: 'dim' });
-
-        // ui.hasTouch() turns true after the first touch contact and stays true. Touch
-        // devices rarely have a gamepad attached, so warn those visitors up front.
-        if (ui.hasTouch()) {
-            ui.label('This demo needs a gamepad', { color: 'warm' });
-        }
-
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: TOP_Y, width: LEFT_W });
+        ui.panel('Controls');
+        ui.label('L stick moves, R stick aims', { color: 'dim' });
+        ui.label('Triggers grow the pod', { color: 'dim' });
+        ui.label('A color, B trail, R2 boost', { color: 'dim' });
+        ui.label('Start recenters', { color: 'dim' });
         ui.end();
     }
 
@@ -488,11 +512,10 @@ class Demo {
         const aimY = BT.getAxis(BT.AXIS_RIGHT_Y, PLAYER);
         const throttle = Math.max(BT.getAxis(BT.AXIS_TRIGGER_L, PLAYER), BT.getAxis(BT.AXIS_TRIGGER_R, PLAYER));
 
-        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: 28 });
-        ui.panel('Gamepad');
-
-        // How many gamepads the browser reports, and whether player one has one.
-        ui.kv('Pads', BT.gamepadCount);
+        // The panel title says how many gamepads the browser reports; the first pip says
+        // whether player one has one.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_X, y: TOP_Y, width: RIGHT_W });
+        ui.panel(`Gamepads: ${BT.gamepadCount}`);
         ui.pip('P1 connected', BT.isGamepadConnected(PLAYER));
 
         // Pips light up while a button is physically held down right now.
@@ -509,7 +532,6 @@ class Demo {
         // meter below shows the same triggers as an ANALOG 0 to 1 pull.
         ui.pip('L2 held', BT.isDown(BT.BTN_L2, PLAYER));
         ui.pip('R2 held', BT.isDown(BT.BTN_R2, PLAYER));
-        ui.separator();
 
         // LX/LY are the left stick, RX/RY the right stick, each from -1.00 to +1.00.
         ui.kv('LX', formatAxis(moveX));
@@ -519,7 +541,22 @@ class Demo {
 
         // The meter fills left-to-right with trigger pressure (0 = released, 1 = fully
         // squeezed) - the same value that grows the pod.
-        ui.meter('Throttle', throttle, { width: THROTTLE_METER_W });
+        ui.meter('Throttle', throttle, { width: METER_W });
+        ui.end();
+    }
+
+    // The Pod panel under the status panel: what A, B, and R2 have done to the pod. These
+    // work from the keyboard too (Space or B for A, N for B), so this panel reacts even
+    // without a gamepad - except the boost, which needs R2.
+    renderPodPanel() {
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_X, y: POD_PANEL_Y, width: RIGHT_W });
+        ui.panel('Pod');
+        ui.kv('Color', POD_COLOR_NAMES[this.podColorIndex]);
+        ui.kv('Trail', this.trailEnabled ? 'on' : 'off');
+
+        // The boost meter is full the tick R2 starts a boost and empties as boostTicks
+        // counts down to 0.
+        ui.meter('Boost', this.boostTicks / BOOST_TICKS, { width: METER_W });
         ui.end();
     }
 
@@ -527,9 +564,18 @@ class Demo {
     // borderless group. Pinned near the top of the arena so the idle pod and aim
     // crosshair (arena center) do not sit on the text.
     renderEmptyState() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: ARENA_X + 12, y: ARENA_Y + 8 });
-        ui.label('Connect a gamepad and press', { color: 'warm' });
-        ui.label('any button to wake it.', { color: 'warm' });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: ARENA_X + 6, y: ARENA_Y + 6 });
+
+        // ui.hasTouch() turns true after the first touch contact and stays true. Touch
+        // devices rarely have a gamepad attached, so tell those visitors plainly that
+        // this page cannot work for them.
+        if (ui.hasTouch()) {
+            ui.label('This demo needs a gamepad.', { color: 'warm' });
+        } else {
+            ui.label('Connect a gamepad and press', { color: 'warm' });
+            ui.label('any button to wake it.', { color: 'warm' });
+        }
+
         ui.end();
     }
 }

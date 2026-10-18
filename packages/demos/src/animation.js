@@ -29,26 +29,27 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A small gray walker - an 8x8 body on two short legs, built on an offscreen canvas - stands
-on a dark green ground strip that fills the lower part of a 320x240 screen, with a soft
-shadow under its feet. Every 2 seconds it changes state, in a loop that repeats every 6
-seconds:
+A small gray walker - an 8x8 body with one eye on two short legs, built on an offscreen
+canvas and drawn at twice its size - stands on a dark green ground strip along the bottom
+of a 320x240 screen, with a soft shadow under its feet. Every 2 seconds it changes state,
+in a loop that repeats every 6 seconds:
 
   1. Idle - it stands still.
   2. Walking - it slides sideways 1 pixel per tick, legs cycling through three poses,
-     bouncing back whenever it reaches x = 60 or x = 220.
-  3. Jumping - it rises along a smooth arc up to 35 pixels high and lands again after one
-     second, twice in a row, while the shadow stays on the ground.
+     turning around (and facing the other way) whenever it reaches x = 64 or x = 220.
+  3. Jumping - it rises along a smooth arc up to 40 pixels high and lands again after one
+     second, twice in a row, while its shadow stays on the ground and shrinks as it rises.
 
-A UI kit panel in the top-right corner names the current state, and a thin color strip on
-the ground edge echoes it: gray for Idle, green for Walking, red for Jumping. In the
-top-left corner a borderless group shows an ability cooldown (a countdown and a meter),
-the seconds until the next particle spawn, and how many particles are alive. Over the
-ground strip, a short list names the concepts on show.
+Two UI kit panels sit along the top edge. Timers, on the left, shows an ability cooldown
+(a countdown and a meter), the seconds until the next particle spawn, and how many
+particles are alive. State, on the right, lists the three states with a lit pip next to
+the current one. On the ground strip, a short list names the concepts on show.
 
-Every 3 seconds a 4x4 particle appears near the walker in a hue tied to the moment it
-spawned. It glows for most of its 3-second life and then winks out quickly. The engine
-overlay gets a custom row with the state and the tick count, and the timing chart is on.
+Every 45 ticks (three quarters of a second) a burst of 32 tiny sparks shoots up from the
+walker's feet like a fountain, arcs over under gravity, and falls back to the ground. Each
+burst has its own hue, tied to the moment it spawned. A spark glows for most of its
+1.5-second life and then winks out quickly. The engine overlay gets a custom row with the
+state and the tick count, and the timing chart is on.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -60,8 +61,10 @@ WHAT YOU WILL LEARN
   on a 360-tick cycle with `tick % 360`.
 - A cooldown timer: a tick count that counts down to zero, shown as seconds and as a
   ui.meter().
-- Periodic events with the Timer class: new Timer(180), timer.fireIfElapsed(tick), and
+- Periodic events with the Timer class: new Timer(45), timer.fireIfElapsed(tick), and
   timer.remainingTicks(tick).
+- Simple particle physics: each spark has a velocity, and gravity adds a little to its
+  downward speed every tick, which bends its path into an arc.
 - A jump arc from Math.sin(): progress from 0 to 1 becomes a smooth hill.
 - Palette animation for particles: each particle owns a palette slot, update() writes its
   current color there with palette.set(), and render() just passes the slot number.
@@ -69,12 +72,14 @@ WHAT YOU WILL LEARN
   and the hue.
 - Building a four-frame walk strip on an OffscreenCanvas and cutting frames out of it with
   sheet.tileRect().
+- Drawing one sprite at twice its size, mirrored to face the way it walks, with the
+  params form of BT.drawSprite(): { scale: 2, flags: BT.FLIP_H }.
 
 HOW PARTICLE COLORS WORK
 ------------------------
 
-Each particle gets its own palette slot (50-69, a rotating pool of 20) the moment it is
-spawned. In update(), the color is computed - hue from the spawn tick, alpha from age -
+Each particle gets its own palette slot (50-177, a rotating pool of 128) the moment it is
+spawned. In update(), the color is computed - hue picked at spawn time, alpha from age -
 and written into that slot with palette.set(). In render(), the particle is drawn with
 the slot number alone; no Color32 objects are needed there. The Palette Animation demo
 explores this idea in depth: https://demos.blit386.dev/palette-animation
@@ -105,26 +110,52 @@ const AnimState = Object.freeze({
     Jumping: 'Jumping', // following a jump arc
 });
 
-// How many particles can be alive at once. Each gets its own palette slot.
-const MAX_PARTICLES = 20;
+// How many particles can be alive at once. Each gets its own palette slot. A burst lives
+// for two spawn intervals, so at most about 64 are alive - 128 slots leave plenty of
+// room.
+const MAX_PARTICLES = 128;
 
-// Where in the palette particle colors are stored (slots 50-69).
+// Every SPAWN_INTERVAL ticks, BURST_SIZE particles shoot up from the walker's feet.
+const SPAWN_INTERVAL = 45;
+const BURST_SIZE = 32;
+
+// How many ticks one particle lives (90 ticks = 1.5 seconds at 60 FPS).
+const PARTICLE_LIFETIME = 90;
+
+// How much faster a particle falls each tick, in pixels per tick. Small numbers make
+// floaty sparks, big numbers make them drop like stones.
+const GRAVITY = 0.06;
+
+// Where in the palette particle colors are stored (slots 50-177).
 const PARTICLE_SLOT_START = 50;
 
-// Where the walker's colors start (slot 20 and up; the canvas has two colors).
+// The states in the order the State panel lists them (and the order they play in).
+const STATE_ORDER = [AnimState.Idle, AnimState.Walking, AnimState.Jumping];
+
+// Where the walker's colors start (slot 20 and up; the canvas has three colors).
 const SPRITE_BASE = 20;
 
 // Walk animation: four 18x18 frames in one horizontal strip (idle + three walk poses).
 const WALK_FRAME_W = 18;
 const WALK_FRAME_COUNT = 4;
 
+// The walker is drawn at twice its size, so each canvas pixel becomes a 2x2 block.
+const WALKER_SCALE = 2;
+
+// The y coordinate of the ground's top edge. The walker's feet rest on this line.
+const GROUND_Y = 172;
+
+// The walker turns around when its left edge reaches one of these x positions. The
+// range is centered: 64 pixels of room on the left, 64 on the right of the 36-pixel-wide
+// walker.
+const WALK_MIN_X = 64;
+const WALK_MAX_X = 220;
+
 // Scene color slots (low palette slots - text and panels use the shared UI theme
 // instead).
 const C_GROUND = 1; // (40, 60, 40) dark green ground strip
 const C_SHADOW = 2; // (0, 0, 0, 100) semi-transparent shadow under the walker
-const C_STATE_IDLE = 3; // (150, 150, 150) calm gray - the Idle state color
-const C_STATE_WALK = 4; // (100, 255, 100) "go" green - the Walking state color
-const C_STATE_JUMP = 5; // (255, 100, 100) alert red - the Jumping state color
+const C_GROUND_EDGE = 3; // (72, 104, 60) lighter green line along the ground's top edge
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs before init(), so
@@ -136,22 +167,26 @@ const UI_ACCENT = 247; // phosphor green (update bars)
 const UI_WARM = 248; // orange (chart warning and error frames)
 const UI_INFO = 249; // light blue (overlay row text)
 
-// Draws one frame of the walker onto the canvas: a body square plus two legs whose
-// positions change with `frameIndex` (0 idle, 1 left foot forward, 2 mid stride, 3 right
-// foot forward).
+// Draws one frame of the walker onto the canvas: a body square with one eye, plus two
+// legs whose positions change with `frameIndex` (0 idle, 1 left foot forward, 2 mid
+// stride, 3 right foot forward). The eye sits on the right, so the walker faces right;
+// renderCharacter() mirrors it to face left.
 function drawWalkFrame(ctx, frameIndex) {
     const ox = frameIndex * WALK_FRAME_W;
     const bodyColor = '#b0b0c8';
     const legColor = '#8080a0';
+    const eyeColor = '#1a1c2c';
 
     ctx.fillStyle = bodyColor;
     ctx.fillRect(ox + 5, 4, 8, 8);
+    ctx.fillStyle = eyeColor;
+    ctx.fillRect(ox + 10, 6, 2, 2);
     ctx.fillStyle = legColor;
 
     if (frameIndex === 0) {
-        // Idle: feet together under the body.
-        ctx.fillRect(ox + 6, 12, 3, 4);
-        ctx.fillRect(ox + 9, 12, 3, 4);
+        // Idle: feet apart under the body, lined up with the body edges.
+        ctx.fillRect(ox + 5, 12, 3, 4);
+        ctx.fillRect(ox + 10, 12, 3, 4);
     } else if (frameIndex === 1) {
         // Left foot forward.
         ctx.fillRect(ox + 4, 12, 3, 4);
@@ -206,8 +241,10 @@ class Demo {
     // Which state the walker is in right now.
     animState = AnimState.Idle;
 
-    // The walker's position on screen (top-left corner of its frame).
-    charPos = new Vector2i(80, 100);
+    // The walker's position on screen (top-left corner of its frame). Its feet end 16
+    // canvas rows below the frame's top, so at 2x the frame's top sits 32 pixels above
+    // the ground line.
+    charPos = new Vector2i(80, GROUND_Y - 16 * WALKER_SCALE);
 
     // Counts down how many ticks the ability is still unavailable.
     abilityCooldownTicks = 0;
@@ -215,10 +252,13 @@ class Demo {
     // Total duration of the cooldown (2 seconds at 60 FPS = 120 ticks).
     abilityCooldownDuration = 120;
 
-    // Fires every 180 ticks (3 seconds at 60 FPS) to spawn the next particle.
-    spawnTimer = new Timer(180);
+    // Fires every 45 ticks (0.75 seconds at 60 FPS) to spawn the next burst.
+    spawnTimer = new Timer(SPAWN_INTERVAL);
 
-    // The active particles: each has a pos (Vector2i), a spawnTick, and a paletteSlot.
+    // The active particles: each has a position (x, y), a velocity (vx, vy), a
+    // spawnTick, a hue, and a paletteSlot. Position and velocity are fractional numbers
+    // so slow sparks still move smoothly; they are rounded to whole pixels only when
+    // drawn.
     particles = [];
 
     // Counts spawned particles so the palette slots are handed out in a circle.
@@ -236,6 +276,10 @@ class Demo {
 
     // Where the current walk started; the leg pose is picked from the distance walked.
     walkStartX = 80;
+
+    // Reused every frame for BT.drawSprite(): the scale stays at 2, and flags flips to
+    // BT.FLIP_H (a mirror image) while the walker faces left.
+    spriteParams = { scale: WALKER_SCALE, flags: 0 };
 
     // Slot map for the shared UI kit theme, filled in init() by applyTheme(). theme.bg,
     // theme.text, and friends are palette indices for our own drawing.
@@ -280,24 +324,22 @@ class Demo {
     async init() {
         console.log('[AnimationDemo] Initializing...');
 
-        // Create the palette and fill the scene colors (ground, shadow, state strip).
+        // Create the palette and fill the scene colors (ground, its edge, shadow).
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_GROUND, new Color32(40, 60, 40));
         this.palette.set(C_SHADOW, new Color32(0, 0, 0, 100));
-        this.palette.set(C_STATE_IDLE, new Color32(150, 150, 150));
-        this.palette.set(C_STATE_WALK, new Color32(100, 255, 100));
-        this.palette.set(C_STATE_JUMP, new Color32(255, 100, 100));
+        this.palette.set(C_GROUND_EDGE, new Color32(72, 104, 60));
 
         // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
         // high palette slots (240-251), far above this demo's sprite colors (slots 20-21)
-        // and particle slots (50-69), and returns a map of friendly names to those slots
+        // and particle slots (50-177), and returns a map of friendly names to those slots
         // (this.theme.bg, .text, ...). All on-screen text and the cooldown meter use
         // them.
         this.theme = applyTheme(this.palette);
 
-        // Particle slots (50-69) start fully transparent (alpha 0) so they stay invisible
-        // until update() writes real colors into them when particles spawn.
+        // Particle slots (50-177) start fully transparent (alpha 0) so they stay
+        // invisible until update() writes real colors into them when particles spawn.
         for (let i = 0; i < MAX_PARTICLES; i++) {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
@@ -349,24 +391,34 @@ class Demo {
             this.abilityCooldownTicks--;
         }
 
-        // Spawn a particle every 180 ticks.
+        // Spawn a burst of particles every SPAWN_INTERVAL ticks.
         if (this.spawnTimer.fireIfElapsed(tick)) {
-            this.spawnParticle();
+            this.spawnBurst();
         }
 
-        // Remove dead particles (older than 3 seconds = 180 ticks). Array.filter returns
-        // a new array with only the entries that pass the test.
-        this.particles = this.particles.filter((p) => tick - p.spawnTick < 180);
+        // Move every particle: add its velocity to its position, then let gravity pull a
+        // little harder on it. Adding to vy each tick is what bends a straight line into
+        // an arc - the spark slows as it rises, stops at the top, and falls faster and
+        // faster on the way down.
+        for (const p of this.particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += GRAVITY;
+        }
+
+        // Remove dead particles: too old, or fallen back down to the ground's edge (a 2x2
+        // spark at y = GROUND_Y - 1 would already cover the edge line). Array.filter
+        // returns a new array with only the entries that pass the test.
+        this.particles = this.particles.filter((p) => tick - p.spawnTick < PARTICLE_LIFETIME && p.y < GROUND_Y - 1);
 
         // Update each particle's palette slot with its current color. The hue is fixed at
         // spawn time; only the alpha changes as the particle ages.
         for (const p of this.particles) {
             const age = tick - p.spawnTick;
-            const lifetime = 180;
 
             // t goes from 0 (just born) to 1 (fully aged, about to disappear). Think of
             // it like a candle burning down: 0 is a fresh candle, 1 is gone.
-            const t = age / lifetime;
+            const t = age / PARTICLE_LIFETIME;
 
             // applyEasing(t, 'ease-in') starts slow and accelerates toward the end.
             // Subtracting from 1 flips it: alpha stays high for most of the particle's
@@ -374,12 +426,8 @@ class Demo {
             // that glows brightly, then winks out all at once instead of fading evenly.
             const alpha = Math.floor(255 * (1 - applyEasing(t, 'ease-in')));
 
-            // Hue is based on when the particle was spawned, so no two look the same. The
-            // % keeps the hue within 0-359 degrees of the color wheel.
-            const hue = (p.spawnTick * 3) % 360;
-
             // Compute the color and write it into this particle's reserved palette slot.
-            const color = Color32.fromHSL(hue, 100, 60);
+            const color = Color32.fromHSL(p.hue, 100, 60);
             this.palette.set(p.paletteSlot, new Color32(color.r, color.g, color.b, alpha));
         }
 
@@ -393,13 +441,15 @@ class Demo {
         // Clear the whole screen with the shared UI theme's background color.
         BT.clear(this.theme.bg);
 
-        // Green ground strip the walker stands on.
-        BT.drawRectFill(new Rect2i(0, 150, 320, 90), C_GROUND);
+        // Green ground strip the walker stands on, from GROUND_Y down to the bottom of
+        // the screen, with a 2-pixel lighter line on top so the edge reads clearly.
+        BT.drawRectFill(new Rect2i(0, GROUND_Y, 320, 240 - GROUND_Y), C_GROUND);
+        BT.drawRectFill(new Rect2i(0, GROUND_Y, 320, 2), C_GROUND_EDGE);
 
         // Draw the walker with a shadow below it.
         this.renderCharacter();
 
-        // The on-screen state indicator (the overlay row also shows state + ticks).
+        // The State panel (the overlay row also shows state + ticks).
         this.renderStateIndicator();
 
         // Draw any active particles.
@@ -458,11 +508,11 @@ class Demo {
             // Move 1 pixel per tick; turn around near the screen edges.
             this.charPos.x += this.walkDir;
 
-            if (this.charPos.x > 220) {
+            if (this.charPos.x >= WALK_MAX_X) {
                 this.walkDir = -1;
             }
 
-            if (this.charPos.x < 60) {
+            if (this.charPos.x <= WALK_MIN_X) {
                 this.walkDir = 1;
             }
         }
@@ -493,78 +543,87 @@ class Demo {
             // screen.
             const jumpProgress = (BT.ticks - this.jumpStartTick) / this.jumpDuration;
 
-            yOffset = -Math.abs(Math.sin(jumpProgress * Math.PI) * 35);
+            yOffset = -Math.abs(Math.sin(jumpProgress * Math.PI) * 40);
         }
 
         const drawPos = new Vector2i(this.charPos.x, this.charPos.y + Math.floor(yOffset));
 
-        BT.drawSprite(this.spriteSheet, srcRect, drawPos, 0);
+        // Face the way we are walking: the frames face right, so mirror them with
+        // BT.FLIP_H while walkDir is -1. The walker keeps its last facing while it idles
+        // and jumps.
+        this.spriteParams.flags = this.walkDir < 0 ? BT.FLIP_H : 0;
 
-        // The shadow sits at the feet's ground position no matter how high the jump is.
-        const shadowY = this.charPos.y + srcRect.height - 4;
+        BT.drawSprite(this.spriteSheet, srcRect, drawPos, this.spriteParams);
 
-        BT.drawRectFill(new Rect2i(this.charPos.x + 3, shadowY, srcRect.width - 6, 4), C_SHADOW);
+        // The shadow is a 1-pixel line on the ground's top edge, right under the feet, no
+        // matter how high the jump is. It gets 2 pixels narrower on each side for every
+        // 10 pixels of height, like a real shadow shrinking as the thing casting it
+        // moves away from the ground.
+        const shrink = 2 * Math.floor(-yOffset / 10);
+        const shadowW = 24 - 2 * shrink;
+
+        BT.drawRectFill(new Rect2i(this.charPos.x + 6 + shrink, GROUND_Y, shadowW, 1), C_SHADOW);
     }
 
-    // Draws the state readout so the Idle / Walking / Jumping cycle is obvious on screen:
-    // a small kit panel in the top-right corner plus a color strip on the ground edge.
+    // Draws the state machine as a kit panel in the top-right corner: all three states in
+    // the order they play, with a lit pip (a small filled square) next to the current
+    // one. Watching the lit pip step down the list makes the Idle -> Walking -> Jumping
+    // loop obvious at a glance.
     renderStateIndicator() {
-        // Pick the scene slot for the strip and the kit text role for the panel label.
-        // Idle is calm gray/dim, Walking is "go" green, Jumping is alert red/orange.
-        let stripColor = C_STATE_IDLE;
-        let stateRole = 'dim';
-
-        if (this.animState === AnimState.Walking) {
-            stripColor = C_STATE_WALK;
-            stateRole = 'accent';
-        } else if (this.animState === AnimState.Jumping) {
-            stripColor = C_STATE_JUMP;
-            stateRole = 'warm';
-        }
-
-        // A small bordered kit panel in the top-right corner names the current state.
         ui.begin(UI_ANCHORS.TOP_RIGHT);
         ui.panel('State');
-        ui.label(this.animState, { color: stateRole });
+
+        for (const state of STATE_ORDER) {
+            ui.pip(state, state === this.animState);
+        }
+
         ui.end();
-
-        // A matching color strip painted right into the scene, on the ground edge, so you
-        // can see the state change even without reading the panel text.
-        BT.drawRectFill(new Rect2i(218, 152, 96, 6), stripColor);
-        ui.caption(218, 161, 'State machine', { color: 'dim' });
     }
 
-    // Spawns a new particle near the walker. Each particle gets its own palette slot from
-    // the rotating pool.
-    spawnParticle() {
-        // Rotate through the 20 slots in a circle: `%` wraps the count back to 0 after
-        // 19, so the oldest particle's slot gets reused.
-        const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
-        this.nextParticleSlot++;
+    // Spawns a burst of BURST_SIZE particles at the walker's feet, all flying upward at
+    // slightly different speeds and angles, like a little fountain. Each particle gets
+    // its own palette slot from the rotating pool.
+    spawnBurst() {
+        // The whole burst shares a base hue picked from the spawn tick, so each burst has
+        // its own color. The % keeps the hue within 0-359 degrees of the color wheel.
+        const baseHue = (BT.ticks * 3) % 360;
 
-        // Scatter the particle around the walker. BT.random is the engine's shared random
-        // number generator, and int() returns a whole number starting at the first value
-        // and stopping just before the second - so int(-5, 25) gives anything from -5 to
-        // 24, and 25 itself never comes up. Both ranges are deliberately lopsided: most x
-        // offsets are positive, so dust trails off to the right, and most y offsets are
-        // negative, which on screen means upward - the dust rises off the walker.
-        const x = this.charPos.x + BT.random.int(-5, 25);
-        const y = this.charPos.y + BT.random.int(-15, 5);
+        // The fountain starts at the middle of the walker's feet (it is 36 pixels wide,
+        // so the middle is 18 pixels in from its left edge), just above the ground line.
+        const originX = this.charPos.x + 18;
+        const originY = GROUND_Y - 2;
 
-        this.particles.push({
-            pos: new Vector2i(x, y),
-            spawnTick: BT.ticks,
-            paletteSlot: slot, // this particle "owns" this palette slot
-        });
+        for (let i = 0; i < BURST_SIZE; i++) {
+            // Rotate through the 128 slots in a circle: `%` wraps the count back to 0
+            // after 127, so the oldest particle's slot gets reused.
+            const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
+            this.nextParticleSlot++;
+
+            // BT.random is the engine's shared random number generator. float(a, b)
+            // returns a fractional number from a up to (but not including) b. vx spreads
+            // the sparks left and right; vy is always negative, which on screen means
+            // upward, so every spark starts by rising. int(0, 40) nudges each spark's hue
+            // a little away from the burst's base hue, so the burst shimmers.
+            this.particles.push({
+                x: originX + BT.random.float(-4, 4),
+                y: originY,
+                vx: BT.random.float(-1.2, 1.2),
+                vy: BT.random.float(-3, -1.2),
+                spawnTick: BT.ticks,
+                hue: (baseHue + BT.random.int(0, 40)) % 360,
+                paletteSlot: slot, // this particle "owns" this palette slot
+            });
+        }
     }
 
-    // Draws all active particles as small colored squares. The color for each particle
+    // Draws all active particles as tiny colored squares. The color for each particle
     // was already written in update() via palette.set(); here we just use the slot
     // number.
     renderParticles() {
         for (const p of this.particles) {
-            // Draw a 4x4 square. The color is whatever update() put in p.paletteSlot.
-            BT.drawRectFill(new Rect2i(p.pos.x - 2, p.pos.y - 2, 4, 4), p.paletteSlot);
+            // Draw a 2x2 square. Math.floor turns the fractional position into a whole
+            // pixel, and the color is whatever update() put in p.paletteSlot.
+            BT.drawRectFill(new Rect2i(Math.floor(p.x), Math.floor(p.y), 2, 2), p.paletteSlot);
         }
     }
 
@@ -578,9 +637,11 @@ class Demo {
         // Ask the timer how many ticks are left until the next spawn event.
         const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks);
 
-        // Timer readouts: a borderless kit group pinned near the top-left corner. { x, y
-        // } pin the group's top-left corner; the kit stacks the rows below it.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 4, y: 22 });
+        // Timer readouts: a kit panel in the top-left corner, level with the State panel
+        // on the right. kvCols: 10 makes the key column of the ui.kv() rows wide enough
+        // for "Particles" plus a space.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { kvCols: 10 });
+        ui.panel('Timers');
 
         // Orange while counting down, green once the ability is ready again. Math.ceil
         // rounds up, so "1s" shows until the very last tick of the cooldown.
@@ -590,15 +651,20 @@ class Demo {
         // A read-only kit meter shows the same fraction as a bar.
         ui.meter(null, cooldownPercent, { color: 'warm', width: 100 });
 
-        ui.label(`Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`, { color: 'header' });
-        ui.label(`Particles: ${this.particles.length}`, { color: 'dim' });
+        // Key-value rows: the key on the left in a dim color, the value lined up in a
+        // column on the right. The next burst is under a second away, so it is counted
+        // in ticks rather than seconds. padStart(2) adds a space in front of one-digit
+        // numbers, so the text keeps the same width and the panel does not twitch.
+        ui.kv('Spawn in', `${String(ticksUntilSpawn).padStart(2)} ticks`);
+        ui.kv('Particles', this.particles.length);
         ui.end();
 
-        // Concept summary: another borderless kit group, pinned over the ground strip.
-        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 4, y: 162 });
-        ui.label('Tick-based timing:', { color: 'header' });
-        ui.label('- Tick-based timing (update rate)', { color: 'dim' });
-        ui.label('- Cooldown & event scheduling', { color: 'dim' });
+        // Concept summary: a borderless kit group on the ground strip, a little below its
+        // top edge so the walker's feet never touch the text.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: GROUND_Y + 10 });
+        ui.label('Tick-based timing', { color: 'header' });
+        ui.label('- Fixed-rate ticks (BT.ticks)', { color: 'dim' });
+        ui.label('- Cooldowns and Timer events', { color: 'dim' });
         ui.label('- State machine transitions', { color: 'dim' });
         ui.end();
     }

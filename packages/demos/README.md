@@ -81,6 +81,8 @@ to these URLs via `VINTAGE_URLS`.
   stretch
 - [nine-slice-panels](https://demos.blit386.dev/nine-slice-panels) - One panel at any size: stretch vs tile, corner
   crop, palette-offset recolor, three-slice bars
+- [pattern-fill](https://demos.blit386.dev/pattern-fill) - Tile one 16x16 PNG across the whole screen, edge tiles
+  cropped instead of stretched
 - [animation](https://demos.blit386.dev/animation) - Tick-based animation, walk frame cycling, state machines, particles
 - [sprite-effects](https://demos.blit386.dev/sprite-effects) - Damage flash, silhouette, ghost, team colors, day/night
 - [bunnymark](https://demos.blit386.dev/bunnymark) - Sprite throughput stress test: bouncing bunnies in typed arrays, a
@@ -185,10 +187,11 @@ to these URLs via `VINTAGE_URLS`.
 ## Shared UI kit
 
 All on-screen demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters,
-a virtual touch D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 46 of
-the 50 demos. Four demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine
+a virtual touch D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 47 of
+the 52 demos. Five demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine
 overlay), `hello-world` (a bare-bones starter kept as a minimal reference, with no demo UI at all), `hypercube` (a
-full-canvas tesseract with no shared UI kit), and `logo-lowres` (a full-canvas showcase with no demo HUD):
+full-canvas tesseract with no shared UI kit), `logo-lowres` (a full-canvas showcase with no demo HUD), and
+`pattern-fill` (a full-screen tiled pattern with no demo HUD):
 
 | File | What it provides |
 | --- | --- |

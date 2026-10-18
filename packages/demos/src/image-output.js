@@ -355,10 +355,10 @@ class Demo {
             // HardwareSettings.isFrameCaptureShortcutEnabled), not something this demo
             // wires up itself; it has no button of its own to advertise them, so this
             // hint is the most relevant place.
-            const hint = BT.isDevMode
-                ? 'Saves the current frame (dev: F9 copies, Shift+F9 saves)'
-                : 'Saves the current frame';
-            ui.label(hint, { color: 'dim' });
+            const hint1 = 'Saves the current frame';
+            const hint2 = BT.isDevMode ? '(dev: F9 copies, Shift+F9 saves)' : '';
+            ui.label(hint1, { color: 'dim' });
+            ui.label(hint2, { color: 'dim' });
         }
 
         // Frame counter so you can tell consecutive screenshots apart.
