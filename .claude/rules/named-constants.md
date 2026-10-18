@@ -62,13 +62,15 @@ Two options, and only two:
 
 Two silent hardcoded copies are not an option. That is the exact shape of every drift this rule was written from.
 
-## What this rule would have caught
+## What this rule was written from
 
-`GLITCH_TYPES` in `packages/demos` is re-typed as a bare array literal in five demo files. Three of them (`crt-pipboy`,
-`snake-game`, `basics-enhanced`) list `hshift`, `chromasplit`, `noise`, `flicker`, `interference`; two of them
-(`sprite-effects`, `logo-lowres`) have already diverged to a variant that drops `chromasplit` and adds `vroll`. Every
-`this.glitchType === 'hshift'` branch re-types the literal a sixth, seventh, eighth time. Nothing in the toolchain can
-tell an intentional variant from a typo here, because plain JavaScript demos have no compiler backstop at all.
+`GLITCH_TYPES` in `packages/demos` used to be re-typed as a bare array literal in five demo files. Three of them
+(`crt-pipboy`, `snake-game`, `basics-enhanced`) listed `hshift`, `chromasplit`, `noise`, `flicker`, `interference`; two
+(`sprite-effects`, `logo-lowres`) had silently diverged to a variant that dropped `chromasplit` and added `vroll`, and
+every `this.glitchType === 'hshift'` branch re-typed the literal again. Nothing in the toolchain could tell an
+intentional variant from a typo, because plain JavaScript demos have no compiler backstop at all. The fix is the shape
+this rule asks for: both variants now live once, as `GLITCH_TYPES_CHROMA` and `GLITCH_TYPES_VROLL` in
+`packages/demos/src/shared/crt-glitch.js`, and every demo imports the one it means.
 
 ## What doing it right looks like
 

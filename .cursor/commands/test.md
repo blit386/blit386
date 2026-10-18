@@ -57,7 +57,13 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `scripts/__tests__/capture-demo-clip.test.mjs` | Argument parsing, URL/dimension math, ffmpeg and browser-script builders |
 | `scripts/__tests__/capture-og-image.test.mjs` | OG card argument parsing, scale-mode resolution, integer/fit/auto scale math, the ffmpeg filter graph, the `!important` canvas-prep script |
 | `scripts/__tests__/capture-demo-shots.test.mjs` | The `capture:shots` driver: argument parsing, variant validation, `/shots?auto` URL building, output-path containment |
+| `scripts/__tests__/check-demo-registry.test.mjs` | The `check:demo-registry` validation rules: each one still rejects the bad input it claims to |
+| `scripts/__tests__/check-demo-comment-links.test.mjs` | The `check:demo-comment-links` helpers: header-comment extraction, dead-host, docs-link, and demo-slug failures |
 | `plugins/__tests__/demo-registry.test.mjs` | `@description` and `@ogScale` header-tag parsing across both comment styles |
+| `plugins/__tests__/virtual-demos.test.mjs` | `renderDemoHtml` layout substitution and the dev-only vintage-URL redirect lookup |
+| `plugins/__tests__/channel-headers.test.mjs` | The pure `robots.txt` / `_headers` builders behind `channelHeadersPlugin` |
+| `plugins/__tests__/sitemap.test.mjs` | The pure sitemap XML builder behind `sitemapPlugin` |
+| `plugins/__tests__/html-escape.test.mjs` | The shared HTML-escaping helper `virtual-demos.js` and `social-meta.js` use |
 | `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
 | `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, the nine-slice sets it builds, out-of-range guards, the fresh-copy-vs-singleton distinction |
 | `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, and the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy) |
@@ -99,9 +105,16 @@ Manual hot-reload check (nothing automated covers this - run by hand after touch
 
 ## packages/website
 
-`node --test scripts/__tests__/*.test.mjs`, run via `pnpm run test` (or `pnpm run test:watch`). Covers the sync and
-build helper scripts, not the rendered site itself - visual/content correctness is verified by `pnpm run build` + manual
-check.
+Two runners, both behind `pnpm run test` (which builds the engine first via `../../scripts/ensure-engine-built.mjs`):
+
+- `test:scripts` - `node --test scripts/__tests__/*.test.mjs`, the sync and build helper scripts (`test:scripts:watch`
+  for watch mode)
+- `test:unit` - Vitest over `src/**/*.test.ts`, the `ServerPlugin`s that run in the deployed Worker (`/mcp`, CSP,
+  channel headers, the feed, method guards) plus `public/webmcp.js`; `test:unit:coverage` is what `test` runs,
+  `test:unit:watch` for watch mode. See "Test runners" in `packages/website/CLAUDE.md` for why it is plain Vitest and
+  not the Workers pool.
+
+Neither covers the rendered site itself - visual/content correctness is verified by `pnpm run build` + manual check.
 
 ## packages/kit and packages/create-blit386
 

@@ -16,11 +16,17 @@ Scoping decisions locked during the session:
   so nothing is duplicated.
 - Unfiled sections (architecture, prioritization, open questions, and idea prose not yet promoted) stay as full text
   here only.
-- `#NNN` may still name a GitHub issue; prefer `BT-xxx` Linear links once filed.
+- `#NNN` may still name a GitHub issue; prefer `BT-xxx` Linear links once filed. The original GitHub issues were
+  migrated to Linear and no longer resolve on github.com - a remaining `#NNN` is a historical label only.
 - Ideas marked (wild) are ambitious - included deliberately.
 - This is an idea inventory, not a commitment.
 
 Promotion pass 2026-07-24: Wave 1 hygiene + top-five bets + demoscene engine primitives (18.1, 18.2, 18.4).
+
+Status pass 2026-10-18 (1.8.0 release prep): marked shipped in 1.8.0 - drawSprite v2 flags/scale/pivot (BT-236, A.1),
+nine-slice (BT-270), `BT.drawTile` (BT-265), `isAnyKey*` / `isAnyButton*` (BT-123), `BT.renderAt` (BT-370, 18.4); BT-362
+folded into BT-369; BT-235 (spec only), BT-263, BT-276 Done; dead `#NNN` refs replaced with their Linear issues where
+known; demoscene hooks (BT-70 children) sit on milestone 1.9.0, palette superpowers (BT-359) on 1.10.0.
 
 ## 1. Architecture position
 
@@ -31,7 +37,8 @@ remains an immediate-mode renderer; retained structure belongs to separate ESM c
 The nuance: the engine must still ship the primitives those libraries need to exist.
 
 - A scene library needs draw ordering (z) - section 5.1.
-- A GUI library needs clipping (#249) and nine-slice (#206) - both already filed.
+- A GUI library needs clipping ([BT-117](https://linear.app/vancura/issue/BT-117)) and nine-slice
+  ([BT-270](https://linear.app/vancura/issue/BT-270) **Done**, shipped 1.8.0 as `BT.drawNineSlice`).
 - A replay or netcode library needs a deterministic loop + input log + seeded RNG - section 6.2.
 - Sprite animation as data (a frame sequencer with no parent/child tree) is renderer territory - it is a timing helper,
   not a scene graph - section 4.
@@ -61,7 +68,9 @@ Umbrella: [BT-359](https://linear.app/vancura/issue/BT-359). Open question 17.4 
 
 ### 3.1 Per-scanline palettes (copper bars)
 
-Filed: [BT-362](https://linear.app/vancura/issue/BT-362).
+Filed: [BT-362](https://linear.app/vancura/issue/BT-362) **Duplicate** - folded into the copper list
+[BT-369](https://linear.app/vancura/issue/BT-369) on 2026-09-12 (a per-row palette band is the first copper op; the LUT
+design lives there).
 
 ### 3.2 Raster line effects (wild)
 
@@ -85,7 +94,8 @@ Filed: [BT-360](https://linear.app/vancura/issue/BT-360).
 - Shading helpers step indices along a ramp: `ramp.darker(index)`, `ramp.lighter(index)`.
 - Auto-generate ramps with hue-shifted shadows (the pixel-art way - shadows shift toward blue/purple, not black):
   `Palette.rampFrom(baseColor, steps, { hueShift })`.
-- Feeds: light-table generation (3.3), outline color choice (#211), and editor tooling (15.2).
+- Feeds: light-table generation (3.3), outline color choice ([BT-138](https://linear.app/vancura/issue/BT-138)), and
+  editor tooling (15.2).
 
 ### 3.5 Dither fill patterns (PICO-8 `fillp()`)
 
@@ -125,7 +135,8 @@ and a docs page that markets itself.
 ## 4. Sprite animation v2 and the art pipeline
 
 Umbrella: [BT-363](https://linear.app/vancura/issue/BT-363). Animation/pack reparented from
-[BT-263](https://linear.app/vancura/issue/BT-263).
+[BT-263](https://linear.app/vancura/issue/BT-263) **Done** (the 1.8.0 sprite umbrella: flags, scale, pivot, nine-slice,
+drawTile).
 
 ### 4.1 SpriteAnimation full spec
 
@@ -160,7 +171,8 @@ Draw a sprite with every non-transparent texel forced to a single palette index.
 
 - One shader flag (`SpriteDrawParams.silhouetteIndex?: number`).
 - Uses: damage-flash white, drop shadows (silhouette + offset + light table = soft shadow), ghost/afterimage trails,
-  outlines (silhouette at 4/8 offsets under the sprite - gives sprites what #211 gives text).
+  outlines (silhouette at 4/8 offsets under the sprite - gives sprites what
+  [BT-138](https://linear.app/vancura/issue/BT-138) gives text).
 
 ### 5.3 Bulk draw APIs
 
@@ -172,7 +184,7 @@ per-element call overhead.
 - `BT.drawSpriteBatch(sheet, items: SpriteBatchItem[])` or a packed-array form.
 - Validation once per call, not per element; documented as the perf escape hatch in docs/performance-best-practices.md.
 
-### 5.4 More primitives (rounds out #245-248)
+### 5.4 More primitives (rounds out #245-248, now [BT-118](https://linear.app/vancura/issue/BT-118))
 
 - `drawPolygon` / `drawPolygonFill` (point list; scanline fill; document the fill rule together with #247).
 - `drawArc` / `drawPie` - cooldown indicators, radar sweeps.
@@ -203,11 +215,11 @@ Explicit non-goal worth writing down: RGBA alpha blending contradicts palette-fi
 remap tables (3.3), dither patterns (3.5), silhouette (5.2) - cover shadow/ghost/additive looks while staying indexed. A
 docs page ("Why no alpha? Here is what to use instead") turns a limitation into a philosophy.
 
-### 5.8 Clip stack (extends #249)
+### 5.8 Clip stack (extends #249 / [BT-117](https://linear.app/vancura/issue/BT-117))
 
 If clipping lands, GUI libraries will immediately want nesting: `BT.clipPush(rect)` / `clipPop()` with intersection
-semantics, alongside the flat `clipSet/clipReset`. Also define clip space (screen vs world/camera) in #249 - currently
-unspecified.
+semantics, alongside the flat `clipSet/clipReset`. Also define clip space (screen vs world/camera) in
+[BT-117](https://linear.app/vancura/issue/BT-117) - currently unspecified.
 
 ## 6. Capture, replay, and time control
 
@@ -219,8 +231,8 @@ Filed: [BT-366](https://linear.app/vancura/issue/BT-366).
 
 ### 6.2 Deterministic session replay (wild, structural)
 
-Filed: [BT-367](https://linear.app/vancura/issue/BT-367). Relates [BT-276](https://linear.app/vancura/issue/BT-276),
-[BT-57](https://linear.app/vancura/issue/BT-57); carries open question 17.1.
+Filed: [BT-367](https://linear.app/vancura/issue/BT-367). Relates [BT-276](https://linear.app/vancura/issue/BT-276)
+**Done** (1.5.0), [BT-57](https://linear.app/vancura/issue/BT-57); carries open question 17.1.
 
 ### 6.3 Frame stepping and time scale
 
@@ -234,7 +246,8 @@ Shipped: [BT-303](https://linear.app/vancura/issue/BT-303) **Done**.
 ## 7. Fantasy-console constraints mode (wild)
 
 `BT.constraints('nes' | 'c64' | 'gameboy' | 'spectrum' | 'pico8' | ConstraintSpec)` - opt-in simulation of real hardware
-limits. Post-process presets (#217-219) make output LOOK old; constraints make the engine BEHAVE old.
+limits. Post-process presets (#217-219, now [BT-127](https://linear.app/vancura/issue/BT-127) children) make output LOOK
+old; constraints make the engine BEHAVE old.
 
 - NES: 3+1 colors per 16×16 attribute region (attribute clash visualized or enforced), 8 sprites per scanline with
   authentic flicker (round-robin dropping), 64 sprite budget.
@@ -248,7 +261,7 @@ limits. Post-process presets (#217-219) make output LOOK old; constraints make t
   (educational "clash debugger" mode).
 - No engine has this. Demoscene, educators, and game-jam theme events ("NES-constraint jam") would all pick it up.
 
-## 8. Text system extensions (beyond #210-214)
+## 8. Text system extensions (beyond #210-214, now [BT-134](https://linear.app/vancura/issue/BT-134))
 
 - Inline control codes, P8SCII-style: `[c=12]` color, `[shake]`, `[wave]`, `[font=big]` inline font switch,
   `[pause=500]` typewriter timing, `[marker=x]` gameplay hooks. Parser lives in the print path; codes escape-able.
@@ -265,10 +278,11 @@ limits. Post-process presets (#217-219) make output LOOK old; constraints make t
 
 ## 9. Audio extensions (beyond shipped system and #322-326)
 
-### 9.1 Music transport completion (fold into #322 before implementation)
+### 9.1 Music transport completion
 
-`BT.musicPause()` / `musicResume()`, `BT.musicPosition` getter (seconds into the current track) and
-`musicSeek(seconds)`. Currently the spec can start, stop, and crossfade but never pause or tell you where it is.
+Filed: [BT-513](https://linear.app/vancura/issue/BT-513) (1.10.0). `BT.musicPause()` / `musicResume()`,
+`BT.musicPosition` getter (seconds into the current track) and `musicSeek(seconds)`. Currently the spec can start, stop,
+and crossfade but never pause or tell you where it is.
 
 ### 9.2 Tracker module playback (wild)
 
@@ -281,23 +295,28 @@ worklet-friendly way to register a node into the `music` bus.
 A `MusicPattern`/`Sequencer`: 16/32-step grid, per-step synth params or preset refs, tempo, swing, pattern chaining.
 PICO-8's music editor as a library - kids will make bangers. Natural home is a companion lib; the engine-level enabler
 it needs is sample-accurate scheduling: `BT.soundPlayAt(clip, audioTime)` (AudioContext-clock start times). Ship the
-enabler in-engine regardless.
+enabler in-engine regardless - filed as [BT-514](https://linear.app/vancura/issue/BT-514) (1.10.0).
 
 ### 9.4 Audio-reactive visuals
 
-`BT.audioLevel(bus)` - expose the #324 analyzer publicly (peak/RMS per bus). VU-reactive demoscene visuals, rhythm
-minigames, mouth-flap dialogue portraits.
+`BT.audioLevel(bus)` - expose the #324 analyzer publicly (peak/RMS per bus); filed as
+[BT-514](https://linear.app/vancura/issue/BT-514) (1.10.0). VU-reactive demoscene visuals, rhythm minigames, mouth-flap
+dialogue portraits.
 
 ### 9.5 Misc audio
 
-- Per-sound low-pass "occlusion" option once #192's effect chain exists (`soundPlay(clip, { lowpass: 0.5 })`).
+- Per-sound low-pass "occlusion" option once the [BT-217](https://linear.app/vancura/issue/BT-217) effect chain exists
+  (`soundPlay(clip, { lowpass: 0.5 })`).
 - Web MIDI input (wild): `BT` won't own it, but a demo + docs recipe (MIDI keyboard -> synth params) markets the synth
   engine.
 - Audio export: render a `SynthParams` to WAV for download (sound-designer tooling hook, 15.2).
 
-## 10. Tilemap additions (extend #193 when it gets rewritten)
+## 10. Tilemap additions (extend #193 / [BT-275](https://linear.app/vancura/issue/BT-275) when it gets rewritten)
 
-The umbrella needs its API reconciliation first (section 2). These belong in the rewrite:
+Shipped 1.8.0: grid tile drawing via `BT.drawTile` and `SpriteSheet.tileSize`
+([BT-265](https://linear.app/vancura/issue/BT-265) **Done**) - the single-tile primitive the umbrella builds on. The
+umbrella ([BT-275](https://linear.app/vancura/issue/BT-275), 1.9.0) still needs its API reconciliation first (section
+2). These belong in the rewrite:
 
 - Autotiling: Wang/blob (47-tile) and 16-tile bitmask autotilers - `mapAutotile(layer, region, ruleset)`. The feature
   that makes tilemaps pleasant to author programmatically.
@@ -308,7 +327,8 @@ The umbrella needs its API reconciliation first (section 2). These belong in the
   support than full TMX; arguably support it FIRST.
 - Iso/hex projections (wild): render-side projection support only (draw ordering + coordinate transforms), data model
   stays rectangular.
-- Chunk streaming: pairs with `hash2i` (#297) for infinite procedural worlds; define chunk-eviction policy.
+- Chunk streaming: pairs with `hash2i` ([BT-280](https://linear.app/vancura/issue/BT-280) **Done**, 1.5.0) for infinite
+  procedural worlds; define chunk-eviction policy.
 
 ## 11. Input additions
 
@@ -320,9 +340,11 @@ The umbrella needs its API reconciliation first (section 2). These belong in the
   \- mobile games shouldn't hand-roll these; demo 027 (drag/flick) shows the demand.
 - Gamepad rumble: `BT.gamepadRumble(player, { duration, weakMagnitude, strongMagnitude })` via `GamepadHapticActuator` -
   the sibling #284 explicitly skipped; Steam Deck has excellent haptics.
-- Stylus fields: `tiltX/tiltY/twist` alongside #287's pressure (drawing-toy demos, art tools).
-- Keyboard: an `anyInput()` "press anything to start" helper unifying #244's anyKey/anyButton with pointer taps - the
-  actual use case behind both.
+- Stylus fields: `tiltX/tiltY/twist` alongside [BT-285](https://linear.app/vancura/issue/BT-285)'s pressure (drawing-toy
+  demos, art tools).
+- Keyboard: an `anyInput()` "press anything to start" helper unifying the anyKey/anyButton helpers
+  ([BT-123](https://linear.app/vancura/issue/BT-123) **Done**, shipped 1.8.0 as `BT.isAnyKey*` / `BT.isAnyButton*`) with
+  pointer taps - the actual use case behind both.
 
 ## 12. Overlay and dev tools
 
@@ -333,8 +355,8 @@ The umbrella needs its API reconciliation first (section 2). These belong in the
   output - tune colors in-game, paste back into source.
 - Input visualizer panel: live keyboard/gamepad/pointer state (demo 035 exists as a standalone; make it an overlay
   panel).
-- Reframe #252 as an overlay panel (batches, vertices, texture switches, primitives-vs-sprites split) instead of a
-  parallel `BT.batchDebug*` API.
+- Reframe [BT-114](https://linear.app/vancura/issue/BT-114) (batch debug) as an overlay panel (batches, vertices,
+  texture switches, primitives-vs-sprites split) instead of a parallel `BT.batchDebug*` API.
 - Memory row: JS heap (where available), GPU texture count/bytes tracked by the engine's own allocations.
 - Asset panel: loaded assets, sizes, cache hits, load states (ties to #209).
 
@@ -357,8 +379,8 @@ palette-indexed assets - they fit the engine's asset model perfectly.
 
 ### 13.3 Deck-specific ergonomics
 
-- 16:10 awareness: Deck is 1280×800; letterboxing (#216) should document 16:10-native logical resolutions (400×250,
-  320×200 - the DOS resolution!) as first-class choices.
+- 16:10 awareness: Deck is 1280×800; letterboxing ([BT-131](https://linear.app/vancura/issue/BT-131)) should document
+  16:10-native logical resolutions (400×250, 320×200 - the DOS resolution!) as first-class choices.
 - `targetFPS: 40`: the Deck's beloved 40 Hz mode; the fixed-timestep loop already supports arbitrary rates - bless it in
   docs with a battery-life note.
 - Touch + gamepad simultaneously (Deck has both): already supported by the input model; add a docs recipe.
@@ -378,8 +400,9 @@ palette-indexed assets - they fit the engine's asset model perfectly.
 - WebGPU compute (wild): compute-shader palette effects (full-screen index remaps, cellular automata demos, GPU particle
   updates feeding 5.3 bulk draws).
 - PWA template: manifest + service worker + offline cache in create-blit386; installable games by default.
-- Safe-area insets: expose `env(safe-area-inset-*)` so the virtual gamepad (#290) and HUDs avoid notches - worth a note
-  inside #290 itself.
+- Safe-area insets: expose `env(safe-area-inset-*)` so the virtual gamepad
+  ([BT-283](https://linear.app/vancura/issue/BT-283)) and HUDs avoid notches - worth a note inside
+  [BT-283](https://linear.app/vancura/issue/BT-283) itself.
 - Battery/thermal awareness: `navigator.getBattery` + `requestAnimationFrame` cadence watching to suggest 30 fps mode on
   throttling mobile GPUs (overlay hint, not automatic).
 - WebCodecs (wild): exact-frame video export (beyond MediaRecorder's realtime capture) for trailer-quality clips.
@@ -392,8 +415,9 @@ Per the architecture position (section 1), these are deliberately NOT engine fea
 
 - @blit386/scene: entities, z-ordered draw lists, lifecycle, groups. Consumes engine z (5.1) and animation (4.1).
 - @blit386/ui: immediate-mode GUI - `ui.button(rect, 'Start')` returns clicked-this-frame. IMGUI style fits the renderer
-  philosophy exactly (no retained widget tree; draws through BT every frame; needs only clipping #249 and nine-slice
-  #206 from the engine). Retained-mode GUI can be a later, separate experiment.
+  philosophy exactly (no retained widget tree; draws through BT every frame; needs only clipping
+  [BT-117](https://linear.app/vancura/issue/BT-117) and nine-slice [BT-270](https://linear.app/vancura/issue/BT-270)
+  **Done** from the engine). Retained-mode GUI can be a later, separate experiment.
 - @blit386/motion: tweens, timelines, screen-shake recipes; re-exports engine `Easing`.
 - @blit386/particles: emitters/forces over the bulk draw APIs (5.3).
 - @blit386/collide: AABB/grid/swept collision helpers on `Rect2i`; platformer controller recipes. Physics-lite; real
@@ -436,21 +460,25 @@ Top five bets from the session (Linear links after 2026-07-24 promotion):
 1. Sprite animation done fully (4.1) + Aseprite import (4.2) - [BT-363](https://linear.app/vancura/issue/BT-363) /
    [BT-266](https://linear.app/vancura/issue/BT-266) / [BT-364](https://linear.app/vancura/issue/BT-364).
 2. Rolling GIF recorder (6.1) - [BT-366](https://linear.app/vancura/issue/BT-366).
-3. Palette superpowers trio (3.1 / 3.3 / 3.5) - [BT-359](https://linear.app/vancura/issue/BT-359) /
-   [BT-362](https://linear.app/vancura/issue/BT-362) / [BT-360](https://linear.app/vancura/issue/BT-360) /
+3. Palette superpowers trio (3.1 / 3.3 / 3.5) - [BT-359](https://linear.app/vancura/issue/BT-359) (1.10.0) /
+   [BT-362](https://linear.app/vancura/issue/BT-362) **Duplicate** (folded into
+   [BT-369](https://linear.app/vancura/issue/BT-369)) / [BT-360](https://linear.app/vancura/issue/BT-360) /
    [BT-361](https://linear.app/vancura/issue/BT-361).
 4. Determinism policy + replay foundation (6.2) - [BT-367](https://linear.app/vancura/issue/BT-367).
-5. drawSprite v2 unification (Appendix A.1) - [BT-236](https://linear.app/vancura/issue/BT-236).
+5. drawSprite v2 unification (Appendix A.1) - [BT-236](https://linear.app/vancura/issue/BT-236) **Done** (shipped
+   1.8.0).
 
 Suggested sequencing waves (each wave shippable independently):
 
-- Wave 1 (unblock + hygiene): drawSprite v2 ([BT-236](https://linear.app/vancura/issue/BT-236)), ColorArg
-  ([BT-235](https://linear.app/vancura/issue/BT-235)), orientation rename
-  ([BT-234](https://linear.app/vancura/issue/BT-234) **Done**), stale-issue audit
-  ([BT-358](https://linear.app/vancura/issue/BT-358)), #279 closed on GitHub.
+- Wave 1 (unblock + hygiene): drawSprite v2 ([BT-236](https://linear.app/vancura/issue/BT-236) **Done**, 1.8.0),
+  ColorArg ([BT-235](https://linear.app/vancura/issue/BT-235) **Done** - spec only; implementation rides the 2.0.0
+  number-overload tickets), orientation rename ([BT-234](https://linear.app/vancura/issue/BT-234) **Done**), stale-issue
+  audit ([BT-358](https://linear.app/vancura/issue/BT-358), still Backlog), #279 closed on GitHub.
 - Wave 2 (identity): dither ([BT-361](https://linear.app/vancura/issue/BT-361)), light tables
   ([BT-360](https://linear.app/vancura/issue/BT-360)), per-scanline palettes
-  ([BT-362](https://linear.app/vancura/issue/BT-362)); silhouette / Lospec still unfiled (parent checklist / §3.x).
+  ([BT-362](https://linear.app/vancura/issue/BT-362) **Duplicate**, now part of
+  [BT-369](https://linear.app/vancura/issue/BT-369)); silhouette / Lospec still unfiled (parent checklist / §3.x).
+  Umbrella [BT-359](https://linear.app/vancura/issue/BT-359) sits on 1.10.0.
 - Wave 3 (pipeline): SpriteAnimation ([BT-266](https://linear.app/vancura/issue/BT-266)), Aseprite
   ([BT-364](https://linear.app/vancura/issue/BT-364)), SpritePack ([BT-271](https://linear.app/vancura/issue/BT-271));
   z-ordering still §5.1.
@@ -458,20 +486,25 @@ Suggested sequencing waves (each wave shippable independently):
   ([BT-368](https://linear.app/vancura/issue/BT-368)); BT.watch still §12; hot reload
   ([BT-303](https://linear.app/vancura/issue/BT-303) **Done**).
 - Wave 5 (structure): replay ([BT-367](https://linear.app/vancura/issue/BT-367)); bulk draws / transitions still §5.
-- Demoscene engine hooks (parallel): [BT-70](https://linear.app/vancura/issue/BT-70) -
+- Demoscene engine hooks (parallel, milestone 1.9.0): [BT-70](https://linear.app/vancura/issue/BT-70) -
   [BT-67](https://linear.app/vancura/issue/BT-67) / [BT-115](https://linear.app/vancura/issue/BT-115) /
   [BT-289](https://linear.app/vancura/issue/BT-289) / [BT-369](https://linear.app/vancura/issue/BT-369) /
-  [BT-370](https://linear.app/vancura/issue/BT-370).
+  [BT-370](https://linear.app/vancura/issue/BT-370) **Done** (shipped 1.8.0).
 - Ongoing: Steam Deck packaging in the kit, controller glyphs, ecosystem libraries as demand appears.
 
 ## 17. Open questions
 
 1. Determinism: is replay/netcode-grade determinism a design goal baked into the random + loop design now, or a later
-   best-effort concern? (Cheap now, miserable to retrofit. Affects #293-299 acceptance criteria.)
+   best-effort concern? (Cheap now, miserable to retrofit. Affects the seeded-random tickets -
+   [BT-276](https://linear.app/vancura/issue/BT-276) **Done**, phase 2
+   [BT-394](https://linear.app/vancura/issue/BT-394).)
 2. ColorArg resolution policy: when a beginner writes `'red'`, does it resolve to an exact palette match, nearest color,
-   auto-registered new slot, or a helpful error? (Appendix A.2 lists the options.)
+   auto-registered new slot, or a helpful error? (Appendix A.2 lists the options; specified in
+   [BT-235](https://linear.app/vancura/issue/BT-235) **Done**, spec only.)
 3. Arbitrary sprite rotation (#204): is non-90-degree rotation of pixel art something the engine should encourage at
    all, or should v1 ship flags-only (90-degree steps + flips) with arbitrary rotation deferred to `drawAffine` (5.5)?
+   Decided in [BT-236](https://linear.app/vancura/issue/BT-236): 1.8.0 shipped flags-only, no `rotation` field;
+   arbitrary rotation stays with 5.5.
 4. Palette LUT budget: per-scanline palettes (3.1) and light tables (3.3) both grow the palette texture - decide the
    combined GPU memory/bind-group design once rather than per-feature.
 5. Where does the sequencer live: engine (`MusicPattern`) or companion lib over `BT.soundPlayAt`? (9.3 recommends
@@ -484,7 +517,7 @@ copilots in the loop. The demoscene audience wants almost the opposite of the ga
 more. A game dev wants `drawSprite`; a scener wants the framebuffer, the palette registers, and a way to sync everything
 to row 32 of pattern 4.
 
-Engine hooks umbrella (extended, not duplicated): [BT-70](https://linear.app/vancura/issue/BT-70).
+Engine hooks umbrella (extended, not duplicated): [BT-70](https://linear.app/vancura/issue/BT-70), milestone 1.9.0.
 
 ### 18.0 Where these features live (decided)
 
@@ -496,8 +529,9 @@ other way:
   Exposing enough internals for a library to implement them would mean designing the engine feature anyway, with a worse
   API and a stability contract on internals you would regret. And none are demoscene-only: games want feedback trails
   (bullet-hell effects), copper gradients (skies, water), index shaders (custom weather/lighting), and `renderAt`
-  (trailer rendering, agent-driven testing) too. They have the same status as clipping (#249) or z-ordering (5.1):
-  general primitives the demoscene happens to stress hardest.
+  (trailer rendering, agent-driven testing) too. They have the same status as clipping
+  ([BT-117](https://linear.app/vancura/issue/BT-117)) or z-ordering (5.1): general primitives the demoscene happens to
+  stress hardest. `renderAt` shipped first, in 1.8.0.
 - `@blit386/demo` companion: everything workflow-shaped (18.3, 18.6) - Rocket sync, tracker playback + row events,
   BPM/beat helpers, parts timeline, micro3d, scroller helpers. Consumes public `BT` APIs only, evolves at demotool speed
   (sceners will want to fork the Rocket editor - that churn must not live in the engine), keeps the engine's
@@ -543,8 +577,9 @@ A demo is music synchronization; everything else is decoration. Nothing in the b
 
 ### 18.4 Deterministic offline rendering (engine + kit)
 
-Filed: [BT-370](https://linear.app/vancura/issue/BT-370). Relates [BT-367](https://linear.app/vancura/issue/BT-367) /
-[BT-368](https://linear.app/vancura/issue/BT-368). Near-miss: [BT-68](https://linear.app/vancura/issue/BT-68).
+Shipped: [BT-370](https://linear.app/vancura/issue/BT-370) **Done** (`BT.renderAt`, 1.8.0). Relates
+[BT-367](https://linear.app/vancura/issue/BT-367) / [BT-368](https://linear.app/vancura/issue/BT-368). Near-miss:
+[BT-68](https://linear.app/vancura/issue/BT-68).
 
 ### 18.5 Vibe-coding infrastructure (site + kit)
 
@@ -582,14 +617,16 @@ Filed: [BT-370](https://linear.app/vancura/issue/BT-370). Relates [BT-367](https
 1. Framebuffer lock + feedback buffer (18.1) - without per-pixel freedom, sceners will not come at all.
 2. Rocket-style sync + tracker row events (18.3) - without sync, nothing they make will feel like a demo.
 3. `renderAt` deterministic seek (18.4) - the multiplier behind compo delivery, sync editing, and agent-driven
-   vibe-coding.
+   vibe-coding. Shipped in 1.8.0 ([BT-370](https://linear.app/vancura/issue/BT-370) **Done**).
 
 ## Appendix A: Meta-issues (filed)
 
 Full bodies live in Linear; drop local `issue-drafts/` paths.
 
-- A.1 Unified `drawSprite` v2 signature - [BT-236](https://linear.app/vancura/issue/BT-236) (umbrella; blocks
-  flip/rot/pivot/scale/raw-number children)
-- A.2 `ColorArg` string color type - [BT-235](https://linear.app/vancura/issue/BT-235)
+- A.1 Unified `drawSprite` v2 signature - [BT-236](https://linear.app/vancura/issue/BT-236) **Done** (1.8.0 shipped
+  `SpriteDrawParams` flags, scale, pivot and `BT.drawNineSlice`; named frames
+  [BT-271](https://linear.app/vancura/issue/BT-271) stay on 1.9.0, raw numbers
+  [BT-262](https://linear.app/vancura/issue/BT-262) on 2.0.0)
+- A.2 `ColorArg` string color type - [BT-235](https://linear.app/vancura/issue/BT-235) **Done** (spec)
 - A.3 Orientation naming collision - [BT-234](https://linear.app/vancura/issue/BT-234) **Done** (`screenOrientation`
   shipped)

@@ -29,9 +29,9 @@ is free with `ls packages/demos/src/*.js` and check it does not collide with a r
 
 ### 2. Create packages/demos/src/<slug>.js
 
-Every demo except `flurry` (the immersive screensaver with no demo HUD) uses the shared UI kit for on-screen panels and
-touch controls - `packages/demos/CLAUDE.md` forbids hand-rolling panels, buttons, or HUD text colors, and requires the
-demo to be usable on touch. Start from this shape:
+Every demo except the five full-screen pieces with no demo HUD (`flurry`, `hello-world`, `hypercube`, `logo-lowres`,
+`pattern-fill`) uses the shared UI kit for on-screen panels and touch controls - `packages/demos/CLAUDE.md` forbids
+hand-rolling panels, buttons, or HUD text colors, and requires the demo to be usable on touch. Start from this shape:
 
 ```js
 /*
@@ -135,15 +135,18 @@ bootstrap(Demo);
 ```
 
 - Widgets: `ui.panel`, `ui.label` (roles `text`/`dim`/`header`/`accent`/`warm`/`info`), `ui.kv`, `ui.checkbox`,
-  `ui.pip`, `ui.button`, `ui.slider`, `ui.meter`, `ui.separator`, `ui.spacer`. Update-side queries: `ui.dpad.isDown` /
-  `isPressed`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`, `ui.overWidget(x, y)` (skip raw-pointer painting or
-  dragging that would land on a widget). Read `packages/demos/src/shared/ui.js` and a recent demo such as
-  `packages/demos/src/synth-toy.js` for the full pattern.
+  `ui.pip`, `ui.button`, `ui.slider`, `ui.meter`, `ui.separator`, `ui.spacer`, `ui.tooltip` (hover or long-press help on
+  a widget), `ui.caption` (free-placed label outside a panel), `ui.audioUnlockHint` (the tap-to-unlock notice for audio
+  demos), and `ui.drawRect` / `ui.drawRectFill` for kit-colored boxes in the scene. Update-side queries:
+  `ui.dpad.isDown` / `isPressed`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`, `ui.overWidget(x, y)` (skip
+  raw-pointer painting or dragging that would land on a widget). Read `packages/demos/src/shared/ui.js` and a recent
+  demo such as `packages/demos/src/synth-toy.js` for the full pattern.
 - Widget identity is the label; pass `{ id }` when two widgets in one frame share a label.
 - Keyboard `{ key }` bindings are edge-safe because `ui.tick()` runs in `update()` - never read `BT.isKeyPressed` from
   `render()`.
-- The page title defaults to `BLIT386 Demo - Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
-  first ~20 lines) when that default is wrong for the demo.
+- The page title defaults to `BLIT386 Demo – Title Cased Topic` (the registry emits an en dash there; it is the one
+  place the project uses one). Only add a `// @pageTitle Custom Title` comment when that default is wrong for the demo,
+  and keep it within the first 2000 bytes of the file - `demo-registry.js` scans no further.
 - **Required:** a `@description` tag in the header - one line, 60-104 characters, ending in a period, within the first
   2000 bytes of the file (directly under the title line, as above). It becomes the page's meta description and
   `og:description`, so write the sentence you would want to read under a shared link, not a restatement of the title.
@@ -184,9 +187,21 @@ set by `src/basics.js`; see `packages/demos/CLAUDE.md` (Documentation Style and 
 - `pnpm run check:demo-registry` (from `packages/demos`) - confirms disk, order, vintage, and nav-hidden sets agree.
 - `pnpm run check:demo-comment-links` (from `packages/demos`) - catches a dead `vancura.dev` link, or a
   `Prerequisites:`/`Guides:`/`Reference:` link to a docs page or demo slug that does not actually exist.
-- `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. Demo content has no automated tests;
-  `scripts/*.mjs` tooling does (see `/test demos`).
+- `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. Demo content has no automated tests; the
+  tooling under `scripts/`, `plugins/`, `src/shared/`, and `_shots/` does (see `/test demos`).
 - `pnpm run build` to confirm the production build still succeeds (the Cloudflare Pages deploy gate).
+
+### 5b. Capture the OG card and the shots
+
+Every demo ships with an OpenGraph card and a `/shots` capture set; `check:demo-registry` fails on a missing
+`public/social/og-<slug>.png`, and the demo stays off the all-demos sheet at `/` until it has a `display` capture. With
+the dev server running (`pnpm run dev` on :5173, or `pnpm run build && pnpm run preview` on :4173 for the OG card):
+
+- `pnpm run capture:og -- <slug>` writes `public/social/og-<slug>.png`; look at it before committing and add
+  `// @ogScale` only if the framing is wrong.
+- `pnpm run capture:shots -- --demos <slug>` writes `public/shots/<slug>/`. The first pose is the OG card and the index
+  tile; add a `POSES_BY_SLUG` entry in `_shots/` only when the demo needs a key press or pointer gesture to show its
+  point (see `/demos-shots`).
 
 ### 6. Update the docs
 

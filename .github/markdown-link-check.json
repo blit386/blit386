@@ -60,6 +60,10 @@
       "comment": "Blob/tree/raw paths can flake; keep them ignored while verifying issue/PR links."
     },
     {
+      "pattern": "^https?://web\\.archive\\.org(/|$)",
+      "comment": "Wayback Machine is slow and flaky; archived links are pinned snapshots, so skip them."
+    },
+    {
       "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
     },
     {

@@ -54,7 +54,10 @@ so a push only exercises them once the per-package checks are clean. That gating
 - `api:since:check` - every public export carries an `@since` tag
 - `api:history:check` - `docs/_api-history.json` matches the source version tags
 - `api:getters:check` - every public `BT.*` getter and method has a mention in `.claude/rules/bt-api-getters.md`
-- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:compact-tables`,
+- `api:deprecations:check` - `docs/reference-deprecations.md` matches the kit's migration registry
+  (`scripts/gen-deprecations.mjs --check`)
+- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
+  `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`,
   `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`
 
 ## packages/demos
@@ -63,8 +66,11 @@ so a push only exercises them once the per-package checks are clean. That gating
 
 - `format:check` - Biome (JS/JSON/CSS) + Prettier (MD/YAML)
 - `lint` - ESLint
-- `test` - `node --test scripts/__tests__/*.test.mjs` (pure helper functions in `scripts/*.mjs`, not demo content)
-- `spellcheck` - cspell over `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
+- `test` - `node --test` over `scripts/__tests__`, `plugins/__tests__`, `src/shared/__tests__`, and `_shots/__tests__`
+  (pure helpers, the shared UI kit, and the `/shots` page - not demo content); builds `packages/blit386/dist/` first via
+  `../../scripts/ensure-engine-built.mjs` when it is missing or stale
+- `spellcheck` - cspell over `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `plugins/**`, `scripts/**`, `_partials/**`,
+  `_shots/**`, the root-level `*.{md,mdx}`, `CLAUDE.md`, and `AGENTS.md`
 - `knip` - unused exports and dependencies
 - `check:demo-registry` - `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
 - `check:demo-comment-links` - no `vancura.dev` links in `src/*.js` header comments, and every `blit386.dev/docs/...` /
@@ -81,9 +87,13 @@ No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 
 - `format:check` - Biome (lint + format) + Prettier
 - `typecheck` - fumadocs-mdx + tsc
-- `test` - `node --test scripts/__tests__/*.test.mjs`
-- `spellcheck` - cspell on `content/` and `src/`
+- `test` - `test:scripts` (`node --test scripts/__tests__/*.test.mjs`) then `test:unit:coverage` (Vitest over
+  `src/**/*.test.ts`, the Worker plugins); builds the engine first via `../../scripts/ensure-engine-built.mjs`
+- `spellcheck` - cspell over `content/**/*.{md,mdx}`, `src/**/*.{ts,tsx}`, the package's root `*.{md,mdx}`, and
+  `CLAUDE.md`
 - `knip` - unused exports/deps
+- `check:well-known-schemas` - every agent-facing `.well-known` file (agent-skills index, MCP server card, api-catalog
+  linkset, OAuth discovery documents) has the shape its spec requires
 - `sync:docs:check` - regenerates `content/docs` from `packages/blit386/docs/` and fails when the mirror drifted
 
 Not in `preflight` (CI's `build-website` job runs them, in this order): `build` (`CLOUDFLARE=1 waku build`),
