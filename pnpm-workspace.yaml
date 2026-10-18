@@ -70,7 +70,7 @@ overrides:
   # bundle - but `security:audit` covers dev + prod, so it fails CI. 6.2.1 is the only
   # patch (no 5.x backport), so this crosses the major get-uri declares (`^5.0.2`); the
   # link checker never fetches ftp: URLs, so that code path is not exercised.
-  basic-ftp@<=6.2.0: ^6.2.2
+  basic-ftp@<=6.2.0: ^6.2.3
   # GHSA-r4xh-jqrq-34v2 (moderate): quadratic-time parse() from parseKey rescanning to the
   # end of the document on each key line. Dev-only, reached through cspell (cspell-config-lib)
   # and knip, so it never enters a runtime bundle - but `security:audit` covers dev + prod,
