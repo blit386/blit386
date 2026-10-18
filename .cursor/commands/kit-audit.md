@@ -52,7 +52,7 @@ skills are hand-authored beginner prose, so they drift silently when the engine 
    audit edit. What this audit does own is `blit386.docsReviewedAt` in `packages/kit/package.json`: set it to the engine
    version you just checked the docs against. `blit doctor` compares it with the installed engine, and
    `scripts/check-kit-docs-drift.mjs` (root, `.github/workflows/kit-docs-drift.yml`) compares it with
-   `docs/_api-history.json` to decide when to file a drift issue.
+   `packages/blit386/docs/_api-history.json` to decide when to file a drift issue.
 
 5. Keep kit content self-contained
 

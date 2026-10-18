@@ -23,8 +23,8 @@ Run the package's spellcheck, then fix all reported errors.
 - `blit386`: `pnpm run spellcheck` checks `src/**/*.{ts,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `demos`: `pnpm run spellcheck` checks `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `plugins/**`, `scripts/**`,
   `_partials/**`, `_shots/**`, the package's root `*.{md,mdx}`, `CLAUDE.md`, and `AGENTS.md`. Files outside those paths
-  (`.claude/**`, config files) aren't covered by the script - lint-staged spellchecks them when staged for a commit;
-  check one by hand with `pnpm exec cspell <path>`
+  (`.claude/**`) aren't covered by the script - lint-staged spellchecks staged Markdown and skill files, but not JSON or
+  YAML config files; check one by hand with `pnpm exec cspell <path>`
 - `website`: `pnpm run spellcheck` checks `content/**/*.{md,mdx}`, `src/**/*.{ts,tsx}`, the package's root `*.{md,mdx}`,
   and `CLAUDE.md`
 - `kit` / `create-blit386`: no package-local `spellcheck` script yet (the combined one lived in the retired
