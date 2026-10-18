@@ -14,7 +14,7 @@ There are 52 demo modules today, covering drawing, palettes, post-process CRT ef
 gamepad), audio, seeded randomness, and test hooks. Each demo lives in a single number-free kebab-case file under `src/`
 (for example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames.
 Most demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
-[Shared UI kit](#shared-ui-kit) below for the four exceptions). During development, Vite serves the matching page at
+[Shared UI kit](#shared-ui-kit) below for the five exceptions). During development, Vite serves the matching page at
 `/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
 persistent shell (navigation banner + iframe). The banner's demo selector is a fuzzy-searchable combobox (type to filter
 by title). The iframe loads the same demo with `?embed&source`, which runs the canvas, keeps the Twoslash source panel
@@ -34,7 +34,7 @@ To embed a demo in your own page, iframe the `?embed` form - canvas only, no ban
 
 Other URL parameters every demo understands: `?seed=N` pins `BT.random` so a run is repeatable (captures use `seed=1`),
 `?backend=software` forces the Canvas 2D renderer, and `?nosplash` skips the release-build splash. Production only
-allows framing from `blit386.dev`, `vancura.dev`, Framer, and `localhost` - see
+allows framing from `blit386.dev` (and `next.blit386.dev`), `vancura.dev`, Framer, and `localhost` - see
 [docs/SECURITY-HEADERS.md](docs/SECURITY-HEADERS.md) to add a host.
 
 The demos build on each other in `DEMO_ORDER` where it matters; later pages assume you have seen the ideas from earlier
@@ -300,14 +300,9 @@ hardware-setting change still forces a full reload - see [CLAUDE.md](CLAUDE.md#h
 
 ## Adding a demo
 
-1. Create `src/<topic>.js` - a class with `init()`, `update()`, `render()` (and optional `configure()`), passed to
-   `bootstrap()`, with a header comment that carries a `@description` line. Every panel, button, and label comes from
-   the shared UI kit. The `/demos-new` skill writes the skeleton; [CLAUDE.md](CLAUDE.md) has the comment rules.
-2. Append the slug to `DEMO_ORDER` in `plugins/demo-order.js` and add it to the `## Demos` list above.
-3. Start `pnpm run dev`, then `pnpm run capture:shots -- --demos <topic>` for the gallery and site-index tiles, and
-   `pnpm run capture:og -- <topic> --force --base-url http://localhost:4173` against `pnpm run preview` for the social
-   card.
-4. `pnpm run check:demo-registry` confirms all of the above agree; `pnpm run preflight` runs every gate.
+Run the `/demos-new` skill, or follow the checklist in
+[`.claude/rules/file-structure.md`](.claude/rules/file-structure.md) ("Beside the file"). `pnpm run check:demo-registry`
+confirms everything agrees; `pnpm run preflight` runs every gate.
 
 ## Social metadata and OG images
 

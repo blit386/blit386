@@ -310,18 +310,12 @@ commands are rewritten by `rtk hook claude`; search and read tools are not - use
 | --- | --- |
 | `dev`, `dev:watch` | Vite dev server at `http://localhost:5173` - it never opens a browser; `dev:watch` also rebuilds the engine's browser bundle on change. Both build the engine first if `packages/blit386/dist` is missing |
 | `build`, `preview` | Production build to `dist/` (flattened slugs, `_redirects`, `sitemap.xml`, `robots.txt`, `index.html`, `shots.html`) and a static server for it on port 4173 |
-| `lint`, `lint:fix` | ESLint with zero warnings allowed |
-| `format`, `format:check` | Biome for JS/JSON/CSS, Prettier for Markdown/YAML |
-| `spellcheck` | cspell over `src/`, `docs/`, `plugins/`, `scripts/`, `_partials/`, `_shots/`, and the root Markdown files |
 | `test` | `node --test` over the `__tests__/` directories of `scripts/`, `plugins/`, `src/shared/`, and `_shots/` |
-| `knip` | Unused files and exports, run from the repo root with `--workspace packages/demos` |
 | `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, nav-hidden set, reserved slugs, header tags, the README `## Demos` list, and OG cards |
 | `check:demo-comment-links` | Dead `Prerequisites:` / `Guides:` / `Reference:` links in demo headers |
 | `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
 | `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
 | `capture:demo` | A native-resolution video clip of one demo's canvas for the blog (Chrome and `ffmpeg`) |
-| `generate:audio-loops` | Regenerates the procedural `.wav` loops in `public/audio/` |
-| `docs:links` | Markdown link check (shared root script) |
 | `preflight` | `format:check`, `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |
 | `security:audit`, `security:mcp-preflight` | `pnpm audit` at moderate level and the engine's MCP scanner preflight |
 
