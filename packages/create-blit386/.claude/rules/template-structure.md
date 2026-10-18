@@ -11,12 +11,23 @@
 - `templates/js/` - JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
 - `templates/ts/` - TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic,
   typed.
-- `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). Every AI assistant's
-  config is generated from the kit IR (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static
-  templates. That includes the documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's
+- The starter game (`src/game.*`) is the Catcher example and carries the `testState()` hook (engine 1.8.0+) plus a
+  dev-only `window.__game` whose `state()` delegates to it - the kit's `test-the-game` skill reads both. The kit's
+  `content/templates/game.{js,ts}` are a different file on purpose: the empty skeleton `blit clean` writes over a game,
+  not a copy of the starter. Keep their header comments (the method list, the optional hooks) saying the same thing.
+- `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). The workflow is
+  package-manager-agnostic: it runs `{{pmCiPrepare}}` (`corepack enable`, which reads the generated `packageManager`
+  field; `npm install --global bun` for Bun, which Corepack does not manage), then `{{pmCiInstall}}` (a lockfile-strict
+  install from `PmHints.ciInstallCmd`), `{{pmRunFormat}}:check`, and `{{pmRunBuild}}` - never a second pnpm/npm version
+  pin, which `pnpm/action-setup` rejects when it disagrees with `packageManager`. The kit's Copilot setup workflow is
+  generated in code per manager. Every AI assistant's config is generated from the kit IR
+  (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static templates. That includes the
+  documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's
   `.github/workflows/copilot-setup-steps.yml` - do not add a static template for them. That workflow copies the action
   pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` / `ACTIONS_SETUP_NODE` in the kit's
   `src/adapters.ts`); bump both together - `test/agent-copilot.test.mjs` fails when they drift.
+- `biome.json` lists `!.blit` in `files.includes` and `.prettierignore` lists `.blit/`: the pristine kit copies under
+  `.blit/base/` must never be reformatted, or `blit agents sync` reports edits the user did not make (root `CLAUDE.md`).
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
 - Rename `gitignore` → `.gitignore`, `editorconfig` → `.editorconfig`, `gitattributes` → `.gitattributes`,
   `node-version` → `.node-version`, and `prettierignore` → `.prettierignore`, and strip `.tmpl` extensions, during the

@@ -36,8 +36,7 @@ assumed; see the SemVer choice bullet in the pre-bump checklist below.
    Every release publishes all three packages, including any with no changes since the last release - that is the
    accepted cost of lockstep, matching how Babel and Angular operate. Do not add logic to skip an unchanged package.
 5. Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`). One tag per release, covering all three packages - there is
-   only one tag series now that they share a version, matching every existing tag in the repo (`0.1.0`, `1.0.0`,
-   `1.1.0`, `1.2.0`, `1.2.1`).
+   only one tag series now that they share a version, matching every existing tag in the repo (`0.1.0` through `1.7.1`).
 6. Publishing is manual-only. There is no CI publish workflow and no `NPM_TOKEN` secret - see "Publishing is
    manual-only" below for why. Every release is `pnpm publish` (or, for the engine, `pnpm run release`) from vancura's
    machine. With two-factor auth on, that means one package at a time, each needing a fresh one-time code (`--otp`).
@@ -53,6 +52,11 @@ wondering whether to re-add a publish workflow, don't.
 
 Tags are still cut and pushed after a manual publish, exactly as before. They no longer trigger anything; they are
 purely a marker in the repo history for which commit shipped which version.
+
+A consequence worth stating: none of the three packages publishes with npm provenance attestations. Provenance needs a
+publish from a supported CI runner with OIDC (`--provenance`), and a laptop publish cannot produce one. No
+`publishConfig.provenance` is set anywhere, and `pnpm publish --provenance` would fail locally - do not add it unless
+the manual-only decision above is reversed first.
 
 ## Release order: engine first
 

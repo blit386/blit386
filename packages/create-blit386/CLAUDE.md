@@ -132,6 +132,8 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
 | --- | --- |
 | What does the scaffolder generate? | `src/scaffold.ts`, `templates/` |
 | Template layout and rename rules | `.claude/rules/template-structure.md` |
+| Starter game vs the empty skeleton `blit clean` writes | `templates/{js,ts}/src/game.*` (Catcher, with `testState()`) vs `packages/kit/content/templates/game.{js,ts}` - two files by design, see `.claude/rules/template-structure.md` |
+| Optional CI workflow and why it has no pnpm pin | `templates/optional/ci/github/workflows/ci.yml` (Corepack + `packageManager`), `.claude/rules/template-structure.md` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the `blit` CLI do, and how are agent files generated? | `packages/kit/CLAUDE.md` |
 | Which generated files the kit owns (sync classes) | `packages/kit/src/ownership.ts`, imported via `@blit386/kit/adapters` |

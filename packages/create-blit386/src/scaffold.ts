@@ -6,7 +6,8 @@
  *                        .node-version, biome.json, prettier.config.js + .prettierignore +
  *                        scripts/prettier-plugin-compact-tables.mjs)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
- *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
+ *   - ../templates/ts    (the TypeScript game + package.json + tsconfig)
+ *   - ../templates/optional/ci (wizard opt-in GitHub Actions workflow; assistant files come from the kit)
  *   - @blit386/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
  *
  * After emitting all files, scaffold writes `.blit/manifest.json` (the ownership manifest) and
@@ -55,6 +56,12 @@ export interface ScaffoldOptions {
     pmRunBuild: string;
     pmRunFormat: string;
     pmRunLint: string;
+
+    /** Lockfile-strict install for the CI workflow; defaults to `pmInstall`. */
+    pmCiInstall?: string;
+
+    /** CI step that provides the package manager on a runner; defaults to `corepack enable`. */
+    pmCiPrepare?: string;
     includeCi?: boolean;
 
     /** AI assistants to generate config for. Empty means none. Each entry writes its own adapter tree. */
@@ -227,6 +234,8 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
+        pmCiInstall: options.pmCiInstall ?? options.pmInstall,
+        pmCiPrepare: options.pmCiPrepare ?? 'corepack enable',
         packageManager: options.packageManager ?? '',
 
         // Resolved per language so base templates stay language-agnostic.

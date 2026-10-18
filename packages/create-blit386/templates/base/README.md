@@ -37,9 +37,15 @@ More about hot reload: `docs/hot-reload.md`.
 - `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version.
+- `npx blit agents add <name>` - set up an AI assistant you did not pick at the start (`claude`, `cursor`,
+  `antigravity`, `codex`, `copilot`, `gemini`, `opencode`, or `zed`); `npx blit agents sync` keeps its files current.
+- `npx blit clean` - replace `{{gameFile}}` with an empty skeleton when you want to start your own game from scratch.
 
 The `blit` helper is installed inside this project, not on your whole computer, so it needs `npx` in front (it means
 "run the helper that lives in this project"). Typing plain `blit` would say "command not found."
+
+Everything here works the same on Windows (PowerShell or Command Prompt), macOS, and Linux. The `.gitattributes` file
+keeps line endings consistent on every computer, so `format:check` agrees everywhere.
 
 ## Peek behind the scenes
 
@@ -75,8 +81,10 @@ the usual suspects: blank screens, "command not found," forgotten `await`, and m
 - `AGENTS.md` - a short home base for you or an AI assistant.
 - `docs/` - nine friendly guides: getting started, the game loop, drawing, input, colors, randomness and world
   generation, sound, hot reload, and fixing problems.
-- [blit386.dev](https://blit386.dev) - the full BLIT386 documentation site. If you set up Claude Code or Cursor, it can
-  search this site directly - that is what the `.mcp.json` file here (Claude Code) or `.cursor/mcp.json` (Cursor) is
-  for.
+- [blit386.dev](https://blit386.dev) - the full BLIT386 documentation site. If you set up an AI assistant (Claude Code,
+  Cursor, Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenCode, or Zed), it can search this site directly - that is
+  what its generated docs-server config is for (`.mcp.json` for Claude Code and GitHub Copilot, `.cursor/mcp.json` for
+  Cursor, and so on). Claude Code's desktop app also reads `.claude/launch.json` here to start the game's preview server
+  for you.
 - [blit386.dev/llms.txt](https://blit386.dev/llms.txt) - the whole site's contents as one plain text file, handy for
   skimming or pasting into a chat.

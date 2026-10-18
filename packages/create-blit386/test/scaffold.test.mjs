@@ -18,6 +18,13 @@ import { test } from 'node:test';
 import { scaffold } from '../dist/scaffold.js';
 import { cli, installedKit, assertNoPlaceholders } from './helpers.mjs';
 
+// The engine range is derived by scripts/bump-lockstep.mjs at release time, so read it from the
+// source instead of hardcoding a value the bump would silently invalidate.
+const BLIT386_RANGE = /const BLIT386_RANGE = '([^']+)'/u.exec(
+    readFileSync(new URL('../src/scaffold.ts', import.meta.url), 'utf8'),
+)?.[1];
+assert.ok(BLIT386_RANGE, 'src/scaffold.ts should define BLIT386_RANGE');
+
 test('scaffolds a runnable game project', () => {
     assert.ok(existsSync(cli), 'dist/index.js must be built before running tests (run `pnpm run build`)');
 
@@ -98,7 +105,11 @@ test('scaffolds a runnable game project', () => {
             'packageManager should be a Corepack name@version pin',
         );
         assert.ok(manifest.dependencies?.blit386, 'blit386 dependency is missing');
-        assert.equal(manifest.dependencies.blit386, '^1.7.0', 'generated games should pin blit386 ^1.7.0');
+        assert.equal(
+            manifest.dependencies.blit386,
+            BLIT386_RANGE,
+            'generated games should pin the BLIT386_RANGE constant from src/scaffold.ts',
+        );
         assert.equal(
             manifest.devDependencies?.['@blit386/kit'],
             `^${installedKit.version}`,
@@ -140,6 +151,7 @@ test('scaffolds a runnable game project', () => {
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
         // The test-the-game skill reads window.__game and replays runs with ?seed=, which needs BT.random.
         assert.ok(game.includes('__game'), 'game.js should expose window.__game for the test-the-game skill');
+        assert.ok(game.includes('testState()'), 'game.js should carry the testState() hook BT.testState() reads');
 
         assert.ok(
             existsSync(join(project, 'docs', 'hot-reload.md')),
@@ -200,12 +212,22 @@ test('scaffold copies optional CI and agent files when requested', () => {
             pmRunBuild,
             pmRunFormat,
             pmRunLint,
+            pmCiInstall: 'pnpm install --frozen-lockfile',
             includeCi: true,
             agents: ['claude'],
             packageManager: 'pnpm@11.20.0',
         });
 
         assert.ok(existsSync(join(project, '.github', 'workflows', 'ci.yml')), 'CI workflow should be generated');
+        // The workflow runs the scaffolding package manager through Corepack (`packageManager` in package.json), so it
+        // carries no second pnpm pin and works for npm and yarn scaffolds too.
+        const ci = readFileSync(join(project, '.github', 'workflows', 'ci.yml'), 'utf8');
+        assert.ok(ci.includes("run: 'pnpm install --frozen-lockfile'"), 'ci.yml should install with a strict lockfile');
+        assert.ok(ci.includes(`run: '${pmRunFormat}:check'`), 'ci.yml should run format:check');
+        assert.ok(ci.includes(`run: '${pmRunBuild}'`), 'ci.yml should run the build');
+        assert.ok(ci.includes('corepack enable'), 'ci.yml should enable Corepack instead of pinning pnpm');
+        assert.ok(!ci.includes('pnpm/action-setup'), 'ci.yml must not pin a pnpm version beside packageManager');
+        assert.ok(!ci.includes('{{'), 'ci.yml still has unrendered placeholders');
         assert.ok(existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be generated for Claude agent choice');
         assertNoPlaceholders(project, 'CLAUDE.md');
 
@@ -519,6 +541,35 @@ test('scaffold omits packageManager when the option is absent', () => {
     }
 });
 
+test('bun CI installs bun instead of relying on Corepack', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-bun-ci-'));
+
+    try {
+        const project = join(work, 'bun-ci-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'bun-ci-game',
+            pmInstall: 'bun install',
+            pmRunDev: 'bun run dev',
+            pmRunBuild: 'bun run build',
+            pmRunFormat: 'bun run format',
+            pmRunLint: 'bun run lint',
+            pmCiInstall: 'bun install --frozen-lockfile',
+            pmCiPrepare: 'npm install --global bun',
+            includeCi: true,
+            agents: [],
+        });
+
+        const ci = readFileSync(join(project, '.github', 'workflows', 'ci.yml'), 'utf8');
+        assert.ok(ci.includes("run: 'npm install --global bun'"), 'bun ci.yml should install bun globally');
+        assert.ok(!ci.includes('corepack enable'), 'bun ci.yml must not rely on Corepack');
+        assert.ok(ci.includes("run: 'bun install --frozen-lockfile'"), 'bun ci.yml should use a frozen lockfile');
+        assert.ok(!ci.includes('{{'), 'ci.yml still has unrendered placeholders');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffolds a TypeScript project when language is ts', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
 
@@ -581,6 +632,7 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
         assert.ok(game.includes('__game'), 'game.ts should expose window.__game for the test-the-game skill');
+        assert.ok(game.includes('testState(): GameState'), 'game.ts should carry the typed testState() hook');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
