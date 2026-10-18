@@ -64,8 +64,10 @@ BT.resume(); // optional: keep playing from there
 
 `BT.isReady` is `false` until `init()` has finished and the game loop exists - poll it when you drive the page from
 outside (a screenshot tool, a play-testing harness). Inside `update()` / `render()` the engine is already ready.
-`renderAt` replays your game from the beginning (it re-runs `init()`), so it only lands on the right frame if everything
-that moves is driven by `BT.timeSeconds`, `BT.ticks`, or `BT.random` - never `performance.now()` or `Date.now()`.
+`renderAt` replays your game from the beginning on a fresh copy of your game class (a new `Game`, then `init()`), so the
+fields your class sets up start over by themselves. It only lands on the right frame if everything that moves is driven
+by `BT.timeSeconds`, `BT.ticks`, or `BT.random` - never `performance.now()` or `Date.now()` - and if variables outside
+the class (at the top of the file) are reset in `init()` too.
 
 ## The built-in dev shortcut (engine 1.7.0+)
 

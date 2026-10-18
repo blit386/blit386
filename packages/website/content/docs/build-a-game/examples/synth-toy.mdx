@@ -38,17 +38,18 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A deep navy screen with the engine overlay already open: its text rows across the top and
-the audio meter band with three bus level bars (main, music, sfx) and a voice count. A
-title strip reading "Synth Toy - six presets and a randomizer" runs along the top edge of
-the scene, and the line under it shows the orange "Click or press a key to enable sound"
-prompt until sound is unlocked, then a dim "Tap a button, or press its key".
+The engine overlay is open from the start: white bars along the top with the audio meter
+band (three bus level bars - main, music, sfx - and a voice count), and a hint bar along
+the bottom. Between them, one centered line of text reads "Click or press a key to enable
+sound" in warm orange until sound is unlocked, then a dim "Tap a button, or press its
+key."
 
-Two panels sit along the bottom edge. "Presets" on the left is a keypad of six buttons of
-equal width - "J - Jump", "P - Pickup", "E - Explosion", "L - Laser", "H - Hit", and
-"B - Blip" - with a "Last" row naming the preset played most recently. "Randomizer" on the
-right has an "R - Randomize" button and a readout of the last rolled recipe: Waveform,
-Frequency in Hz, Duration in seconds, Noise mix with a meter bar, Sweep, and Duty.
+Two panels of the same height sit side by side under that line. "Presets" on the left is
+a keypad of six equal buttons in two columns - "J Jump", "P Pickup", "E Explosion",
+"L Laser", "H Hit", and "B Blip" - with a "Last" row naming the preset played most
+recently. "Randomizer" on the right has an "R - Randomize" button and a readout of the
+last rolled recipe: Waveform, Frequency in Hz, Duration in seconds, Noise mix with a meter
+bar, Sweep, and Duty.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -63,9 +64,11 @@ WHAT YOU WILL LEARN
 - BT.random.pick(), .float(), .bool(), .next(), and .int() build a brand new recipe with
   every field chosen at random inside safe ranges.
 - Kicking off an async render-and-play from a synchronous button handler.
-- isOverlayVisibleAtStart: true, isOverlayAudioMetersEnabled: true, and
-  overlayStyle.gapPaletteIndex to show the overlay from the first frame and blend its gaps
-  into the background.
+- isOverlayVisibleAtStart: true and isOverlayAudioMetersEnabled: true show the overlay
+  and its audio meters from the first frame, and overlayStyle / overlayAudioMeterStyle
+  pick its colors from the palette.
+- Laying buttons out in a grid: the UI kit stacks a group's rows, so each keypad button
+  gets its own tiny group pinned to an exact spot on top of the panel.
 
 HOW A SYNTH RECIPE WORKS
 ------------------------
@@ -90,7 +93,7 @@ wobble on top of all this; the demo leaves it out to keep the panel small.)
 TRY THIS
 --------
 
-- Click anywhere, or press any key, to unlock sound - watch the line under the title
+- Click anywhere, or press any key, to unlock sound - watch the line under the overlay
   change once you do.
 - Tap the preset buttons (or press J, P, E, L, H, or B) to hear the jump, pickup,
   explosion, laser, hit, and blip presets. The "Last" row names the one you played.
@@ -107,7 +110,7 @@ TRY THIS
 
 import { AudioClip, bootstrap, BT } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, THEME_OVERLAY_AUDIO_METER_STYLE, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SynthParams} SynthParams */
@@ -121,16 +124,62 @@ const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 // (a SynthParams object) for that sound. `label` is the button text (which doubles as the
 // keyboard hint), `name` is what the "Last" row shows, and `code` is the bound key.
 const PRESET_DEFINITIONS = [
-    { code: 'KeyJ', label: 'J - Jump', name: 'Jump', factory: () => BT.synthPreset.jump() },
-    { code: 'KeyP', label: 'P - Pickup', name: 'Pickup', factory: () => BT.synthPreset.pickup() },
-    { code: 'KeyE', label: 'E - Explosion', name: 'Explosion', factory: () => BT.synthPreset.explosion() },
-    { code: 'KeyL', label: 'L - Laser', name: 'Laser', factory: () => BT.synthPreset.laser() },
-    { code: 'KeyH', label: 'H - Hit', name: 'Hit', factory: () => BT.synthPreset.hit() },
-    { code: 'KeyB', label: 'B - Blip', name: 'Blip', factory: () => BT.synthPreset.blip() },
+    { code: 'KeyJ', label: 'J Jump', name: 'Jump', factory: () => BT.synthPreset.jump() },
+    { code: 'KeyP', label: 'P Pickup', name: 'Pickup', factory: () => BT.synthPreset.pickup() },
+    { code: 'KeyE', label: 'E Explosion', name: 'Explosion', factory: () => BT.synthPreset.explosion() },
+    { code: 'KeyL', label: 'L Laser', name: 'Laser', factory: () => BT.synthPreset.laser() },
+    { code: 'KeyH', label: 'H Hit', name: 'Hit', factory: () => BT.synthPreset.hit() },
+    { code: 'KeyB', label: 'B Blip', name: 'Blip', factory: () => BT.synthPreset.blip() },
 ];
 
-// All preset buttons share one width so the left panel reads as a tidy keypad.
-const PRESET_BUTTON_W = 96;
+// Screen layout, in display pixels. The engine overlay is open from the start: its bars
+// cover the top 56 rows and its hint bar the bottom 14, so everything sits in the band
+// between them. The status line comes first, then two panels side by side, equally tall.
+const STATUS_Y = 64;
+const PANEL_Y = 76;
+const PRESET_PANEL_X = 4;
+const PRESET_PANEL_W = 174;
+const RANDOM_PANEL_X = 184;
+const RANDOM_PANEL_W = 132;
+
+// Panel metrics from the UI kit: content starts 22 pixels below a panel's top edge
+// (under its title) and 9 pixels in from its left edge, and is 20 pixels narrower than
+// the panel.
+const PANEL_CONTENT_TOP = 22;
+const PANEL_CONTENT_X = 9;
+const PANEL_CONTENT_SHRINK = 20;
+
+// The presets form a keypad of two columns and three rows, all buttons the same width.
+// The kit stacks a group's rows top to bottom, so the keypad reserves its space inside
+// the panel with an empty row and then places each button with its own tiny group.
+const PRESET_COLUMNS = 2;
+const PRESET_GAP_X = 6;
+const PRESET_BUTTON_W = (PRESET_PANEL_W - PANEL_CONTENT_SHRINK - PRESET_GAP_X) / PRESET_COLUMNS;
+const PRESET_ROW_H = 27;
+const PRESET_GRID_X = PRESET_PANEL_X + PANEL_CONTENT_X;
+
+// The keypad starts under the panel title and the one-line key hint.
+const PRESET_GRID_Y = PANEL_Y + PANEL_CONTENT_TOP + 14;
+const PRESET_GRID_H = (PRESET_DEFINITIONS.length / PRESET_COLUMNS) * PRESET_ROW_H;
+
+// A group pinned with pad 0 starts its first row 5 pixels above the y it is given, so
+// each button group is placed this much lower to land on its keypad row.
+const PINNED_ROW_SHIFT = 5;
+
+// Breathing room: under the keypad before the "Last" row, under the Randomize button
+// before the readout, and at the bottom of both panels. These make both panels end on
+// the same line, with "Last" and "Duty" on the same row.
+const PRESET_PANEL_FILLER = 1;
+const RANDOM_PANEL_FILLER = 6;
+const PANEL_TRAILING_SPACE = 5;
+
+// One text row of the UI kit, and where the "Last" row sits: under the keypad.
+const ROW_H = 10;
+const LAST_ROW_Y = PRESET_GRID_Y + PRESET_GRID_H + PRESET_PANEL_FILLER;
+
+// The value column of the randomizer readout starts after this many characters, so the
+// longest key, "Frequency", keeps a space after it.
+const RANDOM_KV_COLS = 10;
 
 // Safe ranges for the randomizer. Every one of these stays inside the bounds
 // AudioClip.synth() actually accepts (see the engine's synthValidation.ts): frequencies
@@ -226,7 +275,7 @@ class Demo {
     lastRandomParams = null;
 
     // Turns on the engine's built-in audio meters, shows the overlay from the very first
-    // frame, and styles the overlay so its gaps match the demo's background color.
+    // frame, and colors it from the shared UI theme.
     configure() {
         return {
             // Live per-bus level bars and a voices/steal/drop readout in the overlay. Off
@@ -239,16 +288,12 @@ class Demo {
             // meters should be visible immediately.
             isOverlayVisibleAtStart: true,
 
-            // gapPaletteIndex fills both the thin seams between overlay rows and the
-            // empty (unfilled) track behind each audio meter bar, so it must match the
-            // screen background or those seams would show up as a mismatched color. The
-            // shared UI theme puts its background color at THEME_DEFAULT_START_SLOT
-            // (applyTheme()'s default start slot - see init() below); configure() runs
-            // before init(), so we reference the constant directly instead of calling
-            // applyTheme() early.
-            overlayStyle: {
-                gapPaletteIndex: THEME_DEFAULT_START_SLOT,
-            },
+            // The overlay's default colors live in palette slots 1 and 2, which this demo
+            // never fills - they would draw solid black. These two shared styles point
+            // the bars, text, and meters at the theme's colors instead, with the screen
+            // background in the gaps between bands and behind each meter bar.
+            overlayStyle: THEME_OVERLAY_STYLE,
+            overlayAudioMeterStyle: THEME_OVERLAY_AUDIO_METER_STYLE,
         };
     }
 
@@ -281,57 +326,64 @@ class Demo {
         ui.tick();
     }
 
-    // Clears the screen and declares the whole UI: title bar, unlock message, the preset
-    // keypad on the left, and the randomizer readout on the right.
+    // Clears the screen and declares the whole UI: the status line, the preset keypad on
+    // the left, and the randomizer readout on the right.
     render() {
         BT.clear(this.theme.bg);
 
-        // The full-width title strip along the top edge.
-        ui.begin(UI_ANCHORS.TOP_BAR);
-        ui.panel('Synth Toy - six presets and a randomizer');
-        ui.end();
-
-        this.renderUnlockPrompt();
+        this.renderStatusLine();
         this.renderPresetPanel();
         this.renderRandomPanel();
     }
 
-    // Shows the shared unlock reminder until audio is unlocked, then switches to a plain
-    // reminder of the controls. A borderless group - just one line of text pinned under
-    // the title strip.
-    renderUnlockPrompt() {
-        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
+    // One centered line just under the overlay bars: the shared unlock reminder in warm
+    // orange until sound is unlocked, then a dim reminder of the controls.
+    renderStatusLine() {
+        const isLocked = !BT.isAudioUnlocked;
+        const text = isLocked ? 'Click or press a key to enable sound' : 'Tap a button, or press its key.';
 
-        // The shared "click to enable sound" row - it draws itself only while sound is
-        // still locked, and disappears on its own after the first click or key press.
-        ui.audioUnlockHint();
+        // FONT_W is the width of one character; the last one's empty spacing column is
+        // left out, so the visible letters are what gets centered.
+        const x = Math.floor(BT.displaySize.x / 2) - Math.floor((text.length * FONT_W - 1) / 2);
 
-        // Once sound works, swap in a short reminder of the controls instead.
-        if (BT.isAudioUnlocked) {
-            ui.label('Tap a button, or press its key', { color: 'dim' });
-        }
-
-        ui.end();
+        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
     }
 
-    // Left-hand panel: one button per preset, plus the last one played. Each button fires
-    // on click, tap, or its keyboard shortcut - ui.button() treats all three the same.
+    // Left-hand panel: a keypad of six preset buttons, plus the last one played. Each
+    // button fires on click, tap, or its keyboard shortcut - ui.button() treats all three
+    // the same.
+    //
+    // A group is drawn the moment it ends, in call order, so the panel comes first with
+    // empty rows where the keypad and the "Last" row go, and those are placed on top of
+    // it afterwards. The "Last" row comes after the buttons, so a press shows up in it on
+    // the same frame.
     renderPresetPanel() {
-        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
+        ui.begin('topLeft', { x: PRESET_PANEL_X, y: PANEL_Y, width: PRESET_PANEL_W });
         ui.panel('Presets');
+        ui.label('Keys J P E L H B or tap', { color: 'dim' });
+        ui.spacer(4);
+        ui.spacer(PRESET_GRID_H + PRESET_PANEL_FILLER + ROW_H + PANEL_TRAILING_SPACE);
+        ui.end();
 
         for (let i = 0; i < PRESET_DEFINITIONS.length; i++) {
             const def = PRESET_DEFINITIONS[i];
+            const x = PRESET_GRID_X + (i % PRESET_COLUMNS) * (PRESET_BUTTON_W + PRESET_GAP_X);
+            const y = PRESET_GRID_Y + Math.floor(i / PRESET_COLUMNS) * PRESET_ROW_H + PINNED_ROW_SHIFT;
+
+            ui.begin('topLeft', { x, y, pad: 0 });
 
             if (ui.button(def.label, { key: def.code, width: PRESET_BUTTON_W })) {
                 // Play the pre-rendered clip and remember it for the "Last" row below.
                 BT.soundPlay(this.presetClips[i]);
                 this.lastPresetIndex = i;
             }
+
+            ui.end();
         }
 
         const lastLabel = this.lastPresetIndex === null ? '-' : PRESET_DEFINITIONS[this.lastPresetIndex].name;
 
+        ui.begin('topLeft', { x: PRESET_GRID_X, y: LAST_ROW_Y + PINNED_ROW_SHIFT, pad: 0 });
         ui.kv('Last', lastLabel);
         ui.end();
     }
@@ -339,14 +391,17 @@ class Demo {
     // Right-hand panel: the Randomize button and the most recently rolled recipe, one
     // field per row.
     renderRandomPanel() {
-        const params = this.lastRandomParams;
-
-        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
+        ui.begin('topLeft', { x: RANDOM_PANEL_X, y: PANEL_Y, width: RANDOM_PANEL_W, kvCols: RANDOM_KV_COLS });
         ui.panel('Randomizer');
 
-        if (ui.button('R - Randomize', { key: 'KeyR' })) {
+        if (ui.button('R - Randomize', { key: 'KeyR', width: RANDOM_PANEL_W - PANEL_CONTENT_SHRINK })) {
             this.triggerRandomize();
         }
+
+        ui.spacer(RANDOM_PANEL_FILLER);
+
+        // Read after the button, so a roll made this frame already shows below.
+        const params = this.lastRandomParams;
 
         // Each row reports one part of the rolled recipe ('-' before the first roll).
         ui.kv('Waveform', params === null ? '-' : params.waveform);
@@ -356,7 +411,7 @@ class Demo {
         // Noise mix: how much white noise is mixed into the tone (0 is a pure, clean
         // tone; 1 is pure hiss). The meter bar fills up left-to-right with the amount.
         ui.kv('Noise mix', params === null ? '-' : params.noiseMix.toFixed(2));
-        ui.meter(null, params === null ? 0 : params.noiseMix);
+        ui.meter(null, params === null ? 0 : params.noiseMix, { width: RANDOM_PANEL_W - PANEL_CONTENT_SHRINK });
 
         // The sweep target in Hz, or 'none' when this roll kept a flat pitch.
         const sweepLabel =
@@ -368,6 +423,7 @@ class Demo {
         const dutyLabel = params === null ? '-' : params.waveform === 'square' ? params.dutyCycle.toFixed(2) : 'n/a';
 
         ui.kv('Duty', dutyLabel);
+        ui.spacer(PANEL_TRAILING_SPACE);
         ui.end();
     }
 

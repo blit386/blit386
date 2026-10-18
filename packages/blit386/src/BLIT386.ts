@@ -627,6 +627,10 @@ export const BT = {
      * When not using {@link bootstrap}, set `canvas.tabIndex = 0` and call
      * `canvas.focus()` so keyboard events reach the canvas.
      *
+     * {@link BT.renderAt} replays a `'start'` seek by building a new instance of `demo`'s class with
+     * no constructor arguments. A class instance you built with arguments (`new MyGame(config)`)
+     * replays as a default-built copy, so keep per-run setup in `init()`.
+     *
      * @since 0.1.0
      * @changed 1.8.0 A call made while another `init()` is still running resolves to `false` and changes nothing.
      * @param demo - Demo implementation that provides lifecycle hooks.
@@ -2635,10 +2639,16 @@ export const BT = {
      * `requestAnimationFrame`, so it works in hidden and headless pages.
      *
      * `from: 'start'` (default) stops the loop, resets engine-owned state (the `BT.random` stream,
-     * palette and post-process effects, camera, ticks), re-runs your game's `init()`, then steps
-     * `update()` to the target tick and renders once. The splash is not replayed; as in the live
-     * run, palette effects that `init()` started behind it are dropped. Palette slot colors are not
-     * restored, so build the palette inside `init()`. `from: 'current'` steps
+     * palette and post-process effects, camera, ticks), builds a fresh instance of your game class
+     * and runs its `init()`, then steps `update()` to the target tick and renders once. The fresh
+     * instance starts from the constructor, exactly like the boot run, so no field carries over from
+     * the run being replaced; an object-literal game has no class, so its `init()` re-runs on the
+     * same object. The class is built with no constructor arguments, so a game that needs them must
+     * reset its fields in `init()` instead. If the constructor or `init()` fails, the call rejects
+     * and the previous instance stays active, but the engine state the seek already reset (random
+     * stream, palette, camera, ticks) is not restored: seek again or reload the page. The splash is
+     * not replayed; as in the live run, palette effects that `init()` started behind it are dropped.
+     * Palette slot colors are not restored, so build the palette inside `init()`. `from: 'current'` steps
      * forward from the tick the game is on and rejects a target in the past. Either way the loop
      * stays stopped afterwards: `BT.captureFrame()` captures the seeked frame, and `BT.resume()`
      * keeps playing from it.
