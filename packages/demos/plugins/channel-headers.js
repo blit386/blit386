@@ -33,13 +33,13 @@ export function buildNoindexHeadersBlock() {
  * On the `next.demos.blit386.dev` preview channel (`BLIT386_CHANNEL=next`, set only in the
  * `deploy-demos-next` CI job - see `.github/workflows/deploy.yml`), appends an
  * `X-Robots-Tag: noindex` block to `dist/_headers` and writes a disallow-all `dist/robots.txt`.
- * Production gets neither `_headers` addition: it stays exactly what `viteStaticCopy` copied
+ * Production gets neither `_headers` addition: it stays exactly what Vite's `public/` copy wrote
  * from `public/_headers`. Production's `robots.txt` instead allows everything and points
  * crawlers at `sitemapPlugin`'s `dist/sitemap.xml`.
  *
  * Runs in `closeBundle`, which fires after every plugin's `writeBundle` hook across the whole
  * build (Rollup runs the hooks in phases, not by plugin array order) - so `dist/_headers` from
- * `viteStaticCopy` already exists by the time this reads/appends to it.
+ * Vite's `public/` copy already exists by the time this reads/appends to it.
  * @returns {import('vite').Plugin}
  */
 export function channelHeadersPlugin() {

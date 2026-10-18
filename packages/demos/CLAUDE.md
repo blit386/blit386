@@ -1,8 +1,9 @@
 # blit386-demos
 
-Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript. Deployed to
-demos.blit386.dev via Cloudflare Pages. The engine is consumed as `workspace:*` from the sibling `packages/blit386`
-package in this monorepo.
+Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript - 52 demos today, one
+file each under `src/`. Deployed to demos.blit386.dev via Cloudflare Pages (`wrangler.jsonc` names the project and
+`dist/`; response headers come from `public/_headers`, explained in `docs/SECURITY-HEADERS.md`). The engine is consumed
+as `workspace:*` from the sibling `packages/blit386` package in this monorepo.
 
 Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together with this file.
@@ -215,7 +216,9 @@ All demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pi
 D-pad, swipes, tap zones - comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current
 widget list and options. Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 52 demos, 47 import it;
 the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` (a bare-bones starter
-plus four immersive/showcase pieces, none with a demo HUD).
+plus four immersive/showcase pieces, none with a demo HUD). Beside the kit, `src/shared/` holds `key-names.js`
+(`keyLabel(code)` for on-screen key names), `canvas-sprites.js` (offscreen-canvas sprite art), `crt-glitch.js` (the
+shared TV-fault constants), and `post-process-backend.js`.
 
 The invariants below are covered by `node:test` unit tests in `src/shared/__tests__/` (slot allocation and collisions,
 the draw-command pool's allocates-nothing-per-frame claim, layout anchor math, widget value mapping, gesture and D-pad
@@ -301,9 +304,45 @@ state → helper functions → the `Demo` class → `bootstrap(Demo);` last. Cla
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-demos run <script>` from the
 repo root); `package.json` is the list and `pnpm run preflight` is the gating set. Test, lint, and git-diff shell
-commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep. `pnpm run test`
-also runs `_shots/__tests__/*.test.mjs`. `pnpm run capture:shots` (beside `capture:og`) writes the committed /shots PNGs
-and manifest; the dev server must be running.
+commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep.
+
+| Script | What it does |
+| --- | --- |
+| `dev`, `dev:watch` | Vite dev server at `http://localhost:5173` - it never opens a browser; `dev:watch` also rebuilds the engine's browser bundle on change. Both build the engine first if `packages/blit386/dist` is missing |
+| `build`, `preview` | Production build to `dist/` (flattened slugs, `_redirects`, `sitemap.xml`, `robots.txt`, `index.html`, `shots.html`) and a static server for it on port 4173 |
+| `lint`, `lint:fix` | ESLint with zero warnings allowed |
+| `format`, `format:check` | Biome for JS/JSON/CSS, Prettier for Markdown/YAML |
+| `spellcheck` | cspell over `src/`, `docs/`, `plugins/`, `scripts/`, `_partials/`, `_shots/`, and the root Markdown files |
+| `test` | `node --test` over the `__tests__/` directories of `scripts/`, `plugins/`, `src/shared/`, and `_shots/` |
+| `knip` | Unused files and exports, run from the repo root with `--workspace packages/demos` |
+| `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, nav-hidden set, reserved slugs, header tags, the README `## Demos` list, and OG cards |
+| `check:demo-comment-links` | Dead `Prerequisites:` / `Guides:` / `Reference:` links in demo headers |
+| `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
+| `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
+| `capture:demo` | A native-resolution video clip of one demo's canvas for the blog (Chrome and `ffmpeg`) |
+| `generate:audio-loops` | Regenerates the procedural `.wav` loops in `public/audio/` |
+| `docs:links` | Markdown link check (shared root script) |
+| `preflight` | `format:check`, `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |
+| `security:audit`, `security:mcp-preflight` | `pnpm audit` at moderate level and the engine's MCP scanner preflight |
+
+The capture scripts accept a leading `--` and ignore it (`PNPM_ARG_SEPARATOR`), so `pnpm run capture:og -- basics` and
+`pnpm run capture:shots -- --all` both forward cleanly.
+
+Skills that know this package: `/demos-new` (scaffold a demo), `/demos-shots` (capture and review), and the
+package-argument skills `/test demos`, `/review demos`, `/preflight demos`, `/format demos`, `/spellcheck demos`,
+`/pr demos`, `/deep-review demos`, `/security-run demos`.
+
+Every page reads a few URL parameters; nothing else is runtime-configurable:
+
+| Parameter | Effect |
+| --- | --- |
+| `?embed` | Canvas only - no banner, no source panel. The form external iframes use: `https://demos.blit386.dev/<slug>?embed` |
+| `?embed&source` | Keeps the Twoslash source panel under the canvas; what the shell's own iframe loads |
+| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame` |
+| `?seed=N` | Pins `BT.random` (engine `SeedUrlParam`); every capture uses `seed=1`, which is why the same pose gives the same pixels on every machine |
+| `?backend=software` | Forces the Canvas 2D renderer |
+| `?nosplash` | Skips the release-build splash |
+| `?baseline=<url>` | `/shots` only: diff the committed captures against another manifest (same-origin or http(s)) |
 
 Biome owns JS/JSON/CSS, Prettier owns Markdown/YAML: 4-space indent (2 for JSON/YAML/Markdown), 120 columns, single
 quotes, semicolons, trailing commas. Markdown tables are compact by design via the shared root
@@ -324,6 +363,7 @@ every push to main, no path filter. The `-next` job sets `BLIT386_CHANNEL=next` 
 `plugins/virtual-demos.js` and `plugins/channel-headers.js` read directly (Node context, at build time - no client-side
 env var involved) to render the unreleased-work banner and a `noindex` meta tag into every page, append
 `X-Robots-Tag: noindex` to `dist/_headers`, and write a disallow-all `dist/robots.txt`. Production gets none of that -
-no banner, no noindex header, and `_headers` stays exactly what `viteStaticCopy` copied. Production's `robots.txt`
-instead allows everything and points crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from the live
-demo registry (site root plus every demo's canonical extensionless URL, skipped entirely on the `next` channel).
+no banner, no noindex header, and `_headers` stays exactly what Vite's `public/` copy produced. Production's
+`robots.txt` instead allows everything and points crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from
+the live demo registry (site root plus every demo's canonical extensionless URL, skipped entirely on the `next`
+channel).

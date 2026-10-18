@@ -19,6 +19,12 @@ track the local engine source during development. Both packages live in this sam
 `packages/blit386` and `packages/demos` - wired together by the root `pnpm-workspace.yaml`, so a single clone and
 `pnpm install` gets you both, already linked.
 
+How the link resolves: in `pnpm run dev` the Vite config aliases `blit386` straight to `../blit386/dist/blit386.js` (so
+`dev:watch` rebuilds show up without a restart); `pnpm run build` resolves it through `node_modules`, which pnpm points
+at the same workspace package. There is no environment variable to point the demos at a different engine checkout - to
+test the demos against an engine branch, check that branch out in this monorepo (a `git worktree` works) and run the
+demos from there.
+
 ## Browser and Renderer
 
 The engine prefers WebGPU and falls back to a Canvas 2D software renderer when WebGPU is missing or fails to start
@@ -35,6 +41,11 @@ WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safar
 [README](../README.md#browser-and-renderer).
 
 ## One-Time Setup
+
+Prerequisites: Node.js `>=22.18.0` (`engines` in the root `package.json`; `.node-version` pins `22.23.1` for `fnm` /
+`nvm`-style managers) and pnpm `11.20.0` (the root `packageManager` field - `corepack enable` or pnpm's own version
+manager picks it up). `pnpm run capture:og` and `capture:demo` additionally need Google Chrome installed and `ffmpeg` on
+`PATH`; nothing else does.
 
 ### 1. Clone the Repository
 
@@ -67,18 +78,21 @@ blit386/                        # This repo
 │   │   └── package.json
 │   └── demos/                   # The demos (npm name: blit386-demos)
 │       ├── src/                  # One number-free kebab-case JS file per demo (e.g. basics.js)
-│       │   └── shared/            # Shared UI kit (panels, buttons, touch D-pad) + helpers
-│       ├── public/                # Static assets: sprites/, fonts/, audio/, _headers
-│       ├── _partials/             # Shared HTML template + persistent-shell chrome (demo-shell.js)
-│       ├── plugins/               # virtual-demos + demo-order.js + demo-vintage-urls.js + registry
-│       ├── scripts/                # playwright-session, capture-demo-clip, capture-og-image,
-│       │                           # check-demo-comment-links, check-demo-registry, generate-audio-loops
+│       │   └── shared/            # Shared UI kit (panels, buttons, tooltips, touch D-pad) + helpers + tests
+│       ├── public/                # Static assets: sprites/, fonts/, audio/, social/ (OG cards),
+│       │                          # shots/ (gallery captures + manifest.json), _headers, 404.html
+│       ├── _partials/             # Shared HTML template + persistent-shell chrome (demo-shell*.js)
+│       ├── _shots/                # The /shots capture gallery and the / demo sheet (poses.js, tests)
+│       ├── plugins/               # virtual-demos + demo-order.js + demo-vintage-urls.js + registry + tests
+│       ├── scripts/                # playwright-session, capture-demo-shots, capture-og-image, capture-demo-clip,
+│       │                           # check-demo-comment-links, check-demo-registry, generate-audio-loops, tests
+│       ├── styles/                 # layout.css, demo-source.css, twoslash-rich.css
 │       ├── docs/                   # This guide, security headers
+│       ├── wrangler.jsonc          # Cloudflare Pages project name + output dir
 │       └── package.json
-└── package.json
+├── .node-version
+└── package.json                 # engines.node, packageManager (pnpm)
 ```
-
-Prerequisite: Node.js >= 22.18.0 (`engines` in the root `package.json`).
 
 ## Running the Demos
 
@@ -93,8 +107,12 @@ cd packages/demos
 pnpm run dev
 ```
 
-Visit `http://localhost:5173/` for the demo sheet, or a demo directly at `http://localhost:5173/demos/<slug>.html`.
-Vintage numbered paths such as `/demos/001-basics.html` 301 to the current slug.
+The server never opens a browser. Visit `http://localhost:5173/` for the demo sheet, a demo directly at
+`http://localhost:5173/demos/<slug>.html`, or `http://localhost:5173/shots` for the capture gallery with its dev-only
+capture controls. Vintage numbered paths such as `/demos/001-basics.html` 301 to the current slug.
+
+`pnpm run test` runs the `node:test` suites (scripts, plugins, the shared UI kit, the shots page); `pnpm run preflight`
+runs every gate the pre-push hook runs. Demo files themselves have no automated tests - open them and look.
 
 ### Development with Auto-Rebuild
 
