@@ -213,6 +213,7 @@ test('scaffold copies optional CI and agent files when requested', () => {
             pmRunFormat,
             pmRunLint,
             pmCiInstall: 'pnpm install --frozen-lockfile',
+            pmCiPrepare: 'corepack enable',
             includeCi: true,
             agents: ['claude'],
             packageManager: 'pnpm@11.20.0',
@@ -535,6 +536,30 @@ test('scaffold omits packageManager when the option is absent', () => {
         assert.ok(
             !readFileSync(join(project, 'package.json'), 'utf8').includes('{{'),
             'placeholders should be rendered',
+        );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('includeCi without CI commands is rejected', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-ci-missing-'));
+
+    try {
+        assert.throws(
+            () =>
+                scaffold({
+                    targetDir: join(work, 'game'),
+                    projectName: 'game',
+                    pmInstall: 'bun install',
+                    pmRunDev: 'bun run dev',
+                    pmRunBuild: 'bun run build',
+                    pmRunFormat: 'bun run format',
+                    pmRunLint: 'bun run lint',
+                    includeCi: true,
+                    agents: [],
+                }),
+            /pmCiInstall and pmCiPrepare/u,
         );
     } finally {
         rmSync(work, { recursive: true, force: true });

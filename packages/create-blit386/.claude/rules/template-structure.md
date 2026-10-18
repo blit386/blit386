@@ -17,9 +17,10 @@
   not a copy of the starter. Keep their header comments (the method list, the optional hooks) saying the same thing.
 - `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). The workflow is
   package-manager-agnostic: it runs `{{pmCiPrepare}}` (`corepack enable`, which reads the generated `packageManager`
-  field; `npm install --global bun` for Bun, which Corepack does not manage), then `{{pmCiInstall}}` (a lockfile-strict
-  install from `PmHints.ciInstallCmd`), `{{pmRunFormat}}:check`, and `{{pmRunBuild}}` - never a second pnpm/npm version
-  pin, which `pnpm/action-setup` rejects when it disagrees with `packageManager`. The kit's Copilot setup workflow is
+  field for pnpm and yarn - it does not shim npm, so an npm game's CI uses the npm that ships with Node;
+  `npm install --global bun` for Bun, which Corepack does not manage), then `{{pmCiInstall}}` (a lockfile-strict install
+  from `PmHints.ciInstallCmd`), `{{pmRunFormat}}:check`, and `{{pmRunBuild}}` - never a second pnpm/npm version pin,
+  which `pnpm/action-setup` rejects when it disagrees with `packageManager`. The kit's Copilot setup workflow is
   generated in code per manager. Every AI assistant's config is generated from the kit IR
   (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static templates. That includes the
   documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's

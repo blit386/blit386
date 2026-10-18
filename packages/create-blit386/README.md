@@ -29,8 +29,9 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
   It is a project-local bin, so invoke it through `npx`.
 - A `testState()` hook on the starter game (engine 1.8.0+), so `npx blit play` or an AI assistant can read the score,
   lives, and positions as numbers instead of guessing from pixels.
-- Optional GitHub Actions CI (format check + build) that runs whichever package manager scaffolded the game through
-  Corepack, so it needs no version pin of its own (npm, pnpm, and yarn; Bun is not managed by Corepack).
+- Optional GitHub Actions CI (format check + build) that runs whichever package manager scaffolded the game, so it needs
+  no version pin of its own: pnpm and yarn come from Corepack at the version in `packageManager`, npm is the one that
+  ships with the runner's Node (Corepack does not shim npm by default), and Bun is installed globally.
 
 If you pick one or more AI assistants in the wizard (Claude Code, Cursor, Antigravity, Codex, GitHub Copilot, Gemini
 CLI, OpenCode, and Zed are checkboxes - you can choose any mix), the scaffolder also generates each assistant's config
