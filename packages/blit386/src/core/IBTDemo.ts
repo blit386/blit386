@@ -33,8 +33,8 @@ export type Backend = 'webgpu' | 'software';
 export type AudioBus = 'main' | 'music' | 'sfx';
 
 /**
- * Where `BT.renderAt` starts its seek: `'start'` replays from tick 0 (re-running the game's `init()`), `'current'`
- * steps forward from the tick the game is on.
+ * Where `BT.renderAt` starts its seek: `'start'` replays from tick 0 (on a fresh instance of the game class, which
+ * runs `init()` again), `'current'` steps forward from the tick the game is on.
  *
  * @since 1.8.0
  */

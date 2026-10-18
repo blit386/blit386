@@ -1047,6 +1047,109 @@ describe('BTAPI', () => {
             expect(activeEffectCount()).toBe(0);
         });
 
+        describe("from 'start' with a class-based demo", () => {
+            /** Instances built so far, in construction order. */
+            let built: CountingDemo[] = [];
+
+            /** Settings every CountingDemo returns from configure(). */
+            const settings = {
+                isSplashEnabled: false,
+                displaySize: new Vector2i(320, 240),
+                drawingBufferSize: new Vector2i(640, 480),
+                targetFPS: 60,
+            };
+
+            /** A class demo with runtime state that only a fresh instance starts clean. */
+            class CountingDemo implements IBTDemo {
+                /** Bumped by every update(); a leaked value shows up as a too-high count. */
+                public updates = 0;
+
+                /** Filled by init(); a re-used instance would end up with a second copy. */
+                public items: number[] = [];
+
+                /** What init() should resolve to for this instance. */
+                public initResult = true;
+
+                public constructor() {
+                    built.push(this);
+                }
+
+                public configure(): typeof settings {
+                    return settings;
+                }
+
+                public async init(): Promise<boolean> {
+                    this.items.push(1);
+
+                    return this.initResult;
+                }
+
+                public update(): void {
+                    this.updates++;
+                }
+
+                public render(): void {}
+            }
+
+            beforeEach(() => {
+                built = [];
+            });
+
+            it('replays into a fresh instance built from the same class', async () => {
+                const first = new CountingDemo();
+
+                await boot(first);
+                await BTAPI.instance.renderAt(1);
+                await BTAPI.instance.renderAt(1);
+
+                const active = BTAPI.instance.getDemo() as CountingDemo;
+
+                expect(built).toHaveLength(3);
+                expect(active).toBe(built[2]);
+                expect(active).not.toBe(first);
+                expect(active.items).toEqual([1]);
+                expect(active.updates).toBe(60);
+            });
+
+            it('keeps the previous instance running when the fresh one fails init()', async () => {
+                const first = new CountingDemo();
+
+                await boot(first);
+                vi.spyOn(CountingDemo.prototype, 'init').mockResolvedValueOnce(false);
+
+                await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
+                expect(BTAPI.instance.getDemo()).toBe(first);
+            });
+
+            it('keeps the previous instance running when the constructor throws', async () => {
+                class ThrowsOnSecondBuild extends CountingDemo {
+                    public constructor() {
+                        super();
+
+                        if (built.length > 1) {
+                            throw new Error('constructor failed');
+                        }
+                    }
+                }
+
+                const first = new ThrowsOnSecondBuild();
+
+                await boot(first);
+
+                await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('constructor');
+                expect(BTAPI.instance.getDemo()).toBe(first);
+            });
+        });
+
+        it("from 'start' re-runs init on the same object for an object-literal demo", async () => {
+            const { demo } = await boot();
+
+            await BTAPI.instance.renderAt(1);
+
+            expect(BTAPI.instance.getDemo()).toBe(demo);
+            expect(demo.init).toHaveBeenCalledTimes(2);
+        });
+
         it("from 'start' rejects when the re-run init fails", async () => {
             const demo = makeMockDemo();
 

@@ -2635,8 +2635,11 @@ export const BT = {
      * `requestAnimationFrame`, so it works in hidden and headless pages.
      *
      * `from: 'start'` (default) stops the loop, resets engine-owned state (the `BT.random` stream,
-     * palette and post-process effects, camera, ticks), re-runs your game's `init()`, then steps
-     * `update()` to the target tick and renders once. The splash is not replayed; as in the live
+     * palette and post-process effects, camera, ticks), builds a fresh instance of your game class
+     * and runs its `init()`, then steps `update()` to the target tick and renders once. The fresh
+     * instance starts from the constructor, exactly like the boot run, so no field carries over from
+     * the run being replaced; an object-literal game has no class, so its `init()` re-runs on the
+     * same object. If the constructor or `init()` fails, the previous instance stays active. The splash is not replayed; as in the live
      * run, palette effects that `init()` started behind it are dropped. Palette slot colors are not
      * restored, so build the palette inside `init()`. `from: 'current'` steps
      * forward from the tick the game is on and rejects a target in the past. Either way the loop

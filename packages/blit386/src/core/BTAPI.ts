@@ -590,9 +590,7 @@ export class BTAPI {
             return false;
         }
 
-        this.demo = newDemo;
-        this.orientation?.setOnChange(newDemo.onOrientationChange?.bind(newDemo) ?? null);
-        this.reducedMotion?.setOnChange(newDemo.onReducedMotionChange?.bind(newDemo) ?? null);
+        this.installDemo(newDemo);
 
         return true;
     }
@@ -3236,12 +3234,17 @@ export class BTAPI {
     }
 
     /**
-     * Resets engine-owned state to how the boot run found it, then re-runs the game's `init()`.
+     * Resets engine-owned state to how the boot run found it, then runs `init()` on a fresh game
+     * instance.
      *
      * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, and the post-process clock. State the game keeps in its own fields is `init()`'s
-     * job to reset - that is the documented contract of a `'start'` seek. The splash and its handoff
-     * fade are not replayed, but what the handoff did to palette effects is (see the end).
+     * input edges, ticks, and the post-process clock. The game's own fields reset because the replay
+     * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
+     * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
+     * game has no class to build from, so its `init()` re-runs on the same object and resetting its
+     * fields stays `init()`'s job. If the constructor or `init()` fails, the previous instance stays
+     * active. The splash and its handoff fade are not replayed, but what the handoff did to palette
+     * effects is (see the end).
      *
      * @param demo - Running game instance.
      * @param loop - Stopped game loop.
@@ -3269,15 +3272,23 @@ export class BTAPI {
         loop.resetTicks();
         this.lastRenderClockMs = 0;
 
+        const replay = this.buildReplayDemo(demo);
+
+        // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the
+        // loop's update/render callbacks all reach the instance being replayed.
+        this.installDemo(replay);
+
         let ok = false;
 
         try {
-            ok = await demo.init();
+            ok = await replay.init();
         } catch (error) {
             console.error('[BT] renderAt: init() threw while replaying from the start:', error);
         }
 
         if (!ok) {
+            this.installDemo(demo);
+
             throw new Error(errorMessages.RENDER_AT_INIT_FAILED_MESSAGE);
         }
 
@@ -3287,6 +3298,42 @@ export class BTAPI {
         if (this.splash) {
             this.paletteEffects.clear();
         }
+    }
+
+    /**
+     * Builds the instance a `'start'` seek replays into: a new one from the game's class, or the same
+     * object for an object-literal game, which has no class to build from.
+     *
+     * @param demo - Running game instance.
+     * @returns The instance to run `init()` on.
+     * @throws {Error} When the game's constructor throws (the error is logged first).
+     */
+    private buildReplayDemo(demo: IBTDemo): IBTDemo {
+        const GameClass: unknown = demo.constructor;
+
+        if (typeof GameClass !== 'function' || GameClass === Object) {
+            return demo;
+        }
+
+        try {
+            return new (GameClass as new () => IBTDemo)();
+        } catch (error) {
+            console.error('[BT] renderAt: the game constructor threw while replaying from the start:', error);
+
+            throw new Error(errorMessages.RENDER_AT_CONSTRUCT_FAILED_MESSAGE, { cause: error });
+        }
+    }
+
+    /**
+     * Makes `demo` the active game: the loop's update/render callbacks and the orientation and
+     * reduced-motion hooks all route to it from now on.
+     *
+     * @param demo - Game instance to activate.
+     */
+    private installDemo(demo: IBTDemo): void {
+        this.demo = demo;
+        this.orientation?.setOnChange(demo.onOrientationChange?.bind(demo) ?? null);
+        this.reducedMotion?.setOnChange(demo.onReducedMotionChange?.bind(demo) ?? null);
     }
 
     /**
