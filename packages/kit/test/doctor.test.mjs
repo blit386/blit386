@@ -74,7 +74,7 @@ test('blit doctor reports a compatible engine range', () => {
 
 test('blit doctor nudges to check docs when the engine is newer than docsReviewedAt but still compatible', () => {
     // The kit's committed blit386.docsReviewedAt is "1.8.0" (packages/kit/package.json); a patch release
-    // above that still satisfies the ^1.7.0 engineRange, so this exercises the compatible-but-stale branch.
+    // above that still satisfies the ^1.8.0 engineRange, so this exercises the compatible-but-stale branch.
     const root = makeGame('1.8.1');
     try {
         const { exitCode, output } = runDoctor(root);
