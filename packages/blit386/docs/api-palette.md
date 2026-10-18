@@ -113,7 +113,7 @@ Palette.pico8(); // PICO-8 16-color
 Palette.nes(); // NES 64-color
 ```
 
-<DemoEmbed demo="015-palette-presets" title="BLIT386 palette presets demo" />
+<DemoEmbed demo="palette-presets" title="BLIT386 palette presets demo" />
 
 ## HUD preset
 
@@ -257,13 +257,13 @@ BT.paletteSwap(indexA, indexB);
 BT.paletteClearEffects();
 ```
 
-<DemoEmbed demo="019-palette-cycling" title="BLIT386 palette cycling demo" />
+<DemoEmbed demo="palette-cycling" title="BLIT386 palette cycling demo" />
 
-<DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+<DemoEmbed demo="palette-fade" title="BLIT386 palette fade and flash demo" />
 
-<DemoEmbed demo="017-palette-swap" title="BLIT386 palette swap demo" />
+<DemoEmbed demo="palette-swap" title="BLIT386 palette swap demo" />
 
-<DemoEmbed demo="016-palette-animation" title="BLIT386 palette animation demo" />
+<DemoEmbed demo="palette-animation" title="BLIT386 palette animation demo" />
 
 ### Exposure fade
 
@@ -338,7 +338,9 @@ The full curve list (sine, cubic, bounce, and more) and the `interpolate` helper
 <Callout title="Timing">
 
 Effects advance once per fixed update, right after `demo.update()`, and never during `demo.render()`. Your draw calls
-therefore see one consistent palette for the whole frame, and the renderer uploads it once at the end of the frame.
+therefore see one consistent palette for the whole frame, and the renderer uploads it once at the end of the frame. An
+effect's clock starts when it is added, not at tick 0, and `BT.ticksReset()` pauses effects for one update instead of
+running them backwards. A `'start'` seek with `BT.renderAt` clears all effects before it replays `init()`.
 
 Effects that auto-remove (fade, flash) clean up when their duration elapses. `paletteCycle` runs indefinitely until
 `paletteClearEffects()` is called.

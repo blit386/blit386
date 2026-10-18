@@ -15,7 +15,7 @@ regression tracking, compared locally rather than in CI.
 ### Tier 1: Unit tests (Vitest, Node.js)
 
 Pure logic with no GPU dependencies. Tests run in Node.js for maximum speed. The list below is illustrative - see
-`src/**/*.test.ts` for the full set (~60+ files).
+`src/**/*.test.ts` for the full set (~110 files).
 
 - Vector2i - all arithmetic, distance, comparison, factory methods
 - Rect2i - intersection, containment, computed properties
@@ -23,8 +23,11 @@ Pure logic with no GPU dependencies. Tests run in Node.js for maximum speed. The
 - Palette - construction, set/get, named aliases, serialization, GPU float layout, preset factories
 - PaletteEffect - manager lifecycle, CycleEffect rotation, FadeEffect/FadeRangeEffect lerp, FlashEffect, paletteSwap
 - Easing - boundary values, monotonicity, midpoint checks for all easing curves
-- GameLoop - constructor validation, tick counter
-- IBTDemo - `defaultConfig()` and optional `configure()`
+- GameLoop - constructor validation, tick counter, `step()` and pending-frame cancellation
+- IBTDemo - `defaultConfig()`, optional `configure()`, and the `testState()` hook contract
+- Random, hash1i/2i/3i, and the noise classes - seeded determinism, `clone()` / `fork()`, `seedValue`
+- SpriteOrientation, TileGrid, NineSlice, `Rect2i.fromTile` - flip/turn/scale math, tile-grid validation, and the
+  nine-slice strip layout behind `BT.drawSprite` params, `BT.drawTile`, and `BT.drawNineSlice`
 
 ### Tier 2: Integration tests (Vitest, Node + GPU mocks)
 
@@ -43,7 +46,13 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   (`Promise<boolean>`), and hot-swap delegation (happy-dom)
 - HotRuntime / HotSwap - Vite HMR context registration, tier selection, asset hot-replace routing (Node)
 - WakeLock / Orientation - acquire/release lifecycle, silent no-op fallbacks (Node + vi stubs)
-- PointerInput - `touch-action` gating for scroll capture and palette-band override (happy-dom)
+- PointerInput - `touch-action` gating for scroll capture and palette-band override, a press carried across a frame that
+  ran no `update()`, and an empty `pointerType` counting as the mouse (happy-dom)
+- KeyboardInput and keyboardRuntimeMaps - `isAnyKey*` edges and repeat, the `'versus'` / `'single'` layouts, and
+  `BT.inputMapReset()` (happy-dom; the runtime map tables in Node)
+- GamepadInput - digital triggers (`BTN_L2` / `BTN_R2` at the 50% threshold) and `isAnyButton*` (Node + vi stubs)
+- clientToDisplayPos - the one conversion shared by pointer input and `BT.nativeScreenToDisplayPos` (Node)
+- AudioManager - unlock state machine and the park/unpark pair a `renderAt` seek uses (happy-dom + Web Audio mocks)
 - WebGPURenderer - frame lifecycle, camera, pipeline delegation (Node + GPU mocks)
 - SoftwareRenderer - frame lifecycle, palette enforcement, camera offsets, indexed sprite blits, bitmap text,
   `captureFrame()` semantics, and unsupported-effects assertions (Node + 2D canvas mocks)
@@ -52,7 +61,9 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
 - WebGPUContext - initialization with mock adapter/device (Node + GPU mocks)
 - BTAPI - singleton coordinator; lazy-loads `WebGPURenderer` after WebGPU init succeeds; includes software-mode init,
   `?backend=software` URL override, `BT.requestedBackend` vs. `BT.activeBackend` after WebGPU fallback, `captureFrame()`
-  in software mode, `BT.loadingAssetsCount`, and overlay render path (Node + GPU mocks + 2D canvas mocks)
+  in software mode, `BT.loadingAssetsCount`, overlay render path, `BT.isReady` across init and re-init,
+  `BT.testState()`, and `BT.renderAt` / `BT.resume` (from-start replay on a fresh instance, failed replay keeps the
+  previous instance, per-update palette effect timing, audio parked during a seek) (Node + GPU mocks + 2D canvas mocks)
 - Overlay - colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
@@ -67,10 +78,17 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
 Actual GPU rendering verified via screenshot comparison. Requires Chrome with WebGPU flags enabled.
 
 Most specs cover both the default WebGPU backend and the `?backend=software` software backend, producing separate
-baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software backend throws on effects).
+baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software backend throws on effects). Every fixture
+publishes `window.__ACTIVE_BACKEND__` and the specs open it through `tests/visual/open-fixture.ts`: a WebGPU test skips
+when the engine silently fell back to software, and a software test asserts `'software'`, so a fallback can no longer
+pass a WebGPU baseline by accident.
 
 - Primitives - pixel, line, and rectangle rendering (WebGPU + software)
-- Sprites - palette-indexed sprite rendering, palette offsets, batching
+- Sprites - palette-indexed sprite rendering, palette offsets, batching, plus the `sprites-oriented`,
+  `sprites-stretched`, and `sprites-nineslice` fixtures for flips and quarter turns, scale and `Rect2i` stretch, and
+  `BT.drawNineSlice`
+- Render-at - no snapshots: under a manual `requestAnimationFrame` clock, the page that played to a tick and a fresh
+  page that seeks to it with `BT.renderAt` must match byte for byte, on both backends
 - Camera - camera offset transforms applied to all geometry
 - Fonts - placeholder text rendering at known positions
 - Mixed - primitives and sprites combined with correct layering
@@ -126,12 +144,14 @@ tests/visual/
   fixtures/             - HTML pages and Vite config
   __snapshots__/        - Git-tracked reference screenshots
   coverage-fixture.ts   - Playwright fixture for Istanbul coverage
+  open-fixture.ts       - Opens a fixture and reports the backend that actually rendered
   primitives.spec.ts    - Primitive rendering visual test
   sprites.spec.ts       - Sprite rendering visual test
   camera.spec.ts        - Camera transform visual test
   fonts.spec.ts         - Text rendering visual test
   mixed.spec.ts         - Combined rendering visual test
   post-process.spec.ts  - Post-process effect chain visual test
+  render-at.spec.ts     - Live loop vs. BT.renderAt seek, byte-for-byte
 ```
 
 ## Writing a new test
@@ -246,23 +266,11 @@ Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fi
 
 ## IDE setup
 
-Zed uses the Tasks system. Create `.zed/tasks.json`:
-
-```json
-[
-  {
-    "label": "Test: Run All",
-    "command": "pnpm run test",
-    "cwd": "$ZED_WORKTREE_ROOT"
-  },
-  {
-    "label": "Test: Current File",
-    "command": "pnpm",
-    "args": ["exec", "vitest", "run", "$ZED_FILE"],
-    "cwd": "$ZED_WORKTREE_ROOT"
-  }
-]
-```
+Zed uses the Tasks system, and the repo root commits `.zed/tasks.json` with one task per package script worth running
+from the editor (`blit386: test:unit`, `blit386: test:unit:watch`, `blit386: test:visual`, `blit386: bench`, and the
+`preflight` / `typecheck` / `build` tasks for every package). Clone the repo and they appear in the task picker; add a
+one-off entry for a single file with `"command": "pnpm", "args": ["exec", "vitest", "run", "$ZED_FILE"]` and
+`"cwd": "$ZED_WORKTREE_ROOT/packages/blit386"`.
 
 ## CI integration
 
@@ -283,18 +291,18 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | Job | Gated on | What it runs |
 | --- | --- | --- |
 | `changes` | always | Path filters; emits the per-package booleans every job below reads |
-| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check` - repo-wide, so they run once rather than per package |
+| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `bump:check`, and the root `test:*` Node suites for those scripts - repo-wide, so they run once rather than per package |
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
-| `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check` |
+| `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check` |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
 | `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (90 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
-| `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry` |
+| `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry`, `check:demo-comment-links`, `test` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
-| `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
-| `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs) |
+| `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, `check:well-known-schemas`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
+| `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs), then `check:deploy-size` and `check:well-known-urls` |
 | `quality-kit` / `build-test-kit` | kit | `typecheck`, `knip`; then build and `node --test` |
-| `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests |
+| `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests and `test:bump-lockstep` |
 
 Jobs needing full git history ask the shared setup action for it: `quality-engine` and `test-engine` take
 `fetch-depth: 0` plus `fetch-tags: true` (release dates come from tags, and the API-history generator walks history with
@@ -306,9 +314,12 @@ working tree, so anything reading that tree afterwards would be reading regenera
 could not run at all before the monorepo merge, because the docs-site repository had no engine checkout to sync against
 \- so a stale published mirror was only ever caught by hand.
 
-The four workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, and `deploy.yml`; CodeQL runs from GitHub's default
-setup rather than a checked-in workflow. On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional
-Commits validation only; every other gate - knip, bundle size, doc links, agent-config drift - runs inside `ci.yml`.
+The six workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, `deploy.yml`, `mcp-governance-audit.yml` (the monthly
+MCP governance scan from the [security runbook](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)), and `kit-docs-drift.yml` (advisory drift
+between `_api-history.json` and the kit docs, reported to Linear, never a status check); CodeQL runs from GitHub's
+default setup rather than a checked-in workflow. On pull requests, `pr-checks.yml` complements `ci.yml` with
+Conventional Commits validation only; every other gate - knip, bundle size, doc links, agent-config drift - runs inside
+`ci.yml`.
 
 ### `pr-checks.yml` (`PR Checks` workflow)
 

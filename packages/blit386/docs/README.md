@@ -18,7 +18,8 @@ Developer Experience.
 | [API: Overlay](api-overlay.md) | Engine overlay HUD configure flags, style objects, and worked examples |
 | [API: Game Loop](api-game-loop.md) | Fixed-timestep simulation timing, tick counters, and the Timer helper |
 | [API: Camera](api-camera.md) | The camera's global pixel offset and world-clamp helpers |
-| [API: Easing](api-easing.md) | Named easing curves for palette fade effects via applyEasing |
+| [API: Easing](api-easing.md) | Named easing curves and interpolate() for number, Vector2i, Color32, and Rect2i |
+| [API: Random](api-random.md) | Seeded Random PRNG, coordinate hashes, and Value/Perlin/Simplex pattern noise for procedural worlds |
 | [API: Core Types](api-core-types.md) | The integer core types: Vector2i, Rect2i, and Color32 |
 | [API: Browser Support](api-browser-support.md) | WebGPU support matrix, automatic software fallback, and build toolchain |
 | [API: Rendering](api-rendering.md) | Primitives, sprites, text, post-process effects, and frame capture |
@@ -32,6 +33,7 @@ Developer Experience.
 | --- | --- |
 | [Input Guide](guide-input.md) | Pointer, keyboard, gamepad, and text-accumulation input in BLIT386 |
 | [Game Loop Guide](guide-game-loop.md) | Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp |
+| [Random Guide](guide-random.md) | Seeded determinism in practice: reproducible runs, independent streams, and procedural worlds from coordinates |
 | [Palette Guide](guide-palette.md) | The palette-first rendering workflow: setup, slot offsets, and palette effects |
 | [Palette Presets](guide-palette-presets.md) | Exact color data for the built-in Palette presets and the HUD preset |
 | [Overlay Guide](guide-overlay.md) | The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout |
@@ -39,6 +41,7 @@ Developer Experience.
 | [Bitmap Fonts](guide-bitmap-fonts.md) | The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion |
 | [Audio Guide](guide-audio.md) | The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints |
 | [Hot Reload](guide-hot-reload.md) | The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin |
+| [Splash](guide-splash.md) | The BLIT386 splash: gating, the loading-screen hold, the palette handoff, and the skip |
 
 ## Performance and reference
 

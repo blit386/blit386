@@ -3,8 +3,6 @@
 This guide covers the contributing workflow, code style conventions, IDE setup, and maintenance checklists for the
 BLIT386 project.
 
----
-
 ## Contributing
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full contributor workflow. Key points:
@@ -15,8 +13,6 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full contributor workflo
 - All commits require a DCO sign-off: use `git commit -s`.
 - Follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages.
 - Open a pull request against `main`. CI must be green before merge.
-
----
 
 ## Repository scripts
 
@@ -49,7 +45,7 @@ package).
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
 | `pnpm run bench:baseline` | Run Tier 4 benchmarks and write `benchmark-baseline.json` (run on `main` before perf work) |
 | `pnpm run bench:compare` | Compare `benchmark-results.json` against `benchmark-baseline.json`, 25% regression threshold |
-| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:bench-compare`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
+| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `api:deprecations:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
 | `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`, cursor rules parity, cursor `.mcp.json`, maintainer dogfood for Antigravity/Codex/Gemini/Copilot/OpenCode) |
 | `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
@@ -62,8 +58,13 @@ package).
 | `pnpm run api:since:check` | Check public API `@since` / `@changed` / `@deprecated` tags |
 | `pnpm run api:history:check` | Check API version-history manifest drift |
 | `pnpm run api:getters:check` | Check `BT.*` getter/method coverage in `.claude/rules/bt-api-getters.md` |
+| `pnpm run api:deprecations` | Regenerate `docs/reference-deprecations.md` from the kit's migration registry |
+| `pnpm run api:deprecations:check` | Check `docs/reference-deprecations.md` for drift against that registry |
 | `pnpm run test:api-history` | API history generator unit tests (Node test) |
 | `pnpm run test:api-getters` | API getter drift checker unit tests (Node test) |
+| `pnpm run test:api-deprecations` | Deprecation timeline generator unit tests (Node test) |
+| `pnpm run check-bench-coverage` | Remind (never fail) when a push touches a hot-path directory without a `*.bench.ts`; the pre-push hook runs it last |
+| `pnpm run test:check-bench-coverage` | Bench coverage reminder unit tests (Node test) |
 | `pnpm run test:bench-compare` | Benchmark comparison script unit tests (Node test) |
 | `pnpm run test:compact-tables` | Compact-table Prettier plugin unit tests (Node test) |
 | `pnpm run test:shell-safety` | Shell safety hook unit tests (Node test) |
@@ -75,6 +76,7 @@ package).
 | `pnpm run convert-font` | Convert BMFont to .btfont format |
 | `pnpm run system-font:export` | Export system font data to PNG atlas (`assets/system-font.png`) |
 | `pnpm run system-font:convert` | Regenerate `systemFontData.ts` from edited PNG atlas |
+| `pnpm run splash-logo:convert` | Regenerate the splash logo bitmap data from its source PNG |
 | `pnpm run security:audit` | Run dependency security audit (all deps, moderate+; matches CI) |
 | `pnpm run security:audit:prod` | Run production-only dependency audit (moderate+) |
 | `pnpm run security:audit:fix` | Run dependency security audit and auto-fix |
@@ -89,8 +91,6 @@ does not run the same full-repo check two to four times - run them once from the
 Dependency audit severity policy and CI gate: [dependency-policy.md](security/dependency-policy.md). Temporary
 exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 
----
-
 ## Documentation index
 
 | Guide | What it covers |
@@ -100,7 +100,9 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 | [Game Loop Guide](guide-game-loop.md) | render-time interpolation, smoothing motion |
 | [API: Camera](api-camera.md) | global pixel offset, world-clamp helpers |
 | [API: Core Types](api-core-types.md) | Vector2i, Rect2i, Color32 |
-| [API: Easing](api-easing.md) | named easing curves for palette fades |
+| [API: Easing](api-easing.md) | named easing curves and interpolate() |
+| [API: Random](api-random.md) | seeded Random, coordinate hashes, pattern noise |
+| [Random Guide](guide-random.md) | reproducible runs, independent streams, worlds from coordinates |
 | [API: Overlay](api-overlay.md) | overlay configure flags and style |
 | [Overlay Guide](guide-overlay.md) | engine HUD subsystem, toggle, custom rows, layout |
 | [API: Rendering](api-rendering.md) | primitives, sprites, text, post-process, frame capture |
@@ -113,6 +115,7 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 | [API: Browser Support](api-browser-support.md) | WebGPU support matrix, automatic fallback |
 | [Input Guide](guide-input.md) | pointer, keyboard, gamepad |
 | [Hot Reload](guide-hot-reload.md) | blit386/vite plugin, hot-swap, asset hot-replace |
+| [Splash](guide-splash.md) | splash gating, loading-screen hold, palette handoff, skip |
 | [Post-Process Effects](guide-post-process-effects.md) | effect chain, built-in effects, custom effects |
 | [Bitmap Fonts](guide-bitmap-fonts.md) | .btfont format, BMFont conversion |
 | [Deprecation Timeline](reference-deprecations.md) | dated compatibility aliases and cleanup checklist |
@@ -129,8 +132,6 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 | [Audit exceptions](security/audit-exceptions.md) | Temporary GHSA acceptance playbook |
 | [Tooling](tooling.md) | TypeScript pin, declaration checks, CI enforcement |
 | [Voice Guide](voice.md) | error messages and user-facing string style |
-
----
 
 ## Commit guidelines
 
@@ -152,11 +153,11 @@ Types:
 | `build` | Build system or external dependencies |
 | `revert` | Revert a previous commit |
 
-Scopes: `renderer`, `camera`, `assets`, `api`, `utils`, `examples`, `ci`, `docs` (convention only; not enforced)
+Scopes, by frequency in this package's history: `docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`,
+`tests`, `utils`, `rules`, `release`, `security`, `input`, `deps` / `deps-dev`, `visual`, `camera` (convention only; not
+enforced)
 
 AI-assisted commits add a trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`
-
----
 
 ## Code style
 
@@ -231,16 +232,16 @@ adding or moving code. Never use `// #region` / `// #endregion` - region markers
   members and before `return`; JSDoc on every member including private. See [CLAUDE.md](../CLAUDE.md) (TypeScript file
   structure).
 
----
-
 ## IDE setup
 
 ### Zed
 
-`.zed/settings.json` is committed to the repository - clone the repo and it applies automatically. It mirrors the repo
-toolchain: Biome (via its Zed extension/language server) formats TS/JS/JSON on save, Prettier (built in) formats
-Markdown/YAML on save, and `agent.tool_permissions` blocks the built-in agent from editing lock files or `.env` files
-(mirroring the `PreToolUse` file-block hook in `.claude/settings.json`).
+`.zed/settings.json` and `.zed/tasks.json` are committed to the repository - clone the repo and they apply
+automatically. The tasks file lists one task per package script worth running from the editor (`blit386: preflight`,
+`blit386: test:unit`, `website: sync:docs`, and so on). The settings file mirrors the repo toolchain: Biome (via its Zed
+extension/language server) formats TS/JS/JSON on save, Prettier (built in) formats Markdown/YAML on save, and
+`agent.tool_permissions` blocks the built-in agent from editing lock files or `.env` files (mirroring the `PreToolUse`
+file-block hook in `.claude/settings.json`).
 
 ### Claude Code
 
@@ -287,15 +288,13 @@ repo root, with verbatim hook scripts as symlinks into `packages/kit/content/hoo
 `pnpm run sync:maintainer-agents` after an adapter shape change; `pnpm run sync:maintainer-agents:check` and
 `pnpm run agents:check` both gate on those files in `quality-root` and pre-push.
 
----
-
 ## Dependency management
 
 Renovate is configured (`renovate.json` at the project root). Dependency update PRs open automatically each Monday
 before 6 AM:
 
-- Patch updates and GitHub Actions updates: auto-merge after 7 days (`minimumReleaseAge`, aligned with `.npmrc`
-  `minimum-release-age`)
+- Patch updates and GitHub Actions updates: auto-merge after 7 days (`minimumReleaseAge`, aligned with
+  `pnpm-workspace.yaml`'s `minimumReleaseAge: 10080` minutes and `.npmrc`'s `min-release-age=7` days)
 - Minor updates: manual review required
 - Major updates: manual review with `major-update` label
 - Vulnerability alerts are enabled
@@ -329,8 +328,6 @@ CI guard: the `build-engine` job runs `node scripts/check-declaration-tooling.mj
 each build. It fails on known drift-warning patterns and verifies the API Extractor bundled TypeScript version matches
 `package.json`. Locally: `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log`, or run
 `pnpm run test:declarations` for the checker unit tests.
-
----
 
 ## Maintenance checklist
 
@@ -375,8 +372,6 @@ publish job; see [dependency-policy.md](security/dependency-policy.md#npm-publis
 - [ ] Dependency audit and cleanup
 - [ ] Review contribution guidelines
 - [ ] Update examples with new features
-
----
 
 ## Planned improvements
 

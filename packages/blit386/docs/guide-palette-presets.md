@@ -30,7 +30,7 @@ That means:
 
 </Callout>
 
-<DemoEmbed demo="015-palette-presets" title="BLIT386 palette presets demo" />
+<DemoEmbed demo="palette-presets" title="BLIT386 palette presets demo" />
 
 ## VGA (256 slots)
 

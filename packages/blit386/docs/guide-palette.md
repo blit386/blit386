@@ -41,7 +41,7 @@ Key rules:
 - After activation, edit colors with `BT.palette.set(...)`; you do not need to call `paletteSet()` again for value-only
   changes (see [Palette addressing](api-palette.md#palette-addressing)).
 
-<DemoEmbed demo="003-colors" title="BLIT386 colors demo" />
+<DemoEmbed demo="colors" title="BLIT386 colors demo" />
 
 </Step>
 
@@ -149,7 +149,11 @@ No duplicate textures required.
 
 ## Runtime palette effects
 
-Palette effects mutate slots over time and are applied in the engine frame pipeline.
+Palette effects mutate slots over time. They advance once per fixed update, right after your `update()`, on the tick
+clock (`BT.ticks * 1000 / BT.targetFPS`) rather than on wall time, so they follow the fixed-step loop, not the display's
+refresh rate, and a [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) seek reproduces them exactly. An effect's
+time counts from the moment it was added, `BT.ticksReset()` pauses effects for one update instead of running them
+backwards, and a palette write made in `render()` lands after that frame's effects, not before them.
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -178,7 +182,7 @@ BT.paletteSwap(10, 11);
 BT.paletteClearEffects();
 ```
 
-<DemoEmbed demo="018-flurry" title="BLIT386 Flurry demo" />
+<DemoEmbed demo="flurry" title="BLIT386 Flurry demo" />
 
 ### Exposure fades vs. crossfades
 

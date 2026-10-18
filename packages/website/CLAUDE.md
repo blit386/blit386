@@ -9,10 +9,14 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together wit
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-website run <script>` from the
 repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it ends with the docs-mirror check -
-see Documentation mirror; the build, `check:deploy-size`, and `check:well-known-urls` run only in CI's `build-website`
-job). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets; `WORKERS_CI` works too, and
-`BLIT386_TWOSLASH` overrides either (see Twoslash). Test, lint, and git-diff shell commands are rewritten by
-`rtk hook claude`; search and read tools are not - use the native Read/Grep for exploration.
+see Documentation mirror). `preflight` is `format:check`, `typecheck`, `test`, `spellcheck`, `knip`,
+`check:well-known-schemas`, then `sync:docs:check`; it runs no build, so the build, `check:deploy-size`, and
+`check:well-known-urls` run only in CI's `build-website` job. Production builds require `CLOUDFLARE=1`, which
+`pnpm run build` already sets; `WORKERS_CI` works too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and
+git-diff shell commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep for
+exploration. **Run lint as `RTK_DISABLED=1 pnpm run lint`:** the hook rewrites `pnpm run lint` here into an `eslint`
+call, which fails with `eslint: command not found` and is not a real lint result (the script is `biome check .`;
+`pnpm exec biome check <files>` also works).
 
 ## Critical Rules
 
@@ -24,8 +28,8 @@ job). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already s
    regardless of cwd); this package no longer carries its own copy
 3. No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* … */}` as emphasis and
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
-4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
-   is protected - land changes via PR
+4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `website`, `content`, `ci`, `docs`, `deps`,
+   `config`. `main` is protected - land changes via PR
 5. Every `git` subprocess spawned from `scripts/` passes `env: gitEnv()` ([`scripts/git-env.mjs`](scripts/git-env.mjs)).
    These scripts run under `.husky/pre-push`, which exports `GIT_DIR` into every child; it outranks `cwd` and `-C`, so
    an unguarded `git init` in a fixture repo re-initializes the real one and writes `bare = true` into the shared
@@ -214,8 +218,10 @@ re-run `pnpm run sync:docs` after the doc edit is committed and commit the resul
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
-frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine's GitHub path - both consumed by
-`docsPageLayout`), and copies `packages/blit386/docs/_api-history.json` across.
+frontmatter (`title`, `description`, `lastModified` from git, and `editUrl` into the engine's GitHub path - the last two
+consumed by `docsPageLayout`; `lastModified` is always a UTC `+00:00` timestamp, because newer git prints `Z` for the
+same instant and the generator normalizes it, so the committed mirror does not flip between machines), and copies
+`packages/blit386/docs/_api-history.json` across.
 
 MDX components: the generator passes PascalCase tags through verbatim and is MDX-aware, escaping stray braces in prose
 while leaving JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact. Any component the engine docs use must
@@ -414,6 +420,12 @@ word, so `ui` finds `UI` and `ui.button` but not `uint`; two-letter function wor
 rather than a length cutoff, which used to drop real terms like `UI` and `2D` (BT-585). It deliberately does **not**
 build a FlexSearch index in-process - that exceeds the Worker CPU limit (error 1102), the same reason site search runs
 in static mode.
+
+The Build a Game pages (see Build a Game pages) are ordinary loader pages, so `search_docs` and `get_doc_page` serve
+them with no special case: that is how an agent with only this connector and no scaffolded project reaches the starter
+project and the kit guides (BT-557). `get_doc_page` is a lookup key, never a fetch - it accepts a bare site path or an
+absolute URL on the request's own origin or `https://blit386.dev`, strips the query, fragment, trailing slash, and `.md`
+suffix, and rejects any other host before looking anything up.
 
 `public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
 into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the

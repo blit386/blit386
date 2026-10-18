@@ -7,9 +7,9 @@ paths:
 
 These six directories are the engine's per-frame hot paths - the software renderer, input polling, the overlay, the `BT`
 facade and game loop (`src/core/`), and the sprite/font/palette/math helpers those paths lean on. A 2026 performance
-audit found concrete hot-path problems in several of them. Coverage today is uneven: `src/utils/`, `src/assets/`, and
-the overlay's `src/overlay/palette/` already have `*.bench.ts` files; `src/render/`, `src/input/`, and `src/core/` do
-not yet.
+audit found concrete hot-path problems in several of them. Every one of the six now has at least one colocated
+`*.bench.ts` (plus `src/BLIT386.bench.ts` for the facade itself), but coverage inside each is still partial - a new hot
+method in a file without a bench is the normal case, not the exception.
 
 When a change here adds a new hot method, a materially different allocation pattern, or a meaningfully different code
 path in an existing one:

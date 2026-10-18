@@ -147,6 +147,10 @@ async init() {
 Forgetting `await` is the single most common beginner mistake. If something you loaded is `undefined`, check for a
 missing `await` first.
 
+Call `bootstrap(Game)` once. While `init()` is still running, `BT.isReady` stays `false` and a second start is refused
+(engine 1.8.0+: an overlapping `BT.init` resolves to `false`, a second `bootstrap()` logs an error), so a stray double
+call cannot start two games - but it is still a bug worth removing.
+
 ## Waiting for assets (a loading screen)
 
 `BT.loadingAssetsCount` is how many image and audio loads are still in flight. It is a property (no parentheses). To

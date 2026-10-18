@@ -62,13 +62,13 @@ declare const viewSize: Vector2i;
 const clamped = clampCameraToWorld(desired, worldSize, viewSize);
 ```
 
-<DemoEmbed demo="007-camera" title="BLIT386 camera demo" />
+<DemoEmbed demo="camera" title="BLIT386 camera demo" />
 
 Two more camera-driven demos: parallax scrolling and a scrolling tile grid.
 
-<DemoEmbed demo="011-starfield" title="BLIT386 starfield parallax demo" />
+<DemoEmbed demo="starfield" title="BLIT386 starfield parallax demo" />
 
-<DemoEmbed demo="012-tilemap" title="BLIT386 tilemap demo" />
+<DemoEmbed demo="tilemap" title="BLIT386 tilemap demo" />
 
 ## API history
 

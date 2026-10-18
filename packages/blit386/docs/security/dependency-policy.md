@@ -36,8 +36,9 @@ re-running both commands.
 | Per release | Run `pnpm run security:audit` and `pnpm run security:audit:prod` before tagging |
 
 Patch updates for GitHub Actions and npm patches may automerge after 7 days (`minimumReleaseAge`), matching
-[`.npmrc`](../../../../.npmrc) `minimum-release-age` (10080 minutes), per [renovate.json](../../../../renovate.json).
-Minor and major updates require manual review.
+[`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml)'s `minimumReleaseAge: 10080` (minutes) and
+[`.npmrc`](../../../../.npmrc)'s `min-release-age=7` (days, for anyone running plain npm), per
+[renovate.json](../../../../renovate.json). Minor and major updates require manual review.
 
 ### Renovate vs Dependabot
 

@@ -28,7 +28,10 @@ Three gating layers, resolved in order. The first match wins.
    under [Reduced motion](#reduced-motion), and `?seed=N` in [Random](guide-random.md#seeding-from-the-url).)
 3. `BT.isDevMode` - on in release builds, off in development.
 
-So with no configuration at all, a production build shows the splash and a dev server does not.
+So with no configuration at all, a production build shows the splash and a dev server does not. A
+[`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) replay from the start re-runs `init()` on a fresh game
+instance but never the splash; it still drops the palette effects the handoff would have dropped, so the seeked frame
+matches the live one.
 
 ### Turning it off
 
@@ -159,6 +162,8 @@ When `BT.isReducedMotionPreferred` is `true` at splash start, the splash shows a
 You do not opt into any of this. It follows `BT.isReducedMotionPreferred` automatically, which itself follows the
 platform's `prefers-reduced-motion` setting (or the `?reducedmotion` / `?noreducedmotion` URL overrides - see
 [API: Core](api-core.md#reduced-motion)).
+
+<DemoEmbed demo="reduced-motion" title="BLIT386 reduced motion demo" />
 
 ## Backends
 

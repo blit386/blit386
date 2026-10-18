@@ -136,7 +136,7 @@ second call silently started another unstoppable `GameLoop`.
 
 <Since symbol="BT.init" />
 
-<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+<DemoEmbed demo="basics" title="BLIT386 basics demo" />
 
 ```ts twoslash
 import { BT, type IBTDemo } from 'blit386';
@@ -547,6 +547,8 @@ const snapshot = BT.testState();
 - The engine never calls `testState()` on its own, so the hook costs nothing unless something reads it. `BT.testState()`
   also exists in release builds; only the `window.BT` global is dev-only (see `BootstrapOptions.exposeGlobal`).
 
+<DemoEmbed demo="test-state" title="BLIT386 test state demo" />
+
 ### Engine readiness
 
 <Since symbol="BT.isReady" />
@@ -709,7 +711,7 @@ enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the t
 
 ## Putting it together
 
-<DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
+<DemoEmbed demo="game-scene" title="BLIT386 game scene capstone demo" />
 
 ## API history
 

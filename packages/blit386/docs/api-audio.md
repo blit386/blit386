@@ -81,7 +81,7 @@ BT.audioMuteSet('music', false); // restores audio at 0.75
 `BT.audioVolumeGet` always returns the logical (pre-mute) volume, so reading it while muted still reports the level you
 configured, not `0`.
 
-<DemoEmbed demo="038-audio-buses" title="BLIT386 audio buses demo" />
+<DemoEmbed demo="audio-buses" title="BLIT386 audio buses demo" />
 
 ## Unlock state
 
@@ -101,6 +101,10 @@ if (!BT.isAudioUnlocked) {
 
 See [Web audio constraints](guide-audio.md#web-audio-constraints) for what happens to volume/mute calls made before the
 gesture, and why no configure flag can skip this requirement.
+
+A `BT.renderAt` seek suspends the context while the loop is stopped (a gesture that unlocks audio mid-seek stays
+suspended too) and drops `BT.soundPlay` calls made by stepped updates; `BT.resume()` brings it back. See
+[Seeking a frame with renderAt](api-core.md#seeking-a-frame-with-renderat).
 
 ## Loading
 
@@ -296,7 +300,7 @@ character rather than per-play variation. See [Playback (SFX)](#playback-sfx) be
 through the SFX voice pool, and [Design a sound](guide-audio.md#design-a-sound) in the Audio Guide for a walkthrough of
 tuning `SynthParams` by hand and storing presets as data.
 
-<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
+<DemoEmbed demo="synth-toy" title="BLIT386 synth toy demo" />
 
 ## Playback (SFX)
 
@@ -390,7 +394,7 @@ BT.soundPanGet(ref); // -0.3
 `BT.soundPlay` also returns an inert `SoundRef` (no throw) when `clip` hasn't finished loading yet, or was already
 released with `clip.unload()`.
 
-<DemoEmbed demo="036-audio-basics" title="BLIT386 audio basics demo" />
+<DemoEmbed demo="audio-basics" title="BLIT386 audio basics demo" />
 
 ## Playback (Music)
 
@@ -499,7 +503,7 @@ remembers the most recent pending request and starts it automatically the instan
 See [Playing music](guide-audio.md#playing-music) in the Audio Guide for a state-based music switching pattern and an
 intro-then-loop recipe.
 
-<DemoEmbed demo="037-music" title="BLIT386 music playback demo" />
+<DemoEmbed demo="music" title="BLIT386 music playback demo" />
 
 ## Hardware settings
 

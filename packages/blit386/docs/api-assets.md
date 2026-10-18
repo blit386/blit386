@@ -23,7 +23,7 @@ texture creation, and software sprite loops.
 | Limit | Default | Applies to |
 | --- | --- | --- |
 | Max width / height | `8192` | Decoded PNGs, font atlas textures, `fromIndexedPixels()` |
-| Max total pixels | `16,777,216` (`4096 × 4096`) | Same sources |
+| Max total pixels | `16,777,216` (`4096×4096`) | Same sources |
 | Max `.btfont` JSON size | `1,048,576` bytes (`1 MiB`) | `BitmapFont.load()` before `JSON.parse()` |
 | Max embedded texture payload | `524,288` bytes (`512 KiB`) | Base64 data in `texture` when using `data:image/png;base64,...` |
 | Max glyph count | `8192` | Glyph map entries in a `.btfont` file |
@@ -121,7 +121,7 @@ BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 - Pass `{ sort: 'none' }` to preserve row-major scan order.
 - Slot `0` is never touched - transparent pixels in the image map to slot 0 at draw time.
 
-<DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
+<DemoEmbed demo="sprites" title="BLIT386 sprites demo" />
 
 ### Tile grids
 
@@ -257,7 +257,7 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 - See [Bitmap Fonts Guide](guide-bitmap-fonts.md) for the `.btfont` format specification and the BMFont conversion
   workflow (`pnpm run convert-font`).
 
-<DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
+<DemoEmbed demo="bitmap-font" title="BLIT386 bitmap font demo" />
 
 ## Hot-replacing assets
 

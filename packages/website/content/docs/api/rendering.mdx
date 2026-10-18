@@ -45,13 +45,13 @@ BT.drawRectFill(rect, paletteIndex); // filled
 
 All primitives write palette indices, not RGBA - the active palette resolves colors at frame end.
 
-<DemoEmbed demo="002-primitives" title="BLIT386 primitives demo" />
+<DemoEmbed demo="primitives" title="BLIT386 primitives demo" />
 
 Two more primitive-drawing demos: pixel art from number grids, and animated mathematical patterns.
 
-<DemoEmbed demo="005-pixel-art" title="BLIT386 pixel art demo" />
+<DemoEmbed demo="pixel-art" title="BLIT386 pixel art demo" />
 
-<DemoEmbed demo="006-patterns" title="BLIT386 patterns demo" />
+<DemoEmbed demo="patterns" title="BLIT386 patterns demo" />
 
 ## Sprites
 
@@ -74,8 +74,6 @@ BT.drawSprite(sheet, srcRect, destPos, paletteOffset);
 - `srcRect` - source region within the sheet in pixels.
 - `destPos` - top-left destination in display coordinates.
 - `paletteOffset` - shift added to every stored pixel index before palette lookup (default `0`).
-
-<DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
 
 Palette offset semantics
 
@@ -105,7 +103,7 @@ BT.drawSprite(sheet, srcRect, new Vector2i(10, 10), 16); // blue-team shift
 
 Draws are auto-batched by texture. Group draws from the same sheet to minimize GPU state changes.
 
-<DemoEmbed demo="010-sprite-effects" title="BLIT386 sprite effects demo" />
+<DemoEmbed demo="sprite-effects" title="BLIT386 sprite effects demo" />
 
 ### Drawing tiles
 
@@ -201,11 +199,15 @@ const feet = new Vector2i(40, 60);
 // ---cut---
 const params: SpriteDrawParams = { flags: 0, pivot: new Vector2i(8, 16), scale: 2, paletteOffset: 0 };
 
-// Bottom center of the 16x16 source lands on `feet`, at any scale.
+// Bottom center of the 16×16 source lands on `feet`, at any scale.
 BT.drawSprite(sheet, srcRect, feet, params);
 
 params.pivot = undefined; // back to top-left placement
 ```
+
+The sprites demo walks through every `SpriteDrawParams` field: recolor, flip, quarter turns, scale, pivot, and stretch.
+
+<DemoEmbed demo="sprites" title="BLIT386 sprites demo" />
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -237,15 +239,15 @@ interface SpriteDrawParams {
 - The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
   hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
   never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a `Vector2i`.
-- With a `Vector2i` dest and no `pivot`, `dest` is the top-left of the post-flags, post-scale footprint. A 16x32 sprite
-  with `ROT_90_CW` covers 32x16, growing down and right from `dest`; with `scale: 2` it covers 64x32.
+- With a `Vector2i` dest and no `pivot`, `dest` is the top-left of the post-flags, post-scale footprint. A 16×32 sprite
+  with `ROT_90_CW` covers 32×16, growing down and right from `dest`; with `scale: 2` it covers 64×32.
 - `pivot` is a point in source pixels relative to the source rect's top-left, in `[0, sw] x [0, sh]` (corner
   coordinates, not texel indices). It goes through the flags (the "Point map" column in
   [Transform order and flags](#transform-order-and-flags)), is multiplied by `scale`, and that point lands on `dest`.
   Values outside the sprite are fine. The result is an integer move of the footprint, so pixels are identical on both
   backends.
 - An explicit `pivot` of `(0, 0)` is not the same as no pivot. It is the source's top-left corner, which moves when the
-  sprite is flipped or turned. For a 16x16 sprite with `FLIP_H`, no pivot draws the footprint at `dest`, while
+  sprite is flipped or turned. For a 16×16 sprite with `FLIP_H`, no pivot draws the footprint at `dest`, while
   `pivot: new Vector2i(0, 0)` draws it 16 pixels to the left, because the source's left edge is now on the right. To
   return a reused params object to top-left placement, assign `params.pivot = undefined`.
 - With a `Rect2i` dest, the rectangle is that footprint already: flags only remap texels into it, they do not resize it.
@@ -287,7 +289,7 @@ rectangle's top-left; release builds skip the check.
 - Arbitrary-angle rotation is not supported. There is no `rotation` field, so a leftover `rotation` on an object literal
   is a type error rather than a silent no-op.
 
-The 8 orientations for a 3x2 source `ABC / DEF` (`sw = 3`, `sh = 2`). "Point map" sends a point `(x, y)` in
+The 8 orientations for a 3×2 source `ABC / DEF` (`sw = 3`, `sh = 2`). "Point map" sends a point `(x, y)` in
 `[0, sw] x [0, sh]` to the post-flags footprint:
 
 | Orientation | Shortest flags | Also spelled | Result | Footprint | Point map |
@@ -341,6 +343,8 @@ The footprint texel then maps back to a source texel through the orientation's t
 
 <Since symbol="BT.drawNineSlice" />
 <Since symbol="NineSlice" />
+<Since symbol="NineSliceOptions" />
+<Since symbol="NineSliceMode" />
 
 A nine-slice splits one sprite region into 4 corners, 4 edges, and a center, so a single piece of panel art fills boxes
 of any size. Corners always draw at 1:1. Edges and center either stretch or tile.
@@ -374,6 +378,8 @@ BT.drawNineSlice(panel, new Rect2i(20, 100, 120, 64), 16); // palette offset, as
 - Each tile is one quad. Tiling a 1-pixel strip across a large box costs one quad per pixel and can fill the sprite
   buffer; stretch flat fills and tile only patterned art.
 
+<DemoEmbed demo="nine-slice-panels" title="BLIT386 nine-slice panels demo" />
+
 ### Planned: sprite draw params
 
 <Callout title="Planned - not shipped">
@@ -389,40 +395,50 @@ All transform features hang off one reusable params object. Separate methods sta
 [`BT.drawTile`](#drawing-tiles) and [`BT.drawNineSlice`](#nine-slice-panels) are not further `drawSprite` overloads.
 There is no `drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
 
-```ts
+```ts twoslash
+import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare class SpritePack {
+  frame(name: string): SpriteFrame;
+}
+// ---cut---
 // 1. Shipped. Unchanged.
-drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
+declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
 
 // 2. Shipped (1.8.0).
-drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
+declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
 
 // 3. Planned named frame (BT-271). Always takes the params path, so `params` may be omitted.
-drawSprite(pack: SpritePack, frameName: string, dest: Vector2i | Rect2i, params?: SpriteDrawParams): void;
+declare function drawSprite(
+  pack: SpritePack,
+  frameName: string,
+  dest: Vector2i | Rect2i,
+  params?: SpriteDrawParams,
+): void;
 
 // 4. Reserved for BT-262 (milestone 2.0.0). Not added to the 1.8.0 types.
-drawSprite(
-    sheet: SpriteSheet,
-    srcX: number,
-    srcY: number,
-    srcW: number,
-    srcH: number,
-    destX: number,
-    destY: number,
-    paletteOffsetOrParams?: number | SpriteDrawParams,
+declare function drawSprite(
+  sheet: SpriteSheet,
+  srcX: number,
+  srcY: number,
+  srcW: number,
+  srcH: number,
+  destX: number,
+  destY: number,
+  paletteOffsetOrParams?: number | SpriteDrawParams,
 ): void;
 
 interface SpriteDrawParams {
-    flags?: number; // shipped
-    pivot?: Vector2i | undefined; // shipped: source pixels, before flags; assign undefined to reset
-    scale?: number | Vector2i; // shipped
-    paletteOffset?: number; // shipped
+  flags?: number; // shipped
+  pivot?: Vector2i | undefined; // shipped: source pixels, before flags; assign undefined to reset
+  scale?: number | Vector2i; // shipped
+  paletteOffset?: number; // shipped
 }
 
 // Planned (BT-271). Returned by SpritePack.frame(name).
 interface SpriteFrame {
-    readonly sheet: SpriteSheet; // the page this frame lives on
-    readonly rect: Rect2i; // frozen
-    readonly pivot?: Vector2i; // frozen; filled from Aseprite slice data by BT-364, never applied implicitly
+  readonly sheet: SpriteSheet; // the page this frame lives on
+  readonly rect: Rect2i; // frozen
+  readonly pivot?: Vector2i; // frozen; filled from Aseprite slice data by BT-364, never applied implicitly
 }
 ```
 
@@ -520,7 +536,7 @@ BT.systemFont.codePoints.length; // how many characters the system font covers
 BT.systemFont.hasGlyph('é'); // test one character before drawing it
 ```
 
-<DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
+<DemoEmbed demo="system-font-glyphs" title="BLIT386 system font glyphs demo" />
 
 ### Bitmap fonts
 
@@ -594,7 +610,7 @@ import { crtPipBoy, amber, green } from 'blit386';
 for (const fx of crtPipBoy()) BT.effectAdd(fx);
 ```
 
-<DemoEmbed demo="023-crt-pipboy" title="BLIT386 PipBoy CRT demo" />
+<DemoEmbed demo="crt-pipboy" title="BLIT386 PipBoy CRT demo" />
 
 Built-in effects:
 
@@ -647,11 +663,15 @@ A game with no `configure()` inherits the default `640×480` drawing buffer for 
 `BT.captureFrame()` returns a `640×480` PNG where every game pixel is a 2×2 block. `{ size: 'display' }` returns the
 `320×240` original. Neither size is affected by how the browser scales the canvas on screen.
 
+While `BT.renderAt` holds the loop stopped, `BT.captureFrame()` re-renders the seeked frame to capture it instead of
+waiting for a loop frame that never comes, and runs after every `renderAt` called before it - see
+[Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
+
 The display-size capture has its own pending slot on the renderer, separate from the F9 / Shift+F9 dev shortcuts, so an
 agent's capture and a keypress in the same frame both resolve. Two `{ size: 'display' }` requests in the same frame
 still reject the earlier one, as two `BT.captureFrame()` calls always have.
 
-<DemoEmbed demo="013-image-output" title="BLIT386 image output demo" />
+<DemoEmbed demo="image-output" title="BLIT386 image output demo" />
 
 <Callout title="Internal implementation note">
 

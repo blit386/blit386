@@ -233,6 +233,21 @@ BT.drawSprite(sheet, sprite, pos, 16); // team-color range
 
 Use palette offsets liberally for team colors and damage flashes - batching cost dominates, not the offset itself.
 
+### Allocation-free draw calls
+
+The sprite draw calls added in 1.8.0 allocate nothing per call, so they are safe in the hottest loop:
+
+- `BT.drawTile(sheet, index, pos)` and `BT.drawTile(sheet, col, row, pos)` reuse one internal source rectangle; there is
+  no `Rect2i` to build or cache per tile.
+- `BT.drawSprite(sheet, src, dest, params)` with a `SpriteDrawParams` object resolves flags, scale, and pivot into
+  engine-owned scratch. The engine reads the object and never retains it, so one params object rewritten per draw is
+  enough - do not build a fresh literal per sprite.
+- `BT.drawNineSlice(panel, rect)` is one draw call however many parts it emits. Build the `NineSlice` once in `init()`.
+  Tiled edges and centers draw one quad per tile, so tiling a 1-pixel strip across a large box costs many quads; stretch
+  flat fills instead and keep tiling for art that needs it.
+
+<DemoEmbed demo="bunnymark" title="BLIT386 bunnymark sprite throughput demo" />
+
 ### Line rendering costs
 
 The Renderer has been optimized to reduce vertex overhead: axis-aligned lines now render as single quads (6 vertices),
@@ -467,25 +482,27 @@ examples below demonstrate both approaches:
 
 ### Clarity-first examples (inline allocation)
 
-- `001-basics.js` - Entry-level example teaching core concepts
-- `022-bitmap-font.js` - Bitmap font loading and palette indexize workflow
-- `002-primitives.js` - Drawing primitive shapes
-- `008-sprites.js` - Sprite rendering and palette offsets
-- `004-fonts.js` - System font and text rendering
+- `basics.js` - Entry-level example teaching core concepts
+- `bitmap-font.js` - Bitmap font loading and palette indexize workflow
+- `primitives.js` - Drawing primitive shapes
+- `sprites.js` - Sprite rendering and palette offsets
+- `fonts.js` - System font and text rendering
 
 These prioritize readability and learning over micro-optimizations.
 
 ### Performance-optimized examples (pre-allocation)
 
-- `006-patterns.js` - Complex animations with 200+ operations/frame
-- `007-camera.js` - Scrolling world with many buildings
+- `patterns.js` - Complex animations with 200+ operations/frame
+- `camera.js` - Scrolling world with many buildings
+- `bunnymark.js` - Bouncing sprites by the hundred from one sheet, with the WebGPU sprite cap made visible
+- `nine-slice-panels.js` - One `NineSlice` per panel style, drawn at every size from a single asset
 
 These demonstrate when and how to optimize for performance-critical scenarios.
 
 ### Effect and animation examples
 
-- `009-animation.js` - Tick-based timing (inline allocation, focus on clarity)
-- `010-sprite-effects.js` - Palette offset effects for team colors and flashes
+- `animation.js` - Tick-based timing (inline allocation, focus on clarity)
+- `sprite-effects.js` - Palette offset effects for team colors and flashes
 
 ## Conclusion
 

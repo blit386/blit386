@@ -24,6 +24,7 @@ src/overlay/
   Overlay.ts              # Orchestrator: sample, toggle, layout plan, delegate draws
   layout/layoutPlan.ts    # Computes Y positions for bars, chart, palette grid, custom rows
   bars/Bars.ts            # Filled bar bands + label text (OverlayBars)
+  audio-meter/            # Per-bus level bars + voices/steal/drop readout
   timing-chart/           # Scrolling update/render timing dots + severity/tags
   palette/                # Live swatch grid, hover tooltip, clipboard copy, scroll
   sampling/               # FpsSampler, TimingSampler
@@ -73,7 +74,7 @@ class Demo {
 Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-row `barPaletteIndex` /
 `textPaletteIndex`. Rows stack upward from the footer with 1 px gaps.
 
-<DemoEmbed demo="033-basics-enhanced" title="BLIT386 basics enhanced demo" />
+<DemoEmbed demo="basics-enhanced" title="BLIT386 basics enhanced demo" />
 
 ## Optional bands
 

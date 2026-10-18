@@ -55,7 +55,7 @@ smooths motion that covers more than a pixel or two per tick - it doesn't add su
 renderer. For a sprite moving `2` px/tick at `targetFPS: 60` on a `144` Hz display, it turns a visible 1-then-2-then-0
 px stutter into a steadier progression across render frames.
 
-<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+<DemoEmbed demo="basics" title="BLIT386 basics demo" />
 
 ## Zero-allocation version
 
@@ -98,7 +98,10 @@ once per fixed update (right after your `update()`), and custom post-process eff
 time and draw the same frame the live loop draws on that tick (a seek renders with `BT.renderAlpha` at `0`, so it
 matches a live frame that lands exactly on the tick, not one interpolated between ticks). Drive animation from
 `BT.timeSeconds` or `BT.ticks`, and change state only in `init()` and `update()`. A value read from `performance.now()`
-cannot be seeked, and a seek calls `render()` once, at the end.
+cannot be seeked, and a seek calls `render()` once, at the end. `BT.ticksReset()` moves the clock back to zero without
+running anything backwards: palette effects skip that one update instead of reversing. An external driver (a screenshot
+tool, a play-testing harness) waits for [`BT.isReady`](api-core.md#engine-readiness) before its first seek or
+[`BT.testState()`](api-core.md#test-state-for-agent-play-testing) read.
 
 ```text
              BT.renderAt(t)                 BT.resume()
@@ -112,6 +115,8 @@ cannot be seeked, and a seek calls `render()` once, at the end.
 Seeking from the start costs one `update()` per tick - 10,800 calls for three minutes at 60 FPS - so a demo that
 computes its frame from `BT.timeSeconds` seeks instantly, while a game with heavy per-tick simulation seeks slowly by
 design.
+
+<DemoEmbed demo="test-state" title="BLIT386 test-state demo" />
 
 ## API history
 

@@ -14,7 +14,9 @@ Beyond rendering MDX, the site ships a few things worth knowing about:
 - Full engine API reference and guides, generated from `packages/blit386` (see [Content](#content) below).
 - Twoslash type-on-hover popups in TypeScript code blocks (on in production builds; `pnpm run dev:twoslash` enables them
   locally, one page at a time - see [Development](#development) and `CLAUDE.md`, Twoslash).
-- An MCP server at `/mcp` so AI assistants can search the docs; setup instructions live on the site at `/mcp-server`.
+- An MCP server at `/mcp` (`search_docs`, `get_doc_page`, `get_docs_summary`) so AI assistants can search and read the
+  docs, including the Build a Game pages - a starter project plus the kit's guides and skills, for an agent with no
+  scaffolded project. Setup instructions live on the site at `/mcp-server`.
 - `Accept: text/markdown` content negotiation: any canonical doc URL returns clean markdown to agents that ask for it,
   and `/llms.txt` summarizes the whole site.
 - A blog at `/blog` with an RSS feed at `/feed.xml`.
@@ -39,6 +41,17 @@ pnpm run dev
 
 Open the URL printed by Waku (typically `http://localhost:3000`).
 
+Pages with embedded live demos (`DemoEmbed`) load them from the demos dev server in development, at
+`http://localhost:5173` (Vite's default port), not from demos.blit386.dev. Start it in a second terminal, or the frames
+stay blank:
+
+```bash
+pnpm --filter blit386-demos run dev
+```
+
+To edit engine docs and see them here as you type, run `pnpm run sync:docs:watch` alongside `pnpm run dev` (see
+[Content](#content)).
+
 `pnpm run dev` leaves Twoslash off. To get type-on-hover popups locally, build the engine first and use the opt-in
 script - Twoslash resolves its declarations from `packages/blit386/dist`, and because the transformer runs with
 `throws: false`, skipping that build degrades every block to plain highlighting **silently**:
@@ -55,8 +68,13 @@ section under it will run out of memory. `pnpm run build && pnpm run start` is t
 ## Quality checks
 
 ```bash
-pnpm run preflight   # format:check, typecheck, test, spellcheck, knip, build, sync:docs:check
+pnpm run preflight   # format:check, typecheck, test, spellcheck, knip, check:well-known-schemas, sync:docs:check
+RTK_DISABLED=1 pnpm run lint   # biome check; plain `pnpm run lint` is mis-rewritten to eslint by the RTK hook
 ```
+
+`preflight` runs no build. CI's `build-website` job builds the site and then runs `check:deploy-size` (Cloudflare's 25
+MiB per-asset and 64 MiB uncompressed Worker limits) and `check:well-known-urls` (boots the built Worker and checks that
+every URL the site advertises to agents resolves).
 
 `test` runs two suites: `test:scripts` (`node --test` over `scripts/**`) and `test:unit` (Vitest over `src/**`, the
 Worker plugins), the second with coverage thresholds. Run either alone, or `pnpm run test:unit:watch` while working on
@@ -72,6 +90,7 @@ once in the `quality-root` job.
 
 ```bash
 pnpm run build
+pnpm run start       # serve the built site locally with wrangler dev
 pnpm run deploy      # requires wrangler login or CI secrets
 ```
 
@@ -81,11 +100,12 @@ Cloudflare Worker named `blit386` (custom domain `blit386.dev`); a plain push to
 
 ### What the deploy needs
 
-- GitHub repository secrets `CLOUDFLARE_API_TOKEN` (Workers deploy permission) and `CLOUDFLARE_ACCOUNT_ID`, consumed by
-  the `deploy-website` and `deploy-website-next` jobs in `.github/workflows/deploy.yml`.
+- GitHub secrets `CLOUDFLARE_API_TOKEN` (Workers deploy permission) and `CLOUDFLARE_ACCOUNT_ID`, consumed by the
+  `deploy-website` and `deploy-website-next` jobs in `.github/workflows/deploy.yml`.
 - `dist/server/wrangler.json`: the config actually deployed. Waku regenerates it on every build and
   `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` and `observability.enabled: true` into
-  it.
+  it, plus `vars.BLIT386_CHANNEL` on the `next` channel, and drops the prerendered page copies Waku embeds in the Worker
+  so it stays under Cloudflare's size limit.
 - The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386"` value never reaches
   Cloudflare either: both `pnpm run deploy` and CI pass `--name blit386` explicitly, which overrides it.
 
@@ -96,7 +116,7 @@ Documentation lives in `content/` as MDX files. The public API, guide, performan
 remains the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mirror:
 
 ```bash
-pnpm run sync:docs         # regenerate content/docs from ../blit386/docs
+pnpm run sync:docs         # regenerate content/docs from ../blit386/docs, then the Build a Game pages from ../kit/content
 pnpm run sync:docs:check   # regenerate and fail if the mirror drifted
 pnpm run sync:docs:watch   # watch packages/blit386/docs and re-sync on every change (run alongside pnpm run dev)
 ```

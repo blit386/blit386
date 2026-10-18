@@ -56,7 +56,9 @@ update() {
 ## Notes
 
 - Slots: 0 = mouse or first touch; 1-3 = extra touches or pens (multi-touch).
-- Read in `update()`. Positions are already in your screen's pixel coordinates.
+- Read in `update()`. Positions are already in your screen's pixel coordinates. A click that lands on a fast display
+  between two `update()` steps waits for the next one (engine 1.8.0+), so `BT.isPressed(BT.BTN_POINTER_A)` in `update()`
+  never misses it - there is nothing to work around.
 - `pointerDelta` makes a good drag velocity - release while moving to "flick".
 - Wheel capture is opt-in: set `isCapturingPointerScroll: true` in `configure()` when you map the mouse wheel. Without
   it the host page scrolls normally and `BT.pointerScrollDelta` stays `0`.

@@ -33,6 +33,10 @@ BT.ticksReset(); // reset tick counter to 0
 BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
 ```
 
+Palette effects advance on the same tick clock, once per fixed update. To stop the loop and render exactly the frame at
+a given time (a screenshot at second 3.2, a headless capture), use `BT.renderAt(seconds)` and restart with
+`BT.resume()` - see [Seeking a frame with renderAt](/docs/api/core#seeking-a-frame-with-renderat).
+
 <Since symbol="BT.deltaSeconds" />
 <Since symbol="BT.timeSeconds" />
 <Since symbol="BT.ticks" />
@@ -40,7 +44,7 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 <Since symbol="BT.ticksReset" />
 <Since symbol="BT.assignTag" />
 
-<DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
+<DemoEmbed demo="animation" title="BLIT386 animation and timing demo" />
 
 ## Multiple update() steps per render frame
 
@@ -74,7 +78,9 @@ The opposite direction happens too: on a high refresh-rate display (120 Hz or hi
 sizeable fraction of render frames have zero preceding `update()` calls that frame. This is normal, not a dropped frame
 \- `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
 [API: Camera](/docs/api/camera#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
-`render()` draws the same game state twice in a row rather than resetting to defaults.
+`render()` draws the same game state twice in a row rather than resetting to defaults. A pointer press that lands in
+such a frame is carried to the next frame that runs `update()`, so `BT.isPressed(BT.BTN_POINTER_A)` still sees it - see
+[Frame-timing semantics](/docs/guides/input#frame-timing-semantics).
 
 ## Interpolating render state with renderAlpha
 

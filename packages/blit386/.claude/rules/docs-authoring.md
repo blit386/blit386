@@ -26,7 +26,10 @@ Published docs are MDX-capable Markdown: Fumadocs/Fumapress components render di
 
 Registered components (`packages/website/press.config.tsx`, `getMdxComponents`): `Callout`, `Card` / `Cards`, `Tabs` /
 `Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
-`InlineTOC`, `DemoEmbed`. A component not in that map fails the mirror build.
+`InlineTOC`, `Popup` / `PopupTrigger` / `PopupContent`, `DemoEmbed`, `DemoShowcase`, `VideoEmbed`, plus the API-history
+trio `Since` / `ApiAvailability` / `PageChangelog` (see `docs/documentation-and-versioning-guide.md`). The map also
+registers `HomeHero`, `AuthorByline`, and `CommunityConnect` for the site's own home and blog pages - do not use those
+in engine docs. A component not in that map fails the mirror build.
 
 When to use which:
 

@@ -21,6 +21,11 @@ helpers, and allocation patterns.
 For visual correctness (not performance), use the visual regression tests: `pnpm run test:visual`. They run Playwright
 with Chromium + WebGPU and produce PNG snapshots. See [Testing](reference-testing.md) for details.
 
+For whole-engine sprite throughput in a real browser, rather than one method in Node, open the
+[bunnymark demo](https://demos.blit386.dev/bunnymark): it spawns bouncing sprites by the hundred and counts the ones
+held back by the WebGPU sprite cap, so a renderer change can be judged by how many bunnies a machine moves before a
+frame slips. It is a reference point, not a gate - nothing records its numbers.
+
 ### When to use CPU benchmarks
 
 Use CPU benchmarks when you want to measure a single method, hot loop, cache lookup, math helper, allocation pattern, or
@@ -42,6 +47,7 @@ Current benchmark files:
 - `src/BLIT386.bench.ts`
 - `src/utils/Vector2i.bench.ts`
 - `src/utils/Color32.bench.ts`
+- `src/utils/Random.bench.ts`
 - `src/utils/Rect2i.bench.ts`
 - `src/assets/BitmapFont.bench.ts`
 - `src/assets/Palette.bench.ts`
@@ -50,6 +56,8 @@ Current benchmark files:
 - `src/assets/SystemFont.bench.ts`
 - `src/core/GameLoop.bench.ts`
 - `src/input/GamepadInput.bench.ts`
+- `src/input/KeyboardInput.bench.ts`
+- `src/input/PointerInput.bench.ts`
 - `src/overlay/Overlay.bench.ts`
 - `src/overlay/palette/PaletteView.bench.ts`
 - `src/render/PrimitivePipeline.bench.ts`

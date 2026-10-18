@@ -72,6 +72,16 @@ frame; calling methods on `BT.random` advances the shared stream.
 - Snapshots that call game code and allocate a fresh copy per call: `testState` (runs the demo's `testState()` hook and
   deep-copies the result, so it is never a getter)
 
+## Constants (neither getter nor method)
+
+Plain values on `BT` with no naming decision to make - the drift check skips them: `BTN_*` bit flags (including the
+gamepad-only `BTN_L2` / `BTN_R2` and their union `BTN_TRIGGER`), `AXIS_*` (`AXIS_TRIGGER_L` / `AXIS_TRIGGER_R` are the
+analog twins of the trigger buttons), `FLIP_*` / `ROT_*` sprite orientation bits (passed in `SpriteDrawParams.flags`),
+the keyboard tables `DEFAULT_KEYBOARD_PLAYER1` / `DEFAULT_KEYBOARD_PLAYER2` (the `'versus'` layout) and
+`DEFAULT_KEYBOARD_SINGLE_PLAYER1` / `DEFAULT_KEYBOARD_SINGLE_PLAYER2` (the `'single'` layout), and the `BT.preset`
+namespace. `HardwareSettings.keyboardLayout` is the non-boolean configure field those tables mirror - it is not a Tier B
+flag, so the drift check does not look for it.
+
 Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-deprecations.md` (`pointerPosValid`,
 `buttonDown`, `keyDown`, …).
 

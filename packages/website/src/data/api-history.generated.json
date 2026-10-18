@@ -2103,6 +2103,8 @@
       "FrameCaptureOptions",
       "FrameCaptureSize",
       "NineSlice",
+      "NineSliceMode",
+      "NineSliceOptions",
       "SpriteDrawParams",
       "amber",
       "crtPipBoy",
@@ -2175,7 +2177,8 @@
       "BT.pointerPos",
       "BT.pointerPosTo",
       "BT.pointerScrollDelta",
-      "BT.showCursor"
+      "BT.showCursor",
+      "KeyboardLayout"
     ],
     "guides/post-process-effects": [
       "BarrelDistortion",
