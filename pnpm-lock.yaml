@@ -18,7 +18,7 @@ overrides:
   brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
   brace-expansion@>=4.0.0 <5.0.12: ^5.0.12
   ip-address@<=10.7.0: ^10.7.3
-  basic-ftp@<=6.2.0: ^6.2.2
+  basic-ftp@<=6.2.0: ^6.2.3
   smol-toml@<1.8.1: ^1.9.0
   postcss-selector-parser@<7.1.6: ^7.1.6
   source-map-js@<1.2.2: ^1.2.2
@@ -3069,8 +3069,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  basic-ftp@6.2.2:
-    resolution: {integrity: sha512-LIkJcf/F6bTTfvE3k2YcTxrJsLKKVXiEpHZYkQP6JoqTb7khng7c13ckRTDQbqRh5IkehVH3F00sSlAa2F6DwA==}
+  basic-ftp@6.2.3:
+    resolution: {integrity: sha512-T7GYtQ2eKJUN5YORG7A8u2WfB9JMN0a4/wl3MI64qq2qTRfa3FXzoNq0DDojZDkDyStcL+TkfKsz4JHEZx5kGQ==}
     engines: {node: '>=10.0.0'}
 
   blake3-wasm@2.1.5:
@@ -8392,7 +8392,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.21: {}
 
-  basic-ftp@6.2.2: {}
+  basic-ftp@6.2.3: {}
 
   blake3-wasm@2.1.5: {}
 
@@ -9352,7 +9352,7 @@ snapshots:
 
   get-uri@8.0.1(supports-color@10.2.2):
     dependencies:
-      basic-ftp: 6.2.2
+      basic-ftp: 6.2.3
       data-uri-to-buffer: 8.0.0
       debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
