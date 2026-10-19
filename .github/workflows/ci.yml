@@ -314,7 +314,7 @@ jobs:
         run: pnpm run build:check-declarations build.log
 
       - name: Upload library artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: library-dist
           path: packages/blit386/dist/
@@ -331,7 +331,7 @@ jobs:
       # upload-artifact has no v8 major; v7 output paired with download-artifact v8 is
       # the current combination, and is what the demos pipeline shipped on pre-merge.
       - name: Download library artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: library-dist
           path: dist
@@ -504,7 +504,7 @@ jobs:
           NODE_ENV: production
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: demos-dist
           path: packages/demos/dist/
@@ -623,7 +623,7 @@ jobs:
         run: pnpm --filter blit386-website run check:well-known-urls
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: website-dist
           path: packages/website/dist/
