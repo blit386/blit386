@@ -35,8 +35,8 @@ themes - Stone, Fire, Ice, Void - each with a small color square and its name; t
 one has a green frame around its square and a bright name, and a meter under the list
 fills up toward the next swap. Sprite, beside it, shows public/sprites/test.png at 3
 times its size, with the current theme, the palette slots it reads, and its palette
-offset listed to its right. How it works, across the bottom, shows the three calls the
-demo makes, each under a comment saying when it runs.
+offset listed to its right. How it works, across the bottom, shows the calls the demo
+makes, each under a comment saying when it runs.
 
 Every 2 seconds the demo activates the next theme palette. The sprite changes color
 instantly; the legend squares, the text, and the engine overlay keep their colors because
@@ -74,15 +74,16 @@ When you call BT.paletteSet(newPalette):
   1. The engine uploads the new palette to the GPU.
   2. All drawing calls now look up colors from the new palette.
 
-Sprites store palette indices, not colors. If the new palette keeps every color at the
-same slot number and only changes the color values (a "value swap"), the sprites are
-already correct. If the new palette moves the same colors to different slot numbers (a
-"layout swap"), call BT.spritesRefresh(): the engine re-matches every sprite's original
-RGBA pixels against the new palette, the same way indexize() did the first time.
+Sprites store palette indices, not colors. When the new palette keeps every color at
+the same slot number and only changes the color values (a "value swap"), the sprites
+are already correct, and the sheet stays as indexize() wrote it. BT.spritesRefresh()
+is the other case, a "layout swap", where the same colors move to different slot
+numbers. That call re-matches every sprite's original RGBA pixels against the new
+palette, the same way indexize() did the first time.
 
-This demo is a value swap: every theme palette keeps the sprite colors at the same slot
-numbers, just tinted differently, so BT.spritesRefresh() is not needed. update() calls it
-anyway to show the call - see the note there for what actually happens.
+This demo is a value swap. Every theme palette keeps the sprite colors at the same slot
+numbers and only tints the values, so update() calls BT.paletteSet() and leaves the
+sheet alone.
 
 TRY THIS
 --------
@@ -90,8 +91,6 @@ TRY THIS
 - Press the backquote key (`) to open the engine overlay. The timing chart gets a tag
   with the theme name at every swap, and the overlay's own colors (slots 40-44) stay put
   because all four palettes hold the same values there.
-- Open the browser console: on the first swap the engine reports that spritesRefresh()
-  could not re-index the sheet. The note in update() explains why.
 
 */
 
@@ -296,15 +295,6 @@ class Demo {
             // sprite's stored indices are still correct.
             BT.paletteSet(this.themes[this.currentTheme]);
             BT.assignTag(`Theme: ${this.themeNames[this.currentTheme]}`);
-
-            // BT.spritesRefresh() is for a LAYOUT swap, when the same colors move to
-            // different slot numbers; the engine docs say to skip it after a value swap
-            // like this one. It is called here only to show where it would go. What it
-            // really does: it re-matches the sprite's original stone colors against the
-            // new palette, and a tinted palette does not contain them, so the engine logs
-            // an error to the console and stops tracking this sheet. The sprite itself is
-            // untouched and keeps drawing correctly.
-            BT.spritesRefresh();
         }
     }
 
@@ -408,8 +398,8 @@ class Demo {
         ui.caption(valueX, firstY + 24, '0', { color: 'info' });
     }
 
-    // Draws the How it works panel across the bottom: the three calls this demo really
-    // makes, each under a dim comment saying when it runs.
+    // Draws the How it works panel across the bottom: the calls this demo really makes,
+    // each under a dim comment saying when it runs.
     renderCodePanel() {
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: CODE_PANEL_Y, width: CODE_PANEL_W });
         ui.panel('How it works - a value swap');
@@ -417,8 +407,6 @@ class Demo {
         ui.label('palette.fillBlock(10, colors, tint)', { color: 'info' });
         ui.label('// Every 2 seconds', { color: 'dim' });
         ui.label('BT.paletteSet(this.themes[next])', { color: 'info' });
-        ui.label('// Needed only after a layout swap', { color: 'dim' });
-        ui.label('BT.spritesRefresh()', { color: 'info' });
         ui.end();
     }
 
