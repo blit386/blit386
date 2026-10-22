@@ -1,402 +1,390 @@
 {
-  "generatedAt": "2026-10-18T11:29:54.782Z",
-  "engineVersion": "1.7.1",
+  "generatedAt": "2026-10-22T16:02:16.966Z",
+  "engineVersion": "1.8.0",
   "entries": [
     {
-      "slug": "hello-world",
-      "pose": "start",
       "variants": {
         "display": "hello-world/start.display.png",
         "uidebug": "hello-world/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "hello-world",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "hello-world",
-      "pose": "settled",
       "variants": {
         "display": "hello-world/settled.display.png",
         "uidebug": "hello-world/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "hello-world",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "basics",
-      "pose": "moving",
       "variants": {
         "display": "basics/moving.display.png",
         "uidebug": "basics/moving.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "basics",
+      "pose": "moving",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "basics",
-      "pose": "start",
       "variants": {
         "display": "basics/start.display.png",
         "uidebug": "basics/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "basics",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "primitives",
-      "pose": "start",
       "variants": {
         "display": "primitives/start.display.png",
         "uidebug": "primitives/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "primitives",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "primitives",
-      "pose": "settled",
       "variants": {
         "display": "primitives/settled.display.png",
         "uidebug": "primitives/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "primitives",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "colors",
-      "pose": "start",
       "variants": {
         "display": "colors/start.display.png",
         "uidebug": "colors/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
-    },
-    {
+      "error": null,
       "slug": "colors",
-      "pose": "settled",
-      "variants": {
-        "display": "colors/settled.display.png",
-        "uidebug": "colors/settled.uidebug.png"
-      },
+      "pose": "start",
       "width": 320,
-      "height": 240,
-      "lint": [],
-      "error": null
+      "height": 240
     },
     {
-      "slug": "fonts",
-      "pose": "start",
       "variants": {
         "display": "fonts/start.display.png",
         "uidebug": "fonts/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "fonts",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "fonts",
-      "pose": "settled",
       "variants": {
         "display": "fonts/settled.display.png",
         "uidebug": "fonts/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "fonts",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pixel-art",
-      "pose": "start",
       "variants": {
         "display": "pixel-art/start.display.png",
         "uidebug": "pixel-art/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pixel-art",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pixel-art",
-      "pose": "settled",
       "variants": {
         "display": "pixel-art/settled.display.png",
         "uidebug": "pixel-art/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pixel-art",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "patterns",
-      "pose": "start",
       "variants": {
         "display": "patterns/start.display.png",
         "uidebug": "patterns/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "patterns",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "patterns",
-      "pose": "settled",
       "variants": {
         "display": "patterns/settled.display.png",
         "uidebug": "patterns/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "patterns",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "camera",
-      "pose": "start",
       "variants": {
         "display": "camera/start.display.png",
         "uidebug": "camera/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "camera",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "camera",
-      "pose": "settled",
       "variants": {
         "display": "camera/settled.display.png",
         "uidebug": "camera/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "camera",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "sprites",
-      "pose": "start",
       "variants": {
         "display": "sprites/start.display.png",
         "uidebug": "sprites/start.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "sprites",
+      "pose": "start",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "sprites",
-      "pose": "settled",
       "variants": {
         "display": "sprites/settled.display.png",
         "uidebug": "sprites/settled.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "sprites",
+      "pose": "settled",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "animation",
-      "pose": "jump",
       "variants": {
         "display": "animation/jump.display.png",
         "uidebug": "animation/jump.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "animation",
+      "pose": "jump",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "animation",
-      "pose": "start",
       "variants": {
         "display": "animation/start.display.png",
         "uidebug": "animation/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "animation",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "sprite-effects",
-      "pose": "start",
       "variants": {
         "display": "sprite-effects/start.display.png",
         "uidebug": "sprite-effects/start.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "sprite-effects",
+      "pose": "start",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "sprite-effects",
-      "pose": "settled",
       "variants": {
         "display": "sprite-effects/settled.display.png",
         "uidebug": "sprite-effects/settled.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "sprite-effects",
+      "pose": "settled",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "starfield",
-      "pose": "spread",
       "variants": {
         "display": "starfield/spread.display.png",
         "uidebug": "starfield/spread.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "starfield",
+      "pose": "spread",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "tilemap",
-      "pose": "start",
       "variants": {
         "display": "tilemap/start.display.png",
         "uidebug": "tilemap/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "tilemap",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "tilemap",
-      "pose": "settled",
       "variants": {
         "display": "tilemap/settled.display.png",
         "uidebug": "tilemap/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "tilemap",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "image-output",
-      "pose": "start",
       "variants": {
         "display": "image-output/start.display.png",
         "uidebug": "image-output/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "image-output",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "image-output",
-      "pose": "settled",
       "variants": {
         "display": "image-output/settled.display.png",
         "uidebug": "image-output/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "image-output",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "game-scene",
-      "pose": "start",
       "variants": {
         "display": "game-scene/start.display.png",
         "uidebug": "game-scene/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "game-scene",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "game-scene",
-      "pose": "settled",
       "variants": {
         "display": "game-scene/settled.display.png",
         "uidebug": "game-scene/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "game-scene",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-presets",
-      "pose": "start",
       "variants": {
         "display": "palette-presets/start.display.png",
         "uidebug": "palette-presets/start.uidebug.png"
       },
-      "width": 520,
-      "height": 390,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-presets",
+      "pose": "start",
+      "width": 520,
+      "height": 390
     },
     {
-      "slug": "palette-presets",
-      "pose": "settled",
       "variants": {
         "display": "palette-presets/settled.display.png",
         "uidebug": "palette-presets/settled.uidebug.png"
       },
-      "width": 520,
-      "height": 390,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-presets",
+      "pose": "settled",
+      "width": 520,
+      "height": 390
     },
     {
-      "slug": "palette-animation",
-      "pose": "start",
       "variants": {
         "display": "palette-animation/start.display.png",
         "uidebug": "palette-animation/start.uidebug.png"
       },
-      "width": 520,
-      "height": 390,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-animation",
+      "pose": "start",
+      "width": 520,
+      "height": 390
     },
     {
-      "slug": "palette-animation",
-      "pose": "settled",
       "variants": {
         "display": "palette-animation/settled.display.png",
         "uidebug": "palette-animation/settled.uidebug.png"
       },
-      "width": 520,
-      "height": 390,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-animation",
+      "pose": "settled",
+      "width": 520,
+      "height": 390
     },
     {
       "slug": "palette-swap",
@@ -423,856 +411,844 @@
       "error": null
     },
     {
-      "slug": "flurry",
-      "pose": "start",
       "variants": {
         "display": "flurry/start.display.png",
         "uidebug": "flurry/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "flurry",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "flurry",
-      "pose": "settled",
       "variants": {
         "display": "flurry/settled.display.png",
         "uidebug": "flurry/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "flurry",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-cycling",
-      "pose": "start",
       "variants": {
         "display": "palette-cycling/start.display.png",
         "uidebug": "palette-cycling/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-cycling",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-cycling",
-      "pose": "settled",
       "variants": {
         "display": "palette-cycling/settled.display.png",
         "uidebug": "palette-cycling/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-cycling",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-fade",
-      "pose": "start",
       "variants": {
         "display": "palette-fade/start.display.png",
         "uidebug": "palette-fade/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-fade",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-fade",
-      "pose": "settled",
       "variants": {
         "display": "palette-fade/settled.display.png",
         "uidebug": "palette-fade/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-fade",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "bitmap-font",
-      "pose": "start",
       "variants": {
         "display": "bitmap-font/start.display.png",
         "uidebug": "bitmap-font/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "bitmap-font",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "bitmap-font",
-      "pose": "settled",
       "variants": {
         "display": "bitmap-font/settled.display.png",
         "uidebug": "bitmap-font/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "bitmap-font",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "system-font-glyphs",
-      "pose": "start",
       "variants": {
         "display": "system-font-glyphs/start.display.png",
         "uidebug": "system-font-glyphs/start.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "system-font-glyphs",
+      "pose": "start",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "system-font-glyphs",
-      "pose": "settled",
       "variants": {
         "display": "system-font-glyphs/settled.display.png",
         "uidebug": "system-font-glyphs/settled.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "system-font-glyphs",
+      "pose": "settled",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "crt-pipboy",
-      "pose": "typed",
       "variants": {
         "display": "crt-pipboy/typed.display.png",
         "uidebug": "crt-pipboy/typed.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "crt-pipboy",
+      "pose": "typed",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "crt-toggle",
-      "pose": "crt",
       "variants": {
         "display": "crt-toggle/crt.display.png",
         "uidebug": "crt-toggle/crt.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "crt-toggle",
+      "pose": "crt",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "crt-toggle",
-      "pose": "clean",
       "variants": {
         "display": "crt-toggle/clean.display.png",
         "uidebug": "crt-toggle/clean.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "crt-toggle",
+      "pose": "clean",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-basics",
-      "pose": "start",
       "variants": {
         "display": "pointer-basics/start.display.png",
         "uidebug": "pointer-basics/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-basics",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-basics",
-      "pose": "settled",
       "variants": {
         "display": "pointer-basics/settled.display.png",
         "uidebug": "pointer-basics/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-basics",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-basics",
-      "pose": "hover",
       "variants": {
         "display": "pointer-basics/hover.display.png",
         "uidebug": "pointer-basics/hover.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-basics",
+      "pose": "hover",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-paint",
-      "pose": "start",
       "variants": {
         "display": "pointer-paint/start.display.png",
         "uidebug": "pointer-paint/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-paint",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-paint",
-      "pose": "hover-clear",
       "variants": {
         "display": "pointer-paint/hover-clear.display.png",
         "uidebug": "pointer-paint/hover-clear.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-paint",
+      "pose": "hover-clear",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-drag-flick",
-      "pose": "start",
       "variants": {
         "display": "pointer-drag-flick/start.display.png",
         "uidebug": "pointer-drag-flick/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-drag-flick",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-drag-flick",
-      "pose": "settled",
       "variants": {
         "display": "pointer-drag-flick/settled.display.png",
         "uidebug": "pointer-drag-flick/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-drag-flick",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "pointer-drag-flick",
-      "pose": "hover",
       "variants": {
         "display": "pointer-drag-flick/hover.display.png",
         "uidebug": "pointer-drag-flick/hover.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pointer-drag-flick",
+      "pose": "hover",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "keyboard-input",
-      "pose": "start",
       "variants": {
         "display": "keyboard-input/start.display.png",
         "uidebug": "keyboard-input/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "keyboard-input",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "keyboard-input",
-      "pose": "settled",
       "variants": {
         "display": "keyboard-input/settled.display.png",
         "uidebug": "keyboard-input/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "keyboard-input",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "snake-game",
-      "pose": "crawl",
       "variants": {
         "display": "snake-game/crawl.display.png",
         "uidebug": "snake-game/crawl.uidebug.png"
       },
-      "width": 160,
-      "height": 120,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "snake-game",
+      "pose": "crawl",
+      "width": 160,
+      "height": 120
     },
     {
-      "slug": "snake-game",
-      "pose": "start",
       "variants": {
         "display": "snake-game/start.display.png",
         "uidebug": "snake-game/start.uidebug.png"
       },
-      "width": 160,
-      "height": 120,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "snake-game",
+      "pose": "start",
+      "width": 160,
+      "height": 120
     },
     {
-      "slug": "input-map-remapping",
-      "pose": "start",
       "variants": {
         "display": "input-map-remapping/start.display.png",
         "uidebug": "input-map-remapping/start.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "input-map-remapping",
+      "pose": "start",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "input-map-remapping",
-      "pose": "settled",
       "variants": {
         "display": "input-map-remapping/settled.display.png",
         "uidebug": "input-map-remapping/settled.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "input-map-remapping",
+      "pose": "settled",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "input-map-remapping",
-      "pose": "custom",
       "variants": {
         "display": "input-map-remapping/custom.display.png",
         "uidebug": "input-map-remapping/custom.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "input-map-remapping",
+      "pose": "custom",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "gamepad-input",
-      "pose": "start",
       "variants": {
         "display": "gamepad-input/start.display.png",
         "uidebug": "gamepad-input/start.uidebug.png"
       },
-      "width": 320,
-      "height": 288,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "gamepad-input",
+      "pose": "start",
+      "width": 320,
+      "height": 288
     },
     {
-      "slug": "gamepad-input",
-      "pose": "touch",
       "variants": {
         "display": "gamepad-input/touch.display.png",
         "uidebug": "gamepad-input/touch.uidebug.png"
       },
-      "width": 320,
-      "height": 288,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "gamepad-input",
+      "pose": "touch",
+      "width": 320,
+      "height": 288
     },
     {
-      "slug": "any-input",
-      "pose": "start",
       "variants": {
         "display": "any-input/start.display.png",
         "uidebug": "any-input/start.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "any-input",
+      "pose": "start",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "any-input",
-      "pose": "settled",
       "variants": {
         "display": "any-input/settled.display.png",
         "uidebug": "any-input/settled.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "any-input",
+      "pose": "settled",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "named-colors",
-      "pose": "start",
       "variants": {
         "display": "named-colors/start.display.png",
         "uidebug": "named-colors/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "named-colors",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "named-colors",
-      "pose": "settled",
       "variants": {
         "display": "named-colors/settled.display.png",
         "uidebug": "named-colors/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "named-colors",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "basics-enhanced",
-      "pose": "moving",
       "variants": {
         "display": "basics-enhanced/moving.display.png",
         "uidebug": "basics-enhanced/moving.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "basics-enhanced",
+      "pose": "moving",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "basics-enhanced",
-      "pose": "start",
       "variants": {
         "display": "basics-enhanced/start.display.png",
         "uidebug": "basics-enhanced/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "basics-enhanced",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "logo-lowres",
-      "pose": "start",
       "variants": {
         "display": "logo-lowres/start.display.png",
         "uidebug": "logo-lowres/start.uidebug.png"
       },
-      "width": 80,
-      "height": 60,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "logo-lowres",
+      "pose": "start",
+      "width": 80,
+      "height": 60
     },
     {
-      "slug": "logo-lowres",
-      "pose": "settled",
       "variants": {
         "display": "logo-lowres/settled.display.png",
         "uidebug": "logo-lowres/settled.uidebug.png"
       },
-      "width": 80,
-      "height": 60,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "logo-lowres",
+      "pose": "settled",
+      "width": 80,
+      "height": 60
     },
     {
-      "slug": "keyboard-diagnostic",
-      "pose": "blit386",
       "variants": {
         "display": "keyboard-diagnostic/blit386.display.png",
         "uidebug": "keyboard-diagnostic/blit386.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "keyboard-diagnostic",
+      "pose": "blit386",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "keyboard-diagnostic",
-      "pose": "start",
       "variants": {
         "display": "keyboard-diagnostic/start.display.png",
         "uidebug": "keyboard-diagnostic/start.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "keyboard-diagnostic",
+      "pose": "start",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "keyboard-diagnostic",
-      "pose": "settled",
       "variants": {
         "display": "keyboard-diagnostic/settled.display.png",
         "uidebug": "keyboard-diagnostic/settled.uidebug.png"
       },
-      "width": 600,
-      "height": 315,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "keyboard-diagnostic",
+      "pose": "settled",
+      "width": 600,
+      "height": 315
     },
     {
-      "slug": "audio-basics",
-      "pose": "playing",
       "variants": {
         "display": "audio-basics/playing.display.png",
         "uidebug": "audio-basics/playing.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-basics",
+      "pose": "playing",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "audio-basics",
-      "pose": "start",
       "variants": {
         "display": "audio-basics/start.display.png",
         "uidebug": "audio-basics/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-basics",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "music",
-      "pose": "blend",
       "variants": {
         "display": "music/blend.display.png",
         "uidebug": "music/blend.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "music",
+      "pose": "blend",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "music",
-      "pose": "start",
       "variants": {
         "display": "music/start.display.png",
         "uidebug": "music/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "music",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "audio-buses",
-      "pose": "duck",
       "variants": {
         "display": "audio-buses/duck.display.png",
         "uidebug": "audio-buses/duck.uidebug.png"
       },
-      "width": 320,
-      "height": 260,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-buses",
+      "pose": "duck",
+      "width": 320,
+      "height": 260
     },
     {
-      "slug": "audio-buses",
-      "pose": "start",
       "variants": {
         "display": "audio-buses/start.display.png",
         "uidebug": "audio-buses/start.uidebug.png"
       },
-      "width": 320,
-      "height": 260,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "audio-buses",
+      "pose": "start",
+      "width": 320,
+      "height": 260
     },
     {
-      "slug": "synth-toy",
-      "pose": "played",
       "variants": {
         "display": "synth-toy/played.display.png",
         "uidebug": "synth-toy/played.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "synth-toy",
+      "pose": "played",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "synth-toy",
-      "pose": "start",
       "variants": {
         "display": "synth-toy/start.display.png",
         "uidebug": "synth-toy/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "synth-toy",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "hypercube",
-      "pose": "start",
       "variants": {
         "display": "hypercube/start.display.png",
         "uidebug": "hypercube/start.uidebug.png"
       },
-      "width": 320,
-      "height": 320,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "hypercube",
+      "pose": "start",
+      "width": 320,
+      "height": 320
     },
     {
-      "slug": "hypercube",
-      "pose": "settled",
       "variants": {
         "display": "hypercube/settled.display.png",
         "uidebug": "hypercube/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 320,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "hypercube",
+      "pose": "settled",
+      "width": 320,
+      "height": 320
     },
     {
-      "slug": "random-basics",
-      "pose": "shuffled",
       "variants": {
         "display": "random-basics/shuffled.display.png",
         "uidebug": "random-basics/shuffled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "random-basics",
+      "pose": "shuffled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "random-basics",
-      "pose": "start",
       "variants": {
         "display": "random-basics/start.display.png",
         "uidebug": "random-basics/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "random-basics",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "seeded-worlds",
-      "pose": "copied",
       "variants": {
         "display": "seeded-worlds/copied.display.png",
         "uidebug": "seeded-worlds/copied.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "seeded-worlds",
+      "pose": "copied",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "seeded-worlds",
-      "pose": "start",
       "variants": {
         "display": "seeded-worlds/start.display.png",
         "uidebug": "seeded-worlds/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "seeded-worlds",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "coordinate-patterns",
-      "pose": "far",
       "variants": {
         "display": "coordinate-patterns/far.display.png",
         "uidebug": "coordinate-patterns/far.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "coordinate-patterns",
+      "pose": "far",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "coordinate-patterns",
-      "pose": "start",
       "variants": {
         "display": "coordinate-patterns/start.display.png",
         "uidebug": "coordinate-patterns/start.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "coordinate-patterns",
+      "pose": "start",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "noise",
-      "pose": "start",
       "variants": {
         "display": "noise/start.display.png",
         "uidebug": "noise/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "noise",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "noise",
-      "pose": "settled",
       "variants": {
         "display": "noise/settled.display.png",
         "uidebug": "noise/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "noise",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-exposure-fade",
-      "pose": "bright",
       "variants": {
         "display": "palette-exposure-fade/bright.display.png",
         "uidebug": "palette-exposure-fade/bright.uidebug.png"
       },
-      "width": 480,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-exposure-fade",
+      "pose": "bright",
+      "width": 480,
+      "height": 480
     },
     {
-      "slug": "palette-exposure-fade",
-      "pose": "start",
       "variants": {
         "display": "palette-exposure-fade/start.display.png",
         "uidebug": "palette-exposure-fade/start.uidebug.png"
       },
-      "width": 480,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-exposure-fade",
+      "pose": "start",
+      "width": 480,
+      "height": 480
     },
     {
-      "slug": "reduced-motion",
-      "pose": "warp",
       "variants": {
         "display": "reduced-motion/warp.display.png",
         "uidebug": "reduced-motion/warp.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "reduced-motion",
+      "pose": "warp",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "reduced-motion",
-      "pose": "cruise",
       "variants": {
         "display": "reduced-motion/cruise.display.png",
         "uidebug": "reduced-motion/cruise.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "reduced-motion",
+      "pose": "cruise",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "bunnymark",
-      "pose": "start",
       "variants": {
         "display": "bunnymark/start.display.png",
         "uidebug": "bunnymark/start.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
-    },
-    {
+      "error": null,
       "slug": "bunnymark",
-      "pose": "settled",
-      "variants": {
-        "display": "bunnymark/settled.display.png",
-        "uidebug": "bunnymark/settled.uidebug.png"
-      },
+      "pose": "start",
       "width": 640,
-      "height": 400,
-      "lint": [],
-      "error": null
+      "height": 400
     },
     {
-      "slug": "nine-slice-panels",
-      "pose": "start",
       "variants": {
         "display": "nine-slice-panels/start.display.png",
         "uidebug": "nine-slice-panels/start.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "nine-slice-panels",
+      "pose": "start",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "nine-slice-panels",
-      "pose": "settled",
       "variants": {
         "display": "nine-slice-panels/settled.display.png",
         "uidebug": "nine-slice-panels/settled.uidebug.png"
       },
-      "width": 640,
-      "height": 400,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "nine-slice-panels",
+      "pose": "settled",
+      "width": 640,
+      "height": 400
     },
     {
-      "slug": "pattern-fill",
-      "pose": "start",
       "variants": {
         "display": "pattern-fill/start.display.png",
         "uidebug": "pattern-fill/start.uidebug.png"
       },
-      "width": 960,
-      "height": 600,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pattern-fill",
+      "pose": "start",
+      "width": 960,
+      "height": 600
     },
     {
-      "slug": "pattern-fill",
-      "pose": "settled",
       "variants": {
         "display": "pattern-fill/settled.display.png",
         "uidebug": "pattern-fill/settled.uidebug.png"
       },
-      "width": 960,
-      "height": 600,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pattern-fill",
+      "pose": "settled",
+      "width": 960,
+      "height": 600
     },
     {
-      "slug": "test-state",
-      "pose": "scored",
       "variants": {
         "display": "test-state/scored.display.png",
         "uidebug": "test-state/scored.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "test-state",
+      "pose": "scored",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "test-state",
-      "pose": "start",
       "variants": {
         "display": "test-state/start.display.png",
         "uidebug": "test-state/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "test-state",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     }
   ]
 }
