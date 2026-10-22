@@ -479,10 +479,9 @@ class Demo {
         this.palette.set(UI_GAP, new Color32(60, 60, 70));
 
         // Register the sprite colors: scan the PNG and write every unique opaque color
-        // into the palette starting at COLOR_BASE. The returned array is the same colors
-        // in palette-write order (sorted darkest-first by luminance). The theme-block
-        // builders below recolor each base color and write the result into a higher
-        // block.
+        // into the palette starting at COLOR_BASE. The returned array is those colors
+        // sorted darkest-first by luminance. The theme-block builders below recolor each
+        // of them into a higher block.
         this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, COLOR_BASE);
         const colorCount = this.baseColors.length;
         this.colorCount = colorCount;
@@ -503,12 +502,10 @@ class Demo {
         }
 
         // Load and indexize the sprite. loadIndexed() registers the colors again at
-        // COLOR_BASE, in image scan order this time (sort: 'none'), overwriting block 0,
-        // then converts the sheet's pixels to palette indices against that block.
+        // COLOR_BASE in luminance order, matching baseColors, and overwrites block 0
+        // with that list. It then converts each pixel to the palette index of its color.
         try {
-            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE, {
-                sort: 'none',
-            });
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE);
             this.sheet = indexed.sheet;
             this.charRect = this.sheet.fullRect();
             BT.paletteSet(this.palette);
