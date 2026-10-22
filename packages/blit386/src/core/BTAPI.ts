@@ -1127,22 +1127,16 @@ export class BTAPI {
     /**
      * Sets the active engine palette and propagates it to the renderer.
      *
-     * If sprite sheets have already been indexized, emits a warning when
-     * **replacing** the palette object (layout/index remapping may require
-     * {@link BTAPI.spritesRefresh}). In-place slot value changes on the active
-     * palette do not go through this method and need no refresh.
+     * Replacing the palette object does not re-index sprites. A value swap (same
+     * slot numbers, new colors) needs nothing else. A layout swap (the same colors
+     * at new slot numbers) needs {@link BTAPI.spritesRefresh} afterwards. In-place
+     * slot edits on the active palette do not go through this method.
      *
      * @param palette - Palette to store as the active engine palette.
      */
     public setPalette(palette: Palette): void {
-        if (this.spriteSheets.size > 0) {
-            console.warn('[BT] Active palette structure changed. Call BT.spritesRefresh() to update loaded sprites.');
-        }
-
         if (this.isCapturingPalette) {
-            // The splash is on screen and owns the palette. Hold this until
-            // handoff; the warning above still fires now, when the caller can
-            // act on it.
+            // The splash is on screen and owns the palette. Hold this until handoff.
             this.pendingPalette = palette;
 
             return;
@@ -3431,9 +3425,8 @@ export class BTAPI {
     /**
      * Stores a palette as the active engine palette and propagates it to the renderer.
      *
-     * The warning-free half of {@link setPalette}: the splash handoff installs an
-     * already-warned-about palette, and warning twice for one `BT.paletteSet()`
-     * call would be noise.
+     * Shared by {@link setPalette} and the splash handoff, so a deferred
+     * `BT.paletteSet()` is installed once.
      *
      * @param palette - Palette to store as the active engine palette.
      */
