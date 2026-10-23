@@ -1,5 +1,5 @@
 import type { BitmapFont } from '../../assets/BitmapFont';
-import type { OverlayRow } from '../../core/IBTDemo';
+import type { FrameTextEntry, OverlayRow } from '../../core/IBTDemo';
 import { Vector2i } from '../../utils/Vector2i';
 import { drawOverlayLabelWithDividers } from '../labels';
 import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants';
@@ -226,6 +226,7 @@ export class OverlayBars {
      * @param plan - Computed layout plan with custom bar rects.
      * @param rows - Custom overlay rows.
      * @param style - Default overlay palette indices.
+     * @param textSink - When set, each drawn label is also pushed here (see {@link BT.frameText}).
      */
     drawCustomRowLabels(
         target: OverlayDrawTarget,
@@ -233,6 +234,7 @@ export class OverlayBars {
         plan: OverlayLayoutPlan,
         rows: readonly OverlayRow[],
         style: OverlayBarStyle,
+        textSink: FrameTextEntry[] | null = null,
     ): void {
         const rowCount = rows.length;
 
@@ -262,6 +264,13 @@ export class OverlayBars {
             leftPos.y = barY + OVERLAY_TOP_TEXT_Y;
 
             target.drawLabel(font, leftPos, row.leftText, textPaletteOffset);
+            textSink?.push({
+                source: 'overlay',
+                text: row.leftText,
+                x: leftPos.x,
+                y: leftPos.y,
+                paletteIndex: textIndex,
+            });
 
             const rightText = row.rightText;
 
@@ -270,6 +279,13 @@ export class OverlayBars {
                 rightPos.x = overlayRightAlignedTextX(rightText, displayWidth);
 
                 target.drawLabel(font, rightPos, rightText, textPaletteOffset);
+                textSink?.push({
+                    source: 'overlay',
+                    text: rightText,
+                    x: rightPos.x,
+                    y: rightPos.y,
+                    paletteIndex: textIndex,
+                });
             }
         }
         /* eslint-enable security/detect-object-injection */

@@ -58,7 +58,7 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
+import type { AudioBus, Backend, FrameTextEntry, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,
@@ -196,6 +196,12 @@ export class BTAPI {
      * is not `false`. Layout is fixed at init; drawn after demo `render()` each frame.
      */
     private overlay: Overlay | null = null;
+
+    /** True while {@link BT.frameTextRecordSet} has recording on. */
+    private isTextRecording = false;
+
+    /** Strings drawn this render frame; filled only while {@link isTextRecording}, emptied at frame start. */
+    private readonly frameText: FrameTextEntry[] = [];
 
     /** Active engine palette used by palette-first rendering. */
     private palette: Palette | null = null;
@@ -697,6 +703,26 @@ export class BTAPI {
      */
     public getCanvas(): HTMLCanvasElement | null {
         return this.canvas;
+    }
+
+    /**
+     * Turns the drawn-text recorder behind {@link BT.frameText} on or off. Off empties it.
+     *
+     * @param enabled - `true` to record every frame's system text and overlay row labels.
+     */
+    public setTextRecording(enabled: boolean): void {
+        this.isTextRecording = enabled;
+        this.frameText.length = 0;
+        this.overlay?.setTextSink(enabled ? this.frameText : null);
+    }
+
+    /**
+     * Copies the strings the last rendered frame drew (empty while recording is off).
+     *
+     * @returns A fresh array of fresh entries, safe for the caller to keep.
+     */
+    public getFrameText(): FrameTextEntry[] {
+        return this.frameText.map((entry) => ({ ...entry }));
     }
 
     /**
@@ -1339,6 +1365,10 @@ export class BTAPI {
         if (this.systemFont) {
             this.trackPaletteIndexUsed(paletteIndex);
             this.markDrawCall();
+
+            if (this.isTextRecording) {
+                this.frameText.push({ source: 'systemPrint', text, x: pos.x, y: pos.y, paletteIndex });
+            }
 
             // Offset math: font stores foreground as index 1.
             // Shader computes 1 + (paletteIndex - 1) = paletteIndex.
@@ -2504,6 +2534,8 @@ export class BTAPI {
             hw.overlayAudioMeterStyle,
             hw.overlayAudioMeterHeight,
         );
+
+        this.overlay.setTextSink(this.isTextRecording ? this.frameText : null);
     }
 
     /**
@@ -2993,7 +3025,8 @@ export class BTAPI {
     }
 
     /**
-     * Applies overlay input (palette swatch copy, then body toggle) and clears per-frame palette usage.
+     * Applies overlay input (palette swatch copy, then body toggle), empties the drawn-text
+     * readout, and clears per-frame palette usage.
      *
      * Input runs here (not in {@link Overlay.updateAndRender}) so visibility is current
      * when deciding whether to track palette usage during `demo.render()`. The usage mask is
@@ -3003,6 +3036,7 @@ export class BTAPI {
      */
     private beginRenderFrame(): void {
         this.isDevGuardActive = isDevMode();
+        this.frameText.length = 0;
 
         if (this.overlay) {
             this.overlay.handleFrameInput(

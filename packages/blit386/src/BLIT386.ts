@@ -36,6 +36,8 @@ import {
     type AudioBus,
     type Backend,
     defaultConfig,
+    type FrameTextEntry,
+    type FrameTextSource,
     type HardwareSettings,
     type HotReloadContext,
     type IBTDemo,
@@ -891,6 +893,32 @@ export const BT = {
 
             return { ticks, backend, state: null, error: describeTestStateError(err) };
         }
+    },
+
+    /**
+     * Turns the drawn-text readout behind {@link BT.frameText} on or off. Off by default, so a
+     * game that never calls this pays nothing; while on, each rendered frame records its strings.
+     *
+     * @since 1.9.0
+     * @param enabled - `true` to start recording, `false` to stop and empty the readout.
+     */
+    frameTextRecordSet: (enabled: boolean): void => {
+        BTAPI.instance.setTextRecording(enabled);
+    },
+
+    /**
+     * The strings the last rendered frame drew, with display positions: every
+     * {@link BT.systemPrint} call (`source: 'systemPrint'`) and every {@link OverlayRow} label the
+     * overlay drew (`source: 'overlay'`), in draw order. This is what reached the screen, not game
+     * memory - pair it with {@link BT.testState} when an agent needs both.
+     *
+     * Empty until {@link BT.frameTextRecordSet} turns recording on. Each read returns a fresh copy.
+     *
+     * @since 1.9.0
+     * @returns The last rendered frame's drawn strings, in draw order.
+     */
+    get frameText(): FrameTextEntry[] {
+        return BTAPI.instance.getFrameText();
     },
 
     /**
@@ -3110,6 +3138,8 @@ export type {
     ExposureFadeOptions,
     FrameCaptureOptions,
     FrameCaptureSize,
+    FrameTextEntry,
+    FrameTextSource,
     HardwareSettings,
     HotContext,
     HotReloadContext,
