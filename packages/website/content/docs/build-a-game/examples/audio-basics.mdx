@@ -81,9 +81,11 @@ cannot suddenly blast noise at you. The engine listens for that first gesture an
 its audio for the rest of the session; BT.isAudioUnlocked flips to true once it has.
 
 Not every audio call waits the same way. A sound played with BT.soundPlay() before the
-unlock is simply dropped (the overlay's "drop" counter goes up by one). Music started with
-BT.musicPlay() is remembered and starts the instant sound unlocks - the Music demo shows
-that. Volume and mute changes are kept too, and apply as soon as sound unlocks.
+unlock is simply dropped (the overlay's "drop" counter goes up by one). The pad waits,
+and starts the looping pop on the first tick after unlock while the button is still
+held. Music started with BT.musicPlay() is remembered and starts the instant sound
+unlocks - the Music demo shows that. Volume and mute changes are kept too, and apply as
+soon as sound unlocks.
 
 PITCH, VOLUME, AND PAN
 ----------------------
@@ -238,6 +240,10 @@ class Demo {
     // It is held full while the pad is pressed, so both stay lit until you let go.
     pointerFlashTimer = 0;
 
+    // Set when the pad was pressed before audio finished unlocking. The loop starts
+    // on a later tick if the button is still held once BT.isAudioUnlocked is true.
+    isPadStartPending = false;
+
     // Handle of the looping pop while the pad is held down, or null when nothing plays.
     // BT.soundPlay() returns it; BT.soundVolumeSet(), BT.soundPanSet(), and
     // BT.soundStop() take it to change or stop that one sound.
@@ -307,9 +313,26 @@ class Demo {
         // stays true for as long as the button is held.
         const pos = BT.pointerPos(0);
 
-        // A press inside the pad starts the pop, looping. A press anywhere still unlocks
-        // sound, because the engine listens for that on its own.
-        if (BT.isPressed(BT.BTN_POINTER_A, 0) && PAD_RECT.isContainingXY(pos.x, pos.y)) {
+        // A press inside the pad starts the looping pop once sound is unlocked. The
+        // click that unlocks the page still sees BT.isAudioUnlocked as false, because
+        // AudioContext.resume() finishes a moment later. Remember the press and start
+        // the loop on the first later tick where the unlock has landed and the button
+        // is still held. A press anywhere still unlocks sound; the engine listens for
+        // that on its own.
+        const pressed = BT.isPressed(BT.BTN_POINTER_A, 0);
+        const held = BT.isDown(BT.BTN_POINTER_A, 0);
+
+        if (pressed && PAD_RECT.isContainingXY(pos.x, pos.y)) {
+            if (BT.isAudioUnlocked) {
+                this.isPadStartPending = false;
+                this.startPadSound(pos);
+            } else {
+                this.isPadStartPending = true;
+            }
+        } else if (this.isPadStartPending && !held) {
+            this.isPadStartPending = false;
+        } else if (this.isPadStartPending && BT.isAudioUnlocked) {
+            this.isPadStartPending = false;
             this.startPadSound(pos);
         } else if (this.padSound !== null) {
             if (BT.isDown(BT.BTN_POINTER_A, 0)) {
