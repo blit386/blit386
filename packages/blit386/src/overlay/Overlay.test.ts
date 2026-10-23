@@ -687,6 +687,29 @@ describe('Overlay', () => {
         expect(sink).toHaveLength(2);
     });
 
+    it('records the slot a palette-index-0 row label is really drawn in', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => [
+            { leftText: 'Zero', rightText: 'z', textPaletteIndex: 0 },
+        ]);
+
+        // Index 0 maps to palette offset 0, which the font's index-1 ink draws in slot 1 - visible.
+        expect(
+            getBitmapTextCalls(renderer)
+                .slice(0, 2)
+                .map((call) => call.paletteOffset),
+        ).toEqual([0, 0]);
+        expect(sink.map((entry) => [entry.text, entry.paletteIndex])).toEqual([
+            ['Zero', 1],
+            ['z', 1],
+        ]);
+    });
+
     it('pushes nothing to the text sink while the overlay body is hidden', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const overlay = createOverlay(layout, 'Demo');

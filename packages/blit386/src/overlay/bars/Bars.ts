@@ -259,6 +259,8 @@ export class OverlayBars {
 
             const textIndex = row.textPaletteIndex ?? style.textIndex;
             const textPaletteOffset = overlayBitmapTextPaletteOffset(textIndex);
+            // The font's ink is index 1, so this is the slot the label is drawn in (0 draws in 1).
+            const drawnIndex = textPaletteOffset + 1;
             const barY = barRect.y;
 
             leftPos.y = barY + OVERLAY_TOP_TEXT_Y;
@@ -269,7 +271,7 @@ export class OverlayBars {
                 text: row.leftText,
                 x: leftPos.x,
                 y: leftPos.y,
-                paletteIndex: textIndex,
+                paletteIndex: drawnIndex,
             });
 
             const rightText = row.rightText;
@@ -284,7 +286,7 @@ export class OverlayBars {
                     text: rightText,
                     x: rightPos.x,
                     y: rightPos.y,
-                    paletteIndex: textIndex,
+                    paletteIndex: drawnIndex,
                 });
             }
         }
