@@ -217,6 +217,14 @@ class Demo {
     // rising-edge check in update().
     wasConnected = false;
 
+    // True after update() has run in this drawn frame. render() sets it back to
+    // false, so a frame that only draws leaves it false.
+    updatedThisFrame = false;
+
+    // Gamepad A, B, and Start presses that render() saw on a draw-only frame.
+    // Each BT.BTN_* value is its own bit. The next update() performs them once.
+    pendingGamepadEdges = 0;
+
     // Screen size, timing chart colors, and the keyboard scroll guard.
     configure() {
         return {
@@ -267,7 +275,8 @@ class Demo {
         return true;
     }
 
-    // Reads gamepad input and updates the toy state.
+    // Reads keyboard edges, sticks, and triggers, and updates the toy state.
+    // Gamepad button edges are read in render(), once per drawn frame.
     update() {
         // Let the UI kit do its once-per-tick housekeeping first. This demo has no kit
         // buttons or key bindings, but ui.tick() also tracks whether the screen has ever
@@ -290,37 +299,25 @@ class Demo {
         // Save this tick's connection state so the next tick can compare against it.
         this.wasConnected = connected;
 
-        // Button edges. For player 0, BT.isPressed merges the keyboard map and the
-        // gamepad: the keyboard half clears once per update tick, so update() is where
-        // it must be read. The gamepad half rolls over once per rendered frame instead,
-        // so on a display faster than targetFPS a gamepad press can land in a frame that
-        // runs no update and be missed here - see the input guide's frame-timing section.
+        // This frame did run update(), so render() can treat BT.isPressed as the
+        // gamepad. Keyboard edges clear at the end of this method, so A, B, and
+        // Start are read here, along with any gamepad press saved from a frame
+        // that skipped update().
+        this.updatedThisFrame = true;
 
-        // A press cycles the pod color once per physical press.
-        if (BT.isPressed(BT.BTN_A, PLAYER)) {
-            this.podColorIndex = (this.podColorIndex + 1) % 3;
+        // A cycles the pod color once per physical press.
+        if (this.consumeFacePress(BT.BTN_A)) {
+            this.cyclePodColor();
         }
 
-        // B press toggles trail drawing.
-        if (BT.isPressed(BT.BTN_B, PLAYER)) {
-            this.trailEnabled = !this.trailEnabled;
-
-            // Clearing keeps the trail from "teleporting" across toggles.
-            if (!this.trailEnabled) {
-                this.trail = [];
-            }
+        // B toggles trail drawing.
+        if (this.consumeFacePress(BT.BTN_B)) {
+            this.toggleTrail();
         }
 
         // Start recenters the toy instantly.
-        if (BT.isPressed(BT.BTN_START, PLAYER)) {
+        if (this.consumeFacePress(BT.BTN_START)) {
             this.resetPod();
-        }
-
-        // R2 is the right trigger read as a button: BT.isPressed fires once per pull past
-        // half way, like any other button. (BT.getAxis below still gives the analog
-        // pull.)
-        if (BT.isPressed(BT.BTN_R2, PLAYER)) {
-            this.boostTicks = BOOST_TICKS;
         }
 
         // Axes are dead-zone filtered by the engine (see renderArena for the details).
@@ -366,6 +363,40 @@ class Demo {
 
     // Draws the toy arena and the UI kit groups: title bar, hints, and the status panel.
     render() {
+        // Gamepad edges for A, B, Start, and R2. The engine keeps a gamepad press
+        // until the end of the drawn frame, then forgets it. render() runs once per
+        // drawn frame, so each press is seen once: a fast screen can skip update()
+        // for a frame, and a slow one can run update() twice. The Any Input demo
+        // reads its gamepad helpers here for the same reason.
+        //
+        // After update(), the keyboard edge is already gone, so BT.isPressed is the
+        // gamepad and the action runs now. On a frame that only draws, BT.isPressed
+        // may still be a key update() has not read. That press is saved and performed
+        // on the next update(), which is the only place this demo reads keys. R2 has
+        // no key, so it always runs here. Sticks and the trigger pull that move the
+        // pod stay in update(). Held state is safe in either method.
+        if (this.noteGamepadPress(BT.BTN_A)) {
+            this.cyclePodColor();
+        }
+
+        if (this.noteGamepadPress(BT.BTN_B)) {
+            this.toggleTrail();
+        }
+
+        if (this.noteGamepadPress(BT.BTN_START)) {
+            this.resetPod();
+        }
+
+        // R2, read as a button, fires once per pull past half way. The analog
+        // pull that sets the pod's speed is still BT.getAxis in update().
+        if (BT.isPressed(BT.BTN_R2, PLAYER)) {
+            this.boostTicks = BOOST_TICKS;
+        }
+
+        // The next drawn frame has not run update() yet. A frame that only
+        // draws leaves this false, which is how a saved press stays saved.
+        this.updatedThisFrame = false;
+
         // Erase last frame with the shared theme background, then redraw from scratch.
         BT.clear(this.theme.bg);
 
@@ -382,6 +413,58 @@ class Demo {
         // When no gamepad is plugged in yet, show a friendly prompt inside the arena.
         if (!BT.isGamepadConnected(PLAYER)) {
             this.renderEmptyState();
+        }
+    }
+
+    // True when a mapped keyboard key went down this tick (Space or B for A,
+    // N for B, 5 for Start - the engine's own list, not a second copy), or
+    // when render() saved a gamepad press of this button from a frame that
+    // skipped update(). Keyboard edges clear at the end of update(), which is
+    // why this runs there. One press runs the action once. The & test asks
+    // whether that button's bit is set, and &= ~ clears it.
+    consumeFacePress(button) {
+        const fromKey = BT.DEFAULT_KEYBOARD_PLAYER1[button].some((key) => BT.isKeyPressed(key));
+        const fromPad = (this.pendingGamepadEdges & button) !== 0;
+
+        if (!fromKey && !fromPad) {
+            return false;
+        }
+
+        this.pendingGamepadEdges &= ~button;
+
+        return true;
+    }
+
+    // Reads this button's gamepad edge for render(). When update() already ran
+    // this frame, returns true so the caller runs the action now. On a draw-only
+    // frame, saves the press for update() and returns false. Does not read keys.
+    noteGamepadPress(button) {
+        if (!BT.isPressed(button, PLAYER)) {
+            return false;
+        }
+
+        if (this.updatedThisFrame) {
+            return true;
+        }
+
+        this.pendingGamepadEdges |= button;
+
+        return false;
+    }
+
+    // Moves the pod to the next of its three colors, then back to the first.
+    // The % operator gives the remainder, so the index wraps to 0.
+    cyclePodColor() {
+        this.podColorIndex = (this.podColorIndex + 1) % POD_COLOR_NAMES.length;
+    }
+
+    // Turns the breadcrumb trail on or off. Clearing the list when it goes off
+    // keeps the trail from jumping across the arena the next time it is on.
+    toggleTrail() {
+        this.trailEnabled = !this.trailEnabled;
+
+        if (!this.trailEnabled) {
+            this.trail = [];
         }
     }
 
@@ -495,8 +578,9 @@ class Demo {
 
     // The right-hand status panel: connection info, live button pips, raw stick axis
     // numbers, and a trigger pressure meter. Everything read here is HELD state or an
-    // axis value, both safe to read in render(). Button EDGES (BT.isPressed - "did it go
-    // down just now?") are handled in update() above.
+    // axis value, both safe to read in render(). Button EDGES (BT.isPressed - "did it
+    // go down just now?") are not read here: the gamepad half is at the top of
+    // render(), and the keyboard half is in update().
     renderStatusPanel() {
         // Bitmask OR: BT.BTN_A | BT.BTN_B builds one mask. isDown returns true when
         // EITHER button is held - handy for "press any of these" checks in games. The two
