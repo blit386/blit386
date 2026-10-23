@@ -238,9 +238,10 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   plain `BT.drawRectFill` there is hidden under the panel
 - `ui-core.js` carries a `debug` overlay (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by
   default so the allocates-nothing rule holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`,
-  `margin`, `row-gap`). `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page only. The page takes
-  `snapshot()` before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do
-  not "fix" that order
+  `margin`, `row-gap`). `snapshot().texts` passes through the engine's `BT.frameText` (every string the frame drew, kit
+  or not), which `?embed&capture` turns on. `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page and
+  for agents driving a demo. The page takes `snapshot()` before `captureFrame` on purpose - the capture's extra render
+  would double the recorded groups - so do not "fix" that order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use `THEME_OVERLAY_STYLE` (and
   `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, literal slot numbers (240 +
   offset) with a comment on a custom `startSlot`, or dedicated scene slots
@@ -332,7 +333,7 @@ Every page reads a few URL parameters; nothing else is runtime-configurable:
 | --- | --- |
 | `?embed` | Canvas only - no banner, no source panel. The form external iframes use: `https://demos.blit386.dev/<slug>?embed` |
 | `?embed&source` | Keeps the Twoslash source panel under the canvas; what the shell's own iframe loads |
-| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame` |
+| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame`, and turning on `BT.frameText` (every string the last frame drew, with display positions) |
 | `?seed=N` | Pins `BT.random` (engine `SeedUrlParam`); every capture uses `seed=1`, which is why the same pose gives the same pixels on every machine |
 | `?backend=software` | Forces the Canvas 2D renderer |
 | `?nosplash` | Skips the release-build splash |
