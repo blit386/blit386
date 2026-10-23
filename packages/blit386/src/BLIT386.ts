@@ -907,10 +907,11 @@ export const BT = {
     },
 
     /**
-     * The strings the last rendered frame drew, with display positions: every
-     * {@link BT.systemPrint} call (`source: 'systemPrint'`) and every {@link OverlayRow} label the
-     * overlay drew (`source: 'overlay'`), in draw order. This is what reached the screen, not game
-     * memory - pair it with {@link BT.testState} when an agent needs both.
+     * The strings the last rendered frame drew, with display positions: each
+     * {@link BT.systemPrint} call that drew text (`source: 'systemPrint'`) and each non-empty
+     * {@link OverlayRow} label the overlay drew (`source: 'overlay'`), in draw order. Empty strings
+     * and `systemPrint` calls in palette index 0 draw nothing and are skipped. This is what reached
+     * the screen, not game memory - pair it with {@link BT.testState} when an agent needs both.
      *
      * Empty until {@link BT.frameTextRecordSet} turns recording on. Each read returns a fresh copy.
      *

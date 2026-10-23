@@ -640,9 +640,9 @@ export interface TestStateSnapshot {
 }
 
 /**
- * Where a {@link FrameTextEntry} was drawn from: `'systemPrint'` for every {@link BT.systemPrint}
- * call (game text and any UI kit built on it), `'overlay'` for a left or right label of an
- * {@link OverlayRow}.
+ * Where a {@link FrameTextEntry} was drawn from: `'systemPrint'` for a {@link BT.systemPrint}
+ * call that drew text (game text and any UI kit built on it; empty strings and palette index 0
+ * are skipped), `'overlay'` for a non-empty left or right label of an {@link OverlayRow}.
  *
  * @since 1.9.0
  */

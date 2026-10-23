@@ -571,15 +571,15 @@ const value = label && BT.frameText.find((entry) => entry.y === label.y && entry
 // -> { source: 'systemPrint', text: '42%', x: 173, y: 186, paletteIndex: 244 }
 ```
 
-Every `BT.systemPrint` call is one entry, so a label and its value printed separately come back as two entries on the
-same line.
+Each `BT.systemPrint` call that draws is one entry, so a label and its value printed separately come back as two entries
+on the same line.
 
 Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner on screen, in display pixels, after
 any `BT.cameraSet` offset), and `paletteIndex`:
 
 | `source` | Recorded from |
 | --- | --- |
-| `'systemPrint'` | Every `BT.systemPrint` call, including the ones a UI toolkit built on it makes |
+| `'systemPrint'` | Each `BT.systemPrint` call that drew text, including the ones a UI toolkit built on it makes |
 | `'overlay'` | Each left and right label of an [`overlayRows()`](guide-overlay.md) row the overlay drew |
 
 - Entries come in draw order. The list is emptied at the start of every rendered frame, so it always describes one
