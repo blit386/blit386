@@ -62,7 +62,8 @@ order, and prints one JSON line per step.
    It returns `{ ticks, backend, state }`, where `state` is whatever the game's `testState()` method returns - the
    starter game gives plain numbers, for example `{ score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
    about a second apart: `ticks` should have grown by about 60. `state` is `null` when the game has no `testState()`
-   method. See `use-dev-mode`.
+   method. `BT.testState()` needs engine 1.8.0+; for an older game, see the note on pre-1.8.0 games below. See
+   `use-dev-mode`.
 
 5. Press keys, then read the state again. Keys use `KeyboardEvent.code` names: `KeyA`, `KeyD`, `ArrowLeft`, `Space`.
    Player 0 uses W, A, S, D and Space out of the box; the starter game also maps the left and right arrow keys.

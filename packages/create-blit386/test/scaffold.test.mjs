@@ -25,6 +25,9 @@ const BLIT386_RANGE = /const BLIT386_RANGE = '([^']+)'/u.exec(
 )?.[1];
 assert.ok(BLIT386_RANGE, 'src/scaffold.ts should define BLIT386_RANGE');
 
+// The dev-only global the starters used to assign before engine 1.8.0 added BT.testState().
+const RETIRED_GAME_GLOBAL = '__game';
+
 test('scaffolds a runnable game project', () => {
     assert.ok(existsSync(cli), 'dist/index.js must be built before running tests (run `pnpm run build`)');
 
@@ -150,7 +153,7 @@ test('scaffolds a runnable game project', () => {
         assert.ok(!game.includes('Math.random'), 'game.js should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
         // The test-the-game skill reads BT.testState() and replays runs with ?seed=, which needs BT.random.
-        assert.ok(!game.includes('__game'), 'game.js should not assign the retired window.__game');
+        assert.ok(!game.includes(RETIRED_GAME_GLOBAL), 'game.js should not assign the retired window.__game');
         assert.ok(game.includes('testState()'), 'game.js should carry the testState() hook BT.testState() reads');
 
         assert.ok(
@@ -656,7 +659,7 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(game.includes('BT.random'), 'game.ts should use the seedable BT.random');
         assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
-        assert.ok(!game.includes('__game'), 'game.ts should not assign the retired window.__game');
+        assert.ok(!game.includes(RETIRED_GAME_GLOBAL), 'game.ts should not assign the retired window.__game');
         assert.ok(game.includes('testState(): GameState'), 'game.ts should carry the typed testState() hook');
     } finally {
         rmSync(work, { recursive: true, force: true });
