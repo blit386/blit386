@@ -95,7 +95,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead`, building a fade target with `fillBlock` |
-| `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, the starters' `window.__game` shape, `BT.testState()`, and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
+| `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, `BT.testState()`, the pre-1.8.0 `window.__game` note, and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/templates/game.js`, `game.ts` | The `blit clean` skeletons (`src/commands/clean.ts`). Review when `IBTDemo`'s required methods, `bootstrap`'s signature or defaults (`packages/blit386/src/utils/Bootstrap.ts`, `defaultConfig`), or the `testState()` hook change; `test/clean.test.mjs` pins `class Game`, the TS `init` signature, and the JS/TS split. Keep them the empty shape, never the scaffolder's Catcher starter |

@@ -149,8 +149,8 @@ test('scaffolds a runnable game project', () => {
         assert.ok(game.includes('BT.random'), 'game.js should use the seedable BT.random');
         assert.ok(!game.includes('Math.random'), 'game.js should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
-        // The test-the-game skill reads window.__game and replays runs with ?seed=, which needs BT.random.
-        assert.ok(game.includes('__game'), 'game.js should expose window.__game for the test-the-game skill');
+        // The test-the-game skill reads BT.testState() and replays runs with ?seed=, which needs BT.random.
+        assert.ok(!game.includes('__game'), 'game.js should not assign the retired window.__game');
         assert.ok(game.includes('testState()'), 'game.js should carry the testState() hook BT.testState() reads');
 
         assert.ok(
@@ -656,7 +656,7 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(game.includes('BT.random'), 'game.ts should use the seedable BT.random');
         assert.ok(!game.includes('Math.random'), 'game.ts should not use Math.random');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
-        assert.ok(game.includes('__game'), 'game.ts should expose window.__game for the test-the-game skill');
+        assert.ok(!game.includes('__game'), 'game.ts should not assign the retired window.__game');
         assert.ok(game.includes('testState(): GameState'), 'game.ts should carry the typed testState() hook');
     } finally {
         rmSync(work, { recursive: true, force: true });
