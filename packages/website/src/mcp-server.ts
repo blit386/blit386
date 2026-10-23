@@ -196,6 +196,10 @@ const PAGE_LINK_NOTE = (origin: string): string =>
 
 // Longest slice of a caller's get_doc_page argument echoed back in an error message.
 const MAX_ECHOED_INPUT = 200;
+// Scoring scans every page once per query term, so cost grows with query length (BT-614).
+const MAX_QUERY_LENGTH = 256;
+// A POST must declare a content-length at or under this: 413 when over, 411 when missing.
+const MAX_BODY_BYTES = 64 * 1024;
 
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
@@ -329,6 +333,28 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         return next();
                     }
 
+                    const declaredLength = c.req.raw.headers.get('content-length');
+                    if (declaredLength === null) {
+                        return c.json(
+                            {
+                                jsonrpc: '2.0',
+                                id: null,
+                                error: { code: -32600, message: 'content-length required' },
+                            },
+                            411,
+                        );
+                    }
+                    if (!(Number(declaredLength) <= MAX_BODY_BYTES)) {
+                        return c.json(
+                            {
+                                jsonrpc: '2.0',
+                                id: null,
+                                error: { code: -32600, message: `Request body over ${MAX_BODY_BYTES} bytes` },
+                            },
+                            413,
+                        );
+                    }
+
                     let body: unknown;
                     try {
                         body = await c.req.json<unknown>();
@@ -381,6 +407,13 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     jsonrpc: '2.0',
                                     id,
                                     error: { code: -32602, message: 'Invalid params' },
+                                });
+                            }
+                            if (query.length > MAX_QUERY_LENGTH) {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32602, message: `Query over ${MAX_QUERY_LENGTH} characters` },
                                 });
                             }
                             try {

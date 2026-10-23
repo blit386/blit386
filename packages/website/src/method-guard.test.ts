@@ -50,7 +50,12 @@ describe('methodGuardPlugin', () => {
 
     describe('chained after the other plugins', () => {
         // Hono's compose, reduced to what these three middlewares need: each may answer or delegate.
-        async function runChain(options: { url: string; method: string; body?: string }) {
+        async function runChain(options: {
+            url: string;
+            method: string;
+            body?: string;
+            headers?: Record<string, string>;
+        }) {
             const { loader } = createFakeLoader([]);
             const context = createMockAppContext({ loader, adapters: [] });
             const assets = createFakeAssets(() => new Response('not found', { status: 404 }));
@@ -75,6 +80,7 @@ describe('methodGuardPlugin', () => {
             const response = await runChain({
                 url: 'https://blit386.dev/mcp',
                 method: 'POST',
+                headers: { 'content-length': '50' },
                 body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
             });
 
