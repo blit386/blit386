@@ -34,9 +34,11 @@ Under that line sit three bus panels side by side - "Main", "Music", and "Sfx". 
 what the bus carries here ("All sound", "The loop", "The alert"), then has a "Volume"
 slider and a "Mute (Q)", "Mute (W)", or "Mute (E)" checkbox.
 
-Below them, the "Alert" panel has one button, and the wider "Ducking" panel shows whether
-the music is ducked ("not ducked" or "ducked to 25%"), the volume it will come back to,
-and an amber "Hold" bar that drains while the duck lasts.
+Below them, the "Alert" panel has one button, and the wider "Ducking" panel reads the
+music bus back from the engine: "muted" while mute is on, "ducked to 25%" while an
+alert holds it down, otherwise the live volume as a percent ("100%" at the top of the
+slider). It also shows the volume the music will come back to, and an amber "Hold" bar
+that drains while the duck lasts.
 
 A calm music loop starts on its own the moment sound is unlocked.
 
@@ -343,11 +345,19 @@ class Demo {
         ui.end();
     }
 
-    // The ducking panel under the Music and Sfx columns: whether the music is ducked, the
-    // volume it will come back to, and how much of the hold is left.
+    // The ducking panel under the Music and Sfx columns. The Music row is read from
+    // the engine this frame: muted, ducked to a quarter, or the live volume as a
+    // percent. Restore is the level a duck returns to, and Hold is how much of the
+    // dip is left.
     renderDuckPanel() {
         const holdLeft = this.isDucking ? this.duckHoldTicksLeft / DUCK_HOLD_TICKS : 0;
-        const state = this.isDucking ? `ducked to ${Math.round(DUCK_VOLUME_FACTOR * 100)}%` : 'not ducked';
+        let state = `${Math.round(BT.audioVolumeGet('music') * 100)}%`;
+
+        if (BT.isAudioMuted('music')) {
+            state = 'muted';
+        } else if (this.isDucking) {
+            state = `ducked to ${Math.round(DUCK_VOLUME_FACTOR * 100)}%`;
+        }
 
         ui.begin('topLeft', { x: DUCK_PANEL_X, y: DUCK_ROW_Y, width: DUCK_PANEL_W, kvCols: DUCK_KV_COLS });
         ui.panel('Ducking');

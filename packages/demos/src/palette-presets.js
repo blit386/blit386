@@ -188,7 +188,7 @@ class Demo {
     swatchRect = new Rect2i(0, 0, 0, 0);
 
     // Reused every frame for the overlay row, so no new array or object is allocated.
-    overlayRowData = [{ leftText: 'Current Game Boy - 4 colors', textPaletteIndex: THEME_HEADER }];
+    overlayRowData = [{ leftText: 'Current Game Boy - 4 slots', textPaletteIndex: THEME_HEADER }];
 
     // A wider canvas, the overlay's palette grid (64 columns), and overlay colors. The
     // overlay bar, text, and timing chart all borrow shared UI theme slots (240-251,
@@ -328,7 +328,7 @@ class Demo {
 
         const name = this.presetNames[this.currentPresetIndex];
         const size = this.presets[this.currentPresetIndex].size;
-        this.overlayRowData[0].leftText = `Current ${name} - ${size} colors`;
+        this.overlayRowData[0].leftText = `Current ${name} - ${size} slots`;
 
         return this.overlayRowData;
     }

@@ -31,11 +31,11 @@ WHAT YOU WILL SEE
 
 A 480x480 display split into two 240-wide halves, each showing the same painting of an
 explosion over a canyon (public/sprites/mushroom-cloud.png, 231x240, twelve colors) with
-a strip of its twelve color swatches underneath. The left half is labeled "paletteFade:"
-and the right half "paletteFadeExposure:". Below both sits a UI kit panel with a
-"Highlight lead" slider and a "Restart [R]" button. The engine overlay is open from the
-first frame, with its palette grid showing two rows of fifteen slots at the bottom. The
-cycle repeats forever:
+a strip of its twelve color swatches underneath. The left half is labeled
+"paletteFadeRange:" and the right half "paletteFadeExposure:". Below both sits
+a UI kit panel with a "Highlight lead" slider and a "Restart [R]" button. The
+engine overlay is open from the first frame, with its palette grid showing two
+rows of fifteen slots at the bottom. The cycle repeats forever:
 
   1. Fade up from black - 2 seconds.
   2. Hold, fully lit - 1.5 seconds.
@@ -463,8 +463,9 @@ class Demo {
         this.renderScene(0, PLAIN_FIRST_SLOT);
         this.renderScene(HALF_WIDTH, EXP_FIRST_SLOT);
 
-        // Name each half, using UI colors the fades never touch.
-        BT.systemPrint(new Vector2i(7, TITLE_Y), this.theme.dim, 'paletteFade:');
+        // Name each half after the call that drives it. The left label matches
+        // BT.paletteFadeRange(), the call startFades() uses for that half's slots.
+        BT.systemPrint(new Vector2i(7, TITLE_Y), this.theme.dim, 'paletteFadeRange:');
         BT.systemPrint(new Vector2i(HALF_WIDTH + 7, TITLE_Y), this.theme.header, 'paletteFadeExposure:');
 
         // Pinned to PANEL_Y rather than anchored to the bottom of the screen: the
