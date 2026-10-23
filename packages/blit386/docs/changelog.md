@@ -23,8 +23,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
-- `BT.frameText` and `BT.frameTextRecordSet`: an opt-in readout of the strings the last rendered frame drew - every
-  `BT.systemPrint` call and every `overlayRows()` label, each with its display position and palette index. An agent can
+- `BT.frameText` and `BT.frameTextRecordSet`: an opt-in readout of the strings the last rendered frame drew - each
+  `BT.systemPrint` call that drew text and each non-empty label of a visible `overlayRows()` row, with its display
+  position and palette index (empty strings and palette-index-0 system text draw nothing and are skipped). An agent can
   now check that a label says the right thing, which `BT.testState()` (game memory) cannot. Off by default. See
   [Reading the text a frame drew](api-core.md#reading-the-text-a-frame-drew).
 

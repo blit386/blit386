@@ -133,10 +133,11 @@ order, and prints one JSON line per step.
    // -> [{ source: 'systemPrint', text: 'Score 0', x: 6, y: 6, paletteIndex: 4 }, ...]
    ```
 
-   Each entry is one string, with its top-left corner in game pixels (`BT.displaySize`, not the page). It lists every
-   `BT.systemPrint` call (`source: 'systemPrint'`) and every label of the overlay's `overlayRows()` bars
-   (`source: 'overlay'`), in the order they were drawn. Text drawn with `BT.printFont` is not listed. Compare the
-   starter's `Score` line with `testState().state.score`: they should agree.
+   Each entry is one string, with its top-left corner in game pixels (`BT.displaySize`, not the page). It lists each
+   `BT.systemPrint` call that drew text (`source: 'systemPrint'`) and each label of the overlay's `overlayRows()` bars
+   that was drawn (`source: 'overlay'`), in the order they were drawn. Empty text, text in palette slot 0, and text
+   drawn with `BT.printFont` are not listed. Compare the starter's `Score` line with `testState().state.score`: they
+   should agree.
 
 ## What a healthy run looks like
 

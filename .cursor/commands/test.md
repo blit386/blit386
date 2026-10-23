@@ -95,11 +95,11 @@ Driving a live demo (how an agent checks what a demo shows - the canvas has no a
 2. Poll `BT.isReady` before anything else. Step frames with `BT.renderAt(seconds)` and
    `BT.renderAt(next, { from: 'current' })` rather than waiting on `requestAnimationFrame`: a background or hidden
    browser pane throttles or stops the live loop, while a seek renders exactly the frame asked for.
-3. Read the strings from `BT.frameText`, not a screenshot: every `BT.systemPrint` call (kit text included) and every
-   overlay row label, each with its display position. A kit `ui.kv` row is two entries on the same `y`, key then value.
-   `BT.testState()` is the game's memory, not what was drawn - most demos have no hook, and a wrong label over a right
-   value still passes it. `__blitDemoUi.snapshot()` adds the kit's groups and widget rectangles (set
-   `__blitDemoUi.recording = true` first) next to the same `texts`.
+3. Read the strings from `BT.frameText`, not a screenshot: each `BT.systemPrint` call that drew text (kit text included)
+   and each overlay row label drawn, with its display position; text that draws nothing is skipped. A kit `ui.kv` row is
+   two entries on the same `y`, key then value. `BT.testState()` is the game's memory, not what was drawn - most demos
+   have no hook, and a wrong label over a right value still passes it. `__blitDemoUi.snapshot()` adds the kit's groups
+   and widget rectangles (set `__blitDemoUi.recording = true` first) next to the same `texts`.
 4. Pointer input: dispatch `PointerEvent`s on the canvas, mapping display pixels to `clientX` / `clientY` with
    `canvas.getBoundingClientRect()` and `BT.displaySize` - never `canvas.width`, since a 320×240 demo often has a
    640×480 backing store. Set `pointerType: 'mouse'` (BT-594: an empty type is treated as the mouse, but a touch or pen
