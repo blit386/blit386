@@ -60,21 +60,6 @@ function readSeed() {
     return seed;
 }
 
-// Turn a PNG blob into a data URL string, which a browser tool can read back out of the page.
-/**
- * @param {Blob} blob
- * @returns {Promise<string>}
- */
-function blobToDataURL(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-    });
-}
-
 class Game {
     // How big the screen is. We read the real size in init().
     screen = new Vector2i(320, 240);
@@ -118,20 +103,6 @@ class Game {
 
         if (seed !== null) {
             BT.randomSeed(seed);
-        }
-
-        // Dev builds only: let tests and AI agents grab exact frames, and read the state the old way.
-        // A shipped game (a production build) never has `window.__game`. The state itself comes from
-        // testState() below - `BT.testState()` is the newer way to read it and needs no global at all.
-        if (BT.isDevMode) {
-            // Object.assign instead of `window.__game = ...`, because the editor's type checker does not know
-            // about a `__game` property on `window` in a plain JavaScript file.
-            Object.assign(window, {
-                __game: {
-                    state: () => this.testState(),
-                    frame: async () => blobToDataURL(await BT.captureFrame()),
-                },
-            });
         }
 
         return true; // tell the engine that setup worked

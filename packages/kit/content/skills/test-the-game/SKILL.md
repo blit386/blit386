@@ -62,13 +62,9 @@ order, and prints one JSON line per step.
 
    It returns `{ ticks, backend, state }`, where `state` is whatever the game's `testState()` method returns - the
    starter game gives plain numbers, for example `{ score, lives, paddle: { x, y, ... }, items: [...] }`. Read it twice
-   about a second apart: `ticks` should have grown by about 60.
-
-   A game written against an engine before 1.8.0 has no `testState()`; the starter's `window.__game.state()` returns the
-   same plain object there.
-
-   It returns `{ ticks, backend, state }`, where `state` is what `testState()` returned (or `null` when the game has no
-   such method). See `use-dev-mode`.
+   about a second apart: `ticks` should have grown by about 60. `state` is `null` when the game has no `testState()`
+   method. `BT.testState()` needs engine 1.8.0+; for an older game, see the note on pre-1.8.0 games below. See
+   `use-dev-mode`.
 
 5. Press keys, then read the state again. Keys use `KeyboardEvent.code` names: `KeyA`, `KeyD`, `ArrowLeft`, `Space`.
    Player 0 uses W, A, S, D and Space out of the box; the starter game also maps the left and right arrow keys.
@@ -93,18 +89,19 @@ order, and prints one JSON line per step.
 6. Grab an exact frame when you need to see the picture:
 
    ```js
-   await window.__game.frame(); // a PNG data URL of the next frame
+   const blob = await window.BT.captureFrame({ size: 'display' }); // a PNG Blob, one pixel per game pixel
+   await new Promise((resolve, reject) => {
+     const reader = new FileReader();
+     reader.onload = () => resolve(reader.result); // a data:image/png;base64,... string
+     reader.onerror = () => reject(reader.error);
+     reader.readAsDataURL(blob);
+   });
    ```
 
-   This is sharper than a browser screenshot: it is the game's own pixels, not scaled by the page. It matches
-   `BT.outputSize`, though, which for the starter game is `640x480` - every game pixel a 2x2 block. For a 1:1 frame at
-   `BT.displaySize` (`320x240`), the size that pixel comparisons want, use the engine call directly (engine 1.7.1+):
-
-   ```js
-   await window.BT.captureFrame({ size: 'display' }); // a PNG Blob, one pixel per game pixel
-   ```
-
-   See `save-a-screenshot` for the difference between the two sizes.
+   This is sharper than a browser screenshot: it is the game's own pixels, not scaled by the page. `{ size: 'display' }`
+   (engine 1.7.1+) gives a 1:1 frame at `BT.displaySize` (`320x240` for the starter game), the size that pixel
+   comparisons want. Leave it out and you get `BT.outputSize` (`640x480`, every game pixel a 2x2 block). See
+   `save-a-screenshot` for the difference between the two sizes.
 
 7. Freeze the game on an exact moment when timing matters (engine 1.8.0+). A live game keeps running between your tool
    calls, so two reads never describe the same tick. `BT.renderAt` replays the game from the start on a fresh copy of
@@ -135,16 +132,15 @@ order, and prints one JSON line per step.
 
 ## Notes
 
-- The starter game's `testState()` method lives in `src/game.*`; its dev-only `window.__game.state()` just calls it. Add
-  a field to `testState()` when you need to check something new, for example `level: this.level`. Keep it plain numbers,
-  strings, and arrays so it can be printed.
+- The starter game's `testState()` method lives in `src/game.*`. Add a field to it when you need to check something new,
+  for example `level: this.level`. Keep it plain numbers, strings, and arrays so it can be printed.
 - For a game of your own, the same `testState()` method is all you need (engine 1.8.0+): no global to assign and no
-  `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints it too, and falls back
-  to `window.__game.state()` for a game without the method.
-- An older game without `window.__game` still has `window.BT` in a dev build: `BT.ticks`, `BT.activeBackend`, and
-  `BT.captureFrame()` (it returns a PNG `Blob`; pass `{ size: 'display' }` on engine 1.7.1+ for a 1:1 frame) work
-  straight away, and the terminal `state` step falls back to `BT.ticks`. See `use-dev-mode`.
-- Both `window.__game` and `window.BT` exist only while the dev server runs the game. A built game has neither.
+  `declare global` block, and `window.BT.testState()` reads it. The terminal `state` step prints it too.
+- A game scaffolded before engine 1.8.0 has no `testState()`; its starter assigned a dev-only `window.__game` instead,
+  and `window.__game.state()` returns the same plain object there. The terminal `state` step falls back to it, then to
+  `BT.ticks`. `window.BT` is still there in a dev build: `BT.ticks`, `BT.activeBackend`, and `BT.captureFrame()` work
+  straight away. See `use-dev-mode`.
+- `window.BT` exists only while the dev server runs the game. A built game does not have it.
 - `?seed=` only helps if the game rolls dice with `BT.random`, not `Math.random()`. See `use-random`.
 - If the browser pane or tab is hidden, the browser slows the game down or stops it completely: `ticks` climbs slowly or
   not at all, and `document.visibilityState` reads `hidden`. Show the pane again, or use `npx blit play`, before testing
