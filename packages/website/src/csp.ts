@@ -93,7 +93,12 @@ export function generateNonce(): string {
     return btoa(String.fromCharCode(...bytes));
 }
 
-/** The client search index: a large extensionless JSON asset that relies on 304s. */
+/**
+ * The client search index: a large extensionless JSON asset that relies on 304s.
+ *
+ * Manual-sync hazard: `public/_headers` carries a `Content-Type` rule for this same path, and a static
+ * file cannot import this constant. Change the path in both places.
+ */
 const SEARCH_INDEX_PATH = '/api/search';
 
 /**
