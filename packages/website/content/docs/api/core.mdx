@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-10-23T13:18:27+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -543,6 +543,47 @@ const snapshot = BT.testState();
   also exists in release builds; only the `window.BT` global is dev-only (see `BootstrapOptions.exposeGlobal`).
 
 <DemoEmbed demo="test-state" title="BLIT386 test state demo" />
+
+### Reading the text a frame drew
+
+<Since symbol="BT.frameText" />
+<Since symbol="BT.frameTextRecordSet" />
+<Since symbol="FrameTextEntry" />
+
+`BT.testState()` reports what the game remembers. It cannot catch a label that says the wrong thing while the value
+behind it is right. For that, read the strings the last rendered frame actually drew. Turn the recorder on once with
+`BT.frameTextRecordSet(true)`, then read `BT.frameText` after any frame:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+BT.frameTextRecordSet(true);
+await BT.renderAt(2);
+
+const label = BT.frameText.find((entry) => entry.text === 'Music');
+// -> { source: 'systemPrint', text: 'Music', x: 119, y: 186, paletteIndex: 245 }
+const value = label && BT.frameText.find((entry) => entry.y === label.y && entry.x > label.x);
+// -> { source: 'systemPrint', text: '42%', x: 173, y: 186, paletteIndex: 244 }
+```
+
+Every `BT.systemPrint` call is one entry, so a label and its value printed separately come back as two entries on the
+same line.
+
+Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner in display pixels), and
+`paletteIndex`:
+
+| `source` | Recorded from |
+| --- | --- |
+| `'systemPrint'` | Every `BT.systemPrint` call, including the ones a UI toolkit built on it makes |
+| `'overlay'` | Each left and right label of an [`overlayRows()`](/docs/guides/overlay) row the overlay drew |
+
+- Entries come in draw order. The list is emptied at the start of every rendered frame, so it always describes one
+  frame. `BT.captureFrame` re-renders the parked frame and leaves the same list.
+- Only drawn text is recorded. A string printed in palette index 0 (transparent) is skipped, and overlay rows are
+  skipped while the overlay body is hidden.
+- `BT.printFont` text and the overlay's own bars (FPS, timings) are not recorded.
+- Recording is off by default, so a game that never turns it on pays nothing. Each read of `BT.frameText` returns a
+  fresh copy. `BT.frameTextRecordSet(false)` stops recording and empties the list.
 
 ### Engine readiness
 
