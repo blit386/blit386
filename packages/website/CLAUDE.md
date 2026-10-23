@@ -423,6 +423,10 @@ rather than a length cutoff, which used to drop real terms like `UI` and `2D` (B
 build a FlexSearch index in-process - that exceeds the Worker CPU limit (error 1102), the same reason site search runs
 in static mode.
 
+Input is bounded (BT-614): a POST to `/mcp` with no `content-length` gets `411`, and one over 64 KiB (`MAX_BODY_BYTES`)
+gets `413`, both before parsing and with a `-32600` body. A `search_docs` query over 256 characters (`MAX_QUERY_LENGTH`)
+gets `-32602`. Scoring cost is linear in query length, and the Waku adapter's own body limit is 100 MB.
+
 The Build a Game pages (see Build a Game pages) are ordinary loader pages, so `search_docs` and `get_doc_page` serve
 them with no special case: that is how an agent with only this connector and no scaffolded project reaches the starter
 project and the kit guides (BT-557). `get_doc_page` is a lookup key, never a fetch - it accepts a bare site path or an
