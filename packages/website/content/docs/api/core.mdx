@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-10-23T13:18:27+02:00"
+lastModified: "2026-10-23T13:35:20+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -569,8 +569,8 @@ const value = label && BT.frameText.find((entry) => entry.y === label.y && entry
 Every `BT.systemPrint` call is one entry, so a label and its value printed separately come back as two entries on the
 same line.
 
-Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner in display pixels), and
-`paletteIndex`:
+Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner on screen, in display pixels, after
+any `BT.cameraSet` offset), and `paletteIndex`:
 
 | `source` | Recorded from |
 | --- | --- |
