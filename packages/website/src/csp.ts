@@ -94,6 +94,14 @@ export function generateNonce(): string {
 }
 
 /**
+ * The client search index: a large extensionless JSON asset that relies on 304s.
+ *
+ * Manual-sync hazard: `public/_headers` carries a `Content-Type` rule for this same path, and a static
+ * file cannot import this constant. Change the path in both places.
+ */
+const SEARCH_INDEX_PATH = '/api/search';
+
+/**
  * File extensions served as something other than HTML.
  *
  * Anything else - `/`, `/docs/getting-started`, `/blog/`, an explicit `.html` - is a prerendered page.
@@ -109,6 +117,7 @@ const NON_HTML_EXTENSIONS = new Set([
     'map',
     'md',
     'mp4',
+    'otf',
     'png',
     'svg',
     'txt',
@@ -131,6 +140,10 @@ const NON_HTML_EXTENSIONS = new Set([
  * @param pathname Request path, without query or hash.
  */
 export function isHtmlAssetPath(pathname: string): boolean {
+    if (pathname === SEARCH_INDEX_PATH) {
+        return false;
+    }
+
     const lastSegment = pathname.slice(pathname.lastIndexOf('/') + 1);
     const dot = lastSegment.lastIndexOf('.');
 

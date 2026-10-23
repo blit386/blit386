@@ -104,6 +104,8 @@ describe('isHtmlAssetPath', () => {
         '/assets/entry-BujZVH9j.js',
         '/assets/style-abc123.css',
         '/fonts/DepartureMono-Regular.woff2',
+        '/fonts/DepartureMono-Regular.otf',
+        '/api/search',
         '/media/blog/hot-reload-release-1-4-0/clip.mp4',
         '/llms.txt',
         '/sitemap.xml',

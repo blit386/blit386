@@ -96,7 +96,9 @@ Four things about this are load-bearing and easy to undo by accident:
   client merges the `304`'s headers into its _stored_ body, so a fresh nonce lands on scripts carrying an older one and
   the whole page is blocked. Dropping the validators stops new copies from being revalidatable; dropping the
   conditionals stops copies cached before this shipped from getting a `304` today. `isHtmlAssetPath` in `src/csp.ts`
-  decides which paths pay for it - hashed JS, CSS, and fonts keep their `304`s.
+  decides which paths pay for it - hashed JS, CSS, and fonts keep their `304`s. The extensionless `/api/search` index is
+  exempted by exact path (`SEARCH_INDEX_PATH`), and `public/_headers` repeats that path to give it a JSON `Content-Type`
+  (which is what lets Cloudflare compress it) - a manual-sync pair.
 - **The rewriting needs a real parser.** `<script` occurs inside the RSC flight payload as ordinary JSON string data, so
   a string replace corrupts pages. `HTMLRewriter` is a correctness requirement, not a convenience.
 
