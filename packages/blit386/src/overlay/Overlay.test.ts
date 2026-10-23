@@ -710,6 +710,19 @@ describe('Overlay', () => {
         ]);
     });
 
+    it('leaves an empty left label out of the text sink', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, () => [
+            { leftText: '', rightText: 'ok' },
+        ]);
+
+        expect(sink.map((entry) => entry.text)).toEqual(['ok']);
+    });
+
     it('pushes nothing to the text sink while the overlay body is hidden', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const overlay = createOverlay(layout, 'Demo');

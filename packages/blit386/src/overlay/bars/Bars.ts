@@ -266,13 +266,17 @@ export class OverlayBars {
             leftPos.y = barY + OVERLAY_TOP_TEXT_Y;
 
             target.drawLabel(font, leftPos, row.leftText, textPaletteOffset);
-            textSink?.push({
-                source: 'overlay',
-                text: row.leftText,
-                x: leftPos.x,
-                y: leftPos.y,
-                paletteIndex: drawnIndex,
-            });
+
+            // An empty label draws nothing, so it is not listed (the right label below is skipped too).
+            if (row.leftText.length > 0) {
+                textSink?.push({
+                    source: 'overlay',
+                    text: row.leftText,
+                    x: leftPos.x,
+                    y: leftPos.y,
+                    paletteIndex: drawnIndex,
+                });
+            }
 
             const rightText = row.rightText;
 

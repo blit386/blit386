@@ -584,8 +584,8 @@ any `BT.cameraSet` offset), and `paletteIndex`:
 
 - Entries come in draw order. The list is emptied at the start of every rendered frame, so it always describes one
   frame. `BT.captureFrame` re-renders the parked frame and leaves the same list.
-- Only drawn text is recorded. A string printed in palette index 0 (transparent) is skipped, and overlay rows are
-  skipped while the overlay body is hidden.
+- Only drawn text is recorded. An empty string and a `BT.systemPrint` in palette index 0 (transparent) are skipped, and
+  overlay rows are skipped while the overlay body is hidden.
 - `BT.printFont` text and the overlay's own bars (FPS, timings) are not recorded.
 - Recording is off by default, so a game that never turns it on pays nothing. Each read of `BT.frameText` returns a
   fresh copy. `BT.frameTextRecordSet(false)` stops recording and empties the list.

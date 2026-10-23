@@ -1366,7 +1366,8 @@ export class BTAPI {
             this.trackPaletteIndexUsed(paletteIndex);
             this.markDrawCall();
 
-            if (this.isTextRecording) {
+            // An empty string draws nothing, so it is not listed.
+            if (this.isTextRecording && text.length > 0) {
                 // The renderer draws text shifted by the camera, so record where it lands on screen.
                 const camera = this.renderer?.getCameraOffset() ?? Vector2i.zero();
 

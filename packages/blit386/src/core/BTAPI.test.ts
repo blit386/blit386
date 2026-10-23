@@ -983,6 +983,7 @@ describe('BTAPI', () => {
                 render: () => {
                     BTAPI.instance.drawSystemText(new Vector2i(3, 4), 8, 'hi');
                     BTAPI.instance.drawSystemText(new Vector2i(0, 0), 0, 'transparent');
+                    BTAPI.instance.drawSystemText(new Vector2i(0, 0), 8, '');
                 },
                 ...extra,
             };
@@ -1012,7 +1013,7 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getFrameText()).toEqual([]);
         });
 
-        it('records drawn system text with its position, once per frame, skipping index 0', async () => {
+        it('records drawn system text with its position, once per frame, skipping index 0 and empty text', async () => {
             const loop = await boot();
 
             BTAPI.instance.setTextRecording(true);
