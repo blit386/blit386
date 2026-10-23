@@ -71,9 +71,11 @@ TRY THIS
   fork() row does not. The fork's seedValue reads "none", because a fork was never given
   a seed of its own.
 - The engine also takes a seed from the URL. Open the demo page on its own with
-  ?embed&seed=4821 added and the left world always starts from 4821, because BT.init()
-  applies ?seed= to BT.random right before init() runs. The shell page around the demo
-  does not pass the parameter down to its frame.
+  ?embed&seed=4821 added and the left world always starts from 4821. The line under
+  the worlds says the left seed came from ?seed=4821, because BT.init() applies
+  ?seed= to BT.random right before init() runs. Without that parameter the same line
+  says the left seed came from the clock. The shell page around the demo does not
+  pass the parameter down to its frame.
 
 */
 
@@ -245,6 +247,30 @@ function generateWorld(seed) {
     return { seed, hills, buildings, trees, stars };
 }
 
+// Whole numbers only, same rule as packages/blit386/src/core/SeedUrlParam.ts.
+// That helper is not public, so this repeats it. Null means the caption should
+// keep saying the clock chose the seed.
+function urlSeed() {
+    const raw = new URLSearchParams(globalThis.location.search).get('seed');
+
+    if (raw === null) {
+        return null;
+    }
+
+    const text = raw.trim();
+
+    // Digits only, optional minus. Number("1.0000000000000001") would become 1,
+    // and the engine rejects that rather than rounding.
+    if (!/^-?\d+$/u.test(text)) {
+        return null;
+    }
+
+    const seed = Number(text);
+
+    // Random.seed() keeps only the lower 32 bits, the same way seedValue reports it.
+    return Number.isSafeInteger(seed) ? seed >>> 0 : null;
+}
+
 // Two worlds side by side, proving that the same seed rebuilds the same world.
 class Demo {
     /** @type {Palette | null} */
@@ -264,6 +290,10 @@ class Demo {
     // Whether the engine picked the very first seeds by itself. Once the user presses a
     // button this turns false, because from then on the seeds were chosen on purpose.
     seedsWereAutomatic = true;
+
+    // True only when ?seed= is the seed init() actually used. Otherwise the clock
+    // chose it, or the parameter was missing or invalid.
+    leftSeedFromUrl = false;
 
     // A snapshot of what clone() and fork() do, worked out once in init().
     streams = { seed: 0, base: [], cloned: [], forked: [], forkSeed: undefined };
@@ -315,12 +345,16 @@ class Demo {
         this.seedPicker = new Random();
 
         // Nobody has chosen a seed yet. The engine seeded itself from the clock when it
-        // started up (or from ?seed= in the URL, if there was one), and seedValue hands
-        // that number back - so we can build a world from it and still show which number
-        // it was.
+        // started up, or from ?seed= in the URL when that parameter is a whole number.
+        // seedValue hands that number back, so we can build a world from it and still
+        // show which number it was. leftSeedFromUrl remembers which of the two it was,
+        // because the caption has to say so.
         //
         // That is the part worth noticing: even the run you did not plan has a seed you
         // can write down and return to.
+        const fromUrl = urlSeed();
+
+        this.leftSeedFromUrl = fromUrl !== null && fromUrl === BT.random.seedValue;
         this.left = generateWorld(BT.random.seedValue ?? SEED_MIN);
         this.right = generateWorld(this.rollSeed());
 
@@ -366,10 +400,14 @@ class Demo {
         if (this.left.seed === this.right.seed) {
             text = 'Same seed, same world';
             color = 'accent';
+        } else if (this.seedsWereAutomatic && this.leftSeedFromUrl) {
+            // The page address carried ?seed=, and the engine applied it to BT.random
+            // before init() ran. Name that number so nobody thinks the clock chose it.
+            text = `The left seed came from ?seed=${this.left.seed}`;
         } else if (this.seedsWereAutomatic) {
-            // Nobody typed the left seed: the engine made it from the clock when the demo
-            // started (or took it from ?seed= in the URL). seedValue is how we can still
-            // read it.
+            // Nobody typed the left seed, and the address had no usable ?seed= either.
+            // The engine made it from the clock when the demo started. seedValue is how
+            // we can still read it.
             text = 'The left seed came from the clock';
         }
 

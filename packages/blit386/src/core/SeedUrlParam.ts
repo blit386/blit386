@@ -5,6 +5,8 @@
  * Node without a `location` stub, mirroring `readUrlFlags()` in `src/splash/gating.ts`.
  */
 
+// packages/demos/src/seeded-worlds.js repeats PARAM and the whole-number rule in
+// urlSeed(), because this helper is not public. Keep that copy in step.
 const PARAM = 'seed';
 
 /** Optional sign, then digits only - `Number()` alone would round `1.0000000000000001` to `1`. */
