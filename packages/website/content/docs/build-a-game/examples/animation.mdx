@@ -444,7 +444,7 @@ class Demo {
         }
 
         // Move the walker sideways while in the Walking state.
-        this.updateRockPosition();
+        this.updateWalkerPosition();
     }
 
     // Runs once per screen refresh to draw the walker, particles, and UI. Notice: no
@@ -515,7 +515,7 @@ class Demo {
 
     // Moves the walker based on the current state. Only Walking moves it sideways; the
     // jump arc is a vertical offset computed in renderCharacter().
-    updateRockPosition() {
+    updateWalkerPosition() {
         if (this.animState === AnimState.Walking) {
             // Move 1 pixel per tick; turn around near the screen edges.
             this.charPos.x += this.walkDir;
