@@ -73,7 +73,7 @@ to these URLs via `VINTAGE_URLS`.
 - [colors](https://demos.blit386.dev/colors) - Color32 deep dive: named, HSL, alpha, lerp
 - [named-colors](https://demos.blit386.dev/named-colors) - Color32 named registry APIs: resolve, register, update,
   unregister
-- [hypercube](https://demos.blit386.dev/hypercube) - Fez-style rotating tesseract wireframe on a 256×256 PICO-8 canvas
+- [hypercube](https://demos.blit386.dev/hypercube) - Fez-style rotating tesseract wireframe on a 320x320 PICO-8 canvas
 
 ### Text and Visual Art
 
