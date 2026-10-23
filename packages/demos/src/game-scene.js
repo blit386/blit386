@@ -217,7 +217,7 @@ const C_BUILDING_BASE = 32;
 const C_CLOUD = 40;
 
 // Overlay text and timing-chart colors: 41..44, dimmed with the scene at night.
-const C_HUD_TITLE = 41; // timing-chart error markers only
+const C_HUD_ERROR = 41; // timing-chart error markers only (no overlay text uses it)
 const C_HUD_SCORE = 42;
 const C_HUD_POS = 43;
 const C_HUD_PHASE = 44; // colors the day-phase overlay row (Day / Night / ...)
@@ -359,17 +359,18 @@ class Demo {
     skyTop = new Color32(40, 70, 140);
     skyHorizon = new Color32(120, 170, 220);
 
-    // Overlay text base colors, before the ambient is applied.
-    hudTitleBase = new Color32(255, 230, 180);
+    // Overlay base colors (text rows plus the timing-chart error marker), before the ambient
+    // is applied.
+    hudErrorBase = new Color32(255, 230, 180);
     hudScoreBase = new Color32(200, 220, 255);
     hudPosBase = new Color32(180, 200, 180);
-    hudFpsBase = new Color32(150, 150, 160);
+    hudPhaseBase = new Color32(150, 150, 160);
 
     // Reused every frame for the overlay rows: score, rock position, day phase.
     overlayRowData = [
         { leftText: 'Score 0', textPaletteIndex: C_HUD_SCORE },
         { leftText: 'Rock (0, 0)', textPaletteIndex: C_HUD_POS },
-        { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_PHASE },
+        { leftText: 'Day', textPaletteIndex: C_HUD_PHASE },
     ];
 
     // Palette slots for the engine overlay bars (the FPS strip keeps the engine
@@ -404,7 +405,7 @@ class Demo {
                 updateBarPaletteIndex: C_HUD_POS,
                 renderBarPaletteIndex: C_HUD_SCORE,
                 warningPaletteIndex: C_HUD_PHASE,
-                errorPaletteIndex: C_HUD_TITLE,
+                errorPaletteIndex: C_HUD_ERROR,
                 tagPaletteIndex: C_HUD_POS,
             },
         };
@@ -747,10 +748,10 @@ class Demo {
 
         // Engine overlay text: a subtle night tint on the score / position / phase rows.
         // The kit HUD panels keep their fixed theme colors and does not dim at night.
-        this.palette.set(C_HUD_TITLE, this.hudTitleBase.multiply(ambient));
+        this.palette.set(C_HUD_ERROR, this.hudErrorBase.multiply(ambient));
         this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
         this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
-        this.palette.set(C_HUD_PHASE, this.hudFpsBase.multiply(ambient));
+        this.palette.set(C_HUD_PHASE, this.hudPhaseBase.multiply(ambient));
 
         // Hero shadow, softer at night.
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60);

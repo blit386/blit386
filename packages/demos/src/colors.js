@@ -104,7 +104,6 @@ const C_GREEN_N = 5; // Color32.green (0, 255, 0)
 const C_BLUE_N = 6; // Color32.blue (0, 0, 255)
 const C_YELLOW_N = 7; // Color32.yellow (255, 255, 0)
 const C_CYAN_N = 8; // Color32.cyan (0, 255, 255)
-const C_MAGENTA_N = 9; // Color32.magenta (255, 0, 255)
 
 // Overlay text color: a muted purple, set once in init() like the basic colors above.
 const C_OVERLAY_TEXT = 15; // (200, 80, 200, 140): semi-transparent purple
@@ -190,7 +189,6 @@ class Demo {
         this.palette.set(C_BLUE_N, Color32.blue);
         this.palette.set(C_YELLOW_N, Color32.yellow);
         this.palette.set(C_CYAN_N, Color32.cyan);
-        this.palette.set(C_MAGENTA_N, Color32.magenta);
 
         // Overlay text color. The fourth argument to Color32 is alpha: 255 is fully
         // solid, 0 is fully invisible.

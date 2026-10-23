@@ -310,11 +310,8 @@ class Demo {
             this.swappedA = C_FIRE_BASE + (tick % FIRE_SLOTS);
             this.swappedB = C_FIRE_BASE + ((tick + 3) % FIRE_SLOTS);
 
-            // The two slots can never be equal here, so this check is just a safety net.
-            if (this.swappedA !== this.swappedB) {
-                BT.paletteSwap(this.swappedA, this.swappedB);
-                this.showSwapLabel = true;
-            }
+            BT.paletteSwap(this.swappedA, this.swappedB);
+            this.showSwapLabel = true;
 
             this.lastSwapTick = tick;
         }

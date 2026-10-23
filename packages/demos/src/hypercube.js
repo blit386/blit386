@@ -289,6 +289,92 @@ class Demo {
         return true;
     }
 
+    // Advances the drag/spin state, rotates and projects all 16 corners, and re-sorts the
+    // edges by depth.
+    update() {
+        const dt = BT.deltaSeconds;
+
+        this.updateDrag(dt);
+
+        this.applyLineColors(BT.timeSeconds);
+
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
+
+        // Sine and cosine of each plane angle, computed once per tick rather than once
+        // per corner.
+        const cXW = Math.cos(this.angleXW);
+        const sXW = Math.sin(this.angleXW);
+        const cYZ = Math.cos(this.angleYZ);
+        const sYZ = Math.sin(this.angleYZ);
+        const cXY = Math.cos(this.angleXY);
+        const sXY = Math.sin(this.angleXY);
+        const cZW = Math.cos(this.angleZW);
+        const sZW = Math.sin(this.angleZW);
+        const cXZ = Math.cos(this.angleXZ);
+        const sXZ = Math.sin(this.angleXZ);
+
+        const v = this.scratch;
+
+        for (let i = 0; i < 16; i++) {
+            const src = VERTICES[i];
+
+            v[0] = src[0];
+            v[1] = src[1];
+            v[2] = src[2];
+            v[3] = src[3];
+
+            // The 4D tumble planes first, then the screen-space yaw (XZ), so a horizontal
+            // drag turns the projected object like a solid in front of the viewer.
+            this.rotatePlane(v, cXW, sXW, 0, 3);
+            this.rotatePlane(v, cYZ, sYZ, 1, 2);
+            this.rotatePlane(v, cXY, sXY, 0, 1);
+            this.rotatePlane(v, cZW, sZW, 2, 3);
+            this.rotatePlane(v, cXZ, sXZ, 0, 2);
+
+            // 4D to 3D perspective: points farther along W shrink toward the origin.
+            const w = DIST_4 / (DIST_4 - v[3]);
+            const x3 = v[0] * w;
+            const y3 = v[1] * w;
+            const z3 = v[2] * w;
+
+            // 3D to 2D perspective, then scale and center on the canvas.
+            const p = DIST_3 / (DIST_3 - z3);
+            const x2 = x3 * p * SCALE + cx;
+            const y2 = y3 * p * SCALE + cy;
+
+            this.projected[i].set(x2, y2);
+
+            // Blend Z and W so links that dive "into" W sort behind nearer faces.
+            this.depths[i] = z3 + v[3] * 0.35;
+        }
+
+        // Update the depth on each edge in place. Rebuilding the edges from a sorted
+        // index list would pair the wrong color with the wrong endpoints and flash.
+        for (let e = 0; e < this.edgeOrder.length; e++) {
+            const edge = this.edgeOrder[e];
+
+            edge.depth = (this.depths[edge.i] + this.depths[edge.j]) * 0.5;
+        }
+
+        this.edgeOrder.sort(compareEdgeDepth);
+    }
+
+    // Draws the edges farthest first, then a dot on every corner.
+    render() {
+        BT.clear(C_BG);
+
+        for (let e = 0; e < this.edgeOrder.length; e++) {
+            const edge = this.edgeOrder[e];
+
+            BT.drawLine(this.projected[edge.i], this.projected[edge.j], edge.color);
+        }
+
+        for (let i = 0; i < 16; i++) {
+            BT.drawPixel(this.projected[i], C_DOT);
+        }
+    }
+
     // Rewrites the four line slots for the given time: each hue drifts at HUE_SPEED and
     // the lightness pulses on a sine, phase-shifted per slot.
     applyLineColors(timeSeconds) {
@@ -400,92 +486,6 @@ class Demo {
 
         this.integrateSpin(dt);
         this.fadeSpinToHome(dt);
-    }
-
-    // Advances the drag/spin state, rotates and projects all 16 corners, and re-sorts the
-    // edges by depth.
-    update() {
-        const dt = BT.deltaSeconds;
-
-        this.updateDrag(dt);
-
-        this.applyLineColors(BT.timeSeconds);
-
-        const cx = SIZE / 2;
-        const cy = SIZE / 2;
-
-        // Sine and cosine of each plane angle, computed once per tick rather than once
-        // per corner.
-        const cXW = Math.cos(this.angleXW);
-        const sXW = Math.sin(this.angleXW);
-        const cYZ = Math.cos(this.angleYZ);
-        const sYZ = Math.sin(this.angleYZ);
-        const cXY = Math.cos(this.angleXY);
-        const sXY = Math.sin(this.angleXY);
-        const cZW = Math.cos(this.angleZW);
-        const sZW = Math.sin(this.angleZW);
-        const cXZ = Math.cos(this.angleXZ);
-        const sXZ = Math.sin(this.angleXZ);
-
-        const v = this.scratch;
-
-        for (let i = 0; i < 16; i++) {
-            const src = VERTICES[i];
-
-            v[0] = src[0];
-            v[1] = src[1];
-            v[2] = src[2];
-            v[3] = src[3];
-
-            // The 4D tumble planes first, then the screen-space yaw (XZ), so a horizontal
-            // drag turns the projected object like a solid in front of the viewer.
-            this.rotatePlane(v, cXW, sXW, 0, 3);
-            this.rotatePlane(v, cYZ, sYZ, 1, 2);
-            this.rotatePlane(v, cXY, sXY, 0, 1);
-            this.rotatePlane(v, cZW, sZW, 2, 3);
-            this.rotatePlane(v, cXZ, sXZ, 0, 2);
-
-            // 4D to 3D perspective: points farther along W shrink toward the origin.
-            const w = DIST_4 / (DIST_4 - v[3]);
-            const x3 = v[0] * w;
-            const y3 = v[1] * w;
-            const z3 = v[2] * w;
-
-            // 3D to 2D perspective, then scale and center on the canvas.
-            const p = DIST_3 / (DIST_3 - z3);
-            const x2 = x3 * p * SCALE + cx;
-            const y2 = y3 * p * SCALE + cy;
-
-            this.projected[i].set(x2, y2);
-
-            // Blend Z and W so links that dive "into" W sort behind nearer faces.
-            this.depths[i] = z3 + v[3] * 0.35;
-        }
-
-        // Update the depth on each edge in place. Rebuilding the edges from a sorted
-        // index list would pair the wrong color with the wrong endpoints and flash.
-        for (let e = 0; e < this.edgeOrder.length; e++) {
-            const edge = this.edgeOrder[e];
-
-            edge.depth = (this.depths[edge.i] + this.depths[edge.j]) * 0.5;
-        }
-
-        this.edgeOrder.sort(compareEdgeDepth);
-    }
-
-    // Draws the edges farthest first, then a dot on every corner.
-    render() {
-        BT.clear(C_BG);
-
-        for (let e = 0; e < this.edgeOrder.length; e++) {
-            const edge = this.edgeOrder[e];
-
-            BT.drawLine(this.projected[edge.i], this.projected[edge.j], edge.color);
-        }
-
-        for (let i = 0; i < 16; i++) {
-            BT.drawPixel(this.projected[i], C_DOT);
-        }
     }
 }
 

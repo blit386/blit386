@@ -69,9 +69,8 @@ import { applyTheme, ui } from './shared/ui.js';
 
 // Every color used for drawing gets a numbered slot in the palette, like a numbered paint
 // jar. Slot 0 is always transparent, so our own colors start at 1.
-const C_WHITE = 1; // pure white, kept in the palette but not drawn with
 const C_BG = 2; // deep gray-blue: fills the screen background
-const C_TAG = 3; // pale blue-white: overlay bar and timing-chart accents
+const C_TAG = 3; // pale blue-white: overlay bar
 
 // Heart colors, picked by the codes in HEART_PALETTE_MAP below.
 const C_HEART_OUTLINE = 5; // dark red: the heart's body (grid code 1)
@@ -141,16 +140,6 @@ class Demo {
                 textPaletteIndex: C_BG,
                 gapPaletteIndex: C_BG,
             },
-
-            // Timing chart colors. The chart itself is not enabled in this demo, so these
-            // only matter if you add isOverlayTimingChartEnabled: true above.
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_BG,
-                renderBarPaletteIndex: C_TAG,
-                warningPaletteIndex: C_TAG,
-                errorPaletteIndex: 4, // slot 4 has no named constant and is never set
-                tagPaletteIndex: C_BG,
-            },
         };
     }
 
@@ -158,11 +147,10 @@ class Demo {
     async init() {
         // Lay out the colors first, like putting paint on an artist's tray before
         // starting a painting. Every color gets a number, all chosen before drawing
-        // begins. 32 slots are enough: the artwork uses 1 through 11 and the shared UI
+        // begins. 32 slots are enough: the artwork uses 2 through 11 and the shared UI
         // theme takes 12 more (slots 20-31, installed below).
         this.palette = BT.paletteCreate(32);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(28, 32, 48)); // deep gray-blue background
         this.palette.set(C_TAG, new Color32(200, 210, 230)); // pale blue-white
 
