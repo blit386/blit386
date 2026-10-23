@@ -1048,6 +1048,22 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getFrameText()).toEqual(seeked);
         });
 
+        it('records system text where the camera puts it on screen', async () => {
+            const loop = await boot({
+                render: () => {
+                    BTAPI.instance.setCameraOffset(new Vector2i(10, -5));
+                    BTAPI.instance.drawSystemText(new Vector2i(3, 4), 8, 'hi');
+                },
+            });
+
+            BTAPI.instance.setTextRecording(true);
+            loop.step(0);
+
+            expect(BTAPI.instance.getFrameText()).toEqual([
+                { source: 'systemPrint', text: 'hi', x: -7, y: 9, paletteIndex: 8 },
+            ]);
+        });
+
         it('records overlay row labels after the game text', async () => {
             const loop = await boot(
                 { overlayRows: () => [{ leftText: 'Position: 1, 2' }] },

@@ -574,8 +574,8 @@ const value = label && BT.frameText.find((entry) => entry.y === label.y && entry
 Every `BT.systemPrint` call is one entry, so a label and its value printed separately come back as two entries on the
 same line.
 
-Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner in display pixels), and
-`paletteIndex`:
+Each `FrameTextEntry` has `source`, `text`, `x` and `y` (the text's top-left corner on screen, in display pixels, after
+any `BT.cameraSet` offset), and `paletteIndex`:
 
 | `source` | Recorded from |
 | --- | --- |

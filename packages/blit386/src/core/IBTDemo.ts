@@ -660,10 +660,10 @@ export interface FrameTextEntry {
     /** The exact string that was drawn. */
     readonly text: string;
 
-    /** Left edge of the text, in display pixels. */
+    /** Left edge of the text on screen, in display pixels (after any {@link BT.cameraSet} offset). */
     readonly x: number;
 
-    /** Top edge of the text, in display pixels. */
+    /** Top edge of the text on screen, in display pixels (after any {@link BT.cameraSet} offset). */
     readonly y: number;
 
     /** Palette index the text was drawn in. */

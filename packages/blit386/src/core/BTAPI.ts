@@ -1367,7 +1367,16 @@ export class BTAPI {
             this.markDrawCall();
 
             if (this.isTextRecording) {
-                this.frameText.push({ source: 'systemPrint', text, x: pos.x, y: pos.y, paletteIndex });
+                // The renderer draws text shifted by the camera, so record where it lands on screen.
+                const camera = this.renderer?.getCameraOffset() ?? Vector2i.zero();
+
+                this.frameText.push({
+                    source: 'systemPrint',
+                    text,
+                    x: pos.x - camera.x,
+                    y: pos.y - camera.y,
+                    paletteIndex,
+                });
             }
 
             // Offset math: font stores foreground as index 1.
