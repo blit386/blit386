@@ -48,16 +48,6 @@ interface GameState {
     items: { x: number; y: number }[];
 }
 
-// What the dev build puts on `window.__game`. Open the browser console and type `__game.state()` to try it.
-declare global {
-    interface Window {
-        __game?: {
-            state(): GameState;
-            frame(): Promise<string>; // the next frame as a PNG data URL, sharp and unscaled by the browser
-        };
-    }
-}
-
 // Read `?seed=1234` from the page address. The same seed makes the blocks fall in the same places every run,
 // which is how you replay a bug or give a test a fixed starting point. No seed means a different game every time.
 function readSeed(): number | null {
@@ -76,17 +66,6 @@ function readSeed(): number | null {
     }
 
     return seed;
-}
-
-// Turn a PNG blob into a data URL string, which a browser tool can read back out of the page.
-function blobToDataURL(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-    });
 }
 
 class Game {
@@ -131,16 +110,6 @@ class Game {
 
         if (seed !== null) {
             BT.randomSeed(seed);
-        }
-
-        // Dev builds only: let tests and AI agents grab exact frames, and read the state the old way.
-        // A shipped game (a production build) never has `window.__game`. The state itself comes from
-        // testState() below - `BT.testState()` is the newer way to read it and needs no global at all.
-        if (BT.isDevMode) {
-            window.__game = {
-                state: () => this.testState(),
-                frame: async () => blobToDataURL(await BT.captureFrame()),
-            };
         }
 
         return true; // tell the engine that setup worked

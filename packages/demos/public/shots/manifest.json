@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T16:02:16.966Z",
+  "generatedAt": "2026-10-23T12:56:31.632Z",
   "engineVersion": "1.8.0",
   "entries": [
     {
@@ -387,28 +387,28 @@
       "height": 390
     },
     {
-      "slug": "palette-swap",
-      "pose": "start",
       "variants": {
         "display": "palette-swap/start.display.png",
         "uidebug": "palette-swap/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-swap",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "palette-swap",
-      "pose": "settled",
       "variants": {
         "display": "palette-swap/settled.display.png",
         "uidebug": "palette-swap/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "palette-swap",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
       "variants": {
@@ -1203,28 +1203,28 @@
       "height": 400
     },
     {
+      "slug": "pattern-fill",
+      "pose": "start",
       "variants": {
         "display": "pattern-fill/start.display.png",
         "uidebug": "pattern-fill/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "pattern-fill",
-      "pose": "start",
       "width": 960,
-      "height": 600
+      "height": 600,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "pattern-fill",
+      "pose": "settled",
       "variants": {
         "display": "pattern-fill/settled.display.png",
         "uidebug": "pattern-fill/settled.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "pattern-fill",
-      "pose": "settled",
       "width": 960,
-      "height": 600
+      "height": 600,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {

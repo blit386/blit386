@@ -98,9 +98,6 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'bl
 
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit386').Rect2i} Rect2i */
-
 // How many ticks to hold each theme before switching. A tick is one fixed update; at 60
 // ticks per second, 120 ticks is 2 seconds.
 const SWAP_PERIOD_TICKS = 120;

@@ -119,6 +119,16 @@ const PHASE_FLASH = 12; // 200 ms
 const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
+// Short on-screen label for each phase (the panel title and the overlay row).
+const PHASE_LABELS = {
+    day: 'Day',
+    'fade-to-night': 'Fading to night... (ease-in-out)',
+    night: 'Night',
+    flash: 'Lightning flash!',
+    'night-2': 'Night',
+    'fade-to-day': 'Dawn... (ease-out)',
+};
+
 // The day/night cycle as a lookup table: each phase holds for `duration` ticks, then
 // advances to `next`. The last entry points back at the first, so the cycle never ends.
 const PHASE_TRANSITIONS = {
@@ -212,10 +222,6 @@ class Demo {
     /** @type {Palette | null} */
     night = null;
 
-    // Palette slot map for the shared UI kit theme, filled in init() by applyTheme().
-    // theme.text, theme.header, and friends are palette indices ready for BT draw calls.
-    theme = null;
-
     // Which phase of the day/night cycle we are in - a key of PHASE_TRANSITIONS.
     phase = 'day';
 
@@ -279,7 +285,7 @@ class Demo {
         // colors.)
         applyTheme(this.day);
         applyTheme(this.night);
-        this.theme = applyTheme(this.palette);
+        applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
@@ -329,16 +335,7 @@ class Demo {
     // Short label for the current phase. Falls back to the raw phase name if the table
     // has no entry for it.
     getPhaseLabel() {
-        const phaseLabels = {
-            day: 'Day',
-            'fade-to-night': 'Fading to night... (ease-in-out)',
-            night: 'Night',
-            flash: 'Lightning flash!',
-            'night-2': 'Night',
-            'fade-to-day': 'Dawn... (ease-out)',
-        };
-
-        return phaseLabels[this.phase] ?? this.phase;
+        return PHASE_LABELS[this.phase] ?? this.phase;
     }
 
     // Enters a new phase at the given tick and re-arms the effect trigger.

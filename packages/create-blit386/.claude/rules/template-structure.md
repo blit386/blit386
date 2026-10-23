@@ -11,8 +11,8 @@
 - `templates/js/` - JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
 - `templates/ts/` - TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic,
   typed.
-- The starter game (`src/game.*`) is the Catcher example and carries the `testState()` hook (engine 1.8.0+) plus a
-  dev-only `window.__game` whose `state()` delegates to it - the kit's `test-the-game` skill reads both. The kit's
+- The starter game (`src/game.*`) is the Catcher example and carries the `testState()` hook (engine 1.8.0+) that the
+  kit's `test-the-game` skill reads through `BT.testState()`; it no longer assigns a `window.__game`. The kit's
   `content/templates/game.{js,ts}` are a different file on purpose: the empty skeleton `blit clean` writes over a game,
   not a copy of the starter. Keep their header comments (the method list, the optional hooks) saying the same thing.
 - `templates/optional/` - wizard opt-in extras (currently only the GitHub Actions CI workflow). The workflow is
