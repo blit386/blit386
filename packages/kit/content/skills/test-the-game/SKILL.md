@@ -37,6 +37,8 @@ order, and prints one JSON line per step.
 
 - Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button
   100 ms), `state`, `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
+- To read the words on screen (engine 1.9.0+), start with `eval:BT.frameTextRecordSet(true)` and read them later with
+  `eval:BT.frameText`. Browser step 8 explains what it lists.
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
   (show the browser window). `npx blit play --help` lists them all.
 - The first time, it may say it needs the `playwright-core` package and print the command that adds it. Run that command
@@ -65,10 +67,7 @@ order, and prints one JSON line per step.
    about a second apart: `ticks` should have grown by about 60.
 
    A game written against an engine before 1.8.0 has no `testState()`; the starter's `window.__game.state()` returns the
-   same plain object there.
-
-   It returns `{ ticks, backend, state }`, where `state` is what `testState()` returned (or `null` when the game has no
-   such method). See `use-dev-mode`.
+   same plain object there. A game with no `testState()` at all gets `state: null`. See `use-dev-mode`.
 
 5. Press keys, then read the state again. Keys use `KeyboardEvent.code` names: `KeyA`, `KeyD`, `ArrowLeft`, `Space`.
    Player 0 uses W, A, S, D and Space out of the box; the starter game also maps the left and right arrow keys.
@@ -123,10 +122,27 @@ order, and prints one JSON line per step.
    time. It only lands on the right picture if the game moves from `BT.ticks` / `BT.timeSeconds` / `BT.random`, never
    `Date.now()` or `performance.now()`. Key presses do not replay - `renderAt` checks what the game does on its own.
 
+8. Read the words on the screen (engine 1.9.0+). `testState()` tells you what the game remembers, not what it showed: a
+   score label that prints the wrong number still passes it. To check the text itself, turn on the engine's text readout
+   once, then read it after any frame:
+
+   ```js
+   window.BT.frameTextRecordSet(true); // off by default; turn it on once
+   await window.BT.renderAt(3.0); // or just wait for the next frame
+   window.BT.frameText; // every string the last frame drew
+   // -> [{ source: 'systemPrint', text: 'Score 0', x: 6, y: 6, paletteIndex: 4 }, ...]
+   ```
+
+   Each entry is one string, with its top-left corner in game pixels (`BT.displaySize`, not the page). It lists every
+   `BT.systemPrint` call (`source: 'systemPrint'`) and every label of the overlay's `overlayRows()` bars
+   (`source: 'overlay'`), in the order they were drawn. Text drawn with `BT.printFont` is not listed. Compare the
+   starter's `Score` line with `testState().state.score`: they should agree.
+
 ## What a healthy run looks like
 
 - From the terminal: the last line shows `"errors":[]` and the exit code is 0. Any error the page logs fails the run.
 - In a browser tool: `ticks` climbs between two reads, and the browser console shows no errors.
+- What the screen says matches the state: the text in `BT.frameText` shows the same score and lives as `testState()`.
 - The numbers you meant to change moved the way you expected (the score went up after a catch, the paddle's `x` went
   down while `KeyA` was held).
 - The same seed and the same steps give the same result. Seeded values (where blocks appear, how far they fell by a
