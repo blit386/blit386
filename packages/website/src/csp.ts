@@ -93,6 +93,9 @@ export function generateNonce(): string {
     return btoa(String.fromCharCode(...bytes));
 }
 
+/** The client search index: a large extensionless JSON asset that relies on 304s. */
+const SEARCH_INDEX_PATH = '/api/search';
+
 /**
  * File extensions served as something other than HTML.
  *
@@ -109,6 +112,7 @@ const NON_HTML_EXTENSIONS = new Set([
     'map',
     'md',
     'mp4',
+    'otf',
     'png',
     'svg',
     'txt',
@@ -131,6 +135,10 @@ const NON_HTML_EXTENSIONS = new Set([
  * @param pathname Request path, without query or hash.
  */
 export function isHtmlAssetPath(pathname: string): boolean {
+    if (pathname === SEARCH_INDEX_PATH) {
+        return false;
+    }
+
     const lastSegment = pathname.slice(pathname.lastIndexOf('/') + 1);
     const dot = lastSegment.lastIndexOf('.');
 

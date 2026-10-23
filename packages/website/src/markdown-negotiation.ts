@@ -49,7 +49,7 @@ function assetRequest(request: Request, pathname: string): Request {
  * Cloudflare serves pre-rendered static assets before the Worker runs, so this plugin
  * only sees requests when `run_worker_first` is enabled. To preserve normal serving it
  * re-implements assets-first: any request it does not negotiate is forwarded to the
- * `ASSETS` binding, and only asset-less paths (RSC, `/mcp`, `/api/search`, ...) fall
+ * `ASSETS` binding, and only asset-less paths (RSC, `/mcp`, ...) fall
  * through to the remaining middlewares.
  */
 export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {
@@ -102,7 +102,7 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                         }
                     }
 
-                    // No static asset (RSC, /mcp, /api/search, dynamic) -> next middleware.
+                    // No static asset (RSC, /mcp, dynamic) -> next middleware.
                     return next();
                 },
             ];
