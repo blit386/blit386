@@ -254,11 +254,7 @@ class Demo {
 
             for (let c = 0; c < maxColors; c++) {
                 // palette.get(index) returns a copy of the Color32 stored at that slot.
-                const color = preset.get(c);
-
-                if (color) {
-                    this.palette.set(offset + c, color);
-                }
+                this.palette.set(offset + c, preset.get(c));
             }
         }
 
@@ -342,8 +338,7 @@ class Demo {
 
         for (let i = 0; i < 16; i++) {
             if (i < maxColors) {
-                const color = preset.get(i);
-                this.palette.set(LIVE_SWATCH_SLOT + i, color ?? new Color32(0, 0, 0));
+                this.palette.set(LIVE_SWATCH_SLOT + i, preset.get(i));
             } else {
                 this.palette.set(LIVE_SWATCH_SLOT + i, new Color32(0, 0, 0));
             }
