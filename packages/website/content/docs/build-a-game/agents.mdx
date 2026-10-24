@@ -152,9 +152,9 @@ it:
 - Zed cannot take safety rules from project files, so the hard rules above are all its agent has, and they are only
   instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
   It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
-  destructive git commands (`git reset --hard`, `git checkout --`, `git restore`, `git clean`, and force push). It does
-  not stop the agent from changing those files through a terminal command, so keep terminal approval on if you need that
-  boundary:
+  destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or `git switch`,
+  `git restore`, `git clean`, and force push). It does not stop the agent from changing those files through a terminal
+  command, so keep terminal approval on if you need that boundary:
 
 ```json
 {
@@ -176,7 +176,13 @@ it:
         "terminal": {
           "always_deny": [
             { "pattern": "git\\s+reset\\s+--hard" },
-            { "pattern": "git\\s+checkout\\s+--" },
+            { "pattern": "git\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>]|$)" },
+            {
+              "pattern": "git\\s+(checkout|switch)\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z]*f[a-zA-Z]*|--force|--discard-changes)(\\s|[;&|<>]|$)"
+            },
+            {
+              "pattern": "git\\s+checkout(\\s+[^\\s;&|<>]+)*\\s+[^\\s;&|<>]*(\\.[A-Za-z][A-Za-z0-9]*['\"]?|/['\"]?|[*?\\[][^\\s;&|<>]*)(\\s|[;&|<>]|$)"
+            },
             { "pattern": "git\\s+restore\\b" },
             { "pattern": "git\\s+clean\\b" },
             { "pattern": "git\\s+push\\s+.*--force" }

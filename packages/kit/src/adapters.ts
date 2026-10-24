@@ -1055,9 +1055,13 @@ export function generateCopilotAdapter(root: string, vars: TemplateVars): Genera
  * `"*": "allow"` base entry on purpose: it would override a stricter user-level default for every tool call.
  *
  * MANUAL-SYNC HAZARD: these lists restate the guard core's policy (`content/hooks/guard-core.cjs`: `isProtectedPath`,
- * `isDangerousCommand`) in a form glob patterns can express - coarser, never laxer. `test/opencode.test.mjs`
+ * `isDangerousCommand`) in a form glob patterns can express - coarser, never laxer, with two exceptions a `*`
+ * pattern cannot express without also denying allowed commands: the checkout file-like-argument rule
+ * (`git checkout src/game.js`; `*.*` would also deny a tag such as `git checkout 1.8.0`) and a `-f` / `-p` in the
+ * middle of a bundled short-flag cluster (`-*f` would also deny `git checkout -b leaf`). `test/opencode.test.mjs`
  * runs one case table through both, so an edit on either side that is not mirrored fails the kit tests. The
- * `kit-guard.ts` plugin enforces the exact policy on top of this, including what a pattern cannot (`bash -c "..."`).
+ * `kit-guard.ts` plugin enforces the exact policy on top of this, including those two exceptions and what a pattern
+ * cannot see at all (`bash -c "..."`).
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -1090,6 +1094,37 @@ const OPENCODE_PERMISSION = {
     bash: {
         'git reset --hard*': 'deny',
         'git checkout -- *': 'deny',
+        'git checkout * -- *': 'deny',
+        'git checkout .': 'deny',
+        'git checkout * .': 'deny',
+        'git checkout -f*': 'deny',
+        'git checkout * -f*': 'deny',
+        // Any `--f...` on checkout is `--force` or a prefix of it; checkout has no other long option starting with f.
+        'git checkout *--f*': 'deny',
+        'git checkout -p*': 'deny',
+        'git checkout * -p*': 'deny',
+        'git checkout -2*': 'deny',
+        'git checkout * -2*': 'deny',
+        'git checkout -3*': 'deny',
+        'git checkout * -3*': 'deny',
+        'git checkout *--pat*': 'deny',
+        'git checkout *--ou*': 'deny',
+        'git checkout *--th*': 'deny',
+        'git checkout *--no-over*': 'deny',
+        'git switch -f*': 'deny',
+        'git switch * -f*': 'deny',
+        // Each prefix of `--force` (`--f` to `--force`) as a whole argument, so `--force-create` (keeps local edits)
+        // still passes.
+        ...Object.fromEntries(
+            [3, 4, 5, 6, 7].flatMap((length) => {
+                const prefix = '--force'.slice(0, length);
+                return [
+                    [`git switch *${prefix}`, 'deny'],
+                    [`git switch *${prefix} *`, 'deny'],
+                ];
+            }),
+        ),
+        'git switch *--di*': 'deny',
         'git restore *': 'deny',
         'git restore --staged *': 'allow',
         'git clean': 'deny',
