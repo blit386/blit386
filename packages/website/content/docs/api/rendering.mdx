@@ -8,7 +8,8 @@ editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
 ---
 
 All draw calls require a palette to be active (`BT.paletteSet(palette)` before the first `BT.drawSprite`,
-`BT.drawRectFill`, etc.). All coordinates are integer pixels - use `Vector2i` and `Rect2i`, never floats.
+`BT.drawRectFill`, etc.). All coordinates are integer pixels - use `Vector2i` and `Rect2i` rather than floats. The one
+exception is the numeric `BT.drawPixel(x, y, paletteIndex)` overload, which truncates fractional values toward zero.
 
 Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
 optional `paletteOffset` added to stored texel indices. See [Palette addressing](/docs/api/palette#palette-addressing).
