@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-10-24T11:42:02+02:00"
+lastModified: "2026-10-24T12:07:45+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -162,7 +162,8 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
-not `event.key` layout text.
+not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
+moves elsewhere does not stay down.
 
 ### Raw key queries
 
