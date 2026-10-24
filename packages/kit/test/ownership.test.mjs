@@ -363,3 +363,39 @@ test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lo
         }
     }
 });
+
+test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch forms that discard work (BT-617)', () => {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
+    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+
+    for (const command of [
+        'git checkout -- src/game.js',
+        'git checkout .',
+        'git checkout HEAD -- x',
+        'git checkout -f main',
+        'git switch --force main',
+        'git switch --discard-changes main',
+        'git checkout src/game.js',
+        "git checkout 'src/game.js'",
+        'git checkout HEAD src/',
+        "git checkout '*'",
+    ]) {
+        assert.ok(denies(command), `${command} should be denied`);
+    }
+
+    for (const command of [
+        'git checkout main',
+        'git checkout -b feat',
+        'git checkout --track origin/feature',
+        'git checkout feature/sprites',
+        'git checkout main && cat notes.txt',
+        'git checkout main && rm -f build.log',
+        'git checkout main && git diff -- src',
+        'git switch main',
+    ]) {
+        assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});

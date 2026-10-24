@@ -123,9 +123,9 @@ Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants
 | Zed | `AGENTS.md` (hard rules as a paste-in snippet for your own settings) | `.agents/skills/` (shared) | none - format on save in `.zed/settings.json` | `.zed/settings.json` |
 
 "All four" is the manifest's set: format-on-edit, block-dangerous-shell, the lock-file / `.env` guard, and the
-session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset,
-`checkout --`, a `restore` onto the worktree, `clean`) and the ask list (force push, `branch -D`, `stash drop/clear`)
-are the same in every assistant that can enforce them.
+session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset, a
+`checkout` onto paths, a forced `checkout` or `switch`, a `restore` onto the worktree, `clean`) and the ask list (force
+push, `branch -D`, `stash drop/clear`) are the same in every assistant that can enforce them.
 
 ## The game-author skills
 

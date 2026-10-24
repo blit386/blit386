@@ -68,7 +68,23 @@ const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 // long options alike, and an option value may not start with whitespace, so it cannot swallow the next option.
 const GIT_PREFIX = `git(${SPACE}+-${NON_SPACE}+(${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*)?)*${SPACE}+`;
 
-const RESET_OR_CHECKOUT = new RegExp(`${GIT_PREFIX}reset${SPACE}+--hard|${GIT_PREFIX}checkout${SPACE}+--`);
+const ARG_CHAR = '[^ \\t\\v\\f\\r;&|<>]';
+const RESET_HARD = new RegExp(`${GIT_PREFIX}reset${SPACE}+--hard`);
+// `--` anywhere in the arguments, so `git checkout HEAD -- x` counts as well as `git checkout -- x` (BT-617).
+const CHECKOUT_PATHS = new RegExp(`${GIT_PREFIX}checkout${ARGS}--${ARG_END}`);
+// Decision (BT-617): `git checkout <path>` without `--` overwrites the file, but a regex cannot tell a path from a
+// branch name, and `git checkout main` must stay allowed. So an argument is read as a path only when it is `.`,
+// ends in `/`, ends in a letter-led extension (`src/game.js`, `.gitignore`), or holds a glob character (`*`, `?`,
+// `[`), which git forbids in branch names, so `git checkout '*'` is always a path. Known gaps, accepted: an
+// extensionless file or a directory without a trailing slash (`git checkout Makefile`, `git checkout src`) is
+// let through, and a branch named like a file (`fix.js`) is denied - `git switch` is the unambiguous way to
+// change branch.
+const PATH_LIKE_ARG = `(\\.|${ARG_CHAR}*(\\.[A-Za-z]${ALPHANUMERIC}*|/)|${ARG_CHAR}*[*?[]${ARG_CHAR}*)`;
+const CHECKOUT_PATH_LIKE = new RegExp(`${GIT_PREFIX}checkout${ARGS}${PATH_LIKE_ARG}${ARG_END}`);
+// `-f` may be bundled (`-qf`), as git accepts for any short flag.
+const CHECKOUT_OR_SWITCH_FORCE = new RegExp(
+    `${GIT_PREFIX}(checkout|switch)${ARGS}(-${ALPHANUMERIC}*f${ALPHANUMERIC}*|--force|--discard-changes)${ARG_END}`,
+);
 const CLEAN = new RegExp(`${GIT_PREFIX}clean${ARG_END}`);
 const CLEAN_FORCE = new RegExp(`${GIT_PREFIX}clean${ARGS}(-${ALPHANUMERIC}*f${ALPHANUMERIC}*|--force)${ARG_END}`);
 const CLEAN_DRY_RUN = new RegExp(`${GIT_PREFIX}clean${ARGS}(-${ALPHANUMERIC}*n${ALPHANUMERIC}*|--dry-run)${ARG_END}`);
@@ -87,7 +103,8 @@ const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${AR
 const DENY_DESTRUCTIVE = {
     decision: 'deny',
     userMessage: 'Blocked a destructive git command that could lose your game changes.',
-    agentMessage: 'Use safer git operations. Ask the user before discarding any work.',
+    agentMessage:
+        'Use safer git operations. Ask the user before discarding any work. To change branch, use git switch.',
 };
 const ASK_FORCE_PUSH = {
     decision: 'ask',
@@ -110,9 +127,10 @@ const ASK_STASH = {
  * Classify a shell command the assistant wants to run. Two tiers, split by whether git itself can still recover
  * what the command would discard:
  *
- * - Deny (no override): `git reset --hard`, `git checkout --`, `git restore` in any form that touches the worktree,
- *   and `git clean` unless it is a dry run with no force flag. Each destroys content no git object was ever
- *   created for (uncommitted changes, untracked files), so no approval after the fact can bring it back.
+ * - Deny (no override): `git reset --hard`, `git checkout` onto paths (`--` anywhere, `.`, or a file-like argument),
+ *   `git checkout` / `git switch` with `-f`, `--force` or `--discard-changes`, `git restore` in any form that touches
+ *   the worktree, and `git clean` unless it is a dry run with no force flag. Each destroys content no git object was
+ *   ever created for (uncommitted changes, untracked files), so no approval after the fact can bring it back.
  *   `git restore --staged` without `--worktree` only resets the index and leaves the files alone, so it is the
  *   one safe restore. `git clean` is denied by default rather than by force flag, because
  *   `git -c clean.requireForce=false clean -d` deletes without naming one.
@@ -134,7 +152,9 @@ function isDangerousCommand(command) {
     const destructiveClean = any(CLEAN) && (any(CLEAN_FORCE) || !any(CLEAN_DRY_RUN));
     const destructiveRestore = any(RESTORE) && (!any(RESTORE_STAGED) || any(RESTORE_WORKTREE));
 
-    if (any(RESET_OR_CHECKOUT) || destructiveClean || destructiveRestore) {
+    const destructiveCheckout = any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_OR_SWITCH_FORCE);
+
+    if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore) {
         return DENY_DESTRUCTIVE;
     }
 

@@ -1,7 +1,8 @@
 /**
  * The shell policy case table: what a generated game's shell guard answers for each command. Shared by
  * guard-core.test.mjs (the pure classifier) and shell-safety.test.mjs (the Claude Code + Cursor entry),
- * so the classifier and both protocols are held to the same cases.
+ * so the classifier and both protocols are held to the same cases. The repo's own .claude/hooks/shell-safety.sh is
+ * held to it too, by scripts/shell-safety.test.mjs at the repo root.
  */
 
 /** @type {[command: string, expected: 'deny' | 'ask' | 'allow'][]} */
@@ -19,6 +20,26 @@ export const SHELL_CASES = [
     ['git checkout -- src/game.js', 'deny'],
     ['git checkout "--" .', 'deny'],
     ['git checkout -b feature', 'allow'],
+    ['git checkout .', 'deny'],
+    ['git checkout HEAD -- x', 'deny'],
+    ['git checkout HEAD src/a.ts', 'deny'],
+    ['git checkout src/game.js', 'deny'],
+    ['git checkout src/', 'deny'],
+    ["git checkout '*'", 'deny'],
+    ['git checkout HEAD src?', 'deny'],
+    ['git checkout -f main', 'deny'],
+    ['git checkout --force main', 'deny'],
+    ['git checkout -qf main', 'deny'],
+    ['git switch -f main', 'deny'],
+    ['git switch --force main', 'deny'],
+    ['git switch --discard-changes main', 'deny'],
+    ['git checkout main', 'allow'],
+    ['git checkout -b feat', 'allow'],
+    ['git checkout feature/sprites', 'allow'],
+    ['git checkout --track origin/feature', 'allow'],
+    ['git checkout main && cat notes.txt', 'allow'],
+    ['git switch main', 'allow'],
+    ['git switch -c feature', 'allow'],
     ['git restore src/game.js', 'deny'],
     ['git restore .', 'deny'],
     ['git restore --staged src/game.js', 'allow'],
