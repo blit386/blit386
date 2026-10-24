@@ -81,9 +81,17 @@ const CHECKOUT_PATHS = new RegExp(`${GIT_PREFIX}checkout${ARGS}--${ARG_END}`);
 // change branch.
 const PATH_LIKE_ARG = `(\\.|${ARG_CHAR}*(\\.[A-Za-z]${ALPHANUMERIC}*|/)|${ARG_CHAR}*[*?[]${ARG_CHAR}*)`;
 const CHECKOUT_PATH_LIKE = new RegExp(`${GIT_PREFIX}checkout${ARGS}${PATH_LIKE_ARG}${ARG_END}`);
-// `-f` may be bundled (`-qf`), as git accepts for any short flag.
+// git accepts any unambiguous prefix of a long option (`--for` runs `--force`), so each destructive long option
+// below matches from its shortest unique prefix. Nested optionals, not a `[a-z-]*` run, so nothing backtracks.
+const FORCE_OPTION = '--f(o(r(ce?)?)?)?';
+const DISCARD_OPTION = '--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?';
+// Checkout options that only ever take paths, so they overwrite files whatever the path looks like: `--ours` /
+// `-2`, `--theirs` / `-3`, `--no-overlay`, and `--pathspec-from-file` (the paths come from a file).
+const CHECKOUT_PATH_OPTION = `(-${ALPHANUMERIC}*[23]${ALPHANUMERIC}*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f${ARG_CHAR}*)`;
+const CHECKOUT_PATH_OPTIONS = new RegExp(`${GIT_PREFIX}checkout${ARGS}${CHECKOUT_PATH_OPTION}${ARG_END}`);
+// `-f` may be bundled (`-qf`), as git accepts for any short flag. `--force-create` is a different option and passes.
 const CHECKOUT_OR_SWITCH_FORCE = new RegExp(
-    `${GIT_PREFIX}(checkout|switch)${ARGS}(-${ALPHANUMERIC}*f${ALPHANUMERIC}*|--force|--discard-changes)${ARG_END}`,
+    `${GIT_PREFIX}(checkout|switch)${ARGS}(-${ALPHANUMERIC}*f${ALPHANUMERIC}*|${FORCE_OPTION}|${DISCARD_OPTION})${ARG_END}`,
 );
 const CLEAN = new RegExp(`${GIT_PREFIX}clean${ARG_END}`);
 const CLEAN_FORCE = new RegExp(`${GIT_PREFIX}clean${ARGS}(-${ALPHANUMERIC}*f${ALPHANUMERIC}*|--force)${ARG_END}`);
@@ -152,7 +160,8 @@ function isDangerousCommand(command) {
     const destructiveClean = any(CLEAN) && (any(CLEAN_FORCE) || !any(CLEAN_DRY_RUN));
     const destructiveRestore = any(RESTORE) && (!any(RESTORE_STAGED) || any(RESTORE_WORKTREE));
 
-    const destructiveCheckout = any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_OR_SWITCH_FORCE);
+    const destructiveCheckout =
+        any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
     if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore) {
         return DENY_DESTRUCTIVE;

@@ -101,7 +101,7 @@ is_destructive_restore() {
 }
 
 # `git checkout` onto paths, or `checkout`/`switch` that throws local edits away (BT-617). Mirrors
-# CHECKOUT_PATHS, CHECKOUT_PATH_LIKE and CHECKOUT_OR_SWITCH_FORCE in guard-core.cjs:
+# CHECKOUT_PATHS, CHECKOUT_PATH_LIKE, CHECKOUT_PATH_OPTIONS and CHECKOUT_OR_SWITCH_FORCE in guard-core.cjs:
 #   - `--` anywhere in the arguments (`git checkout HEAD -- x`), not only right after checkout.
 #   - Decision: `git checkout <path>` without `--` cannot be told apart from `git checkout <branch>`
 #     by regex, and `git checkout main` must stay allowed. So an argument counts as a path only when
@@ -109,16 +109,24 @@ is_destructive_restore() {
 #     a glob character (`*`, `?`, `[`), which git forbids in branch names. Known
 #     gaps, accepted: `git checkout Makefile` or `git checkout src` slips through, and a branch named
 #     like a file (`fix.js`) is blocked - `git switch` is the unambiguous way to change branch.
+#   - Checkout options that only take paths: `--ours` / `-2`, `--theirs` / `-3`, `--no-overlay`,
+#     `--pathspec-from-file`.
 #   - `-f` (also bundled, `-qf`), `--force` or `--discard-changes` on checkout or switch.
+#   - git accepts any unambiguous prefix of a long option (`--for` runs `--force`), so each long
+#     option matches from its shortest unique prefix; `--force-create` is a different option and passes.
+GIT_FORCE_OPTION='--f(o(r(ce?)?)?)?'
+GIT_DISCARD_OPTION='--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?'
+GIT_CHECKOUT_PATH_OPTION='(-[[:alnum:]]*[23][[:alnum:]]*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f[^[:space:];&|<>]*)'
 GIT_ARGS='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+'
 GIT_ARG_END='([[:space:]]|[;&|<>]|$)'
 GIT_CHECKOUT_PATHS="checkout${GIT_ARGS}--${GIT_ARG_END}"
 GIT_CHECKOUT_PATH_LIKE="checkout${GIT_ARGS}"'(\.|[^[:space:];&|<>]*(\.[[:alpha:]][[:alnum:]]*|/)|[^[:space:];&|<>]*[*?[][^[:space:];&|<>]*)'"${GIT_ARG_END}"
-GIT_CHECKOUT_OR_SWITCH_FORCE="(checkout|switch)${GIT_ARGS}(-[[:alnum:]]*f[[:alnum:]]*|--force|--discard-changes)${GIT_ARG_END}"
+GIT_CHECKOUT_PATH_OPTIONS="checkout${GIT_ARGS}${GIT_CHECKOUT_PATH_OPTION}${GIT_ARG_END}"
+GIT_CHECKOUT_OR_SWITCH_FORCE="(checkout|switch)${GIT_ARGS}(-[[:alnum:]]*f[[:alnum:]]*|${GIT_FORCE_OPTION}|${GIT_DISCARD_OPTION})${GIT_ARG_END}"
 
 # Exit status 0 when the command runs a checkout or switch that discards uncommitted changes.
 is_destructive_checkout() {
-    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}(${GIT_CHECKOUT_PATHS}|${GIT_CHECKOUT_PATH_LIKE}|${GIT_CHECKOUT_OR_SWITCH_FORCE})"
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}(${GIT_CHECKOUT_PATHS}|${GIT_CHECKOUT_PATH_LIKE}|${GIT_CHECKOUT_PATH_OPTIONS}|${GIT_CHECKOUT_OR_SWITCH_FORCE})"
 }
 
 if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard" || is_destructive_checkout || is_destructive_clean || is_destructive_restore; then
