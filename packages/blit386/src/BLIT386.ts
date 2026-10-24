@@ -631,8 +631,12 @@ export const BT = {
      * no constructor arguments. A class instance you built with arguments (`new MyGame(config)`)
      * replays as a default-built copy, so keep per-run setup in `init()`.
      *
+     * Calling `init()` again after an earlier call resolved restarts the engine: the old game loop
+     * stops and the old GPU device is destroyed before the new run starts.
+     *
      * @since 0.1.0
      * @changed 1.8.0 A call made while another `init()` is still running resolves to `false` and changes nothing.
+     * @changed 1.8.1 A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running.
      * @param demo - Demo implementation that provides lifecycle hooks.
      * @param canvas - Canvas used as the engine render target.
      * @returns `true` when initialization succeeds; otherwise `false`.

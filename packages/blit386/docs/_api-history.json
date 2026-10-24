@@ -645,6 +645,10 @@
         {
           "version": "1.8.0",
           "note": "A call made while another `init()` is still running resolves to `false` and changes nothing."
+        },
+        {
+          "version": "1.8.1",
+          "note": "A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running."
         }
       ],
       "deprecated": null,
