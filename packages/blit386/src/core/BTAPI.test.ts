@@ -973,6 +973,116 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('frame text readout', () => {
+        /** Boots a demo whose render() prints 'hi' and an invisible index-0 string; returns its loop. */
+        async function boot(extra: Partial<IBTDemo> = {}, settings = {}): Promise<GameLoop> {
+            const base = makeMockDemo();
+            const demo: IBTDemo = {
+                ...base,
+                configure: vi.fn().mockReturnValue({ ...base.configure?.(), ...settings }),
+                render: () => {
+                    BTAPI.instance.drawSystemText(new Vector2i(3, 4), 8, 'hi');
+                    BTAPI.instance.drawSystemText(new Vector2i(0, 0), 0, 'transparent');
+                    BTAPI.instance.drawSystemText(new Vector2i(0, 0), 8, '');
+                },
+                ...extra,
+            };
+
+            await BTAPI.instance.init(demo, makeMockCanvas());
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const renderer = BTAPI.instance.getRenderer();
+
+            if (renderer) {
+                vi.spyOn(renderer, 'drawBitmapText').mockImplementation(() => {});
+            }
+
+            const loop = (BTAPI.instance as unknown as { loop: GameLoop }).loop;
+
+            // step() drives one frame synchronously, but only on a stopped loop.
+            loop.stop();
+
+            return loop;
+        }
+
+        it('records nothing until recording is turned on', async () => {
+            const loop = await boot();
+
+            loop.step(0);
+
+            expect(BTAPI.instance.getFrameText()).toEqual([]);
+        });
+
+        it('records drawn system text with its position, once per frame, skipping index 0 and empty text', async () => {
+            const loop = await boot();
+
+            BTAPI.instance.setTextRecording(true);
+            loop.step(0);
+            loop.step(0);
+
+            const entries = BTAPI.instance.getFrameText();
+
+            expect(entries).toEqual([{ source: 'systemPrint', text: 'hi', x: 3, y: 4, paletteIndex: 8 }]);
+
+            // A copy: changing it does not reach the next read.
+            entries.length = 0;
+            expect(BTAPI.instance.getFrameText()).toHaveLength(1);
+
+            BTAPI.instance.setTextRecording(false);
+            expect(BTAPI.instance.getFrameText()).toEqual([]);
+        });
+
+        it('leaves the same list after captureFrame re-renders a seeked frame', async () => {
+            await boot();
+
+            const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
+
+            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockResolvedValue(new Blob());
+            BTAPI.instance.setTextRecording(true);
+            await BTAPI.instance.renderAt(1, 'current');
+
+            const seeked = BTAPI.instance.getFrameText();
+
+            await BTAPI.instance.captureFrame('display');
+
+            expect(seeked.map((entry) => entry.text)).toEqual(['hi']);
+            expect(BTAPI.instance.getFrameText()).toEqual(seeked);
+        });
+
+        it('records system text where the camera puts it on screen', async () => {
+            const loop = await boot({
+                render: () => {
+                    BTAPI.instance.setCameraOffset(new Vector2i(10, -5));
+                    BTAPI.instance.drawSystemText(new Vector2i(3, 4), 8, 'hi');
+                },
+            });
+
+            BTAPI.instance.setTextRecording(true);
+            loop.step(0);
+
+            expect(BTAPI.instance.getFrameText()).toEqual([
+                { source: 'systemPrint', text: 'hi', x: -7, y: 9, paletteIndex: 8 },
+            ]);
+        });
+
+        it('records overlay row labels after the game text', async () => {
+            const loop = await boot(
+                { overlayRows: () => [{ leftText: 'Position: 1, 2' }] },
+                { isOverlayVisibleAtStart: true },
+            );
+
+            BTAPI.instance.setTextRecording(true);
+            loop.step(0);
+
+            const entries = BTAPI.instance.getFrameText();
+
+            expect(entries[0]?.source).toBe('systemPrint');
+            expect(entries.filter((entry) => entry.source === 'overlay').map((entry) => entry.text)).toEqual([
+                'Position: 1, 2',
+            ]);
+        });
+    });
+
     describe('renderAt', () => {
         /** Boots a demo whose update/render are spies; returns the demo and private loop. */
         async function boot(demo: IBTDemo = makeMockDemo()): Promise<{ demo: IBTDemo; loop: GameLoop }> {

@@ -192,7 +192,9 @@ async function runPose(frame, pose, variant, options) {
 
     // Before capture: BT.captureFrame re-renders the parked frame without an update tick, so the kit
     // would record every group a second time and each widget would overlap its own copy.
-    const snapshot = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
+    const snapshot = ui
+        ? ui.snapshot()
+        : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [], texts: engine.frameText };
     const size = variant === OUTPUT_VARIANT ? 'output' : 'display';
     const blob = await stage('capture', () => captureOwnedBlob(engine, size), STEP_TIMEOUT_MS);
     const bitmap = size === 'output' ? await createImageBitmap(blob) : null;

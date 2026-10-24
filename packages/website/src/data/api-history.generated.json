@@ -1,6 +1,6 @@
 {
   "packageVersion": "1.8.0",
-  "unreleasedVersion": "1.8.1",
+  "unreleasedVersion": "1.9.0",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -16,7 +16,8 @@
     "1.7.0": "2026-09-11T17:44:36+02:00",
     "1.7.1": "2026-09-27T11:48:26+02:00",
     "1.8.0": "2026-10-18T19:19:24+02:00",
-    "1.8.1": null
+    "1.8.1": null,
+    "1.9.0": null
   },
   "symbols": {
     "AssetLoader": {
@@ -605,6 +606,20 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "BT.frameText": {
+      "kind": "getter",
+      "since": "1.9.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.frameTextRecordSet": {
+      "kind": "method",
+      "since": "1.9.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.gamepadConnected": {
       "kind": "method",
@@ -1402,6 +1417,20 @@
       "deprecated": null,
       "status": "stable"
     },
+    "FrameTextEntry": {
+      "kind": "interface",
+      "since": "1.9.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "FrameTextSource": {
+      "kind": "type",
+      "since": "1.9.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "FullscreenEffect": {
       "kind": "class",
       "since": "1.0.3",
@@ -2008,6 +2037,8 @@
       "BT.activeBackend",
       "BT.displaySize",
       "BT.drawingBufferSize",
+      "BT.frameText",
+      "BT.frameTextRecordSet",
       "BT.init",
       "BT.isDevMode",
       "BT.isReady",
@@ -2022,6 +2053,7 @@
       "BT.targetFPS",
       "BT.testState",
       "BootstrapOptions",
+      "FrameTextEntry",
       "HardwareSettings",
       "HotContext",
       "HotReloadContext",
