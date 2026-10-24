@@ -1608,6 +1608,8 @@ export const BT = {
      * - `(posOrX: Vector2i, yOrColor: number)` where `yOrColor` is the palette index.
      * - `(posOrX: number, yOrColor: number, maybeColor: number)` for `(x, y, paletteIndex)`.
      *
+     * Fractional coordinates are truncated toward zero, the same rule `Vector2i` applies.
+     *
      * @since 0.1.0
      * @param posOrX - Pixel position as `Vector2i`, or x coordinate when using numeric overload.
      * @param yOrColor - Palette index for vector overload, or y coordinate for numeric overload.

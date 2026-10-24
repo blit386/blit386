@@ -1240,6 +1240,8 @@ export class BTAPI {
     /**
      * Draws a single pixel at the specified position.
      *
+     * Coordinates are integers: a `Vector2i` truncates toward zero when constructed.
+     *
      * @param pos - Pixel coordinates.
      * @param paletteIndex - Palette color index.
      */
@@ -1257,8 +1259,11 @@ export class BTAPI {
      * More efficient than {@link drawPixel} when coordinates are already unpacked -
      * avoids constructing a `Vector2i` just to shuttle two numbers.
      *
-     * @param x - X coordinate.
-     * @param y - Y coordinate.
+     * Fractional coordinates are truncated toward zero, the same rule `Vector2i` applies,
+     * so both backends draw the same pixel.
+     *
+     * @param x - X coordinate (truncated toward zero).
+     * @param y - Y coordinate (truncated toward zero).
      * @param paletteIndex - Palette color index.
      */
     public drawPixelXY(x: number, y: number, paletteIndex: number): void {
@@ -1267,7 +1272,7 @@ export class BTAPI {
 
         this.markDrawCall();
 
-        this.renderer?.drawPixelXY(x, y, paletteIndex);
+        this.renderer?.drawPixelXY(x | 0, y | 0, paletteIndex);
     }
 
     /**
