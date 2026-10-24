@@ -618,6 +618,15 @@ export class GamepadInput {
             }
 
             this.padSlots[freePlayer] = slot;
+
+            // The seat may have been freed in this same poll; drop the old pad's press history.
+            const previous = this.previous[freePlayer];
+
+            if (previous) {
+                previous.buttons = 0;
+            }
+
+            this.firstPressTick[freePlayer]?.clear();
         }
     }
 

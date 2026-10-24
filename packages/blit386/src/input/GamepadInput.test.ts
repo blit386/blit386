@@ -106,6 +106,18 @@ describe('GamepadInput', () => {
         expect(input.connectedCount()).toBe(2);
     });
 
+    it('treats a held button as a new press when another pad takes over the player in one poll', () => {
+        pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
+        input.endFrame(2);
+
+        pads[0] = null;
+        pads[2] = makeGamepad({ pressed: [0] });
+        input.endFrame(3);
+
+        expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 3)).toBe(true);
+    });
+
     it('reports down/pressed/released edges across endFrame', () => {
         pads[0] = makeGamepad({ pressed: [0] });
         input.endFrame(9); // roll(prev=disconnected); poll(current=pressed)
