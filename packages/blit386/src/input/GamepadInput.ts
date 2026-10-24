@@ -100,6 +100,9 @@ const GAMEPAD_AXIS_COUNT = VALID_AXIS_INDICES.length;
 /** A gamepad button (including a trigger) counts as down at or above this analog value. */
 const BUTTON_DOWN_THRESHOLD = 0.5;
 
+/** Marks a player seat with no gamepad on it. */
+const NO_PAD_SLOT = -1;
+
 /** Fixed-length, preallocated per-player axis tuple (mutated in place, never reallocated). */
 type GamepadAxes = [number, number, number, number, number, number];
 
@@ -198,6 +201,9 @@ export class GamepadInput {
         Map<number, number>,
         Map<number, number>,
     ];
+
+    /** Browser gamepad index seated on each player, or `NO_PAD_SLOT` when the seat is free. */
+    private readonly padSlots: number[] = [NO_PAD_SLOT, NO_PAD_SLOT, NO_PAD_SLOT, NO_PAD_SLOT];
 
     /** Current analog stick dead-zone threshold. */
     private deadZone: number;
@@ -557,6 +563,8 @@ export class GamepadInput {
     private poll(): void {
         const pads = this.read();
 
+        this.seatPads(pads);
+
         for (let player = 0; player < GAMEPAD_PLAYER_COUNT; player++) {
             const snapshot = this.current[player];
 
@@ -564,7 +572,8 @@ export class GamepadInput {
                 continue;
             }
 
-            const pad = pads[player];
+            const slot = this.padSlots[player] ?? NO_PAD_SLOT;
+            const pad = slot === NO_PAD_SLOT ? null : pads[slot];
 
             if (!pad?.connected) {
                 snapshot.isConnected = false;
@@ -578,6 +587,46 @@ export class GamepadInput {
             snapshot.buttons = this.mapButtons(pad);
             this.mapAxesInto(pad, snapshot.axes);
             this.dropReleasedTickAnchors(player, snapshot.buttons);
+        }
+    }
+
+    /**
+     * Seats browser gamepads on players. A newly connected pad takes the lowest free player
+     * and keeps it until it disconnects, so Chromium's lone pad at browser index 1 is still
+     * player 0, and a dropped pad never moves the other players to a different seat.
+     *
+     * @param pads - Result of `navigator.getGamepads()` for this poll.
+     */
+    private seatPads(pads: readonly (Gamepad | null)[]): void {
+        for (let player = 0; player < GAMEPAD_PLAYER_COUNT; player++) {
+            const slot = this.padSlots[player] ?? NO_PAD_SLOT;
+
+            if (slot !== NO_PAD_SLOT && !pads[slot]?.connected) {
+                this.padSlots[player] = NO_PAD_SLOT;
+            }
+        }
+
+        for (let slot = 0; slot < pads.length; slot++) {
+            if (!pads[slot]?.connected || this.padSlots.includes(slot)) {
+                continue;
+            }
+
+            const freePlayer = this.padSlots.indexOf(NO_PAD_SLOT);
+
+            if (freePlayer === -1) {
+                break;
+            }
+
+            this.padSlots[freePlayer] = slot;
+
+            // The seat may have been freed in this same poll; drop the old pad's press history.
+            const previous = this.previous[freePlayer];
+
+            if (previous) {
+                previous.buttons = 0;
+            }
+
+            this.firstPressTick[freePlayer]?.clear();
         }
     }
 
@@ -791,5 +840,7 @@ export class GamepadInput {
 
             this.firstPressTick[i]?.clear();
         }
+
+        this.padSlots.fill(NO_PAD_SLOT);
     }
 }

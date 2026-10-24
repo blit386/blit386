@@ -73,6 +73,51 @@ describe('GamepadInput', () => {
         expect(input.connectedCount()).toBe(2);
     });
 
+    it('gives player 0 the first connected pad when the browser leaves slot 0 empty', () => {
+        // Chromium can report a lone pad at index 1 with a null or disconnected slot 0.
+        pads[0] = makeGamepad({ isConnected: false });
+        pads[1] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
+
+        expect(input.isConnected(0)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_A, 0)).toBe(true);
+        expect(input.isConnected(1)).toBe(false);
+        expect(input.connectedCount()).toBe(1);
+    });
+
+    it('keeps each pad on its player when another pad disconnects', () => {
+        pads[0] = makeGamepad({});
+        pads[1] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
+
+        pads[0] = null;
+        input.endFrame(2);
+
+        expect(input.isConnected(0)).toBe(false);
+        expect(input.isConnected(1)).toBe(true);
+        expect(input.isButtonDown(BT.BTN_A, 1)).toBe(true);
+        expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 2)).toBe(false);
+
+        // A pad that connects later takes the lowest free player.
+        pads[2] = makeGamepad({});
+        input.endFrame(3);
+
+        expect(input.isConnected(0)).toBe(true);
+        expect(input.connectedCount()).toBe(2);
+    });
+
+    it('treats a held button as a new press when another pad takes over the player in one poll', () => {
+        pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
+        input.endFrame(2);
+
+        pads[0] = null;
+        pads[2] = makeGamepad({ pressed: [0] });
+        input.endFrame(3);
+
+        expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 3)).toBe(true);
+    });
+
     it('reports down/pressed/released edges across endFrame', () => {
         pads[0] = makeGamepad({ pressed: [0] });
         input.endFrame(9); // roll(prev=disconnected); poll(current=pressed)
