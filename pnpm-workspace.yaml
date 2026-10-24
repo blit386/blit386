@@ -14,7 +14,7 @@ overrides:
   esbuild: ^0.28.2
   js-yaml@>=3.0.0 <3.15.1: ^3.15.2
   js-yaml@>=4.0.0 <4.3.1: ^4.3.2
-  undici@>=7.0.0 <7.29.1: ^7.29.1
+  undici@>=7.0.0 <7.30.1: ^7.30.1
   # GHSA-2v37-7h3g-55p8 (high): custom generators loop indefinitely when size is zero.
   # Dev-only, reached through postcss via vite and vitest, so it never enters a runtime
   # bundle - but `security:audit` covers dev + prod, so it fails CI. 3.3.17 is the patch.
@@ -23,9 +23,12 @@ overrides:
   # (all high): host confusion and SSRF via malformed IPv6/percent-decoding/scheme
   # normalization. Dev-only, reached through ajv via commitlint and
   # @microsoft/api-extractor (vite-plugin-dts), so it never enters a runtime bundle - but
-  # `security:audit` covers dev + prod, so it fails CI. 3.1.6 is the patch; pinned to the
-  # latest 3.x (3.1.7) rather than the 4.x major, since ajv declares `^3.0.1`.
-  fast-uri@<3.1.6: ^3.1.8
+  # `security:audit` covers dev + prod, so it fails CI. 3.1.9 is the patch; pinned to the
+  # latest 3.x (3.1.9) rather than the 4.x major, since ajv declares `^3.0.1`.
+  fast-uri@<3.1.9: ^3.1.9
+  # Zod can exhaust memory while validating oversized input (high). 4.6.6 is the patch; the
+  # override also lifts the transitive 4.1.8 copy.
+  zod@<4.6.6: ^4.6.6
   # GHSA-gqvv-2mrq-wpjv (moderate): incomplete fix for CVE-2026-39408 - toSSG() still
   # writes files outside the output directory. GHSA-g6gw-c38x-mqfc (moderate): unbounded
   # dot-notation nesting in parseBody() can cause memory exhaustion. GHSA-crvj-82cr-hjcx
@@ -117,6 +120,7 @@ minimumReleaseAgeExclude:
   - ws
   - fast-uri
   - undici
+  - happy-dom
   - '@types/node'
   - '@commitlint/cli'
   # Security patch for GHSA-2v37-7h3g-55p8, published 2026-08-03 and so still inside the
