@@ -1266,6 +1266,28 @@ describe('BTAPI', () => {
         /** Lets every queued microtask and zero-delay timer run. */
         const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
+        it('makes a BT.init during a seek wait for it, so the seek cannot take over the new run', async () => {
+            const { demo } = await boot();
+            const releaseReplayInit = deferNextInit(demo);
+
+            const seek = BTAPI.instance.renderAt(1);
+
+            await settle();
+
+            const next = makeMockDemo();
+            const restart = BTAPI.instance.init(next, makeMockCanvas());
+
+            await settle();
+
+            expect(next.init).not.toHaveBeenCalled();
+
+            releaseReplayInit(true);
+            await seek;
+
+            expect(await restart).toBe(true);
+            expect(BTAPI.instance.getDemo()).toBe(next);
+        });
+
         it('serializes overlapping calls', async () => {
             const { demo } = await boot();
             const releaseFirstInit = deferNextInit(demo);
@@ -1651,6 +1673,24 @@ describe('BTAPI', () => {
             expect(await BTAPI.instance.init(makeMockDemo(60, false), makeMockCanvas())).toBe(false);
 
             expect(BTAPI.instance.isInitialized()).toBe(false);
+        });
+
+        it('should release the old device and renderer when a restart has invalid settings', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstDevice = BTAPI.instance.getDevice();
+
+            if (firstDevice === null) {
+                throw new Error('expected the WebGPU backend to start');
+            }
+
+            const destroy = vi.spyOn(firstDevice, 'destroy');
+
+            expect(await BTAPI.instance.init(makeMockDemo(0), makeMockCanvas())).toBe(false);
+
+            expect(destroy).toHaveBeenCalledTimes(1);
+            expect(BTAPI.instance.getRenderer()).toBeNull();
+            expect(BTAPI.instance.getActiveBackend()).toBeNull();
         });
 
         it('should drop the old renderer when a restart fails after destroying the old device', async () => {

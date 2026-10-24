@@ -565,7 +565,8 @@ A `BT.init()` call made after an earlier one resolved restarts the engine cleanl
 game loop, detaches input and audio, and destroys the previous GPU device before creating a new one, so only one loop
 ever runs and a "back to title" restart does not leak GPU memory. Sprite sheets and fonts you kept from the earlier run
 rebuild their texture on the new device the next time they are drawn. Post-process effects do not carry over, so add
-them again in `init()`.
+them again in `init()`. A `BT.renderAt` seek already running finishes before the restart begins, and one called while
+the restart runs rejects, as it does before the first init.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`.

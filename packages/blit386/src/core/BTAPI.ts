@@ -488,7 +488,8 @@ export class BTAPI {
      * Calling `init()` again after an earlier call resolved restarts the engine cleanly: it runs
      * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
      * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
-     * across the restart rebuild their texture on the new device.
+     * across the restart rebuild their texture on the new device. A {@link renderAt} seek already
+     * running finishes first; one called while the init runs rejects, as before init.
      *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
@@ -506,6 +507,9 @@ export class BTAPI {
         this.isInitInProgress = true;
 
         try {
+            // A seek already running would otherwise resume against the new run's demo, renderer, and loop.
+            await this.seekChain;
+
             return await this.runInit(demo, canvas);
         } finally {
             this.isInitInProgress = false;
@@ -1957,6 +1961,7 @@ export class BTAPI {
         // A re-init restarts cleanly: tear down the previous run so its loop never keeps ticking beside the new one.
         this.stop();
         this.loop = null;
+        this.releaseRenderer();
 
         this.demo = demo;
         this.canvas = canvas;
@@ -2595,6 +2600,19 @@ export class BTAPI {
     }
 
     /**
+     * Destroys the previous run's GPU device and drops its renderer, so a restart frees that GPU
+     * memory even when it fails before a new renderer exists. Every buffer and texture on the
+     * device goes with it.
+     */
+    private releaseRenderer(): void {
+        this.device?.destroy();
+        this.device = null;
+        this.context = null;
+        this.renderer = null;
+        this.activeBackend = null;
+    }
+
+    /**
      * Constructs and initializes the renderer for the active hardware settings.
      *
      * Logs the selected backend name, constructs the matching {@link IRenderer},
@@ -2605,12 +2623,6 @@ export class BTAPI {
      * @returns `true` when the renderer is ready; `false` on failure.
      */
     private async initRenderer(canvas: HTMLCanvasElement, hw: HardwareSettings): Promise<boolean> {
-        // Free the previous run's GPU memory; its renderer and every buffer and texture on it die with the device.
-        this.device?.destroy();
-        this.device = null;
-        this.context = null;
-        this.renderer = null;
-
         applyCanvasLayoutStyles(canvas, {
             displaySize: hw.displaySize,
             maxCanvasSize: hw.maxCanvasSize ?? new Vector2i(DEFAULT_MAX_CANVAS_SIZE.x, DEFAULT_MAX_CANVAS_SIZE.y),
