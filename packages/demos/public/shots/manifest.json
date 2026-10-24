@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T12:56:31.632Z",
+  "generatedAt": "2026-10-24T09:14:59.545Z",
   "engineVersion": "1.8.0",
   "entries": [
     {
@@ -1203,28 +1203,28 @@
       "height": 400
     },
     {
-      "slug": "pattern-fill",
-      "pose": "start",
       "variants": {
         "display": "pattern-fill/start.display.png",
         "uidebug": "pattern-fill/start.uidebug.png"
       },
-      "width": 960,
-      "height": 600,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pattern-fill",
+      "pose": "start",
+      "width": 960,
+      "height": 600
     },
     {
-      "slug": "pattern-fill",
-      "pose": "settled",
       "variants": {
         "display": "pattern-fill/settled.display.png",
         "uidebug": "pattern-fill/settled.uidebug.png"
       },
-      "width": 960,
-      "height": 600,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "pattern-fill",
+      "pose": "settled",
+      "width": 960,
+      "height": 600
     },
     {
       "variants": {
@@ -1249,6 +1249,30 @@
       "pose": "start",
       "width": 320,
       "height": 240
+    },
+    {
+      "slug": "raycasting",
+      "pose": "start",
+      "variants": {
+        "display": "raycasting/start.display.png",
+        "uidebug": "raycasting/start.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
+    },
+    {
+      "slug": "raycasting",
+      "pose": "settled",
+      "variants": {
+        "display": "raycasting/settled.display.png",
+        "uidebug": "raycasting/settled.uidebug.png"
+      },
+      "width": 320,
+      "height": 240,
+      "lint": [],
+      "error": null
     }
   ]
 }
