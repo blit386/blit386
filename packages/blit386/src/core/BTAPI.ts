@@ -485,6 +485,11 @@ export class BTAPI {
      * silently reporting `false` would hide a renderer fault. `bootstrap()` catches
      * it and routes it to `onError`.
      *
+     * Calling `init()` again after an earlier call resolved restarts the engine cleanly: it runs
+     * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
+     * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
+     * across the restart rebuild their texture on the new device.
+     *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
      * @returns `true` when initialization succeeds; otherwise `false`, including when
@@ -1949,6 +1954,10 @@ export class BTAPI {
     private async runInit(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
         console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
 
+        // A re-init restarts cleanly: tear down the previous run so its loop never keeps ticking beside the new one.
+        this.stop();
+        this.loop = null;
+
         this.demo = demo;
         this.canvas = canvas;
         this.isDevGuardActive = isDevMode();
@@ -2596,6 +2605,12 @@ export class BTAPI {
      * @returns `true` when the renderer is ready; `false` on failure.
      */
     private async initRenderer(canvas: HTMLCanvasElement, hw: HardwareSettings): Promise<boolean> {
+        // Free the previous run's GPU memory; its renderer and every buffer and texture on it die with the device.
+        this.device?.destroy();
+        this.device = null;
+        this.context = null;
+        this.renderer = null;
+
         applyCanvasLayoutStyles(canvas, {
             displaySize: hw.displaySize,
             maxCanvasSize: hw.maxCanvasSize ?? new Vector2i(DEFAULT_MAX_CANVAS_SIZE.x, DEFAULT_MAX_CANVAS_SIZE.y),

@@ -284,6 +284,9 @@ export class SpriteSheet {
     /** GPU texture created lazily on first use. */
     private texture: GPUTexture | null = null;
 
+    /** Device {@link texture} was created on; a different device (after an engine re-init) rebuilds it. */
+    private textureDevice: GPUDevice | null = null;
+
     /** Retained original RGBA pixel data (set by indexize, used by reindexize). */
     private rgbaPixels: Uint8Array<ArrayBuffer> | null = null;
 
@@ -939,12 +942,19 @@ export class SpriteSheet {
      *
      * If `indexize()` has been called, creates an `r8uint` texture from the
      * palette index data. Otherwise creates an `rgba8unorm` texture from the
-     * original image. The result is cached until `destroy()` is called.
+     * original image. The result is cached until `destroy()` is called or a
+     * different device is passed (the engine was re-initialized).
      *
      * @param device - WebGPU device for texture creation.
      * @returns GPU texture ready for rendering.
      */
     getTexture(device: GPUDevice): GPUTexture {
+        // No destroy(): the texture belongs to the old device, which frees it on its own destroy().
+        if (this.textureDevice !== device) {
+            this.texture = null;
+            this.textureDevice = device;
+        }
+
         if (this.texture === null) {
             if (this.indexedPixels === null) {
                 this.createTexture(device);

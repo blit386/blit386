@@ -1611,6 +1611,98 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.isInitialized()).toBe(true);
         });
 
+        it('should leave exactly one running loop after two sequential inits', async () => {
+            const readLoop = (): GameLoop | null => (BTAPI.instance as unknown as { loop: GameLoop | null }).loop;
+            const isRunning = (loop: GameLoop | null): boolean =>
+                (loop as unknown as { isRunning: boolean } | null)?.isRunning === true;
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstLoop = readLoop();
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const secondLoop = readLoop();
+
+            expect(secondLoop).not.toBe(firstLoop);
+            expect(isRunning(firstLoop)).toBe(false);
+            expect(isRunning(secondLoop)).toBe(true);
+        });
+
+        it('should destroy the first GPU device when a second init runs', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstDevice = BTAPI.instance.getDevice();
+
+            if (firstDevice === null) {
+                throw new Error('expected the WebGPU backend to start');
+            }
+
+            const destroy = vi.spyOn(firstDevice, 'destroy');
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            expect(destroy).toHaveBeenCalledTimes(1);
+            expect(BTAPI.instance.getDevice()).not.toBe(firstDevice);
+        });
+
+        it('should report not ready after a restart whose demo init fails', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+            expect(await BTAPI.instance.init(makeMockDemo(60, false), makeMockCanvas())).toBe(false);
+
+            expect(BTAPI.instance.isInitialized()).toBe(false);
+        });
+
+        it('should drop the old renderer when a restart fails after destroying the old device', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            // The new adapter's texture limit rejects the size inside the renderer step, after the old device is gone.
+            Object.defineProperty(globalThis, 'navigator', {
+                value: {
+                    gpu: {
+                        requestAdapter: async () => ({
+                            requestDevice: async () => createMockGPUDevice(),
+                            features: new Set(),
+                            limits: { maxTextureDimension2D: 1024 } as GPUSupportedLimits,
+                        }),
+                        getPreferredCanvasFormat: () => 'bgra8unorm' as GPUTextureFormat,
+                    },
+                    userAgent: 'test',
+                },
+                writable: true,
+                configurable: true,
+            });
+            const tooLarge: IBTDemo = {
+                ...makeMockDemo(),
+                configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(2048, 1024),
+                    targetFPS: 60,
+                    backend: 'webgpu',
+                }),
+            };
+
+            expect(await BTAPI.instance.init(tooLarge, makeMockCanvas())).toBe(false);
+            expect(BTAPI.instance.getRenderer()).toBeNull();
+        });
+
+        it('should destroy the first GPU device on a stop() then init() cycle', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstDevice = BTAPI.instance.getDevice();
+
+            if (firstDevice === null) {
+                throw new Error('expected the WebGPU backend to start');
+            }
+
+            const destroy = vi.spyOn(firstDevice, 'destroy');
+
+            BTAPI.instance.stop();
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            expect(destroy).toHaveBeenCalledTimes(1);
+        });
+
         it('should clear the in-progress guard after a failed init', async () => {
             expect(await BTAPI.instance.init(makeMockDemo(NaN), makeMockCanvas())).toBe(false);
             expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
