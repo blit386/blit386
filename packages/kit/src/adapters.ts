@@ -176,16 +176,31 @@ function extractManagedRegion(content: string): string {
 
 /**
  * Replace the managed region of an existing shared file with a freshly generated one, preserving
- * everything outside the markers byte-for-byte. Returns null when either file lacks both markers,
- * so the caller can fall back to a conflict copy.
+ * everything outside the markers byte-for-byte. Returns null when either file has no start marker
+ * followed by an end marker, so the caller can fall back to a conflict copy.
+ *
+ * shortcut: in the existing file, notes that mention both markers below the region are taken for the
+ * region; upgrade to requiring exactly one marker pair if that ever shows up in a real file.
  */
 export function replaceManagedRegion(existing: string, regenerated: string): string | null {
-    const exStart = existing.indexOf(MANAGED_START);
-    const exEnd = existing.indexOf(MANAGED_END);
     const regStart = regenerated.indexOf(MANAGED_START);
-    const regEnd = regenerated.indexOf(MANAGED_END);
+    const regEnd = regStart === -1 ? -1 : regenerated.indexOf(MANAGED_END, regStart);
 
-    if (exStart === -1 || exEnd === -1 || regStart === -1 || regEnd === -1) {
+    if (regEnd === -1) {
+        return null;
+    }
+
+    // Notes outside the region may mention either marker, so take the last start marker that has an end
+    // after it, and the first end after that - the real region is the one pair left once mentions drop out.
+    let exStart = existing.lastIndexOf(MANAGED_START);
+    let exEnd = exStart === -1 ? -1 : existing.indexOf(MANAGED_END, exStart);
+
+    while (exStart !== -1 && exEnd === -1) {
+        exStart = exStart === 0 ? -1 : existing.lastIndexOf(MANAGED_START, exStart - 1);
+        exEnd = exStart === -1 ? -1 : existing.indexOf(MANAGED_END, exStart);
+    }
+
+    if (exEnd === -1) {
         return null;
     }
 
