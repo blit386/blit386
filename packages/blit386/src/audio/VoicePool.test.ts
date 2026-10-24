@@ -557,6 +557,18 @@ describe('VoicePool', () => {
             expect(pool.volumeGet(ref)).toBe(0.3);
         });
 
+        it('rejects a non-finite volume and keeps the old one', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 0.5 });
+
+            expect(() => pool.volumeSet(ref, Number.NaN)).toThrow(/finite number/);
+            expect(pool.volumeGet(ref)).toBe(0.5);
+        });
+
         it('ramps volume over fadeMs', () => {
             vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
                 audioVoices: 2,

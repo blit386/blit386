@@ -5,6 +5,7 @@
 
 import type { EasingFunction } from './Easing';
 import { applyEasing } from './Easing';
+import { audioFadeNotFiniteError } from './errorMessages';
 
 /** Number of samples used to build an eased ramp curve for `setValueCurveAtTime`. */
 const FADE_CURVE_SAMPLE_COUNT = 32;
@@ -21,6 +22,7 @@ const FADE_CURVE_SAMPLE_COUNT = 32;
  * @param targetValue - Target parameter value.
  * @param fadeMs - Optional fade duration in milliseconds.
  * @param easing - Easing curve applied when `fadeMs` is a positive duration.
+ * @throws Error when `fadeMs` is `NaN` or infinite.
  */
 export function applyAudioParamRamp(
     param: AudioParam,
@@ -29,6 +31,10 @@ export function applyAudioParamRamp(
     fadeMs: number | undefined,
     easing: EasingFunction,
 ): void {
+    if (fadeMs !== undefined && !Number.isFinite(fadeMs)) {
+        throw new Error(audioFadeNotFiniteError(fadeMs));
+    }
+
     if (fadeMs === undefined || fadeMs <= 0) {
         // Cancel any pending ramp first - setting `.value` directly does not cancel scheduled
         // automation events, so a fade started earlier could otherwise keep running and override
