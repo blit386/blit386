@@ -1675,6 +1675,22 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.isInitialized()).toBe(false);
         });
 
+        it('should clear the old renderer effects before a restart drops it', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstRenderer = BTAPI.instance.getRenderer();
+
+            if (firstRenderer === null) {
+                throw new Error('expected a renderer after init');
+            }
+
+            const clearEffects = vi.spyOn(firstRenderer, 'clearEffects');
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            expect(clearEffects).toHaveBeenCalledTimes(1);
+        });
+
         it('should release the old device and renderer when a restart has invalid settings', async () => {
             expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
 

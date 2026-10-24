@@ -2600,11 +2600,18 @@ export class BTAPI {
     }
 
     /**
-     * Destroys the previous run's GPU device and drops its renderer, so a restart frees that GPU
+     * Clears the previous run's post-process effects (running their `dispose()` hooks), then
+     * destroys its GPU device and drops its renderer, so a restart frees that GPU
      * memory even when it fails before a new renderer exists. Every buffer and texture on the
      * device goes with it.
      */
     private releaseRenderer(): void {
+        // Effects first, while the device is alive, so each effect's dispose() hook runs. Gated like
+        // resetForSeek: the software renderer throws on post-process.
+        if (this.activeBackend === 'webgpu') {
+            this.renderer?.clearEffects();
+        }
+
         this.device?.destroy();
         this.device = null;
         this.context = null;
