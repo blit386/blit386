@@ -85,9 +85,10 @@ const CHECKOUT_PATH_LIKE = new RegExp(`${GIT_PREFIX}checkout${ARGS}${PATH_LIKE_A
 // below matches from its shortest unique prefix. Nested optionals, not a `[a-z-]*` run, so nothing backtracks.
 const FORCE_OPTION = '--f(o(r(ce?)?)?)?';
 const DISCARD_OPTION = '--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?';
-// Checkout options that only ever take paths, so they overwrite files whatever the path looks like: `--ours` /
-// `-2`, `--theirs` / `-3`, `--no-overlay`, and `--pathspec-from-file` (the paths come from a file).
-const CHECKOUT_PATH_OPTION = `(-${ALPHANUMERIC}*[23]${ALPHANUMERIC}*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f${ARG_CHAR}*)`;
+// Checkout options that only ever overwrite files, whatever the paths look like: `--ours` / `-2`, `--theirs` /
+// `-3`, `--no-overlay`, `--pathspec-from-file` (the paths come from a file), and `--patch` / `-p`, which discards
+// the hunks picked interactively even with no path given (`--patch?` also covers its shortest unique prefix).
+const CHECKOUT_PATH_OPTION = `(-${ALPHANUMERIC}*[23p]${ALPHANUMERIC}*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f${ARG_CHAR}*|--patch?)`;
 const CHECKOUT_PATH_OPTIONS = new RegExp(`${GIT_PREFIX}checkout${ARGS}${CHECKOUT_PATH_OPTION}${ARG_END}`);
 // `-f` may be bundled (`-qf`), as git accepts for any short flag. `--force-create` is a different option and passes.
 const CHECKOUT_OR_SWITCH_FORCE = new RegExp(

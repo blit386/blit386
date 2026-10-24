@@ -109,14 +109,15 @@ is_destructive_restore() {
 #     a glob character (`*`, `?`, `[`), which git forbids in branch names. Known
 #     gaps, accepted: `git checkout Makefile` or `git checkout src` slips through, and a branch named
 #     like a file (`fix.js`) is blocked - `git switch` is the unambiguous way to change branch.
-#   - Checkout options that only take paths: `--ours` / `-2`, `--theirs` / `-3`, `--no-overlay`,
-#     `--pathspec-from-file`.
+#   - Checkout options that only ever overwrite files: `--ours` / `-2`, `--theirs` / `-3`,
+#     `--no-overlay`, `--pathspec-from-file`, and `--patch` / `-p` (discards the picked hunks even
+#     with no path given).
 #   - `-f` (also bundled, `-qf`), `--force` or `--discard-changes` on checkout or switch.
 #   - git accepts any unambiguous prefix of a long option (`--for` runs `--force`), so each long
 #     option matches from its shortest unique prefix; `--force-create` is a different option and passes.
 GIT_FORCE_OPTION='--f(o(r(ce?)?)?)?'
 GIT_DISCARD_OPTION='--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?'
-GIT_CHECKOUT_PATH_OPTION='(-[[:alnum:]]*[23][[:alnum:]]*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f[^[:space:];&|<>]*)'
+GIT_CHECKOUT_PATH_OPTION='(-[[:alnum:]]*[23p][[:alnum:]]*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f[^[:space:];&|<>]*|--patch?)'
 GIT_ARGS='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+'
 GIT_ARG_END='([[:space:]]|[;&|<>]|$)'
 GIT_CHECKOUT_PATHS="checkout${GIT_ARGS}--${GIT_ARG_END}"
