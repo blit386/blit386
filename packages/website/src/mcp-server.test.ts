@@ -43,11 +43,14 @@ async function rpc(
     body: unknown,
     options: Omit<MockContextOptions, 'body' | 'method'> = {},
 ): Promise<{ response: Response; json: JsonRpcResponse }> {
+    const raw = typeof body === 'string' ? body : JSON.stringify(body);
     const harness = createMockContext({
         url: options.url ?? 'https://blit386.dev/mcp',
         method: 'POST',
-        body: typeof body === 'string' ? body : JSON.stringify(body),
+        body: raw,
         ...options,
+        // A Request built from a string carries no content-length of its own, as a real client's does.
+        headers: { 'content-length': String(new TextEncoder().encode(raw).length), ...options.headers },
     });
 
     const response = await harness.run(middleware);
@@ -163,6 +166,65 @@ describe('mcpServerPlugin', () => {
                 id: 7,
                 error: { code: -32601, message: 'Method not found: foo/bar' },
             });
+        });
+    });
+
+    describe('input limits (BT-614)', () => {
+        const searchCall = (query: string) => ({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/call',
+            params: { name: 'search_docs', arguments: { query } },
+        });
+
+        it('refuses a query over 256 characters with -32602', async () => {
+            const { json } = await rpc(middleware, searchCall('a'.repeat(257)));
+
+            expect(json.error?.code).toBe(-32602);
+            expect(extractions).toEqual([]);
+        });
+
+        it('still answers a query of exactly 256 characters', async () => {
+            const { json } = await rpc(middleware, searchCall('a'.repeat(256)));
+
+            expect(json.error).toBeUndefined();
+        });
+
+        it('refuses a body over 64 KiB before parsing it', async () => {
+            const { response, json } = await rpc(middleware, searchCall('palette'), {
+                headers: { 'content-length': String(64 * 1024 + 1) },
+            });
+
+            expect(response.status).toBe(413);
+            expect(json.error?.code).toBe(-32600);
+        });
+
+        it('still answers a body of exactly 64 KiB', async () => {
+            const { response } = await rpc(middleware, searchCall('palette'), {
+                headers: { 'content-length': String(64 * 1024) },
+            });
+
+            expect(response.status).toBe(200);
+        });
+
+        it('refuses a body with no content-length', async () => {
+            const harness = createMockContext({
+                url: 'https://blit386.dev/mcp',
+                method: 'POST',
+                body: JSON.stringify(searchCall('palette')),
+            });
+
+            const response = await harness.run(middleware);
+            const json = (await response?.json()) as JsonRpcResponse;
+
+            expect(response?.status).toBe(411);
+            expect(json.error?.code).toBe(-32600);
+        });
+
+        it('answers a normal query', async () => {
+            const { json } = await rpc(middleware, searchCall('palette'));
+
+            expect(searchResults(json).map((r) => r.title)).toContain('Palette cycling');
         });
     });
 

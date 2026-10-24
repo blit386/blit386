@@ -290,6 +290,17 @@ describe('markdownNegotiationPlugin', () => {
 
                 expect(assets.requests[0]?.headers.get('if-none-match')).toBe(CONDITIONAL['if-none-match']);
             });
+
+            it('keeps them for the extensionless search index, which relies on 304s', async () => {
+                const harness = assetsHarness(new Response('ok'), {
+                    url: 'https://blit386.dev/api/search',
+                    headers: CONDITIONAL,
+                });
+
+                await harness.run(middleware);
+
+                expect(assets.requests[0]?.headers.get('if-none-match')).toBe(CONDITIONAL['if-none-match']);
+            });
         });
 
         it('falls through to the next middleware when the binding has no such asset', async () => {
@@ -297,7 +308,7 @@ describe('markdownNegotiationPlugin', () => {
 
             const response = await harness.run(middleware);
 
-            // RSC payloads, /mcp, and /api/search all live here: no static asset exists, so the
+            // RSC payloads and /mcp live here: no static asset exists, so the
             // 404 must not be returned to the client.
             expect(response).toBeUndefined();
             expect(harness.nextCalls).toBe(1);

@@ -602,6 +602,13 @@ does not flip it back to `false`: the loop object is still there.
 A second `BT.init()` call made while one is still in flight is rejected (it resolves to `false` and changes nothing),
 and `BT.isReady` stays `false` for the whole duration of any `init()`, including a re-init after an earlier success.
 
+A `BT.init()` call made after an earlier one resolved restarts the engine cleanly (since 1.8.1). It stops the running
+game loop, detaches input and audio, and destroys the previous GPU device before creating a new one, so only one loop
+ever runs and a "back to title" restart does not leak GPU memory. Sprite sheets and fonts you kept from the earlier run
+rebuild their texture on the new device the next time they are drawn. Post-process effects do not carry over, so add
+them again in `init()`. A `BT.renderAt` seek already running finishes before the restart begins, and one called while
+the restart runs rejects, as it does before the first init.
+
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`.
 

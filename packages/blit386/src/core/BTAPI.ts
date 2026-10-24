@@ -491,6 +491,12 @@ export class BTAPI {
      * silently reporting `false` would hide a renderer fault. `bootstrap()` catches
      * it and routes it to `onError`.
      *
+     * Calling `init()` again after an earlier call resolved restarts the engine cleanly: it runs
+     * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
+     * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
+     * across the restart rebuild their texture on the new device. A {@link renderAt} seek already
+     * running finishes first; one called while the init runs rejects, as before init.
+     *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
      * @returns `true` when initialization succeeds; otherwise `false`, including when
@@ -507,6 +513,9 @@ export class BTAPI {
         this.isInitInProgress = true;
 
         try {
+            // A seek already running would otherwise resume against the new run's demo, renderer, and loop.
+            await this.seekChain;
+
             return await this.runInit(demo, canvas);
         } finally {
             this.isInitInProgress = false;
@@ -1266,6 +1275,8 @@ export class BTAPI {
     /**
      * Draws a single pixel at the specified position.
      *
+     * Coordinates are integers: a `Vector2i` truncates toward zero when constructed.
+     *
      * @param pos - Pixel coordinates.
      * @param paletteIndex - Palette color index.
      */
@@ -1283,8 +1294,11 @@ export class BTAPI {
      * More efficient than {@link drawPixel} when coordinates are already unpacked -
      * avoids constructing a `Vector2i` just to shuttle two numbers.
      *
-     * @param x - X coordinate.
-     * @param y - Y coordinate.
+     * Fractional coordinates are truncated toward zero, the same rule `Vector2i` applies,
+     * so both backends draw the same pixel.
+     *
+     * @param x - X coordinate (truncated toward zero).
+     * @param y - Y coordinate (truncated toward zero).
      * @param paletteIndex - Palette color index.
      */
     public drawPixelXY(x: number, y: number, paletteIndex: number): void {
@@ -1293,7 +1307,7 @@ export class BTAPI {
 
         this.markDrawCall();
 
-        this.renderer?.drawPixelXY(x, y, paletteIndex);
+        this.renderer?.drawPixelXY(x | 0, y | 0, paletteIndex);
     }
 
     /**
@@ -1984,6 +1998,11 @@ export class BTAPI {
     private async runInit(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
         console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
 
+        // A re-init restarts cleanly: tear down the previous run so its loop never keeps ticking beside the new one.
+        this.stop();
+        this.loop = null;
+        this.releaseRenderer();
+
         this.demo = demo;
         this.canvas = canvas;
         this.isDevGuardActive = isDevMode();
@@ -2620,6 +2639,26 @@ export class BTAPI {
         this.reducedMotion?.detach();
         this.reducedMotion = new ReducedMotion();
         this.reducedMotion.attach(demo.onReducedMotionChange?.bind(demo) ?? null);
+    }
+
+    /**
+     * Clears the previous run's post-process effects (running their `dispose()` hooks), then
+     * destroys its GPU device and drops its renderer, so a restart frees that GPU
+     * memory even when it fails before a new renderer exists. Every buffer and texture on the
+     * device goes with it.
+     */
+    private releaseRenderer(): void {
+        // Effects first, while the device is alive, so each effect's dispose() hook runs. Gated like
+        // resetForSeek: the software renderer throws on post-process.
+        if (this.activeBackend === 'webgpu') {
+            this.renderer?.clearEffects();
+        }
+
+        this.device?.destroy();
+        this.device = null;
+        this.context = null;
+        this.renderer = null;
+        this.activeBackend = null;
     }
 
     /**

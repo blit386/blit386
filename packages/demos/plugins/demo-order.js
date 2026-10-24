@@ -60,4 +60,5 @@ export const DEMO_ORDER = [
     'nine-slice-panels',
     'pattern-fill',
     'test-state',
+    'raycasting',
 ];

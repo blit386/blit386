@@ -90,10 +90,11 @@ what runtime gates such as post-process and capture must check.
 
 Readiness and seeking: `BT.isReady` is `true` only after `init()` resolved and the game loop exists - `false` before
 init, while an init is in flight, during the splash, and after a failed init; it stays `true` while `BT.renderAt` holds
-the loop parked. A `BT.init` call made while another is running resolves to `false` and changes nothing. `renderAt`
-stops the loop, replays `from: 'start'` on a fresh instance of the game's class (an object-literal game is reused), then
-steps to the target tick with no `requestAnimationFrame`; `BT.resume()` restarts the loop. Palette effects advance once
-per fixed update on the tick clock, so a seeked frame matches live play on that tick.
+the loop parked. A `BT.init` call made while another is running resolves to `false` and changes nothing; one made after
+an earlier init resolved restarts cleanly (stops the old loop, destroys the old `GPUDevice`). `renderAt` stops the loop,
+replays `from: 'start'` on a fresh instance of the game's class (an object-literal game is reused), then steps to the
+target tick with no `requestAnimationFrame`; `BT.resume()` restarts the loop. Palette effects advance once per fixed
+update on the tick clock, so a seeked frame matches live play on that tick.
 
 Boolean naming: runtime queries and configure flags use grammatical `is*` / `has*` (`isPointerActive`, `hasGlyph`,
 `isOverlayEnabled`). Side-effect or operation-result booleans use imperative verbs (`Timer.fireIfElapsed()`,

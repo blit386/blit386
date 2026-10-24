@@ -24,8 +24,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Never run two deploys of the same site at once, and never cancel one in flight -
-  # a half-finished deploy is worse than a queued one.
+  # Serializes runs on the same ref (consecutive pushes to main for the next.* previews) and
+  # never cancels one in flight - a half-finished deploy is worse than a queued one. This is
+  # keyed on the ref, so it does NOT stop two different release tags from deploying at once;
+  # the production jobs below carry their own fixed groups for that.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
@@ -34,6 +36,15 @@ jobs:
     name: Deploy Demos to Cloudflare Pages
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    # The `production` Environment's deployment-branch rule (main plus release tags) is what
+    # stops a manual run on a feature branch from shipping it; an `if:` here could be edited
+    # away by that branch's own copy of this file. The Cloudflare secrets live in the
+    # Environment, so a ref the rule refuses never receives them. Fixed group: two release
+    # tags (different refs) must not deploy this site in parallel.
+    environment: production
+    concurrency:
+      group: deploy-demos-prod
+      cancel-in-progress: false
     permissions:
       contents: read
       deployments: write
@@ -86,6 +97,11 @@ jobs:
     name: Deploy Website to Cloudflare Workers
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    # Same Environment gate and fixed group as deploy-demos; see the comment there.
+    environment: production
+    concurrency:
+      group: deploy-website-prod
+      cancel-in-progress: false
     permissions:
       contents: read
       deployments: write

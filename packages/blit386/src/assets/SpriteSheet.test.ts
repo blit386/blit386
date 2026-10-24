@@ -180,6 +180,20 @@ describe('SpriteSheet', () => {
             const second = sheet.getTexture(device);
             expect(second).toBe(first);
         });
+
+        it('should create a new texture on a different device instead of reusing the old one', () => {
+            const sheet = new SpriteSheet(mockImage);
+            const oldDevice = createMockGPUDevice();
+            const newDevice = createMockGPUDevice();
+            const createTexture = vi.spyOn(newDevice, 'createTexture');
+
+            const first = sheet.getTexture(oldDevice);
+            const second = sheet.getTexture(newDevice);
+
+            expect(second).not.toBe(first);
+            expect(createTexture).toHaveBeenCalledTimes(1);
+            expect(sheet.getTexture(newDevice)).toBe(second);
+        });
     });
 
     describe('destroy', () => {

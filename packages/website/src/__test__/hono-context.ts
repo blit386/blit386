@@ -35,7 +35,7 @@ interface MockContext {
     };
     env: Record<string, unknown> | undefined;
     res: Response;
-    json: (value: unknown) => Response;
+    json: (value: unknown, status?: number) => Response;
 }
 
 export interface MockContextOptions {
@@ -83,7 +83,8 @@ export function createMockContext(options: MockContextOptions = {}): MockContext
         // Hono starts a request with a placeholder it has not yet finalized; a middleware that
         // mutates `c.res.headers` only ever sees the response `next()` installs.
         res: new Response(null, { status: 404 }),
-        json: (value) => new Response(JSON.stringify(value), { headers: { 'content-type': 'application/json' } }),
+        json: (value, status) =>
+            new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } }),
     };
 
     const next = async (): Promise<void> => {

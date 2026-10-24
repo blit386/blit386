@@ -76,6 +76,7 @@ const pointerEvent = (
         pointerId: number;
         pointerType?: 'mouse' | 'touch' | 'pen' | '';
         button?: number;
+        buttons?: number;
         clientX?: number;
         clientY?: number;
     },
@@ -84,6 +85,7 @@ const pointerEvent = (
         pointerId: init.pointerId,
         pointerType: init.pointerType ?? 'mouse',
         button: init.button ?? 0,
+        buttons: init.buttons ?? 0,
         clientX: init.clientX ?? 0,
         clientY: init.clientY ?? 0,
         bubbles: true,
@@ -369,6 +371,100 @@ describe('PointerInput', () => {
             expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
             expect(input.isButtonDown(BTN_POINTER_B, 0)).toBe(false);
             expect(input.isActive(0)).toBe(false);
+        });
+
+        it('releases mouse buttons on a pointermove that reports no buttons held', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 0,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+            canvas.dispatchEvent(
+                new PointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 1,
+                    clientX: 50,
+                    clientY: 50,
+                    bubbles: true,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(true);
+
+            canvas.dispatchEvent(
+                new PointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 0,
+                    clientX: 60,
+                    clientY: 60,
+                    bubbles: true,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
+            expect(input.isActive(0)).toBe(true);
+        });
+
+        it('restores a still-held button from the buttons mask after a pointerleave cleared it', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerleave', { pointerId: 1, pointerType: 'mouse', clientX: 50, clientY: 50 }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 2,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_B, 0)).toBe(true);
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
+        });
+
+        it('keeps the D button down when back is released while forward is still held', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 3,
+                    buttons: 24,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 3,
+                    buttons: 16,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_D, 0)).toBe(true);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 4,
+                    buttons: 0,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_D, 0)).toBe(false);
         });
 
         it('keeps slot 0 valid after pointerup (only the button releases)', () => {
@@ -979,13 +1075,25 @@ describe('PointerInput', () => {
 
             // Tick 2 inter-frame: mouse moves a small step.
             canvas.dispatchEvent(
-                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 178, clientY: 148 }),
+                pointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 1,
+                    clientX: 178,
+                    clientY: 148,
+                }),
             );
             input.endFrame();
 
             // Tick 3 inter-frame: mouse moves further, then releases.
             canvas.dispatchEvent(
-                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 186, clientY: 156 }),
+                pointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 1,
+                    clientX: 186,
+                    clientY: 156,
+                }),
             );
             canvas.dispatchEvent(
                 pointerEvent('pointerup', {

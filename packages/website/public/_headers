@@ -34,3 +34,9 @@
 
 /.well-known/oauth-authorization-server
   Content-Type: application/json
+
+# The FlexSearch index is extensionless, so without this Cloudflare sends no Content-Type and skips
+# edge compression on the large body. The path is a manual-sync copy of `SEARCH_INDEX_PATH` in
+# `src/csp.ts`; change both together.
+/api/search
+  Content-Type: application/json

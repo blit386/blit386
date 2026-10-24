@@ -10,7 +10,7 @@ Want to build your own game with the engine? Start with the
 [create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) scaffolder
 (`npm create blit386@latest my-game`).
 
-There are 52 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
+There are 53 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
 gamepad), audio, seeded randomness, and test hooks. Each demo lives in a single number-free kebab-case file under `src/`
 (for example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames.
 Most demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
@@ -136,6 +136,8 @@ to these URLs via `VINTAGE_URLS`.
   size
 - [game-scene](https://demos.blit386.dev/game-scene) - Capstone: tilemap ground, patterns, sprites, camera, animation,
   frame capture, and looping background music with a real intro/loop point in one scene
+- [raycasting](https://demos.blit386.dev/raycasting) - Wolfenstein-style first-person maze: one DDA ray per screen
+  column, palette distance shading, a minimap, and a gentle CRT chain
 
 ### Input
 
@@ -198,8 +200,8 @@ to these URLs via `VINTAGE_URLS`.
 ## Shared UI kit
 
 All on-screen demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters,
-a virtual touch D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 47 of
-the 52 demos. Five demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine
+a virtual touch D-pad, swipes, and tap zones - comes from a small shared kit in `src/shared/`. It is imported by 48 of
+the 53 demos. Five demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine
 overlay), `hello-world` (a bare-bones starter kept as a minimal reference, with no demo UI at all), `hypercube` (a
 full-canvas tesseract with no shared UI kit), `logo-lowres` (a full-canvas showcase with no demo HUD), and
 `pattern-fill` (a full-screen tiled pattern with no demo HUD):

@@ -107,6 +107,29 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('canvas blur releases held keys so the next keydown is a fresh press edge', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', bubbles: true }));
+        kb.endUpdate(tick);
+        canvas.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyDown('ArrowRight')).toBe(false);
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', bubbles: true }));
+
+        expect(kb.isKeyPressed('ArrowRight', undefined, tick)).toBe(true);
+
+        const removeSpy = vi.spyOn(canvas, 'removeEventListener');
+
+        kb.detach();
+
+        expect(removeSpy).toHaveBeenCalledWith('blur', expect.any(Function));
+    });
+
     it('repeatRate > 0 repeats on schedule while held', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();

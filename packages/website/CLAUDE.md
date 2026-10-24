@@ -96,7 +96,9 @@ Four things about this are load-bearing and easy to undo by accident:
   client merges the `304`'s headers into its _stored_ body, so a fresh nonce lands on scripts carrying an older one and
   the whole page is blocked. Dropping the validators stops new copies from being revalidatable; dropping the
   conditionals stops copies cached before this shipped from getting a `304` today. `isHtmlAssetPath` in `src/csp.ts`
-  decides which paths pay for it - hashed JS, CSS, and fonts keep their `304`s.
+  decides which paths pay for it - hashed JS, CSS, and fonts keep their `304`s. The extensionless `/api/search` index is
+  exempted by exact path (`SEARCH_INDEX_PATH`), and `public/_headers` repeats that path to give it a JSON `Content-Type`
+  (which is what lets Cloudflare compress it) - a manual-sync pair.
 - **The rewriting needs a real parser.** `<script` occurs inside the RSC flight payload as ordinary JSON string data, so
   a string replace corrupts pages. `HTMLRewriter` is a correctness requirement, not a convenience.
 
@@ -420,6 +422,10 @@ word, so `ui` finds `UI` and `ui.button` but not `uint`; two-letter function wor
 rather than a length cutoff, which used to drop real terms like `UI` and `2D` (BT-585). It deliberately does **not**
 build a FlexSearch index in-process - that exceeds the Worker CPU limit (error 1102), the same reason site search runs
 in static mode.
+
+Input is bounded (BT-614): a POST to `/mcp` with no `content-length` gets `411`, and one over 64 KiB (`MAX_BODY_BYTES`)
+gets `413`, both before parsing and with a `-32600` body. A `search_docs` query over 256 characters (`MAX_QUERY_LENGTH`)
+gets `-32602`. Scoring cost is linear in query length, and the Waku adapter's own body limit is 100 MB.
 
 The Build a Game pages (see Build a Game pages) are ordinary loader pages, so `search_docs` and `get_doc_page` serve
 them with no special case: that is how an agent with only this connector and no scaffolded project reaches the starter

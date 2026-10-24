@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { SHELL_CASES } from '../packages/kit/test/shell-cases.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const hookPath = join(here, '..', '.claude', 'hooks', 'shell-safety.sh');
@@ -67,6 +68,27 @@ describe('destructive command detection', () => {
         assert.equal(result.status, 0);
         assert.equal(result.stdout, '');
     });
+});
+
+// BT-617: this hook and the kit's guard-core.cjs are two copies of one policy, so hold this one to the
+// kit's whole case table rather than a hand-kept copy of it.
+describe('the kit shell policy case table', () => {
+    for (const [command, expected] of SHELL_CASES) {
+        it(`${expected}: ${JSON.stringify(command)}`, () => {
+            const result = runHook(command);
+
+            if (expected === 'deny') {
+                assert.equal(result.status, 2);
+                assert.match(result.stderr, /Destructive git command detected/);
+            } else if (expected === 'ask') {
+                assert.equal(result.status, 0);
+                assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'ask');
+            } else {
+                assert.equal(result.status, 0);
+                assert.equal(result.stdout, '');
+            }
+        });
+    }
 });
 
 describe('git clean detection', () => {

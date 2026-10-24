@@ -165,7 +165,8 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
-not `event.key` layout text.
+not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
+moves elsewhere does not stay down.
 
 ### Raw key queries
 
@@ -423,6 +424,10 @@ BT.gamepadCount; // number of connected gamepads (0..4)
 BT.getAxis(BT.AXIS_LEFT_X, 0); // -1.0 .. 1.0 (dead-zone filtered)
 BT.getAxis(BT.AXIS_TRIGGER_L, 0); // 0.0 .. 1.0
 ```
+
+A newly connected gamepad becomes the lowest free player and keeps that player until it disconnects, so a dropped pad
+never moves the other players. Chrome can put a lone pad at gamepad index 1 with nothing at index 0; it is still
+player 0. Browsers only report a pad after one of its buttons is pressed while the page has focus.
 
 Axis constants:
 
