@@ -1,6 +1,6 @@
 # blit386-demos
 
-Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript - 52 demos today, one
+Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript - 53 demos today, one
 file each under `src/`. Deployed to demos.blit386.dev via Cloudflare Pages (`wrangler.jsonc` names the project and
 `dist/`; response headers come from `public/_headers`, explained in `docs/SECURITY-HEADERS.md`). The engine is consumed
 as `workspace:*` from the sibling `packages/blit386` package in this monorepo.
@@ -214,7 +214,7 @@ sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX 
 
 All demo UI - panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch
 D-pad, swipes, tap zones - comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current
-widget list and options. Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 52 demos, 47 import it;
+widget list and options. Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 53 demos, 48 import it;
 the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` (a bare-bones starter
 plus four immersive/showcase pieces, none with a demo HUD). Beside the kit, `src/shared/` holds `key-names.js`
 (`keyLabel(code)` for on-screen key names), `canvas-sprites.js` (offscreen-canvas sprite art), `crt-glitch.js` (the
@@ -246,7 +246,9 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   offset) with a comment on a custom `startSlot`, or dedicated scene slots
 - Every demo must be usable on touch: key-triggered actions get a `ui.button` with a `{ key }` binding, directional
   input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (`keyboard-input`, `gamepad-input`,
-  `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true
+  `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true. One deliberate
+  exception: `raycasting` has no panel, so its C (CRT on/off) and R (back to start) shortcuts are keyboard-only - touch
+  players still walk with the D-pad and swipes. Do not add buttons back to it
 - Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from `src/shared/post-process-backend.js`, set
   `this.effectsAvailable = isAvailable()` after `init()` (it checks `BT.activeBackend`, not `requestedBackend`), and
   show the note when effects are skipped
