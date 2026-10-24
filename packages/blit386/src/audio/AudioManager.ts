@@ -11,7 +11,7 @@
 import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { audioVolumeNotFiniteError } from '../utils/errorMessages';
+import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions } from './MusicPlayer';
 import {
@@ -308,11 +308,15 @@ export class AudioManager {
      * @param volume - Target volume, clamped to `[0, 1]`.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      * @param easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
-     * @throws Error when `volume` is not a finite number.
+     * @throws Error when `volume` or `fadeMs` is not a finite number.
      */
     public volumeSet(bus: AudioBus, volume: number, fadeMs?: number, easing: EasingFunction = 'linear'): void {
         if (!Number.isFinite(volume)) {
             throw new Error(audioVolumeNotFiniteError('BT.audioVolumeSet', volume));
+        }
+
+        if (fadeMs !== undefined && !Number.isFinite(fadeMs)) {
+            throw new Error(audioFadeNotFiniteError(fadeMs));
         }
 
         const clamped = clampVolume(volume);

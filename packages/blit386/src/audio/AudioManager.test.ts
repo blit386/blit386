@@ -318,6 +318,14 @@ describe('AudioManager', () => {
             },
         );
 
+        it('rejects a non-finite fadeMs on a muted bus and keeps the old volume', () => {
+            audio.volumeSet('sfx', 0.5);
+            audio.muteSet('sfx', true);
+
+            expect(() => audio.volumeSet('sfx', 0.2, Number.NaN)).toThrow(/finite/);
+            expect(audio.volumeGet('sfx')).toBe(0.5);
+        });
+
         it('is a no-op when muting an already-muted bus', () => {
             audio.muteSet('main', true);
             audio.muteSet('main', true);

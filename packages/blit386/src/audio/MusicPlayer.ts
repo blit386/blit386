@@ -10,7 +10,7 @@
 
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { audioVolumeNotFiniteError, musicLoopRangeError } from '../utils/errorMessages';
+import { audioFadeNotFiniteError, audioVolumeNotFiniteError, musicLoopRangeError } from '../utils/errorMessages';
 
 /** Default gain applied to an incoming track when {@link MusicPlayOptions.volume} is omitted. */
 const DEFAULT_VOLUME = 1;
@@ -205,11 +205,15 @@ export class MusicPlayer {
      *
      * @param value - Target gain.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     * @throws Error when `value` is not a finite number.
+     * @throws Error when `value` or `fadeMs` is not a finite number.
      */
     public volumeSet(value: number, fadeMs?: number): void {
         if (!Number.isFinite(value)) {
             throw new Error(audioVolumeNotFiniteError('BT.musicVolumeSet', value));
+        }
+
+        if (fadeMs !== undefined && !Number.isFinite(fadeMs)) {
+            throw new Error(audioFadeNotFiniteError(fadeMs));
         }
 
         this.volume = value;
