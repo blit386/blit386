@@ -120,7 +120,6 @@ minimumReleaseAgeExclude:
   - ws
   - fast-uri
   - undici
-  - happy-dom
   - '@types/node'
   - '@commitlint/cli'
   # Security patch for GHSA-2v37-7h3g-55p8, published 2026-08-03 and so still inside the
@@ -132,6 +131,10 @@ minimumReleaseAgeExclude:
   # window until 2026-10-07. Pinned to the exact vetted version, like nanoid above. Drop this
   # entry once the patch ages past the gate.
   - source-map-js@1.2.2
+  # Security patch for the happy-dom advisory fixed in 21.0.4, published 2026-10-20 and so
+  # inside the 7-day window until 2026-10-27. Pinned to the exact vetted version, like nanoid
+  # above. Drop this entry once the patch ages past the gate.
+  - happy-dom@21.0.4
   - '@commitlint/config-conventional'
   - cspell
   - knip
