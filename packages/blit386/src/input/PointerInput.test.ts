@@ -411,6 +411,24 @@ describe('PointerInput', () => {
             expect(input.isActive(0)).toBe(true);
         });
 
+        it('restores a still-held button from the buttons mask after a pointerleave cleared it', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerleave', { pointerId: 1, pointerType: 'mouse', clientX: 50, clientY: 50 }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    buttons: 2,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_B, 0)).toBe(true);
+            expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
+        });
+
         it('keeps slot 0 valid after pointerup (only the button releases)', () => {
             canvas.dispatchEvent(
                 pointerEvent('pointerdown', {

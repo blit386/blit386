@@ -717,13 +717,12 @@ export class PointerInput {
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
 
-            // A release outside the page never reaches pointerup; `buttons` is the browser's truth.
-            if (event.buttons === 0) {
-                slot.a = false;
-                slot.b = false;
-                slot.c = false;
-                slot.d = false;
-            }
+            // A release outside the page never reaches pointerup, and pointerleave clears every button;
+            // `buttons` is the browser's truth, so rebuild all four from it (1 left, 2 right, 4 middle, 8/16 back/forward).
+            slot.a = (event.buttons & 1) !== 0;
+            slot.b = (event.buttons & 2) !== 0;
+            slot.c = (event.buttons & 4) !== 0;
+            slot.d = (event.buttons & 24) !== 0;
 
             // Activation: sync prevPos to the entry pos so the first frame's
             // delta is zero rather than a jump from (0, 0) (or wherever the
