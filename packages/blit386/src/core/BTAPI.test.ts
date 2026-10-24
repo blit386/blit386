@@ -1922,6 +1922,68 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getRenderer()).not.toBeNull();
         });
 
+        describe('fractional coordinates on the software backend', () => {
+            /** Initializes a 4x1 software canvas and returns a function that renders and reads the logical frame. */
+            async function initFourByOne(): Promise<() => number[]> {
+                uninstallMockNavigatorGPU();
+                let frame: Uint8ClampedArray | null = null;
+                vi.stubGlobal(
+                    'OffscreenCanvas',
+                    class MockOffscreenCanvas {
+                        constructor(
+                            public width: number,
+                            public height: number,
+                        ) {}
+                        getContext(contextType?: string): OffscreenCanvas2DMock | null {
+                            if (contextType !== '2d') {
+                                return null;
+                            }
+
+                            return {
+                                ...makeOffscreenCanvas2dContext(),
+                                putImageData: vi.fn((imageData: ImageData) => {
+                                    frame = imageData.data as Uint8ClampedArray;
+                                }),
+                            };
+                        }
+                    },
+                );
+                const demo: IBTDemo = {
+                    configure: () => ({
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(4, 1),
+                        targetFPS: 60,
+                        backend: 'software',
+                    }),
+                    init: vi.fn().mockResolvedValue(true),
+                    update: vi.fn(),
+                    render: vi.fn(),
+                };
+
+                await BTAPI.instance.init(demo, makeMock2DCanvas());
+                const palette = new Palette(16);
+                palette.set(1, new Color32(200, 100, 50, 255));
+                BTAPI.instance.setPalette(palette);
+
+                return () => {
+                    BTAPI.instance.getRenderer()?.endFrame(0);
+
+                    return Array.from(frame ?? []);
+                };
+            }
+
+            const PIXEL_1 = [0, 0, 0, 0, 200, 100, 50, 255, 0, 0, 0, 0, 0, 0, 0, 0];
+
+            it('drawPixelXY truncates fractional x and y so only pixel 1 changes', async () => {
+                const render = await initFourByOne();
+                BTAPI.instance.getRenderer()?.beginFrame();
+
+                BTAPI.instance.drawPixelXY(1.5, 0.5, 1);
+
+                expect(render()).toEqual(PIXEL_1);
+            });
+        });
+
         it('URL override ?backend=software wins over configure().backend=webgpu', async () => {
             vi.stubGlobal('location', { search: '?backend=software' });
             vi.stubGlobal(
