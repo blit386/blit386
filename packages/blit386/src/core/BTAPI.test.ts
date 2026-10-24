@@ -1974,11 +1974,11 @@ describe('BTAPI', () => {
 
             const PIXEL_1 = [0, 0, 0, 0, 200, 100, 50, 255, 0, 0, 0, 0, 0, 0, 0, 0];
 
-            it('drawPixelXY truncates a fractional x so only pixel 1 changes', async () => {
+            it('drawPixelXY truncates fractional x and y so only pixel 1 changes', async () => {
                 const render = await initFourByOne();
                 BTAPI.instance.getRenderer()?.beginFrame();
 
-                BTAPI.instance.drawPixelXY(1.5, 0, 1);
+                BTAPI.instance.drawPixelXY(1.5, 0.5, 1);
 
                 expect(render()).toEqual(PIXEL_1);
             });
