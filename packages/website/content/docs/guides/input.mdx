@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-10-24T11:42:02+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -420,6 +420,10 @@ BT.gamepadCount; // number of connected gamepads (0..4)
 BT.getAxis(BT.AXIS_LEFT_X, 0); // -1.0 .. 1.0 (dead-zone filtered)
 BT.getAxis(BT.AXIS_TRIGGER_L, 0); // 0.0 .. 1.0
 ```
+
+A newly connected gamepad becomes the lowest free player and keeps that player until it disconnects, so a dropped pad
+never moves the other players. Chrome can put a lone pad at gamepad index 1 with nothing at index 0; it is still
+player 0. Browsers only report a pad after one of its buttons is pressed while the page has focus.
 
 Axis constants:
 

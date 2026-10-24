@@ -424,6 +424,10 @@ BT.getAxis(BT.AXIS_LEFT_X, 0); // -1.0 .. 1.0 (dead-zone filtered)
 BT.getAxis(BT.AXIS_TRIGGER_L, 0); // 0.0 .. 1.0
 ```
 
+A newly connected gamepad becomes the lowest free player and keeps that player until it disconnects, so a dropped pad
+never moves the other players. Chrome can put a lone pad at gamepad index 1 with nothing at index 0; it is still
+player 0. Browsers only report a pad after one of its buttons is pressed while the page has focus.
+
 Axis constants:
 
 - `AXIS_LEFT_X`, `AXIS_LEFT_Y`
