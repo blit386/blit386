@@ -174,41 +174,49 @@ function extractManagedRegion(content: string): string {
     return content.slice(commentEnd + '-->'.length, end).trim();
 }
 
+/** Offsets of the lines that hold exactly `marker`; a marker quoted inside a sentence is not one. */
+function markerLineOffsets(text: string, marker: string): number[] {
+    const offsets: number[] = [];
+    let offset = 0;
+
+    for (const line of text.split('\n')) {
+        if (line.trimEnd() === marker) {
+            offsets.push(offset);
+        }
+
+        offset += line.length + 1;
+    }
+
+    return offsets;
+}
+
+/** The one start-then-end marker pair in `text`, or null when there is none or it is ambiguous. */
+function managedBounds(text: string): { start: number; end: number } | null {
+    const [start, ...extraStarts] = markerLineOffsets(text, MANAGED_START);
+    const [end, ...extraEnds] = markerLineOffsets(text, MANAGED_END);
+
+    if (start === undefined || end === undefined || extraStarts.length > 0 || extraEnds.length > 0 || end < start) {
+        return null;
+    }
+
+    return { start, end: end + MANAGED_END.length };
+}
+
 /**
  * Replace the managed region of an existing shared file with a freshly generated one, preserving
- * everything outside the markers byte-for-byte. Returns null when either file has no start marker
- * followed by an end marker, so the caller can fall back to a conflict copy.
- *
- * shortcut: in the existing file, notes that mention both markers below the region are taken for the
- * region; upgrade to requiring exactly one marker pair if that ever shows up in a real file.
+ * everything outside the markers byte-for-byte. A marker counts only on a line of its own, so notes
+ * may quote one in a sentence. Returns null when either file does not hold exactly one start marker
+ * followed by one end marker, so the caller can fall back to a conflict copy instead of guessing.
  */
 export function replaceManagedRegion(existing: string, regenerated: string): string | null {
-    const regStart = regenerated.indexOf(MANAGED_START);
-    const regEnd = regStart === -1 ? -1 : regenerated.indexOf(MANAGED_END, regStart);
+    const ex = managedBounds(existing);
+    const reg = managedBounds(regenerated);
 
-    if (regEnd === -1) {
+    if (ex === null || reg === null) {
         return null;
     }
 
-    // Notes outside the region may mention either marker, so take the last start marker that has an end
-    // after it, and the first end after that - the real region is the one pair left once mentions drop out.
-    let exStart = existing.lastIndexOf(MANAGED_START);
-    let exEnd = exStart === -1 ? -1 : existing.indexOf(MANAGED_END, exStart);
-
-    while (exStart !== -1 && exEnd === -1) {
-        exStart = exStart === 0 ? -1 : existing.lastIndexOf(MANAGED_START, exStart - 1);
-        exEnd = exStart === -1 ? -1 : existing.indexOf(MANAGED_END, exStart);
-    }
-
-    if (exEnd === -1) {
-        return null;
-    }
-
-    const before = existing.slice(0, exStart);
-    const after = existing.slice(exEnd + MANAGED_END.length);
-    const newBlock = regenerated.slice(regStart, regEnd + MANAGED_END.length);
-
-    return `${before}${newBlock}${after}`;
+    return `${existing.slice(0, ex.start)}${regenerated.slice(reg.start, reg.end)}${existing.slice(ex.end)}`;
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * `replaceManagedRegion`: swaps the kit-managed block of a shared file in place. User notes outside the markers are
- * free text, so a mention of a marker there must never move the splice point, and a file whose region is not
- * well-formed returns null so the caller writes a conflict copy.
+ * free text, so a marker quoted in a sentence must never move the splice point, and a file without exactly one
+ * marker pair on lines of their own returns null so the caller writes a conflict copy.
  */
 
 import { strict as assert } from 'node:assert';
@@ -62,5 +62,16 @@ describe('replaceManagedRegion', () => {
         const result = replaceManagedRegion(existing, region('new'));
 
         assert.equal(result, `wrap it in \`${START}\` and \`${END}\`\n${region('new')}\n`);
+    });
+
+    it('returns null when a marker stands on its own line in the notes, so the region is ambiguous', () => {
+        assert.equal(replaceManagedRegion(`${region('old')}\nexample:\n${region('sample')}\n`, region('new')), null);
+        assert.equal(replaceManagedRegion(`${START}\n${END}\n${region('old')}\n`, region('new')), null);
+    });
+
+    it('accepts CRLF line endings on the marker lines', () => {
+        const result = replaceManagedRegion(`notes\r\n${START}\r\nold\r\n${END}\r\ntail\r\n`, region('new'));
+
+        assert.equal(result, `notes\r\n${region('new')}\r\ntail\r\n`);
     });
 });
