@@ -11,6 +11,7 @@
 import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
+import { audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions } from './MusicPlayer';
 import {
@@ -91,9 +92,6 @@ export class AudioManager {
 
     /** Mute flag per bus. */
     private mutedState: PerBus<boolean>;
-
-    /** Raw gain value captured at mute time for each muted bus, restored verbatim by {@link muteSet}. */
-    private mutedGainSnapshot: Partial<PerBus<number>> = {};
 
     /** Count of SFX play requests dropped while the audio context was locked. */
     private sfxDroppedCount = 0;
@@ -211,7 +209,6 @@ export class AudioManager {
         this.isParked = false;
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
-        this.mutedGainSnapshot = {};
         this.sfxDroppedCount = 0;
         this.isMusicRequestRemembered = false;
         this.pendingMusicRequest = null;
@@ -311,8 +308,13 @@ export class AudioManager {
      * @param volume - Target volume, clamped to `[0, 1]`.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      * @param easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
+     * @throws Error when `volume` is not a finite number.
      */
     public volumeSet(bus: AudioBus, volume: number, fadeMs?: number, easing: EasingFunction = 'linear'): void {
+        if (!Number.isFinite(volume)) {
+            throw new Error(audioVolumeNotFiniteError('BT.audioVolumeSet', volume));
+        }
+
         const clamped = clampVolume(volume);
 
         // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
@@ -349,9 +351,9 @@ export class AudioManager {
      *
      * Cancels any in-flight {@link volumeSet} fade before applying the mute so a
      * scheduled ramp or curve can never override the mute/unmute value afterward.
-     * Muting snapshots the bus node's current gain value and zeroes the node
-     * immediately (no fade). Unmuting restores the exact snapshotted value, so
-     * a mute/unmute pair never destroys the level configured by {@link volumeSet}.
+     * Muting zeroes the node immediately (no fade). Unmuting restores the bus's
+     * logical volume, so a mute/unmute pair never destroys the level configured
+     * by {@link volumeSet}, and a {@link volumeSet} made while muted takes effect.
      *
      * @param bus - Audio bus to mute or unmute.
      * @param muted - `true` to mute, `false` to unmute.
@@ -368,12 +370,10 @@ export class AudioManager {
         node.gain.cancelScheduledValues(this.context?.currentTime ?? 0);
 
         if (muted) {
-            // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
-            this.mutedGainSnapshot[bus] = node.gain.value;
             node.gain.value = 0;
         } else {
             // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
-            node.gain.value = this.mutedGainSnapshot[bus] ?? this.logicalVolume[bus];
+            node.gain.value = this.logicalVolume[bus];
         }
 
         // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
@@ -747,7 +747,8 @@ export class AudioManager {
             return;
         }
 
-        if (this.unlocked) {
+        // A detach (and maybe a re-attach) during the await: this result belongs to a dead context.
+        if (this.context !== context || this.unlocked) {
             return;
         }
 

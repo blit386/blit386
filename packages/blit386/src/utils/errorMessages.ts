@@ -990,3 +990,24 @@ export function renderAtPastError(targetTicks: number, currentTicks: number): st
         "Use from: 'start' to replay from the beginning"
     );
 }
+
+/**
+ * Returns the error message for a non-finite volume passed to a `BT` audio volume call.
+ *
+ * @param api - Public call that rejected the value, for example `BT.audioVolumeSet`.
+ * @param volume - The rejected value (`NaN`, `Infinity`, or `-Infinity`).
+ * @returns User-facing error string.
+ */
+export function audioVolumeNotFiniteError(api: string, volume: number): string {
+    return `${api}() needs a finite number such as 0.5, but got ${volume}. Pass a number between 0 and 1`;
+}
+
+/**
+ * Returns the error message for a non-finite fade time passed to a `BT` audio fade.
+ *
+ * @param fadeMs - The rejected fade duration in milliseconds.
+ * @returns User-facing error string.
+ */
+export function audioFadeNotFiniteError(fadeMs: number): string {
+    return `The audio fade time needs to be a finite number of milliseconds, but got ${fadeMs}. Pass a number such as 300, or leave fadeMs out for an immediate change`;
+}
