@@ -429,6 +429,44 @@ describe('PointerInput', () => {
             expect(input.isButtonDown(BTN_POINTER_A, 0)).toBe(false);
         });
 
+        it('keeps the D button down when back is released while forward is still held', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 3,
+                    buttons: 24,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 3,
+                    buttons: 16,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_D, 0)).toBe(true);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 4,
+                    buttons: 0,
+                    clientX: 50,
+                    clientY: 50,
+                }),
+            );
+
+            expect(input.isButtonDown(BTN_POINTER_D, 0)).toBe(false);
+        });
+
         it('keeps slot 0 valid after pointerup (only the button releases)', () => {
             canvas.dispatchEvent(
                 pointerEvent('pointerdown', {

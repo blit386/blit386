@@ -824,6 +824,11 @@ export class PointerInput {
             this.updateSlotPosition(slot, event.clientX, event.clientY);
             this.setMouseButton(slot, event.button, false);
 
+            // Back and forward share slot.d; keep it down while the other one is still held.
+            if (event.button === 3 || event.button === 4) {
+                slot.d = (event.buttons & 24) !== 0;
+            }
+
             return;
         }
 
