@@ -14,7 +14,8 @@ Primitives, sprites, text, post-process effects, and frame capture.
 
 All draw calls require a palette to be active (`BT.paletteSet(palette)` before the first `BT.drawSprite`,
 `BT.drawRectFill`, etc.). All coordinates are integer pixels - use `Vector2i` and `Rect2i` rather than floats. The one
-exception is the numeric `BT.drawPixel(x, y, paletteIndex)` overload, which truncates fractional values toward zero.
+exception is the numeric `BT.drawPixel(x, y, paletteIndex)` overload, which truncates fractional values toward zero
+(then to a signed 32-bit integer, so values beyond that range wrap).
 
 Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
 optional `paletteOffset` added to stored texel indices. See [Palette addressing](api-palette.md#palette-addressing).
@@ -50,7 +51,8 @@ BT.drawRectFill(rect, paletteIndex); // filled
 ```
 
 All primitives write palette indices, not RGBA - the active palette resolves colors at frame end. Fractional coordinates
-passed to `BT.drawPixel(x, y, paletteIndex)` are truncated toward zero, the same rule `Vector2i` applies.
+passed to `BT.drawPixel(x, y, paletteIndex)` are truncated toward zero, the same rule `Vector2i` applies. The result is
+a signed 32-bit integer, so values beyond that range wrap.
 
 <DemoEmbed demo="primitives" title="BLIT386 primitives demo" />
 
