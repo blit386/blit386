@@ -536,7 +536,12 @@
     "BT.drawPixel": {
       "kind": "method",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Numeric coordinates now truncate toward zero before rendering, so the software backend no longer corrupts neighboring pixels."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
