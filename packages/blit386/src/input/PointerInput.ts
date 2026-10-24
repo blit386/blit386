@@ -717,6 +717,14 @@ export class PointerInput {
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
 
+            // A release outside the page never reaches pointerup; `buttons` is the browser's truth.
+            if (event.buttons === 0) {
+                slot.a = false;
+                slot.b = false;
+                slot.c = false;
+                slot.d = false;
+            }
+
             // Activation: sync prevPos to the entry pos so the first frame's
             // delta is zero rather than a jump from (0, 0) (or wherever the
             // slot was previously zeroed) to the entry point.

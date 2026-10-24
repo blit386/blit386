@@ -89,8 +89,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Attaches listeners to the canvas and window. Also listens for `window`
-     * `blur` to clear held keys and the text buffer when focus leaves the page.
+     * Attaches listeners to the canvas and window. Also listens for `blur`
+     * on the canvas and the `window` to clear held keys and the text buffer when focus leaves either.
      *
      * @param canvas - Canvas that receives keyboard events when focused.
      * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
@@ -103,6 +103,7 @@ export class KeyboardInput {
 
         canvas.addEventListener('keydown', this.onKeyDown);
         canvas.addEventListener('keyup', this.onKeyUp);
+        canvas.addEventListener('blur', this.onBlur);
         canvas.addEventListener('beforeinput', this.onBeforeInput as EventListener);
 
         if (typeof globalThis.window !== 'undefined') {
@@ -119,6 +120,7 @@ export class KeyboardInput {
         if (canvas !== null) {
             canvas.removeEventListener('keydown', this.onKeyDown);
             canvas.removeEventListener('keyup', this.onKeyUp);
+            canvas.removeEventListener('blur', this.onBlur);
             canvas.removeEventListener('beforeinput', this.onBeforeInput as EventListener);
         }
 
@@ -412,7 +414,7 @@ export class KeyboardInput {
         return min;
     }
 
-    /** Clears held keys, repeat anchors, and text (window blur / detach). */
+    /** Clears held keys, repeat anchors, and text (canvas / window blur, detach). */
     private clearAllState(): void {
         this.held.clear();
         this.prevHeld.clear();

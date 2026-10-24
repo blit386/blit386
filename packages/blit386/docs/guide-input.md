@@ -165,7 +165,8 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
-not `event.key` layout text.
+not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
+moves elsewhere does not stay down.
 
 ### Raw key queries
 
