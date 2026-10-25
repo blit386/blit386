@@ -30,6 +30,16 @@ describe('ValueNoise', () => {
         expect(a.noise2D(5, 6)).not.toBe(b.noise2D(5, 6));
     });
 
+    it('should not make seed 1 seed 0 with neighbor columns swapped', () => {
+        // At whole-number coordinates value noise returns the lattice value, so the pre-1.8.1 bug was exact here.
+        const a = new ValueNoise(1);
+        const b = new ValueNoise(0);
+
+        for (let x = 0; x < 16; x++) {
+            expect(a.noise2D(x, 3)).not.toBe(b.noise2D(x ^ 1, 3));
+        }
+    });
+
     it('should reseed via seed()', () => {
         const n = new ValueNoise(1);
         const first = n.noise2D(2.5, 3.5);

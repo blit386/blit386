@@ -144,6 +144,15 @@ stored RNG state, so you do not need an instance per chunk. Complements `Random`
 Coordinates are truncated toward zero with `| 0`. Omit `seed` (or pass `0`) for a fixed default world seed. Float forms
 are the matching `hashNi` value scaled by `1 / 2^32`.
 
+<Callout type="warn" title="Non-zero seeds changed in 1.8.1">
+
+Before 1.8.1 the seed was folded in as an XOR on `x`, so seed `1` was seed `0` with neighboring columns swapped, and
+every seed was just a shifted copy of the same world. Since 1.8.1 each seed gives an unrelated field. Seed `0` (and an
+omitted seed) returns exactly what it did before; any other seed returns different values than 1.5.0-1.8.0, and so do
+the noise classes below.
+
+</Callout>
+
 ```ts twoslash
 import { hash2, hash2i } from 'blit386';
 
@@ -170,9 +179,9 @@ classes are distinct from the post-process `Noise` display effect (GPU grain).
 | `PerlinNoise` | Same surface as `ValueNoise` (gradient Perlin) |
 | `SimplexNoise` | `noise2D` / `noise3D`, `fbm2D` / `fbm3D` (no 1D) |
 
-Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`. Call `seed(n)` to
-switch fields. fBm defaults: `octaves = 4`, `persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so
-fBm stays in approximately `[-1, 1]`.
+Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`, including the
+[1.8.1 seed change](#coordinate-hashing). Call `seed(n)` to switch fields. fBm defaults: `octaves = 4`,
+`persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so fBm stays in approximately `[-1, 1]`.
 
 ```ts twoslash
 import { PerlinNoise, SimplexNoise, ValueNoise } from 'blit386';

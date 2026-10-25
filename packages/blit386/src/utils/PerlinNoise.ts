@@ -47,6 +47,8 @@ const SCALE_3D = 0.982;
  * Deterministic Perlin noise. Same seed and coordinates always produce the same sample.
  *
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds no longer give an x-shifted copy of seed 0 (see `hash2i`). Seed 0 is unchanged;
+ *   every non-zero seed draws a different field than 1.5.0-1.8.0.
  */
 export class PerlinNoise {
     /** World / stream seed (lower 32 bits). */

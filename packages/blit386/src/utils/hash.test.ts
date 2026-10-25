@@ -147,3 +147,47 @@ describe('hash3i / hash3', () => {
         }
     });
 });
+
+describe('seed scattering', () => {
+    // The pre-1.8.1 hashes folded the seed in as `seed ^ x`, so a seed was just an x shift.
+    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
+    const SCATTER = 0x9e3779b1;
+
+    /** Counts grid cells where seed `s` equals seed 0 at `x` XOR `shift(s)`. */
+    function countShiftMatches(shift: (s: number) => number): number {
+        let matches = 0;
+
+        for (const s of SEEDS) {
+            const d = shift(s);
+
+            for (let x = -16; x < 16; x++) {
+                for (let y = -4; y < 4; y++) {
+                    if (hash1i(x, s) === hash1i(x ^ d, 0)) matches++;
+                    if (hash2i(x, y, s) === hash2i(x ^ d, y, 0)) matches++;
+                    if (hash3i(x, y, 2, s) === hash3i(x ^ d, y, 2, 0)) matches++;
+                }
+            }
+        }
+
+        return matches;
+    }
+
+    it('should not make a seed equal to an x XOR of the seed itself', () => {
+        expect(hash2i(0, 5, 1)).not.toBe(hash2i(1, 5, 0));
+        expect(hash2i(7, 3, 12345)).not.toBe(hash2i(7 ^ 12345, 3, 0));
+        expect(countShiftMatches((s) => s)).toBe(0);
+    });
+
+    it('should not make a seed equal to an x XOR of the scattered seed', () => {
+        expect(countShiftMatches((s) => Math.imul(s, SCATTER))).toBe(0);
+    });
+
+    it('should keep seed 0 output identical to 1.5.0-1.8.0', () => {
+        expect(hash1i(7)).toBe(3065301868);
+        expect(hash1i(-3)).toBe(281970187);
+        expect(hash2i(5, -2)).toBe(1674514520);
+        expect(hash2i(-9, 11)).toBe(1048473987);
+        expect(hash3i(1, 2, 3)).toBe(3839766852);
+        expect(hash3i(-4, 5, -6)).toBe(3073427037);
+    });
+});

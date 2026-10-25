@@ -12,6 +12,9 @@
 /** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
 const INV_2_32 = 1 / 4294967296;
 
+/** Odd golden-ratio constant that spreads the seed's bits; mixed in last so a seed is never an x shift. */
+const SEED_SCATTER = 0x9e3779b1;
+
 /**
  * MurmurHash3 32-bit finalizer (avalanche). Input is treated as unsigned.
  *
@@ -37,14 +40,14 @@ function finalize(h: number): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash1i(x: number, seed = 0): number {
     const xi = x | 0;
-    let h = seed >>> 0;
+    const h = Math.imul(xi, 0x27d4eb2d);
 
-    h = Math.imul(h ^ xi, 0x27d4eb2d);
-
-    return finalize(h);
+    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
 }
 
 /**
@@ -55,16 +58,16 @@ export function hash1i(x: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash2i(x: number, y: number, seed = 0): number {
     const xi = x | 0;
     const yi = y | 0;
-    let h = seed >>> 0;
-
-    h = Math.imul(h ^ xi, 0x27d4eb2d);
+    let h = Math.imul(xi, 0x27d4eb2d);
     h = Math.imul(h ^ yi, 0x165667b1);
 
-    return finalize(h);
+    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
 }
 
 /**
@@ -76,18 +79,18 @@ export function hash2i(x: number, y: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash3i(x: number, y: number, z: number, seed = 0): number {
     const xi = x | 0;
     const yi = y | 0;
     const zi = z | 0;
-    let h = seed >>> 0;
-
-    h = Math.imul(h ^ xi, 0x27d4eb2d);
+    let h = Math.imul(xi, 0x27d4eb2d);
     h = Math.imul(h ^ yi, 0x165667b1);
     h = Math.imul(h ^ zi, 0x1b873593);
 
-    return finalize(h);
+    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
 }
 
 /**
@@ -97,6 +100,8 @@ export function hash3i(x: number, y: number, z: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash1i}.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash1(x: number, seed = 0): number {
     return hash1i(x, seed) * INV_2_32;
@@ -110,6 +115,8 @@ export function hash1(x: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash2i}.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash2(x: number, y: number, seed = 0): number {
     return hash2i(x, y, seed) * INV_2_32;
@@ -124,6 +131,8 @@ export function hash2(x: number, y: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash3i}.
  * @since 1.5.0
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
+ *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash3(x: number, y: number, z: number, seed = 0): number {
     return hash3i(x, y, z, seed) * INV_2_32;
