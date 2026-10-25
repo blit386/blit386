@@ -12,6 +12,13 @@ describe('applyAudioParamRamp', () => {
         expect(param.value).toBe(0.5);
     });
 
+    it('rejects a non-finite fadeMs without touching the param', () => {
+        const param = createMockAudioParam(1);
+
+        expect(() => applyAudioParamRamp(param, 0, 0.5, Number.NaN, 'linear')).toThrow(/finite/);
+        expect(param.value).toBe(1);
+    });
+
     it('sets the value immediately when fadeMs is zero or negative', () => {
         const param = createMockAudioParam(1);
 

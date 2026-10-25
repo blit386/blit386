@@ -174,26 +174,49 @@ function extractManagedRegion(content: string): string {
     return content.slice(commentEnd + '-->'.length, end).trim();
 }
 
-/**
- * Replace the managed region of an existing shared file with a freshly generated one, preserving
- * everything outside the markers byte-for-byte. Returns null when either file lacks both markers,
- * so the caller can fall back to a conflict copy.
- */
-export function replaceManagedRegion(existing: string, regenerated: string): string | null {
-    const exStart = existing.indexOf(MANAGED_START);
-    const exEnd = existing.indexOf(MANAGED_END);
-    const regStart = regenerated.indexOf(MANAGED_START);
-    const regEnd = regenerated.indexOf(MANAGED_END);
+/** Offsets of the lines that hold exactly `marker`; a marker quoted inside a sentence is not one. */
+function markerLineOffsets(text: string, marker: string): number[] {
+    const offsets: number[] = [];
+    let offset = 0;
 
-    if (exStart === -1 || exEnd === -1 || regStart === -1 || regEnd === -1) {
+    for (const line of text.split('\n')) {
+        if (line.trimEnd() === marker) {
+            offsets.push(offset);
+        }
+
+        offset += line.length + 1;
+    }
+
+    return offsets;
+}
+
+/** The one start-then-end marker pair in `text`, or null when there is none or it is ambiguous. */
+function managedBounds(text: string): { start: number; end: number } | null {
+    const [start, ...extraStarts] = markerLineOffsets(text, MANAGED_START);
+    const [end, ...extraEnds] = markerLineOffsets(text, MANAGED_END);
+
+    if (start === undefined || end === undefined || extraStarts.length > 0 || extraEnds.length > 0 || end < start) {
         return null;
     }
 
-    const before = existing.slice(0, exStart);
-    const after = existing.slice(exEnd + MANAGED_END.length);
-    const newBlock = regenerated.slice(regStart, regEnd + MANAGED_END.length);
+    return { start, end: end + MANAGED_END.length };
+}
 
-    return `${before}${newBlock}${after}`;
+/**
+ * Replace the managed region of an existing shared file with a freshly generated one, preserving
+ * everything outside the markers byte-for-byte. A marker counts only on a line of its own, so notes
+ * may quote one in a sentence. Returns null when either file does not hold exactly one start marker
+ * followed by one end marker, so the caller can fall back to a conflict copy instead of guessing.
+ */
+export function replaceManagedRegion(existing: string, regenerated: string): string | null {
+    const ex = managedBounds(existing);
+    const reg = managedBounds(regenerated);
+
+    if (ex === null || reg === null) {
+        return null;
+    }
+
+    return `${existing.slice(0, ex.start)}${regenerated.slice(reg.start, reg.end)}${existing.slice(ex.end)}`;
 }
 
 /**

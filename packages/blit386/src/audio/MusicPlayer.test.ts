@@ -664,6 +664,25 @@ describe('MusicPlayer', () => {
             expect(player.volumeGet()).toBe(0.3);
         });
 
+        it('volumeSet rejects a non-finite volume and keeps the old one', () => {
+            const { player } = createPlayer();
+
+            player.play(createMockAudioBuffer());
+            player.volumeSet(0.3);
+
+            expect(() => player.volumeSet(Number.NaN)).toThrow(/finite number/);
+            expect(player.volumeGet()).toBe(0.3);
+        });
+
+        it('volumeSet rejects a non-finite fadeMs before changing the stored volume', () => {
+            const { player } = createPlayer();
+
+            player.volumeSet(0.3);
+
+            expect(() => player.volumeSet(0.8, Number.NaN)).toThrow(/finite/);
+            expect(player.volumeGet()).toBe(0.3);
+        });
+
         it('volumeSet applies immediately to the current voice gain with no fadeMs', () => {
             const { player, context } = createPlayer();
 

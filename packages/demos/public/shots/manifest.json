@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-24T09:14:59.545Z",
+  "generatedAt": "2026-10-25T11:56:06.303Z",
   "engineVersion": "1.8.0",
   "entries": [
     {
@@ -1071,52 +1071,52 @@
       "height": 240
     },
     {
+      "slug": "coordinate-patterns",
+      "pose": "far",
       "variants": {
         "display": "coordinate-patterns/far.display.png",
         "uidebug": "coordinate-patterns/far.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "coordinate-patterns",
-      "pose": "far",
       "width": 640,
-      "height": 480
+      "height": 480,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "coordinate-patterns",
+      "pose": "start",
       "variants": {
         "display": "coordinate-patterns/start.display.png",
         "uidebug": "coordinate-patterns/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "coordinate-patterns",
-      "pose": "start",
       "width": 640,
-      "height": 480
+      "height": 480,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "noise",
+      "pose": "start",
       "variants": {
         "display": "noise/start.display.png",
         "uidebug": "noise/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "noise",
-      "pose": "start",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "noise",
+      "pose": "settled",
       "variants": {
         "display": "noise/settled.display.png",
         "uidebug": "noise/settled.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "noise",
-      "pose": "settled",
       "width": 320,
-      "height": 240
+      "height": 240,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -1251,28 +1251,28 @@
       "height": 240
     },
     {
-      "slug": "raycasting",
-      "pose": "start",
       "variants": {
         "display": "raycasting/start.display.png",
         "uidebug": "raycasting/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "raycasting",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "raycasting",
-      "pose": "settled",
       "variants": {
         "display": "raycasting/settled.display.png",
         "uidebug": "raycasting/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "raycasting",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     }
   ]
 }

@@ -15,7 +15,7 @@ import { basename, resolve } from 'node:path';
 
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
-import { isInteractive, meetsNodeFloor, NODE_FLOOR } from './env';
+import { isInteractive, meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from './env';
 import { detectPackageManager, packageManagerField, pmHints } from './pkgManager';
 import { scaffold } from './scaffold';
 import { defaultWizardOptions, runWizard } from './wizard';
@@ -37,7 +37,9 @@ function tryGitInit(dir: string): boolean {
 
 function tryInstall(dir: string, command: string, args: string[]): boolean {
     try {
-        execFileSync(command, args, { cwd: dir, stdio: 'inherit' });
+        // Same rule as the kit's runPm: npm/pnpm/yarn are .cmd shims on Windows and need a shell. The args are
+        // constants (never user input), so shell: true there has no injection surface.
+        execFileSync(command, args, { cwd: dir, stdio: 'inherit', shell: process.platform === 'win32' });
         return true;
     } catch {
         return false;
@@ -147,7 +149,7 @@ async function main(): Promise<void> {
         }
     }
 
-    const steps = [`cd ${dirArg}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
+    const steps = [`cd ${quoteIfSpaced(dirArg)}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
     note(steps.join('\n'), 'Next steps');
 
     const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';

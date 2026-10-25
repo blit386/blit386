@@ -38,6 +38,9 @@ declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
 
 `BT.audioVolumeSet` sets a bus's volume, optionally fading to it. `BT.audioVolumeGet` reads it back.
 
+A non-finite volume or `fadeMs` (`NaN`, `Infinity`) throws instead of reaching the audio graph. `BT.soundVolumeSet` and
+`BT.musicVolumeSet` reject a non-finite volume the same way.
+
 ```ts twoslash
 import { BT } from 'blit386';
 // ---cut---
@@ -76,6 +79,11 @@ BT.isAudioMuted('music'); // true
 BT.audioVolumeGet('music'); // still 0.75 - muting never overwrites the configured level
 
 BT.audioMuteSet('music', false); // restores audio at 0.75
+
+// A volume set while muted takes effect on unmute.
+BT.audioMuteSet('music', true);
+BT.audioVolumeSet('music', 0.2);
+BT.audioMuteSet('music', false); // audible at 0.2
 ```
 
 `BT.audioVolumeGet` always returns the logical (pre-mute) volume, so reading it while muted still reports the level you

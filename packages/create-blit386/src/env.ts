@@ -38,3 +38,8 @@ export function meetsNodeFloor(current: string, floor: string = NODE_FLOOR): boo
 export function isInteractive(): boolean {
     return Boolean(process.stdin.isTTY && process.stdout.isTTY);
 }
+
+/** Wrap a path in double quotes when it contains whitespace, so a pasted `cd` line works in sh, cmd and PowerShell. */
+export function quoteIfSpaced(path: string): string {
+    return /\s/.test(path) ? `"${path}"` : path;
+}

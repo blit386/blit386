@@ -296,6 +296,36 @@ describe('AudioManager', () => {
             expect(sfx.gain.value).toBe(0.4);
         });
 
+        it('unmute applies a volume set while muted, not the pre-mute gain', () => {
+            const sfx = nthGainNode(getMockContext().createGainCalls, 2);
+
+            audio.volumeSet('sfx', 1);
+            audio.muteSet('sfx', true);
+            audio.volumeSet('sfx', 0.2);
+            audio.muteSet('sfx', false);
+
+            expect(sfx.gain.value).toBeCloseTo(0.2, 5);
+            expect(audio.volumeGet('sfx')).toBeCloseTo(0.2, 5);
+        });
+
+        it.each([Number.NaN, Number.POSITIVE_INFINITY])(
+            'rejects a non-finite volume (%s) and keeps the old one',
+            (bad) => {
+                audio.volumeSet('sfx', 0.5);
+
+                expect(() => audio.volumeSet('sfx', bad)).toThrow(/finite number/);
+                expect(audio.volumeGet('sfx')).toBe(0.5);
+            },
+        );
+
+        it('rejects a non-finite fadeMs on a muted bus and keeps the old volume', () => {
+            audio.volumeSet('sfx', 0.5);
+            audio.muteSet('sfx', true);
+
+            expect(() => audio.volumeSet('sfx', 0.2, Number.NaN)).toThrow(/finite/);
+            expect(audio.volumeGet('sfx')).toBe(0.5);
+        });
+
         it('is a no-op when muting an already-muted bus', () => {
             audio.muteSet('main', true);
             audio.muteSet('main', true);
@@ -547,6 +577,27 @@ describe('AudioManager', () => {
             });
 
             expect(resume).toHaveBeenCalledTimes(2);
+        });
+
+        it('leaves a re-attached manager locked when the old resume() settles late', async () => {
+            audio.attach(canvas);
+
+            const oldContext = getMockContext() as unknown as { resume: () => Promise<void> };
+            let settle: () => void = () => {};
+
+            oldContext.resume = () =>
+                new Promise<void>((resolve) => {
+                    settle = resolve;
+                });
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+            audio.detach();
+            audio.attach(canvas);
+            settle();
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(audio.isUnlocked()).toBe(false);
         });
 
         it('calls resume exactly once even if a second gesture fires after unlock', async () => {

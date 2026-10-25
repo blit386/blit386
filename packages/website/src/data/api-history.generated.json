@@ -1634,7 +1634,12 @@
     "PerlinNoise": {
       "kind": "class",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).\nSeed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1711,7 +1716,12 @@
     "SimplexNoise": {
       "kind": "class",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).\nSeed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1823,7 +1833,12 @@
     "ValueNoise": {
       "kind": "class",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).\nSeed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1921,42 +1936,72 @@
     "hash1": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "hash1i": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "hash2": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "hash2i": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "hash3": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "hash3i": {
       "kind": "function",
       "since": "1.5.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,\nexcept seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every\nnon-zero seed gives different values than 1.5.0-1.8.0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

@@ -322,3 +322,22 @@ test('add copilot on a Claude game leaves the .mcp.json Claude set up alone, edi
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+test('sync keeps one managed region, however many syncs, when the notes above it mention a marker', () => {
+    const claudeMd = generateClaudeAdapter(kitRoot(), vars).find((f) => f.path === 'CLAUDE.md');
+    assert.ok(claudeMd, 'expected the Claude adapter to emit CLAUDE.md');
+    const notes = 'Markers: <!-- blit-kit:managed:start --> ... <!-- blit-kit:managed:end -->\n\n';
+    const root = makeGame(`${notes}${claudeMd.content}`, 'CLAUDE.md');
+
+    try {
+        for (let i = 0; i < 2; i++) {
+            assert.equal(runSync(root).status, 0);
+        }
+
+        const after = readFileSync(join(root, 'CLAUDE.md'), 'utf8');
+        assert.equal(after.split('<!-- blit-kit:managed:end -->').length - 1, 2, 'one mention plus one real region');
+        assert.equal(after, `${notes}${claudeMd.content}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});

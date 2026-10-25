@@ -14,6 +14,7 @@
 import { BTAPI } from '../core/BTAPI';
 import { defaultConfig } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
+import { audioVolumeNotFiniteError } from '../utils/errorMessages';
 import type { AudioManager } from './AudioManager';
 
 /**
@@ -279,8 +280,13 @@ export class VoicePool {
      * @param ref - Voice to update.
      * @param value - Target gain.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @throws Error when `value` is not a finite number.
      */
     public volumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        if (!Number.isFinite(value)) {
+            throw new Error(audioVolumeNotFiniteError('BT.soundVolumeSet', value));
+        }
+
         const slot = this.getActiveSlot(ref);
 
         if (slot === null || slot.gain === null) {

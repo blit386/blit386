@@ -8,7 +8,7 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 
-import { meetsNodeFloor, NODE_FLOOR } from '../dist/env.js';
+import { meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from '../dist/env.js';
 
 test('meetsNodeFloor accepts the floor and newer versions', () => {
     assert.equal(meetsNodeFloor(NODE_FLOOR), true, 'exact floor must pass');
@@ -35,4 +35,10 @@ test('meetsNodeFloor compares against a custom floor', () => {
     assert.equal(meetsNodeFloor('1.2.3', '1.2.3'), true);
     assert.equal(meetsNodeFloor('1.2.2', '1.2.3'), false);
     assert.equal(meetsNodeFloor('2.0.0', '1.9.9'), true);
+});
+
+test('quoteIfSpaced quotes only paths that contain whitespace', () => {
+    assert.equal(quoteIfSpaced('my-game'), 'my-game');
+    assert.equal(quoteIfSpaced('My Game'), '"My Game"');
+    assert.equal(quoteIfSpaced('a\tb'), '"a\tb"');
 });
