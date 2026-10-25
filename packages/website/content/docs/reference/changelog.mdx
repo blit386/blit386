@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-10-25T19:01:47+01:00"
+lastModified: "2026-10-25T19:52:35+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -24,10 +24,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `hash3i` used to fold the seed in as an XOR on `x`, so changing the seed only shifted the same world sideways -
   `new ValueNoise(1)` was seed `0` with neighboring columns swapped, and a game seeding by level number got nearly the
   same terrain on every level. The seed is now scattered and mixed in after the coordinates, so each seed gives an
-  unrelated field. Seed `0` (and an omitted seed) is unchanged, bit for bit. Every other seed now returns different
-  values from `hash1i` / `hash2i` / `hash3i`, `hash1` / `hash2` / `hash3`, `ValueNoise`, `PerlinNoise`, and
-  `SimplexNoise` than it did in 1.5.0-1.8.0: a saved non-zero seed rebuilds a different world, and golden tests on
-  seeded hash or noise output need re-recording. No signatures changed. See
+  unrelated field. One seed, `2126943072`, is the exception: it still gives seed `0` shifted 2^31 columns, which this
+  kind of mixing cannot avoid for every seed. Seed `0` (and an omitted seed) is unchanged, bit for bit. Every other seed
+  now returns different values from `hash1i` / `hash2i` / `hash3i`, `hash1` / `hash2` / `hash3`, `ValueNoise`,
+  `PerlinNoise`, and `SimplexNoise` than it did in 1.5.0-1.8.0: a saved non-zero seed rebuilds a different world, and
+  golden tests on seeded hash or noise output need re-recording. No signatures changed. See
   [Coordinate hashing](/docs/api/random#coordinate-hashing).
 - `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.1 with no engine API change of their own. The scaffolder's
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
