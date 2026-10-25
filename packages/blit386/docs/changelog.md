@@ -19,6 +19,45 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.8.1 - Unreleased
+
+### Changed
+
+- Behavior change: seeded coordinate hashes and noise give a new world for every non-zero seed. `hash1i` / `hash2i` /
+  `hash3i` used to fold the seed in as an XOR on `x`, so changing the seed only shifted the same world sideways -
+  `new ValueNoise(1)` was seed `0` with neighboring columns swapped, and a game seeding by level number got nearly the
+  same terrain on every level. The seed is now scattered and mixed in after the coordinates, so each seed gives an
+  unrelated field. Seed `0` (and an omitted seed) is unchanged, bit for bit. Every other seed now returns different
+  values from `hash1i` / `hash2i` / `hash3i`, `hash1` / `hash2` / `hash3`, `ValueNoise`, `PerlinNoise`, and
+  `SimplexNoise` than it did in 1.5.0-1.8.0: a saved non-zero seed rebuilds a different world, and golden tests on
+  seeded hash or noise output need re-recording. No signatures changed. See
+  [Coordinate hashing](api-random.md#coordinate-hashing).
+- `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.1 with no engine API change of their own. The scaffolder's
+  automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
+  name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
+  its markers, instead of adding another copy on every sync; the agent shell guard also blocks the `git checkout` and
+  `git switch` forms that discard uncommitted work; and the starter templates no longer ship a dev-only `window.__game`
+  (use `BT.testState()`; `blit play` still falls back to it for older games).
+
+### Fixed
+
+- A second `BT.init()` after the first one resolved now restarts cleanly. It used to start a new game loop without
+  stopping the old one, so the game ran at double speed, and it leaked the previous `GPUDevice`. The old loop now stops,
+  the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. An `init()` made while
+  another is still running is still rejected. See [Initialization](api-core.md#initialization).
+- `BT.drawPixel` with a fractional coordinate now truncates toward zero, like `Vector2i`. On the software backend it
+  used to write the color at a shifted byte offset and corrupt the neighboring pixels.
+- A keyboard key no longer stays held when focus leaves the canvas mid-press (it used to swallow the next press), and a
+  mouse button released outside the page is now let go on the next move.
+- A single gamepad that Chrome or Vivaldi reports at index 1 is now player 0. A newly connected pad takes the lowest
+  free player and keeps it until it disconnects, so unplugging one pad no longer moves the others. See
+  [Gamepad API](guide-input.md#gamepad-api).
+- Unmuting a bus now restores the volume set while it was muted, instead of the volume from before the mute. A volume or
+  `fadeMs` of `NaN` or `Infinity` is now rejected with a plain error instead of failing inside Web Audio. See
+  [Mute](api-audio.md#mute).
+- `BT.paletteSet` no longer tells you to call `BT.spritesRefresh()` after a value swap, where refreshing would fail
+  because the original colors are gone.
+
 ## 1.8.0 - 2026-10-18
 
 ### Added
