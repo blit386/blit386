@@ -8,9 +8,11 @@ import {
     fenceFor,
     fillPlaceholders,
     readRelease,
+    renderMdx,
     SECTION,
     shorten,
     splitFrontmatter,
+    toPosix,
     versionLabel,
 } from '../sync-kit-pages.mjs';
 
@@ -160,6 +162,20 @@ describe('buildPages against the real kit, templates, and demos', () => {
             if (name !== 'index') {
                 assert.ok(listed.has(name), `${name} is missing from the sidebar`);
             }
+        }
+    });
+
+    test('converts a Windows-separated path to forward slashes on any platform', () => {
+        assert.equal(
+            toPosix('packages\\kit\\content\\skills\\fix\\SKILL.md', '\\'),
+            'packages/kit/content/skills/fix/SKILL.md',
+        );
+    });
+
+    test('writes forward-slash paths into file keys and the generated header on every platform', () => {
+        for (const { file, page } of pages) {
+            assert.ok(!file.includes('\\'), `${file} has a backslash`);
+            assert.match(renderMdx(page), /^# Generated from packages\/[^\\\n]+ by scripts/mu, file);
         }
     });
 
