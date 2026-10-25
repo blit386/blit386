@@ -147,9 +147,9 @@ are the matching `hashNi` value scaled by `1 / 2^32`.
 <Callout type="warn" title="Non-zero seeds changed in 1.8.1">
 
 Before 1.8.1 the seed was folded in as an XOR on `x`, so seed `1` was seed `0` with neighboring columns swapped, and
-every seed was just a shifted copy of the same world. Since 1.8.1 each seed gives an unrelated field. Seed `0` (and an
-omitted seed) returns exactly what it did before; any other seed returns different values than 1.5.0-1.8.0, and so do
-the noise classes below.
+every seed was just a shifted copy of the same world. Since 1.8.1 each seed gives an unrelated field, with one
+exception: seed `2126943072` still gives seed `0` shifted 2^31 columns. Seed `0` (and an omitted seed) returns exactly
+what it did before; any other seed returns different values than 1.5.0-1.8.0, and so do the noise classes below.
 
 </Callout>
 

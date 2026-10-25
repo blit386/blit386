@@ -41,8 +41,9 @@ function finalize(h: number): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash1i(x: number, seed = 0): number {
     const xi = x | 0;
@@ -59,8 +60,9 @@ export function hash1i(x: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash2i(x: number, y: number, seed = 0): number {
     const xi = x | 0;
@@ -80,8 +82,9 @@ export function hash2i(x: number, y: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash3i(x: number, y: number, z: number, seed = 0): number {
     const xi = x | 0;
@@ -101,8 +104,9 @@ export function hash3i(x: number, y: number, z: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash1i}.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash1(x: number, seed = 0): number {
     return hash1i(x, seed) * INV_2_32;
@@ -116,8 +120,9 @@ export function hash1(x: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash2i}.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash2(x: number, y: number, seed = 0): number {
     return hash2i(x, y, seed) * INV_2_32;
@@ -132,8 +137,9 @@ export function hash2(x: number, y: number, seed = 0): number {
  * @param seed - World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash3i}.
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0.
- *   Seed 0 output is unchanged; every non-zero seed gives different values than 1.5.0-1.8.0.
+ * @changed 1.8.1 Non-zero seeds are mixed in after the coordinates, so a seed is no longer an x shift of seed 0,
+ *   except seed 2126943072, which still gives seed 0 shifted 2^31 columns. Seed 0 output is unchanged; every
+ *   non-zero seed gives different values than 1.5.0-1.8.0.
  */
 export function hash3(x: number, y: number, z: number, seed = 0): number {
     return hash3i(x, y, z, seed) * INV_2_32;
