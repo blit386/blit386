@@ -12,8 +12,9 @@
 /** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
 const INV_2_32 = 1 / 4294967296;
 
-/** Odd golden-ratio constant that spreads the seed's bits; mixed in last so a seed is never an x shift. */
-const SEED_SCATTER = 0x9e3779b1;
+// The seed is XORed in as finalize(seed): a plain multiply leaves seed 0x80000000 a top-bit flip, an x shift of 2^31.
+// shortcut: seed 2126943072 (0x7ec69360) still scatters to 0x80000000 and equals seed 0 shifted 2^31 columns; one seed
+// in 2^32 is unavoidable with an XOR-in seed, so upgrade only if no seed may ever alias another.
 
 /**
  * MurmurHash3 32-bit finalizer (avalanche). Input is treated as unsigned.
@@ -47,7 +48,7 @@ export function hash1i(x: number, seed = 0): number {
     const xi = x | 0;
     const h = Math.imul(xi, 0x27d4eb2d);
 
-    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
+    return finalize(h ^ finalize(seed));
 }
 
 /**
@@ -67,7 +68,7 @@ export function hash2i(x: number, y: number, seed = 0): number {
     let h = Math.imul(xi, 0x27d4eb2d);
     h = Math.imul(h ^ yi, 0x165667b1);
 
-    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
+    return finalize(h ^ finalize(seed));
 }
 
 /**
@@ -90,7 +91,7 @@ export function hash3i(x: number, y: number, z: number, seed = 0): number {
     h = Math.imul(h ^ yi, 0x165667b1);
     h = Math.imul(h ^ zi, 0x1b873593);
 
-    return finalize(h ^ Math.imul(seed >>> 0, SEED_SCATTER));
+    return finalize(h ^ finalize(seed));
 }
 
 /**
