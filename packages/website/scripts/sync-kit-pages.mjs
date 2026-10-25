@@ -20,7 +20,7 @@
  * drifts. This script owns `content/docs/build-a-game/` outright and deletes it before writing.
  */
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildRegistry } from '../../demos/plugins/demo-registry.js';
 import { extractTitleAndBody, transformBody } from './sync-docs-from-engine.mjs';
@@ -85,12 +85,16 @@ const versionLabel = ({ published, unreleased }) =>
         : `> Written for blit386 ${unreleased}, which is not on npm yet. The newest release is ${published}, so ` +
           `an API on this page may be missing from the version npm installs until ${unreleased} ships.`;
 
+/** Repo-relative path with forward slashes, so generated output matches on every platform. */
+const toPosix = (path, separator = sep) => path.split(separator).join('/');
+const repoRel = (path) => toPosix(relative(REPO_ROOT, path));
+
 /** Quote a frontmatter scalar. JSON strings are valid YAML double-quoted scalars. */
 const yamlString = (value) => JSON.stringify(value);
 
 const renderMdx = ({ title, description, sourcePath, body }) => {
     const banner = [
-        `# Generated from ${relative(REPO_ROOT, sourcePath)} by scripts/sync-kit-pages.mjs.`,
+        `# Generated from ${repoRel(sourcePath)} by scripts/sync-kit-pages.mjs.`,
         '# Do not edit by hand: edit the source, then run `pnpm run sync:docs`.',
     ].join('\n');
 
@@ -173,14 +177,10 @@ const PACKAGE_MANAGER_VARS = {
 };
 
 const markdownPage = ({ sourcePath, release, description, title: titleOverride }) => {
-    const source = fillPlaceholders(
-        readFileSync(sourcePath, 'utf8'),
-        PACKAGE_MANAGER_VARS,
-        relative(REPO_ROOT, sourcePath),
-    );
+    const source = fillPlaceholders(readFileSync(sourcePath, 'utf8'), PACKAGE_MANAGER_VARS, repoRel(sourcePath));
     const { fields, body: withoutFrontmatter } = splitFrontmatter(source);
     const { title, body } = extractTitleAndBody(withoutFrontmatter, sourcePath);
-    const { body: transformed } = transformBody(body, relative(REPO_ROOT, dirname(sourcePath)));
+    const { body: transformed } = transformBody(body, repoRel(dirname(sourcePath)));
 
     return {
         title: titleOverride ?? title,
@@ -221,7 +221,7 @@ const starterPage = (release) => {
         ['src/game.js', join(TEMPLATES, 'js', 'src', 'game.js'), 'js'],
     ];
     const sections = files.map(([name, source, lang]) => {
-        let text = fillPlaceholders(readFileSync(source, 'utf8'), vars, relative(REPO_ROOT, source));
+        let text = fillPlaceholders(readFileSync(source, 'utf8'), vars, repoRel(source));
 
         // Same as scaffold.ts: with no package manager chosen, drop the empty field.
         if (name === 'package.json') {
@@ -306,7 +306,7 @@ const indexPage = ({ release, groups }) => ({
 const buildPages = (release) => {
     const group = (folder, pages) =>
         pages.map(({ slug, page }) => ({
-            file: join(folder, `${slug}.mdx`),
+            file: `${folder}/${slug}.mdx`,
             url: `${SITE_BASE}/${folder}/${slug}`,
             page,
         }));
@@ -404,7 +404,7 @@ const buildPages = (release) => {
             ['rules', 'Rules', rules],
             ['examples', 'Examples', examples],
         ].map(([folder, title, entries]) => ({
-            file: join(folder, 'meta.json'),
+            file: `${folder}/meta.json`,
             meta: { title, pages: entries.map(({ file }) => basename(file, '.mdx')) },
         })),
     ];
@@ -433,7 +433,18 @@ const main = () => {
     );
 };
 
-export { buildPages, fenceFor, fillPlaceholders, readRelease, shorten, splitFrontmatter, versionLabel, SECTION };
+export {
+    buildPages,
+    fenceFor,
+    fillPlaceholders,
+    readRelease,
+    renderMdx,
+    shorten,
+    splitFrontmatter,
+    toPosix,
+    versionLabel,
+    SECTION,
+};
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();
