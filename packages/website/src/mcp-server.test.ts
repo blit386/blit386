@@ -59,7 +59,7 @@ async function rpc(
         throw new Error('the MCP middleware delegated instead of answering');
     }
 
-    return { response, json: response.status === 204 ? {} : ((await response.json()) as JsonRpcResponse) };
+    return { response, json: response.status === 202 ? {} : ((await response.json()) as JsonRpcResponse) };
 }
 
 /** Parses the JSON payload `search_docs` packs into its single text content block. */
@@ -118,7 +118,7 @@ describe('mcpServerPlugin', () => {
 
     describe('routing', () => {
         it.each([
-            ['GET', 'https://blit386.dev/mcp'],
+            ['GET', 'https://blit386.dev/api/search'],
             ['POST', 'https://blit386.dev/api/search'],
         ])('delegates %s %s', async (method, url) => {
             const harness = createMockContext({ url, method });
@@ -127,6 +127,16 @@ describe('mcpServerPlugin', () => {
 
             expect(response).toBeUndefined();
             expect(harness.nextCalls).toBe(1);
+        });
+
+        it('refuses GET /mcp with 405 and Allow: POST', async () => {
+            const harness = createMockContext({ url: 'https://blit386.dev/mcp', method: 'GET' });
+
+            const response = await harness.run(middleware);
+
+            expect(response?.status).toBe(405);
+            expect(response?.headers.get('allow')).toBe('POST');
+            expect(harness.nextCalls).toBe(0);
         });
     });
 
@@ -258,18 +268,15 @@ describe('mcpServerPlugin', () => {
             expect(json.id).toBe(id);
         });
 
-        it('omits id entirely for a request that carried none', async () => {
-            const { json } = await rpc(middleware, { jsonrpc: '2.0', method: 'initialize' });
+        it.each(['notifications/initialized', 'notifications/cancelled', 'foo/bar', 'initialize'])(
+            'answers the id-less message %s with a bare 202',
+            async (method) => {
+                const { response } = await rpc(middleware, { jsonrpc: '2.0', method });
 
-            expect(Object.hasOwn(json, 'id')).toBe(false);
-        });
-
-        it('answers notifications/initialized with a bare 204', async () => {
-            const { response } = await rpc(middleware, { jsonrpc: '2.0', method: 'notifications/initialized' });
-
-            expect(response.status).toBe(204);
-            expect(await response.text()).toBe('');
-        });
+                expect(response.status).toBe(202);
+                expect(await response.text()).toBe('');
+            },
+        );
     });
 
     describe('tools/list', () => {

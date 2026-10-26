@@ -201,6 +201,13 @@ const MAX_QUERY_LENGTH = 256;
 // A POST must declare a content-length at or under this: 413 when over, 411 when missing.
 const MAX_BODY_BYTES = 64 * 1024;
 
+// JSON-RPC 2.0 error codes.
+const PARSE_ERROR = -32700;
+const INVALID_REQUEST = -32600;
+const METHOD_NOT_FOUND = -32601;
+const INVALID_PARAMS = -32602;
+const INTERNAL_ERROR = -32603;
+
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
  *
@@ -329,48 +336,45 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
 
             return [
                 async (c, next) => {
-                    if (c.req.path !== '/mcp' || c.req.method !== 'POST') {
+                    if (c.req.path !== '/mcp') {
                         return next();
                     }
 
+                    // No server-initiated stream is offered, so a GET (the SDK opens one after a 202) is refused.
+                    if (c.req.method !== 'POST') {
+                        return new Response(null, { status: 405, headers: { Allow: 'POST' } });
+                    }
+
+                    const rpcError = (id: RpcRequest['id'], code: number, message: string, status?: 411 | 413) => {
+                        const payload = { jsonrpc: '2.0', id, error: { code, message } };
+                        return status === undefined ? c.json(payload) : c.json(payload, status);
+                    };
+
                     const declaredLength = c.req.raw.headers.get('content-length');
                     if (declaredLength === null) {
-                        return c.json(
-                            {
-                                jsonrpc: '2.0',
-                                id: null,
-                                error: { code: -32600, message: 'content-length required' },
-                            },
-                            411,
-                        );
+                        return rpcError(null, INVALID_REQUEST, 'content-length required', 411);
                     }
                     if (!(Number(declaredLength) <= MAX_BODY_BYTES)) {
-                        return c.json(
-                            {
-                                jsonrpc: '2.0',
-                                id: null,
-                                error: { code: -32600, message: `Request body over ${MAX_BODY_BYTES} bytes` },
-                            },
-                            413,
-                        );
+                        return rpcError(null, INVALID_REQUEST, `Request body over ${MAX_BODY_BYTES} bytes`, 413);
                     }
 
                     let body: unknown;
                     try {
                         body = await c.req.json<unknown>();
                     } catch {
-                        return c.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+                        return rpcError(null, PARSE_ERROR, 'Parse error');
                     }
 
                     if (!isRpcRequest(body)) {
-                        return c.json({
-                            jsonrpc: '2.0',
-                            id: null,
-                            error: { code: -32600, message: 'Invalid Request' },
-                        });
+                        return rpcError(null, INVALID_REQUEST, 'Invalid Request');
                     }
 
                     const { id, method, params } = body;
+
+                    // A message without an id is a notification: the spec wants a bare 202, never a JSON-RPC reply.
+                    if (id === undefined) {
+                        return new Response(null, { status: 202 });
+                    }
 
                     if (method === 'initialize') {
                         return c.json({
@@ -384,17 +388,13 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         });
                     }
 
-                    if (method === 'notifications/initialized') {
-                        return new Response(null, { status: 204 });
-                    }
-
                     if (method === 'tools/list') {
                         return c.json({ jsonrpc: '2.0', id, result: { tools: MCP_TOOLS } });
                     }
 
                     if (method === 'tools/call') {
                         if (!isToolCallParams(params)) {
-                            return c.json({ jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params' } });
+                            return rpcError(id, INVALID_PARAMS, 'Invalid params');
                         }
 
                         const { name, arguments: args = {} } = params;
@@ -403,18 +403,10 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         if (name === 'search_docs') {
                             const query = args.query;
                             if (typeof query !== 'string' || query.length === 0) {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32602, message: 'Invalid params' },
-                                });
+                                return rpcError(id, INVALID_PARAMS, 'Invalid params');
                             }
                             if (query.length > MAX_QUERY_LENGTH) {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32602, message: `Query over ${MAX_QUERY_LENGTH} characters` },
-                                });
+                                return rpcError(id, INVALID_PARAMS, `Query over ${MAX_QUERY_LENGTH} characters`);
                             }
                             try {
                                 const results = await searchDocs(query, origin);
@@ -424,32 +416,21 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     result: { content: [{ type: 'text', text: JSON.stringify(results) }] },
                                 });
                             } catch {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32603, message: 'Internal error: search unavailable' },
-                                });
+                                return rpcError(id, INTERNAL_ERROR, 'Internal error: search unavailable');
                             }
                         }
 
                         if (name === 'get_doc_page') {
                             const input = args.url;
                             if (typeof input !== 'string' || input.trim().length === 0) {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32602, message: 'Invalid params' },
-                                });
+                                return rpcError(id, INVALID_PARAMS, 'Invalid params');
                             }
                             const notFound = () =>
-                                c.json({
-                                    jsonrpc: '2.0',
+                                rpcError(
                                     id,
-                                    error: {
-                                        code: -32602,
-                                        message: `No BLIT386 documentation page at "${input.length > MAX_ECHOED_INPUT ? `${input.slice(0, MAX_ECHOED_INPUT)}...` : input}". Use search_docs or get_docs_summary to find a page URL.`,
-                                    },
-                                });
+                                    INVALID_PARAMS,
+                                    `No BLIT386 documentation page at "${input.length > MAX_ECHOED_INPUT ? `${input.slice(0, MAX_ECHOED_INPUT)}...` : input}". Use search_docs or get_docs_summary to find a page URL.`,
+                                );
                             // Reject a malformed or foreign URL before touching the corpus, so it
                             // always answers -32602 and never triggers an extraction.
                             const sitePath = toSitePath(input, origin);
@@ -460,11 +441,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             try {
                                 corpus = await getCorpus();
                             } catch {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32603, message: 'Internal error: pages unavailable' },
-                                });
+                                return rpcError(id, INTERNAL_ERROR, 'Internal error: pages unavailable');
                             }
                             // A linear scan of ~100 entries per call costs nothing next to the
                             // extraction the corpus cache already amortizes.
@@ -489,11 +466,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         if (name === 'get_docs_summary') {
                             const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
                             if (!assets) {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32603, message: 'Internal error: summary unavailable' },
-                                });
+                                return rpcError(id, INTERNAL_ERROR, 'Internal error: summary unavailable');
                             }
                             try {
                                 // Resolve against the incoming request origin and serve from the
@@ -501,11 +474,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                 // Worker (self-zone subrequests time out with Cloudflare 522).
                                 const res = await assets.fetch(new Request(`${origin}/llms.txt`));
                                 if (!res.ok) {
-                                    return c.json({
-                                        jsonrpc: '2.0',
-                                        id,
-                                        error: { code: -32603, message: 'Internal error: summary unavailable' },
-                                    });
+                                    return rpcError(id, INTERNAL_ERROR, 'Internal error: summary unavailable');
                                 }
                                 const text = absolutizeLinks(await res.text(), origin);
                                 return c.json({
@@ -514,26 +483,14 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                                     result: { content: [{ type: 'text', text }] },
                                 });
                             } catch {
-                                return c.json({
-                                    jsonrpc: '2.0',
-                                    id,
-                                    error: { code: -32603, message: 'Internal error: summary unavailable' },
-                                });
+                                return rpcError(id, INTERNAL_ERROR, 'Internal error: summary unavailable');
                             }
                         }
 
-                        return c.json({
-                            jsonrpc: '2.0',
-                            id,
-                            error: { code: -32601, message: `Unknown tool: ${name}` },
-                        });
+                        return rpcError(id, METHOD_NOT_FOUND, `Unknown tool: ${name}`);
                     }
 
-                    return c.json({
-                        jsonrpc: '2.0',
-                        id,
-                        error: { code: -32601, message: `Method not found: ${method}` },
-                    });
+                    return rpcError(id, METHOD_NOT_FOUND, `Method not found: ${method}`);
                 },
             ];
         },
