@@ -324,6 +324,14 @@ jobs:
           VISUAL_SWIFTSHADER: '1'
           VISUAL_REQUIRE_WEBGPU: '1'
 
+      # THROWAWAY: parity-debug frames. Revert before merge.
+      - name: Upload parity debug frames
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: parity-debug
+          path: packages/blit386/test-results/
+
   build-engine:
     name: Build Library
     runs-on: ubuntu-latest
