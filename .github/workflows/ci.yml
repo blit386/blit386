@@ -27,6 +27,7 @@ jobs:
       kit: ${{ steps.filter.outputs.kit }}
       scaffolder: ${{ steps.filter.outputs.scaffolder }}
       shared: ${{ steps.filter.outputs.shared }}
+      render: ${{ steps.filter.outputs.render }}
 
     steps:
       # paths-filter uses the API on pull_request events but needs a working tree on
@@ -78,6 +79,12 @@ jobs:
               - 'packages/demos/plugins/demo-order.js'
             kit:
               - 'packages/kit/**'
+            # Everything the WebGPU-vs-software parity tests (visual-parity below) exercise. All of
+            # src/, not just render/ and assets/: BTAPI in src/core routes draw calls to each backend.
+            render:
+              - 'packages/blit386/src/**'
+              - 'packages/blit386/tests/visual/**'
+              - 'packages/blit386/playwright.config.ts'
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
             # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
             # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
@@ -286,6 +293,36 @@ jobs:
         background: true
 
       - wait-all:
+
+  visual-parity:
+    name: Backend Parity (visual)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.render == 'true' || needs.changes.outputs.shared == 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # Only the tests that compare the two backends against each other. The baseline
+      # screenshot specs are machine-specific and stay local. Runners have no GPU, so
+      # VISUAL_SWIFTSHADER routes WebGPU through Chrome's SwiftShader adapter, and
+      # VISUAL_REQUIRE_WEBGPU turns a "WebGPU not available" skip into a failure so this
+      # job can never pass while testing nothing. Uses the runner image's preinstalled
+      # Google Chrome (the config's `channel: 'chrome'`). No retries: the comparison is
+      # byte-exact and deterministic, so a pass on retry would only hide a real mismatch.
+      - name: Run WebGPU vs software parity tests
+        run: pnpm --filter blit386 run test:visual:parity --reporter=list --retries=0
+        env:
+          VISUAL_SWIFTSHADER: '1'
+          VISUAL_REQUIRE_WEBGPU: '1'
 
   build-engine:
     name: Build Library

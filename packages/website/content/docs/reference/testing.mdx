@@ -94,6 +94,19 @@ pass a WebGPU baseline by accident.
 - Mixed - primitives and sprites combined with correct layering
 - Post-process - baseline scene, pixel/display-tier effects, CRT preset stacks, upscale filters
 
+#### What runs in CI
+
+Only the backend-parity tests - the ones named "identically on WebGPU and software", which render a fixture on both
+backends and compare the two screenshots byte for byte, with no stored baseline. The `visual-parity` job in
+`.github/workflows/ci.yml` runs them (`pnpm run test:visual:parity`, with retries off since the comparison is exact) on
+every PR and push to `main` that touches `src/`, `tests/visual/`, `playwright.config.ts`, or the shared CI and workspace
+files (`.github/`, the lockfile, and the rest of the `shared` filter). GitHub-hosted runners have no GPU, so the job
+sets `VISUAL_SWIFTSHADER=1` (adds Chrome's SwiftShader WebGPU adapter flags in `playwright.config.ts`) and
+`VISUAL_REQUIRE_WEBGPU=1` (makes `openFixture` throw instead of letting a WebGPU test skip, and log the adapter as
+`WebGPU active: adapter ...`). The baseline-screenshot specs never run in CI: their PNGs are machine-specific, so run
+`pnpm run test:visual` locally before merging a renderer change. Set the same two variables locally to reproduce the CI
+run.
+
 ### Tier 4: CPU benchmarks (Vitest bench)
 
 Hot-path performance checks for methods and allocation patterns. Benchmarks run locally only - compare a feature branch
@@ -120,6 +133,7 @@ pnpm run test:unit:watch        # Watch mode for development
 pnpm run test:unit:coverage     # Coverage report (80% minimum threshold)
 pnpm run test:declarations      # Declaration tooling log checker (Node test)
 pnpm run test:visual            # Playwright visual regression (requires Chrome)
+pnpm run test:visual:parity     # Only the baseline-free WebGPU-vs-software parity tests (what CI runs)
 pnpm run test:visual:update     # Update visual test baselines
 pnpm run test:visual:coverage   # Visual tests with Istanbul coverage report
 pnpm run bench                  # Run CPU benchmarks (Vitest bench)
