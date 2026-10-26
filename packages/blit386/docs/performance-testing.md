@@ -85,7 +85,7 @@ measured before/after improvement:
 | --- | --- |
 | `BLIT386.bench.ts` | The `BT` draw-call facade itself: `drawPixel` numeric vs. `Vector2i` overload, `drawRectFill`, `drawLine` - guards against a per-call closure or stray allocation creeping back into the facade |
 | `render/SoftwareRenderer.bench.ts` | Canvas 2D fallback raster loops: sprite blit (8×8 vs. 32×32), bitmap text (20 vs. 200 chars), full-screen rect fill, a diagonal line, and an empty frame's clear + present |
-| `render/PrimitivePipeline.bench.ts` | CPU-side vertex batch filling for pixels, rects, and Bresenham lines, plus `reset()` batch teardown |
+| `render/PrimitivePipeline.bench.ts` | CPU-side vertex filling for pixels, rects, and Bresenham lines, plus `reset()` teardown |
 | `render/SpritePipeline.bench.ts` | CPU-side sprite and bitmap-text batch filling, including per-quad UV computation and `reset()` |
 | `input/GamepadInput.bench.ts` | A realistic per-frame query mix (button/axis reads plus `endFrame()`), and `poll()` / `endFrame()` in isolation |
 | `assets/Palette.bench.ts` | `get()` vs. `getRef()` color lookup, and `toFloat32ArrayInto()` GPU staging |
