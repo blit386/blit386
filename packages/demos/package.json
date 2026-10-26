@@ -81,7 +81,7 @@
     "globals": "^17.8.0",
     "knip": "^6.32.0",
     "playwright-core": "^1.62.1",
-    "postcss-nesting": "^14.0.2",
+    "postcss-nesting": "^14.0.3",
     "prettier": "^3.9.6",
     "shiki": "^4.4.3",
     "typescript": "~5.9.3",
