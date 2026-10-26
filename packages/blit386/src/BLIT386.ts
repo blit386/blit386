@@ -2539,6 +2539,7 @@ export const BT = {
      * bitmap fonts with proportional glyphs, use {@link BT.printFont} instead.
      *
      * @since 1.0.3
+     * @changed 1.8.1 On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`.
      * @param pos - Text origin in display coordinates.
      * @param paletteIndex - Palette color index for the text.
      * @param text - String to render.
@@ -2587,6 +2588,7 @@ export const BT = {
      * {@link BT.drawSprite}.
      *
      * @since 0.1.0
+     * @changed 1.8.1 Glyph pixels on an alpha-0 palette entry or past the palette are skipped on both backends, and on WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one glyph, not two, matching `BitmapFont.measureText`.
      * @param font - Font asset used for rendering.
      * @param pos - Text origin in display coordinates.
      * @param text - String to render.
@@ -2749,12 +2751,9 @@ export const BT = {
      *   at index 1 renders as `palette[1 + N]`, a pixel at index 2 renders as `palette[2 + N]`,
      *   and so on. Use this for palette-swap effects such as team colors or damage flashes.
      *
-     * **Out-of-range behavior:** No CPU-side validation is performed. `paletteOffset` is passed to
-     * the GPU as a `u32`. If `storedIndex + paletteOffset` exceeds the last palette index, WebGPU's
-     * robust buffer access returns 0 for every component; because the fragment shader forces alpha
-     * to 1.0, the affected pixels render as opaque black. Negative values are forbidden - a negative
-     * JS number written into a `u32` vertex attribute wraps to a large unsigned integer, which also
-     * produces out-of-bounds black pixels.
+     * **Out-of-range behavior:** `paletteOffset` must be a non-negative integer below the palette size,
+     * or the call throws. A pixel whose `storedIndex + paletteOffset` lands past the last palette index,
+     * or on a palette entry with alpha 0, is skipped (left transparent), the same on both backends.
      *
      * **Flip and quarter turns (since 1.8.0):** pass a {@link SpriteDrawParams} object as the 4th argument
      * instead of a number. `params.flags` takes any combination of `BT.FLIP_H`, `BT.FLIP_V`,
@@ -2777,6 +2776,7 @@ export const BT = {
      *
      * @since 0.1.0
      * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, pivot placement, and Rect2i stretch destinations.
+     * @changed 1.8.1 Pixels on an alpha-0 palette entry or past the palette are skipped on both backends (software drew them opaque or black, WebGPU could show a stale color).
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
      * @param destPos - Destination top-left in display coordinates (or where `params.pivot` lands), or (params

@@ -101,4 +101,24 @@ test.describe('Sprite Rendering', () => {
 
         expect(Buffer.compare(gpu, software)).toBe(0);
     });
+
+    for (const [mode, hash] of [
+        ['alpha-0 slots, indices past 255, and emoji text', ''],
+        ['indices past a smaller palette after a palette swap', '#stale'],
+    ]) {
+        test(`should render ${mode} identically on WebGPU and software (BT-624)`, async ({ page }) => {
+            if ((await openFixture(page, `/sprites-parity.html${hash}`)) !== 'webgpu') {
+                test.skip(true, 'WebGPU not available in this environment');
+                return;
+            }
+
+            const gpu = await page.locator('canvas').screenshot();
+
+            expect(await openFixture(page, `/sprites-parity.html?backend=software${hash}`)).toBe('software');
+
+            const software = await page.locator('canvas').screenshot();
+
+            expect(Buffer.compare(gpu, software)).toBe(0);
+        });
+    }
 });

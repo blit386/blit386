@@ -566,6 +566,10 @@
         {
           "version": "1.8.0",
           "note": "Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, pivot placement, and Rect2i stretch destinations."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Pixels on an alpha-0 palette entry or past the palette are skipped on both backends (software drew them opaque or black, WebGPU could show a stale color)."
         }
       ],
       "deprecated": null,
@@ -1087,7 +1091,12 @@
     "BT.printFont": {
       "kind": "method",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Glyph pixels on an alpha-0 palette entry or past the palette are skipped on both backends, and on WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one glyph, not two, matching `BitmapFont.measureText`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1244,7 +1253,12 @@
     "BT.systemPrint": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

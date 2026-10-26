@@ -1023,6 +1023,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     private flushPaletteIfDirty(): void {
         if (this.palette && this.paletteBuffer && (this.isPaletteDirty || this.palette.isDirty)) {
+            // Zero slots past size (alpha 0, so the shader discards them) instead of leaving a larger old palette's colors.
+            this.paletteStaging.fill(0);
             this.palette.toFloat32ArrayInto(this.paletteStaging);
             this.device.queue.writeBuffer(this.paletteBuffer, 0, this.paletteStaging);
             this.isPaletteDirty = false;

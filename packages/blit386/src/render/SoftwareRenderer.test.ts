@@ -190,6 +190,61 @@ describe('SoftwareRenderer', () => {
         expect(getPixel(frame as ImageData, 4, 1, 0)).toEqual([255, 255, 0, 255]);
     });
 
+    it('skips sprite texels whose palette entry has alpha 0, matching the GPU shader discard (BT-624)', async () => {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(4, 4));
+        await renderer.init();
+
+        const palette = makePalette();
+        palette.set(4, new Color32(255, 255, 0, 255));
+        palette.set(5, new Color32(255, 0, 0, 0));
+        renderer.setPalette(palette);
+        renderer.setClearColor(4);
+
+        const sheet = SpriteSheet.fromIndexedPixels(2, 1, new Uint8Array([5, 1]));
+        renderer.beginFrame();
+        renderer.drawSprite(sheet, new Rect2i(0, 0, 2, 1), new Vector2i(0, 0), 0);
+        renderer.endFrame();
+
+        const frame = logicalContext.lastImageData as ImageData;
+        expect(getPixel(frame, 4, 0, 0)).toEqual([255, 255, 0, 255]);
+        expect(getPixel(frame, 4, 1, 0)).toEqual([255, 0, 0, 255]);
+    });
+
+    it('skips sprite texels whose index plus offset is past the palette size (BT-624)', async () => {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(4, 4));
+        await renderer.init();
+
+        const palette = makePalette();
+        palette.set(4, new Color32(255, 255, 0, 255));
+        palette.set(11, new Color32(0, 0, 255, 255));
+        renderer.setPalette(palette);
+        renderer.setClearColor(4);
+
+        // 16-color palette, offset 10: texel 1 -> 11 (in range), texel 10 -> 20 (out of range).
+        const sheet = SpriteSheet.fromIndexedPixels(2, 1, new Uint8Array([10, 1]));
+        renderer.beginFrame();
+        renderer.drawSprite(sheet, new Rect2i(0, 0, 2, 1), new Vector2i(0, 0), 10);
+        renderer.endFrame();
+
+        const frame = logicalContext.lastImageData as ImageData;
+        expect(getPixel(frame, 4, 0, 0)).toEqual([255, 255, 0, 255]);
+        expect(getPixel(frame, 4, 1, 0)).toEqual([0, 0, 255, 255]);
+    });
+
     it('keeps each queued sprite draw independent when the caller reuses one srcRect (drawTile scratch rect)', async () => {
         const canvas = {
             width: 0,

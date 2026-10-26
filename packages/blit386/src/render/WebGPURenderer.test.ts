@@ -1346,6 +1346,44 @@ describe('palette dirty-flag auto-propagation', () => {
         uninstallMockNavigatorGPU();
     });
 
+    it('clears staging slots past the new size after switching to a smaller palette (BT-624)', async () => {
+        const device = createMockGPUDevice();
+        const writeBufferSpy = vi.spyOn(device.queue, 'writeBuffer');
+
+        const renderer = new WebGPURenderer(device, createMockGPUCanvasContext(), new Vector2i(320, 240));
+
+        installMockNavigatorGPU();
+
+        await renderer.init();
+
+        const large = new Palette(32);
+
+        for (let i = 1; i < 32; i++) {
+            large.set(i, new Color32(255, 0, 0, 255));
+        }
+
+        renderer.setPalette(large);
+        renderer.beginFrame();
+        renderer.endFrame(0);
+
+        renderer.setPalette(new Palette(16));
+        renderer.beginFrame();
+        renderer.endFrame(0);
+
+        const paletteUploads = writeBufferSpy.mock.calls
+            .map((call): unknown => call[2])
+            .filter((data): data is Float32Array => data instanceof Float32Array && data.length === 256 * 4);
+        const last = paletteUploads.at(-1);
+
+        expect(last).toBeDefined();
+        // Slot 20 (four floats) was red in the 32-color palette; it must read as zero (alpha 0, discarded) now.
+        expect(Array.from(last?.subarray(20 * 4, 21 * 4) ?? [])).toEqual([0, 0, 0, 0]);
+
+        writeBufferSpy.mockRestore();
+
+        uninstallMockNavigatorGPU();
+    });
+
     it('no GPU upload happens when palette is clean and isPaletteDirty is false', async () => {
         const device = createMockGPUDevice();
         const writeBufferSpy = vi.spyOn(device.queue, 'writeBuffer');

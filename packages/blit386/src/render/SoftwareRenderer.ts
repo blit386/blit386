@@ -951,7 +951,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         cameraX: number,
         cameraY: number,
     ): void {
-        const color = this.resolvePrimitiveColor(paletteIndex);
+        const color = this.resolveColor(paletteIndex);
 
         if (!color || width <= 0 || height <= 0) {
             return;
@@ -1023,7 +1023,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         cameraX: number,
         cameraY: number,
     ): void {
-        const color = this.resolvePrimitiveColor(paletteIndex);
+        const color = this.resolveColor(paletteIndex);
         if (!color) {
             return;
         }
@@ -1161,12 +1161,11 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             for (let x = 0; x < clipped.width; x++) {
                 const rawIndex = indexedPixels[(clipped.y + y) * sheetWidth + (clipped.x + x)] ?? 0;
 
-                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
+                const color = this.resolveTexel(rawIndex, paletteOffset);
+
+                if (!color) {
                     continue;
                 }
-
-                const finalIndex = (rawIndex + paletteOffset) >>> 0;
-                const color = this.resolveSpriteColor(finalIndex);
 
                 this.writePixel(
                     pixels,
@@ -1222,14 +1221,15 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             for (let x = clipped.x; x < clipped.x + clipped.width; x++) {
                 const rawIndex = indexedPixels[y * sheetWidth + x] ?? 0;
 
-                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
+                const color = this.resolveTexel(rawIndex, command.paletteOffset);
+
+                if (!color) {
                     continue;
                 }
 
                 const i = x - srcRect.x;
                 const u = row.swap ? j : i;
                 const v = row.swap ? i : j;
-                const color = this.resolveSpriteColor((rawIndex + command.paletteOffset) >>> 0);
 
                 this.writePixel(
                     pixels,
@@ -1284,11 +1284,11 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
                 const rawIndex = indexedPixels[sy * sheetW + sx] ?? 0;
 
-                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
+                const color = this.resolveTexel(rawIndex, command.paletteOffset);
+
+                if (!color) {
                     continue;
                 }
-
-                const color = this.resolveSpriteColor((rawIndex + command.paletteOffset) >>> 0);
 
                 this.writePixelUnchecked(pixels, x, y, color.r, color.g, color.b, 255);
             }
@@ -1366,13 +1366,14 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Resolves a palette index to a `Color32` for primitive drawing.
-     * Returns `null` for out-of-range indices and fully transparent colors.
+     * Resolves a palette index to a `Color32` for primitive, sprite, and text drawing.
+     * Returns `null` for out-of-range indices and fully transparent colors, the same
+     * texels the WebGPU sprite shader discards.
      *
      * @param paletteIndex - Palette entry index to look up.
      * @returns Resolved color, or `null` when the pixel should not be drawn.
      */
-    private resolvePrimitiveColor(paletteIndex: number): Color32 | null {
+    private resolveColor(paletteIndex: number): Color32 | null {
         if (!this.palette || paletteIndex >= this.palette.size) {
             return null;
         }
@@ -1383,18 +1384,15 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Resolves a palette index to a `Color32` for sprite drawing.
-     * Returns `Color32.black` for out-of-range indices instead of skipping.
+     * Resolves a sprite or glyph texel: index `0` is always transparent, otherwise the
+     * offset index goes through {@link resolveColor}.
      *
-     * @param paletteIndex - Palette entry index to look up.
-     * @returns Resolved color.
+     * @param rawIndex - Stored texel index from the sheet.
+     * @param paletteOffset - Per-draw palette offset.
+     * @returns Resolved color, or `null` when the pixel should not be drawn.
      */
-    private resolveSpriteColor(paletteIndex: number): Color32 {
-        if (!this.palette || paletteIndex >= this.palette.size) {
-            return Color32.black;
-        }
-
-        return this.palette.getRef(paletteIndex);
+    private resolveTexel(rawIndex: number, paletteOffset: number): Color32 | null {
+        return rawIndex === TRANSPARENT_PALETTE_INDEX ? null : this.resolveColor((rawIndex + paletteOffset) >>> 0);
     }
 
     /**
