@@ -1424,8 +1424,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             return;
         }
 
-        // THROWAWAY: flip pixel (0, 0) to prove the visual-parity CI job fails. Revert.
-        this.wordView[0] ^= 0x00ffffff;
         this.logicalCtx.putImageData(this.imageData, 0, 0);
         this.outputCtx.clearRect(0, 0, this.outputSize.x, this.outputSize.y);
         this.outputCtx.drawImage(this.logicalCanvas, 0, 0, this.outputSize.x, this.outputSize.y);
