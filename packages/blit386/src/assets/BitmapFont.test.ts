@@ -107,6 +107,8 @@ function mockFontFetchResponse(data: unknown) {
         ok: true,
         status: 200,
         statusText: 'OK',
+        headers: new Headers(),
+        body: null,
         text: vi.fn().mockResolvedValue(JSON.stringify(data)),
     };
 }
@@ -281,6 +283,53 @@ describe('BitmapFont', () => {
         expect(font.measureText('\u0100')).toBe(0);
     });
 
+    describe('font size limit', () => {
+        it('should reject an oversize Content-Length without reading the body', async () => {
+            const text = vi.fn().mockResolvedValue('{}');
+
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    status: 200,
+                    headers: new Headers({ 'content-length': String(MAX_BTFONT_JSON_BYTES + 1) }),
+                    body: null,
+                    text,
+                }),
+            );
+
+            await expect(BitmapFont.load('huge.btfont')).rejects.toBeInstanceOf(AssetLimitError);
+            expect(text).not.toHaveBeenCalled();
+        });
+
+        it('should stop streaming once the running total passes the limit', async () => {
+            const chunk = new Uint8Array(MAX_BTFONT_JSON_BYTES / 2 + 1);
+            let reads = 0;
+            const reader = {
+                read: () => {
+                    reads += 1;
+
+                    return Promise.resolve({ done: false, value: chunk });
+                },
+                cancel: vi.fn().mockResolvedValue(undefined),
+            };
+
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({
+                    ok: true,
+                    status: 200,
+                    headers: new Headers(),
+                    body: { getReader: () => reader },
+                    text: vi.fn(),
+                }),
+            );
+
+            await expect(BitmapFont.load('chunked.btfont')).rejects.toBeInstanceOf(AssetLimitError);
+            expect(reads).toBe(2);
+        });
+    });
+
     describe('load error cases', () => {
         it('should throw when fetch returns a non-ok response', async () => {
             vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' }));
@@ -356,6 +405,8 @@ describe('BitmapFont', () => {
                 'fetch',
                 vi.fn().mockResolvedValue({
                     ok: true,
+                    headers: new Headers(),
+                    body: null,
                     text: vi.fn().mockResolvedValue(' '.repeat(MAX_BTFONT_JSON_BYTES + 1)),
                 }),
             );
@@ -947,6 +998,24 @@ describe('BitmapFont', () => {
                 await font.hotReload('test.btfont', null);
 
                 expect(replaceSpy).toHaveBeenCalledOnce();
+            });
+
+            it('rejects an oversize re-fetched .btfont without reading the body', async () => {
+                const text = vi.fn().mockResolvedValue('{}');
+
+                vi.stubGlobal(
+                    'fetch',
+                    vi.fn().mockResolvedValue({
+                        ok: true,
+                        status: 200,
+                        headers: new Headers({ 'content-length': String(MAX_BTFONT_JSON_BYTES + 1) }),
+                        body: null,
+                        text,
+                    }),
+                );
+
+                await expect(font.hotReload('test.btfont', null)).rejects.toBeInstanceOf(AssetLimitError);
+                expect(text).not.toHaveBeenCalled();
             });
 
             it('throws when the re-fetched .btfont file is missing', async () => {

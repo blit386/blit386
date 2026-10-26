@@ -102,6 +102,34 @@ describe('AssetLoader', () => {
             vi.unstubAllGlobals();
         });
 
+        it('should not re-cache an image that finishes loading after clear()', async () => {
+            const finishers: Array<() => void> = [];
+
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    onerror: (() => void) | null = null;
+                    width = 10;
+                    height = 10;
+
+                    set src(_: string) {
+                        finishers.push(() => this.onload?.());
+                    }
+                },
+            );
+
+            const pending = AssetLoader.loadImage('late.png');
+
+            AssetLoader.clear();
+            for (const finish of finishers) {
+                finish();
+            }
+            await pending;
+
+            expect(AssetLoader.isLoaded('late.png')).toBe(false);
+        });
+
         it('should load a single image from a URL', async () => {
             const img = await AssetLoader.loadImage('test.png');
 

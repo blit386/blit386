@@ -1,6 +1,11 @@
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { isHotActive } from '../hot/HotRuntime';
-import { assertDimensions, assertImageElementWithinLimits, assertIndexedPixelInput } from '../utils/AssetLimits';
+import {
+    assertDimensions,
+    assertImageElementWithinLimits,
+    assertIndexedPixelInput,
+    getDecodedImageSize,
+} from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import {
     spriteColorNotInPaletteError,
@@ -314,7 +319,9 @@ export class SpriteSheet {
 
         if (image) {
             assertImageElementWithinLimits('sprite sheet', image);
-            this._size = new Vector2i(image.width, image.height);
+            const decoded = getDecodedImageSize(image);
+
+            this._size = new Vector2i(decoded.width, decoded.height);
         } else if (size) {
             assertDimensions('sprite sheet', size.x, size.y);
             this._size = size;
@@ -543,8 +550,7 @@ export class SpriteSheet {
 
         assertImageElementWithinLimits('sprite sheet', image);
 
-        const w = image.width;
-        const h = image.height;
+        const { width: w, height: h } = getDecodedImageSize(image);
 
         const data = SpriteSheet.readRgbaPixels(image, w, h);
         const collected = collectUniqueOpaqueColors(data);
@@ -763,7 +769,9 @@ export class SpriteSheet {
             assertImageElementWithinLimits('sprite sheet', image);
 
             this.image = image;
-            this._size = new Vector2i(image.width, image.height);
+            const decoded = getDecodedImageSize(image);
+
+            this._size = new Vector2i(decoded.width, decoded.height);
 
             if (this.imageBitmap) {
                 this.imageBitmap.close();

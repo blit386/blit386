@@ -418,8 +418,14 @@ export class AudioClip {
         onProgress?: AudioClipProgressCallback,
     ): Promise<ArrayBuffer> {
         const contentLengthHeader = response.headers.get('content-length');
+
+        // Content-Length is the compressed size when the body is content-encoded, so the decoded
+        // byte count would overshoot it: treat the length as unknown.
         const contentLength = contentLengthHeader !== null ? Number(contentLengthHeader) : Number.NaN;
-        const totalBytes = Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
+
+        const encoding = response.headers.get('content-encoding');
+        const isEncoded = encoding !== null && encoding !== 'identity';
+        const totalBytes = !isEncoded && Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
 
         if (totalBytes === null || response.body === null) {
             onProgress?.({ phase: 'download', ratio: null });

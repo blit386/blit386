@@ -42,6 +42,7 @@ import type { SynthParams } from './synth/SynthParams';
  * @param opts.ok            - Whether the response reports success. Defaults to `true`.
  * @param opts.status        - HTTP status code. Defaults to `200`.
  * @param opts.contentLength - `Content-Length` header value; omit to simulate a missing header.
+ * @param opts.contentEncoding - `Content-Encoding` header value; omit for an identity response.
  * @param opts.chunks        - Body chunks streamed via a fake `ReadableStream` reader.
  * @param opts.arrayBufferBytes - Byte length returned by the `arrayBuffer()` fallback path.
  * @returns Response stub accepted by the `fetch` mock.
@@ -50,19 +51,28 @@ function mockAudioFetchResponse({
     ok = true,
     status = 200,
     contentLength,
+    contentEncoding,
     chunks,
     arrayBufferBytes = 4,
 }: {
     ok?: boolean;
     status?: number;
     contentLength?: number;
+    contentEncoding?: string;
     chunks?: Uint8Array[];
     arrayBufferBytes?: number;
 } = {}) {
     const headers = {
         // Real `Headers.get` is case-insensitive; normalize so the mock matches that behavior.
-        get: (name: string) =>
-            name.toLowerCase() === 'content-length' && contentLength !== undefined ? String(contentLength) : null,
+        get: (name: string) => {
+            const key = name.toLowerCase();
+
+            if (key === 'content-length' && contentLength !== undefined) {
+                return String(contentLength);
+            }
+
+            return key === 'content-encoding' && contentEncoding !== undefined ? contentEncoding : null;
+        },
     };
 
     type ChunkReadResult = { done: true } | { done: false; value: Uint8Array };
@@ -225,6 +235,47 @@ describe('AudioClip', () => {
                 { phase: 'download', ratio: 1 },
                 { phase: 'decoding', ratio: null },
             ]);
+        });
+
+        it('should report a null ratio when the response is content-encoded', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(
+                    mockAudioFetchResponse({
+                        contentLength: 2,
+                        contentEncoding: 'gzip',
+                        chunks: [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])],
+                    }),
+                ),
+            );
+
+            const events: AudioClipProgress[] = [];
+
+            await AudioClip.load('gzip.wav', { onProgress: (progress) => events.push(progress) });
+
+            expect(events).toEqual([
+                { phase: 'download', ratio: null },
+                { phase: 'decoding', ratio: null },
+            ]);
+        });
+
+        it('should keep byte-accurate progress for content-encoding identity', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(
+                    mockAudioFetchResponse({
+                        contentLength: 2,
+                        contentEncoding: 'identity',
+                        chunks: [new Uint8Array([1, 2])],
+                    }),
+                ),
+            );
+
+            const events: AudioClipProgress[] = [];
+
+            await AudioClip.load('identity.wav', { onProgress: (progress) => events.push(progress) });
+
+            expect(events[0]).toEqual({ phase: 'download', ratio: 1 });
         });
 
         it('should report a null ratio when Content-Length is absent', async () => {

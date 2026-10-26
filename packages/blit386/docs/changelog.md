@@ -42,6 +42,16 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Image size limits now check the decoded size. A large PNG shown at a small size through an `<img width="64">` used to
+  pass the limit and then decode in full, and a 128 px image shown at 64 px uploaded only its top-left 64x64. Sprite
+  sheets and the asset loader now read `naturalWidth` and `naturalHeight`. See
+  [Asset size limits](api-assets.md#asset-size-limits).
+- `.btfont` files are now size-checked while they download. An oversize `Content-Length` is refused without reading the
+  body, and a body without one stops at 1 MiB. It used to read the whole file before checking, on both load and hot
+  reload.
+- `AssetLoader.clear()` now also stops images that are still loading from putting themselves back in the cache.
+- `AudioClip` `onProgress` reports `ratio: null` for a content-encoded (for example gzip) response instead of a value
+  above 1. See [API: Audio](api-audio.md#loading).
 - After a hot reload that only edits methods, `onOrientationChange` and `onReducedMotionChange` now run the edited code,
   and a handler added during the session fires. They used to keep calling the version from when the game started. See
   [Hot reload](guide-hot-reload.md#tier-1-method-only-change).
