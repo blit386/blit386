@@ -25,7 +25,8 @@ Run the package's test suite with various options.
 - No arguments: `pnpm run test:unit` (all Vitest tests)
 - `coverage`: `pnpm run test:unit:coverage` (with coverage thresholds)
 - `watch`: `pnpm run test:unit:watch` (interactive watch mode)
-- `visual`: `pnpm run test:visual` (Playwright visual regression)
+- `visual`: `pnpm run test:visual` (Playwright visual regression; local only - CI runs just the baseline-free subset,
+  `pnpm run test:visual:parity`, see `docs/reference-testing.md`)
 - File path: `pnpm exec vitest run <path>`
 
 Conventions: test files are colocated (`src/utils/Vector2i.test.ts` next to `Vector2i.ts`); visual tests live in
