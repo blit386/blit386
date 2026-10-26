@@ -333,6 +333,19 @@ describe('SoftwareRenderer line draw', () => {
         },
         BENCH_OPTIONS,
     );
+
+    // Viewport clipping keeps this proportional to the visible length, not the 2,000,000-pixel span.
+    const hugeEnd = new Vector2i(2_000_000, 1_000_000);
+
+    bench(
+        'drawLine (huge diagonal, mostly off-screen)',
+        () => {
+            renderer.beginFrame();
+            renderer.drawLine(lineStart, hugeEnd, 1);
+            renderer.endFrame();
+        },
+        BENCH_OPTIONS,
+    );
 });
 
 describe('SoftwareRenderer frame clear and present', () => {

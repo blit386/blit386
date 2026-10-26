@@ -42,6 +42,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.drawLine` on a diagonal that is huge or mostly off-screen no longer walks every pixel. The software backend used
+  to step all 2,000,000 pixels of a line like `(0, 0)` to `(2000000, 1)` and froze the frame; both backends now clip
+  diagonals to the viewport first, so only the visible pixels cost anything. The visible pixels are identical to an
+  un-clipped line. See [Primitives](api-rendering.md#primitives).
 - A second `BT.init()` after the first one resolved now restarts cleanly. It used to start a new game loop without
   stopping the old one, so the game ran at double speed, and it leaked the previous `GPUDevice`. The old loop now stops,
   the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. An `init()` made while

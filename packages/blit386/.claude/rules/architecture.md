@@ -61,6 +61,7 @@ src/
     WebGPURenderer.ts      # WebGPU concrete renderer implementing IRenderer
     SoftwareRenderer.ts    # Canvas 2D software fallback implementing IRenderer
     PrimitivePipeline.ts   # Batched geometry writing palette indices (pixels, lines, rects)
+    clipLine.ts            # Integer viewport clip for Bresenham lines (clipBresenhamLine); shared by SoftwareRenderer and PrimitivePipeline
     SpritePipeline.ts      # Batched textured quads (sprites, bitmap text); applies SpriteDrawParams flags/scale/pivot/stretch
     SpriteOrientation.ts   # FLIP_*/ROT_* bits, mask -> orientation lookup, the one orientation table both backends read
     PostProcessChain.ts    # Tier-aware fullscreen effect chain
@@ -129,6 +130,7 @@ src/
     urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
+    bresenham.ts           # Reference Bresenham walk (walkBresenham) for the line-clipping tests
     webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
     spriteOrientationFixture.ts # Shared ABC/DEF sprite source + grid oracle for every flip/rotation mask (used by both backends' tests)
     setup.ts               # Vitest global setup (GPU constants)

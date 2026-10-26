@@ -14,6 +14,7 @@
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { walkBresenham } from '../__test__/bresenham';
 import {
     createMockGPUDevice,
     createMockPaletteBuffer,
@@ -509,7 +510,17 @@ describe('primitive overflow handling', () => {
     });
 
     it('a 2,000,000-pixel diagonal stops once the buffer is full', async () => {
-        const pipeline = await setup();
+        // The line must stay on screen to overflow, since off-screen pixels are clipped away.
+        installMockNavigatorGPU();
+
+        const pipeline = new PrimitivePipeline();
+
+        await pipeline.init(
+            createMockGPUDevice(),
+            new Vector2i(2_000_001, 2_000_001),
+            createMockPaletteBuffer(),
+            'r8uint',
+        );
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         try {
@@ -521,5 +532,92 @@ describe('primitive overflow handling', () => {
         } finally {
             warnSpy.mockRestore();
         }
+    });
+});
+
+describe('diagonal line viewport clipping', () => {
+    const WIDTH = 320;
+    const HEIGHT = 240;
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    /** Un-clipped Bresenham reference, filtered to the viewport, as "x,y" keys. */
+    const referencePixels = (x0: number, y0: number, x1: number, y1: number, camX = 0, camY = 0): Set<string> => {
+        const flat = walkBresenham(x0, y0, x1, y1, {
+            minX: camX,
+            minY: camY,
+            maxX: camX + WIDTH - 1,
+            maxY: camY + HEIGHT - 1,
+        });
+        const keys = new Set<string>();
+
+        for (let i = 0; i < flat.length; i += 2) {
+            // eslint-disable-next-line security/detect-object-injection
+            keys.add(`${(flat[i] as number) - camX},${(flat[i + 1] as number) - camY}`);
+        }
+
+        return keys;
+    };
+
+    /** Reads back the 1x1 quads the pipeline queued (first vertex of each 6-vertex quad). */
+    const queuedPixels = (pipeline: PrimitivePipeline): Set<string> => {
+        const floats = (pipeline as unknown as { vertexFloats: Float32Array }).vertexFloats;
+        const count = pipeline.getFrameSubmittedVertices();
+        const keys = new Set<string>();
+
+        for (let v = 0; v < count; v += 6) {
+            keys.add(`${floats[v * 3]},${floats[v * 3 + 1]}`);
+        }
+
+        return keys;
+    };
+
+    const setup = async (): Promise<PrimitivePipeline> => {
+        installMockNavigatorGPU();
+
+        const pipeline = new PrimitivePipeline();
+
+        await pipeline.init(createMockGPUDevice(), new Vector2i(WIDTH, HEIGHT), createMockPaletteBuffer(), 'r8uint');
+
+        return pipeline;
+    };
+
+    it('queues only the in-viewport pixels of a 2,000,000-pixel line', async () => {
+        const pipeline = await setup();
+
+        pipeline.drawLine(new Vector2i(0, 0), new Vector2i(2_000_000, 1), 1);
+
+        const expected = referencePixels(0, 0, 2_000_000, 1);
+
+        expect(queuedPixels(pipeline)).toEqual(expected);
+        expect(pipeline.getFrameSubmittedVertices()).toBe(expected.size * 6);
+        expect(pipeline.getFrameOverflowCount()).toBe(0);
+    });
+
+    it('matches the un-clipped pixels inside the viewport for clipped diagonals', async () => {
+        const pipeline = await setup();
+        const cases: [number, number, number, number][] = [
+            [-200, -90, 500, 300],
+            [400, -40, -90, 210],
+            [30, 900, 50, -700],
+        ];
+
+        for (const [x0, y0, x1, y1] of cases) {
+            pipeline.reset();
+            pipeline.drawLine(new Vector2i(x0, y0), new Vector2i(x1, y1), 1);
+
+            expect(queuedPixels(pipeline), `(${x0},${y0})-(${x1},${y1})`).toEqual(referencePixels(x0, y0, x1, y1));
+        }
+    });
+
+    it('clips against the camera-shifted viewport', async () => {
+        const pipeline = await setup();
+
+        pipeline.setCameraOffset(new Vector2i(400, -60));
+        pipeline.drawLine(new Vector2i(300, -200), new Vector2i(900, 400), 1);
+
+        expect(queuedPixels(pipeline)).toEqual(referencePixels(300, -200, 900, 400, 400, -60));
     });
 });

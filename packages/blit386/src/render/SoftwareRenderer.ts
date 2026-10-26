@@ -8,6 +8,8 @@ import { Color32 } from '../utils/Color32';
 import { noActivePaletteError } from '../utils/errorMessages';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import type { ClippedLine } from './clipLine';
+import { clipBresenhamLine } from './clipLine';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
 import type { SpriteOrientation } from './SpriteOrientation';
@@ -135,6 +137,8 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private clearPaletteIndex: number = 0;
     private cameraOffset: Vector2i = Vector2i.zero();
     private readonly clipScratch = new Rect2i();
+    /** Reused clip result so lines allocate nothing per call. */
+    private readonly clippedLine: ClippedLine = { x: 0, y: 0, err: 0, steps: 0 };
     private readonly commands: DrawCommand[] = [];
     private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
@@ -190,28 +194,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Estimates primitive vertices for a line using the same rules as {@link PrimitivePipeline.drawLine}.
-     *
-     * @param x0 - Start X.
-     * @param y0 - Start Y.
-     * @param x1 - End X.
-     * @param y1 - End Y.
-     * @returns Vertex count for the line draw.
-     */
-    private static estimateLineVertexCount(x0: number, y0: number, x1: number, y1: number): number {
-        const ix0 = x0 | 0;
-        const iy0 = y0 | 0;
-        const ix1 = x1 | 0;
-        const iy1 = y1 | 0;
-
-        if (iy0 === iy1 || ix0 === ix1) {
-            return SoftwareRenderer.QUAD_VERTEX_COUNT;
-        }
-
-        return SoftwareRenderer.countBresenhamSteps(ix0, iy0, ix1, iy1) * SoftwareRenderer.QUAD_VERTEX_COUNT;
-    }
-
-    /**
      * Estimates primitive vertices for a rectangle outline using {@link PrimitivePipeline.drawRect} rules.
      *
      * @param rect - Outline bounds.
@@ -227,46 +209,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         }
 
         return vertices;
-    }
-
-    /**
-     * Counts Bresenham steps between two integer endpoints (inclusive).
-     *
-     * @param x0 - Start X.
-     * @param y0 - Start Y.
-     * @param x1 - End X.
-     * @param y1 - End Y.
-     * @returns Number of pixels visited.
-     */
-    private static countBresenhamSteps(x0: number, y0: number, x1: number, y1: number): number {
-        let cx = x0;
-        let cy = y0;
-        const tx = x1;
-        const ty = y1;
-        const dx = Math.abs(tx - cx);
-        const dy = Math.abs(ty - cy);
-        const sx = cx < tx ? 1 : -1;
-        const sy = cy < ty ? 1 : -1;
-        let err = dx - dy;
-        let steps = 1;
-
-        while (cx !== tx || cy !== ty) {
-            const e2 = err * 2;
-
-            if (e2 > -dy) {
-                err -= dy;
-                cx += sx;
-            }
-
-            if (e2 < dx) {
-                err += dx;
-                cy += sy;
-            }
-
-            steps++;
-        }
-
-        return steps;
     }
 
     /**
@@ -495,7 +437,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             cameraX: this.cameraOffset.x,
             cameraY: this.cameraOffset.y,
         });
-        this.primitiveSubmittedVertices += SoftwareRenderer.estimateLineVertexCount(p0.x, p0.y, p1.x, p1.y);
+        this.primitiveSubmittedVertices += this.estimateLineVertexCount(p0.x, p0.y, p1.x, p1.y);
     }
 
     /**
@@ -793,6 +735,48 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Estimates primitive vertices for a line using the same rules as {@link PrimitivePipeline.drawLine}.
+     *
+     * @param x0 - Start X.
+     * @param y0 - Start Y.
+     * @param x1 - End X.
+     * @param y1 - End Y.
+     * @returns Vertex count for the line draw.
+     */
+    private estimateLineVertexCount(x0: number, y0: number, x1: number, y1: number): number {
+        const ix0 = x0 | 0;
+        const iy0 = y0 | 0;
+        const ix1 = x1 | 0;
+        const iy1 = y1 | 0;
+
+        if (iy0 === iy1 || ix0 === ix1) {
+            return SoftwareRenderer.QUAD_VERTEX_COUNT;
+        }
+
+        // Only the visible part of the line is emitted, matching PrimitivePipeline.drawLine.
+        const camera = this.cameraOffset;
+        const clip = this.clippedLine;
+
+        if (
+            !clipBresenhamLine(
+                ix0,
+                iy0,
+                ix1,
+                iy1,
+                camera.x,
+                camera.y,
+                camera.x + this.displaySize.x - 1,
+                camera.y + this.displaySize.y - 1,
+                clip,
+            )
+        ) {
+            return 0;
+        }
+
+        return clip.steps * SoftwareRenderer.QUAD_VERTEX_COUNT;
+    }
+
+    /**
      * Returns every pending display-size request (public and shortcut slots) and clears
      * both slots, so the caller settles them all from one logical-canvas export.
      *
@@ -1028,23 +1012,28 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             return;
         }
 
-        let cx = x0 - cameraX;
-        let cy = y0 - cameraY;
+        const sx0 = x0 - cameraX;
+        const sy0 = y0 - cameraY;
         const tx = x1 - cameraX;
         const ty = y1 - cameraY;
-        const dx = Math.abs(tx - cx);
-        const dy = Math.abs(ty - cy);
-        const sx = cx < tx ? 1 : -1;
-        const sy = cy < ty ? 1 : -1;
-        let err = dx - dy;
+        const clip = this.clippedLine;
+
+        // Start at the first on-screen pixel so a huge or off-screen line costs only its visible length.
+        if (!clipBresenhamLine(sx0, sy0, tx, ty, 0, 0, this.displaySize.x - 1, this.displaySize.y - 1, clip)) {
+            return;
+        }
+
+        const dx = Math.abs(tx - sx0);
+        const dy = Math.abs(ty - sy0);
+        const sx = sx0 < tx ? 1 : -1;
+        const sy = sy0 < ty ? 1 : -1;
+        let err = clip.err;
+        let cx = clip.x;
+        let cy = clip.y;
         const pixels = this.framePixels;
 
-        while (true) {
+        for (let i = 0; i < clip.steps; i++) {
             this.writePixel(pixels, cx, cy, color.r, color.g, color.b, 255);
-
-            if (cx === tx && cy === ty) {
-                break;
-            }
 
             const e2 = err * 2;
 

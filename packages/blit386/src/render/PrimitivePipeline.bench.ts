@@ -1,5 +1,6 @@
 import { bench, describe } from 'vitest';
 
+import { createMockGPUDevice, createMockPaletteBuffer, installMockNavigatorGPU } from '../__test__/webgpu-mock';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { PrimitivePipeline } from './PrimitivePipeline';
@@ -18,6 +19,9 @@ const PALETTE_INDEX = 3;
 const LINE_START = new Vector2i(0, 0);
 const LINE_END = new Vector2i(319, 239);
 
+/** A 2,000,000-pixel diagonal that leaves the 320x240 viewport almost immediately. */
+const HUGE_LINE_END = new Vector2i(2_000_000, 1_000_000);
+
 /**
  * Fills a pipeline's batch with a fixed number of filled rectangles.
  * Shared by the fill-throughput benches and the reset() setup below.
@@ -33,6 +37,14 @@ function fillWithRects(pipeline: PrimitivePipeline, rect: Rect2i, count: number)
 }
 
 const pipeline = new PrimitivePipeline();
+
+// Initialized pipeline for the viewport-clipped line bench; the one above is uninitialized (unbounded viewport).
+installMockNavigatorGPU();
+
+const clippedPipeline = new PrimitivePipeline();
+
+await clippedPipeline.init(createMockGPUDevice(), new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+
 const rect = new Rect2i(10, 10, 4, 4);
 
 describe('PrimitivePipeline vertex batch filling', () => {
@@ -73,6 +85,17 @@ describe('PrimitivePipeline vertex batch filling', () => {
             for (let i = 0; i < 100; i++) {
                 pipeline.reset();
                 pipeline.drawLine(LINE_START, LINE_END, PALETTE_INDEX);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'drawLine huge diagonal, viewport clipped x 100',
+        () => {
+            for (let i = 0; i < 100; i++) {
+                clippedPipeline.reset();
+                clippedPipeline.drawLine(LINE_START, HUGE_LINE_END, PALETTE_INDEX);
             }
         },
         BENCH_OPTIONS,

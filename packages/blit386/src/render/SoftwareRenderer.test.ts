@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { walkBresenham } from '../__test__/bresenham';
 import {
     applyMaskToGrid,
     DOC_RESULTS,
@@ -874,5 +875,119 @@ describe('SoftwareRenderer drawSpriteOriented (flip and quarter turns)', () => {
 
             expect(readGrid(frame, 0, 0, 4, 1)).toBe('CC..');
         });
+    });
+});
+
+describe('SoftwareRenderer line viewport clipping', () => {
+    const SIZE = 8;
+
+    /** Un-clipped Bresenham reference, filtered to the viewport, as "x,y" keys. */
+    const referencePixels = (x0: number, y0: number, x1: number, y1: number, camX = 0, camY = 0): Set<string> => {
+        const flat = walkBresenham(x0 - camX, y0 - camY, x1 - camX, y1 - camY, {
+            minX: 0,
+            minY: 0,
+            maxX: SIZE - 1,
+            maxY: SIZE - 1,
+        });
+        const keys = new Set<string>();
+
+        for (let i = 0; i < flat.length; i += 2) {
+            // eslint-disable-next-line security/detect-object-injection
+            keys.add(`${flat[i]},${flat[i + 1]}`);
+        }
+
+        return keys;
+    };
+
+    const drawAndRead = async (
+        draw: (renderer: SoftwareRenderer) => void,
+    ): Promise<{ renderer: SoftwareRenderer; lit: Set<string>; vertices: number }> => {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(SIZE, SIZE));
+
+        await renderer.init();
+        renderer.setPalette(makePalette());
+        renderer.beginFrame();
+        renderer.setClearColor(3);
+        draw(renderer);
+
+        const vertices = renderer.getFrameDiagnostics().primitiveSubmittedVertices;
+
+        renderer.endFrame();
+
+        const frame = logicalContext.lastImageData as ImageData;
+        const lit = new Set<string>();
+
+        for (let y = 0; y < SIZE; y++) {
+            for (let x = 0; x < SIZE; x++) {
+                if (getPixel(frame, SIZE, x, y)[0] === 255) {
+                    lit.add(`${x},${y}`);
+                }
+            }
+        }
+
+        return { renderer, lit, vertices };
+    };
+
+    beforeEach(() => {
+        logicalContext.lastImageData = null;
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                constructor(
+                    public width: number,
+                    public height: number,
+                    public data: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4),
+                ) {}
+            },
+        );
+        vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('queues only the visible pixels of a 2,000,000-pixel line', async () => {
+        const { lit, vertices } = await drawAndRead((r) => {
+            r.drawLine(new Vector2i(0, 0), new Vector2i(2_000_000, 1), 1);
+        });
+        const expected = referencePixels(0, 0, 2_000_000, 1);
+
+        expect(expected.size).toBeLessThanOrEqual(SIZE);
+        expect(lit).toEqual(expected);
+        expect(vertices).toBe(expected.size * 6);
+    });
+
+    it('matches the un-clipped pixels inside the viewport for clipped diagonals', async () => {
+        const cases: [number, number, number, number][] = [
+            [-20, -9, 30, 17],
+            [12, -4, -9, 21],
+            [3, 30, 5, -25],
+            [-100, 3, 100, 4],
+        ];
+
+        for (const [x0, y0, x1, y1] of cases) {
+            const { lit } = await drawAndRead((r) => {
+                r.drawLine(new Vector2i(x0, y0), new Vector2i(x1, y1), 1);
+            });
+
+            expect(lit, `(${x0},${y0})-(${x1},${y1})`).toEqual(referencePixels(x0, y0, x1, y1));
+        }
+    });
+
+    it('clips against the camera-shifted viewport', async () => {
+        const { lit } = await drawAndRead((r) => {
+            r.setCameraOffset(new Vector2i(40, -6));
+            r.drawLine(new Vector2i(30, -20), new Vector2i(70, 20), 1);
+        });
+
+        expect(lit).toEqual(referencePixels(30, -20, 70, 20, 40, -6));
     });
 });

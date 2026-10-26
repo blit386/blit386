@@ -1,6 +1,8 @@
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import type { ClippedLine } from './clipLine';
+import { clipBresenhamLine } from './clipLine';
 
 /**
  * Maximum number of primitive vertices retained for a frame.
@@ -66,6 +68,15 @@ export class PrimitivePipeline {
     /** Camera offset applied to all drawing operations. */
     private cameraOffset: Vector2i = Vector2i.zero();
 
+    /** Render target width in pixels that diagonal lines are clipped to; unbounded until `init()`. */
+    private viewportWidth: number = Number.POSITIVE_INFINITY;
+
+    /** Render target height in pixels that diagonal lines are clipped to; unbounded until `init()`. */
+    private viewportHeight: number = Number.POSITIVE_INFINITY;
+
+    /** Reused clip result so diagonal lines allocate nothing per call. */
+    private readonly clippedLine: ClippedLine = { x: 0, y: 0, err: 0, steps: 0 };
+
     /** Overflow events recorded this frame (dropped quads). */
     private overflowCount: number = 0;
 
@@ -97,6 +108,8 @@ export class PrimitivePipeline {
         targetFormat: GPUTextureFormat,
     ): Promise<void> {
         this.device = device;
+        this.viewportWidth = displaySize.x;
+        this.viewportHeight = displaySize.y;
         await this.createPipeline(displaySize, paletteBuffer, targetFormat);
     }
 
@@ -432,21 +445,38 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     private drawLineBresenham(x0: number, y0: number, x1: number, y1: number, paletteIndex: number): void {
+        // Off-screen pixels cost buffer space and walk time, so start at the first visible pixel.
+        const minX = this.cameraOffset.x;
+        const minY = this.cameraOffset.y;
+        const clip = this.clippedLine;
+
+        if (
+            !clipBresenhamLine(
+                x0,
+                y0,
+                x1,
+                y1,
+                minX,
+                minY,
+                minX + this.viewportWidth - 1,
+                minY + this.viewportHeight - 1,
+                clip,
+            )
+        ) {
+            return;
+        }
+
         const dx = Math.abs(x1 - x0);
         const dy = Math.abs(y1 - y0);
         const sx = x0 < x1 ? 1 : -1;
         const sy = y0 < y1 ? 1 : -1;
-        let err = dx - dy;
-        let cx = x0;
-        let cy = y0;
+        let err = clip.err;
+        let cx = clip.x;
+        let cy = clip.y;
 
-        while (true) {
+        for (let i = 0; i < clip.steps; i++) {
             // A full buffer drops every further pixel, so stop walking the line.
             if (!this.addQuad(cx, cy, cx + 1, cy + 1, paletteIndex)) {
-                break;
-            }
-
-            if (cx === x1 && cy === y1) {
                 break;
             }
 
