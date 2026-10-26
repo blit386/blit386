@@ -60,24 +60,11 @@ export class PrimitivePipeline {
     /** Uint32 view for writing palette index values. */
     private readonly vertexIndices: Uint32Array;
 
-    /** Number of vertices in the current (unflushed) batch. */
+    /** Number of vertices queued for the current frame. */
     private vertexCount: number = 0;
 
     /** Camera offset applied to all drawing operations. */
     private cameraOffset: Vector2i = Vector2i.zero();
-
-    /** Primitive batches recorded by `encodePass()`. */
-    private readonly batches: Array<{ vertexStart: number; vertexCount: number }> = [];
-
-    /**
-     * Pool of reusable batch-entry objects, indexed in parallel with {@link batches}.
-     * Never truncated by {@link reset}, so a steady-state batch count reuses the same
-     * objects frame after frame instead of allocating a fresh literal per flush.
-     */
-    private readonly batchEntryPool: Array<{ vertexStart: number; vertexCount: number }> = [];
-
-    /** Total primitive vertices across all flushed batches. */
-    private totalVertices: number = 0;
 
     /** Overflow events recorded this frame (dropped quads). */
     private overflowCount: number = 0;
@@ -264,10 +251,7 @@ export class PrimitivePipeline {
      * @param renderPass - Active render pass encoder.
      */
     encodePass(renderPass: GPURenderPassEncoder): void {
-        // Flush any remaining vertices into the batch queue.
-        this.flushBatch();
-
-        if (this.batches.length === 0 || this.totalVertices === 0) {
+        if (this.vertexCount === 0) {
             return;
         }
 
@@ -278,25 +262,21 @@ export class PrimitivePipeline {
             0,
             this.vertexArrayBuffer,
             0,
-            this.totalVertices * VERTEX_STRIDE,
+            this.vertexCount * VERTEX_STRIDE,
         );
 
         renderPass.setPipeline(this.pipeline as GPURenderPipeline);
         renderPass.setBindGroup(0, this.bindGroup as GPUBindGroup);
         renderPass.setVertexBuffer(0, this.vertexBuffer as GPUBuffer);
 
-        for (const batch of this.batches) {
-            renderPass.draw(batch.vertexCount, 1, batch.vertexStart, 0);
-        }
+        renderPass.draw(this.vertexCount, 1, 0, 0);
     }
 
     /**
-     * Clears per-frame batching state.
+     * Clears per-frame vertex state.
      */
     reset(): void {
         this.vertexCount = 0;
-        this.totalVertices = 0;
-        this.batches.length = 0;
         this.overflowCount = 0;
     }
 
@@ -310,12 +290,12 @@ export class PrimitivePipeline {
     }
 
     /**
-     * Primitive vertices queued for GPU submission this frame (flushed + pending).
+     * Primitive vertices queued for GPU submission this frame.
      *
-     * @returns Total vertex count across all batches.
+     * @returns Vertex count queued this frame.
      */
     getFrameSubmittedVertices(): number {
-        return this.totalVertices + this.vertexCount;
+        return this.vertexCount;
     }
 
     /**
@@ -495,7 +475,7 @@ export class PrimitivePipeline {
      * @returns `false` when the quad was dropped because the frame buffer is full.
      */
     private addQuad(x0: number, y0: number, x1: number, y1: number, paletteIndex: number): boolean {
-        const index = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
+        const index = this.vertexCount * VALUES_PER_VERTEX;
 
         if (index + 6 * VALUES_PER_VERTEX > this.vertexFloats.length) {
             if (this.overflowCount === 0) {
@@ -526,7 +506,7 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index (written as uint32).
      */
     private writeVertex(x: number, y: number, paletteIndex: number): void {
-        const index = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
+        const index = this.vertexCount * VALUES_PER_VERTEX;
 
         // Position stored as float32 via the float view.
         // eslint-disable-next-line security/detect-object-injection
@@ -537,30 +517,5 @@ export class PrimitivePipeline {
         this.vertexIndices[index + 2] = paletteIndex;
 
         this.vertexCount++;
-    }
-
-    /**
-     * Records the current vertex batch and resets the vertex count.
-     * Called from encodePass() to queue the pending vertices.
-     * Does not write to GPU - encodePass() uploads all batches at once.
-     */
-    private flushBatch(): void {
-        if (this.vertexCount === 0) {
-            return;
-        }
-
-        let entry = this.batchEntryPool[this.batches.length];
-
-        if (!entry) {
-            entry = { vertexStart: 0, vertexCount: 0 };
-            this.batchEntryPool.push(entry);
-        }
-
-        entry.vertexStart = this.totalVertices;
-        entry.vertexCount = this.vertexCount;
-        this.batches.push(entry);
-
-        this.totalVertices += this.vertexCount;
-        this.vertexCount = 0;
     }
 }
