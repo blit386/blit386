@@ -47,6 +47,13 @@ await clippedPipeline.init(createMockGPUDevice(), new Vector2i(320, 240), create
 
 const rect = new Rect2i(10, 10, 4, 4);
 
+// Filled once and never reset, so every timed draw on it takes the overflow drop path.
+const fullPipeline = new PrimitivePipeline();
+
+while (fullPipeline.getFrameOverflowCount() === 0) {
+    fullPipeline.drawRectFill(rect, PALETTE_INDEX);
+}
+
 describe('PrimitivePipeline vertex batch filling', () => {
     bench(
         'drawRectFill x 5000',
@@ -113,12 +120,12 @@ describe('PrimitivePipeline vertex batch filling', () => {
     );
 
     bench(
-        'drawLine long diagonal on a full buffer',
+        'overflow drop path: drawRectFill x 5000 + drawPixelXY x 5000 on a full buffer',
         () => {
-            pipeline.reset();
-
-            // The buffer fills after ~8,333 pixels; the add then reports failure and the loop stops.
-            pipeline.drawLine(LINE_START, new Vector2i(2_000_000, 1_999_999), PALETTE_INDEX);
+            for (let i = 0; i < 5000; i++) {
+                fullPipeline.drawRectFill(rect, PALETTE_INDEX);
+                fullPipeline.drawPixelXY(i & 0xff, (i >> 8) & 0xff, PALETTE_INDEX);
+            }
         },
         BENCH_OPTIONS,
     );
