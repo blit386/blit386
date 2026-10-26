@@ -450,3 +450,76 @@ describe('vertex count verification', () => {
         expect(pipeline.getFrameSubmittedVertices()).toBe(6);
     });
 });
+
+describe('primitive overflow handling', () => {
+    const MAX_QUADS = Math.floor(50000 / 6);
+
+    const setup = async (): Promise<PrimitivePipeline> => {
+        installMockNavigatorGPU();
+
+        const pipeline = new PrimitivePipeline();
+
+        await pipeline.init(createMockGPUDevice(), new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+
+        return pipeline;
+    };
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    it('warns once per frame, counts rects, and submits no partial rect', async () => {
+        const pipeline = await setup();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        try {
+            for (let i = 0; i < MAX_QUADS + 1000; i++) {
+                pipeline.drawRectFill(new Rect2i(0, 0, 1, 1), 1);
+            }
+
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+            expect(pipeline.getFrameOverflowCount()).toBe(1000);
+            expect(pipeline.getFrameSubmittedVertices()).toBe(MAX_QUADS * 6);
+            expect(pipeline.getFrameSubmittedVertices() % 6).toBe(0);
+
+            pipeline.reset();
+            pipeline.drawRectFill(new Rect2i(0, 0, 1, 1), 1);
+
+            expect(pipeline.getFrameOverflowCount()).toBe(0);
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+
+    it('drawPixelXY drops whole pixels once full', async () => {
+        const pipeline = await setup();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        try {
+            for (let i = 0; i < MAX_QUADS + 10; i++) {
+                pipeline.drawPixelXY(i, 0, 1);
+            }
+
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+            expect(pipeline.getFrameOverflowCount()).toBe(10);
+            expect(pipeline.getFrameSubmittedVertices() % 6).toBe(0);
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+
+    it('a 2,000,000-pixel diagonal stops once the buffer is full', async () => {
+        const pipeline = await setup();
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        try {
+            pipeline.drawLine(new Vector2i(0, 0), new Vector2i(2_000_000, 1_999_999), 1);
+
+            expect(warnSpy).toHaveBeenCalledTimes(1);
+            expect(pipeline.getFrameOverflowCount()).toBe(1);
+            expect(pipeline.getFrameSubmittedVertices()).toBe(MAX_QUADS * 6);
+        } finally {
+            warnSpy.mockRestore();
+        }
+    });
+});

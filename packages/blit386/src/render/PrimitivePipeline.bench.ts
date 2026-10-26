@@ -88,4 +88,15 @@ describe('PrimitivePipeline vertex batch filling', () => {
         },
         BENCH_OPTIONS,
     );
+
+    bench(
+        'drawLine long diagonal on a full buffer',
+        () => {
+            pipeline.reset();
+
+            // The buffer fills after ~8,333 pixels; the add then reports failure and the loop stops.
+            pipeline.drawLine(LINE_START, new Vector2i(2_000_000, 1_999_999), PALETTE_INDEX);
+        },
+        BENCH_OPTIONS,
+    );
 });
