@@ -18,13 +18,14 @@ Looking for audio assets? `AudioClip` loading is documented separately in [API: 
 
 Sprite sheets, font atlases, and raw indexed buffers share the same decoded-size policy as render configuration (`8192`
 pixels per side, `16,777,216` total pixels). Limits are enforced before canvas readback, CPU buffer retention, GPU
-texture creation, and software sprite loops.
+texture creation, and software sprite loops. For an `<img>` element the limit applies to the decoded image size
+(`naturalWidth` × `naturalHeight`), not the size it is displayed at.
 
 | Limit | Default | Applies to |
 | --- | --- | --- |
 | Max width / height | `8192` | Decoded PNGs, font atlas textures, `fromIndexedPixels()` |
 | Max total pixels | `16,777,216` (`4096×4096`) | Same sources |
-| Max `.btfont` JSON size | `1,048,576` bytes (`1 MiB`) | `BitmapFont.load()` before `JSON.parse()` |
+| Max `.btfont` JSON size | `1,048,576` bytes (`1 MiB`) | `BitmapFont.load()` while the body downloads, before `JSON.parse()` |
 | Max embedded texture payload | `524,288` bytes (`512 KiB`) | Base64 data in `texture` when using `data:image/png;base64,...` |
 | Max glyph count | `8192` | Glyph map entries in a `.btfont` file |
 | Max software blit area | `16,777,216` pixels | Software renderer source rectangles (clipped to the sheet first) |

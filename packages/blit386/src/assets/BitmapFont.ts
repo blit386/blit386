@@ -372,7 +372,7 @@ export class BitmapFont {
             throw new Error(BitmapFont.buildLoadErrorMessage(url, response.status));
         }
 
-        const { data, glyphEntries } = BitmapFont.parseBtfontFile(url, await response.text());
+        const { data, glyphEntries } = BitmapFont.parseBtfontFile(url, await BitmapFont.readCappedText(response));
 
         BitmapFont.validateGlyphEntriesPreAtlas(glyphEntries);
 
@@ -405,6 +405,58 @@ export class BitmapFont {
         registerFontForHotReload(url, font);
 
         return font;
+    }
+
+    /**
+     * Reads a `.btfont` response body, rejecting as soon as it passes the JSON size limit.
+     *
+     * Checks `Content-Length` before touching the body, then caps the running total while
+     * streaming. Responses without a readable body fall back to `response.text()`; the size
+     * check in {@link parseBtfontFile} still applies to that text.
+     *
+     * @param response - Successful fetch response.
+     * @returns Response body text.
+     * @throws AssetLimitError if the body exceeds the `.btfont` JSON size limit.
+     */
+    private static async readCappedText(response: Response): Promise<string> {
+        const declared = Number(response.headers.get('content-length'));
+        const declaredError = Number.isFinite(declared) && declared > 0 ? validateBtfontJsonByteSize(declared) : null;
+
+        if (declaredError) {
+            throw new AssetLimitError(declaredError);
+        }
+
+        if (response.body === null) {
+            return response.text();
+        }
+
+        const reader = response.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let total = 0;
+
+        for (;;) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            total += value.byteLength;
+
+            const sizeError = validateBtfontJsonByteSize(total);
+
+            if (sizeError) {
+                await reader.cancel();
+
+                throw new AssetLimitError(sizeError);
+            }
+
+            chunks.push(value);
+        }
+
+        const decoder = new TextDecoder();
+
+        return chunks.map((chunk) => decoder.decode(chunk, { stream: true })).join('') + decoder.decode();
     }
 
     /**
@@ -971,7 +1023,7 @@ export class BitmapFont {
             throw new Error(BitmapFont.buildLoadErrorMessage(url, response.status));
         }
 
-        const { data, glyphEntries } = BitmapFont.parseBtfontFile(url, await response.text());
+        const { data, glyphEntries } = BitmapFont.parseBtfontFile(url, await BitmapFont.readCappedText(response));
 
         BitmapFont.validateGlyphEntriesPreAtlas(glyphEntries);
 

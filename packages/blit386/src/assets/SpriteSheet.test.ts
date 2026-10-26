@@ -59,6 +59,25 @@ function makeOffscreenCanvasMock(pixelData: Uint8ClampedArray, w: number, h: num
 describe('SpriteSheet', () => {
     const mockImage = { width: 256, height: 256 } as HTMLImageElement;
 
+    describe('decoded image size', () => {
+        it('should reject an image whose decoded size exceeds the limit even if its display size is small', () => {
+            const downscaled = {
+                width: 64,
+                height: 64,
+                naturalWidth: MAX_ASSET_DIMENSION + 1,
+                naturalHeight: 16,
+            } as HTMLImageElement;
+
+            expect(() => new SpriteSheet(downscaled)).toThrow(AssetLimitError);
+        });
+
+        it('should use the decoded size, not the display size, for the sheet size', () => {
+            const downscaled = { width: 64, height: 64, naturalWidth: 128, naturalHeight: 128 } as HTMLImageElement;
+
+            expect(new SpriteSheet(downscaled).width).toBe(128);
+        });
+    });
+
     describe('getUVs', () => {
         it('should return (0, 0, 1, 1) for a full-size rect', () => {
             const sheet = new SpriteSheet(mockImage);
@@ -1139,6 +1158,32 @@ describe('SpriteSheet', () => {
 
                 expect(() => sheet.hotReplaceImage(oversized, null)).toThrow(AssetLimitError);
                 expect(sheet.status).toBe('failed');
+            });
+
+            it('rejects a replacement whose decoded size exceeds the limit despite a small display size', () => {
+                const sheet = new SpriteSheet(mockImage);
+                const downscaled = {
+                    width: 64,
+                    height: 64,
+                    naturalWidth: MAX_ASSET_DIMENSION + 1,
+                    naturalHeight: 16,
+                } as HTMLImageElement;
+
+                sheet.beginHotReplace();
+
+                expect(() => sheet.hotReplaceImage(downscaled, null)).toThrow(AssetLimitError);
+            });
+
+            it('uses the decoded size of the replacement image', () => {
+                const sheet = new SpriteSheet(mockImage);
+
+                sheet.hotReplaceImage(
+                    { width: 64, height: 64, naturalWidth: 128, naturalHeight: 96 } as HTMLImageElement,
+                    null,
+                );
+
+                expect(sheet.width).toBe(128);
+                expect(sheet.height).toBe(96);
             });
 
             it('invalidates the cached texture for a non-indexized sheet', () => {

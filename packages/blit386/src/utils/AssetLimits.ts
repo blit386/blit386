@@ -182,6 +182,20 @@ export function assertDimensions(context: string, width: number, height: number)
 }
 
 /**
+ * Reads the decoded pixel size of an image element.
+ *
+ * `width`/`height` on an `HTMLImageElement` are the attribute or layout size, so a downscaled
+ * `<img>` would pass the limit check and upload cropped. `naturalWidth`/`naturalHeight` are the
+ * decoded size; the plain size is only a fallback for image-like objects without them.
+ *
+ * @param image - Loaded image element.
+ * @returns Decoded width and height in pixels.
+ */
+export function getDecodedImageSize(image: HTMLImageElement): { width: number; height: number } {
+    return { width: image.naturalWidth ?? image.width, height: image.naturalHeight ?? image.height };
+}
+
+/**
  * Validates an `HTMLImageElement` after decode and before canvas readback or texture upload.
  *
  * @param context - Asset label used in error text.
@@ -189,7 +203,9 @@ export function assertDimensions(context: string, width: number, height: number)
  * @throws {@link AssetLimitError} when the image dimensions are invalid.
  */
 export function assertImageElementWithinLimits(context: string, image: HTMLImageElement): void {
-    assertDimensions(context, image.width, image.height);
+    const { width, height } = getDecodedImageSize(image);
+
+    assertDimensions(context, width, height);
 }
 
 /**

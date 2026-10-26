@@ -406,8 +406,9 @@ export class AudioClip {
      * download progress when `Content-Length` is present.
      *
      * Falls back to `response.arrayBuffer()` with a single indeterminate
-     * progress report when the length is missing, non-numeric, or the
-     * response has no body reader to stream from.
+     * progress report when the length is missing, non-numeric, the response
+     * is content-encoded (other than `identity`, so the length is the
+     * compressed size), or the response has no body reader to stream from.
      *
      * @param response - Successful fetch response.
      * @param onProgress - Optional progress callback.
@@ -418,8 +419,14 @@ export class AudioClip {
         onProgress?: AudioClipProgressCallback,
     ): Promise<ArrayBuffer> {
         const contentLengthHeader = response.headers.get('content-length');
+
+        // Content-Length is the compressed size when the body is content-encoded, so the decoded
+        // byte count would overshoot it: treat the length as unknown.
         const contentLength = contentLengthHeader !== null ? Number(contentLengthHeader) : Number.NaN;
-        const totalBytes = Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
+
+        const encoding = response.headers.get('content-encoding')?.toLowerCase() ?? null;
+        const isEncoded = encoding !== null && encoding !== 'identity';
+        const totalBytes = !isEncoded && Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
 
         if (totalBytes === null || response.body === null) {
             onProgress?.({ phase: 'download', ratio: null });

@@ -325,12 +325,16 @@ export class AssetLoader {
     }
 
     /**
-     * Clears all in-memory caches. In-flight image requests aren't aborted
-     * and may repopulate the cache once complete.
+     * Clears all in-memory caches. In-flight image requests aren't aborted,
+     * but their generation is bumped so they no longer repopulate the cache.
      *
      * Primarily intended for tests or explicit asset-lifecycle resets.
      */
     static clear(): void {
+        for (const key of loadGenerations.keys()) {
+            bumpGeneration(key);
+        }
+
         loadedImages.clear();
         loadingPromises.clear();
     }

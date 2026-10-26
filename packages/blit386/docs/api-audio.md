@@ -160,7 +160,7 @@ await AudioClip.load('audio/theme.mp3', {
 
 <TypeTable type={{
     phase: { type: "'download' | 'decoding'", description: 'Which stage of the load this snapshot reports.' },
-    ratio: { type: 'number | null', description: 'Fraction complete in [0, 1]. null when Content-Length is unknown, or during the single, atomic decode step.' },
+    ratio: { type: 'number | null', description: 'Fraction complete in [0, 1]. null when Content-Length is unknown, when the response is content-encoded (for example gzip, so the length is the compressed size), or during the single, atomic decode step.' },
   }} />
 
 Release a clip's decoded buffer with `unload()` once you no longer need it:
