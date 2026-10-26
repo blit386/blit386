@@ -496,6 +496,38 @@ describe('drawBitmapText', () => {
         expect(totalVertices).toBe(12); // Only 2 'A' glyphs rendered
     });
 
+    it('iterates code points, so an astral character draws one glyph like software and measureText (BT-624)', () => {
+        pipeline.reset();
+
+        const sheet = new SpriteSheet(mockImage);
+        const fallback = makeGlyph(0, 8, 0, 0, 9);
+        const codes: number[] = [];
+        const font = {
+            getSpriteSheet: () => sheet,
+            getGlyphByCode: (code: number) => {
+                codes.push(code);
+
+                return fallback;
+            },
+        } as unknown as BitmapFont;
+
+        pipeline.drawBitmapText(font, new Vector2i(0, 0), 'a\u{1F600}');
+
+        let totalVertices = 0;
+
+        const renderPass = {
+            ...createMockRenderPassEncoder(),
+            draw: (vertexCount: number) => {
+                totalVertices += vertexCount;
+            },
+        } as unknown as GPURenderPassEncoder;
+
+        pipeline.encodePass(renderPass);
+
+        expect(codes).toEqual([0x61, 0x1f600]);
+        expect(totalVertices).toBe(12);
+    });
+
     it('empty string produces no draw calls', () => {
         pipeline.reset();
 

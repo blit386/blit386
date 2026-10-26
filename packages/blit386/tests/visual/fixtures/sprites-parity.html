@@ -1,0 +1,154 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Backend Parity Edge Cases</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+            // Signal test readiness regardless of success/failure.
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
+
+            // BT-624 cases the two backends used to draw differently. Default mode: an alpha-0 slot,
+            // an index past 255 in a full palette (the GPU used to clamp it onto slot 255), and an
+            // emoji in text. '#stale' mode: a 32-color palette swapped for a 16-color one, then an
+            // index past 16 (the GPU used to show the old palette's color).
+            const isStaleMode = location.hash === '#stale';
+            const colorBlack = 1;
+            const BLOCK = 8;
+            const TEXELS = [5, 200, 10, 1];
+
+            // One 8x8 block per texel value so each case is easy to see.
+            function createSheet() {
+                const w = BLOCK * TEXELS.length;
+                const pixels = new Uint8Array(w * BLOCK);
+
+                for (let y = 0; y < BLOCK; y++) {
+                    for (let x = 0; x < w; x++) {
+                        pixels[y * w + x] = TEXELS[Math.floor(x / BLOCK)];
+                    }
+                }
+
+                return SpriteSheet.fromIndexedPixels(w, BLOCK, pixels);
+            }
+
+            function createFullPalette() {
+                const palette = new Palette(256);
+
+                for (let i = 1; i < 256; i++) {
+                    palette.set(i, new Color32(i, 255 - i, (i * 7) & 255, 255));
+                }
+
+                palette.set(colorBlack, new Color32(0, 0, 0, 255));
+                palette.set(5, new Color32(255, 0, 0, 0)); // alpha 0: transparent on both backends
+                palette.set(255, Color32.fromHex('#ff00ff')); // shows only if an index clamps onto 255
+
+                return palette;
+            }
+
+            function createPalette(size, fill) {
+                const palette = new Palette(size);
+
+                for (let i = 1; i < size; i++) {
+                    palette.set(i, fill);
+                }
+
+                palette.set(colorBlack, new Color32(0, 0, 0, 255));
+
+                return palette;
+            }
+
+            class SpritesParityTest {
+                sheet = null;
+                src = null;
+                small = null;
+                bigFrames = 0;
+                isSwitched = false;
+
+                configure() {
+                    return {
+                        // See sprites.html: no blit386() Vite plugin here, so disable the splash.
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(320, 240),
+                        targetFPS: 60,
+                    };
+                }
+
+                async init() {
+                    this.sheet = createSheet();
+                    this.src = new Rect2i(0, 0, BLOCK * TEXELS.length, BLOCK);
+
+                    if (isStaleMode) {
+                        BT.paletteSet(createPalette(32, Color32.fromHex('#ff00ff')));
+                        this.small = createPalette(16, Color32.fromHex('#ffffff'));
+                    } else {
+                        BT.paletteSet(createFullPalette());
+                    }
+
+                    return true;
+                }
+
+                update() {
+                    // Swap only after the 32-color palette has been uploaded by one rendered frame.
+                    if (isStaleMode && this.bigFrames > 0 && !this.isSwitched) {
+                        BT.paletteSet(this.small);
+                        this.isSwitched = true;
+                    }
+                }
+
+                render() {
+                    BT.clear(colorBlack);
+
+                    if (!this.sheet) {
+                        return;
+                    }
+
+                    if (isStaleMode) {
+                        if (!this.isSwitched) {
+                            this.bigFrames++;
+                            return;
+                        }
+
+                        // Offset 10: 15, 210 (past 16), 20 (past 16), 11.
+                        BT.drawSprite(this.sheet, this.src, new Vector2i(8, 8), 10);
+                    } else {
+                        BT.drawSprite(this.sheet, this.src, new Vector2i(8, 8), 0);
+                        // Offset 100: 105, 300 (past 255), 110, 101.
+                        BT.drawSprite(this.sheet, this.src, new Vector2i(8, 24), 100);
+                        BT.systemPrint(new Vector2i(8, 40), 2, 'A\u{1F600}B');
+                    }
+
+                    // Signal render complete, publishing the backend that actually started.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(SpritesParityTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

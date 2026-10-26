@@ -58,6 +58,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   [Mute](api-audio.md#mute).
 - `BT.paletteSet` no longer tells you to call `BT.spritesRefresh()` after a value swap, where refreshing would fail
   because the original colors are gone.
+- The WebGPU and software backends now draw the same pixels in three cases. A sprite or glyph pixel whose palette color
+  has alpha `0` is transparent on both (software drew it opaque). A pixel whose index plus `paletteOffset` lands past
+  the palette is skipped on both (software drew black, and WebGPU showed a stale color from a larger palette set
+  earlier). And bitmap text on WebGPU now treats a character outside the Basic Multilingual Plane, such as an emoji, as
+  one character, so it matches `measureText` and centered or right-aligned text lines up. See
+  [Create and activate a palette](guide-palette.md#create-and-activate-a-palette).
 
 ## 1.8.0 - 2026-10-18
 

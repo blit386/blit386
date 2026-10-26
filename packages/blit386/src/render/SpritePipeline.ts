@@ -314,9 +314,14 @@ export class SpritePipeline {
         let cursorX = pos.x;
         const len = text.length;
 
-        // Optimized loop using charCodeAt and getGlyphByCode for ASCII fast-path.
+        // Iterate code points (like SoftwareRenderer and BitmapFont.measureText) without allocating.
         for (let i = 0; i < len; i++) {
-            const code = text.charCodeAt(i);
+            const code = text.codePointAt(i) ?? 0;
+
+            if (code > 0xffff) {
+                i++; // Skip the low surrogate.
+            }
+
             const glyph = font.getGlyphByCode(code);
 
             if (glyph) {
@@ -458,12 +463,13 @@ export class SpritePipeline {
                     if (rawIndex == ${TRANSPARENT_PALETTE_INDEX}u) { discard; }
 
                     let combined = rawIndex + input.paletteOffset;
-                    let index = min(combined, ${MAX_PALETTE_SIZE - 1}u);
+                    // Past the palette: discard like the software backend, never clamp onto slot 255.
+                    if (combined >= ${MAX_PALETTE_SIZE}u) { discard; }
 
-                    let color = palette.colors[index];
+                    let color = palette.colors[combined];
                     if (color.a == 0.0) { discard; }
 
-                    return index;
+                    return combined;
                 }
             `,
         });
