@@ -1,45 +1,75 @@
-// THROWAWAY: finds Chrome flags that composite a SwiftShader WebGPU canvas in CI. Revert before merge.
+// THROWAWAY: diagnoses the SwiftShader parity mismatch in CI. Revert before merge.
 import fs from 'node:fs';
 
-import { chromium, test } from '@playwright/test';
+import { test } from '@playwright/test';
 
 import { openFixture } from './open-fixture';
 
-const BASE = ['--enable-unsafe-webgpu', '--disable-gpu-sandbox', '--enable-unsafe-swiftshader'];
+for (const name of ['sprites-stretched', 'sprites-nineslice']) {
+    test(`debug ${name} identically on WebGPU and software`, async ({ page }) => {
+        const shots: Buffer[] = [];
 
-const VARIANTS: Record<string, string[]> = {
-    current: ['--enable-features=Vulkan', '--use-webgpu-adapter=swiftshader', '--use-angle=swiftshader'],
-    vulkanSwiftshader: ['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-angle=swiftshader'],
-    vulkanAngleVulkan: ['--enable-features=Vulkan', '--use-vulkan=swiftshader', '--use-angle=vulkan'],
-    noVulkanFeature: ['--use-webgpu-adapter=swiftshader', '--use-angle=swiftshader'],
-    angleOnly: ['--use-angle=swiftshader'],
-    noVulkanSurface: [
-        '--enable-features=Vulkan',
-        '--use-vulkan=swiftshader',
-        '--use-angle=swiftshader',
-        '--use-webgpu-adapter=swiftshader',
-        '--disable-vulkan-surface',
-        '--ignore-gpu-blocklist',
-    ],
-};
-
-for (const [label, extra] of Object.entries(VARIANTS)) {
-    test(`debug ${label} identically on WebGPU and software`, async () => {
-        const browser = await chromium.launch({ channel: 'chrome', args: [...BASE, ...extra] });
-        const page = await browser.newPage({
-            baseURL: 'http://localhost:5174',
-            viewport: { width: 1280, height: 720 },
-        });
-        const gpuBackend = await openFixture(page, '/sprites-stretched.html');
-        const gpu = await page.locator('canvas').screenshot();
-        const swBackend = await openFixture(page, '/sprites-stretched.html?backend=software');
-        const sw = await page.locator('canvas').screenshot();
+        for (const delay of [0, 2000]) {
+            for (const q of ['', '?backend=software']) {
+                console.log(name, q || 'gpu', await openFixture(page, `/${name}.html${q}`));
+                await page.waitForTimeout(delay);
+                shots.push(await page.locator('canvas').screenshot());
+            }
+        }
 
         fs.mkdirSync('test-results/parity-debug', { recursive: true });
-        fs.writeFileSync(`test-results/parity-debug/${label}-gpu.png`, gpu);
-        console.log(
-            `PARITY-DEBUG ${label} gpu=${String(gpuBackend)} sw=${String(swBackend)} identical=${Buffer.compare(gpu, sw) === 0} gpuBytes=${gpu.length} swBytes=${sw.length}`,
+        for (const [i, s] of shots.entries()) {
+            fs.writeFileSync(`test-results/parity-debug/${name}-${i}.png`, s);
+        }
+
+        const result = await page.evaluate(
+            async (b64s) => {
+                const load = async (s: string) => {
+                    const img = new Image();
+                    img.src = `data:image/png;base64,${s}`;
+                    await img.decode();
+                    const c = document.createElement('canvas');
+                    c.width = img.width;
+                    c.height = img.height;
+                    const ctx = c.getContext('2d') as CanvasRenderingContext2D;
+                    ctx.drawImage(img, 0, 0);
+                    return ctx.getImageData(0, 0, img.width, img.height);
+                };
+                const imgs = await Promise.all(b64s.map(load));
+                const diff = (A: ImageData, B: ImageData) => {
+                    let n = 0;
+                    let minX = 1e9,
+                        minY = 1e9,
+                        maxX = -1,
+                        maxY = -1;
+                    const pairs = new Map<string, number>();
+                    for (let p = 0; p < A.data.length; p += 4) {
+                        const pa = A.data.slice(p, p + 3).join(',');
+                        const pb = B.data.slice(p, p + 3).join(',');
+                        if (pa !== pb) {
+                            n++;
+                            const x = (p / 4) % A.width,
+                                y = Math.floor(p / 4 / A.width);
+                            minX = Math.min(minX, x);
+                            maxX = Math.max(maxX, x);
+                            minY = Math.min(minY, y);
+                            maxY = Math.max(maxY, y);
+                            const k = `${pa} vs ${pb}`;
+                            pairs.set(k, (pairs.get(k) ?? 0) + 1);
+                        }
+                    }
+                    return { n, box: [minX, minY, maxX, maxY], pairs: [...pairs].slice(0, 8) };
+                };
+                return {
+                    size: [imgs[0].width, imgs[0].height, imgs[1].width, imgs[1].height],
+                    gpuVsSw: diff(imgs[0], imgs[1]),
+                    gpuVsSwAfter2s: diff(imgs[2], imgs[3]),
+                    gpuVsGpuAfter2s: diff(imgs[0], imgs[2]),
+                };
+            },
+            shots.map((s) => s.toString('base64')),
         );
-        await browser.close();
+
+        console.log(`PARITY-DEBUG ${name} ${JSON.stringify(result)}`);
     });
 }
