@@ -78,7 +78,7 @@ overrides:
   # end of the document on each key line. Dev-only, reached through cspell (cspell-config-lib)
   # and knip, so it never enters a runtime bundle - but `security:audit` covers dev + prod,
   # so it fails CI. 1.8.1 is the patch; 1.9.0 is the latest.
-  smol-toml@<1.8.1: ^1.9.0
+  smol-toml@<1.8.1: ^1.9.1
   # GHSA-rj75-hqrm-r3gf (moderate): quadratic complexity in flat selector parsing allows CPU
   # exhaustion. Dev-only, reached through postcss-nesting in packages/demos' CSS pipeline,
   # so it never enters a runtime bundle - but `security:audit` covers dev + prod, so it
