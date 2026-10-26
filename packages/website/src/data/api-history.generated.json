@@ -1755,7 +1755,12 @@
     "SpriteSheet": {
       "kind": "class",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

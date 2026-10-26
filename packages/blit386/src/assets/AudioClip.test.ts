@@ -278,6 +278,25 @@ describe('AudioClip', () => {
             expect(events[0]).toEqual({ phase: 'download', ratio: 1 });
         });
 
+        it('should treat a mixed-case identity content-encoding as unencoded', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(
+                    mockAudioFetchResponse({
+                        contentLength: 2,
+                        contentEncoding: 'Identity',
+                        chunks: [new Uint8Array([1, 2])],
+                    }),
+                ),
+            );
+
+            const events: AudioClipProgress[] = [];
+
+            await AudioClip.load('identity-case.wav', { onProgress: (progress) => events.push(progress) });
+
+            expect(events[0]).toEqual({ phase: 'download', ratio: 1 });
+        });
+
         it('should report a null ratio when Content-Length is absent', async () => {
             vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
 

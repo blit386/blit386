@@ -19,7 +19,7 @@ Looking for audio assets? `AudioClip` loading is documented separately in [API: 
 Sprite sheets, font atlases, and raw indexed buffers share the same decoded-size policy as render configuration (`8192`
 pixels per side, `16,777,216` total pixels). Limits are enforced before canvas readback, CPU buffer retention, GPU
 texture creation, and software sprite loops. For an `<img>` element the limit applies to the decoded image size
-(`naturalWidth` x `naturalHeight`), not the size it is displayed at.
+(`naturalWidth` × `naturalHeight`), not the size it is displayed at.
 
 | Limit | Default | Applies to |
 | --- | --- | --- |
