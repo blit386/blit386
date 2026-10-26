@@ -8,7 +8,7 @@ import type { AudioBus } from '../core/IBTDemo';
  * Overflow counts are WebGPU-only; software reports zero overflow with comparable vertex totals.
  */
 export interface OverlayRendererDiagnostics {
-    /** Primitive pipeline overflow events this frame (dropped pixels or vertices). */
+    /** Primitive pipeline overflow events this frame (dropped pixels or rects). */
     readonly primitiveOverflowCount: number;
 
     /** Sprite pipeline overflow events this frame (dropped quads). */

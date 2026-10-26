@@ -79,7 +79,7 @@ export class PrimitivePipeline {
     /** Total primitive vertices across all flushed batches. */
     private totalVertices: number = 0;
 
-    /** Overflow events recorded this frame (dropped pixels or vertices). */
+    /** Overflow events recorded this frame (dropped quads). */
     private overflowCount: number = 0;
 
     /** Pre-allocated rect to avoid per-call allocations in hot paths. */
@@ -134,13 +134,7 @@ export class PrimitivePipeline {
         const x1 = rect.x + rect.width;
         const y1 = rect.y + rect.height;
 
-        this.addVertex(x0, y0, paletteIndex);
-        this.addVertex(x1, y0, paletteIndex);
-        this.addVertex(x0, y1, paletteIndex);
-
-        this.addVertex(x1, y0, paletteIndex);
-        this.addVertex(x1, y1, paletteIndex);
-        this.addVertex(x0, y1, paletteIndex);
+        this.addQuad(x0, y0, x1, y1, paletteIndex);
     }
 
     /**
@@ -164,17 +158,7 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawPixelXY(x: number, y: number, paletteIndex: number): void {
-        // Draw 1x1 rectangle (2 triangles = 6 vertices).
-        const x1 = x + 1;
-        const y1 = y + 1;
-
-        this.addVertex(x, y, paletteIndex);
-        this.addVertex(x1, y, paletteIndex);
-        this.addVertex(x, y1, paletteIndex);
-
-        this.addVertex(x1, y, paletteIndex);
-        this.addVertex(x1, y1, paletteIndex);
-        this.addVertex(x, y1, paletteIndex);
+        this.addQuad(x, y, x + 1, y + 1, paletteIndex);
     }
 
     /**
@@ -281,7 +265,7 @@ export class PrimitivePipeline {
      */
     encodePass(renderPass: GPURenderPassEncoder): void {
         // Flush any remaining vertices into the batch queue.
-        this.earlyFlush();
+        this.flushBatch();
 
         if (this.batches.length === 0 || this.totalVertices === 0) {
             return;
@@ -317,7 +301,7 @@ export class PrimitivePipeline {
     }
 
     /**
-     * Overflow events recorded since the last {@link reset} (dropped pixels or vertices).
+     * Overflow events recorded since the last {@link reset} (dropped quads).
      *
      * @returns Per-frame primitive overflow count.
      */
@@ -477,8 +461,10 @@ export class PrimitivePipeline {
         let cy = y0;
 
         while (true) {
-            // Draw pixel directly without creating Vector2i.
-            this.addPixelVertices(cx, cy, paletteIndex);
+            // A full buffer drops every further pixel, so stop walking the line.
+            if (!this.addQuad(cx, cy, cx + 1, cy + 1, paletteIndex)) {
+                break;
+            }
 
             if (cx === x1 && cy === y1) {
                 break;
@@ -497,69 +483,50 @@ export class PrimitivePipeline {
     }
 
     /**
-     * Adds vertices for a single pixel (6 vertices for 2 triangles).
-     * Internal helper used by the Bresenham path.
+     * Adds one quad (6 vertices, 2 triangles) as a unit, so a frame never holds half a quad.
+     * When the frame buffer cannot hold all 6 vertices the quad is dropped, counted once, and
+     * the first drop per frame warns.
      *
-     * @param x - X position.
-     * @param y - Y position.
-     * @param paletteIndex - Palette color index.
+     * @param x0 - Left edge in pixels.
+     * @param y0 - Top edge in pixels.
+     * @param x1 - Right edge in pixels.
+     * @param y1 - Bottom edge in pixels.
+     * @param paletteIndex - Palette color index (written as uint32).
+     * @returns `false` when the quad was dropped because the frame buffer is full.
      */
-    private addPixelVertices(x: number, y: number, paletteIndex: number): void {
-        // Ensure space for complete pixel (6 vertices) to prevent partial geometry.
+    private addQuad(x0: number, y0: number, x1: number, y1: number, paletteIndex: number): boolean {
         const index = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
-        const pixelValues = 6 * VALUES_PER_VERTEX; // 6 vertices * 3 values
 
-        if (index + pixelValues > this.vertexFloats.length) {
-            if (this.vertexCount > 0) {
-                this.earlyFlush();
+        if (index + 6 * VALUES_PER_VERTEX > this.vertexFloats.length) {
+            if (this.overflowCount === 0) {
+                console.warn('[PrimitivePipeline] Primitive buffer capacity exceeded for this frame, quad dropped');
             }
 
-            // Check again after flush - if still no space, buffer is exhausted.
-            if ((this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX + pixelValues > this.vertexFloats.length) {
-                console.warn('[PrimitivePipeline] Buffer exhausted, pixel dropped');
-                this.overflowCount++;
+            this.overflowCount++;
 
-                return;
-            }
+            return false;
         }
 
-        const x1 = x + 1;
-        const y1 = y + 1;
+        this.writeVertex(x0, y0, paletteIndex);
+        this.writeVertex(x1, y0, paletteIndex);
+        this.writeVertex(x0, y1, paletteIndex);
 
-        this.addVertex(x, y, paletteIndex);
-        this.addVertex(x1, y, paletteIndex);
-        this.addVertex(x, y1, paletteIndex);
+        this.writeVertex(x1, y0, paletteIndex);
+        this.writeVertex(x1, y1, paletteIndex);
+        this.writeVertex(x0, y1, paletteIndex);
 
-        this.addVertex(x1, y, paletteIndex);
-        this.addVertex(x1, y1, paletteIndex);
-        this.addVertex(x, y1, paletteIndex);
+        return true;
     }
 
     /**
-     * Adds a single vertex to the primitive batch.
-     * Flushes batching state first if the frame buffer has been filled.
+     * Writes a single vertex. Callers must have checked capacity (see {@link addQuad}).
      *
      * @param x - X position in pixels.
      * @param y - Y position in pixels.
      * @param paletteIndex - Palette color index (written as uint32).
      */
-    private addVertex(x: number, y: number, paletteIndex: number): void {
+    private writeVertex(x: number, y: number, paletteIndex: number): void {
         const index = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
-
-        if (index + VALUES_PER_VERTEX > this.vertexFloats.length) {
-            this.earlyFlush();
-
-            // Re-check after flush - if still no space, buffer is exhausted for this frame.
-            const newIndex = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
-
-            if (newIndex + VALUES_PER_VERTEX > this.vertexFloats.length) {
-                console.warn('[PrimitivePipeline] Primitive buffer capacity exceeded for this frame, vertex dropped');
-                this.overflowCount++;
-                return;
-            }
-
-            // Space available after flush, continue with vertex addition below.
-        }
 
         // Position stored as float32 via the float view.
         // eslint-disable-next-line security/detect-object-injection
@@ -574,10 +541,10 @@ export class PrimitivePipeline {
 
     /**
      * Records the current vertex batch and resets the vertex count.
-     * Used for early flush when the buffer is full mid-frame.
+     * Called from encodePass() to queue the pending vertices.
      * Does not write to GPU - encodePass() uploads all batches at once.
      */
-    private earlyFlush(): void {
+    private flushBatch(): void {
         if (this.vertexCount === 0) {
             return;
         }
