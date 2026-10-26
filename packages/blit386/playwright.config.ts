@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * Extra Chromium flags for GPU-less hosts (GitHub-hosted runners): run Vulkan, and so WebGPU and the compositor, on
+ * SwiftShader. Opt in with `VISUAL_SWIFTSHADER=1`; local runs keep the hardware adapter. Do not swap in
+ * `--use-webgpu-adapter=swiftshader`: it starts WebGPU too, but the canvas never reaches a screenshot (captures white).
+ */
+const SWIFTSHADER_ARGS = process.env.VISUAL_SWIFTSHADER
+    ? ['--use-vulkan=swiftshader', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+    : [];
+
 export default defineConfig({
     testDir: 'tests/visual',
     outputDir: 'test-results',
@@ -27,7 +36,12 @@ export default defineConfig({
                 channel: 'chrome',
                 launchOptions: {
                     // Hand-kept in step with CHROME_WEBGPU_ARGS in packages/demos/scripts/playwright-session.mjs.
-                    args: ['--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-gpu-sandbox'],
+                    args: [
+                        '--enable-unsafe-webgpu',
+                        '--enable-features=Vulkan',
+                        '--disable-gpu-sandbox',
+                        ...SWIFTSHADER_ARGS,
+                    ],
                 },
             },
         },

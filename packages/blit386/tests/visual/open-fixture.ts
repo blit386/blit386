@@ -13,6 +13,11 @@ const GPU_PRESENT_DELAY = (() => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 100;
 })();
 
+/** Set in CI so a WebGPU test fails instead of skipping when WebGPU did not start - a skip there would test nothing. */
+const REQUIRE_WEBGPU = !!process.env.VISUAL_REQUIRE_WEBGPU;
+
+let adapterLogged = false;
+
 /**
  * Opens a fixture, waits for the first frame, and returns the backend that actually started.
  *
@@ -40,9 +45,28 @@ export async function openFixture(page: Page, url: string): Promise<ActiveBacken
 
     await page.waitForTimeout(GPU_PRESENT_DELAY);
 
-    if (initFailed) {
-        return null;
+    const backend: ActiveBackend = initFailed
+        ? null
+        : await page.evaluate(() => (window as unknown as { __ACTIVE_BACKEND__: ActiveBackend }).__ACTIVE_BACKEND__);
+
+    if (REQUIRE_WEBGPU && !url.includes('backend=software')) {
+        if (backend !== 'webgpu') {
+            throw new Error(`VISUAL_REQUIRE_WEBGPU is set but ${url} started backend ${String(backend)}`);
+        }
+
+        if (!adapterLogged) {
+            adapterLogged = true;
+            const info = await page.evaluate(async () => {
+                const adapter = await navigator.gpu?.requestAdapter();
+
+                return adapter
+                    ? `${adapter.info.vendor} ${adapter.info.architecture} ${adapter.info.description}`
+                    : 'none';
+            });
+
+            console.log(`WebGPU active: adapter ${info}`);
+        }
     }
 
-    return page.evaluate(() => (window as unknown as { __ACTIVE_BACKEND__: ActiveBackend }).__ACTIVE_BACKEND__);
+    return backend;
 }
