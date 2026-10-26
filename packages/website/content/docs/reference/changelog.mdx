@@ -39,6 +39,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- After a hot reload that only edits methods, `onOrientationChange` and `onReducedMotionChange` now run the edited code,
+  and a handler added during the session fires. They used to keep calling the version from when the game started. See
+  [Hot reload](/docs/guides/hot-reload#tier-1-method-only-change).
 - `BT.drawLine` on a diagonal that is huge or mostly off-screen no longer walks every pixel. The software backend used
   to step all 2,000,000 pixels of a line like `(0, 0)` to `(2000000, 1)` and froze the frame; both backends now clip
   diagonals to the viewport first, so only the visible pixels cost anything. The visible pixels are identical to an

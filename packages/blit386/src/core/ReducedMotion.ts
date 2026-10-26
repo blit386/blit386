@@ -184,19 +184,6 @@ export class ReducedMotion {
     }
 
     /**
-     * Rebinds the demo callback for subsequent changes, without touching the live listener.
-     *
-     * Used when a hot reload swaps in a new demo instance ({@link BTAPI.hotReplaceDemo}) - the
-     * `change` listener installed by {@link attach} closes over `this.onChange`, so without
-     * this, preference changes would keep reaching the *previous* demo's bound handler.
-     *
-     * @param onChange - Replacement demo callback, or `null` to stop forwarding events.
-     */
-    public setOnChange(onChange: ChangeHandler | null): void {
-        this.onChange = onChange;
-    }
-
-    /**
      * Removes the `change` listener.
      *
      * Safe to call repeatedly or when {@link attach} was never called (for example because
