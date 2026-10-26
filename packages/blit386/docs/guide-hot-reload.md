@@ -40,7 +40,10 @@ configurable, and there is no way to force a different tier from demo code.
 
 If the constructor, class field initializers, and `init()` are all unchanged (compared by source text), the running
 instance's prototype is swapped onto the new class. Every field on the instance is left exactly as it was - `init()`
-does not re-run, music keeps playing, and the game loop keeps ticking without a hitch.
+does not re-run, music keeps playing, and the game loop keeps ticking without a hitch. Edits to an existing
+`onOrientationChange` or `onReducedMotionChange` take effect on the next event, since the engine looks the hook up on
+the instance each time one fires. Adding one of these hooks usually changes the class source enough to take Tier 2
+instead; the new hook fires either way.
 
 ```ts twoslash
 import { BT, type IBTDemo, Rect2i, Vector2i } from 'blit386';

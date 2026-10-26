@@ -564,11 +564,8 @@ export class BTAPI {
      * loop while this candidate's `init()` runs. A failed hot reload must leave the running
      * engine untouched.
      *
-     * On success, also rebinds the orientation and reduced-motion subsystems' change
-     * callbacks to the new instance via {@link Orientation.setOnChange} and
-     * {@link ReducedMotion.setOnChange} - the listeners installed at {@link init} close over
-     * the *previous* demo's bound `onOrientationChange` / `onReducedMotionChange`, so without
-     * this, those events would keep reaching stale code after the swap.
+     * The orientation and reduced-motion listeners need no rebinding: they forward through
+     * {@link demo} at call time, so they reach the new instance as soon as it is installed.
      *
      * @param newDemo - Freshly constructed candidate demo instance.
      * @returns `true` when `newDemo.init()` succeeds and {@link demo} was swapped to it.
@@ -2192,9 +2189,12 @@ export class BTAPI {
 
         this.orientation?.detach();
         this.orientation = new Orientation();
-        this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
+        // Forward through this.demo at call time so a method-only hot swap reaches the new handler.
+        this.orientation.attach(hwSettings.preferredOrientation ?? 'any', (type) =>
+            this.demo?.onOrientationChange?.(type),
+        );
 
-        this.attachReducedMotion(demo);
+        this.attachReducedMotion();
 
         console.log('[BT] Initialization complete');
 
@@ -2584,19 +2584,18 @@ export class BTAPI {
     }
 
     /**
-     * Attaches the reduced-motion preference listener, binding the demo callback.
+     * Attaches the reduced-motion preference listener, forwarding to the active demo's
+     * optional {@link IBTDemo.onReducedMotionChange} looked up at call time, so hot swaps of
+     * either tier reach the current handler.
      *
      * Extracted from {@link init} to keep that method's cyclomatic complexity within the
      * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
      * and {@link attachAudioSubsystem}.
-     *
-     * @param demo - Active demo instance whose optional {@link IBTDemo.onReducedMotionChange}
-     *   hook is bound.
      */
-    private attachReducedMotion(demo: IBTDemo): void {
+    private attachReducedMotion(): void {
         this.reducedMotion?.detach();
         this.reducedMotion = new ReducedMotion();
-        this.reducedMotion.attach(demo.onReducedMotionChange?.bind(demo) ?? null);
+        this.reducedMotion.attach((prefersReduced) => this.demo?.onReducedMotionChange?.(prefersReduced));
     }
 
     /**
@@ -3367,8 +3366,6 @@ export class BTAPI {
      */
     private installDemo(demo: IBTDemo): void {
         this.demo = demo;
-        this.orientation?.setOnChange(demo.onOrientationChange?.bind(demo) ?? null);
-        this.reducedMotion?.setOnChange(demo.onReducedMotionChange?.bind(demo) ?? null);
     }
 
     /**

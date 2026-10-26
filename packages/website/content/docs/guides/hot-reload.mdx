@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Hot Reload"
 description: "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-10-26T19:47:31+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-hot-reload.md"
 ---
 
@@ -37,7 +37,10 @@ configurable, and there is no way to force a different tier from demo code.
 
 If the constructor, class field initializers, and `init()` are all unchanged (compared by source text), the running
 instance's prototype is swapped onto the new class. Every field on the instance is left exactly as it was - `init()`
-does not re-run, music keeps playing, and the game loop keeps ticking without a hitch.
+does not re-run, music keeps playing, and the game loop keeps ticking without a hitch. Edits to an existing
+`onOrientationChange` or `onReducedMotionChange` take effect on the next event, since the engine looks the hook up on
+the instance each time one fires. Adding one of these hooks usually changes the class source enough to take Tier 2
+instead; the new hook fires either way.
 
 ```ts twoslash
 import { BT, type IBTDemo, Rect2i, Vector2i } from 'blit386';

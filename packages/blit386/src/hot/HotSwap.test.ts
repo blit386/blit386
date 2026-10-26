@@ -326,6 +326,89 @@ describe('hotSwapDemo', () => {
         expect(BTAPI.instance.getDemo()).toBe(oldDemo); // same instance: Tier 1 methods-only swap, not a reload
     });
 
+    it('routes orientation and reduced-motion events to handlers edited or added by a methods-only swap (BT-626)', async () => {
+        stubOffscreenCanvas();
+        vi.stubGlobal('location', { search: '?backend=software' });
+        vi.stubGlobal('requestAnimationFrame', vi.fn());
+
+        const orientationTarget = new EventTarget();
+        const orientation = {
+            type: 'landscape-primary',
+            addEventListener: (event: string, listener: EventListener) =>
+                orientationTarget.addEventListener(event, listener),
+            removeEventListener: (event: string, listener: EventListener) =>
+                orientationTarget.removeEventListener(event, listener),
+        };
+        const motionTarget = new EventTarget();
+        const mediaQueryList = {
+            matches: false,
+            addEventListener: (event: string, listener: EventListener) =>
+                motionTarget.addEventListener(event, listener),
+            removeEventListener: (event: string, listener: EventListener) =>
+                motionTarget.removeEventListener(event, listener),
+        };
+        vi.stubGlobal('screen', { orientation });
+        vi.stubGlobal(
+            'matchMedia',
+            vi.fn(() => mediaQueryList),
+        );
+
+        const oldOnOrientationChange = vi.fn();
+        const newOnOrientationChange = vi.fn();
+        const newOnReducedMotionChange = vi.fn();
+
+        // placeholder() keeps the member count equal to NewClass: an added method leaves extra
+        // whitespace in the class source, which changes initFingerprint and forces a re-init.
+        class OriginalClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+            configure() {
+                return { isSplashEnabled: false };
+            }
+            onOrientationChange(type: string) {
+                oldOnOrientationChange(type);
+            }
+            placeholder() {}
+        }
+
+        const oldDemo = new OriginalClass();
+        await BTAPI.instance.init(oldDemo, makeMock2DCanvas());
+
+        // Same init()/configure(), so hotSwapDemo takes the methods-only tier.
+        class NewClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+            configure() {
+                return { isSplashEnabled: false };
+            }
+            onOrientationChange(type: string) {
+                newOnOrientationChange(type);
+            }
+            onReducedMotionChange(prefersReduced: boolean) {
+                newOnReducedMotionChange(prefersReduced);
+            }
+        }
+
+        const result = await hotSwapDemo(NewClass as unknown as DemoConstructor);
+
+        expect(result).toBe(true);
+        expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+
+        orientation.type = 'portrait-primary';
+        orientationTarget.dispatchEvent(new Event('change'));
+        motionTarget.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
+
+        expect(newOnOrientationChange).toHaveBeenCalledWith('portrait-primary');
+        expect(oldOnOrientationChange).not.toHaveBeenCalled();
+        expect(newOnReducedMotionChange).toHaveBeenCalledWith(true);
+    });
+
     it('aborts without swapping when configure() throws, keeping the previous demo running', async () => {
         const oldDemo = makeDemo();
         await BTAPI.instance.init(oldDemo, makeMockCanvas());

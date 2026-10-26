@@ -185,21 +185,6 @@ describe('ReducedMotion instance', () => {
         expect(onChange).not.toHaveBeenCalled();
     });
 
-    it('rebinds the callback via setOnChange without touching the listener', () => {
-        const { mql } = installMockMatchMedia();
-        const oldOnChange = vi.fn();
-        const newOnChange = vi.fn();
-        const reducedMotion = new ReducedMotion();
-
-        reducedMotion.attach(oldOnChange);
-        reducedMotion.setOnChange(newOnChange);
-
-        mql.dispatchEvent(Object.assign(new Event('change'), { matches: true }));
-
-        expect(newOnChange).toHaveBeenCalledWith(true);
-        expect(oldOnChange).not.toHaveBeenCalled();
-    });
-
     it('resolves a URL override over a contradicting platform change, suppressing the callback', () => {
         withSearch('?noreducedmotion', () => {
             const { mql } = installMockMatchMedia(false);
