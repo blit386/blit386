@@ -66,7 +66,7 @@ export class PrimitivePipeline {
     /** Camera offset applied to all drawing operations. */
     private cameraOffset: Vector2i = Vector2i.zero();
 
-    /** Primitive batches recorded after each early flush. */
+    /** Primitive batches recorded by `encodePass()`. */
     private readonly batches: Array<{ vertexStart: number; vertexCount: number }> = [];
 
     /**
