@@ -102,10 +102,10 @@ pass a WebGPU baseline by accident.
 Only the backend-parity tests - the ones named "identically on WebGPU and software", which render a fixture on both
 backends and compare the two screenshots byte for byte, with no stored baseline. The `visual-parity` job in
 `.github/workflows/ci.yml` runs them (`pnpm run test:visual:parity`, with retries off since the comparison is exact) on
-every PR and push to `main` that touches `src/`, `tests/visual/`, `playwright.config.ts`, or the shared CI and workspace
-files (`.github/`, the lockfile, and the rest of the `shared` filter). GitHub-hosted runners have no GPU, so the job
-sets `VISUAL_SWIFTSHADER=1` (adds Chrome's SwiftShader WebGPU adapter flags in `playwright.config.ts`) and
-`VISUAL_REQUIRE_WEBGPU=1` (makes `openFixture` throw instead of letting a WebGPU test skip, and log the adapter as
+every PR and push to `main` that touches `src/`, `tests/visual/`, `playwright.config.ts`, `package.json`, or the shared
+CI and workspace files (`.github/`, the lockfile, and the rest of the `shared` filter). GitHub-hosted runners have no
+GPU, so the job sets `VISUAL_SWIFTSHADER=1` (adds Chrome's SwiftShader WebGPU adapter flags in `playwright.config.ts`)
+and `VISUAL_REQUIRE_WEBGPU=1` (makes `openFixture` throw instead of letting a WebGPU test skip, and log the adapter as
 `WebGPU active: adapter ...`). The baseline-screenshot specs never run in CI: their PNGs are machine-specific, so run
 `pnpm run test:visual` locally before merging a renderer change. Set the same two variables locally to reproduce the CI
 run.

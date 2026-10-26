@@ -85,6 +85,8 @@ jobs:
               - 'packages/blit386/src/**'
               - 'packages/blit386/tests/visual/**'
               - 'packages/blit386/playwright.config.ts'
+              # Holds the test:visual:parity script the job runs.
+              - 'packages/blit386/package.json'
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
             # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
             # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
