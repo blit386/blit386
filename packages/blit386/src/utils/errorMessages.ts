@@ -830,7 +830,7 @@ export function audioClipSynthUnitRangeFieldError(field: string, value: number):
 export function audioClipSynthInvalidSeedError(seed: unknown): string {
     return (
         `AudioClip.synth() needs a finite number for seed (got ${String(seed)}). ` +
-        'Set seed to any number; the same seed always renders the same sound.'
+        'Set seed to a finite number; the same seed always renders the same sound.'
     );
 }
 
