@@ -111,4 +111,27 @@ describe('reportDrift', () => {
 
         assert.ok(!calls.some((call) => call.query.includes('AddComment')), 'should not repost an identical comment');
     });
+
+    it('still comments when the latest comment differs from the report', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): kit docs need review...',
+                comments: { nodes: [{ body: 'an older report' }] },
+            },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(
+            calls.some((call) => call.query.includes('AddComment')),
+            'expected an AddComment mutation',
+        );
+    });
 });

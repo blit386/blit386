@@ -63,7 +63,8 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     const existing = await findTrackingIssue(apiKey, { teamId: LINEAR_TEAM_ID, titlePrefix: TRACKING_ISSUE_TITLE });
 
     if (existing) {
-        if (existing.comments?.nodes[0]?.body === body) {
+        // Trimmed: Linear may add or strip trailing whitespace on a stored comment.
+        if (existing.comments?.nodes[0]?.body.trim() === body.trim()) {
             log(`Tracking issue ${existing.identifier} already has this drift report; not commenting again.`);
             return;
         }
