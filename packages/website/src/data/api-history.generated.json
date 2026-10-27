@@ -1860,6 +1860,10 @@
         {
           "version": "1.5.0",
           "note": "Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Returns exactly 0 and 1 for `t = 0` and `t = 1` on every curve (back and bounce used to miss by ~1e-16)."
         }
       ],
       "deprecated": null,

@@ -197,6 +197,7 @@ const CURVES: Record<EasingFunction, Curve> = {
  *
  * @since 1.0.3
  * @changed 1.5.0 Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families.
+ * @changed 1.8.1 Returns exactly 0 and 1 for `t = 0` and `t = 1` on every curve (back and bounce used to miss by ~1e-16).
  * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
  * @param easing - Easing curve to apply.
  * @returns Eased value. Guaranteed to return 0 for `t = 0` and 1 for `t = 1`.
@@ -207,6 +208,11 @@ export function applyEasing(t: number, easing: EasingFunction): number {
 
     if (curve === undefined) {
         throw new Error(`Unsupported easing: ${easing}`);
+    }
+
+    // Overshooting curves (back, bounce) miss the endpoints by ~1e-16, so pin them.
+    if (t === 0 || t === 1) {
+        return t;
     }
 
     return curve(t);

@@ -531,6 +531,42 @@ describe('Rect2i', () => {
         });
     });
 
+    describe('negative coordinates', () => {
+        it('should floor centerX and centerY so a rect center moves with the rect across zero', () => {
+            const r = new Rect2i(-5, -5, 3, 3);
+
+            expect(r.centerX).toBe(-4);
+            expect(r.centerY).toBe(-4);
+            expect(r.center.x).toBe(-4);
+            expect(r.centerTo(new Vector2i()).y).toBe(-4);
+        });
+
+        it('should not wrap the center near the 32-bit coordinate limit', () => {
+            const r = new Rect2i(2_000_000_000, 2_000_000_000, 3, 3);
+
+            expect(r.centerX).toBe(2_000_000_001);
+            expect(r.centerY).toBe(2_000_000_001);
+            expect(r.center.x).toBe(2_000_000_001);
+            expect(r.centerTo(new Vector2i()).y).toBe(2_000_000_001);
+        });
+
+        it('should give the same overlap depth left of zero as right of zero', () => {
+            const left = new Rect2i(-4, 0, 3, 1).intersectionDepth(new Rect2i(-3, 0, 2, 1));
+            const right = new Rect2i(1, 0, 3, 1).intersectionDepth(new Rect2i(2, 0, 2, 1));
+
+            expect(right.x).toBe(2);
+            expect(left.x).toBe(2);
+        });
+
+        it('should give the same overlap depth from intersectionDepthTo on both axes', () => {
+            const out = new Vector2i();
+
+            new Rect2i(0, -4, 1, 3).intersectionDepthTo(new Rect2i(0, -3, 1, 2), out);
+
+            expect(out.y).toBe(2);
+        });
+    });
+
     describe('intersectionDepthTo', () => {
         it('should write depth to the output vector', () => {
             const a = new Rect2i(0, 0, 100, 100);

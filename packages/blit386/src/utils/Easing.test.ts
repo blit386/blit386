@@ -56,6 +56,15 @@ const FAMILY_MIDPOINTS: { easing: EasingFunction; expected: number }[] = [
 ];
 
 describe('applyEasing', () => {
+    describe('exact endpoints', () => {
+        for (const easing of ALL_EASINGS) {
+            it(`${easing}: returns exactly 0 and 1 at the ends`, () => {
+                expect(applyEasing(0, easing)).toBe(0);
+                expect(applyEasing(1, easing)).toBe(1);
+            });
+        }
+    });
+
     describe('boundary values', () => {
         for (const easing of ALL_EASINGS) {
             it(`${easing}: f(0) === 0`, () => {
