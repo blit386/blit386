@@ -160,6 +160,11 @@ per-package `--filter` dispatch only looks at files under `packages/*` and would
 entirely. `bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails
 both the push and CI, on top of the existing per-commit gates below.
 
+Before any of that, `.husky/pre-push` scans the commits being pushed and rejects a placeholder identity (see
+`.husky/check-author.sh`) on either the author or the committer, so a rebase or cherry-pick under a sandbox `user.*`
+override is caught too. For a new remote branch the range is `<sha> --not --remotes` (only commits no remote has yet),
+not the whole history.
+
 The following are not part of that pre-push gate - run them directly when auditing. All five do run in CI, so a
 regression they would catch surfaces on the PR rather than at push time:
 
