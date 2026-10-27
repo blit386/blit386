@@ -822,6 +822,19 @@ export function audioClipSynthUnitRangeFieldError(field: string, value: number):
 }
 
 /**
+ * Returns the error message for a missing or non-finite synth seed.
+ *
+ * @param seed - Invalid seed value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthInvalidSeedError(seed: unknown): string {
+    return (
+        `AudioClip.synth() needs a finite number for seed (got ${String(seed)}). ` +
+        'Set seed to any number; the same seed always renders the same sound.'
+    );
+}
+
+/**
  * Returns the error message for a `SynthPitchSweep.toFrequency` that is not a positive number.
  *
  * @param toFrequency - Invalid target frequency value that was supplied.

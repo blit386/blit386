@@ -140,3 +140,15 @@ describe('validateSynthParams', () => {
         expect(() => validateSynthParams(buildParams({ dutyCycle: -0.5 }), 48000)).toThrow(/dutyCycle/);
     });
 });
+
+describe('validateSynthParams seed', () => {
+    it('should throw for a missing seed instead of time-seeding the noise', () => {
+        const params = { waveform: 'noise', frequency: 440, duration: 1 } as unknown as SynthParams;
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/seed/);
+    });
+
+    it('should throw for a non-finite seed', () => {
+        expect(() => validateSynthParams(buildParams({ seed: Number.NaN }), 48000)).toThrow(/seed/);
+    });
+});
