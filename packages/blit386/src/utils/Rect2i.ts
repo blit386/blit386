@@ -60,19 +60,23 @@ export class Rect2i {
     }
 
     /**
-     * Gets the truncated horizontal center coordinate.
+     * Gets the horizontal center coordinate, rounded down (toward negative infinity).
+     *
+     * @changed 1.8.1 Rounds down instead of toward zero, so the center of a rectangle left of zero moves with it.
      * @returns Center X coordinate.
      */
     get centerX(): number {
-        return (this.x + this.width / 2) | 0;
+        return (2 * this.x + this.width) >> 1;
     }
 
     /**
-     * Gets the truncated vertical center coordinate.
+     * Gets the vertical center coordinate, rounded down (toward negative infinity).
+     *
+     * @changed 1.8.1 Rounds down instead of toward zero, so the center of a rectangle above zero moves with it.
      * @returns Center Y coordinate.
      */
     get centerY(): number {
-        return (this.y + this.height / 2) | 0;
+        return (2 * this.y + this.height) >> 1;
     }
 
     /**
@@ -92,11 +96,13 @@ export class Rect2i {
     }
 
     /**
-     * Gets the truncated center point as a new vector.
+     * Gets the center point as a new vector, each axis rounded down (toward negative infinity).
+     *
+     * @changed 1.8.1 Rounds down instead of toward zero for negative coordinates.
      * @returns Vector2i at the rectangle center.
      */
     get center(): Vector2i {
-        return Vector2i.fromXYUnchecked((this.x + this.width / 2) | 0, (this.y + this.height / 2) | 0);
+        return Vector2i.fromXYUnchecked((2 * this.x + this.width) >> 1, (2 * this.y + this.height) >> 1);
     }
 
     /**
@@ -305,8 +311,8 @@ export class Rect2i {
      * @returns The out vector for chaining.
      */
     centerTo(out: Vector2i): Vector2i {
-        out.x = (this.x + this.width / 2) | 0;
-        out.y = (this.y + this.height / 2) | 0;
+        out.x = (2 * this.x + this.width) >> 1;
+        out.y = (2 * this.y + this.height) >> 1;
 
         return out;
     }
@@ -482,14 +488,15 @@ export class Rect2i {
      * @returns Vector with overlap depth in X and Y axes.
      */
     intersectionDepth(other: Rect2i): Vector2i {
-        // Inline center calculation to avoid allocations.
-        const centerAX = (this.x + this.width / 2) | 0;
-        const centerBX = (other.x + other.width / 2) | 0;
-        const centerAY = (this.y + this.height / 2) | 0;
-        const centerBY = (other.y + other.height / 2) | 0;
+        // Compare doubled centers (2x + w) so odd sizes need no rounding.
+        const doubleCenterAX = 2 * this.x + this.width;
+        const doubleCenterBX = 2 * other.x + other.width;
+        const doubleCenterAY = 2 * this.y + this.height;
+        const doubleCenterBY = 2 * other.y + other.height;
 
-        const xDepth = centerAX < centerBX ? this.x + this.width - other.x : other.x + other.width - this.x;
-        const yDepth = centerAY < centerBY ? this.y + this.height - other.y : other.y + other.height - this.y;
+        const xDepth = doubleCenterAX < doubleCenterBX ? this.x + this.width - other.x : other.x + other.width - this.x;
+        const yDepth =
+            doubleCenterAY < doubleCenterBY ? this.y + this.height - other.y : other.y + other.height - this.y;
 
         // Integer arithmetic results, use unchecked.
         return Vector2i.fromXYUnchecked(xDepth, yDepth);
@@ -508,14 +515,14 @@ export class Rect2i {
      * @returns The out vector for chaining.
      */
     intersectionDepthTo(other: Rect2i, out: Vector2i): Vector2i {
-        // Inline center calculation to avoid allocations.
-        const centerAX = (this.x + this.width / 2) | 0;
-        const centerBX = (other.x + other.width / 2) | 0;
-        const centerAY = (this.y + this.height / 2) | 0;
-        const centerBY = (other.y + other.height / 2) | 0;
+        // Compare doubled centers (2x + w) so odd sizes need no rounding.
+        const doubleCenterAX = 2 * this.x + this.width;
+        const doubleCenterBX = 2 * other.x + other.width;
+        const doubleCenterAY = 2 * this.y + this.height;
+        const doubleCenterBY = 2 * other.y + other.height;
 
-        out.x = centerAX < centerBX ? this.x + this.width - other.x : other.x + other.width - this.x;
-        out.y = centerAY < centerBY ? this.y + this.height - other.y : other.y + other.height - this.y;
+        out.x = doubleCenterAX < doubleCenterBX ? this.x + this.width - other.x : other.x + other.width - this.x;
+        out.y = doubleCenterAY < doubleCenterBY ? this.y + this.height - other.y : other.y + other.height - this.y;
 
         return out;
     }

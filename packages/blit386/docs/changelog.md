@@ -23,6 +23,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- Behavior change: `Rect2i` centers round down instead of toward zero. `centerX`, `centerY`, `center`, and `centerTo`
+  gave `-3` for a rectangle at `x = -5` with `width = 3` where the true middle pixel is `-4`, so a center did not move
+  with its rectangle across zero; they now round down. Results are unchanged for non-negative rectangles, and differ
+  only for odd sizes at negative coordinates. `intersectionDepth` and `intersectionDepthTo` now compare doubled centers
+  (`2x + w`) without rounding, which fixes a wrong depth for overlapping rectangles left of zero. `applyEasing` (and so
+  `interpolate`) now returns exactly `0` and `1` at `t = 0` and `t = 1` for every curve; `back-in`, `back-out`, and the
+  bounce curves used to miss by about 1e-16.
 - Behavior change: seeded coordinate hashes and noise give a new world for every non-zero seed. `hash1i` / `hash2i` /
   `hash3i` used to fold the seed in as an XOR on `x`, so changing the seed only shifted the same world sideways -
   `new ValueNoise(1)` was seed `0` with neighboring columns swapped, and a game seeding by level number got nearly the

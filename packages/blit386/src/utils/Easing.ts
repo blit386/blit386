@@ -21,6 +21,7 @@ const HALF_PI = PI / 2;
  *
  * @since 1.0.3
  * @changed 1.5.0 Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families.
+ * @changed 1.8.1 Returns exactly 0 and 1 for `t = 0` and `t = 1` on every curve (back and bounce used to miss by ~1e-16).
  */
 export type EasingFunction =
     | 'linear'
@@ -207,6 +208,11 @@ export function applyEasing(t: number, easing: EasingFunction): number {
 
     if (curve === undefined) {
         throw new Error(`Unsupported easing: ${easing}`);
+    }
+
+    // Overshooting curves (back, bounce) miss the endpoints by ~1e-16, so pin them.
+    if (t === 0 || t === 1) {
+        return t;
     }
 
     return curve(t);
