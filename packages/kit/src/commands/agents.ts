@@ -43,6 +43,7 @@ import { detectPackageManager, findProjectRoot, type PackageManager } from '../e
 import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-safety';
 import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
+import { readManifest } from '../read-manifest';
 import { ui } from '../messages';
 import {
     AGENT_KINDS,
@@ -275,36 +276,13 @@ const CONFIG_MERGES: Readonly<Record<string, ConfigMerge>> = {
  * caller controls where it goes.
  */
 export function checkSyncDrift(root: string, out: (line: string) => void): number {
-    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+    const result = readManifest(root, out, 'enable sync support');
 
-    if (hasSymlinkedSegment(manifestPath, root)) {
-        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read.'));
-        return 1;
+    if (!result.ok) {
+        return result.exitCode;
     }
 
-    if (!existsSync(manifestPath)) {
-        out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
-        return 0;
-    }
-
-    let manifest: ReadBlitManifest;
-
-    try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
-    } catch {
-        out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
-        return 1;
-    }
-
-    if (!Array.isArray(manifest.files)) {
-        out(
-            ui.error(
-                '.blit/manifest.json is missing the files array. The manifest may be damaged or from an older version.',
-            ),
-        );
-        return 1;
-    }
+    const manifest = result.manifest;
 
     const tracked = manifest.files.filter((e) => isKitManaged(e.class));
     const missing: string[] = [];
@@ -498,32 +476,13 @@ export function runFullSync(
     out: (line: string) => void,
     options: { force: boolean; forcePaths: string[] } = { force: false, forcePaths: [] },
 ): number {
-    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+    const result = readManifest(root, out, 'enable sync support');
 
-    if (hasSymlinkedSegment(manifestPath, root)) {
-        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
-        return 1;
+    if (!result.ok) {
+        return result.exitCode;
     }
 
-    if (!existsSync(manifestPath)) {
-        out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
-        return 0;
-    }
-
-    let manifest: ReadBlitManifest;
-
-    try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
-    } catch {
-        out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
-        return 1;
-    }
-
-    if (!Array.isArray(manifest.files)) {
-        out(ui.error('.blit/manifest.json is missing the files array. The manifest may be damaged.'));
-        return 1;
-    }
+    const manifest = result.manifest;
 
     const regenerated = regenerate(manifest, root);
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
@@ -749,7 +708,7 @@ export function runFullSync(
     if (manifest.vars !== undefined) {
         refreshed.vars = manifest.vars;
     }
-    writeFileSync(manifestPath, `${JSON.stringify(refreshed, null, 2)}\n`);
+    writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
 
     printSummary(out, tally);
 
@@ -810,44 +769,6 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
 /** Type guard: is `name` an assistant `add` knows how to set up? */
 function isAddableAgent(name: string): name is AgentKind {
     return (AGENT_KINDS as readonly string[]).includes(name);
-}
-
-/** Result of reading the manifest: either the parsed manifest, or a friendly failure with an exit code. */
-type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; exitCode: number };
-
-/**
- * Read and validate `.blit/manifest.json`. Prints a Tier-1 line on failure.
- * A missing manifest is informational (exit 0); a damaged one is an error (exit 1).
- */
-function readManifest(root: string, out: (line: string) => void): ManifestResult {
-    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
-
-    if (hasSymlinkedSegment(manifestPath, root)) {
-        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
-        return { ok: false, exitCode: 1 };
-    }
-
-    if (!existsSync(manifestPath)) {
-        out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit386` to enable agent setup.'));
-        return { ok: false, exitCode: 0 };
-    }
-
-    let manifest: ReadBlitManifest;
-
-    try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
-    } catch {
-        out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
-        return { ok: false, exitCode: 1 };
-    }
-
-    if (!Array.isArray(manifest.files)) {
-        out(ui.error('.blit/manifest.json is missing the files array. The manifest may be damaged.'));
-        return { ok: false, exitCode: 1 };
-    }
-
-    return { ok: true, manifest };
 }
 
 /**

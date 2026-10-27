@@ -22,31 +22,16 @@ import { join } from 'node:path';
 import { findProjectRoot } from '../env';
 import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-safety';
 import { kitRoot } from '../kit-root';
-import { BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest } from '../manifest';
+import { BLIT_DIR, MANIFEST_FILE } from '../manifest';
 import { ui } from '../messages';
 import { confirm } from '../prompt';
+import { readManifest } from '../read-manifest';
 
 /** Project-relative path of the game source file in a TypeScript scaffold. */
 const GAME_FILE_TS = 'src/game.ts';
 
 /** Project-relative path of the game source file in a JavaScript scaffold. */
 const GAME_FILE_JS = 'src/game.js';
-
-/** Read `.blit/manifest.json` if present and undamaged; a missing or unreadable manifest is not fatal. */
-function tryReadManifest(root: string): ReadBlitManifest | null {
-    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
-
-    if (hasSymlinkedSegment(manifestPath, root) || !existsSync(manifestPath)) {
-        return null;
-    }
-
-    try {
-        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
-        return Array.isArray(manifest.files) ? manifest : null;
-    } catch {
-        return null;
-    }
-}
 
 export async function runClean(args: string[]): Promise<void> {
     const out = (line: string): void => {
@@ -99,7 +84,9 @@ export async function runClean(args: string[]): Promise<void> {
         return;
     }
 
-    const manifest = tryReadManifest(root);
+    // A missing or damaged manifest only means there is no hash to compare, so its messages are dropped.
+    const result = readManifest(root, () => {});
+    const manifest = result.ok ? result.manifest : null;
     const entry = manifest?.files.find((file) => file.path === relPath);
     const isModified = entry !== undefined && entry.sha256 !== sha256(absPath);
 

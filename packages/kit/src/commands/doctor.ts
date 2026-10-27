@@ -1,6 +1,6 @@
 /** `blit doctor` - a friendly checkup of the things a BLIT386 game needs. */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import {
     compareVersions,
@@ -15,36 +15,21 @@ import {
     readProject,
     satisfiesCaretRange,
 } from '../env';
-import { hasSymlinkedSegment } from '../fs-safety';
-import { BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest } from '../manifest';
 import { NO_GIT_NAG, ui } from '../messages';
 import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
+import { readManifest } from '../read-manifest';
 import { checkSyncDrift } from './agents';
 
 /** Drift never sees a file the manifest did not track. */
 function checkDocsMcp(root: string, out: (line: string) => void): void {
-    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+    // checkSyncDrift already reports a missing or damaged manifest, so this check stays quiet about it.
+    const result = readManifest(root, () => {});
 
-    if (hasSymlinkedSegment(manifestPath, root) || !existsSync(manifestPath)) {
+    if (!result.ok) {
         return;
     }
 
-    let manifest: ReadBlitManifest;
-
-    try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
-    } catch {
-        return;
-    }
-
-    if (typeof manifest !== 'object' || manifest === null || !Array.isArray(manifest.files)) {
-        return;
-    }
-
-    // JSON can carry entries with no string path. hasAgentFiles normalizes that path, so skip them.
-    const files = manifest.files.filter(
-        (entry) => typeof entry === 'object' && entry !== null && typeof entry.path === 'string',
-    );
+    const files = result.manifest.files;
 
     const missing = new Map<string, string[]>();
 
