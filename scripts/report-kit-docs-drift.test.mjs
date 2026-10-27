@@ -91,4 +91,24 @@ describe('reportDrift', () => {
         assert.equal(commentCall.variables.issueId, 'iss-1');
         assert.ok(!calls.some((call) => call.query.includes('CreateIssue')), 'should not create a duplicate issue');
     });
+
+    it('skips the comment when the latest comment already matches the report', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): kit docs need review...',
+                comments: { nodes: [{ body: formatDriftBody(REPORT) }] },
+            },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(!calls.some((call) => call.query.includes('AddComment')), 'should not repost an identical comment');
+    });
 });

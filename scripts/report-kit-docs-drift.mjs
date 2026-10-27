@@ -63,6 +63,11 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     const existing = await findTrackingIssue(apiKey, { teamId: LINEAR_TEAM_ID, titlePrefix: TRACKING_ISSUE_TITLE });
 
     if (existing) {
+        if (existing.comments?.nodes[0]?.body === body) {
+            log(`Tracking issue ${existing.identifier} already has this drift report; not commenting again.`);
+            return;
+        }
+
         await addComment(apiKey, { issueId: existing.id, body });
         log(`Updated existing tracking issue ${existing.identifier} with the latest drift report.`);
         return;
