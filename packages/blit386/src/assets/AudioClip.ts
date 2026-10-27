@@ -176,6 +176,7 @@ export class AudioClip {
      * fresh, independent `AudioBuffer` on every call. See {@link SynthParams} for the full
      * parameter set.
      *
+     * @changed 1.8.1 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed.
      * @param params - Deterministic synthesis parameters.
      * @returns A new clip wrapping the synthesized buffer.
      * @throws Error if `params` fails validation, or the engine has not registered a decode
