@@ -91,4 +91,91 @@ describe('reportDrift', () => {
         assert.equal(commentCall.variables.issueId, 'iss-1');
         assert.ok(!calls.some((call) => call.query.includes('CreateIssue')), 'should not create a duplicate issue');
     });
+
+    it('skips the comment when the latest comment already matches the report', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): kit docs need review...',
+                comments: { nodes: [{ body: formatDriftBody(REPORT), createdAt: '2026-10-20T00:00:00Z' }] },
+            },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(!calls.some((call) => call.query.includes('AddComment')), 'should not repost an identical comment');
+    });
+
+    it('still comments when the latest comment differs from the report', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): kit docs need review...',
+                comments: { nodes: [{ body: 'an older report', createdAt: '2026-10-20T00:00:00Z' }] },
+            },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(
+            calls.some((call) => call.query.includes('AddComment')),
+            'expected an AddComment mutation',
+        );
+    });
+
+    it('compares against the newest comment whatever order Linear returns them in', async () => {
+        const stale = { body: formatDriftBody(REPORT), createdAt: '2026-10-01T00:00:00Z' };
+        const newest = { body: 'a newer, different report', createdAt: '2026-10-20T00:00:00Z' };
+
+        for (const nodes of [
+            [stale, newest],
+            [newest, stale],
+        ]) {
+            const { fetchImpl, calls } = makeLinearFetch({
+                existingIssue: { id: 'iss-1', identifier: 'BT-500', title: 'docs(kit): ...', comments: { nodes } },
+            });
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = fetchImpl;
+            try {
+                await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+            } finally {
+                globalThis.fetch = originalFetch;
+            }
+
+            assert.ok(
+                calls.some((call) => call.query.includes('AddComment')),
+                'newest differs, so comment',
+            );
+        }
+    });
+
+    it('comments when the tracking issue has no comments yet', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: { id: 'iss-1', identifier: 'BT-500', title: 'docs(kit): ...', comments: { nodes: [] } },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(
+            calls.some((call) => call.query.includes('AddComment')),
+            'expected an AddComment mutation',
+        );
+    });
 });

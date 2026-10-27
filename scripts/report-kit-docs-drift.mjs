@@ -63,6 +63,15 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     const existing = await findTrackingIssue(apiKey, { teamId: LINEAR_TEAM_ID, titlePrefix: TRACKING_ISSUE_TITLE });
 
     if (existing) {
+        // Newest by createdAt, not by position: the connection's order is not something to rely on.
+        // Trimmed: Linear may add or strip trailing whitespace on a stored comment.
+        const latest = existing.comments?.nodes.reduce((a, b) => (!a || b.createdAt > a.createdAt ? b : a), undefined);
+
+        if (latest?.body.trim() === body.trim()) {
+            log(`Tracking issue ${existing.identifier} already has this drift report; not commenting again.`);
+            return;
+        }
+
         await addComment(apiKey, { issueId: existing.id, body });
         log(`Updated existing tracking issue ${existing.identifier} with the latest drift report.`);
         return;
