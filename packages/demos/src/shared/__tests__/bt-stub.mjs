@@ -28,6 +28,7 @@ const STUB_KEYS = [
     'drawRect',
     'drawNineSlice',
     'systemPrint',
+    'frameText',
 ];
 
 const SAFE_DEFAULTS = {
@@ -41,6 +42,7 @@ const SAFE_DEFAULTS = {
     drawRect: () => {},
     drawNineSlice: () => {},
     systemPrint: () => {},
+    frameText: [],
 };
 
 /**

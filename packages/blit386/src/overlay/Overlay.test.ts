@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { Palette } from '../assets/Palette';
-import type { OverlayAudioMeterStyle } from '../core/IBTDemo';
+import type { FrameTextEntry, OverlayAudioMeterStyle } from '../core/IBTDemo';
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
@@ -662,6 +662,76 @@ describe('Overlay', () => {
 
         // Top labels split into segments: title, backend + resolution, 3 metrics, 3 timing.
         expect(getBitmapTextCalls(renderer)).toHaveLength(9);
+    });
+
+    it('pushes each drawn custom row label to the text sink at its drawn position', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const customRows = [{ leftText: 'Bounces 3', rightText: 'ok', textPaletteIndex: 6 }];
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+
+        const rowY = customRowBarY(240, 0) + OVERLAY_TOP_TEXT_Y;
+
+        expect(sink).toEqual([
+            { source: 'overlay', text: 'Bounces 3', x: OVERLAY_EDGE_MARGIN_PX, y: rowY, paletteIndex: 6 },
+            { source: 'overlay', text: 'ok', x: overlayRightAlignedTextX('ok', 320), y: rowY, paletteIndex: 6 },
+        ]);
+
+        overlay.setTextSink(null);
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+
+        expect(sink).toHaveLength(2);
+    });
+
+    it('records the slot a palette-index-0 row label is really drawn in', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => [
+            { leftText: 'Zero', rightText: 'z', textPaletteIndex: 0 },
+        ]);
+
+        // Index 0 maps to palette offset 0, which the font's index-1 ink draws in slot 1 - visible.
+        expect(
+            getBitmapTextCalls(renderer)
+                .slice(0, 2)
+                .map((call) => call.paletteOffset),
+        ).toEqual([0, 0]);
+        expect(sink.map((entry) => [entry.text, entry.paletteIndex])).toEqual([
+            ['Zero', 1],
+            ['z', 1],
+        ]);
+    });
+
+    it('leaves an empty left label out of the text sink', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, () => [
+            { leftText: '', rightText: 'ok' },
+        ]);
+
+        expect(sink.map((entry) => entry.text)).toEqual(['ok']);
+    });
+
+    it('pushes nothing to the text sink while the overlay body is hidden', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo');
+        const sink: FrameTextEntry[] = [];
+
+        overlay.setTextSink(sink);
+        overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, () => [{ leftText: 'Hidden row' }]);
+
+        expect(sink).toEqual([]);
     });
 
     it('does not invoke getCustomRows while the overlay is hidden', () => {

@@ -255,7 +255,15 @@ describe('UiContext snapshot', () => {
         assert.equal(ctx.groupRows, groupRows);
         assert.equal(ctx.groupWidgets, groupWidgets);
         assert.equal(frameGroups.length + groupRows.length + groupWidgets.length, 0);
-        assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [] });
+        assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [], texts: [] });
+    });
+
+    it("passes the engine's drawn-text readout through as texts", (t) => {
+        const texts = [{ source: 'systemPrint', text: 'Music', x: 119, y: 108, paletteIndex: 242 }];
+
+        stubBt(t, { frameText: texts });
+
+        assert.equal(createReadyContext().snapshot().texts, texts);
     });
 
     it('captures groups, rows, and widgets in absolute coordinates', (t) => {

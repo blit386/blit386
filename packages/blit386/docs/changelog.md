@@ -19,6 +19,16 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.9.0 - Unreleased
+
+### Added
+
+- `BT.frameText` and `BT.frameTextRecordSet`: an opt-in readout of the strings the last rendered frame drew - each
+  `BT.systemPrint` call that drew text and each non-empty label of a visible `overlayRows()` row, with its display
+  position and palette index (empty strings and palette-index-0 system text draw nothing and are skipped). An agent can
+  now check that a label says the right thing, which `BT.testState()` (game memory) cannot. Off by default. See
+  [Reading the text a frame drew](api-core.md#reading-the-text-a-frame-drew).
+
 ## 1.8.1 - Unreleased
 
 ### Changed
