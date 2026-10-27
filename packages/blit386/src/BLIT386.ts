@@ -1628,7 +1628,7 @@ export const BT = {
 
         try {
             if (posOrX instanceof Vector2i && maybeColor === undefined) {
-                BTAPI.instance.drawPixel(new Vector2i(posOrX.x, posOrX.y), yOrColor);
+                BTAPI.instance.drawPixel(posOrX, yOrColor);
                 return;
             }
 
