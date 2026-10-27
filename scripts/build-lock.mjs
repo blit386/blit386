@@ -77,7 +77,7 @@ const isPidAlive = (pid) => {
 const getProcessStart = (pid) => {
     const result = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
         encoding: 'utf8',
-        env: { ...process.env, LC_ALL: 'C' },
+        env: { ...process.env, LC_ALL: 'C', TZ: 'UTC' }, // lstart is local time; pin it so every process agrees.
     });
 
     return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : null;
