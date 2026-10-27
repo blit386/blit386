@@ -4,6 +4,7 @@
 
 import {
     audioClipSynthDurationTooLongError,
+    audioClipSynthInvalidSeedError,
     audioClipSynthInvalidWaveformError,
     audioClipSynthNonNegativeFieldError,
     audioClipSynthNonPositiveDurationError,
@@ -47,6 +48,10 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
         throw new Error(audioClipSynthNonPositiveFrequencyError(params.frequency));
     }
 
+    if (!Number.isFinite(params.seed)) {
+        throw new Error(audioClipSynthInvalidSeedError(params.seed));
+    }
+
     validateEnvelope(params.envelope);
 
     if (params.pitchSweep !== undefined && !(params.pitchSweep.toFrequency > 0)) {
@@ -57,6 +62,16 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
         validateVibrato(params.vibrato);
     }
 
+    validateUnitRangeFields(params);
+}
+
+/**
+ * Validates the optional `noiseMix` and `dutyCycle` fields, which must lie in [0, 1].
+ *
+ * @param params - Synthesis parameters to check.
+ * @throws Error describing the first invalid field found.
+ */
+function validateUnitRangeFields(params: SynthParams): void {
     if (params.noiseMix !== undefined && (params.noiseMix < 0 || params.noiseMix > 1)) {
         throw new Error(audioClipSynthUnitRangeFieldError('noiseMix', params.noiseMix));
     }

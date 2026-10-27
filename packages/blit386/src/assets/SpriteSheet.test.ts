@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice } from '../__test__/webgpu-mock';
 import { collectUsedIndices, resetUsage } from '../core/RenderPaletteUsage';
-import { registerHotContext } from '../hot/HotRuntime';
+import { registerHotReload } from '../hot/HotRuntime';
 import { AssetLimitError, MAX_ASSET_DIMENSION, MAX_ASSET_PIXELS } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
@@ -1048,7 +1048,7 @@ describe('SpriteSheet', () => {
 
     describe('hot reload', () => {
         function activateHotReload() {
-            registerHotContext({
+            registerHotReload({
                 data: {},
                 on: vi.fn(),
                 invalidate: vi.fn(),

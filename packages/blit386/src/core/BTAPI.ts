@@ -1246,7 +1246,8 @@ export class BTAPI {
     /**
      * Draws a single pixel at the specified position.
      *
-     * Coordinates are integers: a `Vector2i` truncates toward zero when constructed.
+     * Coordinates are integers: a `Vector2i` truncates toward zero when constructed, and the
+     * components are truncated again here because they are mutable after construction.
      *
      * @param pos - Pixel coordinates.
      * @param paletteIndex - Palette color index.
@@ -1257,7 +1258,7 @@ export class BTAPI {
 
         this.markDrawCall();
 
-        this.renderer?.drawPixel(pos, paletteIndex);
+        this.renderer?.drawPixelXY(pos.x | 0, pos.y | 0, paletteIndex);
     }
 
     /**

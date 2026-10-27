@@ -1,5 +1,6 @@
 import { assertImageElementWithinLimits } from '../utils/AssetLimits';
 import { appendCacheBustQuery } from '../utils/HotReloadUrl';
+import { extractExtension } from '../utils/urlHints';
 
 /**
  * Successfully loaded images keyed by request URL.
@@ -55,21 +56,6 @@ function hasExplicitLocation(url: string): boolean {
 
     // URL prefixes that already point at an explicit location, so no `images/` hint is needed.
     return isExplicitUrl(url) || rootedPathPrefixes.some((prefix) => url.startsWith(prefix));
-}
-
-/**
- * Extracts the lowercase file extension (including the dot) from a URL,
- * ignoring any query string or fragment.
- *
- * @param url - Path or URL to inspect.
- * @returns Extension like `.png`, or an empty string when none is present.
- */
-function extractExtension(url: string): string {
-    const path = url.split(/[?#]/)[0] ?? url;
-    const fileName = path.slice(path.lastIndexOf('/') + 1);
-    const dotIndex = fileName.lastIndexOf('.');
-
-    return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
 }
 
 /**

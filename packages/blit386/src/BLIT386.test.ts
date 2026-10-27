@@ -925,6 +925,15 @@ describe('BT.drawPixel', () => {
         expect(spy).toHaveBeenCalledWith(pos, 2);
     });
 
+    it('passes the same Vector2i through without copying it', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'drawPixel').mockReturnValue(undefined);
+        const pos = new Vector2i(5, 10);
+
+        BT.drawPixel(pos, 2);
+
+        expect(spy.mock.calls[0]?.[0]).toBe(pos);
+    });
+
     it('supports (x, y, color) arguments, routed through the XY fast path', () => {
         const spy = vi.spyOn(BTAPI.instance, 'drawPixelXY').mockReturnValue(undefined);
 

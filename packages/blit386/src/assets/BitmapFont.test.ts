@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { registerHotContext } from '../hot/HotRuntime';
+import { registerHotReload } from '../hot/HotRuntime';
 import {
     AssetLimitError,
     MAX_ASSET_DIMENSION,
@@ -936,7 +936,7 @@ describe('BitmapFont', () => {
 
     describe('hot reload', () => {
         function activateHotReload() {
-            registerHotContext({
+            registerHotReload({
                 data: {},
                 on: vi.fn(),
                 invalidate: vi.fn(),

@@ -2130,6 +2130,18 @@ describe('BTAPI', () => {
 
                 expect(render()).toEqual(PIXEL_1);
             });
+
+            it('drawPixel truncates a Vector2i mutated to fractional x and y so only pixel 1 changes', async () => {
+                const render = await initFourByOne();
+                BTAPI.instance.getRenderer()?.beginFrame();
+                const pos = new Vector2i(0, 0);
+
+                pos.x = 1.5;
+                pos.y = 0.5;
+                BTAPI.instance.drawPixel(pos, 1);
+
+                expect(render()).toEqual(PIXEL_1);
+            });
         });
 
         it('URL override ?backend=software wins over configure().backend=webgpu', async () => {

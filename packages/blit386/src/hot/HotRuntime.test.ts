@@ -18,7 +18,7 @@ function registerAndCaptureAssetHandler(
 ): (payload: unknown) => void {
     let captured: ((payload: unknown) => void) | undefined;
 
-    HotRuntimeModule.registerHotContext({
+    HotRuntimeModule.registerHotReload({
         data: {},
         on: (_event, cb) => {
             captured = cb;
@@ -68,22 +68,22 @@ describe('HotRuntime', () => {
         vi.restoreAllMocks();
     });
 
-    describe('registerHotContext', () => {
+    describe('registerHotReload', () => {
         it('wires the asset-changed listener once, across repeated registrations', () => {
             const first = makeFakeHotContext();
             const second = makeFakeHotContext();
 
-            HotRuntime.registerHotContext(first);
+            HotRuntime.registerHotReload(first);
             expect(first.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
 
-            HotRuntime.registerHotContext(second);
+            HotRuntime.registerHotReload(second);
             expect(second.on).not.toHaveBeenCalled();
         });
 
         it('is inactive before any registration, and active immediately after', () => {
             expect(HotRuntime.isHotActive()).toBe(false);
 
-            HotRuntime.registerHotContext(makeFakeHotContext());
+            HotRuntime.registerHotReload(makeFakeHotContext());
 
             expect(HotRuntime.isHotActive()).toBe(true);
         });
@@ -99,13 +99,13 @@ describe('HotRuntime', () => {
                 accept: vi.fn(),
             };
 
-            expect(() => HotRuntime.registerHotContext(broken)).not.toThrow();
+            expect(() => HotRuntime.registerHotReload(broken)).not.toThrow();
             expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to register'), expect.any(Error));
             expect(HotRuntime.isHotActive()).toBe(false);
 
             const working = makeFakeHotContext();
 
-            HotRuntime.registerHotContext(working);
+            HotRuntime.registerHotReload(working);
 
             expect(working.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
             expect(HotRuntime.isHotActive()).toBe(true);
@@ -113,7 +113,7 @@ describe('HotRuntime', () => {
     });
 
     describe('registerHotReload', () => {
-        it('delegates to registerHotContext', () => {
+        it('wires the asset-changed listener', () => {
             const hot = makeFakeHotContext();
 
             HotRuntime.registerHotReload(hot);
@@ -134,7 +134,7 @@ describe('HotRuntime', () => {
     describe('requestHardReload', () => {
         it('calls invalidate on the registered hot context', () => {
             const hot = makeFakeHotContext();
-            HotRuntime.registerHotContext(hot);
+            HotRuntime.registerHotReload(hot);
 
             HotRuntime.requestHardReload('settings changed');
 
@@ -328,13 +328,13 @@ describe('HotRuntime', () => {
         });
 
         it('requests a hard reload for an unrecognized asset type', () => {
-            // Capture the handler first, before anything has wired the listener - registerHotContext
+            // Capture the handler first, before anything has wired the listener - registerHotReload
             // only calls context.on(...) once per module instance (guarded by the internal `wired`
-            // flag), so a second registerHotContext call updates which context requestHardReload
+            // flag), so a second registerHotReload call updates which context requestHardReload
             // targets without re-registering the listener.
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             const invalidate = vi.fn();
-            HotRuntime.registerHotContext({ data: {}, on: vi.fn(), invalidate, accept: vi.fn() });
+            HotRuntime.registerHotReload({ data: {}, on: vi.fn(), invalidate, accept: vi.fn() });
 
             handler({ url: 'level.json', type: 'other', timestamp: 1 });
 

@@ -60,7 +60,8 @@ export function buildPathHint(url: string, folderName: string): string {
  * @returns Extension like `.png`, or an empty string when none is present.
  */
 export function extractExtension(url: string): string {
-    const fileName = url.slice(url.lastIndexOf('/') + 1).replace(/[?#].*$/, '');
+    const path = url.split(/[?#]/)[0] ?? url;
+    const fileName = path.slice(path.lastIndexOf('/') + 1);
     const dotIndex = fileName.lastIndexOf('.');
 
     return dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';

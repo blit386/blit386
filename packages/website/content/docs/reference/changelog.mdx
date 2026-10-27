@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-10-26T20:58:11+01:00"
+lastModified: "2026-10-27T18:03:41+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -39,6 +39,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `AudioClip.synth` now throws when `seed` is missing or not a finite number. A plain-JavaScript call that left `seed`
+  out used to get noise from a time-based seed that changed on every run.
 - Image size limits now check the decoded size. A large PNG shown at a small size through an `<img width="64">` used to
   pass the limit and then decode in full, and a 128 px image shown at 64 px uploaded only its top-left 64x64. Sprite
   sheets and the asset loader now read `naturalWidth` and `naturalHeight`. See

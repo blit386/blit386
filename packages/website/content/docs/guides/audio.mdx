@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-10-27T18:03:41+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
@@ -223,8 +223,8 @@ BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
 
 Beyond loading audio files, `AudioClip.synth` generates a clip entirely on the CPU from a `SynthParams` descriptor - no
 source file, no network fetch, and no `OfflineAudioContext`. Rendering is deterministic and synchronous: the same params
-(including `seed`) always produce the same samples, so a `SynthParams` value behaves like ordinary game data rather than
-a recorded asset. See [Synth](/docs/api/audio#synth) for the full field reference.
+(including `seed`, which must be a finite number) always produce the same samples, so a `SynthParams` value behaves like
+ordinary game data rather than a recorded asset. See [Synth](/docs/api/audio#synth) for the full field reference.
 
 Start by hand-tuning a few fields and listening to the result:
 

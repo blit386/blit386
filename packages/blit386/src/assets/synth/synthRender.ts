@@ -6,7 +6,7 @@
  * directly unit-testable and runs synchronously off the audio graph.
  */
 
-import { Rng } from '../../utils/Rng';
+import { Random } from '../../utils/Random';
 import { envelopeValueAt, resolveEnvelope } from './synthEnvelope';
 import type { SynthParams } from './SynthParams';
 import { DEFAULT_DUTY_CYCLE, DEFAULT_NOISE_MIX, DEFAULT_VOLUME } from './SynthParams';
@@ -23,7 +23,7 @@ const CLIP_MAX = 1;
  * Renders `params` into a full-precision PCM sample buffer at `sampleRate`.
  *
  * Deterministic for identical `params` and `sampleRate` - the only source of randomness (the
- * `'noise'` waveform and `noiseMix` blending) is drawn from a {@link Rng} seeded with
+ * `'noise'` waveform and `noiseMix` blending) is drawn from a {@link Random} seeded with
  * `params.seed`. The carrier phase is accumulated sample by sample from the instantaneous
  * frequency (base frequency plus any pitch sweep and vibrato), so pitch modulation stays
  * continuous instead of producing phase discontinuities. Output is clamped to `[-1, 1]`
@@ -41,7 +41,7 @@ export function renderSynthSamples(params: SynthParams, sampleRate: number): Flo
     const volume = params.volume ?? DEFAULT_VOLUME;
     const noiseMix = params.noiseMix ?? DEFAULT_NOISE_MIX;
     const dutyCycle = params.dutyCycle ?? DEFAULT_DUTY_CYCLE;
-    const rng = new Rng(params.seed);
+    const rng = new Random(params.seed);
     let phase = 0;
 
     for (let i = 0; i < sampleCount; i++) {
@@ -83,7 +83,7 @@ function renderTone(
     phase: number,
     dutyCycle: number,
     noiseMix: number,
-    rng: Rng,
+    rng: Random,
 ): number {
     if (waveform === 'noise') {
         return noiseSample(rng);

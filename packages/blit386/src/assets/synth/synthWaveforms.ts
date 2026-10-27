@@ -2,7 +2,7 @@
  * Per-waveform oscillator sample generation for the deterministic synthesis engine.
  */
 
-import type { Rng } from '../../utils/Rng';
+import type { Random } from '../../utils/Random';
 import type { SynthWaveform } from './SynthParams';
 
 /**
@@ -37,6 +37,6 @@ export function oscillatorSample(waveform: Exclude<SynthWaveform, 'noise'>, phas
  * @param rng - Deterministic PRNG to draw from; advances its state by one call.
  * @returns Sample in [-1, 1).
  */
-export function noiseSample(rng: Rng): number {
+export function noiseSample(rng: Random): number {
     return rng.next() * 2 - 1;
 }
