@@ -51,4 +51,14 @@ describe('flattenDemos', () => {
 
         assert.throws(() => flattenDemos(distDir), { code: 'ENOTDIR' });
     });
+
+    it('fails and keeps the source file when a page cannot be written', () => {
+        // dist/a.html is a directory, so writing the flattened page fails after the read succeeded.
+        mkdirSync(join(distDir, 'a.html'));
+        mkdirSync(join(distDir, 'demos'));
+        writeFileSync(join(distDir, 'demos', 'a.html'), 'x');
+
+        assert.throws(() => flattenDemos(distDir), { code: 'EISDIR' });
+        assert.ok(existsSync(join(distDir, 'demos', 'a.html')));
+    });
 });
