@@ -101,10 +101,9 @@ tmp/
 temp/
 scripts/.tmp-agent-config-mcp-*/
 
-# Cross-process build locks (scripts/build-lock.mjs, used by ensure-engine-built.mjs and
-# ensure-kit-built.mjs) - created and removed at runtime; a crashed process can leave one behind
+# Cross-process build locks (scripts/build-lock.mjs, used by
+# ensure-engine-built.mjs) - created and removed at runtime; a crashed process can leave one behind
 /.ensure-engine-built.lock/
-/.ensure-kit-built.lock/
 
 # Superpowers skill scratch (task briefs, review diffs, progress ledger)
 .superpowers/

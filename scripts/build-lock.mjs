@@ -11,8 +11,9 @@
  * (`mkdirSync` is atomic) so only the process that wins the race builds; every other process either
  * finds the target already fresh (built by the winner while it waited) or waits for the lock to free
  * up and then re-checks. A lock is reclaimed as abandoned only when its recorded pid is confirmed
- * dead via `process.kill(pid, 0)` (a build killed mid-run: crash, Ctrl-C) or, if the pid can't even be
- * read, once the lock directory itself is older than `LOCK_STALE_MS` - never merely because a waiter
+ * dead via `process.kill(pid, 0)` (a build killed mid-run: crash, Ctrl-C), when the pid is alive but
+ * its start time no longer matches the one recorded beside it (the pid was reused), or, if the pid
+ * can't even be read, once the lock directory itself is older than `LOCK_STALE_MS` - never merely because a waiter
  * has personally been polling a long time, so a legitimately slow but live build is never evicted out
  * from under itself no matter how long anyone has been waiting on it.
  *
@@ -25,8 +26,9 @@
  * lock can otherwise have the second one delete the *new*, live lock the first one just created after
  * winning the race and starting its build.
  */
+import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /** Milliseconds between polls while waiting for another process's build or lock. */
@@ -40,6 +42,24 @@ const sleepSync = (ms) => {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 };
 
+/** How long a waiter polls before printing its one "still waiting" message. */
+const LOCK_WAIT_NOTICE_MS = 5000;
+
+/** Newest mtime (ms) of any file under `dir`, recursively. 0 if `dir` has no files. */
+const getNewestMtimeMs = (dir) => {
+    let newestMtimeMs = 0;
+
+    for (const relativePath of readdirSync(dir, { recursive: true })) {
+        const stats = statSync(resolve(dir, relativePath));
+
+        if (stats.isFile() && stats.mtimeMs > newestMtimeMs) {
+            newestMtimeMs = stats.mtimeMs;
+        }
+    }
+
+    return newestMtimeMs;
+};
+
 const isPidAlive = (pid) => {
     if (!Number.isInteger(pid)) {
         return false;
@@ -48,9 +68,47 @@ const isPidAlive = (pid) => {
     try {
         process.kill(pid, 0);
         return true;
-    } catch {
+    } catch (err) {
+        return err.code === 'EPERM'; // Alive, but owned by another user.
+    }
+};
+
+/** Start time of `pid` as `ps` prints it, or `null` where it can't be read (Windows, no `ps`). */
+const getProcessStart = (pid) => {
+    const result = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
+        encoding: 'utf8',
+        env: { ...process.env, LC_ALL: 'C' },
+    });
+
+    return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : null;
+};
+
+/**
+ * Whether the process that wrote `lockDir` is still running. A live pid alone is not enough - after a
+ * reboot or SIGKILL the pid can be reused by an unrelated process - so the start time recorded beside
+ * the pid must also match. Without a recorded or readable start time, the pid check stands alone.
+ */
+const isLockOwnerAlive = (lockDir, pid) => {
+    if (!isPidAlive(pid)) {
         return false;
     }
+
+    let recordedStart;
+
+    try {
+        recordedStart = readFileSync(resolve(lockDir, 'start'), 'utf8');
+    } catch {
+        return true;
+    }
+
+    // Empty means the owner is mid-write - not a mismatch.
+    if (!recordedStart) {
+        return true;
+    }
+
+    const currentStart = getProcessStart(pid);
+
+    return currentStart === null || currentStart === recordedStart;
 };
 
 /** The pid recorded in `lockDir`, or `NaN` if it can't be read (missing, or not written yet). */
@@ -95,7 +153,7 @@ const reclaimAbandonedLock = (lockDir) => {
 
     const reapedPid = readLockOwnerPid(reapDir);
 
-    if (Number.isInteger(reapedPid) && isPidAlive(reapedPid)) {
+    if (Number.isInteger(reapedPid) && isLockOwnerAlive(reapDir, reapedPid)) {
         try {
             renameSync(reapDir, lockDir);
         } catch {
@@ -114,7 +172,10 @@ const reclaimAbandonedLock = (lockDir) => {
  * caller should build) or `checkBuilt()` reports the target already fresh, built by another process
  * while waiting (return `false` - the caller should skip the build).
  */
-const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync) => {
+const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync, now = Date.now) => {
+    const waitStartMs = now();
+    let noticePrinted = false;
+
     for (;;) {
         if (checkBuilt()) {
             return false;
@@ -123,6 +184,13 @@ const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync) => {
         try {
             mkdirSync(lockDir);
             writeFileSync(resolve(lockDir, 'pid'), String(process.pid));
+
+            const start = getProcessStart(process.pid);
+
+            if (start !== null) {
+                writeFileSync(resolve(lockDir, 'start'), start);
+            }
+
             return true;
         } catch (err) {
             if (err.code !== 'EEXIST') {
@@ -131,12 +199,20 @@ const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync) => {
         }
 
         const lockOwnerPid = readLockOwnerPid(lockDir);
-        const ownerIsDead = Number.isInteger(lockOwnerPid) && !isPidAlive(lockOwnerPid);
+        const ownerIsDead = Number.isInteger(lockOwnerPid) && !isLockOwnerAlive(lockDir, lockOwnerPid);
         const ownerIsUnverifiable = !Number.isInteger(lockOwnerPid) && isLockOlderThan(lockDir, LOCK_STALE_MS);
 
         if (ownerIsDead || ownerIsUnverifiable) {
             reclaimAbandonedLock(lockDir);
             continue;
+        }
+
+        if (!noticePrinted && now() - waitStartMs > LOCK_WAIT_NOTICE_MS) {
+            noticePrinted = true;
+
+            const owner = Number.isInteger(lockOwnerPid) ? `pid ${lockOwnerPid}` : 'an unknown owner';
+
+            console.error(`waiting on build lock held by ${owner} - delete ${lockDir} if stale`);
         }
 
         sleep(LOCK_POLL_MS);
@@ -147,4 +223,4 @@ const releaseBuildLock = (lockDir) => {
     rmSync(lockDir, { recursive: true, force: true });
 };
 
-export { acquireLockOrConfirmBuilt, reclaimAbandonedLock, releaseBuildLock };
+export { acquireLockOrConfirmBuilt, getNewestMtimeMs, getProcessStart, reclaimAbandonedLock, releaseBuildLock };
