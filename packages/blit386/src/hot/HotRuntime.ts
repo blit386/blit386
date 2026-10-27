@@ -35,14 +35,14 @@ export interface HotContext {
     accept(): void;
 }
 
-/** Registered Vite HMR context, or `null` before {@link registerHotContext} runs. */
+/** Registered Vite HMR context, or `null` before {@link registerHotReload} runs. */
 let hot: HotContext | null = null;
 
 /** Hot-swap generation counter; advanced only through {@link nextGeneration}. */
 let generation = 0;
 
 /**
- * True once {@link registerHotContext} has wired the asset-changed listener, so a
+ * True once {@link registerHotReload} has wired the asset-changed listener, so a
  * re-evaluated entry module (every hot reload re-runs top-level module code) does
  * not attach the listener a second time.
  */
@@ -191,30 +191,6 @@ function handleAssetChanged(payload: unknown): void {
 }
 
 /**
- * Registers the active Vite HMR context and wires the asset-changed listener
- * exactly once.
- *
- * The entire body runs in try/catch: this function executes synchronously at
- * the entry module's top level (via the snippet the `blit386/vite` plugin
- * injects), so a throw here (for example from an incompatible or broken `hot`
- * object) must not abort loading the game.
- *
- * @param context - Vite's `import.meta.hot` context.
- */
-export function registerHotContext(context: HotContext): void {
-    try {
-        if (!wired) {
-            context.on(ASSET_CHANGED_EVENT, handleAssetChanged);
-            wired = true;
-        }
-
-        hot = context;
-    } catch (err) {
-        console.error('[BT] Failed to register the hot-reload context:', err);
-    }
-}
-
-/**
  * Registers the active Vite HMR context so the engine can hot-swap the demo
  * class in place instead of reloading the page.
  *
@@ -233,21 +209,35 @@ export function registerHotContext(context: HotContext): void {
  * Never called by hand - it does nothing useful without the plugin's matching
  * asset watcher and snippet injection.
  *
+ * Wires the asset-changed listener exactly once. The entire body runs in
+ * try/catch: this function executes synchronously at the entry module's top
+ * level, so a throw here (for example from an incompatible or broken `hot`
+ * object) must not abort loading the game.
+ *
  * @since 1.4.0
- * @param hot - Vite's `import.meta.hot` context (or a structurally compatible object).
+ * @param context - Vite's `import.meta.hot` context (or a structurally compatible object).
  */
-export function registerHotReload(hot: HotContext): void {
-    registerHotContext(hot);
+export function registerHotReload(context: HotContext): void {
+    try {
+        if (!wired) {
+            context.on(ASSET_CHANGED_EVENT, handleAssetChanged);
+            wired = true;
+        }
+
+        hot = context;
+    } catch (err) {
+        console.error('[BT] Failed to register the hot-reload context:', err);
+    }
 }
 
 /**
  * Reports whether a Vite HMR context is registered.
  *
  * Gates dev-only registries and logic so production builds (no
- * `import.meta.hot`, so {@link registerHotContext} never runs) pay nothing for
+ * `import.meta.hot`, so {@link registerHotReload} never runs) pay nothing for
  * hot reload.
  *
- * @returns `true` once {@link registerHotContext} has run.
+ * @returns `true` once {@link registerHotReload} has run.
  */
 export function isHotActive(): boolean {
     return hot !== null;
