@@ -9,8 +9,7 @@
  * @since 1.5.0
  */
 
-/** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
-const INV_2_32 = 1 / 4294967296;
+import { INV_2_32 } from './noiseCommon';
 
 // The seed is XORed in as finalize(seed): a plain multiply leaves seed 0x80000000 a top-bit flip, an x shift of 2^31.
 // shortcut: seed 2126943072 (0x7ec69360) still scatters to 0x80000000 and equals seed 0 shifted 2^31 columns; one seed

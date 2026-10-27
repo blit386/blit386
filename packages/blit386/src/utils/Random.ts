@@ -16,11 +16,9 @@ import {
     randomWeightedLengthError,
     randomWeightedTotalError,
 } from './errorMessages';
+import { INV_2_32 } from './noiseCommon';
 import type { Rect2i } from './Rect2i';
 import { Vector2i } from './Vector2i';
-
-/** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
-const INV_2_32 = 1 / 4294967296;
 
 /** Two pi, used by {@link Random.angle}. */
 const TWO_PI = Math.PI * 2;
