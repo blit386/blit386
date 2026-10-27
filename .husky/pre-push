@@ -38,7 +38,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     PUSH_COUNT=$((PUSH_COUNT + 1))
 
     if [ "$remote_sha" = "$ZERO_SHA" ]; then
-        push_range="$local_sha"
+        # Only commits no remote ref has yet, not the whole history.
+        push_range="$local_sha --not --remotes"
     else
         push_range="$remote_sha..$local_sha"
     fi
@@ -47,9 +48,12 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     # while runs in a subshell, so check_author_identity's `exit 1` would only
     # kill the subshell and the push would proceed anyway.
     author_log=$(mktemp)
-    git log "$push_range" --format='%H%x09%an%x09%ae' >"$author_log"
-    while IFS="$(printf '\t')" read -r sha an ae; do
-        check_author_identity "$an" "$ae" "Commit $sha"
+    # $push_range is deliberately unquoted: it may carry the extra --not --remotes args.
+    # shellcheck disable=SC2086
+    git log $push_range --format='%H%x09%an%x09%ae%x09%cn%x09%ce' >"$author_log"
+    while IFS="$(printf '\t')" read -r sha an ae cn ce; do
+        check_author_identity "$an" "$ae" "Commit $sha author"
+        check_author_identity "$cn" "$ce" "Commit $sha committer"
     done <"$author_log"
     rm -f "$author_log"
 done
