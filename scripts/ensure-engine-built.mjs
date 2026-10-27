@@ -30,11 +30,11 @@
  *   node ../../scripts/ensure-engine-built.mjs
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { acquireLockOrConfirmBuilt, releaseBuildLock } from './build-lock.mjs';
+import { acquireLockOrConfirmBuilt, getNewestMtimeMs, releaseBuildLock } from './build-lock.mjs';
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -43,21 +43,6 @@ const resolveEngineViteEntry = () => resolve(scriptDir, '..', 'packages', 'blit3
 const resolveEngineSourceDir = () => resolve(scriptDir, '..', 'packages', 'blit386', 'src');
 
 const resolveEngineBuildLockDir = () => resolve(scriptDir, '..', '.ensure-engine-built.lock');
-
-/** Newest mtime (ms) of any file under `dir`, recursively. 0 if `dir` has no files. */
-const getNewestMtimeMs = (dir) => {
-    let newestMtimeMs = 0;
-
-    for (const relativePath of readdirSync(dir, { recursive: true })) {
-        const stats = statSync(resolve(dir, relativePath));
-
-        if (stats.isFile() && stats.mtimeMs > newestMtimeMs) {
-            newestMtimeMs = stats.mtimeMs;
-        }
-    }
-
-    return newestMtimeMs;
-};
 
 const isEngineBuilt = (
     engineViteEntry = resolveEngineViteEntry(),

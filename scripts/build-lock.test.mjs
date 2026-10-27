@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
-import { acquireLockOrConfirmBuilt, reclaimAbandonedLock, releaseBuildLock } from './build-lock.mjs';
+import { acquireLockOrConfirmBuilt, getProcessStart, reclaimAbandonedLock, releaseBuildLock } from './build-lock.mjs';
 
 describe('build-lock', () => {
     const makeLockDir = () => join(mkdtempSync(join(tmpdir(), 'build-lock-')), 'lock');
@@ -116,6 +116,58 @@ describe('build-lock', () => {
             assert.equal(sleepCalls, 1);
 
             rmSync(lockDir, { recursive: true, force: true });
+        });
+
+        it('reclaims a lock whose live pid was reused by a different process', {
+            skip: getProcessStart(process.pid) === null,
+        }, () => {
+            const lockDir = makeLockDir();
+
+            mkdirSync(lockDir);
+            writeFileSync(join(lockDir, 'pid'), String(process.pid));
+            writeFileSync(join(lockDir, 'start'), 'Thu Jan  1 00:00:00 1970');
+
+            const acquired = acquireLockOrConfirmBuilt(
+                lockDir,
+                () => false,
+                () => assert.fail('should not wait'),
+            );
+
+            assert.equal(acquired, true);
+            assert.equal(Number(readFileSync(join(lockDir, 'pid'), 'utf8')), process.pid);
+
+            rmSync(lockDir, { recursive: true, force: true });
+        });
+
+        it('prints one waiting message after five seconds of waiting on a live owner', () => {
+            const lockDir = makeLockDir();
+            const logged = mock.method(console, 'error', () => {});
+
+            try {
+                assert.equal(
+                    acquireLockOrConfirmBuilt(lockDir, () => false),
+                    true,
+                );
+
+                let nowMs = 0;
+                let sleepCalls = 0;
+
+                acquireLockOrConfirmBuilt(
+                    lockDir,
+                    () => sleepCalls >= 40,
+                    () => {
+                        sleepCalls += 1;
+                        nowMs += 200;
+                    },
+                    () => nowMs,
+                );
+
+                assert.equal(logged.mock.callCount(), 1);
+                assert.match(String(logged.mock.calls[0].arguments[0]), new RegExp(`pid ${process.pid}`));
+            } finally {
+                logged.mock.restore();
+                rmSync(lockDir, { recursive: true, force: true });
+            }
         });
 
         it('reclaims a lock left behind by a pid that is no longer running', () => {
