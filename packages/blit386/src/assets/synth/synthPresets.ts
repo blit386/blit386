@@ -3,7 +3,7 @@
  *
  * Each factory returns a fresh {@link SynthParams} object tuned for a common game-sound
  * archetype (jump, item pickup, explosion, laser, hit, UI blip). Every factory accepts an
- * optional `seed`: it seeds an {@link Rng} that applies small, bounded jitter to a few
+ * optional `seed`: it seeds an {@link Random} that applies small, bounded jitter to a few
  * hand-picked fields (frequency and/or duration and/or mix), so repeated plays of the same
  * sound (for example footsteps or repeated hits) don't sound robotic, while an identical seed
  * always reproduces the exact same variant. Omitting `seed` is equivalent to passing
@@ -14,7 +14,7 @@
  * multi-effect pipeline, so splitting further would not add clarity.
  */
 
-import { Rng } from '../../utils/Rng';
+import { Random } from '../../utils/Random';
 import type { SynthParams } from './SynthParams';
 
 /** Seed used when a preset factory's `seed` argument is omitted. */
@@ -36,8 +36,8 @@ const MIX_JITTER = 0.1;
  * @param amount - Maximum fractional deviation from `1`.
  * @returns Multiplier to apply to a base value.
  */
-function jitterMultiplier(rng: Rng, amount: number): number {
-    return 1 + rng.nextRange(-amount, amount);
+function jitterMultiplier(rng: Random, amount: number): number {
+    return 1 + rng.float(-amount, amount);
 }
 
 /**
@@ -63,7 +63,7 @@ function clampUnit(value: number): number {
  * @returns A fresh `SynthParams` for a jump sound effect.
  */
 export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
     const frequency = 300 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -87,7 +87,7 @@ export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * @returns A fresh `SynthParams` for a pickup sound effect.
  */
 export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
     const frequency = 880 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -112,7 +112,7 @@ export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * @returns A fresh `SynthParams` for an explosion sound effect.
  */
 export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
 
     return {
         waveform: 'sawtooth',
@@ -134,7 +134,7 @@ export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * @returns A fresh `SynthParams` for a laser sound effect.
  */
 export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
     const frequency = 1200 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -157,7 +157,7 @@ export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * @returns A fresh `SynthParams` for a hit sound effect.
  */
 export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
 
     return {
         waveform: 'square',
@@ -180,7 +180,7 @@ export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * @returns A fresh `SynthParams` for a UI blip sound effect.
  */
 export function blip(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Rng(seed);
+    const rng = new Random(seed);
 
     return {
         waveform: 'sine',

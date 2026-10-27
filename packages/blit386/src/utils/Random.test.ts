@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 
 import { Random } from './Random';
 import { Rect2i } from './Rect2i';
-import { Rng } from './Rng';
 import { Vector2i } from './Vector2i';
 
 describe('Random', () => {
@@ -95,15 +94,6 @@ describe('Random', () => {
 
                 expect(value).toBeGreaterThanOrEqual(0);
                 expect(value).toBeLessThan(1);
-            }
-        });
-
-        it('should match Rng mulberry32 for the same seed', () => {
-            const random = new Random(42);
-            const rng = new Rng(42);
-
-            for (let i = 0; i < 50; i++) {
-                expect(random.next()).toBe(rng.next());
             }
         });
     });

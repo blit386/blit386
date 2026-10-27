@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { Rng } from '../../utils/Rng';
+import { Random } from '../../utils/Random';
 import { noiseSample, oscillatorSample } from './synthWaveforms';
 
 describe('oscillatorSample', () => {
@@ -72,7 +72,7 @@ describe('oscillatorSample', () => {
 
 describe('noiseSample', () => {
     it('should return a value in [-1, 1]', () => {
-        const rng = new Rng(1);
+        const rng = new Random(1);
 
         for (let i = 0; i < 500; i++) {
             const value = noiseSample(rng);
@@ -83,14 +83,14 @@ describe('noiseSample', () => {
     });
 
     it('should be deterministic for the same seed', () => {
-        const a = new Rng(42);
-        const b = new Rng(42);
+        const a = new Random(42);
+        const b = new Random(42);
 
         expect(noiseSample(a)).toBe(noiseSample(b));
     });
 
     it('should advance the RNG on every call', () => {
-        const rng = new Rng(42);
+        const rng = new Random(42);
 
         const first = noiseSample(rng);
         const second = noiseSample(rng);
