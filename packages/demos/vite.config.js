@@ -1,10 +1,11 @@
-import { copyFileSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { blit386 } from 'blit386/vite';
 import { defineConfig } from 'vite';
 
+import { flattenDemos } from './plugins/flatten-demos.js';
 import { buildRegistry } from './plugins/demo-registry.js';
 import { channelHeadersPlugin } from './plugins/channel-headers.js';
 import { VINTAGE_URLS } from './plugins/demo-vintage-urls.js';
@@ -22,39 +23,7 @@ function flattenDemosPlugin() {
         name: 'flatten-demos',
         apply: 'build',
         closeBundle() {
-            const distDir = resolve(__dirname, 'dist');
-            const demosDir = join(distDir, 'demos');
-
-            try {
-                const files = readdirSync(demosDir);
-
-                for (const file of files) {
-                    const srcPath = join(demosDir, file);
-                    const destPath = join(distDir, file);
-
-                    // For HTML files, rewrite asset paths before copying.
-                    if (file.endsWith('.html')) {
-                        let content = readFileSync(srcPath, 'utf-8');
-
-                        // Every page moves from demos/<slug>.html up to the dist/ root, so any
-                        // `../` reference Vite emitted for the old location (hashed assets,
-                        // copied fonts, public-dir links like the favicon) must become `./`.
-                        // No legitimate `../` survives flattening, so this is safe to apply
-                        // wholesale rather than naming each directory.
-                        content = content.replace(/(\ssrc|\shref)="\.\.\//g, '$1="./');
-
-                        writeFileSync(destPath, content);
-                    } else {
-                        copyFileSync(srcPath, destPath);
-                    }
-                    unlinkSync(srcPath);
-                }
-
-                // Remove empty demos directory.
-                rmSync(demosDir, { recursive: true });
-            } catch {
-                // Demos directory may not exist in dev mode.
-            }
+            flattenDemos(resolve(__dirname, 'dist'));
         },
     };
 }
