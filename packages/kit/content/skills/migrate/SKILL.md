@@ -47,3 +47,5 @@ update, or when the user says "update my game to the new version" or "fix the re
   and then offers the same migrate step.
 - `blit migrate` previews by default and only changes files with `--write`, so it is always safe to run and read first.
 - If the project is not saved with git, save a copy before writing - `blit migrate --write` warns about this first.
+- `blit migrate` skips any source file, or `vite.config.*`, that is a symlink or sits inside a symlinked folder, because
+  writing to it would change files outside the project. Update those by hand.

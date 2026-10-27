@@ -11,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import { join, relative } from 'node:path';
 
 import { compareVersions, findProjectRoot, installedVersion, isGitRepo } from '../env';
+import { hasSymlinkedSegment } from '../fs-safety';
 import { applyRenames, type RenameHit, renamesFromMigrations } from '../migrations/codemod';
 import {
     enableHotReloadInViteConfig,
@@ -113,18 +114,18 @@ function sourceFiles(root: string): string[] {
 
     // Prefer src/ only when it really is a directory; otherwise scan the whole project. Genuine read
     // errors (permissions, etc.) are left to propagate rather than being masked by a blanket fallback.
-    if (existsSync(srcDir) && statSync(srcDir).isDirectory()) {
-        return collectFiles(srcDir, []);
-    }
+    const files =
+        existsSync(srcDir) && statSync(srcDir).isDirectory() ? collectFiles(srcDir, []) : collectFiles(root, []);
 
-    return collectFiles(root, []);
+    // --write rewrites these in place, so drop any reached through a symlink: its target may sit outside the project.
+    return files.filter((file) => !hasSymlinkedSegment(file, root));
 }
 
 /** Locate vite.config.* at the project root (not under src/). */
 function findViteConfig(root: string): string | null {
     for (const name of VITE_CONFIG_NAMES) {
         const path = join(root, name);
-        if (existsSync(path) && statSync(path).isFile()) {
+        if (existsSync(path) && statSync(path).isFile() && !hasSymlinkedSegment(path, root)) {
             return path;
         }
     }
