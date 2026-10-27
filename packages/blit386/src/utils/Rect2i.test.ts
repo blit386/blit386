@@ -541,6 +541,15 @@ describe('Rect2i', () => {
             expect(r.centerTo(new Vector2i()).y).toBe(-4);
         });
 
+        it('should not wrap the center near the 32-bit coordinate limit', () => {
+            const r = new Rect2i(2_000_000_000, 2_000_000_000, 3, 3);
+
+            expect(r.centerX).toBe(2_000_000_001);
+            expect(r.centerY).toBe(2_000_000_001);
+            expect(r.center.x).toBe(2_000_000_001);
+            expect(r.centerTo(new Vector2i()).y).toBe(2_000_000_001);
+        });
+
         it('should give the same overlap depth left of zero as right of zero', () => {
             const left = new Rect2i(-4, 0, 3, 1).intersectionDepth(new Rect2i(-3, 0, 2, 1));
             const right = new Rect2i(1, 0, 3, 1).intersectionDepth(new Rect2i(2, 0, 2, 1));

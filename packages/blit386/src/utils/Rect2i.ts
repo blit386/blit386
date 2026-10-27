@@ -66,7 +66,7 @@ export class Rect2i {
      * @returns Center X coordinate.
      */
     get centerX(): number {
-        return (2 * this.x + this.width) >> 1;
+        return this.x + (this.width >> 1);
     }
 
     /**
@@ -76,7 +76,7 @@ export class Rect2i {
      * @returns Center Y coordinate.
      */
     get centerY(): number {
-        return (2 * this.y + this.height) >> 1;
+        return this.y + (this.height >> 1);
     }
 
     /**
@@ -102,7 +102,7 @@ export class Rect2i {
      * @returns Vector2i at the rectangle center.
      */
     get center(): Vector2i {
-        return Vector2i.fromXYUnchecked((2 * this.x + this.width) >> 1, (2 * this.y + this.height) >> 1);
+        return Vector2i.fromXYUnchecked(this.x + (this.width >> 1), this.y + (this.height >> 1));
     }
 
     /**
@@ -311,8 +311,8 @@ export class Rect2i {
      * @returns The out vector for chaining.
      */
     centerTo(out: Vector2i): Vector2i {
-        out.x = (2 * this.x + this.width) >> 1;
-        out.y = (2 * this.y + this.height) >> 1;
+        out.x = this.x + (this.width >> 1);
+        out.y = this.y + (this.height >> 1);
 
         return out;
     }
