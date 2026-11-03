@@ -216,6 +216,10 @@ the same pace at any refresh rate, and `BT.renderAt` reproduces them exactly. Mu
 different palette ranges and will not conflict. The public `Palette.isDirty` getter reflects whether slots changed since
 the last GPU upload - effects set this flag; no polling needed.
 
+Ranges for `BT.paletteCycle` and `BT.paletteFadeRange`, and both indices for `BT.paletteSwap`, start at slot 1, because
+slot 0 is always transparent and can't be changed. A range that includes slot 0, or an `end` at or past the palette
+size, throws at the call, and `paletteCycle` needs a palette set first, like the fade effects.
+
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
 declare const start: number;

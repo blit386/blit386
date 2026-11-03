@@ -12,7 +12,9 @@
 import { clampByte, clampUnit, Color32, INV_255, linearToSrgb, srgbToLinear } from '../utils/Color32';
 import type { EasingFunction } from '../utils/Easing';
 import { applyEasing } from '../utils/Easing';
+import { paletteEffectSlotZeroError } from '../utils/errorMessages';
 import type { Palette } from './Palette';
+import { TRANSPARENT_PALETTE_INDEX } from './Palette';
 
 /**
  * A single palette effect that runs over time.
@@ -803,6 +805,11 @@ export class FlashEffect implements PaletteEffect {
  * @param indexB - Second palette index.
  */
 export function paletteSwap(palette: Palette, indexA: number, indexB: number): void {
+    // Slot 0 is the frozen transparent singleton; reject before any write so a partial swap can't corrupt the other slot.
+    if (indexA === TRANSPARENT_PALETTE_INDEX || indexB === TRANSPARENT_PALETTE_INDEX) {
+        throw new Error(paletteEffectSlotZeroError());
+    }
+
     if (indexA !== indexB) {
         const refA = palette.getRef(indexA);
         const refB = palette.getRef(indexB);
