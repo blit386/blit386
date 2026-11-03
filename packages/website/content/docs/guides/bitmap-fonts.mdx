@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Bitmap Fonts"
 description: "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-11-03T20:47:12+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-bitmap-fonts.md"
 ---
 
@@ -35,6 +35,7 @@ The glyph data is stored as bit patterns in `src/assets/fonts/systemFontData.ts`
 pnpm run system-font:export   # exports current data to assets/system-font.png (96×154, 16×11 grid of 6×14 cells)
 # open assets/system-font.png in a pixel editor and redraw glyphs
 pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
+pnpm run system-font:check    # fails if systemFontData.ts is out of date with the PNG
 ```
 
 White pixels become foreground (palette index 1), black pixels become transparent (palette index 0). Only the top 6 bits

@@ -56,6 +56,8 @@ so a push only exercises them once the per-package checks are clean. That gating
 - `api:getters:check` - every public `BT.*` getter and method has a mention in `.claude/rules/bt-api-getters.md`
 - `api:deprecations:check` - `docs/reference-deprecations.md` matches the kit's migration registry
   (`scripts/gen-deprecations.mjs --check`)
+- `system-font:check` - `src/assets/fonts/systemFontData.ts` matches `assets/system-font.png` and the extra-chars list
+  (`scripts/convert-system-font.mjs --check`)
 - `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
   `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`,
   `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`
