@@ -106,6 +106,38 @@ describe('Splash state machine', () => {
         expect(splash.isVisible).toBe(false);
     });
 
+    it('still plays the fade-out when init() settles long after the minimum hold', () => {
+        splash.start();
+        step(FADE_IN_MS);
+        step(3000);
+        splash.markInitSettled();
+        step(16);
+
+        expect(splash.state).toBe('fadingOut');
+    });
+
+    // Before the fix, settling HOLD_MIN_MS + FADE_OUT_MS into shown was the point where the fade-out vanished.
+    it.each([
+        ['just under', HOLD_MIN_MS + FADE_OUT_MS - 1],
+        ['just over', HOLD_MIN_MS + FADE_OUT_MS + 1],
+    ])('runs the full fade-out from the settle when init() settles %s the old cutoff', (_label, settleAfterMs) => {
+        splash.start();
+        step(FADE_IN_MS);
+        step(settleAfterMs);
+        splash.markInitSettled();
+        step(0);
+
+        expect(splash.state).toBe('fadingOut');
+
+        step(FADE_OUT_MS - 1);
+
+        expect(splash.state).toBe('fadingOut');
+
+        step(2);
+
+        expect(splash.state).toBe('done');
+    });
+
     it('is not visible in either terminal state', () => {
         const fresh = new Splash({}, () => now);
 
