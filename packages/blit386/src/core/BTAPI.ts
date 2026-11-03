@@ -1774,7 +1774,6 @@ export class BTAPI {
      * @param end - Last palette index in the cycling range (inclusive). Must be below the palette size.
      * @param speed - Steps per second. Positive = forward, negative = backward.
      * @throws If no palette is set, `start` is 0, or `end` is past the palette.
-     * @changed 1.8.1 Requires an active palette and rejects slot 0 or an `end` past the palette at the call.
      */
     public paletteCycle(start: number, end: number, speed: number): void {
         const palette = this.getPalette();
@@ -1847,7 +1846,6 @@ export class BTAPI {
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
      * @throws If no palette is set, `start` is 0, `start` is greater than `end`, or `end` is past the palette.
-     * @changed 1.8.1 Rejects slot 0 or an `end` past the palette at the call.
      */
     public paletteFadeRange(
         start: number,
@@ -1896,7 +1894,6 @@ export class BTAPI {
      * @param indexA - First palette index.
      * @param indexB - Second palette index.
      * @throws If either index is 0 (slot 0 is always transparent).
-     * @changed 1.8.1 Rejects slot 0 before writing anything.
      */
     public paletteSwap(indexA: number, indexB: number): void {
         // getPalette(), so a swap during the splash edits the game's captured palette

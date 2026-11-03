@@ -1341,6 +1341,7 @@ export const BT = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
+     * @changed 1.8.1 Requires an active palette and rejects slot 0 or an `end` past the palette at the call.
      * @param start - First palette index in the cycling range (inclusive).
      * @param end - Last palette index in the cycling range (inclusive).
      * @param speed - Steps per second. Positive = forward, negative = backward.
@@ -1419,6 +1420,7 @@ export const BT = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
+     * @changed 1.8.1 Rejects slot 0 or an `end` past the palette at the call.
      * @param start - First palette index to fade (inclusive).
      * @param end - Last palette index to fade (inclusive).
      * @param target - Target palette to fade toward.
@@ -1457,6 +1459,7 @@ export const BT = {
      * takes effect on the next frame.
      *
      * @since 1.0.3
+     * @changed 1.8.1 Rejects slot 0 before writing anything.
      * @param indexA - First palette index.
      * @param indexB - Second palette index.
      */
