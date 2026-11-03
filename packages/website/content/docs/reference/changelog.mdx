@@ -46,6 +46,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- The splash no longer cancels browser shortcuts while it waits on `init()`. Ctrl, Cmd, or Alt chords and F1-F12
+  (reload, find, fullscreen, DevTools) used to be swallowed for as long as the splash held, and still skip it now. See
+  [The skip](/docs/guides/splash#the-skip).
 - `AudioClip.synth` now throws when `seed` is missing or not a finite number. A plain-JavaScript call that left `seed`
   out used to get noise from a time-based seed that changed on every run.
 - Image size limits now check the decoded size. A large PNG shown at a small size through an `<img width="64">` used to

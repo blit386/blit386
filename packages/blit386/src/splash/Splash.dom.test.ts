@@ -70,3 +70,68 @@ describe('Splash skip input', () => {
         expect(() => splash.detachSkipInput()).not.toThrow();
     });
 });
+
+describe('Splash skip input and browser shortcuts', () => {
+    let now = 0;
+    let splash: Splash;
+    let target: EventTarget;
+
+    beforeEach(() => {
+        now = 0;
+        splash = new Splash({}, () => now);
+        target = new EventTarget();
+        splash.start();
+        splash.attachSkipInput(target);
+    });
+
+    function press(event: Event): void {
+        target.dispatchEvent(event);
+        now += 1;
+        splash.advance();
+    }
+
+    it('still prevents a plain cancelable keydown', () => {
+        const event = new Event('keydown', { cancelable: true });
+
+        press(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(splash.state).toBe('shown');
+    });
+
+    it('still prevents a plain KeyboardEvent such as Space', () => {
+        const event = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
+
+        press(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(splash.state).toBe('shown');
+    });
+
+    it.each(['ctrlKey', 'metaKey', 'altKey'] as const)('skips but does not prevent a keydown with %s', (modifier) => {
+        const event = new KeyboardEvent('keydown', { key: 'r', cancelable: true, [modifier]: true });
+
+        press(event);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(splash.state).toBe('shown');
+    });
+
+    it.each(['F1', 'F5', 'F11', 'F12'])('skips but does not prevent %s', (key) => {
+        const event = new KeyboardEvent('keydown', { key, cancelable: true });
+
+        press(event);
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(splash.state).toBe('shown');
+    });
+
+    it('still prevents a pointerdown', () => {
+        const event = new Event('pointerdown', { cancelable: true });
+
+        press(event);
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(splash.state).toBe('shown');
+    });
+});

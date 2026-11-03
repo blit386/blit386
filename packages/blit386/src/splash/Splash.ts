@@ -105,10 +105,15 @@ export class Splash {
 
         this.onSkipEvent = (event: Event): void => {
             // Capture phase, so this runs before anything the page or the game
-            // wired up. preventDefault stops the browser's own reaction (scroll,
-            // zoom, focus move); the engine input subsystems are drained by the
-            // caller at handoff so the game's first update() sees no press edge.
-            if (event.cancelable) {
+            // wired up. preventDefault stops the browser's own reaction to the
+            // skip press (scroll, zoom, focus move); the engine input subsystems
+            // are drained by the caller at handoff so the game's first update()
+            // sees no press edge. Every keydown still skips, but browser and OS
+            // shortcuts must keep working while the hold waits on init(), so a
+            // keydown with Ctrl, Meta or Alt held, or an F1-F12 key (F5 reload,
+            // F11 fullscreen, F12 DevTools), is not cancelled. A plain Event
+            // counts as a plain press.
+            if (event.cancelable && !isShortcutKey(event)) {
                 event.preventDefault();
             }
 
@@ -448,4 +453,19 @@ export class Splash {
         this.currentState = next;
         this.stateEnteredAt = at;
     }
+}
+
+/**
+ * Whether an event is a keydown the browser should keep handling: a Ctrl, Meta or
+ * Alt chord, or a function key. Anything that is not a `KeyboardEvent` is a plain press.
+ *
+ * @param event - The skip event.
+ * @returns `true` when the default action must not be cancelled.
+ */
+function isShortcutKey(event: Event): boolean {
+    if (!(event instanceof KeyboardEvent)) {
+        return false;
+    }
+
+    return event.ctrlKey || event.metaKey || event.altKey || /^F([1-9]|1[0-2])$/.test(event.key);
 }
