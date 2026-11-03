@@ -49,6 +49,9 @@ export class Splash {
     /** Whether the game's `init()` has settled (resolved or rejected). */
     private isInitSettled = false;
 
+    /** Clock reading when the game's `init()` first settled, in milliseconds. Only meaningful once {@link isInitSettled}. */
+    private initSettledAt = 0;
+
     /** Whether the viewer asked to skip, or reduced motion is preferred. Collapses the fade-in and the minimum hold. */
     private isSkipped = false;
 
@@ -263,10 +266,18 @@ export class Splash {
      *
      * The hold has a minimum but no maximum: it extends until this is called, so
      * the splash doubles as a loading screen. Called on both success and failure,
-     * so a failed `init()` cannot leave the splash holding forever.
+     * so a failed `init()` cannot leave the splash holding forever. The first call
+     * also records when the settle happened, so the fade-out can start from that
+     * moment rather than from a minimum hold that ran out long before (see
+     * {@link leaveShown}).
      */
     public markInitSettled(): void {
+        if (this.isInitSettled) {
+            return;
+        }
+
         this.isInitSettled = true;
+        this.initSettledAt = this.timeProvider();
     }
 
     /**
@@ -329,7 +340,10 @@ export class Splash {
      * the entry stamp advances by the elapsed state's exact duration rather than
      * to the current clock reading - so a single late frame cannot stretch the
      * whole sequence. A skipped state has no duration to carry, so it stamps at
-     * the current reading instead.
+     * the current reading instead. `shown` carries only up to the moment `init()`
+     * settled: its hold has no maximum, so a stamp at the end of the minimum hold
+     * could land far in the past and swallow the whole fade-out (see
+     * {@link leaveShown}).
      *
      * @returns `true` when a transition happened and another may follow.
      */
@@ -373,6 +387,15 @@ export class Splash {
      * The hold has a minimum but no maximum, so this refuses to move until the
      * game's `init()` has settled however long a skip has been waiting.
      *
+     * Without a skip, `fadingOut` is stamped at the later of the minimum hold's
+     * end and the moment `init()` settled. The first keeps the carry-leftover rule
+     * when the hold expires on its own; the second stops a slow `init()` from
+     * back-dating the fade-out past its own duration, which would cut the lit logo
+     * straight to black. Stamping at the settle rather than at `now` keeps one late
+     * frame from stretching the fade-out. A settle that happened while the tab was
+     * hidden can still be older than the fade-out on return, and then the sequence
+     * cascades to `done` as {@link advance} describes.
+     *
      * @param now - Current clock reading in milliseconds.
      * @param elapsed - Milliseconds spent in `shown`.
      * @returns `true` when the state changed.
@@ -385,7 +408,7 @@ export class Splash {
         if (this.isSkipped) {
             this.enter('fadingOut', now);
         } else if (elapsed >= HOLD_MIN_MS) {
-            this.enter('fadingOut', this.stateEnteredAt + HOLD_MIN_MS);
+            this.enter('fadingOut', Math.max(this.stateEnteredAt + HOLD_MIN_MS, this.initSettledAt));
         } else {
             return false;
         }
