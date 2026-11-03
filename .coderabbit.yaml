@@ -268,3 +268,9 @@ reviews:
   auto_review:
     enabled: false
     labels: ['cr']
+  # ESLint is disabled: CodeRabbit's sandbox cannot resolve the repo's ESLint config packages and
+  # skips the run with a missing-dependency warning. CI (Code Quality jobs) and the pre-push
+  # preflight already run ESLint with the real config.
+  tools:
+    eslint:
+      enabled: false
