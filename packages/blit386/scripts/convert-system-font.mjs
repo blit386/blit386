@@ -254,13 +254,23 @@ Options:
         process.exit(0);
     }
 
-    const inputPath = args.find((arg) => !arg.startsWith('-')) || DEFAULT_INPUT;
+    const unknownOption = args.find((arg) => arg.startsWith('-') && arg !== '--check');
+
+    if (unknownOption) {
+        console.error(`Unknown option: ${unknownOption} (see --help)`);
+        process.exit(1);
+    }
+
+    const positional = args.filter((arg) => !arg.startsWith('-'));
+    const inputPath = positional[0] || DEFAULT_INPUT;
     const bitmaps = extractBitmaps(inputPath);
     const source = generateTypeScript(bitmaps);
 
     if (args.includes('--check')) {
         if (readFileSync(OUTPUT_PATH, 'utf8') !== source) {
-            console.error('systemFontData.ts is stale - run pnpm run system-font:convert');
+            const inputArg = positional[0] ? ` ${positional[0]}` : '';
+
+            console.error(`systemFontData.ts is stale - run pnpm run system-font:convert${inputArg}`);
             process.exit(1);
         }
 
