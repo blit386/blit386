@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "The BLIT386 Splash"
 description: "The BLIT386 splash: gating, the loading-screen hold, the palette handoff, and the skip."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-11-03T18:21:50+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-splash.md"
 ---
 
@@ -126,6 +126,10 @@ screen is black rather than showing stale splash grays.
 ## The skip
 
 Any key, click, or tap skips.
+
+Browser shortcuts keep working during the splash. A key press with Ctrl, Cmd, or Alt held, and the function keys F1
+through F12, still skip but are not cancelled, so reload, find, fullscreen, and DevTools behave normally while `init()`
+loads. Plain keys such as Space and the arrows are cancelled, so the skip press does not scroll the page.
 
 Skip collapses the fade-in and the minimum hold, but it still waits on `init()`. When the splash is also the loading
 screen, "skip" cannot mean "start now" if the assets are not ready. The fade-out then runs at its full duration, because

@@ -130,6 +130,10 @@ screen is black rather than showing stale splash grays.
 
 Any key, click, or tap skips.
 
+Browser shortcuts keep working during the splash. A key press with Ctrl, Cmd, or Alt held, and the function keys F1
+through F12, still skip but are not cancelled, so reload, find, fullscreen, and DevTools behave normally while `init()`
+loads. Plain keys such as Space and the arrows are cancelled, so the skip press does not scroll the page.
+
 Skip collapses the fade-in and the minimum hold, but it still waits on `init()`. When the splash is also the loading
 screen, "skip" cannot mean "start now" if the assets are not ready. The fade-out then runs at its full duration, because
 it is the handoff into your palette rather than decoration - cutting it would produce exactly the hard cut the exposure
