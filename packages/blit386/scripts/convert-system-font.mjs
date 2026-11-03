@@ -46,6 +46,7 @@ const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
 const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
 const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
 const ON_THRESHOLD = 128; // Red channel >= this means "on".
+const CHECK_FLAG = '--check';
 
 /**
  * Reads the PNG and extracts bit patterns for every glyph (ASCII plus extras).
@@ -254,7 +255,7 @@ Options:
         process.exit(0);
     }
 
-    const unknownOption = args.find((arg) => arg.startsWith('-') && arg !== '--check');
+    const unknownOption = args.find((arg) => arg.startsWith('-') && arg !== CHECK_FLAG);
 
     if (unknownOption) {
         console.error(`Unknown option: ${unknownOption} (see --help)`);
@@ -266,9 +267,10 @@ Options:
     const bitmaps = extractBitmaps(inputPath);
     const source = generateTypeScript(bitmaps);
 
-    if (args.includes('--check')) {
+    if (args.includes(CHECK_FLAG)) {
         if (readFileSync(OUTPUT_PATH, 'utf8') !== source) {
-            const inputArg = positional[0] ? ` ${positional[0]}` : '';
+            // Single-quote the path so spaces and shell metacharacters survive a copy-paste.
+            const inputArg = positional[0] ? ` '${positional[0].replaceAll("'", "'\\''")}'` : '';
 
             console.error(`systemFontData.ts is stale - run pnpm run system-font:convert${inputArg}`);
             process.exit(1);
