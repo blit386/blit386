@@ -11,10 +11,13 @@
  * Everything else is "off" (transparent).
  *
  * Usage:
- *   node scripts/convert-system-font.mjs [input-path]
+ *   node scripts/convert-system-font.mjs [--check] [input-path]
  *
  * Default input: assets/system-font.png
  * Output: src/assets/fonts/systemFontData.ts (always overwritten)
+ *
+ * With --check nothing is written; the script exits 1 if the file on disk
+ * differs from the generated source (wired in as `pnpm run system-font:check`).
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -221,7 +224,7 @@ function generateTypeScript(bitmaps) {
     lines.push('/** Number of bytes per glyph (one byte per row). */');
     lines.push('export const SYSTEM_FONT_BYTES_PER_GLYPH = 14;');
 
-    return lines.join('\n');
+    return lines.join('\n') + '\n';
 }
 
 function main() {
@@ -238,20 +241,32 @@ listed in system-font-extra-chars.mjs (fallback, dashes, arrows, etc.).
 Any pixel with red channel >= 128 is treated as foreground.
 
 Usage:
-  node scripts/convert-system-font.mjs [input-path]
+  node scripts/convert-system-font.mjs [--check] [input-path]
 
 Default input: assets/system-font.png
-Output: src/assets/fonts/systemFontData.ts (always overwritten)
+Output: src/assets/fonts/systemFontData.ts (always overwritten, except with --check)
 
 Options:
+  --check        Write nothing; exit 1 if systemFontData.ts differs from what
+                 the input would generate
   -h, --help     Show this help message
 `);
         process.exit(0);
     }
 
-    const inputPath = args[0] || DEFAULT_INPUT;
+    const inputPath = args.find((arg) => !arg.startsWith('-')) || DEFAULT_INPUT;
     const bitmaps = extractBitmaps(inputPath);
     const source = generateTypeScript(bitmaps);
+
+    if (args.includes('--check')) {
+        if (readFileSync(OUTPUT_PATH, 'utf8') !== source) {
+            console.error('systemFontData.ts is stale - run pnpm run system-font:convert');
+            process.exit(1);
+        }
+
+        console.log('systemFontData.ts is up to date.');
+        return;
+    }
 
     writeFileSync(OUTPUT_PATH, source);
 
