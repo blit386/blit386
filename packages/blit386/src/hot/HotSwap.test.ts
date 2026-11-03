@@ -3,9 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings, IBTDemo } from '../core/IBTDemo';
+import { mergeHardwareSettings } from '../core/IBTDemo';
 import type { DemoConstructor } from '../utils/Bootstrap';
+import { Color32 } from '../utils/Color32';
+import { Vector2i } from '../utils/Vector2i';
 import * as HotRuntime from './HotRuntime';
-import { hasHardReloadDiff, hotSwapDemo, initFingerprint } from './HotSwap';
+import {
+    HARD_RELOAD_FIELDS,
+    hasHardReloadDiff,
+    HOT_RELOAD_IGNORED_FIELDS,
+    hotSwapDemo,
+    initFingerprint,
+} from './HotSwap';
 
 function resetSingleton(): void {
     (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
@@ -169,22 +178,76 @@ describe('hasHardReloadDiff', () => {
         expect(hasHardReloadDiff(base, changed)).toBe(true);
     });
 
-    // These five fields are deliberately excluded from the hard-reload comparison (per the
-    // originating issue's own field list): they are applied live by their own subsystems
-    // (PointerInput, KeyboardInput, WakeLock, Orientation) rather than requiring a fresh
-    // init(), so changing any of them must never force a Tier 3 hard reload.
-    const EXCLUDED_CHANGED_VALUES: Record<string, unknown> = {
+    // BTAPI reads these once at boot and a hot swap never updates its hwSettings, so a change
+    // can only take effect through a full page reload.
+    const BOOT_ONLY_CHANGED_VALUES: Record<string, unknown> = {
         isCapturingPointerScroll: true,
         isCapturingKeyboardScroll: true,
         isWakeLockEnabled: true,
         preferredOrientation: 'landscape',
         isDetectingDroppedFrames: true,
+        isFrameCaptureShortcutEnabled: true,
     };
 
-    it.each(Object.keys(EXCLUDED_CHANGED_VALUES))('is false when excluded field %s changes', (field) => {
-        // eslint-disable-next-line security/detect-object-injection -- field iterates EXCLUDED_CHANGED_VALUES' own keys, not external input
-        const changed = { ...base, [field]: EXCLUDED_CHANGED_VALUES[field] };
-        expect(hasHardReloadDiff(base, changed)).toBe(false);
+    it.each(Object.keys(BOOT_ONLY_CHANGED_VALUES))('is true when boot-only field %s changes', (field) => {
+        // eslint-disable-next-line security/detect-object-injection -- field iterates BOOT_ONLY_CHANGED_VALUES' own keys, not external input
+        const changed = { ...base, [field]: BOOT_ONLY_CHANGED_VALUES[field] };
+        expect(hasHardReloadDiff(base, changed)).toBe(true);
+    });
+
+    // Fails when a HardwareSettings field is added without deciding whether it forces a reload.
+    it('classifies every resolved HardwareSettings key as hard-reload or explicitly ignored', () => {
+        type CanonicalKeys = Exclude<
+            keyof HardwareSettings,
+            | 'detectDroppedFrames'
+            | 'overlayEnabled'
+            | 'overlayVisibleAtStart'
+            | 'overlayToggleHintVisible'
+            | 'overlayToggleEnabled'
+            | 'overlayPaletteView'
+            | 'overlayTimingChart'
+            | 'overlayRendererDiagnosticsBar'
+        >;
+        const full: Required<Pick<HardwareSettings, CanonicalKeys>> = {
+            displaySize: new Vector2i(320, 240),
+            drawingBufferSize: new Vector2i(640, 480),
+            maxCanvasSize: new Vector2i(1920, 1080),
+            targetFPS: 60,
+            outputUpscaleFilter: 'nearest',
+            isDetectingDroppedFrames: false,
+            isCapturingPointerScroll: false,
+            isCapturingKeyboardScroll: false,
+            isWakeLockEnabled: false,
+            preferredOrientation: 'any',
+            keyboardLayout: 'versus',
+            isSplashEnabled: false,
+            splashColorDark: Color32.black,
+            splashColorLight: Color32.white,
+            isFrameCaptureShortcutEnabled: false,
+            backend: 'webgpu',
+            audioVoices: 16,
+            isOverlayEnabled: true,
+            isOverlayVisibleAtStart: false,
+            isOverlayToggleHintVisible: true,
+            isOverlayToggleEnabled: true,
+            isOverlayToggleHitDebugVisible: false,
+            isOverlayPaletteEnabled: false,
+            overlayPaletteColumns: 16,
+            overlayPaletteRowsVisible: 4,
+            overlayStyle: {},
+            isOverlayTimingChartEnabled: false,
+            overlayTimingChartHeight: 32,
+            overlayTimingChartStyle: {},
+            overlayTimingChartDiagnostics: false,
+            isOverlayRendererDiagnosticsBarEnabled: false,
+            isOverlayAudioMetersEnabled: false,
+            overlayAudioMeterHeight: 16,
+            overlayAudioMeterStyle: {},
+        };
+        const classified = new Set<string>([...HARD_RELOAD_FIELDS, ...HOT_RELOAD_IGNORED_FIELDS]);
+        const unclassified = Object.keys(mergeHardwareSettings(full)).filter((key) => !classified.has(key));
+
+        expect(unclassified).toEqual([]);
     });
 });
 

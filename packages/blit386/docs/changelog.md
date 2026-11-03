@@ -49,6 +49,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Changing `isWakeLockEnabled`, `preferredOrientation`, `isCapturingPointerScroll`, `isCapturingKeyboardScroll`,
+  `isDetectingDroppedFrames`, or `isFrameCaptureShortcutEnabled` in `configure()` now forces a full page reload during
+  hot reload. The engine reads these once at boot, so a method-only or re-init swap silently left the old value in
+  place. See [Hot reload](guide-hot-reload.md#tier-3-hardware-settings-change).
 - The splash no longer cancels browser shortcuts while it waits on `init()`. Ctrl, Cmd, or Alt chords and F1-F12
   (reload, find, fullscreen, DevTools) used to be swallowed for as long as the splash held, and still skip it now. See
   [The skip](guide-splash.md#the-skip).

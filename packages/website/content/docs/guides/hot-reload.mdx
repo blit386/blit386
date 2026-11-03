@@ -148,9 +148,10 @@ import { type IBTDemo, type HardwareSettings, Vector2i } from 'blit386';
 class Demo implements IBTDemo {
   configure(): Partial<HardwareSettings> {
     // Changing displaySize, drawingBufferSize, backend, targetFPS, audioVoices,
-    // outputUpscaleFilter, maxCanvasSize, keyboardLayout, or any overlay flag
-    // forces a full page reload on save - there is no partial-swap path for
-    // hardware settings.
+    // outputUpscaleFilter, maxCanvasSize, keyboardLayout, isWakeLockEnabled,
+    // preferredOrientation, the scroll-capture flags, isDetectingDroppedFrames,
+    // isFrameCaptureShortcutEnabled, or any overlay flag forces a full page
+    // reload on save - there is no partial-swap path for hardware settings.
     return { displaySize: new Vector2i(320, 240) };
   }
 
@@ -164,6 +165,9 @@ class Demo implements IBTDemo {
 ```
 
 `onHotReload` never fires for a Tier 3 reload - the page is gone before there is anything left to notify.
+
+The splash settings (`isSplashEnabled`, `splashColorDark`, `splashColorLight`) are the exception: the splash plays once
+at boot, so changing them while the page is running does nothing until your next manual reload.
 
 Running under `?backend=software` does not itself force a Tier 3 reload on every edit. The comparison accounts for the
 URL override on both sides, so only a genuine `configure()` change - not the override alone - triggers a full page

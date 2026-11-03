@@ -26,6 +26,14 @@ const HARD_RELOAD_SCALAR_FIELDS = [
     'outputUpscaleFilter',
     // Seeds the keyboard maps once before init(), so a change needs a fresh init().
     'keyboardLayout',
+    // BTAPI reads each of these once at boot and a hot swap never refreshes its settings, so a
+    // change only takes effect after a full page reload.
+    'isCapturingPointerScroll',
+    'isCapturingKeyboardScroll',
+    'isWakeLockEnabled',
+    'preferredOrientation',
+    'isDetectingDroppedFrames',
+    'isFrameCaptureShortcutEnabled',
 ] as const;
 
 /** HardwareSettings overlay scalar/boolean/count flags that force a hard reload when they change. */
@@ -48,6 +56,21 @@ const HARD_RELOAD_OVERLAY_FLAG_FIELDS = [
 
 /** HardwareSettings style-object fields compared by JSON projection. */
 const HARD_RELOAD_STYLE_FIELDS = ['overlayStyle', 'overlayTimingChartStyle', 'overlayAudioMeterStyle'] as const;
+
+/**
+ * HardwareSettings fields deliberately left out of the reload comparison: the splash plays once
+ * at boot, so editing these mid-session has nothing to apply and reloading the page on every
+ * tweak would only replay the splash.
+ */
+export const HOT_RELOAD_IGNORED_FIELDS = ['isSplashEnabled', 'splashColorDark', 'splashColorLight'] as const;
+
+/** Every HardwareSettings field the reload comparison inspects; covered by a guard test. */
+export const HARD_RELOAD_FIELDS: readonly string[] = [
+    ...HARD_RELOAD_VECTOR_FIELDS,
+    ...HARD_RELOAD_SCALAR_FIELDS,
+    ...HARD_RELOAD_OVERLAY_FLAG_FIELDS,
+    ...HARD_RELOAD_STYLE_FIELDS,
+];
 
 /**
  * Matches the `class Name` (or anonymous `class`) header token at the very start of a
