@@ -235,6 +235,7 @@ pnpm run api:since:check            # Check public API @since / @changed / @depr
 pnpm run api:history:check          # Check API version-history manifest drift
 pnpm run api:deprecations           # Regenerate docs/reference-deprecations.md from the kit's migration registry
 pnpm run api:deprecations:check     # Check the deprecation timeline for drift
+pnpm run system-font:check          # Check systemFontData.ts for drift against the system font PNG
 pnpm run security:audit             # Dependency security audit (moderate+)
 pnpm run security:audit:prod        # Production-deps-only security audit
 pnpm run security:mcp-preflight     # MCP security preflight checks

@@ -45,7 +45,7 @@ package).
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
 | `pnpm run bench:baseline` | Run Tier 4 benchmarks and write `benchmark-baseline.json` (run on `main` before perf work) |
 | `pnpm run bench:compare` | Compare `benchmark-results.json` against `benchmark-baseline.json`, 25% regression threshold |
-| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `api:deprecations:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
+| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `api:deprecations:check`, `system-font:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
 | `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`, cursor rules parity, cursor `.mcp.json`, maintainer dogfood for Antigravity/Codex/Gemini/Copilot/OpenCode) |
 | `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
@@ -60,6 +60,7 @@ package).
 | `pnpm run api:getters:check` | Check `BT.*` getter/method coverage in `.claude/rules/bt-api-getters.md` |
 | `pnpm run api:deprecations` | Regenerate `docs/reference-deprecations.md` from the kit's migration registry |
 | `pnpm run api:deprecations:check` | Check `docs/reference-deprecations.md` for drift against that registry |
+| `pnpm run system-font:check` | Check `src/assets/fonts/systemFontData.ts` for drift against `assets/system-font.png` |
 | `pnpm run test:api-history` | API history generator unit tests (Node test) |
 | `pnpm run test:api-getters` | API getter drift checker unit tests (Node test) |
 | `pnpm run test:api-deprecations` | Deprecation timeline generator unit tests (Node test) |
