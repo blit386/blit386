@@ -120,27 +120,32 @@ describe('GamepadInput', () => {
 
     it('reports down/pressed/released edges across endFrame', () => {
         pads[0] = makeGamepad({ pressed: [0] });
-        input.endFrame(9); // roll(prev=disconnected); poll(current=pressed)
+        input.endUpdate(9); // roll(prev=disconnected)
+        input.endFrame(9); // poll(current=pressed)
 
         expect(input.isButtonDown(BT.BTN_A, 0)).toBe(true);
         expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 10)).toBe(true);
         expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(false);
 
-        input.endFrame(10); // roll(prev=current=pressed); poll(current still pressed)
+        input.endUpdate(10); // roll(prev=current=pressed)
+        input.endFrame(10); // poll(current still pressed)
 
         expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 11)).toBe(false);
 
         pads[0] = makeGamepad({ pressed: [] });
-        input.endFrame(11); // roll(prev=current=pressed); poll(current=released)
+        input.endUpdate(11); // roll(prev=current=pressed)
+        input.endFrame(11); // poll(current=released)
 
         expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(true);
     });
 
     it('supports repeat behavior for held buttons', () => {
         pads[0] = makeGamepad({ pressed: [0] });
-        input.endFrame(0); // roll(prev=disconnected); poll(current=pressed)
+        input.endUpdate(0); // roll(prev=disconnected)
+        input.endFrame(0); // poll(current=pressed)
 
         expect(input.isButtonPressed(BT.BTN_A, 0, 3, 5)).toBe(true);
+        input.endUpdate(5);
         input.endFrame(5);
 
         expect(input.isButtonPressed(BT.BTN_A, 0, 3, 6)).toBe(false);
@@ -213,15 +218,18 @@ describe('GamepadInput', () => {
 
     it('reports trigger pressed/released edges and supports repeat', () => {
         pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1] });
+        input.endUpdate(0);
         input.endFrame(0);
 
         expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 5)).toBe(true);
+        input.endUpdate(5);
         input.endFrame(5);
 
         expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 6)).toBe(false);
         expect(input.isButtonPressed(BT.BTN_L2, 0, 3, 8)).toBe(true);
 
         pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0] });
+        input.endUpdate(9);
         input.endFrame(9);
 
         expect(input.isButtonReleased(BT.BTN_L2, 0)).toBe(true);
@@ -238,8 +246,10 @@ describe('GamepadInput', () => {
 
     it('treats disconnect as release for a held trigger', () => {
         pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0, 1] });
+        input.endUpdate(1);
         input.endFrame(1);
         pads[0] = null;
+        input.endUpdate(2);
         input.endFrame(2);
 
         expect(input.isButtonReleased(BT.BTN_R2, 0)).toBe(true);
@@ -287,11 +297,14 @@ describe('GamepadInput', () => {
 
     it('treats disconnect as release for previously held buttons', () => {
         pads[0] = makeGamepad({ pressed: [0, 1] });
-        input.endFrame(1); // roll(prev=disconnected); poll(current=pressed, connected)
-        input.endFrame(2); // roll(prev=current=pressed, connected); poll(current unchanged)
+        input.endUpdate(1); // roll(prev=disconnected)
+        input.endFrame(1); // poll(current=pressed, connected)
+        input.endUpdate(2); // roll(prev=current=pressed, connected)
+        input.endFrame(2); // poll(current unchanged)
 
         pads[0] = null;
-        input.endFrame(3); // roll(prev=current=pressed, connected); poll(current=disconnected)
+        input.endUpdate(3); // roll(prev=current=pressed, connected)
+        input.endFrame(3); // poll(current=disconnected)
         expect(input.isButtonReleased(BT.BTN_A | BT.BTN_B, 0)).toBe(true);
     });
 
@@ -326,12 +339,15 @@ describe('GamepadInput', () => {
 
         it('isAnyButtonPressed fires for a new button while another is held', () => {
             pads[0] = makeGamepad({ pressed: [0] });
+            input.endUpdate(1);
             input.endFrame(1);
+            input.endUpdate(2);
             input.endFrame(2);
 
             expect(input.isAnyButtonPressed(0, undefined, 2)).toBe(false);
 
             pads[0] = makeGamepad({ pressed: [0, 1] });
+            input.endUpdate(3);
             input.endFrame(3);
 
             expect(input.isAnyButtonPressed(0, undefined, 3)).toBe(true);
@@ -339,9 +355,11 @@ describe('GamepadInput', () => {
 
         it('isAnyButtonPressed repeats while held', () => {
             pads[0] = makeGamepad({ pressed: [0] });
+            input.endUpdate(0);
             input.endFrame(0);
 
             expect(input.isAnyButtonPressed(0, 3, 5)).toBe(true);
+            input.endUpdate(5);
             input.endFrame(5);
 
             expect(input.isAnyButtonPressed(0, 3, 6)).toBe(false);
@@ -358,19 +376,24 @@ describe('GamepadInput', () => {
 
         it('isAnyButtonReleased waits until every button is up', () => {
             pads[0] = makeGamepad({ pressed: [0, 1] });
+            input.endUpdate(1);
             input.endFrame(1);
+            input.endUpdate(2);
             input.endFrame(2);
 
             pads[0] = makeGamepad({ pressed: [1] });
+            input.endUpdate(3);
             input.endFrame(3);
 
             expect(input.isAnyButtonReleased(0)).toBe(false);
 
             pads[0] = makeGamepad({ pressed: [] });
+            input.endUpdate(4);
             input.endFrame(4);
 
             expect(input.isAnyButtonReleased(0)).toBe(true);
 
+            input.endUpdate(5);
             input.endFrame(5);
 
             expect(input.isAnyButtonReleased(0)).toBe(false);
@@ -378,10 +401,13 @@ describe('GamepadInput', () => {
 
         it('isAnyButtonReleased treats a disconnect while held as a release', () => {
             pads[0] = makeGamepad({ pressed: [0] });
+            input.endUpdate(1);
             input.endFrame(1);
+            input.endUpdate(2);
             input.endFrame(2);
 
             pads[0] = null;
+            input.endUpdate(3);
             input.endFrame(3);
 
             expect(input.isAnyButtonReleased(0)).toBe(true);
@@ -402,10 +428,13 @@ describe('GamepadInput', () => {
 
         it('isAnyButtonReleased ignores a trigger that is still held', () => {
             pads[0] = makeGamepad({ pressed: [0], buttons: [1, 0, 0, 0, 0, 0, 1] });
+            input.endUpdate(1);
             input.endFrame(1);
+            input.endUpdate(2);
             input.endFrame(2);
 
             pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 1] });
+            input.endUpdate(3);
             input.endFrame(3);
 
             expect(input.isAnyButtonReleased(0)).toBe(true);
@@ -417,6 +446,81 @@ describe('GamepadInput', () => {
             expect(input.isAnyButtonReleased(4)).toBe(false);
             expect(input.isAnyButtonDown(0)).toBe(false);
             expect(input.isAnyButtonReleased(0)).toBe(false);
+        });
+    });
+
+    // BTAPI runs zero or more update steps per rendered frame: each update reads input and then
+    // calls endUpdate(tick), and the frame ends with one endFrame(tick) poll. These tests follow
+    // that order, including frames with no update (120 Hz display) and frames with two.
+    describe('update-clock edges', () => {
+        it('keeps a press edge across a render-only frame until an update reads it', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endFrame(1); // a frame that ran no update
+
+            expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 1)).toBe(true);
+        });
+
+        it('keeps a release edge across a render-only frame until an update reads it', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endUpdate(1);
+
+            pads[0] = makeGamepad({});
+            input.endFrame(2);
+            input.endFrame(2); // a frame that ran no update
+
+            expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(true);
+        });
+
+        it('reports a press edge to only the first of two updates in one frame', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+
+            expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 1)).toBe(true);
+            input.endUpdate(1);
+
+            expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 2)).toBe(false);
+        });
+
+        it('starts repeat after a press that arrived on a render-only frame and no update queried', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endFrame(1); // a frame that ran no update
+            input.endUpdate(1); // tick 1 never asked about A
+
+            expect(input.isButtonPressed(BT.BTN_A, 0, 3, 3)).toBe(false);
+            expect(input.isButtonPressed(BT.BTN_A, 0, 3, 4)).toBe(true);
+        });
+
+        it('runs the any-button edges on the same clock', () => {
+            pads[0] = makeGamepad({ pressed: [1] });
+            input.endFrame(1);
+            input.endFrame(1);
+
+            expect(input.isAnyButtonPressed(0, undefined, 1)).toBe(true);
+            input.endUpdate(1);
+            expect(input.isAnyButtonPressed(0, undefined, 2)).toBe(false);
+
+            pads[0] = makeGamepad({});
+            input.endFrame(2);
+            input.endFrame(2);
+
+            expect(input.isAnyButtonReleased(0)).toBe(true);
+            input.endUpdate(2);
+            expect(input.isAnyButtonReleased(0)).toBe(false);
+        });
+
+        it('never polls from endUpdate', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+
+            const getGamepadsSpy = vi.mocked(globalThis.navigator.getGamepads);
+            getGamepadsSpy.mockClear();
+
+            input.endUpdate(1);
+            input.endUpdate(2);
+            expect(getGamepadsSpy).not.toHaveBeenCalled();
         });
     });
 });

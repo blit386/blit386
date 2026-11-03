@@ -2,11 +2,12 @@
  * Gamepad input subsystem.
  *
  * Uses the browser Gamepad API. `navigator.getGamepads()` is polled exactly
- * once per rendered frame, inside {@link GamepadInput.endFrame}: the frame
- * that's ending is first rolled into previous-state (for edge detection via
- * {@link isButtonPressed} / {@link isButtonReleased} and optional repeat
- * timing), then fresh state is polled for the frame about to start. Public
- * accessors read that cached snapshot and never trigger a poll themselves.
+ * once per rendered frame, inside {@link GamepadInput.endFrame}. Previous-state
+ * (for edge detection via {@link GamepadInput.isButtonPressed} /
+ * {@link GamepadInput.isButtonReleased} and repeat anchors) rolls over once per
+ * fixed update, inside {@link GamepadInput.endUpdate}, so every edge is reported
+ * to exactly one update - like `KeyboardInput`. Public accessors read the cached
+ * snapshot and never trigger a poll themselves.
  */
 /* eslint-disable security/detect-object-injection */
 
@@ -173,7 +174,7 @@ function isButtonDown(pad: Gamepad, index: number): boolean {
 }
 
 /**
- * Per-player gamepad snapshot used for current and previous frame state.
+ * Per-player gamepad snapshot used for current state and the previous-update snapshot.
  */
 interface PlayerSnapshot {
     /** Whether a gamepad is connected for this player slot. */
@@ -185,13 +186,13 @@ interface PlayerSnapshot {
 }
 
 /**
- * Polling-based gamepad input tracker with per-frame previous-state snapshots.
+ * Polling-based gamepad input tracker with per-update previous-state snapshots.
  */
 export class GamepadInput {
     /** Current polled state per player slot. */
     private readonly current: readonly [PlayerSnapshot, PlayerSnapshot, PlayerSnapshot, PlayerSnapshot];
 
-    /** End-of-frame previous snapshot per player slot. */
+    /** Snapshot taken at the last {@link GamepadInput.endUpdate}, per player slot. */
     private readonly previous: readonly [PlayerSnapshot, PlayerSnapshot, PlayerSnapshot, PlayerSnapshot];
 
     /** First tick each button was pressed per player (for repeat behavior). */
@@ -284,19 +285,36 @@ export class GamepadInput {
     }
 
     /**
-     * Snapshots this frame's state into previous-state storage for next
-     * frame's edge detection, then polls gamepads once for the frame about to
-     * start.
+     * Polls gamepads once for the frame about to start. Call once per rendered
+     * frame. It never rolls previous-state over, so an edge polled on a frame
+     * that runs no update stays visible until an update reads it.
      *
      * @param _currentTick - Current engine tick (unused; kept for BTAPI parity).
      */
     public endFrame(_currentTick: number): void {
+        this.poll();
+    }
+
+    /**
+     * Ends a fixed update step: records the repeat anchor of every button that
+     * went down since the last update, then snapshots current state into
+     * previous-state. Call once per `demo.update()`, after it ran.
+     *
+     * @param currentTick - Tick of the update that just read input.
+     */
+    public endUpdate(currentTick: number): void {
         for (let i = 0; i < GAMEPAD_PLAYER_COUNT; i++) {
             const current = this.current[i];
             const previous = this.previous[i];
 
             if (!current || !previous) {
                 continue;
+            }
+
+            const newPresses = current.buttons & ~previous.buttons;
+
+            if (current.isConnected && newPresses !== 0) {
+                this.recordNewPressTicks(i, newPresses, currentTick);
             }
 
             previous.isConnected = current.isConnected;
@@ -306,8 +324,6 @@ export class GamepadInput {
                 previous.axes[a] = current.axes[a] ?? 0;
             }
         }
-
-        this.poll();
     }
 
     /**
@@ -363,10 +379,7 @@ export class GamepadInput {
             return false;
         }
 
-        const edgeMask = current.buttons & ~previous.buttons & buttonMask;
-
-        if (edgeMask !== 0) {
-            this.recordNewPressTicks(index, edgeMask, currentTick);
+        if ((current.buttons & ~previous.buttons & buttonMask) !== 0) {
             return true;
         }
 
@@ -392,7 +405,7 @@ export class GamepadInput {
     }
 
     /**
-     * Reports whether any button in `buttonMask` was released this frame, including
+     * Reports whether any button in `buttonMask` was released since the last update, including
      * when the gamepad disconnects while buttons were held.
      *
      * @param buttonMask - One or more `BTN_*` bit flags.
@@ -448,12 +461,12 @@ export class GamepadInput {
     }
 
     /**
-     * Release edge for "everything is up": no button is held now, and at least one was held on
-     * the previous frame. Releasing one button while another stays down does not count; a
+     * Release edge for "everything is up": no button is held now, and at least one was held at
+     * the last update. Releasing one button while another stays down does not count; a
      * disconnect while buttons were held does.
      *
      * @param player - Zero-based player index.
-     * @returns `true` on the frame the last held button comes up.
+     * @returns `true` on the first update after the last held button comes up.
      */
     public isAnyButtonReleased(player: number): boolean {
         const index = this.normalizePlayer(player);
@@ -747,7 +760,7 @@ export class GamepadInput {
     }
 
     /**
-     * Stores first-press ticks for newly pressed buttons in this frame.
+     * Stores first-press ticks for buttons newly pressed since the last update.
      *
      * @param player - Player slot index.
      * @param edgeMask - Newly pressed button bits.

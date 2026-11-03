@@ -6,6 +6,9 @@
  * the cached snapshot from that single poll and never trigger one themselves; axis tuples are preallocated
  * and written in place rather than reallocated per poll. The realistic-mix benchmark below is what regresses
  * if either guarantee breaks (a query starts polling again, or an axes array starts reallocating).
+ *
+ * Previous-state rolls over once per fixed update, inside `endUpdate()`, which never polls; it also records
+ * the repeat anchor of each new press.
  */
 import { bench, describe, vi } from 'vitest';
 
@@ -120,6 +123,29 @@ describe('GamepadInput any-button queries', () => {
             input.isAnyButtonDown(0);
             input.isAnyButtonPressed(0, 10, 100);
             input.isAnyButtonReleased(0);
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+describe('GamepadInput.endUpdate', () => {
+    let tick = 0;
+
+    bench(
+        'endUpdate',
+        () => {
+            tick++;
+            input.endUpdate(tick);
+        },
+        BENCH_OPTIONS,
+    );
+
+    bench(
+        'endUpdate + endFrame (one update, one rendered frame)',
+        () => {
+            tick++;
+            input.endUpdate(tick);
+            input.endFrame(tick);
         },
         BENCH_OPTIONS,
     );

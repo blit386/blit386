@@ -53,7 +53,8 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   ran no `update()`, and an empty `pointerType` counting as the mouse (happy-dom)
 - KeyboardInput and keyboardRuntimeMaps - `isAnyKey*` edges and repeat, the `'versus'` / `'single'` layouts, and
   `BT.inputMapReset()` (happy-dom; the runtime map tables in Node)
-- GamepadInput - digital triggers (`BTN_L2` / `BTN_R2` at the 50% threshold) and `isAnyButton*` (Node + vi stubs)
+- GamepadInput - digital triggers (`BTN_L2` / `BTN_R2` at the 50% threshold), `isAnyButton*`, and edges and repeat on
+  the fixed-update clock across render-only and multi-update frames (Node + vi stubs)
 - clientToDisplayPos - the one conversion shared by pointer input and `BT.nativeScreenToDisplayPos` (Node)
 - AudioManager - unlock state machine and the park/unpark pair a `renderAt` seek uses (happy-dom + Web Audio mocks)
 - WebGPURenderer - frame lifecycle, camera, pipeline delegation (Node + GPU mocks)

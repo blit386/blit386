@@ -245,10 +245,9 @@ if (BT.isAnyButtonPressed(0)) {
   keyboard. `player` defaults to `0`.
 - Call the pressed and released checks from `update()`, not `render()`. The held checks (`isAnyKeyDown`,
   `isAnyButtonDown`) are safe anywhere.
-- The keyboard edges clear once per fixed-update tick, and are buffered so a fast tap is never dropped. The gamepad
-  edges follow `BT.isPressed` and `BT.isReleased` instead: they roll over once per rendered frame, so on a display
-  faster than `targetFPS` a gamepad edge can be missed by a frame that runs no update, and a frame that runs several
-  updates reports the same edge to each of them. See [Frame-timing semantics](#frame-timing-semantics).
+- Keyboard and gamepad edges both clear once per fixed-update tick, so each press or release reaches exactly one
+  `update()`, whatever the display refresh rate. Keyboard edges are also buffered so a fast tap is never dropped. See
+  [Frame-timing semantics](#frame-timing-semantics).
 
 <DemoEmbed demo="any-input" title="BLIT386 any-input demo" />
 
@@ -545,15 +544,19 @@ Both are no-ops before the engine is initialized. The cursor is restored automat
 
 ## Frame-timing semantics
 
-Pointer and gamepad previous-state rollover happens at the end of each animation frame, after `demo.update()` and
-`demo.render()` have run. Keyboard press/release edges and `BT.inputString` align with the fixed update rate
-(`targetFPS`), not the display refresh rate:
+Pointer previous-state rollover happens at the end of each animation frame, after `demo.update()` and `demo.render()`
+have run. Keyboard and gamepad press/release edges and `BT.inputString` align with the fixed update rate (`targetFPS`),
+not the display refresh rate:
 
 - On a 120 Hz monitor with `targetFPS: 60`, `render()` may run twice per `update()`. Keyboard edges are buffered on DOM
   events and consumed on the next fixed update so fast taps are not dropped between render-only frames.
 - `pointerDelta()` reflects movement between the last `update()` and the current one.
-- Gamepad current state is polled from the Gamepad API once per render frame, immediately after that frame's
-  previous-state rollover. Button/axis queries read that cached snapshot and never trigger a poll themselves.
+- Gamepad current state is polled from the Gamepad API once per render frame, at the end of the frame. Button/axis
+  queries read that cached snapshot and never trigger a poll themselves. Previous-state rolls over after each
+  `update()`, so a press polled on a frame that runs no update is reported to the next update, and a frame that runs
+  several updates reports it to the first one only. Hold-to-repeat counts from that update's tick.
+- Gamepads are polled, not event-driven, so a tap too short to show up in any poll is lost, and one whose press and
+  release both land between two updates (under about two rendered frames) is lost too.
 - Read `BT.inputString` during `update()`; the buffer clears at the end of each fixed update step.
 
 Pointer transitions:

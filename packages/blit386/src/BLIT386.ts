@@ -2041,14 +2041,15 @@ export const BT = {
      * Same parameter semantics as {@link isDown}; returns `true` only on
      * the frame the button transitions from up to down.
      *
-     * Call from `update()`, not `render()`, for reliable detection: for keyboard-mapped
-     * face buttons (players 0 and 1), the press edge clears once per fixed-update tick,
-     * which always runs before that frame's `render()`.
+     * Call from `update()`, not `render()`, for reliable detection: for keyboard and
+     * gamepad buttons, the press edge clears once per fixed-update tick, which always
+     * runs before that frame's `render()`.
      *
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
+     * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2147,14 +2148,15 @@ export const BT = {
      * Same parameter semantics as {@link isDown}; returns `true` only on
      * the frame the button transitions from down to up.
      *
-     * Call from `update()`, not `render()`, for reliable detection: for keyboard-mapped
-     * face buttons (players 0 and 1), the release edge clears once per fixed-update tick,
-     * which always runs before that frame's `render()`.
+     * Call from `update()`, not `render()`, for reliable detection: for keyboard and
+     * gamepad buttons, the release edge clears once per fixed-update tick, which always
+     * runs before that frame's `render()`.
      *
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
+     * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2478,13 +2480,13 @@ export const BT = {
     },
 
     /**
-     * Checks whether any gamepad button was pressed since the last rendered frame.
+     * Checks whether any gamepad button was pressed since the last fixed update.
      *
-     * Same press and repeat semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`.
-     * Like {@link isPressed}, the gamepad edge rolls over once per rendered frame, not once per fixed update: a
-     * frame that runs no update can miss it, and a frame that runs several updates reports it to each.
+     * Same press and repeat semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`:
+     * like {@link isPressed}, the edge clears once per fixed update, so each press reaches exactly one `update()`.
      *
      * @since 1.8.0
+     * @changed 1.8.1 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
      * @param player - Zero-based gamepad index (0-3).
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
      * @returns `true` on a press edge (and on repeat ticks when configured).
@@ -2498,14 +2500,14 @@ export const BT = {
     /**
      * Checks whether every gamepad button has just been released for a player.
      *
-     * Same "everything is up" meaning as {@link isAnyKeyReleased}: `true` only on the frame where no button
+     * Same "everything is up" meaning as {@link isAnyKeyReleased}: `true` only on the update where no button
      * is held any more and at least one was held before. A gamepad disconnecting while buttons were held
-     * also counts. Call from `update()`. Like {@link isReleased}, the edge rolls over once per rendered frame,
-     * not once per fixed update.
+     * also counts. Call from `update()`: like {@link isReleased}, the edge clears once per fixed update.
      *
      * @since 1.8.0
+     * @changed 1.8.1 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
      * @param player - Zero-based gamepad index (0-3).
-     * @returns `true` on the frame the last held button comes up.
+     * @returns `true` on the first update after the last held button comes up.
      */
     isAnyButtonReleased: (player: number = 0): boolean => {
         return BTAPI.instance.getGamepad()?.isAnyButtonReleased(player) ?? false;

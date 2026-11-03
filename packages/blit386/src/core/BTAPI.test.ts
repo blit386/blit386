@@ -1047,6 +1047,41 @@ describe('BTAPI', () => {
             expect(activeEffectCount()).toBe(0);
         });
 
+        it("from 'start' reads a gamepad button held before the seek as held, not as a new press", async () => {
+            // A pad button that went down after the last poll and is still held when the seek starts.
+            // The drain must poll first and then roll over, or the replay's first update sees a press.
+            const isAHeld = { value: false };
+            const buttons = Array.from({ length: 16 }, (_, index) => ({
+                get pressed(): boolean {
+                    return index === 0 && isAHeld.value;
+                },
+                touched: false,
+                get value(): number {
+                    return index === 0 && isAHeld.value ? 1 : 0;
+                },
+            }));
+            const pad = { connected: true, axes: [0, 0, 0, 0], buttons } as unknown as Gamepad;
+
+            Object.defineProperty(globalThis.navigator, 'getGamepads', {
+                configurable: true,
+                value: () => [pad, null, null, null],
+            });
+
+            const pressedByUpdate: boolean[] = [];
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.update).mockImplementation(() => {
+                pressedByUpdate.push(BT.isPressed(BT.BTN_A));
+            });
+            await boot(demo);
+
+            isAHeld.value = true;
+            await BTAPI.instance.renderAt(1 / 60);
+
+            expect(pressedByUpdate).toEqual([false]);
+            expect(BT.isDown(BT.BTN_A)).toBe(true);
+        });
+
         describe("from 'start' with a class-based demo", () => {
             /** Instances built so far, in construction order. */
             let built: CountingDemo[] = [];
@@ -6097,6 +6132,142 @@ describe('camera reset persistence through the real game loop', () => {
         drainFramesUntil(() => BTAPI.instance.getTicks() !== ticksBeforeCommit);
 
         expect(cameraSamples.at(-1)).toEqual(new Vector2i(0, 0));
+    });
+});
+
+describe('gamepad edges through the real game loop', () => {
+    let pads: (Gamepad | null)[];
+
+    /**
+     * Builds a connected standard-mapping pad with only button 0 (A) possibly held.
+     *
+     * @param isAHeld - Whether A is down.
+     * @returns A minimal `Gamepad` stand-in.
+     */
+    function makePad(isAHeld: boolean): Gamepad {
+        const buttons = Array.from({ length: 16 }, (_, index) => ({
+            pressed: index === 0 && isAHeld,
+            touched: false,
+            value: index === 0 && isAHeld ? 1 : 0,
+        }));
+
+        return { connected: true, axes: [0, 0, 0, 0], buttons } as unknown as Gamepad;
+    }
+
+    beforeEach(() => {
+        resetSingleton();
+
+        vi.resetAllMocks();
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
+        installMockNavigatorGPU();
+
+        pads = [null, null, null, null];
+        Object.defineProperty(globalThis.navigator, 'getGamepads', { configurable: true, value: () => pads });
+    });
+
+    afterEach(() => {
+        (BTAPI.instance as unknown as { loop: GameLoop | null }).loop?.stop();
+
+        resetSingleton();
+
+        uninstallMockNavigatorGPU();
+
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it('reports a pad press and release to exactly one update across render-only and double-update frames', async () => {
+        // Same synthetic clock as the camera test above: rAF timestamps and performance.now()
+        // share it, so the number of updates each frame runs is fully determined.
+        let clock = 0;
+
+        vi.spyOn(performance, 'now').mockImplementation(() => clock);
+
+        const rafCallbacks: FrameRequestCallback[] = [];
+
+        vi.stubGlobal(
+            'requestAnimationFrame',
+            vi.fn((callback: FrameRequestCallback) => {
+                rafCallbacks.push(callback);
+
+                return rafCallbacks.length;
+            }),
+        );
+
+        /**
+         * Advances the clock by `ms` and fires the next queued frame.
+         *
+         * @param ms - Frame length in milliseconds.
+         * @returns How many fixed updates the frame ran.
+         */
+        function runFrame(ms: number): number {
+            const ticksBefore = BTAPI.instance.getTicks();
+
+            clock += ms;
+            rafCallbacks.shift()?.(clock);
+
+            return BTAPI.instance.getTicks() - ticksBefore;
+        }
+
+        /**
+         * Runs 4 ms frames until one runs an update, which leaves less than 4 ms in the
+         * accumulator - so the next two 4 ms frames are guaranteed to run no update.
+         */
+        function syncToUpdate(): void {
+            for (let frames = 0; runFrame(4) === 0; frames++) {
+                if (frames >= 100) {
+                    throw new Error('No fixed update ran within 100 frames.');
+                }
+            }
+        }
+
+        const presses: boolean[] = [];
+        const releases: boolean[] = [];
+
+        const demo: IBTDemo = {
+            configure: () => ({
+                isSplashEnabled: false,
+                displaySize: new Vector2i(320, 240),
+                targetFPS: 60,
+            }),
+            init: vi.fn().mockResolvedValue(true),
+            update: vi.fn(() => {
+                presses.push(BT.isPressed(BT.BTN_A));
+                releases.push(BT.isReleased(BT.BTN_A));
+            }),
+            render: vi.fn(),
+        };
+
+        pads[0] = makePad(false);
+
+        await BTAPI.instance.init(demo, makeMockCanvas());
+        BTAPI.instance.setPalette(new Palette(16));
+
+        // GameLoop.start() double-rAF-bootstraps before its first real tick.
+        runFrame(4);
+        runFrame(4);
+        syncToUpdate();
+
+        // The press is polled at the end of a frame that runs no update, then a second
+        // render-only frame passes, then one frame runs several updates.
+        presses.length = 0;
+        pads[0] = makePad(true);
+
+        expect(runFrame(4)).toBe(0);
+        expect(runFrame(4)).toBe(0);
+        expect(runFrame(40)).toBeGreaterThanOrEqual(2);
+        expect(presses[0]).toBe(true);
+        expect(presses.filter(Boolean)).toHaveLength(1);
+
+        syncToUpdate();
+        releases.length = 0;
+        pads[0] = makePad(false);
+
+        expect(runFrame(4)).toBe(0);
+        expect(runFrame(4)).toBe(0);
+        expect(runFrame(40)).toBeGreaterThanOrEqual(2);
+        expect(releases[0]).toBe(true);
+        expect(releases.filter(Boolean)).toHaveLength(1);
     });
 });
 

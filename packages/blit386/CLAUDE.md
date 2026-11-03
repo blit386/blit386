@@ -64,14 +64,16 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
   `'single'` gives player 0 WASD and the arrows and moves player 1 to IJKL. `BT.inputMap` overrides single buttons;
   `BT.inputMapReset` restores the active layout's defaults, not `'versus'`
 - `BT.isAnyKey*` cover every key; `BT.isAnyButton*` cover `BTN_UP` through `BTN_SELECT` only - never the triggers
-- Pointer and gamepad previous-state rollover is end-of-render-frame aligned. Keyboard is different: press/release edges
-  and `inputString` clear once per fixed-update tick (inside `demo.update()`), which always runs before that frame's
-  `render()`. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
-  `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()` - reading an edge from `render()`
-  races the update tick that already cleared it and intermittently misses presses under rapid input. `BT.isKeyDown` /
-  `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and
-  the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
-  time because the overlay itself read the toggle key's edge from the render phase
+- Pointer previous-state rollover is end-of-render-frame aligned. Keyboard and gamepad are different: press/release
+  edges and `inputString` clear once per fixed-update tick (`KeyboardInput.endUpdate` / `GamepadInput.endUpdate`, right
+  after `demo.update()`), which always runs before that frame's `render()`; the gamepad is still polled once per render
+  frame (`GamepadInput.endFrame`), and that poll never rolls edges over. Call `BT.isKeyPressed`, `BT.isKeyReleased`,
+  `BT.inputString`, `BT.isPressed` / `BT.isReleased` for keyboard and gamepad buttons, and `BT.isAnyKey*` /
+  `BT.isAnyButton*` edges from `update()`, never `render()` - reading an edge from `render()` races the update tick that
+  already cleared it and intermittently misses presses under rapid input. `BT.isKeyDown` / `BT.isDown` (held state, not
+  edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and the postmortem this rule came
+  from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the time because the overlay
+  itself read the toggle key's edge from the render phase
 - A pointer press that lands in a render frame with no `update()` step (display faster than `targetFPS`) is carried to
   the next frame that runs one, so `update()`-side `BT.isPressed` never misses a click; render-side readers (the
   overlay) still see each press once. Pointer and gamepad hold state is unaffected
