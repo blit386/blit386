@@ -32,9 +32,11 @@ Not every edit is the same:
 2. Re-init - you edited `init()`, the constructor, or a class field initializer. The engine builds a fresh instance and
    runs `init()` again. Without extra code, fields reset to whatever `init()` sets. Optional `onHotReload` lets you copy
    important values across (see below).
-3. Full page reload - you changed something in `configure()` that rebuilds the screen or audio graph (`displaySize`,
-   `backend`, `targetFPS`, `audioVoices`, overlay flags, and friends). The page reloads because those settings cannot be
-   swapped live.
+3. Full page reload - you changed a setting `configure()` returns (`displaySize`, `backend`, `targetFPS`, `audioVoices`,
+   overlay flags, `isCapturingKeyboardScroll`, and the rest). The page reloads because the engine reads those settings
+   once at startup and cannot swap them live (engine 1.8.1+ reloads for every one of them). The splash settings
+   (`isSplashEnabled`, `splashColorDark`, `splashColorLight`) are the exception: the splash only plays at startup, so
+   editing them reloads nothing.
 
 ## Keep state across a re-init
 

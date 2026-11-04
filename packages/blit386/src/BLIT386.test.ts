@@ -1166,23 +1166,21 @@ describe('BT.isPressed', () => {
     });
 
     it('reads pointer buttons with the carried press inside update()', () => {
-        const isButtonPressedLatched = vi.fn().mockReturnValue(true);
-        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressedLatched } as never);
+        const isButtonPressed = vi.fn().mockReturnValue(true);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressed } as never);
         vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
 
         expect(BT.isPressed(BT.BTN_POINTER_B, 0)).toBe(true);
-        expect(isButtonPressedLatched).toHaveBeenCalledWith(21, 0);
+        expect(isButtonPressed).toHaveBeenCalledWith(21, 0, 'update');
     });
 
     it('reads pointer buttons without the carried press outside update()', () => {
         const isButtonPressed = vi.fn().mockReturnValue(true);
-        const isButtonPressedLatched = vi.fn().mockReturnValue(true);
-        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressed, isButtonPressedLatched } as never);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonPressed } as never);
         vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(false);
 
         expect(BT.isPressed(BT.BTN_POINTER_B, 0)).toBe(true);
-        expect(isButtonPressed).toHaveBeenCalledWith(21, 0);
-        expect(isButtonPressedLatched).not.toHaveBeenCalled();
+        expect(isButtonPressed).toHaveBeenCalledWith(21, 0, 'frame');
     });
 
     it('forwards repeatRate to keyboard/gamepad face-button queries', () => {
@@ -1253,7 +1251,16 @@ describe('BT.isReleased', () => {
         vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonReleased } as never);
 
         expect(BT.isReleased(BT.BTN_POINTER_C, 2)).toBe(true);
-        expect(isButtonReleased).toHaveBeenCalledWith(22, 2);
+        expect(isButtonReleased).toHaveBeenCalledWith(22, 2, 'frame');
+    });
+
+    it('reads pointer releases on the update clock inside update()', () => {
+        const isButtonReleased = vi.fn().mockReturnValue(true);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ isButtonReleased } as never);
+        vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
+
+        expect(BT.isReleased(BT.BTN_POINTER_A, 0)).toBe(true);
+        expect(isButtonReleased).toHaveBeenCalledWith(20, 0, 'update');
     });
 
     it('merges keyboard and gamepad for players 0 and 1', () => {
@@ -1495,7 +1502,17 @@ describe('BT.pointerDelta', () => {
         vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getDelta } as never);
 
         expect(BT.pointerDelta(1)).toBe(expected);
-        expect(getDelta).toHaveBeenCalledWith(1);
+        expect(getDelta).toHaveBeenCalledWith(1, 'frame');
+    });
+
+    it('reads the update clock inside update()', () => {
+        const getDelta = vi.fn().mockReturnValue(new Vector2i(1, 2));
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getDelta } as never);
+        vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
+
+        BT.pointerDelta(1);
+
+        expect(getDelta).toHaveBeenCalledWith(1, 'update');
     });
 });
 
@@ -1607,8 +1624,19 @@ describe('BT.pointerDeltaTo', () => {
 
         const result = BT.pointerDeltaTo(out, 1);
 
-        expect(getDeltaTo).toHaveBeenCalledWith(1, out);
+        expect(getDeltaTo).toHaveBeenCalledWith(1, out, 'frame');
         expect(result).toBe(out);
+    });
+
+    it('reads the update clock inside update()', () => {
+        const out = new Vector2i();
+        const getDeltaTo = vi.fn().mockReturnValue(out);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getDeltaTo } as never);
+        vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
+
+        BT.pointerDeltaTo(out, 1);
+
+        expect(getDeltaTo).toHaveBeenCalledWith(1, out, 'update');
     });
 });
 
@@ -1648,6 +1676,21 @@ describe('BT.pointerScrollDelta', () => {
         vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getScrollDelta } as never);
 
         expect(BT.pointerScrollDelta).toBe(42);
+    });
+
+    it('reads the update clock inside update() and the frame clock outside it', () => {
+        const getScrollDelta = vi.fn().mockReturnValue(0);
+        vi.spyOn(BTAPI.instance, 'getPointer').mockReturnValue({ getScrollDelta } as never);
+        const isUpdating = vi.spyOn(BTAPI.instance, 'isUpdating', 'get').mockReturnValue(true);
+
+        void BT.pointerScrollDelta;
+
+        expect(getScrollDelta).toHaveBeenLastCalledWith('update');
+
+        isUpdating.mockReturnValue(false);
+        void BT.pointerScrollDelta;
+
+        expect(getScrollDelta).toHaveBeenLastCalledWith('frame');
     });
 });
 

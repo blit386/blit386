@@ -59,7 +59,7 @@ BT.isKeyDown('ArrowLeft'); // keyboard hold
 BT.isPointerActive(0); // mouse or touch slot 0 is active
 BT.pointerPos(0); // pointer position (Vector2i)
 BT.pointerPosTo(out, 0); // same, written into an existing Vector2i (engine 1.7.0+)
-BT.pointerDeltaTo(out, 0); // same for the per-frame delta (engine 1.7.0+)
+BT.pointerDeltaTo(out, 0); // same for the movement delta (engine 1.7.0+)
 BT.nativeScreenToDisplayPos(e.clientX, e.clientY); // DOM event coords to display pixels, or null (engine 1.8.0+)
 BT.randomSeed(1234); // reseed the shared generator (engine 1.5.0+)
 BT.drawTile(sheet, 3, pos); // one grid cell of a sheet loaded with { tileSize } (engine 1.8.0+)

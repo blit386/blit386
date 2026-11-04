@@ -966,16 +966,16 @@ describe('PointerInput', () => {
             );
 
             // A frame that ran no update(): render-side readers see the edge once, then it is gone.
-            input.endFrame(false);
+            input.endFrame();
 
             expect(input.isButtonPressed(button, 0)).toBe(false);
 
             // The update-side reader still gets it on the next frame that runs update().
-            expect(input.isButtonPressedLatched(button, 0)).toBe(true);
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(true);
 
-            input.endFrame(true);
+            input.endUpdate();
 
-            expect(input.isButtonPressedLatched(button, 0)).toBe(false);
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(false);
         });
 
         it('reports isButtonReleased only on the tick after the button transitions to up', () => {
@@ -1270,6 +1270,153 @@ describe('PointerInput', () => {
             );
 
             expect(input.isButtonReleased(BTN_POINTER_D, 0)).toBe(true);
+        });
+    });
+
+    describe('update clock', () => {
+        /** Dispatches a mouse event at display pixel `(x, 50)`; the stub rect scales display to client 2x. */
+        const mouseAt = (type: string, x: number, init: { button?: number; buttons?: number } = {}): void => {
+            canvas.dispatchEvent(
+                pointerEvent(type, {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    clientX: RECT_LEFT + x * 2 + 1,
+                    clientY: RECT_TOP + 101,
+                    ...init,
+                }),
+            );
+        };
+
+        it('reports movement since the last update across a render-only frame', () => {
+            mouseAt('pointermove', 0);
+            input.endUpdate();
+            input.endFrame();
+
+            mouseAt('pointermove', 10);
+            input.endUpdate();
+            input.endFrame();
+
+            mouseAt('pointermove', 20);
+            input.endFrame(); // render-only frame
+
+            mouseAt('pointermove', 30);
+
+            expect(input.getDelta(0, 'update').x).toBe(20);
+            expect(input.getDeltaTo(0, new Vector2i(), 'update').x).toBe(20);
+            expect(input.getDelta(0).x).toBe(10);
+        });
+
+        it('reports a release during a render-only frame to the next update, once', () => {
+            mouseAt('pointerdown', 5, { button: 0, buttons: 1 });
+            input.endUpdate();
+            input.endFrame();
+
+            mouseAt('pointerup', 5, { button: 0, buttons: 0 });
+            input.endFrame(); // render-only frame
+
+            expect(input.isButtonReleased(BTN_POINTER_A, 0)).toBe(false);
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(true);
+
+            input.endUpdate();
+
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(false);
+        });
+
+        it.each([
+            [BTN_POINTER_A, 0],
+            [BTN_POINTER_B, 2],
+            [BTN_POINTER_C, 1],
+            [BTN_POINTER_D, 3],
+        ])('reports a press of button %i once across a frame that runs two updates', (button, domButton) => {
+            mouseAt('pointerdown', 5, { button: domButton });
+
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(true);
+
+            input.endUpdate();
+
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(false);
+        });
+
+        it('reports a press during a render-only frame to the next update', () => {
+            mouseAt('pointerdown', 5, { button: 0 });
+            input.endFrame(); // render-only frame
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(false);
+            expect(input.isButtonPressed(BTN_POINTER_A, 0, 'update')).toBe(true);
+        });
+
+        it('shows render-side readers (the overlay) each press exactly once', () => {
+            mouseAt('pointerdown', 5, { button: 0 });
+            input.endUpdate();
+            input.endUpdate(); // a frame with two updates
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(true);
+
+            input.endFrame();
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(false);
+
+            input.endFrame(); // render-only frame
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(false);
+        });
+
+        it('carries wheel scroll across a render-only frame to the next update', () => {
+            input.setIsCapturingScroll(true);
+            canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 7, deltaMode: 0, bubbles: true, cancelable: true }));
+            input.endFrame(); // render-only frame
+            canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 3, deltaMode: 0, bubbles: true, cancelable: true }));
+
+            expect(input.getScrollDelta()).toBe(3);
+            expect(input.getScrollDelta('update')).toBe(10);
+
+            input.endUpdate();
+
+            expect(input.getScrollDelta('update')).toBe(0);
+            expect(input.getScrollDelta()).toBe(3);
+        });
+
+        it('clears both clocks when the overlay consumes the wheel delta', () => {
+            input.setIsCapturingScroll(true);
+            canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 7, deltaMode: 0, bubbles: true, cancelable: true }));
+
+            input.consumeScrollDelta();
+
+            expect(input.getScrollDelta()).toBe(0);
+            expect(input.getScrollDelta('update')).toBe(0);
+        });
+
+        it('keeps wheel scroll from an earlier render-only frame when the overlay consumes this frame', () => {
+            input.setIsCapturingScroll(true);
+            canvas.dispatchEvent(
+                new WheelEvent('wheel', { deltaY: 10, deltaMode: 0, bubbles: true, cancelable: true }),
+            );
+            input.endFrame(); // render-only frame; the overlay did not use this wheel
+            canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 5, deltaMode: 0, bubbles: true, cancelable: true }));
+
+            input.consumeScrollDelta(); // the overlay uses only this frame's 5
+
+            expect(input.getScrollDelta()).toBe(0);
+            expect(input.getScrollDelta('update')).toBe(10);
+        });
+
+        it('does not hand the next update negative scroll when the overlay consumes after an update ran', () => {
+            input.setIsCapturingScroll(true);
+            canvas.dispatchEvent(
+                new WheelEvent('wheel', { deltaY: 10, deltaMode: 0, bubbles: true, cancelable: true }),
+            );
+            input.endUpdate(); // this frame's update() already read the 10
+
+            input.consumeScrollDelta(); // the overlay then takes the same wheel in render
+
+            expect(input.getScrollDelta()).toBe(0);
+            expect(input.getScrollDelta('update')).toBe(0);
+        });
+
+        it('starts the update-clock delta at zero when the mouse enters', () => {
+            mouseAt('pointermove', 40);
+
+            expect(input.getDelta(0, 'update').x).toBe(0);
         });
     });
 

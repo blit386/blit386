@@ -117,3 +117,42 @@ describe('PointerInput.getDeltaTo', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('PointerInput.handleMove burst, both clocks', () => {
+    let x = 0;
+
+    bench(
+        `${MOVES_PER_FRAME}x pointermove + 1x endUpdate + 1x endFrame`,
+        () => {
+            for (let i = 0; i < MOVES_PER_FRAME; i++) {
+                x = (x + 1) % 600;
+                canvas.dispatchEvent(
+                    new PointerEvent('pointermove', {
+                        pointerId: 1,
+                        pointerType: 'mouse',
+                        clientX: x,
+                        clientY: 100,
+                        bubbles: true,
+                        cancelable: true,
+                    }),
+                );
+            }
+
+            input.endUpdate();
+            input.endFrame();
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+describe('PointerInput.getDeltaTo, update clock', () => {
+    const out = new Vector2i();
+
+    bench(
+        "getDeltaTo(0, out, 'update')",
+        () => {
+            input.getDeltaTo(0, out, 'update');
+        },
+        BENCH_OPTIONS,
+    );
+});

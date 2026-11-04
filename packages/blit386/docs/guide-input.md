@@ -59,7 +59,7 @@ import { BT } from 'blit386';
 const pos = BT.pointerPos(); // slot 0 (mouse)
 const touch = BT.pointerPos(1); // slot 1 (first touch)
 
-// Movement since the last frame
+// Movement since the last update() (when read from update())
 const delta = BT.pointerDelta(); // slot 0 (mouse)
 const td = BT.pointerDelta(1); // slot 1
 
@@ -75,6 +75,10 @@ if (BT.isPointerActive(1)) {
 
 `BT.pointerPos()` returns `Vector2i.zero()` when the slot index is out of `[0, 3]` or the engine is not initialized.
 `BT.pointerDelta()` similarly returns `Vector2i.zero()` for invalid slots.
+
+Read from `update()`, `BT.pointerDelta()` is the movement since the previous `update()`, however many frames rendered in
+between, so a drag or a flick moves at the same speed on a 60 Hz and a 120 Hz display. Read from `render()`, it is the
+movement since the previous rendered frame. See [Frame-timing semantics](#frame-timing-semantics).
 
 <DemoEmbed demo="pointer-basics" title="BLIT386 pointer basics demo" />
 
@@ -479,8 +483,9 @@ if (scroll < 0) {
 }
 ```
 
-The value aggregates all `WheelEvent.deltaY` values received since the last frame, normalizing line and page delta modes
-to pixels. It resets to zero each frame.
+The value aggregates `WheelEvent.deltaY` values, normalizing line and page delta modes to pixels. Read from `update()`,
+it covers every wheel event since the previous `update()` and resets after each one. Read from `render()`, it covers the
+current rendered frame.
 
 Wheel capture is opt-in. Set `isCapturingPointerScroll: true` in `configure()` so the engine calls `preventDefault()` on
 canvas `wheel` events and fills `BT.pointerScrollDelta`. When the flag is omitted (the default), the host page scrolls
@@ -547,13 +552,12 @@ Both are no-ops before the engine is initialized. The cursor is restored automat
 
 ## Frame-timing semantics
 
-Pointer previous-state rollover happens at the end of each animation frame, after `demo.update()` and `demo.render()`
-have run. Keyboard and gamepad press/release edges and `BT.inputString` align with the fixed update rate (`targetFPS`),
-not the display refresh rate:
+Keyboard, gamepad, and pointer press/release edges, `BT.inputString`, `BT.pointerDelta()`, and `BT.pointerScrollDelta`
+align with the fixed update rate (`targetFPS`) when read from `update()`, not with the display refresh rate:
 
 - On a 120 Hz monitor with `targetFPS: 60`, `render()` may run twice per `update()`. Keyboard edges are buffered on DOM
   events and consumed on the next fixed update so fast taps are not dropped between render-only frames.
-- `pointerDelta()` reflects movement between the last `update()` and the current one.
+- `pointerDelta()` read from `update()` reflects movement between the last `update()` and the current one.
 - Gamepad current state is polled from the Gamepad API once per render frame, at the end of the frame. Button/axis
   queries read that cached snapshot and never trigger a poll themselves. Previous-state rolls over after each
   `update()`, so a press polled on a frame that runs no update is reported to the next update, and a frame that runs
@@ -564,10 +568,15 @@ not the display refresh rate:
 
 Pointer transitions:
 
-- Any pointer event that fires between two animation frames is visible as a transition on the next `update()` call.
-- A pointer button press that lands in a frame that runs no update (a display faster than `targetFPS`) is carried to the
-  next frame that does, so `BT.isPressed` never misses a click. Only `update()` sees the carried press; the engine
-  overlay and other render-side readers still see each press once.
+- The pointer keeps two sets of previous state. The update set rolls over after each `update()`; the frame set rolls
+  over at the end of each rendered frame. `BT.isPressed`, `BT.isReleased`, `BT.pointerDelta()`, and
+  `BT.pointerScrollDelta` read the update set inside `update()` and the frame set everywhere else.
+- Any pointer event that fires between two updates is visible on the next `update()` call, including a press, release,
+  movement, or wheel scroll that lands in a frame running no update (a display faster than `targetFPS`).
+- A frame that runs several updates (a 30 Hz display, or a hitch) reports each press and release to the first of them
+  only, so one click counts once.
+- `render()` and the engine overlay see each pointer edge once per rendered frame, and their delta and scroll cover that
+  frame alone. Pointer hold state (`BT.isDown`, `BT.pointerPos()`) has no clock and reads the same everywhere.
 
 ## Page-interaction guards
 

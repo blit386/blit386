@@ -81,8 +81,9 @@ The opposite direction happens too: on a high refresh-rate display (120 Hz or hi
 sizeable fraction of render frames have zero preceding `update()` calls that frame. This is normal, not a dropped frame
 \- `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
 [API: Camera](api-camera.md#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
-`render()` draws the same game state twice in a row rather than resetting to defaults. A pointer press that lands in
-such a frame is carried to the next frame that runs `update()`, so `BT.isPressed(BT.BTN_POINTER_A)` still sees it - see
+`render()` draws the same game state twice in a row rather than resetting to defaults. Pointer input that lands in such
+a frame - a press, a release, movement, wheel scroll - waits for the next `update()`, so `BT.isPressed`,
+`BT.isReleased`, and `BT.pointerDelta()` read there still see it - see
 [Frame-timing semantics](guide-input.md#frame-timing-semantics).
 
 ## Interpolating render state with renderAlpha
