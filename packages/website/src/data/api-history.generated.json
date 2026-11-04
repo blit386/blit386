@@ -694,14 +694,24 @@
     "BT.isAnyButtonPressed": {
       "kind": "method",
       "since": "1.8.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.isAnyButtonReleased": {
       "kind": "method",
       "since": "1.8.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -808,6 +818,10 @@
         {
           "version": "1.8.0",
           "note": "Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only)."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`."
         }
       ],
       "deprecated": null,
@@ -834,6 +848,10 @@
         {
           "version": "1.8.0",
           "note": "Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only)."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`."
         }
       ],
       "deprecated": null,

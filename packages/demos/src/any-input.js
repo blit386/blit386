@@ -54,15 +54,14 @@ Also in use: BT.isKeyDown(code) and BT.isKeyReleased(code) for one specific key,
 for time stamps, ui.slider() for the repeat rate, and isOverlayEnabled: false plus
 isCapturingKeyboardScroll: true in configure().
 
-WHY ARE THE GAMEPAD HELPERS READ IN RENDER()?
----------------------------------------------
+WHY ARE ALL THE EDGES READ IN UPDATE()?
+---------------------------------------
 
-Keyboard edges clear once per fixed update tick, so they are read in update(). Gamepad
-edges are the odd one out: the engine rolls them over once per DRAWN frame instead. On a
-display faster than the engine's tick rate some frames run no update at all, and on a
-slower one a frame can run two, so reading gamepad edges from update() would miss or
-double-count presses. render() runs exactly once per drawn frame, so this demo reads the
-gamepad helpers there and each edge is seen exactly once.
+Keyboard and gamepad edges both clear once per fixed update tick, so each press reaches
+exactly one update(). render() follows the screen instead: on a display faster than the
+engine's tick rate some drawn frames run no update at all, and on a slower one a frame can
+run two. Reading an edge from render() could miss it or see it twice, so this demo reads
+every pressed and released helper in update() and only draws the results in render().
 
 TRY THIS
 --------
@@ -216,25 +215,20 @@ class Demo {
         return true;
     }
 
-    // Reads the keyboard helpers once per tick. Keyboard edges (pressed / released) only
-    // last one tick, so they must be read here and remembered, never read from render().
+    // Reads the keyboard and gamepad helpers once per tick. Their edges (pressed /
+    // released) only last one tick, so they must be read here and remembered, never read
+    // from render().
     update() {
         // The UI kit's once-per-tick housekeeping. It also notices touch contacts, which
         // ui.hasTouch() in render() relies on to show the "Needs a keyboard" label.
         ui.tick();
 
         this.updateKeyboard();
+        this.readGamepads();
     }
 
-    // Reads the gamepad helpers, clears the frame, and declares the panels.
+    // Clears the frame and declares the panels.
     render() {
-        // Gamepad edges are the odd one out: the engine clears them once per DRAWN frame,
-        // not once per tick. On a fast screen some frames run no tick at all, and on a
-        // slow one a frame can run two, so reading them in update() would miss or
-        // double-count presses. render() runs exactly once per drawn frame, so each edge
-        // is seen exactly once here.
-        this.readGamepads();
-
         BT.clear(this.theme.bg);
 
         ui.begin(UI_ANCHORS.TOP_BAR);
@@ -290,10 +284,10 @@ class Demo {
     }
 
     // Handles the gamepad helpers for each of the four player slots. Called once per
-    // drawn frame from render(), see the note there.
+    // tick from update(), like the keyboard helpers.
     readGamepads() {
         for (let player = 0; player < PLAYER_COUNT; player++) {
-            // Any button on this player's pad went down this frame.
+            // Any button on this player's pad went down this tick.
             if (BT.isAnyButtonPressed(player)) {
                 this.padPresses[player] += 1;
                 this.addLog(`P${player + 1} pad pressed`);

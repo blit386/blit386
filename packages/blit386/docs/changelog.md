@@ -53,6 +53,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `isDetectingDroppedFrames`, or `isFrameCaptureShortcutEnabled` in `configure()` now forces a full page reload during
   hot reload. The engine reads these once at boot, so a method-only or re-init swap silently left the old value in
   place. See [Hot reload](guide-hot-reload.md#tier-3-hardware-settings-change).
+- Gamepad presses and releases now reach exactly one `update()`. Gamepad edges rolled over once per rendered frame, so
+  on a display faster than `targetFPS` (every 120 Hz ProMotion screen at the default 60) about half of them were never
+  seen by `update()`, a frame that ran several updates after a hitch reported one press to each of them, and
+  hold-to-repeat never started after a missed press. They now clear once per fixed update, like keyboard edges, so
+  `BT.isPressed`, `BT.isReleased`, `BT.isAnyButtonPressed`, and `BT.isAnyButtonReleased` read from `update()` see each
+  edge once. Code that read gamepad edges from `render()` to work around this should move them back to `update()`:
+  `render()` no longer sees an edge an update already consumed. A parked `BT.captureFrame()` no longer consumes gamepad
+  edges either. See [Frame-timing semantics](guide-input.md#frame-timing-semantics).
 - The splash no longer cancels browser shortcuts while it waits on `init()`. Ctrl, Cmd, or Alt chords and F1-F12
   (reload, find, fullscreen, DevTools) used to be swallowed for as long as the splash held, and still skip it now. See
   [The skip](guide-splash.md#the-skip).
