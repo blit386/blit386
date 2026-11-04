@@ -260,6 +260,10 @@ BT.spritesRefresh();
 
 Why: sprite textures store indices. If your palette layout changes, old indices point to wrong colors until re-indexed.
 
+`BT.spritesRefresh()` re-maps every sheet you indexized with `sheet.indexize()` or `SpriteSheet.loadIndexed`, including
+sheets you have not drawn yet, such as a boss sheet loaded in `init()` for a later level. Call `sheet.destroy()` on a
+sheet you no longer need so the next refresh skips it.
+
 </Step>
 
 <Step>

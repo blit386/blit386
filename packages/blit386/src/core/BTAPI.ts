@@ -14,7 +14,7 @@ import {
     PaletteEffectManager,
     paletteSwap,
 } from '../assets/PaletteEffect';
-import { type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
+import { getIndexedSheets, type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
@@ -217,9 +217,6 @@ export class BTAPI {
 
     /** Active splash, or null when gating turned it off. One-shot per page load. */
     private splash: Splash | null = null;
-
-    /** Registry of all sprite sheets that have been passed to drawSprite, for spritesRefresh. */
-    private readonly spriteSheets: Set<SpriteSheet> = new Set();
 
     /** Game loop managing fixed-timestep updates and variable-rate rendering. */
     private loop: GameLoop | null = null;
@@ -1659,7 +1656,8 @@ export class BTAPI {
     }
 
     /**
-     * Re-indexizes all tracked sprite sheets against the current active palette.
+     * Re-indexizes every indexized, not-yet-destroyed sprite sheet against the current
+     * active palette, whether or not it has been drawn.
      *
      * Call this after a **palette-layout swap** (same colors at new slot indices)
      * so every sprite sheet re-maps its original RGBA pixels against the new
@@ -1679,18 +1677,13 @@ export class BTAPI {
 
         let refreshed = 0;
 
-        for (const sheet of this.spriteSheets) {
-            if (!sheet.isIndexed()) {
-                this.spriteSheets.delete(sheet);
-                continue;
-            }
-
+        for (const sheet of getIndexedSheets()) {
             try {
                 sheet.reindexize(palette);
                 refreshed++;
             } catch (e) {
-                console.error('[BT] spritesRefresh: failed to reindexize sheet, removing from registry:', e);
-                this.spriteSheets.delete(sheet);
+                // The throw lands before the indices change: the sheet keeps them and the next refresh retries it.
+                console.error('[BT] spritesRefresh: failed to reindexize sheet, keeping its old palette indices:', e);
             }
         }
 
@@ -2991,7 +2984,7 @@ export class BTAPI {
     }
 
     /**
-     * Validates that a sprite sheet has been indexized and registers it for refresh tracking.
+     * Validates that a sprite sheet has been indexized.
      *
      * @param sheet - Sprite sheet to validate.
      * @throws If the sprite sheet has not been indexized.
@@ -3000,8 +2993,6 @@ export class BTAPI {
         if (!sheet.isIndexed()) {
             throw new Error(spriteNotIndexizedError());
         }
-
-        this.spriteSheets.add(sheet);
     }
 
     /**

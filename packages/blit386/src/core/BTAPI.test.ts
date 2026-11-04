@@ -32,7 +32,7 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import { NineSlice } from '../assets/NineSlice';
 import { Palette } from '../assets/Palette';
 import { PaletteEffectManager } from '../assets/PaletteEffect';
-import { SpriteSheet } from '../assets/SpriteSheet';
+import { registerIndexedSheet, SpriteSheet, unregisterIndexedSheet } from '../assets/SpriteSheet';
 import { AudioManager } from '../audio/AudioManager';
 import { INVALID_SOUND_REF, type SoundRef } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
@@ -704,16 +704,18 @@ describe('BTAPI', () => {
             });
         });
 
-        it('drawSprite should register the sheet for spritesRefresh tracking', () => {
+        it('drawSprite should keep a registered sheet in spritesRefresh tracking', () => {
             const palette = new Palette(16);
             const reindexize = vi.fn();
             const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
+            registerIndexedSheet(mockSheet);
             BTAPI.instance.setPalette(palette);
             BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
             BTAPI.instance.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
+            unregisterIndexedSheet(mockSheet);
         });
 
         it('drawBitmapText should not throw before init', () => {
@@ -730,17 +732,19 @@ describe('BTAPI', () => {
             );
         });
 
-        it('drawBitmapText should register the font sheet for spritesRefresh tracking', () => {
+        it('drawBitmapText should keep a registered font sheet in spritesRefresh tracking', () => {
             const palette = new Palette(16);
             const reindexize = vi.fn();
             const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
 
+            registerIndexedSheet(mockSheet);
             BTAPI.instance.setPalette(palette);
             BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi');
             BTAPI.instance.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
+            unregisterIndexedSheet(mockSheet);
         });
 
         it('setCameraOffset should not throw before init', () => {
@@ -6478,11 +6482,12 @@ describe('BTAPI splash palette capture', () => {
         const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
         BTAPI.instance.setPalette(gamePalette);
-        (BTAPI.instance as unknown as { spriteSheets: Set<SpriteSheet> }).spriteSheets.add(mockSheet);
+        registerIndexedSheet(mockSheet);
         BTAPI.instance.spritesRefresh();
 
         expect(reindexize).toHaveBeenCalledWith(gamePalette);
         expect(reindexize).not.toHaveBeenCalledWith(splashPalette);
+        unregisterIndexedSheet(mockSheet);
     });
 
     it('drops palette effects started during capture', () => {

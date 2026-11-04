@@ -71,8 +71,9 @@ palette slot `255` from the clamp, not an inherent error color.
 
 `BT.palette` returns the same object the engine draws with. Mutating slots updates colors on the next frame. Call
 `BT.paletteSet()` again only when replacing the whole palette object (for example a prebuilt day vs. night palette), or
-after a layout swap when colors moved to different slot numbers (then also call `BT.spritesRefresh()`). See
-[Palette Guide](guide-palette.md) section 6.
+after a layout swap when colors moved to different slot numbers (then also call `BT.spritesRefresh()`, which re-maps
+every indexized sheet, drawn yet or not, until `sheet.destroy()` removes it). See [Palette Guide](guide-palette.md)
+section 6.
 
 ## Palette setup
 
