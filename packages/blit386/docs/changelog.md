@@ -108,8 +108,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `BT.spritesRefresh()` now re-maps every indexized sprite sheet, not only sheets drawn at least once, so a sheet loaded
   in `init()` but first drawn in a later level no longer shows wrong colors after a layout swap. The engine also stops
   holding on to every sheet it has drawn: `sheet.destroy()` removes a sheet from the refresh list, and a sheet the game
-  simply drops can be garbage-collected. A sheet whose colors are missing from the new palette keeps its old indices and
-  is retried by the next refresh, instead of being dropped for good.
+  simply drops can be garbage-collected (during a hot-reload dev session it stays loaded until `destroy()`). A sheet
+  whose colors are missing from the new palette keeps its old indices and is retried by the next refresh, instead of
+  being dropped for good.
 
 ## 1.8.0 - 2026-10-18
 

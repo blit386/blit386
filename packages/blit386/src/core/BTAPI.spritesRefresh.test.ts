@@ -21,14 +21,15 @@ const GREEN = new Color32(0, 255, 0);
 const created: SpriteSheet[] = [];
 
 /**
- * Builds a 1x1 sheet of one opaque color and indexizes it against `palette`.
+ * Builds a one-row sheet of opaque pixels and indexizes it against `palette`.
  *
- * @param color - The sheet's only pixel.
+ * @param colors - The sheet's pixels, left to right (one color gives a 1x1 sheet).
  * @param palette - Palette to indexize against.
  * @returns The indexized sheet.
  */
-function indexedSheet(color: Color32, palette: Palette): SpriteSheet {
-    const pixels = new Uint8ClampedArray([color.r, color.g, color.b, 255]);
+function indexedSheet(colors: Color32 | Color32[], palette: Palette): SpriteSheet {
+    const row = Array.isArray(colors) ? colors : [colors];
+    const pixels = new Uint8ClampedArray(row.flatMap((c) => [c.r, c.g, c.b, 255]));
 
     vi.stubGlobal(
         'OffscreenCanvas',
@@ -39,7 +40,7 @@ function indexedSheet(color: Color32, palette: Palette): SpriteSheet {
         },
     );
 
-    const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+    const sheet = new SpriteSheet({ width: row.length, height: 1 } as HTMLImageElement);
 
     sheet.indexize(palette);
     created.push(sheet);
@@ -138,5 +139,16 @@ describe('BTAPI.spritesRefresh tracking', () => {
         BTAPI.instance.spritesRefresh();
 
         expect(sheet.getIndexedPixels()[0]).toBe(2);
+    });
+
+    it('leaves every pixel untouched when a later pixel fails to re-map', () => {
+        // GREEN maps cleanly to a new slot; RED is missing, so the whole re-map must be discarded.
+        const sheet = indexedSheet([GREEN, RED], twoColorPalette(RED, GREEN));
+
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        BTAPI.instance.setPalette(twoColorPalette(GREEN, GREEN));
+        BTAPI.instance.spritesRefresh();
+
+        expect(Array.from(sheet.getIndexedPixels())).toEqual([2, 1]);
     });
 });

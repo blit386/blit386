@@ -65,8 +65,10 @@ export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | unde
 
 /**
  * Every live indexized sheet, for `BT.spritesRefresh`. Held through `WeakRef` so a
- * sheet the game drops without calling `destroy()` can still be garbage-collected.
- * `indexedRefs` maps each sheet to its one ref, so unregistering is O(1).
+ * sheet the game drops without calling `destroy()` can still be garbage-collected -
+ * except while hot reload is active, when the strong `hotReloadRegistry` keeps every
+ * loaded sheet until `destroy()`. `indexedRefs` maps each sheet to its one ref, so
+ * unregistering is O(1).
  */
 const indexedSheets = new Set<WeakRef<SpriteSheet>>();
 
@@ -83,6 +85,13 @@ const indexedRefs = new WeakMap<SpriteSheet, WeakRef<SpriteSheet>>();
 export function registerIndexedSheet(sheet: SpriteSheet): void {
     if (indexedRefs.has(sheet)) {
         return;
+    }
+
+    // Drop refs to collected sheets here too, so a game that never refreshes doesn't grow the set.
+    for (const stale of indexedSheets) {
+        if (!stale.deref()) {
+            indexedSheets.delete(stale);
+        }
     }
 
     const ref = new WeakRef(sheet);
