@@ -6712,6 +6712,12 @@ describe('BTAPI palette effect ranges', () => {
         expect(() => BTAPI.instance.paletteCycle(1, 3, 1)).toThrow(/No palette set yet/);
     });
 
+    it('paletteFadeRange requires an active palette', () => {
+        (BTAPI.instance as unknown as { palette: Palette | null }).palette = null;
+
+        expect(() => BTAPI.instance.paletteFadeRange(1, 3, Palette.pico8(), 500)).toThrow(/No palette set yet/);
+    });
+
     it('paletteFadeRange rejects slot 0 at the call', () => {
         expect(() => BTAPI.instance.paletteFadeRange(0, 15, Palette.pico8(), 500)).toThrow(slotZero);
         expect(activeEffectCount()).toBe(0);
