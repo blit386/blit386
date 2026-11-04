@@ -110,7 +110,9 @@ rendered frame and not by wall time. Two things follow:
 - A fade target is a whole `Palette` - build the "night" palette once in `init()`.
 - Slots past the end of the target palette are left alone. Hand `paletteFadeExposure` a small target palette and it only
   touches that many slots, which is how two different fades can run at once on one palette.
-- If you change a sprite's colors as a full theme swap with `BT.paletteSet`, call `BT.spritesRefresh()` afterward so
-  sprite sheets re-resolve against the new colors.
+- A theme swap (new colors in the same slots, with `BT.paletteSet` or the effects above) needs nothing else: sprites
+  pick up the new colors on their own. Call `BT.spritesRefresh()` only after a layout swap, where the same colors moved
+  to different slot numbers. It re-maps every sheet from `SpriteSheet.loadIndexed`, including ones not drawn yet. Never
+  call it after a theme swap: the old colors are gone, so it fails and logs an error for each sheet that used one.
 
 See `docs/palette.md`.

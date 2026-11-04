@@ -2986,22 +2986,25 @@ export const BT = {
     },
 
     /**
-     * Re-indexizes all tracked sprite sheets against the current active palette.
+     * Re-indexizes every sprite sheet against the current active palette.
+     *
+     * Covers each sheet indexized through `sheet.indexize()` or `SpriteSheet.loadIndexed`,
+     * whether or not it has been drawn yet, until `sheet.destroy()` removes it.
      *
      * Only call this after a **palette-layout swap** - when the same colors have
      * moved to different slot positions and existing sprite indices now point to
      * the wrong slots. Each sheet re-runs exact RGBA-to-index matching against the
      * active palette via `SpriteSheet.reindexize()`. If any opaque pixel's original
      * color is missing from the new palette, `reindexize()` throws, and
-     * `spritesRefresh()` catches that error and removes the affected sheet from the
-     * registry (it will no longer render).
+     * `spritesRefresh()` logs that error and leaves the sheet with its old palette
+     * indices; the next `spritesRefresh()` tries it again.
      *
      * **Do not call this after a palette-value swap.** If you changed what color a
      * slot holds (e.g. palette animation, theme tinting), the stored indices are
      * still correct - the fragment shader picks up the new color automatically.
      * Calling `spritesRefresh()` in that case is wasteful at best; at worst, if the
      * original RGBA values are gone from the palette, sheets with missing colors
-     * will fail reindexing and be removed from the registry.
+     * fail reindexing and log an error.
      *
      * Typical usage after a layout swap:
      * ```ts
@@ -3010,6 +3013,7 @@ export const BT = {
      * ```
      *
      * @since 1.0.3
+     * @changed 1.8.1 Covers every indexized sheet, not only sheets already drawn; `sheet.destroy()` removes a sheet. A sheet that fails to re-map keeps its old indices and is retried by the next call, instead of being dropped.
      * @throws If no active palette has been set.
      */
     spritesRefresh: (): void => {

@@ -64,6 +64,75 @@ export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | unde
 }
 
 /**
+ * Every live indexized sheet, for `BT.spritesRefresh`. Held through `WeakRef` so a
+ * sheet the game drops without calling `destroy()` can still be garbage-collected.
+ * `indexedRefs` maps each sheet to its one ref, so unregistering is O(1).
+ */
+const indexedSheets = new Set<WeakRef<SpriteSheet>>();
+
+/** Maps each registered sheet to its entry in `indexedSheets`. */
+const indexedRefs = new WeakMap<SpriteSheet, WeakRef<SpriteSheet>>();
+
+/**
+ * Adds a sheet to the indexized-sheet registry. Idempotent.
+ *
+ * Internal - called by {@link SpriteSheet.indexize}.
+ *
+ * @param sheet - Sheet that has just been indexized.
+ */
+export function registerIndexedSheet(sheet: SpriteSheet): void {
+    if (indexedRefs.has(sheet)) {
+        return;
+    }
+
+    const ref = new WeakRef(sheet);
+
+    indexedRefs.set(sheet, ref);
+    indexedSheets.add(ref);
+}
+
+/**
+ * Removes a sheet from the indexized-sheet registry. No-op when it is not registered.
+ *
+ * Internal - called by {@link SpriteSheet.destroy} and by `BT.spritesRefresh` when a
+ * sheet can no longer be re-mapped.
+ *
+ * @param sheet - Sheet to forget.
+ */
+export function unregisterIndexedSheet(sheet: SpriteSheet): void {
+    const ref = indexedRefs.get(sheet);
+
+    if (ref) {
+        indexedSheets.delete(ref);
+        indexedRefs.delete(sheet);
+    }
+}
+
+/**
+ * Returns every indexized sheet that is still alive and not destroyed, drawn or not,
+ * dropping entries whose sheet has been garbage-collected.
+ *
+ * Internal - used by `BT.spritesRefresh`.
+ *
+ * @returns Live registered sheets, in registration order.
+ */
+export function getIndexedSheets(): SpriteSheet[] {
+    const live: SpriteSheet[] = [];
+
+    for (const ref of indexedSheets) {
+        const sheet = ref.deref();
+
+        if (sheet) {
+            live.push(sheet);
+        } else {
+            indexedSheets.delete(ref);
+        }
+    }
+
+    return live;
+}
+
+/**
  * Maps retained RGBA bytes to palette indices for one sprite sheet.
  *
  * @param w - Image width in pixels.
@@ -644,6 +713,7 @@ export class SpriteSheet {
         this.indexedPixels = mapRgbaPixelsToIndexed(w, h, this.rgbaPixels, palette, this.sourceName);
 
         this.invalidateTexture();
+        registerIndexedSheet(this);
     }
 
     /**
@@ -1015,6 +1085,7 @@ export class SpriteSheet {
     destroy(): void {
         this.invalidateTexture();
         this.unregisterFromHotReload();
+        unregisterIndexedSheet(this);
 
         if (this.imageBitmap) {
             this.imageBitmap.close();
