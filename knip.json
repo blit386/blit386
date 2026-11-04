@@ -7,7 +7,8 @@
       "entry": ["src/**/*.test.ts", "src/**/*.bench.ts"],
       "project": ["src/**/*.ts"],
       "ignoreIssues": {
-        "src/overlay/timing-chart/style.ts": ["duplicates"]
+        "src/overlay/timing-chart/style.ts": ["duplicates"],
+        "src/assets/fonts/systemFontData.ts": ["duplicates"]
       },
       "ignoreDependencies": ["vite-plugin-istanbul"],
       "typescript": {
