@@ -479,4 +479,4 @@ export const SYSTEM_FONT_GLYPH_WIDTH = 6;
 export const SYSTEM_FONT_GLYPH_HEIGHT = 14;
 
 /** Number of bytes per glyph (one byte per row). */
-export const SYSTEM_FONT_BYTES_PER_GLYPH = 14;
+export const SYSTEM_FONT_BYTES_PER_GLYPH = SYSTEM_FONT_GLYPH_HEIGHT;
