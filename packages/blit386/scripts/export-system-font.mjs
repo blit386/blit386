@@ -15,72 +15,38 @@
  * Default output: assets/system-font.png
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PNG } from 'pngjs';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
+import {
+    SYSTEM_FONT_BITMAPS,
+    SYSTEM_FONT_FIRST_CHAR,
+    SYSTEM_FONT_GLYPH_COUNT,
+    SYSTEM_FONT_GLYPH_HEIGHT,
+    SYSTEM_FONT_GLYPH_WIDTH,
+    SYSTEM_FONT_LAST_CHAR,
+} from '../src/assets/fonts/systemFontData.ts';
 import { SYSTEM_FONT_EXTRA_CHARS } from './system-font-extra-chars.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
-const FONT_DATA_PATH = join(PROJECT_ROOT, 'src/assets/fonts/systemFontData.ts');
 const DEFAULT_OUTPUT = join(PROJECT_ROOT, 'assets/system-font.png');
 
-const GLYPH_WIDTH = 6;
-const GLYPH_HEIGHT = 14;
+const GLYPH_WIDTH = SYSTEM_FONT_GLYPH_WIDTH;
+const GLYPH_HEIGHT = SYSTEM_FONT_GLYPH_HEIGHT;
 const ATLAS_COLS = 16;
-const FIRST_CHAR = 32;
-const LAST_CHAR = 126;
-const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1; // 95
-// Contiguous ASCII block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
-const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
+const FIRST_CHAR = SYSTEM_FONT_FIRST_CHAR;
+const LAST_CHAR = SYSTEM_FONT_LAST_CHAR;
+const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1;
+// Contiguous ASCII block followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
+const GLYPH_COUNT = SYSTEM_FONT_GLYPH_COUNT;
 const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
 const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
 const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
-
-/**
- * Parses the SYSTEM_FONT_BITMAPS array from the TypeScript source file.
- * Extracts all hex literals from the array initializer.
- *
- * @returns {number[]} The flat array of glyph bytes (1330 entries).
- */
-function parseBitmapData() {
-    const source = readFileSync(FONT_DATA_PATH, 'utf-8');
-
-    // Anchor to the SYSTEM_FONT_BITMAPS identifier, then find its array initializer.
-    const identIndex = source.indexOf('SYSTEM_FONT_BITMAPS');
-
-    if (identIndex === -1) {
-        console.error('Error: Could not find SYSTEM_FONT_BITMAPS identifier in the source file.');
-        process.exit(1);
-    }
-
-    const startIndex = source.indexOf('[', identIndex);
-    const endIndex = source.indexOf('];', startIndex);
-
-    if (startIndex === -1 || endIndex === -1) {
-        console.error('Error: Could not find SYSTEM_FONT_BITMAPS array initializer in the source file.');
-        process.exit(1);
-    }
-
-    const arrayContent = source.slice(startIndex + 1, endIndex);
-
-    // Extract all hex values (0x00 - 0xff).
-    const hexPattern = /0x[\da-fA-F]{2}/g;
-    const matches = arrayContent.match(hexPattern);
-
-    if (!matches || matches.length !== GLYPH_COUNT * GLYPH_HEIGHT) {
-        console.error(
-            `Error: Expected ${GLYPH_COUNT * GLYPH_HEIGHT} hex values, found ${matches ? matches.length : 0}.`,
-        );
-        process.exit(1);
-    }
-
-    return matches.map((hex) => parseInt(hex, 16));
-}
 
 /**
  * Builds an RGBA PNG atlas from the bit-pattern data.
@@ -159,8 +125,7 @@ Options:
     }
 
     const outputPath = args[0] || DEFAULT_OUTPUT;
-    const bitmaps = parseBitmapData();
-    const pngData = buildPNG(bitmaps);
+    const pngData = buildPNG(SYSTEM_FONT_BITMAPS);
 
     writeFileSync(outputPath, pngData);
 
