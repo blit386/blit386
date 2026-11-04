@@ -33,6 +33,14 @@ export const POINTER_SLOT_COUNT = 4;
  */
 const isMousePointer = (event: PointerEvent): boolean => event.pointerType === 'mouse' || event.pointerType === '';
 
+/**
+ * Which previous state a reader compares against. `'frame'` rolls over once per rendered frame ({@link
+ * PointerInput.endFrame}) and serves render-side readers such as the overlay; `'update'` rolls over once per fixed
+ * `update()` ({@link PointerInput.endUpdate}), so a frame that runs no update loses nothing and a frame that runs
+ * several reports each edge once.
+ */
+export type PointerClock = 'frame' | 'update';
+
 /** Pixels-per-line conversion for `WheelEvent.deltaMode === DOM_DELTA_LINE`. */
 const WHEEL_LINE_HEIGHT_PX = 16;
 
@@ -51,7 +59,7 @@ const BTN_D = 23;
 /**
  * Internal per-slot pointer state.
  *
- * `pos` and `prevPos` are reused `Vector2i` instances; allocation discipline
+ * `pos`, `prevPos` and `updatePrevPos` are reused `Vector2i` instances; allocation discipline
  * keeps the event hot path free of per-call object churn.
  */
 interface Slot {
@@ -94,20 +102,30 @@ interface Slot {
     /** Snapshot of `d` taken at `endFrame()`. */
     prevD: boolean;
 
-    /**
-     * Press edges (A..D) seen by a frame that ran no `update()` step, kept until the next frame that does.
-     * Read only by {@link PointerInput.isButtonPressedLatched}.
-     */
-    latchedPress: [boolean, boolean, boolean, boolean];
+    /** Snapshot of `pos` taken at `endUpdate()`; the update-clock delta. */
+    updatePrevPos: Vector2i;
+
+    /** Snapshot of `a` taken at `endUpdate()`, for update-clock edges. */
+    updatePrevA: boolean;
+
+    /** Snapshot of `b` taken at `endUpdate()`. */
+    updatePrevB: boolean;
+
+    /** Snapshot of `c` taken at `endUpdate()`. */
+    updatePrevC: boolean;
+
+    /** Snapshot of `d` taken at `endUpdate()`. */
+    updatePrevD: boolean;
 }
 
 /**
  * DOM-backed pointer input tracker.
  *
  * Construct, then call {@link attach} with the rendering canvas and the
- * engine's logical display size. Call {@link endFrame} once per rAF tick
- * AFTER the demo's `update()` and `render()` so per-frame deltas reset and
- * edge-detection prev-state is captured for the next tick.
+ * engine's logical display size. Call {@link endUpdate} after each fixed
+ * `update()` and {@link endFrame} once per rAF tick AFTER the demo's
+ * `render()`, so each clock's deltas reset and its edge-detection prev-state
+ * is captured for the next update or frame.
  *
  * Position queries return display-space coordinates. The slot index parameter
  * (`0` = mouse, `1`..`3` = touch / pen in arrival order) is range-checked;
@@ -125,6 +143,12 @@ export class PointerInput {
 
     /** Accumulated wheel delta in pixels for the current frame. */
     private scrollDeltaY: number = 0;
+
+    /** Accumulated wheel delta in pixels since the last `update()`. */
+    private updateScrollDeltaY: number = 0;
+
+    /** Whether an `update()` has run since the last `endFrame()`, so it already read this frame's wheel delta. */
+    private hasUpdatedThisFrame: boolean = false;
 
     /** Canvas to receive listeners; `null` until {@link attach} is called. */
     private canvas: HTMLCanvasElement | null = null;
@@ -333,6 +357,8 @@ export class PointerInput {
 
         this.idToSlot.clear();
         this.scrollDeltaY = 0;
+        this.updateScrollDeltaY = 0;
+        this.hasUpdatedThisFrame = false;
 
         for (const slot of this.slots) {
             this.resetSlot(slot);
@@ -340,7 +366,7 @@ export class PointerInput {
     }
 
     /**
-     * Snapshots per-frame state at the END of each rAF tick.
+     * Snapshots `'frame'`-clock state at the END of each rAF tick.
      *
      * Must be called once per tick after demo `update()` and `render()`, overlay
      * draws, and renderer submit. Snapshots `pos -> prevPos` so the
@@ -353,9 +379,10 @@ export class PointerInput {
      * asynchronously between rAF callbacks. Snapshotting at the START of a
      * tick would capture the post-event state as `prev`, hiding edges that
      * occurred during the inter-frame gap. By snapshotting at the END of the
-     * tick, `prev` is the state at the moment `update()` last looked, and
-     * any event that arrives before the next `update()` is correctly visible
-     * as a transition.
+     * tick, `prev` is the state at the end of the last rendered frame, and any
+     * event that arrives before the next frame is visible to render-side
+     * readers as a transition. Update-side readers compare against the state
+     * {@link endUpdate} snapshotted instead.
      *
      * Also marks {@link cachedRect} dirty for the next tick. This is a
      * safety net on top of the `ResizeObserver` / `resize` / `scroll`
@@ -367,22 +394,13 @@ export class PointerInput {
      * event (up to 500-1000/s for a high-poll-rate mouse) down to once per
      * rendered frame.
      *
-     * @param didUpdate - Whether this frame ran at least one `update()` step; `false` carries press edges forward
-     * for {@link isButtonPressedLatched}.
+     * Rolls over the `'frame'` clock only. The `'update'` clock that `update()`
+     * reads is rolled by {@link endUpdate}, so a frame that runs no update
+     * (display faster than `targetFPS`) loses no update-side delta, edge, or
+     * wheel scroll.
      */
-    public endFrame(didUpdate = true): void {
+    public endFrame(): void {
         for (const slot of this.slots) {
-            // A frame with no update() step (display faster than the update rate) would otherwise swallow a
-            // press edge before update() could read it. Carry it, for update-side readers only, to the next one.
-            if (didUpdate) {
-                slot.latchedPress.fill(false);
-            } else {
-                slot.latchedPress[0] ||= slot.a && !slot.prevA;
-                slot.latchedPress[1] ||= slot.b && !slot.prevB;
-                slot.latchedPress[2] ||= slot.c && !slot.prevC;
-                slot.latchedPress[3] ||= slot.d && !slot.prevD;
-            }
-
             slot.prevPos.copyFrom(slot.pos);
             slot.prevA = slot.a;
             slot.prevB = slot.b;
@@ -391,7 +409,28 @@ export class PointerInput {
         }
 
         this.scrollDeltaY = 0;
+        this.hasUpdatedThisFrame = false;
         this.isRectDirty = true;
+    }
+
+    /**
+     * Snapshots `'update'`-clock state after each fixed `update()` step.
+     *
+     * Snapshots `pos -> updatePrevPos` and `a..d -> updatePrevA..D`, and clears
+     * the update-side wheel delta, so the next `update()` sees exactly what
+     * happened since this one, however many frames render in between.
+     */
+    public endUpdate(): void {
+        for (const slot of this.slots) {
+            slot.updatePrevPos.copyFrom(slot.pos);
+            slot.updatePrevA = slot.a;
+            slot.updatePrevB = slot.b;
+            slot.updatePrevC = slot.c;
+            slot.updatePrevD = slot.d;
+        }
+
+        this.updateScrollDeltaY = 0;
+        this.hasUpdatedThisFrame = true;
     }
 
     /**
@@ -438,35 +477,40 @@ export class PointerInput {
     }
 
     /**
-     * Returns the position delta `(pos - prevPos)` for slot `slot` since the last `endFrame()`.
+     * Returns the position delta for slot `slot` since the last `endFrame()` (`'frame'`) or `endUpdate()`
+     * (`'update'`).
      *
      * Returns `Vector2i.zero()` when the slot index is out of range.
      *
      * @param slot - Pointer slot index.
-     * @returns Per-frame delta in display coordinates.
+     * @param clock - Which previous state to compare against.
+     * @returns Delta in display coordinates.
      */
-    public getDelta(slot: number): Vector2i {
+    public getDelta(slot: number, clock: PointerClock = 'frame'): Vector2i {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
             return Vector2iImpl.zero();
         }
 
-        return new Vector2iImpl(s.pos.x - s.prevPos.x, s.pos.y - s.prevPos.y);
+        const prev = clock === 'update' ? s.updatePrevPos : s.prevPos;
+
+        return new Vector2iImpl(s.pos.x - prev.x, s.pos.y - prev.y);
     }
 
     /**
-     * Writes the position delta `(pos - prevPos)` for slot `slot` since the last `endFrame()` into
-     * `out`.
+     * Writes the position delta for slot `slot` since the last `endFrame()` (`'frame'`) or `endUpdate()`
+     * (`'update'`) into `out`.
      *
      * Zero-allocation alternative to `getDelta()`. Writes `(0, 0)` into `out` when the slot index
      * is out of range.
      *
      * @param slot - Pointer slot index.
      * @param out - Vector to write the delta into.
+     * @param clock - Which previous state to compare against.
      * @returns The `out` vector, for chaining.
      */
-    public getDeltaTo(slot: number, out: Vector2i): Vector2i {
+    public getDeltaTo(slot: number, out: Vector2i, clock: PointerClock = 'frame'): Vector2i {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
@@ -476,8 +520,10 @@ export class PointerInput {
             return out;
         }
 
-        out.x = s.pos.x - s.prevPos.x;
-        out.y = s.pos.y - s.prevPos.y;
+        const prev = clock === 'update' ? s.updatePrevPos : s.prevPos;
+
+        out.x = s.pos.x - prev.x;
+        out.y = s.pos.y - prev.y;
 
         return out;
     }
@@ -511,26 +557,36 @@ export class PointerInput {
     }
 
     /**
-     * Returns the wheel scroll delta accumulated during the current frame, in pixels.
+     * Returns the wheel scroll delta accumulated during the current frame (`'frame'`) or since the last
+     * `update()` (`'update'`), in pixels.
      *
-     * Reset to zero by `endFrame()`. Aggregates `WheelEvent.deltaY` across
+     * Reset to zero by `endFrame()` or `endUpdate()` respectively. Aggregates `WheelEvent.deltaY` across
      * all wheel events received since the last reset, normalizing
      * `deltaMode === DOM_DELTA_LINE` (1 line = 16 px) and `DOM_DELTA_PAGE`
      * (1 page = `window.innerHeight` px).
      *
-     * @returns Vertical scroll delta for the current frame in pixels.
+     * @param clock - Which accumulator to read.
+     * @returns Vertical scroll delta in pixels.
      */
-    public getScrollDelta(): number {
-        return this.scrollDeltaY;
+    public getScrollDelta(clock: PointerClock = 'frame'): number {
+        return clock === 'update' ? this.updateScrollDeltaY : this.scrollDeltaY;
     }
 
     /**
-     * Clears accumulated wheel delta for the current frame.
+     * Removes this frame's wheel delta from both clocks.
      *
      * Used when the overlay consumes scroll input over the palette footer so
-     * demo code reading {@link BT.pointerScrollDelta} does not see the same delta.
+     * demo code reading {@link BT.pointerScrollDelta} does not see the same delta,
+     * including in the next `update()` after a frame that ran none. Wheel scroll
+     * from earlier render-only frames, which the overlay did not use, stays in
+     * the update-side total. On a frame that ran an `update()`, that update has
+     * already read the wheel and reset its total, so there is nothing to remove.
      */
     public consumeScrollDelta(): void {
+        if (!this.hasUpdatedThisFrame) {
+            this.updateScrollDeltaY -= this.scrollDeltaY;
+        }
+
         this.scrollDeltaY = 0;
     }
 
@@ -598,80 +654,65 @@ export class PointerInput {
     }
 
     /**
-     * Reports whether the given pointer button transitioned to down on the current frame.
+     * Reports whether the given pointer button went down since the last frame or update (see `clock`).
      * Unlike {@link isButtonDown}, does not require the slot to be active, so press
      * edges remain visible after deactivation.
      *
      * @param button - One of `BTN_A..D`.
      * @param slot - Pointer slot index.
-     * @returns `true` only on the frame the button transitions from up to down.
+     * @param clock - Which previous state to compare against.
+     * @returns `true` if the button went down since the last frame (`'frame'`) or update (`'update'`).
      */
-    public isButtonPressed(button: number, slot: number): boolean {
+    public isButtonPressed(button: number, slot: number, clock: PointerClock = 'frame'): boolean {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
             return false;
         }
 
+        const isUpdate = clock === 'update';
+
         switch (button) {
             case BTN_A:
-                return s.a && !s.prevA;
+                return s.a && !(isUpdate ? s.updatePrevA : s.prevA);
             case BTN_B:
-                return s.b && !s.prevB;
+                return s.b && !(isUpdate ? s.updatePrevB : s.prevB);
             case BTN_C:
-                return s.c && !s.prevC;
+                return s.c && !(isUpdate ? s.updatePrevC : s.prevC);
             case BTN_D:
-                return s.d && !s.prevD;
+                return s.d && !(isUpdate ? s.updatePrevD : s.prevD);
             default:
                 return false;
         }
     }
 
     /**
-     * Like {@link isButtonPressed}, but also true for a press that landed in an earlier frame which ran no
-     * `update()` step. For `update()`-side readers only: render-side readers (the overlay) must keep using
-     * {@link isButtonPressed}, or they would see the same edge twice.
-     *
-     * @param button - One of `BTN_A..D`.
-     * @param slot - Pointer slot index.
-     * @returns `true` if the button went down since the last frame that ran `update()`.
-     */
-    public isButtonPressedLatched(button: number, slot: number): boolean {
-        const s = this.getSlotOrNull(slot);
-
-        if (s === null) {
-            return false;
-        }
-
-        const latched = button >= BTN_A && button <= BTN_D ? s.latchedPress[button - BTN_A] : false;
-
-        return latched || this.isButtonPressed(button, slot);
-    }
-
-    /**
-     * Reports whether the given pointer button transitioned to up on the current frame.
+     * Reports whether the given pointer button went up since the last frame or update (see `clock`).
      * Unlike {@link isButtonDown}, does not require the slot to be active.
      *
      * @param button - One of `BTN_A..D`.
      * @param slot - Pointer slot index.
-     * @returns `true` only on the frame the button transitions from down to up.
+     * @param clock - Which previous state to compare against.
+     * @returns `true` if the button went up since the last frame (`'frame'`) or update (`'update'`).
      */
-    public isButtonReleased(button: number, slot: number): boolean {
+    public isButtonReleased(button: number, slot: number, clock: PointerClock = 'frame'): boolean {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
             return false;
         }
 
+        const isUpdate = clock === 'update';
+
         switch (button) {
             case BTN_A:
-                return !s.a && s.prevA;
+                return !s.a && (isUpdate ? s.updatePrevA : s.prevA);
             case BTN_B:
-                return !s.b && s.prevB;
+                return !s.b && (isUpdate ? s.updatePrevB : s.prevB);
             case BTN_C:
-                return !s.c && s.prevC;
+                return !s.c && (isUpdate ? s.updatePrevC : s.prevC);
             case BTN_D:
-                return !s.d && s.prevD;
+                return !s.d && (isUpdate ? s.updatePrevD : s.prevD);
             default:
                 return false;
         }
@@ -729,6 +770,7 @@ export class PointerInput {
             // slot was previously zeroed) to the entry point.
             if (!isPreviouslyActive) {
                 slot.prevPos.copyFrom(slot.pos);
+                slot.updatePrevPos.copyFrom(slot.pos);
             }
 
             return;
@@ -768,6 +810,7 @@ export class PointerInput {
             // delta from (0, 0) to the entry point.
             if (!isPreviouslyActive) {
                 slot.prevPos.copyFrom(slot.pos);
+                slot.updatePrevPos.copyFrom(slot.pos);
             }
 
             return;
@@ -803,6 +846,7 @@ export class PointerInput {
         // first delta is zero. Without this, prevPos still holds the freed
         // position from the previous occupant of this slot.
         slot.prevPos.copyFrom(slot.pos);
+        slot.updatePrevPos.copyFrom(slot.pos);
 
         this.idToSlot.set(event.pointerId, slotIndex);
 
@@ -924,6 +968,7 @@ export class PointerInput {
         }
 
         this.scrollDeltaY += pixels;
+        this.updateScrollDeltaY += pixels;
     }
 
     /**
@@ -960,11 +1005,15 @@ export class PointerInput {
             b: false,
             c: false,
             d: false,
-            latchedPress: [false, false, false, false],
             prevA: false,
             prevB: false,
             prevC: false,
             prevD: false,
+            updatePrevPos: new Vector2iImpl(0, 0),
+            updatePrevA: false,
+            updatePrevB: false,
+            updatePrevC: false,
+            updatePrevD: false,
         };
     }
 
@@ -984,11 +1033,15 @@ export class PointerInput {
         slot.b = false;
         slot.c = false;
         slot.d = false;
-        slot.latchedPress.fill(false);
         slot.prevA = false;
         slot.prevB = false;
         slot.prevC = false;
         slot.prevD = false;
+        slot.updatePrevPos.set(0, 0);
+        slot.updatePrevA = false;
+        slot.updatePrevB = false;
+        slot.updatePrevC = false;
+        slot.updatePrevD = false;
     }
 
     /**
@@ -1012,10 +1065,10 @@ export class PointerInput {
      * state, and the pointerId -> slot mapping. Called on `pointerup`,
      * `pointercancel`, and `pointerleave` for touch / pen events.
      *
-     * Deliberately preserves `pos` and `prevPos` so the release-frame caller
-     * can still read the final position via `getPos` and the release-frame
-     * velocity via `getDelta`. The next pointerdown that reuses this slot
-     * resyncs `prevPos` so the first frame's delta starts at zero.
+     * Deliberately preserves `pos`, `prevPos` and `updatePrevPos` so the
+     * release-tick caller can still read the final position via `getPos` and
+     * the release velocity via `getDelta`. The next pointerdown that reuses
+     * this slot resyncs both so the first delta starts at zero.
      *
      * @param slotIndex - Index of the slot to free.
      */

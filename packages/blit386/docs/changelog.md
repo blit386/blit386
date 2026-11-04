@@ -61,6 +61,15 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   edge once. Code that read gamepad edges from `render()` to work around this should move them back to `update()`:
   `render()` no longer sees an edge an update already consumed. A parked `BT.captureFrame()` no longer consumes gamepad
   edges either. See [Frame-timing semantics](guide-input.md#frame-timing-semantics).
+- Pointer movement, releases, and wheel scroll now reach `update()` in full, and a click counts once. Pointer state
+  rolled over once per rendered frame, so on a display faster than `targetFPS` `update()` lost about half of
+  `BT.pointerDelta()` (a drag or a flick ran at half speed on a 120 Hz screen), about half of
+  `BT.isReleased(BT.BTN_POINTER_*)` edges (drops and charge-on-release broke), and about half of
+  `BT.pointerScrollDelta`; a frame that ran several updates reported one click to each of them. Read from `update()`,
+  these now cover everything since the previous `update()` and report each edge to exactly one update. Read from
+  `render()` they still cover the current rendered frame, so render-side readouts do not change. A parked
+  `BT.captureFrame()` no longer consumes pointer edges. See
+  [Frame-timing semantics](guide-input.md#frame-timing-semantics).
 - The splash no longer cancels browser shortcuts while it waits on `init()`. Ctrl, Cmd, or Alt chords and F1-F12
   (reload, find, fullscreen, DevTools) used to be swallowed for as long as the splash held, and still skip it now. See
   [The skip](guide-splash.md#the-skip).

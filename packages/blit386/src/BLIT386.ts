@@ -66,6 +66,7 @@ import {
     resetKeyboardFaceButtonMaps,
     setKeyboardFaceButtonKeys,
 } from './input/keyboardRuntimeMaps';
+import type { PointerClock } from './input/PointerInput';
 import { BarrelDistortion } from './render/effects/display/BarrelDistortion';
 import { Bloom } from './render/effects/display/Bloom';
 import { ChromaticAberration } from './render/effects/display/ChromaticAberration';
@@ -278,6 +279,16 @@ function faceButtonKeys(button: number, player: number): readonly string[] | nul
     }
 
     return getKeyboardFaceButtonKeys(player, button);
+}
+
+/**
+ * Picks the pointer clock for a `BT.*` read: inside `update()` the update clock (state since the previous update),
+ * anywhere else the frame clock (state since the previous rendered frame).
+ *
+ * @returns `'update'` while the demo's `update()` runs, otherwise `'frame'`.
+ */
+function pointerClock(): PointerClock {
+    return BTAPI.instance.isUpdating ? 'update' : 'frame';
 }
 
 /**
@@ -1835,32 +1846,32 @@ export const BT = {
     },
 
     /**
-     * Returns the position delta `(pos - prevPos)` for a pointer slot since the previous frame.
+     * Returns how far a pointer slot moved since the previous `update()` (read from `update()`) or since the previous
+     * rendered frame (read anywhere else).
      *
-     * Reflects movement accumulated between the previous and current frame.
-     * Snapshotted and reset by the engine at `endFrame()`, which runs after
-     * `update()` and `render()`. Returns `Vector2i.zero()` when the engine is
-     * not initialized or `pointerIndex` is out of range.
+     * Read from `update()` it covers every frame rendered since the last update, so a drag or a flick moves at the
+     * same speed on a 60 Hz and a 120 Hz display. Returns `Vector2i.zero()` when the engine is not initialized or
+     * `pointerIndex` is out of range.
      *
      * @since 1.0.3
+     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
-     * @returns Per-frame movement in display coordinates.
+     * @returns Movement in display coordinates.
      */
     pointerDelta: (pointerIndex: number = 0): Vector2i => {
-        return BTAPI.instance.getPointer()?.getDelta(pointerIndex) ?? Vector2i.zero();
+        return BTAPI.instance.getPointer()?.getDelta(pointerIndex, pointerClock()) ?? Vector2i.zero();
     },
 
     /**
-     * Writes the position delta `(pos - prevPos)` for a pointer slot since the previous frame into
-     * `out`.
+     * Writes how far a pointer slot moved into `out`: since the previous `update()` when read from `update()`, since
+     * the previous rendered frame anywhere else.
      *
-     * Zero-allocation counterpart to {@link pointerDelta}. Reflects movement accumulated between
-     * the previous and current frame. Snapshotted and reset by the engine at `endFrame()`, which
-     * runs after `update()` and `render()`. Writes `(0, 0)` into `out` when the engine is not
-     * initialized or `pointerIndex` is out of range.
+     * Zero-allocation counterpart to {@link pointerDelta}, with the same timing. Writes `(0, 0)` into `out` when the
+     * engine is not initialized or `pointerIndex` is out of range.
      *
      * @since 1.7.0
-     * @param out - Vector2i to write the per-frame movement into.
+     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame.
+     * @param out - Vector2i to write the movement into.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns The `out` vector, for chaining.
      */
@@ -1874,7 +1885,7 @@ export const BT = {
             return out;
         }
 
-        return pointer.getDeltaTo(pointerIndex, out);
+        return pointer.getDeltaTo(pointerIndex, out, pointerClock());
     },
 
     /**
@@ -1905,20 +1916,21 @@ export const BT = {
     },
 
     /**
-     * Wheel scroll delta accumulated during the current frame, in pixels.
+     * Wheel scroll delta in pixels: accumulated since the previous `update()` when read from `update()`, since the
+     * previous rendered frame anywhere else.
      *
-     * Aggregates `WheelEvent.deltaY` across all wheel events received since
-     * the last frame, normalizing line and page delta modes to pixels.
+     * Aggregates `WheelEvent.deltaY` across those wheel events, normalizing line and page delta modes to pixels.
      * Requires {@link HardwareSettings.isCapturingPointerScroll} (or overlay
      * palette-band force capture); otherwise this stays `0` and the host page
      * scrolls normally.
      *
      * @since 1.0.4
      * @changed 1.3.1 Requires `HardwareSettings.isCapturingPointerScroll` (or overlay force); opt-in now, not default.
-     * @returns Vertical scroll delta in pixels for the current frame, or `0` when not initialized.
+     * @changed 1.8.1 Read from `update()`, the delta covers every wheel event since the previous `update()`, not only the last rendered frame.
+     * @returns Vertical scroll delta in pixels, or `0` when not initialized.
      */
     get pointerScrollDelta(): number {
-        return BTAPI.instance.getPointer()?.getScrollDelta() ?? 0;
+        return BTAPI.instance.getPointer()?.getScrollDelta(pointerClock()) ?? 0;
     },
 
     /**
@@ -2047,12 +2059,15 @@ export const BT = {
      * Call from `update()`, not `render()`, for reliable detection: for keyboard and
      * gamepad buttons, the press edge clears once per fixed-update tick, which always
      * runs before that frame's `render()`.
+     * Pointer buttons keep two clocks: from `update()` the press is reported to exactly one
+     * update, from `render()` to exactly one rendered frame.
      *
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
+     * @changed 1.8.1 Pointer presses are tracked per fixed update, so a frame that runs several `update()` steps reports a click to the first one only.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2080,13 +2095,7 @@ export const BT = {
                     continue;
                 }
 
-                // A press carried over a frame with no update() is for update() alone; render() would
-                // otherwise read the same edge again on every following render-only frame.
-                const isPressed = BTAPI.instance.isUpdating
-                    ? pointer.isButtonPressedLatched(pointerCode, player)
-                    : pointer.isButtonPressed(pointerCode, player);
-
-                if (isPressed) {
+                if (pointer.isButtonPressed(pointerCode, player, pointerClock())) {
                     return true;
                 }
             }
@@ -2154,12 +2163,15 @@ export const BT = {
      * Call from `update()`, not `render()`, for reliable detection: for keyboard and
      * gamepad buttons, the release edge clears once per fixed-update tick, which always
      * runs before that frame's `render()`.
+     * Pointer buttons keep two clocks: from `update()` the release is reported to exactly one
+     * update, from `render()` to exactly one rendered frame.
      *
      * `BTN_L2`, `BTN_R2` and `BTN_TRIGGER` are gamepad only (no keyboard mapping).
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
+     * @changed 1.8.1 Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2183,7 +2195,7 @@ export const BT = {
 
                 if (
                     pointerCode !== null &&
-                    (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player) ?? false)
+                    (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player, pointerClock()) ?? false)
                 ) {
                     return true;
                 }

@@ -43,7 +43,7 @@ WHAT YOU WILL LEARN
   since the last update, both in display pixels.
 - BT.isDown(BT.BTN_POINTER_A, 0) and friends read the four mouse buttons: A is left, B is
   right, C is middle, D is the back or forward button. Touch slots only ever report A.
-- BT.pointerScrollDelta is the wheel movement for the current frame. It stays 0 unless
+- BT.pointerScrollDelta is the wheel movement since the last update. It stays 0 unless
   configure() sets isCapturingPointerScroll: true.
 - BT.hideCursor() hides the OS cursor so a drawn crosshair can take its place.
 - Pointer state is held state, not an edge, so reading it from render() is safe.

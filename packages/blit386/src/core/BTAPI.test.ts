@@ -966,15 +966,18 @@ describe('BTAPI', () => {
             expect(pointer).not.toBeNull();
 
             const endFrameSpy = vi.spyOn(pointer as NonNullable<typeof pointer>, 'endFrame');
+            const endUpdateSpy = vi.spyOn(pointer as NonNullable<typeof pointer>, 'endUpdate');
 
             loop.stop();
             loop.step(0);
 
-            expect(endFrameSpy).toHaveBeenLastCalledWith(false);
+            expect(endFrameSpy).toHaveBeenCalledTimes(1);
+            expect(endUpdateSpy).not.toHaveBeenCalled();
 
             loop.step(1);
 
-            expect(endFrameSpy).toHaveBeenLastCalledWith(true);
+            expect(endFrameSpy).toHaveBeenCalledTimes(2);
+            expect(endUpdateSpy).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -1429,6 +1432,39 @@ describe('BTAPI', () => {
             const blob = await BTAPI.instance.captureFrame('display');
 
             expect(await blob.text()).toBe('60');
+        });
+
+        it('keeps a pointer release that arrives while parked for the next stepped update, across a capture', async () => {
+            const demo = makeMockDemo();
+            const seen: boolean[] = [];
+            vi.mocked(demo.update).mockImplementation(() => {
+                seen.push(BT.isReleased(BT.BTN_POINTER_A));
+            });
+            const canvas = Object.assign(makeMockCanvas(), {
+                getBoundingClientRect: () => ({ left: 0, top: 0, width: 320, height: 240 }),
+            });
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+            const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
+
+            vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockResolvedValue(new Blob());
+
+            const listener = (type: string): ((event: unknown) => void) =>
+                vi.mocked(canvas.addEventListener).mock.calls.find(([t]) => t === type)?.[1] as (
+                    event: unknown,
+                ) => void;
+            const mouse = { pointerId: 1, pointerType: 'mouse', button: 0, clientX: 5, clientY: 5 };
+
+            await BTAPI.instance.renderAt(0, 'current'); // park the loop
+            listener('pointerdown')({ ...mouse, buttons: 1 });
+            await BTAPI.instance.renderAt(1 / 60, 'current'); // one update sees the button down
+            seen.length = 0;
+
+            listener('pointerup')({ ...mouse, buttons: 0 });
+            await BTAPI.instance.captureFrame('display'); // re-renders the parked tick with zero updates
+            await BTAPI.instance.renderAt(2 / 60, 'current');
+
+            expect(seen).toEqual([true]);
         });
 
         it('waits for the audio to finish suspending before it steps', async () => {

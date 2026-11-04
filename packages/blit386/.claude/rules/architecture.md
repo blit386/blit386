@@ -89,7 +89,7 @@ src/
     PaletteEffect.ts       # Palette effect system (cycle, fade, exposure fade, flash, swap)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
   input/
-    PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); carries press edges across render-only frames for update() readers
+    PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); two previous-state clocks - endUpdate for update() readers, endFrame for render-side readers and the overlay
     clientToDisplayPos.ts  # Pure client -> display-pixel conversion shared by PointerInput and BT.nativeScreenToDisplayPos
     KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, beforeinput text; any-key queries behind BT.isAnyKey*
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone); digital trigger buttons (BTN_L2/R2 at 0.5 analog) and any-button masks

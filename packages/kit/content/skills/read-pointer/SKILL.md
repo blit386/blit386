@@ -26,14 +26,14 @@ configure() {
 update() {
     if (BT.isPointerActive(0)) {
         const p = BT.pointerPos(0); // a Vector2i in screen pixels
-        const move = BT.pointerDelta(0); // how far it moved this frame
+        const move = BT.pointerDelta(0); // how far it moved since the last update()
 
         if (BT.isDown(BT.BTN_POINTER_A, 0)) this.paintAt(p); // primary button held
         if (BT.isPressed(BT.BTN_POINTER_A, 0)) this.startDrag(p);
         if (BT.isReleased(BT.BTN_POINTER_A, 0)) this.endDrag(p, move); // move as flick velocity
     }
 
-    const wheel = BT.pointerScrollDelta; // a getter; vertical wheel movement this frame (pixels)
+    const wheel = BT.pointerScrollDelta; // a getter; vertical wheel movement since the last update() (pixels)
     this.zoom += wheel;
 }
 ```
@@ -48,7 +48,8 @@ update() {
 - `BT.nativeScreenToDisplayPos(clientX, clientY)` - method, engine 1.8.0+; converts a DOM event's `clientX` / `clientY`
   to display pixels, or `null` before init or for a zero-size canvas. Only for DOM events the engine does not wrap, such
   as a file dropped on the canvas - for the mouse and touch, `pointerPos` already is in display pixels.
-- `BT.pointerScrollDelta` - getter; vertical wheel delta this frame (requires `isCapturingPointerScroll: true`).
+- `BT.pointerScrollDelta` - getter; vertical wheel delta since the last `update()` when read there (requires
+  `isCapturingPointerScroll: true`).
 - Buttons: `BT.BTN_POINTER_A` (primary), `BTN_POINTER_B/C/D`, `BTN_POINTER_ANY`, used with
   `BT.isDown/isPressed/isReleased`.
 - `BT.hideCursor()` / `BT.showCursor()` - methods; hide or restore the OS cursor over the canvas.
@@ -56,10 +57,11 @@ update() {
 ## Notes
 
 - Slots: 0 = mouse or first touch; 1-3 = extra touches or pens (multi-touch).
-- Read in `update()`. Positions are already in your screen's pixel coordinates. A click that lands on a fast display
-  between two `update()` steps waits for the next one (engine 1.8.0+), so `BT.isPressed(BT.BTN_POINTER_A)` in `update()`
-  never misses it - there is nothing to work around.
-- `pointerDelta` makes a good drag velocity - release while moving to "flick".
+- Read in `update()`. Positions are already in your screen's pixel coordinates. A click, release, drag, or wheel turn
+  that lands on a fast display between two `update()` steps waits for the next one, and a click counts once even when
+  one frame runs several updates (engine 1.8.1+) - there is nothing to work around.
+- `pointerDelta` read in `update()` is the movement since the previous `update()`, so it makes a good drag velocity: on
+  the `BT.isReleased(BT.BTN_POINTER_A)` tick, use it as the "flick" speed. It matches on 60 Hz and 120 Hz screens.
 - Wheel capture is opt-in: set `isCapturingPointerScroll: true` in `configure()` when you map the mouse wheel. Without
   it the host page scrolls normally and `BT.pointerScrollDelta` stays `0`.
 - The same flag gates touch scrolling past the canvas: off means `touch-action: pan-y` (phones can tap-hold-scroll the

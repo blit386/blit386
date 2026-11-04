@@ -2132,11 +2132,12 @@ export class BTAPI {
                     void this.captureFrameViaShortcut();
                 }
 
-                // Keyboard and gamepad edges (and the keyboard text buffer) align with fixed update
-                // rate, not display refresh rate (render may run 2x update on 120 Hz / 60 FPS setups),
-                // so each edge reaches exactly one update.
+                // Keyboard, gamepad and pointer edges (plus the keyboard text buffer, pointer delta and
+                // wheel scroll) align with fixed update rate, not display refresh rate (render may run 2x
+                // update on 120 Hz / 60 FPS setups), so each edge reaches exactly one update.
                 this.keyboard?.endUpdate(tick);
                 this.gamepad?.endUpdate(tick);
+                this.pointer?.endUpdate();
             },
             () => {
                 const frameStartMs = performance.now();
@@ -2179,11 +2180,10 @@ export class BTAPI {
                     this.renderer.endFrame(this.consumeFrameDeltaMs());
                 }
 
-                // Snapshot pointer state for next frame's edge detection / delta.
-                // Must run AFTER demo.update + demo.render have read the current
-                // state, so prev = "state when update last looked", letting any
-                // event that arrives before the next tick be visible as a transition.
-                this.pointer?.endFrame(this.pendingUpdateSteps > 0);
+                // Roll the pointer's render-side ('frame') clock for the overlay and render() readers.
+                // update() reads the 'update' clock, rolled in the update callback above, so a frame
+                // that runs no update loses nothing for it.
+                this.pointer?.endFrame();
 
                 const tick = this.loop?.getTicks() ?? 0;
 
@@ -3223,12 +3223,13 @@ export class BTAPI {
      * The skip press must not reach the game's first frame. `endUpdate` clears the
      * pending press and release sets and snapshots the held keys into `prevHeld`,
      * so a key still physically down reads as held (`BT.isKeyDown`) but produces no
-     * press edge. Pointer previous-state rollover works the same way. The gamepad is
+     * press edge. Pointer previous-state rollover (both clocks) works the same way. The gamepad is
      * polled first and then rolled over, so a pad button held through the splash also
      * reads as held with no press edge.
      */
     private drainInputEdges(): void {
         this.keyboard?.endUpdate(0);
+        this.pointer?.endUpdate();
         this.pointer?.endFrame();
         this.gamepad?.endFrame(0);
         this.gamepad?.endUpdate(0);

@@ -822,6 +822,10 @@
         {
           "version": "1.8.1",
           "note": "Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Pointer presses are tracked per fixed update, so a frame that runs several `update()` steps reports a click to the first one only."
         }
       ],
       "deprecated": null,
@@ -852,6 +856,10 @@
         {
           "version": "1.8.1",
           "note": "Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one."
         }
       ],
       "deprecated": null,
@@ -1064,14 +1072,24 @@
     "BT.pointerDelta": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
     "BT.pointerDeltaTo": {
       "kind": "method",
       "since": "1.7.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1107,6 +1125,10 @@
         {
           "version": "1.3.1",
           "note": "Requires `HardwareSettings.isCapturingPointerScroll` (or overlay force); opt-in now, not default."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Read from `update()`, the delta covers every wheel event since the previous `update()`, not only the last rendered frame."
         }
       ],
       "deprecated": null,
