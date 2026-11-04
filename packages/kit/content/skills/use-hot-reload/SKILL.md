@@ -40,7 +40,7 @@ Needs blit386 `^1.4.0`. Production builds skip the plugin (`apply: 'serve'`), so
 | --- | --- |
 | `update()` / `render()` / module constants they use | Method swap - instance fields kept; `init()` does not re-run |
 | `init()`, constructor, or class field initializers | Fresh instance + `init()`; optional `onHotReload` can restore fields |
-| `configure()` hardware settings | Full page reload (display size, backend, FPS, audio voices, overlay flags) |
+| `configure()` hardware settings | Full page reload - any setting it returns (display size, FPS, scroll capture, overlay flags) |
 
 ### 3. Optional: restore state after a re-init
 
