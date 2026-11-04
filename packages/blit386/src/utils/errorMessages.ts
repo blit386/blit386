@@ -491,6 +491,37 @@ export function paletteIndexOutOfRangeError(index: number, size: number): string
 }
 
 /**
+ * Returns the error message when a palette effect or swap touches slot 0.
+ *
+ * @returns User-facing error string.
+ */
+export function paletteEffectSlotZeroError(): string {
+    return "Palette effects can't use color number 0, because slot 0 is always transparent. Start your range at 1.";
+}
+
+/**
+ * Returns the error message when a palette effect range ends past the palette.
+ *
+ * @param end - The out-of-range end index that was supplied.
+ * @param size - The number of colors in the active palette.
+ * @returns User-facing error string.
+ */
+export function paletteEffectEndOutOfRangeError(end: number, size: number): string {
+    return `The color number ${end} is too big for this palette. The palette has ${size} colors, so end your range at ${size - 1} or lower.`;
+}
+
+/**
+ * Returns the error message when a palette fade range starts after it ends.
+ *
+ * @param start - The start index that was supplied.
+ * @param end - The end index that was supplied.
+ * @returns User-facing error string.
+ */
+export function paletteEffectRangeOrderError(start: number, end: number): string {
+    return `The range start (${start}) must be a whole number that isn't greater than the range end (${end}).`;
+}
+
+/**
  * Returns the error message when `applyHUD` is called with `startSlot` less than 1.
  *
  * @param startSlot - The invalid start slot value that was supplied.

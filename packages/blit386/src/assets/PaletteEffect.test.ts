@@ -706,6 +706,23 @@ describe('paletteSwap', () => {
         expect(palette.isDirty).toBe(true);
     });
 
+    it('rejects slot 0 before writing anything', () => {
+        const palette = makeTestPalette();
+        const original = palette.get(5);
+
+        expect(() => paletteSwap(palette, 5, 0)).toThrow(/slot 0/);
+        expect(() => paletteSwap(palette, 0, 5)).toThrow(/slot 0/);
+        expect(palette.getRef(5).isEqual(original)).toBe(true);
+    });
+
+    it('leaves slot A unchanged when slot B is out of range', () => {
+        const palette = makeTestPalette();
+        const original = palette.get(5);
+
+        expect(() => paletteSwap(palette, 5, 999)).toThrow();
+        expect(palette.getRef(5).isEqual(original)).toBe(true);
+    });
+
     it('is a no-op when indices are the same', () => {
         const palette = makeTestPalette();
         const original = palette.get(5);

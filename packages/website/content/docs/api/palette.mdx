@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Palette"
 description: "Palette setup, built-in presets, HUD preset, serialization, and palette effects."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-11-03T21:25:45+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-palette.md"
 ---
 
@@ -215,6 +215,10 @@ Animated effects run automatically once per fixed update, right after your `upda
 the same pace at any refresh rate, and `BT.renderAt` reproduces them exactly. Multiple effects can run simultaneously on
 different palette ranges and will not conflict. The public `Palette.isDirty` getter reflects whether slots changed since
 the last GPU upload - effects set this flag; no polling needed.
+
+Ranges for `BT.paletteCycle` and `BT.paletteFadeRange`, and both indices for `BT.paletteSwap`, start at slot 1, because
+slot 0 is always transparent and can't be changed. A range that includes slot 0, or an `end` at or past the palette
+size, throws at the call, and `paletteCycle` needs a palette set first, like the fade effects.
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';

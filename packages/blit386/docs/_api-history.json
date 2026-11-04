@@ -981,6 +981,10 @@
         {
           "version": "1.8.0",
           "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Requires an active palette and rejects slot 0 or an `end` past the palette at the call."
         }
       ],
       "deprecated": null,
@@ -1017,6 +1021,10 @@
         {
           "version": "1.8.0",
           "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Rejects slot 0 or an `end` past the palette at the call."
         }
       ],
       "deprecated": null,
@@ -1044,7 +1052,12 @@
     "BT.paletteSwap": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Rejects slot 0 before writing anything."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

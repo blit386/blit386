@@ -46,6 +46,9 @@ import type { EasingFunction } from '../utils/Easing';
 import * as errorMessages from '../utils/errorMessages';
 import {
     noActivePaletteError,
+    paletteEffectEndOutOfRangeError,
+    paletteEffectRangeOrderError,
+    paletteEffectSlotZeroError,
     paletteIndexNegativeError,
     paletteIndexOutOfRangeError,
     spriteNotIndexizedError,
@@ -1767,11 +1770,18 @@ export class BTAPI {
      * Classic water/fire/plasma animation. Runs indefinitely until canceled
      * via {@link paletteClearEffects}.
      *
-     * @param start - First palette index in the cycling range (inclusive).
-     * @param end - Last palette index in the cycling range (inclusive).
+     * @param start - First palette index in the cycling range (inclusive). Must be 1 or higher.
+     * @param end - Last palette index in the cycling range (inclusive). Must be below the palette size.
      * @param speed - Steps per second. Positive = forward, negative = backward.
+     * @throws If no palette is set, `start` is 0, or `end` is past the palette.
      */
     public paletteCycle(start: number, end: number, speed: number): void {
+        const palette = this.getPalette();
+
+        if (!palette) {
+            throw new Error(noActivePaletteError());
+        }
+
         if (!Number.isFinite(speed)) {
             throw new Error(`paletteCycle: 'speed' should be a number (got ${speed}).`);
         }
@@ -1779,6 +1789,8 @@ export class BTAPI {
         if (!Number.isInteger(start) || !Number.isInteger(end) || start >= end) {
             throw new Error(`paletteCycle: start must be an integer less than end, got [${start}, ${end}].`);
         }
+
+        this.assertEffectRange(start, end, palette.size);
 
         this.paletteEffects.add(new CycleEffect(start, end, speed));
     }
@@ -1828,11 +1840,12 @@ export class BTAPI {
     /**
      * Fades only a subset of palette indices toward a target over time.
      *
-     * @param start - First palette index to fade (inclusive).
-     * @param end - Last palette index to fade (inclusive).
+     * @param start - First palette index to fade (inclusive). Must be 1 or higher.
+     * @param end - Last palette index to fade (inclusive). Must be below the palette size.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
+     * @throws If no palette is set, `start` is 0, `start` is greater than `end`, or `end` is past the palette.
      */
     public paletteFadeRange(
         start: number,
@@ -1847,6 +1860,11 @@ export class BTAPI {
             throw new Error(noActivePaletteError());
         }
 
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start > end) {
+            throw new Error(paletteEffectRangeOrderError(start, end));
+        }
+
+        this.assertEffectRange(start, end, palette.size);
         this.assertFiniteDuration('paletteFadeRange', durationMs);
         this.paletteEffects.add(new FadeRangeEffect(start, end, palette, target, durationMs, easing));
     }
@@ -1875,6 +1893,7 @@ export class BTAPI {
      *
      * @param indexA - First palette index.
      * @param indexB - Second palette index.
+     * @throws If either index is 0 (slot 0 is always transparent).
      */
     public paletteSwap(indexA: number, indexB: number): void {
         // getPalette(), so a swap during the splash edits the game's captured palette
@@ -1945,6 +1964,23 @@ export class BTAPI {
         }
 
         this.renderer.clearEffects();
+    }
+
+    /**
+     * Rejects an effect range that includes the frozen transparent slot 0 or runs past the palette.
+     *
+     * @param start - First index of the range.
+     * @param end - Last index of the range (inclusive).
+     * @param size - Active palette size.
+     */
+    private assertEffectRange(start: number, end: number, size: number): void {
+        if (start <= TRANSPARENT_PALETTE_INDEX) {
+            throw new Error(paletteEffectSlotZeroError());
+        }
+
+        if (end >= size) {
+            throw new Error(paletteEffectEndOutOfRangeError(end, size));
+        }
     }
 
     /**

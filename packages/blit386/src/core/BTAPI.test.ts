@@ -54,6 +54,7 @@ import type { SpriteDrawParams } from '../render/SpriteOrientation';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
+import { paletteEffectEndOutOfRangeError, paletteEffectSlotZeroError } from '../utils/errorMessages';
 import type * as FrameCaptureModule from '../utils/FrameCapture';
 import { downloadBlob } from '../utils/FrameCapture';
 import { Rect2i } from '../utils/Rect2i';
@@ -1245,6 +1246,7 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             vi.mocked(demo.init).mockImplementation(async () => {
+                BTAPI.instance.setPalette(Palette.pico8());
                 BTAPI.instance.paletteCycle(1, 4, 1);
 
                 return true;
@@ -1259,6 +1261,7 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             vi.mocked(demo.init).mockImplementation(async () => {
+                BTAPI.instance.setPalette(Palette.pico8());
                 BTAPI.instance.paletteCycle(1, 4, 1);
 
                 return true;
@@ -6836,5 +6839,77 @@ describe('BTAPI splash lifecycle in init', () => {
 
             expect(enableDissolveSpy).toHaveBeenCalled();
         });
+    });
+});
+
+describe('BTAPI palette effect ranges', () => {
+    beforeEach(() => {
+        resetSingleton();
+        (BTAPI.instance as unknown as { palette: Palette | null }).palette = Palette.pico8();
+    });
+
+    afterEach(() => {
+        resetSingleton();
+    });
+
+    const slotZero = paletteEffectSlotZeroError();
+
+    function snapshot(): string {
+        const palette = (BTAPI.instance as unknown as { palette: Palette }).palette;
+
+        return Array.from({ length: palette.size }, (_, i) => palette.get(i).toHex()).join(',');
+    }
+
+    it('paletteCycle rejects slot 0 at the call', () => {
+        expect(() => BTAPI.instance.paletteCycle(0, 3, 1)).toThrow(slotZero);
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('paletteCycle rejects an end past the palette size at the call', () => {
+        expect(() => BTAPI.instance.paletteCycle(1, 16, 1)).toThrow(paletteEffectEndOutOfRangeError(16, 16));
+        expect(() => BTAPI.instance.paletteCycle(1, 40, 1)).toThrow(paletteEffectEndOutOfRangeError(40, 16));
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('paletteCycle accepts the last slot', () => {
+        BTAPI.instance.paletteCycle(1, 15, 1);
+
+        expect(activeEffectCount()).toBe(1);
+    });
+
+    it('paletteCycle requires an active palette', () => {
+        (BTAPI.instance as unknown as { palette: Palette | null }).palette = null;
+
+        expect(() => BTAPI.instance.paletteCycle(1, 3, 1)).toThrow(/No palette set yet/);
+    });
+
+    it('paletteFadeRange requires an active palette', () => {
+        (BTAPI.instance as unknown as { palette: Palette | null }).palette = null;
+
+        expect(() => BTAPI.instance.paletteFadeRange(1, 3, Palette.pico8(), 500)).toThrow(/No palette set yet/);
+    });
+
+    it('paletteFadeRange rejects slot 0 at the call', () => {
+        expect(() => BTAPI.instance.paletteFadeRange(0, 15, Palette.pico8(), 500)).toThrow(slotZero);
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('paletteFadeRange rejects an end past the palette size at the call', () => {
+        expect(() => BTAPI.instance.paletteFadeRange(1, 16, Palette.pico8(), 500)).toThrow(
+            paletteEffectEndOutOfRangeError(16, 16),
+        );
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('paletteFadeRange rejects start greater than end', () => {
+        expect(() => BTAPI.instance.paletteFadeRange(5, 3, Palette.pico8(), 500)).toThrow();
+    });
+
+    it('paletteSwap with slot 0 throws and leaves the palette unchanged', () => {
+        const before = snapshot();
+
+        expect(() => BTAPI.instance.paletteSwap(5, 0)).toThrow(slotZero);
+        expect(() => BTAPI.instance.paletteSwap(0, 5)).toThrow(slotZero);
+        expect(snapshot()).toBe(before);
     });
 });
