@@ -1263,7 +1263,12 @@
     "BT.spritesRefresh": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Covers every indexized sheet, not only sheets already drawn; `sheet.destroy()` removes a sheet. A sheet that fails to re-map keeps its old indices and is retried by the next call, instead of being dropped."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
