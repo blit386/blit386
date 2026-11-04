@@ -40,7 +40,7 @@ Needs blit386 `^1.4.0`. Production builds skip the plugin (`apply: 'serve'`), so
 | --- | --- |
 | `update()` / `render()` / module constants they use | Method swap - instance fields kept; `init()` does not re-run |
 | `init()`, constructor, or class field initializers | Fresh instance + `init()`; optional `onHotReload` can restore fields |
-| `configure()` hardware settings | Full page reload - on engine 1.8.1+ any setting it returns except the splash ones (display size, FPS, scroll capture, overlay flags) |
+| `configure()` hardware settings | Full page reload when a returned setting changes (display size, FPS, scroll capture, overlay flags). On engine 1.8.1+ that is every setting except `isSplashEnabled`, `splashColorDark` and `splashColorLight` |
 
 ### 3. Optional: restore state after a re-init
 
