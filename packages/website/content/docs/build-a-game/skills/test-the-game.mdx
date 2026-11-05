@@ -125,7 +125,7 @@ order, and prints one JSON line per step.
 
    ```js
    window.__btInputTrace.start();
-   // ...click, press keys or pad buttons (steps 5 and 6)...
+   // ...click, press keys or pad buttons (step 5)...
    const { entries } = window.__btInputTrace.stop();
 
    const count = (clock, test) => entries.filter((e) => e.clock === clock && test(e)).length;
