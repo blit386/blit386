@@ -35,6 +35,8 @@ These are read-only values; access them as properties, not function calls.
   the raw lifecycle state
 - Readiness: `BT.isReady` (engine 1.8.0+) - true only once `init()` has finished and the game loop exists; poll it
   before `BT.renderAt` / `BT.captureFrame` / `BT.testState` from an external driver
+- Screen text: `BT.frameText` (engine 1.9.0+) - the strings the last frame drew, with positions, once
+  `BT.frameTextRecordSet(true)` has turned the readout on; for play-testing, see `skills/test-the-game/`
 - Accessibility: `BT.isReducedMotionPreferred` (engine 1.7.0+) - true when the player asked their system for less
   motion; pair it with the `onReducedMotionChange` hook below
 - Fonts: `BT.systemFont` (engine 1.7.0+) - the built-in 6x14 font as a live `BitmapFont`, so `font.codePoints` and

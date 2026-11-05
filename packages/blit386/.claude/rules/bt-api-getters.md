@@ -34,6 +34,8 @@ Zero-argument read-only values on `BT`:
   `splashState`; `isReducedMotionPreferred` resolves the platform's `prefers-reduced-motion` match (or a
   `?reducedmotion` / `?noreducedmotion` URL override) and needs no init either, mirroring `screenOrientation`
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount`
+- Last-frame readout: `frameText` - the strings the last rendered frame drew, a fresh copy per read; empty until
+  `frameTextRecordSet(true)`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
 
@@ -46,7 +48,7 @@ frame; calling methods on `BT.random` advances the shared stream.
 ## Keep as methods
 
 - Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `randomSeed`,
-  `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`, `resume`
+  `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`, `resume`, `frameTextRecordSet`
 - Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFadeExposure`, `paletteFlash`,
   `paletteSwap`, `paletteClearEffects`
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`, `green`)

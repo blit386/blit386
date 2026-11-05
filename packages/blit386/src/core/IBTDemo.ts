@@ -640,6 +640,37 @@ export interface TestStateSnapshot {
 }
 
 /**
+ * Where a {@link FrameTextEntry} was drawn from: `'systemPrint'` for a {@link BT.systemPrint}
+ * call that drew text (game text and any UI kit built on it; empty strings and palette index 0
+ * are skipped), `'overlay'` for a non-empty left or right label of an {@link OverlayRow}.
+ *
+ * @since 1.9.0
+ */
+export type FrameTextSource = 'systemPrint' | 'overlay';
+
+/**
+ * One string the last rendered frame drew, as reported by {@link BT.frameText}.
+ *
+ * @since 1.9.0
+ */
+export interface FrameTextEntry {
+    /** Which draw path drew the string. */
+    readonly source: FrameTextSource;
+
+    /** The exact string that was drawn. */
+    readonly text: string;
+
+    /** Left edge of the text on screen, in display pixels (after any {@link BT.cameraSet} offset). */
+    readonly x: number;
+
+    /** Top edge of the text on screen, in display pixels (after any {@link BT.cameraSet} offset). */
+    readonly y: number;
+
+    /** Palette index the text was drawn in. */
+    readonly paletteIndex: number;
+}
+
+/**
  * Demo contract implemented by BLIT386 applications.
  *
  * Engine lifecycle order:

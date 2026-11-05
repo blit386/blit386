@@ -647,15 +647,22 @@ class UiContext {
     }
 
     /**
-     * The layout of the last rendered frame as plain data, for the capture page's lint rules.
-     * Empty until `recording` is switched on. Returns a fresh copy every call.
+     * The last rendered frame as plain data: the kit layout for the capture page's lint rules
+     * (`groups`, empty until `recording` is switched on) and every string the frame drew
+     * (`texts`, from the engine's `BT.frameText` - kit text, direct `BT.systemPrint` calls, and
+     * overlay rows, each with its display position; empty unless `?capture` turned it on).
+     * Returns a fresh copy every call.
      *
-     * @returns {{ display: { w: number, h: number }, groups: Array<object> }}
+     * @returns {{ display: { w: number, h: number }, groups: Array<object>, texts: Array<object> }}
      */
     snapshot() {
         const display = BT.displaySize;
 
-        return { display: { w: display.x, h: display.y }, groups: structuredClone(this.frameGroups) };
+        return {
+            display: { w: display.x, h: display.y },
+            groups: structuredClone(this.frameGroups),
+            texts: BT.frameText,
+        };
     }
 
     /**

@@ -36,7 +36,8 @@ Playwright, or a `tests/` directory for those - automated unit or E2E coverage w
 (not broadly available) and would largely duplicate what `packages/blit386`'s own suite already covers. Correctness is
 verified by:
 
-1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
+1. Running the dev server (`pnpm run dev`) and opening the demo in a browser - an agent drives it as described under
+   "Driving a live demo" below
 2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
 3. Preflight checks (`/preflight demos`) - format:check, lint, test, spellcheck, knip, check:demo-registry,
    check:demo-comment-links, build
@@ -67,7 +68,7 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `plugins/__tests__/html-escape.test.mjs` | The shared HTML-escaping helper `virtual-demos.js` and `social-meta.js` use |
 | `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
 | `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, the nine-slice sets it builds, out-of-range guards, the fresh-copy-vs-singleton distinction |
-| `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, and the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy) |
+| `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, and the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy, `texts` passed through from `BT.frameText`) |
 | `src/shared/__tests__/ui-lint.test.mjs` | The layout lint rules (`overlap`, `out-of-display`, `margin`, `row-gap`) over recorded snapshots, including the zero-width spacer exemption |
 | `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `tooltip()` docking and clamping, `spacer()` recording a zero-width row |
 | `src/shared/__tests__/key-names.test.mjs` | `keyLabel()`: letter, digit, arrow, named-key, and numpad labels, and the pass-through for any other code |
@@ -86,6 +87,33 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
 verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM
 harness) and the individual demo files under `src/<topic>.js` remain uncovered, per the "no automated tests" note above.
+
+Driving a live demo (how an agent checks what a demo shows - the canvas has no accessibility tree, and a screenshot of a
+6-pixel font is a bad oracle):
+
+1. Open `http://localhost:5173/demos/<slug>.html?embed&capture&seed=1` from `pnpm run dev`. `?embed&capture` puts the
+   engine on `window.BT` and turns on the drawn-text recorder; `seed=1` pins `BT.random`.
+2. Poll `BT.isReady` before anything else. Step frames with `BT.renderAt(seconds)` and
+   `BT.renderAt(next, { from: 'current' })` rather than waiting on `requestAnimationFrame`: a background or hidden
+   browser pane throttles or stops the live loop, while a seek renders exactly the frame asked for.
+3. Read the strings from `BT.frameText`, not a screenshot: each `BT.systemPrint` call that drew text (kit text included)
+   and each overlay row label drawn, with its display position; text that draws nothing is skipped. A kit `ui.kv` row is
+   two entries on the same `y`, key then value. `BT.testState()` is the game's memory, not what was drawn - most demos
+   have no hook, and a wrong label over a right value still passes it. `__blitDemoUi.snapshot()` adds the kit's groups
+   and widget rectangles (set `__blitDemoUi.recording = true` first) next to the same `texts`.
+4. Pointer input: dispatch `PointerEvent`s on the canvas, mapping display pixels to `clientX` / `clientY` with
+   `canvas.getBoundingClientRect()` and `BT.displaySize` - never `canvas.width`, since a 320×240 demo often has a
+   640×480 backing store. Set `pointerType: 'mouse'` (BT-594: an empty type is treated as the mouse, but a touch or pen
+   move with no `pointerdown` is dropped).
+5. For a slider, a drag, or a hold, leave the button down across a rendered frame: `pointerdown`, step a frame, move,
+   step, then `pointerup`. A same-turn `pointerdown` + `pointerup` on the audio-buses Music slider unlocks audio
+   (`BT.isAudioUnlocked` turns true) and leaves `BT.audioVolumeGet('music')` at `1`, because `ui.slider` only drags
+   while the button is still down on a rendered frame.
+
+`_shots/capture.js` is the working recipe (`seekWhenReady`, `pointerClientPoint`, `injectInput`). The engine contract
+for all of the above - readiness, seeking, test state, the drawn-text readout - lives in
+`packages/blit386/docs/api-core.md` (Engine readiness, Seeking a frame with renderAt, Test state for agent play-testing,
+Reading the text a frame drew); read it there rather than restating it here.
 
 Manual hot-reload check (nothing automated covers this - run by hand after touching hot-reload wiring):
 

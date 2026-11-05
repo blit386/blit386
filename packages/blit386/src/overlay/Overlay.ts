@@ -10,6 +10,7 @@ import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type {
     Backend,
+    FrameTextEntry,
     OverlayAudioMeterStyle,
     OverlayRow,
     OverlayStyle,
@@ -153,6 +154,9 @@ export class Overlay {
     readonly #layoutScratch = createOverlayLayoutPlanScratch();
 
     readonly #barStyle = { barIndex: DEFAULT_IDX_BG, textIndex: DEFAULT_IDX_TEXT };
+
+    /** When set, custom-row labels are also pushed here for {@link BT.frameText}. */
+    #textSink: FrameTextEntry[] | null = null;
 
     #idxBg = DEFAULT_IDX_BG;
 
@@ -301,6 +305,15 @@ export class Overlay {
      */
     get isTrackingPaletteUsage(): boolean {
         return this.#paletteView.isEnabled && this.#toggle.isBodyVisible;
+    }
+
+    /**
+     * Sets (or clears, with `null`) the array that drawn custom-row labels are pushed to.
+     *
+     * @param sink - Receives one entry per drawn left or right label; the caller empties it.
+     */
+    setTextSink(sink: FrameTextEntry[] | null): void {
+        this.#textSink = sink;
     }
 
     /**
@@ -766,7 +779,7 @@ export class Overlay {
 
         if (isBodyVisible) {
             if (customRows !== undefined && customRows.length > 0) {
-                this.#bars.drawCustomRowLabels(renderer, font, plan, customRows, this.#barStyle);
+                this.#bars.drawCustomRowLabels(renderer, font, plan, customRows, this.#barStyle, this.#textSink);
             }
 
             this.#bars.drawTopLabels(

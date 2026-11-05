@@ -557,6 +557,22 @@ describe('BT.isReady', () => {
     });
 });
 
+describe('BT.frameText', () => {
+    it('delegates recording and reads to BTAPI', () => {
+        const entries = [{ source: 'systemPrint' as const, text: 'Music', x: 1, y: 2, paletteIndex: 3 }];
+        const setSpy = vi.spyOn(BTAPI.instance, 'setTextRecording').mockImplementation(() => {});
+
+        vi.spyOn(BTAPI.instance, 'getFrameText').mockReturnValue(entries);
+
+        BT.frameTextRecordSet(true);
+
+        expect(setSpy).toHaveBeenCalledWith(true);
+        expect(BT.frameText).toBe(entries);
+
+        vi.restoreAllMocks();
+    });
+});
+
 describe('BT.testState', () => {
     /** Minimal demo with an optional `testState` hook; `init()` resolves so `hotReplaceDemo` accepts it. */
     function makeDemo(testState?: () => unknown): IBTDemo {
