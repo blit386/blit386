@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BTAPI } from '../core/BTAPI';
+import { GameLoop } from '../core/GameLoop';
 import type { HardwareSettings, IBTDemo } from '../core/IBTDemo';
 import { mergeHardwareSettings } from '../core/IBTDemo';
 import type { DemoConstructor } from '../utils/Bootstrap';
@@ -620,5 +621,134 @@ describe('hotSwapDemo', () => {
         expect(result).toBe(false);
         expect(BTAPI.instance.getDemo()).toBe(oldDemo);
         expect(errorSpy).toHaveBeenCalled();
+    });
+});
+
+describe('hotSwapDemo after a runtime throw (BT-725)', () => {
+    type PrivateBTAPI = { demo: IBTDemo | null; loop: GameLoop | null; isSeekParked: boolean };
+    type PrivateLoop = { tick: (currentTime: number) => void; lastUpdateTime: number };
+
+    class Broken {
+        async init() {
+            return true;
+        }
+        update() {
+            throw new Error('typo');
+        }
+        render() {}
+    }
+
+    class Fixed {
+        async init() {
+            return true;
+        }
+        update() {}
+        render() {}
+    }
+
+    class FixedWithNewInit {
+        async init() {
+            // Different body than Broken.init(), so initFingerprint differs and Tier 2 runs.
+            return Promise.resolve(true);
+        }
+        update() {}
+        render() {}
+    }
+
+    let raf: ReturnType<typeof vi.fn>;
+
+    /** Installs a `Broken` demo on a loop that has already halted on its first update. */
+    function haltOnError(): { api: PrivateBTAPI; loop: GameLoop } {
+        const api = BTAPI.instance as unknown as PrivateBTAPI;
+        const demo = new Broken();
+        const loop = new GameLoop(
+            10,
+            () => api.demo?.update(),
+            () => api.demo?.render(),
+        );
+        api.demo = demo;
+        api.loop = loop;
+
+        loop.start();
+        (loop as unknown as PrivateLoop).lastUpdateTime = 0;
+
+        expect(() => (loop as unknown as PrivateLoop).tick(10)).toThrow('typo');
+
+        raf.mockClear();
+
+        return { api, loop };
+    }
+
+    beforeEach(() => {
+        resetSingleton();
+        raf = vi.fn(() => 1);
+        vi.stubGlobal('requestAnimationFrame', raf);
+        vi.stubGlobal('cancelAnimationFrame', vi.fn());
+        vi.spyOn(HotRuntime, 'requestHardReload').mockImplementation(() => {});
+        vi.spyOn(HotRuntime, 'announce').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        resetSingleton();
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it('restarts a halted loop after a methods-only swap (Tier 1)', async () => {
+        const { loop } = haltOnError();
+
+        expect(await hotSwapDemo(Fixed as unknown as DemoConstructor)).toBe(true);
+        expect(raf).toHaveBeenCalledOnce();
+        expect(loop.isHaltedOnError()).toBe(false);
+    });
+
+    it('restarts a halted loop after a re-init swap (Tier 2)', async () => {
+        const { loop } = haltOnError();
+
+        expect(await hotSwapDemo(FixedWithNewInit as unknown as DemoConstructor)).toBe(true);
+        expect(raf).toHaveBeenCalledOnce();
+        expect(loop.isHaltedOnError()).toBe(false);
+    });
+
+    it('drains input edges left over from the update that threw before restarting', async () => {
+        const { loop } = haltOnError();
+        (loop as unknown as { ticks: number }).ticks = 42;
+        const drain = vi.spyOn(
+            BTAPI.instance as unknown as { drainInputEdges: (tick: number) => void },
+            'drainInputEdges',
+        );
+
+        await hotSwapDemo(Fixed as unknown as DemoConstructor);
+
+        // The real tick, not 0, so a pad button held through the freeze repeats on its own beat.
+        expect(drain).toHaveBeenCalledExactlyOnceWith(42);
+        expect(drain.mock.invocationCallOrder[0]).toBeLessThan(raf.mock.invocationCallOrder[0] ?? 0);
+    });
+
+    it('leaves the loop stopped while a BT.renderAt seek holds it parked', async () => {
+        const { api, loop } = haltOnError();
+        // What BTAPI#seek does to the loop before stepping it.
+        loop.stop();
+        api.isSeekParked = true;
+
+        expect(await hotSwapDemo(Fixed as unknown as DemoConstructor)).toBe(true);
+        expect(raf).not.toHaveBeenCalled();
+    });
+
+    it('keeps a halted loop stopped when the Tier 2 re-init fails', async () => {
+        const { loop } = haltOnError();
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        class FailsInit {
+            async init() {
+                return Promise.resolve(false);
+            }
+            update() {}
+            render() {}
+        }
+
+        expect(await hotSwapDemo(FailsInit as unknown as DemoConstructor)).toBe(false);
+        expect(raf).not.toHaveBeenCalled();
+        expect(loop.isHaltedOnError()).toBe(true);
     });
 });

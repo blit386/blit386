@@ -876,4 +876,83 @@ describe('GameLoop', () => {
             expect(internals.accumulator).toBe(0);
         });
     });
+
+    describe('a callback that throws (BT-725)', () => {
+        type PrivateLoop = { tick: (currentTime: number) => void; lastUpdateTime: number };
+
+        it('stops the loop and rethrows, so start() schedules frames again', () => {
+            const raf = vi.fn(() => 1);
+            vi.stubGlobal('requestAnimationFrame', raf);
+
+            let isBroken = true;
+            const onUpdate = vi.fn(() => {
+                if (isBroken) {
+                    throw new Error('typo');
+                }
+            });
+            const loop = new GameLoop(10, onUpdate, vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            loop.start();
+            p.lastUpdateTime = 0;
+            raf.mockClear();
+
+            expect(() => p.tick(10)).toThrow('typo');
+            expect(raf).not.toHaveBeenCalled(); // one error, not one per frame
+            expect(loop.isHaltedOnError()).toBe(true);
+
+            isBroken = false;
+            loop.start();
+
+            expect(raf).toHaveBeenCalledOnce();
+            expect(loop.isHaltedOnError()).toBe(false);
+        });
+
+        it('stops on a throwing render() too', () => {
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn(() => 1),
+            );
+
+            const loop = new GameLoop(
+                10,
+                vi.fn(),
+                vi.fn(() => {
+                    throw new Error('render typo');
+                }),
+            );
+            const p = loop as unknown as PrivateLoop;
+
+            loop.start();
+            p.lastUpdateTime = 0;
+
+            expect(() => p.tick(10)).toThrow('render typo');
+            expect(loop.isHaltedOnError()).toBe(true);
+        });
+
+        it('clears the halted state on stop()', () => {
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn(() => 1),
+            );
+
+            const loop = new GameLoop(
+                10,
+                vi.fn(() => {
+                    throw new Error('typo');
+                }),
+                vi.fn(),
+            );
+            const p = loop as unknown as PrivateLoop;
+
+            loop.start();
+            p.lastUpdateTime = 0;
+
+            expect(() => p.tick(10)).toThrow();
+
+            loop.stop();
+
+            expect(loop.isHaltedOnError()).toBe(false);
+        });
+    });
 });

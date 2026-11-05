@@ -656,6 +656,23 @@ export class BTAPI {
     }
 
     /**
+     * Restarts the game loop after a successful hot swap when a throw in `update()` or `render()` stopped it, so
+     * saving the fix resumes the game without a page reload. A no-op when the loop is running or was stopped on
+     * purpose. That includes a {@link renderAt} seek: its `stop()` clears the halt, so only {@link resume} ends a seek.
+     *
+     * Input edges are drained first: the update that threw never reached its input rollover, so its presses would
+     * otherwise reach the first update after the restart a second time.
+     */
+    public resumeHaltedLoop(): void {
+        if (!this.loop?.isHaltedOnError()) {
+            return;
+        }
+
+        this.drainInputEdges(this.loop.getTicks());
+        this.loop.start();
+    }
+
+    /**
      * Gets the fractional progress between the last completed fixed update and the next.
      *
      * @returns Interpolation alpha in `[0, 1)`; `0` before initialization.
@@ -3248,13 +3265,15 @@ export class BTAPI {
      * press edge. Pointer previous-state rollover (both clocks) works the same way. The gamepad is
      * polled first and then rolled over, so a pad button held through the splash also
      * reads as held with no press edge.
+     *
+     * @param tick - Current tick, so a pad button pressed during the drain times its auto-repeat from now.
      */
-    private drainInputEdges(): void {
-        this.keyboard?.endUpdate(0);
+    private drainInputEdges(tick: number): void {
+        this.keyboard?.endUpdate(tick);
         this.pointer?.endUpdate();
         this.pointer?.endFrame();
-        this.gamepad?.endFrame(0);
-        this.gamepad?.endUpdate(0);
+        this.gamepad?.endFrame(tick);
+        this.gamepad?.endUpdate(tick);
     }
 
     /**
@@ -3358,7 +3377,7 @@ export class BTAPI {
 
         this.resetCamera();
         this.lastCameraOffset = Vector2i.zero();
-        this.drainInputEdges();
+        this.drainInputEdges(0);
         loop.resetTicks();
         this.lastRenderClockMs = 0;
 
@@ -3512,7 +3531,7 @@ export class BTAPI {
             }
 
             this.endPaletteCapture(reducedMotion);
-            this.drainInputEdges();
+            this.drainInputEdges(0);
         }
     }
 
