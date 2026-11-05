@@ -84,15 +84,9 @@ export function readUrlFlags(): SplashUrlFlags {
         return { forceOn: false, forceOff: false };
     }
 
-    try {
-        const params = new URLSearchParams(search);
+    const params = new URLSearchParams(search);
 
-        return { forceOn: params.has(FLAG_ON), forceOff: params.has(FLAG_OFF) };
-    } catch (error) {
-        console.warn('[BT] Failed to parse splash URL flags:', error);
-
-        return { forceOn: false, forceOff: false };
-    }
+    return { forceOn: params.has(FLAG_ON), forceOff: params.has(FLAG_OFF) };
 }
 
 /**
