@@ -58,7 +58,9 @@ Without this hook, a re-init still works - fields just reset to whatever the new
 the previous instance running.
 
 A throw from `update()` or `render()` pauses the loop and logs the error once. The next save whose swap succeeds starts
-the loop again with the game's state intact (engine 1.8.1+), so tell the user to fix and save, not to reload the page.
+the loop again (engine 1.8.1+), so tell the user to fix and save, not to reload the page. A fix inside `update()` or
+`render()` is a method-only swap and keeps every field. A fix that also touches `init()`, the constructor, or a field
+initializer is a re-init: fields reset unless `onHotReload` copies them across.
 
 ### 4. Asset hot-replace
 

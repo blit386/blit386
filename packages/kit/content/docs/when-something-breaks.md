@@ -74,10 +74,11 @@ console. There is almost always a red error there, and it came from your `update
 The engine calls `update()` and `render()` over and over. If your code throws an error in the middle of a round, the
 engine prints that error once and pauses the game. There is no error screen; the last picture just stays there.
 
-Read the first red line and fix that spot. With `npm run dev` running, saving the fix starts the game again from where
-it paused (engine 1.8.1+); on an older engine, or without the dev server, reload the page. Be extra careful with browser
-features that can fail on some devices, like saving with `localStorage` (it throws in some private windows) or
-`navigator.vibrate`. Wrap those in `try` / `catch` so a failure skips the feature instead of stopping the game:
+Read the first red line and fix that spot. With `npm run dev` running, saving the fix starts the game again (engine
+1.8.1+) - from where it paused when you only changed `update()` or `render()`, fresh when you also changed `init()`; on
+an older engine, or without the dev server, reload the page. Be extra careful with browser features that can fail on
+some devices, like saving with `localStorage` (it throws in some private windows) or `navigator.vibrate`. Wrap those in
+`try` / `catch` so a failure skips the feature instead of stopping the game:
 
 ```js
 try {
@@ -218,7 +219,8 @@ With hot reload (the starter's `blit386` Vite plugin), most saves keep the game 
 - Edited `configure()` (screen size, FPS, overlay flags)? A full page reload is expected.
 - Broke `init()` so it throws or returns `false`? The previous game should keep running. Fix the typo and save again.
 - Game froze right after a save? `update()` or `render()` probably crashed - the browser console shows the error once.
-  Fix it and save again, and the game carries on from where it froze (engine 1.8.1+). Older engines need a page reload.
+  Fix it and save again, and the game carries on (engine 1.8.1+) - from where it froze if the fix stayed inside
+  `update()` or `render()`. Older engines need a page reload.
 
 If the page reloads on every tiny edit, check that `vite.config.js` still has `plugins: [blit386()]` and that you are on
 blit386 1.4.0 or newer (`npx blit doctor`). Older games can pick the plugin up with `npx blit migrate --write` (or

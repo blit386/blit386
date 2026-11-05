@@ -64,7 +64,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling
   frames while still counting itself as running, so even a hot-reload save that fixed the typo left the game frozen
   until a page reload. Now the error reaches the console once, the loop stops, and the next successful hot-reload save
-  starts it again with the game's state intact. It does not restart while a `BT.renderAt` seek holds the loop. See
+  starts it again: a method-only swap keeps every field, and a re-init keeps whatever `onHotReload` restores. It does
+  not restart while a `BT.renderAt` seek holds the loop. See
   [After a runtime error](guide-hot-reload.md#after-a-runtime-error).
 - A pointer click or tap whose down and up both land between two `update()` steps is no longer lost. `BT.isPressed` and
   `BT.isReleased` for `BT.BTN_POINTER_*` used to compare the button against its previous state only, so a Playwright

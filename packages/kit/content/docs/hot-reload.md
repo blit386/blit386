@@ -13,7 +13,8 @@ With the `blit386` Vite plugin in place (it ships in the starter `vite.config.js
 - A broken save that makes `init()` fail leaves the previous game running, so you can fix the typo without losing the
   session.
 - A save that makes `update()` or `render()` crash pauses the game and prints the error once in the browser console. Fix
-  the typo and save again - the game picks up where it paused (engine 1.8.1+). No page reload needed.
+  the typo and save again - the game picks up where it paused (engine 1.8.1+). No page reload needed. If the fix also
+  edits `init()`, the save is a re-init instead, so fields reset unless `onHotReload` copies them across.
 
 Hot reload only works while `npm run dev` (or `npx blit run`) is running. A production build (`npm run build`) never
 includes it.
