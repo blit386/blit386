@@ -60,6 +60,14 @@ const BTN_D = 23;
 export const POINTER_BUTTON_CODES = [BTN_A, BTN_B, BTN_C, BTN_D] as const;
 
 /**
+ * Bit for a pointer button code in a pending-edge mask.
+ *
+ * @param button - One of `BTN_A..D`.
+ * @returns `1 << (button - BTN_A)`, or `0` for any other code.
+ */
+const buttonBit = (button: number): number => (button >= BTN_A && button <= BTN_D ? 1 << (button - BTN_A) : 0);
+
+/**
  * Internal per-slot pointer state.
  *
  * `pos`, `prevPos` and `updatePrevPos` are reused `Vector2i` instances; allocation discipline
@@ -119,7 +127,42 @@ interface Slot {
 
     /** Snapshot of `d` taken at `endUpdate()`. */
     updatePrevD: boolean;
+
+    /** Buttons (bit `1 << (code - BTN_A)`) that went down since `endUpdate()`, even if they are up again. */
+    updatePendingPress: number;
+
+    /** Buttons that went up since `endUpdate()`, even if they went down first. */
+    updatePendingRelease: number;
+
+    /** Buttons that went down since `endFrame()`, even if they are up again. */
+    framePendingPress: number;
+
+    /** Buttons that went up since `endFrame()`. */
+    framePendingRelease: number;
 }
+
+/**
+ * Packs a slot's four held buttons into a bitmask (see {@link buttonBit}).
+ *
+ * @param slot - Slot to read.
+ * @returns The held-button mask.
+ */
+const heldMask = (slot: Slot): number => (slot.a ? 1 : 0) | (slot.b ? 2 : 0) | (slot.c ? 4 : 0) | (slot.d ? 8 : 0);
+
+/**
+ * Packs the buttons a slot held at the last rollover of one clock into a bitmask.
+ *
+ * @param slot - Slot to read.
+ * @param isUpdate - `true` for the update clock, `false` for the frame clock.
+ * @returns The previous-state mask.
+ */
+const prevMask = (slot: Slot, isUpdate: boolean): number =>
+    isUpdate
+        ? (slot.updatePrevA ? 1 : 0) |
+          (slot.updatePrevB ? 2 : 0) |
+          (slot.updatePrevC ? 4 : 0) |
+          (slot.updatePrevD ? 8 : 0)
+        : (slot.prevA ? 1 : 0) | (slot.prevB ? 2 : 0) | (slot.prevC ? 4 : 0) | (slot.prevD ? 8 : 0);
 
 /**
  * DOM-backed pointer input tracker.
@@ -369,7 +412,8 @@ export class PointerInput {
     }
 
     /**
-     * Snapshots `'frame'`-clock state at the END of each rAF tick.
+     * Snapshots `'frame'`-clock state at the END of each rAF tick, and clears the frame clock's pending press and
+     * release flags.
      *
      * Must be called once per tick after demo `update()` and `render()`, overlay
      * draws, and renderer submit. Snapshots `pos -> prevPos` so the
@@ -409,6 +453,8 @@ export class PointerInput {
             slot.prevB = slot.b;
             slot.prevC = slot.c;
             slot.prevD = slot.d;
+            slot.framePendingPress = 0;
+            slot.framePendingRelease = 0;
         }
 
         this.scrollDeltaY = 0;
@@ -417,7 +463,8 @@ export class PointerInput {
     }
 
     /**
-     * Snapshots `'update'`-clock state after each fixed `update()` step.
+     * Snapshots `'update'`-clock state after each fixed `update()` step, and clears the update clock's pending press
+     * and release flags.
      *
      * Snapshots `pos -> updatePrevPos` and `a..d -> updatePrevA..D`, and clears
      * the update-side wheel delta, so the next `update()` sees exactly what
@@ -430,6 +477,8 @@ export class PointerInput {
             slot.updatePrevB = slot.b;
             slot.updatePrevC = slot.c;
             slot.updatePrevD = slot.d;
+            slot.updatePendingPress = 0;
+            slot.updatePendingRelease = 0;
         }
 
         this.updateScrollDeltaY = 0;
@@ -668,25 +717,20 @@ export class PointerInput {
      */
     public isButtonPressed(button: number, slot: number, clock: PointerClock = 'frame'): boolean {
         const s = this.getSlotOrNull(slot);
+        const bit = buttonBit(button);
 
-        if (s === null) {
+        if (s === null || bit === 0) {
             return false;
         }
 
         const isUpdate = clock === 'update';
 
-        switch (button) {
-            case BTN_A:
-                return s.a && !(isUpdate ? s.updatePrevA : s.prevA);
-            case BTN_B:
-                return s.b && !(isUpdate ? s.updatePrevB : s.prevB);
-            case BTN_C:
-                return s.c && !(isUpdate ? s.updatePrevC : s.prevC);
-            case BTN_D:
-                return s.d && !(isUpdate ? s.updatePrevD : s.prevD);
-            default:
-                return false;
+        // A down and up that both landed since the last rollover leave no held-versus-previous difference.
+        if (((isUpdate ? s.updatePendingPress : s.framePendingPress) & bit) !== 0) {
+            return true;
         }
+
+        return (heldMask(s) & ~prevMask(s, isUpdate) & bit) !== 0;
     }
 
     /**
@@ -700,25 +744,19 @@ export class PointerInput {
      */
     public isButtonReleased(button: number, slot: number, clock: PointerClock = 'frame'): boolean {
         const s = this.getSlotOrNull(slot);
+        const bit = buttonBit(button);
 
-        if (s === null) {
+        if (s === null || bit === 0) {
             return false;
         }
 
         const isUpdate = clock === 'update';
 
-        switch (button) {
-            case BTN_A:
-                return !s.a && (isUpdate ? s.updatePrevA : s.prevA);
-            case BTN_B:
-                return !s.b && (isUpdate ? s.updatePrevB : s.prevB);
-            case BTN_C:
-                return !s.c && (isUpdate ? s.updatePrevC : s.prevC);
-            case BTN_D:
-                return !s.d && (isUpdate ? s.updatePrevD : s.prevD);
-            default:
-                return false;
+        if (((isUpdate ? s.updatePendingRelease : s.framePendingRelease) & bit) !== 0) {
+            return true;
         }
+
+        return (~heldMask(s) & prevMask(s, isUpdate) & bit) !== 0;
     }
 
     /**
@@ -763,10 +801,13 @@ export class PointerInput {
 
             // A release outside the page never reaches pointerup, and pointerleave clears every button;
             // `buttons` is the browser's truth, so rebuild all four from it (1 left, 2 right, 4 middle, 8/16 back/forward).
+            const heldBefore = heldMask(slot);
+
             slot.a = (event.buttons & 1) !== 0;
             slot.b = (event.buttons & 2) !== 0;
             slot.c = (event.buttons & 4) !== 0;
             slot.d = (event.buttons & 24) !== 0;
+            this.markEdges(slot, heldBefore);
 
             // Activation: sync prevPos to the entry pos so the first frame's
             // delta is zero rather than a jump from (0, 0) (or wherever the
@@ -806,7 +847,11 @@ export class PointerInput {
             slot.isActive = true;
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
+
+            const heldBefore = heldMask(slot);
+
             this.setMouseButton(slot, event.button, true);
+            this.markEdges(slot, heldBefore);
 
             // Activation: sync prevPos so the first delta is zero. Without
             // this, the very first read after the mouse enters would see a
@@ -842,6 +887,7 @@ export class PointerInput {
         slot.pointerType = event.pointerType === 'pen' ? 'pen' : 'touch';
         slot.isActive = true;
         slot.a = true;
+        this.markEdges(slot, 0);
 
         this.updateSlotPosition(slot, event.clientX, event.clientY);
 
@@ -869,12 +915,17 @@ export class PointerInput {
             const slot = this.slots[0];
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
+
+            const heldBefore = heldMask(slot);
+
             this.setMouseButton(slot, event.button, false);
 
             // Back and forward share slot.d; keep it down while the other one is still held.
             if (event.button === 3 || event.button === 4) {
                 slot.d = (event.buttons & 24) !== 0;
             }
+
+            this.markEdges(slot, heldBefore);
 
             return;
         }
@@ -1017,6 +1068,10 @@ export class PointerInput {
             updatePrevB: false,
             updatePrevC: false,
             updatePrevD: false,
+            updatePendingPress: 0,
+            updatePendingRelease: 0,
+            framePendingPress: 0,
+            framePendingRelease: 0,
         };
     }
 
@@ -1045,6 +1100,29 @@ export class PointerInput {
         slot.updatePrevB = false;
         slot.updatePrevC = false;
         slot.updatePrevD = false;
+        slot.updatePendingPress = 0;
+        slot.updatePendingRelease = 0;
+        slot.framePendingPress = 0;
+        slot.framePendingRelease = 0;
+    }
+
+    /**
+     * Records the press and release edges between a slot's held buttons `before` a DOM event and now, on both clocks.
+     * The pending bits outlive the held state, so a tap that starts and ends between two rollovers still reports one
+     * press and one release, and they survive {@link freeSlot}.
+     *
+     * @param slot - Slot the event changed.
+     * @param before - {@link heldMask} taken before the event changed it.
+     */
+    private markEdges(slot: Slot, before: number): void {
+        const after = heldMask(slot);
+        const pressed = after & ~before;
+        const released = before & ~after;
+
+        slot.updatePendingPress |= pressed;
+        slot.framePendingPress |= pressed;
+        slot.updatePendingRelease |= released;
+        slot.framePendingRelease |= released;
     }
 
     /**
@@ -1091,6 +1169,8 @@ export class PointerInput {
             this.idToSlot.delete(slot.pointerId);
         }
 
+        const heldBefore = heldMask(slot);
+
         slot.pointerId = null;
         slot.pointerType = null;
         slot.isActive = false;
@@ -1098,6 +1178,7 @@ export class PointerInput {
         slot.b = false;
         slot.c = false;
         slot.d = false;
+        this.markEdges(slot, heldBefore);
     }
 
     /**
@@ -1113,6 +1194,8 @@ export class PointerInput {
             this.idToSlot.delete(slot.pointerId);
         }
 
+        const heldBefore = heldMask(slot);
+
         slot.pointerId = null;
         slot.pointerType = null;
         slot.isActive = false;
@@ -1120,6 +1203,7 @@ export class PointerInput {
         slot.b = false;
         slot.c = false;
         slot.d = false;
+        this.markEdges(slot, heldBefore);
     }
 
     /**

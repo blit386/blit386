@@ -61,6 +61,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A pointer click or tap whose down and up both land between two `update()` steps is no longer lost. `BT.isPressed` and
+  `BT.isReleased` for `BT.BTN_POINTER_*` used to compare the button against its previous state only, so a Playwright
+  `page.mouse.click()` (zero delay), a fast trackpad tap, or a quick touch showed neither edge and the game never saw
+  the click. Each press and release is now remembered until the next rollover and reaches exactly one `update()` (and,
+  for the overlay, one rendered frame). Gamepads are unchanged: they are polled, so a press shorter than a poll cannot
+  be seen. See [Frame-timing semantics](guide-input.md#frame-timing-semantics).
 - Changing `isWakeLockEnabled`, `preferredOrientation`, `isCapturingPointerScroll`, `isCapturingKeyboardScroll`,
   `isDetectingDroppedFrames`, or `isFrameCaptureShortcutEnabled` in `configure()` now forces a full page reload during
   hot reload. The engine reads these once at boot, so a method-only or re-init swap silently left the old value in
