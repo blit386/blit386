@@ -123,7 +123,12 @@ async function launchBrowser(playwright: PlaywrightModule, headed: boolean): Pro
     return null;
 }
 
-/** Game pixel (x, y) -> page position, so steps can use the same coordinates as the game's draw calls. */
+/**
+ * Game pixel (x, y) -> page position, so steps can use the same coordinates as the game's draw calls.
+ *
+ * Manual-sync hazard: mirrors `displayToClientPos` in the engine's `src/input/clientToDisplayPos.ts` (pixel center,
+ * `+ 0.5`). It runs inside `page.evaluate`, so it cannot import it - change both together.
+ */
 function toPagePoint(page: Page, x: number, y: number): Promise<{ x: number; y: number }> {
     return page.evaluate(
         ([gx, gy]) => {

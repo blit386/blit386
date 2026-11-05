@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { Vector2i } from '../utils/Vector2i';
-import { clientToDisplayPos as convertInto, type ViewportRect } from './clientToDisplayPos';
+import { clientToDisplayPos as convertInto, displayToClientPos, type ViewportRect } from './clientToDisplayPos';
 
 const DISPLAY = new Vector2i(320, 240);
 
@@ -45,5 +45,44 @@ describe('clientToDisplayPos', () => {
     it('returns null for non-finite client coordinates', () => {
         expect(clientToDisplayPos(Number.NaN, 10, RECT, DISPLAY)).toBeNull();
         expect(clientToDisplayPos(10, Number.POSITIVE_INFINITY, RECT, DISPLAY)).toBeNull();
+    });
+});
+
+describe('displayToClientPos', () => {
+    const CASES: { name: string; rect: ViewportRect; size: Vector2i }[] = [
+        { name: 'odd display, 1:1 canvas', rect: { left: 0, top: 0, width: 7, height: 5 }, size: new Vector2i(7, 5) },
+        {
+            name: 'odd display, odd CSS-scaled canvas',
+            rect: { left: 13.5, top: 7.25, width: 1001, height: 537 },
+            size: new Vector2i(321, 179),
+        },
+        {
+            name: 'canvas smaller than the display',
+            rect: { left: 40, top: 40, width: 100, height: 75 },
+            size: new Vector2i(320, 240),
+        },
+        {
+            name: 'scrolled page (rect above and left of the viewport)',
+            rect: { left: -250.5, top: -1200, width: 640, height: 480 },
+            size: new Vector2i(320, 240),
+        },
+    ];
+
+    it.each(CASES)('round-trips every edge and center pixel: $name', ({ rect, size }) => {
+        const xs = [0, 1, Math.floor(size.x / 2), size.x - 2, size.x - 1];
+        const ys = [0, 1, Math.floor(size.y / 2), size.y - 2, size.y - 1];
+
+        for (const y of ys) {
+            for (const x of xs) {
+                const point = displayToClientPos(x, y, rect, size);
+
+                expect(clientToDisplayPos(point.x, point.y, rect, size)).toEqual(new Vector2i(x, y));
+            }
+        }
+    });
+
+    it('aims at the pixel center', () => {
+        expect(displayToClientPos(0, 0, RECT, DISPLAY)).toEqual({ x: 101, y: 51 });
+        expect(displayToClientPos(319, 239, RECT, DISPLAY)).toEqual({ x: 100 + 639, y: 50 + 479 });
     });
 });

@@ -2,7 +2,7 @@
  * Pure conversion from DOM client coordinates to logical display coordinates.
  *
  * Shared by `PointerInput` (every pointer event) and the public
- * `BT.nativeScreenToDisplayPos`, so the two can never disagree.
+ * `BT.nativeScreenToDisplayPos`, so the two can never disagree. `displayToClientPos` is the inverse.
  */
 
 import type { Vector2i } from '../utils/Vector2i';
@@ -42,4 +42,30 @@ export function clientToDisplayPos(
     out.set(Math.max(0, Math.min(x, displaySize.x - 1)), Math.max(0, Math.min(y, displaySize.y - 1)));
 
     return out;
+}
+
+/**
+ * Inverse of {@link clientToDisplayPos}: the viewport point at the center of display pixel (x, y).
+ *
+ * Feeding the result back through `clientToDisplayPos` with the same rect and display size returns (x, y).
+ * Internal: for engine tests and probes. `blit play` keeps its own copy (`toPagePoint` in
+ * `packages/kit/src/commands/play.ts`, which runs inside `page.evaluate` and cannot import this) - keep the two
+ * in sync by hand.
+ *
+ * @param x - Display pixel X.
+ * @param y - Display pixel Y.
+ * @param rect - Canvas bounding rect in viewport coordinates.
+ * @param displaySize - Logical display size.
+ * @returns Viewport coordinates, such as DOM `clientX` / `clientY`.
+ */
+export function displayToClientPos(
+    x: number,
+    y: number,
+    rect: ViewportRect,
+    displaySize: Vector2i,
+): { x: number; y: number } {
+    return {
+        x: rect.left + ((x + 0.5) * rect.width) / displaySize.x,
+        y: rect.top + ((y + 0.5) * rect.height) / displaySize.y,
+    };
 }
