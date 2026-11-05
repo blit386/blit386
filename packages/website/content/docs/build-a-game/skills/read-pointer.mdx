@@ -64,6 +64,16 @@ update() {
   fast trackpad tap) is not lost (engine 1.8.1+): that one `update()` sees `BT.isPressed` and `BT.isReleased` both true,
   and `BT.isDown` already false. On 1.8.1+ a play-test click needs no `delay`; on engine 1.8.0 hold the button for about
   100 ms or the click is lost. Two clicks inside one `update()` step count as one, so wait a step between them.
+- A touch tap lives in slots 1-3 and frees its slot on release, so `isPointerActive(slot)` is already false on the
+  `update()` that sees a quick tap. Read its edges without that guard; `pointerPos(slot)` still holds the last position:
+
+  ```js
+  for (let slot = 1; slot < 4; slot++) {
+    if (BT.isPressed(BT.BTN_POINTER_A, slot)) this.startDrag(BT.pointerPos(slot));
+    if (BT.isReleased(BT.BTN_POINTER_A, slot)) this.endDrag(BT.pointerPos(slot), BT.pointerDelta(slot));
+  }
+  ```
+
 - `pointerDelta` read in `update()` is the movement since the previous `update()`, so it makes a good drag velocity: on
   the `BT.isReleased(BT.BTN_POINTER_A)` tick, use it as the "flick" speed. It matches on 60 Hz and 120 Hz screens.
 - Wheel capture is opt-in: set `isCapturingPointerScroll: true` in `configure()` when you map the mouse wheel. Without
