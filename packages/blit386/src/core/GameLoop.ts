@@ -102,6 +102,9 @@ export class GameLoop {
     /** Whether the loop is currently running. */
     private isRunning: boolean = false;
 
+    /** Whether the loop stopped because `onUpdate` or `onRender` threw. Cleared by {@link start} and {@link stop}. */
+    private haltedOnError: boolean = false;
+
     /** Current tick count (increments once per fixed update call). */
     private ticks: number = 0;
 
@@ -203,6 +206,7 @@ export class GameLoop {
         }
 
         this.isRunning = true;
+        this.haltedOnError = false;
         this.accumulator = 0;
 
         this.rafHandle = requestAnimationFrame(() => {
@@ -219,7 +223,17 @@ export class GameLoop {
      */
     public stop(): void {
         this.isRunning = false;
+        this.haltedOnError = false;
         cancelAnimationFrame(this.rafHandle);
+    }
+
+    /**
+     * Whether the loop stopped because `onUpdate` or `onRender` threw, and nothing has started or stopped it since.
+     *
+     * @returns `true` after a throw in a frame; `false` while running, and after any {@link start} or {@link stop}.
+     */
+    public isHaltedOnError(): boolean {
+        return this.haltedOnError;
     }
 
     /**
@@ -283,7 +297,11 @@ export class GameLoop {
      * Advances the accumulator, runs zero or more fixed updates, renders once,
      * and schedules the next frame while the loop remains active.
      *
+     * When `onUpdate` or `onRender` throws, the loop stops (so {@link start} works again) and the error is
+     * rethrown once. No further frame is scheduled, so a broken update logs one error rather than one per frame.
+     *
      * @param currentTime - High-resolution timestamp provided by rAF, in milliseconds.
+     * @throws Whatever `onUpdate` or `onRender` threw.
      */
     private tick(currentTime: number): void {
         if (!this.isRunning) {
@@ -309,19 +327,26 @@ export class GameLoop {
         // Fixed update loop (capped at MAX_STEPS per frame).
         const steps = Math.min(Math.floor(this.accumulator / this.updateInterval), GameLoop.MAX_STEPS);
 
-        for (let i = 0; i < steps; i++) {
-            this.onUpdate();
-            this.ticks++;
+        try {
+            for (let i = 0; i < steps; i++) {
+                this.onUpdate();
+                this.ticks++;
+            }
+
+            this.accumulator -= steps * this.updateInterval;
+
+            this.renderAlpha =
+                Number.isFinite(this.updateInterval) && this.updateInterval > 0
+                    ? Math.min(Math.max(this.accumulator / this.updateInterval, 0), 1 - Number.EPSILON)
+                    : 0;
+
+            this.onRender();
+        } catch (err) {
+            this.stop();
+            this.haltedOnError = true;
+
+            throw err;
         }
-
-        this.accumulator -= steps * this.updateInterval;
-
-        this.renderAlpha =
-            Number.isFinite(this.updateInterval) && this.updateInterval > 0
-                ? Math.min(Math.max(this.accumulator / this.updateInterval, 0), 1 - Number.EPSILON)
-                : 0;
-
-        this.onRender();
 
         // Skip when a callback stopped the loop, or stopped and restarted it (start() already owns
         // the next frame), so a frame never schedules a second chain.

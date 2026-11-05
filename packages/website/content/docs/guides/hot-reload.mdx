@@ -173,6 +173,21 @@ Running under `?backend=software` does not itself force a Tier 3 reload on every
 URL override on both sides, so only a genuine `configure()` change - not the override alone - triggers a full page
 reload.
 
+## After a runtime error
+
+A save that type-checks can still throw at runtime - a typo in a field name inside `update()`, a `render()` that reads
+past the end of an array. When `update()` or `render()` throws, the engine logs the error to the console once and stops
+the game loop. It does not keep running frames: a broken `update()` would otherwise log the same error 60 times a second
+and bury it.
+
+Fix the code and save again. Once that save's Tier 1 or Tier 2 swap succeeds, the engine starts the loop again from
+where it stopped - the instance keeps its fields (Tier 1) or gets your `onHotReload` snapshot (Tier 2), with no page
+reload. A save that fails its own swap (a constructor or `init()` that throws) leaves the loop stopped until a later
+save works.
+
+One case does not restart the loop: a `BT.renderAt` seek holding it parked. The swap still installs the new code, but
+only `BT.resume()` ends a seek.
+
 ## The `blit386:hot-reload` DOM event
 
 Every successful Tier 1 or Tier 2 swap also dispatches a `blit386:hot-reload` `CustomEvent` on the engine canvas

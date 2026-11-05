@@ -265,6 +265,8 @@ async function tryReinit(oldDemo: IBTDemo, newDemo: IBTDemo, startedAt: number):
         console.error('[BT] onHotReload threw:', err);
     }
 
+    BTAPI.instance.resumeHaltedLoop();
+
     announce('reinit', generationValue, performance.now() - startedAt);
 
     return true;
@@ -288,6 +290,8 @@ function applyMethodSwap(oldDemo: IBTDemo, NewClass: DemoConstructor, startedAt:
     } catch (err) {
         console.error('[BT] onHotReload threw:', err);
     }
+
+    BTAPI.instance.resumeHaltedLoop();
 
     announce('methods', generationValue, performance.now() - startedAt);
 }

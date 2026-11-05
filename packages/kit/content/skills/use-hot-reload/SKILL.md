@@ -58,6 +58,9 @@ onHotReload(context) {
 Without this hook, a re-init still works - fields just reset to whatever the new `init()` sets. A failed `init()` leaves
 the previous instance running.
 
+A throw from `update()` or `render()` pauses the loop and logs the error once. The next save whose swap succeeds starts
+the loop again with the game's state intact (engine 1.8.1+), so tell the user to fix and save, not to reload the page.
+
 ### 4. Asset hot-replace
 
 Files under `public/` (images, audio, `.btfont`) update in place. Demo-held references stay valid. If a replaced image
