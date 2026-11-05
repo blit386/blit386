@@ -78,5 +78,5 @@ export function createBlackened(source: Palette): Palette {
  * @returns Encoded channel in [0, 255].
  */
 function mixChannel(from: number, to: number, t: number): number {
-    return Math.max(0, Math.min(255, Math.round(from + (to - from) * t)));
+    return Math.round(from + (to - from) * t);
 }
