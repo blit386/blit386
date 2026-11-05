@@ -11,6 +11,7 @@
  * context.
  */
 
+import type { InputTrace, InputTraceOptions, InputTraceResult } from '../input/InputTrace';
 import { isDevMode } from './devMode';
 
 declare global {
@@ -18,7 +19,22 @@ declare global {
     interface Window {
         /** The `BT` namespace, assigned by {@link exposeGlobal} for console debugging. */
         BT?: unknown;
+
+        /** The dev-only input-edge trace, assigned by {@link exposeInputTrace} under the same gate as `BT`. */
+        __btInputTrace?: InputTraceGlobal;
     }
+}
+
+/** What `window.__btInputTrace` offers: start, stop and a read-only recording flag, nothing else of the trace. */
+export interface InputTraceGlobal {
+    /** See {@link InputTrace.start}. */
+    start: (options?: InputTraceOptions) => void;
+
+    /** See {@link InputTrace.stop}. */
+    stop: () => InputTraceResult;
+
+    /** See {@link InputTrace.isRecording}. */
+    readonly isRecording: boolean;
 }
 
 /** Inputs to {@link resolveExposeGlobal}, gathered by {@link exposeGlobal}. */
@@ -60,4 +76,32 @@ export function exposeGlobal(value: unknown, override?: boolean): void {
     }
 
     globalThis.window.BT = value;
+}
+
+/**
+ * Assigns a facade over `trace` to `window.__btInputTrace` when the `window.BT` gate allows it.
+ *
+ * @param trace - The engine's input trace.
+ * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
+ */
+export function exposeInputTrace(trace: InputTrace, override?: boolean): void {
+    if (!resolveExposeGlobal({ override, devMode: isDevMode() })) {
+        return;
+    }
+
+    if (typeof globalThis.window === 'undefined') {
+        return;
+    }
+
+    globalThis.window.__btInputTrace = {
+        start: (options?: InputTraceOptions): void => {
+            trace.start(options);
+        },
+
+        stop: (): InputTraceResult => trace.stop(),
+
+        get isRecording(): boolean {
+            return trace.isRecording;
+        },
+    };
 }

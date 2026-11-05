@@ -8,8 +8,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { InputTrace } from '../input/InputTrace';
 import type * as DevModeModule from './devMode';
-import { exposeGlobal, resolveExposeGlobal } from './globalExpose';
+import { exposeGlobal, exposeInputTrace, resolveExposeGlobal } from './globalExpose';
 
 vi.mock('./devMode', async (importOriginal) => {
     const actual = await importOriginal<typeof DevModeModule>();
@@ -71,5 +72,44 @@ describe('exposeGlobal', () => {
         exposeGlobal({ id: 'BT' }, false);
 
         expect(fakeWindow.BT).toBeUndefined();
+    });
+});
+
+describe('exposeInputTrace', () => {
+    afterEach(() => {
+        Reflect.deleteProperty(globalThis, 'window');
+    });
+
+    it('does not throw when there is no window', () => {
+        expect(() => exposeInputTrace(new InputTrace(), true)).not.toThrow();
+    });
+
+    it('assigns a start / stop facade over the trace when gating allows it', () => {
+        const fakeWindow = {} as Window;
+
+        Object.defineProperty(globalThis, 'window', { value: fakeWindow, configurable: true });
+
+        const trace = new InputTrace();
+
+        exposeInputTrace(trace, true);
+
+        const facade = fakeWindow.__btInputTrace;
+
+        expect(facade?.isRecording).toBe(false);
+        facade?.start({ maxEntries: 5 });
+        expect(trace.isRecording).toBe(true);
+        expect(facade?.isRecording).toBe(true);
+        expect(facade?.stop()).toEqual({ entries: [], isTruncated: false });
+        expect(Object.keys(facade ?? {})).toEqual(['start', 'stop', 'isRecording']);
+    });
+
+    it('does not assign when gating disallows it (release build, no override)', () => {
+        const fakeWindow = {} as Window;
+
+        Object.defineProperty(globalThis, 'window', { value: fakeWindow, configurable: true });
+
+        exposeInputTrace(new InputTrace());
+
+        expect(fakeWindow.__btInputTrace).toBeUndefined();
     });
 });

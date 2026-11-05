@@ -235,6 +235,28 @@ export class KeyboardInput {
     }
 
     /**
+     * Appends every key code for which {@link isKeyPressed} (edge only, no repeat) or
+     * {@link isKeyReleased} is true right now, so the dev-only input trace reports exactly what
+     * `update()` would see. Allocates; call it only while the trace is recording.
+     *
+     * @param pressed - Receives codes that went down since the last {@link endUpdate}.
+     * @param released - Receives codes that went up since the last {@link endUpdate}.
+     */
+    public collectEdges(pressed: string[], released: string[]): void {
+        for (const code of new Set([...this.pendingPress, ...this.held])) {
+            if (this.isKeyPressed(code, undefined, 0)) {
+                pressed.push(code);
+            }
+        }
+
+        for (const code of new Set([...this.pendingRelease, ...this.prevHeld])) {
+            if (this.isKeyReleased(code)) {
+                released.push(code);
+            }
+        }
+    }
+
+    /**
      * Whether at least one key is held this frame.
      *
      * @returns `true` while any key is down.

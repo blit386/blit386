@@ -40,7 +40,7 @@ has it already (see `use-hot-reload`). It reads `true` while `npm run dev` is ru
 
 ## What dev mode turns on for you (engine 1.7.0+)
 
-Two things come free with a dev build, without any code:
+These come free with a dev build, without any code:
 
 - **`window.BT`** - the engine puts itself on the page, so you can type `BT.ticks`, `BT.activeBackend`, or
   `BT.palette.get(1)` straight into the browser console and inspect the running game. It is not assigned in a built
@@ -48,10 +48,13 @@ Two things come free with a dev build, without any code:
 - **F9 / Shift+F9 frame capture** - F9 copies the current frame to the clipboard, Shift+F9 saves it as a PNG. Turn both
   off with `isFrameCaptureShortcutEnabled: false` in `configure()` when your game wants F9 for itself. See the
   `save-a-screenshot` skill.
+- **`window.__btInputTrace`** (engine 1.8.1+) - records which clicks, keys, and pad buttons each `update()` and each
+  frame saw, so you can check that one click counted once. It sits next to `window.BT` and follows the same
+  `exposeGlobal` switch. See the `test-the-game` skill.
 
-Left alone, both follow `BT.isDevMode`, so neither ships to players by accident. Each also has an explicit override that
-wins over that default - `exposeGlobal: true` for the first, `isFrameCaptureShortcutEnabled: true` for the second - if
-you want one in a release build on purpose.
+Left alone, all three follow `BT.isDevMode`, so none ships to players by accident. Each also has an explicit override
+that wins over that default - `exposeGlobal: true` for `window.BT` and the input trace,
+`isFrameCaptureShortcutEnabled: true` for F9 - if you want one in a release build on purpose.
 
 ## Let an agent read the game's state (engine 1.8.0+)
 

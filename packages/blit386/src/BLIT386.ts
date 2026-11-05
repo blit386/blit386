@@ -101,7 +101,7 @@ import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError, renderAtOptionsError, systemFontNotReadyError } from './utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
-import { exposeGlobal } from './utils/globalExpose';
+import { exposeGlobal, exposeInputTrace } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
 import { Random } from './utils/Random';
@@ -113,6 +113,8 @@ import { Vector2i } from './utils/Vector2i';
 
 /** Pointer button bit mask (`BTN_POINTER_A..D`). */
 const POINTER_BUTTON_MASK = (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
+
+// Manual sync: src/input/InputTrace.ts derives the same bits from POINTER_FLAG_SHIFT (an import would cycle).
 const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
 
 /** Face button bit mask (`BTN_UP..BTN_SELECT`). */
@@ -3076,6 +3078,7 @@ async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions =
     const success = await bootstrapImpl(DemoClass, options);
 
     exposeGlobal(BT, options.exposeGlobal);
+    exposeInputTrace(BTAPI.instance.inputTrace, options.exposeGlobal);
 
     return success;
 }

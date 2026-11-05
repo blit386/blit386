@@ -666,3 +666,68 @@ describe('KeyboardInput any-key helpers', () => {
         expect(kb.isAnyKeyReleased()).toBe(false);
     });
 });
+
+describe('KeyboardInput.collectEdges', () => {
+    let canvas: HTMLCanvasElement;
+    let kb: KeyboardInput;
+
+    const down = (code: string): void => {
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    };
+    const up = (code: string): void => {
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+    };
+    const edges = (): { pressed: string[]; released: string[] } => {
+        const pressed: string[] = [];
+        const released: string[] = [];
+
+        kb.collectEdges(pressed, released);
+
+        return { pressed, released };
+    };
+
+    beforeEach(() => {
+        canvas = createCanvas();
+        kb = new KeyboardInput();
+        kb.attach(canvas, { getTicks: () => 0 });
+        kb.endUpdate(0);
+    });
+
+    afterEach(() => {
+        kb.detach();
+        document.body.replaceChildren();
+    });
+
+    it('lists a press, then nothing after endUpdate, then the release', () => {
+        down('Space');
+        expect(edges()).toEqual({ pressed: ['Space'], released: [] });
+
+        kb.endUpdate(1);
+        expect(edges()).toEqual({ pressed: [], released: [] });
+
+        up('Space');
+        expect(edges()).toEqual({ pressed: [], released: ['Space'] });
+    });
+
+    it('lists a tap that starts and ends between two updates once on each side', () => {
+        down('KeyJ');
+        up('KeyJ');
+
+        expect(edges()).toEqual({ pressed: ['KeyJ'], released: ['KeyJ'] });
+    });
+
+    it('matches isKeyPressed and isKeyReleased for each listed code', () => {
+        down('KeyA');
+        down('KeyB');
+        kb.endUpdate(1);
+        up('KeyA');
+        down('KeyC');
+
+        const { pressed, released } = edges();
+
+        expect(pressed).toEqual(['KeyC']);
+        expect(released).toEqual(['KeyA']);
+        expect(kb.isKeyPressed('KeyC', undefined, 1)).toBe(true);
+        expect(kb.isKeyReleased('KeyA')).toBe(true);
+    });
+});

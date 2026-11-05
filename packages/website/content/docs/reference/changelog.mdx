@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-04T20:30:15+01:00"
+lastModified: "2026-11-05T13:58:09+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -17,6 +17,13 @@ This page is editorial - release highlights and migration notes, not an exhausti
 notes, including dependency bumps and CI changes omitted here for brevity.
 
 ## 1.8.1 - Unreleased
+
+### Added
+
+- Dev builds get `window.__btInputTrace`, a recorder of which pointer, key and gamepad edges each `update()` and each
+  rendered frame saw, plus the pointer delta and wheel total. Start it, play, stop it, and count presses per clock
+  instead of wrapping `BT` methods. Not part of the `BT` API; until started, the game loop only checks one flag per
+  update and per frame. See [Tracing input edges in dev builds](/docs/guides/input#tracing-input-edges-in-dev-builds).
 
 ### Changed
 
