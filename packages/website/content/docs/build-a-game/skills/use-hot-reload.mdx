@@ -60,7 +60,9 @@ the previous instance running.
 A throw from `update()` or `render()` pauses the loop and logs the error once. The next save whose swap succeeds starts
 the loop again (engine 1.8.1+), so tell the user to fix and save, not to reload the page. A fix inside `update()` or
 `render()` is a method-only swap and keeps every field. A fix that also touches `init()`, the constructor, or a field
-initializer is a re-init: fields reset unless `onHotReload` copies them across.
+initializer is a re-init: fields reset unless `onHotReload` copies them across. One exception: a `BT.renderAt` call made
+after the crash parks the loop, and a fixed save then installs the new code without restarting it. Call `BT.resume()` to
+end the seek and run the game again.
 
 ### 4. Asset hot-replace
 
