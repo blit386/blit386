@@ -396,6 +396,12 @@ export class Splash {
      * hidden can still be older than the fade-out on return, and then the sequence
      * cascades to `done` as {@link advance} describes.
      *
+     * The fade-out palette effect is advanced once by `now - stateEnteredAt` right
+     * after it is added, because the effect manager starts its clock at the add.
+     * Without that, the palette runs behind the state and a late frame lets `done`
+     * clear the fade before it reaches black. The fade-in in {@link start} is
+     * stamped and added at the same reading, so it needs no catch-up.
+     *
      * @param now - Current clock reading in milliseconds.
      * @param elapsed - Milliseconds spent in `shown`.
      * @returns `true` when the state changed.
@@ -423,7 +429,12 @@ export class Splash {
             this.live.copyFrom(createBlackened(this.live));
             this.stateEnteredAt -= FADE_OUT_MS;
         } else {
-            this.effects.add(new ExposureFadeEffect(this.live, createBlackened(this.live), FADE_OUT_MS));
+            const fade = new ExposureFadeEffect(this.live, createBlackened(this.live), FADE_OUT_MS);
+
+            this.effects.add(fade);
+
+            // The manager starts the effect's clock at `now`; catch it up to the stamp.
+            fade.update(this.live, now - this.stateEnteredAt);
         }
 
         return true;

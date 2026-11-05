@@ -7,6 +7,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ExposureFadeEffect } from '../assets/PaletteEffect';
 import {
     FADE_IN_MS,
     FADE_OUT_MS,
@@ -15,6 +16,7 @@ import {
     RAMP_LAST_SLOT,
     RAMP_PALETTE_SIZE,
 } from './constants';
+import { createBlackened, createRamp } from './ramp';
 import { Splash } from './Splash';
 
 describe('Splash state machine', () => {
@@ -212,6 +214,25 @@ describe('Splash state machine', () => {
         splash.start();
 
         expect(splash.palette.size).toBe(RAMP_PALETTE_SIZE);
+    });
+
+    it('keeps the fade-out palette on the state clock when the first frame after the stamp is late (BT-742)', () => {
+        const lateMs = 300;
+
+        splash.start();
+        step(FADE_IN_MS);
+        step(3000);
+        splash.markInitSettled();
+        step(lateMs);
+
+        expect(splash.state).toBe('fadingOut');
+
+        // The fade-out is stamped at the settle, so the palette should be lateMs into it.
+        const expected = createRamp();
+        new ExposureFadeEffect(createRamp(), createBlackened(expected), FADE_OUT_MS).update(expected, lateMs);
+
+        expect(splash.palette.get(RAMP_LAST_SLOT).r).toBe(expected.get(RAMP_LAST_SLOT).r);
+        expect(splash.palette.get(RAMP_LAST_SLOT).r).toBeLessThan(255);
     });
 });
 
