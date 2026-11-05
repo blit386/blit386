@@ -134,6 +134,7 @@ src/
     bresenham.ts           # Reference Bresenham walk (walkBresenham) for the line-clipping tests
     webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
     spriteOrientationFixture.ts # Shared ABC/DEF sprite source + grid oracle for every flip/rotation mask (used by both backends' tests)
+    engineHarness.ts       # Test-only: boots the real BTAPI (software backend, fake canvas), owns the rAF clock, dispatches input between frames, records per-update/per-render reads (refresh-rate tests)
     setup.ts               # Vitest global setup (GPU constants)
 ```
 

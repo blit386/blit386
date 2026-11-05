@@ -24,6 +24,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   rendered frame saw, plus the pointer delta and wheel total. Start it, play, stop it, and count presses per clock
   instead of wrapping `BT` methods. Not part of the `BT` API; until started, the game loop only checks one flag per
   update and per frame. See [Tracing input edges in dev builds](/docs/guides/input#tracing-input-edges-in-dev-builds).
+- For contributors: input fixes that depend on the display's refresh rate are now covered by tests that run the real
+  engine loop at 60, 120 and 144 Hz, instead of a hand check on a 120 Hz screen. A test-only harness boots the engine
+  with a fake canvas, controls the frame clock, and sends pointer, wheel, keyboard and gamepad input between frames. It
+  is not shipped in the package and changes nothing for games. See
+  [Refresh-rate tests](/docs/reference/testing#refresh-rate-tests).
 
 ### Changed
 
