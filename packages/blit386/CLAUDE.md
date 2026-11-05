@@ -22,7 +22,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` - not docs |
 | What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) - not docs |
 | What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
-| What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio), `src/__test__/spriteOrientationFixture.ts` (flip/rotation oracle), `src/overlay/testFixtures.ts` (overlay) |
+| What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio), `src/__test__/spriteOrientationFixture.ts` (flip/rotation oracle), `src/__test__/engineHarness.ts` (real engine at a chosen refresh rate), `src/overlay/testFixtures.ts` (overlay) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
 | How is `bt-api-getters.md` checked against the real `BT.*` surface? | `scripts/check-api-getters-drift.mjs`, wired into `pnpm run api:getters:check` (this package's own `preflight`) |
 | Which preset has which exact color values? | `docs/guide-palette-presets.md` |
@@ -165,6 +165,11 @@ palette-indexed rendering, or camera offsets: it is the pixel-level correctness 
 `test:visual:update` regenerates baselines after an intentional visual change. Benchmarks cover isolated methods and
 allocation patterns; compare a feature branch against a `main` baseline locally with `pnpm run bench:compare` - CI does
 not run or gate on benchmarks.
+
+An input or game-loop timing change gets a refresh-rate test, not a hand check on a 120 Hz display:
+`src/__test__/engineHarness.ts` boots the real `BTAPI`, owns the rAF clock, dispatches pointer / wheel / keyboard /
+gamepad input between frames, and records what each `update()` and `render()` read (`src/core/BTAPI.refreshRate.test.ts`
+runs 60, 120 and 144 Hz). Test-only - never export it from `BLIT386.ts`.
 
 Coverage lists, snapshot locations, mock usage, and known quirks:
 [docs/reference-testing.md](docs/reference-testing.md). Benchmark workflow: `docs/performance-testing.md` and the

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Testing"
 description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
-lastModified: "2026-11-04T20:49:35+01:00"
+lastModified: "2026-11-05T14:52:30+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-testing.md"
 ---
 
@@ -65,6 +65,9 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   in software mode, `BT.loadingAssetsCount`, overlay render path, `BT.isReady` across init and re-init,
   `BT.testState()`, and `BT.renderAt` / `BT.resume` (from-start replay on a fresh instance, failed replay keeps the
   previous instance, per-update palette effect timing, audio parked during a seek) (Node + GPU mocks + 2D canvas mocks)
+- BTAPI refresh rates - `src/core/BTAPI.refreshRate.test.ts` runs the real loop at 60, 120 and 144 Hz on the engine
+  harness: pointer, wheel, keyboard and gamepad edges each reach exactly one `update()`, and delta and wheel totals
+  match what was sent (Node + software backend; see [Refresh-rate tests](#refresh-rate-tests))
 - Overlay - colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
@@ -247,6 +250,78 @@ For software-renderer tests that need a Canvas 2D context, use the `makeMock2DCa
 
 `src/__test__/setup.ts` also installs a global `OffscreenCanvas` stub in Node.js (returns zero-filled pixel data from
 `getImageData`). This is needed by `SpriteSheet.indexize()` tests that run outside a browser environment.
+
+## Refresh-rate tests
+
+A display faster than `targetFPS` renders frames that run no `update()`, and a slow frame runs several. Input bugs that
+only show up there (BT-696, BT-683) used to need a hand check on a real 120 Hz display. Any change to input or to the
+game loop gets a refresh-rate test instead.
+
+`src/__test__/engineHarness.ts` boots the real `BTAPI` on the software backend with a fake canvas and owns the
+`requestAnimationFrame` clock. Input is dispatched onto the canvas between frames, so every engine listener sees it the
+way a browser would deliver it. The harness is test-only: it is not exported from `BLIT386.ts`, never reaches `dist`,
+and sits outside coverage.
+
+```ts twoslash
+// @filename: __test__/engineHarness.ts
+export declare function startEngine<T>(options: { read: () => T }): Promise<{
+  updates: T[];
+  renders: T[];
+  frame(ms: number): number;
+  runAt(hz: number, frames: number, beforeFrame?: (index: number) => void): number;
+  pointer(type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel', fields?: { buttons?: number }): void;
+  dispose(): void;
+}>;
+// @filename: BLIT386.ts
+export declare const BT: { BTN_POINTER_A: number; isReleased(mask: number): boolean };
+// @filename: core/Example.test.ts
+// ---cut---
+import { afterEach, expect, it } from 'vitest';
+
+import { startEngine } from '../__test__/engineHarness';
+import { BT } from '../BLIT386';
+
+let dispose = (): void => undefined;
+
+afterEach(() => dispose());
+
+it('a release reaches update() at 120 Hz', async () => {
+  const harness = await startEngine({ read: () => BT.isReleased(BT.BTN_POINTER_A) });
+  dispose = harness.dispose;
+
+  harness.pointer('pointerdown', { buttons: 1 });
+  harness.runAt(120, 3);
+  harness.pointer('pointerup');
+  harness.runAt(120, 3);
+
+  expect(harness.updates.filter(Boolean)).toHaveLength(1);
+});
+```
+
+What the harness gives you:
+
+- `startEngine({ read, configure? })` - boots the engine (no splash, no overlay, 160×120, `targetFPS: 60`; `configure`
+  overrides merge on top) and runs the loop's two warm-up frames
+- `updates` / `renders` - one `read()` result per `update()` and per `render()`
+- `frame(ms)` - advances the clock by `ms`, runs one frame, returns how many updates it ran; a long frame or jitter is
+  just a different `ms`
+- `runAt(hz, frames, beforeFrame?)` - runs frames at a fixed refresh rate, calling `beforeFrame(index)` before each
+- `pointer(type, fields?)`, `wheel(deltaY)`, `key(type, code)` - dispatch on the canvas; the canvas rect matches the
+  display 1:1, so `clientX` is the display x
+- `pad(player, pressed)` - plugs in a standard-mapping pad with those button indices held (`null` unplugs it); the
+  engine polls once per rendered frame
+- `dispose()` - stops the loop, resets the `BTAPI` singleton, and removes every stub; call it in `afterEach`
+
+<Callout type="warn">
+
+Keep at least one update between a press and its release. A down and up that both land between the same two updates are
+lost today - that is BT-703, not something a refresh-rate test should paper over. Holding each state for
+`Math.ceil(hz / 60) + 1` frames is always enough.
+
+</Callout>
+
+To check that a new test can fail, break the code it guards: moving `this.pointer?.endUpdate()` out of the update
+callback in `src/core/BTAPI.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays green.
 
 ## Coverage
 
