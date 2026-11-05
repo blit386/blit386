@@ -5,8 +5,8 @@
  *
  * Each case runs one fixed update plus one rendered frame of input rollover, the work `BTAPI`'s
  * game loop does every frame. "trace off" adds only the `isRecording` check `BTAPI` makes, and
- * must stay level with "no trace": input runs every frame, and the trace is meant to cost nothing
- * until someone starts it. "trace on" is the reference for what recording costs.
+ * must stay level with "no trace": input runs every frame, and until someone starts the trace that
+ * one flag check should be its only cost. "trace on" is the reference for what recording costs.
  *
  * Whichever case runs second takes one ~10 ms pause and reads about 20% slower on `hz`, even with the
  * two swapped; compare `p75` / `p99`, which stay level.

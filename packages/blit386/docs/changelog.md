@@ -25,8 +25,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 - Dev builds get `window.__btInputTrace`, a recorder of which pointer, key and gamepad edges each `update()` and each
   rendered frame saw, plus the pointer delta and wheel total. Start it, play, stop it, and count presses per clock
-  instead of wrapping `BT` methods. Not part of the `BT` API; it costs nothing until started. See
-  [Tracing input edges in dev builds](guide-input.md#tracing-input-edges-in-dev-builds).
+  instead of wrapping `BT` methods. Not part of the `BT` API; until started, the game loop only checks one flag per
+  update and per frame. See [Tracing input edges in dev builds](guide-input.md#tracing-input-edges-in-dev-builds).
 
 ### Changed
 

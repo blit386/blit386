@@ -608,8 +608,8 @@ Each entry is one `update()` (`clock: 'update'`) or one rendered frame (`clock: 
 
 Keyboard and gamepad edges clear after each `update()`, so a render entry that follows an update normally shows none -
 the trace makes that visible instead of leaving you to guess. Recording stops on its own at `maxEntries` (1 to 1000000)
-and sets `isTruncated`; while it is off, the game loop pays nothing for it. Stop it before calling `BT.renderAt`: the
-replay runs `update()` once per tick up to the target, and each of those is recorded too.
+and sets `isTruncated`; while it is off, the game loop only checks one flag per update and per frame. Stop it before
+calling `BT.renderAt`: the replay runs `update()` once per tick up to the target, and each of those is recorded too.
 
 ## Page-interaction guards
 
