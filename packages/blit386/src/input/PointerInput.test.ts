@@ -1420,6 +1420,128 @@ describe('PointerInput', () => {
         });
     });
 
+    describe('taps that start and end between two frames (BT-703)', () => {
+        const mouseAt = (type: string, init: { button?: number; buttons?: number } = {}): void => {
+            canvas.dispatchEvent(
+                pointerEvent(type, { pointerId: 1, pointerType: 'mouse', clientX: 50, clientY: 70, ...init }),
+            );
+        };
+
+        const touchAt = (type: string, pointerId = 7): void => {
+            canvas.dispatchEvent(pointerEvent(type, { pointerId, pointerType: 'touch', clientX: 50, clientY: 70 }));
+        };
+
+        it.each([
+            [BTN_POINTER_A, 0],
+            [BTN_POINTER_B, 2],
+            [BTN_POINTER_C, 1],
+            [BTN_POINTER_D, 3],
+        ])('reports one press and one release of button %i to the next update', (button, domButton) => {
+            mouseAt('pointerdown', { button: domButton, buttons: 1 });
+            mouseAt('pointerup', { button: domButton, buttons: 0 });
+
+            expect(input.isButtonDown(button, 0)).toBe(false);
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(true);
+            expect(input.isButtonReleased(button, 0, 'update')).toBe(true);
+
+            input.endUpdate();
+
+            expect(input.isButtonPressed(button, 0, 'update')).toBe(false);
+            expect(input.isButtonReleased(button, 0, 'update')).toBe(false);
+        });
+
+        it('reports a touch tap that allocates and frees its slot between updates', () => {
+            touchAt('pointerdown');
+            touchAt('pointerup');
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 1, 'update')).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_A, 1, 'update')).toBe(true);
+
+            input.endUpdate();
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 1, 'update')).toBe(false);
+            expect(input.isButtonReleased(BTN_POINTER_A, 1, 'update')).toBe(false);
+        });
+
+        it('keeps the tap for the next update after a render-only frame', () => {
+            mouseAt('pointerdown', { button: 0, buttons: 1 });
+            mouseAt('pointerup', { button: 0, buttons: 0 });
+            input.endFrame(); // render-only frame
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0, 'update')).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(true);
+        });
+
+        it('shows render-side readers (the overlay) a sub-frame tap exactly once', () => {
+            mouseAt('pointerdown', { button: 0, buttons: 1 });
+            mouseAt('pointerup', { button: 0, buttons: 0 });
+            input.endUpdate();
+            input.endUpdate(); // a frame with two updates
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_A, 0)).toBe(true);
+
+            input.endFrame();
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 0)).toBe(false);
+            expect(input.isButtonReleased(BTN_POINTER_A, 0)).toBe(false);
+        });
+
+        it('reports a release caused by pointerleave or a buttonless move as a release edge', () => {
+            mouseAt('pointerdown', { button: 0, buttons: 1 });
+            input.endUpdate();
+            mouseAt('pointermove', { buttons: 0 }); // release outside the page
+
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(true);
+
+            input.endUpdate();
+            mouseAt('pointerdown', { button: 0, buttons: 1 });
+            input.endUpdate();
+            canvas.dispatchEvent(pointerEvent('pointerleave', { pointerId: 1, pointerType: 'mouse' }));
+
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(true);
+        });
+
+        it('keeps back/forward down while the other one is still held, with no release edge', () => {
+            mouseAt('pointerdown', { button: 3, buttons: 8 });
+            mouseAt('pointerdown', { button: 4, buttons: 24 });
+            input.endUpdate();
+            mouseAt('pointerup', { button: 3, buttons: 16 });
+
+            expect(input.isButtonDown(BTN_POINTER_D, 0)).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_D, 0, 'update')).toBe(false);
+        });
+
+        it('reports a touch pointercancel inside a gap as a press and a release', () => {
+            touchAt('pointerdown');
+            canvas.dispatchEvent(
+                pointerEvent('pointercancel', { pointerId: 7, pointerType: 'touch', clientX: 50, clientY: 70 }),
+            );
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 1, 'update')).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_A, 1, 'update')).toBe(true);
+        });
+
+        it('reports a pen tap inside a gap as a press and a release', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', { pointerId: 9, pointerType: 'pen', clientX: 50, clientY: 70 }),
+            );
+            canvas.dispatchEvent(
+                pointerEvent('pointerup', { pointerId: 9, pointerType: 'pen', clientX: 50, clientY: 70 }),
+            );
+
+            expect(input.isButtonPressed(BTN_POINTER_A, 1, 'update')).toBe(true);
+            expect(input.isButtonReleased(BTN_POINTER_A, 1, 'update')).toBe(true);
+        });
+
+        it('does not invent a release for a button that was never down', () => {
+            mouseAt('pointerup', { button: 0, buttons: 0 });
+
+            expect(input.isButtonReleased(BTN_POINTER_A, 0, 'update')).toBe(false);
+            expect(input.isButtonReleased(BTN_POINTER_A, 0)).toBe(false);
+        });
+    });
+
     describe('wheel handling', () => {
         beforeEach(() => {
             input.setIsCapturingScroll(true);

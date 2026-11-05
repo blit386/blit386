@@ -156,3 +156,32 @@ describe('PointerInput.getDeltaTo, update clock', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('PointerInput sub-frame click (BT-703)', () => {
+    const tap = (type: 'pointerdown' | 'pointerup'): void => {
+        canvas.dispatchEvent(
+            new PointerEvent(type, {
+                pointerId: 1,
+                pointerType: 'mouse',
+                button: 0,
+                buttons: type === 'pointerdown' ? 1 : 0,
+                clientX: 100,
+                clientY: 100,
+                bubbles: true,
+                cancelable: true,
+            }),
+        );
+    };
+
+    bench(
+        'pointerdown + pointerup + isButtonPressed/isButtonReleased (update clock) + endUpdate',
+        () => {
+            tap('pointerdown');
+            tap('pointerup');
+            input.isButtonPressed(20, 0, 'update');
+            input.isButtonReleased(20, 0, 'update');
+            input.endUpdate();
+        },
+        BENCH_OPTIONS,
+    );
+});

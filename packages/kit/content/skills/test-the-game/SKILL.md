@@ -120,9 +120,10 @@ order, and prints one JSON line per step.
    time. It only lands on the right picture if the game moves from `BT.ticks` / `BT.timeSeconds` / `BT.random`, never
    `Date.now()` or `performance.now()`. Key presses do not replay - `renderAt` checks what the game does on its own.
 
-8. Check that a click or key reached `update()` exactly once (engine 1.8.1+). Do not wrap `BT.isPressed` or other `BT`
-   methods to count calls: `render()` sees the same press on a different clock, so the count comes out wrong. Record the
-   input trace instead. It lists what each `update()` and each rendered frame saw:
+8. Check that a click or key reached `update()` exactly once (engine 1.8.1+; a zero-delay `page.mouse.click()` counts
+   there, but on 1.8.0 hold it about 100 ms). Do not wrap `BT.isPressed` or other `BT` methods to count calls:
+   `render()` sees the same press on a different clock, so the count comes out wrong. Record the input trace instead. It
+   lists what each `update()` and each rendered frame saw:
 
    ```js
    window.__btInputTrace.start();

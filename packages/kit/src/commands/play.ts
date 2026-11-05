@@ -46,7 +46,8 @@ Example:
 
 /**
  * The game reads the mouse button once per step (1/60 s). A click that is over sooner than that is never seen, so
- * `click` holds the button down for a few steps.
+ * `click` holds the button down for a few steps. Engine 1.8.1+ also catches a zero-delay click; the hold stays so
+ * games pinned to 1.8.0 (the kit's `engineRange` is `^1.8.0`) still see it.
  */
 const CLICK_HOLD_MS = 100;
 

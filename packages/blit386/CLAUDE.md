@@ -80,8 +80,9 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
   dropped ~20% of the time because the overlay itself read the toggle key's edge from the render phase
 - Pointer input that lands in a render frame with no `update()` step (display faster than `targetFPS`) - press, release,
   movement, wheel - reaches the next `update()`, and a frame with several updates reports each pointer edge to the first
-  only; render-side readers (the overlay) still see each edge once per rendered frame. Pointer and gamepad hold state is
-  unaffected
+  only; render-side readers (the overlay) still see each edge once per rendered frame. A down and up that both land
+  between two rollovers (a zero-delay `page.mouse.click()`, a fast tap) still report one press and one release, kept in
+  per-slot pending flags that `endUpdate` / `endFrame` clear. Pointer and gamepad hold state is unaffected
 - Default gamepad stick dead zone is `0.75`
 - Triggers are available both as axes (`AXIS_TRIGGER_L/R`) and as gamepad-only digital buttons (`BTN_L2` / `BTN_R2`,
   mask `BTN_TRIGGER`; down at a fixed 0.5 analog value, keyboard never triggers them)

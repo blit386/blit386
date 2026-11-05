@@ -39,7 +39,7 @@ async function boot<T>(options: Parameters<typeof startEngine<T>>[0]): ReturnTyp
 
 /**
  * Frames to hold each state: always spans more than one update interval, so press and release
- * never fall between the same two updates (that case is BT-703).
+ * never fall between the same two updates (a down and up inside one gap has its own test below).
  *
  * @param hz - Display refresh rate.
  * @returns Frames per hold.
@@ -162,5 +162,27 @@ describe('input edges through the real loop at display refresh rates', () => {
         harness.runAt(120, holdFrames(120));
 
         expect(harness.updates.filter(Boolean)).toHaveLength(1);
+    });
+
+    it.each(RATES)('a zero-delay click (down and up in one gap) reaches exactly one update() at %i Hz', async (hz) => {
+        const harness = await boot({
+            read: () => ({
+                pressed: BT.isPressed(BT.BTN_POINTER_A),
+                released: BT.isReleased(BT.BTN_POINTER_A),
+            }),
+        });
+
+        harness.pointer('pointermove', { clientX: 10, clientY: 10 });
+        harness.runAt(hz, holdFrames(hz));
+        harness.updates.length = 0;
+
+        for (let click = 0; click < CLICKS; click++) {
+            harness.pointer('pointerdown', { buttons: 1 });
+            harness.pointer('pointerup');
+            harness.runAt(hz, holdFrames(hz));
+        }
+
+        expect(harness.updates.filter((seen) => seen.pressed)).toHaveLength(CLICKS);
+        expect(harness.updates.filter((seen) => seen.released)).toHaveLength(CLICKS);
     });
 });

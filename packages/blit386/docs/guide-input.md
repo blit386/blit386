@@ -575,6 +575,11 @@ Pointer transitions:
   movement, or wheel scroll that lands in a frame running no update (a display faster than `targetFPS`).
 - A frame that runs several updates (a 30 Hz display, or a hitch) reports each press and release to the first of them
   only, so one click counts once.
+- A click or tap shorter than one frame still registers. When the button goes down and comes back up before the next
+  `update()` (a Playwright `page.mouse.click()` with its default zero delay, a fast trackpad tap, a quick touch),
+  `BT.isPressed` and `BT.isReleased` are both true on that one `update()`, while `BT.isDown` is already false. The
+  overlay sees the same tap once on its own frame set. Two clicks inside one update step still count as one press and
+  one release, so a play test that needs two clicks waits a step between them.
 - `render()` and the engine overlay see each pointer edge once per rendered frame, and their delta and scroll cover that
   frame alone. Pointer hold state (`BT.isDown`, `BT.pointerPos()`) has no clock and reads the same everywhere.
 
