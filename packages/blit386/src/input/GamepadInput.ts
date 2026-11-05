@@ -379,7 +379,7 @@ export class GamepadInput {
             return false;
         }
 
-        if ((current.buttons & ~previous.buttons & buttonMask) !== 0) {
+        if ((this.getPressedMask(index) & buttonMask) !== 0) {
             return true;
         }
 
@@ -413,28 +413,49 @@ export class GamepadInput {
      * @returns `true` when any requested button transitions from down to up.
      */
     public isButtonReleased(buttonMask: number, player: number): boolean {
-        const index = this.normalizePlayer(player);
+        return buttonMask > 0 && (this.getReleasedMask(player) & buttonMask) !== 0;
+    }
 
-        if (index === null || buttonMask <= 0) {
-            return false;
+    /**
+     * Every button that went down since the last update, as one mask. Edge only, no repeat. The one
+     * home of the press-edge rule: {@link isButtonPressed} and the dev-only input trace both read it.
+     *
+     * @param player - Zero-based player index.
+     * @returns `BTN_*` bits pressed since the last update, or `0`.
+     */
+    public getPressedMask(player: number): number {
+        const index = this.normalizePlayer(player);
+        const current = index === null ? undefined : this.current[index];
+        const previous = index === null ? undefined : this.previous[index];
+
+        if (!current?.isConnected || !previous) {
+            return 0;
         }
 
-        const current = this.current[index];
-        const previous = this.previous[index];
+        return current.buttons & ~previous.buttons;
+    }
+
+    /**
+     * Every button that went up since the last update, as one mask; a disconnect releases every held
+     * button. The one home of the release-edge rule: {@link isButtonReleased} and the dev-only input trace both read it.
+     *
+     * @param player - Zero-based player index.
+     * @returns `BTN_*` bits released since the last update, or `0`.
+     */
+    public getReleasedMask(player: number): number {
+        const index = this.normalizePlayer(player);
+        const current = index === null ? undefined : this.current[index];
+        const previous = index === null ? undefined : this.previous[index];
 
         if (!previous) {
-            return false;
-        }
-
-        if (!current?.isConnected && previous.isConnected) {
-            return (previous.buttons & buttonMask) !== 0;
+            return 0;
         }
 
         if (!current?.isConnected) {
-            return false;
+            return previous.isConnected ? previous.buttons : 0;
         }
 
-        return (~current.buttons & previous.buttons & buttonMask) !== 0;
+        return ~current.buttons & previous.buttons;
     }
 
     /**

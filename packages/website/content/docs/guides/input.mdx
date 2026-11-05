@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-11-04T20:30:15+01:00"
+lastModified: "2026-11-05T13:33:16+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -574,6 +574,39 @@ Pointer transitions:
   only, so one click counts once.
 - `render()` and the engine overlay see each pointer edge once per rendered frame, and their delta and scroll cover that
   frame alone. Pointer hold state (`BT.isDown`, `BT.pointerPos()`) has no clock and reads the same everywhere.
+
+### Tracing input edges in dev builds
+
+To check that a click or key reached `update()` exactly once, record what each update and each rendered frame saw. Dev
+builds have `window.__btInputTrace` next to `window.BT`, under the same rule: present while the dev server runs the
+game, absent in a built game unless `BootstrapOptions.exposeGlobal` turns it on. It is a debugging aid, not part of the
+`BT` API.
+
+```js
+window.__btInputTrace.start(); // or start({ maxEntries: 2000 }); the default keeps 10000 entries
+// ...click, type, press pad buttons...
+const { entries, isTruncated } = window.__btInputTrace.stop();
+
+const pressesIn = (clock) =>
+  entries.filter((e) => e.clock === clock && e.pointer.some((p) => p.pressed & BT.BTN_POINTER_A)).length;
+
+pressesIn('update'); // one per click
+pressesIn('render'); // render() sees each press too, on the frame clock
+```
+
+Each entry is one `update()` (`clock: 'update'`) or one rendered frame (`clock: 'render'`), in order:
+
+- `tick` is `BT.ticks`, and `frame` counts rendered frames since `start()`; updates share it with the render after them.
+- `pointer` lists slots with an edge or movement: `{ slot, pressed, released, dx, dy }`, where `pressed` and `released`
+  are masks of `BT.BTN_POINTER_*`. Update entries read the update set of previous state, render entries the frame set.
+- `wheel` is that clock's scroll total in pixels.
+- `keys` holds `{ pressed, released }` arrays of `KeyboardEvent.code` values.
+- `gamepad` lists players with an edge: `{ player, pressed, released }`, masks of `BT.BTN_*`.
+
+Keyboard and gamepad edges clear after each `update()`, so a render entry that follows an update normally shows none -
+the trace makes that visible instead of leaving you to guess. Recording stops on its own at `maxEntries` (1 to 1000000)
+and sets `isTruncated`; while it is off, the game loop pays nothing for it. Stop it before calling `BT.renderAt`: the
+replay runs `update()` once per tick up to the target, and each of those is recorded too.
 
 ## Page-interaction guards
 

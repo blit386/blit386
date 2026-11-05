@@ -855,6 +855,34 @@ describe('BTAPI', () => {
             expect(endFrameSpy).toHaveBeenLastCalledWith(0);
         });
 
+        it('records the input trace once per update, before the inputs roll over, and once per frame', async () => {
+            const { loop } = await bootForClock();
+            const internals = BTAPI.instance as unknown as {
+                keyboard: { endUpdate: (tick: number) => void };
+                pointer: { endUpdate: () => void; endFrame: () => void };
+            };
+            const recordSpy = vi.spyOn(BTAPI.instance.inputTrace, 'record');
+            const keyboardEndUpdate = vi.spyOn(internals.keyboard, 'endUpdate');
+            const pointerEndFrame = vi.spyOn(internals.pointer, 'endFrame');
+
+            loop.stop();
+            loop.step(2); // without start(), the loop never calls record
+            expect(recordSpy).not.toHaveBeenCalled();
+
+            BTAPI.instance.inputTrace.start();
+            loop.step(2);
+
+            const { entries } = BTAPI.instance.inputTrace.stop();
+
+            expect(entries.map((e) => e.clock)).toEqual(['update', 'update', 'render']);
+            expect(recordSpy.mock.invocationCallOrder[0]).toBeLessThan(
+                keyboardEndUpdate.mock.invocationCallOrder.at(-2) ?? 0,
+            );
+            expect(recordSpy.mock.invocationCallOrder[2]).toBeLessThan(
+                pointerEndFrame.mock.invocationCallOrder.at(-1) ?? 0,
+            );
+        });
+
         /** A 16-entry palette with distinct, in-range colors. */
         function makeRampPalette(base: number): Palette {
             const palette = new Palette(16);

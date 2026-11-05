@@ -20,6 +20,7 @@ import { AudioManager } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
 import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audio/VoicePool';
 import { GamepadInput } from '../input/GamepadInput';
+import { InputTrace } from '../input/InputTrace';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
@@ -113,6 +114,12 @@ export class BTAPI {
 
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
+
+    /**
+     * Dev-only input-edge trace, exposed as `window.__btInputTrace` by `bootstrap()`. Off until
+     * started, so the game loop pays one field read per update and per frame.
+     */
+    public readonly inputTrace = new InputTrace();
 
     /**
      * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
@@ -2132,6 +2139,10 @@ export class BTAPI {
                     void this.captureFrameViaShortcut();
                 }
 
+                if (this.inputTrace.isRecording) {
+                    this.inputTrace.record('update', tick, this.pointer, this.keyboard, this.gamepad);
+                }
+
                 // Keyboard, gamepad and pointer edges (plus the keyboard text buffer, pointer delta and
                 // wheel scroll) align with fixed update rate, not display refresh rate (render may run 2x
                 // update on 120 Hz / 60 FPS setups), so each edge reaches exactly one update.
@@ -2157,6 +2168,17 @@ export class BTAPI {
                     this.demo?.render();
 
                     renderMs = Math.max(0, performance.now() - renderStartMs);
+
+                    // Before the overlay, which can consume this frame's wheel scroll.
+                    if (this.inputTrace.isRecording) {
+                        this.inputTrace.record(
+                            'render',
+                            this.loop?.getTicks() ?? 0,
+                            this.pointer,
+                            this.keyboard,
+                            this.gamepad,
+                        );
+                    }
 
                     // Overlay: screen-space HUD after demo content (top/bottom bars).
                     if (this.overlay && this.systemFont) {

@@ -56,6 +56,9 @@ const BTN_C = 22;
 /** Auxiliary pointer button code (mouse back / forward). Maps to `BT.BTN_POINTER_D`. */
 const BTN_D = 23;
 
+/** The four button codes in `BT.BTN_POINTER_A..D` order; read by the dev-only input trace. */
+export const POINTER_BUTTON_CODES = [BTN_A, BTN_B, BTN_C, BTN_D] as const;
+
 /**
  * Internal per-slot pointer state.
  *

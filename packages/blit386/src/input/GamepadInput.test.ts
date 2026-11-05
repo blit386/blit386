@@ -523,4 +523,42 @@ describe('GamepadInput', () => {
             expect(getGamepadsSpy).not.toHaveBeenCalled();
         });
     });
+
+    describe('edge masks', () => {
+        it('reports pressed and released masks on the update clock', () => {
+            pads[0] = makeGamepad({ pressed: [0, 1] });
+            input.endFrame(1);
+
+            expect(input.getPressedMask(0)).toBe(BT.BTN_A | BT.BTN_B);
+            expect(input.getReleasedMask(0)).toBe(0);
+
+            input.endUpdate(1);
+            expect(input.getPressedMask(0)).toBe(0);
+
+            pads[0] = makeGamepad({ pressed: [1] });
+            input.endFrame(2);
+
+            expect(input.getPressedMask(0)).toBe(0);
+            expect(input.getReleasedMask(0)).toBe(BT.BTN_A);
+        });
+
+        it('releases every held button on disconnect, like isButtonReleased', () => {
+            pads[0] = makeGamepad({ pressed: [0] });
+            input.endFrame(1);
+            input.endUpdate(1);
+
+            pads[0] = null;
+            input.endFrame(2);
+
+            expect(input.getReleasedMask(0)).toBe(BT.BTN_A);
+            expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(true);
+        });
+
+        it('returns 0 for an empty or out-of-range player', () => {
+            expect(input.getPressedMask(2)).toBe(0);
+            expect(input.getReleasedMask(2)).toBe(0);
+            expect(input.getPressedMask(9)).toBe(0);
+            expect(input.getReleasedMask(-1)).toBe(0);
+        });
+    });
 });

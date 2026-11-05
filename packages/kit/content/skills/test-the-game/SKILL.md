@@ -120,6 +120,29 @@ order, and prints one JSON line per step.
    time. It only lands on the right picture if the game moves from `BT.ticks` / `BT.timeSeconds` / `BT.random`, never
    `Date.now()` or `performance.now()`. Key presses do not replay - `renderAt` checks what the game does on its own.
 
+8. Check that a click or key reached `update()` exactly once (engine 1.8.1+). Do not wrap `BT.isPressed` or other `BT`
+   methods to count calls: `render()` sees the same press on a different clock, so the count comes out wrong. Record the
+   input trace instead. It lists what each `update()` and each rendered frame saw:
+
+   ```js
+   window.__btInputTrace.start();
+   // ...click, press keys or pad buttons (steps 5 and 6)...
+   const { entries } = window.__btInputTrace.stop();
+
+   const count = (clock, test) => entries.filter((e) => e.clock === clock && test(e)).length;
+   count('update', (e) => e.pointer.some((p) => p.pressed & BT.BTN_POINTER_A)); // one per click
+   count('update', (e) => e.pointer.some((p) => p.released & BT.BTN_POINTER_A)); // one per release
+   count('update', (e) => e.keys.pressed.includes('Space')); // one per Space tap
+   count('render', (e) => e.pointer.some((p) => p.pressed & BT.BTN_POINTER_A)); // render() sees presses too
+   ```
+
+   Each entry has `clock` (`'update'` or `'render'`), `tick`, `pointer` (slots with an edge or movement: `pressed` and
+   `released` are masks of `BT.BTN_POINTER_*`, plus `dx` / `dy`), `wheel`, `keys` (`{ pressed, released }` key codes)
+   and `gamepad` (players with an edge, masks of `BT.BTN_*`). Only update entries tell you what the game's logic saw.
+   Recording stops by itself after 10000 entries (`start({ maxEntries })` changes that) and sets `isTruncated`. Like
+   `window.BT`, it exists only in a dev build. Stop it before `BT.renderAt` (step 7): the replay runs `update()` once
+   per tick, and the trace records every one.
+
 ## What a healthy run looks like
 
 - From the terminal: the last line shows `"errors":[]` and the exit code is 0. Any error the page logs fails the run.
