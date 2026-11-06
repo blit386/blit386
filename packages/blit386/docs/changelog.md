@@ -61,6 +61,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `AudioClip.synth()` no longer renders pure silence for a short clip with the default envelope. A clip of 0.1 seconds
+  or less (the default `attack` plus `release` is 0.11) used to start its release at the first sample, from a gain of 0,
+  so nothing played, and slightly longer clips peaked below full volume. When `attack + release` is longer than the
+  clip, both are now scaled down by the same factor, so the attack reaches full gain and the last sample is still
+  exactly 0. Clips long enough to fit both, and every `BT.synthPreset`, are unchanged bit for bit. See
+  [Synth](api-audio.md#synth).
 - `BT.musicStop()` called before the player's first click now cancels a `BT.musicPlay()` remembered while audio was
   locked. Before, the stopped track still started on the first click.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling

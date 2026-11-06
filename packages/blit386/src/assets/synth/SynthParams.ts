@@ -26,9 +26,11 @@ export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
  *
  * The release phase is always anchored to the end of the clip, so a note is fully released
  * by its last sample regardless of how `attack`/`decay`/`release` compare to the clip's total
- * `duration`.
+ * `duration`. When `attack + release` is longer than the clip, both are scaled by the same
+ * factor so the attack still reaches full gain before the release starts.
  *
  * @since 1.3.0
+ * @changed 1.8.1 A clip shorter than `attack + release` no longer renders as silence.
  */
 export interface SynthEnvelope {
     /**

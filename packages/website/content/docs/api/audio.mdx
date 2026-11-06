@@ -231,8 +231,10 @@ const laser = await AudioClip.synth({
     release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip.' },
   }} />
 
-The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
-phases overlap - a percussive hit is never cut off mid-fade.
+The release phase always finishes exactly at `duration`. When `attack + release` is longer than the clip, both are
+scaled down by the same factor (`duration / (attack + release)`) so the attack still reaches full amplitude before the
+release starts - a 0.05 second blip with the default envelope is audible, not silent. If decay would still run past the
+start of the release, the release falls from whatever level the envelope had reached.
 
 <Since symbol="SynthPitchSweep" />
 

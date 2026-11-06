@@ -116,3 +116,38 @@ describe('envelopeValueAt', () => {
         }
     });
 });
+
+describe('envelopeValueAt on a clip shorter than attack plus release', () => {
+    const defaults = resolveEnvelope(undefined);
+
+    it('should reach full gain for a default-envelope clip of 0.05s', () => {
+        const duration = 0.05;
+        let peak = 0;
+
+        for (let i = 0; i <= 2400; i++) {
+            peak = Math.max(peak, envelopeValueAt((i / 2400) * duration, duration, defaults));
+        }
+
+        expect(peak).toBeGreaterThan(0.5);
+        expect(envelopeValueAt(0, duration, defaults)).toBe(0);
+        expect(envelopeValueAt(duration, duration, defaults)).toBe(0);
+    });
+
+    it('should keep the peak audible at the old 0.1s cliff', () => {
+        let peak = 0;
+
+        for (let i = 0; i <= 4800; i++) {
+            peak = Math.max(peak, envelopeValueAt((i / 4800) * 0.1, 0.1, defaults));
+        }
+
+        expect(peak).toBeGreaterThan(0.5);
+    });
+});
+
+describe('envelopeValueAt with a long attack and no release', () => {
+    it('should keep ramping across the clip instead of squeezing the attack', () => {
+        const swell = { attack: 2, decay: 0, sustain: 1, release: 0 };
+
+        expect(envelopeValueAt(0.5, 1, swell)).toBeCloseTo(0.25, 10);
+    });
+});
