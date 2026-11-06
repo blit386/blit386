@@ -61,6 +61,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Asset hot reload in the `blit386/vite` plugin no longer silently does nothing when Vite's `base` is not `/`, when
+  `assetDirs` names a subfolder of `public`, or when it names a folder outside `public`. The plugin built the URL from
+  the `assetDirs` entry alone, so the engine never found the asset it had loaded; it now builds the URL the way Vite
+  serves the file (`base` plus the path under `publicDir`, or under the project root outside it). `assetDirs` only
+  chooses which files are watched.
 - `AudioClip.synth()` no longer renders pure silence for a short clip with the default envelope. A clip of 0.1 seconds
   or less (the default `attack` plus `release` is 0.11) used to start its release at the first sample, from a gain of 0,
   so nothing played, and slightly longer clips peaked below full volume. When `attack + release` is longer than the

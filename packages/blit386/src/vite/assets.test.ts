@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ASSET_CHANGED_EVENT } from '../hot/protocol';
-import { assetTypeForFile, handleAssetHotUpdate, resolveAssetUrl } from './assets';
+import { assetTypeForFile, handleAssetHotUpdate, resolveAssetUrl, resolveServedUrl } from './assets';
 import type { AssetKind } from './options';
 
 describe('resolveAssetUrl', () => {
@@ -42,6 +42,7 @@ describe('assetTypeForFile', () => {
 
 describe('handleAssetHotUpdate', () => {
     const assetDirs = ['/project/public'];
+    const serve = { base: '/', publicDir: '/project/public', root: '/project' };
     const assetTypes = new Map<string, AssetKind>([['.png', 'image']]);
 
     it('sends a custom asset-changed event for a recognized extension', () => {
@@ -52,6 +53,7 @@ describe('handleAssetHotUpdate', () => {
             environmentName: 'client',
             send,
             assetDirs,
+            serve,
             assetTypes,
             fullReloadOnUnknownAssets: true,
         });
@@ -72,6 +74,7 @@ describe('handleAssetHotUpdate', () => {
             environmentName: 'client',
             send,
             assetDirs,
+            serve,
             assetTypes,
             fullReloadOnUnknownAssets: true,
         });
@@ -88,6 +91,7 @@ describe('handleAssetHotUpdate', () => {
             environmentName: 'client',
             send,
             assetDirs,
+            serve,
             assetTypes,
             fullReloadOnUnknownAssets: false,
         });
@@ -104,6 +108,7 @@ describe('handleAssetHotUpdate', () => {
             environmentName: 'ssr',
             send,
             assetDirs,
+            serve,
             assetTypes,
             fullReloadOnUnknownAssets: true,
         });
@@ -120,11 +125,30 @@ describe('handleAssetHotUpdate', () => {
             environmentName: 'client',
             send,
             assetDirs,
+            serve,
             assetTypes,
             fullReloadOnUnknownAssets: true,
         });
 
         expect(result).toBeUndefined();
         expect(send).not.toHaveBeenCalled();
+    });
+});
+
+describe('resolveServedUrl', () => {
+    const serve = { base: '/', publicDir: '/project/public', root: '/project' };
+
+    it('percent-encodes each path segment', () => {
+        expect(resolveServedUrl('/project/public/my sprites/hero #1.png', serve)).toBe('/my%20sprites/hero%20%231.png');
+    });
+
+    it('uses only the pathname of an absolute base URL', () => {
+        expect(resolveServedUrl('/project/public/hero.png', { ...serve, base: 'https://cdn.example/game' })).toBe(
+            '/game/hero.png',
+        );
+    });
+
+    it('returns null for a file outside both publicDir and root', () => {
+        expect(resolveServedUrl('/elsewhere/hero.png', serve)).toBeNull();
     });
 });

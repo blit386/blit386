@@ -321,7 +321,7 @@ runtime cost or behavior change to ship):
       default: "a module under /src/ ending .js, .ts, .mjs, or .mts",
     },
     assetDirs: {
-      description: 'Directories to watch for asset changes, resolved against the Vite root.',
+      description: "Directories to watch for asset changes, resolved against the Vite root. This only selects which files are watched; the URL sent to the game follows Vite's own serving rules (your `base`, plus the path under `publicDir`, or under the project root for a folder outside it). A folder outside both `publicDir` and the project root is not hot reloaded.",
       type: 'string[]',
       default: "['public']",
     },
@@ -337,9 +337,10 @@ runtime cost or behavior change to ship):
     },
   }} />
 
-A game that keeps level data or animation descriptors under `public/levels/` can watch that directory too, and treat
-`.json` as its own asset kind (routed through the `'other'` fallback today, so this only changes what the console log
-attributes the reload to until a dedicated handler exists):
+A game that keeps level data or animation descriptors under `public/levels/` is already covered by the default `public`
+watch, so only the extension needs registering. You can register `.json` as its own asset kind (it is routed through the
+`'other'` fallback today, so this only changes what the console log attributes the reload to until a dedicated handler
+exists):
 
 ```js
 // vite.config.js
@@ -349,7 +350,6 @@ import { blit386 } from 'blit386/vite';
 export default defineConfig({
   plugins: [
     blit386({
-      assetDirs: ['public', 'public/levels'],
       assetTypes: { '.json': 'other' },
     }),
   ],
