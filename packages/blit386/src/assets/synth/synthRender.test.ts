@@ -108,3 +108,13 @@ describe('renderSynthSamples', () => {
         expect(Array.from(withMix)).toEqual(Array.from(withoutMix));
     });
 });
+
+describe('renderSynthSamples on a clip shorter than the default attack plus release', () => {
+    it('should not render a 0.05s default-envelope clip as silence', () => {
+        const samples = renderSynthSamples(buildParams({ waveform: 'square', duration: 0.05 }), 48000);
+        const peak = samples.reduce((max, sample) => Math.max(max, Math.abs(sample)), 0);
+
+        expect(peak).toBeGreaterThan(0.5);
+        expect(Math.abs(samples.at(-1) ?? 1)).toBeLessThan(0.01);
+    });
+});

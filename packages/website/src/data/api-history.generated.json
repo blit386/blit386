@@ -1830,7 +1830,12 @@
     "SynthEnvelope": {
       "kind": "interface",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "A clip shorter than `attack + release` no longer renders as silence."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

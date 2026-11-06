@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "Audio buses, SFX voice pool, crossfading music, and procedural synthesis."
-lastModified: "2026-11-06T09:23:07+01:00"
+lastModified: "2026-11-06T10:44:39+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-audio.md"
 ---
 
@@ -231,8 +231,10 @@ const laser = await AudioClip.synth({
     release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip.' },
   }} />
 
-The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
-phases overlap - a percussive hit is never cut off mid-fade.
+The release phase always finishes exactly at `duration`. When `attack + release` is longer than the clip, both are
+scaled down by the same factor (`duration / (attack + release)`) so the attack still reaches full amplitude before the
+release starts - a 0.05 second blip with the default envelope is audible, not silent. If decay would still run past the
+start of the release, the release falls from whatever level the envelope had reached.
 
 <Since symbol="SynthPitchSweep" />
 
