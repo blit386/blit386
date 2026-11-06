@@ -44,9 +44,12 @@ order, and prints one JSON line per step.
   npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state
   ```
 
-  - `BT.pointerDelta(0)` and `BT.pointerScrollDelta` report the movement since the previous `update()`, so they are zero
-    again by the next step. Save what `update()` reads (for example `this.lastDrag` and `this.lastWheel`) and return it
-    from `testState()`, so a later `state` step can see it.
+  - In engine 1.8.1+, `BT.pointerDelta(0)` and `BT.pointerScrollDelta` report the movement since the previous
+    `update()`, so they are zero again by the next step. On engine 1.8.0, a frame without an `update()` can lose pointer
+    movement or wheel input, so do not read a missed input as a bug in your game.
+  - Save what `update()` reads and return it from `testState()`, so a later `state` step can see it. A later `update()`
+    writes zero over a saved value, so add wheel deltas to a total (or keep the last nonzero one). For a drag, add the
+    movement up over the drag, or save the delta on the frame the button is released, even if it is zero.
   - The release follows the last move. Its `pointerDelta` can include more than one move, and it can be zero if an
     `update()` runs between the last move and the release. A short `<ms>`, about 100, makes each move larger.
   - To read the wheel, set `isCapturingPointerScroll: true` in `configure()`. `BT.pointerScrollDelta` is vertical only,
