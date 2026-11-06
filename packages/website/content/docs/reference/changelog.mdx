@@ -58,6 +58,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Asset hot reload no longer stops after the first code hot reload. Saving a PNG, sound, or font under `public/` swapped
+  it in place only until you edited game code; from then on nothing happened until a full page reload. The engine now
+  listens for asset changes again each time Vite re-runs the entry module.
 - Asset hot reload in the `blit386/vite` plugin no longer silently does nothing when Vite's `base` is not `/`, when
   `assetDirs` names a subfolder of `public`, or when it names a folder outside `public`. The plugin built the URL from
   the `assetDirs` entry alone, so the engine never found the asset it had loaded; it now builds the URL the way Vite

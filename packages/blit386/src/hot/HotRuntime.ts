@@ -41,13 +41,6 @@ let hot: HotContext | null = null;
 /** Hot-swap generation counter; advanced only through {@link nextGeneration}. */
 let generation = 0;
 
-/**
- * True once {@link registerHotReload} has wired the asset-changed listener, so a
- * re-evaluated entry module (every hot reload re-runs top-level module code) does
- * not attach the listener a second time.
- */
-let wired = false;
-
 /** Asset kinds routed to a hot-replace handler; anything else falls through to a hard reload. */
 const KNOWN_ASSET_TYPES = new Set(['image', 'audio', 'font', 'other']);
 
@@ -209,7 +202,9 @@ function handleAssetChanged(payload: unknown): void {
  * Never called by hand - it does nothing useful without the plugin's matching
  * asset watcher and snippet injection.
  *
- * Wires the asset-changed listener exactly once. The entire body runs in
+ * Wires the asset-changed listener on every new context (Vite removes the previous
+ * context's listeners when the entry module re-evaluates); registering the same
+ * context again is a no-op. The entire body runs in
  * try/catch: this function executes synchronously at the entry module's top
  * level, so a throw here (for example from an incompatible or broken `hot`
  * object) must not abort loading the game.
@@ -219,9 +214,8 @@ function handleAssetChanged(payload: unknown): void {
  */
 export function registerHotReload(context: HotContext): void {
     try {
-        if (!wired) {
+        if (context !== hot) {
             context.on(ASSET_CHANGED_EVENT, handleAssetChanged);
-            wired = true;
         }
 
         hot = context;

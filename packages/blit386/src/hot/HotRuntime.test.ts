@@ -69,7 +69,7 @@ describe('HotRuntime', () => {
     });
 
     describe('registerHotReload', () => {
-        it('wires the asset-changed listener once, across repeated registrations', () => {
+        it('wires the asset-changed listener on each new context, because Vite drops the old context listeners', () => {
             const first = makeFakeHotContext();
             const second = makeFakeHotContext();
 
@@ -77,7 +77,16 @@ describe('HotRuntime', () => {
             expect(first.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
 
             HotRuntime.registerHotReload(second);
-            expect(second.on).not.toHaveBeenCalled();
+            expect(second.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
+        });
+
+        it('subscribes once when the same context object is registered twice', () => {
+            const context = makeFakeHotContext();
+
+            HotRuntime.registerHotReload(context);
+            HotRuntime.registerHotReload(context);
+
+            expect(context.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
         });
 
         it('is inactive before any registration, and active immediately after', () => {
