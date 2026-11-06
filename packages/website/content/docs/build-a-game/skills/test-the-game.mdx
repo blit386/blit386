@@ -44,12 +44,13 @@ order, and prints one JSON line per step.
   npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state
   ```
 
-  `BT.pointerDelta(0)` and `BT.pointerScrollDelta` are only the movement since the previous `update()`, so by the time
-  the next step runs they are zero again. The release lands right after the last move, so `pointerDelta` on the release
-  is that last move's distance (a short `<ms>`, about 100, makes it large; a long one can read 0 if an `update()` slips
-  in between). Have the game's `update()` copy what it read (for example `this.lastDrag` and `this.lastWheel`) into
-  `testState()`. The game only receives the wheel when `configure()` sets `isCapturingPointerScroll: true`, and
-  `BT.pointerScrollDelta` is vertical only, so the `<dx>` of `wheel:<dx>:<dy>` never reaches the game.
+  - `BT.pointerDelta(0)` and `BT.pointerScrollDelta` report the movement since the previous `update()`, so they are zero
+    again by the next step. Save what `update()` reads (for example `this.lastDrag` and `this.lastWheel`) and return it
+    from `testState()`, so a later `state` step can see it.
+  - The release follows the last move. Its `pointerDelta` can include more than one move, and it can be zero if an
+    `update()` runs between the last move and the release. A short `<ms>`, about 100, makes each move larger.
+  - To read the wheel, set `isCapturingPointerScroll: true` in `configure()`. `BT.pointerScrollDelta` is vertical only,
+    so the `<dx>` of `wheel:<dx>:<dy>` never reaches the game.
 
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
   (show the browser window). `npx blit play --help` lists them all.
