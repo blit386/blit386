@@ -39,8 +39,10 @@ jobs:
     # The `production` Environment's deployment-branch rule (main plus release tags) is what
     # stops a manual run on a feature branch from shipping it; an `if:` here could be edited
     # away by that branch's own copy of this file. The Cloudflare secrets live in the
-    # Environment, so a ref the rule refuses never receives them. Fixed group: two release
-    # tags (different refs) must not deploy this site in parallel.
+    # Environment, so a ref the rule refuses never receives them - but only while no org or
+    # repo secret of the same name exists, since those are readable from any branch. The
+    # `next` preview jobs therefore use a `preview` Environment (main-only rule) too. Fixed
+    # group: two release tags (different refs) must not deploy this site in parallel.
     environment: production
     concurrency:
       group: deploy-demos-prod
@@ -147,6 +149,7 @@ jobs:
     name: Deploy Demos to Cloudflare Pages (next preview)
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: preview
     permissions:
       contents: read
       deployments: write
@@ -184,6 +187,7 @@ jobs:
     name: Deploy Website to Cloudflare Workers (next preview)
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: preview
     permissions:
       contents: read
       deployments: write
