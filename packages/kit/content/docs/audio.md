@@ -100,7 +100,8 @@ websites from blaring at you the moment you open them, and it applies to every g
 So until the player touches something:
 
 - `BT.soundPlay()` is quietly thrown away. It is not saved for later.
-- `BT.musicPlay()` _is_ remembered, and starts on its own the instant the player interacts.
+- `BT.musicPlay()` _is_ remembered, and starts on its own the instant the player interacts, unless you call
+  `BT.musicStop()` first, which cancels it.
 - Loading and synthesizing still work, so `init()` is still the right place to prepare your sounds.
 
 `BT.isAudioUnlocked` tells you whether the player has already interacted:

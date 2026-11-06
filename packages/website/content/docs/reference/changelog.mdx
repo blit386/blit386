@@ -58,6 +58,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.musicStop()` called before the player's first click now cancels a `BT.musicPlay()` remembered while audio was
+  locked. Before, the stopped track still started on the first click.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling
   frames while still counting itself as running, so even a hot-reload save that fixed the typo left the game frozen
   until a page reload. Now the error reaches the console once, the loop stops, and the next successful hot-reload save
