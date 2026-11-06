@@ -8,10 +8,12 @@
  * empirically that only `hotUpdate` fires for asset changes on the installed Vite version.
  */
 
+import path from 'node:path';
 import process from 'node:process';
 
 import type { Plugin } from 'vite';
 
+import type { AssetServeContext } from './assets';
 import { handleAssetHotUpdate } from './assets';
 import type { Blit386PluginOptions } from './options';
 import { resolveOptions } from './options';
@@ -37,6 +39,7 @@ export type { AssetKind, Blit386PluginOptions, ResolvedBlit386PluginOptions } fr
  */
 export function blit386(options?: Blit386PluginOptions): Plugin {
     let resolved = resolveOptions(options, process.cwd());
+    let serve: AssetServeContext = { base: '/', publicDir: path.resolve(process.cwd(), 'public'), root: process.cwd() };
 
     return {
         name: 'blit386',
@@ -44,6 +47,12 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
 
         configResolved(config) {
             resolved = resolveOptions(options, config.root);
+            serve = {
+                base: config.base,
+                // '' means `publicDir: false`.
+                publicDir: config.publicDir,
+                root: config.root,
+            };
         },
 
         // Method shorthand, not an arrow function - `this.error()` below needs Vite's own plugin
@@ -71,6 +80,7 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
                 assetDirs: resolved.assetDirs,
                 assetTypes: resolved.assetTypes,
                 fullReloadOnUnknownAssets: resolved.fullReloadOnUnknownAssets,
+                serve,
             });
         },
     };

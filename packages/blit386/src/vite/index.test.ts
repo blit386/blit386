@@ -85,7 +85,7 @@ describe('blit386', () => {
             const plugin = blit386();
             const send = vi.fn();
 
-            invokeHook(plugin.configResolved, undefined, { root: '/project' });
+            invokeHook(plugin.configResolved, undefined, { root: '/project', base: '/', publicDir: '/project/public' });
 
             const result = invokeHook(
                 plugin.hotUpdate,
@@ -105,7 +105,7 @@ describe('blit386', () => {
             const plugin = blit386({ assetDirs: ['assets'], assetTypes: { '.svg': 'image' } });
             const send = vi.fn();
 
-            invokeHook(plugin.configResolved, undefined, { root: '/project' });
+            invokeHook(plugin.configResolved, undefined, { root: '/project', base: '/', publicDir: '/project/public' });
 
             const result = invokeHook(
                 plugin.hotUpdate,
@@ -117,7 +117,7 @@ describe('blit386', () => {
             expect(send).toHaveBeenCalledExactlyOnceWith({
                 type: 'custom',
                 event: ASSET_CHANGED_EVENT,
-                data: { url: '/icon.svg', type: 'image', timestamp: expect.any(Number) },
+                data: { url: '/assets/icon.svg', type: 'image', timestamp: expect.any(Number) },
             });
         });
 
@@ -125,7 +125,7 @@ describe('blit386', () => {
             const plugin = blit386();
             const send = vi.fn();
 
-            invokeHook(plugin.configResolved, undefined, { root: '/project' });
+            invokeHook(plugin.configResolved, undefined, { root: '/project', base: '/', publicDir: '/project/public' });
 
             const result = invokeHook(
                 plugin.hotUpdate,
@@ -135,6 +135,58 @@ describe('blit386', () => {
 
             expect(result).toBeUndefined();
             expect(send).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('hotUpdate broadcast URL', () => {
+        function broadcastUrl(
+            options: Parameters<typeof blit386>[0],
+            config: Record<string, unknown>,
+            file: string,
+        ): string | undefined {
+            const plugin = blit386(options);
+            const send = vi.fn();
+
+            invokeHook(plugin.configResolved, undefined, { root: '/project', ...config });
+            invokeHook(plugin.hotUpdate, { environment: { name: 'client' } }, { file, server: { ws: { send } } });
+
+            return (send.mock.calls[0]?.[0] as { data: { url: string } } | undefined)?.data.url;
+        }
+
+        it('prefixes a non-root base', () => {
+            const url = broadcastUrl(
+                undefined,
+                { base: '/my-game/', publicDir: '/project/public' },
+                '/project/public/hero.png',
+            );
+
+            expect(url).toBe('/my-game/hero.png');
+        });
+
+        it('keeps the publicDir-relative path for an assetDirs entry that is a subfolder of public', () => {
+            const url = broadcastUrl(
+                { assetDirs: ['public/sprites'] },
+                { base: '/', publicDir: '/project/public' },
+                '/project/public/sprites/hero.png',
+            );
+
+            expect(url).toBe('/sprites/hero.png');
+        });
+
+        it('uses the root-relative path for a folder outside public', () => {
+            const url = broadcastUrl(
+                { assetDirs: ['assets'], assetTypes: { '.svg': 'image' } },
+                { base: '/my-game/', publicDir: '/project/public' },
+                '/project/assets/icon.svg',
+            );
+
+            expect(url).toBe('/my-game/assets/icon.svg');
+        });
+
+        it('uses the root-relative path for every file when publicDir is false', () => {
+            const url = broadcastUrl(undefined, { base: '/', publicDir: '' }, '/project/public/hero.png');
+
+            expect(url).toBe('/public/hero.png');
         });
     });
 });

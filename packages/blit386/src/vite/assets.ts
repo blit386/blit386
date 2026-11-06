@@ -31,6 +31,21 @@ export interface HandleAssetHotUpdateParams {
 
     /** Whether an unrecognized extension under an asset dir triggers a full reload. */
     fullReloadOnUnknownAssets: boolean;
+
+    /** Vite's serving rules, used to build the broadcast URL the way the dev server serves the file. */
+    serve: AssetServeContext;
+}
+
+/** The parts of Vite's resolved config that decide the URL a file is served at. */
+export interface AssetServeContext {
+    /** Vite's `base` (public base path). */
+    base: string;
+
+    /** Absolute `publicDir`, or `''` when `publicDir: false`. */
+    publicDir: string;
+
+    /** Absolute Vite root. */
+    root: string;
 }
 
 /**
@@ -50,6 +65,33 @@ export function resolveAssetUrl(file: string, assetDirs: readonly string[]): str
     }
 
     return null;
+}
+
+/**
+ * Maps an absolute file path to the pathname Vite serves it at: `base` plus the path relative to
+ * `publicDir` when the file is inside it, otherwise `base` plus the path relative to `root`. This is
+ * the pathname the engine caches the asset under (`normalizeAssetUrl`).
+ *
+ * @param file - Absolute file path.
+ * @param serve - Vite's `base`, `publicDir` and `root`.
+ * @returns A percent-encoded pathname, or `null` when `file` is outside both `publicDir` and `root`.
+ */
+export function resolveServedUrl(file: string, serve: AssetServeContext): string | null {
+    const inside = (dir: string): string | null => {
+        const relative = dir.length > 0 ? path.relative(dir, file) : '';
+
+        return relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : null;
+    };
+
+    const relative = inside(serve.publicDir) ?? inside(serve.root);
+
+    if (relative === null) {
+        return null;
+    }
+
+    const basePath = new URL(serve.base, 'http://localhost').pathname.replace(/\/?$/, '/');
+
+    return basePath + relative.split(path.sep).map(encodeURIComponent).join('/');
 }
 
 /**
@@ -80,7 +122,9 @@ export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | u
         return undefined;
     }
 
-    const url = resolveAssetUrl(params.file, params.assetDirs);
+    // assetDirs only decides which files are watched; the URL follows Vite's serving rules.
+    const watched = resolveAssetUrl(params.file, params.assetDirs);
+    const url = watched === null ? null : resolveServedUrl(params.file, params.serve);
 
     if (url === null) {
         return undefined;

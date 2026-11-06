@@ -26,7 +26,11 @@ export interface Blit386PluginOptions {
      */
     include?: (id: string) => boolean;
 
-    /** Directories to watch for asset changes, resolved against the Vite root. Default: `['public']`. */
+    /**
+     * Directories to watch for asset changes, resolved against the Vite root. Only selects which files are
+     * watched; the broadcast URL follows Vite's serving rules (`base` plus the path under `publicDir`, or under the
+     * root for a file outside it). A folder outside both is not hot reloaded. Default: `['public']`.
+     */
     assetDirs?: string[];
 
     /**
