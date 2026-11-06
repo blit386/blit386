@@ -170,6 +170,14 @@ export const NES_HEX = [
     'f8a4c0',
     'f0d0b0',
     'fce0a8',
+    'f8d878',
+    'd8f878',
+    'b8f8b8',
+    'b8f8d8',
+    '00fcfc',
+    'f8d8f8',
+    '000000',
+    '000000',
 ];
 // cspell:enable
 

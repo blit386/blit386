@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Color32 } from '../utils/Color32';
 import { Palette } from './Palette';
+import { C64_HEX, CGA_HEX, GAMEBOY_HEX, NES_HEX, PICO8_HEX, VGA_HEX } from './palettes/presetData';
 
 describe('Palette', () => {
     /** Verifies that every supported indexed palette size constructs cleanly. */
@@ -249,6 +250,23 @@ describe('Palette', () => {
         expect(Palette.gameboy().get(1).isEqual(Color32.fromHex('#306230'))).toBe(true);
         expect(Palette.nes().get(1).isEqual(Color32.fromHex('#0000fc'))).toBe(true);
         expect(Palette.pico8().get(12).isEqual(Color32.fromHex('#29adff'))).toBe(true);
+    });
+});
+
+describe('Palette preset source data', () => {
+    it('pins the source length of every preset array', () => {
+        expect(NES_HEX).toHaveLength(64);
+        expect(VGA_HEX).toHaveLength(256);
+        expect(CGA_HEX).toHaveLength(16);
+        expect(C64_HEX).toHaveLength(16);
+        expect(PICO8_HEX).toHaveLength(16);
+        expect(GAMEBOY_HEX).toHaveLength(4);
+    });
+
+    it('fills the last NES slots instead of leaving them black', () => {
+        expect(Palette.nes().get(55).isEqual(Color32.fromHex('#fce0a8'))).toBe(true);
+        expect(Palette.nes().get(56).isEqual(Color32.fromHex('#f8d878'))).toBe(true);
+        expect(Palette.nes().get(61).isEqual(Color32.fromHex('#f8d8f8'))).toBe(true);
     });
 });
 
