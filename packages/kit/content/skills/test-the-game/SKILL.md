@@ -36,7 +36,26 @@ That starts the dev server, opens the game in the Chrome or Edge on this compute
 order, and prints one JSON line per step.
 
 - Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button
-  100 ms), `state`, `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
+  100 ms), `drag:<x1>:<y1>:<x2>:<y2>:<ms>` (press, move over `<ms>`, release; a small `<ms>` is a flick), `wheel:<dy>`
+  or `wheel:<dx>:<dy>` (at the pointer; `move` there first), `state`, `shot[:<file.png>]` (saved under `screenshots/`,
+  ignored by git), `eval:<expression>`.
+- To test a drag or a scroll, move the pointer onto the game, run the step, then print `state`:
+
+  ```sh
+  npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state
+  ```
+
+  - In engine 1.8.1+, `BT.pointerDelta(0)` and `BT.pointerScrollDelta` report the movement since the previous
+    `update()`, so they are zero again by the next step. On engine 1.8.0, a frame without an `update()` can lose pointer
+    movement or wheel input, so do not read a missed input as a bug in your game.
+  - Save what `update()` reads and return it from `testState()`, so a later `state` step can see it. A later `update()`
+    writes zero over a saved value, so add wheel deltas to a total (or keep the last nonzero one). For a drag, add the
+    movement up over the drag, or save the delta on the frame the button is released, even if it is zero.
+  - The release follows the last move. Its `pointerDelta` can include more than one move, and it can be zero if an
+    `update()` runs between the last move and the release. A short `<ms>`, about 100, makes each move larger.
+  - To read the wheel, set `isCapturingPointerScroll: true` in `configure()`. `BT.pointerScrollDelta` is vertical only,
+    so the `<dx>` of `wheel:<dx>:<dy>` never reaches the game.
+
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
   (show the browser window). `npx blit play --help` lists them all.
 - The first time, it may say it needs the `playwright-core` package and print the command that adds it. Run that command
