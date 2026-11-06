@@ -565,9 +565,14 @@ export class AudioManager {
     /**
      * Stops the music player, optionally fading out first.
      *
+     * Also cancels a request remembered by {@link musicPlay} while the context was still locked.
+     *
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
     public musicStop(fadeMs?: number): void {
+        // A request remembered while locked has no voice to stop yet; drop it so it cannot start on unlock.
+        this.pendingMusicRequest = null;
+        this.isMusicRequestRemembered = false;
         this.musicPlayer?.stop(fadeMs);
     }
 

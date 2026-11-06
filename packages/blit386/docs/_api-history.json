@@ -929,7 +929,12 @@
     "BT.musicStop": {
       "kind": "method",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Also cancels a music request remembered while the audio context was still locked."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

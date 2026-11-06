@@ -876,6 +876,28 @@ describe('AudioManager', () => {
             expect(sources[0]?.buffer).not.toBe(firstBuffer);
         });
 
+        it('musicStop while locked cancels the remembered request so nothing starts on unlock', async () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer());
+            audio.musicStop();
+
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const context = getMockContext();
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
+            expect(audio.isMusicPlaying()).toBe(false);
+        });
+
         it('starts playback immediately once unlocked', async () => {
             audio.attach(canvas);
 

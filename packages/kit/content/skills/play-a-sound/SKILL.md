@@ -105,6 +105,7 @@ What that means for you:
 
 - `BT.soundPlay()` before the player interacts is thrown away silently. It does not queue up.
 - `BT.musicPlay()` before the player interacts is remembered, and starts by itself the moment they touch anything.
+  `BT.musicStop()` before that cancels the remembered request.
 - Loading (`AudioClip.load`) and building sounds (`AudioClip.synth`) work fine while everything is still silent, so
   `init()` is still the right place for them.
 - `BT.isAudioUnlocked` tells you which side of the line you are on.

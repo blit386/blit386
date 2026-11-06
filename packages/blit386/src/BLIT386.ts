@@ -1187,6 +1187,7 @@ export const BT = {
      * Stops the music player, optionally fading out first.
      *
      * @since 1.3.0
+     * @changed 1.8.1 Also cancels a music request remembered while the audio context was still locked.
      * @param options - Optional fade behavior.
      * @param options.fadeMs - Fade-out duration in milliseconds. Omit to stop immediately.
      */
