@@ -18,6 +18,8 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Hot-path source directories, relative to this package root. Keep in sync with `.claude/rules/bench-coverage.md`. */
@@ -43,14 +45,17 @@ export function checkBenchCoverage(changedFiles) {
 
 /**
  * @param {string} baseRef Git ref to diff the current worktree against.
+ * @param {string} [cwd] Directory to diff from; paths are reported relative to it. Defaults to this package root.
  * @returns {string[]} Changed `src/` file paths relative to this package root, or `[]` if the diff cannot be
  *   computed (for example, `baseRef` does not exist locally) - this reminder is best-effort, never fatal.
  */
-function changedFilesSince(baseRef) {
+export function changedFilesSince(baseRef, cwd = ROOT) {
     try {
-        const output = execFileSync('git', ['diff', '--name-only', `${baseRef}...HEAD`, '--', 'src'], {
-            cwd: ROOT,
+        // --relative: plain --name-only prints repo-root paths (packages/blit386/src/...), which never match HOT_PATH_DIRS.
+        const output = execFileSync('git', ['diff', '--name-only', '--relative', `${baseRef}...HEAD`, '--', 'src'], {
+            cwd,
             encoding: 'utf8',
+            env: gitEnvWithoutRepoLocation(),
         });
 
         return output.split('\n').filter(Boolean);

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { checkBenchCoverage, HOT_PATH_DIRS } from './check-bench-coverage.mjs';
+import { gitEnvWithoutRepoLocation } from './git-env.mjs';
 
 describe('checkBenchCoverage', () => {
     it('does not remind when no hot-path files changed', () => {
@@ -87,5 +88,55 @@ describe('HOT_PATH_DIRS', () => {
             'src/assets/',
             'src/utils/',
         ]);
+    });
+});
+
+describe('changedFilesSince (real git output)', () => {
+    it('reports package-relative paths that checkBenchCoverage recognizes, from a nested package dir', async () => {
+        const { execFileSync } = await import('node:child_process');
+        const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = await import('node:fs');
+        const { tmpdir } = await import('node:os');
+        const { join } = await import('node:path');
+        const { changedFilesSince } = await import('./check-bench-coverage.mjs');
+
+        const dir = mkdtempSync(join(tmpdir(), 'check-bench-coverage-'));
+        const pkg = join(dir, 'packages', 'blit386');
+        const env = gitEnvWithoutRepoLocation({
+            GIT_AUTHOR_NAME: 'Test',
+            GIT_AUTHOR_EMAIL: 'test@example.com',
+            GIT_COMMITTER_NAME: 'Test',
+            GIT_COMMITTER_EMAIL: 'test@example.com',
+        });
+        const run = (args) =>
+            execFileSync('git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, encoding: 'utf8', env });
+
+        let previousGitDir;
+
+        try {
+            run(['init', '--initial-branch=main']);
+            mkdirSync(join(pkg, 'src', 'core'), { recursive: true });
+            writeFileSync(join(pkg, 'src', 'core', 'X.ts'), 'export const X = 1;\n');
+            run(['add', '.']);
+            run(['commit', '-m', 'base']);
+            writeFileSync(join(pkg, 'src', 'core', 'X.ts'), 'export const X = 2;\n');
+            run(['commit', '-am', 'change']);
+
+            // Hook-like env: GIT_DIR would otherwise make git treat pkg as the work tree root.
+            previousGitDir = process.env.GIT_DIR;
+            process.env.GIT_DIR = join(dir, '.git');
+            const files = changedFilesSince('HEAD~1', pkg);
+
+            assert.deepEqual(files, ['src/core/X.ts']);
+            assert.equal(checkBenchCoverage(files).needsReminder, true);
+        } finally {
+            // A pre-push hook already exports GIT_DIR; put it back rather than deleting it.
+            if (previousGitDir === undefined) {
+                delete process.env.GIT_DIR;
+            } else {
+                process.env.GIT_DIR = previousGitDir;
+            }
+            // Retries: git may still be writing into the repo (ENOTEMPTY seen under the pre-push hook).
+            rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+        }
     });
 });
