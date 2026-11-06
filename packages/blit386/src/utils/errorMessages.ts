@@ -1047,6 +1047,28 @@ export function audioVolumeNotFiniteError(api: string, volume: number): string {
 }
 
 /**
+ * Returns the error message for a non-finite numeric option passed to a `BT` sound call.
+ *
+ * @param api - The `BT` method the caller used, such as `BT.soundPlay`.
+ * @param option - The option name, such as `pitch` or `pan`.
+ * @param value - The rejected value.
+ * @returns User-facing error string.
+ */
+export function audioOptionNotFiniteError(api: string, option: string, value: number): string {
+    return `${api}() needs a finite number for ${option}, but got ${value}. Pass a number such as 1, or leave ${option} out for the default`;
+}
+
+/**
+ * Returns the error message for a `BT.soundPlay` start time that is not a finite, non-negative number.
+ *
+ * @param atTime - The rejected start time.
+ * @returns User-facing error string.
+ */
+export function audioStartTimeInvalidError(atTime: number): string {
+    return `BT.soundPlay() needs atTime to be a finite number that is 0 or more, but got ${atTime}. Pass a time on the audio clock such as 0.5, or leave atTime out to start now`;
+}
+
+/**
  * Returns the error message for a non-finite fade time passed to a `BT` audio fade.
  *
  * @param fadeMs - The rejected fade duration in milliseconds.

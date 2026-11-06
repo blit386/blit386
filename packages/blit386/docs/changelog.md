@@ -61,6 +61,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A `NaN` or infinite `BT.soundPlay` option no longer breaks the voice pool. A bad `volume`, `fadeInMs`, or `atTime` (or
+  a negative `atTime`) used to throw after the voice slot was taken, leaving a voice that never started and never ended;
+  the next time that slot was reused, `BT.init` restarted, or a clip was unloaded, `stop()` on it threw. `BT.soundPlay`
+  now rejects a non-finite `volume`, `pitch`, `pan`, `fadeInMs`, or `atTime`, and a negative `atTime`, before it takes a
+  slot, and `BT.soundPitchSet`, `BT.soundPanSet`, and the `fadeOutMs` of `BT.soundStop` give the same clear error
+  instead of a raw browser one (`BT.soundStop` now checks the fade even for a voice that has already ended, and
+  `BT.soundPlay` checks its options even before audio is attached). See [Volume](api-audio.md#volume).
 - `Palette.nes()` no longer renders NES colors `$38`-`$3D` as black. The preset data stopped one row short, so slots
   56-63 kept the default black; they now hold the last row of the table (pale yellow through pale pink, then two blacks,
   as on hardware).

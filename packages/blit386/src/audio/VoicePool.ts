@@ -14,7 +14,12 @@
 import { BTAPI } from '../core/BTAPI';
 import { defaultConfig } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
-import { audioVolumeNotFiniteError } from '../utils/errorMessages';
+import {
+    audioFadeNotFiniteError,
+    audioOptionNotFiniteError,
+    audioStartTimeInvalidError,
+    audioVolumeNotFiniteError,
+} from '../utils/errorMessages';
 import type { AudioManager } from './AudioManager';
 
 /**
@@ -188,8 +193,13 @@ export class VoicePool {
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link VoicePlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
+     * @throws Error when `volume`, `pitch`, `pan`, `fadeInMs`, or `atTime` is not finite, or
+     * `atTime` is negative. Checked before any slot is touched, so a bad option never steals or
+     * leaves behind a voice.
      */
     public play(buffer: AudioBuffer, options: VoicePlayOptions = {}): SoundRef {
+        validatePlayOptions(options);
+
         const context = this.audioManager.getContext();
         const sfxBus = this.audioManager.getSfxBus();
 
@@ -234,8 +244,13 @@ export class VoicePool {
      *
      * @param ref - Voice to stop.
      * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     * @throws Error when `fadeOutMs` is not finite.
      */
     public stop(ref: SoundRef, fadeOutMs?: number): void {
+        if (fadeOutMs !== undefined && !Number.isFinite(fadeOutMs)) {
+            throw new Error(audioFadeNotFiniteError(fadeOutMs));
+        }
+
         const slot = this.getActiveSlot(ref);
 
         if (slot === null) {
@@ -312,8 +327,13 @@ export class VoicePool {
      * @param ref - Voice to update.
      * @param value - Target playback rate.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @throws Error when `value` is not a finite number.
      */
     public pitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        if (!Number.isFinite(value)) {
+            throw new Error(audioOptionNotFiniteError('BT.soundPitchSet', 'pitch', value));
+        }
+
         const slot = this.getActiveSlot(ref);
 
         if (slot === null || slot.source === null) {
@@ -339,8 +359,13 @@ export class VoicePool {
      * @param ref - Voice to update.
      * @param value - Target pan.
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @throws Error when `value` is not a finite number.
      */
     public panSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        if (!Number.isFinite(value)) {
+            throw new Error(audioOptionNotFiniteError('BT.soundPanSet', 'pan', value));
+        }
+
         const slot = this.getActiveSlot(ref);
 
         if (slot === null || slot.panner === null) {
@@ -668,4 +693,34 @@ function createEmptySlot(): VoiceSlot {
         startOrder: 0,
         generation: 0,
     };
+}
+
+/**
+ * Rejects bad numeric {@link VoicePlayOptions} before any slot is allocated.
+ *
+ * @param options - Options passed to {@link VoicePool.play}.
+ * @throws Error when a numeric option is not finite, or `atTime` is negative.
+ */
+function validatePlayOptions(options: VoicePlayOptions): void {
+    const { volume, pitch, pan, fadeInMs, atTime } = options;
+
+    if (volume !== undefined && !Number.isFinite(volume)) {
+        throw new Error(audioVolumeNotFiniteError('BT.soundPlay', volume));
+    }
+
+    if (pitch !== undefined && !Number.isFinite(pitch)) {
+        throw new Error(audioOptionNotFiniteError('BT.soundPlay', 'pitch', pitch));
+    }
+
+    if (pan !== undefined && !Number.isFinite(pan)) {
+        throw new Error(audioOptionNotFiniteError('BT.soundPlay', 'pan', pan));
+    }
+
+    if (fadeInMs !== undefined && !Number.isFinite(fadeInMs)) {
+        throw new Error(audioFadeNotFiniteError(fadeInMs));
+    }
+
+    if (atTime !== undefined && !(Number.isFinite(atTime) && atTime >= 0)) {
+        throw new Error(audioStartTimeInvalidError(atTime));
+    }
 }

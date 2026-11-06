@@ -105,6 +105,18 @@ export interface MockAudioContext {
 }
 
 /**
+ * Mirrors the browser's WebIDL `float` check on `AudioParam` values and times.
+ *
+ * @param value - Value or time about to be written to a mock `AudioParam`.
+ * @throws TypeError when `value` is `NaN` or infinite.
+ */
+function assertFiniteParamValue(value: number): void {
+    if (!Number.isFinite(value)) {
+        throw new TypeError(`The provided float value is non-finite: ${value}`);
+    }
+}
+
+/**
  * Creates a mock `AudioParam` that applies every scheduling call immediately
  * (no real audio clock in tests) while recording call arguments.
  *
@@ -117,19 +129,31 @@ export function createMockAudioParam(initialValue: number = DEFAULT_GAIN_VALUE):
     const setValueCurveAtTimeCalls: Array<{ values: Float32Array; startTime: number; duration: number }> = [];
     const cancelScheduledValuesCalls: number[] = [];
 
+    let currentValue = initialValue;
+
     const param = {
-        value: initialValue,
+        // Real AudioParam.value is a WebIDL float: a non-finite assignment throws a TypeError.
+        get value(): number {
+            return currentValue;
+        },
+        set value(next: number) {
+            assertFiniteParamValue(next);
+            currentValue = next;
+        },
         setValueAtTimeCalls,
         linearRampToValueAtTimeCalls,
         setValueCurveAtTimeCalls,
         cancelScheduledValuesCalls,
         setValueAtTime: (value: number, startTime: number) => {
+            assertFiniteParamValue(value);
             setValueAtTimeCalls.push({ value, startTime });
             param.value = value;
 
             return param;
         },
         linearRampToValueAtTime: (value: number, endTime: number) => {
+            assertFiniteParamValue(value);
+            assertFiniteParamValue(endTime);
             linearRampToValueAtTimeCalls.push({ value, endTime });
             param.value = value;
 
@@ -205,6 +229,13 @@ export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
                 throw new Error('cannot start an AudioBufferSourceNode more than once');
             }
 
+            // Real browsers throw a RangeError for a negative time and a TypeError for NaN.
+            assertFiniteParamValue(when);
+
+            if (when < 0) {
+                throw new RangeError(`The provided start time (${when}) is negative`);
+            }
+
             hasStarted = true;
 
             const call: { when: number; offset?: number; duration?: number } = { when };
@@ -220,6 +251,11 @@ export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
             startCalls.push(call);
         },
         stop: (when: number = 0) => {
+            // Real browsers throw InvalidStateError when stop() runs before start().
+            if (!hasStarted) {
+                throw new Error('InvalidStateError: cannot call stop without calling start first');
+            }
+
             stopCalls.push(when);
         },
     };

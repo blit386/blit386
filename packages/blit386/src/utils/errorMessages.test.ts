@@ -24,6 +24,8 @@ import {
     audioClipSynthPitchSweepFrequencyError,
     audioClipSynthSustainRangeError,
     audioClipSynthUnitRangeFieldError,
+    audioOptionNotFiniteError,
+    audioStartTimeInvalidError,
     btfontEmbeddedTextureFormatError,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphCountTooLargeError,
@@ -564,5 +566,24 @@ describe('keyboardLayoutUnknownWarning', () => {
         expect(keyboardLayoutUnknownWarning(cyclic, layouts)).toContain('(got <object>)');
         expect(keyboardLayoutUnknownWarning(() => 'x', layouts)).toContain('(got <function>)');
         expect(keyboardLayoutUnknownWarning(Symbol('x'), layouts)).toContain('(got <symbol>)');
+    });
+});
+
+describe('audio option errors', () => {
+    it('names the API, the option, and the rejected value for a non-finite option', () => {
+        const message = audioOptionNotFiniteError('BT.soundPlay', 'pitch', Number.NaN);
+
+        expect(message).toContain('BT.soundPlay()');
+        expect(message).toContain('pitch');
+        expect(message).toContain('NaN');
+        expect(message.endsWith('.')).toBe(false);
+    });
+
+    it('names the rejected value for an invalid start time', () => {
+        const message = audioStartTimeInvalidError(-1);
+
+        expect(message).toContain('atTime');
+        expect(message).toContain('-1');
+        expect(message.endsWith('.')).toBe(false);
     });
 });
