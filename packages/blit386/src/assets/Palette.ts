@@ -341,6 +341,7 @@ export class Palette {
     /**
      * Creates a 64-slot NES palette.
      *
+     * @changed 1.8.1 Slots 56-63 hold the last NES row (pale yellow to pale pink, then black) instead of staying black.
      * @returns New NES preset palette.
      */
     public static nes(): Palette {

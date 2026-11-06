@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-06T13:12:34+01:00"
+lastModified: "2026-11-06T14:13:21+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -58,6 +58,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `Palette.nes()` no longer renders NES colors `$38`-`$3D` as black. The preset data stopped one row short, so slots
+  56-63 kept the default black; they now hold the last row of the table (pale yellow through pale pink, then two blacks,
+  as on hardware).
 - Asset hot reload no longer stops after the first code hot reload. Saving a PNG, sound, or font under `public/` swapped
   it in place only until you edited game code; from then on nothing happened until a full page reload. The engine now
   listens for asset changes again each time Vite re-runs the entry module.

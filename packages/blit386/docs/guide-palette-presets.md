@@ -162,9 +162,6 @@ That means:
 
 `Palette.nes()`:
 
-`NES_HEX` currently defines 56 source entries. After transparent slot reservation and preset copy, remaining palette
-slots keep their constructor default (black).
-
 ```ts twoslash
 [
   '7c7c7c',
@@ -223,6 +220,14 @@ slots keep their constructor default (black).
   'f8a4c0',
   'f0d0b0',
   'fce0a8',
+  'f8d878',
+  'd8f878',
+  'b8f8b8',
+  'b8f8d8',
+  '00fcfc',
+  'f8d8f8',
+  '000000',
+  '000000',
 ];
 ```
 

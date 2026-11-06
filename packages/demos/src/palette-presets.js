@@ -76,7 +76,7 @@ history:
   - CGA        16 slots   (1981 IBM PC graphics card - loud, iconic)
   - C64        16 slots   (1982 Commodore 64 - earthy, distinctive)
   - PICO-8     16 slots   (2015 fantasy console - soft, retro feel)
-  - NES        64 slots   (1983 Nintendo console - 56 colors defined, the rest black)
+  - NES        64 slots   (1983 Nintendo console - full 64-entry table)
   - VGA       256 slots   (1987 IBM PC graphics standard - rich range)
 
 Slot 0 of every palette is reserved for transparency, so a preset's colors start at
@@ -228,7 +228,7 @@ class Demo {
             Palette.cga(), // 16 loud IBM PC colors
             Palette.c64(), // 16 Commodore 64 colors
             Palette.pico8(), // 16 soft fantasy console colors
-            Palette.nes(), // 64 slots, 56 of them defined
+            Palette.nes(), // 64 slots, all defined
             Palette.vga(), // 256 VGA standard colors
         ];
 
