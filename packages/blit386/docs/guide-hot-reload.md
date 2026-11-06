@@ -338,8 +338,9 @@ runtime cost or behavior change to ship):
   }} />
 
 A game that keeps level data or animation descriptors under `public/levels/` is already covered by the default `public`
-watch, so only the extension needs registering. `.json` can be its own asset kind (routed through the `'other'` fallback
-today, so this only changes what the console log attributes the reload to until a dedicated handler exists):
+watch, so only the extension needs registering. You can register `.json` as its own asset kind (it is routed through the
+`'other'` fallback today, so this only changes what the console log attributes the reload to until a dedicated handler
+exists):
 
 ```js
 // vite.config.js
