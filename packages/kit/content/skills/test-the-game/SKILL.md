@@ -36,7 +36,22 @@ That starts the dev server, opens the game in the Chrome or Edge on this compute
 order, and prints one JSON line per step.
 
 - Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button
-  100 ms), `state`, `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
+  100 ms), `drag:<x1>:<y1>:<x2>:<y2>:<ms>` (press, move over `<ms>`, release; a small `<ms>` is a flick), `wheel:<dy>`
+  or `wheel:<dx>:<dy>` (at the pointer; `move` there first), `state`, `shot[:<file.png>]` (saved under `screenshots/`,
+  ignored by git), `eval:<expression>`.
+- To test a drag or a scroll, move the pointer onto the game, run the step, then print `state`:
+
+  ```sh
+  npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state
+  ```
+
+  `BT.pointerDelta(0)` and `BT.pointerScrollDelta` are only the movement since the previous `update()`, so by the time
+  the next step runs they are zero again. The release lands right after the last move, so `pointerDelta` on the release
+  is that last move's distance (a short `<ms>`, about 100, makes it large; a long one can read 0 if an `update()` slips
+  in between). Have the game's `update()` copy what it read (for example `this.lastDrag` and `this.lastWheel`) into
+  `testState()`. The game only receives the wheel when `configure()` sets `isCapturingPointerScroll: true`, and
+  `BT.pointerScrollDelta` is vertical only, so the `<dx>` of `wheel:<dx>:<dy>` never reaches the game.
+
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
   (show the browser window). `npx blit play --help` lists them all.
 - The first time, it may say it needs the `playwright-core` package and print the command that adds it. Run that command

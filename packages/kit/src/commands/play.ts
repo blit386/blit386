@@ -36,12 +36,21 @@ Steps (keys use KeyboardEvent.code names: ArrowLeft, KeyA, Space, Enter, ...):
   hold:<key>:<ms>     Hold a key down for <ms> milliseconds.
   move:<x>:<y>        Move the mouse to game pixel (x, y).
   click:<x>:<y>       Click at game pixel (x, y), holding the button for 100 ms so the game sees it.
+  drag:<x1>:<y1>:<x2>:<y2>:<ms>
+                      Press at (x1, y1), move to (x2, y2) over <ms> milliseconds, release. The button is held 100 ms
+                      before the first move so the game sees the press; the release lands right after the last move.
+                      A small <ms> (about 100) makes a flick.
+  wheel:<dy>          Scroll the wheel by <dy> pixels (negative scrolls up) at the current pointer position.
+  wheel:<dx>:<dy>     Same, with a sideways amount too (the page gets it; BT.pointerScrollDelta is vertical only).
+                      Move the pointer first (move:<x>:<y>); the game only receives the wheel when configure()
+                      sets isCapturingPointerScroll: true.
   state               Print the game's testState(), else window.__game.state(), else BT.ticks.
   shot[:<file.png>]   Save the next frame as a PNG (default: screenshots/tick-<n>.png).
   eval:<expression>   Print the result of a JavaScript expression run in the game page (BT is available).
 
 Example:
   npx blit play --seed 42 wait:1000 state hold:ArrowLeft:500 state shot
+  npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state
 `;
 
 /**
@@ -50,6 +59,19 @@ Example:
  * games pinned to 1.8.0 (the kit's `engineRange` is `^1.8.0`) still see it.
  */
 const CLICK_HOLD_MS = 100;
+
+/** Gap between the pointer moves of a `drag`, about one 60 FPS frame, so the game sees a path and not a jump. */
+const DRAG_STEP_MS = 16;
+
+/** Longest `drag` accepted, so a typo (an extra zero) fails at once instead of sleeping for hours. */
+const MAX_DRAG_MS = 60_000;
+
+/** Step names that carry several numbers; checked up front in `runPlay` and run in `runStep`. */
+const STEP_DRAG = 'drag';
+const STEP_WHEEL = 'wheel';
+
+/** Time the game gets to read a wheel event before the next step looks at its state. */
+const WHEEL_SETTLE_MS = 50;
 
 /** Tried in this order; the command uses whichever browser the computer already has. */
 const BROWSER_CHANNELS = ['chrome', 'msedge'] as const;
@@ -97,6 +119,36 @@ function toNumber(text: string | undefined, what: string): number {
     }
 
     return value;
+}
+
+/** `drag:<x1>:<y1>:<x2>:<y2>:<ms>` arguments, checked before any browser opens. */
+function parseDragArgs(args: string[]): { x1: number; y1: number; x2: number; y2: number; ms: number } {
+    if (args.length !== 5) {
+        throw new Error(`drag needs five numbers: drag:<x1>:<y1>:<x2>:<y2>:<ms>, got ${args.length}.`);
+    }
+
+    const x1 = toNumber(args[0], 'x1');
+    const y1 = toNumber(args[1], 'y1');
+    const x2 = toNumber(args[2], 'x2');
+    const y2 = toNumber(args[3], 'y2');
+    const ms = toNumber(args[4], 'drag time');
+
+    if (ms < 0 || ms > MAX_DRAG_MS) {
+        throw new Error(`drag time must be between 0 and ${MAX_DRAG_MS} milliseconds, got "${args[4]}".`);
+    }
+
+    return { x1, y1, x2, y2, ms };
+}
+
+/** `wheel:<dy>` or `wheel:<dx>:<dy>` arguments, checked before any browser opens. */
+function parseWheelArgs(args: string[]): { dx: number; dy: number } {
+    if (args.length < 1 || args.length > 2) {
+        throw new Error(`wheel needs one or two numbers: wheel:<dy> or wheel:<dx>:<dy>, got ${args.length}.`);
+    }
+
+    return args.length === 1
+        ? { dx: 0, dy: toNumber(args[0], 'dy') }
+        : { dx: toNumber(args[0], 'dx'), dy: toNumber(args[1], 'dy') };
 }
 
 /** Load an optional peer dependency, or return null when the game does not have it installed. */
@@ -174,6 +226,36 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
             await (name === 'move'
                 ? page.mouse.move(point.x, point.y)
                 : page.mouse.click(point.x, point.y, { delay: CLICK_HOLD_MS }));
+            return undefined;
+        }
+        case STEP_DRAG: {
+            const { x1, y1, x2, y2, ms } = parseDragArgs(args);
+            const from = await toPagePoint(page, x1, y1);
+            const to = await toPagePoint(page, x2, y2);
+            const count = Math.max(1, Math.round(ms / DRAG_STEP_MS));
+
+            await page.mouse.move(from.x, from.y);
+            await page.mouse.down();
+            // Hold the press for a few frames so the game sees it before anything else happens (see CLICK_HOLD_MS).
+            await page.waitForTimeout(CLICK_HOLD_MS);
+
+            for (let i = 1; i <= count; i++) {
+                await page.waitForTimeout(ms / count);
+                await page.mouse.move(from.x + ((to.x - from.x) * i) / count, from.y + ((to.y - from.y) * i) / count);
+            }
+
+            // No wait before the release: a flick's speed comes from the last move and the release sharing an update.
+            // (Sending both at once does not work - Playwright builds the move with the button still down, and the
+            // game reads that as a second press.)
+            await page.mouse.up();
+            await page.waitForTimeout(CLICK_HOLD_MS);
+            return undefined;
+        }
+        case STEP_WHEEL: {
+            const { dx, dy } = parseWheelArgs(args);
+
+            await page.mouse.wheel(dx, dy);
+            await page.waitForTimeout(WHEEL_SETTLE_MS);
             return undefined;
         }
         case 'state':
@@ -299,6 +381,21 @@ export async function runPlay(argv: string[]): Promise<void> {
 
     if (options.backend !== undefined && options.backend !== SOFTWARE_BACKEND) {
         fail(`--backend only accepts "${SOFTWARE_BACKEND}", got "${options.backend}".`);
+        return;
+    }
+
+    try {
+        for (const step of steps) {
+            const [name, ...args] = step.split(':');
+
+            if (name === STEP_DRAG) {
+                parseDragArgs(args);
+            } else if (name === STEP_WHEEL) {
+                parseWheelArgs(args);
+            }
+        }
+    } catch (error) {
+        fail(error instanceof Error ? error.message : String(error));
         return;
     }
 
