@@ -781,4 +781,90 @@ describe('VoicePool', () => {
             expect(pool.isPlaying(otherRef)).toBe(true);
         });
     });
+
+    describe('non-finite and out-of-range options', () => {
+        const badPlayOptions: Array<[string, Record<string, number>]> = [
+            ['NaN volume', { volume: Number.NaN }],
+            ['infinite volume', { volume: Number.POSITIVE_INFINITY }],
+            ['NaN pitch', { pitch: Number.NaN }],
+            ['NaN pan', { pan: Number.NaN }],
+            ['NaN fadeInMs', { fadeInMs: Number.NaN }],
+            ['infinite fadeInMs', { fadeInMs: Number.POSITIVE_INFINITY }],
+            ['NaN atTime', { atTime: Number.NaN }],
+            ['negative atTime', { atTime: -1 }],
+        ];
+
+        it.each(badPlayOptions)('rejects %s without taking a slot', (_label, options) => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            expect(() => pool.play(createMockAudioBuffer(), options)).toThrow();
+            expect(pool.getActiveVoiceCount()).toBe(0);
+            expect(pool.getStealCount()).toBe(0);
+            expect(() => pool.stopAll()).not.toThrow();
+        });
+
+        it('does not steal a live voice when the incoming options are bad', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const live = pool.play(createMockAudioBuffer());
+
+            expect(() => pool.play(createMockAudioBuffer(), { volume: Number.NaN })).toThrow();
+            expect(pool.isPlaying(live)).toBe(true);
+            expect(pool.getStealCount()).toBe(0);
+        });
+
+        it('stopAll and stopVoicesUsingBuffer still work after a rejected play', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const buffer = createMockAudioBuffer();
+            const ref = pool.play(buffer);
+
+            expect(() => pool.play(buffer, { volume: Number.NaN })).toThrow();
+            expect(() => pool.stopVoicesUsingBuffer(buffer)).not.toThrow();
+            expect(pool.isPlaying(ref)).toBe(false);
+            expect(() => pool.stopAll()).not.toThrow();
+        });
+
+        it('rejects a non-finite pitchSet, panSet, and stop fade without touching the voice', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            expect(() => pool.pitchSet(ref, Number.NaN)).toThrow(/pitch/);
+            expect(() => pool.panSet(ref, Number.POSITIVE_INFINITY)).toThrow(/pan/);
+            expect(() => pool.stop(ref, Number.NaN)).toThrow(/fade/);
+            expect(() => pool.stop(ref, Number.POSITIVE_INFINITY)).toThrow(/fade/);
+            expect(pool.isPlaying(ref)).toBe(true);
+            expect(pool.pitchGet(ref)).toBe(1);
+            expect(pool.panGet(ref)).toBe(0);
+        });
+
+        it('rejects a non-finite fadeMs on pitchSet and panSet without changing the voice', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            expect(() => pool.pitchSet(ref, 2, Number.NaN)).toThrow(/fade/);
+            expect(() => pool.panSet(ref, 0.5, Number.POSITIVE_INFINITY)).toThrow(/fade/);
+            expect(pool.isPlaying(ref)).toBe(true);
+            expect(pool.pitchGet(ref)).toBe(1);
+            expect(pool.panGet(ref)).toBe(0);
+        });
+    });
 });
