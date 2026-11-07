@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { formatDriftBody, LINEAR_TEAM_ID, reportDrift } from './report-kit-docs-drift.mjs';
+import { formatDriftBody, LINEAR_TEAM_ID, main, reportDrift } from './report-kit-docs-drift.mjs';
 
 const REPORT = {
     drift: true,
@@ -204,5 +204,102 @@ describe('reportDrift', () => {
         }
 
         assert.ok(!calls.some((call) => call.query.includes('AddComment')));
+    });
+});
+
+describe('reportDrift markdown normalization', () => {
+    it('treats `* ` bullets from Linear as equal to the `- ` bullets it was sent', async () => {
+        const stored = formatDriftBody(REPORT).replace(/^- /gmu, '* ');
+        const calls = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (_url, init) => {
+            const body = JSON.parse(init.body);
+            calls.push(body);
+            return {
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                json: async () => ({
+                    data: {
+                        issues: {
+                            nodes: [
+                                {
+                                    id: 'i',
+                                    identifier: 'BT-500',
+                                    title: 't',
+                                    description: stored,
+                                    comments: { nodes: [] },
+                                },
+                            ],
+                        },
+                    },
+                }),
+            };
+        };
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(!calls.some((call) => call.query.includes('AddComment')));
+    });
+});
+
+describe('main exit codes', () => {
+    const CLEAN = { drift: false, docsReviewedAt: '1.8.0' };
+    const quiet = async (run) => {
+        const { log, error } = console;
+        console.log = () => {};
+        console.error = () => {};
+        try {
+            return await run();
+        } finally {
+            console.log = log;
+            console.error = error;
+        }
+    };
+    const boom = () => {
+        throw new Error('boom');
+    };
+
+    it('returns 1 when the drift check throws', async () => {
+        assert.equal(await quiet(() => main({ env: {}, check: boom })), 1);
+    });
+
+    it('returns 1 when reporting to Linear throws', async () => {
+        const code = await quiet(() =>
+            main({ env: { LINEAR_API_KEY: 'k' }, check: () => REPORT, report: async () => boom() }),
+        );
+        assert.equal(code, 1);
+    });
+
+    it('returns 0 when drift is found and reported', async () => {
+        const code = await quiet(() =>
+            main({ env: { LINEAR_API_KEY: 'k' }, check: () => REPORT, report: async () => {} }),
+        );
+        assert.equal(code, 0);
+    });
+
+    it('returns 0 when drift is found and the key is unset', async () => {
+        assert.equal(await quiet(() => main({ env: {}, check: () => REPORT, report: async () => boom() })), 0);
+    });
+
+    it('returns 0 on a clean run without a key, and never verifies', async () => {
+        assert.equal(await quiet(() => main({ env: {}, check: () => CLEAN, verify: async () => boom() })), 0);
+    });
+
+    it('returns 1 on a clean run when the key is rejected', async () => {
+        const code = await quiet(() =>
+            main({ env: { LINEAR_API_KEY: 'k' }, check: () => CLEAN, verify: async () => boom() }),
+        );
+        assert.equal(code, 1);
+    });
+
+    it('returns 0 on a clean run when the key works', async () => {
+        const code = await quiet(() =>
+            main({ env: { LINEAR_API_KEY: 'k' }, check: () => CLEAN, verify: async () => {} }),
+        );
+        assert.equal(code, 0);
     });
 });

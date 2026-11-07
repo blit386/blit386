@@ -174,3 +174,14 @@ export async function addComment(apiKey, { issueId, body }, fetchImpl = fetch) {
 
     return result.comment;
 }
+
+/**
+ * Cheapest authenticated call, used to prove the key still works when there is nothing else to send.
+ * @param {string} apiKey
+ * @param {typeof fetch} [fetchImpl]
+ * @returns {Promise<void>}
+ * @throws {Error} When the key is rejected or Linear is unreachable.
+ */
+export async function verifyApiKey(apiKey, fetchImpl = fetch) {
+    await linearRequest(apiKey, 'query VerifyApiKey { viewer { id } }', {}, fetchImpl);
+}
