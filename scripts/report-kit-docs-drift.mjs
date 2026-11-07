@@ -5,8 +5,11 @@
  *
  * CI-only (`.github/workflows/kit-docs-drift.yml`) - not part of `pnpm run preflight` or any
  * `quality-root` step, since it needs a live `LINEAR_API_KEY` and makes a real network call.
- * Never a required check: this always exits 0, drift or not, so a standing content-review backlog
- * never shows as a red workflow run - the Linear issue/comment is the only signal.
+ * Never a required check on drift: finding drift exits 0, as does an unset `LINEAR_API_KEY`, so a
+ * standing content-review backlog never shows as a red workflow run - the Linear issue/comment is
+ * the only signal. A run that cannot do its job (the drift check throws, the Linear call fails, or a
+ * clean run finds the key rejected - e.g. an expired key or a missing `_api-history.json`) exits 1,
+ * so a dead reporter is visible.
  *
  * Usage:
  *   LINEAR_API_KEY=... node scripts/report-kit-docs-drift.mjs
@@ -15,7 +18,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { checkKitDocsDrift } from './check-kit-docs-drift.mjs';
-import { addComment, createIssue, findTrackingIssue, resolveLabelIds } from './lib/linear-client.mjs';
+import { addComment, createIssue, findTrackingIssue, resolveLabelIds, verifyApiKey } from './lib/linear-client.mjs';
 
 /** BLIT386 team (key `BT`) id, from `list_teams`. Structural, low-churn - see BT-293 plan. */
 export const LINEAR_TEAM_ID = '1d6b360b-cb57-4f44-9b47-f729b13538ee';
@@ -55,6 +58,15 @@ export function formatDriftBody(report) {
 }
 
 /**
+ * Linear hands markdown back normalized (for one, `* ` bullets for `- `), so compare on a canonical form.
+ * @param {string} text
+ * @returns {string}
+ */
+function canonical(text) {
+    return text.trim().replace(/^[*-] /gmu, '- ');
+}
+
+/**
  * @param {{ apiKey: string, report: import('./check-kit-docs-drift.mjs').DriftReport, log?: (message: string) => void }} options
  * @returns {Promise<void>}
  */
@@ -67,7 +79,10 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
         // Trimmed: Linear may add or strip trailing whitespace on a stored comment.
         const latest = existing.comments?.nodes.reduce((a, b) => (!a || b.createdAt > a.createdAt ? b : a), undefined);
 
-        if (latest?.body.trim() === body.trim()) {
+        // A fresh issue holds the report in its description and has no comments yet.
+        const previous = latest?.body ?? existing.description;
+
+        if (previous !== undefined && previous !== null && canonical(previous) === canonical(body)) {
             log(`Tracking issue ${existing.identifier} already has this drift report; not commenting again.`);
             return;
         }
@@ -89,24 +104,47 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     log(`Filed new tracking issue ${created.identifier}.`);
 }
 
-/** CLI entry point. Always resolves to exit code 0 - see file header. */
-async function main() {
+/**
+ * CLI entry point. Resolves to 1 only when checking, verifying the key, or reporting fails - see file
+ * header. Dependencies are injectable so tests can drive every exit path without Linear or the repo.
+ * @param {{ env?: Record<string, string | undefined>, check?: typeof checkKitDocsDrift, report?: typeof reportDrift,
+ *   verify?: typeof verifyApiKey }} [deps]
+ * @returns {Promise<number>}
+ */
+export async function main({
+    env = process.env,
+    check = checkKitDocsDrift,
+    report: send = reportDrift,
+    verify = verifyApiKey,
+} = {}) {
     let report;
 
     try {
-        report = checkKitDocsDrift();
+        report = check();
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Failed to check kit docs drift: ${message}`);
-        return 0;
+        return 1;
     }
+
+    const apiKey = env.LINEAR_API_KEY;
 
     if (!report.drift) {
         console.log(`Kit docs OK (no engine API changes since docsReviewedAt ${report.docsReviewedAt}).`);
+
+        // A clean run sends nothing, so prove the key still works: a dead key must not wait for the first drift.
+        if (apiKey) {
+            try {
+                await verify(apiKey);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error(`LINEAR_API_KEY check failed: ${message}`);
+                return 1;
+            }
+        }
+
         return 0;
     }
-
-    const apiKey = process.env.LINEAR_API_KEY;
 
     if (!apiKey) {
         console.log('Kit docs drift detected, but LINEAR_API_KEY is not set - skipping Linear filing.');
@@ -115,10 +153,11 @@ async function main() {
     }
 
     try {
-        await reportDrift({ apiKey, report });
+        await send({ apiKey, report });
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Failed to report kit docs drift to Linear: ${message}`);
+        return 1;
     }
 
     return 0;

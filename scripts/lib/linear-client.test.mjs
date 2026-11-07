@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { addComment, createIssue, findTrackingIssue, linearRequest, resolveLabelIds } from './linear-client.mjs';
+import {
+    addComment,
+    createIssue,
+    findTrackingIssue,
+    linearRequest,
+    resolveLabelIds,
+    verifyApiKey,
+} from './linear-client.mjs';
 
 /** @param {{ ok?: boolean, status?: number, statusText?: string, body: unknown }} response */
 function makeFetch(response) {
@@ -135,5 +142,18 @@ describe('addComment', () => {
             () => addComment('key-123', { issueId: 'iss-1', body: 'update' }, fetchImpl),
             /success: false/u,
         );
+    });
+});
+
+describe('verifyApiKey', () => {
+    it('resolves when Linear accepts the key', async () => {
+        const { fetchImpl, getCapturedRequest } = makeFetch({ body: { data: { viewer: { id: 'u-1' } } } });
+        await verifyApiKey('key-123', fetchImpl);
+        assert.equal(getCapturedRequest().init.headers.Authorization, 'key-123');
+    });
+
+    it('throws when Linear rejects the key', async () => {
+        const { fetchImpl } = makeFetch({ ok: false, status: 401, statusText: 'Unauthorized', body: {} });
+        await assert.rejects(() => verifyApiKey('bad', fetchImpl), /401/u);
     });
 });
