@@ -16,7 +16,8 @@
     "1.7.0": "2026-09-11T17:44:36+02:00",
     "1.7.1": "2026-09-27T11:48:26+02:00",
     "1.8.0": "2026-10-18T19:19:24+02:00",
-    "1.8.1": null
+    "1.8.1": null,
+    "1.9.0": null
   },
   "symbols": {
     "AssetLoader": {
@@ -1192,7 +1193,12 @@
     "BT.renderAt": {
       "kind": "method",
       "since": "1.8.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.9.0",
+          "note": "A failed `init()` on a `from: 'start'` seek restores ticks, the random stream and the camera."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

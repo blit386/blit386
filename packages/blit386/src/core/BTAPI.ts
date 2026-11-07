@@ -3352,22 +3352,33 @@ export class BTAPI {
      * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
      * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
      * game has no class to build from, so its `init()` re-runs on the same object and resetting its
-     * fields stays `init()`'s job. If the constructor or `init()` fails, the previous instance stays
-     * active. The splash and its handoff fade are not replayed, but what the handoff did to palette
-     * effects is (see the end).
+     * fields stays `init()`'s job. The splash and its handoff fade are not replayed, but what the
+     * handoff did to palette effects is (see the end).
+     *
+     * Failure: the instance is built before anything is reset, so a throwing constructor changes
+     * nothing. If `init()` fails, the previous instance is reinstalled and the ticks, the
+     * `BT.random` stream position, the camera offset and the post-process clock are
+     * restored, so `BT.resume()` continues the old game where it was (`BT.random.seedValue` reads
+     * `undefined` afterwards unless nothing had drawn since the seed). Not restored: palette effects
+     * and post-process effects (clearing disposes them), and pending input edges, all gone.
      *
      * @param demo - Running game instance.
      * @param loop - Stopped game loop.
+     * @throws {Error} When the constructor or `init()` fails.
      */
     private async resetForSeek(demo: IBTDemo, loop: GameLoop): Promise<void> {
-        // seed() only when it reproduces the captured state exactly (nothing drew between the seed
-        // and the capture), so BT.random.seedValue keeps reporting the seed; setState() clears it.
-        if (this.bootRandomSeed !== undefined && this.bootRandomSeed === this.bootRandomState) {
-            this.random.seed(this.bootRandomSeed);
-        } else {
-            this.random.setState(this.bootRandomState);
-        }
+        // Before any reset: a constructor throw leaves the engine untouched.
+        const replay = this.buildReplayDemo(demo);
 
+        const ticks = loop.getTicks();
+        const randomState = this.random.getState();
+        const randomSeed = this.random.seedValue;
+        const cameraOffset = this.getCameraOffset();
+        const lastCameraOffset = this.lastCameraOffset;
+        const isCameraResetPending = this.pendingCameraReset;
+        const renderClockMs = this.lastRenderClockMs;
+
+        this.restoreRandom(this.bootRandomState, this.bootRandomSeed);
         this.paletteEffects.clear();
 
         // Gate on activeBackend, like the splash dissolve: the software renderer throws on
@@ -3381,8 +3392,6 @@ export class BTAPI {
         this.drainInputEdges(0);
         loop.resetTicks();
         this.lastRenderClockMs = 0;
-
-        const replay = this.buildReplayDemo(demo);
 
         // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the
         // loop's update/render callbacks all reach the instance being replayed.
@@ -3400,6 +3409,13 @@ export class BTAPI {
             this.installDemo(demo);
             // The failed init() may have started effects; the restored game never asked for them.
             this.paletteEffects.clear();
+            loop.setTicks(ticks);
+            this.restoreRandom(randomState, randomSeed);
+            this.setCameraOffset(cameraOffset);
+            // setCameraOffset() commits the renderer's offset; put back the deferred-reset state it overwrites.
+            this.lastCameraOffset = lastCameraOffset;
+            this.pendingCameraReset = isCameraResetPending;
+            this.lastRenderClockMs = renderClockMs;
 
             throw new Error(errorMessages.RENDER_AT_INIT_FAILED_MESSAGE);
         }
@@ -3409,6 +3425,22 @@ export class BTAPI {
         // shows a cycle the live run never ran. `splash` is set once at boot and never cleared.
         if (this.splash) {
             this.paletteEffects.clear();
+        }
+    }
+
+    /**
+     * Puts the `BT.random` stream back to a captured position. Uses `seed()` only when it reproduces
+     * the state exactly (nothing drew between the seed and the capture), so `BT.random.seedValue`
+     * keeps reporting the seed; `setState()` clears it.
+     *
+     * @param state - Value from `Random#getState`.
+     * @param seed - `Random#seedValue` read at the same moment.
+     */
+    private restoreRandom(state: number, seed: number | undefined): void {
+        if (seed !== undefined && seed === state) {
+            this.random.seed(seed);
+        } else {
+            this.random.setState(state);
         }
     }
 

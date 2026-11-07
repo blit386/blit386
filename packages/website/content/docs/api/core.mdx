@@ -608,9 +608,13 @@ BT.resume(); // keep playing from tick 192
   carry over. The new instance becomes the one `update()`, `render()`, and the orientation and reduced-motion hooks
   reach. The constructor must take no arguments, as it does for `bootstrap()`: a class instance you built with arguments
   and passed to `BT.init(demo, canvas)` replays as a default-built copy, so keep per-run setup in `init()`.
-- If the constructor throws or `init()` fails, `renderAt` rejects and the previous instance stays active, but the engine
-  stays reset (random stream, palette, camera, ticks) and anything a failed `init()` already did to the engine stays
-  applied, except palette effects, which are cleared - seek again or reload the page.
+- If the constructor throws, `renderAt` rejects before anything is reset, so the game is exactly as it was. If `init()`
+  fails (it returns `false` or throws), `renderAt` rejects, the previous instance stays active, and the tick count, the
+  `BT.random` stream position, the camera offset, and the post-process clock are put back, so `BT.resume()` continues
+  the old game where it was (`BT.random.seedValue` then reads `undefined` unless nothing had drawn since the seed). Not
+  restored: palette effects and post-process effects the seek cleared (clearing disposes them, so start them again),
+  pending input edges, and anything the failed `init()` already did to the engine, such as slot colors it set. Palette
+  effects the failed `init()` started are cleared.
 - An object literal passed to `BT.init(demo, canvas)` has no class to build from, so its `init()` re-runs on the same
   object and must reset every field itself.
 - State outside the instance is still yours to reset: module-level variables, objects shared between runs, DOM
