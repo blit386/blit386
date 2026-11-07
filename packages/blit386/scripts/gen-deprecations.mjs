@@ -22,6 +22,8 @@ import { fileURLToPath } from 'node:url';
 
 import { buildKitBuildCommand, isKitBuilt } from '../../../scripts/ensure-kit-built.mjs';
 
+import { buildBanner, loadPages, SITE_BASE } from './sync-doc-banners.mjs';
+
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, 'docs');
 const OUTPUT_FILE = join(DOCS_DIR, 'reference-deprecations.md');
@@ -37,16 +39,6 @@ export const GENERATED_HEADER = `<!-- generated:start -->
 > this file drifts from the registry.
 
 <!-- generated:end -->`;
-
-const BANNER = `<!-- blit386.dev-banner:start -->
-
-<!-- prettier-ignore -->
-> [!TIP]
-> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/reference/deprecations, typeset like an
-> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
-> words either way.
-
-<!-- blit386.dev-banner:end -->`;
 
 const INTRO =
     'Central tracker for public API compatibility aliases and planned removals.\n\n' +
@@ -157,6 +149,17 @@ export function renderMigrationBlock(migration) {
     );
 }
 
+/** Banner text is owned by `sync-doc-banners.mjs`; only the page's site path is looked up here. */
+function deprecationsBanner() {
+    const page = loadPages().find((entry) => entry.src === 'reference-deprecations.md');
+
+    if (page === undefined) {
+        throw new Error('docs/_sitemap.json has no entry for reference-deprecations.md.');
+    }
+
+    return buildBanner(`${SITE_BASE}/${page.path}`);
+}
+
 /**
  * Renders the full `docs/reference-deprecations.md` contents from the migration registry.
  *
@@ -168,7 +171,7 @@ export function renderDeprecationsMarkdown(migrations) {
 
     const parts = [
         '# Deprecation Timeline',
-        BANNER,
+        deprecationsBanner(),
         GENERATED_HEADER,
         INTRO,
         ...migrationBlocks,
