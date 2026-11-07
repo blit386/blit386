@@ -15,16 +15,6 @@
  *   node scripts/gen-api-history.mjs                  # write docs/_api-history.json
  *   node scripts/gen-api-history.mjs --check          # report drift, write nothing, exit 1
  *   node scripts/gen-api-history.mjs --since-check    # exit 1 if any public export lacks @since
- *   node scripts/gen-api-history.mjs --backfill       # one-time codemod, see Risks below
- *   node scripts/gen-api-history.mjs --methods A,B    # Phase 2 (class methods); not yet implemented
- *
- * `--backfill` derives each symbol's introducing release via `git log -S` + `git describe
- * --tags --contains` (the "pickaxe" technique) and writes `@since <version>` straight into
- * the JSDoc block in source, upgrading any date-only `@deprecated` line to also carry the
- * version. This is a one-time, human-reviewed operation: pickaxe matching can find a later
- * refactor commit instead of the true introduction (a renamed or reformatted declaration is
- * the classic failure), so every inserted tag needs a diff review before commit. Never run
- * `--backfill` as part of routine CI.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -432,7 +422,7 @@ function collectNamespaceMemberRecords(checker, btSymbol, exportName) {
  * Enumerates every public symbol reachable from the entrypoint module: every
  * `checker.getExportsOfModule` export (already resolved through re-exports), plus every member
  * of the configured namespace object export (`BT` in production), each carrying its parsed
- * version tags and the AST node/file needed for the `--backfill` codemod.
+ * version tags.
  *
  * @param {ts.Program} program - Compiled program.
  * @param {string} entryFilePath - Absolute path to the public entrypoint module.
@@ -693,226 +683,6 @@ function generate() {
 }
 
 /**
- * Finds the JSDoc (`/** ... *\/`) leading-comment range immediately attached to a node.
- *
- * @param {string} sourceText - Full source text of the node's file.
- * @param {ts.Node} node - Declaration node.
- * @returns {ts.CommentRange | null} The closest JSDoc comment range, or `null` if none.
- */
-export function findJsDocCommentRange(sourceText, node) {
-    const ranges = ts.getLeadingCommentRanges(sourceText, node.getFullStart()) ?? [];
-    const jsDocRanges = ranges.filter((range) => sourceText.slice(range.pos, range.pos + 3) === '/**');
-
-    return jsDocRanges.at(-1) ?? null;
-}
-
-/**
- * Expands a single-line `/** description *\/` comment into the codebase's standard multi-line
- * JSDoc block (opening `/**` alone, one ` * <description>` line, closing ` *\/`), so the shared
- * tag-insertion logic in {@link insertSinceTag} can treat it exactly like any other JSDoc block.
- * Preserves the description text verbatim (trimmed) and leaves a comment with no description
- * (e.g. `/**\/`) as just the opening/closing pair.
- *
- * @param {string} commentText - Full single-line `/** ... *\/` comment text (no `\n`).
- * @param {string} baseIndent - Whitespace preceding the comment's `/**` on its source line; the
- *   expanded continuation lines indent one space further, matching this codebase's convention
- *   (e.g. `    /**` pairs with `     * ...` and `     *\/`).
- * @returns {string[]} The comment re-expressed as multi-line lines (not yet joined).
- */
-function expandSingleLineComment(commentText, baseIndent) {
-    const description = commentText.slice(3, -2).trim();
-    const continuationIndent = `${baseIndent} `;
-    const lines = ['/**'];
-
-    if (description.length > 0) {
-        lines.push(`${continuationIndent}* ${description}`);
-    }
-
-    lines.push(`${continuationIndent}*/`);
-
-    return lines;
-}
-
-/**
- * Inserts an `@since <version>` line into a JSDoc comment's text, immediately before its first
- * existing tag line (or before the closing `*\/` when the block has no tags yet), matching the
- * surrounding indentation. A single-line `/** description *\/` comment (the style used throughout
- * the `BT` namespace object literal) is first expanded to a proper multi-line block via
- * {@link expandSingleLineComment} - single-line JSDoc has nowhere valid to hold a second line, so
- * inserting a tag into it unexpanded would leave the tag as bare text outside any comment.
- *
- * @param {string} commentText - Full `/** ... *\/` comment text.
- * @param {string} version - Version to insert.
- * @param {{ baseIndent?: string }} [options] - `baseIndent`: whitespace preceding the comment's
- *   `/**` on its source line, used only when expanding a single-line comment. Defaults to `''`.
- * @returns {string} Updated comment text.
- */
-export function insertSinceTag(commentText, version, options = {}) {
-    const initialLines = commentText.split('\n');
-    const lines =
-        initialLines.length === 1 ? expandSingleLineComment(commentText, options.baseIndent ?? '') : initialLines;
-    const firstTagIndex = lines.findIndex((line) => /^\s*\*\s*@/u.test(line));
-    // eslint-disable-next-line security/detect-object-injection -- firstTagIndex is a bounded findIndex result
-    const referenceLine = firstTagIndex === -1 ? (lines.at(-1) ?? '') : lines[firstTagIndex];
-    const indentMatch = /^(\s*)\*/u.exec(referenceLine);
-    const indent = indentMatch ? indentMatch[1] : ' ';
-    const newLine = `${indent}* @since ${version}`;
-
-    if (firstTagIndex === -1) {
-        lines.splice(lines.length - 1, 0, newLine);
-    } else {
-        lines.splice(firstTagIndex, 0, newLine);
-    }
-
-    return lines.join('\n');
-}
-
-/**
- * Upgrades a date-only `@deprecated Deprecated since <date>.` line to also carry the
- * introducing version: `@deprecated Deprecated since <version> (<date>).`. A no-op when the
- * line already carries a version.
- *
- * @param {string} commentText - Full `/** ... *\/` comment text.
- * @param {string} version - Version to insert.
- * @returns {string} Updated comment text.
- */
-export function upgradeDeprecatedTag(commentText, version) {
-    return commentText.replace(
-        /(@deprecated\s+Deprecated since )(\d{4}-\d{2}-\d{2})/u,
-        (_match, prefix, date) => `${prefix}${version} (${date})`,
-    );
-}
-
-/**
- * Applies the `--backfill` codemod to one declaration: inserts `@since`, and when the
- * declaration also has a date-only `@deprecated` tag, upgrades it to carry the version too.
- *
- * @param {string} sourceText - Full source text of the declaration's file.
- * @param {ts.Node} node - Declaration node to tag.
- * @param {string} version - Introducing version to insert.
- * @param {{ upgradeDeprecated?: boolean }} [options] - Whether to also upgrade a bare `@deprecated` line.
- * @returns {string} Updated source text.
- */
-export function applySinceCodemod(sourceText, node, version, options = {}) {
-    const range = findJsDocCommentRange(sourceText, node);
-
-    if (!range) {
-        throw new Error('Cannot backfill @since: declaration has no JSDoc comment block.');
-    }
-
-    const lineStart = sourceText.lastIndexOf('\n', range.pos - 1) + 1;
-    const baseIndent = sourceText.slice(lineStart, range.pos);
-
-    let commentText = sourceText.slice(range.pos, range.end);
-
-    commentText = insertSinceTag(commentText, version, { baseIndent });
-
-    if (options.upgradeDeprecated) {
-        commentText = upgradeDeprecatedTag(commentText, version);
-    }
-
-    return sourceText.slice(0, range.pos) + commentText + sourceText.slice(range.end);
-}
-
-/**
- * Strips a `git describe --tags --contains` suffix (`TAG~N` or `TAG^0`) down to the bare tag.
- *
- * @param {string} describeOutput - Raw `git describe` output.
- * @returns {string} Bare tag name.
- */
-function stripDescribeSuffix(describeOutput) {
-    const match = /^([^~^]+)/u.exec(describeOutput.trim());
-
-    return match ? match[1] : describeOutput.trim();
-}
-
-/**
- * Runs the git-pickaxe archaeology technique (section 3.3): find the earliest commit whose diff
- * introduced `declarationText` in `filePath`, then resolve the first tag that contains it.
- * Returns `null` when either step fails - unresolved symbols need manual review, never a guess.
- *
- * @param {string} declarationText - Text to pickaxe-search for (e.g. `'export class Widget'`).
- * @param {string} filePath - Path to the file, relative to `cwd`.
- * @param {{ cwd?: string, execFile?: typeof execFileSync }} [runOptions] - Injectable for tests.
- * @returns {string | null} Introducing version tag, or `null` if unresolved.
- */
-export function findIntroducingVersion(declarationText, filePath, runOptions = {}) {
-    const cwd = runOptions.cwd ?? ROOT;
-    const execFile = runOptions.execFile ?? execFileSync;
-
-    let sha;
-
-    try {
-        // `--follow` is required so the pickaxe search survives file renames (e.g.
-        // `src/BlitTech.ts` -> `src/BLIT386.ts`, or the overlay subsystem's move from
-        // `src/render/stats-overlay/` to `src/overlay/`). Without it, `git log -- <path>` only sees
-        // history since the path last took its current name, so every symbol declared before a
-        // rename falsely resolves to whichever release followed the rename.
-        const log = execFile('git', ['log', '--follow', '-S', declarationText, '--format=%H', '--', filePath], {
-            cwd,
-            encoding: 'utf8',
-        });
-        const shas = log
-            .trim()
-            .split('\n')
-            .filter((line) => line.length > 0);
-
-        sha = shas.at(-1);
-    } catch {
-        return null;
-    }
-
-    if (!sha) {
-        return null;
-    }
-
-    try {
-        const describeOutput = execFile('git', ['describe', '--tags', '--contains', sha], { cwd, encoding: 'utf8' });
-
-        return stripDescribeSuffix(describeOutput);
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Builds a reasonably specific pickaxe search string for a symbol record - specific enough to
- * avoid matching an unrelated later edit, per the Risks section (a bare method name like
- * `drawSprite:` can resolve to a later refactor instead of the true introduction).
- *
- * @param {{ name: string, node: ts.Node }} record - Symbol record from {@link collectSymbolRecords}.
- * @returns {string} Pickaxe search text.
- */
-function pickaxeSearchText(record) {
-    if (record.name.includes('.')) {
-        const memberName = record.name.slice(record.name.indexOf('.') + 1);
-
-        return ts.isGetAccessor(record.node) ? `get ${memberName}(` : `${memberName}:`;
-    }
-
-    if (ts.isClassDeclaration(record.node)) {
-        const modifiers = ts.canHaveModifiers(record.node) ? (ts.getModifiers(record.node) ?? []) : [];
-        const isAbstract = modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.AbstractKeyword);
-
-        return isAbstract ? `export abstract class ${record.name}` : `export class ${record.name}`;
-    }
-
-    if (ts.isInterfaceDeclaration(record.node)) {
-        return `interface ${record.name}`;
-    }
-
-    if (ts.isTypeAliasDeclaration(record.node)) {
-        return `type ${record.name}`;
-    }
-
-    if (ts.isFunctionDeclaration(record.node)) {
-        return `function ${record.name}`;
-    }
-
-    return `${record.name} =`;
-}
-
-/**
  * Path relative to the repo root, for readable console output.
  *
  * @param {string} filePath - Absolute file path.
@@ -923,89 +693,16 @@ function relativeToRoot(filePath) {
 }
 
 /**
- * Runs `--backfill`: derives `@since` for every symbol currently missing it via git archaeology,
- * writes the tag (and upgrades any date-only `@deprecated` line) into source, and prints a
- * resolved/unresolved summary. Every write here needs a human diff review before commit - see
- * the module doc comment and brief section 11 (Risks and gotchas).
- */
-function runBackfill() {
-    const program = createRepoProgram();
-    const pending = collectSymbolRecords(program, ENTRY_FILE).filter((record) => !record.tags.since);
-
-    if (pending.length === 0) {
-        console.log('Every public export already has @since; nothing to backfill.');
-
-        return;
-    }
-
-    const byFile = new Map();
-
-    for (const record of pending) {
-        const filePath = record.sourceFile.fileName;
-
-        if (!byFile.has(filePath)) {
-            byFile.set(filePath, []);
-        }
-
-        byFile.get(filePath).push(record);
-    }
-
-    let resolvedCount = 0;
-    let unresolvedCount = 0;
-
-    for (const [filePath, records] of byFile) {
-        let sourceText = readFileSync(filePath, 'utf8');
-
-        // Bottom-to-top so an earlier insertion never shifts a not-yet-processed node's offsets.
-        const orderedRecords = [...records].sort((a, b) => b.node.getStart() - a.node.getStart());
-
-        for (const record of orderedRecords) {
-            const searchText = pickaxeSearchText(record);
-            const version = findIntroducingVersion(searchText, relativeToRoot(filePath));
-
-            if (!version) {
-                console.warn(`[backfill] UNRESOLVED: ${record.name} (${relativeToRoot(filePath)}) - tag it manually.`);
-                unresolvedCount += 1;
-                continue;
-            }
-
-            sourceText = applySinceCodemod(sourceText, record.node, version, {
-                upgradeDeprecated: Boolean(record.tags.deprecated && !record.tags.deprecated.version),
-            });
-            console.log(`[backfill] ${record.name} -> @since ${version} (${relativeToRoot(filePath)})`);
-            resolvedCount += 1;
-        }
-
-        writeFileSync(filePath, sourceText);
-    }
-
-    console.log(`\nBackfill complete: ${resolvedCount} resolved, ${unresolvedCount} unresolved.`);
-    console.log('Review every inserted @since before committing - pickaxe matching is a heuristic, not a proof.');
-}
-
-/**
  * Parses CLI flags into a plain options object. Pure (no `process` access) so it is unit
  * testable without spawning the script.
  *
  * @param {string[]} argv - `process.argv.slice(2)`-style argument list.
- * @returns {{ isCheck: boolean, isSinceCheck: boolean, isBackfill: boolean, methodsClasses: string[] }}
- *   Parsed CLI options.
+ * @returns {{ isCheck: boolean, isSinceCheck: boolean }} Parsed CLI options.
  */
 export function parseCliArgs(argv) {
-    const methodsIndex = argv.indexOf('--methods');
-    const methodsClasses =
-        methodsIndex === -1
-            ? []
-            : (argv[methodsIndex + 1] ?? '')
-                  .split(',')
-                  .map((name) => name.trim())
-                  .filter((name) => name.length > 0);
-
     return {
         isCheck: argv.includes('--check'),
         isSinceCheck: argv.includes('--since-check'),
-        isBackfill: argv.includes('--backfill'),
-        methodsClasses,
     };
 }
 
@@ -1059,23 +756,10 @@ function runSinceCheck() {
 
 /** CLI entry point. */
 function main() {
-    const { isCheck, isSinceCheck, isBackfill, methodsClasses } = parseCliArgs(process.argv.slice(2));
-
-    if (methodsClasses.length > 0) {
-        console.log(
-            `[gen-api-history] --methods ${methodsClasses.join(',')} received; class-method enumeration is Phase 2` +
-                ' and not implemented yet - ignoring.',
-        );
-    }
+    const { isCheck, isSinceCheck } = parseCliArgs(process.argv.slice(2));
 
     if (isSinceCheck) {
         runSinceCheck();
-
-        return;
-    }
-
-    if (isBackfill) {
-        runBackfill();
 
         return;
     }

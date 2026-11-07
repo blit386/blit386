@@ -6,24 +6,18 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 import {
-    applySinceCodemod,
     buildApiHistoryJson,
     buildPagesMap,
     buildVersionsMap,
-    collectSymbolRecords,
     commentToText,
     compareVersions,
     createProgramFromFiles,
     deriveStatus,
     enumerateSymbols,
     extractTags,
-    findIntroducingVersion,
-    findJsDocCommentRange,
-    insertSinceTag,
     parseCliArgs,
     parseDeprecatedTag,
     resolveTagDate,
-    upgradeDeprecatedTag,
 } from './gen-api-history.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -37,29 +31,6 @@ function loadFixtureSymbols() {
     const program = createProgramFromFiles([ENTRY_FILE]);
 
     return enumerateSymbols(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
-}
-
-/** Recursively finds a property assignment named `name` anywhere in `sourceFile` (test helper). */
-function findPropertyAssignment(sourceFile, name) {
-    let found;
-
-    const visit = (node) => {
-        if (found) {
-            return;
-        }
-
-        if (ts.isPropertyAssignment(node) && node.name.getText(sourceFile) === name) {
-            found = node;
-
-            return;
-        }
-
-        ts.forEachChild(node, visit);
-    };
-
-    ts.forEachChild(sourceFile, visit);
-
-    return found;
 }
 
 describe('commentToText', () => {
@@ -156,16 +127,6 @@ describe('collectSymbolRecords / enumerateSymbols (fixture module graph)', () =>
 
         assert.equal(symbols['FixtureBT.pick'].kind, 'method');
         assert.equal(symbols['FixtureBT.pick'].since, '1.0.0');
-    });
-
-    it('collectSymbolRecords exposes the AST node and source file needed for backfill', () => {
-        const program = createProgramFromFiles([ENTRY_FILE]);
-        const records = collectSymbolRecords(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
-        const widgetRecord = records.find((record) => record.name === 'Widget');
-
-        assert.ok(widgetRecord);
-        assert.equal(widgetRecord.sourceFile.fileName.endsWith('Source.ts'), true);
-        assert.equal(typeof widgetRecord.node.getStart, 'function');
     });
 });
 
@@ -309,125 +270,6 @@ describe('buildApiHistoryJson', () => {
     });
 });
 
-describe('JSDoc backfill codemod', () => {
-    it('insertSinceTag inserts before the first existing tag, matching its indentation', () => {
-        const comment = ['    /**', '     * A helper.', '     *', '     * @param x - Input.', '     */'].join('\n');
-
-        const updated = insertSinceTag(comment, '1.0.3');
-
-        assert.equal(
-            updated,
-            [
-                '    /**',
-                '     * A helper.',
-                '     *',
-                '     * @since 1.0.3',
-                '     * @param x - Input.',
-                '     */',
-            ].join('\n'),
-        );
-    });
-
-    it('insertSinceTag appends before the closing */ when the block has no tags', () => {
-        const comment = ['/**', ' * A helper with no tags yet.', ' */'].join('\n');
-
-        const updated = insertSinceTag(comment, '1.0.0');
-
-        assert.equal(updated, ['/**', ' * A helper with no tags yet.', ' * @since 1.0.0', ' */'].join('\n'));
-    });
-
-    it('upgradeDeprecatedTag adds a version to a date-only @deprecated line', () => {
-        const comment = ['/**', ' * @deprecated Deprecated since 2026-05-31. Use {@link isDown} instead.', ' */'].join(
-            '\n',
-        );
-
-        const updated = upgradeDeprecatedTag(comment, '1.1.0');
-
-        assert.match(updated, /@deprecated Deprecated since 1\.1\.0 \(2026-05-31\)\. Use \{@link isDown\} instead\./u);
-    });
-
-    it('upgradeDeprecatedTag is a no-op when a version is already present', () => {
-        const comment = '/**\n * @deprecated Deprecated since 1.1.0 (2026-05-31). Use isDown instead.\n */';
-        assert.equal(upgradeDeprecatedTag(comment, '9.9.9'), comment);
-    });
-
-    it('findJsDocCommentRange + applySinceCodemod round-trip on a real fixture declaration', async () => {
-        const { readFileSync } = await import('node:fs');
-        const program = createProgramFromFiles([ENTRY_FILE]);
-        const records = collectSymbolRecords(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
-        const helperRecord = records.find((record) => record.name === 'helper');
-
-        assert.ok(helperRecord);
-
-        const sourceText = readFileSync(helperRecord.sourceFile.fileName, 'utf8');
-        const range = findJsDocCommentRange(sourceText, helperRecord.node);
-
-        assert.ok(range);
-        assert.equal(sourceText.slice(range.pos, range.pos + 3), '/**');
-    });
-
-    it('insertSinceTag expands a single-line comment into a multi-line block, preserving the description', () => {
-        const comment = '/** Horizontal flip flag for sprite rendering. */';
-
-        const updated = insertSinceTag(comment, '1.2.0', { baseIndent: '    ' });
-
-        assert.equal(
-            updated,
-            ['/**', '     * Horizontal flip flag for sprite rendering.', '     * @since 1.2.0', '     */'].join('\n'),
-        );
-    });
-
-    it('insertSinceTag expands a single-line comment with no baseIndent (top-level declaration)', () => {
-        const comment = '/** A top-level single-line description. */';
-
-        const updated = insertSinceTag(comment, '2.0.0');
-
-        assert.equal(updated, ['/**', ' * A top-level single-line description.', ' * @since 2.0.0', ' */'].join('\n'));
-    });
-
-    it('applySinceCodemod expands a real single-line-JSDoc namespace member into valid multi-line JSDoc', async () => {
-        const { readFileSync } = await import('node:fs');
-        const program = createProgramFromFiles([ENTRY_FILE]);
-        const records = collectSymbolRecords(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
-        const flagRecord = records.find((record) => record.name === 'FixtureBT.flag');
-
-        assert.ok(flagRecord);
-
-        const sourceText = readFileSync(flagRecord.sourceFile.fileName, 'utf8');
-        const range = findJsDocCommentRange(sourceText, flagRecord.node);
-
-        assert.ok(range);
-        assert.equal(sourceText.slice(range.pos, range.end).includes('\n'), false, 'fixture comment is single-line');
-
-        const updatedSource = applySinceCodemod(sourceText, flagRecord.node, '1.2.0');
-
-        // The inserted tag must land inside a real multi-line JSDoc block, never as bare text
-        // outside any comment (the exact regression this fix addresses).
-        assert.match(
-            updatedSource,
-            /\/\*\*\n\s+\* Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style\.\n\s+\* @since 1\.2\.0\n\s+\*\/\n\s+flag: 1,/u,
-        );
-
-        // Re-parsing the updated text (in memory - never touching the fixture file on disk) must
-        // still find a well-formed `flag` property with the newly inserted @since, and no parse
-        // errors, proving the codemod output is valid, re-consumable TypeScript/JSDoc.
-        const reparsedSourceFile = ts.createSourceFile(
-            flagRecord.sourceFile.fileName,
-            updatedSource,
-            ts.ScriptTarget.ES2022,
-            true,
-        );
-        const flagNode = findPropertyAssignment(reparsedSourceFile, 'flag');
-
-        assert.ok(flagNode, 'expected to find the re-parsed `flag` property assignment');
-        assert.deepEqual(extractTags(flagNode), {
-            since: '1.2.0',
-            changes: [],
-            deprecated: null,
-        });
-    });
-});
-
 describe('extractTags (@changed parsing)', () => {
     /** Parses `source` in memory and returns its lone top-level function declaration. */
     function parseFunctionFixture(source) {
@@ -509,193 +351,16 @@ export function widget() {}
     });
 });
 
-describe('findIntroducingVersion (git pickaxe, mocked execFile)', () => {
-    it('strips a TAG~N describe suffix down to the bare tag', () => {
-        const execFile = (_git, args) => {
-            if (args.includes('-S')) {
-                return 'abc123\n';
-            }
-            return '1.2.0~3\n';
-        };
-
-        assert.equal(findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile }), '1.2.0');
-    });
-
-    it('strips a TAG^0 describe suffix (exact tag commit) down to the bare tag', () => {
-        const execFile = (_git, args) => (args.includes('-S') ? 'abc123\n' : '1.2.0^0\n');
-
-        assert.equal(findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile }), '1.2.0');
-    });
-
-    it('returns null when the pickaxe search finds no commit', () => {
-        const execFile = () => '';
-
-        assert.equal(findIntroducingVersion('export class Ghost', 'src/Ghost.ts', { execFile }), null);
-    });
-
-    it('returns null when git describe fails (e.g. commit not reachable from any tag)', () => {
-        const execFile = (_git, args) => {
-            if (args.includes('-S')) {
-                return 'abc123\n';
-            }
-            throw new Error('fatal: no tag exactly matches');
-        };
-
-        assert.equal(findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile }), null);
-    });
-
-    it('passes --follow to git log -S so pickaxe search survives file renames', () => {
-        const logArgs = [];
-        const execFile = (_git, args) => {
-            if (args[0] === 'log') {
-                logArgs.push(...args);
-
-                return 'abc123\n';
-            }
-
-            return '1.2.0^0\n';
-        };
-
-        findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile });
-
-        assert.ok(logArgs.includes('--follow'), 'expected git log invocation to include --follow');
-        assert.ok(logArgs.includes('-S'), 'expected git log invocation to still include -S');
-    });
-});
-
-describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)', () => {
-    /**
-     * Builds a throwaway git repo with a symbol declared before a file rename, then renamed and
-     * edited afterward, mirroring the real regression: `src/BlitTech.ts` renamed to
-     * `src/BLIT386.ts` shortly before a release tag, which made every symbol declared in that file
-     * falsely resolve to the post-rename release when `git log` ran without `--follow`. A mocked
-     * `execFile` cannot prove this - it only proves the codemod builds the argv it is told to
-     * build. Only a real git repo proves the `--follow` flag itself changes pickaxe results.
-     *
-     * @returns {{ dir: string, oldSha: string, renameSha: string }} Fixture repo directory and the
-     *   genesis commit / rename commit SHAs.
-     */
-    async function buildRenameFixtureRepo() {
-        const { execFileSync } = await import('node:child_process');
-        const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
-        const { tmpdir } = await import('node:os');
-        const dir = mkdtempSync(join(tmpdir(), 'gen-api-history-rename-'));
-        // GIT_DIR and its siblings outrank `cwd`, and git exports them into every hook it runs -
-        // including `.husky/pre-push`, which is what dispatches this test suite. Left in place,
-        // `run(['init', ...])` below re-initializes the *real* repository instead of the fixture:
-        // a push from a linked worktree carries GIT_DIR=.git/worktrees/<name>, which git cannot
-        // pair with a work tree from this cwd, so it writes `bare = true` into the shared
-        // .git/config and every later git command fails with "this operation must be run in a
-        // work tree" until it is reset by hand. `packages/website/scripts/git-env.mjs` scrubs the
-        // same set for the same reason.
-        //
-        // The list comes from git rather than a hand-copied copy of it: --local-env-vars is what
-        // git itself clears before recursing into an unrelated repository, so it stays correct as
-        // git grows new ones. The three appended scope discovery and ref visibility rather than
-        // repo location, and are set on hook subprocesses all the same.
-        const repoLocationVars = new Set([
-            ...execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
-                .split('\n')
-                .map((name) => name.trim())
-                .filter(Boolean),
-            'GIT_CEILING_DIRECTORIES',
-            'GIT_NAMESPACE',
-            'GIT_QUARANTINE_PATH',
-        ]);
-        const env = {
-            ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !repoLocationVars.has(name))),
-            GIT_AUTHOR_NAME: 'Test',
-            GIT_AUTHOR_EMAIL: 'test@example.com',
-            GIT_COMMITTER_NAME: 'Test',
-            GIT_COMMITTER_EMAIL: 'test@example.com',
-        };
-        // -c commit.gpgsign=false / tag.gpgsign=false override the caller's global git config for
-        // this throwaway, git-config-isolated fixture repo only - a machine with commit signing
-        // enabled globally would otherwise fail these commits without a configured signing key.
-        const run = (args) =>
-            execFileSync('git', ['-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], {
-                cwd: dir,
-                encoding: 'utf8',
-                env,
-            });
-
-        run(['init', '--initial-branch=main']);
-        writeFileSync(join(dir, 'OldName.ts'), 'export const FLAG: number = 1;\n');
-        run(['add', 'OldName.ts']);
-        run(['commit', '-m', 'genesis: add FLAG in OldName.ts']);
-        const oldSha = run(['log', '-1', '--format=%H']).trim();
-
-        run(['mv', 'OldName.ts', 'NewName.ts']);
-        run(['commit', '-m', 'rename: OldName.ts -> NewName.ts']);
-        const renameSha = run(['log', '-1', '--format=%H']).trim();
-
-        run(['tag', '-a', '1.0.0', '-m', '1.0.0', oldSha]);
-        run(['tag', '-a', '2.0.0', '-m', '2.0.0', renameSha]);
-
-        return { dir, oldSha, renameSha, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
-    }
-
-    it('resolves a symbol declared before a rename to the pre-rename tag, not the rename tag', async () => {
-        const { execFileSync } = await import('node:child_process');
-        const fixture = await buildRenameFixtureRepo();
-
-        try {
-            const version = findIntroducingVersion('FLAG: number = 1', 'NewName.ts', {
-                cwd: fixture.dir,
-                execFile: execFileSync,
-            });
-
-            assert.equal(version, '1.0.0', 'expected --follow to find the pre-rename genesis tag, not 2.0.0');
-        } finally {
-            fixture.cleanup();
-        }
-    });
-
-    it('regresses to the wrong post-rename tag when --follow is omitted (proves the bug this test guards against)', async () => {
-        const { execFileSync } = await import('node:child_process');
-        const fixture = await buildRenameFixtureRepo();
-
-        try {
-            // Deliberately mimics the pre-fix argv (no --follow) to prove the old behavior really
-            // was broken, and that the fix in findIntroducingVersion is what closes the gap.
-            const execFileWithoutFollow = (_git, args, options) =>
-                execFileSync(
-                    'git',
-                    args.filter((arg) => arg !== '--follow'),
-                    options,
-                );
-
-            const version = findIntroducingVersion('FLAG: number = 1', 'NewName.ts', {
-                cwd: fixture.dir,
-                execFile: execFileWithoutFollow,
-            });
-
-            assert.equal(version, '2.0.0', 'without --follow, git log cannot see past the rename');
-        } finally {
-            fixture.cleanup();
-        }
-    });
-});
-
 describe('parseCliArgs', () => {
-    it('defaults every flag to false and methodsClasses to an empty array', () => {
+    it('defaults every flag to false', () => {
         assert.deepEqual(parseCliArgs([]), {
             isCheck: false,
             isSinceCheck: false,
-            isBackfill: false,
-            methodsClasses: [],
         });
     });
 
-    it('recognizes --check, --since-check, and --backfill independently', () => {
+    it('recognizes --check and --since-check independently', () => {
         assert.equal(parseCliArgs(['--check']).isCheck, true);
         assert.equal(parseCliArgs(['--since-check']).isSinceCheck, true);
-        assert.equal(parseCliArgs(['--backfill']).isBackfill, true);
-    });
-
-    it('parses --methods into a trimmed, non-empty class list without crashing (Phase 2 stub)', () => {
-        assert.deepEqual(parseCliArgs(['--methods', 'Palette,Color32']).methodsClasses, ['Palette', 'Color32']);
-        assert.deepEqual(parseCliArgs(['--methods', ' Palette , , Color32 ']).methodsClasses, ['Palette', 'Color32']);
-        assert.deepEqual(parseCliArgs(['--methods']).methodsClasses, []);
     });
 });
