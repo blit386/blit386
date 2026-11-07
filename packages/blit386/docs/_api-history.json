@@ -922,7 +922,12 @@
     "BT.musicPlay": {
       "kind": "method",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Validates `fadeMs` and `volume` before remembering or changing music."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -933,6 +938,10 @@
         {
           "version": "1.8.1",
           "note": "Also cancels a music request remembered while the audio context was still locked."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Validates `fadeMs` before canceling or stopping music."
         }
       ],
       "deprecated": null,
