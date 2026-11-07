@@ -69,6 +69,33 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('does not track a letter pressed while Meta is held (macOS sends no keyup for it)', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', metaKey: true, bubbles: true }));
+
+        expect(kb.isKeyDown('KeyA')).toBe(false);
+        expect(kb.isKeyPressed('KeyA', undefined, 0)).toBe(false);
+
+        kb.detach();
+    });
+
+    it('still tracks the Meta key itself', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'MetaLeft', metaKey: true, bubbles: true }));
+
+        expect(kb.isKeyDown('MetaLeft')).toBe(true);
+
+        kb.detach();
+    });
+
     it('endFrame snapshots for pressed / released edges', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
