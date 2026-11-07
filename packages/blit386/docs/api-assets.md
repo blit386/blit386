@@ -208,8 +208,9 @@ BT.paletteSet(palette);
 <Callout type="warn">
 
 A sheet from `SpriteSheet.load()` has no GPU texture until it is indexized, and `getTexture(device)` throws if you ask
-for one first. `BT.drawSprite()` and the other draw calls check this for you; it only matters if you call `getTexture`
-directly. Call `indexize(palette)` first, or use `SpriteSheet.loadIndexed()`, which does it in one step.
+for one first. The draw calls (`BT.drawSprite()` and the rest) do not indexize a sheet for you either: they report an
+error and draw nothing for a sheet that was never indexized. Call `indexize(palette)` before drawing or calling
+`getTexture`, or use `SpriteSheet.loadIndexed()`, which does it in one step.
 
 </Callout>
 

@@ -1105,8 +1105,8 @@ export class SpriteSheet {
     /**
      * Destroys and clears the cached GPU texture if one is currently held.
      *
-     * Called before re-creating the texture with a different format (after
-     * `indexize` or `reindexize`) and by `destroy` during full teardown.
+     * Called so the next `getTexture()` uploads fresh pixel data (after
+     * `indexize`, `reindexize`, or a hot replace) and by `destroy` during full teardown.
      */
     private invalidateTexture(): void {
         if (this.texture) {
