@@ -162,6 +162,21 @@ function mapRgbaPixelsToIndexed(
     const indexed = new Uint8Array(w * h);
     const pixelCount = w * h;
 
+    // Packed RGB -> slot. Filled from the top slot down so the lowest matching slot wins, like
+    // Palette.findColor. Only alpha 255 entries: pixel colors always have alpha 255, so findColor
+    // never matched a semi-transparent entry either.
+    const slotByRgb = new Map<number, number>();
+
+    for (let slot = palette.size - 1; slot >= 0; slot--) {
+        const entry = palette.getRef(slot);
+
+        // Whole-byte channels only: a palette effect can write a fraction through getRef, which `<<` would
+        // truncate into a false match; findColor's strict equality never matched one.
+        if (entry.a === 255 && Number.isInteger(entry.r) && Number.isInteger(entry.g) && Number.isInteger(entry.b)) {
+            slotByRgb.set((entry.r << 16) | (entry.g << 8) | entry.b, slot);
+        }
+    }
+
     for (let i = 0; i < pixelCount; i++) {
         const base = i * RGBA_BYTES_PER_PIXEL;
         const a = rgba[base + 3];
@@ -177,8 +192,7 @@ function mapRgbaPixelsToIndexed(
         const r = rgba[base] ?? 0;
         const g = rgba[base + 1] ?? 0;
         const b = rgba[base + 2] ?? 0;
-        const color = new Color32(r, g, b, 255);
-        const index = palette.findColor(color);
+        const index = slotByRgb.get((r << 16) | (g << 8) | b) ?? -1;
 
         if (index === -1) {
             const hex =

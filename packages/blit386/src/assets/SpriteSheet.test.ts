@@ -297,6 +297,50 @@ describe('SpriteSheet', () => {
             expect(sheet.isIndexed()).toBe(true);
         });
 
+        it('maps a color present in two palette slots to the lower slot', () => {
+            const pixels = new Uint8ClampedArray([255, 0, 0, 255]);
+
+            vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+            const palette = new Palette(16);
+            palette.set(3, new Color32(255, 0, 0, 255));
+            palette.set(9, new Color32(255, 0, 0, 255));
+
+            const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+            sheet.indexize(palette);
+
+            expect((sheet as unknown as { indexedPixels: Uint8Array }).indexedPixels[0]).toBe(3);
+        });
+
+        it('never matches a semi-transparent palette entry', () => {
+            const pixels = new Uint8ClampedArray([255, 0, 0, 255]);
+
+            vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+            const palette = new Palette(16);
+            palette.set(2, new Color32(255, 0, 0, 128));
+            palette.set(5, new Color32(255, 0, 0, 255));
+
+            const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+            sheet.indexize(palette);
+
+            expect((sheet as unknown as { indexedPixels: Uint8Array }).indexedPixels[0]).toBe(5);
+        });
+
+        it('does not match a palette entry with a fractional channel', () => {
+            const pixels = new Uint8ClampedArray([12, 0, 0, 255]);
+
+            vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+            const palette = new Palette(16);
+            palette.set(2, new Color32(12, 0, 0, 255));
+            palette.getRef(2).r = 12.5;
+
+            const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+
+            expect(() => sheet.indexize(palette)).toThrow();
+        });
+
         it('throws when an opaque pixel color is not in the palette', () => {
             const w = 1;
             const h = 1;
