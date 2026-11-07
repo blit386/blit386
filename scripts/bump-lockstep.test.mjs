@@ -540,6 +540,38 @@ describe('bump-lockstep', () => {
             assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_MINOR = 2;/);
         });
 
+        it('restores the file whose write threw partway, not only the files written before it', () => {
+            const files = makeFixtureFiles();
+            const originals = new Map(files);
+            const calls = [];
+            let forwardWrites = 0;
+
+            assert.throws(
+                () =>
+                    bumpLockstep({
+                        root: '/repo',
+                        version: '1.5.0',
+                        readFile: (path) => files.get(path),
+                        writeFile: (path, data) => {
+                            calls.push(path);
+                            forwardWrites += 1;
+                            if (forwardWrites === 2) {
+                                // Mimic writeFileSync: truncate first, then fail partway.
+                                files.set(path, '');
+                                throw new Error('ENOSPC');
+                            }
+                            files.set(path, data);
+                        },
+                    }),
+                /ENOSPC/,
+            );
+
+            assert.ok(calls.length >= 3, 'the failed target is written back after the failure');
+            for (const [path, contents] of originals) {
+                assert.equal(files.get(path), contents, `${path} was restored`);
+            }
+        });
+
         it('reports rollback failures alongside the original error, and still rolls back the rest', () => {
             const files = makeFixtureFiles();
             const scaffoldRangePath = join('/repo', SCAFFOLD_RANGE_FILE);

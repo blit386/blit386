@@ -446,9 +446,11 @@ export function bumpLockstep(options) {
                 continue;
             }
 
-            writeFile(entry.absolute, entry.next);
-
+            // Recorded before the write: writeFileSync truncates first, so a write that throws partway
+            // leaves this file broken and it needs restoring too.
             written.push({ absolute: entry.absolute, previousContents: entry.previousContents });
+
+            writeFile(entry.absolute, entry.next);
         }
     } catch (error) {
         /** @type {{ absolute: string, error: unknown }[]} */
