@@ -43,6 +43,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
   RGBA texture the sprite shader could not draw. Games that call `loadIndexed()` or `indexize()` are unaffected.
+- Behavior change: `SpriteSheet.size` is now a frozen copy. `new SpriteSheet(null, v)` no longer keeps your vector, so
+  changing `v` afterward no longer changes the sheet's width and height, and writing to `sheet.size.x` or `.y` throws in
+  strict mode. Read the size, and build a new sheet if you need different dimensions.
 - Behavior change: `Rect2i` centers round down instead of toward zero. `centerX`, `centerY`, `center`, and `centerTo`
   gave `-3` for a rectangle at `x = -5` with `width = 3` where the true middle pixel is `-4`, so a center did not move
   with its rectangle across zero; they now round down. Results are unchanged for non-negative rectangles, and differ

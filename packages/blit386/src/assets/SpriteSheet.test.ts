@@ -1240,3 +1240,25 @@ describe('SpriteSheet', () => {
         });
     });
 });
+
+describe('SpriteSheet size ownership', () => {
+    it('does not follow later changes to the vector passed to the constructor', () => {
+        const v = new Vector2i(16, 8);
+        const sheet = new SpriteSheet(null, v);
+
+        v.x = 99;
+        v.y = 99;
+
+        expect(sheet.width).toBe(16);
+        expect(sheet.height).toBe(8);
+    });
+
+    it('returns a frozen size', () => {
+        const sheet = new SpriteSheet(null, new Vector2i(16, 8));
+
+        expect(Object.isFrozen(sheet.size)).toBe(true);
+        expect(() => {
+            sheet.size.x = 0;
+        }).toThrow(TypeError);
+    });
+});
