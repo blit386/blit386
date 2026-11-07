@@ -103,6 +103,8 @@ export async function initWebGPU(
     if (deviceDimensionError) {
         console.error(`[BT] ${deviceDimensionError}`);
 
+        device.destroy();
+
         throw new RenderDimensionLimitError(deviceDimensionError);
     }
 
@@ -124,25 +126,44 @@ export async function initWebGPU(
     if (!context) {
         console.error('[BT] Failed to get WebGPU context');
 
+        device.destroy();
+
         return null;
     }
 
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-
-    context.configure({
-        device,
-        format: canvasFormat,
-        alphaMode: 'premultiplied',
-
-        // COPY_SRC is required alongside the default RENDER_ATTACHMENT so FrameCapture can
-        // copy the swap-chain texture straight to a staging buffer (see WebGPURenderer.submitFrame).
-        // Without it, copyTextureToBuffer on the current texture is a WebGPU validation error;
-        // implementations that drop the invalid copy leave the staging buffer zero-filled,
-        // which BT.captureFrame/downloadFrame then encodes as a fully transparent PNG.
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-    });
+    configureContext(context, device);
 
     console.log('[BT] WebGPU initialized successfully');
 
     return { device, context, drawingBufferSize: drawingBufferSize.clone() };
+}
+
+/**
+ * Configures the canvas context for the device. On a throw the device is destroyed first, because the caller never
+ * receives it and nothing else could free it.
+ *
+ * @param context - The canvas WebGPU context to configure.
+ * @param device - The device the context renders with.
+ */
+function configureContext(context: GPUCanvasContext, device: GPUDevice): void {
+    try {
+        const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+
+        context.configure({
+            device,
+            format: canvasFormat,
+            alphaMode: 'premultiplied',
+
+            // COPY_SRC is required alongside the default RENDER_ATTACHMENT so FrameCapture can
+            // copy the swap-chain texture straight to a staging buffer (see WebGPURenderer.submitFrame).
+            // Without it, copyTextureToBuffer on the current texture is a WebGPU validation error;
+            // implementations that drop the invalid copy leave the staging buffer zero-filled,
+            // which BT.captureFrame/downloadFrame then encodes as a fully transparent PNG.
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
+    } catch (err) {
+        device.destroy();
+
+        throw err;
+    }
 }
