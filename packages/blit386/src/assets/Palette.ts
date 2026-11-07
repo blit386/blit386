@@ -305,6 +305,8 @@ export class Palette {
     /**
      * Creates the classic CGA 16-color palette.
      *
+     * Source entry 0 (black) falls on the transparent slot 0, so this palette has no drawable black.
+     *
      * @returns New CGA preset palette.
      */
     public static cga(): Palette {
@@ -314,6 +316,8 @@ export class Palette {
     /**
      * Creates the Commodore 64 16-color palette.
      *
+     * Source entry 0 (black) falls on the transparent slot 0, so this palette has no drawable black.
+     *
      * @returns New C64 preset palette.
      */
     public static c64(): Palette {
@@ -321,7 +325,10 @@ export class Palette {
     }
 
     /**
-     * Creates a four-shade Game Boy palette.
+     * Creates the Game Boy palette: three drawable shades plus transparent slot 0.
+     *
+     * Source entry 0 (the darkest shade, `#0f380f`) falls on the transparent slot 0, so only slots 1-3 hold
+     * `#306230`, `#8bac0f` and `#9bbc0f`.
      *
      * @returns New Game Boy preset palette.
      */
@@ -332,6 +339,8 @@ export class Palette {
     /**
      * Creates the PICO-8 16-color palette.
      *
+     * Source entry 0 (black) falls on the transparent slot 0, so this palette has no drawable black.
+     *
      * @returns New PICO-8 preset palette.
      */
     public static pico8(): Palette {
@@ -340,6 +349,8 @@ export class Palette {
 
     /**
      * Creates a 64-slot NES palette.
+     *
+     * Source entry 0 (gray `#7c7c7c`, NES `$00`) falls on the transparent slot 0, so that gray is unavailable.
      *
      * @changed 1.8.1 Slots 56-63 hold the last NES row (pale yellow to pale pink, then black) instead of staying black.
      * @returns New NES preset palette.

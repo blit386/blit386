@@ -107,10 +107,10 @@ Each preset returns a fully populated `Palette` instance.
 import { Palette } from 'blit386';
 // ---cut---
 Palette.vga(); // VGA 256-color
-Palette.cga(); // CGA 16-color
-Palette.c64(); // Commodore 64 16-color
-Palette.gameboy(); // Game Boy 4-shade
-Palette.pico8(); // PICO-8 16-color
+Palette.cga(); // CGA 16-color, no drawable black
+Palette.c64(); // Commodore 64 16-color, no drawable black
+Palette.gameboy(); // Game Boy, 3 drawable shades (slot 0 is transparent)
+Palette.pico8(); // PICO-8 16-color, no drawable black
 Palette.nes(); // NES 64-color
 ```
 

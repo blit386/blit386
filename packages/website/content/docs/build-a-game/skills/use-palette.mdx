@@ -67,7 +67,8 @@ update() {
 - `palette.applyHUD(startSlot?)` (method) - fill six ready-made HUD colors (white, background, label, header, dim, code)
   in one call.
 - Built-in retro palettes: `Palette.vga()`, `Palette.cga()`, `Palette.c64()`, `Palette.nes()`, `Palette.gameboy()`,
-  `Palette.pico8()`.
+  `Palette.pico8()`. Slot 0 is transparent in every preset, so Game Boy has 3 drawable shades and CGA, C64 and PICO-8
+  have no drawable black.
 - `Color32` presets are getters (no parentheses): `Color32.white`, `Color32.black`, `Color32.red`, `Color32.green`,
   `Color32.blue`, `Color32.yellow`, `Color32.cyan`, `Color32.magenta`. Also `Color32.fromHex('#ff8800')` and named
   colors via `Color32.resolveNamedColor('cornflowerblue')`.
