@@ -46,8 +46,9 @@ regression threshold).
 - on the feature branch: `pnpm run bench:json`, which writes `benchmark-results.json`
 - `pnpm run bench:compare` runs `scripts/compare-tier-1-benchmarks.mjs` against those two files with a 25% regression
   threshold and writes `benchmark-comparison.json` / `benchmark-comparison.md`; it exits nonzero on a regression, a
-  missing benchmark, or when the two files share no benchmark at all. Benchmarks are matched by their path inside
-  `packages/blit386/`, so a baseline captured in another checkout or worktree still compares
+  missing benchmark, when the two files share no benchmark at all, or when the baseline file does not exist. Benchmarks
+  are matched by their path inside `packages/blit386/`, so a baseline captured in another checkout or worktree still
+  compares
 - other files or another threshold go after `--`, which pnpm forwards and the script ignores:
   `pnpm run bench:compare -- --baseline other.json --current results.json --threshold 10`
 - paste `benchmark-comparison.md` into the PR description by hand when the change is performance-sensitive, then delete
