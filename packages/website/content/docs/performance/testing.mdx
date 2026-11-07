@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Performance Testing"
 description: "CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow."
-lastModified: "2026-10-26T15:48:11+01:00"
+lastModified: "2026-11-07T13:15:22+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-testing.md"
 ---
 
@@ -247,7 +247,8 @@ writing `benchmark-comparison.json` and `benchmark-comparison.md`. The command e
 by more than 25% or a benchmark present in the baseline is missing from the current run. Benchmarks are matched by their
 path inside `packages/blit386/`, so a baseline recorded in another checkout or worktree still compares. If the baseline
 and the current run share no benchmark at all, the command exits nonzero with a message instead of reporting an empty
-comparison.
+comparison. A missing baseline file is an error too: the command exits nonzero and tells you to run
+`pnpm run bench:baseline` on `main` first.
 
 To compare different files or use another threshold, pass those flags after `--`. pnpm forwards them and the script
 ignores the separator, overriding the defaults baked into the `bench:compare` script:
