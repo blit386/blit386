@@ -13,7 +13,7 @@ import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
-import { MusicPlayer, type MusicPlayOptions } from './MusicPlayer';
+import { MusicPlayer, type MusicPlayOptions, validateFinite } from './MusicPlayer';
 import {
     DEFAULT_PAN,
     DEFAULT_PITCH,
@@ -553,6 +553,9 @@ export class AudioManager {
      * @param options - Playback options; see {@link MusicPlayOptions}.
      */
     public musicPlay(buffer: AudioBuffer, options?: MusicPlayOptions): void {
+        // Checked here too so a bad value throws now, not at unlock where it would only be logged.
+        validateFinite(options?.fadeMs, options?.volume, 'BT.musicPlay');
+
         if (!this.unlocked) {
             this.pendingMusicRequest = { buffer, options };
             this.rememberMusicRequest();
@@ -571,6 +574,8 @@ export class AudioManager {
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
     public musicStop(fadeMs?: number): void {
+        validateFinite(fadeMs, undefined, 'BT.musicStop');
+
         // A request remembered while locked has no voice to stop yet; drop it so it cannot start on unlock.
         this.pendingMusicRequest = null;
         this.isMusicRequestRemembered = false;
