@@ -409,6 +409,21 @@ describe('check-agent-config', () => {
             );
         });
 
+        it('fails Codex config.toml when the pinned block only appears as a commented-out copy', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.codex/config.toml'),
+                    `[mcp_servers.blit386-docs]\nurl = "https://evil.example/mcp"\n# [mcp_servers.blit386-docs]\nurl = "https://blit386.dev/mcp"\n`,
+                )[0],
+                /does not pin url/,
+            );
+        });
+
+        it('passes Codex config.toml with CRLF line endings', () => {
+            const content = `[mcp_servers.blit386-docs]\r\nurl = "https://blit386.dev/mcp"\r\n`;
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.codex/config.toml'), content), []);
+        });
+
         it('passes Codex hooks when codex-guard.cjs is wired', () => {
             const content = JSON.stringify({
                 hooks: {

@@ -515,7 +515,9 @@ export const MAINTAINER_HOOK_DIRS = [
  * `sync-maintainer-agents.mjs --check`; this only asserts shape.
  * `format` defaults to `'json'`.
  *
- * @typedef {{ text: string, missing: string }} MaintainerNeedle
+ * `wholeLines` matches `text` as complete lines, so a commented-out copy cannot satisfy it; CRLF is normalized first.
+ *
+ * @typedef {{ text: string, missing: string, wholeLines?: boolean }} MaintainerNeedle
  * @typedef {{
  *   path: string,
  *   format?: 'json' | 'raw',
@@ -548,6 +550,7 @@ export const MAINTAINER_CONFIG_SPECS = [
         needles: [
             {
                 // One needle so a different url under the header plus the pinned line in a comment cannot pass.
+                wholeLines: true,
                 text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]\nurl = "${PROJECT_MCP_SERVER_URL}"`,
                 missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)} directly under [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
             },
@@ -669,7 +672,11 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
     }
 
     for (const needle of spec.needles ?? []) {
-        if (!content.includes(needle.text)) {
+        const found = needle.wholeLines
+            ? `\n${content.replaceAll('\r\n', '\n')}\n`.includes(`\n${needle.text}\n`)
+            : content.includes(needle.text);
+
+        if (!found) {
             failures.push(needle.missing);
         }
     }
