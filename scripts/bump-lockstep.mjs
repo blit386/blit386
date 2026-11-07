@@ -446,9 +446,11 @@ export function bumpLockstep(options) {
                 continue;
             }
 
-            writeFile(entry.absolute, entry.next);
-
+            // Recorded before the write: writeFileSync truncates first, so a write that throws partway
+            // leaves this file broken and it needs restoring too.
             written.push({ absolute: entry.absolute, previousContents: entry.previousContents });
+
+            writeFile(entry.absolute, entry.next);
         }
     } catch (error) {
         /** @type {{ absolute: string, error: unknown }[]} */
@@ -475,7 +477,7 @@ export function bumpLockstep(options) {
             .join('\n');
 
         throw new Error(
-            `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left at the bumped version:\n${rollbackMessage}`,
+            `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left in an unknown state (bumped, partly written, or unchanged):\n${rollbackMessage}`,
         );
     }
 
@@ -602,9 +604,9 @@ export function main(argv, hooks = {}) {
             log('(dry-run; no files written)');
         }
         return 0;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(message);
+    } catch (caught) {
+        const message = caught instanceof Error ? caught.message : String(caught);
+        error(message);
         return 1;
     }
 }
