@@ -152,16 +152,12 @@ describe('system font glyph access', () => {
         expect(glyph).not.toBe(fallback);
     });
 
-    it('resolves a reserved (unassigned) placeholder to its own glyph, not the fallback', () => {
-        // U+E006 is one of the 14 reserved Private Use Area placeholders that took the accented
-        // Latin letters' atlas cells after they were dropped - still a real (blank) glyph, not
-        // a missing character routed through the fallback.
+    it('treats the removed reserved placeholder U+E006 as a missing character that uses the fallback', () => {
+        // U+E006-U+E013 used to be 14 blank Private Use Area placeholders; they were removed (BT-674).
         const font = createSystemFont();
-        const glyph = font.getGlyph('\ue006');
-        const fallback = font.getGlyph('\ufffd');
 
-        expect(glyph).not.toBeNull();
-        expect(glyph).not.toBe(fallback);
+        expect(font.hasGlyph('\ue006')).toBe(false);
+        expect(font.getGlyph('\ue006')).toBe(font.getGlyph('\ufffd'));
     });
 
     it('reports hasGlyph as false for a character with no glyph of its own, even with a fallback defined', () => {

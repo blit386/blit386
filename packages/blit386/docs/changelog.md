@@ -43,6 +43,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
   RGBA texture the sprite shader could not draw. Games that call `loadIndexed()` or `indexize()` are unaffected.
+- Behavior change: the system font no longer has 14 blank "reserved" glyphs at U+E006-U+E013. `hasGlyph` is now false
+  for those code points and they draw the U+FFFD fallback glyph instead of nothing; `codePoints` and `glyphCount` each
+  shrink by 14, so the `system-font-glyphs` demo no longer shows empty cells. No game could have drawn anything with
+  them, and nothing else about the font changes.
 - Behavior change: `Rect2i` centers round down instead of toward zero. `centerX`, `centerY`, `center`, and `centerTo`
   gave `-3` for a rectangle at `x = -5` with `width = 3` where the true middle pixel is `-4`, so a center did not move
   with its rectangle across zero; they now round down. Results are unchanged for non-negative rectangles, and differ
