@@ -152,12 +152,16 @@ describe('system font glyph access', () => {
         expect(glyph).not.toBe(fallback);
     });
 
-    it('treats the removed reserved placeholder U+E006 as a missing character that uses the fallback', () => {
+    it('treats every removed reserved placeholder U+E006-U+E013 as a missing character that uses the fallback', () => {
         // U+E006-U+E013 used to be 14 blank Private Use Area placeholders; they were removed (BT-674).
         const font = createSystemFont();
 
-        expect(font.hasGlyph('\ue006')).toBe(false);
-        expect(font.getGlyph('\ue006')).toBe(font.getGlyph('\ufffd'));
+        for (let codePoint = 0xe006; codePoint <= 0xe013; codePoint++) {
+            const char = String.fromCodePoint(codePoint);
+
+            expect(font.hasGlyph(char)).toBe(false);
+            expect(font.getGlyph(char)).toBe(font.getGlyph('\ufffd'));
+        }
     });
 
     it('reports hasGlyph as false for a character with no glyph of its own, even with a fallback defined', () => {
