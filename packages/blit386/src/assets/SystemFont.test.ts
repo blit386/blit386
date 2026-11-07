@@ -80,6 +80,24 @@ describe('createSystemFont', () => {
         expect(font.hasGlyph('↓')).toBe(true);
     });
 
+    it('draws the hyphen and en dash 5 px wide and the em dash across the whole cell (BT-671)', () => {
+        // The em dash used to be a copy of the hyphen and the en dash was 3 px. Row 6 holds the bar;
+        // 0xfc fills all 6 columns, so consecutive em dashes join into one line.
+        const glyphBytes = (codePoint: number): number[] => {
+            const index =
+                codePoint <= SYSTEM_FONT_LAST_CHAR
+                    ? codePoint - SYSTEM_FONT_FIRST_CHAR
+                    : SYSTEM_FONT_LAST_CHAR - SYSTEM_FONT_FIRST_CHAR + 1 + SYSTEM_FONT_EXTRA_CHARS.indexOf(codePoint);
+            const start = index * SYSTEM_FONT_BYTES_PER_GLYPH;
+            return SYSTEM_FONT_BITMAPS.slice(start, start + SYSTEM_FONT_BYTES_PER_GLYPH);
+        };
+        const bar = (rowByte: number): number[] => [0, 0, 0, 0, 0, 0, rowByte, 0, 0, 0, 0, 0, 0, 0];
+
+        expect(glyphBytes(0x2d)).toEqual(bar(0xf8));
+        expect(glyphBytes(0x2013)).toEqual(bar(0xf8));
+        expect(glyphBytes(0x2014)).toEqual(bar(0xfc));
+    });
+
     it('exposes codePoints as an ascending, duplicate-free enumeration of every real glyph', () => {
         // Structural checks rather than a hardcoded count - a glyph browser built on codePoints
         // must never need updating when the font gains or loses a glyph.
