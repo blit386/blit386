@@ -112,6 +112,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   clip, both are now scaled down by the same factor, so the attack reaches full gain and the last sample is still
   exactly 0. Clips long enough to fit both, and every `BT.synthPreset`, are unchanged bit for bit. See
   [Synth](api-audio.md#synth).
+- `AudioClip.synth()` now throws for a `NaN` or `Infinity` in any numeric field, and for a negative `volume`, instead of
+  rendering a broken sound. Before, `volume: NaN` gave a clip of pure `NaN`, `dutyCycle: NaN` or `vibrato.depth: NaN`
+  gave a flat signal with no tone, `envelope.attack: NaN` skipped the attack, and `frequency: Infinity` turned the phase
+  into `NaN`. `volume` stays unbounded above, since the output is clamped. See [Synth](api-audio.md#synth).
 - `BT.musicStop()` called before the player's first click now cancels a `BT.musicPlay()` remembered while audio was
   locked. Before, the stopped track still started on the first click.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling

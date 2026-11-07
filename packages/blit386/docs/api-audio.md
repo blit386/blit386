@@ -217,14 +217,14 @@ const laser = await AudioClip.synth({
 
 <TypeTable type={{
     waveform: { type: "'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise'", description: 'Oscillator waveform shape.' },
-    frequency: { type: 'number', description: 'Base carrier frequency in Hz at the start of the clip.' },
-    duration: { type: 'number', description: 'Total clip duration in seconds. Must be greater than 0 and no more than 60.' },
-    volume: { type: 'number', default: '1', description: 'Overall output amplitude in [0, 1]; final output is always clamped.' },
+    frequency: { type: 'number', description: 'Base carrier frequency in Hz at the start of the clip. Must be a finite number greater than 0.' },
+    duration: { type: 'number', description: 'Total clip duration in seconds. Must be finite, greater than 0 and no more than 60.' },
+    volume: { type: 'number', default: '1', description: 'Overall output amplitude, 0 or more; final output is always clamped, so a value above 1 only distorts. Throws for a negative value, NaN, or Infinity.' },
     envelope: { type: 'SynthEnvelope', description: 'Attack/decay/sustain/release envelope.' },
     pitchSweep: { type: 'SynthPitchSweep', description: 'Linear pitch sweep from frequency to a target frequency.' },
     vibrato: { type: 'SynthVibrato', description: 'Sine-wave vibrato applied on top of frequency.' },
-    noiseMix: { type: 'number', default: '0', description: 'Fraction of white noise mixed into the oscillator, in [0, 1]. Ignored when waveform is noise.' },
-    dutyCycle: { type: 'number', default: '0.5', description: 'Fraction of each cycle spent high, in [0, 1]. Only affects square.' },
+    noiseMix: { type: 'number', default: '0', description: 'Fraction of white noise mixed into the oscillator, a finite value in [0, 1]. Ignored when waveform is noise.' },
+    dutyCycle: { type: 'number', default: '0.5', description: 'Fraction of each cycle spent high, a finite value in [0, 1]. Only affects square.' },
     seed: { type: 'number', description: 'Seed for the deterministic PRNG driving noise generation.' },
   }} />
 
@@ -233,10 +233,10 @@ const laser = await AudioClip.synth({
 `SynthEnvelope` fields (all optional, times in seconds):
 
 <TypeTable type={{
-    attack: { type: 'number', default: '0.01', description: 'Time to ramp from silence to full amplitude.' },
-    decay: { type: 'number', default: '0.1', description: 'Time to fall from full amplitude to sustain.' },
-    sustain: { type: 'number', default: '0.7', description: 'Gain level in [0, 1] held between decay and release.' },
-    release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip.' },
+    attack: { type: 'number', default: '0.01', description: 'Time to ramp from silence to full amplitude. Must be finite and not negative.' },
+    decay: { type: 'number', default: '0.1', description: 'Time to fall from full amplitude to sustain. Must be finite and not negative.' },
+    sustain: { type: 'number', default: '0.7', description: 'Finite gain level in [0, 1] held between decay and release.' },
+    release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip. Must be finite and not negative.' },
   }} />
 
 The release phase always finishes exactly at `duration`. When `attack + release` is longer than the clip, both are
@@ -249,7 +249,7 @@ start of the release, the release falls from whatever level the envelope had rea
 `SynthPitchSweep` fields:
 
 <TypeTable type={{
-    toFrequency: { type: 'number', description: 'Frequency in Hz the carrier linearly reaches by the end of the clip. Required, and must be greater than 0.' },
+    toFrequency: { type: 'number', description: 'Frequency in Hz the carrier linearly reaches by the end of the clip. Required, and must be a finite number greater than 0.' },
   }} />
 
 <Since symbol="SynthVibrato" />
@@ -257,8 +257,8 @@ start of the release, the release falls from whatever level the envelope had rea
 `SynthVibrato` fields (both optional):
 
 <TypeTable type={{
-    rate: { type: 'number', default: '5', description: 'Vibrato rate in Hz (oscillations per second). Must not be negative.' },
-    depth: { type: 'number', default: '0', description: 'Peak frequency deviation in Hz above and below the carrier. Defaults to 0, so vibrato is silent until you set a depth. Must not be negative.' },
+    rate: { type: 'number', default: '5', description: 'Vibrato rate in Hz (oscillations per second). Must be finite and not negative.' },
+    depth: { type: 'number', default: '0', description: 'Peak frequency deviation in Hz above and below the carrier. Defaults to 0, so vibrato is silent until you set a depth. Must be finite and not negative.' },
   }} />
 
 ```ts twoslash

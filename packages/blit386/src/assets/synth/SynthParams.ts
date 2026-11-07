@@ -99,15 +99,22 @@ export interface SynthParams {
     /** Oscillator waveform shape. */
     waveform: SynthWaveform;
 
-    /** Base carrier frequency in Hz at the start of the clip (before any pitch sweep or vibrato). */
+    /**
+     * Base carrier frequency in Hz at the start of the clip (before any pitch sweep or vibrato).
+     * Must be a finite number greater than 0.
+     */
     frequency: number;
 
-    /** Total clip duration in seconds. Must be greater than 0 and no more than {@link MAX_SYNTH_DURATION_SECONDS}. */
+    /**
+     * Total clip duration in seconds. Must be finite, greater than 0 and no more than
+     * {@link MAX_SYNTH_DURATION_SECONDS}.
+     */
     duration: number;
 
     /**
-     * Overall output amplitude in [0, 1] (unclamped on the high end; final output is always
-     * clamped to avoid clipping).
+     * Overall output amplitude, 0 or more (unclamped on the high end; final output is always
+     * clamped to avoid clipping, so a value above 1 only distorts). A negative, `NaN` or
+     * `Infinity` value throws.
      * Defaults to {@link DEFAULT_VOLUME}.
      */
     volume?: number;
