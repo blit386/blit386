@@ -294,9 +294,11 @@ export class Palette {
     }
 
     /**
-     * Creates the default VGA-style 256-color palette.
+     * Creates the VGA-style 256-color palette, built on the xterm 256-color layout (16 base colors, a 6×6×6 cube, and a
+     * 24-step gray ramp). It is not the VGA mode 13h default palette, so indexed art made for that palette will show
+     * different colors.
      *
-     * @returns New VGA preset palette.
+     * @returns New xterm-256-style preset palette.
      */
     public static vga(): Palette {
         return createPreset(VGA_HEX, 256);

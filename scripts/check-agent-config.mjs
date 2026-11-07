@@ -515,7 +515,9 @@ export const MAINTAINER_HOOK_DIRS = [
  * `sync-maintainer-agents.mjs --check`; this only asserts shape.
  * `format` defaults to `'json'`.
  *
- * @typedef {{ text: string, missing: string }} MaintainerNeedle
+ * `wholeLines` matches `text` as complete lines, so a commented-out copy cannot satisfy it; CRLF is normalized first.
+ *
+ * @typedef {{ text: string, missing: string, wholeLines?: boolean }} MaintainerNeedle
  * @typedef {{
  *   path: string,
  *   format?: 'json' | 'raw',
@@ -547,12 +549,10 @@ export const MAINTAINER_CONFIG_SPECS = [
         format: 'raw',
         needles: [
             {
-                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
-                missing: `.codex/config.toml does not declare [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
-            },
-            {
-                text: `url = "${PROJECT_MCP_SERVER_URL}"`,
-                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+                // One needle so a different url under the header plus the pinned line in a comment cannot pass.
+                wholeLines: true,
+                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]\nurl = "${PROJECT_MCP_SERVER_URL}"`,
+                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)} directly under [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
             },
         ],
     },
@@ -624,7 +624,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
         }
 
         if (spec.mcp) {
-            const container = parsed[spec.mcp.container];
+            const container = parsed?.[spec.mcp.container];
 
             if (container === null || typeof container !== 'object') {
                 failures.push(`${spec.path} has no ${spec.mcp.container} object`);
@@ -663,7 +663,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
         }
 
         if (spec.bashDeny !== undefined) {
-            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed.permission?.bash);
+            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed?.permission?.bash);
 
             if (bash?.[spec.bashDeny] !== 'deny') {
                 failures.push(`${spec.path} permission.bash does not deny \`${spec.bashDeny}\``);
@@ -672,7 +672,11 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
     }
 
     for (const needle of spec.needles ?? []) {
-        if (!content.includes(needle.text)) {
+        const found = needle.wholeLines
+            ? `\n${content.replaceAll('\r\n', '\n')}\n`.includes(`\n${needle.text}\n`)
+            : content.includes(needle.text);
+
+        if (!found) {
             failures.push(needle.missing);
         }
     }
@@ -840,26 +844,28 @@ export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory,
  * @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>}
  */
 function readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) {
-    return readdirSync(agentsSkillsDir, { withFileTypes: true }).map((entry) => {
-        if (!entry.isSymbolicLink()) {
-            return { name: entry.name, isSymlink: false, resolvedName: null };
-        }
+    return readdirSync(agentsSkillsDir, { withFileTypes: true })
+        .filter((entry) => !entry.name.startsWith('.'))
+        .map((entry) => {
+            if (!entry.isSymbolicLink()) {
+                return { name: entry.name, isSymlink: false, resolvedName: null };
+            }
 
-        const linkPath = join(agentsSkillsDir, entry.name);
+            const linkPath = join(agentsSkillsDir, entry.name);
 
-        try {
-            const target = realpathSync(linkPath);
-            const targetIsDirectory = statSync(target).isDirectory();
+            try {
+                const target = realpathSync(linkPath);
+                const targetIsDirectory = statSync(target).isDirectory();
 
-            return {
-                name: entry.name,
-                isSymlink: true,
-                resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
-            };
-        } catch {
-            return { name: entry.name, isSymlink: true, resolvedName: null };
-        }
-    });
+                return {
+                    name: entry.name,
+                    isSymlink: true,
+                    resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
+                };
+            } catch {
+                return { name: entry.name, isSymlink: true, resolvedName: null };
+            }
+        });
 }
 
 /** @param {string} claudeSkillsDir @returns {string[]} Directory names under `.claude/skills/` (dotfiles excluded). */

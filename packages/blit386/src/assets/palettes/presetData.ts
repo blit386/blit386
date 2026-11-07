@@ -21,7 +21,7 @@ function rgbToHex(r: number, g: number, b: number): string {
     return [r, g, b].map((channel) => (channel & BYTE_MASK).toString(16).padStart(2, '0')).join('');
 }
 
-/** Classic VGA 16-color base entries (indices 0-15). */
+/** xterm-256-style 16-color base entries (80/c0 levels, indices 0-15). */
 const VGA_BASE_HEX = [
     '000000',
     '800000',
@@ -41,10 +41,10 @@ const VGA_BASE_HEX = [
     'ffffff',
 ] as const;
 
-/** VGA 6-level per-channel steps for the 216-entry color cube (indices 16-231). */
+/** xterm-256 6-level per-channel steps for the 216-entry color cube (indices 16-231). */
 const VGA_CUBE_CHANNEL_LEVELS = [0, 95, 135, 175, 215, 255] as const;
 
-/** VGA grayscale ramp parameters (indices 232-255). */
+/** xterm-256 grayscale ramp parameters (indices 232-255). */
 const VGA_GRAYSCALE_ENTRY_COUNT = 24;
 const VGA_GRAYSCALE_LEVEL_STEP = 10;
 const VGA_GRAYSCALE_START_LEVEL = 8;
@@ -59,7 +59,10 @@ const VGA_GRAYSCALE_HEX = Array.from({ length: VGA_GRAYSCALE_ENTRY_COUNT }, (_, 
     return rgbToHex(level, level, level);
 });
 
-/** Default VGA 256-color preset data. */
+/**
+ * Preset data behind `Palette.vga()`: the xterm 256-color layout, not the VGA mode 13h default palette.
+ * The name is kept so existing games keep working.
+ */
 export const VGA_HEX = [...VGA_BASE_HEX, ...VGA_CUBE_HEX, ...VGA_GRAYSCALE_HEX];
 
 /** Commodore 64 16-color preset data. */

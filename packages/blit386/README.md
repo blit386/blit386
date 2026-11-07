@@ -150,7 +150,7 @@ bootstrap(Game);
 - Animate colors, not geometry: Cycle, fade, flash, and swap give you water, lava, and lightning for the cost of one
   tiny palette upload. `BT.paletteFadeExposure` goes further and fades in linear light like an iris pull, so highlights
   hold and shadows crush instead of everything dimming at one flat rate.
-- Retro palettes in the box: VGA, CGA, C64, Game Boy, PICO-8, and NES presets.
+- Retro palettes in the box: VGA-style (xterm-256 layout), CGA, C64, Game Boy, PICO-8, and NES presets.
 - Recolor without redrawing: Palette offsets turn one sprite sheet into team colors, day and night, or power-up states -
   no duplicate textures.
 - CRT when you want it: A two-tier post-process chain with bundled CRT presets for that curved-glass glow.

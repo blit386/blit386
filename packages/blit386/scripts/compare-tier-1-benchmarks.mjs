@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 
-const COMMENT_MARKER = '<!-- benchmark-comparison -->';
 const DEFAULT_THRESHOLD = 10;
 const PACKAGE_MARKER = '/packages/blit386/';
 
@@ -28,7 +27,7 @@ function normalizeFilepath(filepath) {
  *
  * @param {string[]} argv Raw CLI arguments after the node/script prefix.
  * @returns {{
- *   baseline: string | null,
+ *   baseline: string,
  *   current: string | null,
  *   jsonOut: string,
  *   markdownOut: string,
@@ -40,7 +39,7 @@ export function parseArgs(argv) {
         baseline: null,
         current: null,
         jsonOut: 'benchmark-comparison.json',
-        markdownOut: 'benchmark-comment.md',
+        markdownOut: 'benchmark-comparison.md',
         threshold: DEFAULT_THRESHOLD,
     };
 
@@ -90,6 +89,10 @@ export function parseArgs(argv) {
 
     if (!Number.isFinite(args.threshold) || args.threshold < 0) {
         throw new Error(`Invalid --threshold value: ${String(args.threshold)}`);
+    }
+
+    if (!args.baseline) {
+        throw new Error('The --baseline argument is required');
     }
 
     return args;
@@ -210,14 +213,13 @@ export function flattenBenchmarks(report) {
 }
 
 /**
- * Compares the current benchmark report against an optional baseline report.
+ * Compares the current benchmark report against a baseline report.
  *
  * @param {{ files: unknown[], __sourceLabel?: string }} currentReport Current benchmark report.
- * @param {{ files: unknown[], __sourceLabel?: string } | null} baselineReport Baseline benchmark report, if available.
+ * @param {{ files: unknown[], __sourceLabel?: string }} baselineReport Baseline benchmark report.
  * @param {number} thresholdPct Maximum allowed slowdown percentage before failure.
  * @returns {{
  *   generatedAt: string,
- *   hasBaseline: boolean,
  *   thresholdPct: number,
  *   summary: {
  *     total: number,
@@ -236,11 +238,11 @@ export function flattenBenchmarks(report) {
  *     deltaPct: number | null,
  *     status: string,
  *   }>,
- * }} Comparison report used by CI and PR comments.
+ * }} Comparison report.
  */
 export function compareReports(currentReport, baselineReport, thresholdPct) {
     const currentEntries = flattenBenchmarks(currentReport);
-    const baselineEntries = baselineReport ? flattenBenchmarks(baselineReport) : [];
+    const baselineEntries = flattenBenchmarks(baselineReport);
     const currentByKey = new Map(currentEntries.map((entry) => [entry.matchKey, entry]));
     const baselineByKey = new Map(baselineEntries.map((entry) => [entry.matchKey, entry]));
     const keys = [...new Set([...baselineByKey.keys(), ...currentByKey.keys()])].sort((left, right) =>
@@ -304,7 +306,6 @@ export function compareReports(currentReport, baselineReport, thresholdPct) {
 
     return {
         generatedAt: new Date().toISOString(),
-        hasBaseline: baselineReport !== null,
         thresholdPct,
         summary,
         benchmarks,
@@ -345,7 +346,7 @@ function formatDelta(value) {
 }
 
 /**
- * Converts an internal benchmark status into the PR comment label.
+ * Converts an internal benchmark status into the markdown table label.
  *
  * @param {string} status Internal benchmark status.
  * @returns {string} Human-readable status label.
@@ -376,10 +377,9 @@ function escapeMarkdownCell(value) {
 }
 
 /**
- * Builds the markdown body for the benchmark PR comment.
+ * Builds the markdown body for the benchmark comparison table.
  *
  * @param {{
- *   hasBaseline: boolean,
  *   thresholdPct: number,
  *   summary: {
  *     compared: number,
@@ -396,22 +396,12 @@ function escapeMarkdownCell(value) {
  *     status: string,
  *   }>,
  * }} report Comparison report.
- * @returns {string} Markdown comment body.
+ * @returns {string} Markdown body.
  */
 export function buildMarkdown(report) {
-    const lines = [COMMENT_MARKER, '## Tier 1 Benchmark Comparison', ''];
-
-    if (!report.hasBaseline) {
-        lines.push(
-            'No `main` branch benchmark baseline artifact is available yet. This run produced fresh benchmark results and uploaded them as artifacts.',
-            '',
-            `Configured regression threshold: ${report.thresholdPct}% slowdown.`,
-        );
-
-        return `${lines.join('\n')}\n`;
-    }
-
-    lines.push(
+    const lines = [
+        '## Tier 1 Benchmark Comparison',
+        '',
         `Compared ${report.summary.compared} benchmarks against the latest \`main\` baseline. Regression threshold: ${report.thresholdPct}% slowdown.`,
         '',
         `Regressions: ${report.summary.regressions} | Improvements: ${report.summary.improvements} | New: ${report.summary.newBenchmarks} | Missing: ${report.summary.missingBenchmarks}`,
@@ -421,7 +411,7 @@ export function buildMarkdown(report) {
         '',
         '| Benchmark | Baseline ops/sec | Current ops/sec | Delta | Status |',
         '| --- | ---: | ---: | ---: | --- |',
-    );
+    ];
 
     for (const benchmark of report.benchmarks) {
         lines.push(
@@ -447,29 +437,29 @@ function writeFile(filePath, content) {
 }
 
 /**
- * Determines whether a comparison report should fail the command that produced it: a baseline was available and the
- * comparison found a regression past the threshold or a benchmark missing from the current run.
+ * Determines whether a comparison report should fail the command that produced it: the comparison found a regression
+ * past the threshold or a benchmark missing from the current run.
  *
- * @param {{ hasBaseline: boolean, summary: { regressions: number, missingBenchmarks: number } }} report Comparison
+ * @param {{ summary: { regressions: number, missingBenchmarks: number } }} report Comparison
  *   report returned by {@link compareReports}.
  * @returns {boolean} True when the command should exit nonzero.
  */
 export function hasComparisonFailures(report) {
-    return report.hasBaseline && (report.summary.regressions > 0 || report.summary.missingBenchmarks > 0);
+    return report.summary.regressions > 0 || report.summary.missingBenchmarks > 0;
 }
 
 /**
  * Detects a baseline that shares no benchmark with the current run even though both are non-empty, which means the
  * match keys diverged (for example a baseline from an unrelated layout) and "Regressions: 0" would be meaningless.
  *
- * @param {{ hasBaseline: boolean, summary: { compared: number, newBenchmarks: number, missingBenchmarks: number } }} report
+ * @param {{ summary: { compared: number, newBenchmarks: number, missingBenchmarks: number } }} report
  *   Comparison report returned by {@link compareReports}.
  * @returns {boolean} True when both sides have benchmarks but none matched.
  */
 export function hasZeroMatches(report) {
     const { compared, newBenchmarks, missingBenchmarks } = report.summary;
 
-    return report.hasBaseline && compared === 0 && newBenchmarks > 0 && missingBenchmarks > 0;
+    return compared === 0 && newBenchmarks > 0 && missingBenchmarks > 0;
 }
 
 /**
@@ -481,13 +471,20 @@ export function hasZeroMatches(report) {
  */
 function main() {
     const args = parseArgs(process.argv.slice(2));
+
+    if (!fs.existsSync(args.baseline)) {
+        console.error(
+            `Baseline file not found: ${args.baseline}. Record one on \`main\` first with \`pnpm run bench:baseline\`.`,
+        );
+        process.exitCode = 1;
+
+        return;
+    }
+
     const currentReport = readJsonFile(args.current);
     currentReport.__sourceLabel = args.current;
-    const baselineReport = args.baseline && fs.existsSync(args.baseline) ? readJsonFile(args.baseline) : null;
-
-    if (baselineReport !== null) {
-        baselineReport.__sourceLabel = args.baseline;
-    }
+    const baselineReport = readJsonFile(args.baseline);
+    baselineReport.__sourceLabel = args.baseline;
 
     const report = compareReports(currentReport, baselineReport, args.threshold);
 
