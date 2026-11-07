@@ -78,7 +78,7 @@ describe('VoicePool', () => {
         installed = installMockAudioContext();
         canvas = createCanvas();
         audio = new AudioManager();
-        audio.attach(canvas);
+        audio.attach(canvas, 16);
     });
 
     afterEach(() => {
@@ -92,7 +92,7 @@ describe('VoicePool', () => {
         it('defaults to 16 voice slots when hardware settings are unavailable', () => {
             vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             for (let i = 0; i < 16; i++) {
                 pool.play(createMockAudioBuffer());
@@ -110,7 +110,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             pool.play(createMockAudioBuffer());
             pool.play(createMockAudioBuffer());
@@ -125,7 +125,7 @@ describe('VoicePool', () => {
 
     describe('counters', () => {
         it('starts with zero drop and steal counts', () => {
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             expect(pool.getDropCount()).toBe(0);
             expect(pool.getStealCount()).toBe(0);
@@ -136,7 +136,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
 
             expect(pool.getVoiceCount()).toBe(4);
         });
@@ -146,7 +146,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
 
             expect(pool.getActiveVoiceCount()).toBe(0);
         });
@@ -156,7 +156,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
             const first = pool.play(createMockAudioBuffer());
             pool.play(createMockAudioBuffer());
 
@@ -172,7 +172,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             pool.play(createMockAudioBuffer());
             pool.play(createMockAudioBuffer());
@@ -188,7 +188,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
             const buffer = createMockAudioBuffer();
 
             pool.play(buffer);
@@ -208,7 +208,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
             const buffer = createMockAudioBuffer();
 
             pool.play(buffer, { volume: 0.5, pitch: 1.5, pan: -0.5 });
@@ -228,7 +228,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
 
             pool.play(createMockAudioBuffer());
 
@@ -247,7 +247,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
 
             pool.play(createMockAudioBuffer(), { loop: true, atTime: 2.5 });
 
@@ -263,7 +263,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
             const context = getMockContext(installed);
 
             setMockCurrentTime(getLiveContext(installed), 7);
@@ -280,7 +280,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
 
             pool.play(createMockAudioBuffer(), { volume: 0.8, fadeInMs: 200 });
 
@@ -298,7 +298,7 @@ describe('VoicePool', () => {
                 audioVoices: 4,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 4);
             const context = getMockContext(installed);
 
             setMockCurrentTime(getLiveContext(installed), 10);
@@ -326,7 +326,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
 
             const first = pool.play(createMockAudioBuffer());
             const second = pool.play(createMockAudioBuffer());
@@ -341,7 +341,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             pool.play(createMockAudioBuffer(), { priority: 5 });
             const low = pool.play(createMockAudioBuffer(), { priority: 1 });
@@ -357,7 +357,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             const oldest = pool.play(createMockAudioBuffer(), { priority: 2 });
             pool.play(createMockAudioBuffer(), { priority: 2 });
@@ -372,7 +372,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
 
             pool.play(createMockAudioBuffer(), { priority: 5 });
             const dropped = pool.play(createMockAudioBuffer(), { priority: 1 });
@@ -384,7 +384,7 @@ describe('VoicePool', () => {
         it('returns an invalid ref without allocating when the manager has no live context', () => {
             audio.detach();
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             const ref = pool.play(createMockAudioBuffer());
 
@@ -399,14 +399,14 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             expect(pool.isPlaying(ref)).toBe(true);
         });
 
         it('reports isPlaying false for INVALID_SOUND_REF', () => {
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             expect(pool.isPlaying(INVALID_SOUND_REF)).toBe(false);
         });
@@ -416,7 +416,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             pool.stop(ref);
@@ -429,7 +429,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             const context = getMockContext(installed);
@@ -445,7 +445,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
@@ -466,7 +466,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
@@ -489,7 +489,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
             const first = pool.play(createMockAudioBuffer());
 
             pool.stop(first, 500);
@@ -505,7 +505,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             pool.stop(ref);
@@ -514,13 +514,13 @@ describe('VoicePool', () => {
         });
 
         it('is a no-op when stopping INVALID_SOUND_REF', () => {
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             expect(() => pool.stop(INVALID_SOUND_REF)).not.toThrow();
         });
 
         it('is a no-op for an out-of-range voiceIndex', () => {
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             expect(() => pool.stop({ voiceIndex: 999, generation: 0 })).not.toThrow();
             expect(pool.isPlaying({ voiceIndex: 999, generation: 0 })).toBe(false);
@@ -531,7 +531,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             // A fresh pool's last slot has generation 0 - the same value `Array.at(-1)` would
             // wrap to if the explicit bounds check in getActiveSlot were ever removed. This ref
@@ -549,7 +549,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             pool.volumeSet(ref, 0.3);
@@ -562,7 +562,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 0.5 });
 
             expect(() => pool.volumeSet(ref, Number.NaN)).toThrow(/finite number/);
@@ -574,7 +574,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             pool.volumeSet(ref, 0.2, 100);
@@ -592,7 +592,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
@@ -613,7 +613,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             pool.pitchSet(ref, 2);
@@ -626,7 +626,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             pool.panSet(ref, -1);
@@ -639,7 +639,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             pool.stop(ref);
@@ -659,7 +659,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             const context = getMockContext(installed);
@@ -678,7 +678,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             pool.play(createMockAudioBuffer());
 
@@ -699,7 +699,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
             const first = pool.play(createMockAudioBuffer(), { priority: 1 });
 
             const context = getMockContext(installed);
@@ -721,7 +721,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
             pool.play(createMockAudioBuffer());
 
             const context = getMockContext(installed);
@@ -745,7 +745,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const first = pool.play(createMockAudioBuffer());
             const second = pool.play(createMockAudioBuffer());
 
@@ -756,7 +756,7 @@ describe('VoicePool', () => {
         });
 
         it('is a no-op on an empty pool', () => {
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 16);
 
             expect(() => pool.stopAll()).not.toThrow();
         });
@@ -768,7 +768,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const releasedBuffer = createMockAudioBuffer();
             const otherBuffer = createMockAudioBuffer();
 
@@ -799,7 +799,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
 
             expect(() => pool.play(createMockAudioBuffer(), options)).toThrow();
             expect(pool.getActiveVoiceCount()).toBe(0);
@@ -812,7 +812,7 @@ describe('VoicePool', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 1);
             const live = pool.play(createMockAudioBuffer());
 
             expect(() => pool.play(createMockAudioBuffer(), { volume: Number.NaN })).toThrow();
@@ -825,7 +825,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const buffer = createMockAudioBuffer();
             const ref = pool.play(buffer);
 
@@ -840,7 +840,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             expect(() => pool.pitchSet(ref, Number.NaN)).toThrow(/pitch/);
@@ -857,7 +857,7 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            const pool = new VoicePool(audio);
+            const pool = new VoicePool(audio, 2);
             const ref = pool.play(createMockAudioBuffer());
 
             expect(() => pool.pitchSet(ref, 2, Number.NaN)).toThrow(/fade/);

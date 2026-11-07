@@ -132,8 +132,9 @@ export class AudioManager {
      * success, so `AudioClip.load()` can later decode against the live context.
      *
      * @param target - Canvas that receives the one-shot unlock gesture listeners.
+     * @param voiceCount - Number of voice slots for the SFX pool.
      */
-    public attach(target: HTMLCanvasElement): void {
+    public attach(target: HTMLCanvasElement, voiceCount: number): void {
         this.detach();
 
         let busNodes: PerBus<GainNode>;
@@ -153,7 +154,7 @@ export class AudioManager {
 
         setAudioDecodeContext(this.context);
 
-        this.voicePool = new VoicePool(this);
+        this.voicePool = new VoicePool(this, voiceCount);
         setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
 
         this.musicPlayer = new MusicPlayer(this.context, busNodes.music);

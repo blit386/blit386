@@ -11,8 +11,6 @@
  * live slot and silently no-ops with inert defaults on a stale ref.
  */
 
-import { BTAPI } from '../core/BTAPI';
-import { defaultConfig } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import {
     audioFadeNotFiniteError,
@@ -21,14 +19,6 @@ import {
     audioVolumeNotFiniteError,
 } from '../utils/errorMessages';
 import type { AudioManager } from './AudioManager';
-
-/**
- * Fallback voice count used when `HardwareSettings.audioVoices` is unavailable. Sourced from
- * `defaultConfig()` so this can never drift from the engine-wide default; the `?? 16` only
- * satisfies `audioVoices`' optional type and is unreachable in practice, since `defaultConfig()`
- * always sets it.
- */
-const DEFAULT_VOICE_COUNT = defaultConfig().audioVoices ?? 16;
 
 /** Default per-voice gain applied when {@link VoicePlayOptions.volume} is omitted. */
 export const DEFAULT_VOLUME = 1;
@@ -175,10 +165,11 @@ export class VoicePool {
      * Creates a pool with a fixed number of voice slots.
      *
      * @param audioManager - Owning audio manager; used to reach the live context and `sfx` bus.
+     * @param voiceCount - Number of voice slots, from `HardwareSettings.audioVoices`.
      */
-    constructor(audioManager: AudioManager) {
+    constructor(audioManager: AudioManager, voiceCount: number) {
         this.audioManager = audioManager;
-        this.slots = Array.from({ length: resolveVoiceCount() }, () => createEmptySlot());
+        this.slots = Array.from({ length: voiceCount }, () => createEmptySlot());
     }
 
     /**
@@ -665,16 +656,6 @@ export class VoicePool {
 
         this.resetSlot(slot);
     }
-}
-
-/**
- * Reads the configured voice count from hardware settings, falling back to
- * {@link DEFAULT_VOICE_COUNT}.
- *
- * @returns Resolved voice slot count.
- */
-function resolveVoiceCount(): number {
-    return BTAPI.instance.getHardwareSettings()?.audioVoices ?? DEFAULT_VOICE_COUNT;
 }
 
 /**

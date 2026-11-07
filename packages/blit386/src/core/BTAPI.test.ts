@@ -1719,6 +1719,22 @@ describe('BTAPI', () => {
             expect(await BTAPI.instance.init(makeMockDemo(60, true, 64), makeMockCanvas())).toBe(true);
         });
 
+        it('should pass the configured audioVoices to AudioManager.attach', async () => {
+            const attachSpy = vi.spyOn(AudioManager.prototype, 'attach');
+
+            await BTAPI.instance.init(makeMockDemo(60, true, 3), makeMockCanvas());
+
+            expect(attachSpy).toHaveBeenCalledWith(expect.anything(), 3);
+        });
+
+        it('should pass the default audioVoices to AudioManager.attach when none is configured', async () => {
+            const attachSpy = vi.spyOn(AudioManager.prototype, 'attach');
+
+            await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+            expect(attachSpy).toHaveBeenCalledWith(expect.anything(), 16);
+        });
+
         it('should reject an overlapping init and keep isInitialized false until the new init finishes', async () => {
             await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
 

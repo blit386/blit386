@@ -64,6 +64,7 @@ import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
 import {
+    DEFAULT_AUDIO_VOICES,
     defaultConfig,
     mergeHardwareSettings,
     needsOverlayRendererDiagnostics,
@@ -2649,7 +2650,7 @@ export class BTAPI {
 
         this.audio?.detach();
         this.audio = new AudioManager();
-        this.audio.attach(canvas);
+        this.audio.attach(canvas, hw.audioVoices ?? DEFAULT_AUDIO_VOICES);
 
         if (this.isCollectAudioMetersEnabled) {
             this.audio.enableBusMetering();
