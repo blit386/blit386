@@ -106,7 +106,12 @@ async function hotReloadImageAsset(url: string): Promise<void> {
     const palette = BTAPI.instance.getPalette();
 
     for (const sheet of sheets) {
-        sheet.hotReplaceImage(image, palette);
+        // A failing sheet is already marked 'failed' by hotReplaceImage; keep going so the rest don't stay 'loading'.
+        try {
+            sheet.hotReplaceImage(image, palette);
+        } catch (error) {
+            console.error(`[BT] Image hot replace failed for a sheet loaded from '${url}':`, error);
+        }
     }
 }
 
