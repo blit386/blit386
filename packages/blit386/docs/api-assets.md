@@ -144,8 +144,10 @@ largest sheet the engine accepts) on both axes throws a `RangeError` and leaves 
 reads back as a frozen `Vector2i` (or `null`). The grid survives a hot-reload image swap, and lookups are checked
 against the sheet's current size. See [Drawing tiles](api-rendering.md#drawing-tiles).
 
-`sheet.size` also reads back as a frozen `Vector2i`, a copy of the vector you passed to the constructor. Changing your
-own vector afterwards does not resize the sheet, and writing to `sheet.size.x` or `.y` throws in strict mode.
+`sheet.size` also reads back as a frozen `Vector2i`, and writing to `sheet.size.x` or `.y` throws in strict mode. An
+image-backed sheet (including every `loadIndexed` result) takes its size from the decoded image, and a hot-reload image
+swap can change it. A sheet built without an image keeps a copy of the vector you passed to the constructor, so changing
+your own vector afterwards does not resize the sheet.
 
 ## Sprite setup - manual path
 
