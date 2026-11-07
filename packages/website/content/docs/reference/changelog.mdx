@@ -62,6 +62,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
+  `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
+  start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
+  each starts after the previous one settles and builds on whatever it installed, and a failed swap does not block the
+  next one. See [Hot reload](/docs/guides/hot-reload).
 - `BT.musicPlay` and `BT.musicStop` now reject a non-finite `fadeMs` (and `BT.musicPlay` a non-finite `volume`) before
   changing anything. Before, `BT.musicStop(Infinity)` left the track audible at full volume while `BT.isMusicPlaying`
   was `false`, and `BT.musicStop(NaN)` threw a raw browser error.
