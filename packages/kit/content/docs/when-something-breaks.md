@@ -204,9 +204,9 @@ game's address goes dead. Start the server again with `npm run dev` and reload t
 
 Same checklist as above. Also remember: a full page reload (so everything looks like a cold start) is expected when you
 edit `configure()` hardware settings (screen size, backend, FPS, audio voices, overlay flags), when you upgrade the
-`blit386` package itself, or when you change an unrecognized file under `public/`. Method and most asset edits should
-update without wiping the page - if they do not, confirm `vite.config.js` still has `plugins: [blit386()]` and restart
-the dev server once.
+`blit386` package itself, or when you change an unrecognized file under `public/` (hidden files such as `.DS_Store` are
+ignored). Method and most asset edits should update without wiping the page - if they do not, confirm `vite.config.js`
+still has `plugins: [blit386()]` and restart the dev server once.
 
 ## I changed the code and the game acted weird
 

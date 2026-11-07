@@ -66,6 +66,26 @@ describe('handleAssetHotUpdate', () => {
         });
     });
 
+    it.each(['/project/public/.DS_Store', '/project/public/sprites/.hero.png.swp'])(
+        'ignores the hidden file %s even when full reload on unknown assets is enabled',
+        (file) => {
+            const send = vi.fn();
+
+            const result = handleAssetHotUpdate({
+                file,
+                environmentName: 'client',
+                send,
+                assetDirs,
+                serve,
+                assetTypes,
+                fullReloadOnUnknownAssets: true,
+            });
+
+            expect(result).toBeUndefined();
+            expect(send).not.toHaveBeenCalled();
+        },
+    );
+
     it('sends a full-reload for an unrecognized extension when enabled', () => {
         const send = vi.fn();
 
