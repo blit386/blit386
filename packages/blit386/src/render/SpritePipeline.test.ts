@@ -46,6 +46,11 @@ import { Vector2i } from '../utils/Vector2i';
 import { resolveSpriteOrientation } from './SpriteOrientation';
 import { SpritePipeline } from './SpritePipeline';
 
+/** Builds an indexed sheet sized like `image`: only indexed sheets have a GPU texture. */
+function indexedSheet(image: HTMLImageElement): SpriteSheet {
+    return SpriteSheet.fromIndexedPixels(image.width, image.height, new Uint8Array(image.width * image.height));
+}
+
 describe('SpritePipeline constructor', () => {
     it('creates an instance without error', () => {
         const pipeline = new SpritePipeline();
@@ -164,7 +169,7 @@ describe('drawSprite', () => {
     it('does not throw with valid arguments', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 20));
@@ -174,7 +179,7 @@ describe('drawSprite', () => {
     it('with explicit paletteOffset does not throw', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0), 1);
@@ -184,7 +189,7 @@ describe('drawSprite', () => {
     it('with zero paletteOffset does not throw', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0), 0);
@@ -194,7 +199,7 @@ describe('drawSprite', () => {
     it('causes a draw call in encodePass', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
 
@@ -215,7 +220,7 @@ describe('drawSprite', () => {
     it('multiple calls from the same sheet produce one draw call', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
         pipeline.drawSprite(sheet, new Rect2i(16, 0, 16, 16), new Vector2i(20, 0));
@@ -238,8 +243,8 @@ describe('drawSprite', () => {
     it('calls from different sheets produce separate draw calls', () => {
         pipeline.reset();
 
-        const sheetA = new SpriteSheet({ width: 64, height: 64 } as HTMLImageElement);
-        const sheetB = new SpriteSheet({ width: 128, height: 128 } as HTMLImageElement);
+        const sheetA = indexedSheet({ width: 64, height: 64 } as HTMLImageElement);
+        const sheetB = indexedSheet({ width: 128, height: 128 } as HTMLImageElement);
 
         pipeline.drawSprite(sheetA, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
         pipeline.drawSprite(sheetB, new Rect2i(0, 0, 16, 16), new Vector2i(20, 0));
@@ -261,8 +266,8 @@ describe('drawSprite', () => {
     it('interleaved sheets produce one draw call per texture switch', () => {
         pipeline.reset();
 
-        const sheetA = new SpriteSheet({ width: 64, height: 64 } as HTMLImageElement);
-        const sheetB = new SpriteSheet({ width: 128, height: 128 } as HTMLImageElement);
+        const sheetA = indexedSheet({ width: 64, height: 64 } as HTMLImageElement);
+        const sheetB = indexedSheet({ width: 128, height: 128 } as HTMLImageElement);
 
         pipeline.drawSprite(sheetA, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
         pipeline.drawSprite(sheetB, new Rect2i(0, 0, 16, 16), new Vector2i(20, 0));
@@ -285,7 +290,7 @@ describe('drawSprite', () => {
     it('after reset produces no draw calls', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
         pipeline.reset();
@@ -309,7 +314,7 @@ describe('drawSprite', () => {
 
         pipeline.setCameraOffset(new Vector2i(50, 50));
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10));
@@ -322,7 +327,7 @@ describe('drawSprite', () => {
     it('a single-pixel srcRect does not throw', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             pipeline.drawSprite(sheet, new Rect2i(0, 0, 1, 1), new Vector2i(5, 5));
@@ -331,7 +336,7 @@ describe('drawSprite', () => {
     });
 
     it('multiple frame cycles work without error', () => {
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         expect(() => {
             for (let i = 0; i < 5; i++) {
@@ -346,7 +351,7 @@ describe('drawSprite', () => {
         pipeline.reset();
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         try {
             // MAX_VERTICES = 50,000, each sprite = 6 vertices * 5 values (20 bytes)
@@ -373,7 +378,7 @@ describe('drawSprite', () => {
         pipeline.reset();
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         try {
             for (let i = 0; i < 8400; i++) {
@@ -395,7 +400,7 @@ describe('drawSprite', () => {
     it('reports submitted vertex count for batched sprites', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         pipeline.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
 
@@ -439,7 +444,7 @@ describe('drawBitmapText', () => {
     it('renders characters that have glyphs', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         const font = makeMockFont(
             {
@@ -471,7 +476,7 @@ describe('drawBitmapText', () => {
     it('silently skips characters without glyphs', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
         const font = makeMockFont(
             {
                 A: makeGlyph(0, 8, 0, 0, 9),
@@ -499,7 +504,7 @@ describe('drawBitmapText', () => {
     it('iterates code points, so an astral character draws one glyph like software and measureText (BT-624)', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
         const fallback = makeGlyph(0, 8, 0, 0, 9);
         const codes: number[] = [];
         const font = {
@@ -531,7 +536,7 @@ describe('drawBitmapText', () => {
     it('empty string produces no draw calls', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
         const font = makeMockFont({}, sheet);
 
         pipeline.drawBitmapText(font, new Vector2i(0, 0), '');
@@ -553,7 +558,7 @@ describe('drawBitmapText', () => {
     it('applies paletteOffset without error', () => {
         pipeline.reset();
 
-        const sheet = new SpriteSheet(mockImage);
+        const sheet = indexedSheet(mockImage);
 
         const font = makeMockFont(
             {

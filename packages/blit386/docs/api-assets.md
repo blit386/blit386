@@ -205,6 +205,15 @@ BT.paletteSet(palette);
 
 </Steps>
 
+<Callout type="warn">
+
+A sheet from `SpriteSheet.load()` has no GPU texture until it is indexized, and `getTexture(device)` throws if you ask
+for one first. The draw calls (`BT.drawSprite()` and the rest) do not indexize a sheet for you either: they report an
+error and draw nothing for a sheet that was never indexized. Call `indexize(palette)` before drawing or calling
+`getTexture`, or use `SpriteSheet.loadIndexed()`, which does it in one step.
+
+</Callout>
+
 To create a sheet from raw palette-indexed pixel data (advanced / test use):
 
 ```ts twoslash
