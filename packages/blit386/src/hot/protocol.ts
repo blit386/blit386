@@ -6,12 +6,15 @@
  * without pulling `vite` into the published engine bundle.
  */
 
+/** Every asset kind the plugin can broadcast; the one list the payload type and the runtime check derive from. */
+export const ASSET_KINDS = ['image', 'audio', 'font', 'other'] as const;
+
 /**
  * Payload describing a changed asset, broadcast by the `blit386/vite` plugin's asset
  * watcher (`src/vite/assets.ts`) as a Vite custom HMR event.
  *
- * `type` is an open string union: today's values are the asset kinds the engine can
- * hot-replace (BT-305); future kinds (levels, maps, animations) can extend this union
+ * `type` is one of {@link ASSET_KINDS}: today's values are the asset kinds the engine can
+ * hot-replace (BT-305); future kinds (levels, maps, animations) can extend that list
  * without changing the event name or the envelope shape.
  */
 export interface AssetChangedPayload {
@@ -19,7 +22,7 @@ export interface AssetChangedPayload {
     url: string;
 
     /** Asset kind, used to route to the right hot-replace handler. */
-    type: 'image' | 'audio' | 'font' | 'other';
+    type: (typeof ASSET_KINDS)[number];
 
     /** `Date.now()` when the plugin observed the change, for logging/ordering. */
     timestamp: number;
