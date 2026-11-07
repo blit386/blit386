@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-07T15:14:19+01:00"
+lastModified: "2026-11-07T18:19:18+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -43,8 +43,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - Behavior change: the system font no longer has 14 blank "reserved" glyphs at U+E006-U+E013. `hasGlyph` is now false
   for those code points and they draw the U+FFFD fallback glyph instead of nothing; `codePoints` and `glyphCount` each
   shrink by 14, so the `system-font-glyphs` demo no longer shows empty cells. No game could have drawn anything with
-  them. The atlas shrinks from 96×154 to 96×140 and every glyph after U+E005 moves up 14 cells, so
-  `getSpriteSheet()` and `getGlyph()` report new source rectangles for those glyphs; the glyph shapes are unchanged.
+  them. The atlas shrinks from 96×154 to 96×140 and every glyph after U+E005 moves up 14 cells, so `getSpriteSheet()`
+  and `getGlyph()` report new source rectangles for those glyphs; the glyph shapes are unchanged.
 - Behavior change: `SpriteSheet.size` is now a frozen copy. `new SpriteSheet(null, v)` no longer keeps your vector, so
   changing `v` afterward no longer changes the sheet's width and height, and writing to `sheet.size.x` or `.y` throws in
   strict mode. Read the size, and build a new sheet if you need different dimensions.
