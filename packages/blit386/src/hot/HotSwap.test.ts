@@ -566,6 +566,97 @@ describe('hotSwapDemo', () => {
         expect(BTAPI.instance.getDemo()).toBe(oldDemo);
     });
 
+    it('runs overlapping Tier 2 swaps one at a time so the newest class wins (BT-695)', async () => {
+        class OldClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+        }
+
+        await BTAPI.instance.init(new OldClass(), makeMockCanvas());
+
+        let resolveFirstInit: (value: boolean) => void = () => {};
+        const firstInit = new Promise<boolean>((resolve) => {
+            resolveFirstInit = resolve;
+        });
+
+        class FirstClass {
+            async init() {
+                return firstInit;
+            }
+            update() {}
+            render() {}
+        }
+
+        class SecondClass {
+            async init() {
+                // Body differs from FirstClass.init() so the second swap is also Tier 2.
+                return Promise.resolve(true);
+            }
+            update() {}
+            render() {}
+        }
+
+        const first = hotSwapDemo(FirstClass as unknown as DemoConstructor);
+        const second = hotSwapDemo(SecondClass as unknown as DemoConstructor);
+
+        // Let the second swap run as far as it can while the first init() is still pending.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        resolveFirstInit(true);
+
+        expect(await Promise.all([first, second])).toEqual([true, true]);
+        expect(BTAPI.instance.getDemo()).toBeInstanceOf(SecondClass);
+    });
+
+    it('keeps later swaps running after an earlier swap fails or throws (BT-695)', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        class OldClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+        }
+
+        await BTAPI.instance.init(new OldClass(), makeMockCanvas());
+
+        class FailsInit {
+            async init() {
+                return Promise.resolve(false);
+            }
+            update() {}
+            render() {}
+        }
+
+        class ThrowsInit {
+            async init(): Promise<boolean> {
+                throw new Error('init exploded');
+            }
+            update() {}
+            render() {}
+        }
+
+        class GoodClass {
+            async init() {
+                return Promise.resolve(true);
+            }
+            update() {}
+            render() {}
+        }
+
+        const failed = hotSwapDemo(FailsInit as unknown as DemoConstructor);
+        const thrown = hotSwapDemo(ThrowsInit as unknown as DemoConstructor);
+        const good = hotSwapDemo(GoodClass as unknown as DemoConstructor);
+
+        expect(await failed).toBe(false);
+        await thrown.catch(() => {});
+        expect(await good).toBe(true);
+        expect(BTAPI.instance.getDemo()).toBeInstanceOf(GoodClass);
+    });
+
     it('swaps the prototype in place and preserves fields when only methods changed (Tier 1)', async () => {
         class Original {
             score = 7;

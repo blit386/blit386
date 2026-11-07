@@ -297,15 +297,15 @@ function applyMethodSwap(oldDemo: IBTDemo, NewClass: DemoConstructor, startedAt:
 }
 
 /**
- * Hot-swaps the running demo in place with a newly evaluated demo class, using the
- * cheapest tier that is safe for what changed.
+ * Runs one swap attempt with the cheapest tier that is safe for what changed; {@link hotSwapDemo}
+ * queues calls to it so two attempts never overlap.
  *
  * @param NewClass - Newly evaluated demo class from the re-run entry module.
  * @returns `true` when a swap tier ran (including a requested hard reload); `false` only
  *   when construction or the Tier 2 re-init failed and the previous demo instance is
  *   still running unmodified.
  */
-export async function hotSwapDemo(NewClass: DemoConstructor): Promise<boolean> {
+async function swapDemo(NewClass: DemoConstructor): Promise<boolean> {
     const startedAt = performance.now();
 
     const oldDemo = BTAPI.instance.getDemo();
@@ -339,4 +339,28 @@ export async function hotSwapDemo(NewClass: DemoConstructor): Promise<boolean> {
     applyMethodSwap(oldDemo, NewClass, startedAt);
 
     return true;
+}
+
+/** Tail of the swap chain; settles (never rejects) once the latest queued swap is done. */
+let swapQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Hot-swaps the running demo with a newly evaluated demo class, one swap at a time.
+ *
+ * A Tier 2 swap awaits the new `init()`, so a second save can arrive while the first is
+ * still pending. Each swap therefore starts only after the previous one settles and
+ * compares against whatever that swap installed, so the newest class always ends up running.
+ * A swap that returns `false` or rejects does not stop later swaps, but a swap whose `init()`
+ * never settles does: later saves wait behind it until the page is reloaded.
+ *
+ * @param NewClass - Newly evaluated demo class from the re-run entry module.
+ * @returns `true` when a swap tier ran (including a requested hard reload); `false` when
+ *   construction or the Tier 2 re-init failed and the previous instance is still running.
+ */
+export function hotSwapDemo(NewClass: DemoConstructor): Promise<boolean> {
+    const run = swapQueue.then(() => swapDemo(NewClass));
+
+    swapQueue = run.catch(() => {});
+
+    return run;
 }

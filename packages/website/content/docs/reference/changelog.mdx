@@ -58,6 +58,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
+  `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
+  start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
+  each starts after the previous one settles and builds on whatever it installed, and a failed swap does not block the
+  next one. See [Hot reload](/docs/guides/hot-reload).
 - A `NaN` or infinite `BT.soundPlay` option no longer breaks the voice pool. A bad `volume`, `fadeInMs`, or `atTime` (or
   a negative `atTime`) used to throw after the voice slot was taken, leaving a voice that never started and never ended;
   the next time that slot was reused, `BT.init` restarted, or a clip was unloaded, `stop()` on it threw. `BT.soundPlay`

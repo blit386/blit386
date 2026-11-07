@@ -94,6 +94,11 @@ built by code that no longer exists. Instead, a fresh instance is constructed an
 instance keeps driving the loop. Only once that succeeds does the engine swap the new instance in; a failed `init()`
 (returns `false`, or throws) leaves the previous instance running untouched, so a broken save never crashes your game.
 
+Swaps run one at a time. If you save again while a slow `init()` is still running, the second swap waits for the first
+to finish and then builds on the instance it installed, so the newest save is always the one left running. The flip
+side: an `init()` that never finishes (an asset load that never completes, say) holds up every later save until you
+reload the page.
+
 Just before the new instance's `init()` runs, the previous instance's own enumerable fields are captured into a
 `snapshot` and handed to the new instance's `onHotReload`, so you can restore whatever state matters to you:
 
