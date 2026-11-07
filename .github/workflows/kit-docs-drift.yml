@@ -6,10 +6,13 @@ name: Kit Docs Drift
 # scripts/report-kit-docs-drift.mjs for why. Files/updates a tracking issue in Linear
 # (team BT) instead of failing a status check.
 #
-# Requires the LINEAR_API_KEY repo secret (a Linear Personal API key with issue read/write
-# access on the workspace containing team BT) - add it under Settings > Secrets and
-# variables > Actions. Not set up by this workflow; until it exists, the report script
-# detects the missing key and skips the Linear call cleanly (exit 0).
+# Requires LINEAR_API_KEY (a Linear Personal API key with issue read/write access on the
+# workspace containing team BT), held as a secret of the `kit-docs-drift` Environment, whose
+# deployment-branch rule allows `main` only. Not a repo or org secret: those are readable
+# from any branch. Not set up by this workflow; until the Environment and secret exist, the
+# report script detects the missing key and skips the Linear call cleanly (exit 0). Set the
+# main-only rule BEFORE adding the secret: GitHub auto-creates an unknown Environment on the
+# first run that names it, with no branch rule.
 
 on:
   push:
@@ -32,6 +35,8 @@ jobs:
   report-drift:
     name: Report kit docs drift
     runs-on: ubuntu-latest
+    # Gate for LINEAR_API_KEY, see the CWE-200 note on the last step.
+    environment: kit-docs-drift
     permissions:
       contents: read
 
@@ -49,13 +54,13 @@ jobs:
       # No pnpm install: check-kit-docs-drift.mjs, lib/linear-client.mjs, and
       # report-kit-docs-drift.mjs use only Node builtins (fs, fetch).
       #
-      # LINEAR_API_KEY is withheld unless this run is on main. push/schedule are already
-      # main-only (see the `on:` triggers above), but workflow_dispatch has no ref
-      # restriction - anyone who can dispatch this workflow could otherwise pick a branch
-      # with a modified report-kit-docs-drift.mjs and exfiltrate the secret (CWE-200). A
-      # non-main run still executes with an empty key, which report-kit-docs-drift.mjs
-      # already treats as "key not set" and skips the Linear call cleanly (exit 0).
+      # LINEAR_API_KEY comes from the `kit-docs-drift` Environment, whose deployment-branch
+      # rule allows `main` only (CWE-200). push/schedule are already main-only (see the `on:`
+      # triggers above), but workflow_dispatch has no ref restriction and runs the dispatched
+      # branch's own copy of this file, so a check written in the YAML could be edited away
+      # by a branch. The Environment rule is enforced by GitHub, outside the file: a run on
+      # any other ref is refused before the job starts and never receives the secret.
       - name: Check and report kit docs drift
         run: node scripts/report-kit-docs-drift.mjs
         env:
-          LINEAR_API_KEY: ${{ github.ref == 'refs/heads/main' && secrets.LINEAR_API_KEY || '' }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
