@@ -276,7 +276,8 @@ function parseGlyphs(xmlData) {
             process.exit(1);
         }
 
-        const charCode = parseInt(idAttr, 10);
+        // parseInt alone would read "65abc" as 65, so require the whole value to be an integer.
+        const charCode = /^-?\d+$/.test(idAttr) ? parseInt(idAttr, 10) : Number.NaN;
 
         if (Number.isNaN(charCode)) {
             console.error(`Error: The glyph has a non-numeric id: ${idAttr}`);
@@ -284,7 +285,14 @@ function parseGlyphs(xmlData) {
             process.exit(1);
         }
 
-        const char = String.fromCharCode(charCode);
+        // fromCodePoint throws a RangeError outside the Unicode range, so reject it up front.
+        if (charCode < 0 || charCode > 0x10ffff) {
+            console.error(`Error: The glyph has an id outside the Unicode range 0-0x10FFFF: ${idAttr}`);
+
+            process.exit(1);
+        }
+
+        const char = String.fromCodePoint(charCode);
 
         parseGlyphData(glyphs, char, tag, charCode);
 
