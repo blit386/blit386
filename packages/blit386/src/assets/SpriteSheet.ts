@@ -1060,7 +1060,9 @@ export class SpriteSheet {
      * Releases the GPU texture from memory and clears all retained pixel data.
      *
      * Clears CPU-side `rgbaPixels` and `indexedPixels`, so a destroyed sheet has
-     * no GPU texture until it is indexized again with {@link indexize}.
+     * no GPU texture. An image-backed sheet can get one again by calling
+     * {@link indexize}; a sheet made with {@link SpriteSheet.fromIndexedPixels}
+     * has no source image and must be recreated from its indexed data.
      */
     destroy(): void {
         this.invalidateTexture();

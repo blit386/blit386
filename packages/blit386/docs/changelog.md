@@ -65,6 +65,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A hidden file written into an asset folder no longer reloads the running game. Finder's `.DS_Store` and vim's `.swp`
+  files used to trigger a full page reload through the `blit386/vite` plugin and lose your game state; files whose names
+  start with a dot are now ignored.
 - A `NaN` or infinite `BT.soundPlay` option no longer breaks the voice pool. A bad `volume`, `fadeInMs`, or `atTime` (or
   a negative `atTime`) used to throw after the voice slot was taken, leaving a voice that never started and never ended;
   the next time that slot was reused, `BT.init` restarted, or a clip was unloaded, `stop()` on it threw. `BT.soundPlay`

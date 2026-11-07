@@ -84,7 +84,7 @@ The plugin needs blit386 1.4.0 or newer.
 - Changing `configure()` hardware settings (see above).
 - Rebuilding or upgrading the `blit386` package itself.
 - Editing a file under `public/` that the plugin does not recognize as an image, audio, or `.btfont` (by default that
-  reloads the page).
+  reloads the page). Hidden files (names starting with a dot, like `.DS_Store`) are ignored.
 
 ## Telling a dev build from a release build
 

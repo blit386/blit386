@@ -449,12 +449,7 @@ export class BTAPI {
      * @returns Supported backend override, or null when absent/invalid.
      */
     public static getBackendQueryOverride(): Backend | null {
-        const search =
-            typeof globalThis.location?.search === 'string'
-                ? globalThis.location.search
-                : typeof window === 'undefined'
-                  ? ''
-                  : window.location?.search;
+        const search = typeof globalThis.location?.search === 'string' ? globalThis.location.search : '';
 
         if (!search) {
             return null;
