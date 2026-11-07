@@ -926,7 +926,7 @@
       "changes": [
         {
           "version": "1.8.1",
-          "note": "Validates `fadeMs` and `volume` before remembering or changing music."
+          "note": "Validates `fadeMs`, `volume`, and the loop region before remembering or changing music."
         }
       ],
       "deprecated": null,

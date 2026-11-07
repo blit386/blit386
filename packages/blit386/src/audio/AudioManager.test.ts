@@ -11,7 +11,7 @@
  * provide no Web Audio APIs.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import {
     createMockAudioBuffer,
@@ -834,6 +834,18 @@ describe('AudioManager', () => {
             expect(audio.hasRememberedMusicRequest()).toBe(false);
         });
 
+        it('remembers a valid loop region and rejects one past the clip duration while locked', () => {
+            audio.attach(canvas, 16);
+
+            // 10 seconds long, so the loop points below are checked against a real duration.
+            const buffer = createMockAudioBuffer(1, 441000, 44100);
+
+            audio.musicPlay(buffer, { loopStart: 2, loopEnd: 10 });
+
+            expect(audio.hasRememberedMusicRequest()).toBe(true);
+            expect(() => audio.musicPlay(buffer, { loopStart: 2, loopEnd: 11 })).toThrow();
+        });
+
         it('drops nothing but remembers the request when locked: musicPlay before unlock', () => {
             audio.attach(canvas, 16);
 
@@ -985,6 +997,8 @@ describe('AudioManager', () => {
                 throw new Error('play failed');
             });
 
+            onTestFinished(() => playSpy.mockRestore());
+
             audio.musicPlay(createMockAudioBuffer());
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
@@ -1005,7 +1019,6 @@ describe('AudioManager', () => {
             );
 
             consoleErrorSpy.mockRestore();
-            playSpy.mockRestore();
         });
 
         it('does not replay a stale remembered request on a later unlock attempt', async () => {
