@@ -13,7 +13,7 @@ import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
-import { MusicPlayer, type MusicPlayOptions, validateFinite } from './MusicPlayer';
+import { MusicPlayer, type MusicPlayOptions, validateFinite, validateLoopRegion } from './MusicPlayer';
 import {
     DEFAULT_PAN,
     DEFAULT_PITCH,
@@ -551,12 +551,18 @@ export class AudioManager {
      *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link MusicPlayOptions}.
+     * @throws Error if `fadeMs`/`volume` is not finite, or the loop region is invalid - locked or not.
      */
     public musicPlay(buffer: AudioBuffer, options?: MusicPlayOptions): void {
         // Checked here too so a bad value throws now, not at unlock where it would only be logged.
         validateFinite(options?.fadeMs, options?.volume, 'BT.musicPlay');
 
         if (!this.unlocked) {
+            // Same loop-region check MusicPlayer.play runs, so the locked path throws like the unlocked one.
+            if (options !== undefined) {
+                validateLoopRegion(options, buffer.duration);
+            }
+
             this.pendingMusicRequest = { buffer, options };
             this.rememberMusicRequest();
 
@@ -788,8 +794,8 @@ export class AudioManager {
      * Starts the music request remembered from before unlock (see {@link musicPlay}), if any.
      *
      * Clears {@link isMusicRequestRemembered} and {@link pendingMusicRequest} before calling
-     * {@link MusicPlayer.play} (rather than after), so a `play()` failure - for example invalid
-     * `loopStart`/`loopEnd` - can never leave a stale request dangling forever. `unlock()` never
+     * {@link MusicPlayer.play} (rather than after), so a `play()` failure (an invalid loop region
+     * is already rejected in {@link musicPlay}) can never leave a stale request dangling forever. `unlock()` never
      * calls {@link resumeAndUnlock} again once {@link unlocked} is `true`, so a request left
      * uncleared here would never get another chance to be replayed or discarded. A `play()`
      * failure is logged separately from a `context.resume()` failure so the two are never

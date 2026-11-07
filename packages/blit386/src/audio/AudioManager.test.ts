@@ -26,6 +26,7 @@ import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
 import { notifyMusicHotReplace } from './audioDecodeContext';
 import { AudioManager, UNLOCK_GESTURE_EVENTS } from './AudioManager';
+import { MusicPlayer } from './MusicPlayer';
 import { INVALID_SOUND_REF } from './VoicePool';
 
 /**
@@ -826,6 +827,13 @@ describe('AudioManager', () => {
     });
 
     describe('music playback', () => {
+        it('throws on an invalid loop region while locked and stores nothing: musicPlay before unlock', () => {
+            audio.attach(canvas, 16);
+
+            expect(() => audio.musicPlay(createMockAudioBuffer(), { loopStart: 1 })).toThrow();
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
         it('drops nothing but remembers the request when locked: musicPlay before unlock', () => {
             audio.attach(canvas, 16);
 
@@ -970,9 +978,14 @@ describe('AudioManager', () => {
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-            // Invalid loopStart/loopEnd pair - MusicPlayer.play() validates and throws
-            // synchronously, which must not be mistaken for a context.resume() failure.
-            audio.musicPlay(createMockAudioBuffer(), { loopStart: 5, loopEnd: 1 });
+            // MusicPlayer.play() throwing synchronously must not be mistaken for a
+            // context.resume() failure. musicPlay() rejects an invalid loop region up front, so
+            // force the failure at the player instead.
+            const playSpy = vi.spyOn(MusicPlayer.prototype, 'play').mockImplementation(() => {
+                throw new Error('play failed');
+            });
+
+            audio.musicPlay(createMockAudioBuffer());
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -992,6 +1005,7 @@ describe('AudioManager', () => {
             );
 
             consoleErrorSpy.mockRestore();
+            playSpy.mockRestore();
         });
 
         it('does not replay a stale remembered request on a later unlock attempt', async () => {

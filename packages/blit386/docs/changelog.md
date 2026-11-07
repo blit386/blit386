@@ -65,6 +65,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.musicPlay` before the first click now throws on an invalid loop region, like it does after. A `loopStart` without
+  a `loopEnd`, or a pair outside the clip, set in `init()` used to be stored and then only logged when audio unlocked,
+  so no music played and nothing threw. See [Audio](api-audio.md).
 - An image hot replace no longer strands the other sprite sheets when one fails. When several sheets were loaded from
   the same image and the new image broke one of them (for example a color that is not in the active palette), the sheets
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet
