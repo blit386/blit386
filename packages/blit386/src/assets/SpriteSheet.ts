@@ -143,6 +143,16 @@ export function getIndexedSheets(): SpriteSheet[] {
 }
 
 /**
+ * Tells whether a channel is a whole number in 0-255, so it packs into a lookup key without collisions.
+ *
+ * @param value - Channel value to check.
+ * @returns `true` for an integer from 0 to 255.
+ */
+function isByte(value: number): boolean {
+    return Number.isInteger(value) && value >= 0 && value <= 255;
+}
+
+/**
  * Maps retained RGBA bytes to palette indices for one sprite sheet.
  *
  * @param w - Image width in pixels.
@@ -162,6 +172,21 @@ function mapRgbaPixelsToIndexed(
     const indexed = new Uint8Array(w * h);
     const pixelCount = w * h;
 
+    // Packed RGB -> slot. Filled from the top slot down so the lowest matching slot wins, like
+    // Palette.findColor. Only alpha 255 entries: pixel colors always have alpha 255, so findColor
+    // never matched a semi-transparent entry either.
+    const slotByRgb = new Map<number, number>();
+
+    for (let slot = palette.size - 1; slot >= 0; slot--) {
+        const entry = palette.getRef(slot);
+
+        // Whole-byte channels only: a palette effect can write a fraction or an out-of-range value through
+        // getRef, which the packing would turn into a false match; findColor's strict equality never matched one.
+        if (entry.a === 255 && isByte(entry.r) && isByte(entry.g) && isByte(entry.b)) {
+            slotByRgb.set((entry.r << 16) | (entry.g << 8) | entry.b, slot);
+        }
+    }
+
     for (let i = 0; i < pixelCount; i++) {
         const base = i * RGBA_BYTES_PER_PIXEL;
         const a = rgba[base + 3];
@@ -177,8 +202,7 @@ function mapRgbaPixelsToIndexed(
         const r = rgba[base] ?? 0;
         const g = rgba[base + 1] ?? 0;
         const b = rgba[base + 2] ?? 0;
-        const color = new Color32(r, g, b, 255);
-        const index = palette.findColor(color);
+        const index = slotByRgb.get((r << 16) | (g << 8) | b) ?? -1;
 
         if (index === -1) {
             const hex =
