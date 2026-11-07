@@ -28,10 +28,10 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bm
  * Builds the extension-specific hint for a failing image URL.
  *
  * @param extension - Lowercase extension including the dot (or empty string).
- * @returns Hint text, or null when the extension warrants no hint.
+ * @returns Hint text, or an empty string when the extension warrants no hint.
  */
-function buildExtensionHint(extension: string): string | null {
-    let hint: string | null = null;
+function buildExtensionHint(extension: string): string {
+    let hint = '';
 
     if (extension === '.btfont') {
         hint = "This looks like a font file. For images, use a file that ends with '.png'.";
@@ -50,7 +50,7 @@ function buildExtensionHint(extension: string): string | null {
  */
 function buildImageHints(url: string): string {
     const hints = [buildPathHint(url, 'images'), buildExtensionHint(extractExtension(url))].filter(
-        (hint): hint is string => hint !== null && hint !== '',
+        (hint) => hint !== '',
     );
 
     return hints.length > 0 ? ` ${hints.join(' ')}` : '';
