@@ -294,6 +294,31 @@ jobs:
         run: pnpm --filter blit386 run api:deprecations:check
         background: true
 
+      - name: Check bt-api-getters.md against public API
+        run: pnpm --filter blit386 run api:getters:check
+        background: true
+
+      # These are node --test suites under scripts/, which vitest (src/** only) never picks up.
+      - name: Run declaration tooling tests
+        run: pnpm --filter blit386 run test:declarations
+        background: true
+
+      - name: Run API getters drift guard tests
+        run: pnpm --filter blit386 run test:api-getters
+        background: true
+
+      - name: Run API deprecations generator tests
+        run: pnpm --filter blit386 run test:api-deprecations
+        background: true
+
+      - name: Run benchmark comparison tests
+        run: pnpm --filter blit386 run test:bench-compare
+        background: true
+
+      - name: Run benchmark coverage check tests
+        run: pnpm --filter blit386 run test:check-bench-coverage
+        background: true
+
       - wait-all:
 
   visual-parity:
