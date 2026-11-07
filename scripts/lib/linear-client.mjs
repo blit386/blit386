@@ -51,6 +51,7 @@ const FIND_TRACKING_ISSUE_QUERY = `
                 id
                 identifier
                 title
+                description
                 comments(first: 50) {
                     nodes {
                         body
@@ -66,13 +67,13 @@ const FIND_TRACKING_ISSUE_QUERY = `
  * @param {string} apiKey
  * @param {{ teamId: string, titlePrefix: string }} params
  * @param {typeof fetch} [fetchImpl]
- * @returns {Promise<{ id: string, identifier: string, title: string, comments?: { nodes: { body: string, createdAt: string }[] } } | null>}
+ * @returns {Promise<{ id: string, identifier: string, title: string, description?: string | null, comments?: { nodes: { body: string, createdAt: string }[] } } | null>}
  *   The first open issue whose title starts with `titlePrefix` in the given team, or `null` if none exists.
  */
 export async function findTrackingIssue(apiKey, { teamId, titlePrefix }, fetchImpl = fetch) {
     const data = await linearRequest(apiKey, FIND_TRACKING_ISSUE_QUERY, { teamId, titlePrefix }, fetchImpl);
     const nodes =
-        /** @type {{ issues: { nodes: { id: string, identifier: string, title: string, comments?: { nodes: { body: string, createdAt: string }[] } }[] } }} */ (
+        /** @type {{ issues: { nodes: { id: string, identifier: string, title: string, description?: string | null, comments?: { nodes: { body: string, createdAt: string }[] } }[] } }} */ (
             data
         ).issues.nodes;
 

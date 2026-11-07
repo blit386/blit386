@@ -67,7 +67,10 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
         // Trimmed: Linear may add or strip trailing whitespace on a stored comment.
         const latest = existing.comments?.nodes.reduce((a, b) => (!a || b.createdAt > a.createdAt ? b : a), undefined);
 
-        if (latest?.body.trim() === body.trim()) {
+        // A fresh issue holds the report in its description and has no comments yet.
+        const previous = latest?.body ?? existing.description;
+
+        if (previous?.trim() === body.trim()) {
             log(`Tracking issue ${existing.identifier} already has this drift report; not commenting again.`);
             return;
         }

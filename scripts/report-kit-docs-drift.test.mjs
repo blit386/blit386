@@ -163,7 +163,13 @@ describe('reportDrift', () => {
 
     it('comments when the tracking issue has no comments yet', async () => {
         const { fetchImpl, calls } = makeLinearFetch({
-            existingIssue: { id: 'iss-1', identifier: 'BT-500', title: 'docs(kit): ...', comments: { nodes: [] } },
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): ...',
+                description: 'an older report',
+                comments: { nodes: [] },
+            },
         });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = fetchImpl;
@@ -177,5 +183,26 @@ describe('reportDrift', () => {
             calls.some((call) => call.query.includes('AddComment')),
             'expected an AddComment mutation',
         );
+    });
+
+    it('does not comment when the description already holds the report and there are no comments', async () => {
+        const { fetchImpl, calls } = makeLinearFetch({
+            existingIssue: {
+                id: 'iss-1',
+                identifier: 'BT-500',
+                title: 'docs(kit): ...',
+                description: `${formatDriftBody(REPORT)}\n`,
+                comments: { nodes: [] },
+            },
+        });
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = fetchImpl;
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(!calls.some((call) => call.query.includes('AddComment')));
     });
 });
