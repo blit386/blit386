@@ -2677,10 +2677,13 @@ export const BT = {
      * instance starts from the constructor, exactly like the boot run, so no field carries over from
      * the run being replaced; an object-literal game has no class, so its `init()` re-runs on the
      * same object. The class is built with no constructor arguments, so a game that needs them must
-     * reset its fields in `init()` instead. If the constructor or `init()` fails, the call rejects
-     * and the previous instance stays active, but the engine state the seek already reset (random
-     * stream, palette, camera, ticks) is not restored: seek again or reload the page. The splash is
-     * not replayed; as in the live run, palette effects that `init()` started behind it are dropped.
+     * reset its fields in `init()` instead. If the constructor throws, nothing was reset. If `init()`
+     * fails, the call rejects, the previous instance stays active, and the ticks, the `BT.random`
+     * stream position, the camera offset and the post-process clock are put back, so `BT.resume()` continues the
+     * old game where it was. Palette effects and post-process effects the seek cleared stay lost,
+     * as do pending input edges; an object-literal game keeps any field the failed `init()` wrote, because
+     * it has no fresh instance. The splash is not replayed; as in the live run, palette effects that
+     * `init()` started behind it are dropped.
      * Palette slot colors are not restored, so build the palette inside `init()`. `from: 'current'` steps
      * forward from the tick the game is on and rejects a target in the past. Either way the loop
      * stays stopped afterwards: `BT.captureFrame()` captures the seeked frame, and `BT.resume()`
@@ -2695,6 +2698,7 @@ export const BT = {
      * the frame at 5 seconds.
      *
      * @since 1.8.0
+     * @changed 1.9.0 A failed `init()` on a `from: 'start'` seek restores ticks, the random stream and the camera.
      * @param seconds - Target time in seconds; rounded to the nearest tick.
      * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`. Must be an object - a
      *   bare `'current'` rejects.

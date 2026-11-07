@@ -254,6 +254,15 @@ export class GameLoop {
     }
 
     /**
+     * Sets the tick counter, for restoring a clock {@link resetTicks} zeroed.
+     *
+     * @param ticks - Tick count to continue from.
+     */
+    public setTicks(ticks: number): void {
+        this.ticks = ticks;
+    }
+
+    /**
      * Gets the fractional progress between the last completed fixed update and the next.
      *
      * @returns Interpolation alpha in `[0, 1)`, computed from the leftover accumulator after

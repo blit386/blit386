@@ -1243,6 +1243,130 @@ describe('BTAPI', () => {
             await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
         });
 
+        describe("a failed 'start' seek (BT-727)", () => {
+            /** Parks a booted game at tick 600 with a moved camera and a drawn-from random stream. */
+            async function parkAtTick600(): Promise<IBTDemo> {
+                const demo = makeMockDemo();
+
+                await boot(demo);
+                await BTAPI.instance.renderAt(10);
+                BTAPI.instance.setCameraOffset(new Vector2i(7, 9));
+                BTAPI.instance.getRandom().next();
+                BTAPI.instance.getRandom().next();
+
+                return demo;
+            }
+
+            it('puts the clock, the random stream and the camera back when init() resolves false', async () => {
+                const demo = await parkAtTick600();
+                const random = BTAPI.instance.getRandom();
+                const ticksBefore = BTAPI.instance.getTicks();
+                const stateBefore = random.getState();
+
+                expect(ticksBefore).toBe(600);
+                vi.mocked(demo.init).mockResolvedValueOnce(false);
+
+                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+
+                expect(BTAPI.instance.getTicks()).toBe(ticksBefore);
+                expect(random.getState()).toBe(stateBefore);
+                expect(BTAPI.instance.getCameraOffset().x).toBe(7);
+                expect(BTAPI.instance.getCameraOffset().y).toBe(9);
+            });
+
+            it('keeps BT.random.seedValue when nothing drew since the seed', async () => {
+                const demo = await parkAtTick600();
+                const random = BTAPI.instance.getRandom();
+
+                random.seed(123);
+                vi.mocked(demo.init).mockResolvedValueOnce(false);
+
+                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+
+                expect(random.seedValue).toBe(123);
+                expect(random.getState()).toBe(123);
+            });
+
+            it('puts back a camera reset that was still pending, and the post-process clock', async () => {
+                const demo = await parkAtTick600();
+                const internals = BTAPI.instance as unknown as {
+                    lastCameraOffset: Vector2i;
+                    lastRenderClockMs: number;
+                    pendingCameraReset: boolean;
+                };
+
+                // A game that called resetCamera() in render(): the renderer is at 0, the deferred
+                // reset is pending, and the engine still holds the world offset it re-applies.
+                BTAPI.instance.resetCamera();
+                internals.lastCameraOffset = new Vector2i(7, 9);
+                internals.lastRenderClockMs = 12345;
+                vi.mocked(demo.init).mockResolvedValueOnce(false);
+
+                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+
+                expect(internals.pendingCameraReset).toBe(true);
+                expect(internals.lastCameraOffset.x).toBe(7);
+                expect(internals.lastCameraOffset.y).toBe(9);
+                expect(internals.lastRenderClockMs).toBe(12345);
+            });
+
+            it('puts them back when init() throws', async () => {
+                const demo = await parkAtTick600();
+                const stateBefore = BTAPI.instance.getRandom().getState();
+
+                vi.mocked(demo.init).mockRejectedValueOnce(new Error('asset fetch failed'));
+                vi.spyOn(console, 'error').mockImplementation(() => {});
+
+                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+
+                expect(BTAPI.instance.getTicks()).toBe(600);
+                expect(BTAPI.instance.getRandom().getState()).toBe(stateBefore);
+                expect(BTAPI.instance.getCameraOffset().x).toBe(7);
+            });
+
+            it('changes nothing when the constructor throws', async () => {
+                class ThrowsOnThirdBuild {
+                    public static built = 0;
+
+                    public constructor() {
+                        ThrowsOnThirdBuild.built++;
+
+                        // Build 1 boots, build 2 is the setup seek's replay, build 3 is the seek under test.
+                        if (ThrowsOnThirdBuild.built > 2) {
+                            throw new Error('constructor failed');
+                        }
+                    }
+
+                    public configure(): HardwareSettings {
+                        return { isSplashEnabled: false, displaySize: new Vector2i(320, 240), targetFPS: 60 };
+                    }
+
+                    public async init(): Promise<boolean> {
+                        return true;
+                    }
+
+                    public update(): void {}
+
+                    public render(): void {}
+                }
+
+                await boot(new ThrowsOnThirdBuild());
+                await BTAPI.instance.renderAt(10);
+                BTAPI.instance.setCameraOffset(new Vector2i(7, 9));
+                BTAPI.instance.getRandom().next();
+
+                const stateBefore = BTAPI.instance.getRandom().getState();
+
+                vi.spyOn(console, 'error').mockImplementation(() => {});
+
+                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('constructor');
+
+                expect(BTAPI.instance.getTicks()).toBe(600);
+                expect(BTAPI.instance.getRandom().getState()).toBe(stateBefore);
+                expect(BTAPI.instance.getCameraOffset().x).toBe(7);
+            });
+        });
+
         it("from 'start' works on the software backend, which has no post-process chain", async () => {
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
