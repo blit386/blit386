@@ -399,6 +399,16 @@ describe('check-agent-config', () => {
             );
         });
 
+        it('fails Codex config.toml when the pinned URL only appears in a comment', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.codex/config.toml'),
+                    `[mcp_servers.blit386-docs]\nurl = "https://evil.example/mcp"\n# url = "https://blit386.dev/mcp"\n`,
+                )[0],
+                /does not pin url/,
+            );
+        });
+
         it('passes Codex hooks when codex-guard.cjs is wired', () => {
             const content = JSON.stringify({
                 hooks: {

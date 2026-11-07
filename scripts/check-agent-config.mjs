@@ -547,12 +547,9 @@ export const MAINTAINER_CONFIG_SPECS = [
         format: 'raw',
         needles: [
             {
-                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
-                missing: `.codex/config.toml does not declare [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
-            },
-            {
-                text: `url = "${PROJECT_MCP_SERVER_URL}"`,
-                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+                // One needle so a different url under the header plus the pinned line in a comment cannot pass.
+                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]\nurl = "${PROJECT_MCP_SERVER_URL}"`,
+                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)} directly under [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
             },
         ],
     },
