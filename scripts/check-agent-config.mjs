@@ -624,7 +624,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
         }
 
         if (spec.mcp) {
-            const container = parsed[spec.mcp.container];
+            const container = parsed?.[spec.mcp.container];
 
             if (container === null || typeof container !== 'object') {
                 failures.push(`${spec.path} has no ${spec.mcp.container} object`);
@@ -663,7 +663,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
         }
 
         if (spec.bashDeny !== undefined) {
-            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed.permission?.bash);
+            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed?.permission?.bash);
 
             if (bash?.[spec.bashDeny] !== 'deny') {
                 failures.push(`${spec.path} permission.bash does not deny \`${spec.bashDeny}\``);

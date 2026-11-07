@@ -469,6 +469,19 @@ describe('check-agent-config', () => {
             assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('opencode.json'), content), []);
         });
 
+        it('reports a JSON null MCP config as a failure instead of throwing', () => {
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.agents/mcp_config.json'), 'null'), [
+                '.agents/mcp_config.json has no mcpServers object',
+            ]);
+        });
+
+        it('reports a JSON null OpenCode config as a failure instead of throwing', () => {
+            const failures = findMaintainerConfigFailures(maintainerSpec('opencode.json'), 'null');
+
+            assert.ok(failures.length > 0);
+            assert.ok(failures.every((message) => typeof message === 'string'));
+        });
+
         it('fails OpenCode when type is not remote', () => {
             const content = JSON.stringify({
                 permission: { bash: { 'git reset --hard*': 'deny' } },
