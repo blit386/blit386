@@ -477,7 +477,7 @@ export function bumpLockstep(options) {
             .join('\n');
 
         throw new Error(
-            `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left at the bumped version:\n${rollbackMessage}`,
+            `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left in an unknown state (bumped, partly written, or unchanged):\n${rollbackMessage}`,
         );
     }
 
