@@ -33,7 +33,7 @@ for (const code of HELD_KEYS) {
 }
 
 // Roll the press edges into the previous-tick snapshot so the queries measure the steady held state.
-input.endUpdate(0);
+input.endUpdate();
 
 describe('KeyboardInput any-key queries', () => {
     bench(

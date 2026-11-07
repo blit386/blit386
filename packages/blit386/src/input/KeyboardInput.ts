@@ -150,10 +150,8 @@ export class KeyboardInput {
     /**
      * Ends a fixed update step: snapshots `prevHeld`, clears pending edges and
      * {@link getInputString}. Call once per `demo.update()` (not once per render frame).
-     *
-     * @param _currentTick - Reserved for future use; fixed-update tick when the demo read input.
      */
-    public endUpdate(_currentTick: number): void {
+    public endUpdate(): void {
         this.pendingPress.clear();
         this.pendingRelease.clear();
 
@@ -164,16 +162,6 @@ export class KeyboardInput {
         }
 
         this.inputBuffer = '';
-    }
-
-    /**
-     * Alias for {@link endUpdate}; kept for tests and callers that still use the old name.
-     *
-     * @deprecated Deprecated since 1.0.3 (2026-05-31). Call {@link endUpdate} once per fixed update instead.
-     * @param currentTick - Passed through to {@link endUpdate}.
-     */
-    public endFrame(currentTick: number): void {
-        this.endUpdate(currentTick);
     }
 
     /**
@@ -317,7 +305,7 @@ export class KeyboardInput {
     }
 
     /**
-     * Text accumulated since the last {@link endFrame} from `beforeinput`.
+     * Text accumulated since the last {@link endUpdate} from `beforeinput`.
      * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter.
      *
      * @returns Buffered characters for the current frame.

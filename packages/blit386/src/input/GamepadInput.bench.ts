@@ -67,8 +67,6 @@ const input = new GamepadInput();
 input.attach();
 
 describe('GamepadInput per-frame query mix', () => {
-    let tick = 0;
-
     bench(
         '8x isButtonDown + 4x getAxis + 1x endFrame',
         () => {
@@ -86,8 +84,7 @@ describe('GamepadInput per-frame query mix', () => {
             input.getAxis(BT.AXIS_RIGHT_X, 0);
             input.getAxis(BT.AXIS_TRIGGER_L, 0);
 
-            tick++;
-            input.endFrame(tick);
+            input.endFrame();
         },
         BENCH_OPTIONS,
     );
@@ -104,13 +101,10 @@ describe('GamepadInput.isConnected', () => {
 });
 
 describe('GamepadInput.endFrame', () => {
-    let tick = 0;
-
     bench(
         'endFrame',
         () => {
-            tick++;
-            input.endFrame(tick);
+            input.endFrame();
         },
         BENCH_OPTIONS,
     );
@@ -145,7 +139,7 @@ describe('GamepadInput.endUpdate', () => {
         () => {
             tick++;
             input.endUpdate(tick);
-            input.endFrame(tick);
+            input.endFrame();
         },
         BENCH_OPTIONS,
     );
