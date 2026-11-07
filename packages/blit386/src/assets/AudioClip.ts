@@ -63,7 +63,7 @@ export interface AudioClipLoadOptions {
     onProgress?: AudioClipProgressCallback;
 }
 
-/** Maximum time to wait on a `fetch` (including body streaming) before aborting it as a network error. */
+/** Maximum silence on a `fetch` (waiting for headers, or between body chunks) before aborting it as a network error. */
 const DOWNLOAD_TIMEOUT_MS = 15_000;
 
 /** Resolved clips keyed by their winning source URL. */
@@ -365,10 +365,12 @@ export class AudioClip {
      * Downloads `url`, distinguishing a rejected fetch (network/CORS) from an
      * HTTP error status.
      *
-     * Aborts the request after {@link DOWNLOAD_TIMEOUT_MS} so a stalled
-     * connection can never hang {@link AudioClip.load} indefinitely; a timeout
+     * Aborts the request after {@link DOWNLOAD_TIMEOUT_MS} of silence so a stalled
+     * connection can never hang {@link AudioClip.load} indefinitely; the timer
+     * covers the wait for headers and is re-armed on every received body chunk,
+     * so a slow download that keeps making progress is never cut off. A timeout
      * surfaces the same network error as any other rejected fetch. The
-     * timeout is always cleared once the request settles, however it settles.
+     * timer is always cleared once the request settles, however it settles.
      *
      * @param url - Audio URL to download.
      * @param onProgress - Optional progress callback.
@@ -377,7 +379,14 @@ export class AudioClip {
      */
     private static async download(url: string, onProgress?: AudioClipProgressCallback): Promise<ArrayBuffer> {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        const arm = (): void => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+        };
+
+        arm();
 
         try {
             let response: Response;
@@ -392,8 +401,11 @@ export class AudioClip {
                 throw new Error(audioClipHttpError(url, response.status));
             }
 
+            // Restart the idle window so a slow header wait does not eat into the first chunk's wait.
+            arm();
+
             try {
-                return await AudioClip.readResponseBody(response, onProgress);
+                return await AudioClip.readResponseBody(response, arm, onProgress);
             } catch {
                 throw new Error(audioClipNetworkError(url));
             }
@@ -403,22 +415,12 @@ export class AudioClip {
     }
 
     /**
-     * Reads a response body into an `ArrayBuffer`, reporting byte-accurate
-     * download progress when `Content-Length` is present.
-     *
-     * Falls back to `response.arrayBuffer()` with a single indeterminate
-     * progress report when the length is missing, non-numeric, the response
-     * is content-encoded (other than `identity`, so the length is the
-     * compressed size), or the response has no body reader to stream from.
+     * Returns the byte total for progress ratios, or `null` when unknown.
      *
      * @param response - Successful fetch response.
-     * @param onProgress - Optional progress callback.
-     * @returns Downloaded bytes.
+     * @returns The `Content-Length` value, or `null` if missing, non-numeric, or content-encoded.
      */
-    private static async readResponseBody(
-        response: Response,
-        onProgress?: AudioClipProgressCallback,
-    ): Promise<ArrayBuffer> {
+    private static knownTotalBytes(response: Response): number | null {
         const contentLengthHeader = response.headers.get('content-length');
 
         // Content-Length is the compressed size when the body is content-encoded, so the decoded
@@ -427,11 +429,37 @@ export class AudioClip {
 
         const encoding = response.headers.get('content-encoding')?.toLowerCase() ?? null;
         const isEncoded = encoding !== null && encoding !== 'identity';
-        const totalBytes = !isEncoded && Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
+
+        return !isEncoded && Number.isFinite(contentLength) && contentLength > 0 ? contentLength : null;
+    }
+
+    /**
+     * Reads a response body into an `ArrayBuffer`, reporting byte-accurate
+     * download progress when `Content-Length` is present.
+     *
+     * Always streams through the body reader so `onChunk` can re-arm the idle
+     * timeout. When the length is missing, non-numeric, or the response is
+     * content-encoded (other than `identity`, so the length is the compressed
+     * size), it reports a single indeterminate progress snapshot up front.
+     * Falls back to `response.arrayBuffer()` only when there is no body reader.
+     *
+     * @param response - Successful fetch response.
+     * @param onChunk - Called when each chunk arrives (re-arms the idle timeout).
+     * @param onProgress - Optional progress callback.
+     * @returns Downloaded bytes.
+     */
+    private static async readResponseBody(
+        response: Response,
+        onChunk: () => void,
+        onProgress?: AudioClipProgressCallback,
+    ): Promise<ArrayBuffer> {
+        const totalBytes = AudioClip.knownTotalBytes(response);
 
         if (totalBytes === null || response.body === null) {
             onProgress?.({ phase: 'download', ratio: null });
+        }
 
+        if (response.body === null) {
             return response.arrayBuffer();
         }
 
@@ -446,10 +474,13 @@ export class AudioClip {
                 break;
             }
 
+            onChunk();
             chunks.push(value);
             bytesReceived += value.byteLength;
 
-            onProgress?.({ phase: 'download', ratio: bytesReceived / totalBytes });
+            if (totalBytes !== null) {
+                onProgress?.({ phase: 'download', ratio: bytesReceived / totalBytes });
+            }
         }
 
         return AudioClip.concatChunks(chunks, bytesReceived);
