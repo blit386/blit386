@@ -59,7 +59,7 @@ so a push only exercises them once the per-package checks are clean. That gating
 - `system-font:check` - `src/assets/fonts/systemFontData.ts` matches `assets/system-font.png` and the extra-chars list
   (`scripts/convert-system-font.mjs --check`)
 - `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
-  `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`,
+  `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`,
   `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`
 
 ## packages/demos
