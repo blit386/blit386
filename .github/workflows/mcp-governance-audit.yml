@@ -1,6 +1,6 @@
 name: MCP Governance Audit
 
-# BT-38: automated monthly check that the tracked root .mcp.json carries only the
+# BT-38 / BT-659: automated check (on PRs and pushes to main that touch MCP config, plus a monthly backstop) that the tracked root .mcp.json carries only the
 # documented, accepted shadow MCP entry (blit386-docs - see "Accepted MCP entries" in
 # packages/blit386/docs/security/security-runbook.md) and nothing unmanaged or unreviewed.
 #
@@ -9,15 +9,32 @@ name: MCP Governance Audit
 # elsewhere never blocks this check, and it needs no --mcps-dir at all.
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.mcp.json'
+      - '**/.mcp.json'
+      - '**/*.mcp.json'
+      - 'packages/blit386/scripts/security/mcp-preflight.mjs'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.mcp.json'
+      - '**/.mcp.json'
+      - '**/*.mcp.json'
+      - 'packages/blit386/scripts/security/mcp-preflight.mjs'
   schedule:
-    - cron: '0 6 1 * *' # monthly, 1st of the month at 06:00 UTC
+    - cron: '0 6 1 * *' # monthly backstop, 1st of the month at 06:00 UTC
   workflow_dispatch:
 
 concurrency:
-  # One fixed, workflow-wide group: a schedule run and a workflow_dispatch run should
-  # never execute concurrently and race each other's report output.
-  group: mcp-governance-audit
-  cancel-in-progress: true
+  # Pull requests key by PR number (as ci.yml does) so they cancel only their own earlier
+  # runs. Push, schedule and dispatch share one fixed group so they never race each other's
+  # report output, and a PR run can never cancel the monthly run.
+  group:
+    ${{ github.event_name == 'pull_request' && format('mcp-governance-audit-pr-{0}', github.event.pull_request.number)
+    || 'mcp-governance-audit' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   governance-audit:
@@ -37,6 +54,9 @@ jobs:
         with:
           node-version-file: '.node-version'
 
+      # No --include-user-config: it only adds $HOME/.mcp.json style files, and a GitHub-hosted
+      # runner has none, so it would scan nothing.
+      #
       # No pnpm install: mcp-preflight.mjs uses only Node builtins (fs, os, path, node:util).
       # The checkout root here already is the monorepo root, so a single governance-only
       # pass covers the tracked root .mcp.json directly - unlike the documented agent-session
@@ -47,7 +67,6 @@ jobs:
           node packages/blit386/scripts/security/mcp-preflight.mjs \
             --governance-only \
             --repo-root . \
-            --include-user-config \
             --output-json mcp-governance-report.json
 
       - name: Governance audit summary
@@ -56,7 +75,7 @@ jobs:
           {
             echo '## MCP governance audit'
             echo ''
-            echo 'Monthly scan of tracked MCP config files for unmanaged (shadow) servers.'
+            echo 'Scan of tracked MCP config files for unmanaged (shadow) servers.'
             echo ''
             echo 'A failing run means an unaccepted shadow MCP entry was found. Compare against'
             echo '"Accepted MCP entries" in packages/blit386/docs/security/security-runbook.md'

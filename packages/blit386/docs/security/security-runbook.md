@@ -29,7 +29,8 @@ documented fallback instead of a fictional backup owner.
 
 - Before a comprehensive security assessment or hardening pass.
 - Before `/deep-review` when security tooling is in scope.
-- Monthly MCP governance audit (see [Periodic governance](#periodic-governance-monthly)).
+- MCP governance audit, run in CI on every change to MCP config and monthly as a backstop (see
+  [Periodic governance](#periodic-governance)).
 
 ## MCP preflight (required first step)
 
@@ -45,8 +46,8 @@ pnpm run security:mcp-preflight -- \
   --output-json security-reports/mcp-preflight-latest.json
 ```
 
-Governance-only (monthly) - `--mcps-dir` is not required here, since governance-only mode never reads it (it only scans
-static `*.mcp.json` files):
+Governance-only - `--mcps-dir` is not required here, since governance-only mode never reads it (it only scans static
+`*.mcp.json` files):
 
 ```bash
 pnpm run security:mcp-preflight -- \
@@ -56,9 +57,10 @@ pnpm run security:mcp-preflight -- \
   --output-json security-reports/mcp-governance-$(date +%Y-%m).json
 ```
 
-This same command runs automatically every month via
+This same check runs automatically in CI (minus `--include-user-config`, which scans nothing on a runner) on every pull
+request or push to `main` that touches an MCP config file or `mcp-preflight.mjs`, and monthly as a backstop, via
 [`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) - see
-[Periodic governance](#periodic-governance-monthly).
+[Periodic governance](#periodic-governance).
 
 Exit codes:
 
@@ -162,12 +164,12 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
   --allow-fallback
 ```
 
-## Periodic governance (monthly)
+## Periodic governance
 
 [`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) runs this
-automatically every month from the repo root - a failing run (red X in Actions) means an unaccepted shadow MCP entry was
-found; that is the enforced check. The steps below are the same procedure run by hand, useful as an early check or from
-inside an agent session:
+automatically from the repo root on every PR or push to `main` that touches MCP config, and monthly as a backstop - a
+failing run (red X in Actions) means an unaccepted shadow MCP entry was found; that is the enforced check. The steps
+below are the same procedure run by hand, useful as an early check or from inside an agent session:
 
 1. Run governance-only preflight for both packages (use each package directory as `--repo-root`).
 2. Run it once more with the monorepo root as `--repo-root` - `discoverMcpConfigPaths` only walks one level up, so a
