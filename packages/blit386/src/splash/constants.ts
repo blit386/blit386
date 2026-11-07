@@ -5,10 +5,19 @@
  * consumers: these are tuning values, not API.
  */
 
-/** Number of gray steps in the splash ramp. */
+/**
+ * Number of gray steps in the splash ramp.
+ *
+ * Copied into scripts/convert-splash-logo.mjs, which bakes it into the generated
+ * src/splash/logoData.ts. Re-run `pnpm run splash-logo:convert` after changing it.
+ */
 export const RAMP_STEPS = 16;
 
-/** First palette slot the ramp occupies. Slot 0 is reserved transparent. */
+/**
+ * First palette slot the ramp occupies. Slot 0 is reserved transparent.
+ *
+ * Also copied into scripts/convert-splash-logo.mjs; see {@link RAMP_STEPS}.
+ */
 export const RAMP_FIRST_SLOT = 1;
 
 /** Last palette slot the ramp occupies. */

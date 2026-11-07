@@ -67,6 +67,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- The system font's en dash and em dash have their proper widths. The em dash was a copy of the hyphen and the en dash
+  was narrower than both, so text with an em dash (U+2014) drew the same pixels as a hyphen. The en dash is now 5 px
+  wide, like the hyphen, and the em dash fills the whole 6-px cell, so a run of em dashes joins into one line.
 - An image hot replace no longer strands the other sprite sheets when one fails. When several sheets were loaded from
   the same image and the new image broke one of them (for example a color that is not in the active palette), the sheets
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet

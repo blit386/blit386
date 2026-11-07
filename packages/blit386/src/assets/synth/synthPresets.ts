@@ -14,6 +14,7 @@
  * multi-effect pipeline, so splitting further would not add clarity.
  */
 
+import { clampUnit } from '../../utils/Color32';
 import { Random } from '../../utils/Random';
 import type { SynthParams } from './SynthParams';
 
@@ -38,17 +39,6 @@ const MIX_JITTER = 0.1;
  */
 function jitterMultiplier(rng: Random, amount: number): number {
     return 1 + rng.float(-amount, amount);
-}
-
-/**
- * Clamps a value into `[0, 1]`, used after jittering a `noiseMix`/`dutyCycle` field so a preset
- * can never render an out-of-range value that {@link validateSynthParams} would reject.
- *
- * @param value - Value to clamp.
- * @returns `value` clamped to `[0, 1]`.
- */
-function clampUnit(value: number): number {
-    return Math.min(Math.max(value, 0), 1);
 }
 
 /**

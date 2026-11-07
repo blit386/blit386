@@ -77,7 +77,7 @@ history:
   - C64        16 slots   (1982 Commodore 64 - earthy, distinctive)
   - PICO-8     16 slots   (2015 fantasy console - soft, retro feel)
   - NES        64 slots   (1983 Nintendo console - full 64-entry table)
-  - VGA       256 slots   (1987 IBM PC graphics standard - rich range)
+  - VGA       256 slots   (VGA-style, xterm-256 layout - rich range)
 
 Slot 0 of every palette is reserved for transparency, so a preset's colors start at
 slot 1. A preset palette gives you an authentic retro look in one call.
@@ -229,7 +229,7 @@ class Demo {
             Palette.c64(), // 16 Commodore 64 colors, no drawable black
             Palette.pico8(), // 16 soft fantasy console colors, no drawable black
             Palette.nes(), // 64 slots, all defined
-            Palette.vga(), // 256 VGA standard colors
+            Palette.vga(), // 256 VGA-style colors (xterm-256 layout)
         ];
 
         // Build the main palette. It holds the swatch copies plus the shared UI colors.
