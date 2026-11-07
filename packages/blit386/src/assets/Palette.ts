@@ -219,24 +219,13 @@ export class Palette {
         if (Array.isArray(colors) && typeof size === 'number') {
             if (colors.length === size) {
                 const palette = new Palette(size);
-                const nameEntries = names ? Object.entries(names) : [];
-                const colorSlotCount = colors.length - 1;
 
-                for (let step = 0; step < colorSlotCount + nameEntries.length; step++) {
-                    if (step < colorSlotCount) {
-                        const index = step + 1;
+                for (let index = 1; index < colors.length; index++) {
+                    palette.set(index, Color32.fromHex(readHexColor(colors, index, 'Palette JSON')));
+                }
 
-                        palette.set(index, Color32.fromHex(readHexColor(colors, index, 'Palette JSON')));
-                    } else {
-                        const nameIndex = step - colorSlotCount;
-
-                        // eslint-disable-next-line security/detect-object-injection -- nameIndex is bounded by the combined loop length
-                        const nameEntry = nameEntries[nameIndex];
-
-                        if (nameEntry) {
-                            palette.setNamed(nameEntry[0], nameEntry[1]);
-                        }
-                    }
+                for (const [name, slot] of names ? Object.entries(names) : []) {
+                    palette.setNamed(name, slot);
                 }
 
                 return palette;
