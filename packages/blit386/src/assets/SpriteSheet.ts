@@ -9,6 +9,7 @@ import {
 import { Color32 } from '../utils/Color32';
 import {
     spriteColorNotInPaletteError,
+    spriteNotIndexizedError,
     spriteTileGridMissingError,
     spriteTileOutOfGridError,
 } from '../utils/errorMessages';
@@ -340,14 +341,13 @@ export type IndexedSpriteLoadResult = {
  * Sprite-sheet wrapper around a loaded image asset.
  *
  * The class keeps the original image available for CPU-side inspection while
- * lazily creating and caching a GPU texture for rendering. When possible,
- * `load()` also pre-decodes the source into an `ImageBitmap` so texture uploads
- * preserve pixel-art alpha and color values more reliably.
+ * lazily creating and caching a GPU texture for rendering.
  *
- * After calling `indexize()`, the sheet stores palette indices rather than RGBA
- * data. The GPU texture becomes an `r8uint` format uploaded via `writeTexture`.
- * The original RGBA bytes are retained so `reindexize()` can re-convert without
- * reloading the image.
+ * Drawing requires an indexed sheet: after calling `indexize()`, the sheet stores
+ * palette indices rather than RGBA data, and the GPU texture is an `r8uint`
+ * texture uploaded via `writeTexture`. The original RGBA bytes are retained so
+ * `reindexize()` can re-convert without reloading the image. A sheet that was
+ * never indexed has no GPU texture.
  *
  * @since 0.1.0
  * @changed 1.8.1 Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size.
@@ -361,9 +361,6 @@ export class SpriteSheet {
 
     /** Source URL this sheet was loaded from via {@link SpriteSheet.load}, or `null` otherwise. */
     private sourceUrl: string | null = null;
-
-    /** Pre-decoded image bitmap for GPU upload (created by load()). */
-    private imageBitmap: ImageBitmap | null = null;
 
     /** GPU texture created lazily on first use. */
     private texture: GPUTexture | null = null;
@@ -504,10 +501,6 @@ export class SpriteSheet {
     /**
      * Loads a sprite sheet from an image URL.
      *
-     * Attempts to create an `ImageBitmap` with explicit alpha and color-space
-     * settings for more predictable GPU uploads. If bitmap creation fails, the
-     * instance still works and falls back to uploading the `HTMLImageElement`.
-     *
      * @changed 1.8.0 Added `options.tileSize`.
      * @param url - Path or URL to the image file.
      * @param options - Optional configuration.
@@ -525,22 +518,6 @@ export class SpriteSheet {
 
         sheet.sourceUrl = url;
         sheet.registerForHotReload();
-
-        // Create ImageBitmap with explicit alpha handling.
-        // - premultiplyAlpha: 'none' preserves original alpha values (avoids dark fringes)
-        // - colorSpaceConversion: 'none' preserves exact RGB values for pixel art
-        try {
-            sheet.imageBitmap = await createImageBitmap(image, {
-                premultiplyAlpha: 'none',
-                colorSpaceConversion: 'none',
-            });
-        } catch (error) {
-            // Fall back to HTMLImageElement if ImageBitmap creation fails.
-            console.warn(
-                `[SpriteSheet] ImageBitmap creation failed for ${url}, using HTMLImageElement fallback:`,
-                error,
-            );
-        }
 
         return sheet;
     }
@@ -853,11 +830,6 @@ export class SpriteSheet {
 
             this._size = new Vector2i(decoded.width, decoded.height);
 
-            if (this.imageBitmap) {
-                this.imageBitmap.close();
-                this.imageBitmap = null;
-            }
-
             if (this.indexedPixels !== null && palette !== null) {
                 this.indexize(palette);
             } else {
@@ -1028,15 +1000,20 @@ export class SpriteSheet {
     /**
      * Gets or lazily creates the GPU texture for this sprite sheet.
      *
-     * If `indexize()` has been called, creates an `r8uint` texture from the
-     * palette index data. Otherwise creates an `rgba8unorm` texture from the
-     * original image. The result is cached until `destroy()` is called or a
-     * different device is passed (the engine was re-initialized).
+     * Creates an `r8uint` texture from the palette index data. The result is
+     * cached until `destroy()` is called or a different device is passed (the
+     * engine was re-initialized).
      *
+     * @changed 1.8.1 Throws for a sheet that was never indexized; the unused `rgba8unorm` texture path is gone.
      * @param device - WebGPU device for texture creation.
      * @returns GPU texture ready for rendering.
+     * @throws Error if the sheet has not been indexized.
      */
     getTexture(device: GPUDevice): GPUTexture {
+        if (this.indexedPixels === null) {
+            throw new Error(spriteNotIndexizedError());
+        }
+
         // No destroy(): the texture belongs to the old device, which frees it on its own destroy().
         if (this.textureDevice !== device) {
             this.texture = null;
@@ -1044,14 +1021,10 @@ export class SpriteSheet {
         }
 
         if (this.texture === null) {
-            if (this.indexedPixels === null) {
-                this.createTexture(device);
-            } else {
-                this.createIndexedTexture(device);
-            }
+            this.createIndexedTexture(device);
         }
 
-        // Safe assertion: createTexture / createIndexedTexture always initializes this.texture.
+        // Safe assertion: createIndexedTexture always initializes this.texture.
         return this.texture as GPUTexture;
     }
 
@@ -1086,57 +1059,16 @@ export class SpriteSheet {
     /**
      * Releases the GPU texture from memory and clears all retained pixel data.
      *
-     * Also closes any retained `ImageBitmap` that has not yet been uploaded.
-     * Clears CPU-side `rgbaPixels` and `indexedPixels`; only image-backed sheets
-     * that have not been destroyed can recreate a GPU texture via a new load or
-     * {@link indexize} call.
+     * Clears CPU-side `rgbaPixels` and `indexedPixels`, so a destroyed sheet has
+     * no GPU texture until it is indexized again with {@link indexize}.
      */
     destroy(): void {
         this.invalidateTexture();
         this.unregisterFromHotReload();
         unregisterIndexedSheet(this);
 
-        if (this.imageBitmap) {
-            this.imageBitmap.close();
-            this.imageBitmap = null;
-        }
-
         this.rgbaPixels = null;
         this.indexedPixels = null;
-    }
-
-    /**
-     * Creates and uploads the GPU texture from the image.
-     *
-     * Uses `ImageBitmap` when available, then releases it immediately after the
-     * upload to avoid holding duplicate image resources in memory.
-     *
-     * @param device - WebGPU device for texture creation.
-     */
-    private createTexture(device: GPUDevice): void {
-        if (!this.image) {
-            throw new Error('createTexture: no source image available.');
-        }
-
-        assertDimensions('sprite sheet texture', this.size.x, this.size.y);
-
-        this.texture = device.createTexture({
-            label: 'Sprite Sheet Texture',
-            size: [this.size.x, this.size.y, TEXTURE_LAYER_COUNT],
-            format: 'rgba8unorm',
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
-        });
-
-        // Prefer ImageBitmap (correct alpha handling) over HTMLImageElement.
-        const source = this.imageBitmap ?? this.image;
-
-        device.queue.copyExternalImageToTexture({ source }, { texture: this.texture }, [this.size.x, this.size.y]);
-
-        // Close ImageBitmap after the upload to free resources.
-        if (this.imageBitmap) {
-            this.imageBitmap.close();
-            this.imageBitmap = null;
-        }
     }
 
     /**

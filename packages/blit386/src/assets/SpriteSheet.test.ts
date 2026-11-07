@@ -6,8 +6,7 @@
  * - normalized UV calculation from pixel-space rectangles
  * - reported sheet dimensions and source image access
  * - lazy GPU texture creation, caching, and recreation after destroy
- * - cleanup of GPU textures and temporary `ImageBitmap` instances
- * - `load()` behavior when bitmap decoding succeeds or falls back
+ * - cleanup of GPU textures
  * - `indexize()` / `reindexize()` palette-index conversion
  *
  * GPU-facing behavior is verified with the local WebGPU mock helpers and
@@ -55,6 +54,9 @@ function makeOffscreenCanvasMock(pixelData: Uint8ClampedArray, w: number, h: num
         }
     };
 }
+
+/** Builds a drawable sheet: only indexed sheets have a GPU texture. */
+const indexedSheet = () => SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16) as Uint8Array<ArrayBuffer>);
 
 describe('SpriteSheet', () => {
     const mockImage = { width: 256, height: 256 } as HTMLImageElement;
@@ -182,17 +184,23 @@ describe('SpriteSheet', () => {
     });
 
     describe('getTexture', () => {
-        it('should return a texture object from a mock device', () => {
+        it('throws for a sheet that was never indexized', () => {
             const sheet = new SpriteSheet(mockImage);
+
+            expect(() => sheet.getTexture(createMockGPUDevice())).toThrow(/hasn't been prepared yet/);
+        });
+
+        it('should return a texture object from a mock device', () => {
+            const sheet = indexedSheet();
             const device = createMockGPUDevice();
 
             const texture = sheet.getTexture(device);
             expect(texture).toBeDefined();
-            expect(texture.label).toBe('Sprite Sheet Texture');
+            expect(texture.label).toBe('Sprite Sheet Indexed Texture');
         });
 
         it('should return the same cached texture on subsequent calls', () => {
-            const sheet = new SpriteSheet(mockImage);
+            const sheet = indexedSheet();
             const device = createMockGPUDevice();
 
             const first = sheet.getTexture(device);
@@ -201,7 +209,7 @@ describe('SpriteSheet', () => {
         });
 
         it('should create a new texture on a different device instead of reusing the old one', () => {
-            const sheet = new SpriteSheet(mockImage);
+            const sheet = indexedSheet();
             const oldDevice = createMockGPUDevice();
             const newDevice = createMockGPUDevice();
             const createTexture = vi.spyOn(newDevice, 'createTexture');
@@ -216,19 +224,8 @@ describe('SpriteSheet', () => {
     });
 
     describe('destroy', () => {
-        it('should allow creating a new texture after destroy', () => {
-            const sheet = new SpriteSheet(mockImage);
-            const device = createMockGPUDevice();
-
-            const first = sheet.getTexture(device);
-            sheet.destroy();
-
-            const second = sheet.getTexture(device);
-            expect(second).not.toBe(first);
-        });
-
         it('should call GPUTexture.destroy on the GPU texture', () => {
-            const sheet = new SpriteSheet(mockImage);
+            const sheet = indexedSheet();
             const device = createMockGPUDevice();
 
             const texture = sheet.getTexture(device);
@@ -239,7 +236,7 @@ describe('SpriteSheet', () => {
         });
 
         it('should not throw when destroyed before getTexture is called', () => {
-            const sheet = new SpriteSheet(mockImage);
+            const sheet = indexedSheet();
             expect(() => sheet.destroy()).not.toThrow();
         });
     });
@@ -388,37 +385,6 @@ describe('SpriteSheet', () => {
             vi.unstubAllGlobals();
         });
 
-        it('should create a SpriteSheet with an ImageBitmap when createImageBitmap succeeds', async () => {
-            const mockBitmap = { close: vi.fn() } as unknown as ImageBitmap;
-            vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(mockBitmap));
-            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
-
-            const sheet = await SpriteSheet.load('test.png');
-            expect(sheet).toBeInstanceOf(SpriteSheet);
-            expect(sheet.size.x).toBe(256);
-        });
-
-        it('should fall back to HTMLImageElement when createImageBitmap throws', async () => {
-            vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('Not supported')));
-            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
-
-            const sheet = await SpriteSheet.load('test.png');
-            expect(sheet).toBeInstanceOf(SpriteSheet);
-        });
-
-        it('should close imageBitmap after getTexture uploads it to the GPU', async () => {
-            const closeSpy = vi.fn();
-            vi.stubGlobal(
-                'createImageBitmap',
-                vi.fn().mockResolvedValue({ close: closeSpy } as unknown as ImageBitmap),
-            );
-            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
-
-            const sheet = await SpriteSheet.load('test.png');
-            sheet.getTexture(createMockGPUDevice());
-            expect(closeSpy).toHaveBeenCalledOnce();
-        });
-
         it('rejects oversized images returned from AssetLoader', async () => {
             vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue({
                 width: MAX_ASSET_DIMENSION + 1,
@@ -436,19 +402,6 @@ describe('SpriteSheet', () => {
 
             await expect(SpriteSheet.load('huge-area.png')).rejects.toBeInstanceOf(AssetLimitError);
             await expect(SpriteSheet.load('huge-area.png')).rejects.toThrow(MAX_ASSET_PIXELS.toLocaleString('en-US'));
-        });
-
-        it('should close imageBitmap on destroy when getTexture was never called', async () => {
-            const closeSpy = vi.fn();
-            vi.stubGlobal(
-                'createImageBitmap',
-                vi.fn().mockResolvedValue({ close: closeSpy } as unknown as ImageBitmap),
-            );
-            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
-
-            const sheet = await SpriteSheet.load('test.png');
-            sheet.destroy();
-            expect(closeSpy).toHaveBeenCalledOnce();
         });
 
         it('stores the tileSize option on the loaded sheet', async () => {
@@ -1184,17 +1137,6 @@ describe('SpriteSheet', () => {
 
                 expect(sheet.width).toBe(128);
                 expect(sheet.height).toBe(96);
-            });
-
-            it('invalidates the cached texture for a non-indexized sheet', () => {
-                const sheet = new SpriteSheet(mockImage);
-                const device = createMockGPUDevice();
-                const first = sheet.getTexture(device);
-
-                sheet.hotReplaceImage({ width: 64, height: 64 } as HTMLImageElement, null);
-                const second = sheet.getTexture(device);
-
-                expect(second).not.toBe(first);
             });
 
             it('re-indexizes an already-indexized sheet against the active palette', () => {
