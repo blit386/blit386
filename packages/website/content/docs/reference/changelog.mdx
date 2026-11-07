@@ -62,6 +62,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
+  keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
+  `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed
+  once when it goes from no mapped keys held to one, and released once when the last mapped key comes up. A keyboard tap
+  between two updates still counts as one press and one release. See [Input](/docs/guides/input).
 - The system font's en dash and em dash have their proper widths. The em dash was a copy of the hyphen and the en dash
   was narrower than both, so text with an em dash (U+2014) drew the same pixels as a hyphen. The en dash is now 5 px
   wide, like the hyphen, and the em dash fills the whole 6-px cell, so a run of em dashes joins into one line.

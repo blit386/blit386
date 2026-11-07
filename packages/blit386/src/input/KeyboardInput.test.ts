@@ -6,7 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_KEYBOARD_PLAYER1 } from './defaultKeyboardMap';
+import { DEFAULT_KEYBOARD_PLAYER1, DEFAULT_KEYBOARD_SINGLE_PLAYER1 } from './defaultKeyboardMap';
 import { KeyboardInput } from './KeyboardInput';
 
 const createCanvas = (): HTMLCanvasElement => {
@@ -472,6 +472,95 @@ describe('KeyboardInput', () => {
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
 
         expect(kb.isButtonDown(codes)).toBe(true);
+
+        kb.detach();
+    });
+
+    it('OR button: a second mapped key pressed while the first is held is not a new press', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        const codes = ['Space', 'KeyB'];
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+        kb.endUpdate(1);
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
+
+        expect(kb.isButtonPressed(codes, undefined, 2)).toBe(false);
+
+        kb.detach();
+    });
+
+    it("OR button: 'single' layout KeyW held then ArrowUp is not a second BTN_UP press", () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        const codes = DEFAULT_KEYBOARD_SINGLE_PLAYER1[1 << 0] ?? [];
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+        kb.endUpdate(1);
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp', bubbles: true }));
+
+        expect(kb.isButtonPressed(codes, undefined, 2)).toBe(false);
+
+        kb.detach();
+    });
+
+    it('OR button: releasing one of two held mapped keys is not a release', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        const codes = ['Space', 'KeyB'];
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
+        kb.endUpdate(1);
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB', bubbles: true }));
+
+        expect(kb.isButtonReleased(codes)).toBe(false);
+
+        kb.detach();
+    });
+
+    it('OR button: handing over from one mapped key to another within a tick is neither a press nor a release', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        const codes = ['Space', 'KeyB'];
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+        kb.endUpdate(1);
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
+
+        expect(kb.isButtonPressed(codes, undefined, 2)).toBe(false);
+        expect(kb.isButtonReleased(codes)).toBe(false);
+
+        kb.detach();
+    });
+
+    it('OR button: a tap between two updates is still one press and one release', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        const codes = ['Space', 'KeyB'];
+
+        kb.endUpdate(0);
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB', bubbles: true }));
+
+        expect(kb.isButtonPressed(codes, undefined, 1)).toBe(true);
+        expect(kb.isButtonReleased(codes)).toBe(true);
 
         kb.detach();
     });

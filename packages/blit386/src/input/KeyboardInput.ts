@@ -360,14 +360,15 @@ export class KeyboardInput {
             return false;
         }
 
-        if (codes.some((c) => this.pendingPress.has(c))) {
+        const isPrevDown = codes.some((c) => this.prevHeld.has(c));
+
+        // A second mapped key pressed while another was already held at the last update is not a new edge.
+        // shortcut: a key released and pressed again within one update tick reports no edge; fine below one tick (~16 ms).
+        if (!isPrevDown && codes.some((c) => this.pendingPress.has(c))) {
             return true;
         }
 
-        const isDown = this.isButtonDown(codes);
-        const isPrevDown = codes.some((c) => this.prevHeld.has(c));
-
-        if (!isDown) {
+        if (!this.isButtonDown(codes)) {
             return false;
         }
 
@@ -401,15 +402,12 @@ export class KeyboardInput {
             return false;
         }
 
-        if (codes.some((c) => this.pendingRelease.has(c))) {
-            return true;
-        }
-
+        // Another mapped key still held means the logical button never went up.
         if (this.isButtonDown(codes)) {
             return false;
         }
 
-        return codes.some((c) => this.prevHeld.has(c));
+        return codes.some((c) => this.pendingRelease.has(c) || this.prevHeld.has(c));
     }
 
     /**
