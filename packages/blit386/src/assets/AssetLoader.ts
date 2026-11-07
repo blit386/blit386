@@ -1,6 +1,6 @@
 import { assertImageElementWithinLimits } from '../utils/AssetLimits';
 import { appendCacheBustQuery } from '../utils/HotReloadUrl';
-import { extractExtension } from '../utils/urlHints';
+import { buildPathHint, extractExtension } from '../utils/urlHints';
 
 /**
  * Successfully loaded images keyed by request URL.
@@ -23,40 +23,6 @@ const loadingPromises = new Map<string, Promise<HTMLImageElement>>();
  * Allocated once at module load; checked inside {@link buildExtensionHint}.
  */
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']);
-
-/**
- * Returns whether a URL is absolute or uses a special browser scheme.
- *
- * @param url - Path or URL to inspect.
- * @returns True when the URL already has an explicit scheme.
- */
-function isExplicitUrl(url: string): boolean {
-    const lowerUrl = url.toLowerCase();
-
-    // URL scheme prefixes that identify an absolute or special-scheme URL.
-    // Checked after the `://` shortcut in {@link isExplicitUrl}.
-    const specialSchemePrefixes = ['//', 'data:', 'blob:'] as const;
-
-    // Lowercase scheme prefixes treated as explicit browser locations (after `://` check).
-    return lowerUrl.includes('://') || specialSchemePrefixes.some((prefix) => lowerUrl.startsWith(prefix));
-}
-
-/**
- * Returns whether a URL already points at an explicit location: an absolute URL,
- * a special browser scheme, or a rooted/relative (`/`, `./`) path. When this is
- * false, the caller suggests an `images/` location.
- *
- * @param url - Path or URL to inspect.
- * @returns True when the URL needs no `images/` prefix hint.
- */
-function hasExplicitLocation(url: string): boolean {
-    // Path prefixes that already point at an explicit location,
-    // so no `images/` directory hint is appended in error messages.
-    const rootedPathPrefixes = ['/', './'] as const;
-
-    // URL prefixes that already point at an explicit location, so no `images/` hint is needed.
-    return isExplicitUrl(url) || rootedPathPrefixes.some((prefix) => url.startsWith(prefix));
-}
 
 /**
  * Builds the extension-specific hint for a failing image URL.
@@ -83,8 +49,9 @@ function buildExtensionHint(extension: string): string | null {
  * @returns Extra hint text (or empty string when no hint applies).
  */
 function buildImageHints(url: string): string {
-    const pathHint = hasExplicitLocation(url) ? null : `Did you mean '/images/${url}' or './images/${url}'?`;
-    const hints = [pathHint, buildExtensionHint(extractExtension(url))].filter((hint): hint is string => hint !== null);
+    const hints = [buildPathHint(url, 'images'), buildExtensionHint(extractExtension(url))].filter(
+        (hint): hint is string => hint !== null && hint !== '',
+    );
 
     return hints.length > 0 ? ` ${hints.join(' ')}` : '';
 }
