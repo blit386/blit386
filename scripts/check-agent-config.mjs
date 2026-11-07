@@ -840,26 +840,28 @@ export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory,
  * @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>}
  */
 function readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) {
-    return readdirSync(agentsSkillsDir, { withFileTypes: true }).map((entry) => {
-        if (!entry.isSymbolicLink()) {
-            return { name: entry.name, isSymlink: false, resolvedName: null };
-        }
+    return readdirSync(agentsSkillsDir, { withFileTypes: true })
+        .filter((entry) => !entry.name.startsWith('.'))
+        .map((entry) => {
+            if (!entry.isSymbolicLink()) {
+                return { name: entry.name, isSymlink: false, resolvedName: null };
+            }
 
-        const linkPath = join(agentsSkillsDir, entry.name);
+            const linkPath = join(agentsSkillsDir, entry.name);
 
-        try {
-            const target = realpathSync(linkPath);
-            const targetIsDirectory = statSync(target).isDirectory();
+            try {
+                const target = realpathSync(linkPath);
+                const targetIsDirectory = statSync(target).isDirectory();
 
-            return {
-                name: entry.name,
-                isSymlink: true,
-                resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
-            };
-        } catch {
-            return { name: entry.name, isSymlink: true, resolvedName: null };
-        }
-    });
+                return {
+                    name: entry.name,
+                    isSymlink: true,
+                    resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
+                };
+            } catch {
+                return { name: entry.name, isSymlink: true, resolvedName: null };
+            }
+        });
 }
 
 /** @param {string} claudeSkillsDir @returns {string[]} Directory names under `.claude/skills/` (dotfiles excluded). */

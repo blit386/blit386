@@ -764,4 +764,19 @@ describe('check-agent-config under a symlinked temp root', () => {
             rmSync(root, { recursive: true, force: true });
         }
     });
+
+    it('ignores a Finder .DS_Store in .agents/skills', () => {
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-dsstore-'));
+        mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
+        mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
+        writeFileSync(join(root, '.agents', 'skills', '.DS_Store'), '');
+
+        try {
+            const failures = checkRootSkillsLayout(root).filter((message) => message.includes('.DS_Store'));
+
+            assert.deepEqual(failures, []);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
 });
