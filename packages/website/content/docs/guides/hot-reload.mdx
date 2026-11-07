@@ -248,7 +248,8 @@ swap:
 - Editing the engine's own source (a `blit386` dist rebuild). The hot-reload boundary lives in the demo/game's entry
   module, not inside the engine bundle itself - a changed `blit386` dist is a different module identity as far as Vite's
   module graph is concerned, so there is nothing to swap into.
-- An asset change with an unrecognized extension, when `fullReloadOnUnknownAssets` is left at its default `true`.
+- An asset change with an unrecognized extension, when `fullReloadOnUnknownAssets` is left at its default `true`. Hidden
+  files (names starting with a dot, such as Finder's `.DS_Store` or a vim `.swp` file) are ignored.
 - Calling `bootstrap()` a second time with no Vite HMR context registered at all (for example, calling it twice by
   mistake outside of a dev server) logs an error and returns `false`, rather than silently starting a second,
   unstoppable game loop. Before 1.4.0, the same mistake silently started a second GameLoop.
@@ -312,7 +313,8 @@ runtime cost or behavior change to ship):
   a dev build.
 
 - Watches the configured asset directories and broadcasts `blit386:asset-changed` events for recognized file types (see
-  the [asset matrix](#asset-hot-replace-matrix) above), falling back to a full reload for anything else.
+  the [asset matrix](#asset-hot-replace-matrix) above), falling back to a full reload for anything else (hidden files,
+  whose names start with a dot, are ignored).
 
 ### Plugin options
 

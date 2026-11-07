@@ -122,6 +122,11 @@ export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | u
         return undefined;
     }
 
+    // Finder's .DS_Store and vim's .swp reach the watcher; they are never game assets.
+    if (path.basename(params.file).startsWith('.')) {
+        return undefined;
+    }
+
     // assetDirs only decides which files are watched; the URL follows Vite's serving rules.
     const watched = resolveAssetUrl(params.file, params.assetDirs);
     const url = watched === null ? null : resolveServedUrl(params.file, params.serve);

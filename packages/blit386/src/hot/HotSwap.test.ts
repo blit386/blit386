@@ -252,6 +252,64 @@ describe('hasHardReloadDiff', () => {
     });
 });
 
+describe('hasHardReloadDiff vector and style branches', () => {
+    // Real Vector2i values, unlike the isEqual stub in the scalar describe above.
+    // Overrides are keyed by real HardwareSettings fields so a typo fails typecheck. The result is cast
+    // because HardwareSettings forbids an explicit undefined, which these tests need.
+    const settings = (
+        overrides: { [K in keyof HardwareSettings]?: HardwareSettings[K] | undefined } = {},
+    ): HardwareSettings =>
+        ({
+            displaySize: new Vector2i(320, 240),
+            targetFPS: 60,
+            drawingBufferSize: new Vector2i(640, 480),
+            maxCanvasSize: new Vector2i(1920, 1080),
+            ...overrides,
+        }) as unknown as HardwareSettings;
+
+    it.each([
+        ['displaySize', new Vector2i(160, 120)],
+        ['drawingBufferSize', new Vector2i(1, 1)],
+        ['maxCanvasSize', new Vector2i(1280, 720)],
+    ] as const)('is true when %s changes size', (field, value) => {
+        expect(hasHardReloadDiff(settings(), settings({ [field]: value }))).toBe(true);
+    });
+
+    it('is false for equal but distinct Vector2i instances', () => {
+        const previous = settings();
+        const next = settings();
+
+        expect(next.displaySize).not.toBe(previous.displaySize);
+        expect(hasHardReloadDiff(previous, next)).toBe(false);
+    });
+
+    it('is true when drawingBufferSize goes from defined to undefined', () => {
+        expect(hasHardReloadDiff(settings(), settings({ drawingBufferSize: undefined }))).toBe(true);
+    });
+
+    it('is true when drawingBufferSize goes from undefined to defined', () => {
+        expect(hasHardReloadDiff(settings({ drawingBufferSize: undefined }), settings())).toBe(true);
+    });
+
+    it.each(['drawingBufferSize', 'maxCanvasSize'] as const)('is false when %s is undefined on both sides', (field) => {
+        expect(hasHardReloadDiff(settings({ [field]: undefined }), settings({ [field]: undefined }))).toBe(false);
+    });
+
+    const STYLES = [
+        ['overlayStyle', { barPaletteIndex: 1 }, { barPaletteIndex: 2 }],
+        ['overlayTimingChartStyle', { gridPaletteIndex: 1 }, { gridPaletteIndex: 2 }],
+        ['overlayAudioMeterStyle', { clipPaletteIndex: 1 }, { clipPaletteIndex: 2 }],
+    ] as const;
+
+    it.each(STYLES)('is true when a %s property changes', (field, before, after) => {
+        expect(hasHardReloadDiff(settings({ [field]: before }), settings({ [field]: after }))).toBe(true);
+    });
+
+    it.each(STYLES)('is false for a structurally equal %s copy', (field, before) => {
+        expect(hasHardReloadDiff(settings({ [field]: before }), settings({ [field]: { ...before } }))).toBe(false);
+    });
+});
+
 describe('hotSwapDemo', () => {
     beforeEach(() => {
         resetSingleton();
