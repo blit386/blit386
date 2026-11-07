@@ -210,8 +210,10 @@ export class GameLoop {
         this.accumulator = 0;
 
         this.rafHandle = requestAnimationFrame(() => {
-            this.rafHandle = requestAnimationFrame(() => {
-                this.lastUpdateTime = performance.now();
+            this.rafHandle = requestAnimationFrame((frameTime) => {
+                // Seed from the rAF timestamp, the clock every later tick uses; performance.now() runs
+                // ahead of it and would make the first delta too short.
+                this.lastUpdateTime = frameTime;
 
                 this.rafHandle = requestAnimationFrame(this.boundTick);
             });
@@ -398,6 +400,11 @@ export class GameLoop {
      */
     private detectFrameDrop(deltaTime: number): void {
         if (!this.onFrameDrop) {
+            return;
+        }
+
+        // A zero or negative delta is not a real frame; it must never become the baseline.
+        if (deltaTime <= 0) {
             return;
         }
 
