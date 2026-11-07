@@ -29,7 +29,8 @@ export interface Blit386PluginOptions {
     /**
      * Directories to watch for asset changes, resolved against the Vite root. Only selects which files are
      * watched; the broadcast URL follows Vite's serving rules (`base` plus the path under `publicDir`, or under the
-     * root for a file outside it). A folder outside both is not hot reloaded. Default: `['public']`.
+     * root for a file outside it). A folder outside both is not hot reloaded. Default: Vite's `publicDir`
+     * (`public` unless the Vite config changes it; nothing is watched when `publicDir` is `false`).
      */
     assetDirs?: string[];
 
@@ -66,7 +67,7 @@ export interface ResolvedBlit386PluginOptions {
 /** Matches a module id under `/src/` ending a JS/TS extension, ignoring any query suffix. */
 const DEFAULT_INCLUDE_PATTERN = /\/src\/.*\.(?:js|ts|mjs|mts)$/;
 
-/** Default {@link Blit386PluginOptions.assetDirs}. */
+/** Default {@link Blit386PluginOptions.assetDirs} when Vite's `publicDir` is not known. */
 const DEFAULT_ASSET_DIRS = ['public'];
 
 /** Default {@link Blit386PluginOptions.assetTypes}. */
@@ -100,10 +101,17 @@ export function defaultInclude(id: string): boolean {
  *
  * @param options - User-provided options, or `undefined` for all defaults.
  * @param root - Vite's resolved project root (absolute path).
+ * @param publicDir - Vite's resolved `publicDir` (absolute, or `''` for `publicDir: false`). When given and
+ *   `options.assetDirs` is not, it becomes the only asset directory (none for `''`).
  * @returns Fully resolved options.
  */
-export function resolveOptions(options: Blit386PluginOptions | undefined, root: string): ResolvedBlit386PluginOptions {
-    const assetDirs = (options?.assetDirs ?? DEFAULT_ASSET_DIRS).map((dir) => path.resolve(root, dir));
+export function resolveOptions(
+    options: Blit386PluginOptions | undefined,
+    root: string,
+    publicDir?: string,
+): ResolvedBlit386PluginOptions {
+    const defaultDirs = publicDir === undefined ? DEFAULT_ASSET_DIRS : publicDir === '' ? [] : [publicDir];
+    const assetDirs = (options?.assetDirs ?? defaultDirs).map((dir) => path.resolve(root, dir));
     const assetTypes = new Map(Object.entries({ ...DEFAULT_ASSET_TYPES, ...options?.assetTypes }));
 
     return {

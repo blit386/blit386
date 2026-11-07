@@ -46,7 +46,7 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
         apply: 'serve',
 
         configResolved(config) {
-            resolved = resolveOptions(options, config.root);
+            resolved = resolveOptions(options, config.root, config.publicDir);
             serve = {
                 base: config.base,
                 // '' means `publicDir: false`.
