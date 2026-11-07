@@ -775,6 +775,20 @@ export function audioClipSynthNonPositiveDurationError(duration: number): string
 }
 
 /**
+ * Returns the error message for a `SynthParams.duration` too short to hold one sample at the decode context's rate.
+ *
+ * @param duration - The rejected duration in seconds.
+ * @param sampleRate - Sample rate in Hz the duration was rounded against.
+ * @returns A message naming the shortest usable duration.
+ */
+export function audioClipSynthDurationRoundsToZeroError(duration: number, sampleRate: number): string {
+    return (
+        `AudioClip.synth() duration is too short (got ${duration}s, which rounds to 0 samples at ${sampleRate} Hz). ` +
+        `Use at least ${(1 / sampleRate).toPrecision(3)} seconds, enough for one sample.`
+    );
+}
+
+/**
  * Returns the error message for a `SynthParams.duration` that exceeds the supported maximum.
  *
  * @param duration - Invalid duration value that was supplied, in seconds.
