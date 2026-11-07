@@ -54,6 +54,22 @@ const BTN_SELECT = 1 << 11;
 const BTN_L2 = 1 << 16;
 const BTN_R2 = 1 << 17;
 
+/** Standard-mapping button index and the `BTN_*` flag it sets; triggers are separate (analog threshold). */
+const DIGITAL_BUTTONS: readonly (readonly [number, number])[] = [
+    [GP_BUTTON_UP, BTN_UP],
+    [GP_BUTTON_DOWN, BTN_DOWN],
+    [GP_BUTTON_LEFT, BTN_LEFT],
+    [GP_BUTTON_RIGHT, BTN_RIGHT],
+    [GP_BUTTON_A, BTN_A],
+    [GP_BUTTON_B, BTN_B],
+    [GP_BUTTON_X, BTN_X],
+    [GP_BUTTON_Y, BTN_Y],
+    [GP_BUTTON_L, BTN_L],
+    [GP_BUTTON_R, BTN_R],
+    [GP_BUTTON_START, BTN_START],
+    [GP_BUTTON_SELECT, BTN_SELECT],
+];
+
 /** Axis constants mirrored from `BT.AXIS_*` to avoid circular imports. */
 const AXIS_LEFT_X = 0;
 const AXIS_LEFT_Y = 1;
@@ -686,42 +702,12 @@ export class GamepadInput {
     private mapButtons(pad: Gamepad): number {
         let mask = 0;
 
-        if (isButtonDown(pad, GP_BUTTON_UP)) {
-            mask |= BTN_UP;
+        for (const [index, flag] of DIGITAL_BUTTONS) {
+            if (isButtonDown(pad, index)) {
+                mask |= flag;
+            }
         }
-        if (isButtonDown(pad, GP_BUTTON_DOWN)) {
-            mask |= BTN_DOWN;
-        }
-        if (isButtonDown(pad, GP_BUTTON_LEFT)) {
-            mask |= BTN_LEFT;
-        }
-        if (isButtonDown(pad, GP_BUTTON_RIGHT)) {
-            mask |= BTN_RIGHT;
-        }
-        if (isButtonDown(pad, GP_BUTTON_A)) {
-            mask |= BTN_A;
-        }
-        if (isButtonDown(pad, GP_BUTTON_B)) {
-            mask |= BTN_B;
-        }
-        if (isButtonDown(pad, GP_BUTTON_X)) {
-            mask |= BTN_X;
-        }
-        if (isButtonDown(pad, GP_BUTTON_Y)) {
-            mask |= BTN_Y;
-        }
-        if (isButtonDown(pad, GP_BUTTON_L)) {
-            mask |= BTN_L;
-        }
-        if (isButtonDown(pad, GP_BUTTON_R)) {
-            mask |= BTN_R;
-        }
-        if (isButtonDown(pad, GP_BUTTON_START)) {
-            mask |= BTN_START;
-        }
-        if (isButtonDown(pad, GP_BUTTON_SELECT)) {
-            mask |= BTN_SELECT;
-        }
+
         if (isTriggerDown(pad, GP_BUTTON_L2)) {
             mask |= BTN_L2;
         }

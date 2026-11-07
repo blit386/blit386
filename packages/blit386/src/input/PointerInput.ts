@@ -67,6 +67,22 @@ export const POINTER_BUTTON_CODES = [BTN_A, BTN_B, BTN_C, BTN_D] as const;
  */
 const buttonBit = (button: number): number => (button >= BTN_A && button <= BTN_D ? 1 << (button - BTN_A) : 0);
 
+/** Number of pointer buttons per slot (`BTN_A..D`); every per-button array has this length. */
+const BUTTON_COUNT = POINTER_BUTTON_CODES.length;
+
+/** `PointerEvent.buttons` bits that hold each pointer button down, in `BTN_A..D` order (left, right, middle, back/forward). */
+const DOM_BUTTONS_MASKS: readonly number[] = [1, 2, 4, 24];
+
+/** Maps a DOM `PointerEvent.button` (0 left, 1 middle, 2 right, 3 back, 4 forward) to its `button - BTN_A` index. */
+const MOUSE_BUTTON_INDEX: readonly number[] = [0, 2, 1, 3, 3];
+
+/**
+ * Builds a fresh all-up button-state array.
+ *
+ * @returns Array of {@link BUTTON_COUNT} `false` values.
+ */
+const createButtons = (): boolean[] => new Array<boolean>(BUTTON_COUNT).fill(false);
+
 /**
  * Internal per-slot pointer state.
  *
@@ -89,44 +105,17 @@ interface Slot {
     /** Snapshot of `pos` taken at `endFrame()`; used to compute the per-frame delta. */
     prevPos: Vector2i;
 
-    /** Current state of `BTN_A` for this slot. */
-    a: boolean;
+    /** Held state per button, indexed by `button - BTN_A` (A, B, C, D). */
+    down: boolean[];
 
-    /** Current state of `BTN_B` for this slot. */
-    b: boolean;
-
-    /** Current state of `BTN_C` for this slot. */
-    c: boolean;
-
-    /** Current state of `BTN_D` for this slot. */
-    d: boolean;
-
-    /** Snapshot of `a` taken at `endFrame()`, used for isPressed/released edge detection. */
-    prevA: boolean;
-
-    /** Snapshot of `b` taken at `endFrame()`. */
-    prevB: boolean;
-
-    /** Snapshot of `c` taken at `endFrame()`. */
-    prevC: boolean;
-
-    /** Snapshot of `d` taken at `endFrame()`. */
-    prevD: boolean;
+    /** Snapshot of `down` taken at `endFrame()`, used for isPressed/released edge detection. */
+    prevDown: boolean[];
 
     /** Snapshot of `pos` taken at `endUpdate()`; the update-clock delta. */
     updatePrevPos: Vector2i;
 
-    /** Snapshot of `a` taken at `endUpdate()`, for update-clock edges. */
-    updatePrevA: boolean;
-
-    /** Snapshot of `b` taken at `endUpdate()`. */
-    updatePrevB: boolean;
-
-    /** Snapshot of `c` taken at `endUpdate()`. */
-    updatePrevC: boolean;
-
-    /** Snapshot of `d` taken at `endUpdate()`. */
-    updatePrevD: boolean;
+    /** Snapshot of `down` taken at `endUpdate()`, for update-clock edges. */
+    updatePrevDown: boolean[];
 
     /** Buttons (bit `1 << (code - BTN_A)`) that went down since `endUpdate()`, even if they are up again. */
     updatePendingPress: number;
@@ -147,7 +136,18 @@ interface Slot {
  * @param slot - Slot to read.
  * @returns The held-button mask.
  */
-const heldMask = (slot: Slot): number => (slot.a ? 1 : 0) | (slot.b ? 2 : 0) | (slot.c ? 4 : 0) | (slot.d ? 8 : 0);
+const heldMask = (slot: Slot): number => buttonsMask(slot.down);
+
+/**
+ * Packs a button-state array into a bitmask (see {@link buttonBit}).
+ *
+ * Unrolled on purpose: this runs on every edge query. Keep it in step with {@link BUTTON_COUNT}.
+ *
+ * @param buttons - Four button states in `BTN_A..D` order.
+ * @returns The mask.
+ */
+const buttonsMask = (buttons: readonly boolean[]): number =>
+    (buttons[0] ? 1 : 0) | (buttons[1] ? 2 : 0) | (buttons[2] ? 4 : 0) | (buttons[3] ? 8 : 0);
 
 /**
  * Packs the buttons a slot held at the last rollover of one clock into a bitmask.
@@ -156,13 +156,20 @@ const heldMask = (slot: Slot): number => (slot.a ? 1 : 0) | (slot.b ? 2 : 0) | (
  * @param isUpdate - `true` for the update clock, `false` for the frame clock.
  * @returns The previous-state mask.
  */
-const prevMask = (slot: Slot, isUpdate: boolean): number =>
-    isUpdate
-        ? (slot.updatePrevA ? 1 : 0) |
-          (slot.updatePrevB ? 2 : 0) |
-          (slot.updatePrevC ? 4 : 0) |
-          (slot.updatePrevD ? 8 : 0)
-        : (slot.prevA ? 1 : 0) | (slot.prevB ? 2 : 0) | (slot.prevC ? 4 : 0) | (slot.prevD ? 8 : 0);
+const prevMask = (slot: Slot, isUpdate: boolean): number => buttonsMask(isUpdate ? slot.updatePrevDown : slot.prevDown);
+
+/**
+ * Copies one button-state array into another in place.
+ *
+ * @param from - Source states.
+ * @param to - Destination states, same length.
+ */
+const copyButtons = (from: readonly boolean[], to: boolean[]): void => {
+    for (let i = 0; i < BUTTON_COUNT; i++) {
+        // eslint-disable-next-line security/detect-object-injection -- bounded loop counter over fixed four-element arrays
+        to[i] = from[i] ?? false;
+    }
+};
 
 /**
  * DOM-backed pointer input tracker.
@@ -251,8 +258,7 @@ export class PointerInput {
     private readonly onMove: (event: PointerEvent) => void;
     private readonly onDown: (event: PointerEvent) => void;
     private readonly onUp: (event: PointerEvent) => void;
-    private readonly onCancel: (event: PointerEvent) => void;
-    private readonly onPointerLeave: (event: PointerEvent) => void;
+    private readonly onPointerExit: (event: PointerEvent) => void;
     private readonly onWheel: (event: WheelEvent) => void;
     private readonly onContextMenu: (event: Event) => void;
     /** Marks {@link cachedRect} dirty on the canvas window's `resize` event. */
@@ -273,8 +279,7 @@ export class PointerInput {
         this.onMove = (event) => this.handleMove(event);
         this.onDown = (event) => this.handleDown(event);
         this.onUp = (event) => this.handleUp(event);
-        this.onCancel = (event) => this.handleCancel(event);
-        this.onPointerLeave = (event) => this.handlePointerLeave(event);
+        this.onPointerExit = (event) => this.handlePointerExit(event);
         this.onWheel = (event) => this.handleWheel(event);
         this.onContextMenu = (event) => event.preventDefault();
         this.onWindowResize = () => {
@@ -325,8 +330,8 @@ export class PointerInput {
         canvas.addEventListener('pointermove', this.onMove);
         canvas.addEventListener('pointerdown', this.onDown);
         canvas.addEventListener('pointerup', this.onUp);
-        canvas.addEventListener('pointercancel', this.onCancel);
-        canvas.addEventListener('pointerleave', this.onPointerLeave);
+        canvas.addEventListener('pointercancel', this.onPointerExit);
+        canvas.addEventListener('pointerleave', this.onPointerExit);
         canvas.addEventListener('wheel', this.onWheel, { passive: false });
         canvas.addEventListener('contextmenu', this.onContextMenu);
 
@@ -369,8 +374,8 @@ export class PointerInput {
             canvas.removeEventListener('pointermove', this.onMove);
             canvas.removeEventListener('pointerdown', this.onDown);
             canvas.removeEventListener('pointerup', this.onUp);
-            canvas.removeEventListener('pointercancel', this.onCancel);
-            canvas.removeEventListener('pointerleave', this.onPointerLeave);
+            canvas.removeEventListener('pointercancel', this.onPointerExit);
+            canvas.removeEventListener('pointerleave', this.onPointerExit);
             canvas.removeEventListener('wheel', this.onWheel);
             canvas.removeEventListener('contextmenu', this.onContextMenu);
 
@@ -418,7 +423,7 @@ export class PointerInput {
      * Must be called once per tick after demo `update()` and `render()`, overlay
      * draws, and renderer submit. Snapshots `pos -> prevPos` so the
      * next frame's `getDelta` reflects movement during the inter-frame gap,
-     * snapshots `a..d -> prevA..prevD` so the next frame's `isButtonPressed`
+     * snapshots `down -> prevDown` so the next frame's `isButtonPressed`
      * / `isButtonReleased` see the transition, and clears the accumulated
      * wheel delta so the next frame's `getScrollDelta` accumulates fresh.
      *
@@ -449,10 +454,7 @@ export class PointerInput {
     public endFrame(): void {
         for (const slot of this.slots) {
             slot.prevPos.copyFrom(slot.pos);
-            slot.prevA = slot.a;
-            slot.prevB = slot.b;
-            slot.prevC = slot.c;
-            slot.prevD = slot.d;
+            copyButtons(slot.down, slot.prevDown);
             slot.framePendingPress = 0;
             slot.framePendingRelease = 0;
         }
@@ -466,17 +468,14 @@ export class PointerInput {
      * Snapshots `'update'`-clock state after each fixed `update()` step, and clears the update clock's pending press
      * and release flags.
      *
-     * Snapshots `pos -> updatePrevPos` and `a..d -> updatePrevA..D`, and clears
+     * Snapshots `pos -> updatePrevPos` and `down -> updatePrevDown`, and clears
      * the update-side wheel delta, so the next `update()` sees exactly what
      * happened since this one, however many frames render in between.
      */
     public endUpdate(): void {
         for (const slot of this.slots) {
             slot.updatePrevPos.copyFrom(slot.pos);
-            slot.updatePrevA = slot.a;
-            slot.updatePrevB = slot.b;
-            slot.updatePrevC = slot.c;
-            slot.updatePrevD = slot.d;
+            copyButtons(slot.down, slot.updatePrevDown);
             slot.updatePendingPress = 0;
             slot.updatePendingRelease = 0;
         }
@@ -691,18 +690,7 @@ export class PointerInput {
             return false;
         }
 
-        switch (button) {
-            case BTN_A:
-                return s.a;
-            case BTN_B:
-                return s.b;
-            case BTN_C:
-                return s.c;
-            case BTN_D:
-                return s.d;
-            default:
-                return false;
-        }
+        return button >= BTN_A && button <= BTN_D && s.down[button - BTN_A] === true;
     }
 
     /**
@@ -803,10 +791,11 @@ export class PointerInput {
             // `buttons` is the browser's truth, so rebuild all four from it (1 left, 2 right, 4 middle, 8/16 back/forward).
             const heldBefore = heldMask(slot);
 
-            slot.a = (event.buttons & 1) !== 0;
-            slot.b = (event.buttons & 2) !== 0;
-            slot.c = (event.buttons & 4) !== 0;
-            slot.d = (event.buttons & 24) !== 0;
+            for (let i = 0; i < BUTTON_COUNT; i++) {
+                // eslint-disable-next-line security/detect-object-injection -- bounded loop counter over fixed-length arrays
+                slot.down[i] = (event.buttons & (DOM_BUTTONS_MASKS[i] ?? 0)) !== 0;
+            }
+
             this.markEdges(slot, heldBefore);
 
             // Activation: sync prevPos to the entry pos so the first frame's
@@ -886,7 +875,7 @@ export class PointerInput {
         slot.pointerId = event.pointerId;
         slot.pointerType = event.pointerType === 'pen' ? 'pen' : 'touch';
         slot.isActive = true;
-        slot.a = true;
+        slot.down[0] = true;
         this.markEdges(slot, 0);
 
         this.updateSlotPosition(slot, event.clientX, event.clientY);
@@ -920,9 +909,9 @@ export class PointerInput {
 
             this.setMouseButton(slot, event.button, false);
 
-            // Back and forward share slot.d; keep it down while the other one is still held.
+            // Back and forward share the D button; keep it down while the other one is still held.
             if (event.button === 3 || event.button === 4) {
-                slot.d = (event.buttons & 24) !== 0;
+                slot.down[3] = (event.buttons & 24) !== 0;
             }
 
             this.markEdges(slot, heldBefore);
@@ -947,36 +936,12 @@ export class PointerInput {
     }
 
     /**
-     * Routes a `pointercancel` event (browser-initiated abort). Behaves the
-     * same as `pointerleave`: deactivates slot 0 for mouse, frees the slot
-     * for touch / pen.
+     * Routes a `pointercancel` (browser-initiated abort) or `pointerleave` (pointer left the canvas bounds) event.
+     * For mouse: deactivates slot 0 and clears all buttons. For touch / pen: frees the slot.
      *
      * @param event - DOM pointer event from the canvas.
      */
-    private handleCancel(event: PointerEvent): void {
-        if (isMousePointer(event)) {
-            this.deactivateMouseSlot();
-
-            return;
-        }
-
-        const slotIndex = this.idToSlot.get(event.pointerId);
-
-        if (slotIndex === undefined) {
-            return;
-        }
-
-        this.freeSlot(slotIndex);
-    }
-
-    /**
-     * Routes a `pointerleave` event (pointer left the canvas bounds). For
-     * mouse: deactivates slot 0 and clears all buttons. For touch / pen:
-     * frees the slot.
-     *
-     * @param event - DOM pointer event from the canvas.
-     */
-    private handlePointerLeave(event: PointerEvent): void {
+    private handlePointerExit(event: PointerEvent): void {
         if (isMousePointer(event)) {
             this.deactivateMouseSlot();
 
@@ -1055,19 +1020,10 @@ export class PointerInput {
             isActive: false,
             pos: new Vector2iImpl(0, 0),
             prevPos: new Vector2iImpl(0, 0),
-            a: false,
-            b: false,
-            c: false,
-            d: false,
-            prevA: false,
-            prevB: false,
-            prevC: false,
-            prevD: false,
+            down: createButtons(),
+            prevDown: createButtons(),
             updatePrevPos: new Vector2iImpl(0, 0),
-            updatePrevA: false,
-            updatePrevB: false,
-            updatePrevC: false,
-            updatePrevD: false,
+            updatePrevDown: createButtons(),
             updatePendingPress: 0,
             updatePendingRelease: 0,
             framePendingPress: 0,
@@ -1087,19 +1043,10 @@ export class PointerInput {
         slot.isActive = false;
         slot.pos.set(0, 0);
         slot.prevPos.set(0, 0);
-        slot.a = false;
-        slot.b = false;
-        slot.c = false;
-        slot.d = false;
-        slot.prevA = false;
-        slot.prevB = false;
-        slot.prevC = false;
-        slot.prevD = false;
+        slot.down.fill(false);
+        slot.prevDown.fill(false);
         slot.updatePrevPos.set(0, 0);
-        slot.updatePrevA = false;
-        slot.updatePrevB = false;
-        slot.updatePrevC = false;
-        slot.updatePrevD = false;
+        slot.updatePrevDown.fill(false);
         slot.updatePendingPress = 0;
         slot.updatePendingRelease = 0;
         slot.framePendingPress = 0;
@@ -1174,10 +1121,7 @@ export class PointerInput {
         slot.pointerId = null;
         slot.pointerType = null;
         slot.isActive = false;
-        slot.a = false;
-        slot.b = false;
-        slot.c = false;
-        slot.d = false;
+        slot.down.fill(false);
         this.markEdges(slot, heldBefore);
     }
 
@@ -1199,10 +1143,7 @@ export class PointerInput {
         slot.pointerId = null;
         slot.pointerType = null;
         slot.isActive = false;
-        slot.a = false;
-        slot.b = false;
-        slot.c = false;
-        slot.d = false;
+        slot.down.fill(false);
         this.markEdges(slot, heldBefore);
     }
 
@@ -1220,22 +1161,12 @@ export class PointerInput {
      * @param isPressed - `true` to set the button down, `false` to release it.
      */
     private setMouseButton(slot: Slot, button: number, isPressed: boolean): void {
-        switch (button) {
-            case 0:
-                slot.a = isPressed;
-                break;
-            case 2:
-                slot.b = isPressed;
-                break;
-            case 1:
-                slot.c = isPressed;
-                break;
-            case 3:
-            case 4:
-                slot.d = isPressed;
-                break;
-            default:
-                break;
+        // eslint-disable-next-line security/detect-object-injection -- DOM button code only reads a fixed lookup table; misses are undefined
+        const index = MOUSE_BUTTON_INDEX[button];
+
+        if (index !== undefined) {
+            // eslint-disable-next-line security/detect-object-injection -- index comes from MOUSE_BUTTON_INDEX, always in [0, 3]
+            slot.down[index] = isPressed;
         }
     }
 
