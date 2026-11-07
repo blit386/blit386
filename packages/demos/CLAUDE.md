@@ -194,7 +194,9 @@ Current signatures live in the engine: `packages/blit386/src/BLIT386.ts`, `packa
 input uses `BT.isDown` / `BT.isPressed` / `BT.isKeyDown`. Prefer the built-ins over re-deriving them:
 `Color32#luminance` over inline luma weights, `Color32#multiply` over a hand-rolled tint, `palette.applyHUD(startSlot?)`
 over six `palette.set()` calls, `SpriteSheet.loadColorsIntoPalette` before `indexize`, and
-`palette.fillBlock(start, source, transform)` over a manual `for` loop of `palette.set()` calls.
+`palette.fillBlock(start, source, transform)` over a manual `for` loop of `palette.set()` calls. Zero-argument `BT`
+values are getters, not functions (`BT.displaySize.x`, not `BT.displaySize()`); see
+`packages/blit386/.claude/rules/bt-api-getters.md`.
 
 Two engine behaviors that bite in demos:
 
