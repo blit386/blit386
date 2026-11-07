@@ -5,8 +5,10 @@
  *
  * CI-only (`.github/workflows/kit-docs-drift.yml`) - not part of `pnpm run preflight` or any
  * `quality-root` step, since it needs a live `LINEAR_API_KEY` and makes a real network call.
- * Never a required check: this always exits 0, drift or not, so a standing content-review backlog
- * never shows as a red workflow run - the Linear issue/comment is the only signal.
+ * Never a required check on drift: finding drift exits 0, as does an unset `LINEAR_API_KEY`, so a
+ * standing content-review backlog never shows as a red workflow run - the Linear issue/comment is
+ * the only signal. A run that cannot do its job (the drift check throws, or the Linear call fails,
+ * e.g. an expired key or a missing `_api-history.json`) exits 1, so a dead reporter is visible.
  *
  * Usage:
  *   LINEAR_API_KEY=... node scripts/report-kit-docs-drift.mjs
@@ -92,7 +94,7 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     log(`Filed new tracking issue ${created.identifier}.`);
 }
 
-/** CLI entry point. Always resolves to exit code 0 - see file header. */
+/** CLI entry point. Resolves to 1 only when checking or reporting fails - see file header. */
 async function main() {
     let report;
 
@@ -101,7 +103,7 @@ async function main() {
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Failed to check kit docs drift: ${message}`);
-        return 0;
+        return 1;
     }
 
     if (!report.drift) {
@@ -122,6 +124,7 @@ async function main() {
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Failed to report kit docs drift to Linear: ${message}`);
+        return 1;
     }
 
     return 0;
