@@ -61,6 +61,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.musicPlay` and `BT.musicStop` now reject a non-finite `fadeMs` (and `BT.musicPlay` a non-finite `volume`) before
+  changing anything. Before, `BT.musicStop(Infinity)` left the track audible at full volume while `BT.isMusicPlaying`
+  was `false`, and `BT.musicStop(NaN)` threw a raw browser error.
 - A `NaN` or infinite `BT.soundPlay` option no longer breaks the voice pool. A bad `volume`, `fadeInMs`, or `atTime` (or
   a negative `atTime`) used to throw after the voice slot was taken, leaving a voice that never started and never ended;
   the next time that slot was reused, `BT.init` restarted, or a clip was unloaded, `stop()` on it threw. `BT.soundPlay`

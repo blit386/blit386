@@ -1178,6 +1178,7 @@ export const BT = {
      * @since 1.3.0
      * @param clip - Loaded audio clip to play.
      * @param options - Crossfade, volume, and loop options; see {@link MusicPlayOptions}.
+     * @throws Error when `options.fadeMs` or `options.volume` is not a finite number; the current track is left alone.
      */
     musicPlay: (clip: AudioClip, options?: MusicPlayOptions): void => {
         BTAPI.instance.musicPlay(clip, options);
@@ -1190,6 +1191,7 @@ export const BT = {
      * @changed 1.8.1 Also cancels a music request remembered while the audio context was still locked.
      * @param options - Optional fade behavior.
      * @param options.fadeMs - Fade-out duration in milliseconds. Omit to stop immediately.
+     * @throws Error when `options.fadeMs` is not a finite number; the current track keeps playing.
      */
     musicStop: (options?: { fadeMs?: number }): void => {
         BTAPI.instance.musicStop(options?.fadeMs);

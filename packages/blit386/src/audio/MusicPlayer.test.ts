@@ -640,6 +640,42 @@ describe('MusicPlayer', () => {
         });
     });
 
+    describe('non-finite play/stop values', () => {
+        it.each([Number.POSITIVE_INFINITY, Number.NaN])('stop(%s) throws and keeps the track current', (fadeMs) => {
+            const { player } = createPlayer();
+
+            player.play(createMockAudioBuffer());
+
+            expect(() => player.stop(fadeMs)).toThrow('finite');
+            expect(player.isPlaying()).toBe(true);
+        });
+
+        it('play with a NaN fadeMs throws and leaves the old track current', () => {
+            const { player, context } = createPlayer();
+
+            player.play(createMockAudioBuffer());
+
+            const sourcesBefore = (context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls
+                .length;
+
+            expect(() => player.play(createMockAudioBuffer(), { fadeMs: Number.NaN })).toThrow('finite');
+            expect(player.isPlaying()).toBe(true);
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                sourcesBefore,
+            );
+        });
+
+        it('play rejects a non-finite volume and keeps the old track and volume', () => {
+            const { player } = createPlayer();
+
+            player.play(createMockAudioBuffer(), { volume: 0.5 });
+
+            expect(() => player.play(createMockAudioBuffer(), { volume: Number.NaN })).toThrow('finite');
+            expect(player.isPlaying()).toBe(true);
+            expect(player.volumeGet()).toBe(0.5);
+        });
+    });
+
     describe('volume', () => {
         it('defaults to 1 before any play()', () => {
             const { player } = createPlayer();

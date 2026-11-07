@@ -843,6 +843,21 @@ describe('AudioManager', () => {
             );
         });
 
+        it('musicPlay with a non-finite fadeMs throws while locked and remembers nothing', () => {
+            audio.attach(canvas, 16);
+
+            expect(() => audio.musicPlay(createMockAudioBuffer(), { fadeMs: Number.NaN })).toThrow('finite');
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
+        it('musicStop with a non-finite fadeMs throws while locked and keeps the remembered request', () => {
+            audio.attach(canvas, 16);
+            audio.musicPlay(createMockAudioBuffer());
+
+            expect(() => audio.musicStop(Number.POSITIVE_INFINITY)).toThrow('finite');
+            expect(audio.hasRememberedMusicRequest()).toBe(true);
+        });
+
         it('only the latest pending request survives multiple musicPlay calls while locked', async () => {
             audio.attach(canvas, 16);
 

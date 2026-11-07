@@ -39,10 +39,12 @@ declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
 `BT.audioVolumeSet` sets a bus's volume, optionally fading to it. `BT.audioVolumeGet` reads it back.
 
 A non-finite volume or `fadeMs` (`NaN`, `Infinity`) throws instead of reaching the audio graph. `BT.soundVolumeSet` and
-`BT.musicVolumeSet` reject a non-finite volume the same way. `BT.soundPlay` throws for a non-finite `volume`, `pitch`,
-`pan`, or `fadeInMs`, and for an `atTime` that is not finite or is negative; `BT.soundPitchSet`, `BT.soundPanSet`, and
-the `fadeOutMs` of `BT.soundStop` reject non-finite values too. The check runs before a voice is taken, so a bad value
-(a volume computed as `1 - dist / maxDist` with `maxDist = 0`, say) never leaves a silent voice behind.
+`BT.musicVolumeSet` reject a non-finite volume the same way. `BT.musicPlay` throws for a non-finite `volume` or
+`fadeMs`, and `BT.musicStop` for a non-finite `fadeMs`, before the current track is touched. `BT.soundPlay` throws for a
+non-finite `volume`, `pitch`, `pan`, or `fadeInMs`, and for an `atTime` that is not finite or is negative;
+`BT.soundPitchSet`, `BT.soundPanSet`, and the `fadeOutMs` of `BT.soundStop` reject non-finite values too. The check runs
+before a voice is taken, so a bad value (a volume computed as `1 - dist / maxDist` with `maxDist = 0`, say) never leaves
+a silent voice behind.
 
 ```ts twoslash
 import { BT } from 'blit386';
