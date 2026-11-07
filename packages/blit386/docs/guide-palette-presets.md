@@ -34,7 +34,8 @@ That means:
 
 ## VGA (256 slots)
 
-`Palette.vga()` preset data is generated in three exact blocks:
+`Palette.vga()` is VGA-style but uses the xterm 256-color layout, not the VGA mode 13h default palette. Indexed art made
+for the DOS VGA palette will show different colors through it. The preset data is generated in three exact blocks:
 
 1. 16-color base
 2. 6×6×6 RGB cube using channel steps `[0, 95, 135, 175, 215, 255]`
@@ -63,13 +64,13 @@ That means:
 ];
 ```
 
-### VGA cube steps
+### xterm-256 cube steps
 
 ```ts twoslash
 [0, 95, 135, 175, 215, 255];
 ```
 
-### VGA grayscale ramp (`8..238`, step 10)
+### xterm-256 grayscale ramp (`8..238`, step 10)
 
 ```ts twoslash
 [8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118, 128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
