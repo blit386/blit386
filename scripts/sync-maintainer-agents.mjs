@@ -214,7 +214,7 @@ function readKitHookContents(name) {
  * @param {string} root Absolute repo root.
  * @returns {string[]}
  */
-function listOwnedSurfacePaths(root) {
+export function listOwnedSurfacePaths(root = ROOT) {
     /** @type {string[]} */
     const found = [];
 
@@ -256,7 +256,7 @@ function listOwnedSurfacePaths(root) {
  * @param {MaintainerEntry} entry
  * @returns {boolean} True when on-disk state already matches the plan entry.
  */
-function entryMatchesDisk(root, entry) {
+export function entryMatchesDisk(root, entry) {
     const abs = join(root, entry.path);
 
     try {
@@ -286,7 +286,7 @@ function entryMatchesDisk(root, entry) {
  * @param {string} root
  * @param {MaintainerEntry} entry
  */
-function writeEntry(root, entry) {
+export function writeEntry(root, entry) {
     const abs = join(root, entry.path);
     mkdirSync(dirname(abs), { recursive: true });
     rmSync(abs, { force: true });
@@ -334,24 +334,32 @@ async function collectGeneratedFiles() {
     ];
 }
 
-async function main() {
-    const isCheck = process.argv.includes('--check');
-    const generated = await collectGeneratedFiles();
-    const plan = planMaintainerEntries(generated, readKitHookContents);
+/**
+ * Plan, then check or write, the maintainer agent files under `root`.
+ *
+ * @param {object} options
+ * @param {Array<{ path: string, content: string }>} options.generated Adapter output (before skip/classify).
+ * @param {boolean} options.isCheck Report drift without writing.
+ * @param {string} [options.root] Absolute repo root.
+ * @param {(name: string) => string | null} [options.readKit] Kit hook reader.
+ * @returns {number} Process exit code: 1 when `isCheck` found drift, else 0.
+ */
+export function syncMaintainerAgents({ generated, isCheck, root = ROOT, readKit = readKitHookContents }) {
+    const plan = planMaintainerEntries(generated, readKit);
     const expected = new Set(plan.map((entry) => entry.path));
-    const orphans = findOrphanMaintainerPaths(listOwnedSurfacePaths(ROOT), expected, OWNED_DIRS, OWNED_EXACT_FILES);
+    const orphans = findOrphanMaintainerPaths(listOwnedSurfacePaths(root), expected, OWNED_DIRS, OWNED_EXACT_FILES);
     /** @type {string[]} */
     const drifted = [];
 
     for (const entry of plan) {
-        if (entryMatchesDisk(ROOT, entry)) {
+        if (entryMatchesDisk(root, entry)) {
             continue;
         }
 
         drifted.push(entry.path);
 
         if (!isCheck) {
-            writeEntry(ROOT, entry);
+            writeEntry(root, entry);
         }
     }
 
@@ -359,7 +367,7 @@ async function main() {
         drifted.push(`${orphan} (orphaned)`);
 
         if (!isCheck) {
-            rmSync(join(ROOT, orphan), { force: true });
+            rmSync(join(root, orphan), { force: true });
         }
     }
 
@@ -372,18 +380,18 @@ async function main() {
             }
 
             console.error('\nRun `pnpm run sync:maintainer-agents` to update them.');
-            process.exit(1);
+            return 1;
         }
 
         console.log(`All ${plan.length} maintainer agent file(s) up to date.`);
 
-        return;
+        return 0;
     }
 
     if (drifted.length === 0) {
         console.log(`All ${plan.length} maintainer agent file(s) already up to date.`);
 
-        return;
+        return 0;
     }
 
     for (const entry of drifted) {
@@ -391,11 +399,23 @@ async function main() {
     }
 
     console.log(`\n${drifted.length} of ${plan.length} maintainer agent file(s) updated.`);
+
+    return 0;
+}
+
+async function main() {
+    const generated = await collectGeneratedFiles();
+
+    return syncMaintainerAgents({ generated, isCheck: process.argv.includes('--check') });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-    main().catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
+    main()
+        .then((code) => {
+            process.exitCode = code;
+        })
+        .catch((error) => {
+            console.error(error);
+            process.exit(1);
+        });
 }
