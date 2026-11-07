@@ -46,7 +46,13 @@
       "*/.env.example": "allow"
     },
     "bash": {
-      "git reset --hard*": "deny",
+      "git reset *--hard*": "deny",
+      "git reset *--h": "deny",
+      "git reset *--h *": "deny",
+      "git reset *--ha": "deny",
+      "git reset *--ha *": "deny",
+      "git reset *--har": "deny",
+      "git reset *--har *": "deny",
       "git checkout -- *": "deny",
       "git checkout * -- *": "deny",
       "git checkout .": "deny",

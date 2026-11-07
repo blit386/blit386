@@ -576,7 +576,7 @@ export const MAINTAINER_CONFIG_SPECS = [
     {
         path: 'opencode.json',
         mcp: { container: 'mcp', urlKey: 'url', type: 'remote' },
-        bashDeny: 'git reset --hard*',
+        bashDeny: 'git reset *--hard*',
     },
     {
         path: '.opencode/plugins/kit-guard.ts',

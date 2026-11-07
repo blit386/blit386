@@ -131,6 +131,11 @@ describe('opencode.json permissions agree with the guard core', () => {
     const DENIED = [
         'git reset --hard',
         'git reset --hard HEAD~1',
+        'git reset -q --hard',
+        'git reset HEAD --hard',
+        'git reset --har',
+        'git reset --h',
+        'git reset --hard;ls',
         'git checkout -- src/game.js',
         'git checkout .',
         'git checkout HEAD -- x',
@@ -164,6 +169,7 @@ describe('opencode.json permissions agree with the guard core', () => {
     const ALLOWED = [
         'git status',
         'git reset --soft HEAD~1',
+        'git reset --help',
         'git checkout -b feature',
         'git checkout main',
         'git checkout --track origin/feature',

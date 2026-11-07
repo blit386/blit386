@@ -168,7 +168,7 @@ it:
         },
         "terminal": {
           "always_deny": [
-            { "pattern": "git\\s+reset\\s+--hard" },
+            { "pattern": "git\\s+reset\\s+([^\\s;&|<>]+\\s+)*--h(a(rd?)?)?([^A-Za-z-]|$)" },
             { "pattern": "git\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>]|$)" },
             {
               "pattern": "git\\s+(checkout|switch)\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z]*f[a-zA-Z]*|--force|--discard-changes)(\\s|[;&|<>]|$)"

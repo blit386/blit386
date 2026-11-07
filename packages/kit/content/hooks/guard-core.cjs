@@ -69,7 +69,11 @@ const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 const GIT_PREFIX = `git(${SPACE}+-${NON_SPACE}+(${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*)?)*${SPACE}+`;
 
 const ARG_CHAR = '[^ \\t\\v\\f\\r;&|<>]';
-const RESET_HARD = new RegExp(`${GIT_PREFIX}reset${SPACE}+--hard`);
+// Anywhere in the arguments (`reset -q --hard`, `reset HEAD --hard`) and from its shortest prefix: git runs `--h`,
+// `--ha` and `--har` as `--hard` too, while `--help` is a different option and passes (BT-641). It ends on any
+// character that cannot continue the option, not ARG_END, so `(git reset --hard)` and a backtick form still count.
+const HARD_OPTION = '--h(a(rd?)?)?';
+const RESET_HARD = new RegExp(`${GIT_PREFIX}reset${ARGS}${HARD_OPTION}([^A-Za-z-]|$)`);
 // `--` anywhere in the arguments, so `git checkout HEAD -- x` counts as well as `git checkout -- x` (BT-617).
 const CHECKOUT_PATHS = new RegExp(`${GIT_PREFIX}checkout${ARGS}--${ARG_END}`);
 // Decision (BT-617): `git checkout <path>` without `--` overwrites the file, but a regex cannot tell a path from a
