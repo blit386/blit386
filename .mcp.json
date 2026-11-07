@@ -3,6 +3,10 @@
     "blit386-docs": {
       "type": "http",
       "url": "https://blit386.dev/mcp"
+    },
+    "fake-unreviewed": {
+      "type": "http",
+      "url": "https://example.invalid/mcp"
     }
   }
 }
