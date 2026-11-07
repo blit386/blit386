@@ -945,6 +945,56 @@ export function discoverPackageAgentRoots(packagesDir) {
         .sort();
 }
 
+/**
+ * Runs the command `.claude/settings.json` wires for `Edit|MultiEdit|Write` against a real-shaped
+ * `.env` payload (`tool_input.file_path`) and expects the block exit code 2, so a payload-shape
+ * regression in that hook fails CI.
+ *
+ * @param {string} root Repo root.
+ * @returns {string[]} Failure messages.
+ */
+export function checkClaudeProtectFilesHook(root) {
+    const content = readFileIfExists(join(root, '.claude', 'settings.json'));
+
+    if (content === null) {
+        return ['.claude/settings.json is missing'];
+    }
+
+    let commands;
+
+    try {
+        commands = (JSON.parse(content).hooks?.PreToolUse ?? [])
+            .filter((entry) => entry.matcher === 'Edit|MultiEdit|Write')
+            .flatMap((entry) => entry.hooks ?? [])
+            .map((hook) => hook.command)
+            .filter((command) => typeof command === 'string');
+    } catch (error) {
+        return [`.claude/settings.json is not parseable as JSON: ${error instanceof Error ? error.message : error}`];
+    }
+
+    if (commands.length === 0) {
+        return ['.claude/settings.json has no PreToolUse command for Edit|MultiEdit|Write'];
+    }
+
+    const payload = JSON.stringify({ tool_name: 'Write', tool_input: { file_path: join(root, '.env'), content: 'x' } });
+    const statuses = commands.map(
+        (command) =>
+            spawnSync('sh', ['-c', command], {
+                input: payload,
+                encoding: 'utf8',
+                env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+                timeout: 10_000,
+            }).status,
+    );
+
+    // Claude Code blocks the edit when any wired hook exits 2, so one blocker is enough.
+    return statuses.includes(2)
+        ? []
+        : [
+              `.claude/settings.json Edit|MultiEdit|Write hooks exited ${statuses.join(', ')} for a .env payload, expected one to exit 2`,
+          ];
+}
+
 /** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
 function runAllChecks() {
     const failures = [];
@@ -981,6 +1031,7 @@ function runAllChecks() {
     collect(failures, '.', findCursorMcpFailures(readFileIfExists(join(REPO_ROOT, '.cursor', 'mcp.json'))));
 
     collect(failures, '.', checkMaintainerAgentConfigs(REPO_ROOT));
+    collect(failures, '.', checkClaudeProtectFilesHook(REPO_ROOT));
 
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);

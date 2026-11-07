@@ -53,7 +53,10 @@ The description after the package argument becomes the commit subject.
 5. Push and create PR
 
 - Push to remote: `git push -u origin HEAD`
-- Create PR using `gh pr create` with:
+- Write the body to a scratch file outside the repo (the session scratchpad or a temp dir) and create the PR with
+  `gh pr create --title '<title>' --body-file <file>`. Never inline the body with `--body`: an apostrophe ends the
+  quoted string, and the repo's shell guard blocks any call whose text names a destructive git command. Keep apostrophes
+  out of the title too, since it sits in single quotes. Use:
   - Title matching the commit message
   - Body with summary and test plan
   - Link to related issues if any

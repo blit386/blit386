@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { gitEnv } from '../packages/website/scripts/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
+    checkClaudeProtectFilesHook,
     checkMaintainerAgentConfigs,
     checkRootSkillsLayout,
     discoverPackageAgentRoots,
@@ -816,5 +817,34 @@ describe('check-agent-config under a symlinked temp root', () => {
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
+    });
+
+    describe('checkClaudeProtectFilesHook', () => {
+        const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+        function rootWithHook(command) {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-protect-'));
+            mkdirSync(join(root, '.claude'), { recursive: true });
+            const hooks = { PreToolUse: [{ matcher: 'Edit|MultiEdit|Write', hooks: [{ type: 'command', command }] }] };
+            writeFileSync(join(root, '.claude', 'settings.json'), JSON.stringify({ hooks }));
+            return root;
+        }
+
+        it('passes for this repo, whose hook blocks a real-shaped .env payload', () => {
+            assert.deepEqual(checkClaudeProtectFilesHook(REPO), []);
+        });
+
+        it('fails when the wired command lets a .env payload through', () => {
+            const root = rootWithHook('exit 0');
+
+            try {
+                const failures = checkClaudeProtectFilesHook(root);
+
+                assert.equal(failures.length, 1);
+                assert.match(failures[0], /exited 0 for a \.env payload, expected one to exit 2/);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
     });
 });

@@ -222,21 +222,14 @@ export class GamepadInput {
     /** Browser gamepad index seated on each player, or `NO_PAD_SLOT` when the seat is free. */
     private readonly padSlots: number[] = [NO_PAD_SLOT, NO_PAD_SLOT, NO_PAD_SLOT, NO_PAD_SLOT];
 
-    /** Current analog stick dead-zone threshold. */
-    private deadZone: number;
-
     /** Event handler for `gamepadconnected`. */
     private readonly onConnected: (event: Event) => void;
 
     /** Event handler for `gamepaddisconnected`. */
     private readonly onDisconnected: (event: Event) => void;
 
-    /**
-     * Creates a gamepad input tracker.
-     *
-     * @param deadZone - Stick dead-zone threshold in `[0, 0.99]`.
-     */
-    constructor(deadZone: number = DEFAULT_GAMEPAD_DEAD_ZONE) {
+    /** Creates a gamepad input tracker. */
+    constructor() {
         this.current = [
             this.createEmptySnapshot(),
             this.createEmptySnapshot(),
@@ -250,7 +243,6 @@ export class GamepadInput {
             this.createEmptySnapshot(),
         ];
         this.firstPressTick = [new Map(), new Map(), new Map(), new Map()];
-        this.deadZone = this.sanitizeDeadZone(deadZone);
         this.onConnected = () => this.poll();
         this.onDisconnected = () => this.poll();
     }
@@ -283,31 +275,11 @@ export class GamepadInput {
     }
 
     /**
-     * Sets the analog stick dead zone used by {@link GamepadInput.getAxis} for stick axes.
-     *
-     * @param deadZone - New dead-zone threshold.
-     */
-    public setDeadZone(deadZone: number): void {
-        this.deadZone = this.sanitizeDeadZone(deadZone);
-    }
-
-    /**
-     * Returns the current analog stick dead-zone threshold.
-     *
-     * @returns Current dead-zone threshold in `[0, 0.99]`.
-     */
-    public getDeadZone(): number {
-        return this.deadZone;
-    }
-
-    /**
      * Polls gamepads once for the frame about to start. Call once per rendered
      * frame. It never rolls previous-state over, so an edge polled on a frame
      * that runs no update stays visible until an update reads it.
-     *
-     * @param _currentTick - Current engine tick (unused; kept for BTAPI parity).
      */
-    public endFrame(_currentTick: number): void {
+    public endFrame(): void {
         this.poll();
     }
 
@@ -594,20 +566,6 @@ export class GamepadInput {
     }
 
     /**
-     * Normalizes and clamps dead-zone configuration.
-     *
-     * @param deadZone - Requested dead-zone value.
-     * @returns Clamped dead-zone value.
-     */
-    private sanitizeDeadZone(deadZone: number): number {
-        if (!Number.isFinite(deadZone)) {
-            return DEFAULT_GAMEPAD_DEAD_ZONE;
-        }
-
-        return Math.max(0, Math.min(deadZone, 0.99));
-    }
-
-    /**
      * Polls `navigator.getGamepads()` and refreshes current snapshots.
      */
     private poll(): void {
@@ -735,7 +693,7 @@ export class GamepadInput {
     }
 
     /**
-     * Applies configured dead zone and re-normalizes stick range.
+     * Applies the fixed dead zone and re-normalizes stick range.
      *
      * @param value - Raw stick axis value.
      * @returns Dead-zone filtered value.
@@ -743,11 +701,11 @@ export class GamepadInput {
     private applyStickDeadZone(value: number): number {
         const abs = Math.abs(value);
 
-        if (abs <= this.deadZone) {
+        if (abs <= DEFAULT_GAMEPAD_DEAD_ZONE) {
             return 0;
         }
 
-        const normalized = (abs - this.deadZone) / (1 - this.deadZone);
+        const normalized = (abs - DEFAULT_GAMEPAD_DEAD_ZONE) / (1 - DEFAULT_GAMEPAD_DEAD_ZONE);
 
         return Math.sign(value) * Math.min(1, normalized);
     }
