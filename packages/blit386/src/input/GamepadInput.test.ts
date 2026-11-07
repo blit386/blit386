@@ -165,6 +165,32 @@ describe('GamepadInput', () => {
         expect(input.isButtonDown(BT.BTN_UP, 0)).toBe(true);
     });
 
+    it('maps each standard-mapping button index to exactly its own BTN flag', () => {
+        const table: [number, number][] = [
+            [12, BT.BTN_UP],
+            [13, BT.BTN_DOWN],
+            [14, BT.BTN_LEFT],
+            [15, BT.BTN_RIGHT],
+            [0, BT.BTN_A],
+            [1, BT.BTN_B],
+            [2, BT.BTN_X],
+            [3, BT.BTN_Y],
+            [4, BT.BTN_L],
+            [5, BT.BTN_R],
+            [9, BT.BTN_START],
+            [8, BT.BTN_SELECT],
+        ];
+
+        for (const [index, flag] of table) {
+            pads[0] = makeGamepad({ pressed: [index] });
+            input.endFrame(1);
+
+            for (const [, other] of table) {
+                expect(input.isButtonDown(other, 0)).toBe(other === flag);
+            }
+        }
+    });
+
     it('maps triggers to BTN_L2 / BTN_R2 at the 0.5 threshold', () => {
         pads[0] = makeGamepad({ buttons: [0, 0, 0, 0, 0, 0, 0.49, 0.5] });
         input.endFrame(1);
