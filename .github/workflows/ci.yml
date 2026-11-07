@@ -366,6 +366,7 @@ jobs:
 
       - name: Build library
         working-directory: packages/blit386
+        shell: bash # explicit shell enables pipefail, so a failed build is not masked by tee
         run: pnpm run build 2>&1 | tee build.log
         env:
           NODE_ENV: production
@@ -380,6 +381,7 @@ jobs:
           name: library-dist
           path: packages/blit386/dist/
           retention-days: 7
+          if-no-files-found: error
 
   bundle-size:
     name: Check Bundle Size
