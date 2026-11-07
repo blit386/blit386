@@ -640,6 +640,18 @@ describe('bump-lockstep', () => {
             assert.equal(main(['node', 'bump-lockstep.mjs']), 1);
         });
 
+        it('routes a thrown error through the injected error hook', () => {
+            const errors = [];
+            const code = main(['node', 'bump-lockstep.mjs', '1.2'], {
+                log: () => {},
+                error: (message) => errors.push(message),
+            });
+
+            assert.equal(code, 1);
+            assert.equal(errors.length, 1);
+            assert.match(errors[0], /1\.2/);
+        });
+
         it('--check returns 0 and reports the in-step version', () => {
             const lines = [];
             const code = main(['node', 'bump-lockstep.mjs', '--check'], {

@@ -604,9 +604,9 @@ export function main(argv, hooks = {}) {
             log('(dry-run; no files written)');
         }
         return 0;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(message);
+    } catch (caught) {
+        const message = caught instanceof Error ? caught.message : String(caught);
+        error(message);
         return 1;
     }
 }
