@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
     buildMarkdown,
@@ -32,17 +34,20 @@ function makeReport(benchmarks, options = {}) {
 
 describe('parseArgs', () => {
     it('ignores the `--` separator pnpm forwards', () => {
-        assert.equal(parseArgs(['--', '--current', 'current.json']).current, 'current.json');
+        assert.equal(
+            parseArgs(['--', '--baseline', 'baseline.json', '--current', 'current.json']).current,
+            'current.json',
+        );
     });
 
     it('parses required and defaulted options', () => {
-        const args = parseArgs(['--current', 'current.json']);
+        const args = parseArgs(['--baseline', 'baseline.json', '--current', 'current.json']);
 
         assert.deepEqual(args, {
-            baseline: null,
+            baseline: 'baseline.json',
             current: 'current.json',
             jsonOut: 'benchmark-comparison.json',
-            markdownOut: 'benchmark-comment.md',
+            markdownOut: 'benchmark-comparison.md',
             threshold: 10,
         });
     });
@@ -72,6 +77,10 @@ describe('parseArgs', () => {
 
     it('throws when --current is missing', () => {
         assert.throws(() => parseArgs(['--baseline', 'baseline.json']), /--current argument is required/);
+    });
+
+    it('throws when --baseline is missing', () => {
+        assert.throws(() => parseArgs(['--current', 'current.json']), /--baseline argument is required/);
     });
 
     it('throws when a flag is missing its value', () => {
@@ -122,17 +131,6 @@ describe('flattenBenchmarks', () => {
 });
 
 describe('compareReports', () => {
-    it('marks every entry as new when there is no baseline', () => {
-        const current = makeReport([{ name: 'fast()', hz: 1000 }]);
-        const report = compareReports(current, null, 25);
-
-        assert.equal(report.hasBaseline, false);
-        assert.equal(report.summary.newBenchmarks, 1);
-        assert.equal(report.summary.compared, 0);
-        assert.equal(report.benchmarks[0].status, 'new');
-        assert.equal(report.benchmarks[0].baselineHz, null);
-    });
-
     it('marks an unchanged benchmark as pass', () => {
         const baseline = makeReport([{ name: 'fast()', hz: 1000 }]);
         const current = makeReport([{ name: 'fast()', hz: 1000 }]);
@@ -191,12 +189,6 @@ describe('compareReports', () => {
 });
 
 describe('hasComparisonFailures', () => {
-    it('is false when there is no baseline', () => {
-        const report = compareReports(makeReport([{ name: 'fast()', hz: 1000 }]), null, 25);
-
-        assert.equal(hasComparisonFailures(report), false);
-    });
-
     it('is false when the baseline comparison has no regressions or missing benchmarks', () => {
         const baseline = makeReport([{ name: 'fast()', hz: 1000 }]);
         const current = makeReport([{ name: 'fast()', hz: 1000 }]);
@@ -223,14 +215,6 @@ describe('hasComparisonFailures', () => {
 });
 
 describe('buildMarkdown', () => {
-    it('reports no baseline available when hasBaseline is false', () => {
-        const report = compareReports(makeReport([{ name: 'fast()', hz: 1000 }]), null, 25);
-        const markdown = buildMarkdown(report);
-
-        assert.match(markdown, /<!-- benchmark-comparison -->/);
-        assert.match(markdown, /No `main` branch benchmark baseline artifact is available yet/);
-    });
-
     it('renders a comparison table row per benchmark when a baseline is present', () => {
         const baseline = makeReport([{ name: 'fast()', hz: 1000 }]);
         const current = makeReport([{ name: 'fast()', hz: 1000 }]);
@@ -269,5 +253,20 @@ describe('checkout-independent matching', () => {
         const baseline = makeReport([{ name: 'b', hz: 100 }]);
 
         assert.equal(hasZeroMatches(compareReports(current, baseline, 10)), true);
+    });
+});
+
+describe('missing baseline file', () => {
+    it('exits 1 with a message naming the file and bench:baseline', () => {
+        const script = fileURLToPath(new URL('compare-tier-1-benchmarks.mjs', import.meta.url));
+        const result = spawnSync(
+            process.execPath,
+            [script, '--baseline', 'no-such-baseline.json', '--current', 'no-such-current.json'],
+            { encoding: 'utf8' },
+        );
+
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /no-such-baseline\.json/);
+        assert.match(result.stderr, /pnpm run bench:baseline/);
     });
 });

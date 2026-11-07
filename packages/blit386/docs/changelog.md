@@ -65,6 +65,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- The system font's en dash and em dash have their proper widths. The em dash was a copy of the hyphen and the en dash
+  was narrower than both, so text with an em dash (U+2014) drew the same pixels as a hyphen. The en dash is now 5 px
+  wide, like the hyphen, and the em dash fills the whole 6-px cell, so a run of em dashes joins into one line.
 - `BT.musicPlay` before the first click now throws on an invalid loop region, like it does after. A `loopStart` without
   a `loopEnd`, or a pair outside the clip, set in `init()` used to be stored and then only logged when audio unlocked,
   so no music played and nothing threw. See [Audio](api-audio.md).

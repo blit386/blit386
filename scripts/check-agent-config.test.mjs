@@ -399,6 +399,31 @@ describe('check-agent-config', () => {
             );
         });
 
+        it('fails Codex config.toml when the pinned URL only appears in a comment', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.codex/config.toml'),
+                    `[mcp_servers.blit386-docs]\nurl = "https://evil.example/mcp"\n# url = "https://blit386.dev/mcp"\n`,
+                )[0],
+                /does not pin url/,
+            );
+        });
+
+        it('fails Codex config.toml when the pinned block only appears as a commented-out copy', () => {
+            assert.match(
+                findMaintainerConfigFailures(
+                    maintainerSpec('.codex/config.toml'),
+                    `[mcp_servers.blit386-docs]\nurl = "https://evil.example/mcp"\n# [mcp_servers.blit386-docs]\nurl = "https://blit386.dev/mcp"\n`,
+                )[0],
+                /does not pin url/,
+            );
+        });
+
+        it('passes Codex config.toml with CRLF line endings', () => {
+            const content = `[mcp_servers.blit386-docs]\r\nurl = "https://blit386.dev/mcp"\r\n`;
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.codex/config.toml'), content), []);
+        });
+
         it('passes Codex hooks when codex-guard.cjs is wired', () => {
             const content = JSON.stringify({
                 hooks: {
@@ -467,6 +492,19 @@ describe('check-agent-config', () => {
                 mcp: { 'blit386-docs': { type: 'remote', url: 'https://blit386.dev/mcp', enabled: true } },
             });
             assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('opencode.json'), content), []);
+        });
+
+        it('reports a JSON null MCP config as a failure instead of throwing', () => {
+            assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.agents/mcp_config.json'), 'null'), [
+                '.agents/mcp_config.json has no mcpServers object',
+            ]);
+        });
+
+        it('reports a JSON null OpenCode config as a failure instead of throwing', () => {
+            const failures = findMaintainerConfigFailures(maintainerSpec('opencode.json'), 'null');
+
+            assert.ok(failures.length > 0);
+            assert.ok(failures.every((message) => typeof message === 'string'));
         });
 
         it('fails OpenCode when type is not remote', () => {
@@ -760,6 +798,21 @@ describe('check-agent-config under a symlinked temp root', () => {
             const failures = checkRootSkillsLayout(root).filter((message) => message.includes('skills/gone'));
 
             assert.deepEqual(failures, ['.agents/skills/gone is a broken symlink']);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('ignores a Finder .DS_Store in .agents/skills', () => {
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-dsstore-'));
+        mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
+        mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
+        writeFileSync(join(root, '.agents', 'skills', '.DS_Store'), '');
+
+        try {
+            const failures = checkRootSkillsLayout(root).filter((message) => message.includes('.DS_Store'));
+
+            assert.deepEqual(failures, []);
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
