@@ -24,13 +24,14 @@ import { PNG } from 'pngjs';
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import {
     SYSTEM_FONT_BITMAPS,
+    SYSTEM_FONT_EXTRA_CHARS as DATA_EXTRA_CODE_POINTS,
     SYSTEM_FONT_FIRST_CHAR,
-    SYSTEM_FONT_GLYPH_COUNT,
     SYSTEM_FONT_GLYPH_HEIGHT,
     SYSTEM_FONT_GLYPH_WIDTH,
     SYSTEM_FONT_LAST_CHAR,
 } from '../src/assets/fonts/systemFontData.ts';
 import { SYSTEM_FONT_EXTRA_CHARS } from './system-font-extra-chars.mjs';
+import { padBitmaps } from './system-font-pad.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
@@ -42,8 +43,9 @@ const ATLAS_COLS = 16;
 const FIRST_CHAR = SYSTEM_FONT_FIRST_CHAR;
 const LAST_CHAR = SYSTEM_FONT_LAST_CHAR;
 const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1;
-// Contiguous ASCII block followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
-const GLYPH_COUNT = SYSTEM_FONT_GLYPH_COUNT;
+// Contiguous ASCII block followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order. The list in
+// system-font-extra-chars.mjs is the layout owner, so the atlas grows as soon as an entry is appended.
+const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
 const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
 const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
 const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
@@ -124,8 +126,29 @@ Options:
         process.exit(0);
     }
 
+    // Entries appended to the list start as blank (all-zero) glyphs; anything but a pure append is refused.
+    let bitmaps;
+    let paddedGlyphs;
+
+    try {
+        ({ bitmaps, paddedGlyphs } = padBitmaps({
+            bitmaps: SYSTEM_FONT_BITMAPS,
+            dataExtras: DATA_EXTRA_CODE_POINTS,
+            listCodePoints: SYSTEM_FONT_EXTRA_CHARS.map(({ codePoint }) => codePoint),
+            asciiGlyphCount: ASCII_GLYPH_COUNT,
+            glyphHeight: GLYPH_HEIGHT,
+        }));
+    } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error));
+        process.exit(1);
+    }
+
+    if (paddedGlyphs > 0) {
+        console.log(`Padded ${paddedGlyphs} blank glyph(s) for new entries in system-font-extra-chars.mjs.`);
+    }
+
     const outputPath = args[0] || DEFAULT_OUTPUT;
-    const pngData = buildPNG(SYSTEM_FONT_BITMAPS);
+    const pngData = buildPNG(bitmaps);
 
     writeFileSync(outputPath, pngData);
 
