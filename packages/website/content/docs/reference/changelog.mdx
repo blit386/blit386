@@ -32,6 +32,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- `blit386` now declares an optional peer dependency on `vite` `>=6`, the first version that calls the `hotUpdate` hook
+  the `blit386/vite` plugin uses for asset hot reload. Engine-only projects without Vite see no warning. A project on
+  Vite 5 is now told: pnpm and yarn warn, and npm may refuse to install until Vite is upgraded, instead of asset edits
+  silently being ignored.
 - Loading a sprite sheet no longer keeps an unused full-size `ImageBitmap` in memory (16 MB for a 2048x2048 sheet) or
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
