@@ -45,6 +45,22 @@ describe('resolveOptions', () => {
         expect(resolved.assetTypes.get('.btfont')).toBe('font');
     });
 
+    it('defaults assetDirs to a custom publicDir', () => {
+        expect(resolveOptions(undefined, '/project', '/project/static').assetDirs).toEqual([
+            resolve('/project/static'),
+        ]);
+    });
+
+    it('defaults assetDirs to none when publicDir is false', () => {
+        expect(resolveOptions(undefined, '/project', '').assetDirs).toEqual([]);
+    });
+
+    it('keeps an explicit assetDirs regardless of publicDir', () => {
+        expect(resolveOptions({ assetDirs: ['assets'] }, '/project', '/project/static').assetDirs).toEqual([
+            resolve('/project', 'assets'),
+        ]);
+    });
+
     it('resolves assetDirs against the given root', () => {
         const resolved = resolveOptions({ assetDirs: ['static', 'assets'] }, '/project');
 

@@ -76,6 +76,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   the `assetDirs` entry alone, so the engine never found the asset it had loaded; it now builds the URL the way Vite
   serves the file (`base` plus the path under `publicDir`, or under the project root outside it). `assetDirs` only
   chooses which files are watched.
+- The `blit386/vite` plugin now watches Vite's own `publicDir` by default. Before, the default `assetDirs` was a fixed
+  `public`, so a game with `publicDir: 'static'` got no asset hot reload and no message. With `publicDir: false` nothing
+  is watched by default. An explicit `assetDirs` behaves as before.
 - `AudioClip.synth()` no longer renders pure silence for a short clip with the default envelope. A clip of 0.1 seconds
   or less (the default `attack` plus `release` is 0.11) used to start its release at the first sample, from a gain of 0,
   so nothing played, and slightly longer clips peaked below full volume. When `attack + release` is longer than the

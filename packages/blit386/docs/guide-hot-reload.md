@@ -323,7 +323,7 @@ runtime cost or behavior change to ship):
     assetDirs: {
       description: "Directories to watch for asset changes, resolved against the Vite root. This only selects which files are watched; the URL sent to the game follows Vite's own serving rules (your `base`, plus the path under `publicDir`, or under the project root for a folder outside it). A folder outside both `publicDir` and the project root is not hot reloaded.",
       type: 'string[]',
-      default: "['public']",
+      default: "Vite's publicDir (public unless you change it; none when publicDir is false)",
     },
     assetTypes: {
       description: 'Maps a lowercased file extension (with leading dot) to an asset kind. Merged over, not replacing, the defaults.',

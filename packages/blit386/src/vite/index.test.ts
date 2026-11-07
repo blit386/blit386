@@ -184,9 +184,29 @@ describe('blit386', () => {
         });
 
         it('uses the root-relative path for every file when publicDir is false', () => {
-            const url = broadcastUrl(undefined, { base: '/', publicDir: '' }, '/project/public/hero.png');
+            const url = broadcastUrl(
+                { assetDirs: ['public'] },
+                { base: '/', publicDir: '' },
+                '/project/public/hero.png',
+            );
 
             expect(url).toBe('/public/hero.png');
+        });
+
+        it('watches a custom publicDir by default', () => {
+            const url = broadcastUrl(
+                undefined,
+                { base: '/', publicDir: '/project/static' },
+                '/project/static/hero.png',
+            );
+
+            expect(url).toBe('/hero.png');
+        });
+
+        it('watches nothing by default when publicDir is false', () => {
+            const url = broadcastUrl(undefined, { base: '/', publicDir: '' }, '/project/public/hero.png');
+
+            expect(url).toBeUndefined();
         });
     });
 });
