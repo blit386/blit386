@@ -58,6 +58,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- On macOS, pressing Cmd plus a letter (Cmd+A, Cmd+Z) no longer leaves that letter held forever. Browsers send no
+  `keyup` for a key pressed while Cmd is held, so the key stayed down and, say, player 0 kept walking left. Keys pressed
+  while Cmd (the Meta key) is held are now ignored on every platform; keys already held when Cmd goes down are
+  unaffected.
 - A hidden file written into an asset folder no longer reloads the running game. Finder's `.DS_Store` and vim's `.swp`
   files used to trigger a full page reload through the `blit386/vite` plugin and lose your game state; files whose names
   start with a dot are now ignored.

@@ -460,6 +460,11 @@ export class KeyboardInput {
             event.preventDefault();
         }
 
+        // macOS sends no keyup for a key pressed while Meta is held, so it would stay down forever.
+        if (event.metaKey && !code.startsWith('Meta')) {
+            return;
+        }
+
         if (this.held.has(code)) {
             return;
         }
