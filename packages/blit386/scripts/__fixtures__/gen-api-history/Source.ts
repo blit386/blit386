@@ -10,7 +10,7 @@ export class Widget {
 }
 
 /**
- * Fixture function with no version tag yet, simulating a symbol pending backfill.
+ * Fixture function with no version tag yet, simulating a symbol without a tag.
  */
 export function helper(): void {}
 
