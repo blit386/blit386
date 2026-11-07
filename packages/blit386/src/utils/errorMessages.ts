@@ -984,7 +984,7 @@ export const RENDER_AT_NOT_READY_MESSAGE =
 
 /** `BT.renderAt()` re-ran the game's init() for a `from: 'start'` seek and it failed. */
 export const RENDER_AT_INIT_FAILED_MESSAGE =
-    "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. Your game keeps its previous state and BT.resume() continues it, but palette and post-process effects the seek cleared are gone. Check the console for the init() error";
+    "BT.renderAt() re-ran your game's init() to start the seek from the beginning, and init() failed. A class game keeps its previous state and BT.resume() continues it (an object-literal game keeps any fields init() wrote before it failed), but palette and post-process effects the seek cleared are gone. Check the console for the init() error";
 
 /** `BT.renderAt()` built a fresh game instance for a `from: 'start'` seek and its constructor threw. */
 export const RENDER_AT_CONSTRUCT_FAILED_MESSAGE =

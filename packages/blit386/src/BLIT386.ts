@@ -2677,7 +2677,8 @@ export const BT = {
      * fails, the call rejects, the previous instance stays active, and the ticks, the `BT.random`
      * stream position, the camera offset and the post-process clock are put back, so `BT.resume()` continues the
      * old game where it was. Palette effects and post-process effects the seek cleared stay lost,
-     * as do pending input edges. The splash is not replayed; as in the live run, palette effects that
+     * as do pending input edges; an object-literal game keeps any field the failed `init()` wrote, because
+     * it has no fresh instance. The splash is not replayed; as in the live run, palette effects that
      * `init()` started behind it are dropped.
      * Palette slot colors are not restored, so build the palette inside `init()`. `from: 'current'` steps
      * forward from the tick the game is on and rejects a target in the past. Either way the loop

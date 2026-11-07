@@ -614,7 +614,8 @@ BT.resume(); // keep playing from tick 192
   the old game where it was (`BT.random.seedValue` then reads `undefined` unless nothing had drawn since the seed). Not
   restored: palette effects and post-process effects the seek cleared (clearing disposes them, so start them again),
   pending input edges, and anything the failed `init()` already did to the engine, such as slot colors it set. Palette
-  effects the failed `init()` started are cleared.
+  effects the failed `init()` started are cleared. An object-literal game has no fresh instance, so the failed `init()`
+  ran on the live object and any field it wrote before failing stays changed.
 - An object literal passed to `BT.init(demo, canvas)` has no class to build from, so its `init()` re-runs on the same
   object and must reset every field itself.
 - State outside the instance is still yours to reset: module-level variables, objects shared between runs, DOM

@@ -3360,7 +3360,8 @@ export class BTAPI {
      * `BT.random` stream position, the camera offset and the post-process clock are
      * restored, so `BT.resume()` continues the old game where it was (`BT.random.seedValue` reads
      * `undefined` afterwards unless nothing had drawn since the seed). Not restored: palette effects
-     * and post-process effects (clearing disposes them), and pending input edges, all gone.
+     * and post-process effects (clearing disposes them), and pending input edges, all gone. An object-literal
+     * game runs `init()` on the live object, so fields it wrote before failing stay changed.
      *
      * @param demo - Running game instance.
      * @param loop - Stopped game loop.
