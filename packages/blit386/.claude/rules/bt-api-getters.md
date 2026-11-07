@@ -13,7 +13,7 @@ When editing `src/BLIT386.ts`, demos, or API docs:
 
 Zero-argument read-only values on `BT`:
 
-- Configure-time (use same names as `HardwareSettings`): `displaySize`, `drawingBufferSize`, `targetFpsX`
+- Configure-time (use same names as `HardwareSettings`): `displaySize`, `drawingBufferSize`, `targetFPS`
 - Derived: `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)
 - Configure-time (backend): `requestedBackend` mirrors resolved `HardwareSettings.backend` (includes
   `?backend=software`); `null` before `BT.init()`
@@ -101,7 +101,7 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
 
 ## Naming when adding getters
 
-- Match `HardwareSettings` spelling: `targetFpsX` (not `fps`, not `targetFps`)
+- Match `HardwareSettings` spelling: `targetFPS` (not `fps`, not `targetFps`)
 - `requestedBackend` = resolved request (`configure()` merge + URL override); `activeBackend` = backend that started
   (after fallback)
 - Runtime feature gates (post-process, etc.) use `activeBackend`, not `requestedBackend`
