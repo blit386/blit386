@@ -77,7 +77,8 @@ npx blit migrate --write  # also enables hot reload in vite.config when missing
 `plugins: [blit386()]`. Restart the dev server once after that, then save a file - the game should keep playing. If your
 vite.config is unusual, add the two lines by hand (this page) or ask your AI assistant (the use-hot-reload skill).
 
-The plugin needs blit386 1.4.0 or newer.
+The plugin needs blit386 1.4.0 or newer. Saving an image, sound or font while the game runs also needs Vite 6 or newer
+(new games already have it); on Vite 5 those edits are silently ignored.
 
 ## What still forces a full reload
 

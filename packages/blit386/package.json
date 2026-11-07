@@ -128,6 +128,14 @@
     "test:security-preflight": "node --test scripts/security/mcp-preflight.test.mjs"
   },
   "packageManager": "pnpm@11.20.0",
+  "peerDependencies": {
+    "vite": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
     "@eslint/js": "^10.0.1",
