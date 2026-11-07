@@ -239,4 +239,67 @@ describe('initWebGPU', () => {
             }),
         );
     });
+
+    describe('device cleanup on failed init (BT-728)', () => {
+        function installNavigatorWithDevice(device: GPUDevice): void {
+            Object.defineProperty(globalThis, 'navigator', {
+                value: {
+                    gpu: {
+                        requestAdapter: async () => ({
+                            requestDevice: async () => device,
+                            features: new Set(),
+                            limits: { maxTextureDimension2D: 2048 } as GPUSupportedLimits,
+                        }),
+                        getPreferredCanvasFormat: () => 'bgra8unorm' as GPUTextureFormat,
+                    },
+                    userAgent: 'test',
+                },
+                writable: true,
+                configurable: true,
+            });
+        }
+
+        it('destroys the device when the device texture limit check fails', async () => {
+            const destroy = vi.fn();
+            const device = {
+                ...createMockGPUDevice(),
+                limits: { maxTextureDimension2D: 512 } as GPUSupportedLimits,
+                destroy,
+            } as GPUDevice;
+
+            installNavigatorWithDevice(device);
+
+            await expect(initWebGPU(createMockCanvas(), displaySize, new Vector2i(1024, 768))).rejects.toBeInstanceOf(
+                RenderDimensionLimitError,
+            );
+            expect(destroy).toHaveBeenCalledTimes(1);
+        });
+
+        it('destroys the device when canvas.getContext returns null', async () => {
+            const destroy = vi.fn();
+            const device = { ...createMockGPUDevice(), destroy } as GPUDevice;
+
+            installNavigatorWithDevice(device);
+
+            expect(await initWebGPU(createMockCanvas(null), displaySize)).toBeNull();
+            expect(destroy).toHaveBeenCalledTimes(1);
+        });
+
+        it('destroys the device and rethrows when configuring the canvas context throws', async () => {
+            const destroy = vi.fn();
+            const device = { ...createMockGPUDevice(), destroy } as GPUDevice;
+            const failure = new Error('configure failed');
+            const gpuContext = {
+                ...createMockGPUCanvasContext(),
+                configure: () => {
+                    throw failure;
+                },
+            };
+
+            installNavigatorWithDevice(device);
+
+            await expect(initWebGPU(createMockCanvas(gpuContext), displaySize)).rejects.toBe(failure);
+            expect(destroy).toHaveBeenCalledTimes(1);
+        });
+    });
 });
