@@ -26,7 +26,7 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A 600x315 screen with a title bar across the top that reads "174 glyphs - Click one to
+A 600x315 screen with a title bar across the top that reads "160 glyphs - Click one to
 copy to the clipboard" (the number is read from the font, so it follows whatever the
 engine ships). Below it sits a grid of 16 columns of small button-shaped cells, each
 holding one white glyph of the built-in 6x14 system font, in the order the font lists
@@ -224,7 +224,7 @@ class Demo {
         this.font = BT.systemFont;
         this.codePoints = this.font.codePoints;
 
-        // Math.ceil rounds up: 174 glyphs / 16 columns = 10.875, which becomes 11 rows
+        // Math.ceil rounds up: 165 glyphs / 16 columns = 10.3125, which becomes 11 rows
         // because the last, partly empty row still needs to exist.
         this.gridRows = Math.ceil(this.codePoints.length / GRID_COLS);
 
