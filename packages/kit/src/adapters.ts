@@ -1115,7 +1115,18 @@ const OPENCODE_PERMISSION = {
         '*/.env.example': 'allow',
     },
     bash: {
-        'git reset --hard*': 'deny',
+        // `--hard` anywhere after `reset`, followed by anything (`;`, `&&`, a redirect), and each shorter prefix git
+        // accepts (`--h` to `--har`) as a whole argument, so `--help` still passes.
+        'git reset *--hard*': 'deny',
+        ...Object.fromEntries(
+            [3, 4, 5].flatMap((length) => {
+                const prefix = '--hard'.slice(0, length);
+                return [
+                    [`git reset *${prefix}`, 'deny'],
+                    [`git reset *${prefix} *`, 'deny'],
+                ];
+            }),
+        ),
         'git checkout -- *': 'deny',
         'git checkout * -- *': 'deny',
         'git checkout .': 'deny',

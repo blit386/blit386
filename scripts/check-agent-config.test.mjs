@@ -488,7 +488,7 @@ describe('check-agent-config', () => {
 
         it('passes OpenCode when remote MCP and bash deny are present', () => {
             const content = JSON.stringify({
-                permission: { bash: { 'git reset --hard*': 'deny' } },
+                permission: { bash: { 'git reset *--hard*': 'deny' } },
                 mcp: { 'blit386-docs': { type: 'remote', url: 'https://blit386.dev/mcp', enabled: true } },
             });
             assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('opencode.json'), content), []);
@@ -509,7 +509,7 @@ describe('check-agent-config', () => {
 
         it('fails OpenCode when type is not remote', () => {
             const content = JSON.stringify({
-                permission: { bash: { 'git reset --hard*': 'deny' } },
+                permission: { bash: { 'git reset *--hard*': 'deny' } },
                 mcp: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp' } },
             });
             assert.match(
