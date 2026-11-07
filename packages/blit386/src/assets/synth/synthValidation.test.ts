@@ -235,4 +235,16 @@ describe('validateSynthParams non-finite numbers', () => {
 
         expect(() => validateSynthParams(params, 48000)).toThrow(/duration/);
     });
+
+    it('should throw an engine error for a duration that rounds to zero samples', () => {
+        const params = buildParams({ duration: 0.00001 });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/rounds to 0 samples/);
+    });
+
+    it('should accept the shortest duration that rounds to one sample', () => {
+        const params = buildParams({ duration: 1 / 48000 });
+
+        expect(() => validateSynthParams(params, 48000)).not.toThrow();
+    });
 });

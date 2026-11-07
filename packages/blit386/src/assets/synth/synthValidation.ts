@@ -3,6 +3,7 @@
  */
 
 import {
+    audioClipSynthDurationRoundsToZeroError,
     audioClipSynthDurationTooLongError,
     audioClipSynthInvalidSeedError,
     audioClipSynthInvalidWaveformError,
@@ -16,6 +17,7 @@ import {
 } from '../../utils/errorMessages';
 import type { SynthEnvelope, SynthParams, SynthVibrato } from './SynthParams';
 import { MAX_SYNTH_DURATION_SECONDS, SYNTH_WAVEFORMS } from './SynthParams';
+import { synthSampleCount } from './synthRender';
 
 /** Waveform names accepted by {@link SynthParams.waveform}. */
 const VALID_WAVEFORMS = new Set<string>(SYNTH_WAVEFORMS);
@@ -52,17 +54,7 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
         throw new Error(audioClipSynthInvalidWaveformError(params.waveform));
     }
 
-    if (!(params.duration > 0)) {
-        throw new Error(audioClipSynthNonPositiveDurationError(params.duration));
-    }
-
-    if (params.duration > MAX_SYNTH_DURATION_SECONDS) {
-        throw new Error(audioClipSynthDurationTooLongError(params.duration, MAX_SYNTH_DURATION_SECONDS));
-    }
-
-    if (!(Number.isFinite(sampleRate) && sampleRate > 0)) {
-        throw new Error(audioClipSynthNonPositiveSampleRateError(sampleRate));
-    }
+    validateTiming(params.duration, sampleRate);
 
     if (!(Number.isFinite(params.frequency) && params.frequency > 0)) {
         throw new Error(audioClipSynthNonPositiveFrequencyError(params.frequency));
@@ -90,6 +82,31 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
     }
 
     validateUnitRangeFields(params);
+}
+
+/**
+ * Validates the clip `duration` and the `sampleRate` it is rounded against.
+ *
+ * @param duration - Requested clip length in seconds.
+ * @param sampleRate - Target sample rate in Hz.
+ * @throws Error describing the first invalid value found.
+ */
+function validateTiming(duration: number, sampleRate: number): void {
+    if (!(duration > 0)) {
+        throw new Error(audioClipSynthNonPositiveDurationError(duration));
+    }
+
+    if (duration > MAX_SYNTH_DURATION_SECONDS) {
+        throw new Error(audioClipSynthDurationTooLongError(duration, MAX_SYNTH_DURATION_SECONDS));
+    }
+
+    if (!(Number.isFinite(sampleRate) && sampleRate > 0)) {
+        throw new Error(audioClipSynthNonPositiveSampleRateError(sampleRate));
+    }
+
+    if (synthSampleCount(duration, sampleRate) < 1) {
+        throw new Error(audioClipSynthDurationRoundsToZeroError(duration, sampleRate));
+    }
 }
 
 /**

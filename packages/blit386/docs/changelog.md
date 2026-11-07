@@ -136,6 +136,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   rendering a broken sound. Before, `volume: NaN` gave a clip of pure `NaN`, `dutyCycle: NaN` or `vibrato.depth: NaN`
   gave a flat signal with no tone, `envelope.attack: NaN` skipped the attack, and `frequency: Infinity` turned the phase
   into `NaN`. `volume` stays unbounded above, since the output is clamped. See [Synth](api-audio.md#synth).
+- `AudioClip.synth()` now throws an engine error for a `duration` shorter than half a sample at the audio context's
+  sample rate (for example `0.00001` at 48000 Hz). Before, it passed validation and the browser threw a bare
+  `NotSupportedError` from `createBuffer`. See [Synth](api-audio.md#synth).
 - `BT.musicStop()` called before the player's first click now cancels a `BT.musicPlay()` remembered while audio was
   locked. Before, the stopped track still started on the first click.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling

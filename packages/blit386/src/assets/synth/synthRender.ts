@@ -20,6 +20,17 @@ const CLIP_MIN = -1;
 const CLIP_MAX = 1;
 
 /**
+ * Returns how many samples a clip of `duration` seconds has at `sampleRate`.
+ *
+ * @param duration - Clip length in seconds.
+ * @param sampleRate - Sample rate in Hz.
+ * @returns The rounded sample count, which is 0 for a duration under half a sample.
+ */
+export function synthSampleCount(duration: number, sampleRate: number): number {
+    return Math.round(duration * sampleRate);
+}
+
+/**
  * Renders `params` into a full-precision PCM sample buffer at `sampleRate`.
  *
  * Deterministic for identical `params` and `sampleRate` - the only source of randomness (the
@@ -32,10 +43,10 @@ const CLIP_MAX = 1;
  * @param params - Synthesis parameters. Assumed already validated by
  *   {@link validateSynthParams}.
  * @param sampleRate - Output sample rate in Hz.
- * @returns Rendered mono samples, `Math.round(params.duration * sampleRate)` long.
+ * @returns Rendered mono samples, {@link synthSampleCount} long.
  */
 export function renderSynthSamples(params: SynthParams, sampleRate: number): Float32Array<ArrayBuffer> {
-    const sampleCount = Math.round(params.duration * sampleRate);
+    const sampleCount = synthSampleCount(params.duration, sampleRate);
     const samples = new Float32Array(sampleCount);
     const envelope = resolveEnvelope(params.envelope);
     const volume = params.volume ?? DEFAULT_VOLUME;

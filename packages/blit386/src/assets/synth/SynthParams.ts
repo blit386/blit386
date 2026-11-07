@@ -107,7 +107,8 @@ export interface SynthParams {
 
     /**
      * Total clip duration in seconds. Must be finite, greater than 0 and no more than
-     * {@link MAX_SYNTH_DURATION_SECONDS}.
+     * {@link MAX_SYNTH_DURATION_SECONDS}, and long enough to round to at least one sample at the
+     * decode context's sample rate (about 0.00002 seconds at 48000 Hz).
      */
     duration: number;
 
