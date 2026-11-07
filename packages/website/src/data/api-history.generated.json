@@ -1837,6 +1837,10 @@
         {
           "version": "1.8.1",
           "note": "Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size."
+        },
+        {
+          "version": "1.8.1",
+          "note": "`size` is a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size."
         }
       ],
       "deprecated": null,

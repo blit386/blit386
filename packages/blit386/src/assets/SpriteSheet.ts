@@ -351,6 +351,7 @@ export type IndexedSpriteLoadResult = {
  *
  * @since 0.1.0
  * @changed 1.8.1 Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size.
+ * @changed 1.8.1 `size` is a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
  */
 export class SpriteSheet {
     /** Source HTML image element (null for sheets created from raw indexed data). */

@@ -139,6 +139,9 @@ largest sheet the engine accepts) on both axes throws a `RangeError` and leaves 
 reads back as a frozen `Vector2i` (or `null`). The grid survives a hot-reload image swap, and lookups are checked
 against the sheet's current size. See [Drawing tiles](/docs/api/rendering#drawing-tiles).
 
+`sheet.size` also reads back as a frozen `Vector2i`, a copy of the vector you passed to the constructor. Changing your
+own vector afterwards does not resize the sheet, and writing to `sheet.size.x` or `.y` throws in strict mode.
+
 ## Sprite setup - manual path
 
 Use this only when you need fine-grained control over the palette layout or want to load several sheets into the same
