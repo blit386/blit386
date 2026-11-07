@@ -202,8 +202,7 @@ Conventional Commits and DCO sign-off are root-level policy (see root `CLAUDE.md
 A fresh remote or cloud checkout has no `node_modules`. `scripts/session-start-bootstrap.sh` fixes that
 (`pnpm install --frozen-lockfile` for the whole monorepo, skipped on an unchanged lockfile) and is wired into both the
 root `.claude/settings.json` (SessionStart) and the root `.devcontainer/devcontainer.json` (`postCreateCommand`) - one
-script, two call sites. Neither blocks or fails the session on a bootstrap error. Detail:
-`.claude/rules/environment-bootstrap.md`.
+script, two call sites. Neither blocks or fails the session on a bootstrap error.
 
 ## Environment and tooling gotchas
 
