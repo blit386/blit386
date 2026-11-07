@@ -6,7 +6,10 @@
  * without pulling `vite` into the published engine bundle.
  */
 
-/** Every asset kind the plugin can broadcast; the one list the payload type and the runtime check derive from. */
+/**
+ * Every asset kind the plugin can broadcast; the one list the payload type and the runtime check derive from.
+ * `'image'`, `'audio'`, and `'font'` are hot-replaced in place; `'other'` is accepted but falls back to a hard reload.
+ */
 export const ASSET_KINDS = ['image', 'audio', 'font', 'other'] as const;
 
 /**
