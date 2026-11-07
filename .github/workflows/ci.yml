@@ -294,6 +294,10 @@ jobs:
         run: pnpm --filter blit386 run api:deprecations:check
         background: true
 
+      - name: Check bt-api-getters.md against public API
+        run: pnpm --filter blit386 run api:getters:check
+        background: true
+
       - wait-all:
 
   visual-parity:
@@ -458,6 +462,22 @@ jobs:
 
       - name: Run security preflight tests
         run: pnpm --filter blit386 run test:security-preflight
+
+      # These are node --test suites under scripts/, which vitest (src/** only) never picks up.
+      - name: Run declaration tooling tests
+        run: pnpm --filter blit386 run test:declarations
+
+      - name: Run API getters drift guard tests
+        run: pnpm --filter blit386 run test:api-getters
+
+      - name: Run API deprecations generator tests
+        run: pnpm --filter blit386 run test:api-deprecations
+
+      - name: Run benchmark comparison tests
+        run: pnpm --filter blit386 run test:bench-compare
+
+      - name: Run benchmark coverage check tests
+        run: pnpm --filter blit386 run test:check-bench-coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
