@@ -55,7 +55,7 @@ describe('InputTrace', () => {
     const update = (): void => {
         tick++;
         trace.record('update', tick, pointer, keyboard, gamepad);
-        keyboard.endUpdate(tick);
+        keyboard.endUpdate();
         gamepad.endUpdate(tick);
         pointer.endUpdate();
     };
@@ -64,7 +64,7 @@ describe('InputTrace', () => {
     const render = (): void => {
         trace.record('render', tick, pointer, keyboard, gamepad);
         pointer.endFrame();
-        gamepad.endFrame(tick);
+        gamepad.endFrame();
     };
 
     beforeEach(() => {

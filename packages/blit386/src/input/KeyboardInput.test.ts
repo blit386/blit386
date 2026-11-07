@@ -102,13 +102,13 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', bubbles: true }));
 
         expect(kb.isKeyPressed('KeyZ', undefined, 0)).toBe(true);
 
-        kb.endFrame(1);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyZ', bubbles: true }));
 
@@ -141,7 +141,7 @@ describe('KeyboardInput', () => {
         kb.attach(canvas, { getTicks: () => tick });
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', bubbles: true }));
-        kb.endUpdate(tick);
+        kb.endUpdate();
         canvas.dispatchEvent(new Event('blur'));
 
         expect(kb.isKeyDown('ArrowRight')).toBe(false);
@@ -163,14 +163,14 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         tick = 10;
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true }));
 
         expect(kb.isKeyPressed('ArrowDown', 5, 10)).toBe(true);
 
-        kb.endFrame(10);
+        kb.endUpdate();
 
         expect(kb.isKeyPressed('ArrowDown', 5, 11)).toBe(false);
 
@@ -185,13 +185,13 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', bubbles: true }));
 
         expect(kb.isKeyPressed('Digit1', 0, 0)).toBe(true);
 
-        kb.endFrame(1);
+        kb.endUpdate();
 
         expect(kb.isKeyPressed('Digit1', 0, 2)).toBe(false);
 
@@ -204,7 +204,7 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        kb.endUpdate(0);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', bubbles: true }));
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyJ', bubbles: true }));
@@ -212,7 +212,7 @@ describe('KeyboardInput', () => {
         expect(kb.isKeyPressed('KeyJ', undefined, 0)).toBe(true);
         expect(kb.isKeyReleased('KeyJ')).toBe(true);
 
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         expect(kb.isKeyPressed('KeyJ', undefined, 1)).toBe(false);
         expect(kb.isKeyReleased('KeyJ')).toBe(false);
@@ -236,7 +236,7 @@ describe('KeyboardInput', () => {
 
         expect(kb.getInputString()).toBe('z');
 
-        kb.endUpdate(0);
+        kb.endUpdate();
 
         expect(kb.getInputString()).toBe('');
 
@@ -249,7 +249,7 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        kb.endUpdate(0);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyX', bubbles: true }));
 
@@ -274,7 +274,7 @@ describe('KeyboardInput', () => {
 
         expect(kb.getInputString()).toBe('Hi');
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         expect(kb.getInputString()).toBe('');
     });
@@ -397,11 +397,11 @@ describe('KeyboardInput', () => {
 
         const codes = DEFAULT_KEYBOARD_PLAYER1[1 << 0] ?? [];
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
 
-        kb.endFrame(1);
+        kb.endUpdate();
 
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
 
@@ -418,14 +418,14 @@ describe('KeyboardInput', () => {
 
         const codes = DEFAULT_KEYBOARD_PLAYER1[1 << 0] ?? [];
 
-        kb.endFrame(0);
+        kb.endUpdate();
 
         tick = 10;
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
 
         expect(kb.isButtonPressed(codes, 4, 10)).toBe(true);
 
-        kb.endFrame(10);
+        kb.endUpdate();
 
         expect(kb.isButtonPressed(codes, 4, 14)).toBe(true);
 
@@ -485,7 +485,7 @@ describe('KeyboardInput', () => {
         const codes = ['Space', 'KeyB'];
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
-        kb.endUpdate(1);
+        kb.endUpdate();
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
 
         expect(kb.isButtonPressed(codes, undefined, 2)).toBe(false);
@@ -502,7 +502,7 @@ describe('KeyboardInput', () => {
         const codes = DEFAULT_KEYBOARD_SINGLE_PLAYER1[1 << 0] ?? [];
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
-        kb.endUpdate(1);
+        kb.endUpdate();
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowUp', bubbles: true }));
 
         expect(kb.isButtonPressed(codes, undefined, 2)).toBe(false);
@@ -520,7 +520,7 @@ describe('KeyboardInput', () => {
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
-        kb.endUpdate(1);
+        kb.endUpdate();
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB', bubbles: true }));
 
         expect(kb.isButtonReleased(codes)).toBe(false);
@@ -537,7 +537,7 @@ describe('KeyboardInput', () => {
         const codes = ['Space', 'KeyB'];
 
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
-        kb.endUpdate(1);
+        kb.endUpdate();
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
 
@@ -555,7 +555,7 @@ describe('KeyboardInput', () => {
 
         const codes = ['Space', 'KeyB'];
 
-        kb.endUpdate(0);
+        kb.endUpdate();
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', bubbles: true }));
         canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB', bubbles: true }));
 
@@ -660,7 +660,7 @@ describe('KeyboardInput any-key helpers', () => {
         canvas = createCanvas();
         kb = new KeyboardInput();
         kb.attach(canvas, { getTicks: () => tick });
-        kb.endUpdate(0);
+        kb.endUpdate();
     });
 
     afterEach(() => {
@@ -687,14 +687,14 @@ describe('KeyboardInput any-key helpers', () => {
 
         expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
 
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         expect(kb.isAnyKeyPressed(undefined, 1)).toBe(false);
     });
 
     it('isAnyKeyPressed fires for a second key pressed while another is held', () => {
         down('KeyA');
-        kb.endUpdate(1);
+        kb.endUpdate();
         down('KeyB');
 
         expect(kb.isAnyKeyPressed(undefined, 1)).toBe(true);
@@ -710,14 +710,14 @@ describe('KeyboardInput any-key helpers', () => {
     it('isAnyKeyPressed repeats on schedule anchored to the earliest held key', () => {
         tick = 10;
         down('ArrowDown');
-        kb.endUpdate(10);
+        kb.endUpdate();
 
         expect(kb.isAnyKeyPressed(5, 11)).toBe(false);
         expect(kb.isAnyKeyPressed(5, 15)).toBe(true);
 
         tick = 12;
         down('ArrowUp');
-        kb.endUpdate(12);
+        kb.endUpdate();
 
         // ArrowUp is held too, but the cadence still follows ArrowDown (tick 10).
         expect(kb.isAnyKeyPressed(5, 15)).toBe(true);
@@ -726,7 +726,7 @@ describe('KeyboardInput any-key helpers', () => {
 
     it('isAnyKeyPressed ignores a non-positive repeatRate', () => {
         down('KeyA');
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         expect(kb.isAnyKeyPressed(0, 5)).toBe(false);
         expect(kb.isAnyKeyPressed(-3, 5)).toBe(false);
@@ -739,25 +739,25 @@ describe('KeyboardInput any-key helpers', () => {
     it('isAnyKeyReleased waits until every key is up', () => {
         down('KeyA');
         down('KeyB');
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         up('KeyA');
 
         expect(kb.isAnyKeyReleased()).toBe(false);
 
-        kb.endUpdate(2);
+        kb.endUpdate();
         up('KeyB');
 
         expect(kb.isAnyKeyReleased()).toBe(true);
 
-        kb.endUpdate(3);
+        kb.endUpdate();
 
         expect(kb.isAnyKeyReleased()).toBe(false);
     });
 
     it('isAnyKeyReleased is false when a different key is pressed in the same update', () => {
         down('KeyA');
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         up('KeyA');
         down('KeyB');
@@ -774,7 +774,7 @@ describe('KeyboardInput any-key helpers', () => {
 
     it('window blur does not report a release', () => {
         down('KeyA');
-        kb.endUpdate(1);
+        kb.endUpdate();
 
         globalThis.window.dispatchEvent(new Event('blur'));
 
@@ -806,7 +806,7 @@ describe('KeyboardInput.collectEdges', () => {
         canvas = createCanvas();
         kb = new KeyboardInput();
         kb.attach(canvas, { getTicks: () => 0 });
-        kb.endUpdate(0);
+        kb.endUpdate();
     });
 
     afterEach(() => {
@@ -818,7 +818,7 @@ describe('KeyboardInput.collectEdges', () => {
         down('Space');
         expect(edges()).toEqual({ pressed: ['Space'], released: [] });
 
-        kb.endUpdate(1);
+        kb.endUpdate();
         expect(edges()).toEqual({ pressed: [], released: [] });
 
         up('Space');
@@ -835,7 +835,7 @@ describe('KeyboardInput.collectEdges', () => {
     it('matches isKeyPressed and isKeyReleased for each listed code', () => {
         down('KeyA');
         down('KeyB');
-        kb.endUpdate(1);
+        kb.endUpdate();
         up('KeyA');
         down('KeyC');
 
