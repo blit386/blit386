@@ -65,6 +65,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
+  keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
+  `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed
+  once when it goes from no mapped keys held to one, and released once when the last mapped key comes up. A keyboard tap
+  between two updates still counts as one press and one release. See [Input](guide-input.md).
 - An image hot replace no longer strands the other sprite sheets when one fails. When several sheets were loaded from
   the same image and the new image broke one of them (for example a color that is not in the active palette), the sheets
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet
