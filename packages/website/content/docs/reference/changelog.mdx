@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-07T10:53:16+01:00"
+lastModified: "2026-11-07T13:15:47+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -62,6 +62,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.musicPlay` before the first click now throws on an invalid loop region, like it does after. A `loopStart` without
+  a `loopEnd`, or a pair outside the clip, set in `init()` used to be stored and then only logged when audio unlocked,
+  so no music played and nothing threw. See [Audio](/docs/api/audio).
 - An image hot replace no longer strands the other sprite sheets when one fails. When several sheets were loaded from
   the same image and the new image broke one of them (for example a color that is not in the active palette), the sheets
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet
