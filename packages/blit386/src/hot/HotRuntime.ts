@@ -12,7 +12,7 @@ import { AudioClip } from '../assets/AudioClip';
 import { getHotReloadFonts } from '../assets/BitmapFont';
 import { getHotReloadSheets } from '../assets/SpriteSheet';
 import { BTAPI } from '../core/BTAPI';
-import { ASSET_CHANGED_EVENT, type AssetChangedPayload, HOT_RELOAD_DOM_EVENT } from './protocol';
+import { ASSET_CHANGED_EVENT, ASSET_KINDS, type AssetChangedPayload, HOT_RELOAD_DOM_EVENT } from './protocol';
 
 /**
  * Minimal structural shape of Vite's `import.meta.hot` context that the engine
@@ -41,8 +41,8 @@ let hot: HotContext | null = null;
 /** Hot-swap generation counter; advanced only through {@link nextGeneration}. */
 let generation = 0;
 
-/** Asset kinds routed to a hot-replace handler; anything else falls through to a hard reload. */
-const KNOWN_ASSET_TYPES = new Set(['image', 'audio', 'font', 'other']);
+/** Asset kinds accepted by {@link isAssetChangedPayload}; any other kind is ignored as malformed, and only `'other'` hard-reloads. */
+const KNOWN_ASSET_TYPES: ReadonlySet<string> = new Set(ASSET_KINDS);
 
 /**
  * Narrows an unknown HMR event payload to {@link AssetChangedPayload}.

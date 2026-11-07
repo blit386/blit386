@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AssetChangedPayload } from './protocol';
 import { ASSET_CHANGED_EVENT, HOT_RELOAD_DOM_EVENT } from './protocol';
 
 describe('protocol', () => {
@@ -14,11 +13,5 @@ describe('protocol', () => {
 
     it('uses two different event names', () => {
         expect(ASSET_CHANGED_EVENT).not.toBe(HOT_RELOAD_DOM_EVENT);
-    });
-
-    it('describes the expected payload shape', () => {
-        const payload: AssetChangedPayload = { url: 'sprites/hero.png', type: 'image', timestamp: 1700000000000 };
-
-        expect(payload).toEqual({ url: 'sprites/hero.png', type: 'image', timestamp: 1700000000000 });
     });
 });

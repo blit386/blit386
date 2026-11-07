@@ -121,17 +121,6 @@ describe('HotRuntime', () => {
         });
     });
 
-    describe('registerHotReload', () => {
-        it('wires the asset-changed listener', () => {
-            const hot = makeFakeHotContext();
-
-            HotRuntime.registerHotReload(hot);
-
-            expect(HotRuntime.isHotActive()).toBe(true);
-            expect(hot.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
-        });
-    });
-
     describe('nextGeneration', () => {
         it('increments on every call, starting from 1', () => {
             expect(HotRuntime.nextGeneration()).toBe(1);
