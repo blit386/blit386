@@ -387,7 +387,7 @@ function classifyBtMemberKind(declaration) {
  * @param {ts.TypeChecker} checker - Type checker for the program.
  * @param {ts.Symbol} btSymbol - Resolved symbol for the namespace object export.
  * @param {string} exportName - Public name of the namespace export (`'BT'` in production).
- * @returns {Array<{ name: string, kind: string, node: ts.Node, sourceFile: ts.SourceFile, tags: object }>}
+ * @returns {Array<{ name: string, kind: string, tags: object }>}
  *   One record per member.
  */
 function collectNamespaceMemberRecords(checker, btSymbol, exportName) {
@@ -410,8 +410,6 @@ function collectNamespaceMemberRecords(checker, btSymbol, exportName) {
             {
                 name: `${exportName}.${propertySymbol.getName()}`,
                 kind: classifyBtMemberKind(memberDeclaration),
-                node: memberDeclaration,
-                sourceFile: memberDeclaration.getSourceFile(),
                 tags: extractTags(memberDeclaration),
             },
         ];
@@ -428,7 +426,7 @@ function collectNamespaceMemberRecords(checker, btSymbol, exportName) {
  * @param {string} entryFilePath - Absolute path to the public entrypoint module.
  * @param {{ namespaceExportName?: string }} [options] - `namespaceExportName` defaults to `'BT'`;
  *   override for fixtures that use a different namespace object name.
- * @returns {Array<{ name: string, kind: string, node: ts.Node, sourceFile: ts.SourceFile, tags: object }>}
+ * @returns {Array<{ name: string, kind: string, tags: object }>}
  *   One record per public symbol.
  */
 export function collectSymbolRecords(program, entryFilePath, options = {}) {
@@ -466,8 +464,6 @@ export function collectSymbolRecords(program, entryFilePath, options = {}) {
         records.push({
             name,
             kind: classifyDeclarationKind(declaration),
-            node: declaration,
-            sourceFile: declaration.getSourceFile(),
             tags: extractTags(declaration),
         });
     }
