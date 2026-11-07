@@ -49,6 +49,10 @@ import { gitEnv } from '../packages/website/scripts/git-env.mjs';
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** @param {string} path @returns {string | null} File contents, or `null` when the file does not exist. */
+function realpathSyncIfExists(path) {
+    return existsSync(path) ? realpathSync(path) : path;
+}
+
 function readFileIfExists(path) {
     return existsSync(path) ? readFileSync(path, 'utf8') : null;
 }
@@ -721,13 +725,11 @@ export function findMaintainerHookSymlinkFailures(entries) {
 function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
     const abs = join(root, relPath);
 
+    if (!lstatSync(abs).isSymbolicLink()) {
+        return { path: relPath, isSymlink: false, resolvedBasename: null };
+    }
+
     try {
-        const stat = lstatSync(abs);
-
-        if (!stat.isSymbolicLink()) {
-            return { path: relPath, isSymlink: false, resolvedBasename: null };
-        }
-
         const target = realpathSync(abs);
 
         if (dirname(target) !== kitHooksDir) {
@@ -736,7 +738,8 @@ function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
 
         return { path: relPath, isSymlink: true, resolvedBasename: basename(target) };
     } catch {
-        return { path: relPath, isSymlink: false, resolvedBasename: null };
+        // lstat succeeded above, so a realpath failure means a dangling link.
+        return { path: relPath, isSymlink: true, resolvedBasename: null };
     }
 }
 
@@ -749,7 +752,8 @@ function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
  * @returns {string[]}
  */
 export function checkMaintainerAgentConfigs(root) {
-    const kitHooksDir = join(root, 'packages', 'kit', 'content', 'hooks');
+    // Resolved once: link targets come from realpathSync, so a symlinked root (macOS /tmp) must not skew the compare.
+    const kitHooksDir = realpathSyncIfExists(join(root, 'packages', 'kit', 'content', 'hooks'));
     /** @type {string[]} */
     const failures = [];
 
@@ -875,7 +879,7 @@ function readClaudeSkillDirNames(claudeSkillsDir) {
  */
 export function checkRootSkillsLayout(root) {
     const agentsSkillsDir = join(root, '.agents', 'skills');
-    const claudeSkillsDir = join(root, '.claude', 'skills');
+    const claudeSkillsDir = realpathSyncIfExists(join(root, '.claude', 'skills'));
     const zedSettingsPath = join(root, '.zed', 'settings.json');
     const claudeSkillsDirExists = existsSync(claudeSkillsDir);
 

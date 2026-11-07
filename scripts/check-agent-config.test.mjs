@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { gitEnv } from '../packages/website/scripts/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
+    checkMaintainerAgentConfigs,
     checkRootSkillsLayout,
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
@@ -706,5 +707,61 @@ describe('check-agent-config', () => {
                 rmSync(packagesDir, { recursive: true, force: true });
             }
         });
+    });
+});
+
+describe('check-agent-config under a symlinked temp root', () => {
+    // os.tmpdir() resolves under /private on macOS, so the unresolved root differs from realpathSync output.
+    it('reports good, dangling and plain-file hook entries correctly', () => {
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-hooks-'));
+        const kitHooks = join(root, 'packages', 'kit', 'content', 'hooks');
+        const codexHooks = join(root, '.codex', 'hooks');
+        mkdirSync(kitHooks, { recursive: true });
+        mkdirSync(codexHooks, { recursive: true });
+        writeFileSync(join(kitHooks, 'good.cjs'), '');
+        symlinkSync(join(kitHooks, 'good.cjs'), join(codexHooks, 'good.cjs'));
+        symlinkSync(join(kitHooks, 'gone.cjs'), join(codexHooks, 'gone.cjs'));
+        writeFileSync(join(codexHooks, 'plain.cjs'), '');
+
+        try {
+            const failures = checkMaintainerAgentConfigs(root).filter((message) => message.includes('.cjs'));
+
+            assert.deepEqual(failures, [
+                '.codex/hooks/gone.cjs is a broken symlink or does not resolve under packages/kit/content/hooks/',
+                '.codex/hooks/plain.cjs is not a symlink',
+            ]);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('accepts a valid .agents/skills link', () => {
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-'));
+        mkdirSync(join(root, '.claude', 'skills', 'a'), { recursive: true });
+        mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
+        symlinkSync(join(root, '.claude', 'skills', 'a'), join(root, '.agents', 'skills', 'a'));
+
+        try {
+            const failures = checkRootSkillsLayout(root).filter((message) => message.includes('skills/a'));
+
+            assert.deepEqual(failures, []);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('reports a dangling .agents/skills link as broken', () => {
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-gone-'));
+        mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
+        mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
+        symlinkSync(join(root, '.claude', 'skills', 'gone'), join(root, '.agents', 'skills', 'gone'));
+
+        try {
+            const failures = checkRootSkillsLayout(root).filter((message) => message.includes('skills/gone'));
+
+            assert.deepEqual(failures, ['.agents/skills/gone is a broken symlink']);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
     });
 });
