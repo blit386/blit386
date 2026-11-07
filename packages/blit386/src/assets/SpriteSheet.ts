@@ -397,10 +397,10 @@ export class SpriteSheet {
             assertImageElementWithinLimits('sprite sheet', image);
             const decoded = getDecodedImageSize(image);
 
-            this._size = new Vector2i(decoded.width, decoded.height);
+            this._size = Object.freeze(new Vector2i(decoded.width, decoded.height));
         } else if (size) {
             assertDimensions('sprite sheet', size.x, size.y);
-            this._size = size;
+            this._size = Object.freeze(new Vector2i(size.x, size.y));
         } else {
             throw new Error('Either an image or explicit size must be provided.');
         }
@@ -409,9 +409,10 @@ export class SpriteSheet {
     /**
      * Gets the sprite-sheet dimensions in pixels.
      *
-     * @returns Sheet dimensions. Changes after a hot-replace image swap with
+     * @returns Frozen sheet dimensions. Changes after a hot-replace image swap with
      *   different dimensions - any `srcRect` a demo holds onto is the demo's own
      *   responsibility to reconcile.
+     * @changed 1.8.1 Returns a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
      */
     get size(): Vector2i {
         return this._size;
@@ -828,7 +829,7 @@ export class SpriteSheet {
             this.image = image;
             const decoded = getDecodedImageSize(image);
 
-            this._size = new Vector2i(decoded.width, decoded.height);
+            this._size = Object.freeze(new Vector2i(decoded.width, decoded.height));
 
             if (this.indexedPixels !== null && palette !== null) {
                 this.indexize(palette);
