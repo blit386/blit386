@@ -81,7 +81,8 @@ is how you get an engine rumble rather than a clean tone.
 **`dutyCycle`** - only matters for `'square'`. It is the "thickness" of the buzz, from 0 to 1, default 0.5. Move it
 towards 0.1 and the square wave gets thin and nasal, which is a very NES sound.
 
-**`volume`** - 0 to 1, default 1.
+**`volume`** - 0 to 1, default 1. A negative value throws, and so does `NaN` or `Infinity` in this or any other number
+field. Above 1 is allowed but the output is clamped, so it only distorts.
 
 ## A worked example: a laser that is yours
 

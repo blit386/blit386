@@ -152,3 +152,87 @@ describe('validateSynthParams seed', () => {
         expect(() => validateSynthParams(buildParams({ seed: Number.NaN }), 48000)).toThrow(/seed/);
     });
 });
+
+describe('validateSynthParams non-finite numbers', () => {
+    it('should throw for a NaN volume', () => {
+        expect(() => validateSynthParams(buildParams({ volume: Number.NaN }), 48000)).toThrow(/volume/);
+    });
+
+    it('should throw for an infinite volume', () => {
+        expect(() => validateSynthParams(buildParams({ volume: Number.POSITIVE_INFINITY }), 48000)).toThrow(/volume/);
+    });
+
+    it('should throw for a negative volume', () => {
+        expect(() => validateSynthParams(buildParams({ volume: -0.5 }), 48000)).toThrow(/volume/);
+    });
+
+    it('should accept a volume above 1, since the output is clamped', () => {
+        expect(() => validateSynthParams(buildParams({ volume: 2 }), 48000)).not.toThrow();
+    });
+
+    it('should throw for a NaN dutyCycle', () => {
+        expect(() => validateSynthParams(buildParams({ dutyCycle: Number.NaN }), 48000)).toThrow(/dutyCycle/);
+    });
+
+    it('should throw for a NaN noiseMix', () => {
+        expect(() => validateSynthParams(buildParams({ noiseMix: Number.NaN }), 48000)).toThrow(/noiseMix/);
+    });
+
+    it('should throw for a NaN envelope.attack', () => {
+        const params = buildParams({ envelope: { attack: Number.NaN } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/envelope\.attack/);
+    });
+
+    it('should throw for an infinite envelope.decay', () => {
+        const params = buildParams({ envelope: { decay: Number.POSITIVE_INFINITY } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/envelope\.decay/);
+    });
+
+    it('should throw for a NaN envelope.release', () => {
+        const params = buildParams({ envelope: { release: Number.NaN } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/envelope\.release/);
+    });
+
+    it('should throw for a NaN envelope.sustain', () => {
+        const params = buildParams({ envelope: { sustain: Number.NaN } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/sustain/);
+    });
+
+    it('should throw for a NaN vibrato.rate', () => {
+        const params = buildParams({ vibrato: { rate: Number.NaN } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/vibrato\.rate/);
+    });
+
+    it('should throw for a NaN vibrato.depth', () => {
+        const params = buildParams({ vibrato: { depth: Number.NaN } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/vibrato\.depth/);
+    });
+
+    it('should throw for an infinite frequency', () => {
+        const params = buildParams({ frequency: Number.POSITIVE_INFINITY });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/frequency/);
+    });
+
+    it('should throw for an infinite pitchSweep.toFrequency', () => {
+        const params = buildParams({ pitchSweep: { toFrequency: Number.POSITIVE_INFINITY } });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/pitch sweep/);
+    });
+
+    it('should throw for an infinite sample rate', () => {
+        expect(() => validateSynthParams(buildParams(), Number.POSITIVE_INFINITY)).toThrow(/sample rate/);
+    });
+
+    it('should throw for an infinite duration', () => {
+        const params = buildParams({ duration: Number.POSITIVE_INFINITY });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/duration/);
+    });
+});

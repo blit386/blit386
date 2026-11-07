@@ -771,7 +771,7 @@ export function audioClipSynthInvalidWaveformError(waveform: string): string {
  * @returns User-facing error string.
  */
 export function audioClipSynthNonPositiveDurationError(duration: number): string {
-    return `AudioClip.synth() needs duration greater than 0 seconds (got ${duration}). Set duration to a positive number.`;
+    return `AudioClip.synth() needs duration greater than 0 seconds (got ${duration}). Set duration to a finite, positive number.`;
 }
 
 /**
@@ -800,7 +800,7 @@ export function audioClipSynthDurationTooLongError(duration: number, maxDuration
  */
 export function audioClipSynthNonPositiveSampleRateError(sampleRate: number): string {
     return (
-        `AudioClip.synth() needs a positive sample rate (got ${sampleRate}). ` +
+        `AudioClip.synth() needs a finite, positive sample rate (got ${sampleRate}). ` +
         'Make sure the engine has finished starting before calling AudioClip.synth().'
     );
 }
@@ -812,7 +812,7 @@ export function audioClipSynthNonPositiveSampleRateError(sampleRate: number): st
  * @returns User-facing error string.
  */
 export function audioClipSynthNonPositiveFrequencyError(frequency: number): string {
-    return `AudioClip.synth() needs frequency greater than 0 Hz (got ${frequency}). Set frequency to a positive number.`;
+    return `AudioClip.synth() needs frequency greater than 0 Hz (got ${frequency}). Set frequency to a finite, positive number.`;
 }
 
 /**
@@ -826,7 +826,7 @@ export function audioClipSynthNonPositiveFrequencyError(frequency: number): stri
  * @returns User-facing error string.
  */
 export function audioClipSynthNonNegativeFieldError(field: string, value: number): string {
-    return `AudioClip.synth() needs ${field} to be 0 or greater (got ${value}). Use a non-negative number.`;
+    return `AudioClip.synth() needs ${field} to be 0 or greater (got ${value}). Use a finite, non-negative number.`;
 }
 
 /**
@@ -836,7 +836,7 @@ export function audioClipSynthNonNegativeFieldError(field: string, value: number
  * @returns User-facing error string.
  */
 export function audioClipSynthSustainRangeError(sustain: number): string {
-    return `AudioClip.synth() needs envelope.sustain between 0 and 1 (got ${sustain}). Use a value in that range.`;
+    return `AudioClip.synth() needs envelope.sustain between 0 and 1 (got ${sustain}). Use a finite value in that range.`;
 }
 
 /**
@@ -849,7 +849,7 @@ export function audioClipSynthSustainRangeError(sustain: number): string {
  * @returns User-facing error string.
  */
 export function audioClipSynthUnitRangeFieldError(field: string, value: number): string {
-    return `AudioClip.synth() needs ${field} between 0 and 1 (got ${value}). Use a value in that range.`;
+    return `AudioClip.synth() needs ${field} between 0 and 1 (got ${value}). Use a finite value in that range.`;
 }
 
 /**
@@ -874,7 +874,7 @@ export function audioClipSynthInvalidSeedError(seed: unknown): string {
 export function audioClipSynthPitchSweepFrequencyError(toFrequency: number): string {
     return (
         `AudioClip.synth() needs pitch sweep toFrequency greater than 0 Hz (got ${toFrequency}). ` +
-        'Set pitchSweep.toFrequency to a positive number.'
+        'Set pitchSweep.toFrequency to a finite, positive number.'
     );
 }
 

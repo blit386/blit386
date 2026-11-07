@@ -21,6 +21,26 @@ import { MAX_SYNTH_DURATION_SECONDS, SYNTH_WAVEFORMS } from './SynthParams';
 const VALID_WAVEFORMS = new Set<string>(SYNTH_WAVEFORMS);
 
 /**
+ * Returns whether `value` is a finite number of 0 or more. NaN and Infinity fail, unlike a bare `value < 0` test.
+ *
+ * @param value - Number to test.
+ * @returns `true` when `value` is finite and not negative.
+ */
+function isNonNegative(value: number): boolean {
+    return Number.isFinite(value) && value >= 0;
+}
+
+/**
+ * Returns whether `value` is a finite number within [0, 1].
+ *
+ * @param value - Number to test.
+ * @returns `true` when `value` is finite and between 0 and 1 inclusive.
+ */
+function isUnitRange(value: number): boolean {
+    return Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+/**
  * Validates `params` and the target `sampleRate` before {@link renderSynthSamples} runs.
  *
  * @param params - Synthesis parameters supplied to {@link AudioClip.synth}.
@@ -40,11 +60,11 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
         throw new Error(audioClipSynthDurationTooLongError(params.duration, MAX_SYNTH_DURATION_SECONDS));
     }
 
-    if (!(sampleRate > 0)) {
+    if (!(Number.isFinite(sampleRate) && sampleRate > 0)) {
         throw new Error(audioClipSynthNonPositiveSampleRateError(sampleRate));
     }
 
-    if (!(params.frequency > 0)) {
+    if (!(Number.isFinite(params.frequency) && params.frequency > 0)) {
         throw new Error(audioClipSynthNonPositiveFrequencyError(params.frequency));
     }
 
@@ -52,9 +72,16 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
         throw new Error(audioClipSynthInvalidSeedError(params.seed));
     }
 
+    if (params.volume !== undefined && !isNonNegative(params.volume)) {
+        throw new Error(audioClipSynthNonNegativeFieldError('volume', params.volume));
+    }
+
     validateEnvelope(params.envelope);
 
-    if (params.pitchSweep !== undefined && !(params.pitchSweep.toFrequency > 0)) {
+    if (
+        params.pitchSweep !== undefined &&
+        !(Number.isFinite(params.pitchSweep.toFrequency) && params.pitchSweep.toFrequency > 0)
+    ) {
         throw new Error(audioClipSynthPitchSweepFrequencyError(params.pitchSweep.toFrequency));
     }
 
@@ -72,11 +99,11 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
  * @throws Error describing the first invalid field found.
  */
 function validateUnitRangeFields(params: SynthParams): void {
-    if (params.noiseMix !== undefined && (params.noiseMix < 0 || params.noiseMix > 1)) {
+    if (params.noiseMix !== undefined && !isUnitRange(params.noiseMix)) {
         throw new Error(audioClipSynthUnitRangeFieldError('noiseMix', params.noiseMix));
     }
 
-    if (params.dutyCycle !== undefined && (params.dutyCycle < 0 || params.dutyCycle > 1)) {
+    if (params.dutyCycle !== undefined && !isUnitRange(params.dutyCycle)) {
         throw new Error(audioClipSynthUnitRangeFieldError('dutyCycle', params.dutyCycle));
     }
 }
@@ -92,19 +119,19 @@ function validateEnvelope(envelope: SynthEnvelope | undefined): void {
         return;
     }
 
-    if (envelope.attack !== undefined && envelope.attack < 0) {
+    if (envelope.attack !== undefined && !isNonNegative(envelope.attack)) {
         throw new Error(audioClipSynthNonNegativeFieldError('envelope.attack', envelope.attack));
     }
 
-    if (envelope.decay !== undefined && envelope.decay < 0) {
+    if (envelope.decay !== undefined && !isNonNegative(envelope.decay)) {
         throw new Error(audioClipSynthNonNegativeFieldError('envelope.decay', envelope.decay));
     }
 
-    if (envelope.release !== undefined && envelope.release < 0) {
+    if (envelope.release !== undefined && !isNonNegative(envelope.release)) {
         throw new Error(audioClipSynthNonNegativeFieldError('envelope.release', envelope.release));
     }
 
-    if (envelope.sustain !== undefined && (envelope.sustain < 0 || envelope.sustain > 1)) {
+    if (envelope.sustain !== undefined && !isUnitRange(envelope.sustain)) {
         throw new Error(audioClipSynthSustainRangeError(envelope.sustain));
     }
 }
@@ -116,11 +143,11 @@ function validateEnvelope(envelope: SynthEnvelope | undefined): void {
  * @throws Error describing the first invalid field found.
  */
 function validateVibrato(vibrato: SynthVibrato): void {
-    if (vibrato.rate !== undefined && vibrato.rate < 0) {
+    if (vibrato.rate !== undefined && !isNonNegative(vibrato.rate)) {
         throw new Error(audioClipSynthNonNegativeFieldError('vibrato.rate', vibrato.rate));
     }
 
-    if (vibrato.depth !== undefined && vibrato.depth < 0) {
+    if (vibrato.depth !== undefined && !isNonNegative(vibrato.depth)) {
         throw new Error(audioClipSynthNonNegativeFieldError('vibrato.depth', vibrato.depth));
     }
 }
