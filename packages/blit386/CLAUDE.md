@@ -42,7 +42,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | How is agent config drift checked? | `scripts/check-agent-config.mjs` (root), wired into `pnpm run agents:check` and the `quality-root` CI job - covers Claude/Cursor/Zed plus the maintainer dogfood for Antigravity/Codex/Gemini/Copilot/OpenCode |
 | Where do the `.cursor/commands/*.md` slash commands come from? | Generated from `.claude/skills/*/SKILL.md` (frontmatter stripped) by `scripts/sync-cursor-commands.mjs` (root); never hand-edit them. `pnpm run sync:cursor-commands` regenerates, `pnpm run sync:cursor-commands:check` reports drift |
 | Where do the other agents' maintainer hooks/MCP config come from? | Generated from the kit adapters by `scripts/sync-maintainer-agents.mjs` (root); never hand-edit them and never `blit agents add` into this repo. `pnpm run sync:maintainer-agents` regenerates, `pnpm run sync:maintainer-agents:check` reports byte drift |
-| Where are Cursor agent rules and hooks? | `.cursor/rules/*.mdc` mirrors only the rule files still standalone in root `.claude/rules/` (currently `docs-sync-required`, `named-constants`) - everything else Cursor gets from `AGENTS.md`, which it reads natively; `.cursor/hooks.json`; `.cursor/mcp.json` (Cursor's own schema, not a symlink to root `.mcp.json` - see `scripts/check-agent-config.mjs`'s `findCursorMcpFailures`) |
+| Where are Cursor agent rules and hooks? | `.cursor/rules/*.mdc` mirrors only the rule files still standalone in root `.claude/rules/` (currently `docs-sync-required`, `environment-gotchas`, `named-constants`) - everything else Cursor gets from `AGENTS.md`, which it reads natively; `.cursor/hooks.json`; `.cursor/mcp.json` (Cursor's own schema, not a symlink to root `.mcp.json` - see `scripts/check-agent-config.mjs`'s `findCursorMcpFailures`) |
 | Where is the public docs site? | `packages/website` builds it from this package's `docs/`; `docs/_sitemap.json` controls what publishes |
 | Dependency security policy / CI audit gate? | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md` |
 | Where is the annotated `src/` tree? | `.claude/rules/architecture.md` |
@@ -211,4 +211,5 @@ Preflight behaves differently in ephemeral or CI-style checkouts, and the failur
 not "fix" them by editing the checks. `_api-history.json` regeneration needs git tags (dates regenerate as `null`
 without them, wiping the committed ones; restore the `versions` block afterward), and `docs:links` needs outbound
 network (external URLs 403 through a sandbox proxy while internal links still resolve). Full list, including hook
-interaction and when `--no-verify` is legitimate: `.claude/rules/environment-gotchas.md`, which loads every session.
+interaction and when `--no-verify` is legitimate: the root `.claude/rules/environment-gotchas.md`, which loads at
+session start.
