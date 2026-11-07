@@ -112,13 +112,14 @@ class IndexizeCanvas {
 
 (globalThis as unknown as { OffscreenCanvas: unknown }).OffscreenCanvas = IndexizeCanvas;
 
+/** One sheet reused across iterations, so the registry scan of a first-time indexize is not measured. */
+const indexizeSheet = new SpriteSheet({ width: INDEXIZE_SIZE, height: INDEXIZE_SIZE } as HTMLImageElement);
+
 describe('SpriteSheet.indexize', () => {
     bench(
         'indexize 256x256, palette 256',
         () => {
-            const sheet = new SpriteSheet({ width: INDEXIZE_SIZE, height: INDEXIZE_SIZE } as HTMLImageElement);
-
-            sheet.indexize(indexizePalette);
+            indexizeSheet.indexize(indexizePalette);
         },
         BENCH_OPTIONS,
     );

@@ -341,6 +341,20 @@ describe('SpriteSheet', () => {
             expect(() => sheet.indexize(palette)).toThrow();
         });
 
+        it('does not match a palette entry with an out-of-range channel', () => {
+            const pixels = new Uint8ClampedArray([1, 0, 0, 255]);
+
+            vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+            const palette = new Palette(16);
+            palette.set(2, new Color32(1, 0, 0, 255));
+            palette.getRef(2).g = 256;
+
+            const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+
+            expect(() => sheet.indexize(palette)).toThrow();
+        });
+
         it('throws when an opaque pixel color is not in the palette', () => {
             const w = 1;
             const h = 1;

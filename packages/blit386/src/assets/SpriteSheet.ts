@@ -143,6 +143,16 @@ export function getIndexedSheets(): SpriteSheet[] {
 }
 
 /**
+ * Tells whether a channel is a whole number in 0-255, so it packs into a lookup key without collisions.
+ *
+ * @param value - Channel value to check.
+ * @returns `true` for an integer from 0 to 255.
+ */
+function isByte(value: number): boolean {
+    return Number.isInteger(value) && value >= 0 && value <= 255;
+}
+
+/**
  * Maps retained RGBA bytes to palette indices for one sprite sheet.
  *
  * @param w - Image width in pixels.
@@ -170,9 +180,9 @@ function mapRgbaPixelsToIndexed(
     for (let slot = palette.size - 1; slot >= 0; slot--) {
         const entry = palette.getRef(slot);
 
-        // Whole-byte channels only: a palette effect can write a fraction through getRef, which `<<` would
-        // truncate into a false match; findColor's strict equality never matched one.
-        if (entry.a === 255 && Number.isInteger(entry.r) && Number.isInteger(entry.g) && Number.isInteger(entry.b)) {
+        // Whole-byte channels only: a palette effect can write a fraction or an out-of-range value through
+        // getRef, which the packing would turn into a false match; findColor's strict equality never matched one.
+        if (entry.a === 255 && isByte(entry.r) && isByte(entry.g) && isByte(entry.b)) {
             slotByRgb.set((entry.r << 16) | (entry.g << 8) | entry.b, slot);
         }
     }
