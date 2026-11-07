@@ -231,6 +231,33 @@ describe('HotRuntime', () => {
             );
         });
 
+        it('still replaces the remaining sheets when an earlier sheet fails its replacement', async () => {
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({ width: 8, height: 8 } as HTMLImageElement);
+            const failingSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(() => {
+                    throw new Error('color not in palette');
+                }),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            const healthySheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([failingSheet, healthySheet]));
+            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+
+            await vi.waitFor(() =>
+                expect(healthySheet.hotReplaceImage).toHaveBeenCalledExactlyOnceWith({ width: 8, height: 8 }, null),
+            );
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('hero.png'), expect.any(Error));
+        });
+
         it('marks every registered sheet loading before the replacement image is fetched, then replaces once it resolves', async () => {
             let resolveFetch: ((image: HTMLImageElement) => void) | undefined;
             vi.spyOn(AssetLoader, 'hotReloadImage').mockImplementation(
