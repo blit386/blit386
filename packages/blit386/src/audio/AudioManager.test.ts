@@ -81,7 +81,7 @@ describe('AudioManager', () => {
 
     describe('bus graph wiring', () => {
         it('creates main, music, and sfx gain nodes on attach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -89,7 +89,7 @@ describe('AudioManager', () => {
         });
 
         it('wires sfx and music into main, and main into destination', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -103,8 +103,8 @@ describe('AudioManager', () => {
         });
 
         it('rebuilds a fresh bus graph on a second attach', () => {
-            audio.attach(canvas);
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -120,14 +120,14 @@ describe('AudioManager', () => {
                 configurable: true,
             });
 
-            expect(() => audio.attach(canvas)).not.toThrow();
+            expect(() => audio.attach(canvas, 16)).not.toThrow();
             expect(audio.isUnlocked()).toBe(false);
         });
     });
 
     describe('music hot-replace wiring', () => {
         it('registers a music hot-replace handler on attach that delegates to the music player', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const restarted = notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
 
@@ -135,7 +135,7 @@ describe('AudioManager', () => {
         });
 
         it('resets the music hot-replace handler to a no-op on detach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.detach();
 
             expect(notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
@@ -148,13 +148,13 @@ describe('AudioManager', () => {
         });
 
         it('getContext returns the live context after attach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             expect(audio.getContext()).toBe(getMockContext());
         });
 
         it('getContext returns null after detach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.detach();
 
             expect(audio.getContext()).toBeNull();
@@ -165,7 +165,7 @@ describe('AudioManager', () => {
         });
 
         it('getSfxBus returns the sfx bus gain node after attach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
             const sfx = nthGainNode(context.createGainCalls, 2);
@@ -174,7 +174,7 @@ describe('AudioManager', () => {
         });
 
         it('getSfxBus returns null after detach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.detach();
 
             expect(audio.getSfxBus()).toBeNull();
@@ -183,7 +183,7 @@ describe('AudioManager', () => {
 
     describe('detach', () => {
         it('closes the audio context', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -199,7 +199,7 @@ describe('AudioManager', () => {
 
     describe('volume', () => {
         beforeEach(() => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
         });
 
         it('defaults every bus to full volume', () => {
@@ -264,7 +264,7 @@ describe('AudioManager', () => {
 
     describe('mute', () => {
         beforeEach(() => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
         });
 
         it('reports unmuted by default', () => {
@@ -336,7 +336,7 @@ describe('AudioManager', () => {
 
     describe('bus metering', () => {
         it('creates no analyzers until enableBusMetering is called', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -344,7 +344,7 @@ describe('AudioManager', () => {
         });
 
         it('enableBusMetering creates one analyzer per bus on first call', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             audio.enableBusMetering();
 
@@ -354,7 +354,7 @@ describe('AudioManager', () => {
         });
 
         it('a second enableBusMetering call does not create more analyzers', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             audio.enableBusMetering();
             audio.enableBusMetering();
@@ -365,7 +365,7 @@ describe('AudioManager', () => {
         });
 
         it('connects each bus gain node to its analyzer without altering existing routing', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
             const main = nthGainNode(context.createGainCalls, 0);
@@ -390,7 +390,7 @@ describe('AudioManager', () => {
         });
 
         it('tears down the bus-to-analyzer taps on detach and rebuilds fresh analyzers on re-attach', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.enableBusMetering();
 
             const firstContext = getMockContext();
@@ -414,7 +414,7 @@ describe('AudioManager', () => {
             expect(disconnectSpies[1]).toHaveBeenCalledWith(firstAnalyzers[1]);
             expect(disconnectSpies[2]).toHaveBeenCalledWith(firstAnalyzers[2]);
 
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.enableBusMetering();
 
             const secondContext = getMockContext();
@@ -424,7 +424,7 @@ describe('AudioManager', () => {
         });
 
         it('getBusLevels returns zeros before enableBusMetering was ever called', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             expect(audio.getBusLevels()).toEqual({ main: 0, music: 0, sfx: 0 });
         });
@@ -434,7 +434,7 @@ describe('AudioManager', () => {
         });
 
         it('getBusLevels returns zeros when metering is enabled but the context is not unlocked', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.enableBusMetering();
 
             expect(audio.isUnlocked()).toBe(false);
@@ -442,7 +442,7 @@ describe('AudioManager', () => {
         });
 
         it('computes a normalized RMS level per bus from analyzer time-domain data once unlocked', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.enableBusMetering();
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
@@ -470,7 +470,7 @@ describe('AudioManager', () => {
         });
 
         it('reuses the same scratch buffer across getBusLevels calls instead of reallocating', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             audio.enableBusMetering();
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
@@ -500,7 +500,7 @@ describe('AudioManager', () => {
         });
 
         it('returns the same reusable snapshot object across calls instead of allocating fresh ones', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const first = audio.getBusLevels();
             const second = audio.getBusLevels();
@@ -511,13 +511,13 @@ describe('AudioManager', () => {
 
     describe('unlock state machine', () => {
         it('starts locked', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             expect(audio.isUnlocked()).toBe(false);
         });
 
         it('unlocks on pointerdown and removes the gesture listeners', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const removeSpy = vi.spyOn(canvas, 'removeEventListener');
 
@@ -533,7 +533,7 @@ describe('AudioManager', () => {
         });
 
         it.each(['keydown', 'pointerup', 'touchend'])('unlocks on %s', async (type) => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event(type, { bubbles: true }));
 
@@ -543,7 +543,7 @@ describe('AudioManager', () => {
         });
 
         it('does not listen to touchstart, which is not a user activation', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('touchstart', { bubbles: true }));
 
@@ -554,7 +554,7 @@ describe('AudioManager', () => {
             // Per the Web Audio spec, resume() called outside a user activation stays pending
             // (it is not rejected) until the context is allowed to start. On a touch device the
             // pointerdown half of a tap behaves this way; the touchend half is the activation.
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext() as unknown as { resume: () => Promise<void>; state: AudioContextState };
             const resume = vi.fn(() => {
@@ -580,7 +580,7 @@ describe('AudioManager', () => {
         });
 
         it('leaves a re-attached manager locked when the old resume() settles late', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const oldContext = getMockContext() as unknown as { resume: () => Promise<void> };
             let settle: () => void = () => {};
@@ -592,7 +592,7 @@ describe('AudioManager', () => {
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
             audio.detach();
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             settle();
             await Promise.resolve();
             await Promise.resolve();
@@ -601,7 +601,7 @@ describe('AudioManager', () => {
         });
 
         it('calls resume exactly once even if a second gesture fires after unlock', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -619,7 +619,7 @@ describe('AudioManager', () => {
 
     describe('playSound', () => {
         it('drops the request and returns an invalid ref before unlock', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const ref = audio.playSound(createMockAudioBuffer());
 
@@ -628,7 +628,7 @@ describe('AudioManager', () => {
         });
 
         it('delegates to the voice pool once unlocked', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -651,7 +651,7 @@ describe('AudioManager', () => {
 
     describe('sound playback controls', () => {
         beforeEach(async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -736,7 +736,7 @@ describe('AudioManager', () => {
                 audioVoices: 3,
             } as HardwareSettings);
 
-            audio.attach(canvas);
+            audio.attach(canvas, 3);
 
             expect(audio.getVoiceCount()).toBe(3);
         });
@@ -746,7 +746,7 @@ describe('AudioManager', () => {
                 audioVoices: 3,
             } as HardwareSettings);
 
-            audio.attach(canvas);
+            audio.attach(canvas, 3);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -765,7 +765,7 @@ describe('AudioManager', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            audio.attach(canvas);
+            audio.attach(canvas, 1);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -784,7 +784,7 @@ describe('AudioManager', () => {
                 audioVoices: 1,
             } as HardwareSettings);
 
-            audio.attach(canvas);
+            audio.attach(canvas, 1);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -802,7 +802,7 @@ describe('AudioManager', () => {
 
     describe('voice pool lifecycle', () => {
         it('stops all voices and closes the context in the right order on detach', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -818,7 +818,7 @@ describe('AudioManager', () => {
 
             // Re-attaching and asking the (new, empty) pool about the old ref must not throw and
             // must report it as not playing - the old pool instance was discarded on detach.
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             expect(() => audio.playSound(createMockAudioBuffer())).not.toThrow();
             expect(ref).not.toEqual(INVALID_SOUND_REF);
             expect(audio.isSoundPlaying(ref)).toBe(false);
@@ -827,7 +827,7 @@ describe('AudioManager', () => {
 
     describe('music playback', () => {
         it('drops nothing but remembers the request when locked: musicPlay before unlock', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             audio.musicPlay(createMockAudioBuffer());
 
@@ -844,7 +844,7 @@ describe('AudioManager', () => {
         });
 
         it('only the latest pending request survives multiple musicPlay calls while locked', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const firstBuffer = createMockAudioBuffer();
             const secondBuffer = createMockAudioBuffer();
@@ -877,7 +877,7 @@ describe('AudioManager', () => {
         });
 
         it('musicStop while locked cancels the remembered request so nothing starts on unlock', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             audio.musicPlay(createMockAudioBuffer());
             audio.musicStop();
@@ -899,7 +899,7 @@ describe('AudioManager', () => {
         });
 
         it('starts playback immediately once unlocked', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -914,7 +914,7 @@ describe('AudioManager', () => {
         });
 
         it('starts the remembered request and clears it once the context unlocks', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             audio.musicPlay(createMockAudioBuffer(), { volume: 0.5 });
 
@@ -944,7 +944,7 @@ describe('AudioManager', () => {
         });
 
         it('clears the remembered request and logs distinctly even if starting it throws', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -973,7 +973,7 @@ describe('AudioManager', () => {
         });
 
         it('does not replay a stale remembered request on a later unlock attempt', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             // Queue a request while locked, then unlock - this replays it exactly once.
             audio.musicPlay(createMockAudioBuffer());
@@ -1001,7 +1001,7 @@ describe('AudioManager', () => {
 
         describe('controls once unlocked', () => {
             beforeEach(async () => {
-                audio.attach(canvas);
+                audio.attach(canvas, 16);
 
                 canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -1044,7 +1044,7 @@ describe('AudioManager', () => {
         });
 
         it('detach stops music playback', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -1061,7 +1061,7 @@ describe('AudioManager', () => {
 
     describe('park', () => {
         it('suspends the context on park and resumes it on unpark once unlocked', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
             await vi.waitFor(() => expect(audio.isUnlocked()).toBe(true));
 
@@ -1081,7 +1081,7 @@ describe('AudioManager', () => {
         });
 
         it('unpark does not resume a context that was never unlocked', () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -1099,7 +1099,7 @@ describe('AudioManager', () => {
         });
 
         it('a gesture that unlocks audio while parked keeps the context suspended until unpark', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
 
@@ -1121,7 +1121,7 @@ describe('AudioManager', () => {
         });
 
         it('a gesture while parked starts remembered music only after the context has suspended again', async () => {
-            audio.attach(canvas);
+            audio.attach(canvas, 16);
 
             const context = getMockContext();
             const suspendOnce = (context as unknown as AudioContext).suspend.bind(context);

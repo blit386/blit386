@@ -794,6 +794,9 @@ export interface IBTDemo {
     onHotReload?(context: HotReloadContext): void;
 }
 
+/** Default SFX voice slot count; read by {@link defaultConfig} and the audio attach fallback in `BTAPI`. */
+export const DEFAULT_AUDIO_VOICES = 16;
+
 /**
  * Creates a fresh default hardware configuration for quick demos.
  *
@@ -812,7 +815,7 @@ export function defaultConfig(): HardwareSettings {
         targetFPS: 60,
         outputUpscaleFilter: 'nearest',
         backend: 'webgpu',
-        audioVoices: 16,
+        audioVoices: DEFAULT_AUDIO_VOICES,
         isCapturingPointerScroll: false,
         isCapturingKeyboardScroll: false,
         isWakeLockEnabled: false,
