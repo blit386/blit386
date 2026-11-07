@@ -15,6 +15,8 @@ on:
       - '.mcp.json'
       - '**/.mcp.json'
       - '**/*.mcp.json'
+      - 'mcp.json'
+      - '**/mcp.json'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
   pull_request:
     branches: [main]
@@ -22,6 +24,8 @@ on:
       - '.mcp.json'
       - '**/.mcp.json'
       - '**/*.mcp.json'
+      - 'mcp.json'
+      - '**/mcp.json'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
   schedule:
     - cron: '0 6 1 * *' # monthly backstop, 1st of the month at 06:00 UTC
