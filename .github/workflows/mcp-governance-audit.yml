@@ -18,6 +18,7 @@ on:
       - 'mcp.json'
       - '**/mcp.json'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
+      - '.github/workflows/mcp-governance-audit.yml'
   pull_request:
     branches: [main]
     paths:
@@ -27,6 +28,7 @@ on:
       - 'mcp.json'
       - '**/mcp.json'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
+      - '.github/workflows/mcp-governance-audit.yml'
   schedule:
     - cron: '0 6 1 * *' # monthly backstop, 1st of the month at 06:00 UTC
   workflow_dispatch:
