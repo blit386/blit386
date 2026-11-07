@@ -416,6 +416,132 @@ describe('AudioClip', () => {
             }
         });
 
+        describe('idle download timeout', () => {
+            /**
+             * Builds a fetch mock whose body yields `chunkCount` chunks, each `delayMs` after the previous read,
+             * and (when `stallAfterFirst` is set) never delivers more than one. Body reads reject on abort,
+             * like a real fetch body.
+             */
+            function stubTimedBodyFetch(chunkCount: number, delayMs: number, stallAfterFirst: boolean): void {
+                vi.stubGlobal(
+                    'fetch',
+                    vi.fn().mockImplementation((_url: string, init?: { signal?: AbortSignal }) => {
+                        let delivered = 0;
+
+                        return Promise.resolve({
+                            ...mockAudioFetchResponse(),
+                            body: {
+                                getReader: () => ({
+                                    read: () =>
+                                        new Promise((resolve, reject) => {
+                                            if (stallAfterFirst && delivered >= 1) {
+                                                init?.signal?.addEventListener('abort', () => {
+                                                    reject(new DOMException('The operation was aborted', 'AbortError'));
+                                                });
+
+                                                return;
+                                            }
+
+                                            setTimeout(() => {
+                                                if (delivered >= chunkCount) {
+                                                    resolve({ done: true });
+
+                                                    return;
+                                                }
+
+                                                delivered += 1;
+                                                resolve({ done: false, value: new Uint8Array([1, 2]) });
+                                            }, delayMs);
+                                        }),
+                                }),
+                            },
+                        });
+                    }),
+                );
+            }
+
+            it('should succeed when chunks keep arriving past the idle window for longer than the old total limit', async () => {
+                vi.useFakeTimers();
+
+                try {
+                    stubTimedBodyFetch(4, 10_000, false);
+
+                    const loadPromise = AudioClip.load('slow.mp3');
+
+                    await vi.advanceTimersByTimeAsync(50_000);
+
+                    await expect(loadPromise).resolves.toBeInstanceOf(AudioClip);
+                } finally {
+                    vi.useRealTimers();
+                }
+            });
+
+            it('should restart the idle window once headers arrive', async () => {
+                vi.useFakeTimers();
+
+                try {
+                    vi.stubGlobal(
+                        'fetch',
+                        vi.fn().mockImplementation(
+                            () =>
+                                new Promise((resolve) => {
+                                    // Headers at 10 s, then the first chunk 10 s later: 20 s total, never 15 s of silence.
+                                    setTimeout(() => {
+                                        let delivered = false;
+
+                                        resolve({
+                                            ...mockAudioFetchResponse(),
+                                            body: {
+                                                getReader: () => ({
+                                                    read: () =>
+                                                        new Promise((resolve) => {
+                                                            setTimeout(() => {
+                                                                resolve(
+                                                                    delivered
+                                                                        ? { done: true }
+                                                                        : {
+                                                                              done: false,
+                                                                              value: new Uint8Array([1, 2]),
+                                                                          },
+                                                                );
+                                                                delivered = true;
+                                                            }, 10_000);
+                                                        }),
+                                                }),
+                                            },
+                                        });
+                                    }, 10_000);
+                                }),
+                        ),
+                    );
+
+                    const loadPromise = AudioClip.load('late-headers.mp3');
+
+                    await vi.advanceTimersByTimeAsync(40_000);
+
+                    await expect(loadPromise).resolves.toBeInstanceOf(AudioClip);
+                } finally {
+                    vi.useRealTimers();
+                }
+            });
+
+            it('should abort with the network error when the body stalls after its first chunk', async () => {
+                vi.useFakeTimers();
+
+                try {
+                    stubTimedBodyFetch(4, 1_000, true);
+
+                    const loadPromise = AudioClip.load('stalled-body.mp3');
+                    const rejection = expect(loadPromise).rejects.toThrow("Couldn't reach the audio file");
+
+                    await vi.advanceTimersByTimeAsync(20_000);
+                    await rejection;
+                } finally {
+                    vi.useRealTimers();
+                }
+            });
+        });
+
         it('should throw a not-found error for a 404 status', async () => {
             vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse({ ok: false, status: 404 })));
 
