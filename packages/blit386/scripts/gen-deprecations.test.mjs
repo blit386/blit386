@@ -7,6 +7,7 @@ import {
     renderDeprecationsMarkdown,
     renderRenameBullets,
 } from './gen-deprecations.mjs';
+import { buildBanner, loadPages, SITE_BASE } from './sync-doc-banners.mjs';
 
 /** A small fixture registry covering every shape the generator has to handle. */
 const FIXTURE_MIGRATIONS = [
@@ -125,6 +126,13 @@ describe('groupMigrationSections', () => {
 });
 
 describe('renderDeprecationsMarkdown', () => {
+    it('embeds the banner exactly as sync-doc-banners.mjs builds it', () => {
+        const page = loadPages().find((entry) => entry.src === 'reference-deprecations.md');
+        const markdown = renderDeprecationsMarkdown(FIXTURE_MIGRATIONS);
+
+        assert.ok(markdown.includes(buildBanner(`${SITE_BASE}/${page.path}`)));
+    });
+
     it('is deterministic: two runs produce byte-identical output', () => {
         const first = renderDeprecationsMarkdown(FIXTURE_MIGRATIONS);
         const second = renderDeprecationsMarkdown(FIXTURE_MIGRATIONS);

@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, 'docs');
 const SITEMAP_FILE = join(DOCS_DIR, '_sitemap.json');
-const SITE_BASE = 'https://blit386.dev/docs';
+export const SITE_BASE = 'https://blit386.dev/docs';
 const BANNER_START = '<!-- blit386.dev-banner:start -->';
 const BANNER_END = '<!-- blit386.dev-banner:end -->';
 
@@ -34,7 +34,7 @@ const BANNER_END = '<!-- blit386.dev-banner:end -->';
 const BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/gu;
 
 /** Load the published-page list (src + site path) from the sitemap manifest. */
-const loadPages = () => {
+export const loadPages = () => {
     let manifest;
 
     try {
@@ -56,7 +56,7 @@ const loadPages = () => {
  * `proseWrap: always` from reflowing the GitHub alert: without it, Prettier
  * pulls `[!TIP]` onto the prose line and the callout stops rendering on GitHub.
  */
-const buildBanner = (url) =>
+export const buildBanner = (url) =>
     [
         BANNER_START,
         '',
@@ -153,4 +153,8 @@ const main = () => {
     console.log(`\n${drifted.length} of ${pages.length} doc banner(s) updated.`);
 };
 
-main();
+const isMainModule = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
+    main();
+}
