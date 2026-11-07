@@ -132,10 +132,11 @@ export class MusicPlayer {
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link MusicPlayOptions}.
      * @throws Error if `loopStart`/`loopEnd` are given without each other, or describe an invalid
-     *   region for `buffer`'s duration.
+     *   region for `buffer`'s duration, or if `fadeMs` or `volume` is not a finite number.
      */
     public play(buffer: AudioBuffer, options: MusicPlayOptions = {}): void {
         validateLoopRegion(options, buffer.duration);
+        validateFinite(options.fadeMs, options.volume, 'BT.musicPlay');
 
         this.lastOptions = options;
 
@@ -182,8 +183,11 @@ export class MusicPlayer {
      * even while the fade-out is still audible. No-op when nothing is playing.
      *
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     * @throws Error when `fadeMs` is not a finite number; nothing changes in that case.
      */
     public stop(fadeMs?: number): void {
+        validateFinite(fadeMs, undefined, 'BT.musicStop');
+
         const now = this.context.currentTime;
         const fadeSeconds = Math.max(0, fadeMs ?? 0) / 1000;
 
@@ -400,6 +404,24 @@ export class MusicPlayer {
      */
     private currentBuffer(): AudioBuffer | null {
         return this.current?.sources[0]?.buffer ?? null;
+    }
+}
+
+/**
+ * Rejects a non-finite `fadeMs` or `volume` before any playback state changes.
+ *
+ * @param fadeMs - Fade duration to check, if given.
+ * @param volume - Target volume to check, if given.
+ * @param api - Public API name used in the volume error message.
+ * @throws Error when either given value is not a finite number.
+ */
+export function validateFinite(fadeMs: number | undefined, volume: number | undefined, api: string): void {
+    if (fadeMs !== undefined && !Number.isFinite(fadeMs)) {
+        throw new Error(audioFadeNotFiniteError(fadeMs));
+    }
+
+    if (volume !== undefined && !Number.isFinite(volume)) {
+        throw new Error(audioVolumeNotFiniteError(api, volume));
     }
 }
 

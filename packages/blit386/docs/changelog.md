@@ -65,6 +65,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.musicPlay` and `BT.musicStop` now reject a non-finite `fadeMs` (and `BT.musicPlay` a non-finite `volume`) before
+  changing anything. Before, `BT.musicStop(Infinity)` left the track audible at full volume while `BT.isMusicPlaying`
+  was `false`, and `BT.musicStop(NaN)` threw a raw browser error.
 - On macOS, pressing Cmd plus a letter (Cmd+A, Cmd+Z) no longer leaves that letter held forever. Browsers send no
   `keyup` for a key pressed while Cmd is held, so the key stayed down and, say, player 0 kept walking left. Keys pressed
   while Cmd (the Meta key) is held are now ignored on every platform; keys already held when Cmd goes down are
