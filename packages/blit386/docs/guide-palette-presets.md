@@ -77,7 +77,7 @@ That means:
 
 ## CGA (16 slots)
 
-`Palette.cga()`:
+`Palette.cga()`: source entry `0` (`000000`) lands on the transparent slot `0`, so there is no drawable black.
 
 ```ts twoslash
 [
@@ -102,7 +102,7 @@ That means:
 
 ## C64 (16 slots)
 
-`Palette.c64()`:
+`Palette.c64()`: source entry `0` (`000000`) lands on the transparent slot `0`, so there is no drawable black.
 
 ```ts twoslash
 [
@@ -127,7 +127,8 @@ That means:
 
 ## Game Boy (4 slots)
 
-`Palette.gameboy()`:
+`Palette.gameboy()`: source entry `0` (`0f380f`, the darkest shade) lands on the transparent slot `0`, so only 3 shades
+are drawable (slots `1`-`3`) and `findColor` for `#0f380f` finds nothing.
 
 ```ts twoslash
 ['0f380f', '306230', '8bac0f', '9bbc0f'];
@@ -135,7 +136,8 @@ That means:
 
 ## Pico8 (16 slots)
 
-`Palette.pico8()`:
+`Palette.pico8()`: source entry `0` (`000000`) lands on the transparent slot `0`, so there is no drawable black. Code
+that draws black outlines with color 0 draws nothing.
 
 ```ts twoslash
 [
@@ -160,7 +162,8 @@ That means:
 
 ## NES (64 slots)
 
-`Palette.nes()`:
+`Palette.nes()`: source entry `0` (gray `7c7c7c`, NES `$00`) lands on the transparent slot `0`, so that gray is
+unavailable.
 
 ```ts twoslash
 [

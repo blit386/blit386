@@ -224,10 +224,10 @@ class Demo {
         // Load all six preset palettes. These are static factory methods that return a
         // ready-made Palette object - think of them as pre-sorted boxes of paint.
         this.presets = [
-            Palette.gameboy(), // 4 slots: shades of green
-            Palette.cga(), // 16 loud IBM PC colors
-            Palette.c64(), // 16 Commodore 64 colors
-            Palette.pico8(), // 16 soft fantasy console colors
+            Palette.gameboy(), // 4 slots: 3 drawable shades of green (slot 0 is transparent)
+            Palette.cga(), // 16 loud IBM PC colors, no drawable black
+            Palette.c64(), // 16 Commodore 64 colors, no drawable black
+            Palette.pico8(), // 16 soft fantasy console colors, no drawable black
             Palette.nes(), // 64 slots, all defined
             Palette.vga(), // 256 VGA standard colors
         ];
