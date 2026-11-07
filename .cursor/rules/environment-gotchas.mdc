@@ -1,0 +1,26 @@
+---
+description: Environment artifacts in ephemeral checkouts (no git tags, no network) and how hooks amplify them
+globs:
+  .husky/**, scripts/**, cspell.json, .claude/skills/**, .agents/skills/**, packages/*/docs/**, packages/*/scripts/**
+alwaysApply: false
+---
+
+# Environment and tooling gotchas
+
+These are environment artifacts of tag-less, offline checkouts, not code bugs - do not "fix" them by editing the checks.
+
+- `pnpm run api:history` (in `packages/blit386`) bakes release dates from git tags. Without tags every date in
+  `_api-history.json` regenerates as `null`; restore the committed `versions` block afterwards. `api:history:check` and
+  the `resolveTagDate` test fail for the same reason and pass in CI.
+- `docs:links` needs outbound network. Only external `https://` URLs fail (403 through a sandbox proxy); confirm all
+  failures are external before treating one as real.
+- The pre-push hook runs per-package `preflight` for changed packages, then one root-level pass (`format:check`,
+  `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `bump:check`). A failed
+  package preflight skips the root pass. When only the artifacts above fail, push with `--no-verify` after the real
+  checks pass on their own.
+- `.agents/skills/*` are symlinks to `.claude/skills/*`; edit the `.claude` copy once.
+- `pnpm run spellcheck` in `packages/blit386` skips root `.claude/skills/`, but the lint-staged `cspell` scans it; add
+  legitimate words to the root `cspell.json`.
+
+Claude: `.claude/rules/environment-gotchas.md` (full content, no `paths:` frontmatter, so it loads at session start;
+`globs:` here is the Cursor-side narrowing).
