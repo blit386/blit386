@@ -169,7 +169,7 @@ it:
         "terminal": {
           "always_deny": [
             {
-              "pattern": "git(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))\\s+\\S+|\\s+-\\S+)*\\s+reset\\s+--hard"
+              "pattern": "git(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))\\s+\\S+|\\s+-\\S+)*\\s+reset\\s+([^\\s;&|<>]+\\s+)*--h(a(rd?)?)?([^A-Za-z-]|$)"
             },
             {
               "pattern": "git(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))\\s+\\S+|\\s+-\\S+)*\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>]|$)"

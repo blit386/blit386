@@ -74,11 +74,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
   its markers, instead of adding another copy on every sync; the agent shell guard also blocks the `git checkout` and
-  `git switch` forms that discard uncommitted work, and the Zed paste-in snippet in `AGENTS.md` now denies the same
-  forms (abbreviated `--force` / `--discard-changes`, `--ours`, `--theirs`, `-p`, git options such as `-C dir` before
-  the command) plus `git push -f`, a `+` refspec, `git branch -D`, and `git stash drop` / `clear`; and the starter
-  templates no longer ship a dev-only `window.__game` (use `BT.testState()`; `blit play` still falls back to it for
-  older games).
+  `git switch` forms that discard uncommitted work, and a `git reset --hard` written with earlier arguments
+  (`git reset -q --hard`, `git reset HEAD --hard`) or shortened (`--har`, `--h`); the Zed paste-in snippet in
+  `AGENTS.md` now denies the same forms (abbreviated `--force` / `--discard-changes`, `--ours`, `--theirs`, `-p`, git
+  options such as `-C dir` before the command) plus `git push -f`, a `+` refspec, `git branch -D`, and `git stash drop`
+  / `clear`; and the starter templates no longer ship a dev-only `window.__game` (use `BT.testState()`; `blit play`
+  still falls back to it for older games).
 
 ### Fixed
 
@@ -144,6 +145,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   rendering a broken sound. Before, `volume: NaN` gave a clip of pure `NaN`, `dutyCycle: NaN` or `vibrato.depth: NaN`
   gave a flat signal with no tone, `envelope.attack: NaN` skipped the attack, and `frequency: Infinity` turned the phase
   into `NaN`. `volume` stays unbounded above, since the output is clamped. See [Synth](/docs/api/audio#synth).
+- `AudioClip.synth()` now throws an engine error for a `duration` shorter than half a sample at the audio context's
+  sample rate (for example `0.00001` at 48000 Hz). Before, it passed validation and the browser threw a bare
+  `NotSupportedError` from `createBuffer`. See [Synth](/docs/api/audio#synth).
 - `BT.musicStop()` called before the player's first click now cancels a `BT.musicPlay()` remembered while audio was
   locked. Before, the stopped track still started on the first click.
 - A throw in a game's `update()` or `render()` no longer freezes the game for good. The loop used to stop scheduling

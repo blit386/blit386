@@ -401,6 +401,32 @@ test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch f
     }
 });
 
+test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form the guard core denies (BT-641)', () => {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
+    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+
+    for (const command of [
+        'git reset --hard',
+        'git reset --hard HEAD~1',
+        'git reset -q --hard',
+        'git reset HEAD --hard',
+        'git reset --har',
+        'git reset --h',
+        '(git reset --hard)',
+        'echo $(git reset --hard)',
+        'x=`git reset --hard`',
+    ]) {
+        assert.ok(denies(command), `${command} should be denied`);
+    }
+
+    for (const command of ['git reset --soft HEAD~1', 'git reset --help', 'git reset --merge', 'git reset --keep']) {
+        assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});
+
 /** The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md. */
 function zedTerminalDenies() {
     const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];

@@ -27,7 +27,6 @@
  *   node scripts/sync-maintainer-agents.mjs            # write files (local + pre-commit)
  *   node scripts/sync-maintainer-agents.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
-import { spawnSync } from 'node:child_process';
 import {
     existsSync,
     lstatSync,
@@ -42,7 +41,7 @@ import {
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { buildKitBuildCommand, isKitBuilt } from './ensure-kit-built.mjs';
+import { ensureKitBuilt } from './ensure-kit-built.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT_ROOT = join(ROOT, 'packages', 'kit');
@@ -180,22 +179,6 @@ export function findOrphanMaintainerPaths(existingRelPaths, expected, ownedDirs,
             return ownedDirs.some((dir) => path.startsWith(dir));
         })
         .sort();
-}
-
-/** Build the kit when `packages/kit/dist` is missing or stale. */
-function ensureKitBuilt() {
-    if (isKitBuilt()) {
-        return;
-    }
-
-    console.log('packages/kit/dist is missing or stale - building the kit first...');
-    const { command, args, cwd } = buildKitBuildCommand();
-    const result = spawnSync(command, args, { stdio: 'inherit', cwd });
-
-    if (result.status !== 0 || !isKitBuilt()) {
-        console.error('Could not build @blit386/kit; packages/kit/dist is still missing or stale.');
-        process.exit(result.status || 1);
-    }
 }
 
 /**
