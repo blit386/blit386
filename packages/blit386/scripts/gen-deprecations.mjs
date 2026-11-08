@@ -15,12 +15,11 @@
  *   node scripts/gen-deprecations.mjs            # write docs/reference-deprecations.md
  *   node scripts/gen-deprecations.mjs --check    # report drift, write nothing, exit 1
  */
-import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { buildKitBuildCommand, isKitBuilt } from '../../../scripts/ensure-kit-built.mjs';
+import { ensureKitBuilt } from '../../../scripts/ensure-kit-built.mjs';
 
 import { buildBanner, loadPages, SITE_BASE } from './sync-doc-banners.mjs';
 
@@ -222,21 +221,6 @@ function runCheck(desiredMarkdown) {
     console.error(`${relativeOutput} is out of date.`);
     console.error('Run `pnpm run api:deprecations` to regenerate it.');
     process.exit(1);
-}
-
-/** Builds the kit if `packages/kit/dist/migrations/registry.js` is missing, then re-verifies it. */
-function ensureKitBuilt() {
-    if (isKitBuilt()) {
-        return;
-    }
-
-    const { command, args, cwd } = buildKitBuildCommand();
-    const result = spawnSync(command, args, { stdio: 'inherit', cwd });
-
-    if (result.status !== 0 || !isKitBuilt()) {
-        console.error('Could not build @blit386/kit; packages/kit/dist/migrations/registry.js is still missing.');
-        process.exit(result.status || 1);
-    }
 }
 
 /** CLI entry point. */
