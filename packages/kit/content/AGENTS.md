@@ -193,7 +193,7 @@ it:
               "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+push(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z]*f[a-zA-Z]*|--force[^\\s;&|<>]*|\\+[^\\s;&|<>]+)(\\s|[;&|<>]|$)"
             },
             {
-              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+branch(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*D[a-zA-Z0-9]*|-[a-zA-Z0-9]*(d[a-zA-Z0-9]*f|f[a-zA-Z0-9]*d)[a-zA-Z0-9]*|(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--delete)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force)|(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--delete))(\\s|[;&|<>]|$)",
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+branch(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*D[a-zA-Z0-9]*|-[a-zA-Z0-9]*(d[a-zA-Z0-9]*f|f[a-zA-Z0-9]*d)[a-zA-Z0-9]*|(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--d(e(l(e(te?)?)?)?)?)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force?)|(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force?)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--d(e(l(e(te?)?)?)?)?))(\\s|[;&|<>]|$)",
               "case_sensitive": true
             },
             {
