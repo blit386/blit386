@@ -42,11 +42,12 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { ensureKitBuilt } from './ensure-kit-built.mjs';
+import { reportSyncDrift } from './lib/report-sync-drift.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT_ROOT = join(ROOT, 'packages', 'kit');
-const KIT_HOOKS_DIR = join(KIT_ROOT, 'content', 'hooks');
 const KIT_HOOKS_DIR_REL = 'packages/kit/content/hooks';
+const KIT_HOOKS_DIR = join(ROOT, KIT_HOOKS_DIR_REL);
 
 /**
  * Paths the Copilot adapter emits that this repo already owns for another reason.
@@ -354,36 +355,13 @@ export function syncMaintainerAgents({ generated, isCheck, root = ROOT, readKit 
         }
     }
 
-    if (isCheck) {
-        if (drifted.length > 0) {
-            console.error(`\n${drifted.length} maintainer agent file(s) out of date:`);
-
-            for (const entry of drifted) {
-                console.error(`  ${entry}`);
-            }
-
-            console.error('\nRun `pnpm run sync:maintainer-agents` to update them.');
-            return 1;
-        }
-
-        console.log(`All ${plan.length} maintainer agent file(s) up to date.`);
-
-        return 0;
-    }
-
-    if (drifted.length === 0) {
-        console.log(`All ${plan.length} maintainer agent file(s) already up to date.`);
-
-        return 0;
-    }
-
-    for (const entry of drifted) {
-        console.log(`updated ${entry}`);
-    }
-
-    console.log(`\n${drifted.length} of ${plan.length} maintainer agent file(s) updated.`);
-
-    return 0;
+    return reportSyncDrift({
+        drifted,
+        total: plan.length,
+        isCheck,
+        noun: 'maintainer agent file',
+        syncScript: 'sync:maintainer-agents',
+    });
 }
 
 async function main() {
