@@ -107,10 +107,10 @@ reviews:
         not prose - do not flag it.
     - path: 'packages/blit386/docs/**/*.md'
       instructions: >-
-        Follow docs house rules: American English spelling (see
-        `packages/blit386/.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated
-        name exemptions); no emoji anywhere (`packages/blit386/CLAUDE.md` Critical Rule 1); published-doc TypeScript
-        fences must use `ts twoslash` (see `packages/blit386/.claude/rules/twoslash-docs.md`); docs authoring style per
+        Follow docs house rules: American English spelling (see the American English bullet under Shared conventions in
+        root `CLAUDE.md`, including literal third-party / spec-mandated name exemptions); no emoji anywhere
+        (`packages/blit386/CLAUDE.md` Critical Rule 1); published-doc TypeScript fences must use `ts twoslash` (see
+        `packages/blit386/.claude/rules/twoslash-docs.md`); docs authoring style per
         `packages/blit386/.claude/rules/docs-authoring.md`. Ignore the generated `<!-- blit386.dev-banner:start -->` …
         `<!-- blit386.dev-banner:end -->` region (owned by `packages/blit386/scripts/sync-doc-banners.mjs`, never
         hand-edited). Plain hyphen-minus (-) for parenthetical breaks and ranges in prose and comments - never the en
