@@ -46,8 +46,8 @@ import { reportSyncDrift } from './lib/report-sync-drift.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const KIT_ROOT = join(ROOT, 'packages', 'kit');
-const KIT_HOOKS_DIR = join(KIT_ROOT, 'content', 'hooks');
 const KIT_HOOKS_DIR_REL = 'packages/kit/content/hooks';
+const KIT_HOOKS_DIR = join(ROOT, KIT_HOOKS_DIR_REL);
 
 /**
  * Paths the Copilot adapter emits that this repo already owns for another reason.
