@@ -96,9 +96,6 @@ export class AudioManager {
     /** Count of SFX play requests dropped while the audio context was locked. */
     private sfxDroppedCount = 0;
 
-    /** Whether a music play request arrived while locked, remembered for later resumption. */
-    private isMusicRequestRemembered = false;
-
     /** Buffer and options from the latest {@link musicPlay} call made while locked; overwritten by a newer pending call, consumed by {@link resumeAndUnlock}. */
     private pendingMusicRequest: { buffer: AudioBuffer; options: MusicPlayOptions | undefined } | null = null;
 
@@ -211,7 +208,6 @@ export class AudioManager {
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
         this.sfxDroppedCount = 0;
-        this.isMusicRequestRemembered = false;
         this.pendingMusicRequest = null;
     }
 
@@ -386,16 +382,6 @@ export class AudioManager {
     }
 
     /**
-     * Records an SFX play request dropped while the audio context was locked.
-     *
-     * Called by {@link playSound} when it drops a play request because the audio context is
-     * still locked (pre-unlock).
-     */
-    public noteDroppedSfx(): void {
-        this.sfxDroppedCount += 1;
-    }
-
-    /**
      * Returns the number of SFX play requests dropped before unlock.
      *
      * @returns Dropped SFX request count.
@@ -405,38 +391,18 @@ export class AudioManager {
     }
 
     /**
-     * Remembers that a music play request arrived while the audio context was
-     * locked, so {@link resumeAndUnlock} can resume it once unlocked.
-     *
-     * Called by {@link musicPlay}; carries no payload itself - see {@link pendingMusicRequest}
-     * for the actual buffer and options.
-     */
-    public rememberMusicRequest(): void {
-        this.isMusicRequestRemembered = true;
-    }
-
-    /**
      * Reports whether a music play request is remembered from before unlock.
      *
      * @returns `true` when a pre-unlock music request is pending resumption.
      */
     public hasRememberedMusicRequest(): boolean {
-        return this.isMusicRequestRemembered;
-    }
-
-    /**
-     * Clears the remembered pre-unlock music request.
-     *
-     * Called by {@link resumeAndUnlock} once the remembered request has been started.
-     */
-    public clearRememberedMusicRequest(): void {
-        this.isMusicRequestRemembered = false;
+        return this.pendingMusicRequest !== null;
     }
 
     /**
      * Plays `buffer` through the SFX voice pool.
      *
-     * Drops the request (counted via {@link noteDroppedSfx}) and returns
+     * Drops the request (counted by {@link getDroppedSfxCount}) and returns
      * {@link INVALID_SOUND_REF} without allocating a voice while the context is locked
      * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
      *
@@ -450,7 +416,7 @@ export class AudioManager {
      */
     public playSound(buffer: AudioBuffer, options?: VoicePlayOptions): SoundRef {
         if (!this.unlocked) {
-            this.noteDroppedSfx();
+            this.sfxDroppedCount += 1;
 
             return INVALID_SOUND_REF;
         }
@@ -545,9 +511,9 @@ export class AudioManager {
      * Plays `buffer` through the music player, crossfading out whatever is currently playing.
      *
      * While the context is locked (pre-unlock), the request is not dropped like {@link playSound}
-     * - it is stored as the pending music request and remembered via {@link rememberMusicRequest},
-     * so {@link resumeAndUnlock} can start it the moment the context unlocks. A newer call while
-     * still locked overwrites the previously stored request; only the latest survives to unlock.
+     * - it is stored as the pending music request, so {@link resumeAndUnlock} can start it the
+     * moment the context unlocks. A newer call while still locked overwrites the previously
+     * stored request; only the latest survives to unlock.
      *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link MusicPlayOptions}.
@@ -564,7 +530,6 @@ export class AudioManager {
             }
 
             this.pendingMusicRequest = { buffer, options };
-            this.rememberMusicRequest();
 
             return;
         }
@@ -584,7 +549,6 @@ export class AudioManager {
 
         // A request remembered while locked has no voice to stop yet; drop it so it cannot start on unlock.
         this.pendingMusicRequest = null;
-        this.isMusicRequestRemembered = false;
         this.musicPlayer?.stop(fadeMs);
     }
 
@@ -793,22 +757,21 @@ export class AudioManager {
     /**
      * Starts the music request remembered from before unlock (see {@link musicPlay}), if any.
      *
-     * Clears {@link isMusicRequestRemembered} and {@link pendingMusicRequest} before calling
-     * {@link MusicPlayer.play} (rather than after), so a `play()` failure (an invalid loop region
-     * is already rejected in {@link musicPlay}) can never leave a stale request dangling forever. `unlock()` never
+     * Clears {@link pendingMusicRequest} before calling {@link MusicPlayer.play} (rather than
+     * after), so a `play()` failure (an invalid loop region is already rejected in
+     * {@link musicPlay}) can never leave a stale request dangling forever. `unlock()` never
      * calls {@link resumeAndUnlock} again once {@link unlocked} is `true`, so a request left
      * uncleared here would never get another chance to be replayed or discarded. A `play()`
      * failure is logged separately from a `context.resume()` failure so the two are never
      * conflated.
      */
     private startRememberedMusicRequest(): void {
-        if (!this.hasRememberedMusicRequest() || this.pendingMusicRequest === null) {
+        if (this.pendingMusicRequest === null) {
             return;
         }
 
         const { buffer, options } = this.pendingMusicRequest;
 
-        this.clearRememberedMusicRequest();
         this.pendingMusicRequest = null;
 
         try {
