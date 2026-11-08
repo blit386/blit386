@@ -401,41 +401,35 @@ test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch f
     }
 });
 
-test('the Zed tool_permissions snippet in AGENTS.md matches the guard core on option prefixes, path-only checkout options, and force push (BT-748)', () => {
+/** The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md. */
+function zedTerminalDenies() {
     const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
-    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+    return (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+}
 
-    // The guard core asks before a force push; the snippet only denies, so it denies those too.
+test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the guard case table leaves out', () => {
+    const denies = zedTerminalDenies();
+
+    // The guard core asks before a force push or a forced branch delete; the snippet only denies, so it denies those.
     for (const command of [
-        'git checkout --for main',
         'git checkout --fo main',
         'git switch --for main',
-        'git switch --disc main',
-        'git checkout -p',
-        'git checkout --patch main',
-        'git checkout --ours Makefile',
-        'git checkout --theirs Makefile',
         'git checkout -2 Makefile',
-        'git checkout -3 Makefile',
         'git checkout --no-overlay main',
-        'git checkout --pathspec-from-file=list',
         'git push -f',
         'git push -uf origin main',
-        'git push origin +main',
         'git push --force-with-lease',
         'git -C game checkout --for main',
         'git --no-pager push -f',
         'git -c core.pager=less push origin +main',
-        'git branch -D old',
+        'git --git-dir .git reset --hard',
         'git branch -d -f old',
         'git branch -df old',
         'git branch --delete -f old',
         'git branch --force --delete old',
-        'git stash drop',
-        'git stash clear',
     ]) {
         assert.ok(denies(command), `${command} should be denied`);
     }
@@ -450,17 +444,16 @@ test('the Zed tool_permissions snippet in AGENTS.md matches the guard core on op
         'git branch -d old',
         'git branch -f main origin/main',
         'git stash pop',
+        // `--no-pager` takes no value, so `grep` / `log` is the command and the later word only a search term.
+        'git --no-pager grep -n restore',
+        'git --no-pager log --grep reset --hard',
     ]) {
         assert.ok(!denies(command), `${command} should be allowed`);
     }
 });
 
 test('the Zed tool_permissions snippet in AGENTS.md denies every command the guard core denies or asks about (BT-748)', () => {
-    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(body, 'AGENTS.md should carry a json snippet');
-
-    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
-    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+    const denies = zedTerminalDenies();
     // The guard strips quotes and backslashes before matching; a pattern cannot, and AGENTS.md says so.
     const quotedSubcommand = /^git ['"\\]/;
 
