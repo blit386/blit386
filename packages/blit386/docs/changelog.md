@@ -78,9 +78,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
   its markers, instead of adding another copy on every sync; the agent shell guard also blocks the `git checkout` and
   `git switch` forms that discard uncommitted work, and the Zed paste-in snippet in `AGENTS.md` now denies the same
-  forms (abbreviated `--force` / `--discard-changes`, `--ours`, `--theirs`, `-p`) plus `git push -f` and a `+` refspec;
-  and the starter templates no longer ship a dev-only `window.__game` (use `BT.testState()`; `blit play` still falls
-  back to it for older games).
+  forms (abbreviated `--force` / `--discard-changes`, `--ours`, `--theirs`, `-p`, git options such as `-C dir` before
+  the command) plus `git push -f`, a `+` refspec, `git branch -D`, and `git stash drop` / `clear`; and the starter
+  templates no longer ship a dev-only `window.__game` (use `BT.testState()`; `blit play` still falls back to it for
+  older games).
 
 ### Fixed
 

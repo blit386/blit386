@@ -34,6 +34,7 @@ import {
     isKitManaged,
     SHARED_SKILLS_DIR,
 } from '../dist/ownership.js';
+import { SHELL_CASES } from './shell-cases.mjs';
 
 /** A path in the shared skills folder, which several agents may read at once. */
 const SHARED_SKILL = `${SHARED_SKILLS_DIR}run/SKILL.md`;
@@ -425,6 +426,16 @@ test('the Zed tool_permissions snippet in AGENTS.md matches the guard core on op
         'git push -uf origin main',
         'git push origin +main',
         'git push --force-with-lease',
+        'git -C game checkout --for main',
+        'git --no-pager push -f',
+        'git -c core.pager=less push origin +main',
+        'git branch -D old',
+        'git branch -d -f old',
+        'git branch -df old',
+        'git branch --delete -f old',
+        'git branch --force --delete old',
+        'git stash drop',
+        'git stash clear',
     ]) {
         assert.ok(denies(command), `${command} should be denied`);
     }
@@ -436,7 +447,31 @@ test('the Zed tool_permissions snippet in AGENTS.md matches the guard core on op
         'git push origin main',
         'git push -u origin feat',
         'git push --follow-tags',
+        'git branch -d old',
+        'git branch -f main origin/main',
+        'git stash pop',
     ]) {
         assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});
+
+test('the Zed tool_permissions snippet in AGENTS.md denies every command the guard core denies or asks about (BT-748)', () => {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
+    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+    // The guard strips quotes and backslashes before matching; a pattern cannot, and AGENTS.md says so.
+    const quotedSubcommand = /^git ['"\\]/;
+
+    for (const [command, expected] of SHELL_CASES) {
+        if (expected === 'allow' || quotedSubcommand.test(command)) {
+            continue;
+        }
+
+        assert.ok(
+            denies(command),
+            `${JSON.stringify(command)} is ${expected} in the guard core, so the snippet should deny it`,
+        );
     }
 });
