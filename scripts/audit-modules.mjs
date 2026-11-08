@@ -234,7 +234,9 @@ export function deriveUnits(root = ROOT) {
         ...packageFiles.filter((rel) => !isMarkdown(posix.basename(rel))),
     ]);
 
-    return units;
+    // A gitignored file at a package root (a local RELEASE.md draft, a leftover benchmark report) exists on
+    // one machine and not in CI; the ledger must derive the same on both.
+    return units.map((unit) => ({ ...unit, paths: dropGitignored(root, unit.paths) }));
 }
 
 /**

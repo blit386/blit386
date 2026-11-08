@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -121,6 +122,26 @@ describe('deriveUnits', () => {
                 units.find((unit) => unit.key === 'tooling-config')?.paths.includes('packages/blit386/package.json'),
             );
             assert.equal(new Set(keys).size, keys.length, 'keys are unique');
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+});
+
+describe('gitignored paths', () => {
+    it('never derives or reports a path git ignores, so a local draft cannot make CI disagree', () => {
+        const root = makeTree();
+
+        try {
+            execFileSync('git', ['-C', root, 'init', '-q']);
+            writeFileSync(join(root, '.gitignore'), 'RELEASE.md\n.wrangler/\n');
+            touch(root, 'RELEASE.md');
+            touch(root, 'packages/website/.wrangler/state.json');
+
+            const units = deriveUnits(root);
+            assert.ok(!units.find((unit) => unit.key === 'repo-docs')?.paths.includes('RELEASE.md'));
+            assert.ok(units.find((unit) => unit.key === 'tooling-config')?.paths.includes('.gitignore'));
+            assert.deepEqual(findUncovered(root, units), []);
         } finally {
             rmSync(root, { recursive: true, force: true });
         }
