@@ -1,7 +1,9 @@
 import { bench, describe } from 'vitest';
 
 import { resetUsage } from '../core/RenderPaletteUsage';
+import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
+import { Palette } from './Palette';
 import { SpriteSheet } from './SpriteSheet';
 
 const BENCH_OPTIONS = {
@@ -73,6 +75,51 @@ describe('SpriteSheet.tileRect', () => {
             for (let i = 0; i < 64; i++) {
                 tileRectSink.value += tileSheet.tileRect(i).x;
             }
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+/** 256x256 opaque image cycling through palette slots 1-255. */
+const INDEXIZE_SIZE = 256;
+const indexizePalette = new Palette(256);
+const indexizeRgba = new Uint8ClampedArray(INDEXIZE_SIZE * INDEXIZE_SIZE * 4);
+
+for (let slot = 1; slot < 256; slot++) {
+    indexizePalette.set(slot, new Color32(slot, 255 - slot, (slot * 7) & 255, 255));
+}
+
+for (let i = 0; i < INDEXIZE_SIZE * INDEXIZE_SIZE; i++) {
+    const c = indexizePalette.getRef((i % 255) + 1);
+
+    indexizeRgba.set([c.r, c.g, c.b, 255], i * 4);
+}
+
+/** Stand-in for the browser canvas so `indexize` decodes `indexizeRgba` in Node. */
+class IndexizeCanvas {
+    public readonly width = INDEXIZE_SIZE;
+    public readonly height = INDEXIZE_SIZE;
+
+    /**
+     * Builds the fake 2D context.
+     *
+     * @returns Minimal 2D context whose `getImageData` yields the fixture pixels.
+     */
+    getContext() {
+        return { drawImage: () => {}, imageSmoothingEnabled: false, getImageData: () => ({ data: indexizeRgba }) };
+    }
+}
+
+(globalThis as unknown as { OffscreenCanvas: unknown }).OffscreenCanvas = IndexizeCanvas;
+
+/** One sheet reused across iterations, so the registry scan of a first-time indexize is not measured. */
+const indexizeSheet = new SpriteSheet({ width: INDEXIZE_SIZE, height: INDEXIZE_SIZE } as HTMLImageElement);
+
+describe('SpriteSheet.indexize', () => {
+    bench(
+        'indexize 256x256, palette 256',
+        () => {
+            indexizeSheet.indexize(indexizePalette);
         },
         BENCH_OPTIONS,
     );

@@ -43,6 +43,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
   RGBA texture the sprite shader could not draw. Games that call `loadIndexed()` or `indexize()` are unaffected.
+- Behavior change: the system font no longer has 14 blank "reserved" glyphs at U+E006-U+E013. `hasGlyph` is now false
+  for those code points and they draw the U+FFFD fallback glyph instead of nothing; `codePoints` and `glyphCount` each
+  shrink by 14, so the `system-font-glyphs` demo no longer shows empty cells. No game could have drawn anything with
+  them. The atlas shrinks from 96×154 to 96×140 and every glyph after U+E005 moves up 14 cells, so `getSpriteSheet()`
+  and `getGlyph()` report new source rectangles for those glyphs; the glyph shapes are unchanged.
+- Behavior change: `SpriteSheet.size` is now a frozen copy. `new SpriteSheet(null, v)` no longer keeps your vector, so
+  changing `v` afterward no longer changes the sheet's width and height, and writing to `sheet.size.x` or `.y` throws in
+  strict mode. Read the size, and build a new sheet if you need different dimensions.
 - Behavior change: `Rect2i` centers round down instead of toward zero. `centerX`, `centerY`, `center`, and `centerTo`
   gave `-3` for a rectangle at `x = -5` with `width = 3` where the true middle pixel is `-4`, so a center did not move
   with its rectangle across zero; they now round down. Results are unchanged for non-negative rectangles, and differ
@@ -83,6 +91,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The system font's en dash and em dash have their proper widths. The em dash was a copy of the hyphen and the en dash
   was narrower than both, so text with an em dash (U+2014) drew the same pixels as a hyphen. The en dash is now 5 px
   wide, like the hyphen, and the em dash fills the whole 6-px cell, so a run of em dashes joins into one line.
+- `BT.musicPlay` before the first click now throws on an invalid loop region, like it does after. A `loopStart` without
+  a `loopEnd`, or a pair outside the clip, set in `init()` used to be stored and then only logged when audio unlocked,
+  so no music played and nothing threw. See [Audio](api-audio.md).
 - An image hot replace no longer strands the other sprite sheets when one fails. When several sheets were loaded from
   the same image and the new image broke one of them (for example a color that is not in the active palette), the sheets
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet

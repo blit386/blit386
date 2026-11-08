@@ -125,7 +125,8 @@ start audio unlocked, and none is planned.
 - `BT.musicPlay` (see [Playback (Music)](api-audio.md#playback-music)) sits between those two behaviors: a pre-unlock
   call isn't dropped like `BT.soundPlay`, but it isn't merely inaudible-and-applied like a bus call either - it is
   remembered and starts automatically the instant the context unlocks. Calling `BT.musicPlay` again while still locked
-  replaces the remembered request, so only the last call before unlock actually plays.
+  replaces the remembered request, so only the last call before unlock actually plays. An invalid loop region throws at
+  the call, not at unlock, and nothing is remembered.
 
 ## Playing SFX
 

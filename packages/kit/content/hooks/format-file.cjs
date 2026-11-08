@@ -60,8 +60,11 @@ function formatFile(root, file) {
 }
 
 // .claude/hooks/, .cursor/hooks/, .gemini/hooks/, .agents/hooks/, .codex/hooks/ or .github/hooks/ - the project root
-// is two levels up.
-const root = realpathSync(path.resolve(__dirname, '..', '..'));
+// is two levels up from the entry the agent started (copilot-hook.cjs for Copilot). Derived from process.argv[1], not
+// __dirname: Node resolves a symlinked main module, so where the hook is installed as a symlink into the kit (this
+// repo's .agents, .codex, .gemini and .github hooks) __dirname is the kit folder, not the project. `node -e` has no
+// argv[1]; __filename keeps the old behavior there.
+const root = realpathSync(path.resolve(path.dirname(process.argv[1] ?? __filename), '..', '..'));
 
 /** Read the edited file from the hook payload on stdin and format it. Never throws. */
 function formatFromPayload() {

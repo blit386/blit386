@@ -4,7 +4,8 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -50,6 +51,56 @@ describe('format-file.cjs', () => {
                 rmSync(root, { recursive: true, force: true });
             }
         }
+    });
+
+    it('finds the project root when the hook is installed as a symlink into the kit', () => {
+        const root = makeProject();
+
+        try {
+            const script = join(root, '.claude', 'hooks', 'format-file.cjs');
+
+            rmSync(script);
+            symlinkSync(join(hooksDir, 'format-file.cjs'), script);
+
+            const result = runHook(script, { input: { file_path: 'src/game.js' } });
+
+            assert.equal(result.status, 0);
+            assert.equal(readFileSync(join(root, 'src', 'game.js'), 'utf8'), 'EDITED');
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('formats through copilot-hook.cjs when the Copilot hooks are symlinks into the kit', () => {
+        const root = makeProject();
+
+        try {
+            const dir = join(root, '.github', 'hooks');
+
+            mkdirSync(dir, { recursive: true });
+            for (const name of readdirSync(hooksDir).filter((file) => file.endsWith('.cjs'))) {
+                symlinkSync(join(hooksDir, name), join(dir, name));
+            }
+
+            const result = runHook(join(dir, 'copilot-hook.cjs'), {
+                args: ['post-tool'],
+                input: { toolName: 'edit', toolArgs: { path: 'src/game.js' }, cwd: root },
+            });
+
+            assert.equal(result.status, 0);
+            assert.equal(readFileSync(join(root, 'src', 'game.js'), 'utf8'), 'EDITED');
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+
+    it('loads without throwing when there is no entry script (node -e has no argv[1])', () => {
+        const result = spawnSync(process.execPath, [
+            '-e',
+            `require(${JSON.stringify(join(hooksDir, 'format-file.cjs'))})`,
+        ]);
+
+        assert.equal(result.status, 0, String(result.stderr));
     });
 
     it('leaves the file alone and still exits 0 when it cannot format', () => {
