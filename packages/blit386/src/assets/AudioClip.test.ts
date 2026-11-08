@@ -704,6 +704,23 @@ describe('AudioClip', () => {
             );
         });
 
+        it('should size the buffer from the rendered sample count', async () => {
+            await AudioClip.synth(buildSynthParams({ duration: 0.5 }));
+
+            expect(mockContext.createBufferCalls.at(-1)).toEqual({
+                numberOfChannels: 1,
+                length: Math.round(0.5 * mockContext.sampleRate),
+                sampleRate: mockContext.sampleRate,
+            });
+        });
+
+        it('should reject a duration under half a sample without calling createBuffer', async () => {
+            const before = mockContext.createBufferCalls.length;
+
+            await expect(AudioClip.synth(buildSynthParams({ duration: 0.00001 }))).rejects.toThrow(/0 samples/);
+            expect(mockContext.createBufferCalls).toHaveLength(before);
+        });
+
         it('should still no-op safely on unload()', async () => {
             const clip = await AudioClip.synth(buildSynthParams());
 

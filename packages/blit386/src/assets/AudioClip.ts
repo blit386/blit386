@@ -176,7 +176,7 @@ export class AudioClip {
      * fresh, independent `AudioBuffer` on every call. See {@link SynthParams} for the full
      * parameter set.
      *
-     * @changed 1.8.1 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound.
+     * @changed 1.8.1 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound. Also throws when `duration` rounds to 0 samples at the context's sample rate, instead of surfacing the browser's `NotSupportedError` from `createBuffer`.
      * @param params - Deterministic synthesis parameters.
      * @returns A new clip wrapping the synthesized buffer.
      * @throws Error if `params` fails validation, or the engine has not registered a decode
@@ -191,10 +191,10 @@ export class AudioClip {
 
         validateSynthParams(params, decodeContext.sampleRate);
 
-        const sampleCount = Math.round(params.duration * decodeContext.sampleRate);
-        const buffer = decodeContext.createBuffer(1, sampleCount, decodeContext.sampleRate);
+        const samples = renderSynthSamples(params, decodeContext.sampleRate);
+        const buffer = decodeContext.createBuffer(1, samples.length, decodeContext.sampleRate);
 
-        buffer.copyToChannel(renderSynthSamples(params, decodeContext.sampleRate), 0);
+        buffer.copyToChannel(samples, 0);
 
         return new AudioClip(`synth:${params.waveform}`, buffer);
     }
