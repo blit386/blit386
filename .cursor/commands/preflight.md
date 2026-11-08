@@ -60,7 +60,7 @@ so a push only exercises them once the per-package checks are clean. That gating
   (`scripts/convert-system-font.mjs --check`)
 - `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
   `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`,
-  `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`
+  `test:spellcheck-coverage`, `test:security-preflight`
 
 ## packages/demos
 
@@ -125,9 +125,9 @@ same scrub is inline in `packages/blit386/scripts/gen-api-history.test.mjs`. Gua
 
 Neither package has its own combined `preflight` script post-monorepo-merge (the old `create-blit386-workspace` root
 that provided it - `format`, `lint`, `spellcheck`, `knip`, `docs:links`, `agents:check`, and the `test:agent-config` /
-`test:bump-lockstep` / `test:compact-tables` / `test:shell-safety` package tests - was retired in BT-404; unifying it is
-tracked as follow-up tooling work, not part of this skill). Until that lands, run the checks that do exist for each
-package, plus the root-wide ones that already cover both:
+`test:bump-lockstep` / `test:compact-tables` package tests - was retired in BT-404; unifying it is tracked as follow-up
+tooling work, not part of this skill). Until that lands, run the checks that do exist for each package, plus the
+root-wide ones that already cover both:
 
 - Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`,
   `pnpm run bump:check` (lockstep versions and the derived `engineRange` / `BLIT386_RANGE` pair)
@@ -179,5 +179,3 @@ regression they would catch surfaces on the PR rather than at push time:
 - `pnpm run test:bump-lockstep` - unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
   `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`). Runs in `build-test-scaffolder`, the one CI job that
   exercises it - and that job is path-filtered, so it only fires when the `scaffolder` or `shared` filter matches
-- `pnpm run test:shell-safety` - unit tests for `.claude/hooks/shell-safety.sh`. Runs in `quality-root`, and
-  `.claude/**` is in the `shared` path filter (BT-439)

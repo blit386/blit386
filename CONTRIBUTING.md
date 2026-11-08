@@ -198,7 +198,6 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Benchmark comparison script tests (`test:bench-compare`)
 - Benchmark coverage reminder tests (`test:check-bench-coverage`)
 - Compact-table Prettier plugin tests (`test:compact-tables`)
-- Shell safety hook tests (`test:shell-safety`)
 - Spellcheck coverage tests (`test:spellcheck-coverage`)
 - Security preflight tests (`test:security-preflight`)
 
