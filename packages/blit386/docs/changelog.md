@@ -77,8 +77,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
   its markers, instead of adding another copy on every sync; the agent shell guard also blocks the `git checkout` and
-  `git switch` forms that discard uncommitted work; and the starter templates no longer ship a dev-only `window.__game`
-  (use `BT.testState()`; `blit play` still falls back to it for older games).
+  `git switch` forms that discard uncommitted work, and a `git reset --hard` written with earlier arguments
+  (`git reset -q --hard`, `git reset HEAD --hard`) or shortened (`--har`, `--h`); and the starter templates no longer
+  ship a dev-only `window.__game` (use `BT.testState()`; `blit play` still falls back to it for older games).
 
 ### Fixed
 
