@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-08T08:22:39+01:00"
+lastModified: "2026-11-08T10:57:36+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -77,9 +77,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `git switch` forms that discard uncommitted work, and a `git reset --hard` written with earlier arguments
   (`git reset -q --hard`, `git reset HEAD --hard`) or shortened (`--har`, `--h`); the Zed paste-in snippet in
   `AGENTS.md` now denies the same forms (abbreviated `--force` / `--discard-changes`, `--ours`, `--theirs`, `-p`, git
-  options such as `-C dir` before the command) plus `git push -f`, a `+` refspec, `git branch -D`, and `git stash drop`
-  / `clear`; and the starter templates no longer ship a dev-only `window.__game` (use `BT.testState()`; `blit play`
-  still falls back to it for older games).
+  options such as `-C dir` before the command) plus `git push -f`, a `+` refspec, `git branch -D` or `-d` with `-f` in
+  any spelling, and `git stash drop` / `clear`; and the starter templates no longer ship a dev-only `window.__game` (use
+  `BT.testState()`; `blit play` still falls back to it for older games).
 
 ### Fixed
 
