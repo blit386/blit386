@@ -59,10 +59,6 @@ const buildEngineBuildCommand = () => ({
 });
 
 const main = () => {
-    if (isEngineBuilt()) {
-        return;
-    }
-
     if (!acquireLockOrConfirmBuilt(resolveEngineBuildLockDir(), isEngineBuilt)) {
         return;
     }
