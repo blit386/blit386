@@ -399,3 +399,44 @@ test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch f
         assert.ok(!denies(command), `${command} should be allowed`);
     }
 });
+
+test('the Zed tool_permissions snippet in AGENTS.md matches the guard core on option prefixes, path-only checkout options, and force push (BT-748)', () => {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
+    const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+
+    // The guard core asks before a force push; the snippet only denies, so it denies those too.
+    for (const command of [
+        'git checkout --for main',
+        'git checkout --fo main',
+        'git switch --for main',
+        'git switch --disc main',
+        'git checkout -p',
+        'git checkout --patch main',
+        'git checkout --ours Makefile',
+        'git checkout --theirs Makefile',
+        'git checkout -2 Makefile',
+        'git checkout -3 Makefile',
+        'git checkout --no-overlay main',
+        'git checkout --pathspec-from-file=list',
+        'git push -f',
+        'git push -uf origin main',
+        'git push origin +main',
+        'git push --force-with-lease',
+    ]) {
+        assert.ok(denies(command), `${command} should be denied`);
+    }
+
+    for (const command of [
+        'git checkout main',
+        'git checkout -b leaf',
+        'git switch --force-create feature',
+        'git push origin main',
+        'git push -u origin feat',
+        'git push --follow-tags',
+    ]) {
+        assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});
