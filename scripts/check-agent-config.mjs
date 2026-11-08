@@ -995,6 +995,61 @@ export function checkClaudeProtectFilesHook(root) {
           ];
 }
 
+/**
+ * Runs the commands `.claude/settings.json` wires for `Bash` against a real-shaped hard-reset
+ * payload and expects the block exit code 2. The guard is the kit's `shell-safety.cjs`, run in
+ * place (BT-646), so a kit refactor that moves it - or breaks its payload handling - fails CI
+ * instead of silently turning the repo's shell guard off.
+ *
+ * @param {string} root Repo root.
+ * @returns {string[]} Failure messages.
+ */
+export function checkClaudeShellSafetyHook(root) {
+    const content = readFileIfExists(join(root, '.claude', 'settings.json'));
+
+    if (content === null) {
+        return ['.claude/settings.json is missing'];
+    }
+
+    let commands;
+
+    try {
+        commands = (JSON.parse(content).hooks?.PreToolUse ?? [])
+            .filter((entry) => entry.matcher === 'Bash')
+            .flatMap((entry) => entry.hooks ?? [])
+            .map((hook) => hook.command)
+            .filter((command) => typeof command === 'string');
+    } catch (error) {
+        return [`.claude/settings.json is not parseable as JSON: ${error instanceof Error ? error.message : error}`];
+    }
+
+    if (commands.length === 0) {
+        return ['.claude/settings.json has no PreToolUse command for Bash'];
+    }
+
+    const payload = JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'git reset --hard' },
+    });
+    const statuses = commands.map(
+        (command) =>
+            spawnSync('sh', ['-c', command], {
+                input: payload,
+                encoding: 'utf8',
+                env: { ...process.env, CLAUDE_PROJECT_DIR: root },
+                timeout: 10_000,
+            }).status,
+    );
+
+    // Claude Code blocks the call when any wired hook exits 2; the rtk rewrite hook beside the guard never does.
+    return statuses.includes(2)
+        ? []
+        : [
+              `.claude/settings.json Bash hooks exited ${statuses.join(', ')} for a hard-reset payload, expected one to exit 2`,
+          ];
+}
+
 /** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
 function runAllChecks() {
     const failures = [];
@@ -1032,6 +1087,7 @@ function runAllChecks() {
 
     collect(failures, '.', checkMaintainerAgentConfigs(REPO_ROOT));
     collect(failures, '.', checkClaudeProtectFilesHook(REPO_ROOT));
+    collect(failures, '.', checkClaudeShellSafetyHook(REPO_ROOT));
 
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
