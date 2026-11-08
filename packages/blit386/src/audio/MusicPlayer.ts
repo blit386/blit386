@@ -70,19 +70,15 @@ export interface MusicPlayOptions {
 }
 
 /**
- * A single crossfade-pair voice: one shared gain node feeding the music bus, and the source
- * node(s) carrying its audio. `sources` holds one entry today but is plural-ready for future
- * multi-stem tracks (for example separate loops layered under one fade envelope).
+ * A single crossfade-pair voice: one gain node feeding the music bus, and the one source node
+ * carrying its audio.
  */
 interface Voice {
     /** Per-voice gain, connected once to the music bus at creation and never reconnected. */
     readonly gain: GainNode;
 
-    /** Source nodes carrying this voice's audio. */
-    readonly sources: AudioBufferSourceNode[];
-
-    /** Count of `sources` that have not yet fired `onended`; the voice finalizes at `0`. */
-    pendingSources: number;
+    /** Source node carrying this voice's audio. */
+    readonly source: AudioBufferSourceNode;
 }
 
 /**
@@ -149,16 +145,7 @@ export class MusicPlayer {
         // always starts at now regardless of overlap.
         const fadeInStart = this.current !== null ? now + fadeSeconds * (1 - overlap) : now;
 
-        if (this.previous !== null) {
-            this.forceStopVoice(this.previous);
-            this.previous = null;
-        }
-
-        if (this.current !== null) {
-            this.previous = this.current;
-            this.current = null;
-            this.scheduleFadeOutAndStop(this.previous, now, fadeSeconds, options.easeOut ?? DEFAULT_EASING);
-        }
+        this.fadeOutCurrent(now, fadeSeconds, options.easeOut ?? DEFAULT_EASING);
 
         this.volume = options.volume ?? DEFAULT_VOLUME;
         this.current = this.startVoice(
@@ -191,16 +178,7 @@ export class MusicPlayer {
         const now = this.context.currentTime;
         const fadeSeconds = Math.max(0, fadeMs ?? 0) / 1000;
 
-        if (this.previous !== null) {
-            this.forceStopVoice(this.previous);
-            this.previous = null;
-        }
-
-        if (this.current !== null) {
-            this.previous = this.current;
-            this.current = null;
-            this.scheduleFadeOutAndStop(this.previous, now, fadeSeconds, DEFAULT_EASING);
-        }
+        this.fadeOutCurrent(now, fadeSeconds, DEFAULT_EASING);
     }
 
     /**
@@ -310,7 +288,7 @@ export class MusicPlayer {
 
         applyAudioParamRamp(gain.gain, fadeInStart, targetVolume, fadeMs, easeIn);
 
-        const voice: Voice = { gain, sources: [source], pendingSources: 1 };
+        const voice: Voice = { gain, source };
 
         source.onended = () => {
             source.disconnect();
@@ -323,10 +301,31 @@ export class MusicPlayer {
     }
 
     /**
-     * Schedules `voice`'s gain to fade to `0` and its source(s) to stop once the fade completes.
+     * Force-stops any voice still fading out, then demotes {@link current} to {@link previous} and
+     * schedules its fade-out and stop.
+     *
+     * @param now - Audio-clock time the fade-out starts at.
+     * @param fadeSeconds - Fade-out duration in seconds; `0` stops immediately.
+     * @param easeOut - Easing curve for the fade-out ramp.
+     */
+    private fadeOutCurrent(now: number, fadeSeconds: number, easeOut: EasingFunction): void {
+        if (this.previous !== null) {
+            this.forceStopVoice(this.previous);
+            this.previous = null;
+        }
+
+        if (this.current !== null) {
+            this.previous = this.current;
+            this.current = null;
+            this.scheduleFadeOutAndStop(this.previous, now, fadeSeconds, easeOut);
+        }
+    }
+
+    /**
+     * Schedules `voice`'s gain to fade to `0` and its source to stop once the fade completes.
      *
      * Does not disconnect anything synchronously - the node chain keeps playing until the
-     * scheduled stop time, and each source's `onended` handler (installed in {@link startVoice})
+     * scheduled stop time, and the source's `onended` handler (installed in {@link startVoice})
      * disconnects it when that actually fires.
      *
      * @param voice - Voice to fade out and stop.
@@ -346,9 +345,7 @@ export class MusicPlayer {
 
         const stopAt = startTime + fadeSeconds;
 
-        for (const source of voice.sources) {
-            source.stop(stopAt);
-        }
+        voice.source.stop(stopAt);
     }
 
     /**
@@ -360,16 +357,14 @@ export class MusicPlayer {
      * @param voice - Voice to force-stop.
      */
     private forceStopVoice(voice: Voice): void {
-        for (const source of voice.sources) {
-            source.stop();
-            source.disconnect();
-        }
+        voice.source.stop();
+        voice.source.disconnect();
 
         voice.gain.disconnect();
     }
 
     /**
-     * Recycles `voice` once every one of its sources has fired `onended`.
+     * Recycles `voice` once its source has fired `onended`.
      *
      * Guards against a stale callback from a voice already replaced or force-stopped by
      * comparing object identity against {@link current} and {@link previous} - unlike
@@ -377,15 +372,9 @@ export class MusicPlayer {
      * {@link startVoice} call allocates a fresh one), so identity alone disambiguates without
      * needing a generation counter.
      *
-     * @param voice - Voice one of whose sources just ended.
+     * @param voice - Voice whose source just ended.
      */
     private handleVoiceSourceEnded(voice: Voice): void {
-        voice.pendingSources -= 1;
-
-        if (voice.pendingSources > 0) {
-            return;
-        }
-
         voice.gain.disconnect();
 
         if (this.current === voice) {
@@ -398,12 +387,12 @@ export class MusicPlayer {
     }
 
     /**
-     * Returns the `AudioBuffer` backing the current track's sole source node.
+     * Returns the `AudioBuffer` backing the current track's source node.
      *
      * @returns The current track's buffer, or `null` when nothing is playing.
      */
     private currentBuffer(): AudioBuffer | null {
-        return this.current?.sources[0]?.buffer ?? null;
+        return this.current?.source.buffer ?? null;
     }
 }
 
