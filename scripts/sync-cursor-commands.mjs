@@ -29,6 +29,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { reportSyncDrift } from './lib/report-sync-drift.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -187,36 +188,13 @@ export function syncCursorCommands({ isCheck, root = ROOT }) {
         }
     }
 
-    if (isCheck) {
-        if (drifted.length > 0) {
-            console.error(`\n${drifted.length} cursor command(s) out of date:`);
-
-            for (const entry of drifted) {
-                console.error(`  ${entry}`);
-            }
-
-            console.error('\nRun `pnpm run sync:cursor-commands` to update them.');
-            return 1;
-        }
-
-        console.log(`All ${commandFiles.length} cursor command(s) up to date.`);
-
-        return 0;
-    }
-
-    if (drifted.length === 0) {
-        console.log(`All ${commandFiles.length} cursor command(s) already up to date.`);
-
-        return 0;
-    }
-
-    for (const entry of drifted) {
-        console.log(`updated ${entry}`);
-    }
-
-    console.log(`\n${drifted.length} of ${commandFiles.length} cursor command(s) updated.`);
-
-    return 0;
+    return reportSyncDrift({
+        drifted,
+        total: commandFiles.length,
+        isCheck,
+        noun: 'cursor command',
+        syncScript: 'sync:cursor-commands',
+    });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
