@@ -2543,6 +2543,7 @@ export const BT = {
      * exact glyphs and metrics {@link BT.systemPrint} uses internally.
      *
      * @since 1.7.0
+     * @changed 1.8.1 The 14 blank reserved glyphs at U+E006-U+E013 are gone: `hasGlyph` is false for them and `codePoints` and `glyphCount` shrink by 14.
      * @throws Error if read before {@link BT.init} finishes creating the system font.
      * @returns The engine's built-in system font.
      */
@@ -2563,6 +2564,7 @@ export const BT = {
      * bitmap fonts with proportional glyphs, use {@link BT.printFont} instead.
      *
      * @since 1.0.3
+     * @changed 1.8.1 U+E006-U+E013 now draw the fallback glyph instead of nothing (the blank reserved glyphs were removed).
      * @changed 1.8.1 On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`.
      * @param pos - Text origin in display coordinates.
      * @param paletteIndex - Palette color index for the text.

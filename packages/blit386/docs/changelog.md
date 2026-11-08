@@ -43,6 +43,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
   RGBA texture the sprite shader could not draw. Games that call `loadIndexed()` or `indexize()` are unaffected.
+- Behavior change: the system font no longer has 14 blank "reserved" glyphs at U+E006-U+E013. `hasGlyph` is now false
+  for those code points and they draw the U+FFFD fallback glyph instead of nothing; `codePoints` and `glyphCount` each
+  shrink by 14, so the `system-font-glyphs` demo no longer shows empty cells. No game could have drawn anything with
+  them. The atlas shrinks from 96×154 to 96×140 and every glyph after U+E005 moves up 14 cells, so `getSpriteSheet()`
+  and `getGlyph()` report new source rectangles for those glyphs; the glyph shapes are unchanged.
 - Behavior change: `SpriteSheet.size` is now a frozen copy. `new SpriteSheet(null, v)` no longer keeps your vector, so
   changing `v` afterward no longer changes the sheet's width and height, and writing to `sheet.size.x` or `.y` throws in
   strict mode. Read the size, and build a new sheet if you need different dimensions.

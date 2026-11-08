@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-25T11:56:06.303Z",
+  "generatedAt": "2026-11-07T14:02:42.938Z",
   "engineVersion": "1.8.0",
   "entries": [
     {
@@ -507,28 +507,28 @@
       "height": 240
     },
     {
+      "slug": "system-font-glyphs",
+      "pose": "start",
       "variants": {
         "display": "system-font-glyphs/start.display.png",
         "uidebug": "system-font-glyphs/start.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "system-font-glyphs",
-      "pose": "start",
       "width": 600,
-      "height": 315
+      "height": 315,
+      "lint": [],
+      "error": null
     },
     {
+      "slug": "system-font-glyphs",
+      "pose": "settled",
       "variants": {
         "display": "system-font-glyphs/settled.display.png",
         "uidebug": "system-font-glyphs/settled.uidebug.png"
       },
-      "lint": [],
-      "error": null,
-      "slug": "system-font-glyphs",
-      "pose": "settled",
       "width": 600,
-      "height": 315
+      "height": 315,
+      "lint": [],
+      "error": null
     },
     {
       "variants": {
@@ -1071,52 +1071,52 @@
       "height": 240
     },
     {
-      "slug": "coordinate-patterns",
-      "pose": "far",
       "variants": {
         "display": "coordinate-patterns/far.display.png",
         "uidebug": "coordinate-patterns/far.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "coordinate-patterns",
+      "pose": "far",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "coordinate-patterns",
-      "pose": "start",
       "variants": {
         "display": "coordinate-patterns/start.display.png",
         "uidebug": "coordinate-patterns/start.uidebug.png"
       },
-      "width": 640,
-      "height": 480,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "coordinate-patterns",
+      "pose": "start",
+      "width": 640,
+      "height": 480
     },
     {
-      "slug": "noise",
-      "pose": "start",
       "variants": {
         "display": "noise/start.display.png",
         "uidebug": "noise/start.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "noise",
+      "pose": "start",
+      "width": 320,
+      "height": 240
     },
     {
-      "slug": "noise",
-      "pose": "settled",
       "variants": {
         "display": "noise/settled.display.png",
         "uidebug": "noise/settled.uidebug.png"
       },
-      "width": 320,
-      "height": 240,
       "lint": [],
-      "error": null
+      "error": null,
+      "slug": "noise",
+      "pose": "settled",
+      "width": 320,
+      "height": 240
     },
     {
       "variants": {
