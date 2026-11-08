@@ -60,7 +60,9 @@ fi
 # that is a safe direction to err in for a security check.
 NORMALIZED_TEXT="$(printf '%s' "$COMMAND_TEXT" | tr -d "'" | tr -d '"' | tr -d '\\')"
 
-GIT_PREFIX='git([[:space:]]+(-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?|--[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?))*[[:space:]]+'
+# Only the global options that take a separate value consume the next word, so
+# `git --no-pager grep -n restore` reads `grep` as the subcommand (BT-749).
+GIT_PREFIX='git([[:space:]]+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))[[:space:]]+[^-[:space:]][^[:space:]]*|[[:space:]]+-[^[:space:]]+)*[[:space:]]+'
 
 # `git clean` deletes untracked files, so treat every invocation as destructive
 # unless it is an explicit preview. Matching force flags alone was not enough:
@@ -144,7 +146,7 @@ fi
 # argument boundaries too, same as ; & |. A refspec prefixed with `+` (e.g.
 # `git push origin +main`) is git's other force-push spelling and is matched
 # separately.
-FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease(=[^[:space:]]*)?)([[:space:]]|[;&|<>]|$)'
+FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-[[:alnum:]]*f[[:alnum:]]*|--force|--force-w(i(t(h(-(l(e(a(se?)?)?)?)?)?)?)?)?(=[^[:space:]]*)?)([[:space:]]|[;&|<>]|$)'
 FORCE_REFSPEC='([[:space:]]+[^[:space:]]+)*[[:space:]]+\+[^[:space:]]+'
 
 if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}push(${FORCE_FLAG}|${FORCE_REFSPEC})"; then
@@ -156,24 +158,21 @@ fi
 # reflog for a while (unlike reset --hard / checkout --/ restore / clean above), so this is "ask"
 # rather than a hard block. `-D` is shorthand for `--delete --force`; scan for either spelling,
 # including `-D` bundled with other short flags (e.g. `-Dq`).
-GIT_BRANCH='branch([[:space:]]|[;&|<>]|$)'
-GIT_BRANCH_SHORT_D='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+-[[:alnum:]]*D[[:alnum:]]*([[:space:]]|[;&|<>]|$)'
-GIT_BRANCH_LONG_DELETE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+--delete([[:space:]]|[;&|<>]|$)'
-GIT_BRANCH_LONG_FORCE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-f|--force)([[:space:]]|[;&|<>]|$)'
+ARGS='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+'
+BRANCH_DELETE_FLAG='(-[[:alnum:]]*d[[:alnum:]]*|--d(e(l(e(te?)?)?)?)?)'
+BRANCH_FORCE_FLAG='(-[[:alnum:]]*f[[:alnum:]]*|--force?)'
+# `-D`, a delete+force cluster (`-df`, `-fd`), or a delete flag and a force flag in either order within the same
+# command (`-d -f`, `--delete -f`, `-d old -f` - BT-749). The argument scan stops at a separator, so
+# `git branch -d old && git branch -f main origin/main` is two commands and passes.
+GIT_BRANCH_FORCED_DELETE="branch${ARGS}(-[[:alnum:]]*D[[:alnum:]]*|-[[:alnum:]]*(d[[:alnum:]]*f|f[[:alnum:]]*d)[[:alnum:]]*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})([[:space:]]|[;&|<>]|$)"
 
-# Exit status 0 when the command force-deletes a branch (`-D`, or `--delete` plus `--force`).
+# Exit status 0 when the command force-deletes a branch.
 is_force_branch_delete() {
-    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_BRANCH}" || return 1
-    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_SHORT_D}" && return 0
-    if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_LONG_DELETE}" \
-        && printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_LONG_FORCE}"; then
-        return 0
-    fi
-    return 1
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_BRANCH_FORCED_DELETE}"
 }
 
 if is_force_branch_delete; then
-    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"Force branch delete detected (git branch -D). Confirm before continuing."}}\n'
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"Force branch delete detected (git branch -D, or -d with -f). Confirm before continuing."}}\n'
     exit 0
 fi
 

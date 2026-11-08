@@ -63,10 +63,14 @@ const ARG_END = `(${SPACE}|[;&|<>]|$)`;
 // never count), then the space before the flag being looked for.
 const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 
-// `git` plus any global options (`-C dir`, `-c key=value`, `--no-pager`) before the subcommand. Written so
-// a backtracking engine cannot go exponential on a long run of options: one `-\S+` branch covers short and
-// long options alike, and an option value may not start with whitespace, so it cannot swallow the next option.
-const GIT_PREFIX = `git(${SPACE}+-${NON_SPACE}+(${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*)?)*${SPACE}+`;
+// `git` plus any global options before the subcommand. Only the options that take a separate value (`-C dir`,
+// `-c key=value`, `--git-dir .git`, ...) consume the next word; every other option (`--no-pager`, `-p`, `--bare`)
+// stands alone, so `git --no-pager grep -n restore` reads `grep` as the subcommand (BT-749). Same shape as the
+// Zed snippet in `content/AGENTS.md`, except that a value may not start with `-`: otherwise `-C -C -C ...` parses
+// two ways per option and a backtracking engine goes exponential (a value-like `-x` is read as an option instead).
+const GIT_PREFIX = `git(${SPACE}+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*|${SPACE}+-${NON_SPACE}+)*${SPACE}+`;
+// A short-flag cluster holding `letter`, as git accepts bundled short flags (`-uf` is `-u -f`).
+const shortCluster = (letter) => `-${ALPHANUMERIC}*${letter}${ALPHANUMERIC}*`;
 
 const ARG_CHAR = '[^ \\t\\v\\f\\r;&|<>]';
 // Anywhere in the arguments (`reset -q --hard`, `reset HEAD --hard`) and from its shortest prefix: git runs `--h`,
@@ -104,13 +108,21 @@ const CLEAN_DRY_RUN = new RegExp(`${GIT_PREFIX}clean${ARGS}(-${ALPHANUMERIC}*n${
 const RESTORE = new RegExp(`${GIT_PREFIX}restore${ARG_END}`);
 const RESTORE_STAGED = new RegExp(`${GIT_PREFIX}restore${ARGS}(-S|--staged)${ARG_END}`);
 const RESTORE_WORKTREE = new RegExp(`${GIT_PREFIX}restore${ARGS}(-W|--worktree)${ARG_END}`);
+// `--force-w` is the shortest unique prefix of `--force-with-lease` (`--force-i` is `--force-if-includes`).
+const FORCE_WITH_LEASE_OPTION = '--force-w(i(t(h(-(l(e(a(se?)?)?)?)?)?)?)?)?';
 const FORCE_PUSH = new RegExp(
-    `${GIT_PREFIX}push((${SPACE}+${NON_SPACE}+)*${SPACE}+(-f|--force|--force-with-lease(=${NON_SPACE}*)?)${ARG_END}|(${SPACE}+${NON_SPACE}+)*${SPACE}+\\+${NON_SPACE}+)`,
+    `${GIT_PREFIX}push((${SPACE}+${NON_SPACE}+)*${SPACE}+(${shortCluster('f')}|--force|${FORCE_WITH_LEASE_OPTION}(=${NON_SPACE}*)?)${ARG_END}|(${SPACE}+${NON_SPACE}+)*${SPACE}+\\+${NON_SPACE}+)`,
 );
-const BRANCH = new RegExp(`${GIT_PREFIX}branch${ARG_END}`);
-const BRANCH_SHORT_D = new RegExp(`${GIT_PREFIX}branch${ARGS}-${ALPHANUMERIC}*D${ALPHANUMERIC}*${ARG_END}`);
-const BRANCH_LONG_DELETE = new RegExp(`${GIT_PREFIX}branch${ARGS}--delete${ARG_END}`);
-const BRANCH_LONG_FORCE = new RegExp(`${GIT_PREFIX}branch${ARGS}(-f|--force)${ARG_END}`);
+// A forced delete is `-D`, or a delete flag plus a force flag in any spelling and order within the same command:
+// `-df`, `-d -f`, `--delete -f`, `-d old -f` (BT-749). ARGS stops at a separator, so `git branch -d old && git
+// branch -f main origin/main` is two commands and passes.
+// git runs a unique prefix of a long option as the option: `--d` to `--delete`, and `--force` with or without its
+// last letter (anything shorter is also a prefix of `--format`, so git rejects it).
+const BRANCH_DELETE_FLAG = `(${shortCluster('d')}|--d(e(l(e(te?)?)?)?)?)`;
+const BRANCH_FORCE_FLAG = `(${shortCluster('f')}|--force?)`;
+const BRANCH_FORCED_DELETE = new RegExp(
+    `${GIT_PREFIX}branch${ARGS}(${shortCluster('D')}|-${ALPHANUMERIC}*(d${ALPHANUMERIC}*f|f${ALPHANUMERIC}*d)${ALPHANUMERIC}*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})${ARG_END}`,
+);
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
 
 const DENY_DESTRUCTIVE = {
@@ -126,8 +138,9 @@ const ASK_FORCE_PUSH = {
 };
 const ASK_BRANCH_DELETE = {
     decision: 'ask',
-    userMessage: 'Force branch delete detected (git branch -D). Confirm before continuing.',
-    agentMessage: 'git branch -D permanently deletes an unmerged branch. Ask the user for explicit confirmation first.',
+    userMessage: 'Force branch delete detected (git branch -D, or -d with -f). Confirm before continuing.',
+    agentMessage:
+        'A forced branch delete (git branch -D, or -d with -f) permanently deletes an unmerged branch. Ask the user for explicit confirmation first.',
 };
 const ASK_STASH = {
     decision: 'ask',
@@ -147,9 +160,9 @@ const ASK_STASH = {
  *   `git restore --staged` without `--worktree` only resets the index and leaves the files alone, so it is the
  *   one safe restore. `git clean` is denied by default rather than by force flag, because
  *   `git -c clean.requireForce=false clean -d` deletes without naming one.
- * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`, `git branch -D`, and
- *   `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits reachable
- *   for a while, so approving one is not approving something irreversible.
+ * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`, `git branch -D` (or `-d` with
+ *   `-f`), and `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits
+ *   reachable for a while, so approving one is not approving something irreversible.
  *
  * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
  *
@@ -176,7 +189,7 @@ function isDangerousCommand(command) {
         return ASK_FORCE_PUSH;
     }
 
-    if (any(BRANCH) && (any(BRANCH_SHORT_D) || (any(BRANCH_LONG_DELETE) && any(BRANCH_LONG_FORCE)))) {
+    if (any(BRANCH_FORCED_DELETE)) {
         return ASK_BRANCH_DELETE;
     }
 

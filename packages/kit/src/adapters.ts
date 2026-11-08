@@ -1078,13 +1078,16 @@ export function generateCopilotAdapter(root: string, vars: TemplateVars): Genera
  * `"*": "allow"` base entry on purpose: it would override a stricter user-level default for every tool call.
  *
  * MANUAL-SYNC HAZARD: these lists restate the guard core's policy (`content/hooks/guard-core.cjs`: `isProtectedPath`,
- * `isDangerousCommand`) in a form glob patterns can express - coarser, never laxer, with two exceptions a `*`
+ * `isDangerousCommand`) in a form glob patterns can express - coarser, never laxer, with four exceptions a `*`
  * pattern cannot express without also denying allowed commands: the checkout file-like-argument rule
- * (`git checkout src/game.js`; `*.*` would also deny a tag such as `git checkout 1.8.0`) and a `-f` / `-p` in the
- * middle of a bundled short-flag cluster (`-*f` would also deny `git checkout -b leaf`). `test/opencode.test.mjs`
- * runs one case table through both, so an edit on either side that is not mirrored fails the kit tests. The
- * `kit-guard.ts` plugin enforces the exact policy on top of this, including those two exceptions and what a pattern
- * cannot see at all (`bash -c "..."`).
+ * (`git checkout src/game.js`; `*.*` would also deny a tag such as `git checkout 1.8.0`), a `-f` / `-p` in the
+ * middle of a bundled short-flag cluster (`-*f` would also deny `git checkout -b leaf`; push lists its common
+ * two-letter clusters such as `-uf`), a branch delete flag and force flag that are not adjacent
+ * (`git branch -d old -f`), and an abbreviated branch delete or force flag (`git branch --del -f`). `--force-w` and
+ * longer push prefixes are covered, since `*--force*` matches them. `test/opencode.test.mjs` runs one case table
+ * through both, so an edit on either side that is not mirrored fails the kit tests. The `kit-guard.ts` plugin enforces
+ * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`); it can only
+ * block, so an ask-tier form these globs miss (`git push -uvf`, `git branch -d old -f`) runs without a prompt.
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -1169,8 +1172,28 @@ const OPENCODE_PERMISSION = {
         'git push * -f*': 'ask',
         'git push *--force*': 'ask',
         'git push * +*': 'ask',
+        // A bundled `-f` after one of push's other short flags (`-uf`); `-fu` is caught by `-f*` above (BT-749).
+        ...Object.fromEntries(
+            ['u', 'v', 'q', 'n', 'd', '4', '6'].flatMap((letter) => [
+                [`git push -${letter}f*`, 'ask'],
+                [`git push * -${letter}f*`, 'ask'],
+            ]),
+        ),
         'git branch -D *': 'ask',
         'git branch * -D*': 'ask',
+        // A delete flag next to a force flag, in either order or as one cluster (`-df`, `-d -f`, `--delete -f`).
+        ...Object.fromEntries(
+            [
+                '-df',
+                '-fd',
+                ...['-d', '--delete'].flatMap((del) =>
+                    ['-f', '--force'].flatMap((force) => [`${del} ${force}`, `${force} ${del}`]),
+                ),
+            ].flatMap((flags) => [
+                [`git branch ${flags}*`, 'ask'],
+                [`git branch * ${flags}*`, 'ask'],
+            ]),
+        ),
         'git stash drop*': 'ask',
         'git stash clear*': 'ask',
     },

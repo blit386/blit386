@@ -163,6 +163,12 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git push origin main --force-with-lease',
         'git push origin +main',
         'git branch -D old',
+        'git push -uf origin main',
+        'git push -fu origin main',
+        'git branch -df old',
+        'git branch -d -f old',
+        'git branch --delete -f old',
+        'git branch --delete --force old',
         'git stash drop',
         'git stash clear',
     ];
@@ -186,6 +192,9 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git push origin foo-feature',
         'git push --follow-tags',
         'git branch -d old',
+        'git push -u origin main',
+        'git branch -f main origin/main',
+        'git --no-pager grep -n restore',
         'git stash pop',
     ];
 
