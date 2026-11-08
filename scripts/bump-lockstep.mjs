@@ -109,6 +109,34 @@ function endOfStringLiteral(raw, start) {
 }
 
 /**
+ * From the end of an object key's string literal, skip whitespace, expect `:`, skip whitespace again.
+ *
+ * @param {string} raw JSON text.
+ * @param {number} keyEnd Index just past the key's closing quote.
+ * @returns {number} Index of the first character of the value, or -1 when no `:` follows the literal
+ *   (so the literal was a string value, not a key).
+ */
+function valueStartAfterKey(raw, keyEnd) {
+    let cursor = keyEnd;
+
+    while (cursor < raw.length && /\s/u.test(raw[cursor])) {
+        cursor += 1;
+    }
+
+    if (raw[cursor] !== ':') {
+        return -1;
+    }
+
+    cursor += 1;
+
+    while (cursor < raw.length && /\s/u.test(raw[cursor])) {
+        cursor += 1;
+    }
+
+    return cursor;
+}
+
+/**
  * Locate the top-level `"version"` string value inside already-valid JSON text.
  *
  * Scans with a depth counter so a nested `"version"` key (inside `dependencies`,
@@ -137,21 +165,11 @@ function findTopLevelVersionSpan(raw) {
                 continue;
             }
 
-            let cursor = literalEnd;
+            const cursor = valueStartAfterKey(raw, literalEnd);
 
-            while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-                cursor += 1;
-            }
-
-            if (raw[cursor] !== ':') {
+            if (cursor === -1) {
                 index = literalEnd;
                 continue;
-            }
-
-            cursor += 1;
-
-            while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-                cursor += 1;
             }
 
             if (raw.slice(index, literalEnd) === '"version"' && raw[cursor] === '"') {
@@ -204,22 +222,10 @@ function findStringFieldSpan(raw, key) {
         const literalEnd = endOfStringLiteral(raw, index);
 
         if (raw.slice(index, literalEnd) === keyLiteral) {
-            let cursor = literalEnd;
+            const cursor = valueStartAfterKey(raw, literalEnd);
 
-            while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-                cursor += 1;
-            }
-
-            if (raw[cursor] === ':') {
-                cursor += 1;
-
-                while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-                    cursor += 1;
-                }
-
-                if (raw[cursor] === '"') {
-                    return { start: cursor, end: endOfStringLiteral(raw, cursor) };
-                }
+            if (cursor !== -1 && raw[cursor] === '"') {
+                return { start: cursor, end: endOfStringLiteral(raw, cursor) };
             }
         }
 
