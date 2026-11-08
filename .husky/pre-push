@@ -131,12 +131,13 @@ fi
 # changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
 # configs) would otherwise run zero checks. Always run the root-level gate too.
 if [ "$PREFLIGHT_STATUS" -eq 0 ]; then
-    echo "Running root-level checks (format:check, docs:links, agents:check, sync:cursor-commands:check, sync:maintainer-agents:check, bump:check)..."
+    echo "Running root-level checks (format:check, docs:links, agents:check, sync:cursor-commands:check, sync:maintainer-agents:check, audit:modules:check, bump:check)..."
     timed "format:check" pnpm run format:check &&
         timed "docs:links" pnpm run docs:links &&
         timed "agents:check" pnpm run agents:check &&
         timed "sync:cursor-commands:check" pnpm run sync:cursor-commands:check &&
         timed "sync:maintainer-agents:check" pnpm run sync:maintainer-agents:check &&
+        timed "audit:modules:check" pnpm run audit:modules:check &&
         timed "bump:check" pnpm run bump:check || PREFLIGHT_STATUS=$?
 fi
 

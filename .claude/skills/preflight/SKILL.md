@@ -34,11 +34,13 @@ one push - most of the "why does push take so long" feeling. They were removed f
 `pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a
 package in isolation. `sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only,
 whole-repo check - they never had a per-package copy to begin with, since they generate against root `.claude/skills/` /
-`.cursor/commands/` and the maintainer dogfood agent configs regardless of which package changed. The root-level pass
-only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip `format:check`,
-`docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, and `bump:check` entirely,
-so a push only exercises them once the per-package checks are clean. That gating is local to pre-push: in CI,
-`quality-root` declares only `needs: changes`, so it runs regardless of whether the per-package quality jobs pass.
+`.cursor/commands/` and the maintainer dogfood agent configs regardless of which package changed, as is
+`audit:modules:check` (the audit ledger in `.claude/skills/audit/modules.md` against the units derived from the tree).
+The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip
+`format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`,
+`audit:modules:check`, and `bump:check` entirely, so a push only exercises them once the per-package checks are clean.
+That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether
+the per-package quality jobs pass.
 
 ## Steps
 

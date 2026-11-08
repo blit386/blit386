@@ -152,6 +152,16 @@ jobs:
         run: pnpm run test:maintainer-agents
         background: true
 
+      # The audit ledger (.claude/skills/audit/modules.md) must name every unit the tree derives;
+      # a new engine directory, demo or package fails here until it has a row.
+      - name: Check audit ledger drift
+        run: pnpm run audit:modules:check
+        background: true
+
+      - name: Run audit-modules tests
+        run: pnpm run test:audit-modules
+        background: true
+
       - name: Run kit-docs-drift tests
         run: pnpm run test:check-kit-docs-drift
         background: true
