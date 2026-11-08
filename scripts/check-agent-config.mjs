@@ -304,20 +304,6 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
 }
 
 /**
- * Whether git would ignore the root `.mcp.json` if it were removed and re-added.
- *
- * Asking git is the only honest way to answer this. Matching `.gitignore` text for the
- * `!/.mcp.json` negation looks equivalent but is not: gitignore resolves last-match-wins, so a
- * later `*.json` or a second bare `.mcp.json` line re-ignores the file while the negation is
- * still sitting there in the text. Both cases were verified to slip past a text-based check.
- *
- * `--no-index` is what makes the question meaningful for a file that is already tracked -
- * without it git short-circuits on the index and always answers "not ignored".
- *
- * @param {string} repoRoot Absolute path to the repository root.
- * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
- */
-/**
  * Whether git would ignore `relPath` if it were removed and re-added.
  *
  * @param {string} repoRoot Absolute path to the repository root.
