@@ -150,10 +150,8 @@ export class KeyboardInput {
     /**
      * Ends a fixed update step: snapshots `prevHeld`, clears pending edges and
      * {@link getInputString}. Call once per `demo.update()` (not once per render frame).
-     *
-     * @param _currentTick - Reserved for future use; fixed-update tick when the demo read input.
      */
-    public endUpdate(_currentTick: number): void {
+    public endUpdate(): void {
         this.pendingPress.clear();
         this.pendingRelease.clear();
 
@@ -164,16 +162,6 @@ export class KeyboardInput {
         }
 
         this.inputBuffer = '';
-    }
-
-    /**
-     * Alias for {@link endUpdate}; kept for tests and callers that still use the old name.
-     *
-     * @deprecated Deprecated since 1.0.3 (2026-05-31). Call {@link endUpdate} once per fixed update instead.
-     * @param currentTick - Passed through to {@link endUpdate}.
-     */
-    public endFrame(currentTick: number): void {
-        this.endUpdate(currentTick);
     }
 
     /**
@@ -317,7 +305,7 @@ export class KeyboardInput {
     }
 
     /**
-     * Text accumulated since the last {@link endFrame} from `beforeinput`.
+     * Text accumulated since the last {@link endUpdate} from `beforeinput`.
      * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter.
      *
      * @returns Buffered characters for the current frame.
@@ -360,14 +348,15 @@ export class KeyboardInput {
             return false;
         }
 
-        if (codes.some((c) => this.pendingPress.has(c))) {
+        const isPrevDown = codes.some((c) => this.prevHeld.has(c));
+
+        // A second mapped key pressed while another was already held at the last update is not a new edge.
+        // shortcut: a key released and pressed again within one update tick reports no edge; fine below one tick (~16 ms).
+        if (!isPrevDown && codes.some((c) => this.pendingPress.has(c))) {
             return true;
         }
 
-        const isDown = this.isButtonDown(codes);
-        const isPrevDown = codes.some((c) => this.prevHeld.has(c));
-
-        if (!isDown) {
+        if (!this.isButtonDown(codes)) {
             return false;
         }
 
@@ -401,15 +390,12 @@ export class KeyboardInput {
             return false;
         }
 
-        if (codes.some((c) => this.pendingRelease.has(c))) {
-            return true;
-        }
-
+        // Another mapped key still held means the logical button never went up.
         if (this.isButtonDown(codes)) {
             return false;
         }
 
-        return codes.some((c) => this.prevHeld.has(c));
+        return codes.some((c) => this.pendingRelease.has(c) || this.prevHeld.has(c));
     }
 
     /**

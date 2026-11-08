@@ -85,8 +85,11 @@ no emoji.
 
 5. Decide and post.
    - If the bucket / evidence / recommended status is unchanged: post nothing.
-   - If it changed: post one audit-update comment in the format above, dated today.
-     `gh issue comment <n> --repo blit386/blit386 --body '<comment>'`
+   - If it changed: post one audit-update comment in the format above, dated today. Write the comment to a scratch file
+     outside the repo (the session scratchpad or a temp dir), then post it with
+     `gh issue comment <n> --repo blit386/blit386 --body-file <file>`. Never inline the text with `--body`: an
+     apostrophe ends the quoted string, and the repo's shell guard blocks any call whose text names a destructive git
+     command.
    - Be precise about what shipped and what is still missing; name the residual gap so the ticket can be re-scoped or
      closed.
 

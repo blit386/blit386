@@ -57,7 +57,7 @@ function cycle(trace: InputTrace | null): void {
         trace.record('update', 1, pointer, keyboard, gamepad);
     }
 
-    keyboard.endUpdate(1);
+    keyboard.endUpdate();
     gamepad.endUpdate(1);
     pointer.endUpdate();
 
@@ -66,7 +66,7 @@ function cycle(trace: InputTrace | null): void {
     }
 
     pointer.endFrame();
-    gamepad.endFrame(1);
+    gamepad.endFrame();
 }
 
 describe('InputTrace per-frame cost', () => {

@@ -926,7 +926,7 @@
       "changes": [
         {
           "version": "1.8.1",
-          "note": "Validates `fadeMs` and `volume` before remembering or changing music."
+          "note": "Validates `fadeMs`, `volume`, and the loop region before remembering or changing music."
         }
       ],
       "deprecated": null,
@@ -1324,7 +1324,12 @@
     "BT.systemFont": {
       "kind": "getter",
       "since": "1.7.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "The 14 blank reserved glyphs at U+E006-U+E013 are gone: `hasGlyph` is false for them and `codePoints` and `glyphCount` shrink by 14."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1332,6 +1337,10 @@
       "kind": "method",
       "since": "1.0.3",
       "changes": [
+        {
+          "version": "1.8.1",
+          "note": "U+E006-U+E013 now draw the fallback glyph instead of nothing (the blank reserved glyphs were removed)."
+        },
         {
           "version": "1.8.1",
           "note": "On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`."
@@ -1837,6 +1846,10 @@
         {
           "version": "1.8.1",
           "note": "Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size."
+        },
+        {
+          "version": "1.8.1",
+          "note": "`size` is a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size."
         }
       ],
       "deprecated": null,

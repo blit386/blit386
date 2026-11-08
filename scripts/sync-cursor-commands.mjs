@@ -29,11 +29,18 @@ import { basename, dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SKILLS_DIR = join(ROOT, '.claude', 'skills');
-const COMMANDS_DIR = join(ROOT, '.cursor', 'commands');
+
+/** Repo-relative directory holding the `.claude/skills/<name>/SKILL.md` sources. */
+const SKILLS_DIR_REL = '.claude/skills';
 
 /** Repo-relative directory a `.cursor/commands/<name>.md` file lives in (used for link re-relativizing). */
 const COMMANDS_DIR_REL = '.cursor/commands';
+
+/** @param {string} root Absolute repo root. */
+const skillsDir = (root) => join(root, SKILLS_DIR_REL);
+
+/** @param {string} root Absolute repo root. */
+const commandsDir = (root) => join(root, COMMANDS_DIR_REL);
 
 /** A path prefix common to every re-relativized link computation; its name is arbitrary. */
 const LINK_MATH_ROOT = '/repo';
@@ -115,38 +122,47 @@ export function findOrphanCommandNames(existingCommandNames, skillNames) {
 }
 
 /** @returns {string[]} Sorted directory names under `.claude/skills/` that contain a SKILL.md. */
-function readSkillNames() {
-    return readdirSync(SKILLS_DIR, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && existsSync(join(SKILLS_DIR, entry.name, 'SKILL.md')))
+export function readSkillNames(root = ROOT) {
+    const dir = skillsDir(root);
+
+    return readdirSync(dir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory() && existsSync(join(dir, entry.name, 'SKILL.md')))
         .map((entry) => entry.name)
         .sort();
 }
 
 /** @returns {string[]} Basenames (no extension) of `.cursor/commands/*.md` files on disk. */
-function readExistingCommandNames() {
-    if (!existsSync(COMMANDS_DIR)) {
+export function readExistingCommandNames(root = ROOT) {
+    const dir = commandsDir(root);
+
+    if (!existsSync(dir)) {
         return [];
     }
 
-    return readdirSync(COMMANDS_DIR, { withFileTypes: true })
+    return readdirSync(dir, { withFileTypes: true })
         .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
         .map((entry) => basename(entry.name, '.md'));
 }
 
-function main() {
-    const isCheck = process.argv.includes('--check');
-    const skillNames = readSkillNames();
+/**
+ * Mirror skills into `.cursor/commands` under `root`, or report drift in check mode.
+ *
+ * @param {{ isCheck: boolean, root?: string }} options
+ * @returns {number} Process exit code: 1 when `isCheck` found drift, else 0.
+ */
+export function syncCursorCommands({ isCheck, root = ROOT }) {
+    const skillNames = readSkillNames(root);
     const commandFiles = buildCommandFiles(
         skillNames.map((name) => ({
             name,
-            skillMdContent: readFileSync(join(SKILLS_DIR, name, 'SKILL.md'), 'utf8'),
+            skillMdContent: readFileSync(join(skillsDir(root), name, 'SKILL.md'), 'utf8'),
         })),
     );
-    const orphanNames = findOrphanCommandNames(readExistingCommandNames(), skillNames);
+    const orphanNames = findOrphanCommandNames(readExistingCommandNames(root), skillNames);
     const drifted = [];
 
     for (const file of commandFiles) {
-        const filePath = join(COMMANDS_DIR, `${file.name}.md`);
+        const filePath = join(commandsDir(root), `${file.name}.md`);
         const current = existsSync(filePath) ? readFileSync(filePath, 'utf8') : null;
 
         if (current === file.content) {
@@ -156,7 +172,7 @@ function main() {
         drifted.push(`.cursor/commands/${file.name}.md`);
 
         if (!isCheck) {
-            mkdirSync(COMMANDS_DIR, { recursive: true });
+            mkdirSync(commandsDir(root), { recursive: true });
             writeFileSync(filePath, file.content);
         }
     }
@@ -165,7 +181,7 @@ function main() {
         drifted.push(`.cursor/commands/${orphanName}.md (orphaned, no matching .claude/skills/${orphanName})`);
 
         if (!isCheck) {
-            rmSync(join(COMMANDS_DIR, `${orphanName}.md`));
+            rmSync(join(commandsDir(root), `${orphanName}.md`));
         }
     }
 
@@ -178,18 +194,18 @@ function main() {
             }
 
             console.error('\nRun `pnpm run sync:cursor-commands` to update them.');
-            process.exit(1);
+            return 1;
         }
 
         console.log(`All ${commandFiles.length} cursor command(s) up to date.`);
 
-        return;
+        return 0;
     }
 
     if (drifted.length === 0) {
         console.log(`All ${commandFiles.length} cursor command(s) already up to date.`);
 
-        return;
+        return 0;
     }
 
     for (const entry of drifted) {
@@ -197,8 +213,10 @@ function main() {
     }
 
     console.log(`\n${drifted.length} of ${commandFiles.length} cursor command(s) updated.`);
+
+    return 0;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-    main();
+    process.exitCode = syncCursorCommands({ isCheck: process.argv.includes('--check') });
 }

@@ -1176,10 +1176,12 @@ export const BT = {
      * dropped - it starts automatically the instant the context unlocks, unlike {@link BT.soundPlay}.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Validates `fadeMs` and `volume` before remembering or changing music.
+     * @changed 1.8.1 Validates `fadeMs`, `volume`, and the loop region before remembering or changing music.
      * @param clip - Loaded audio clip to play.
      * @param options - Crossfade, volume, and loop options; see {@link MusicPlayOptions}.
-     * @throws Error when `options.fadeMs` or `options.volume` is not a finite number; the current track is left alone.
+     * @throws Error when `options.fadeMs` or `options.volume` is not a finite number, or `options.loopStart` and
+     *   `options.loopEnd` are not a valid pair for the clip (also while the context is locked); the current track is
+     *   left alone and nothing is remembered.
      */
     musicPlay: (clip: AudioClip, options?: MusicPlayOptions): void => {
         BTAPI.instance.musicPlay(clip, options);
@@ -2543,6 +2545,7 @@ export const BT = {
      * exact glyphs and metrics {@link BT.systemPrint} uses internally.
      *
      * @since 1.7.0
+     * @changed 1.8.1 The 14 blank reserved glyphs at U+E006-U+E013 are gone: `hasGlyph` is false for them and `codePoints` and `glyphCount` shrink by 14.
      * @throws Error if read before {@link BT.init} finishes creating the system font.
      * @returns The engine's built-in system font.
      */
@@ -2563,6 +2566,7 @@ export const BT = {
      * bitmap fonts with proportional glyphs, use {@link BT.printFont} instead.
      *
      * @since 1.0.3
+     * @changed 1.8.1 U+E006-U+E013 now draw the fallback glyph instead of nothing (the blank reserved glyphs were removed).
      * @changed 1.8.1 On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`.
      * @param pos - Text origin in display coordinates.
      * @param paletteIndex - Palette color index for the text.

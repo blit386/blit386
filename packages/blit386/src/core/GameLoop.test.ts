@@ -254,7 +254,7 @@ describe('GameLoop', () => {
             rafCallbacks[0]?.();
 
             // Execute inner RAF callback - sets lastUpdateTime and schedules first tick.
-            rafCallbacks[1]?.();
+            rafCallbacks[1]?.(16);
 
             expect(p.lastUpdateTime).toBeGreaterThan(0);
             expect(rafCallbacks).toHaveLength(3);
@@ -953,6 +953,83 @@ describe('GameLoop', () => {
             loop.stop();
 
             expect(loop.isHaltedOnError()).toBe(false);
+        });
+    });
+
+    describe('first-frame drop baseline (BT-730)', () => {
+        const FRAME_MS = 1000 / 120;
+        // Another rAF callback ran first in the frame, so performance.now() is ahead of the timestamp.
+        const CALLBACK_LAG_MS = 3;
+
+        function setup(): { loop: GameLoop; onFrameDrop: ReturnType<typeof vi.fn>; frame: (time: number) => void } {
+            const queue: Array<(time: number) => void> = [];
+            let now = 0;
+
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn((cb: (time: number) => void) => {
+                    queue.push(cb);
+
+                    return queue.length;
+                }),
+            );
+            vi.spyOn(performance, 'now').mockImplementation(() => now);
+
+            const onFrameDrop = vi.fn();
+            const loop = new GameLoop(FRAME_MS, vi.fn(), vi.fn(), onFrameDrop);
+
+            const frame = (time: number): void => {
+                now = time + CALLBACK_LAG_MS;
+                queue.shift()?.(time);
+            };
+
+            return { loop, onFrameDrop, frame };
+        }
+
+        it('does not report drops for steady frames when performance.now() runs ahead of the rAF timestamp', () => {
+            const { loop, onFrameDrop, frame } = setup();
+
+            loop.start();
+            frame(0);
+            // Second callback: seeds lastUpdateTime, so the first real delta starts at frame 2.
+            frame(FRAME_MS);
+
+            for (let i = 2; i < 100; i++) {
+                frame(i * FRAME_MS);
+            }
+
+            expect(onFrameDrop).not.toHaveBeenCalled();
+        });
+
+        it('does not let a repeated rAF timestamp set the baseline', () => {
+            const { loop, onFrameDrop, frame } = setup();
+
+            loop.start();
+            frame(0);
+            frame(FRAME_MS);
+            // Same timestamp twice: a zero delta through the real tick path.
+            frame(FRAME_MS);
+
+            for (let i = 2; i < 100; i++) {
+                frame(i * FRAME_MS);
+            }
+
+            expect(onFrameDrop).not.toHaveBeenCalled();
+        });
+
+        it('ignores a non-positive delta so it cannot become the baseline', () => {
+            const { loop, onFrameDrop } = setup();
+            const p = loop as unknown as { detectFrameDrop: (deltaTime: number) => void };
+
+            for (let i = 0; i < 20; i++) {
+                p.detectFrameDrop(i % 2 === 0 ? 0 : -1);
+            }
+
+            for (let i = 0; i < 100; i++) {
+                p.detectFrameDrop(FRAME_MS);
+            }
+
+            expect(onFrameDrop).not.toHaveBeenCalled();
         });
     });
 });

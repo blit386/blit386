@@ -509,7 +509,8 @@ BT.musicVolumeGet(); // 0.4
 Unlike `BT.soundPlay`, a `BT.musicPlay` call made before `BT.isAudioUnlocked` is `true` is not dropped - the engine
 remembers the most recent pending request and starts it automatically the instant the context unlocks. Calling
 `BT.musicPlay` again while still locked replaces the remembered request; only the latest survives to unlock. Calling
-`BT.musicStop` while still locked cancels the remembered request, so nothing starts on the first gesture.
+`BT.musicStop` while still locked cancels the remembered request, so nothing starts on the first gesture. An invalid
+loop region throws right away, locked or not, and nothing is remembered.
 
 </Callout>
 

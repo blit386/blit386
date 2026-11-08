@@ -845,207 +845,6 @@ function cloneVector2i(size: Vector2i): Vector2i {
 /** Non-positive sentinel surfaced when configure() passes null vectors; rejected by {@link validateDimensions}. */
 const INVALID_CONFIGURE_VECTOR_SIZE = new Vector2i(0, 0);
 
-/**
- * Picks a configure-time vector: omit when undefined or null, clone valid {@link Vector2i} values.
- *
- * Explicit `null` is detected from the original `partial` field during merge, not from `picked`.
- *
- * @param value - Field from demo `configure()`.
- * @returns Cloned vector when valid, otherwise `undefined`.
- */
-function pickConfigureVector(value: Vector2i | undefined | null): Vector2i | undefined {
-    if (value === undefined || value === null) {
-        return undefined;
-    }
-
-    return cloneVector2i(value);
-}
-
-/**
- * Clones a caller-supplied configure color so merged settings do not share a
- * mutable reference with the demo's `configure()` return value.
- *
- * @param value - Raw color from `configure()`, possibly undefined.
- * @returns Cloned color, or undefined when none was supplied.
- */
-function pickConfigureColor(value: Color32 | undefined): Color32 | undefined {
-    return value === undefined ? undefined : value.clone();
-}
-
-/**
- * Resolves required `displaySize` for the explicit-profile merge path.
- *
- * Uses defaults only when the field was omitted (`undefined`). Explicit `null` maps to
- * {@link INVALID_CONFIGURE_VECTOR_SIZE} so {@link validateDimensions} can reject it.
- *
- * @param partialDisplaySize - Raw `configure()` value.
- * @param pickedDisplaySize - Cloned value from {@link pickDefinedHardwareSettings}, if any.
- * @param fallback - Baseline display size from {@link defaultConfig}.
- * @returns Resolved display size (never `null`).
- */
-function resolveExplicitDisplaySize(
-    partialDisplaySize: Vector2i | undefined | null,
-    pickedDisplaySize: Vector2i | undefined,
-    fallback: Vector2i,
-): Vector2i {
-    if (partialDisplaySize === null) {
-        return INVALID_CONFIGURE_VECTOR_SIZE.clone();
-    }
-
-    if (pickedDisplaySize !== undefined) {
-        return pickedDisplaySize;
-    }
-
-    return cloneVector2i(fallback);
-}
-
-/**
- * Resolves an optional vector for the explicit display profile.
- *
- * @param partialValue - Raw `configure()` value.
- * @param picked - Cloned value from {@link pickDefinedHardwareSettings}, if any.
- * @returns Cloned vector, {@link INVALID_CONFIGURE_VECTOR_SIZE} when `partialValue` is `null`, or `undefined` when omitted.
- */
-function resolveExplicitOptionalVector(
-    partialValue: Vector2i | undefined | null,
-    picked: Vector2i | undefined,
-): Vector2i | undefined {
-    if (partialValue === null) {
-        return INVALID_CONFIGURE_VECTOR_SIZE.clone();
-    }
-
-    return picked;
-}
-
-/**
- * Copies a defined scalar or object field from `partial` into `picked`.
- *
- * @param picked - Output partial settings.
- * @param partial - Values returned by the demo's `configure()` hook.
- * @param key - Hardware settings field to copy when defined.
- */
-function pickIfDefinedPartial<K extends keyof HardwareSettings>(
-    picked: Partial<HardwareSettings>,
-    partial: Partial<HardwareSettings>,
-    key: K,
-): void {
-    /* eslint-disable security/detect-object-injection -- key is keyof HardwareSettings */
-    if (partial[key] !== undefined) {
-        picked[key] = partial[key];
-    }
-    /* eslint-enable security/detect-object-injection */
-}
-
-/**
- * Copies a defined {@link HardwareSettings.keyboardLayout} into `picked` when it names a
- * known {@link KeyboardLayout}; unknown values (possible from untyped JS `configure()`
- * code) log a warning and resolve to the `'versus'` fallback, on both merge paths.
- *
- * @param picked - Output partial settings.
- * @param value - Raw `keyboardLayout` value from `configure()`.
- */
-function pickKeyboardLayout(picked: Partial<HardwareSettings>, value: unknown): void {
-    if (value === undefined) {
-        return;
-    }
-
-    if ((KEYBOARD_LAYOUTS as readonly unknown[]).includes(value)) {
-        picked.keyboardLayout = value as KeyboardLayout;
-
-        return;
-    }
-
-    console.warn(`[BT] ${keyboardLayoutUnknownWarning(value, KEYBOARD_LAYOUTS)}`);
-    picked.keyboardLayout = KEYBOARD_LAYOUTS[0];
-}
-
-/**
- * Copies defined overlay fields from `partial` into `picked`.
- *
- * @param picked - Output partial settings.
- * @param partial - Values returned by the demo's `configure()` hook.
- */
-function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: Partial<HardwareSettings>): void {
-    pickIfDefinedPartial(picked, partial, 'isOverlayEnabled');
-    pickIfDefinedPartial(picked, partial, 'isOverlayVisibleAtStart');
-    pickIfDefinedPartial(picked, partial, 'isOverlayToggleHintVisible');
-    pickIfDefinedPartial(picked, partial, 'isOverlayToggleEnabled');
-    pickIfDefinedPartial(picked, partial, 'isOverlayToggleHitDebugVisible');
-    pickIfDefinedPartial(picked, partial, 'isOverlayPaletteEnabled');
-    pickIfDefinedPartial(picked, partial, 'overlayPaletteColumns');
-    pickIfDefinedPartial(picked, partial, 'overlayPaletteRowsVisible');
-    pickIfDefinedPartial(picked, partial, 'isOverlayTimingChartEnabled');
-    pickIfDefinedPartial(picked, partial, 'overlayTimingChartHeight');
-    pickIfDefinedPartial(picked, partial, 'overlayTimingChartDiagnostics');
-    pickIfDefinedPartial(picked, partial, 'isOverlayRendererDiagnosticsBarEnabled');
-    pickIfDefinedPartial(picked, partial, 'isOverlayAudioMetersEnabled');
-    pickIfDefinedPartial(picked, partial, 'overlayAudioMeterHeight');
-
-    if (partial.overlayStyle !== undefined) {
-        picked.overlayStyle = { ...partial.overlayStyle };
-    }
-
-    if (partial.overlayTimingChartStyle !== undefined) {
-        picked.overlayTimingChartStyle = { ...partial.overlayTimingChartStyle };
-    }
-
-    if (partial.overlayAudioMeterStyle !== undefined) {
-        picked.overlayAudioMeterStyle = { ...partial.overlayAudioMeterStyle };
-    }
-}
-
-/**
- * Copies only defined fields from a partial configure() return value.
- *
- * @param partial - Values returned by the demo's `configure()` hook.
- * @returns Partial settings containing only defined entries, with vectors cloned.
- */
-function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partial<HardwareSettings> {
-    const picked: Partial<HardwareSettings> = {};
-
-    const pickedDisplaySize = pickConfigureVector(partial.displaySize);
-    if (pickedDisplaySize !== undefined) {
-        picked.displaySize = pickedDisplaySize;
-    }
-
-    const pickedDrawingBufferSize = pickConfigureVector(partial.drawingBufferSize);
-    if (pickedDrawingBufferSize !== undefined) {
-        picked.drawingBufferSize = pickedDrawingBufferSize;
-    }
-
-    const pickedMaxCanvasSize = pickConfigureVector(partial.maxCanvasSize);
-    if (pickedMaxCanvasSize !== undefined) {
-        picked.maxCanvasSize = pickedMaxCanvasSize;
-    }
-
-    pickIfDefinedPartial(picked, partial, 'targetFPS');
-    pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
-    pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
-    pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
-    pickIfDefinedPartial(picked, partial, 'isCapturingKeyboardScroll');
-    pickIfDefinedPartial(picked, partial, 'isWakeLockEnabled');
-    pickIfDefinedPartial(picked, partial, 'preferredOrientation');
-    pickKeyboardLayout(picked, partial.keyboardLayout);
-    pickIfDefinedPartial(picked, partial, 'backend');
-    pickIfDefinedPartial(picked, partial, 'audioVoices');
-    pickIfDefinedPartial(picked, partial, 'isSplashEnabled');
-    pickIfDefinedPartial(picked, partial, 'isFrameCaptureShortcutEnabled');
-
-    const pickedSplashColorDark = pickConfigureColor(partial.splashColorDark);
-    if (pickedSplashColorDark !== undefined) {
-        picked.splashColorDark = pickedSplashColorDark;
-    }
-
-    const pickedSplashColorLight = pickConfigureColor(partial.splashColorLight);
-    if (pickedSplashColorLight !== undefined) {
-        picked.splashColorLight = pickedSplashColorLight;
-    }
-
-    pickDefinedOverlaySettings(picked, partial);
-
-    return picked;
-}
-
 /** Legacy-to-current boolean field aliases accepted by configure() compatibility handling. */
 const DEPRECATED_BOOLEAN_ALIASES = [
     { current: 'isDetectingDroppedFrames', legacy: 'detectDroppedFrames' },
@@ -1057,6 +856,131 @@ const DEPRECATED_BOOLEAN_ALIASES = [
     { current: 'isOverlayTimingChartEnabled', legacy: 'overlayTimingChart' },
     { current: 'isOverlayRendererDiagnosticsBarEnabled', legacy: 'overlayRendererDiagnosticsBar' },
 ] as const;
+
+/** How {@link pickDefinedHardwareSettings} copies one `configure()` field into the merged settings. */
+type PickKind = 'value' | 'vector' | 'color' | 'record' | 'keyboardLayout';
+
+/** Deprecated {@link HardwareSettings} keys; {@link normalizeDeprecatedHardwareSettings} maps them onto current keys. */
+type DeprecatedKey = (typeof DEPRECATED_BOOLEAN_ALIASES)[number]['legacy'];
+
+/**
+ * Every current {@link HardwareSettings} field, named once, with how its `configure()` value is copied.
+ *
+ * The `satisfies` clause makes a new field without an entry here a type error, so neither merge path can
+ * silently drop it. Fields that {@link defaultConfig} leaves out (`isSplashEnabled`, the splash colors,
+ * `isFrameCaptureShortcutEnabled`, ...) stay unset unless `configure()` sets them - the splash gating and the
+ * dev-mode capture shortcut resolve an unset value themselves.
+ */
+const FIELD_PICK_KINDS = {
+    displaySize: 'vector',
+    drawingBufferSize: 'vector',
+    maxCanvasSize: 'vector',
+    outputUpscaleFilter: 'value',
+    targetFPS: 'value',
+    isDetectingDroppedFrames: 'value',
+    isCapturingPointerScroll: 'value',
+    isCapturingKeyboardScroll: 'value',
+    isWakeLockEnabled: 'value',
+    preferredOrientation: 'value',
+    keyboardLayout: 'keyboardLayout',
+    isSplashEnabled: 'value',
+    splashColorDark: 'color',
+    splashColorLight: 'color',
+    isFrameCaptureShortcutEnabled: 'value',
+    backend: 'value',
+    audioVoices: 'value',
+    isOverlayEnabled: 'value',
+    isOverlayVisibleAtStart: 'value',
+    isOverlayToggleHintVisible: 'value',
+    isOverlayToggleEnabled: 'value',
+    isOverlayToggleHitDebugVisible: 'value',
+    isOverlayPaletteEnabled: 'value',
+    overlayPaletteColumns: 'value',
+    overlayPaletteRowsVisible: 'value',
+    overlayStyle: 'record',
+    isOverlayTimingChartEnabled: 'value',
+    overlayTimingChartHeight: 'value',
+    overlayTimingChartStyle: 'record',
+    overlayTimingChartDiagnostics: 'value',
+    isOverlayRendererDiagnosticsBarEnabled: 'value',
+    isOverlayAudioMetersEnabled: 'value',
+    overlayAudioMeterHeight: 'value',
+    overlayAudioMeterStyle: 'record',
+} as const satisfies Record<Exclude<keyof HardwareSettings, DeprecatedKey>, PickKind>;
+
+/** Keys of {@link FIELD_PICK_KINDS}, in table order. */
+const FIELD_KEYS = Object.keys(FIELD_PICK_KINDS) as (keyof typeof FIELD_PICK_KINDS)[];
+
+/**
+ * Validates a defined {@link HardwareSettings.keyboardLayout}: unknown values (possible from untyped JS
+ * `configure()` code) log a warning and resolve to the `'versus'` fallback, on both merge paths.
+ *
+ * @param value - Raw `keyboardLayout` value from `configure()`.
+ * @returns The layout when it is a known {@link KeyboardLayout}, otherwise `'versus'`.
+ */
+function pickKeyboardLayout(value: unknown): KeyboardLayout {
+    if ((KEYBOARD_LAYOUTS as readonly unknown[]).includes(value)) {
+        return value as KeyboardLayout;
+    }
+
+    console.warn(`[BT] ${keyboardLayoutUnknownWarning(value, KEYBOARD_LAYOUTS)}`);
+
+    return KEYBOARD_LAYOUTS[0];
+}
+
+/**
+ * Copies one defined `configure()` value, cloning vectors, colors and style records so merged settings do
+ * not share mutable references with the demo's `configure()` return value.
+ *
+ * @param kind - How the field is copied, from {@link FIELD_PICK_KINDS}.
+ * @param value - Defined, non-null raw value.
+ * @returns The value to store in the merged settings.
+ */
+function pickValue(kind: PickKind, value: unknown): unknown {
+    switch (kind) {
+        case 'vector':
+            return cloneVector2i(value as Vector2i);
+        case 'color':
+            return (value as Color32).clone();
+        case 'record':
+            return { ...(value as object) };
+        case 'keyboardLayout':
+            return pickKeyboardLayout(value);
+        default:
+            return value;
+    }
+}
+
+/**
+ * Copies only the set fields of a `configure()` return value.
+ *
+ * `undefined` and `null` both count as unset, except on a vector field: there `null` becomes
+ * {@link INVALID_CONFIGURE_VECTOR_SIZE} so {@link validateDimensions} rejects it with a clear error.
+ * Deprecated and unknown keys are never copied.
+ *
+ * @param partial - Normalized values returned by the demo's `configure()` hook.
+ * @returns Partial settings containing only set entries, with vectors, colors and records cloned.
+ */
+function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partial<HardwareSettings> {
+    const picked: Record<string, unknown> = {};
+
+    for (const key of FIELD_KEYS) {
+        // eslint-disable-next-line security/detect-object-injection -- key comes from FIELD_PICK_KINDS
+        const kind = FIELD_PICK_KINDS[key];
+        // eslint-disable-next-line security/detect-object-injection -- key comes from FIELD_PICK_KINDS
+        const value: unknown = partial[key];
+
+        if (value === null && kind === 'vector') {
+            // eslint-disable-next-line security/detect-object-injection -- key comes from FIELD_PICK_KINDS
+            picked[key] = INVALID_CONFIGURE_VECTOR_SIZE.clone();
+        } else if (value !== undefined && value !== null) {
+            // eslint-disable-next-line security/detect-object-injection -- key comes from FIELD_PICK_KINDS
+            picked[key] = pickValue(kind, value);
+        }
+    }
+
+    return picked as Partial<HardwareSettings>;
+}
 
 /**
  * Normalizes deprecated configure() keys onto current HardwareSettings fields.
@@ -1083,342 +1007,32 @@ function normalizeDeprecatedHardwareSettings(partial: Partial<HardwareSettings>)
 }
 
 /**
- * Resolves an optional vector from picked configure values or defaults.
- *
- * @param partialValue - Raw value from `configure()` for this optional vector field.
- * @param picked - Value from `configure()`, if any.
- * @param fallback - Default vector when picked is omitted.
- * @returns Cloned vector or `undefined` when neither side provides a size.
+ * Optional {@link defaultConfig} fields the explicit-`displaySize` path still fills when `configure()` omits
+ * them; every other optional (such as `drawingBufferSize`) stays unset on that path.
  */
-function resolveMergedOptionalVector(
-    partialValue: Vector2i | undefined | null,
-    picked: Vector2i | undefined,
-    fallback: Vector2i | undefined,
-): Vector2i | undefined {
-    if (partialValue === null) {
-        return INVALID_CONFIGURE_VECTOR_SIZE.clone();
-    }
-
-    if (picked !== undefined) {
-        return picked;
-    }
-
-    return fallback === undefined ? undefined : cloneVector2i(fallback);
-}
+const EXPLICIT_PROFILE_DEFAULT_KEYS = [
+    'isOverlayEnabled',
+    'isOverlayVisibleAtStart',
+    'isOverlayToggleHintVisible',
+    'isOverlayToggleEnabled',
+    'isOverlayPaletteEnabled',
+    'backend',
+] as const satisfies readonly (keyof HardwareSettings)[];
 
 /**
- * Sets `target[key]` when `value` is defined.
+ * Baseline for the explicit-`displaySize` path: the required fields plus
+ * {@link EXPLICIT_PROFILE_DEFAULT_KEYS}. `displaySize` is always replaced by the picked value on this path.
  *
- * @param target - Partial settings object being built.
- * @param key - Hardware settings field to assign.
- * @param value - Resolved value, or `undefined` to skip.
+ * @param defaults - Baseline hardware settings; {@link defaultConfig} sets every key copied here.
+ * @returns Settings with only the fields the explicit path always fills.
  */
-function assignIfDefined<K extends keyof HardwareSettings>(
-    target: Partial<HardwareSettings>,
-    key: K,
-    value: HardwareSettings[K] | undefined,
-): void {
-    if (value !== undefined) {
-        // eslint-disable-next-line security/detect-object-injection -- key is keyof HardwareSettings
-        target[key] = value;
-    }
-}
-
-/**
- * Shallow-clones an object-shaped optional before assignment.
- *
- * @param value - Optional record from configure or defaults.
- * @returns Cloned record, or `undefined` when input is omitted.
- */
-function shallowCloneOptional<T extends object>(value: T | undefined): T | undefined {
-    return value === undefined ? undefined : { ...value };
-}
-
-/**
- * Merged optional vectors for the full-default configure path.
- *
- * @param optionals - Partial {@link HardwareSettings} object being built; optional
- *   vector fields are written here via {@link assignIfDefined} when resolved.
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
- */
-function assignFullDefaultMergeVectors(
-    optionals: Partial<HardwareSettings>,
-    partial: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): void {
-    assignIfDefined(
-        optionals,
-        'drawingBufferSize',
-        resolveMergedOptionalVector(partial.drawingBufferSize, picked.drawingBufferSize, defaults.drawingBufferSize),
-    );
-
-    assignIfDefined(
-        optionals,
-        'maxCanvasSize',
-        resolveMergedOptionalVector(partial.maxCanvasSize, picked.maxCanvasSize, defaults.maxCanvasSize),
-    );
-}
-
-/**
- * Merged optional scalars and overlay records for the full-default configure path.
- *
- * @param optionals - Partial settings object being built.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
- */
-// eslint-disable-next-line complexity -- flat fan-out of one assignIfDefined per field, not branching
-function assignFullDefaultMergeScalars(
-    optionals: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): void {
-    assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter ?? defaults.outputUpscaleFilter);
-    assignIfDefined(
-        optionals,
-        'isDetectingDroppedFrames',
-        picked.isDetectingDroppedFrames ?? defaults.isDetectingDroppedFrames,
-    );
-    assignIfDefined(
-        optionals,
-        'isCapturingPointerScroll',
-        picked.isCapturingPointerScroll ?? defaults.isCapturingPointerScroll,
-    );
-    assignIfDefined(
-        optionals,
-        'isCapturingKeyboardScroll',
-        picked.isCapturingKeyboardScroll ?? defaults.isCapturingKeyboardScroll,
-    );
-    assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled ?? defaults.isWakeLockEnabled);
-    assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation ?? defaults.preferredOrientation);
-    assignIfDefined(optionals, 'keyboardLayout', picked.keyboardLayout ?? defaults.keyboardLayout);
-    assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
-    assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
-
-    // The splash fields have no defaultConfig() baseline on purpose: isSplashEnabled must stay
-    // unset so the URL flags and dev-mode detection can resolve it, and the ramp endpoints
-    // default inside src/splash/ramp.ts.
-    assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
-    assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
-    assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
-
-    // Same reasoning as isSplashEnabled above: must stay unset so dev-mode detection
-    // can resolve it in src/utils/FrameCaptureShortcut.ts.
-    assignIfDefined(optionals, 'isFrameCaptureShortcutEnabled', picked.isFrameCaptureShortcutEnabled);
-
-    assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle ?? defaults.overlayStyle));
-
-    assignIfDefined(
-        optionals,
-        'isOverlayVisibleAtStart',
-        picked.isOverlayVisibleAtStart ?? defaults.isOverlayVisibleAtStart,
-    );
-
-    assignIfDefined(
-        optionals,
-        'isOverlayToggleHintVisible',
-        picked.isOverlayToggleHintVisible ?? defaults.isOverlayToggleHintVisible,
-    );
-
-    assignIfDefined(
-        optionals,
-        'isOverlayToggleEnabled',
-        picked.isOverlayToggleEnabled ?? defaults.isOverlayToggleEnabled,
-    );
-
-    assignIfDefined(
-        optionals,
-        'isOverlayToggleHitDebugVisible',
-        picked.isOverlayToggleHitDebugVisible ?? defaults.isOverlayToggleHitDebugVisible,
-    );
-
-    assignIfDefined(
-        optionals,
-        'isOverlayPaletteEnabled',
-        picked.isOverlayPaletteEnabled ?? defaults.isOverlayPaletteEnabled,
-    );
-
-    assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);
-
-    assignIfDefined(optionals, 'overlayPaletteRowsVisible', picked.overlayPaletteRowsVisible);
-
-    assignIfDefined(
-        optionals,
-        'isOverlayTimingChartEnabled',
-        picked.isOverlayTimingChartEnabled ?? defaults.isOverlayTimingChartEnabled,
-    );
-
-    assignIfDefined(
-        optionals,
-        'overlayTimingChartHeight',
-        picked.overlayTimingChartHeight ?? defaults.overlayTimingChartHeight,
-    );
-
-    assignIfDefined(
-        optionals,
-        'overlayTimingChartStyle',
-        shallowCloneOptional(picked.overlayTimingChartStyle ?? defaults.overlayTimingChartStyle),
-    );
-
-    assignIfDefined(optionals, 'overlayTimingChartDiagnostics', picked.overlayTimingChartDiagnostics);
-
-    assignIfDefined(optionals, 'isOverlayRendererDiagnosticsBarEnabled', picked.isOverlayRendererDiagnosticsBarEnabled);
-
-    assignFullDefaultMergeAudioMeterScalars(optionals, picked, defaults);
-}
-
-/**
- * Merged optional audio meter fields for the full-default configure path.
- *
- * @param optionals - Partial settings object being built.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
- */
-function assignFullDefaultMergeAudioMeterScalars(
-    optionals: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): void {
-    assignIfDefined(
-        optionals,
-        'isOverlayAudioMetersEnabled',
-        picked.isOverlayAudioMetersEnabled ?? defaults.isOverlayAudioMetersEnabled,
-    );
-
-    assignIfDefined(
-        optionals,
-        'overlayAudioMeterHeight',
-        picked.overlayAudioMeterHeight ?? defaults.overlayAudioMeterHeight,
-    );
-
-    assignIfDefined(
-        optionals,
-        'overlayAudioMeterStyle',
-        shallowCloneOptional(picked.overlayAudioMeterStyle ?? defaults.overlayAudioMeterStyle),
-    );
-}
-
-/**
- * Collects optional hardware fields for the full-default merge path.
- *
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
- * @returns Partial settings to spread into the resolved profile.
- */
-function buildFullDefaultMergeOptionals(
-    partial: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): Partial<HardwareSettings> {
-    const optionals: Partial<HardwareSettings> = {};
-    assignFullDefaultMergeVectors(optionals, partial, picked, defaults);
-    assignFullDefaultMergeScalars(optionals, picked, defaults);
-    return optionals;
-}
-
-/**
- * Optional fields explicitly set in `configure()` when the demo provided `displaySize`.
- *
- * @param partial - Raw `configure()` return value with explicit `displaySize`.
- * @param picked - Defined fields with vectors cloned.
- * @returns Partial settings to spread into the resolved profile.
- */
-function buildExplicitDisplayOptionals(
-    partial: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-): Partial<HardwareSettings> {
-    const optionals: Partial<HardwareSettings> = {};
-    assignIfDefined(
-        optionals,
-        'drawingBufferSize',
-        resolveExplicitOptionalVector(partial.drawingBufferSize, picked.drawingBufferSize),
-    );
-    assignIfDefined(
-        optionals,
-        'maxCanvasSize',
-        resolveExplicitOptionalVector(partial.maxCanvasSize, picked.maxCanvasSize),
-    );
-    assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
-    assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
-    assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
-    assignIfDefined(optionals, 'isCapturingKeyboardScroll', picked.isCapturingKeyboardScroll);
-    assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
-    assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation);
-    assignIfDefined(optionals, 'keyboardLayout', picked.keyboardLayout);
-    assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
-    assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
-    assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
-    assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
-    assignIfDefined(optionals, 'isFrameCaptureShortcutEnabled', picked.isFrameCaptureShortcutEnabled);
-    assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
-    assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);
-    assignIfDefined(optionals, 'overlayPaletteRowsVisible', picked.overlayPaletteRowsVisible);
-    assignIfDefined(optionals, 'isOverlayTimingChartEnabled', picked.isOverlayTimingChartEnabled);
-    assignIfDefined(optionals, 'overlayTimingChartHeight', picked.overlayTimingChartHeight);
-    assignIfDefined(optionals, 'overlayTimingChartStyle', shallowCloneOptional(picked.overlayTimingChartStyle));
-    assignIfDefined(optionals, 'overlayTimingChartDiagnostics', picked.overlayTimingChartDiagnostics);
-    assignIfDefined(optionals, 'isOverlayRendererDiagnosticsBarEnabled', picked.isOverlayRendererDiagnosticsBarEnabled);
-    assignIfDefined(optionals, 'isOverlayToggleHitDebugVisible', picked.isOverlayToggleHitDebugVisible);
-    assignIfDefined(optionals, 'isOverlayAudioMetersEnabled', picked.isOverlayAudioMetersEnabled);
-    assignIfDefined(optionals, 'overlayAudioMeterHeight', picked.overlayAudioMeterHeight);
-    assignIfDefined(optionals, 'overlayAudioMeterStyle', shallowCloneOptional(picked.overlayAudioMeterStyle));
-    return optionals;
-}
-
-/**
- * Merges partial settings with {@link defaultConfig} when the demo did not set
- * `displaySize` (for example only `{ targetFPS: 30 }`).
- *
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
- * @returns Resolved settings with full default resolution and output buffer.
- */
-function mergePartialWithFullDefaults(
-    partial: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): HardwareSettings {
+function explicitProfileBase(defaults: HardwareSettings): HardwareSettings {
     return {
-        displaySize: cloneVector2i(defaults.displaySize),
-        targetFPS: picked.targetFPS ?? defaults.targetFPS,
-        isOverlayEnabled: picked.isOverlayEnabled ?? defaults.isOverlayEnabled ?? true,
-        isOverlayVisibleAtStart: picked.isOverlayVisibleAtStart ?? defaults.isOverlayVisibleAtStart ?? false,
-        isOverlayToggleHintVisible: picked.isOverlayToggleHintVisible ?? defaults.isOverlayToggleHintVisible ?? true,
-        isOverlayToggleEnabled: picked.isOverlayToggleEnabled ?? defaults.isOverlayToggleEnabled ?? true,
-        isOverlayPaletteEnabled: picked.isOverlayPaletteEnabled ?? defaults.isOverlayPaletteEnabled ?? false,
-        ...buildFullDefaultMergeOptionals(partial, picked, defaults),
-    };
-}
-
-/**
- * Applies only fields present in `configure()` when the demo set `displaySize`.
- *
- * @param partial - Raw `configure()` return value with explicit `displaySize`.
- * @param picked - Defined fields with vectors cloned.
- * @param defaults - Baseline hardware settings for required fallbacks.
- * @returns Resolved settings; omitted optionals such as `drawingBufferSize` stay unset.
- * `backend` always inherits from {@link defaultConfig} when omitted from `configure()`.
- */
-function mergeExplicitDisplayProfile(
-    partial: Partial<HardwareSettings>,
-    picked: Partial<HardwareSettings>,
-    defaults: HardwareSettings,
-): HardwareSettings {
-    return {
-        displaySize: resolveExplicitDisplaySize(partial.displaySize, picked.displaySize, defaults.displaySize),
-        targetFPS: picked.targetFPS ?? defaults.targetFPS,
-        isOverlayEnabled: picked.isOverlayEnabled ?? defaults.isOverlayEnabled ?? true,
-        isOverlayVisibleAtStart: picked.isOverlayVisibleAtStart ?? defaults.isOverlayVisibleAtStart ?? false,
-        isOverlayToggleHintVisible: picked.isOverlayToggleHintVisible ?? defaults.isOverlayToggleHintVisible ?? true,
-        isOverlayToggleEnabled: picked.isOverlayToggleEnabled ?? defaults.isOverlayToggleEnabled ?? true,
-        isOverlayPaletteEnabled: picked.isOverlayPaletteEnabled ?? defaults.isOverlayPaletteEnabled ?? false,
-        backend: picked.backend ?? defaults.backend ?? 'webgpu',
-        ...buildExplicitDisplayOptionals(partial, picked),
-    };
+        displaySize: defaults.displaySize,
+        targetFPS: defaults.targetFPS,
+        // eslint-disable-next-line security/detect-object-injection -- key comes from EXPLICIT_PROFILE_DEFAULT_KEYS
+        ...Object.fromEntries(EXPLICIT_PROFILE_DEFAULT_KEYS.map((key) => [key, defaults[key]])),
+    } as HardwareSettings;
 }
 
 /**
@@ -1463,13 +1077,9 @@ export function mergeHardwareSettings(partial?: Partial<HardwareSettings>): Hard
 
     const normalized = normalizeDeprecatedHardwareSettings(partial);
     const picked = pickDefinedHardwareSettings(normalized);
+    const base = normalized.displaySize === undefined ? defaults : explicitProfileBase(defaults);
 
-    const merged =
-        normalized.displaySize === undefined
-            ? mergePartialWithFullDefaults(normalized, picked, defaults)
-            : mergeExplicitDisplayProfile(normalized, picked, defaults);
-
-    return applyKeyboardLayoutScrollCapture(merged, picked);
+    return applyKeyboardLayoutScrollCapture({ ...base, ...picked }, picked);
 }
 
 /** Resolved timing-chart renderer diagnostic visualization mode. */

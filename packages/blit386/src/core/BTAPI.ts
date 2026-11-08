@@ -2159,7 +2159,7 @@ export class BTAPI {
                 // Keyboard, gamepad and pointer edges (plus the keyboard text buffer, pointer delta and
                 // wheel scroll) align with fixed update rate, not display refresh rate (render may run 2x
                 // update on 120 Hz / 60 FPS setups), so each edge reaches exactly one update.
-                this.keyboard?.endUpdate(tick);
+                this.keyboard?.endUpdate();
                 this.gamepad?.endUpdate(tick);
                 this.pointer?.endUpdate();
             },
@@ -2220,11 +2220,9 @@ export class BTAPI {
                 // that runs no update loses nothing for it.
                 this.pointer?.endFrame();
 
-                const tick = this.loop?.getTicks() ?? 0;
-
                 // One Gamepad API poll per rendered frame. It does not roll edges over (the update
                 // callback does), so a press polled here survives a frame that runs no update.
-                this.gamepad?.endFrame(tick);
+                this.gamepad?.endFrame();
 
                 this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);
                 this.overlayTiming.updateMs = this.pendingUpdateMs;
@@ -3265,10 +3263,10 @@ export class BTAPI {
      * @param tick - Current tick, so a pad button pressed during the drain times its auto-repeat from now.
      */
     private drainInputEdges(tick: number): void {
-        this.keyboard?.endUpdate(tick);
+        this.keyboard?.endUpdate();
         this.pointer?.endUpdate();
         this.pointer?.endFrame();
-        this.gamepad?.endFrame(tick);
+        this.gamepad?.endFrame();
         this.gamepad?.endUpdate(tick);
     }
 
