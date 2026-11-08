@@ -16,7 +16,6 @@ import {
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
-    findCursorMcpFailures,
     findMaintainerConfigFailures,
     findMaintainerHookSymlinkFailures,
     findProjectMcpFailures,
@@ -570,7 +569,11 @@ describe('check-agent-config', () => {
         });
     });
 
-    describe('findCursorMcpFailures', () => {
+    describe('the .cursor/mcp.json maintainer config spec', () => {
+        /** @param {string | null} content */
+        const findCursorMcpFailures = (content) =>
+            findMaintainerConfigFailures(maintainerSpec('.cursor/mcp.json'), content);
+
         const VALID_CURSOR_MCP = JSON.stringify({
             mcpServers: { 'blit386-docs': { url: 'https://blit386.dev/mcp' } },
         });
@@ -610,14 +613,14 @@ describe('check-agent-config', () => {
             });
             const failures = findCursorMcpFailures(config);
             assert.equal(failures.length, 1);
-            assert.match(failures[0], /must not have a `type` field/);
+            assert.match(failures[0], /must use `url` for a remote server \(forbids `type`: Cursor reserves it/);
         });
 
         it('fails when .cursor/mcp.json drifts off the pinned URL', () => {
             const config = JSON.stringify({ mcpServers: { 'blit386-docs': { url: 'https://blit386.dev/mcp/v2' } } });
             const failures = findCursorMcpFailures(config);
             assert.equal(failures.length, 1);
-            assert.match(failures[0], /declares URL .*expected the pinned/);
+            assert.match(failures[0], /declares url .*expected the pinned/);
         });
     });
 

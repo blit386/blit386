@@ -304,21 +304,14 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
 }
 
 /**
- * Whether git would ignore the root `.mcp.json` if it were removed and re-added.
+ * Whether git would ignore `relPath` if it were removed and re-added.
  *
- * Asking git is the only honest way to answer this. Matching `.gitignore` text for the
- * `!/.mcp.json` negation looks equivalent but is not: gitignore resolves last-match-wins, so a
- * later `*.json` or a second bare `.mcp.json` line re-ignores the file while the negation is
- * still sitting there in the text. Both cases were verified to slip past a text-based check.
+ * Asking git is the only honest way to answer this. Matching `.gitignore` text for a `!` negation
+ * looks equivalent but is not: gitignore resolves last-match-wins, so a later `*.json` or a second
+ * bare rule re-ignores the file while the negation is still sitting there in the text.
  *
  * `--no-index` is what makes the question meaningful for a file that is already tracked -
  * without it git short-circuits on the index and always answers "not ignored".
- *
- * @param {string} repoRoot Absolute path to the repository root.
- * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
- */
-/**
- * Whether git would ignore `relPath` if it were removed and re-added.
  *
  * @param {string} repoRoot Absolute path to the repository root.
  * @param {string} relPath Project-relative path (forward slashes).
@@ -439,64 +432,6 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
 }
 
 /**
- * Verifies `.cursor/mcp.json` declares the pinned `blit386-docs` server, using Cursor's own
- * schema for a remote server - which is not Claude's schema. `packages/kit/src/adapters.ts`
- * (`MCP_SERVER_ENTRY`) documents why: for Cursor a `type` field marks a *local stdio* server, so
- * a remote HTTP entry must omit it entirely, unlike the root `.mcp.json` (Claude Code), which
- * requires `"type": "http"`. This is why `.cursor/mcp.json` cannot be a symlink to the root
- * `.mcp.json` the way `.agents/skills/*` symlinks into `.claude/skills/*` - the two files are
- * shaped differently on purpose and would misconfigure one assistant or the other if unified.
- *
- * @param {string | null} cursorMcpContent Contents of `.cursor/mcp.json`, or `null` when missing.
- * @returns {string[]} Human-readable failure messages (empty when the config is consistent).
- */
-export function findCursorMcpFailures(cursorMcpContent) {
-    if (cursorMcpContent === null) {
-        return ['.cursor/mcp.json is missing'];
-    }
-
-    const failures = [];
-
-    /** @type {Record<string, unknown>} */
-    let server;
-
-    try {
-        const parsed = JSON.parse(cursorMcpContent);
-        const servers = parsed?.mcpServers;
-
-        if (servers === null || typeof servers !== 'object') {
-            failures.push('.cursor/mcp.json has no mcpServers object');
-            return failures;
-        }
-
-        if (!Object.hasOwn(servers, PROJECT_MCP_SERVER_NAME)) {
-            failures.push(`.cursor/mcp.json does not declare the \`${PROJECT_MCP_SERVER_NAME}\` server`);
-            return failures;
-        }
-
-        server = servers[PROJECT_MCP_SERVER_NAME] ?? {};
-    } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        failures.push(`.cursor/mcp.json is not parseable as JSON: ${detail}`);
-        return failures;
-    }
-
-    if (Object.hasOwn(server, 'type')) {
-        failures.push(
-            `.cursor/mcp.json entry \`${PROJECT_MCP_SERVER_NAME}\` must not have a \`type\` field for a remote server (Cursor reserves it for local stdio servers)`,
-        );
-    }
-
-    if (server.url !== PROJECT_MCP_SERVER_URL) {
-        failures.push(
-            `.cursor/mcp.json declares URL ${JSON.stringify(server.url)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
-        );
-    }
-
-    return failures;
-}
-
-/**
  * Agent hook directories the monorepo dogfoods. Presence of individual scripts is
  * `sync:maintainer-agents:check`; this check only asserts each on-disk `*.cjs` /
  * `*.sh` under these dirs is a symlink into `packages/kit/content/hooks/`.
@@ -521,7 +456,7 @@ export const MAINTAINER_HOOK_DIRS = [
  * @typedef {{
  *   path: string,
  *   format?: 'json' | 'raw',
- *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[] },
+ *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[], forbidReason?: string },
  *   needles?: MaintainerNeedle[],
  *   requireAll?: { texts: string[], missing: string },
  *   bashDeny?: string,
@@ -534,6 +469,19 @@ export const MAINTAINER_CONFIG_SPECS = [
     {
         path: '.agents/mcp_config.json',
         mcp: { container: 'mcpServers', urlKey: 'serverUrl', forbidKeys: ['url', 'httpUrl'] },
+    },
+    {
+        // Cursor's own remote-server schema, which is not Claude's: a `type` field marks a *local stdio*
+        // server there, so a remote HTTP entry must omit it (see `MCP_SERVER_ENTRY` in
+        // `packages/kit/src/adapters.ts`). That is why this file cannot be a symlink to the root
+        // `.mcp.json`, which requires `"type": "http"` for Claude Code.
+        path: '.cursor/mcp.json',
+        mcp: {
+            container: 'mcpServers',
+            urlKey: 'url',
+            forbidKeys: ['type'],
+            forbidReason: 'Cursor reserves it for local stdio servers',
+        },
     },
     {
         path: '.agents/hooks.json',
@@ -656,7 +604,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
             for (const key of spec.mcp.forbidKeys ?? []) {
                 if (Object.hasOwn(server, key)) {
                     failures.push(
-                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`)`,
+                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`${spec.mcp.forbidReason ? `: ${spec.mcp.forbidReason}` : ''})`,
                     );
                 }
             }
@@ -1083,8 +1031,6 @@ function runAllChecks() {
         findRulesParityFailures(readRuleNames(CURSOR_RULES_DIR, '.mdc'), readRuleNames(CLAUDE_RULES_DIR, '.md')),
     );
 
-    collect(failures, '.', findCursorMcpFailures(readFileIfExists(join(REPO_ROOT, '.cursor', 'mcp.json'))));
-
     collect(failures, '.', checkMaintainerAgentConfigs(REPO_ROOT));
     collect(failures, '.', checkClaudeProtectFilesHook(REPO_ROOT));
     collect(failures, '.', checkClaudeShellSafetyHook(REPO_ROOT));
@@ -1111,7 +1057,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, cursor .mcp.json, maintainer agent dogfood).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood).',
     );
 }
 

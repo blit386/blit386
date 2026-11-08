@@ -8,11 +8,14 @@
  * `.cursor/commands/<name>.md`, stripping the YAML frontmatter (Claude reads
  * `name`/`description` from it to discover and trigger the skill; a Cursor
  * command is invoked by filename, so the frontmatter would otherwise render
- * as literal text). This is the same transform `@blit386/kit`'s
- * `generateCursorAdapter` applies when scaffolding a Cursor-flavored project
- * (`packages/kit/src/adapters.ts`). Any `../`-prefixed link target is also
- * re-relativized: `.cursor/commands/` sits one directory level shallower than
- * `.claude/skills/<name>/`, so a straight copy of a link like
+ * as literal text). This is not the kit's transform: `@blit386/kit`'s
+ * `generateCursorAdapter` keeps frontmatter on the `.cursor/skills/*` it
+ * scaffolds, and the kit's own private `stripFrontmatter` only trims
+ * `.claude/rules/` bodies. It is a separate copy on purpose - importing it
+ * would make this build-free pre-commit script depend on `packages/kit/dist`.
+ * Any `../`-prefixed link target is also re-relativized: `.cursor/commands/`
+ * sits one directory level shallower than `.claude/skills/<name>/`, so a
+ * straight copy of a link like
  * `../../../docs/security/security-runbook.md` would point one level above
  * the repo root.
  *
@@ -27,6 +30,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { reportSyncDrift } from './lib/report-sync-drift.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -185,36 +189,13 @@ export function syncCursorCommands({ isCheck, root = ROOT }) {
         }
     }
 
-    if (isCheck) {
-        if (drifted.length > 0) {
-            console.error(`\n${drifted.length} cursor command(s) out of date:`);
-
-            for (const entry of drifted) {
-                console.error(`  ${entry}`);
-            }
-
-            console.error('\nRun `pnpm run sync:cursor-commands` to update them.');
-            return 1;
-        }
-
-        console.log(`All ${commandFiles.length} cursor command(s) up to date.`);
-
-        return 0;
-    }
-
-    if (drifted.length === 0) {
-        console.log(`All ${commandFiles.length} cursor command(s) already up to date.`);
-
-        return 0;
-    }
-
-    for (const entry of drifted) {
-        console.log(`updated ${entry}`);
-    }
-
-    console.log(`\n${drifted.length} of ${commandFiles.length} cursor command(s) updated.`);
-
-    return 0;
+    return reportSyncDrift({
+        drifted,
+        total: commandFiles.length,
+        isCheck,
+        noun: 'cursor command',
+        syncScript: 'sync:cursor-commands',
+    });
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
