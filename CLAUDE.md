@@ -74,6 +74,9 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
 - Project MCP servers: the tracked root [`.mcp.json`](.mcp.json) declares `blit386-docs`, the blit386.dev docs server
   (`search_docs`, `get_doc_page`, `get_docs_summary`) - query the published engine docs without leaving the repo. Setup
   for other clients: `packages/website/content/mcp-server.mdx`
+- Periodic quality audit: `/audit` (`.claude/skills/audit/`) - one Opus reader per derived unit, one Linear ticket per
+  unit; the ledger `modules.md` there records when each unit was last audited and `pnpm run audit:modules:check` keeps
+  it in step with the tree
 - RTK policy: `~/.claude/RTK.md`
 - Session notes written by the `/remember` skill live in `.remember/` and are not a repo artifact
 
