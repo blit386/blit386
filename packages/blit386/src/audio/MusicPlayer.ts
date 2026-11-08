@@ -497,7 +497,7 @@ function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicP
  * @throws Error if only one of `loopStart`/`loopEnd` is given, or the pair does not satisfy
  *   `0 <= loopStart < loopEnd <= duration`.
  */
-function validateLoopRegion(options: MusicPlayOptions, duration: number): void {
+export function validateLoopRegion(options: MusicPlayOptions, duration: number): void {
     const { loopStart, loopEnd } = options;
 
     if (loopStart === undefined && loopEnd === undefined) {

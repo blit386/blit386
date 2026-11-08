@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-10-27T18:03:41+01:00"
+lastModified: "2026-11-07T13:51:16+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
@@ -122,7 +122,8 @@ start audio unlocked, and none is planned.
 - `BT.musicPlay` (see [Playback (Music)](/docs/api/audio#playback-music)) sits between those two behaviors: a pre-unlock
   call isn't dropped like `BT.soundPlay`, but it isn't merely inaudible-and-applied like a bus call either - it is
   remembered and starts automatically the instant the context unlocks. Calling `BT.musicPlay` again while still locked
-  replaces the remembered request, so only the last call before unlock actually plays.
+  replaces the remembered request, so only the last call before unlock actually plays. An invalid loop region throws at
+  the call, not at unlock, and nothing is remembered.
 
 ## Playing SFX
 
