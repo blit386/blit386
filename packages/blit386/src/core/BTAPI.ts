@@ -18,7 +18,14 @@ import { getIndexedSheets, type SpriteSheet, writeGridTileRect, writeTileRect } 
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
-import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audio/VoicePool';
+import {
+    DEFAULT_PAN,
+    DEFAULT_PITCH,
+    DEFAULT_VOLUME,
+    INVALID_SOUND_REF,
+    type SoundPlayOptions,
+    type SoundRef,
+} from '../audio/VoicePool';
 import { GamepadInput } from '../input/GamepadInput';
 import { InputTrace } from '../input/InputTrace';
 import { KeyboardInput } from '../input/KeyboardInput';
@@ -795,15 +802,6 @@ export class BTAPI {
     }
 
     /**
-     * Gets the audio subsystem, internal only; never exposed via the `BT` namespace.
-     *
-     * @returns Audio manager, or null if not initialized.
-     */
-    public getAudio(): AudioManager | null {
-        return this.audio;
-    }
-
-    /**
      * Reports whether the audio context has been unlocked by a user gesture.
      *
      * @returns `true` once unlocked; `false` when locked or not initialized.
@@ -913,10 +911,10 @@ export class BTAPI {
      * Gets a sound's current gain.
      *
      * @param ref - Sound to query.
-     * @returns Current gain in `[0, 1]`, or `1` on a stale ref or when the audio subsystem is not initialized.
+     * @returns Current gain in `[0, 1]`, or {@link DEFAULT_VOLUME} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundVolumeGet(ref: SoundRef): number {
-        return this.audio?.soundVolumeGet(ref) ?? 1;
+        return this.audio?.soundVolumeGet(ref) ?? DEFAULT_VOLUME;
     }
 
     /**
@@ -934,10 +932,10 @@ export class BTAPI {
      * Gets a sound's current playback rate.
      *
      * @param ref - Sound to query.
-     * @returns Current playback rate, or `1` on a stale ref or when the audio subsystem is not initialized.
+     * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundPitchGet(ref: SoundRef): number {
-        return this.audio?.soundPitchGet(ref) ?? 1;
+        return this.audio?.soundPitchGet(ref) ?? DEFAULT_PITCH;
     }
 
     /**
@@ -955,10 +953,10 @@ export class BTAPI {
      * Gets a sound's current stereo pan.
      *
      * @param ref - Sound to query.
-     * @returns Current pan, or `0` on a stale ref or when the audio subsystem is not initialized.
+     * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundPanGet(ref: SoundRef): number {
-        return this.audio?.soundPanGet(ref) ?? 0;
+        return this.audio?.soundPanGet(ref) ?? DEFAULT_PAN;
     }
 
     /**
@@ -1011,10 +1009,10 @@ export class BTAPI {
     /**
      * Gets the music player's current target volume.
      *
-     * @returns Current target gain, or `1` when the audio subsystem is not initialized.
+     * @returns Current target gain, or {@link DEFAULT_VOLUME} when the audio subsystem is not initialized.
      */
     public musicVolumeGet(): number {
-        return this.audio?.musicVolumeGet() ?? 1;
+        return this.audio?.musicVolumeGet() ?? DEFAULT_VOLUME;
     }
 
     /**

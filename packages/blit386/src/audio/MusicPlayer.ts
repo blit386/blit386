@@ -11,9 +11,7 @@
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError, musicLoopRangeError } from '../utils/errorMessages';
-
-/** Default gain applied to an incoming track when {@link MusicPlayOptions.volume} is omitted. */
-const DEFAULT_VOLUME = 1;
+import { DEFAULT_VOLUME } from './VoicePool';
 
 /** Default crossfade duration in milliseconds when {@link MusicPlayOptions.fadeMs} is omitted (immediate switch). */
 const DEFAULT_FADE_MS = 0;
