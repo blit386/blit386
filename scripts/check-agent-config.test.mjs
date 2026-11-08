@@ -612,7 +612,7 @@ describe('check-agent-config', () => {
             });
             const failures = findCursorMcpFailures(config);
             assert.equal(failures.length, 1);
-            assert.match(failures[0], /must use `url` for a remote server \(forbids `type`\)/);
+            assert.match(failures[0], /must use `url` for a remote server \(forbids `type`: Cursor reserves it/);
         });
 
         it('fails when .cursor/mcp.json drifts off the pinned URL', () => {

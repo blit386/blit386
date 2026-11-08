@@ -9,12 +9,13 @@
  * `name`/`description` from it to discover and trigger the skill; a Cursor
  * command is invoked by filename, so the frontmatter would otherwise render
  * as literal text). This is not the kit's transform: `@blit386/kit`'s
- * `generateCursorAdapter` keeps frontmatter on the `.cursor/skills/*` it scaffolds, and the
- * kit's own private `stripFrontmatter` only trims `.claude/rules/` bodies. It is a separate copy
- * on purpose - importing it would make this build-free pre-commit script depend on `packages/kit/dist`.
- * Any `../`-prefixed link target is also
- * re-relativized: `.cursor/commands/` sits one directory level shallower than
- * `.claude/skills/<name>/`, so a straight copy of a link like
+ * `generateCursorAdapter` keeps frontmatter on the `.cursor/skills/*` it
+ * scaffolds, and the kit's own private `stripFrontmatter` only trims
+ * `.claude/rules/` bodies. It is a separate copy on purpose - importing it
+ * would make this build-free pre-commit script depend on `packages/kit/dist`.
+ * Any `../`-prefixed link target is also re-relativized: `.cursor/commands/`
+ * sits one directory level shallower than `.claude/skills/<name>/`, so a
+ * straight copy of a link like
  * `../../../docs/security/security-runbook.md` would point one level above
  * the repo root.
  *

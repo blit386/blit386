@@ -306,6 +306,13 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
 /**
  * Whether git would ignore `relPath` if it were removed and re-added.
  *
+ * Asking git is the only honest way to answer this. Matching `.gitignore` text for a `!` negation
+ * looks equivalent but is not: gitignore resolves last-match-wins, so a later `*.json` or a second
+ * bare rule re-ignores the file while the negation is still sitting there in the text.
+ *
+ * `--no-index` is what makes the question meaningful for a file that is already tracked -
+ * without it git short-circuits on the index and always answers "not ignored".
+ *
  * @param {string} repoRoot Absolute path to the repository root.
  * @param {string} relPath Project-relative path (forward slashes).
  * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
@@ -449,7 +456,7 @@ export const MAINTAINER_HOOK_DIRS = [
  * @typedef {{
  *   path: string,
  *   format?: 'json' | 'raw',
- *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[] },
+ *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[], forbidReason?: string },
  *   needles?: MaintainerNeedle[],
  *   requireAll?: { texts: string[], missing: string },
  *   bashDeny?: string,
@@ -469,7 +476,12 @@ export const MAINTAINER_CONFIG_SPECS = [
         // `packages/kit/src/adapters.ts`). That is why this file cannot be a symlink to the root
         // `.mcp.json`, which requires `"type": "http"` for Claude Code.
         path: '.cursor/mcp.json',
-        mcp: { container: 'mcpServers', urlKey: 'url', forbidKeys: ['type'] },
+        mcp: {
+            container: 'mcpServers',
+            urlKey: 'url',
+            forbidKeys: ['type'],
+            forbidReason: 'Cursor reserves it for local stdio servers',
+        },
     },
     {
         path: '.agents/hooks.json',
@@ -592,7 +604,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
             for (const key of spec.mcp.forbidKeys ?? []) {
                 if (Object.hasOwn(server, key)) {
                     failures.push(
-                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`)`,
+                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`${spec.mcp.forbidReason ? `: ${spec.mcp.forbidReason}` : ''})`,
                     );
                 }
             }
@@ -989,7 +1001,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, cursor .mcp.json, maintainer agent dogfood).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood).',
     );
 }
 
