@@ -427,13 +427,20 @@ test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form
     }
 });
 
-/** The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md. */
+/**
+ * The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md, matched the way
+ * Zed matches: quotes and backslashes removed first (Zed's shell parser rebuilds each command from unquoted words),
+ * and case ignored unless a rule sets `case_sensitive`.
+ */
 function zedTerminalDenies() {
     const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
-    return (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
+    const rules = terminal.always_deny.map(
+        ({ pattern, case_sensitive }) => new RegExp(pattern, case_sensitive ? '' : 'i'),
+    );
+    return (command) => rules.some((rule) => rule.test(command.replace(/['"\\]/g, '')));
 }
 
 test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the guard case table leaves out', () => {
@@ -452,6 +459,8 @@ test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the 
         'git --no-pager push -f',
         'git -c core.pager=less push origin +main',
         'git --git-dir .git reset --hard',
+        // Zed sees `-C my game reset --hard`: the value's end is lost with the quotes.
+        'git -C "my game" reset --hard',
         'git branch -d -f old',
         'git branch -df old',
         'git branch --delete -f old',
@@ -467,8 +476,10 @@ test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the 
         'git push origin main',
         'git push -u origin feat',
         'git push --follow-tags',
+        // Zed ignores case by default; the branch rule sets `case_sensitive`, so `-d` is not read as `-D`.
         'git branch -d old',
         'git branch -f main origin/main',
+        'git -C game status',
         'git stash pop',
         // `--no-pager` takes no value, so `grep` / `log` is the command and the later word only a search term.
         'git --no-pager grep -n restore',
@@ -480,11 +491,9 @@ test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the 
 
 test('the Zed tool_permissions snippet in AGENTS.md denies every command the guard core denies or asks about (BT-748)', () => {
     const denies = zedTerminalDenies();
-    // The guard strips quotes and backslashes before matching; a pattern cannot, and AGENTS.md says so.
-    const quotedSubcommand = /^git ['"\\]/;
 
     for (const [command, expected] of SHELL_CASES) {
-        if (expected === 'allow' || quotedSubcommand.test(command)) {
+        if (expected === 'allow') {
             continue;
         }
 
