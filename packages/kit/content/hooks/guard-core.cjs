@@ -10,7 +10,7 @@
 // agents treat a crashed hook as "allow".
 //
 // Decision (BT-564, BT-576): the shell classification is a Node port of the kit's former
-// shell-safety.sh, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
+// POSIX shell guard, so no agent's entry needs `sh` or `python3` (neither is on every hook PATH;
 // Windows has no `sh`). Claude Code and Cursor share one entry over it, shell-safety.cjs; Gemini CLI
 // (shell-guard.cjs), Antigravity (antigravity-guard.cjs), Codex (codex-guard.cjs), GitHub Copilot
 // (copilot-hook.cjs), and the OpenCode plugin (opencode-kit-guard.ts) each have their own.

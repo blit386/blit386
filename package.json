@@ -27,7 +27,6 @@
     "test:maintainer-agents": "node --test scripts/sync-maintainer-agents.test.mjs scripts/sync-maintainer-agents.disk.test.mjs",
     "test:audit-modules": "node --test scripts/audit-modules.test.mjs",
     "test:compact-tables": "node --test scripts/prettier-plugin-compact-tables.test.mjs",
-    "test:shell-safety": "node --test scripts/shell-safety.test.mjs",
     "test:spellcheck-coverage": "node --test scripts/spellcheck-coverage.test.mjs",
     "test:build-lock": "node --test scripts/build-lock.test.mjs",
     "test:ensure-engine-built": "node --test scripts/ensure-engine-built.test.mjs",

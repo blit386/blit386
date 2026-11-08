@@ -24,7 +24,7 @@
           },
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.sh\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/packages/kit/content/hooks/shell-safety.cjs\"",
             "continueOnError": false,
             "timeout": 10
           }

@@ -89,7 +89,7 @@ jobs:
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
             # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
             # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
-            # shell-safety.test.mjs, ...) - checkers and their *.test.mjs suites alike - only feed quality-root's
+            # ...) - checkers and their *.test.mjs suites alike - only feed quality-root's
             # steps, which already run unconditionally (quality-root has no `if` and no `needs`) - so it
             # deliberately has no filter entry here.
             scaffolder:
@@ -182,10 +182,6 @@ jobs:
 
       - name: Run compact-tables tests
         run: pnpm run test:compact-tables
-        background: true
-
-      - name: Run shell-safety hook tests
-        run: pnpm run test:shell-safety
         background: true
 
       - name: Run spellcheck coverage tests

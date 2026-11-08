@@ -380,7 +380,7 @@ The foundation those adapters build on (BT-564) is in place:
   plus `parsePayload` and `failClosed`. With those, an entry script that cannot read its request blocks it, which
   matters because Gemini CLI, Codex, Antigravity, and Copilot (on timeout) treat a crashed hook as an allow. Each
   agent's entry owns its own payload shape and block protocol. Claude's `protect-files.cjs` is such an entry and fails
-  closed. The shell classifier is a Node port of the kit's former `shell-safety.sh`, so no agent needs `sh` or
+  closed. The shell classifier is a Node port of the kit's former POSIX shell guard, so no agent needs `sh` or
   `python3`. Claude Code and Cursor share one entry over it, `shell-safety.cjs` (BT-576): only
   `hook_event_name == "PreToolUse"` means Claude (Cursor sends its own event name), and it answers each agent in its own
   protocol. A payload it cannot read is denied in both, because the agent cannot be told from it. One case table

@@ -10,6 +10,7 @@ import { gitEnv } from '../packages/website/scripts/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
     checkClaudeProtectFilesHook,
+    checkClaudeShellSafetyHook,
     checkMaintainerAgentConfigs,
     checkRootSkillsLayout,
     discoverPackageAgentRoots,
@@ -845,6 +846,31 @@ describe('check-agent-config under a symlinked temp root', () => {
 
                 assert.equal(failures.length, 1);
                 assert.match(failures[0], /exited 0 for a \.env payload, expected one to exit 2/);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+    });
+
+    describe('checkClaudeShellSafetyHook', () => {
+        const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+        it('passes for this repo, whose Bash hook blocks a real-shaped hard-reset payload', () => {
+            assert.deepEqual(checkClaudeShellSafetyHook(REPO), []);
+        });
+
+        it('fails when the wired guard script has moved', () => {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-shell-'));
+            mkdirSync(join(root, '.claude'), { recursive: true });
+            const command = 'node "$CLAUDE_PROJECT_DIR/packages/kit/content/hooks/shell-safety.cjs"';
+            const hooks = { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command }] }] };
+            writeFileSync(join(root, '.claude', 'settings.json'), JSON.stringify({ hooks }));
+
+            try {
+                const failures = checkClaudeShellSafetyHook(root);
+
+                assert.equal(failures.length, 1);
+                assert.match(failures[0], /exited 1 for a hard-reset payload, expected one to exit 2/);
             } finally {
                 rmSync(root, { recursive: true, force: true });
             }

@@ -1,8 +1,8 @@
 /**
  * The shell policy case table: what a generated game's shell guard answers for each command. Shared by
  * guard-core.test.mjs (the pure classifier) and shell-safety.test.mjs (the Claude Code + Cursor entry),
- * so the classifier and both protocols are held to the same cases. The repo's own .claude/hooks/shell-safety.sh is
- * held to it too, by scripts/shell-safety.test.mjs at the repo root.
+ * so the classifier and both protocols are held to the same cases. This repo's own Claude Code and Cursor hooks run
+ * that same entry.
  */
 
 /** @type {[command: string, expected: 'deny' | 'ask' | 'allow'][]} */
@@ -116,6 +116,22 @@ export const SHELL_CASES = [
     ['git stash drop', 'ask'],
     ['git stash clear', 'ask'],
     ['git stash pop', 'allow'],
+    // Carried over from the repo's retired shell-safety suites (BT-646): glued separators, escapes, options before
+    // the subcommand, and names that only look dangerous.
+    ['git -C /tmp/repo clean -fd', 'deny'],
+    ['git clean --exclude=build -d -f', 'deny'],
+    ['git clean --dry-run --exclude=dist', 'allow'],
+    ['git push --force-with-lease;echo done', 'ask'],
+    ['git push --force-with-lease&echo done', 'ask'],
+    ['git push --force-with-lease|cat', 'ask'],
+    ['git push --force-with-lease</dev/null', 'ask'],
+    ['git push origin \\+main', 'ask'],
+    ['git push origin foo-force-branch', 'allow'],
+    ['git restore --worktree src/game.js', 'deny'],
+    ['git \\restore src/game.js', 'deny'],
+    ['git branch feature-D', 'allow'],
+    ['git stash drop stash@{0}', 'ask'],
+    ['git stash list', 'allow'],
     ['echo hi\ngit reset --hard', 'deny'],
     ['git clean -fd\ngit clean -n', 'deny'],
     ['git status\ngit push --force', 'ask'],

@@ -184,6 +184,5 @@ a generated project, npm publish or registry propagation. Some `agents sync` cas
 
 Root-level script tests that exercise shared tooling (part of the relevant package's `preflight`, not this suite):
 `test:agent-config` (`.agents/skills` symlink integrity), `test:compact-tables` (the compact Markdown table Prettier
-plugin), `test:shell-safety` (this repo's own `.claude/hooks/shell-safety.sh` only, held to the kit's shared policy
-table `packages/kit/test/shell-cases.mjs` plus its own extra cases; the kit's `shell-safety.cjs` entry is covered by
-`packages/kit/test/shell-safety.test.mjs`).
+plugin). This repo's own Claude Code and Cursor shell guard is the kit's `shell-safety.cjs` entry, run in place and
+covered by `packages/kit/test/shell-safety.test.mjs`.
