@@ -146,8 +146,8 @@ it:
   instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
   It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
   destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or `git switch`,
-  `git restore`, `git clean`, and force push). It does not stop the agent from changing those files through a terminal
-  command, so keep terminal approval on if you need that boundary:
+  `git restore`, `git clean`, force push, `git branch -D`, and `git stash drop` or `clear`). It does not stop the agent
+  from changing those files through a terminal command, so keep terminal approval on if you need that boundary:
 
 ```json
 {
@@ -168,17 +168,37 @@ it:
         },
         "terminal": {
           "always_deny": [
-            { "pattern": "git\\s+reset\\s+([^\\s;&|<>]+\\s+)*--h(a(rd?)?)?([^A-Za-z-]|$)" },
-            { "pattern": "git\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>]|$)" },
             {
-              "pattern": "git\\s+(checkout|switch)\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z]*f[a-zA-Z]*|--force|--discard-changes)(\\s|[;&|<>]|$)"
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+reset\\s+([^\\s;&|<>]+\\s+)*--h(a(rd?)?)?([^A-Za-z-]|$)"
             },
             {
-              "pattern": "git\\s+checkout(\\s+[^\\s;&|<>]+)*\\s+[^\\s;&|<>]*(\\.[A-Za-z][A-Za-z0-9]*['\"]?|/['\"]?|[*?\\[][^\\s;&|<>]*)(\\s|[;&|<>]|$)"
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>]|$)"
             },
-            { "pattern": "git\\s+restore\\b" },
-            { "pattern": "git\\s+clean\\b" },
-            { "pattern": "git\\s+push\\s+.*--force" }
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+(checkout|switch)\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z]*f[a-zA-Z]*|--f(o(r(ce?)?)?)?|--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?)(\\s|[;&|<>]|$)"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z0-9]*[23p][a-zA-Z0-9]*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f[^\\s;&|<>]*|--patch?)(\\s|[;&|<>]|$)"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout(\\s+[^\\s;&|<>]+)*\\s+[^\\s;&|<>]*(\\.[A-Za-z][A-Za-z0-9]*['\"]?|/['\"]?|[*?\\[][^\\s;&|<>]*)(\\s|[;&|<>]|$)"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+restore\\b"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+clean\\b"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+push(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z]*f[a-zA-Z]*|--force[^\\s;&|<>]*|\\+[^\\s;&|<>]+)(\\s|[;&|<>]|$)"
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+branch(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*D[a-zA-Z0-9]*|-[a-zA-Z0-9]*(d[a-zA-Z0-9]*f|f[a-zA-Z0-9]*d)[a-zA-Z0-9]*|(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--delete)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force)|(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--delete))(\\s|[;&|<>]|$)",
+              "case_sensitive": true
+            },
+            {
+              "pattern": "git(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+stash\\s+(drop|clear)(\\s|[;&|<>]|$)"
+            }
           ]
         }
       }
@@ -189,7 +209,11 @@ it:
 
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
 others. For the same reason the git patterns are blunter than the hooks other assistants get: every `git restore` is
-denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. Zed's "Test Your
+denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. The snippet only
+denies, so a force push (`-f`, `--force-with-lease`, or a `+` refspec), a forced branch delete, and a stash drop or
+clear are refused outright where the other hooks ask you first. Zed removes quotes before it matches, so after `-C`,
+`-c`, or `--git-dir` the snippet cannot tell where the value ends and reads every later word as a possible command:
+`git -C game commit -m "clean up"` is refused too. Run `cd game && git commit -m "clean up"` instead. Zed's "Test Your
 Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.
 
 If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses

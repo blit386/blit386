@@ -34,6 +34,7 @@ import {
     isKitManaged,
     SHARED_SKILLS_DIR,
 } from '../dist/ownership.js';
+import { SHELL_CASES } from './shell-cases.mjs';
 
 /** A path in the shared skills folder, which several agents may read at once. */
 const SHARED_SKILL = `${SHARED_SKILLS_DIR}run/SKILL.md`;
@@ -423,5 +424,82 @@ test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form
 
     for (const command of ['git reset --soft HEAD~1', 'git reset --help', 'git reset --merge', 'git reset --keep']) {
         assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});
+
+/**
+ * The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md, matched the way
+ * Zed matches: quotes and backslashes removed first (Zed's shell parser rebuilds each command from unquoted words),
+ * and case ignored unless a rule sets `case_sensitive`.
+ */
+function zedTerminalDenies() {
+    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    assert.ok(body, 'AGENTS.md should carry a json snippet');
+
+    const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
+    const rules = terminal.always_deny.map(
+        ({ pattern, case_sensitive }) => new RegExp(pattern, case_sensitive ? '' : 'i'),
+    );
+    return (command) => rules.some((rule) => rule.test(command.replace(/['"\\]/g, '')));
+}
+
+test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the guard case table leaves out', () => {
+    const denies = zedTerminalDenies();
+
+    // The guard core asks before a force push or a forced branch delete; the snippet only denies, so it denies those.
+    for (const command of [
+        'git checkout --fo main',
+        'git switch --for main',
+        'git checkout -2 Makefile',
+        'git checkout --no-overlay main',
+        'git push -f',
+        'git push -uf origin main',
+        'git push --force-with-lease',
+        'git -C game checkout --for main',
+        'git --no-pager push -f',
+        'git -c core.pager=less push origin +main',
+        'git --git-dir .git reset --hard',
+        // Zed sees `-C my game reset --hard`: the value's end is lost with the quotes.
+        'git -C "my game" reset --hard',
+        'git branch -d -f old',
+        'git branch -df old',
+        'git branch --delete -f old',
+        'git branch --force --delete old',
+    ]) {
+        assert.ok(denies(command), `${command} should be denied`);
+    }
+
+    for (const command of [
+        'git checkout main',
+        'git checkout -b leaf',
+        'git switch --force-create feature',
+        'git push origin main',
+        'git push -u origin feat',
+        'git push --follow-tags',
+        // Zed ignores case by default; the branch rule sets `case_sensitive`, so `-d` is not read as `-D`.
+        'git branch -d old',
+        'git branch -f main origin/main',
+        'git -C game status',
+        'git stash pop',
+        // `--no-pager` takes no value, so `grep` / `log` is the command and the later word only a search term.
+        'git --no-pager grep -n restore',
+        'git --no-pager log --grep reset --hard',
+    ]) {
+        assert.ok(!denies(command), `${command} should be allowed`);
+    }
+});
+
+test('the Zed tool_permissions snippet in AGENTS.md denies every command the guard core denies or asks about (BT-748)', () => {
+    const denies = zedTerminalDenies();
+
+    for (const [command, expected] of SHELL_CASES) {
+        if (expected === 'allow') {
+            continue;
+        }
+
+        assert.ok(
+            denies(command),
+            `${JSON.stringify(command)} is ${expected} in the guard core, so the snippet should deny it`,
+        );
     }
 });
