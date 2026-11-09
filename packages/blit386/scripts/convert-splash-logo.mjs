@@ -137,14 +137,13 @@ export function parseLogoModule(source) {
         throw new Error('cannot read LOGO_WIDTH, LOGO_HEIGHT and LOGO_PIXELS from logoData.ts');
     }
 
-    return {
-        width: Number(width),
-        height: Number(height),
-        indices: body
-            .split(',')
-            .map(Number)
-            .filter((_, i, all) => i < all.length - 1 || body.trim().at(-1) !== ','),
-    };
+    const indices = body
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value !== '') // the trailing comma after the last row
+        .map(Number);
+
+    return { width: Number(width), height: Number(height), indices };
 }
 
 /**

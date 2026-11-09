@@ -1,10 +1,11 @@
 /**
  * Non-contiguous extra glyphs appended after the system font's ASCII block (32-126).
  *
- * Shared between `export-system-font.mjs` and `convert-system-font.mjs` so both scripts agree
- * on atlas layout, together with the atlas constants below. The generated `src/assets/fonts/systemFontData.ts` carries its own copy of
- * the code points as `SYSTEM_FONT_EXTRA_CHARS` (that file is bundled into the browser build and
- * cannot import from `scripts/`), written out by `convert-system-font.mjs`.
+ * Shared between `export-system-font.mjs` and `convert-system-font.mjs`, together with the atlas
+ * constants below, so both scripts agree on atlas layout. The generated
+ * `src/assets/fonts/systemFontData.ts` carries its own copy of the code points as
+ * `SYSTEM_FONT_EXTRA_CHARS` (that file is bundled into the browser build and cannot import from
+ * `scripts/`), written out by `convert-system-font.mjs`.
  *
  * Every entry starts as a blank (all-zero) placeholder glyph until hand-drawn in the exported
  * PNG. `codePoint` is the real Unicode character this glyph renders for `SystemFont.ts`'s glyph
