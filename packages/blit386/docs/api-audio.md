@@ -44,7 +44,9 @@ or `overlap`, and `BT.musicStop` for a non-finite `fadeMs`, before the current t
 for a non-finite `volume`, `pitch`, `pan`, `priority`, or `fadeInMs`, and for an `atTime` that is not finite or is
 negative; `BT.soundPitchSet`, `BT.soundPanSet`, and the `fadeOutMs` of `BT.soundStop` reject non-finite values too. The
 check runs before a voice is taken, so a bad value (a volume computed as `1 - dist / maxDist` with `maxDist = 0`, say)
-never leaves a silent voice behind.
+never leaves a silent voice behind. While audio is still locked (before the first user gesture), `BT.soundPlay` drops
+the request and returns an inert handle before its options are checked, so a bad value only throws once audio has
+unlocked.
 
 ```ts twoslash
 import { BT } from 'blit386';
