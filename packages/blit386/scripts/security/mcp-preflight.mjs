@@ -53,8 +53,8 @@ export const SECURITY_MCP_REGISTRY = [
 export const ACCEPTED_SHADOW_MCP_ENTRIES = [{ name: 'blit386-docs', classification: 'shadow-remote' }];
 
 const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json'];
-const RUNLAYER_URL_PATTERN = /runlayer\.com/i;
-const RUNLAYER_COMMAND_PATTERN = /runlayer\s+run\b/i;
+const RUNLAYER_DOMAIN = 'runlayer.com';
+const RUNLAYER_BINARY = 'runlayer';
 
 /**
  * @param {string} statusText
@@ -141,16 +141,24 @@ export function isRunlayerManagedEntry(entry) {
     }
 
     const record = /** @type {Record<string, unknown>} */ (entry);
-    const url = typeof record.url === 'string' ? record.url : '';
-    const command = typeof record.command === 'string' ? record.command : '';
-    const args = Array.isArray(record.args) ? record.args.join(' ') : '';
 
-    if (RUNLAYER_URL_PATTERN.test(url)) {
-        return true;
+    // Managed only when the parsed hostname is runlayer.com or a subdomain of it, never on a
+    // substring anywhere in the URL (BT-763: `https://attacker.example/runlayer.com/mcp`).
+    if (typeof record.url === 'string' && URL.canParse(record.url)) {
+        const host = new URL(record.url).hostname.toLowerCase();
+        if (host === RUNLAYER_DOMAIN || host.endsWith(`.${RUNLAYER_DOMAIN}`)) {
+            return true;
+        }
     }
 
-    const commandLine = `${command} ${args}`.trim();
-    return RUNLAYER_COMMAND_PATTERN.test(commandLine);
+    // Managed only when the command itself is the runlayer binary and its first argument is
+    // `run` - a shell whose script merely mentions `runlayer run` stays a shadow stdio server.
+    return (
+        typeof record.command === 'string' &&
+        path.basename(record.command) === RUNLAYER_BINARY &&
+        Array.isArray(record.args) &&
+        record.args[0] === 'run'
+    );
 }
 
 /**

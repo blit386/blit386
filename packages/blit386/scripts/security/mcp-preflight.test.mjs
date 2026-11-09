@@ -81,6 +81,24 @@ describe('governance classification', () => {
         assert.equal(byName['shadow-stdio'], 'shadow-stdio');
     });
 
+    it('classifies URLs and commands that only mention runlayer as shadow (BT-763)', () => {
+        const config = scanMcpConfigFile(path.join(FIXTURE_ROOT, 'governance', 'hostile-runlayer.mcp.json'));
+        const byName = Object.fromEntries(config.servers.map((server) => [server.name, server.classification]));
+        assert.deepEqual(byName, {
+            'runlayer-in-path': 'shadow-remote',
+            'runlayer-host-prefix': 'shadow-remote',
+            'runlayer-in-comment': 'shadow-stdio',
+        });
+    });
+
+    it('still accepts a real runlayer.com subdomain and a runlayer binary given by path', () => {
+        assert.equal(isRunlayerManagedEntry({ url: 'https://runlayer.com/mcp' }), true);
+        assert.equal(isRunlayerManagedEntry({ url: 'https://API.Runlayer.com/mcp' }), true);
+        assert.equal(isRunlayerManagedEntry({ command: '/usr/local/bin/runlayer', args: ['run', 'x'] }), true);
+        assert.equal(isRunlayerManagedEntry({ url: 'not a url runlayer.com' }), false);
+        assert.equal(isRunlayerManagedEntry({ command: 'runlayer', args: ['exec', 'run'] }), false);
+    });
+
     it('detects runlayer command entries', () => {
         assert.equal(
             isRunlayerManagedEntry({ command: 'runlayer', args: ['run', '00000000-0000-0000-0000-000000000000'] }),
@@ -172,6 +190,19 @@ describe('runMcpPreflight', () => {
         assert.equal(report.governance.acceptedShadowServers.length, 1);
         assert.equal(report.governance.unacceptedShadowServers.length, 1);
         assert.equal(report.governance.unacceptedShadowServers[0]?.name, 'shadow-remote');
+    });
+
+    it('blocks in governance-only mode when entries only mention runlayer (BT-763)', () => {
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-governance-hostile-runlayer-'));
+        fs.copyFileSync(
+            path.join(FIXTURE_ROOT, 'governance', 'hostile-runlayer.mcp.json'),
+            path.join(tempDir, '.mcp.json'),
+        );
+
+        const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: tempDir, governanceOnly: true });
+
+        assert.equal(report.summary.proceed, false);
+        assert.equal(report.governance.unacceptedShadowServers.length, 3);
     });
 
     it('degrades gracefully when mcps-dir does not exist at all, honoring allowFallback', () => {
