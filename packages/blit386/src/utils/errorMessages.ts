@@ -980,6 +980,35 @@ export function randomWeightedTotalError(total: number): string {
 }
 
 /**
+ * Returns the error message for a {@link Random.int} or {@link Random.intInclusive} bound outside the
+ * 32-bit integer range, which `| 0` would otherwise wrap into an unrelated number.
+ *
+ * @param method - Method that received the bound (`'int'` or `'intInclusive'`).
+ * @param value - Bound that was supplied.
+ * @returns User-facing error string.
+ */
+export function randomIntBoundError(method: string, value: number): string {
+    return (
+        `Random.${method}() works with whole numbers from -2147483648 to 2147483647 (got ${value}). ` +
+        'Use a smaller bound, or scale random.next() yourself for a wider range'
+    );
+}
+
+/**
+ * Returns the error message for {@link Random.weighted} when a weight is not a finite number.
+ *
+ * @param index - Position of the bad weight.
+ * @param weight - Weight that was supplied.
+ * @returns User-facing error string.
+ */
+export function randomWeightNotFiniteError(index: number, weight: number): string {
+    return (
+        `Random.weighted() needs finite weights (got ${weight} at index ${index}). ` +
+        'Give each item a weight of 0 or more'
+    );
+}
+
+/**
  * Returns the error message for an invalid half-open integer range on {@link Random.int}.
  *
  * @param min - Inclusive lower bound that was supplied.

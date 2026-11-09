@@ -1777,6 +1777,10 @@
         {
           "version": "1.8.1",
           "note": "Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0."
+        },
+        {
+          "version": "1.8.1",
+          "note": "`int()` / `intInclusive()` throw a clear `RangeError` for a bound outside the 32-bit range instead of\nwrapping it, and `weighted()` throws for a weight that is not a finite number instead of always picking the last item."
         }
       ],
       "deprecated": null,
