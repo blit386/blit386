@@ -325,6 +325,12 @@ describe('registry helpers', () => {
 });
 
 describe('parseArgs', () => {
+    it('ignores the -- that pnpm forwards from `pnpm run security:mcp-preflight -- <args>`', () => {
+        const args = parseArgs(['--', '--governance-only', '--repo-root', '/tmp/repo']);
+        assert.equal(args.governanceOnly, true);
+        assert.equal(args.repoRoot, path.resolve('/tmp/repo'));
+    });
+
     it('requires mcps-dir to be provided explicitly', () => {
         const args = parseArgs(['--allow-fallback']);
         assert.equal(args.mcpsDir, null);

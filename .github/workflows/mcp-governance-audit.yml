@@ -73,7 +73,8 @@ jobs:
       # No --include-user-config: it only adds $HOME/.mcp.json style files, and a GitHub-hosted
       # runner has none, so it would scan nothing.
       #
-      # No pnpm install: mcp-preflight.mjs uses only Node builtins (fs, os, path, node:util).
+      # No pnpm install: mcp-preflight.mjs uses only Node builtins (fs, os, path, node:util) and the
+      # dependency-free scripts/lib/pnpm-arg-separator.mjs.
       # The checkout root here already is the monorepo root, so a single governance-only
       # pass covers the tracked root .mcp.json directly - unlike the documented agent-session
       # procedure, which starts from inside a package directory and needs a --repo-root ../..

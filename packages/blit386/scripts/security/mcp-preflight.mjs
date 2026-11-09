@@ -4,6 +4,8 @@ import path from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
+import { PNPM_ARG_SEPARATOR } from '../../../../scripts/lib/pnpm-arg-separator.mjs';
+
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(SCRIPT_DIR, '../..');
 
@@ -634,7 +636,9 @@ export function formatPreflightSummary(report) {
  */
 export function parseArgs(argv) {
     const { values } = nodeParseArgs({
-        args: argv,
+        // pnpm forwards the separator of `pnpm run security:mcp-preflight -- <args>`; past a `--`,
+        // node:util parseArgs would read every flag as a positional.
+        args: argv.filter((arg) => arg !== PNPM_ARG_SEPARATOR),
         options: {
             'allow-fallback': { type: 'boolean' },
             'governance-only': { type: 'boolean' },
