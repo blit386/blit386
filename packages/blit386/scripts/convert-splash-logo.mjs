@@ -33,8 +33,8 @@ import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(scriptDir, '..');
-export const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
-export const OUTPUT_PATH = join(PROJECT_ROOT, 'src/splash/logoData.ts');
+const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
+const OUTPUT_PATH = join(PROJECT_ROOT, 'src/splash/logoData.ts');
 
 // Must match src/splash/constants.ts. Duplicated because this is a plain .mjs
 // build script and cannot import from TypeScript source.
@@ -58,7 +58,7 @@ const CHANNELS = 4;
  * @param {string} inputPath - Path to the source PNG.
  * @returns {{ width: number, height: number, indices: number[] }} Dimensions and flat index array.
  */
-export function extractIndices(inputPath) {
+function extractIndices(inputPath) {
     const png = PNG.sync.read(readFileSync(inputPath));
     const indices = new Array(png.width * png.height);
 
