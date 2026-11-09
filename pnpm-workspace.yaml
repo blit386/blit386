@@ -37,7 +37,7 @@ overrides:
   # and waku in packages/website's docs pipeline, so it never enters a runtime bundle -
   # but `security:audit` covers dev + prod, so it fails CI. 4.13.5 is the patch; pinned
   # to the latest 4.x (4.13.7) since waku@1.0.0-beta.6 declares hono@^4.12.14.
-  hono@<4.13.5: ^4.13.14
+  hono@<4.13.5: ^4.13.16
   # GHSA-rmxm-3fg6-px4f (moderate): serveStatic decodes the request path a second time,
   # bypassing middleware on static paths. Build-tooling only, reached through waku in
   # packages/website's docs pipeline, so it never enters a runtime bundle - but
