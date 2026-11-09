@@ -517,11 +517,11 @@ export class AudioManager {
      *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link MusicPlayOptions}.
-     * @throws Error if `fadeMs`/`volume` is not finite, or the loop region is invalid - locked or not.
+     * @throws Error if `fadeMs`/`volume`/`overlap` is not finite, or the loop region is invalid - locked or not.
      */
     public musicPlay(buffer: AudioBuffer, options?: MusicPlayOptions): void {
         // Checked here too so a bad value throws now, not at unlock where it would only be logged.
-        validateFinite(options?.fadeMs, options?.volume, 'BT.musicPlay');
+        validateFinite(options?.fadeMs, options?.volume, 'BT.musicPlay', options?.overlap);
 
         if (!this.unlocked) {
             // Same loop-region check MusicPlayer.play runs, so the locked path throws like the unlocked one.

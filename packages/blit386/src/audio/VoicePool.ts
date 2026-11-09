@@ -683,7 +683,7 @@ function createEmptySlot(): VoiceSlot {
  * @throws Error when a numeric option is not finite, or `atTime` is negative.
  */
 function validatePlayOptions(options: VoicePlayOptions): void {
-    const { volume, pitch, pan, fadeInMs, atTime } = options;
+    const { volume, pitch, pan, priority, fadeInMs, atTime } = options;
 
     if (volume !== undefined && !Number.isFinite(volume)) {
         throw new Error(audioVolumeNotFiniteError('BT.soundPlay', volume));
@@ -695,6 +695,10 @@ function validatePlayOptions(options: VoicePlayOptions): void {
 
     if (pan !== undefined && !Number.isFinite(pan)) {
         throw new Error(audioOptionNotFiniteError('BT.soundPlay', 'pan', pan));
+    }
+
+    if (priority !== undefined && !Number.isFinite(priority)) {
+        throw new Error(audioOptionNotFiniteError('BT.soundPlay', 'priority', priority));
     }
 
     if (fadeInMs !== undefined && !Number.isFinite(fadeInMs)) {
