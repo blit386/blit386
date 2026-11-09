@@ -27,11 +27,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockAudioContext, type MockAudioContext } from '../__test__/webaudio-mock';
-import {
-    setAudioClipUnloadHandler,
-    setAudioDecodeContext,
-    setMusicHotReplaceHandler,
-} from '../audio/audioDecodeContext';
+import { audioHooks, resetAudioHooks } from '../audio/audioDecodeContext';
 import { AudioClip, type AudioClipProgress } from './AudioClip';
 import type { SynthParams } from './synth/SynthParams';
 
@@ -119,13 +115,11 @@ describe('AudioClip', () => {
         const context = createMockAudioContext();
 
         mockContext = context as unknown as MockAudioContext;
-        setAudioDecodeContext(context);
+        audioHooks.context = context;
     });
 
     afterEach(() => {
-        setAudioDecodeContext(null);
-        setAudioClipUnloadHandler(() => {});
-        setMusicHotReplaceHandler(() => false);
+        resetAudioHooks();
         AudioClip.clear();
         vi.unstubAllGlobals();
     });
@@ -562,7 +556,7 @@ describe('AudioClip', () => {
         });
 
         it('should throw the not-ready error when no decode context is registered', async () => {
-            setAudioDecodeContext(null);
+            audioHooks.context = null;
             vi.stubGlobal('fetch', vi.fn());
 
             await expect(AudioClip.load('any.mp3')).rejects.toThrow("Audio isn't ready yet");
@@ -633,7 +627,7 @@ describe('AudioClip', () => {
             const releasedBuffer = clip.buffer;
             const handler = vi.fn();
 
-            setAudioClipUnloadHandler(handler);
+            audioHooks.onUnload = handler;
             clip.unload();
 
             expect(handler).toHaveBeenCalledOnce();
@@ -667,7 +661,7 @@ describe('AudioClip', () => {
         });
 
         it('should reject when no decode context is registered', async () => {
-            setAudioDecodeContext(null);
+            audioHooks.context = null;
 
             await expect(AudioClip.synth(buildSynthParams())).rejects.toThrow(/isn't ready/);
         });
@@ -786,7 +780,7 @@ describe('AudioClip', () => {
             const clip = await AudioClip.load('sfx.mp3');
             const oldBuffer = clip.buffer;
             const unloadHandler = vi.fn();
-            setAudioClipUnloadHandler(unloadHandler);
+            audioHooks.onUnload = unloadHandler;
 
             await AudioClip.hotReload('sfx.mp3');
 
@@ -799,7 +793,7 @@ describe('AudioClip', () => {
             const clip = await AudioClip.load('music.mp3');
             const oldBuffer = clip.buffer;
             const musicHandler = vi.fn().mockReturnValue(true);
-            setMusicHotReplaceHandler(musicHandler);
+            audioHooks.onHotReplace = musicHandler;
 
             await AudioClip.hotReload('music.mp3');
 

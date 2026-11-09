@@ -24,7 +24,7 @@ import {
 } from '../__test__/webaudio-mock';
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
-import { notifyMusicHotReplace } from './audioDecodeContext';
+import { audioHooks } from './audioDecodeContext';
 import { AudioManager, UNLOCK_GESTURE_EVENTS } from './AudioManager';
 import { MusicPlayer } from './MusicPlayer';
 import { INVALID_SOUND_REF } from './VoicePool';
@@ -124,13 +124,38 @@ describe('AudioManager', () => {
             expect(() => audio.attach(canvas, 16)).not.toThrow();
             expect(audio.isUnlocked()).toBe(false);
         });
+
+        it('closes a context created before the bus graph threw', () => {
+            const MockContext = globalThis.AudioContext;
+
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            Object.defineProperty(globalThis, 'AudioContext', {
+                value: function GainlessAudioContext(): AudioContext {
+                    const context = new MockContext();
+
+                    context.createGain = () => {
+                        throw new Error('createGain failed');
+                    };
+
+                    return context;
+                },
+                writable: true,
+                configurable: true,
+            });
+
+            audio.attach(canvas, 16);
+
+            expect(getMockContext().closeCallCount).toBe(1);
+            expect(audio.voices).toBeNull();
+            expect(audioHooks.context).toBeNull();
+        });
     });
 
     describe('music hot-replace wiring', () => {
         it('registers a music hot-replace handler on attach that delegates to the music player', () => {
             audio.attach(canvas, 16);
 
-            const restarted = notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
+            const restarted = audioHooks.onHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
 
             expect(restarted).toBe(false); // nothing playing yet, but the handler ran without throwing
         });
@@ -139,7 +164,7 @@ describe('AudioManager', () => {
             audio.attach(canvas, 16);
             audio.detach();
 
-            expect(notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
+            expect(audioHooks.onHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
         });
     });
 
@@ -396,24 +421,11 @@ describe('AudioManager', () => {
 
             const firstContext = getMockContext();
             const firstAnalyzers = firstContext.createAnalyserCalls;
-            const firstMain = nthGainNode(firstContext.createGainCalls, 0);
-            const firstMusic = nthGainNode(firstContext.createGainCalls, 1);
-            const firstSfx = nthGainNode(firstContext.createGainCalls, 2);
-            const disconnectSpies = [
-                vi.spyOn(firstMain as unknown as GainNode, 'disconnect'),
-                vi.spyOn(firstMusic as unknown as GainNode, 'disconnect'),
-                vi.spyOn(firstSfx as unknown as GainNode, 'disconnect'),
-            ];
 
             audio.detach();
 
-            for (const spy of disconnectSpies) {
-                expect(spy).toHaveBeenCalledTimes(1);
-            }
-
-            expect(disconnectSpies[0]).toHaveBeenCalledWith(firstAnalyzers[0]);
-            expect(disconnectSpies[1]).toHaveBeenCalledWith(firstAnalyzers[1]);
-            expect(disconnectSpies[2]).toHaveBeenCalledWith(firstAnalyzers[2]);
+            // Closing the context drops the whole graph, taps included; no per-node disconnect needed.
+            expect(firstContext.closeCallCount).toBe(1);
 
             audio.attach(canvas, 16);
             audio.enableBusMetering();

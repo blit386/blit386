@@ -98,7 +98,7 @@ src/
     keyboardRuntimeMaps.ts # Mutable runtime keyboard maps for players 0/1, seeded from HardwareSettings.keyboardLayout; shared by BT and BTAPI without a circular import
   audio/
     AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume, SFX + music playback; lazy opt-in bus metering (enableBusMetering, getBusLevels) backs the overlay audio meter band
-    audioDecodeContext.ts  # Module-scoped decode-context registry + AudioClip unload seam (wired to VoicePool)
+    audioDecodeContext.ts  # One mutable audioHooks object (decode context, unload + music hot-replace callbacks) AudioClip reads; AudioManager fills and resets it
     VoicePool.ts            # Fixed-size SFX voice pool: allocation/stealing, generational SoundRef handles, per-voice fades
     MusicPlayer.ts          # Crossfading music player: current/previous voice pair, fadeMs/overlap timing, loop points
   utils/

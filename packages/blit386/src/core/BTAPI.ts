@@ -869,6 +869,7 @@ export class BTAPI {
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
     public soundPlay(clip: AudioClip, options?: SoundPlayOptions): SoundRef {
+        // musicPlay deliberately has no isSeeking gate; see the note there.
         if (clip.buffer === null || this.isSeeking) {
             return INVALID_SOUND_REF;
         }
@@ -970,6 +971,8 @@ export class BTAPI {
      * @param options - Playback options; see {@link MusicPlayOptions}.
      */
     public musicPlay(clip: AudioClip, options?: MusicPlayOptions): void {
+        // Unlike soundPlay, not dropped while seeking: one track is never a burst, and a replayed
+        // musicPlay leaves the seeked frame's track queued in the parked context for BT.resume().
         if (clip.buffer === null) {
             return;
         }

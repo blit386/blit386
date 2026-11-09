@@ -12,7 +12,7 @@ import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
-import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
+import { audioHooks, resetAudioHooks } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions, validateFinite, validateLoopRegion } from './MusicPlayer';
 import { INVALID_SOUND_REF, type SoundRef, type VoicePlayOptions, VoicePool } from './VoicePool';
 
@@ -141,8 +141,9 @@ export class AudioManager {
      * returns without installing listeners if constructing the audio context or
      * bus graph throws (for example a browser hitting its concurrent
      * `AudioContext` limit), so a failure here never rejects the caller's
-     * `BTAPI.init()`. Registers the new context with `audioDecodeContext` on
-     * success, so `AudioClip.load()` can later decode against the live context.
+     * `BTAPI.init()`; a context that was created before the bus graph threw is
+     * closed. Fills in `audioHooks` on success, so `AudioClip.load()` can later
+     * decode against the live context.
      *
      * @param target - Canvas that receives the one-shot unlock gesture listeners.
      * @param voiceCount - Number of voice slots for the SFX pool.
@@ -159,21 +160,22 @@ export class AudioManager {
         } catch (error) {
             console.error('[BT] Failed to create the audio context', error);
 
+            this.context?.close().catch(() => {
+                // Same as detach(): close() rejects rather than throwing synchronously.
+            });
             this.context = null;
             this.busNodes = null;
 
             return;
         }
 
-        setAudioDecodeContext(this.context);
-
         this.voicePool = new VoicePool(this, voiceCount);
-        setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
-
         this.musicPlayer = new MusicPlayer(this.context, busNodes.music);
-        setMusicHotReplaceHandler(
-            (oldBuffer, newBuffer) => this.musicPlayer?.hotReplaceCurrentBuffer(oldBuffer, newBuffer) ?? false,
-        );
+
+        audioHooks.context = this.context;
+        audioHooks.onUnload = (buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer);
+        audioHooks.onHotReplace = (oldBuffer, newBuffer) =>
+            this.musicPlayer?.hotReplaceCurrentBuffer(oldBuffer, newBuffer) ?? false;
 
         this.target = target;
 
@@ -184,8 +186,8 @@ export class AudioManager {
 
     /**
      * Removes unlock gesture listeners, closes the audio context, and resets
-     * all bus, mute, and drop-counter state. Clears the `audioDecodeContext`
-     * registration so it never points at a closed context. Safe to call
+     * all bus, mute, and drop-counter state. Resets `audioHooks` so they never
+     * point at a closed context. Safe to call
      * repeatedly or before {@link attach}.
      */
     public detach(): void {
@@ -193,17 +195,9 @@ export class AudioManager {
 
         this.voicePool?.stopAll();
         this.voicePool = null;
-        setAudioClipUnloadHandler(() => {});
-        setMusicHotReplaceHandler(() => false);
 
         this.musicPlayer?.stop();
         this.musicPlayer = null;
-
-        if (this.analyzerNodes !== null && this.busNodes !== null) {
-            this.busNodes.main.disconnect(this.analyzerNodes.main);
-            this.busNodes.music.disconnect(this.analyzerNodes.music);
-            this.busNodes.sfx.disconnect(this.analyzerNodes.sfx);
-        }
 
         this.analyzerNodes = null;
         this.analyzerBuffers = null;
@@ -214,7 +208,7 @@ export class AudioManager {
             });
         }
 
-        setAudioDecodeContext(null);
+        resetAudioHooks();
 
         this.context = null;
         this.busNodes = null;

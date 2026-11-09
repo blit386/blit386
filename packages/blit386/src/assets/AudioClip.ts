@@ -19,7 +19,7 @@
  * loading, caching, releasing, and synthesizing decoded buffers.
  */
 
-import { getAudioDecodeContext, notifyAudioClipUnload, notifyMusicHotReplace } from '../audio/audioDecodeContext';
+import { audioHooks } from '../audio/audioDecodeContext';
 import {
     audioClipDecodeError,
     audioClipHttpError,
@@ -183,7 +183,7 @@ export class AudioClip {
      *   context yet (see {@link audioClipNotReadyError}).
      */
     static async synth(params: SynthParams): Promise<AudioClip> {
-        const decodeContext = getAudioDecodeContext();
+        const decodeContext = audioHooks.context;
 
         if (decodeContext === null) {
             throw new Error(audioClipNotReadyError());
@@ -261,8 +261,8 @@ export class AudioClip {
 
         clip.decodedBuffer = newBuffer;
 
-        notifyAudioClipUnload(oldBuffer);
-        notifyMusicHotReplace(oldBuffer, newBuffer);
+        audioHooks.onUnload(oldBuffer);
+        audioHooks.onHotReplace(oldBuffer, newBuffer);
 
         return true;
     }
@@ -344,7 +344,7 @@ export class AudioClip {
      * @throws Error if no decode context is registered, the download fails, or decoding fails.
      */
     private static async fetchAndDecode(url: string, onProgress?: AudioClipProgressCallback): Promise<AudioBuffer> {
-        const decodeContext = getAudioDecodeContext();
+        const decodeContext = audioHooks.context;
 
         if (decodeContext === null) {
             throw new Error(audioClipNotReadyError());
@@ -525,6 +525,6 @@ export class AudioClip {
             resolvedClips.delete(this.url);
         }
 
-        notifyAudioClipUnload(releasedBuffer);
+        audioHooks.onUnload(releasedBuffer);
     }
 }
