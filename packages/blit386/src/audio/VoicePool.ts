@@ -175,7 +175,7 @@ export class VoicePool {
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link SoundPlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
-     * @throws Error when `volume`, `pitch`, `pan`, `fadeInMs`, or `atTime` is not finite, or
+     * @throws Error when `volume`, `pitch`, `pan`, `priority`, `fadeInMs`, or `atTime` is not finite, or
      * `atTime` is negative. Checked before any slot is touched, so a bad option never steals or
      * leaves behind a voice.
      */
