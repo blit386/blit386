@@ -91,6 +91,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   edge, so `BT.isKeyReleased`, `BT.isReleased` and `BT.isAnyKeyReleased` never fired and a release-to-fire or
   charge-and-release game stayed stuck after an alt-tab mid-hold. The release reaches the next `update()`, the same way
   a gamepad disconnect already did. See [Keyboard](/docs/guides/input#keyboard).
+- Pointer input: a page-mode wheel (`deltaMode` 2) over a canvas inside an iframe scales by that iframe's height, not
+  the top window's, and a touch whose pointer the browser already ended no longer throws from the `pointerdown` handler.
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
   keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
   `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed

@@ -72,11 +72,13 @@ comes up but another is still down; use `BT.isKeyReleased(code)` for per-key rel
 ```js
 // In update(): BT.inputString holds the keys typed since the last update (a getter).
 for (const ch of BT.inputString) {
-  if (ch === '\b')
-    this.name = this.name.slice(0, -1); // Backspace
-  else if (ch === '\r')
+  if (ch === '\b') {
+    this.name = this.name.slice(0, -1); // Backspace deletes the last character
+  } else if (ch === '\r') {
     this.submitName(); // Enter
-  else if (ch >= ' ') this.name += ch; // a printable character; Tab and Escape (below space) are skipped
+  } else if (ch >= ' ') {
+    this.name += ch; // a printable character; Tab and Escape (below space) are skipped
+  }
 }
 ```
 
