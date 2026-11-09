@@ -182,12 +182,19 @@ export function isRunlayerManagedEntry(entry) {
 }
 
 /**
- * @param {string} tableName A TOML table header without its brackets.
+ * @param {string} line A trimmed TOML line that opens with `[`.
  * @param {number} lineNumber
  * @returns {string | null} The server name for `[mcp_servers.<name>]`, or null for a table whose
  *   keys are not read (a server's `env` / `tools` sub-table, or an unrelated table).
  */
-function codexServerTableName(tableName, lineNumber) {
+function codexServerTableName(line, lineNumber) {
+    // Bare dotted names, or mcp_servers."<name>" without escapes. Anything else that opens with
+    // `[` (a trailing comment, `[[...]]`, an escaped key) cannot be read safely.
+    const header = /^\[(mcp_servers\.(?:"[^"\\]+"|[\w-]+)(?:\.[\w-]+)*|[\w.-]+)\]$/u.exec(line);
+    if (!header) {
+        throw new Error(`line ${lineNumber}: unsupported TOML table header`);
+    }
+    const tableName = header[1] ?? '';
     const server = /^mcp_servers\.(?:"([^"]+)"|([\w-]+))$/u.exec(tableName);
     if (server) {
         return server[1] ?? server[2] ?? '';
@@ -200,9 +207,10 @@ function codexServerTableName(tableName, lineNumber) {
 
 /**
  * Reads the `[mcp_servers.<name>]` tables of a Codex `config.toml` into a plain object.
- * shortcut: only bare or double-quoted table names and JSON-compatible values (basic strings,
- * string arrays, numbers, booleans) are read; anything else under `mcp_servers` throws, so the
- * gate fails closed. Swap for a real TOML parser if Codex configs grow beyond that.
+ * shortcut: only single-line bare `key = value` pairs with JSON-compatible values (basic strings,
+ * string arrays, numbers, booleans) and plain table headers are read; any other line anywhere in
+ * the file throws, so the gate fails closed. Swap for a real TOML parser if Codex configs grow
+ * beyond that.
  *
  * @param {string} raw
  * @returns {{ mcp_servers: Record<string, Record<string, unknown>> }}
@@ -215,35 +223,33 @@ export function parseCodexMcpServers(raw) {
 
     for (const [index, rawLine] of raw.split('\n').entries()) {
         const line = rawLine.trim();
+        const lineNumber = index + 1;
         if (line === '' || line.startsWith('#')) {
             continue;
         }
 
-        const header = /^\[\s*([^\]]+?)\s*\]$/u.exec(line);
-        if (header) {
-            const serverName = codexServerTableName(header[1] ?? '', index + 1);
-            current = serverName === null ? null : {};
-            if (serverName !== null && current !== null) {
+        if (line.startsWith('[')) {
+            const serverName = codexServerTableName(line, lineNumber);
+            current = null;
+            if (serverName !== null) {
+                current = {};
                 servers.set(serverName, current);
             }
             continue;
         }
 
-        if (current === null) {
-            if (line.startsWith('mcp_servers')) {
-                throw new Error(`line ${index + 1}: unsupported mcp_servers key outside a table`);
-            }
-            continue;
-        }
-
+        // Pairs: a bare key only, so a dotted or quoted key can never smuggle in mcp_servers.
         const pair = /^([\w-]+)\s*=\s*(.+)$/u.exec(line);
-        if (!pair) {
-            throw new Error(`line ${index + 1}: unsupported TOML line`);
+        if (!pair || pair[1] === 'mcp_servers') {
+            throw new Error(`line ${lineNumber}: unsupported TOML line`);
+        }
+        if (current === null) {
+            continue;
         }
         try {
             current[pair[1] ?? ''] = JSON.parse(pair[2] ?? '');
         } catch {
-            throw new Error(`line ${index + 1}: unsupported TOML value`);
+            throw new Error(`line ${lineNumber}: unsupported TOML value`);
         }
     }
 
@@ -276,20 +282,21 @@ function parseConfig(raw, format) {
  * string plus `args`, or as an argv array (OpenCode), for stdio servers.
  *
  * @param {unknown} entry
- * @returns {{ url: string, command: string, args: unknown[] }}
+ * @returns {{ url: string, command: string, args: unknown[], ambiguous: boolean }}
  */
 function normalizeEntry(entry) {
     const record = entry !== null && typeof entry === 'object' ? /** @type {Record<string, unknown>} */ (entry) : {};
-    const url = [record.url, record.serverUrl, record.httpUrl].find((value) => typeof value === 'string') ?? '';
-    if (Array.isArray(record.command)) {
-        const [command, ...args] = record.command;
-        return { url: /** @type {string} */ (url), command: typeof command === 'string' ? command : '', args };
-    }
-    return {
-        url: /** @type {string} */ (url),
-        command: typeof record.command === 'string' ? record.command : '',
-        args: Array.isArray(record.args) ? record.args : [],
+    const urls = [record.url, record.serverUrl, record.httpUrl].filter((value) => typeof value === 'string');
+    const [command, ...argv] = Array.isArray(record.command) ? record.command : [record.command];
+    const normalized = {
+        url: /** @type {string} */ (urls[0] ?? ''),
+        command: typeof command === 'string' ? command : '',
+        args: Array.isArray(record.command) ? argv : Array.isArray(record.args) ? record.args : [],
     };
+    // Two URL keys, or a URL and a command: which one a client uses differs per client, so the
+    // gate cannot know what it is approving.
+    const ambiguous = urls.length > 1 || (urls.length === 1 && normalized.command.length > 0);
+    return { ...normalized, ambiguous };
 }
 
 /**
@@ -319,7 +326,9 @@ export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
 
         for (const [name, rawEntry] of Object.entries(serversObject)) {
             const entry = normalizeEntry(rawEntry);
-            if (isRunlayerManagedEntry(entry)) {
+            if (entry.ambiguous) {
+                servers.push({ name, classification: 'unknown' });
+            } else if (isRunlayerManagedEntry(entry)) {
                 servers.push({ name, classification: 'runlayer-managed' });
             } else if (entry.url.length > 0) {
                 servers.push({ name, classification: 'shadow-remote' });
