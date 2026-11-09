@@ -50,6 +50,21 @@ const ALLOWED_FUTURE_VERSIONS = ['1.9.0'];
 /** A tag version is a plain `major.minor.patch` - no `v` prefix, no pre-release suffix. */
 const PLAIN_SEMVER = /^\d+\.\d+\.\d+$/u;
 
+/** @type {NodeJS.ProcessEnv | undefined} */
+let gitEnv;
+
+/**
+ * The scrubbed git environment, built once per run: building it spawns its own git process, and
+ * `resolveTagDate` runs once per version.
+ *
+ * @returns {NodeJS.ProcessEnv} Environment for git child processes.
+ */
+function scrubbedGitEnv() {
+    gitEnv ??= gitEnvWithoutRepoLocation();
+
+    return gitEnv;
+}
+
 /** Compiler options used when no real tsconfig is supplied (fixture / unit-test programs). */
 export const DEFAULT_TEST_COMPILER_OPTIONS = {
     target: ts.ScriptTarget.ES2022,
@@ -522,7 +537,7 @@ export function resolveTagDate(tag, runOptions = {}) {
         const output = execFileSync('git', ['log', '-1', '--format=%aI', tag], {
             cwd,
             encoding: 'utf8',
-            env: gitEnvWithoutRepoLocation(),
+            env: scrubbedGitEnv(),
             stdio: ['ignore', 'pipe', 'ignore'], // a missing tag is an expected answer, not noise
         }).trim();
 
@@ -578,7 +593,7 @@ export function assertReleaseTagsPresent(runOptions = {}) {
     const tags = execFileSync('git', ['tag', '--list'], {
         cwd: runOptions.cwd ?? ROOT,
         encoding: 'utf8',
-        env: gitEnvWithoutRepoLocation(),
+        env: scrubbedGitEnv(),
     }).trim();
 
     if (tags.length === 0) {
