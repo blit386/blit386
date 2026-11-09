@@ -22,6 +22,9 @@ export const RENDER_DIMENSION_LIMITS = {
 /** Hardware settings fields that carry render or canvas dimensions. */
 export type RenderDimensionField = 'displaySize' | 'drawingBufferSize' | 'maxCanvasSize';
 
+/** Which allocation-size check {@link checkSize} failed. */
+export type SizeProblem = 'invalid' | 'too-large' | 'area';
+
 /** Error type for render-dimension failures that must abort instead of falling back to another backend. */
 export class RenderDimensionLimitError extends Error {
     /**
@@ -71,23 +74,13 @@ function formatSize(size: Vector2i | undefined | null): string {
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateDimension(field: RenderDimensionField, size: Vector2i | undefined | null): string | null {
-    const x = size?.x;
-    const y = size?.y;
+    const problem = checkSize(size?.x ?? Number.NaN, size?.y ?? Number.NaN);
 
-    if (
-        typeof x !== 'number' ||
-        typeof y !== 'number' ||
-        !Number.isFinite(x) ||
-        !Number.isFinite(y) ||
-        !Number.isInteger(x) ||
-        !Number.isInteger(y) ||
-        x <= 0 ||
-        y <= 0
-    ) {
+    if (problem === 'invalid') {
         return renderDimensionInvalidError(field, formatSize(size));
     }
 
-    if (x > RENDER_DIMENSION_LIMITS.maxWidth || y > RENDER_DIMENSION_LIMITS.maxHeight) {
+    if (problem === 'too-large') {
         return renderDimensionTooLargeError(
             field,
             formatSize(size),
@@ -96,8 +89,34 @@ export function validateDimension(field: RenderDimensionField, size: Vector2i | 
         );
     }
 
-    if (x * y > RENDER_DIMENSION_LIMITS.maxPixels) {
+    if (problem === 'area') {
         return renderDimensionAreaTooLargeError(field, formatSize(size), RENDER_DIMENSION_LIMITS.maxPixels);
+    }
+
+    return null;
+}
+
+/**
+ * Checks a width and height against the shared render and asset allocation limits
+ * ({@link RENDER_DIMENSION_LIMITS}). Each caller maps the result to its own error text.
+ *
+ * @param width - Width in pixels.
+ * @param height - Height in pixels.
+ * @returns `'invalid'` for a non-integer or non-positive size, `'too-large'` past the per-axis
+ *   limit, `'area'` past the pixel-count limit, or `null` when the size can be allocated.
+ */
+export function checkSize(width: number, height: number): SizeProblem | null {
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
+        return 'invalid';
+    }
+
+    if (width > RENDER_DIMENSION_LIMITS.maxWidth || height > RENDER_DIMENSION_LIMITS.maxHeight) {
+        return 'too-large';
+    }
+
+    // Both axes are at most 8192 here, so the product is an exact integer.
+    if (width * height > RENDER_DIMENSION_LIMITS.maxPixels) {
+        return 'area';
     }
 
     return null;
@@ -145,12 +164,7 @@ export function validateWebGPUTextureDimension(
     size: Vector2i,
     maxTextureDimension2D: number | undefined,
 ): string | null {
-    if (
-        maxTextureDimension2D === undefined ||
-        !Number.isFinite(maxTextureDimension2D) ||
-        maxTextureDimension2D <= 0 ||
-        !Number.isInteger(maxTextureDimension2D)
-    ) {
+    if (maxTextureDimension2D === undefined || !Number.isInteger(maxTextureDimension2D) || maxTextureDimension2D <= 0) {
         return null;
     }
 

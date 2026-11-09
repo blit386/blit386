@@ -209,16 +209,6 @@ export function assetDimensionAreaTooLargeError(context: string, size: string, m
 }
 
 /**
- * Returns the error message when indexed pixel dimensions overflow safe allocation limits.
- *
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @returns User-facing error string.
- */
-export function assetIndexedPixelOverflowError(size: string): string {
-    return `The indexed sprite size ${size} is too large to load safely. Use smaller width and height values`;
-}
-
-/**
  * Returns the error message when an indexed pixel buffer length does not match its dimensions.
  *
  * @param actualLength - Number of values supplied in the buffer.
