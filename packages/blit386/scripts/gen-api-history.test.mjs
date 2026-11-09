@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
@@ -420,7 +420,11 @@ describe('assertReleaseTagsPresent (BT-763)', () => {
 
     it('names the tag-less checkout case when the repo has no tags', () => {
         const repo = mkdtempSync(join(tmpdir(), 'api-history-no-tags-'));
-        execFileSync('git', ['init', '-q'], { cwd: repo, env: gitEnvWithoutRepoLocation() });
-        assert.throws(() => assertReleaseTagsPresent({ cwd: repo }), /tag-less checkout/);
+        try {
+            execFileSync('git', ['init', '-q'], { cwd: repo, env: gitEnvWithoutRepoLocation() });
+            assert.throws(() => assertReleaseTagsPresent({ cwd: repo }), /tag-less checkout/);
+        } finally {
+            rmSync(repo, { recursive: true, force: true });
+        }
     });
 });
