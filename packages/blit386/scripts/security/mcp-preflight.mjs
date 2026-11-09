@@ -287,16 +287,18 @@ function parseConfig(raw, format) {
  */
 function normalizeEntry(entry) {
     const record = entry !== null && typeof entry === 'object' ? /** @type {Record<string, unknown>} */ (entry) : {};
-    const urls = [record.url, record.serverUrl, record.httpUrl].filter((value) => typeof value === 'string');
+    const isPresent = (/** @type {unknown} */ value) => value !== undefined && value !== null;
+    const urlValues = [record.url, record.serverUrl, record.httpUrl].filter(isPresent);
     const [command, ...argv] = Array.isArray(record.command) ? record.command : [record.command];
     const normalized = {
-        url: /** @type {string} */ (urls[0] ?? ''),
+        url: typeof urlValues[0] === 'string' ? urlValues[0] : '',
         command: typeof command === 'string' ? command : '',
         args: Array.isArray(record.command) ? argv : Array.isArray(record.args) ? record.args : [],
     };
     // Two URL keys, or a URL and a command: which one a client uses differs per client, so the
-    // gate cannot know what it is approving.
-    const ambiguous = urls.length > 1 || (urls.length === 1 && normalized.command.length > 0);
+    // gate cannot know what it is approving. Presence counts, not type - Zed writes `command` as
+    // an object, and a value this gate cannot read must still block.
+    const ambiguous = urlValues.length > 1 || (urlValues.length === 1 && isPresent(record.command));
     return { ...normalized, ambiguous };
 }
 

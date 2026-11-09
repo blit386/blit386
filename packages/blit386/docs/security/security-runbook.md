@@ -87,7 +87,8 @@ Each server entry is classified, and it fails closed (BT-763):
   Runlayer is a shadow server.
 - `shadow-remote` for a `url`, `serverUrl` or `httpUrl`; `shadow-stdio` for a `command` (a string plus `args`, or an
   argv array as OpenCode writes it).
-- Unclassifiable, and blocking, when an entry has no URL and no command, two URL keys, or a URL and a command.
+- Unclassifiable, and blocking, when an entry has no URL and no command, two URL keys, or a URL and a command (of any
+  type: an object `command`, as Zed writes it, counts).
 - Unreadable, and blocking, when a config does not parse, its server key is not an object, or `.codex/config.toml` holds
   anything beyond plain table headers and single-line JSON-compatible `key = value` pairs (a trailing comment, a dotted
   or quoted key, a multi-line string, a repeated server table).
