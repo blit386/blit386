@@ -387,7 +387,12 @@
     "BT.audioVolumeGet": {
       "kind": "method",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Returns `1` (the default bus volume) before initialization instead of `0`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
