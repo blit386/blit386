@@ -14,10 +14,10 @@ import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { audioHooks, resetAudioHooks } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions, validateFinite, validateLoopRegion } from './MusicPlayer';
-import { INVALID_SOUND_REF, type SoundRef, type VoicePlayOptions, VoicePool } from './VoicePool';
+import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef, VoicePool } from './VoicePool';
 
-/** Default (full) gain for a freshly created or reset bus. */
-const DEFAULT_BUS_VOLUME = 1;
+/** Default (full) gain for a freshly created or reset bus, and `BT.audioVolumeGet` before init. */
+export const DEFAULT_BUS_VOLUME = 1;
 
 /** Minimum accepted bus volume. */
 const MIN_BUS_VOLUME = 0;
@@ -420,10 +420,10 @@ export class AudioManager {
      * free or stealable slot) are tracked separately by {@link voices}' own `getDropCount()`.
      *
      * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param options - Playback options; see {@link SoundPlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
-    public playSound(buffer: AudioBuffer, options?: VoicePlayOptions): SoundRef {
+    public playSound(buffer: AudioBuffer, options?: SoundPlayOptions): SoundRef {
         if (!this.unlocked) {
             this.sfxDroppedCount += 1;
 

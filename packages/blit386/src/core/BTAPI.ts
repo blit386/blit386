@@ -16,7 +16,7 @@ import {
 } from '../assets/PaletteEffect';
 import { getIndexedSheets, type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
-import { AudioManager } from '../audio/AudioManager';
+import { AudioManager, DEFAULT_BUS_VOLUME } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
 import {
     DEFAULT_PAN,
@@ -828,10 +828,10 @@ export class BTAPI {
      * Gets the logical (pre-mute) volume for an audio bus.
      *
      * @param bus - Audio bus to query.
-     * @returns Volume in `[0, 1]`, or `0` when the audio subsystem is not initialized.
+     * @returns Volume in `[0, 1]`, or {@link DEFAULT_BUS_VOLUME} when the audio subsystem is not initialized.
      */
     public audioVolumeGet(bus: AudioBus): number {
-        return this.audio?.volumeGet(bus) ?? 0;
+        return this.audio?.volumeGet(bus) ?? DEFAULT_BUS_VOLUME;
     }
 
     /**

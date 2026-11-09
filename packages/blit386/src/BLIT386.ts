@@ -1024,8 +1024,9 @@ export const BT = {
      * Unaffected by {@link BT.audioMuteSet} - muting never overwrites the configured level.
      *
      * @since 1.3.0
+     * @changed 1.8.1 Returns `1` (the default bus volume) before initialization instead of `0`.
      * @param bus - Audio bus to query.
-     * @returns Volume in `[0, 1]`, or `0` before initialization.
+     * @returns Volume in `[0, 1]`, or `1` (every bus's default) before initialization.
      */
     audioVolumeGet: (bus: AudioBus): number => {
         return BTAPI.instance.audioVolumeGet(bus);

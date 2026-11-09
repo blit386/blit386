@@ -470,6 +470,11 @@ describe('music playback passthroughs', () => {
         expect(BTAPI.instance.isMusicPlaying()).toBe(false);
     });
 
+    it('audioVolumeGet returns the default bus volume, 1, when the audio subsystem is not initialized', () => {
+        expect(BTAPI.instance.audioVolumeGet('main')).toBe(1);
+        expect(new AudioManager().volumeGet('main')).toBe(BTAPI.instance.audioVolumeGet('main'));
+    });
+
     it("musicVolumeSet delegates to the music player's volumeSet", () => {
         const audio = new AudioManager();
         const spy = vi.fn().mockReturnValue(undefined);

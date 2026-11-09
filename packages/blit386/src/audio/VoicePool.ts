@@ -20,19 +20,19 @@ import {
 } from '../utils/errorMessages';
 import type { AudioManager } from './AudioManager';
 
-/** Default per-voice gain applied when {@link VoicePlayOptions.volume} is omitted. */
+/** Default per-voice gain applied when {@link SoundPlayOptions.volume} is omitted. */
 export const DEFAULT_VOLUME = 1;
 
-/** Default playback rate applied when {@link VoicePlayOptions.pitch} is omitted. */
+/** Default playback rate applied when {@link SoundPlayOptions.pitch} is omitted. */
 export const DEFAULT_PITCH = 1;
 
-/** Default stereo pan applied when {@link VoicePlayOptions.pan} is omitted. */
+/** Default stereo pan applied when {@link SoundPlayOptions.pan} is omitted. */
 export const DEFAULT_PAN = 0;
 
-/** Default allocation priority applied when {@link VoicePlayOptions.priority} is omitted. */
+/** Default allocation priority applied when {@link SoundPlayOptions.priority} is omitted. */
 const DEFAULT_PRIORITY = 0;
 
-/** Default loop flag applied when {@link VoicePlayOptions.loop} is omitted. */
+/** Default loop flag applied when {@link SoundPlayOptions.loop} is omitted. */
 const DEFAULT_LOOP = false;
 
 /**
@@ -55,8 +55,12 @@ export interface SoundRef {
 /** Inert handle returned when a voice could not be allocated (pool exhausted, or not yet attached). */
 export const INVALID_SOUND_REF: SoundRef = { voiceIndex: -1, generation: -1 };
 
-/** Options accepted by {@link VoicePool.play}. */
-export interface VoicePlayOptions {
+/**
+ * Options accepted by {@link BT.soundPlay}, forwarded unchanged to {@link VoicePool.play}.
+ *
+ * @since 1.3.0
+ */
+export interface SoundPlayOptions {
     /** Whether the buffer loops. Defaults to `false`. */
     loop?: boolean;
 
@@ -81,19 +85,6 @@ export interface VoicePlayOptions {
      */
     atTime?: number;
 }
-
-/**
- * Options accepted by {@link BTAPI.soundPlay} and {@link BT.soundPlay}.
- *
- * Identical to {@link VoicePlayOptions} by design - `soundPlay` forwards this object unchanged
- * down to {@link AudioManager.playSound} and {@link VoicePool.play}. Declared as an `extends` of
- * `VoicePlayOptions` (rather than redeclaring the same fields) so a future field added to either
- * type cannot silently drift out of sync with the other.
- *
- * @since 1.3.0
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentional no-op extends keeps SoundPlayOptions in lockstep with VoicePlayOptions
-export interface SoundPlayOptions extends VoicePlayOptions {}
 
 /**
  * Options accepted by {@link BT.soundStop}.
@@ -182,13 +173,13 @@ export class VoicePool {
      * every active slot outranks the incoming priority.
      *
      * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param options - Playback options; see {@link SoundPlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      * @throws Error when `volume`, `pitch`, `pan`, `fadeInMs`, or `atTime` is not finite, or
      * `atTime` is negative. Checked before any slot is touched, so a bad option never steals or
      * leaves behind a voice.
      */
-    public play(buffer: AudioBuffer, options: VoicePlayOptions = {}): SoundRef {
+    public play(buffer: AudioBuffer, options: SoundPlayOptions = {}): SoundRef {
         validatePlayOptions(options);
 
         const context = this.audioManager.getContext();
@@ -502,7 +493,7 @@ export class VoicePool {
      * @param slot - Slot to populate (already disconnected from any prior voice by the caller).
      * @param slotIndex - Index of `slot`, captured for the `onended` recycle callback.
      * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param options - Playback options; see {@link SoundPlayOptions}.
      * @param priority - Resolved allocation priority (already defaulted by the caller).
      * @param context - Live audio context (already validated non-null by the caller).
      * @param sfxBus - Live `sfx` bus gain node (already validated non-null by the caller).
@@ -511,7 +502,7 @@ export class VoicePool {
         slot: VoiceSlot,
         slotIndex: number,
         buffer: AudioBuffer,
-        options: VoicePlayOptions,
+        options: SoundPlayOptions,
         priority: number,
         context: AudioContext,
         sfxBus: GainNode,
@@ -677,12 +668,12 @@ function createEmptySlot(): VoiceSlot {
 }
 
 /**
- * Rejects bad numeric {@link VoicePlayOptions} before any slot is allocated.
+ * Rejects bad numeric {@link SoundPlayOptions} before any slot is allocated.
  *
  * @param options - Options passed to {@link VoicePool.play}.
  * @throws Error when a numeric option is not finite, or `atTime` is negative.
  */
-function validatePlayOptions(options: VoicePlayOptions): void {
+function validatePlayOptions(options: SoundPlayOptions): void {
     const { volume, pitch, pan, priority, fadeInMs, atTime } = options;
 
     if (volume !== undefined && !Number.isFinite(volume)) {
