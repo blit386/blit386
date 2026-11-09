@@ -1,73 +1,59 @@
 /**
- * Unit tests for the module-scoped audio decode/unload seam in
- * `audioDecodeContext.ts`.
+ * Unit tests for the module-scoped audio hooks in `audioDecodeContext.ts`.
  *
- * Verifies the decode context registry round-trips and defaults to `null`,
- * and that the unload handler defaults to a no-op and can be reassigned.
+ * Verifies the idle defaults (no context, no-op callbacks), that assigned values are what
+ * `AudioClip` reads, and that `resetAudioHooks()` restores every default at once.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-    getAudioDecodeContext,
-    notifyAudioClipUnload,
-    setAudioClipUnloadHandler,
-    setAudioDecodeContext,
-} from './audioDecodeContext';
+import { audioHooks, resetAudioHooks } from './audioDecodeContext';
 
 afterEach(() => {
-    setAudioDecodeContext(null);
-    setAudioClipUnloadHandler(() => {});
+    resetAudioHooks();
 });
 
 describe('audioDecodeContext', () => {
-    describe('decode context registry', () => {
-        it('should return null before any context is registered', () => {
-            expect(getAudioDecodeContext()).toBeNull();
+    describe('decode context', () => {
+        it('should be null before any context is assigned', () => {
+            expect(audioHooks.context).toBeNull();
         });
 
-        it('should return the registered context', () => {
+        it('should hold the assigned context', () => {
             const context = {} as AudioContext;
 
-            setAudioDecodeContext(context);
+            audioHooks.context = context;
 
-            expect(getAudioDecodeContext()).toBe(context);
-        });
-
-        it('should clear the registered context when set to null', () => {
-            setAudioDecodeContext({} as AudioContext);
-            setAudioDecodeContext(null);
-
-            expect(getAudioDecodeContext()).toBeNull();
+            expect(audioHooks.context).toBe(context);
         });
     });
 
-    describe('unload handler', () => {
-        it('should not throw when no handler is registered', () => {
-            expect(() => notifyAudioClipUnload({} as AudioBuffer)).not.toThrow();
+    describe('callbacks', () => {
+        it('should not throw from the idle unload callback', () => {
+            expect(() => audioHooks.onUnload({} as AudioBuffer)).not.toThrow();
         });
 
-        it('should invoke the registered handler with the released buffer', () => {
-            const handler = vi.fn();
-            const buffer = {} as AudioBuffer;
-
-            setAudioClipUnloadHandler(handler);
-            notifyAudioClipUnload(buffer);
-
-            expect(handler).toHaveBeenCalledOnce();
-            expect(handler).toHaveBeenCalledWith(buffer);
+        it('should report no restart from the idle hot-replace callback', () => {
+            expect(audioHooks.onHotReplace({} as AudioBuffer, {} as AudioBuffer)).toBe(false);
         });
+    });
 
-        it('should stop invoking a replaced handler', () => {
-            const firstHandler = vi.fn();
-            const secondHandler = vi.fn();
+    describe('resetAudioHooks', () => {
+        it('should restore every idle default in one call', () => {
+            const onUnload = vi.fn();
+            const onHotReplace = vi.fn().mockReturnValue(true);
 
-            setAudioClipUnloadHandler(firstHandler);
-            setAudioClipUnloadHandler(secondHandler);
-            notifyAudioClipUnload({} as AudioBuffer);
+            audioHooks.context = {} as AudioContext;
+            audioHooks.onUnload = onUnload;
+            audioHooks.onHotReplace = onHotReplace;
 
-            expect(firstHandler).not.toHaveBeenCalled();
-            expect(secondHandler).toHaveBeenCalledOnce();
+            resetAudioHooks();
+            audioHooks.onUnload({} as AudioBuffer);
+
+            expect(audioHooks.context).toBeNull();
+            expect(onUnload).not.toHaveBeenCalled();
+            expect(audioHooks.onHotReplace({} as AudioBuffer, {} as AudioBuffer)).toBe(false);
+            expect(onHotReplace).not.toHaveBeenCalled();
         });
     });
 });

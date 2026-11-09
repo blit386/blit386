@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "blit386-docs": { "url": "https://blit386.dev/mcp" },
+    "cursor-shadow": { "url": "https://example.com/cursor" }
+  }
+}

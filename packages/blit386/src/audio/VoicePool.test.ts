@@ -788,6 +788,7 @@ describe('VoicePool', () => {
             ['infinite volume', { volume: Number.POSITIVE_INFINITY }],
             ['NaN pitch', { pitch: Number.NaN }],
             ['NaN pan', { pan: Number.NaN }],
+            ['NaN priority', { priority: Number.NaN }],
             ['NaN fadeInMs', { fadeInMs: Number.NaN }],
             ['infinite fadeInMs', { fadeInMs: Number.POSITIVE_INFINITY }],
             ['NaN atTime', { atTime: Number.NaN }],

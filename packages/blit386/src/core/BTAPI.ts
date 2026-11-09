@@ -16,7 +16,7 @@ import {
 } from '../assets/PaletteEffect';
 import { getIndexedSheets, type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
-import { AudioManager } from '../audio/AudioManager';
+import { AudioManager, DEFAULT_BUS_VOLUME } from '../audio/AudioManager';
 import type { MusicPlayOptions } from '../audio/MusicPlayer';
 import {
     DEFAULT_PAN,
@@ -828,10 +828,10 @@ export class BTAPI {
      * Gets the logical (pre-mute) volume for an audio bus.
      *
      * @param bus - Audio bus to query.
-     * @returns Volume in `[0, 1]`, or `0` when the audio subsystem is not initialized.
+     * @returns Volume in `[0, 1]`, or {@link DEFAULT_BUS_VOLUME} when the audio subsystem is not initialized.
      */
     public audioVolumeGet(bus: AudioBus): number {
-        return this.audio?.volumeGet(bus) ?? 0;
+        return this.audio?.volumeGet(bus) ?? DEFAULT_BUS_VOLUME;
     }
 
     /**
@@ -869,6 +869,7 @@ export class BTAPI {
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
     public soundPlay(clip: AudioClip, options?: SoundPlayOptions): SoundRef {
+        // musicPlay deliberately has no isSeeking gate; see the note there.
         if (clip.buffer === null || this.isSeeking) {
             return INVALID_SOUND_REF;
         }
@@ -883,7 +884,7 @@ export class BTAPI {
      * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
      */
     public soundStop(ref: SoundRef, fadeOutMs?: number): void {
-        this.audio?.soundStop(ref, fadeOutMs);
+        this.audio?.voices?.stop(ref, fadeOutMs);
     }
 
     /**
@@ -893,7 +894,7 @@ export class BTAPI {
      * @returns `true` when still playing; `false` on a stale ref or when the audio subsystem is not initialized.
      */
     public isSoundPlaying(ref: SoundRef): boolean {
-        return this.audio?.isSoundPlaying(ref) ?? false;
+        return this.audio?.voices?.isPlaying(ref) ?? false;
     }
 
     /**
@@ -904,7 +905,7 @@ export class BTAPI {
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.audio?.soundVolumeSet(ref, value, fadeMs);
+        this.audio?.voices?.volumeSet(ref, value, fadeMs);
     }
 
     /**
@@ -914,7 +915,7 @@ export class BTAPI {
      * @returns Current gain in `[0, 1]`, or {@link DEFAULT_VOLUME} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundVolumeGet(ref: SoundRef): number {
-        return this.audio?.soundVolumeGet(ref) ?? DEFAULT_VOLUME;
+        return this.audio?.voices?.volumeGet(ref) ?? DEFAULT_VOLUME;
     }
 
     /**
@@ -925,7 +926,7 @@ export class BTAPI {
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.audio?.soundPitchSet(ref, value, fadeMs);
+        this.audio?.voices?.pitchSet(ref, value, fadeMs);
     }
 
     /**
@@ -935,7 +936,7 @@ export class BTAPI {
      * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundPitchGet(ref: SoundRef): number {
-        return this.audio?.soundPitchGet(ref) ?? DEFAULT_PITCH;
+        return this.audio?.voices?.pitchGet(ref) ?? DEFAULT_PITCH;
     }
 
     /**
@@ -946,7 +947,7 @@ export class BTAPI {
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.audio?.soundPanSet(ref, value, fadeMs);
+        this.audio?.voices?.panSet(ref, value, fadeMs);
     }
 
     /**
@@ -956,7 +957,7 @@ export class BTAPI {
      * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or when the audio subsystem is not initialized.
      */
     public soundPanGet(ref: SoundRef): number {
-        return this.audio?.soundPanGet(ref) ?? DEFAULT_PAN;
+        return this.audio?.voices?.panGet(ref) ?? DEFAULT_PAN;
     }
 
     /**
@@ -970,6 +971,8 @@ export class BTAPI {
      * @param options - Playback options; see {@link MusicPlayOptions}.
      */
     public musicPlay(clip: AudioClip, options?: MusicPlayOptions): void {
+        // Unlike soundPlay, not dropped while seeking: one track is never a burst, and a replayed
+        // musicPlay leaves the seeked frame's track queued in the parked context for BT.resume().
         if (clip.buffer === null) {
             return;
         }
@@ -993,7 +996,7 @@ export class BTAPI {
      *   yet started, or when the audio subsystem is not initialized.
      */
     public isMusicPlaying(): boolean {
-        return this.audio?.isMusicPlaying() ?? false;
+        return this.audio?.music?.isPlaying() ?? false;
     }
 
     /**
@@ -1003,7 +1006,7 @@ export class BTAPI {
      * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
      */
     public musicVolumeSet(value: number, fadeMs?: number): void {
-        this.audio?.musicVolumeSet(value, fadeMs);
+        this.audio?.music?.volumeSet(value, fadeMs);
     }
 
     /**
@@ -1012,7 +1015,7 @@ export class BTAPI {
      * @returns Current target gain, or {@link DEFAULT_VOLUME} when the audio subsystem is not initialized.
      */
     public musicVolumeGet(): number {
-        return this.audio?.musicVolumeGet() ?? DEFAULT_VOLUME;
+        return this.audio?.music?.volumeGet() ?? DEFAULT_VOLUME;
     }
 
     /**
@@ -3086,10 +3089,10 @@ export class BTAPI {
         }
 
         this.audioSnapshot.levels = this.audio.getBusLevels();
-        this.audioSnapshot.activeVoices = this.audio.getActiveVoiceCount();
-        this.audioSnapshot.totalVoices = this.audio.getVoiceCount();
-        this.audioSnapshot.voiceStealCount = this.audio.getVoiceStealCount();
-        this.audioSnapshot.voiceDropCount = this.audio.getVoiceDropCount();
+        this.audioSnapshot.activeVoices = this.audio.voices?.getActiveVoiceCount() ?? 0;
+        this.audioSnapshot.totalVoices = this.audio.voices?.getVoiceCount() ?? 0;
+        this.audioSnapshot.voiceStealCount = this.audio.voices?.getStealCount() ?? 0;
+        this.audioSnapshot.voiceDropCount = this.audio.voices?.getDropCount() ?? 0;
         this.audioSnapshot.preUnlockDropCount = this.audio.getDroppedSfxCount();
     }
 

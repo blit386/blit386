@@ -1,0 +1,10 @@
+# Codex keeps MCP servers under [mcp_servers.<name>] tables.
+[mcp_servers.blit386-docs]
+url = "https://blit386.dev/mcp"
+
+[mcp_servers.codex-shadow]
+command = "npx"
+args = ["-y", "example-server"]
+
+[mcp_servers.codex-shadow.env]
+EXAMPLE = "1"

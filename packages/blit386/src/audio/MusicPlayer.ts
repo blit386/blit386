@@ -10,7 +10,12 @@
 
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { audioFadeNotFiniteError, audioVolumeNotFiniteError, musicLoopRangeError } from '../utils/errorMessages';
+import {
+    audioFadeNotFiniteError,
+    audioOptionNotFiniteError,
+    audioVolumeNotFiniteError,
+    musicLoopRangeError,
+} from '../utils/errorMessages';
 import { DEFAULT_VOLUME } from './VoicePool';
 
 /** Default crossfade duration in milliseconds when {@link MusicPlayOptions.fadeMs} is omitted (immediate switch). */
@@ -126,11 +131,11 @@ export class MusicPlayer {
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link MusicPlayOptions}.
      * @throws Error if `loopStart`/`loopEnd` are given without each other, or describe an invalid
-     *   region for `buffer`'s duration, or if `fadeMs` or `volume` is not a finite number.
+     *   region for `buffer`'s duration, or if `fadeMs`, `volume` or `overlap` is not a finite number.
      */
     public play(buffer: AudioBuffer, options: MusicPlayOptions = {}): void {
         validateLoopRegion(options, buffer.duration);
-        validateFinite(options.fadeMs, options.volume, 'BT.musicPlay');
+        validateFinite(options.fadeMs, options.volume, 'BT.musicPlay', options.overlap);
 
         this.lastOptions = options;
 
@@ -395,20 +400,30 @@ export class MusicPlayer {
 }
 
 /**
- * Rejects a non-finite `fadeMs` or `volume` before any playback state changes.
+ * Rejects a non-finite `fadeMs`, `volume` or `overlap` before any playback state changes.
  *
  * @param fadeMs - Fade duration to check, if given.
  * @param volume - Target volume to check, if given.
- * @param api - Public API name used in the volume error message.
- * @throws Error when either given value is not a finite number.
+ * @param api - Public API name used in the volume and overlap error messages.
+ * @param overlap - Crossfade overlap to check, if given.
+ * @throws Error when any given value is not a finite number.
  */
-export function validateFinite(fadeMs: number | undefined, volume: number | undefined, api: string): void {
+export function validateFinite(
+    fadeMs: number | undefined,
+    volume: number | undefined,
+    api: string,
+    overlap?: number,
+): void {
     if (fadeMs !== undefined && !Number.isFinite(fadeMs)) {
         throw new Error(audioFadeNotFiniteError(fadeMs));
     }
 
     if (volume !== undefined && !Number.isFinite(volume)) {
         throw new Error(audioVolumeNotFiniteError(api, volume));
+    }
+
+    if (overlap !== undefined && !Number.isFinite(overlap)) {
+        throw new Error(audioOptionNotFiniteError(api, 'overlap', overlap));
     }
 }
 
