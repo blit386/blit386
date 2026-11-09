@@ -27,6 +27,7 @@ import {
     BTN_X,
     BTN_Y,
 } from './buttonFlags';
+import { isRepeatTick } from './repeatTick';
 
 /** Maximum supported local gamepad players. */
 export const GAMEPAD_PLAYER_COUNT = 4;
@@ -379,13 +380,7 @@ export class GamepadInput {
 
         const first = this.getMinFirstPressTick(index, heldMask);
 
-        if (first === undefined) {
-            return false;
-        }
-
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**

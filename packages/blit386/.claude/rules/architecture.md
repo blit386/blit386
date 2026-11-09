@@ -94,6 +94,7 @@ src/
     KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, keydown text (BT.inputString); any-key queries behind BT.isAnyKey*
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone); digital trigger buttons (BTN_L2/R2 at 0.5 analog) and any-button masks
     buttonFlags.ts         # The BT.BTN_* bit flags and face / pointer / trigger masks, defined once (import-free; BLIT386.ts and the input modules share it)
+    repeatTick.ts          # isRepeatTick: the shared every-N-ticks repeat rule for held keys and gamepad buttons
     defaultKeyboardMap.ts  # Default face-button key tables for both keyboardLayout values ('versus' and 'single'); clone helpers
     InputTrace.ts          # Dev-only input-edge recorder (window.__btInputTrace): per-update and per-frame pointer/key/gamepad edges, delta, wheel; BTAPI records only while isRecording; capped
     keyboardRuntimeMaps.ts # Mutable runtime keyboard maps for players 0/1, seeded from HardwareSettings.keyboardLayout; shared by BT and BTAPI without a circular import

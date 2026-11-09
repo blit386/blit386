@@ -3,6 +3,8 @@
  * and text accumulation from `keydown` `event.key` (`inputString`).
  */
 
+import { isRepeatTick } from './repeatTick';
+
 /**
  * `KeyboardEvent.code` values that scroll the host page by default.
  * When {@link KeyboardInput.setIsCapturingScroll} is enabled, `keydown` calls
@@ -201,13 +203,7 @@ export class KeyboardInput {
 
         const first = this.firstPressTick.get(code);
 
-        if (first === undefined) {
-            return false;
-        }
-
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -283,13 +279,11 @@ export class KeyboardInput {
             }
         }
 
-        if (repeatRate === undefined || repeatRate <= 0 || first === undefined) {
+        if (repeatRate === undefined || repeatRate <= 0) {
             return false;
         }
 
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -323,10 +317,6 @@ export class KeyboardInput {
      * @returns `true` if any listed code is held.
      */
     public isButtonDown(codes: readonly string[]): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         for (const code of codes) {
             if (this.held.has(code)) {
                 return true;
@@ -346,10 +336,6 @@ export class KeyboardInput {
      * @returns `true` on the initial edge or on repeat ticks when configured.
      */
     public isButtonPressed(codes: readonly string[], repeatRate: number | undefined, currentTick: number): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         const isPrevDown = codes.some((c) => this.prevHeld.has(c));
 
         // A second mapped key pressed while another was already held at the last update is not a new edge.
@@ -372,13 +358,7 @@ export class KeyboardInput {
 
         const first = this.getOrMinFirstPressTick(codes);
 
-        if (first === undefined) {
-            return false;
-        }
-
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -388,10 +368,6 @@ export class KeyboardInput {
      * @returns `true` when the logical button transitions from down to up.
      */
     public isButtonReleased(codes: readonly string[]): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         // Another mapped key still held means the logical button never went up.
         if (this.isButtonDown(codes)) {
             return false;

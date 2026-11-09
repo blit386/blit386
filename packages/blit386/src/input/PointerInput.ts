@@ -90,11 +90,8 @@ const createButtons = (): boolean[] => new Array<boolean>(BUTTON_COUNT).fill(fal
  * keeps the event hot path free of per-call object churn.
  */
 interface Slot {
-    /** Native `pointerId` currently bound to this slot, or `null` when the slot is empty. */
+    /** Native `pointerId` bound to a touch / pen slot, or `null` when empty. The mouse slot never sets it. */
     pointerId: number | null;
-
-    /** Source pointer device kind, or `null` when the slot is empty. */
-    pointerType: 'mouse' | 'touch' | 'pen' | null;
 
     /** True when this slot represents an active pointer (mouse hovering, touch in contact). */
     isActive: boolean;
@@ -781,8 +778,6 @@ export class PointerInput {
             const slot = this.slots[0];
             const isPreviouslyActive = slot.isActive;
 
-            slot.pointerId = event.pointerId;
-            slot.pointerType = 'mouse';
             slot.isActive = true;
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
@@ -831,8 +826,6 @@ export class PointerInput {
             const slot = this.slots[0];
             const isPreviouslyActive = slot.isActive;
 
-            slot.pointerId = event.pointerId;
-            slot.pointerType = 'mouse';
             slot.isActive = true;
 
             this.updateSlotPosition(slot, event.clientX, event.clientY);
@@ -873,7 +866,6 @@ export class PointerInput {
         }
 
         slot.pointerId = event.pointerId;
-        slot.pointerType = event.pointerType === 'pen' ? 'pen' : 'touch';
         slot.isActive = true;
         slot.down[0] = true;
         this.markEdges(slot, 0);
@@ -1016,7 +1008,6 @@ export class PointerInput {
     private createEmptySlot(): Slot {
         return {
             pointerId: null,
-            pointerType: null,
             isActive: false,
             pos: new Vector2iImpl(0, 0),
             prevPos: new Vector2iImpl(0, 0),
@@ -1039,7 +1030,6 @@ export class PointerInput {
      */
     private resetSlot(slot: Slot): void {
         slot.pointerId = null;
-        slot.pointerType = null;
         slot.isActive = false;
         slot.pos.set(0, 0);
         slot.prevPos.set(0, 0);
@@ -1119,7 +1109,6 @@ export class PointerInput {
         const heldBefore = heldMask(slot);
 
         slot.pointerId = null;
-        slot.pointerType = null;
         slot.isActive = false;
         slot.down.fill(false);
         this.markEdges(slot, heldBefore);
@@ -1133,15 +1122,8 @@ export class PointerInput {
      */
     private deactivateMouseSlot(): void {
         const slot = this.slots[0];
-
-        if (slot.pointerId !== null) {
-            this.idToSlot.delete(slot.pointerId);
-        }
-
         const heldBefore = heldMask(slot);
 
-        slot.pointerId = null;
-        slot.pointerType = null;
         slot.isActive = false;
         slot.down.fill(false);
         this.markEdges(slot, heldBefore);
