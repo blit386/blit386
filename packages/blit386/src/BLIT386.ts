@@ -52,14 +52,13 @@ import {
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
+import * as flags from './input/buttonFlags';
 import { clientToDisplayPos } from './input/clientToDisplayPos';
 import {
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
     DEFAULT_KEYBOARD_SINGLE_PLAYER1,
     DEFAULT_KEYBOARD_SINGLE_PLAYER2,
-    FACE_BUTTON_FLAGS,
-    type FaceButtonCode,
 } from './input/defaultKeyboardMap';
 import {
     getKeyboardFaceButtonKeys,
@@ -110,18 +109,6 @@ import { SimplexNoise } from './utils/SimplexNoise';
 import { Timer } from './utils/Timer';
 import { ValueNoise } from './utils/ValueNoise';
 import { Vector2i } from './utils/Vector2i';
-
-/** Pointer button bit mask (`BTN_POINTER_A..D`). */
-const POINTER_BUTTON_MASK = (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
-
-// Manual sync: src/input/InputTrace.ts derives the same bits from POINTER_FLAG_SHIFT (an import would cycle).
-const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
-
-/** Face button bit mask (`BTN_UP..BTN_SELECT`). */
-const FACE_BUTTON_MASK = (1 << 12) - 1;
-
-/** Trigger button bit flags (`BTN_L2`, `BTN_R2`). Gamepad only, no keyboard fallback. */
-const TRIGGER_BUTTON_FLAGS = [1 << 16, 1 << 17] as const;
 
 /**
  * Shows a beginner-friendly runtime error in the canvas container and console.
@@ -276,7 +263,7 @@ function describeTestStateError(err: unknown): string {
  * @returns Key codes for that mapping, or `null` if unsupported.
  */
 function faceButtonKeys(button: number, player: number): readonly string[] | null {
-    if (!FACE_BUTTON_FLAGS.includes(button as FaceButtonCode)) {
+    if (!flags.FACE_BUTTON_FLAGS.includes(button as flags.FaceButtonCode)) {
         return null;
     }
 
@@ -301,13 +288,13 @@ function pointerClock(): PointerClock {
  */
 function pointerFlagToPointerCode(pointerFlag: number): number | null {
     switch (pointerFlag) {
-        case 1 << 12:
+        case flags.BTN_POINTER_A:
             return 20;
-        case 1 << 13:
+        case flags.BTN_POINTER_B:
             return 21;
-        case 1 << 14:
+        case flags.BTN_POINTER_C:
             return 22;
-        case 1 << 15:
+        case flags.BTN_POINTER_D:
             return 23;
         default:
             return null;
@@ -361,84 +348,84 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_UP: 1 << 0,
+    BTN_UP: flags.BTN_UP,
 
     /**
      * Down button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_DOWN: 1 << 1,
+    BTN_DOWN: flags.BTN_DOWN,
 
     /**
      * Left button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_LEFT: 1 << 2,
+    BTN_LEFT: flags.BTN_LEFT,
 
     /**
      * Right button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_RIGHT: 1 << 3,
+    BTN_RIGHT: flags.BTN_RIGHT,
 
     /**
      * A button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_A: 1 << 4,
+    BTN_A: flags.BTN_A,
 
     /**
      * B button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_B: 1 << 5,
+    BTN_B: flags.BTN_B,
 
     /**
      * X button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_X: 1 << 6,
+    BTN_X: flags.BTN_X,
 
     /**
      * Y button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_Y: 1 << 7,
+    BTN_Y: flags.BTN_Y,
 
     /**
      * Left shoulder button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_L: 1 << 8,
+    BTN_L: flags.BTN_L,
 
     /**
      * Right shoulder button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_R: 1 << 9,
+    BTN_R: flags.BTN_R,
 
     /**
      * Start button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_START: 1 << 10,
+    BTN_START: flags.BTN_START,
 
     /**
      * Select button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_SELECT: 1 << 11,
+    BTN_SELECT: flags.BTN_SELECT,
 
     /**
      * Primary pointer button code.
@@ -447,7 +434,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_A: 1 << 12,
+    BTN_POINTER_A: flags.BTN_POINTER_A,
 
     /**
      * Secondary pointer button code.
@@ -458,7 +445,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_B: 1 << 13,
+    BTN_POINTER_B: flags.BTN_POINTER_B,
 
     /**
      * Tertiary pointer button code.
@@ -469,7 +456,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_C: 1 << 14,
+    BTN_POINTER_C: flags.BTN_POINTER_C,
 
     /**
      * Auxiliary pointer button code.
@@ -479,7 +466,7 @@ export const BT = {
      *
      * @since 1.0.3
      */
-    BTN_POINTER_D: 1 << 15,
+    BTN_POINTER_D: flags.BTN_POINTER_D,
 
     /**
      * Player one index.
@@ -556,14 +543,14 @@ export const BT = {
      *
      * @since 1.0.3
      */
-    BTN_ABXY: (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7),
+    BTN_ABXY: flags.BTN_ABXY,
 
     /**
      * Both shoulder buttons.
      *
      * @since 1.0.3
      */
-    BTN_SHOULDER: (1 << 8) | (1 << 9),
+    BTN_SHOULDER: flags.BTN_SHOULDER,
 
     /**
      * Left trigger as a digital button (down at 50% pull or more). Gamepad only:
@@ -572,7 +559,7 @@ export const BT = {
      *
      * @since 1.8.0
      */
-    BTN_L2: 1 << 16,
+    BTN_L2: flags.BTN_L2,
 
     /**
      * Right trigger as a digital button (down at 50% pull or more). Gamepad only:
@@ -581,21 +568,21 @@ export const BT = {
      *
      * @since 1.8.0
      */
-    BTN_R2: 1 << 17,
+    BTN_R2: flags.BTN_R2,
 
     /**
      * Either trigger as a digital button (`BTN_L2 | BTN_R2`).
      *
      * @since 1.8.0
      */
-    BTN_TRIGGER: (1 << 16) | (1 << 17),
+    BTN_TRIGGER: flags.BTN_TRIGGER,
 
     /**
      * Any pointer button (A/B/C/D).
      *
      * @since 1.0.3
      */
-    BTN_POINTER_ANY: (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15),
+    BTN_POINTER_ANY: flags.BTN_POINTER_ANY,
 
     /**
      * Default `KeyboardEvent.code` values for player index 0 (first keyboard player).
@@ -2001,10 +1988,10 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
+            for (const pointerFlag of flags.POINTER_FLAGS) {
                 if ((pointerMask & pointerFlag) === 0) {
                     continue;
                 }
@@ -2017,9 +2004,9 @@ export const BT = {
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2033,7 +2020,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2089,10 +2076,10 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
+            for (const pointerFlag of flags.POINTER_FLAGS) {
                 if ((pointerMask & pointerFlag) === 0) {
                     continue;
                 }
@@ -2110,10 +2097,10 @@ export const BT = {
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
         const tick = BTAPI.instance.getTicks();
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2136,7 +2123,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2193,10 +2180,10 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
+            for (const pointerFlag of flags.POINTER_FLAGS) {
                 if ((pointerMask & pointerFlag) === 0) {
                     continue;
                 }
@@ -2212,9 +2199,9 @@ export const BT = {
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2235,7 +2222,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2279,7 +2266,7 @@ export const BT = {
             return;
         }
 
-        if (!FACE_BUTTON_FLAGS.includes(button as FaceButtonCode)) {
+        if (!flags.FACE_BUTTON_FLAGS.includes(button as flags.FaceButtonCode)) {
             return;
         }
 

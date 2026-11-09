@@ -11,6 +11,23 @@
  */
 /* eslint-disable security/detect-object-injection */
 
+import {
+    BTN_A,
+    BTN_B,
+    BTN_DOWN,
+    BTN_L,
+    BTN_L2,
+    BTN_LEFT,
+    BTN_R,
+    BTN_R2,
+    BTN_RIGHT,
+    BTN_SELECT,
+    BTN_START,
+    BTN_UP,
+    BTN_X,
+    BTN_Y,
+} from './buttonFlags';
+
 /** Maximum supported local gamepad players. */
 export const GAMEPAD_PLAYER_COUNT = 4;
 
@@ -32,27 +49,6 @@ const GP_BUTTON_UP = 12;
 const GP_BUTTON_DOWN = 13;
 const GP_BUTTON_LEFT = 14;
 const GP_BUTTON_RIGHT = 15;
-
-/** Face/button bit flags mirrored from `BT.BTN_*` to avoid circular imports. */
-const BTN_UP = 1 << 0;
-const BTN_DOWN = 1 << 1;
-const BTN_LEFT = 1 << 2;
-const BTN_RIGHT = 1 << 3;
-const BTN_A = 1 << 4;
-const BTN_B = 1 << 5;
-const BTN_X = 1 << 6;
-const BTN_Y = 1 << 7;
-const BTN_L = 1 << 8;
-const BTN_R = 1 << 9;
-const BTN_START = 1 << 10;
-const BTN_SELECT = 1 << 11;
-
-/**
- * Trigger bit flags mirrored from `BT.BTN_L2` / `BT.BTN_R2` to avoid circular imports.
- * Manual-sync hazard: keep in step with `BLIT386.ts`; `GamepadInput.test.ts` asserts the parity.
- */
-const BTN_L2 = 1 << 16;
-const BTN_R2 = 1 << 17;
 
 /** Standard-mapping button index and the `BTN_*` flag it sets; triggers are separate (analog threshold). */
 const DIGITAL_BUTTONS: readonly (readonly [number, number])[] = [
