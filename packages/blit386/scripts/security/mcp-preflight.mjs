@@ -157,11 +157,12 @@ export function isRunlayerManagedEntry(entry) {
 
     const record = /** @type {Record<string, unknown>} */ (entry);
 
-    // Managed only when the parsed hostname is runlayer.com or a subdomain of it, never on a
-    // substring anywhere in the URL (BT-763: `https://attacker.example/runlayer.com/mcp`).
+    // Managed only over https to runlayer.com or a subdomain of it, by parsed hostname - never on
+    // a substring anywhere in the URL (BT-763: `https://attacker.example/runlayer.com/mcp`).
     if (typeof record.url === 'string' && URL.canParse(record.url)) {
-        const host = new URL(record.url).hostname.toLowerCase();
-        if (host === RUNLAYER_DOMAIN || host.endsWith(`.${RUNLAYER_DOMAIN}`)) {
+        const { protocol, hostname } = new URL(record.url);
+        const host = hostname.toLowerCase();
+        if (protocol === 'https:' && (host === RUNLAYER_DOMAIN || host.endsWith(`.${RUNLAYER_DOMAIN}`))) {
             return true;
         }
     }

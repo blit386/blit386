@@ -82,9 +82,9 @@ workflow's path filter lists the same files.
 
 Each server entry is classified, and it fails closed (BT-763):
 
-- `runlayer-managed` only when the parsed URL's hostname is `runlayer.com` or a subdomain of it, or the command is the
-  `runlayer` binary with `run` as its first argument. A URL or a shell script that merely mentions Runlayer is a shadow
-  server.
+- `runlayer-managed` only when the URL is `https:` and its parsed hostname is `runlayer.com` or a subdomain of it, or
+  the command is the `runlayer` binary with `run` as its first argument. A URL or a shell script that merely mentions
+  Runlayer is a shadow server.
 - `shadow-remote` for a `url`, `serverUrl` or `httpUrl`; `shadow-stdio` for a `command` (a string plus `args`, or an
   argv array as OpenCode writes it).
 - Unclassifiable, and blocking, when an entry has no URL and no command, two URL keys, or a URL and a command.

@@ -97,6 +97,7 @@ describe('governance classification', () => {
         assert.equal(isRunlayerManagedEntry({ url: 'https://API.Runlayer.com/mcp' }), true);
         assert.equal(isRunlayerManagedEntry({ command: '/usr/local/bin/runlayer', args: ['run', 'x'] }), true);
         assert.equal(isRunlayerManagedEntry({ url: 'not a url runlayer.com' }), false);
+        assert.equal(isRunlayerManagedEntry({ url: 'http://runlayer.com/mcp' }), false);
         assert.equal(isRunlayerManagedEntry({ command: 'runlayer', args: ['exec', 'run'] }), false);
     });
 
