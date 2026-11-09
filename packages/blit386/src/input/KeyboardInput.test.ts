@@ -778,14 +778,49 @@ describe('KeyboardInput any-key helpers', () => {
         expect(kb.isAnyKeyReleased()).toBe(true);
     });
 
-    it('window blur does not report a release', () => {
+    it('window blur reports a release for the keys that were held', () => {
         down('KeyA');
         kb.endUpdate();
 
         globalThis.window.dispatchEvent(new Event('blur'));
 
         expect(kb.isAnyKeyDown()).toBe(false);
+        expect(kb.isAnyKeyReleased()).toBe(true);
+    });
+
+    it('a key held across a blur reports isKeyReleased on the next update, then nothing', () => {
+        const codes = DEFAULT_KEYBOARD_PLAYER1[1 << 0] ?? [];
+
+        down('KeyW');
+        kb.endUpdate();
+
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyDown('KeyW')).toBe(false);
+        expect(kb.isKeyReleased('KeyW')).toBe(true);
+        expect(kb.isButtonReleased(codes)).toBe(true);
+
+        kb.endUpdate();
+
+        expect(kb.isKeyReleased('KeyW')).toBe(false);
         expect(kb.isAnyKeyReleased()).toBe(false);
+        expect(kb.isButtonReleased(codes)).toBe(false);
+    });
+
+    it('a canvas blur followed by a window blur reports one release', () => {
+        down('Space');
+        kb.endUpdate();
+
+        canvas.dispatchEvent(new Event('blur'));
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        const pressed: string[] = [];
+        const released: string[] = [];
+
+        kb.collectEdges(pressed, released);
+
+        expect(released).toEqual(['Space']);
+        expect(pressed).toEqual([]);
     });
 });
 

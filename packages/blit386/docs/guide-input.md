@@ -170,8 +170,9 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
 not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
-moves elsewhere does not stay down. A key pressed while Cmd (the Meta key, also the Windows key elsewhere) is held, such
-as Cmd+A or Cmd+Z, is not reported as a game key, because macOS browsers never send its release.
+moves elsewhere does not stay down, and the next `update()` sees its release edge (`BT.isKeyReleased`, `BT.isReleased`,
+`BT.isAnyKeyReleased`). A key pressed while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or
+Cmd+Z, is not reported as a game key, because macOS browsers never send its release.
 
 ### Raw key queries
 
@@ -247,7 +248,7 @@ if (BT.isAnyButtonPressed(0)) {
   the cadence is counted from the earliest key still held.
 - `isAnyKeyReleased` and `isAnyButtonReleased` mean "everything is up now". Letting go of one key while another stays
   down does not fire them; use `BT.isKeyReleased(code)` for per-key release edges. A gamepad disconnecting while buttons
-  were held counts as the release.
+  were held counts as the release, and so does the canvas or window losing focus while keys were held.
 - `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
   triggers (neither the analog pull nor `BTN_L2` / `BTN_R2`), no keyboard, no pointers. Use `isAnyKey*` for the
   keyboard. `player` defaults to `0`.

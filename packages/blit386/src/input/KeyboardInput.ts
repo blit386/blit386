@@ -88,12 +88,13 @@ export class KeyboardInput {
     constructor() {
         this.onKeyDown = (event) => this.handleKeyDown(event);
         this.onKeyUp = (event) => this.handleKeyUp(event);
-        this.onBlur = () => this.clearAllState();
+        this.onBlur = () => this.releaseAll();
     }
 
     /**
      * Attaches listeners to the canvas and window. Also listens for `blur`
-     * on the canvas and the `window` to clear held keys and the text buffer when focus leaves either.
+     * on the canvas and the `window` to release held keys (with a release edge) and clear the text buffer when focus
+     * leaves either.
      *
      * @param canvas - Canvas that receives keyboard events when focused.
      * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
@@ -423,7 +424,22 @@ export class KeyboardInput {
         return min;
     }
 
-    /** Clears held keys, repeat anchors, and text (canvas / window blur, detach). */
+    /**
+     * Releases every held key when focus leaves (canvas / window blur): each becomes a release edge for the next
+     * update, since no `keyup` will arrive for it. `prevHeld` is kept so those edges read as down-to-up.
+     */
+    private releaseAll(): void {
+        for (const code of this.held) {
+            this.pendingRelease.add(code);
+        }
+
+        this.held.clear();
+        this.pendingPress.clear();
+        this.firstPressTick.clear();
+        this.inputBuffer = '';
+    }
+
+    /** Clears held keys, edges, repeat anchors, and text (detach). */
     private clearAllState(): void {
         this.held.clear();
         this.prevHeld.clear();

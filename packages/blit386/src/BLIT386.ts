@@ -2181,6 +2181,7 @@ export const BT = {
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
      * @changed 1.8.1 Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one.
+     * @changed 1.8.1 A keyboard-mapped button held when the canvas or window loses focus reports a release.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2414,9 +2415,11 @@ export const BT = {
      *
      * Call from `update()`, not `render()`: the release edge clears once per fixed-update
      * tick, which always runs before that frame's `render()`, so a release read from
-     * `render()` can be intermittently missed under rapid input.
+     * `render()` can be intermittently missed under rapid input. A key held when the canvas or the
+     * window loses focus is released then, and reports this edge on the next update.
      *
      * @since 1.1.1
+     * @changed 1.8.1 A key held when the canvas or window loses focus reports a release.
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.
      */
@@ -2483,9 +2486,11 @@ export const BT = {
      *
      * Matches RetroBlit: `true` only on the tick where no key is held any more and at least one
      * was held before. Releasing one key while another stays down does not count; use
-     * {@link isKeyReleased} for per-key edges. Call from `update()`, not `render()`.
+     * {@link isKeyReleased} for per-key edges. Losing focus while keys are held counts as the release.
+     * Call from `update()`, not `render()`.
      *
      * @since 1.8.0
+     * @changed 1.8.1 Fires when the canvas or window loses focus while keys are held.
      * @returns `true` on the tick the last held key comes up.
      */
     isAnyKeyReleased: (): boolean => {

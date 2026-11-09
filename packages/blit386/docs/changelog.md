@@ -90,6 +90,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII, Backspace (`\x08`) and Enter (`\x0d`), repeating while held. IME composition,
   touch-screen keyboards and paste are not supported. See [Text input buffer](guide-input.md#text-input-buffer).
+- A key held when the canvas or the window loses focus now reports a release. Blur used to drop held keys without an
+  edge, so `BT.isKeyReleased`, `BT.isReleased` and `BT.isAnyKeyReleased` never fired and a release-to-fire or
+  charge-and-release game stayed stuck after an alt-tab mid-hold. The release reaches the next `update()`, the same way
+  a gamepad disconnect already did. See [Keyboard](guide-input.md#keyboard).
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
   keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
   `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed
