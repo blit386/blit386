@@ -306,16 +306,19 @@ class Demo {
 
         // Text buffer: the characters typed since the last tick arrive here once, so add
         // them to our own string now or they are gone next tick.
-        const chunk = BT.inputString;
-
-        if (chunk.length > 0) {
-            this.typedBuffer += chunk;
-
-            if (this.typedBuffer.length > TYPED_BUFFER_MAX) {
-                // Keep the most recent characters so long paste tests still show the
-                // tail.
-                this.typedBuffer = this.typedBuffer.slice(-TYPED_BUFFER_MAX);
+        // Backspace arrives as '\b' and deletes; Enter, Tab and Escape are control
+        // codes below the space character, so they are skipped.
+        for (const ch of BT.inputString) {
+            if (ch === '\b') {
+                this.typedBuffer = this.typedBuffer.slice(0, -1);
+            } else if (ch >= ' ') {
+                this.typedBuffer += ch;
             }
+        }
+
+        if (this.typedBuffer.length > TYPED_BUFFER_MAX) {
+            // Keep the most recent characters so a long line still shows its tail.
+            this.typedBuffer = this.typedBuffer.slice(-TYPED_BUFFER_MAX);
         }
     }
 

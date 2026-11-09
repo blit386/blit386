@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-08T10:57:36+01:00"
+lastModified: "2026-11-09T20:13:56+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -83,6 +83,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
+  elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
+  each `keydown`: printable ASCII, Backspace (`\x08`) and Enter (`\x0d`), repeating while held. IME composition,
+  touch-screen keyboards and paste are not supported. See [Text input buffer](/docs/guides/input#text-input-buffer).
+- A key held when the canvas or the window loses focus now reports a release. Blur used to drop held keys without an
+  edge, so `BT.isKeyReleased`, `BT.isReleased` and `BT.isAnyKeyReleased` never fired and a release-to-fire or
+  charge-and-release game stayed stuck after an alt-tab mid-hold. The release reaches the next `update()`, the same way
+  a gamepad disconnect already did. See [Keyboard](/docs/guides/input#keyboard).
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
   keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
   `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed

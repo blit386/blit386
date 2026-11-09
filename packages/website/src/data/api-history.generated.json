@@ -681,7 +681,12 @@
     "BT.inputString": {
       "kind": "getter",
       "since": "1.0.4",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -733,7 +738,12 @@
     "BT.isAnyKeyReleased": {
       "kind": "method",
       "since": "1.8.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Fires when the canvas or window loses focus while keys are held."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -794,7 +804,12 @@
     "BT.isKeyReleased": {
       "kind": "method",
       "since": "1.1.1",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "A key held when the canvas or window loses focus reports a release."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -861,6 +876,10 @@
         {
           "version": "1.8.1",
           "note": "Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one."
+        },
+        {
+          "version": "1.8.1",
+          "note": "A keyboard-mapped button held when the canvas or window loses focus reports a release."
         }
       ],
       "deprecated": null,
