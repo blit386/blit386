@@ -452,11 +452,11 @@ Player constants:
 
 <Callout type="warn" title="The default dead zone is large">
 
-Default stick dead zone is `0.75` (`GamepadInput.DEFAULT_GAMEPAD_DEAD_ZONE` internally; not a public export). Filtering
-is per axis, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the remaining range is
-re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must exceed ~75% deflection
-before movement registers - much larger than typical `0.1`-`0.2` dead zones. There is no public `BT` API to change this
-value today.
+Default stick dead zone is `0.75` (`DEFAULT_GAMEPAD_DEAD_ZONE` in `input/gamepadMapping.ts` internally; not a public
+export). Filtering is per axis, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the
+remaining range is re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must
+exceed ~75% deflection before movement registers - much larger than typical `0.1`-`0.2` dead zones. There is no public
+`BT` API to change this value today.
 
 </Callout>
 

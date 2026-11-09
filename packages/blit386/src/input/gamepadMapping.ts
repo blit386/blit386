@@ -26,7 +26,7 @@ import {
 } from './buttonFlags';
 
 /** Default analog dead zone for stick axes. */
-export const DEFAULT_GAMEPAD_DEAD_ZONE = 0.75;
+const DEFAULT_GAMEPAD_DEAD_ZONE = 0.75;
 
 /** Standard mapping button indices (W3C standard gamepad mapping). */
 const GP_BUTTON_A = 0;

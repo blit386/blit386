@@ -22,8 +22,6 @@ import {
 } from './gamepadMapping';
 import { isRepeatTick } from './repeatTick';
 
-export { DEFAULT_GAMEPAD_DEAD_ZONE } from './gamepadMapping';
-
 /** Maximum supported local gamepad players. */
 export const GAMEPAD_PLAYER_COUNT = 4;
 
