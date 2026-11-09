@@ -483,8 +483,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Appends the character a keydown types, or BS / CR for Backspace / Enter. Ctrl shortcuts type nothing (Meta ones
-     * never get here); Ctrl+Alt is let through because Windows reports AltGr (`@`, `{` on many layouts) that way.
+     * Appends the character a keydown types, or BS / CR for Backspace / Enter. Shortcuts type nothing (see
+     * {@link isShortcut}; Meta ones never get here).
      *
      * @param event - DOM keydown event.
      */
@@ -500,7 +500,7 @@ export class KeyboardInput {
             this.inputBuffer += '\x08';
         } else if (key === 'Enter') {
             this.inputBuffer += '\x0d';
-        } else if (key.length === 1 && !(event.ctrlKey && !event.altKey)) {
+        } else if (key.length === 1 && !isShortcut(event, key)) {
             const cp = key.charCodeAt(0);
 
             if (cp >= FIRST_PRINTABLE && cp <= LAST_PRINTABLE) {
@@ -509,3 +509,27 @@ export class KeyboardInput {
         }
     }
 }
+
+/**
+ * Whether a one-character keydown is a shortcut rather than typing.
+ *
+ * - Ctrl alone is a shortcut. Ctrl+Alt types: Windows reports AltGr (`@`, `{` on many layouts) that way.
+ * - Alt alone is a shortcut when the key still reports its own character (Alt+A gives `a` on Windows and Linux). When Alt
+ *   changes the character it is a macOS Option composition (Option+L gives `@` on a German layout) and types.
+ *
+ * @param event - DOM keydown event.
+ * @param key - `event.key`, already known to be one character.
+ * @returns `true` when the key should not reach {@link KeyboardInput.getInputString}.
+ */
+const isShortcut = (event: KeyboardEvent, key: string): boolean => {
+    if (event.ctrlKey) {
+        return !event.altKey;
+    }
+
+    if (!event.altKey) {
+        return false;
+    }
+
+    // shortcut: compares with the key's US position, so Alt+A on a French layout (code KeyQ) still types.
+    return event.code === `Key${key.toUpperCase()}` || event.code === `Digit${key}`;
+};

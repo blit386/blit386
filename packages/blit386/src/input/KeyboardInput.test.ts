@@ -434,6 +434,38 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('Alt shortcuts that leave the character unchanged type nothing', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        // Windows / Linux: Alt+A reports `a`, Alt+Shift+A reports `A`, Alt+1 reports `1`.
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', altKey: true, bubbles: true }));
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'KeyA', key: 'A', altKey: true, shiftKey: true, bubbles: true }),
+        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', altKey: true, bubbles: true }));
+
+        expect(kb.getInputString()).toBe('');
+
+        kb.detach();
+    });
+
+    it('Alt that changes the character (macOS Option) still types', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        // German Mac layout: Option+L types `@`.
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyL', key: '@', altKey: true, bubbles: true }));
+
+        expect(kb.getInputString()).toBe('@');
+
+        kb.detach();
+    });
+
     it('OS key repeat of a held key keeps typing and deleting', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
