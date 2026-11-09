@@ -136,16 +136,9 @@ export function classifyMcpServer(mcpsDir, serverId) {
     }
 
     if (toolCount === 0) {
-        const authOnly =
-            fs.existsSync(path.join(toolsDir, 'mcp_auth.json')) ||
-            (statusMessage !== null && statusIndicatesAuthRequired(statusMessage));
-        if (authOnly) {
-            return { status: 'auth_required', toolCount: 0, statusMessage };
-        }
-        if (statusMessage !== null && statusIndicatesError(statusMessage)) {
-            return { status: 'errored', toolCount: 0, statusMessage };
-        }
-        return { status: 'absent', toolCount: 0, statusMessage };
+        // STATUS.md error and auth text already returned above; only the auth tool file is left.
+        const status = fs.existsSync(path.join(toolsDir, 'mcp_auth.json')) ? 'auth_required' : 'absent';
+        return { status, toolCount: 0, statusMessage };
     }
 
     return { status: 'healthy', toolCount, statusMessage };
