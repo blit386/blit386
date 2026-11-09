@@ -386,7 +386,7 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | `changes` | always | Path filters; emits the per-package booleans every job below reads |
 | `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `bump:check`, and the root `test:*` Node suites for those scripts - repo-wide, so they run once rather than per package |
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
-| `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check` |
+| `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check`, `api:getters:check`, `system-font:check`, `splash-logo:check`, and the `scripts/` Node suites (`test:declarations`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:bmfont`, `test:system-font`, `test:splash-logo`) |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
 | `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (92 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
@@ -398,8 +398,9 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests and `test:bump-lockstep` |
 
 Jobs needing full git history ask the shared setup action for it: `quality-engine` and `test-engine` take
-`fetch-depth: 0` plus `fetch-tags: true` (release dates come from tags, and the API-history generator walks history with
-`git log --follow`), and `quality-website` takes `fetch-depth: 0` for the same `--follow` reason in the docs mirror.
+`fetch-depth: 0` plus `fetch-tags: true` (the API-history generator resolves each release date with `git log -1 <tag>`,
+which needs the tags and the commits they point at), and `quality-website` takes `fetch-depth: 0` for the same
+`--follow` reason in the docs mirror.
 
 `sync:docs:check` runs here and, since BT-438, as the final gate of `packages/website`'s own `preflight`, so a local run
 is no longer laxer than CI. It runs last in both places for the same reason: it regenerates `content/docs` in the
