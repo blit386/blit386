@@ -190,6 +190,7 @@ export class Random {
      * @param minOrMaxExclusive - When alone, exclusive upper bound from 0; otherwise inclusive min.
      * @param maxExclusive - Exclusive upper bound when two arguments are passed.
      * @returns Whole number in the half-open range.
+     * @throws RangeError if a bound is `NaN` or outside the 32-bit integer range, or the range is empty.
      * @since 1.5.0
      */
     public int(minOrMaxExclusive: number, maxExclusive?: number): number {
@@ -217,6 +218,7 @@ export class Random {
      * @param min - Inclusive lower bound.
      * @param max - Inclusive upper bound.
      * @returns Whole number in the closed range.
+     * @throws RangeError if a bound is `NaN` or outside the 32-bit integer range, or `max` is less than `min`.
      * @since 1.5.0
      */
     public intInclusive(min: number, max: number): number {
@@ -308,6 +310,8 @@ export class Random {
      * @param items - Items to choose from.
      * @param weights - Non-negative finite weights parallel to `items`; total must be greater than 0.
      * @returns Chosen item.
+     * @throws RangeError if `items` is empty, the lengths differ, a weight is not a finite number, or the total is not
+     *   greater than 0.
      * @since 1.5.0
      */
     public weighted<T>(items: readonly T[], weights: readonly number[]): T {

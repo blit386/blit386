@@ -114,7 +114,7 @@ export function checkSize(width: number, height: number): SizeProblem | null {
         return 'too-large';
     }
 
-    // Both axes are at most 8192 here, so the product is an exact integer.
+    // Both axes are at most MAX_RENDER_DIMENSION here, so the product is an exact integer.
     if (width * height > RENDER_DIMENSION_LIMITS.maxPixels) {
         return 'area';
     }
