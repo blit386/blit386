@@ -167,3 +167,42 @@ describe('PerlinNoise seed validation', () => {
         expect(() => new PerlinNoise()).not.toThrow();
     });
 });
+
+describe('PerlinNoise fBm sums', () => {
+    // Three layers, persistence 0.4, lacunarity 3: weights 1, 0.4, 0.16 at 1x, 3x, 9x.
+    const weightSum = 1 + 0.4 + 0.16;
+
+    it('matches the hand-computed weighted sum of layers in 1D', () => {
+        const n = new PerlinNoise(7);
+        const x = 1.37;
+        const expected = (n.noise1D(x) + 0.4 * n.noise1D(3 * x) + 0.16 * n.noise1D(9 * x)) / weightSum;
+
+        expect(n.fbm1D(x, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('matches the hand-computed weighted sum of layers in 2D', () => {
+        const n = new PerlinNoise(7);
+        const [x, y] = [1.37, -2.71];
+        const expected = (n.noise2D(x, y) + 0.4 * n.noise2D(3 * x, 3 * y) + 0.16 * n.noise2D(9 * x, 9 * y)) / weightSum;
+
+        expect(n.fbm2D(x, y, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('matches the hand-computed weighted sum of layers in 3D', () => {
+        const n = new PerlinNoise(7);
+        const [x, y, z] = [1.37, -2.71, 0.53];
+        const expected =
+            (n.noise3D(x, y, z) + 0.4 * n.noise3D(3 * x, 3 * y, 3 * z) + 0.16 * n.noise3D(9 * x, 9 * y, 9 * z)) /
+            weightSum;
+
+        expect(n.fbm3D(x, y, z, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('uses the default 4 layers, persistence 0.5, lacunarity 2', () => {
+        const n = new PerlinNoise(7);
+        const x = 1.37;
+
+        expect(n.fbm1D(x)).toBeCloseTo(n.fbm1D(x, 4, 0.5, 2), 12);
+        expect(n.fbm1D(x)).not.toBeCloseTo(n.fbm1D(x, 3, 0.5, 2), 12);
+    });
+});
