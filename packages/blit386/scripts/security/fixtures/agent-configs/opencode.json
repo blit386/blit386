@@ -1,0 +1,6 @@
+{
+  "mcp": {
+    "blit386-docs": { "type": "remote", "url": "https://blit386.dev/mcp", "enabled": true },
+    "opencode-shadow": { "type": "local", "command": ["npx", "-y", "example-server"] }
+  }
+}
