@@ -13,12 +13,14 @@
  *
  * Usage:
  *   pnpm run splash-logo:convert [input-path]
+ *   pnpm run splash-logo:check     # exit 1 when logoData.ts no longer matches the PNG
  *
  * Default input: assets/splash-logo.png
  * Output: src/splash/logoData.ts (always overwritten)
  *
  * The generated file is one row per line; run `pnpm run format` afterwards to
- * reflow it the way the committed copy is formatted.
+ * reflow it the way the committed copy is formatted. That reflow is why `--check`
+ * compares the parsed numbers, not the file bytes.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -31,8 +33,8 @@ import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(scriptDir, '..');
-const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
-const OUTPUT_PATH = join(PROJECT_ROOT, 'src/splash/logoData.ts');
+export const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
+export const OUTPUT_PATH = join(PROJECT_ROOT, 'src/splash/logoData.ts');
 
 // Must match src/splash/constants.ts. Duplicated because this is a plain .mjs
 // build script and cannot import from TypeScript source.
@@ -56,7 +58,7 @@ const CHANNELS = 4;
  * @param {string} inputPath - Path to the source PNG.
  * @returns {{ width: number, height: number, indices: number[] }} Dimensions and flat index array.
  */
-function extractIndices(inputPath) {
+export function extractIndices(inputPath) {
     const png = PNG.sync.read(readFileSync(inputPath));
     const indices = new Array(png.width * png.height);
 
@@ -86,7 +88,7 @@ function extractIndices(inputPath) {
  * @param {{ width: number, height: number, indices: number[] }} data - Extracted logo data.
  * @returns {string} File contents.
  */
-function renderModule(data) {
+export function renderModule(data) {
     const rows = [];
 
     for (let y = 0; y < data.height; y++) {
@@ -120,10 +122,72 @@ ${rows.join('\n')}
 `;
 }
 
-// pnpm forwards the separator of `pnpm run splash-logo:convert -- <args>` to the script.
-const inputPath = process.argv.slice(2).find((arg) => arg !== PNPM_ARG_SEPARATOR) ?? DEFAULT_INPUT;
-const data = extractIndices(inputPath);
+/**
+ * Reads the dimensions and pixel indices back out of a generated (and possibly reflowed) module.
+ *
+ * @param {string} source - Contents of `logoData.ts`.
+ * @returns {{ width: number, height: number, indices: number[] }} Parsed logo data.
+ */
+export function parseLogoModule(source) {
+    const width = /LOGO_WIDTH = (\d+);/u.exec(source)?.[1];
+    const height = /LOGO_HEIGHT = (\d+);/u.exec(source)?.[1];
+    const body = /LOGO_PIXELS: readonly number\[\] = \[([\d,\s]*)\];/u.exec(source)?.[1];
 
-writeFileSync(OUTPUT_PATH, renderModule(data), 'utf-8');
+    if (width === undefined || height === undefined || body === undefined) {
+        throw new Error('cannot read LOGO_WIDTH, LOGO_HEIGHT and LOGO_PIXELS from logoData.ts');
+    }
 
-console.log(`Wrote ${OUTPUT_PATH} (${data.width}x${data.height}, ${data.indices.length} indices)`);
+    return {
+        width: Number(width),
+        height: Number(height),
+        indices: body
+            .split(',')
+            .map(Number)
+            .filter((_, i, all) => i < all.length - 1 || body.trim().at(-1) !== ','),
+    };
+}
+
+/**
+ * Compares the committed module's data with the PNG's, row by row.
+ *
+ * @param {{ width: number, height: number, indices: number[] }} committed - Parsed `logoData.ts`.
+ * @param {{ width: number, height: number, indices: number[] }} png - Freshly extracted PNG data.
+ * @returns {string[]} Drift descriptions; empty when in sync.
+ */
+export function findLogoDrift(committed, png) {
+    if (committed.width !== png.width || committed.height !== png.height) {
+        return [`logoData.ts is ${committed.width}x${committed.height} but the PNG is ${png.width}x${png.height}`];
+    }
+    if (committed.indices.length !== png.indices.length) {
+        return [`logoData.ts has ${committed.indices.length} indices, expected ${png.indices.length}`];
+    }
+
+    const firstDiff = png.indices.findIndex((value, i) => value !== committed.indices.at(i));
+    return firstDiff === -1 ? [] : [`row ${Math.floor(firstDiff / png.width)} differs from the PNG`];
+}
+
+function main() {
+    // pnpm forwards the separator of `pnpm run splash-logo:convert -- <args>` to the script.
+    const args = process.argv.slice(2).filter((arg) => arg !== PNPM_ARG_SEPARATOR);
+    const isCheck = args.includes('--check');
+    const inputPath = args.find((arg) => arg !== '--check') ?? DEFAULT_INPUT;
+    const data = extractIndices(inputPath);
+
+    if (isCheck) {
+        const drift = findLogoDrift(parseLogoModule(readFileSync(OUTPUT_PATH, 'utf-8')), data);
+        if (drift.length > 0) {
+            console.error(`src/splash/logoData.ts is out of date: ${drift.join('; ')}.`);
+            console.error('Run `pnpm run splash-logo:convert` then `pnpm run format` to regenerate it.');
+            process.exit(1);
+        }
+        console.log('src/splash/logoData.ts matches assets/splash-logo.png.');
+        return;
+    }
+
+    writeFileSync(OUTPUT_PATH, renderModule(data), 'utf-8');
+    console.log(`Wrote ${OUTPUT_PATH} (${data.width}x${data.height}, ${data.indices.length} indices)`);
+}
+
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    main();
+}

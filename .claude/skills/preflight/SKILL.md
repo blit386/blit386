@@ -68,9 +68,11 @@ the per-package quality jobs pass.
   (`scripts/gen-deprecations.mjs --check`)
 - `system-font:check` - `src/assets/fonts/systemFontData.ts` matches `assets/system-font.png` and the extra-chars list
   (`scripts/convert-system-font.mjs --check`)
+- `splash-logo:check` - `src/splash/logoData.ts` matches `assets/splash-logo.png`, compared as parsed rows, not bytes
+  (`scripts/convert-splash-logo.mjs --check`)
 - `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
   `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`,
-  `test:spellcheck-coverage`, `test:security-preflight`
+  `test:system-font`, `test:splash-logo`, `test:spellcheck-coverage`, `test:security-preflight`
 
 ## packages/demos
 
