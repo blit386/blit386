@@ -469,7 +469,8 @@ value today.
 
 - Printable ASCII (space to `~`) arrives as itself, with Shift and AltGr applied by the keyboard layout.
 - Backspace arrives as `\x08` and Enter as `\x0d`. Both, and the printable keys, repeat while held.
-- Tab arrives as `\x09` and Escape as `\x1b`, once per press.
+- Tab arrives as `\x09` and Escape as `\x1b`, once per press. Tab still arrives when the browser then moves focus off
+  the canvas.
 - Ctrl and Cmd shortcuts type nothing, and neither do Alt shortcuts such as Alt+A. Alt that changes the character (macOS
   Option+L for `@` on a German layout) still types.
 

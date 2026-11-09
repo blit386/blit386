@@ -403,7 +403,8 @@ export class KeyboardInput {
     /**
      * Releases every held key when focus leaves (canvas / window blur): each becomes a release edge for the next
      * update, since no `keyup` will arrive for it. `prevHeld` and `pendingPress` are kept, so those edges read as
-     * down-to-up and a key pressed since the last update still reports its press.
+     * down-to-up and a key pressed since the last update still reports its press. Typed text is kept too: Tab's
+     * default action moves focus off the canvas, and its `\x09` must still arrive.
      */
     private releaseAll(): void {
         for (const code of this.held) {
@@ -412,7 +413,6 @@ export class KeyboardInput {
 
         this.held.clear();
         this.firstPressTick.clear();
-        this.inputBuffer = '';
     }
 
     /** Clears held keys, edges, repeat anchors, and text (detach). */

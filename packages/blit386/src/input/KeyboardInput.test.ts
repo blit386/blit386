@@ -484,6 +484,21 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('Tab still arrives when its default action moves focus off the canvas', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Tab', key: 'Tab', bubbles: true }));
+        canvas.dispatchEvent(new Event('blur'));
+
+        expect(kb.getInputString()).toBe('a\x09');
+
+        kb.detach();
+    });
+
     it('OR button mapping: BTN_UP player1 reflects KeyW', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
