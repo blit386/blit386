@@ -76,7 +76,7 @@ import { PerlinNoise } from 'blit386';
 // in init():
 this.terrain = new PerlinNoise(9001);
 for (let x = 0; x < 320; x++) {
-  const n = this.terrain.noise2D(x * 0.02, 0); // about -1 to 1
+  const n = this.terrain.noise1D(x * 0.02); // -1 to 1
   this.groundY.push(Math.floor(120 + n * 40)); // round: screen coordinates are whole numbers
 }
 ```

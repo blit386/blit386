@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { PerlinNoise } from './PerlinNoise';
+import { Random } from './Random';
 
 describe('PerlinNoise', () => {
     it('should return the same sample for the same seed and coordinates', () => {
@@ -84,6 +85,32 @@ describe('PerlinNoise', () => {
                 expect(v3).toBeLessThanOrEqual(1);
             }
         }
+    });
+
+    it('should reach close to both ends of [-1, 1] in 1D and 2D', () => {
+        const n = new PerlinNoise(1234);
+        const coords = new Random(99);
+        let min1 = Infinity;
+        let max1 = -Infinity;
+        let min2 = Infinity;
+        let max2 = -Infinity;
+
+        for (let i = 0; i < 100_000; i++) {
+            const x = coords.float(-500, 500);
+            const y = coords.float(-500, 500);
+            const v1 = n.noise1D(x);
+            const v2 = n.noise2D(x, y);
+
+            min1 = Math.min(min1, v1);
+            max1 = Math.max(max1, v1);
+            min2 = Math.min(min2, v2);
+            max2 = Math.max(max2, v2);
+        }
+
+        expect(max1).toBeGreaterThan(0.9);
+        expect(min1).toBeLessThan(-0.9);
+        expect(max2).toBeGreaterThan(0.9);
+        expect(min2).toBeLessThan(-0.9);
     });
 
     it('should vary continuously for small steps', () => {

@@ -35,6 +35,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- Behavior change: `PerlinNoise` 1D and 2D samples now reach about `-1` and `1`, as documented. `noise1D` / `fbm1D`
+  stayed within `±0.5` and `noise2D` / `fbm2D` within about `±0.66`, so a threshold such as `noise2D(x, y) > 0.7` never
+  fired and terrain came out flatter than designed. 1D output is now twice as large and 2D about 1.5 times, so seeded
+  Perlin worlds keep their shape but change amplitude; 3D and `ValueNoise` / `SimplexNoise` are unchanged. Perlin fBm
+  stays narrower than a single octave (about `±0.8` in 1D, `±0.65` in 2D). See [Random](api-random.md#pattern-noise).
 - `blit386` now declares an optional peer dependency on `vite` `>=6`, the first version that calls the `hotUpdate` hook
   the `blit386/vite` plugin uses for asset hot reload. Engine-only projects without Vite see no warning. A project on
   Vite 5 is now told: pnpm and yarn warn, and npm may refuse to install until Vite is upgraded, instead of asset edits

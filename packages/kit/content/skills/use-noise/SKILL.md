@@ -62,7 +62,7 @@ import { PerlinNoise } from 'blit386';
 this.terrain = new PerlinNoise(9001);
 
 // anywhere:
-const height = this.terrain.noise2D(x * 0.05, y * 0.05); // about -1..1
+const height = this.terrain.noise2D(x * 0.05, y * 0.05); // -1..1
 ```
 
 The multiplier is the important part. Coordinates go in raw and neighboring whole numbers would land on completely
@@ -78,7 +78,7 @@ import { PerlinNoise, Vector2i } from 'blit386';
 this.terrain = new PerlinNoise(9001);
 this.groundY = [];
 for (let x = 0; x < 320; x++) {
-    const n = this.terrain.noise2D(x * 0.02, 0); // -1..1
+    const n = this.terrain.noise1D(x * 0.02); // -1..1 - one line of hills, so 1D noise
     this.groundY.push(Math.floor(120 + n * 40)); // round: screen coordinates are whole numbers
 }
 
@@ -105,7 +105,8 @@ render() {
 | `SimplexNoise` | Fewer square-grid artifacts; `noise2D` / `noise3D` only, no 1D |
 
 All three take a seed in the constructor (`new PerlinNoise(9001)`) and have a `seed(n)` method to switch worlds later.
-All return roughly `-1` to `1`.
+`noise1D` / `noise2D` / `noise3D` return `-1` to `1`. For a single line of hills use `noise1D`: `noise2D(x, 0)` reads
+along a grid line, where Perlin only swings about half as far.
 
 ### More detail with fbm
 
@@ -113,7 +114,7 @@ One noise call gives smooth rolling hills. `fbm` ("fractal Brownian motion") lay
 frequency to add roughness on top of the big shapes - this is what makes terrain look natural instead of like a duvet.
 
 ```js
-const h = this.terrain.fbm2D(x * 0.02, y * 0.02); // 4 layers by default, still about -1..1
+const h = this.terrain.fbm2D(x * 0.02, y * 0.02); // 4 layers by default, inside -1..1 but rarely past ±0.65
 const rougher = this.terrain.fbm2D(x * 0.02, y * 0.02, 6); // more layers, more fine detail
 ```
 
@@ -129,8 +130,8 @@ adds detail and costs more; the other two are worth leaving alone until the shap
   change it.
 - Omit the seed (or pass `0`) and you get a fixed default world - handy while experimenting, but two different features
   will then share a pattern. Give each its own seed once the game is real.
-- Noise returns decimals around `-1..1`. Screen coordinates are whole numbers, so `Math.floor` the result before
-  drawing.
+- Noise returns decimals between `-1` and `1` (`fbm` stays narrower, so stretch it if you need the full range). Screen
+  coordinates are whole numbers, so `Math.floor` the result before drawing.
 - Chunked worlds need no bookkeeping: because the answer depends only on coordinates and seed, a chunk regenerates
   identically when the player returns. Only store what the player _changed_.
 - Needs blit386 `^1.5.0`.

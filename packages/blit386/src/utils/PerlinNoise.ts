@@ -26,16 +26,17 @@ import {
 } from './noiseCommon';
 
 /**
- * Scale so 1D Perlin (unit ±1 gradients) stays in approximately `[-1, 1]`.
- * Max of faded grads is 1 at cell edges in the classic formulation.
+ * Scale for 1D Perlin with ±1 gradients. The raw peak is exactly `0.5`, at a cell midpoint
+ * between two gradients pointing at each other, so `2` maps it onto `[-1, 1]`.
  */
-const SCALE_1D = 1;
+const SCALE_1D = 2;
 
 /**
  * Scale for 2D Perlin with the eight GRAD2 directions (including diagonals of length √2).
- * Empirically keeps samples in approximately `[-1, 1]`.
+ * The raw peak is exactly `1`, at a cell center where all four diagonal gradients point
+ * outward, so samples already span `[-1, 1]`.
  */
-const SCALE_2D = 0.6616;
+const SCALE_2D = 1;
 
 /**
  * Scale for 3D Perlin with the twelve mid-edge GRAD3 directions.
@@ -49,6 +50,9 @@ const SCALE_3D = 0.982;
  * @since 1.5.0
  * @changed 1.8.1 Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).
  *   Seed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0.
+ * @changed 1.8.1 `noise1D` and `fbm1D` samples are twice as large and `noise2D` / `fbm2D` about 1.5 times as large,
+ *   so 1D and 2D noise reach about `-1` and `1` as documented. Seeded Perlin worlds keep their shape but change
+ *   amplitude. 3D is unchanged.
  */
 export class PerlinNoise {
     /** World / stream seed (lower 32 bits). */
