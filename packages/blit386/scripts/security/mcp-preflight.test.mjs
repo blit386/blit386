@@ -12,6 +12,7 @@ import {
     collectRecommendedFallbacks,
     criticalMcpUsable,
     discoverMcpConfigPaths,
+    formatPreflightSummary,
     isRunlayerManagedEntry,
     parseArgs,
     runMcpPreflight,
@@ -204,6 +205,19 @@ describe('runMcpPreflight', () => {
         assert.equal(report.summary.proceed, false);
         assert.equal(report.governance.unacceptedShadowServers.length, 3);
     });
+
+    for (const fixture of ['unknown.mcp.json', 'invalid-json.mcp.txt']) {
+        it(`blocks in governance-only mode on ${fixture} (fail closed, BT-763)`, () => {
+            const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-governance-fail-closed-'));
+            fs.copyFileSync(path.join(FIXTURE_ROOT, 'governance', fixture), path.join(tempDir, '.mcp.json'));
+
+            const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: tempDir, governanceOnly: true });
+
+            assert.equal(report.summary.proceed, false);
+            assert.equal(report.governance.blockingConfigs.length, 1);
+            assert.equal(formatPreflightSummary(report).includes('Unclassifiable or unreadable MCP configs:'), true);
+        });
+    }
 
     it('degrades gracefully when mcps-dir does not exist at all, honoring allowFallback', () => {
         const missingMcpsDir = path.join(os.tmpdir(), 'mcp-preflight-does-not-exist', String(Date.now()));

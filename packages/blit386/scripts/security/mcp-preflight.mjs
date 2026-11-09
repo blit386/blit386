@@ -175,8 +175,11 @@ export function scanMcpConfigFile(configPath) {
         const parsed = JSON.parse(raw);
         const serversObject = parsed.mcpServers;
 
-        if (serversObject === null || typeof serversObject !== 'object') {
+        if (serversObject === undefined) {
             return { path: configPath, servers: [], error: null };
+        }
+        if (serversObject === null || typeof serversObject !== 'object' || Array.isArray(serversObject)) {
+            return { path: configPath, servers: [], error: 'mcpServers is not an object' };
         }
 
         /** @type {{ name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown' }[]} */
@@ -316,6 +319,22 @@ export function runMcpPreflight(options) {
     const acceptedShadowServers = shadowServers.filter(isAcceptedShadow);
     const unacceptedShadowServers = shadowServers.filter((server) => !isAcceptedShadow(server));
 
+    // Fail closed: a config the gate cannot read, or an entry it cannot classify, blocks.
+    const blockingConfigs = governance.flatMap((config) => {
+        if (config.error !== null) {
+            return [{ path: config.path, reason: `unreadable: ${config.error}` }];
+        }
+        const unknown = config.servers.filter((server) => server.classification === 'unknown');
+        return unknown.length > 0
+            ? [
+                  {
+                      path: config.path,
+                      reason: `unclassifiable entries: ${unknown.map((server) => server.name).join(', ')}`,
+                  },
+              ]
+            : [];
+    });
+
     const criticalUsable = governanceOnly ? false : criticalMcpUsable(mcpServers);
     const recommendedFallbacks = governanceOnly ? [] : collectRecommendedFallbacks(mcpServers);
 
@@ -339,13 +358,14 @@ export function runMcpPreflight(options) {
             shadowServers,
             acceptedShadowServers,
             unacceptedShadowServers,
+            blockingConfigs,
         },
         summary: {
             criticalUsable,
             allowFallback: options.allowFallback ?? false,
             recommendedFallbacks,
             proceed: governanceOnly
-                ? unacceptedShadowServers.length === 0
+                ? unacceptedShadowServers.length === 0 && blockingConfigs.length === 0
                 : criticalUsable || (options.allowFallback ?? false),
         },
     };
@@ -356,6 +376,18 @@ export function runMcpPreflight(options) {
     }
 
     return report;
+}
+
+/**
+ * Appends a titled list to `lines`, or nothing when the list is empty.
+ * @param {string[]} lines
+ * @param {string} title
+ * @param {string[]} items
+ */
+function pushSection(lines, title, items) {
+    if (items.length > 0) {
+        lines.push('', title, ...items);
+    }
 }
 
 /**
@@ -394,18 +426,19 @@ export function formatPreflightSummary(report) {
             lines.push(`  - ${config.path}: ${names}`);
         }
     }
-    if (report.governance.acceptedShadowServers.length > 0) {
-        lines.push('', 'Accepted shadow MCP entries:');
-        for (const shadow of report.governance.acceptedShadowServers) {
-            lines.push(`  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`);
-        }
-    }
-    if (report.governance.unacceptedShadowServers.length > 0) {
-        lines.push('', 'Unaccepted shadow MCP entries flagged:');
-        for (const shadow of report.governance.unacceptedShadowServers) {
-            lines.push(`  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`);
-        }
-    }
+    const shadowLine = (/** @type {{ config: string, name: string, classification: string }} */ shadow) =>
+        `  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`;
+    pushSection(lines, 'Accepted shadow MCP entries:', report.governance.acceptedShadowServers.map(shadowLine));
+    pushSection(
+        lines,
+        'Unaccepted shadow MCP entries flagged:',
+        report.governance.unacceptedShadowServers.map(shadowLine),
+    );
+    pushSection(
+        lines,
+        'Unclassifiable or unreadable MCP configs:',
+        report.governance.blockingConfigs.map((blocking) => `  - ${blocking.path}: ${blocking.reason}`),
+    );
     if (report.governance.shadowCount === 0) {
         lines.push('', 'No shadow MCP servers flagged in scanned configs.');
     }
@@ -435,6 +468,7 @@ export function formatPreflightSummary(report) {
  *   shadowServers: Array<{ config: string, name: string, classification: string }>,
  *   acceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
  *   unacceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
+ *   blockingConfigs: Array<{ path: string, reason: string }>,
  * }} governance
  * @property {{
  *   criticalUsable: boolean,
