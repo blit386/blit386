@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
     ASSET_DIMENSION_LIMITS,
     clipSpriteSourceRectXYTo,
-    computeSafePixelArea,
     MAX_ASSET_DIMENSION,
     MAX_ASSET_PIXELS,
     MAX_BTFONT_EMBEDDED_TEXTURE_BYTES,
@@ -60,17 +59,6 @@ describe('AssetLimits', () => {
             const error = validateIndexedPixelInput(MAX_ASSET_DIMENSION, MAX_ASSET_DIMENSION);
 
             expect(error).toContain('too many pixels');
-        });
-    });
-
-    describe('computeSafePixelArea', () => {
-        it('returns null for invalid dimensions', () => {
-            expect(computeSafePixelArea(0, 16)).toBeNull();
-            expect(computeSafePixelArea(16, Number.POSITIVE_INFINITY)).toBeNull();
-        });
-
-        it('returns the pixel count for valid dimensions', () => {
-            expect(computeSafePixelArea(16, 16)).toBe(256);
         });
     });
 

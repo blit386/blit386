@@ -85,17 +85,6 @@ export function formatSize(width: number, height: number): string {
 }
 
 /**
- * Computes a safe pixel count when width and height are valid asset dimensions.
- *
- * @param width - Width in pixels.
- * @param height - Height in pixels.
- * @returns Total pixels when valid, otherwise `null`.
- */
-export function computeSafePixelArea(width: number, height: number): number | null {
-    return checkSize(width, height) === null ? width * height : null;
-}
-
-/**
  * Validates decoded image or indexed-buffer dimensions before allocation.
  *
  * @param context - Asset label used in error text (for example `'sprite sheet'`).
