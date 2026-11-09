@@ -48,7 +48,7 @@ overrides:
   # vite-plugin-dts (@vue/language-core), so it never enters a runtime bundle - but
   # `security:audit` covers dev + prod, so it fails CI. 11.0.1 is the only patch (no
   # backport), so this crosses the major each consumer declares.
-  minimatch@<11.0.1: 11.0.1
+  minimatch@<11.0.1: 11.0.4
   # GHSA-3g3m-2fjr-6pw4 (moderate): AbortSignal cancellation bypass allows post-timeout
   # filesystem traversal. Dev-only, reached through nyc, rimraf, and test-exclude
   # (coverage tooling in packages/blit386), so it never enters a runtime bundle - but
