@@ -854,6 +854,24 @@ describe('KeyboardInput any-key helpers', () => {
         expect(released).toEqual(['Space']);
         expect(pressed).toEqual([]);
     });
+
+    it('a tap that lands just before a blur still reports its press', () => {
+        down('Space');
+        up('Space');
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyPressed('Space', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('Space')).toBe(true);
+        expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
+    });
+
+    it('a key pressed in the same update as a blur reports both its press and its release', () => {
+        down('KeyW');
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyPressed('KeyW', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('KeyW')).toBe(true);
+    });
 });
 
 describe('KeyboardInput.collectEdges', () => {

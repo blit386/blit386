@@ -402,7 +402,8 @@ export class KeyboardInput {
 
     /**
      * Releases every held key when focus leaves (canvas / window blur): each becomes a release edge for the next
-     * update, since no `keyup` will arrive for it. `prevHeld` is kept so those edges read as down-to-up.
+     * update, since no `keyup` will arrive for it. `prevHeld` and `pendingPress` are kept, so those edges read as
+     * down-to-up and a key pressed since the last update still reports its press.
      */
     private releaseAll(): void {
         for (const code of this.held) {
@@ -410,7 +411,6 @@ export class KeyboardInput {
         }
 
         this.held.clear();
-        this.pendingPress.clear();
         this.firstPressTick.clear();
         this.inputBuffer = '';
     }

@@ -171,8 +171,9 @@ Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
 not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
 moves elsewhere does not stay down, and the next `update()` sees its release edge (`BT.isKeyReleased`, `BT.isReleased`,
-`BT.isAnyKeyReleased`). A key pressed while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or
-Cmd+Z, is not reported as a game key, because macOS browsers never send its release.
+`BT.isAnyKeyReleased`). A press that landed since the last `update()` still reports its press edge too. A key pressed
+while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or Cmd+Z, is not reported as a game key,
+because macOS browsers never send its release.
 
 ### Raw key queries
 
