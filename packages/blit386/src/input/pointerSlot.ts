@@ -7,35 +7,36 @@ import type { Vector2i } from '../utils/Vector2i';
 import { Vector2i as Vector2iImpl } from '../utils/Vector2i';
 
 /** Primary pointer button code (mouse left / touch contact). Maps to `BT.BTN_POINTER_A`. */
-export const BTN_A = 20;
+export const CODE_A = 20;
 
 /** Secondary pointer button code (mouse right). Maps to `BT.BTN_POINTER_B`. */
-const BTN_B = 21;
+const CODE_B = 21;
 
 /** Tertiary pointer button code (mouse middle). Maps to `BT.BTN_POINTER_C`. */
-const BTN_C = 22;
+const CODE_C = 22;
 
 /** Auxiliary pointer button code (mouse back / forward). Maps to `BT.BTN_POINTER_D`. */
-export const BTN_D = 23;
+export const CODE_D = 23;
 
 /** The four button codes in `BT.BTN_POINTER_A..D` order; read by the dev-only input trace. */
-export const POINTER_BUTTON_CODES = [BTN_A, BTN_B, BTN_C, BTN_D] as const;
+export const POINTER_BUTTON_CODES = [CODE_A, CODE_B, CODE_C, CODE_D] as const;
 
 /**
  * Bit for a pointer button code in a pending-edge mask.
  *
- * @param button - One of `BTN_A..D`.
- * @returns `1 << (button - BTN_A)`, or `0` for any other code.
+ * @param button - One of `CODE_A..D`.
+ * @returns `1 << (button - CODE_A)`, or `0` for any other code.
  */
-export const buttonBit = (button: number): number => (button >= BTN_A && button <= BTN_D ? 1 << (button - BTN_A) : 0);
+export const buttonBit = (button: number): number =>
+    button >= CODE_A && button <= CODE_D ? 1 << (button - CODE_A) : 0;
 
-/** Number of pointer buttons per slot (`BTN_A..D`); every per-button array has this length. */
+/** Number of pointer buttons per slot (`CODE_A..D`); every per-button array has this length. */
 export const BUTTON_COUNT = POINTER_BUTTON_CODES.length;
 
-/** `PointerEvent.buttons` bits that hold each pointer button down, in `BTN_A..D` order (left, right, middle, back/forward). */
+/** `PointerEvent.buttons` bits that hold each pointer button down, in `CODE_A..D` order (left, right, middle, back/forward). */
 export const DOM_BUTTONS_MASKS: readonly number[] = [1, 2, 4, 24];
 
-/** Maps a DOM `PointerEvent.button` (0 left, 1 middle, 2 right, 3 back, 4 forward) to its `button - BTN_A` index. */
+/** Maps a DOM `PointerEvent.button` (0 left, 1 middle, 2 right, 3 back, 4 forward) to its `button - CODE_A` index. */
 export const MOUSE_BUTTON_INDEX: readonly number[] = [0, 2, 1, 3, 3];
 
 /**
@@ -64,7 +65,7 @@ export interface Slot {
     /** Snapshot of `pos` taken at `endFrame()`; used to compute the per-frame delta. */
     prevPos: Vector2i;
 
-    /** Held state per button, indexed by `button - BTN_A` (A, B, C, D). */
+    /** Held state per button, indexed by `button - CODE_A` (A, B, C, D). */
     down: boolean[];
 
     /** Snapshot of `down` taken at `endFrame()`, used for isPressed/released edge detection. */
@@ -76,7 +77,7 @@ export interface Slot {
     /** Snapshot of `down` taken at `endUpdate()`, for update-clock edges. */
     updatePrevDown: boolean[];
 
-    /** Buttons (bit `1 << (code - BTN_A)`) that went down since `endUpdate()`, even if they are up again. */
+    /** Buttons (bit `1 << (code - CODE_A)`) that went down since `endUpdate()`, even if they are up again. */
     updatePendingPress: number;
 
     /** Buttons that went up since `endUpdate()`, even if they went down first. */
@@ -102,7 +103,7 @@ export const heldMask = (slot: Slot): number => buttonsMask(slot.down);
  *
  * Unrolled on purpose: this runs on every edge query. Keep it in step with {@link BUTTON_COUNT}.
  *
- * @param buttons - Four button states in `BTN_A..D` order.
+ * @param buttons - Four button states in `CODE_A..D` order.
  * @returns The mask.
  */
 const buttonsMask = (buttons: readonly boolean[]): number =>

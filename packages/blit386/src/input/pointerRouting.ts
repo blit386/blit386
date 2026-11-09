@@ -4,9 +4,9 @@
  */
 
 import {
-    BTN_A,
-    BTN_D,
     BUTTON_COUNT,
+    CODE_A,
+    CODE_D,
     DOM_BUTTONS_MASKS,
     heldMask,
     markEdges,
@@ -31,7 +31,7 @@ export interface PointerRouter {
 }
 
 /** Index of the D button (mouse back / forward) in a slot's button arrays. */
-const D_INDEX = BTN_D - BTN_A;
+const D_INDEX = CODE_D - CODE_A;
 
 /**
  * True for mouse events. An empty `pointerType` (synthetic events from test
@@ -94,7 +94,7 @@ export function routeMove(ctx: PointerRouter, event: PointerEvent): void {
 /**
  * Routes a `pointerdown` event. Mouse events claim slot 0 and set the
  * mapped button. Touch / pen events allocate the first free slot in
- * 1..3 and set `BTN_A`; events that arrive while all touch
+ * 1..3 and set `CODE_A`; events that arrive while all touch
  * slots are full are dropped silently.
  *
  * @param ctx - Slots and canvas access from {@link PointerInput}.

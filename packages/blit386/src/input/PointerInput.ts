@@ -21,9 +21,9 @@ import { Vector2i as Vector2iImpl } from '../utils/Vector2i';
 import { clientToDisplayPos } from './clientToDisplayPos';
 import { type PointerRouter, routeDown, routeExit, routeMove, routeUp } from './pointerRouting';
 import {
-    BTN_A,
-    BTN_D,
     buttonBit,
+    CODE_A,
+    CODE_D,
     copyButtons,
     createEmptySlot,
     heldMask,
@@ -183,7 +183,7 @@ export class PointerInput {
      * - `canvas.style.touchAction` gated by the same scroll-capture state (see
      *   {@link updateTouchAction}) so the host page keeps vertical touch scroll
      *   over the canvas except while scroll capture is active
-     * - `contextmenu.preventDefault()` so right-click feeds `BTN_B`
+     * - `contextmenu.preventDefault()` so right-click feeds `CODE_B`
      *   instead of popping the OS context menu
      *
      * Also installs the {@link cachedRect} invalidation sources: a
@@ -556,14 +556,14 @@ export class PointerInput {
     /**
      * Reports whether the given pointer button is held in slot `slot`.
      *
-     * For slot 0 (mouse): `BTN_A` is left, `B` is right, `C` is middle,
+     * For slot 0 (mouse): `CODE_A` is left, `B` is right, `C` is middle,
      * `D` is back / forward (matches RetroBlit canonical, not DOM
      * `PointerEvent.button` index order).
      *
-     * For slots 1-3 (touch / pen): only `BTN_A` is ever true while the
+     * For slots 1-3 (touch / pen): only `CODE_A` is ever true while the
      * contact is down; `B`, `C`, `D` always return `false`.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @returns `true` while the button remains pressed and the slot is active.
      */
@@ -574,7 +574,7 @@ export class PointerInput {
             return false;
         }
 
-        return button >= BTN_A && button <= BTN_D && s.down[button - BTN_A] === true;
+        return button >= CODE_A && button <= CODE_D && s.down[button - CODE_A] === true;
     }
 
     /**
@@ -582,7 +582,7 @@ export class PointerInput {
      * Unlike {@link isButtonDown}, does not require the slot to be active, so press
      * edges remain visible after deactivation.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @param clock - Which previous state to compare against.
      * @returns `true` if the button went down since the last frame (`'frame'`) or update (`'update'`).
@@ -609,7 +609,7 @@ export class PointerInput {
      * Reports whether the given pointer button went up since the last frame or update (see `clock`).
      * Unlike {@link isButtonDown}, does not require the slot to be active.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @param clock - Which previous state to compare against.
      * @returns `true` if the button went up since the last frame (`'frame'`) or update (`'update'`).
