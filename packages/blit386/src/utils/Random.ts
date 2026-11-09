@@ -308,7 +308,7 @@ export class Random {
      * Returns one item chosen by relative weights.
      *
      * @param items - Items to choose from.
-     * @param weights - Non-negative finite weights parallel to `items`; total must be greater than 0.
+     * @param weights - Finite weights parallel to `items` (a negative weight counts as 0); total must be greater than 0.
      * @returns Chosen item.
      * @throws RangeError if `items` is empty, the lengths differ, a weight is not a finite number, or the total is not
      *   greater than 0.

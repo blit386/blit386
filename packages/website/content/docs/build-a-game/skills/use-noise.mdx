@@ -128,8 +128,12 @@ adds detail and costs more; the other two are worth leaving alone until the shap
   change it.
 - Omit the seed (or pass `0`) and you get a fixed default world - handy while experimenting, but two different features
   will then share a pattern. Give each its own seed once the game is real.
-- Noise returns decimals between `-1` and `1` (`fbm` stays narrower, so stretch it if you need the full range). Screen
-  coordinates are whole numbers, so `Math.floor` the result before drawing.
+- Noise returns decimals between `-1` and `1`. With the default settings `fbm` stays narrower (stretch it if you need
+  the full range); one octave or unusual `persistence` values can reach or pass `-1` and `1`, so clamp before using it
+  as an array index. Screen coordinates are whole numbers, so `Math.floor` the result before drawing.
 - Chunked worlds need no bookkeeping: because the answer depends only on coordinates and seed, a chunk regenerates
   identically when the player returns. Only store what the player _changed_.
 - Needs blit386 `^1.5.0`.
+- Engine 1.8.1 changed seeded output: a non-zero seed now builds a different world than it did on 1.5.0-1.8.0, and
+  `PerlinNoise` `noise1D` / `noise2D` now reach the full `-1` to `1` (taller hills from the same code). If a world must
+  stay identical across an engine update, save the generated map, not just the seed.

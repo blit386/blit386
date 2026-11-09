@@ -50,8 +50,9 @@ value. The shared `BT.random` can also be seeded from the URL: `?seed=N` (since 
 The engine keeps one shared `Random` instance on the `BT` facade. `BT.random` is a live reference (same instance across
 reads, like `BT.palette`). It is time-seeded when the engine singleton is created; call `BT.randomSeed(seed)` to make a
 run reproducible. A seed must be a finite number - only its lower 32 bits are used. `BT.randomSeed`, `new Random(seed)`,
-and the noise classes' constructors and `seed()` throw a `RangeError` for `NaN`, `undefined`, or `Infinity`, which would
-otherwise all collapse to seed `0`.
+`random.seed()`, and the noise classes' constructors and `seed()` throw a `RangeError` for `NaN` or `Infinity`, which
+would otherwise collapse to seed `0`. `BT.randomSeed()` and `seed()` also reject `undefined`; a constructor called
+without a seed uses its default.
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -81,7 +82,7 @@ identically; a separate `Random` you own is yours to reseed.
 | `pick(arr)` | One element from a non-empty array |
 | `shuffle(arr)` | New shuffled copy (Fisher-Yates) |
 | `shuffleInPlace(arr)` | Shuffle the array in place and return it |
-| `weighted(items, weights)` | One item by relative non-negative, finite weights |
+| `weighted(items, weights)` | One item by relative finite weights (a negative weight counts as 0) |
 | `angle()` | Float in `[0, 2π)` radians |
 | `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
 | `insideRect(rect)` | Integer point in half-open `rect` |

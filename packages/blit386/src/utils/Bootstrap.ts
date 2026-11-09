@@ -42,7 +42,10 @@ export interface BootstrapOptions {
      */
     containerId?: string;
 
-    /** Custom callback on successful initialization. If it throws, the error is logged and the game keeps running. */
+    /**
+     * Custom callback on successful initialization. If it throws synchronously, the error is logged and the game keeps
+     * running.
+     */
     onSuccess?: () => void;
 
     /** Custom callback on initialization error. */

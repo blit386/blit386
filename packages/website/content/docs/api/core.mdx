@@ -53,7 +53,7 @@ await bootstrap(MyDemo, {
 <TypeTable type={{
     canvasID: { type: 'string', default: "'blit386-canvas'", description: 'Canvas element id' },
     containerID: { type: 'string', default: "'canvas-container'", description: 'Container id for error display' },
-    onSuccess: { type: '() => void', description: 'Called after successful init; if it throws, the error is logged and the game keeps running' },
+    onSuccess: { type: '() => void', description: 'Called after successful init; if it throws synchronously, the error is logged and the game keeps running' },
     onError: { type: '(error: Error) => void', description: 'Called on any init failure' },
     isWaitingForDOMReady: { type: 'boolean', default: 'true', description: 'Wait for DOMContentLoaded' },
     exposeGlobal: { type: 'boolean', default: 'BT.isDevMode', description: 'Assign BT to window.BT for console debugging' },
