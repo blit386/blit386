@@ -108,3 +108,14 @@ describe('synth presets', () => {
         });
     });
 });
+
+describe('synth preset seed validation', () => {
+    for (const { name, factory } of ALL_PRESETS) {
+        it(`${name} names BT.synthPreset.${name}() for a non-finite seed`, () => {
+            expect(() => factory(Number.NaN)).toThrow(RangeError);
+            expect(() => factory(Number.POSITIVE_INFINITY)).toThrow(
+                `Can't seed BT.synthPreset.${name}() with Infinity`,
+            );
+        });
+    }
+});

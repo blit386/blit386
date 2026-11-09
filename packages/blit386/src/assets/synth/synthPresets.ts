@@ -15,6 +15,7 @@
  */
 
 import { clampUnit } from '../../utils/Color32';
+import { randomSeedNotFiniteError } from '../../utils/errorMessages';
 import { Random } from '../../utils/Random';
 import type { SynthParams } from './SynthParams';
 
@@ -29,6 +30,23 @@ const DURATION_JITTER = 0.12;
 
 /** Jitter bound applied to `noiseMix`/`dutyCycle` fields, which must stay within [0, 1]. */
 const MIX_JITTER = 0.1;
+
+/**
+ * Creates a preset's jitter PRNG. Checks the seed here so the error names the preset the
+ * caller used, not the internal `Random`.
+ *
+ * @param name - Preset name as it appears on `BT.synthPreset`.
+ * @param seed - Seed passed to the preset.
+ * @returns PRNG seeded with `seed`.
+ * @throws RangeError if `seed` is not a finite number.
+ */
+function presetRandom(name: string, seed: number): Random {
+    if (!Number.isFinite(seed)) {
+        throw new RangeError(randomSeedNotFiniteError(`BT.synthPreset.${name}()`, seed));
+    }
+
+    return new Random(seed);
+}
 
 /**
  * Computes a deterministic multiplicative jitter factor in `[1 - amount, 1 + amount]`.
@@ -51,9 +69,10 @@ function jitterMultiplier(rng: Random, amount: number): number {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a jump sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('jump', seed);
     const frequency = 300 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -75,9 +94,10 @@ export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a pickup sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('pickup', seed);
     const frequency = 880 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -100,9 +120,10 @@ export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for an explosion sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('explosion', seed);
 
     return {
         waveform: 'sawtooth',
@@ -122,9 +143,10 @@ export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a laser sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('laser', seed);
     const frequency = 1200 * jitterMultiplier(rng, FREQUENCY_JITTER);
 
     return {
@@ -145,9 +167,10 @@ export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a hit sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('hit', seed);
 
     return {
         waveform: 'square',
@@ -168,9 +191,10 @@ export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  *
  * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a UI blip sound effect.
+ * @throws RangeError if `seed` is not a finite number.
  */
 export function blip(seed: number = DEFAULT_PRESET_SEED): SynthParams {
-    const rng = new Random(seed);
+    const rng = presetRandom('blip', seed);
 
     return {
         waveform: 'sine',

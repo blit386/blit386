@@ -1326,7 +1326,12 @@
     "BT.synthPreset": {
       "kind": "const",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Each preset throws a `RangeError` naming itself for a seed that is not a finite number (`NaN`,\n`Infinity`) instead of silently using seed 0."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

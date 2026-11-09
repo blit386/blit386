@@ -35,10 +35,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
-- Behavior change: `BT.randomSeed`, `new Random(seed)`, `random.seed()`, and the `ValueNoise` / `PerlinNoise` /
-  `SimplexNoise` constructors and `seed()` throw a `RangeError` when the seed is not a finite number. `NaN`,
-  `undefined`, `Infinity`, or a seed parsed from bad text used to become seed `0` silently, so every bad seed produced
-  the same world. Omitting the seed still works (time-seeded for `Random`, `0` for noise). See [Random](api-random.md).
+- Behavior change: `BT.randomSeed`, `new Random(seed)`, `random.seed()`, the `BT.synthPreset` factories, and the
+  `ValueNoise` / `PerlinNoise` / `SimplexNoise` constructors and `seed()` throw a `RangeError` when the seed is not a
+  finite number. `NaN`, `undefined`, `Infinity`, or a seed parsed from bad text used to become seed `0` silently, so
+  every bad seed produced the same world. Omitting the seed still works (time-seeded for `Random`, `0` for noise and
+  presets). See [Random](api-random.md).
 - Behavior change: `PerlinNoise` 1D and 2D samples now reach about `-1` and `1`, as documented. `noise1D` / `fbm1D`
   stayed within `±0.5` and `noise2D` / `fbm2D` within about `±0.66`, so a threshold such as `noise2D(x, y) > 0.7` never
   fired and terrain came out flatter than designed. 1D output is now twice as large and 2D about 1.5 times, so seeded

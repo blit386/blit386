@@ -1246,6 +1246,8 @@ export const BT = {
      * the same seed always renders the exact same variant.
      *
      * @since 1.3.0
+     * @changed 1.8.1 Each preset throws a `RangeError` naming itself for a seed that is not a finite number (`NaN`,
+     *   `Infinity`) instead of silently using seed 0.
      * @example
      * const jumpClip = await AudioClip.synth(BT.synthPreset.jump());
      * BT.soundPlay(jumpClip);
