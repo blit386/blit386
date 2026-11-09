@@ -7,6 +7,15 @@ import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs'
 const DEFAULT_THRESHOLD = 10;
 const PACKAGE_MARKER = '/packages/blit386/';
 
+/** Per-benchmark comparison outcome, written to the JSON report and compared below. */
+const STATUS = Object.freeze({
+    PASS: 'pass',
+    FAIL: 'fail',
+    IMPROVED: 'improved',
+    NEW: 'new',
+    MISSING: 'missing',
+});
+
 /**
  * Normalizes a Vitest file path so reports recorded in different checkouts match: separators become forward slashes
  * and everything up to the last `packages/blit386/` segment (the checkout prefix) is dropped. Paths without that
@@ -260,7 +269,7 @@ export function compareReports(currentReport, baselineReport, thresholdPct) {
                 baselineHz: null,
                 currentHz: currentEntry?.hz ?? null,
                 deltaPct: null,
-                status: 'new',
+                status: STATUS.NEW,
             };
         }
 
@@ -271,17 +280,17 @@ export function compareReports(currentReport, baselineReport, thresholdPct) {
                 baselineHz: baselineEntry.hz,
                 currentHz: null,
                 deltaPct: null,
-                status: 'missing',
+                status: STATUS.MISSING,
             };
         }
 
         const deltaPct = ((currentEntry.hz - baselineEntry.hz) / baselineEntry.hz) * 100;
-        let status = 'pass';
+        let status = STATUS.PASS;
 
         if (deltaPct < thresholdPct * -1) {
-            status = 'fail';
+            status = STATUS.FAIL;
         } else if (deltaPct > 0) {
-            status = 'improved';
+            status = STATUS.IMPROVED;
         }
 
         return {
@@ -297,11 +306,11 @@ export function compareReports(currentReport, baselineReport, thresholdPct) {
     const summary = {
         total: benchmarks.length,
         compared: benchmarks.filter((benchmark) => benchmark.deltaPct !== null).length,
-        regressions: benchmarks.filter((benchmark) => benchmark.status === 'fail').length,
-        improvements: benchmarks.filter((benchmark) => benchmark.status === 'improved').length,
-        pass: benchmarks.filter((benchmark) => benchmark.status === 'pass').length,
-        newBenchmarks: benchmarks.filter((benchmark) => benchmark.status === 'new').length,
-        missingBenchmarks: benchmarks.filter((benchmark) => benchmark.status === 'missing').length,
+        regressions: benchmarks.filter((benchmark) => benchmark.status === STATUS.FAIL).length,
+        improvements: benchmarks.filter((benchmark) => benchmark.status === STATUS.IMPROVED).length,
+        pass: benchmarks.filter((benchmark) => benchmark.status === STATUS.PASS).length,
+        newBenchmarks: benchmarks.filter((benchmark) => benchmark.status === STATUS.NEW).length,
+        missingBenchmarks: benchmarks.filter((benchmark) => benchmark.status === STATUS.MISSING).length,
     };
 
     return {
@@ -353,13 +362,13 @@ function formatDelta(value) {
  */
 function formatStatus(status) {
     switch (status) {
-        case 'fail':
+        case STATUS.FAIL:
             return 'FAIL';
-        case 'improved':
+        case STATUS.IMPROVED:
             return 'IMPROVED';
-        case 'new':
+        case STATUS.NEW:
             return 'NEW';
-        case 'missing':
+        case STATUS.MISSING:
             return 'MISSING';
         default:
             return 'PASS';

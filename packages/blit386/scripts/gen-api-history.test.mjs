@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 import {
+    assertReleaseTagsPresent,
     buildApiHistoryJson,
     buildPagesMap,
     buildVersionsMap,
@@ -15,10 +19,12 @@ import {
     deriveStatus,
     enumerateSymbols,
     extractTags,
+    findVersionProblems,
     parseCliArgs,
     parseDeprecatedTag,
     resolveTagDate,
 } from './gen-api-history.mjs';
+import { gitEnvWithoutRepoLocation } from './git-env.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(HERE, '__fixtures__', 'gen-api-history');
@@ -362,5 +368,63 @@ describe('parseCliArgs', () => {
     it('recognizes --check and --since-check independently', () => {
         assert.equal(parseCliArgs(['--check']).isCheck, true);
         assert.equal(parseCliArgs(['--since-check']).isSinceCheck, true);
+    });
+});
+
+describe('version validation (BT-763)', () => {
+    const UNRELEASED = '1.3.0';
+    const params = {
+        packageVersion: '1.2.1',
+        unreleasedVersion: UNRELEASED,
+        docsDir: DOCS_FIXTURES_DIR,
+        resolveDate: (version) => `${version}T00:00:00+00:00`,
+    };
+    const symbolWith = (tags) => ({
+        Thing: { kind: 'function', since: '1.0.0', changes: [], deprecated: null, ...tags },
+    });
+
+    it('accepts the fixture tags and the unreleased version', () => {
+        assert.deepEqual(findVersionProblems(loadFixtureSymbols(), { unreleasedVersion: UNRELEASED }), []);
+        assert.deepEqual(findVersionProblems(symbolWith({ since: UNRELEASED }), { unreleasedVersion: UNRELEASED }), []);
+    });
+
+    it('fails the gate on a non-semver @since, @changed or @deprecated version', () => {
+        for (const tags of [
+            { since: 'next' },
+            { changes: [{ version: 'v1.2.0', note: 'x' }] },
+            { deprecated: { version: '1.2', date: null, note: '' } },
+        ]) {
+            assert.throws(
+                () => buildApiHistoryJson(symbolWith(tags), params),
+                /Thing: @(since|changed|deprecated) "[^"]+" is not a plain major\.minor\.patch version/,
+            );
+        }
+    });
+
+    it('fails the gate on a version past the unreleased version unless the allowlist names it', () => {
+        const tags = { changes: [{ version: '1.4.0', note: 'x' }] };
+        assert.throws(
+            () => buildApiHistoryJson(symbolWith(tags), params),
+            /Thing: @changed 1\.4\.0 is past the next release 1\.3\.0/,
+        );
+        assert.doesNotThrow(() =>
+            buildApiHistoryJson(symbolWith(tags), { ...params, allowedFutureVersions: ['1.4.0'] }),
+        );
+    });
+});
+
+describe('assertReleaseTagsPresent (BT-763)', () => {
+    it('passes in this repo, which has release tags', () => {
+        assert.doesNotThrow(() => assertReleaseTagsPresent({ cwd: REPO_ROOT }));
+    });
+
+    it('names the tag-less checkout case when the repo has no tags', () => {
+        const repo = mkdtempSync(join(tmpdir(), 'api-history-no-tags-'));
+        try {
+            execFileSync('git', ['init', '-q'], { cwd: repo, env: gitEnvWithoutRepoLocation() });
+            assert.throws(() => assertReleaseTagsPresent({ cwd: repo }), /tag-less checkout/);
+        } finally {
+            rmSync(repo, { recursive: true, force: true });
+        }
     });
 });

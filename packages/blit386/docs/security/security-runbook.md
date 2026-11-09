@@ -29,7 +29,7 @@ documented fallback instead of a fictional backup owner.
 
 - Before a comprehensive security assessment or hardening pass.
 - Before `/deep-review` when security tooling is in scope.
-- MCP governance audit, run in CI on every change to the root MCP config and monthly as a backstop (see
+- MCP governance audit, run in CI on every change to a tracked MCP config and monthly as a backstop (see
   [Periodic governance](#periodic-governance)).
 
 ## MCP preflight (required first step)
@@ -46,8 +46,8 @@ pnpm run security:mcp-preflight -- \
   --output-json security-reports/mcp-preflight-latest.json
 ```
 
-Governance-only - `--mcps-dir` is not required here, since governance-only mode never reads it (it only scans static
-`*.mcp.json` files):
+Governance-only - `--mcps-dir` is not required here, since governance-only mode never reads it (it only scans static MCP
+config files - see [What the governance gate accepts](#what-the-governance-gate-accepts)):
 
 ```bash
 pnpm run security:mcp-preflight -- \
@@ -58,19 +58,40 @@ pnpm run security:mcp-preflight -- \
 ```
 
 This same check runs automatically in CI (minus `--include-user-config`, which scans nothing on a runner) on every pull
-request or push to `main` that touches the root `.mcp.json` or `mcp.json`, or `mcp-preflight.mjs`, and monthly as a
-backstop, via [`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) -
-see [Periodic governance](#periodic-governance).
+request or push to `main` that touches a scanned config file or `mcp-preflight.mjs`, and monthly as a backstop, via
+[`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) - see
+[Periodic governance](#periodic-governance).
 
 Exit codes:
 
 - `0` - proceed (critical MCP healthy, `--allow-fallback` with documented fallbacks, or - governance-only - no
-  unaccepted shadow MCP entries found).
+  unaccepted shadow MCP entries and nothing unclassifiable or unreadable found).
 - `1` - missing `--mcps-dir` (unless `--governance-only`, which never reads it), critical MCP down without
-  `--allow-fallback`, or - governance-only - an unaccepted shadow MCP entry found. A nonexistent `--mcps-dir` is no
-  longer fatal by itself: every registered security MCP is reported `absent`, and `--allow-fallback` governs whether
-  that is acceptable - this is what lets a full MCP-session outage proceed deterministically instead of crashing before
-  fallback logic runs.
+  `--allow-fallback`, or - governance-only - an unaccepted shadow MCP entry, an unclassifiable entry, or an unreadable
+  config found (listed under `governance.blockingConfigs`). A nonexistent `--mcps-dir` is no longer fatal by itself:
+  every registered security MCP is reported `absent`, and `--allow-fallback` governs whether that is acceptable - this
+  is what lets a full MCP-session outage proceed deterministically instead of crashing before fallback logic runs.
+
+### What the governance gate accepts
+
+The gate scans the root `.mcp.json` and `mcp.json` (plus the parent directory's, and `$HOME`'s with
+`--include-user-config`), and these tracked agent configs at `--repo-root`: `.cursor/mcp.json`,
+`.agents/mcp_config.json`, `.gemini/settings.json` (all `mcpServers`), `opencode.json` (`mcp`), `.zed/settings.json`
+(`context_servers`, whole-line `//` comments allowed) and `.codex/config.toml` (`[mcp_servers.<name>]` tables). The
+workflow's path filter lists the same files.
+
+Each server entry is classified, and it fails closed (BT-763):
+
+- `runlayer-managed` only when the URL is `https:` and its parsed hostname is `runlayer.com` or a subdomain of it, or
+  the command is the `runlayer` binary with `run` as its first argument. A URL or a shell script that merely mentions
+  Runlayer is a shadow server.
+- `shadow-remote` for a `url`, `serverUrl` or `httpUrl`; `shadow-stdio` for a `command` (a string plus `args`, or an
+  argv array as OpenCode writes it).
+- Unclassifiable, and blocking, when an entry has no URL and no command, two URL keys, or a URL and a command (of any
+  type: an object `command`, as Zed writes it, counts).
+- Unreadable, and blocking, when a config does not parse, its server key is not an object, or `.codex/config.toml` holds
+  anything beyond plain table headers and single-line JSON-compatible `key = value` pairs (a trailing comment, a dotted
+  or quoted key, a multi-line string, a repeated server table).
 
 Never skip the preflight silently. If a tier is unavailable, run the fallback row from the matrix below and record it in
 the report.
@@ -167,14 +188,15 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
 ## Periodic governance
 
 [`.github/workflows/mcp-governance-audit.yml`](../../../../.github/workflows/mcp-governance-audit.yml) runs this
-automatically from the repo root on every PR or push to `main` that touches the root MCP config, and monthly as a
-backstop - a failing run (red X in Actions) means an unaccepted shadow MCP entry was found; that is the enforced check.
-The steps below are the same procedure run by hand, useful as an early check or from inside an agent session:
+automatically from the repo root on every PR or push to `main` that touches a scanned config, and monthly as a
+backstop - a failing run (red X in Actions) means an unaccepted shadow MCP entry, or an unclassifiable or unreadable
+config, was found; that is the enforced check. The steps below are the same procedure run by hand, useful as an early
+check or from inside an agent session:
 
 1. Run governance-only preflight for both packages (use each package directory as `--repo-root`).
 2. Run it once more with the monorepo root as `--repo-root` - `discoverMcpConfigPaths` only walks one level up, so a
-   package-rooted run reaches `packages/`, never the repo root. Without this pass the tracked root `.mcp.json` is never
-   scanned:
+   package-rooted run reaches `packages/`, never the repo root. Without this pass the tracked root `.mcp.json` and agent
+   configs are never scanned:
 
    ```bash
    pnpm run security:mcp-preflight -- \
@@ -185,9 +207,9 @@ The steps below are the same procedure run by hand, useful as an early check or 
    ```
 
 3. Review shadow MCP flags against the accepted entries below. `summary.proceed` (and the script's exit code) already
-   reflects this automatically - it is `false` whenever `governance.unacceptedShadowServers` is non-empty - so this step
-   is about deciding what to do with a failure, not detecting one by hand: migrate or remove every unmanaged server that
-   is not listed there, per organizational policy.
+   reflects this automatically - it is `false` whenever `governance.unacceptedShadowServers` or
+   `governance.blockingConfigs` is non-empty - so this step is about deciding what to do with a failure, not detecting
+   one by hand: migrate or remove every unmanaged server that is not listed there, per organizational policy.
 4. Re-authenticate critical MCPs (Opsera) if status is `auth_required`.
 5. Store reports under `security-reports/` (gitignored).
 
@@ -195,24 +217,26 @@ The steps below are the same procedure run by hand, useful as an early check or 
 
 The entry below is expected in the repo-root pass from step 2 and must not be migrated or removed under step 3.
 Acceptance is bound to the whole row, not the name: a flagged server qualifies only when the name, URL, config path, and
-classification all match. The same name pointing at a different URL, or appearing in a different config file, is a
-finding.
+classification all match. The same name pointing at a different URL, or appearing in a config the row does not name, is
+a finding.
 
-The name, config path, and classification columns are enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
-[`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs); the URL column is
-enforced separately by `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs` (`pnpm run agents:check`). Both are
-hand-synced to this table - there is no shared import between them.
+Every column is enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
+[`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs), so the standalone
+governance audit fails on a different URL by itself. `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs`
+(`pnpm run agents:check`) pins the same URL in each config file. Both are hand-synced to this table - there is no shared
+import between them.
 
 | Server | URL | Declared in | Expected classification |
 | --- | --- | --- | --- |
-| `blit386-docs` | `https://blit386.dev/mcp` | tracked root `.mcp.json` | `shadow-remote` |
+| `blit386-docs` | `https://blit386.dev/mcp` | any tracked config the gate scans at the repo root (root `.mcp.json` and the six agent configs), never a parent-directory or `$HOME` one | `shadow-remote` |
 
-`shadow-remote` is the correct classification, not a finding: `isRunlayerManagedEntry` only exempts Runlayer URLs, and
-this is our own first-party docs server (`packages/website/src/mcp-server.ts`, discovery card at
-`packages/website/public/.well-known/mcp/server-card.json`). It is public, unauthenticated, and read-only - it exposes
-`search_docs`, `get_doc_page`, and `get_docs_summary` over the published documentation and carries no credentials. A
-clean run is a shadow count of one whose single entry matches the whole row above - name, URL, config path, and
-classification together. Count and name alone are not enough to call it clean.
+`shadow-remote` is the correct classification, not a finding: `isRunlayerManagedEntry` only exempts a `runlayer.com`
+host or the `runlayer` binary, and this is our own first-party docs server (`packages/website/src/mcp-server.ts`,
+discovery card at `packages/website/public/.well-known/mcp/server-card.json`). It is public, unauthenticated, and
+read-only - it exposes `search_docs`, `get_doc_page`, and `get_docs_summary` over the published documentation and
+carries no credentials. A clean run is a shadow count of seven - one per tracked config - whose entries each match the
+whole row above - name, URL, config path, and classification together. Count and name alone are not enough to call it
+clean.
 
 ## Report template
 

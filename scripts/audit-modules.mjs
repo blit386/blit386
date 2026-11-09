@@ -207,7 +207,8 @@ export function deriveUnits(root = ROOT) {
     ]);
 
     const isMarkdown = (name) => name.endsWith('.md');
-    const rootFiles = fileNames(root, '.');
+    // In a linked git worktree `.git` is a file, not a directory; it is never audited.
+    const rootFiles = fileNames(root, '.').filter((name) => name !== '.git');
     const packageFiles = KNOWN_PACKAGES.flatMap((pkg) => fileNames(root, pkg).map((name) => posix.join(pkg, name)));
     add('repo-docs', KIND_PROSE, [
         ...rootFiles.filter(isMarkdown),

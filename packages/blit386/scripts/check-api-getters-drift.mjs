@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 import { createRepoProgram, ENTRY_FILE, enumerateSymbols, ROOT } from './gen-api-history.mjs';
+import { relativeToRoot } from './generated-file-check.mjs';
 
 const RULE_FILE_PATH = join(ROOT, '.claude', 'rules', 'bt-api-getters.md');
 const HARDWARE_SETTINGS_FILE = join(ROOT, 'src', 'core', 'IBTDemo.ts');
@@ -165,11 +166,6 @@ export function findMissingTierBMentions(flagNames, ruleContent) {
             (name) =>
                 `${HARDWARE_SETTINGS_INTERFACE}.${name} is missing from the Tier B row of .claude/rules/bt-api-getters.md (expected an inline code span: \`${name}\`)`,
         );
-}
-
-/** Path relative to the package root, for readable console output. */
-function relativeToRoot(filePath) {
-    return filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
 }
 
 /**

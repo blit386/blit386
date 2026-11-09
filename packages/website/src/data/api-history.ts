@@ -1,6 +1,9 @@
 import raw from './api-history.generated.json';
 
-/** Lifecycle status of a documented API symbol. */
+/**
+ * Lifecycle status of a documented API symbol. Manual sync: these values are emitted by
+ * `deriveStatus` in packages/blit386/scripts/gen-api-history.mjs - change both together.
+ */
 export type SymbolStatus = 'stable' | 'unreleased' | 'deprecated';
 
 /** Version history for a single documented API symbol. */

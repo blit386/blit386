@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "blit386-docs": { "serverUrl": "https://blit386.dev/mcp" },
+    "agents-shadow": { "serverUrl": "https://example.com/agents" }
+  }
+}
