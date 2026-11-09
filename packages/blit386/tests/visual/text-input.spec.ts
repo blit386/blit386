@@ -15,4 +15,16 @@ test.describe('Text input', () => {
             .poll(() => page.evaluate(() => (window as unknown as { __TYPED__: string }).__TYPED__))
             .toBe('ab\x08\x0d');
     });
+
+    test('Tab arrives although its default action moves focus off the canvas', async ({ page }) => {
+        expect(await openFixture(page, '/text-input.html?backend=software')).toBe('software');
+
+        await page.locator('canvas').focus();
+        await page.keyboard.press('Tab');
+
+        expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('CANVAS');
+        await expect
+            .poll(() => page.evaluate(() => (window as unknown as { __TYPED__: string }).__TYPED__))
+            .toBe('\x09');
+    });
 });
