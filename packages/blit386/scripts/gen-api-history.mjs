@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+import { relativeToRoot, runCheck } from './generated-file-check.mjs';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TSCONFIG_PATH = join(ROOT, 'tsconfig.json');
@@ -765,16 +766,6 @@ function generate() {
 }
 
 /**
- * Path relative to the repo root, for readable console output.
- *
- * @param {string} filePath - Absolute file path.
- * @returns {string} Repo-relative path.
- */
-function relativeToRoot(filePath) {
-    return filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
-}
-
-/**
  * Parses CLI flags into a plain options object. Pure (no `process` access) so it is unit
  * testable without spawning the script.
  *
@@ -786,27 +777,6 @@ export function parseCliArgs(argv) {
         isCheck: argv.includes('--check'),
         isSinceCheck: argv.includes('--since-check'),
     };
-}
-
-/**
- * Runs `--check`: regenerates the manifest in memory and diffs it against the committed
- * `docs/_api-history.json`, exiting non-zero on drift. Mirrors `sync-doc-banners.mjs --check`.
- *
- * @param {string} desiredJson - Freshly generated JSON text (already `\n`-terminated).
- */
-function runCheck(desiredJson) {
-    const relativeOutput = relativeToRoot(OUTPUT_FILE);
-    const current = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : null;
-
-    if (current === desiredJson) {
-        console.log(`${relativeOutput} is up to date.`);
-
-        return;
-    }
-
-    console.error(`${relativeOutput} is out of date.`);
-    console.error('Run `pnpm run api:history` to regenerate it.');
-    process.exit(1);
 }
 
 /**
@@ -856,7 +826,7 @@ function main() {
     const json = `${JSON.stringify(history, null, 2)}\n`;
 
     if (isCheck) {
-        runCheck(json);
+        runCheck(OUTPUT_FILE, json, 'api:history');
 
         return;
     }
