@@ -95,7 +95,7 @@ src/
     clientToDisplayPos.ts  # Pure client -> display-pixel conversion shared by PointerInput and BT.nativeScreenToDisplayPos
     KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, keydown text (BT.inputString); any-key queries behind BT.isAnyKey*
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone); digital trigger buttons (BTN_L2/R2 at 0.5 analog) and any-button masks
-    gamepadMapping.ts      # W3C standard-mapping tables and pure readers: one Gamepad -> BTN_* mask + AXIS_* tuple, stick dead zone
+    gamepadMapping.ts      # W3C standard-mapping tables, the BT.AXIS_* values, and pure readers: one Gamepad -> BTN_* mask + AXIS_* tuple, stick dead zone
     buttonFlags.ts         # The BT.BTN_* bit flags and face / pointer / trigger masks, defined once (import-free; BLIT386.ts and the input modules share it)
     repeatTick.ts          # isRepeatTick: the shared every-N-ticks repeat rule for held keys and gamepad buttons
     defaultKeyboardMap.ts  # Default face-button key tables for both keyboardLayout values ('versus' and 'single'); clone helpers

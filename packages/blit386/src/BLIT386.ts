@@ -60,6 +60,7 @@ import {
     DEFAULT_KEYBOARD_SINGLE_PLAYER1,
     DEFAULT_KEYBOARD_SINGLE_PLAYER2,
 } from './input/defaultKeyboardMap';
+import * as gamepadMapping from './input/gamepadMapping';
 import {
     getKeyboardFaceButtonKeys,
     resetKeyboardFaceButtonMaps,
@@ -501,42 +502,42 @@ export const BT = {
      *
      * @since 1.0.3
      */
-    AXIS_LEFT_X: 0,
+    AXIS_LEFT_X: gamepadMapping.AXIS_LEFT_X,
 
     /**
      * Left stick vertical axis index.
      *
      * @since 1.0.3
      */
-    AXIS_LEFT_Y: 1,
+    AXIS_LEFT_Y: gamepadMapping.AXIS_LEFT_Y,
 
     /**
      * Right stick horizontal axis index.
      *
      * @since 1.0.3
      */
-    AXIS_RIGHT_X: 2,
+    AXIS_RIGHT_X: gamepadMapping.AXIS_RIGHT_X,
 
     /**
      * Right stick vertical axis index.
      *
      * @since 1.0.3
      */
-    AXIS_RIGHT_Y: 3,
+    AXIS_RIGHT_Y: gamepadMapping.AXIS_RIGHT_Y,
 
     /**
      * Left trigger axis index (0.0 to 1.0).
      *
      * @since 1.0.3
      */
-    AXIS_TRIGGER_L: 4,
+    AXIS_TRIGGER_L: gamepadMapping.AXIS_TRIGGER_L,
 
     /**
      * Right trigger axis index (0.0 to 1.0).
      *
      * @since 1.0.3
      */
-    AXIS_TRIGGER_R: 5,
+    AXIS_TRIGGER_R: gamepadMapping.AXIS_TRIGGER_R,
 
     /**
      * All face buttons (A/B/X/Y).

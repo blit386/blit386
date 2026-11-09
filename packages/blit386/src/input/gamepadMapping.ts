@@ -1,7 +1,7 @@
 /**
- * W3C standard-mapping tables for {@link GamepadInput}: raw button and axis indices, the `BTN_*` flags they
- * set, the stick dead zone, and the pure readers that turn one browser `Gamepad` into a button mask and an
- * axis tuple.
+ * W3C standard-mapping tables for {@link GamepadInput}: raw button and axis indices, the `BTN_*` flags they set,
+ * the `BT.AXIS_*` values, the stick dead zone, and the pure readers that turn one browser `Gamepad` into a button
+ * mask and an axis tuple.
  */
 
 /* eslint-disable security/detect-object-injection */
@@ -66,13 +66,23 @@ const RAW_LEFT_Y = 1;
 const RAW_RIGHT_X = 2;
 const RAW_RIGHT_Y = 3;
 
-/** Axis order of a player snapshot; the same values as `BT.AXIS_*`. */
-const AXIS_LEFT_X = 0;
-const AXIS_LEFT_Y = 1;
-const AXIS_RIGHT_X = 2;
-const AXIS_RIGHT_Y = 3;
-const AXIS_TRIGGER_L = 4;
-const AXIS_TRIGGER_R = 5;
+/** Left stick horizontal (`BT.AXIS_LEFT_X`). The `AXIS_*` values are also the axis order of a player snapshot. */
+export const AXIS_LEFT_X = 0;
+
+/** Left stick vertical (`BT.AXIS_LEFT_Y`). */
+export const AXIS_LEFT_Y = 1;
+
+/** Right stick horizontal (`BT.AXIS_RIGHT_X`). */
+export const AXIS_RIGHT_X = 2;
+
+/** Right stick vertical (`BT.AXIS_RIGHT_Y`). */
+export const AXIS_RIGHT_Y = 3;
+
+/** Left trigger, analog (`BT.AXIS_TRIGGER_L`). */
+export const AXIS_TRIGGER_L = 4;
+
+/** Right trigger, analog (`BT.AXIS_TRIGGER_R`). */
+export const AXIS_TRIGGER_R = 5;
 
 /** Every flag a gamepad can set: the face buttons plus the two digital triggers. */
 export const VALID_BUTTON_FLAGS = [...FACE_BUTTON_FLAGS, BTN_L2, BTN_R2] as const;
