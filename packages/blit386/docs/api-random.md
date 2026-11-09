@@ -81,7 +81,7 @@ identically; a separate `Random` you own is yours to reseed.
 | `pick(arr)` | One element from a non-empty array |
 | `shuffle(arr)` | New shuffled copy (Fisher-Yates) |
 | `shuffleInPlace(arr)` | Shuffle the array in place and return it |
-| `weighted(items, weights)` | One item by relative non-negative weights |
+| `weighted(items, weights)` | One item by relative non-negative, finite weights |
 | `angle()` | Float in `[0, 2π)` radians |
 | `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
 | `insideRect(rect)` | Integer point in half-open `rect` |

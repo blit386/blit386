@@ -102,7 +102,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `Random.int()` and `Random.intInclusive()` explain a bound outside the 32-bit integer range instead of wrapping it:
   `random.int(2 ** 31)` used to fail with a confusing `maxExclusive > min` message about a negative bound.
   `Random.weighted()` throws for a weight that is not a finite number; an `Infinity` weight used to make it return the
-  last item every time. See [Random](api-random.md).
+  last item every time. A `NaN` weight used to count as 0 and now throws as well, so a weight computed as
+  `score / total` needs a guard when `total` can be 0. See [Random](api-random.md).
 - `Color32.toUint32()` returns an unsigned 32-bit value, as documented. Every color with alpha 128 or more came back
   negative (`Color32.red.toUint32()` was `-16776961`, not `0xff0000ff`), so comparing it to a hex literal or using it as
   a map key next to `>>> 0` values failed. `Color32.fromUint32` accepted both forms and is unchanged.
