@@ -95,6 +95,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A `bootstrap()` `onSuccess` callback that throws no longer tears down a game that already started. The error used to
+  reach bootstrap's own error handler, which replaced the canvas with an "Unexpected Error" panel, called `onError`, and
+  resolved `false` while the game loop kept running and `BT.isReady` was `true`. It is now logged to the console, and
+  `bootstrap()` resolves `true`. See [Core](api-core.md).
 - `Random.int()` and `Random.intInclusive()` explain a bound outside the 32-bit integer range instead of wrapping it:
   `random.int(2 ** 31)` used to fail with a confusing `maxExclusive > min` message about a negative bound.
   `Random.weighted()` throws for a weight that is not a finite number; an `Infinity` weight used to make it return the

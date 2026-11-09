@@ -3067,6 +3067,8 @@ export const BT = {
  *   second, unstoppable `GameLoop`.
  * @changed 1.7.0 Exposes `BT` on `window.BT` after bootstrap finishes, gated by
  *   {@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}).
+ * @changed 1.8.1 An `onSuccess` callback that throws is logged and no longer replaces the running game with an
+ *   error panel, fires `onError`, or makes `bootstrap()` resolve `false`.
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.

@@ -42,7 +42,7 @@ export interface BootstrapOptions {
      */
     containerId?: string;
 
-    /** Custom callback on successful initialization. */
+    /** Custom callback on successful initialization. If it throws, the error is logged and the game keeps running. */
     onSuccess?: () => void;
 
     /** Custom callback on initialization error. */
@@ -91,7 +91,7 @@ interface Result {
 async function waitForDOM(): Promise<void> {
     if (document.readyState === 'loading') {
         await new Promise<void>((resolve) => {
-            document.addEventListener('DOMContentLoaded', () => resolve());
+            document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
         });
     }
 }
@@ -194,7 +194,12 @@ async function initDemo(
     if (initialized) {
         console.log('[BT] Demo started successfully');
 
-        onSuccess?.();
+        // The game is already running: a bug in the caller's callback is logged, never turned into a boot failure.
+        try {
+            onSuccess?.();
+        } catch (err) {
+            console.error('[BT] onSuccess threw after the game started; the game keeps running:', err);
+        }
 
         result = { success: true };
     } else {

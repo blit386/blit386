@@ -2025,6 +2025,10 @@
         {
           "version": "1.7.0",
           "note": "Exposes `BT` on `window.BT` after bootstrap finishes, gated by\n{@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode})."
+        },
+        {
+          "version": "1.8.1",
+          "note": "An `onSuccess` callback that throws is logged and no longer replaces the running game with an\nerror panel, fires `onError`, or makes `bootstrap()` resolve `false`."
         }
       ],
       "deprecated": null,
