@@ -128,6 +128,23 @@ describe('deriveUnits', () => {
     });
 });
 
+describe('git worktree checkout', () => {
+    it('does not list the worktree .git file as a tooling-config path', () => {
+        const root = makeTree();
+
+        try {
+            // In a linked worktree `.git` is a file pointing at the real git dir, not a directory.
+            writeFileSync(join(root, '.git'), 'gitdir: /nonexistent/.git/worktrees/example\n');
+
+            const units = deriveUnits(root);
+            assert.ok(!units.find((unit) => unit.key === 'tooling-config')?.paths.includes('.git'));
+            assert.deepEqual(findUncovered(root, units), []);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+});
+
 describe('gitignored paths', () => {
     it('never derives or reports a path git ignores, so a local draft cannot make CI disagree', () => {
         const root = makeTree();
