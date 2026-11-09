@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-09T20:08:21+01:00"
+lastModified: "2026-11-09T20:34:53+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -85,8 +85,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 - `BT.musicPlay` with a non-finite `overlap` (`NaN` or `Infinity`) now throws before anything changes. It used to fade
   out the current track first and then throw, leaving silence. `BT.soundPlay` now rejects a non-finite `priority` the
-  same way it already rejected a bad `volume`, `pitch` or `pan`; a `NaN` priority used to steal any voice, even one
-  played at a higher priority.
+  same way it already rejected a bad `volume`, `pitch` or `pan` (once audio has unlocked - a locked call is still
+  dropped before its options are checked); a `NaN` priority used to steal any voice, even one played at a higher
+  priority.
 - Behavior change: `BT.audioVolumeGet` called before `BT.init()` now returns `1`, the volume every bus starts at,
   instead of `0`.
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
