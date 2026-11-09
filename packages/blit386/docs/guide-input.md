@@ -462,9 +462,20 @@ value today.
 
 <Since symbol="BT.inputString" />
 
-`BT.inputString` returns characters accumulated from filtered `beforeinput` (and Tab / Escape where needed). The buffer
-clears at the end of each fixed update step (read it during `update()`). See public JSDoc on `BT.inputString` for
-details.
+`BT.inputString` returns the text typed on the focused canvas since the last fixed update step, read from each
+`keydown`. The buffer clears at the end of every step, so read it during `update()` and keep what you need.
+
+- Printable ASCII (space to `~`) arrives as itself, with Shift and AltGr applied by the keyboard layout.
+- Backspace arrives as `\x08` and Enter as `\x0d`. Both, and the printable keys, repeat while held.
+- Tab arrives as `\x09` and Escape as `\x1b`, once per press.
+- Ctrl and Cmd shortcuts type nothing.
+
+<Callout type="warn" title="Physical keyboards only">
+
+Text entry needs a physical keyboard. IME composition (Chinese, Japanese, Korean input), touch-screen keyboards and
+paste do not reach `BT.inputString`, and characters outside ASCII are dropped.
+
+</Callout>
 
 ## Scroll delta
 

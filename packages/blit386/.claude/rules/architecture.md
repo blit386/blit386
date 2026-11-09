@@ -91,7 +91,7 @@ src/
   input/
     PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); two previous-state clocks - endUpdate for update() readers, endFrame for render-side readers and the overlay
     clientToDisplayPos.ts  # Pure client -> display-pixel conversion shared by PointerInput and BT.nativeScreenToDisplayPos
-    KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, beforeinput text; any-key queries behind BT.isAnyKey*
+    KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, keydown text (BT.inputString); any-key queries behind BT.isAnyKey*
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone); digital trigger buttons (BTN_L2/R2 at 0.5 analog) and any-button masks
     defaultKeyboardMap.ts  # Default face-button key tables for both keyboardLayout values ('versus' and 'single'); clone helpers
     InputTrace.ts          # Dev-only input-edge recorder (window.__btInputTrace): per-update and per-frame pointer/key/gamepad edges, delta, wheel; BTAPI records only while isRecording; capped

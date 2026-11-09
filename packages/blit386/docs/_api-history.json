@@ -681,7 +681,12 @@
     "BT.inputString": {
       "kind": "getter",
       "since": "1.0.4",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

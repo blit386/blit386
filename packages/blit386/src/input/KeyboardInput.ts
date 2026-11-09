@@ -1,6 +1,6 @@
 /**
  * Keyboard input: DOM `code` tracking, edge detection, optional tick-based repeat,
- * and text accumulation via `beforeinput` (`inputString`).
+ * and text accumulation from `keydown` `event.key` (`inputString`).
  */
 
 /**
@@ -20,6 +20,12 @@ const SCROLL_CODES: ReadonlySet<string> = new Set([
     'End',
 ]);
 
+/** Lowest code point {@link KeyboardInput.getInputString} accepts as typed text (space). */
+const FIRST_PRINTABLE = 32;
+
+/** Highest code point {@link KeyboardInput.getInputString} accepts as typed text (`~`). */
+const LAST_PRINTABLE = 126;
+
 /** Options supplied when attaching to the canvas. */
 export interface KeyboardAttachOptions {
     /**
@@ -32,7 +38,7 @@ export interface KeyboardAttachOptions {
 /**
  * Tracks held keys using `KeyboardEvent.code`, snapshots once per frame for
  * edge detection (aligned with fixed-update timing via {@link endUpdate}), and
- * accumulates filtered text from `beforeinput`.
+ * accumulates filtered text from `keydown` (a canvas never receives `beforeinput`).
  */
 export class KeyboardInput {
     /** Keys currently held (`keydown`, cleared on `keyup` / blur). */
@@ -74,8 +80,6 @@ export class KeyboardInput {
 
     private readonly onKeyUp: (event: KeyboardEvent) => void;
 
-    private readonly onBeforeInput: (event: InputEvent) => void;
-
     private readonly onBlur: () => void;
 
     /**
@@ -84,7 +88,6 @@ export class KeyboardInput {
     constructor() {
         this.onKeyDown = (event) => this.handleKeyDown(event);
         this.onKeyUp = (event) => this.handleKeyUp(event);
-        this.onBeforeInput = (event) => this.handleBeforeInput(event);
         this.onBlur = () => this.clearAllState();
     }
 
@@ -104,7 +107,6 @@ export class KeyboardInput {
         canvas.addEventListener('keydown', this.onKeyDown);
         canvas.addEventListener('keyup', this.onKeyUp);
         canvas.addEventListener('blur', this.onBlur);
-        canvas.addEventListener('beforeinput', this.onBeforeInput as EventListener);
 
         if (typeof globalThis.window !== 'undefined') {
             globalThis.window.addEventListener('blur', this.onBlur);
@@ -121,7 +123,6 @@ export class KeyboardInput {
             canvas.removeEventListener('keydown', this.onKeyDown);
             canvas.removeEventListener('keyup', this.onKeyUp);
             canvas.removeEventListener('blur', this.onBlur);
-            canvas.removeEventListener('beforeinput', this.onBeforeInput as EventListener);
         }
 
         if (typeof globalThis.window !== 'undefined') {
@@ -305,8 +306,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Text accumulated since the last {@link endUpdate} from `beforeinput`.
-     * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter.
+     * Text accumulated since the last {@link endUpdate} from `keydown`.
+     * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter; IME composition is not seen.
      *
      * @returns Buffered characters for the current frame.
      */
@@ -433,7 +434,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Applies first keydown for a code and queues Tab / Escape for {@link getInputString}.
+     * Queues typed text for {@link getInputString} (OS key repeats included), then applies the first keydown for a
+     * code and queues Tab / Escape.
      *
      * @param event - DOM keydown event.
      */
@@ -451,6 +453,8 @@ export class KeyboardInput {
             return;
         }
 
+        this.appendText(event);
+
         if (this.held.has(code)) {
             return;
         }
@@ -462,7 +466,7 @@ export class KeyboardInput {
 
         this.firstPressTick.set(code, tick);
 
-        // `beforeinput` does not reliably fire for Tab / Escape; mirror text-input spec.
+        // Tab / Escape are queued once per press, not on OS key repeat.
         if (code === 'Tab') {
             this.inputBuffer += '\x09';
         } else if (code === 'Escape') {
@@ -487,42 +491,29 @@ export class KeyboardInput {
     }
 
     /**
-     * Filters `beforeinput` into {@link getInputString}.
+     * Appends the character a keydown types, or BS / CR for Backspace / Enter. Ctrl shortcuts type nothing (Meta ones
+     * never get here); Ctrl+Alt is let through because Windows reports AltGr (`@`, `{` on many layouts) that way.
      *
-     * @param event - DOM beforeinput event.
+     * @param event - DOM keydown event.
      */
-    private handleBeforeInput(event: InputEvent): void {
-        const inputType = event.inputType;
+    private appendText(event: KeyboardEvent): void {
+        const key: unknown = event.key;
 
-        if (inputType === 'insertText' || inputType === 'insertCompositionText') {
-            const data = event.data;
-
-            if (data === null || data === undefined) {
-                return;
-            }
-
-            for (let i = 0; i < data.length; i++) {
-                const cp = data.charCodeAt(i);
-
-                // Printable ASCII 32-127, plus Tab (9) and ESC (27) when present as text.
-                if ((cp >= 32 && cp <= 127) || cp === 9 || cp === 27) {
-                    this.inputBuffer += String.fromCharCode(cp);
-                }
-            }
-
+        // Synthetic keydowns (Chrome autofill, hand-built test events) can arrive without a `key`.
+        if (typeof key !== 'string') {
             return;
         }
 
-        if (inputType === 'deleteContentBackward') {
+        if (key === 'Backspace') {
             this.inputBuffer += '\x08';
-
-            return;
-        }
-
-        if (inputType === 'insertLineBreak' || inputType === 'insertParagraph') {
+        } else if (key === 'Enter') {
             this.inputBuffer += '\x0d';
+        } else if (key.length === 1 && !(event.ctrlKey && !event.altKey)) {
+            const cp = key.charCodeAt(0);
 
-            return;
+            if (cp >= FIRST_PRINTABLE && cp <= LAST_PRINTABLE) {
+                this.inputBuffer += key;
+            }
         }
     }
 }
