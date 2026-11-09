@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "blit386-docs": { "httpUrl": "https://blit386.dev/mcp" },
+    "gemini-shadow": { "command": "npx", "args": ["-y", "example-server"] }
+  }
+}

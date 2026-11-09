@@ -234,6 +234,58 @@ describe('runMcpPreflight', () => {
     });
 });
 
+describe('tracked agent MCP configs (BT-763)', () => {
+    const AGENT_FIXTURE = path.join(FIXTURE_ROOT, 'agent-configs');
+    const SHADOW_BY_FILE = {
+        '.cursor/mcp.json': ['cursor-shadow', 'shadow-remote'],
+        '.agents/mcp_config.json': ['agents-shadow', 'shadow-remote'],
+        '.gemini/settings.json': ['gemini-shadow', 'shadow-stdio'],
+        'opencode.json': ['opencode-shadow', 'shadow-stdio'],
+        '.zed/settings.json': ['zed-shadow', 'shadow-stdio'],
+        '.codex/config.toml': ['codex-shadow', 'shadow-stdio'],
+    };
+
+    it('scans every format, accepts blit386-docs in each and flags the shadow entry in each', () => {
+        const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: AGENT_FIXTURE, governanceOnly: true });
+
+        assert.equal(report.summary.proceed, false);
+        assert.deepEqual(report.governance.blockingConfigs, []);
+        for (const [file, [name, classification]] of Object.entries(SHADOW_BY_FILE)) {
+            const configPath = path.join(AGENT_FIXTURE, file);
+            assert.ok(
+                report.governance.acceptedShadowServers.some(
+                    (server) => server.config === configPath && server.name === 'blit386-docs',
+                ),
+                `blit386-docs accepted in ${file}`,
+            );
+            assert.ok(
+                report.governance.unacceptedShadowServers.some(
+                    (server) =>
+                        server.config === configPath &&
+                        server.name === name &&
+                        server.classification === classification,
+                ),
+                `${name} flagged as ${classification} in ${file}`,
+            );
+        }
+    });
+
+    it('fails closed on Codex TOML it cannot read', () => {
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-codex-toml-'));
+        fs.mkdirSync(path.join(tempDir, '.codex'));
+        for (const toml of [
+            "[mcp_servers.x]\nurl = 'https://example.com/single-quoted'\n",
+            'mcp_servers.x.url = "https://example.com/dotted-key"\n',
+            '[mcp_servers]\nx = { url = "https://example.com/inline-table" }\n',
+        ]) {
+            fs.writeFileSync(path.join(tempDir, '.codex', 'config.toml'), toml);
+            const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: tempDir, governanceOnly: true });
+            assert.equal(report.summary.proceed, false, toml);
+            assert.equal(report.governance.blockingConfigs.length, 1, toml);
+        }
+    });
+});
+
 describe('registry helpers', () => {
     it('builds report entries for all registered security MCP servers', () => {
         const report = buildMcpServerReport(MCPS_FIXTURE);

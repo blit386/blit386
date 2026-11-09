@@ -53,6 +53,26 @@ export const SECURITY_MCP_REGISTRY = [
 export const ACCEPTED_SHADOW_MCP_ENTRIES = [{ name: 'blit386-docs', classification: 'shadow-remote' }];
 
 const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json'];
+
+/** @typedef {{ key: string, format: 'json' | 'jsonc' | 'codex-toml' }} McpConfigFormat */
+
+/** @type {McpConfigFormat} */
+const MCP_JSON_FORMAT = { key: 'mcpServers', format: 'json' };
+
+/**
+ * Other tracked agent configs that can declare MCP servers, scanned at the repo root only.
+ * Each is generated or pinned by the kit adapters; `agents:check` pins their blit386-docs URL.
+ * Manual sync: the `paths` filter in .github/workflows/mcp-governance-audit.yml lists these files.
+ * @type {{ file: string, format: McpConfigFormat }[]}
+ */
+const AGENT_MCP_CONFIGS = [
+    { file: '.cursor/mcp.json', format: MCP_JSON_FORMAT },
+    { file: '.agents/mcp_config.json', format: MCP_JSON_FORMAT },
+    { file: '.gemini/settings.json', format: MCP_JSON_FORMAT },
+    { file: 'opencode.json', format: { key: 'mcp', format: 'json' } },
+    { file: '.zed/settings.json', format: { key: 'context_servers', format: 'jsonc' } },
+    { file: '.codex/config.toml', format: { key: 'mcp_servers', format: 'codex-toml' } },
+];
 const RUNLAYER_DOMAIN = 'runlayer.com';
 const RUNLAYER_BINARY = 'runlayer';
 
@@ -162,42 +182,148 @@ export function isRunlayerManagedEntry(entry) {
 }
 
 /**
+ * @param {string} tableName A TOML table header without its brackets.
+ * @param {number} lineNumber
+ * @returns {string | null} The server name for `[mcp_servers.<name>]`, or null for a table whose
+ *   keys are not read (a server's `env` / `tools` sub-table, or an unrelated table).
+ */
+function codexServerTableName(tableName, lineNumber) {
+    const server = /^mcp_servers\.(?:"([^"]+)"|([\w-]+))$/u.exec(tableName);
+    if (server) {
+        return server[1] ?? server[2] ?? '';
+    }
+    if (/^mcp_servers\.(?:"[^"]+"|[\w-]+)\./u.test(tableName) || !tableName.startsWith('mcp_servers')) {
+        return null;
+    }
+    throw new Error(`line ${lineNumber}: unsupported mcp_servers table [${tableName}]`);
+}
+
+/**
+ * Reads the `[mcp_servers.<name>]` tables of a Codex `config.toml` into a plain object.
+ * shortcut: only bare or double-quoted table names and JSON-compatible values (basic strings,
+ * string arrays, numbers, booleans) are read; anything else under `mcp_servers` throws, so the
+ * gate fails closed. Swap for a real TOML parser if Codex configs grow beyond that.
+ *
+ * @param {string} raw
+ * @returns {{ mcp_servers: Record<string, Record<string, unknown>> }}
+ */
+export function parseCodexMcpServers(raw) {
+    /** @type {Map<string, Record<string, unknown>>} */
+    const servers = new Map();
+    /** @type {Record<string, unknown> | null} */
+    let current = null;
+
+    for (const [index, rawLine] of raw.split('\n').entries()) {
+        const line = rawLine.trim();
+        if (line === '' || line.startsWith('#')) {
+            continue;
+        }
+
+        const header = /^\[\s*([^\]]+?)\s*\]$/u.exec(line);
+        if (header) {
+            const serverName = codexServerTableName(header[1] ?? '', index + 1);
+            current = serverName === null ? null : {};
+            if (serverName !== null && current !== null) {
+                servers.set(serverName, current);
+            }
+            continue;
+        }
+
+        if (current === null) {
+            if (line.startsWith('mcp_servers')) {
+                throw new Error(`line ${index + 1}: unsupported mcp_servers key outside a table`);
+            }
+            continue;
+        }
+
+        const pair = /^([\w-]+)\s*=\s*(.+)$/u.exec(line);
+        if (!pair) {
+            throw new Error(`line ${index + 1}: unsupported TOML line`);
+        }
+        try {
+            current[pair[1] ?? ''] = JSON.parse(pair[2] ?? '');
+        } catch {
+            throw new Error(`line ${index + 1}: unsupported TOML value`);
+        }
+    }
+
+    return { mcp_servers: Object.fromEntries(servers) };
+}
+
+/**
+ * @param {string} raw
+ * @param {McpConfigFormat['format']} format
+ * @returns {unknown}
+ */
+function parseConfig(raw, format) {
+    if (format === 'codex-toml') {
+        return parseCodexMcpServers(raw);
+    }
+    // JSONC: whole-line comments only, as check-agent-config.mjs reads Zed settings.
+    const text =
+        format === 'jsonc'
+            ? raw
+                  .split('\n')
+                  .filter((line) => !/^\s*\/\//u.test(line))
+                  .join('\n')
+            : raw;
+    return JSON.parse(text);
+}
+
+/**
+ * Reduces one server entry to the url / command / args the classifier needs, across formats:
+ * `url`, `serverUrl` (.agents) or `httpUrl` (Gemini) for remote servers, and `command` as a
+ * string plus `args`, or as an argv array (OpenCode), for stdio servers.
+ *
+ * @param {unknown} entry
+ * @returns {{ url: string, command: string, args: unknown[] }}
+ */
+function normalizeEntry(entry) {
+    const record = entry !== null && typeof entry === 'object' ? /** @type {Record<string, unknown>} */ (entry) : {};
+    const url = [record.url, record.serverUrl, record.httpUrl].find((value) => typeof value === 'string') ?? '';
+    if (Array.isArray(record.command)) {
+        const [command, ...args] = record.command;
+        return { url: /** @type {string} */ (url), command: typeof command === 'string' ? command : '', args };
+    }
+    return {
+        url: /** @type {string} */ (url),
+        command: typeof record.command === 'string' ? record.command : '',
+        args: Array.isArray(record.args) ? record.args : [],
+    };
+}
+
+/**
  * @param {string} configPath
+ * @param {McpConfigFormat} [configFormat]
  * @returns {{
  *   path: string,
  *   servers: { name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown' }[],
  *   error: string | null,
  * }}
  */
-export function scanMcpConfigFile(configPath) {
+export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
     try {
         const raw = fs.readFileSync(configPath, 'utf8');
-        const parsed = JSON.parse(raw);
-        const serversObject = parsed.mcpServers;
+        const parsed = /** @type {Record<string, unknown> | null} */ (parseConfig(raw, configFormat.format));
+        const serversObject = parsed?.[configFormat.key];
 
         if (serversObject === undefined) {
             return { path: configPath, servers: [], error: null };
         }
         if (serversObject === null || typeof serversObject !== 'object' || Array.isArray(serversObject)) {
-            return { path: configPath, servers: [], error: 'mcpServers is not an object' };
+            return { path: configPath, servers: [], error: `${configFormat.key} is not an object` };
         }
 
         /** @type {{ name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown' }[]} */
         const servers = [];
 
-        for (const [name, entry] of Object.entries(serversObject)) {
+        for (const [name, rawEntry] of Object.entries(serversObject)) {
+            const entry = normalizeEntry(rawEntry);
             if (isRunlayerManagedEntry(entry)) {
                 servers.push({ name, classification: 'runlayer-managed' });
-                continue;
-            }
-
-            const record = /** @type {Record<string, unknown>} */ (entry ?? {});
-            const url = typeof record.url === 'string' ? record.url : '';
-            const command = typeof record.command === 'string' ? record.command : '';
-
-            if (url.length > 0) {
+            } else if (entry.url.length > 0) {
                 servers.push({ name, classification: 'shadow-remote' });
-            } else if (command.length > 0) {
+            } else if (entry.command.length > 0) {
                 servers.push({ name, classification: 'shadow-stdio' });
             } else {
                 servers.push({ name, classification: 'unknown' });
@@ -239,7 +365,14 @@ export function discoverMcpConfigPaths(repoRoot, options = {}) {
     }
 
     const existing = [...new Set(candidates)].filter((candidate) => fs.existsSync(candidate));
-    return existing.map((configPath) => scanMcpConfigFile(configPath));
+    const agentConfigs = AGENT_MCP_CONFIGS.map((config) => ({
+        ...config,
+        file: path.join(repoRoot, config.file),
+    })).filter((config) => fs.existsSync(config.file));
+    return [
+        ...existing.map((configPath) => scanMcpConfigFile(configPath)),
+        ...agentConfigs.map((config) => scanMcpConfigFile(config.file, config.format)),
+    ];
 }
 
 /**
@@ -310,9 +443,12 @@ export function runMcpPreflight(options) {
             .map((server) => ({ config: config.path, name: server.name, classification: server.classification })),
     );
 
-    const rootConfigPath = path.join(repoRoot, '.mcp.json');
+    // Accepted only in the repo's own tracked configs, never in a parent-directory or $HOME one.
+    const trackedConfigPaths = ['.mcp.json', ...AGENT_MCP_CONFIGS.map((config) => config.file)].map((file) =>
+        path.join(repoRoot, file),
+    );
     const isAcceptedShadow = (/** @type {{ config: string, name: string, classification: string }} */ server) =>
-        server.config === rootConfigPath &&
+        trackedConfigPaths.includes(server.config) &&
         ACCEPTED_SHADOW_MCP_ENTRIES.some(
             (entry) => entry.name === server.name && entry.classification === server.classification,
         );

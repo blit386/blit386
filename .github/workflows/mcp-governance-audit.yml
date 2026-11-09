@@ -1,22 +1,29 @@
 name: MCP Governance Audit
 
-# BT-38 / BT-659: automated check (on PRs and pushes to main that touch the root MCP config,
-# plus a monthly backstop) that the tracked root .mcp.json carries only the
+# BT-38 / BT-659: automated check (on PRs and pushes to main that touch a tracked MCP config,
+# plus a monthly backstop) that the tracked MCP configs carry only the
 # documented, accepted shadow MCP entry (blit386-docs - see "Accepted MCP entries" in
 # packages/blit386/docs/security/security-runbook.md) and nothing unmanaged or unreviewed.
 #
 # Runs mcp-preflight.mjs in --governance-only mode, which never touches live MCP session
-# state (it only scans static *.mcp.json files) - so a partial or total MCP outage
+# state (it only scans static MCP config files) - so a partial or total MCP outage
 # elsewhere never blocks this check, and it needs no --mcps-dir at all.
 
-# The paths filter lists only the root .mcp.json and mcp.json: those are the only config files
-# mcp-preflight.mjs reads from --repo-root, so a wider glob would start green runs that scan nothing.
+# The paths filter lists exactly the config files mcp-preflight.mjs reads from --repo-root: the
+# root .mcp.json and mcp.json plus the tracked agent configs in its AGENT_MCP_CONFIGS (BT-763).
+# Keep the two lists in step - a wider glob would start green runs that scan nothing.
 on:
   push:
     branches: [main]
     paths:
       - '.mcp.json'
       - 'mcp.json'
+      - '.cursor/mcp.json'
+      - '.agents/mcp_config.json'
+      - '.gemini/settings.json'
+      - 'opencode.json'
+      - '.zed/settings.json'
+      - '.codex/config.toml'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
       - '.github/workflows/mcp-governance-audit.yml'
   pull_request:
@@ -24,6 +31,12 @@ on:
     paths:
       - '.mcp.json'
       - 'mcp.json'
+      - '.cursor/mcp.json'
+      - '.agents/mcp_config.json'
+      - '.gemini/settings.json'
+      - 'opencode.json'
+      - '.zed/settings.json'
+      - '.codex/config.toml'
       - 'packages/blit386/scripts/security/mcp-preflight.mjs'
       - '.github/workflows/mcp-governance-audit.yml'
   schedule:
