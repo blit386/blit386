@@ -483,8 +483,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Appends the character a keydown types, or BS / CR for Backspace / Enter. Shortcuts type nothing (see
-     * {@link isShortcut}; Meta ones never get here).
+     * Appends the character a keydown types, or BS / CR for Backspace / Enter (CR once per press). Shortcuts type
+     * nothing (see {@link isShortcut}; Meta ones never get here).
      *
      * @param event - DOM keydown event.
      */
@@ -499,7 +499,10 @@ export class KeyboardInput {
         if (key === 'Backspace') {
             this.inputBuffer += '\x08';
         } else if (key === 'Enter') {
-            this.inputBuffer += '\x0d';
+            // Once per press, like Tab: Enter submits, and a repeat would confirm the next screen too.
+            if (!event.repeat) {
+                this.inputBuffer += '\x0d';
+            }
         } else if (key.length === 1 && !isShortcut(event, key)) {
             const cp = key.charCodeAt(0);
 

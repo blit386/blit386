@@ -2430,9 +2430,9 @@ export const BT = {
     /**
      * Text typed on the focused canvas since the last fixed-update flush, built from `keydown`:
      * printable ASCII (32-126), `\x08` for Backspace, `\x0d` for Enter, `\x09` for Tab and `\x1b` for Escape.
-     * Characters and Backspace repeat while the key is held; Ctrl and Alt shortcuts type nothing. Physical keyboards
-     * only: IME composition, touch keyboards and paste do not reach it. Read during `update()`; the buffer clears at
-     * the end of each fixed update step.
+     * Characters and Backspace repeat while the key is held; Enter, Tab and Escape arrive once per press. Ctrl and Alt
+     * shortcuts type nothing. Physical keyboards only: IME composition, touch keyboards and paste do not reach it.
+     * Read during `update()`; the buffer clears at the end of each fixed update step.
      *
      * @since 1.0.4
      * @changed 1.8.1 Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives.

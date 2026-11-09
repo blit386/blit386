@@ -88,9 +88,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
-  each `keydown`: printable ASCII, Backspace (`\x08`) and Enter (`\x0d`), repeating while held; Ctrl and Alt shortcuts
-  type nothing. Text typed just before the canvas loses focus, such as the Tab that moves focus away, still arrives. IME
-  composition, touch-screen keyboards and paste are not supported. See
+  each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl
+  and Alt shortcuts type nothing. Text typed just before the canvas loses focus, such as the Tab that moves focus away,
+  still arrives. IME composition, touch-screen keyboards and paste are not supported. See
   [Text input buffer](guide-input.md#text-input-buffer).
 - A key held when the canvas or the window loses focus now reports a release. Blur used to drop held keys without an
   edge, so `BT.isKeyReleased`, `BT.isReleased` and `BT.isAnyKeyReleased` never fired and a release-to-fire or

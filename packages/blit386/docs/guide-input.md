@@ -468,7 +468,8 @@ value today.
 `keydown`. The buffer clears at the end of every step, so read it during `update()` and keep what you need.
 
 - Printable ASCII (space to `~`) arrives as itself, with Shift and AltGr applied by the keyboard layout.
-- Backspace arrives as `\x08` and Enter as `\x0d`. Both, and the printable keys, repeat while held.
+- Backspace arrives as `\x08` and repeats while held, like the printable keys. Enter arrives as `\x0d`, once per press,
+  so holding it cannot submit twice.
 - Tab arrives as `\x09` and Escape as `\x1b`, once per press. Tab still arrives when the browser then moves focus off
   the canvas.
 - Ctrl and Cmd shortcuts type nothing, and neither do Alt shortcuts such as Alt+A. Alt that changes the character (macOS

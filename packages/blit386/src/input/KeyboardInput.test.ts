@@ -499,6 +499,22 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('Enter is sent once per press, not on OS key repeat', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', repeat: true, bubbles: true }),
+        );
+
+        expect(kb.getInputString()).toBe('\x0d');
+
+        kb.detach();
+    });
+
     it('OR button mapping: BTN_UP player1 reflects KeyW', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
