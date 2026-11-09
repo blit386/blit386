@@ -99,6 +99,9 @@ describe('Rect2i property access benchmarks', () => {
     );
 });
 
+/** Keeps the mixed-shape loop's result observable so the JIT cannot drop the loop. */
+const sink = { value: 0 };
+
 describe('Rect2i mixed-shape benchmarks', () => {
     // Half the operands come from the constructor and half from fromValuesUnchecked, so the one
     // intersects() call site sees both kinds of object - polymorphic if their hidden classes differ.
@@ -119,7 +122,7 @@ describe('Rect2i mixed-shape benchmarks', () => {
                 }
             }
 
-            return hits;
+            sink.value = hits;
         },
         BENCH_OPTIONS,
     );

@@ -271,6 +271,9 @@ describe('Color32 mutation benchmarks', () => {
     );
 });
 
+/** Keeps the mixed-shape loop's result observable so the JIT cannot drop the loop. */
+const sink = { value: 0 };
+
 describe('Color32 mixed-shape benchmarks', () => {
     // Half the operands come from the constructor and half from fromRGBAUnchecked, so the one
     // isEqual() call site sees both kinds of object - polymorphic if their hidden classes differ.
@@ -291,7 +294,7 @@ describe('Color32 mixed-shape benchmarks', () => {
                 }
             }
 
-            return equal;
+            sink.value = equal;
         },
         BENCH_OPTIONS,
     );
