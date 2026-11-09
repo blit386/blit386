@@ -2,7 +2,7 @@
  * Non-contiguous extra glyphs appended after the system font's ASCII block (32-126).
  *
  * Shared between `export-system-font.mjs` and `convert-system-font.mjs` so both scripts agree
- * on atlas layout. The generated `src/assets/fonts/systemFontData.ts` carries its own copy of
+ * on atlas layout, together with the atlas constants below. The generated `src/assets/fonts/systemFontData.ts` carries its own copy of
  * the code points as `SYSTEM_FONT_EXTRA_CHARS` (that file is bundled into the browser build and
  * cannot import from `scripts/`), written out by `convert-system-font.mjs`.
  *
@@ -80,3 +80,20 @@ export const SYSTEM_FONT_EXTRA_CHARS = [
     { codePoint: 0xe004, label: 'Signal Bars Horizontal 2 (custom)' },
     { codePoint: 0xe005, label: 'Signal Bars Horizontal 3 (custom)' },
 ];
+
+/** Glyph cell size in pixels, and the atlas width in glyphs. */
+export const GLYPH_WIDTH = 6;
+export const GLYPH_HEIGHT = 14;
+export const ATLAS_COLS = 16;
+
+/** The contiguous ASCII block every atlas starts with. */
+export const FIRST_CHAR = 32;
+export const LAST_CHAR = 126;
+export const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1;
+
+// Contiguous ASCII block followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order. This list is the
+// layout owner, so the atlas grows as soon as an entry is appended.
+export const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
+export const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
+export const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
+export const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
