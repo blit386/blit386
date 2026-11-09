@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded Random PRNG, coordinate hashes, and Value/Perlin/Simplex pattern noise for procedural worlds."
-lastModified: "2026-11-09T20:13:17+01:00"
+lastModified: "2026-11-09T20:50:38+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-random.md"
 ---
 
@@ -78,7 +78,7 @@ identically; a separate `Random` you own is yours to reseed.
 | `pick(arr)` | One element from a non-empty array |
 | `shuffle(arr)` | New shuffled copy (Fisher-Yates) |
 | `shuffleInPlace(arr)` | Shuffle the array in place and return it |
-| `weighted(items, weights)` | One item by relative non-negative weights |
+| `weighted(items, weights)` | One item by relative non-negative, finite weights |
 | `angle()` | Float in `[0, 2π)` radians |
 | `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
 | `insideRect(rect)` | Integer point in half-open `rect` |
