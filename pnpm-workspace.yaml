@@ -54,7 +54,7 @@ overrides:
   # (coverage tooling in packages/blit386), so it never enters a runtime bundle - but
   # `security:audit` covers dev + prod, so it fails CI. 14.0.2 is the patch and the only
   # line that has it, so this crosses the major nyc declares.
-  glob@>=9.0.0 <14.0.2: 14.0.2
+  glob@>=9.0.0 <14.0.2: 14.0.3
   # GHSA-rgj7-g3m4-5g8c (GHSA-g89c-p67h-r497 / GHSA-2jg2-4ch7-h545, high): libheif
   # vulnerabilities. Dev-only, reached through miniflare via wrangler
   # (packages/website devDependency) for OG image generation, so it never enters a
