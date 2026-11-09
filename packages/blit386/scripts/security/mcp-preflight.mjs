@@ -225,6 +225,9 @@ export function parseCodexMcpServers(raw) {
             const serverName = codexServerTableName(line, lineNumber);
             current = null;
             if (serverName !== null) {
+                if (servers.has(serverName)) {
+                    throw new Error(`line ${lineNumber}: duplicate table [mcp_servers.${serverName}]`);
+                }
                 current = {};
                 servers.set(serverName, current);
             }
@@ -236,13 +239,15 @@ export function parseCodexMcpServers(raw) {
         if (!pair || pair[1] === 'mcp_servers') {
             throw new Error(`line ${lineNumber}: unsupported TOML line`);
         }
-        if (current === null) {
-            continue;
-        }
+        // Every value must parse, in any table, so a multi-line string can never hide lines.
+        let value;
         try {
-            current[pair[1] ?? ''] = JSON.parse(pair[2] ?? '');
+            value = JSON.parse(pair[2] ?? '');
         } catch {
             throw new Error(`line ${lineNumber}: unsupported TOML value`);
+        }
+        if (current !== null) {
+            current[pair[1] ?? ''] = value;
         }
     }
 

@@ -297,6 +297,9 @@ describe('tracked agent MCP configs (BT-763)', () => {
             '[[mcp_servers.x]]\nurl = "https://example.com/array-of-tables"\n',
             '["mcp\\u005fservers".x]\nurl = "https://example.com/escaped-key"\n',
             '"mcp_servers".x.url = "https://example.com/quoted-dotted-key"\n',
+            '[mcp_servers.x]\nurl = "https://blit386.dev/mcp"\n[mcp_servers.x]\ncommand = "sh"\n',
+            'notes = """\n[mcp_servers.x]\n"""\n',
+            '[profiles.y]\nnotes = unquoted\n',
         ]) {
             fs.writeFileSync(path.join(tempDir, '.codex', 'config.toml'), toml);
             const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: tempDir, governanceOnly: true });
