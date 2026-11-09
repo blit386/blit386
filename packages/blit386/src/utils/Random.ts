@@ -32,15 +32,10 @@ const INT32_MAX = 2 ** 31 - 1;
 /** Two pi, used by {@link Random.angle}. */
 const TWO_PI = Math.PI * 2;
 
-/** Cardinal unit offsets for {@link Random.direction4} (Y-down). */
-const CARDINALS: readonly (readonly [number, number])[] = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-];
-
-/** Eight king-move unit offsets for {@link Random.direction8} (Y-down). */
+/**
+ * Eight king-move unit offsets for {@link Random.direction8} (Y-down). The first four rows are the
+ * cardinals {@link Random.direction4} draws from.
+ */
 const DIRECTIONS8: readonly (readonly [number, number])[] = [
     [1, 0],
     [-1, 0],
@@ -463,7 +458,7 @@ export class Random {
      * @since 1.5.0
      */
     public direction4(): Vector2i {
-        const [x, y] = CARDINALS[this.int(4)] as readonly [number, number];
+        const [x, y] = DIRECTIONS8[this.int(4)] as readonly [number, number];
 
         return Vector2i.fromXYUnchecked(x, y);
     }

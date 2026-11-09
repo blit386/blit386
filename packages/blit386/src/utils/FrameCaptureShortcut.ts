@@ -51,7 +51,7 @@ export function isFrameCaptureShortcutEnabled(configureFlag?: boolean): boolean 
  * @returns A two-character string.
  */
 function pad2(value: number): string {
-    return value < 10 ? `0${value}` : `${value}`;
+    return String(value).padStart(2, '0');
 }
 
 /**
