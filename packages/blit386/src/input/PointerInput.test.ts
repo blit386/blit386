@@ -1959,4 +1959,46 @@ describe('PointerInput', () => {
             c.remove();
         });
     });
+
+    describe('audit fixes (BT-755)', () => {
+        it('scales a page-mode wheel by the canvas window height, not the global window', () => {
+            const c = createCanvas();
+            const canvasWindow = {
+                innerHeight: window.innerHeight + 100,
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+            };
+
+            Object.defineProperty(c, 'ownerDocument', { value: { defaultView: canvasWindow } });
+
+            const p = new PointerInput();
+
+            p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+            p.setIsCapturingScroll(true);
+            c.dispatchEvent(new WheelEvent('wheel', { deltaY: 2, deltaMode: 2, bubbles: true, cancelable: true }));
+
+            expect(p.getScrollDelta()).toBe(2 * canvasWindow.innerHeight);
+
+            p.detach();
+            c.remove();
+        });
+
+        it('keeps a touch contact when setPointerCapture throws', () => {
+            const errors: unknown[] = [];
+            const onError = (event: ErrorEvent): void => {
+                errors.push(event.error);
+            };
+
+            canvas.setPointerCapture = vi.fn(() => {
+                throw new DOMException('No active pointer', 'NotFoundError');
+            });
+            window.addEventListener('error', onError);
+            canvas.dispatchEvent(pointerEvent('pointerdown', { pointerId: 7, pointerType: 'touch', buttons: 1 }));
+            window.removeEventListener('error', onError);
+
+            expect(errors).toEqual([]);
+            expect(input.isActive(1)).toBe(true);
+            expect(input.isButtonDown(BTN_POINTER_A, 1)).toBe(true);
+        });
+    });
 });
