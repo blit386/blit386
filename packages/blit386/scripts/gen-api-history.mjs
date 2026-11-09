@@ -225,6 +225,9 @@ export function compareVersions(a, b) {
  * release state), then `unreleased` for the configured unreleased version or missing/untagged
  * future versions, otherwise `stable`.
  *
+ * Manual sync: `SymbolStatus` in packages/website/src/data/api-history.ts re-types these three
+ * values, and `since-badge.tsx` there compares them. Change all three places together.
+ *
  * @param {{ since: string | null, deprecated: unknown }} entry - Symbol's parsed tags.
  * @param {{ packageVersion: string, unreleasedVersion: string, hasTag: (version: string) => boolean }} context
  *   - Release context.
