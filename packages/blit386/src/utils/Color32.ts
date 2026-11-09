@@ -41,6 +41,7 @@ for (let i = 0; i < 256; i++) {
  * Mutable 32-bit RGBA color value with 8-bit channels.
  *
  * @since 0.1.0
+ * @changed 1.8.1 `toUint32()` returns an unsigned value; colors with alpha 128 or more used to come back negative.
  */
 export class Color32 {
     /** The cached singleton for white color. */
@@ -593,10 +594,10 @@ export class Color32 {
     /**
      * Packs color into a 32-bit unsigned integer (ABGR layout).
      *
-     * @returns 32-bit color value as `(A << 24 | B << 16 | G << 8 | R)`.
+     * @returns Unsigned 32-bit color value as `(A << 24 | B << 16 | G << 8 | R) >>> 0`, so `Color32.red` gives `0xff0000ff`.
      */
     toUint32(): number {
-        return (this.a << 24) | (this.b << 16) | (this.g << 8) | this.r;
+        return ((this.a << 24) | (this.b << 16) | (this.g << 8) | this.r) >>> 0;
     }
 
     /**

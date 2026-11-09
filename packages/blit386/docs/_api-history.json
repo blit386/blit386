@@ -1455,7 +1455,12 @@
     "Color32": {
       "kind": "class",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "`toUint32()` returns an unsigned value; colors with alpha 128 or more used to come back negative."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

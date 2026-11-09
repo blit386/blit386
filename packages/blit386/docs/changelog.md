@@ -91,6 +91,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `Color32.toUint32()` returns an unsigned 32-bit value, as documented. Every color with alpha 128 or more came back
+  negative (`Color32.red.toUint32()` was `-16776961`, not `0xff0000ff`), so comparing it to a hex literal or using it as
+  a map key next to `>>> 0` values failed. `Color32.fromUint32` accepted both forms and is unchanged.
 - `Vector2i.normalized()` on a zero vector, `BT.outputSize` before init, and `BT.systemPrintMeasure()` before init
   return a new `(0, 0)` vector. They used to hand out the frozen `Vector2i.zero()`, so
   `velocity.normalized().mulInPlace(speed)` threw `TypeError` only when the entity stood still. See
