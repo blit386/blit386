@@ -98,3 +98,29 @@ describe('Rect2i property access benchmarks', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('Rect2i mixed-shape benchmarks', () => {
+    // Half the operands come from the constructor and half from fromValuesUnchecked, so the one
+    // intersects() call site sees both kinds of object - polymorphic if their hidden classes differ.
+    const operands: Rect2i[] = [];
+
+    for (let i = 0; i < 64; i++) {
+        operands.push(i % 2 === 0 ? new Rect2i(i, i, 8, 8) : Rect2i.fromValuesUnchecked(i, i, 8, 8));
+    }
+
+    bench(
+        'mixed new + fromValuesUnchecked intersects() loop',
+        () => {
+            let hits = 0;
+
+            for (let i = 0; i < operands.length - 1; i++) {
+                if ((operands.at(i) as Rect2i).intersects(operands.at(i + 1) as Rect2i)) {
+                    hits++;
+                }
+            }
+
+            return hits;
+        },
+        BENCH_OPTIONS,
+    );
+});

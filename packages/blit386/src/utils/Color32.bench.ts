@@ -270,3 +270,29 @@ describe('Color32 mutation benchmarks', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('Color32 mixed-shape benchmarks', () => {
+    // Half the operands come from the constructor and half from fromRGBAUnchecked, so the one
+    // isEqual() call site sees both kinds of object - polymorphic if their hidden classes differ.
+    const operands: Color32[] = [];
+
+    for (let i = 0; i < 64; i++) {
+        operands.push(i % 2 === 0 ? new Color32(i, i, i, 255) : Color32.fromRGBAUnchecked(i, i, i, 255));
+    }
+
+    bench(
+        'mixed new + fromRGBAUnchecked isEqual() loop',
+        () => {
+            let equal = 0;
+
+            for (let i = 0; i < operands.length - 1; i++) {
+                if ((operands.at(i) as Color32).isEqual(operands.at(i + 1) as Color32)) {
+                    equal++;
+                }
+            }
+
+            return equal;
+        },
+        BENCH_OPTIONS,
+    );
+});
