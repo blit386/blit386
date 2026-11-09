@@ -65,7 +65,7 @@ import {
     resetKeyboardFaceButtonMaps,
     setKeyboardFaceButtonKeys,
 } from './input/keyboardRuntimeMaps';
-import type { PointerClock } from './input/PointerInput';
+import { POINTER_BUTTON_CODES, type PointerClock } from './input/PointerInput';
 import { BarrelDistortion } from './render/effects/display/BarrelDistortion';
 import { Bloom } from './render/effects/display/Bloom';
 import { ChromaticAberration } from './render/effects/display/ChromaticAberration';
@@ -284,18 +284,18 @@ function pointerClock(): PointerClock {
  * Maps a single pointer button bit flag to the pointer subsystem button code.
  *
  * @param pointerFlag - One pointer button bit from `BTN_POINTER_A..D`.
- * @returns Pointer subsystem button code (`20..23`) or `null` if not a pointer button.
+ * @returns Pointer subsystem button code (one of `POINTER_BUTTON_CODES`) or `null` if not a pointer button.
  */
 function pointerFlagToPointerCode(pointerFlag: number): number | null {
     switch (pointerFlag) {
         case flags.BTN_POINTER_A:
-            return 20;
+            return POINTER_BUTTON_CODES[0];
         case flags.BTN_POINTER_B:
-            return 21;
+            return POINTER_BUTTON_CODES[1];
         case flags.BTN_POINTER_C:
-            return 22;
+            return POINTER_BUTTON_CODES[2];
         case flags.BTN_POINTER_D:
-            return 23;
+            return POINTER_BUTTON_CODES[3];
         default:
             return null;
     }
