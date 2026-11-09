@@ -665,6 +665,24 @@ describe('MusicPlayer', () => {
             );
         });
 
+        it.each([Number.POSITIVE_INFINITY, Number.NaN])(
+            'play with overlap %s throws before fading out the current track',
+            (overlap) => {
+                const { player, context } = createPlayer();
+
+                player.play(createMockAudioBuffer());
+
+                const sourcesBefore = (context as unknown as { createBufferSourceCalls: unknown[] })
+                    .createBufferSourceCalls.length;
+
+                expect(() => player.play(createMockAudioBuffer(), { overlap })).toThrow('finite');
+                expect(player.isPlaying()).toBe(true);
+                expect(
+                    (context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls,
+                ).toHaveLength(sourcesBefore);
+            },
+        );
+
         it('play rejects a non-finite volume and keeps the old track and volume', () => {
             const { player } = createPlayer();
 

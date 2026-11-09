@@ -109,6 +109,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   return a new `(0, 0)` vector. They used to hand out the frozen `Vector2i.zero()`, so
   `velocity.normalized().mulInPlace(speed)` threw `TypeError` only when the entity stood still. See
   [Core types](/docs/api/core-types).
+- `BT.musicPlay` with a non-finite `overlap` (`NaN` or `Infinity`) now throws before anything changes. It used to fade
+  out the current track first and then throw, leaving silence. `BT.soundPlay` now rejects a non-finite `priority` the
+  same way it already rejected a bad `volume`, `pitch` or `pan` (once audio has unlocked - a locked call is still
+  dropped before its options are checked); a `NaN` priority used to steal any voice, even one played at a higher
+  priority.
+- Behavior change: `BT.audioVolumeGet` called before `BT.init()` now returns `1`, the volume every bus starts at,
+  instead of `0`.
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
   keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
   `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed

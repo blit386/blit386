@@ -1025,8 +1025,9 @@ export const BT = {
      * Unaffected by {@link BT.audioMuteSet} - muting never overwrites the configured level.
      *
      * @since 1.3.0
+     * @changed 1.8.1 Returns `1` (the default bus volume) before initialization instead of `0`.
      * @param bus - Audio bus to query.
-     * @returns Volume in `[0, 1]`, or `0` before initialization.
+     * @returns Volume in `[0, 1]`, or `1` (every bus's default) before initialization.
      */
     audioVolumeGet: (bus: AudioBus): number => {
         return BTAPI.instance.audioVolumeGet(bus);
@@ -1177,12 +1178,12 @@ export const BT = {
      * dropped - it starts automatically the instant the context unlocks, unlike {@link BT.soundPlay}.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Validates `fadeMs`, `volume`, and the loop region before remembering or changing music.
+     * @changed 1.8.1 Validates `fadeMs`, `volume`, `overlap`, and the loop region before remembering or changing music.
      * @param clip - Loaded audio clip to play.
      * @param options - Crossfade, volume, and loop options; see {@link MusicPlayOptions}.
-     * @throws Error when `options.fadeMs` or `options.volume` is not a finite number, or `options.loopStart` and
-     *   `options.loopEnd` are not a valid pair for the clip (also while the context is locked); the current track is
-     *   left alone and nothing is remembered.
+     * @throws Error when `options.fadeMs`, `options.volume`, or `options.overlap` is not a finite number, or
+     *   `options.loopStart` and `options.loopEnd` are not a valid pair for the clip (also while the context is
+     *   locked); the current track is left alone and nothing is remembered.
      */
     musicPlay: (clip: AudioClip, options?: MusicPlayOptions): void => {
         BTAPI.instance.musicPlay(clip, options);

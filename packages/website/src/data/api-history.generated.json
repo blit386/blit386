@@ -387,7 +387,12 @@
     "BT.audioVolumeGet": {
       "kind": "method",
       "since": "1.3.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Returns `1` (the default bus volume) before initialization instead of `0`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -926,7 +931,7 @@
       "changes": [
         {
           "version": "1.8.1",
-          "note": "Validates `fadeMs`, `volume`, and the loop region before remembering or changing music."
+          "note": "Validates `fadeMs`, `volume`, `overlap`, and the loop region before remembering or changing music."
         }
       ],
       "deprecated": null,
