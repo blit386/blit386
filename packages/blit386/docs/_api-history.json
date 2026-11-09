@@ -972,7 +972,12 @@
     "BT.outputSize": {
       "kind": "getter",
       "since": "1.0.4",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1352,7 +1357,12 @@
     "BT.systemPrintMeasure": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1931,7 +1941,12 @@
     "Vector2i": {
       "kind": "class",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "`normalized()` of a zero vector returns a new mutable vector instead of the frozen `Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

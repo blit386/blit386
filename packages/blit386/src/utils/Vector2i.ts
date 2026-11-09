@@ -6,6 +6,7 @@
  * convenience methods that return new vectors.
  *
  * @since 0.1.0
+ * @changed 1.8.1 `normalized()` of a zero vector returns a new mutable vector instead of the frozen `Vector2i.zero()`.
  */
 export class Vector2i {
     /** The cached singleton for zero vector. */
@@ -971,13 +972,13 @@ export class Vector2i {
      * Note: Result is not a true unit vector since integers can't represent
      * fractional components. Diagonal directions have magnitude ~1.41.
      *
-     * @returns New direction vector, or zero vector if magnitude is 0.
+     * @returns New direction vector, or a new zero vector if magnitude is 0.
      */
     normalized(): Vector2i {
         const sqrMag = this.x * this.x + this.y * this.y;
 
         if (sqrMag === 0) {
-            return Vector2i.zero();
+            return Vector2i.fromXYUnchecked(0, 0);
         }
 
         const mag = Math.sqrt(sqrMag);

@@ -86,6 +86,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `Vector2i.normalized()` on a zero vector, `BT.outputSize` before init, and `BT.systemPrintMeasure()` before init
+  return a new `(0, 0)` vector. They used to hand out the frozen `Vector2i.zero()`, so
+  `velocity.normalized().mulInPlace(speed)` threw `TypeError` only when the entity stood still. See
+  [Core types](api-core-types.md).
 - A second key mapped to an already-held face button no longer fires another press, and releasing one of two held mapped
   keys no longer fires a release. With the `'single'` layout, holding `KeyW` and then pressing `ArrowUp` used to report
   `BT.isPressed(BT.BTN_UP)` twice (and `'versus'` did the same for Space then `KeyB`); the button now counts as pressed

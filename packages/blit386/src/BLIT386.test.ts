@@ -179,6 +179,15 @@ describe('BT.outputSize', () => {
         expect(size.y).toBe(0);
     });
 
+    it('returns a mutable zero vector when hardware settings are not available', () => {
+        vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
+
+        const size = BT.outputSize;
+
+        expect(() => size.addInPlace(new Vector2i(1, 1))).not.toThrow();
+        expect(size.x).toBe(1);
+    });
+
     it('matches displaySize when drawingBufferSize is omitted', () => {
         vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(mockHardwareSettings(new Vector2i(320, 240)));
 
@@ -1858,6 +1867,15 @@ describe('BT.systemPrintMeasure', () => {
 
         expect(result.x).toBe(0);
         expect(result.y).toBe(0);
+    });
+
+    it('returns a mutable zero vector when system font is not initialized', () => {
+        vi.spyOn(BTAPI.instance, 'getSystemFont').mockReturnValue(null);
+
+        const result = BT.systemPrintMeasure('any text');
+
+        expect(() => result.addInPlace(new Vector2i(1, 1))).not.toThrow();
+        expect(result.x).toBe(1);
     });
 
     it('returns measured size when system font is available', () => {

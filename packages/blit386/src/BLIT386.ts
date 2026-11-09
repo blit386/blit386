@@ -695,13 +695,14 @@ export const BT = {
      * Each read returns a clone.
      *
      * @since 1.0.4
-     * @returns Effective output buffer size, or `Vector2i.zero()` before initialization.
+     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
+     * @returns Effective output buffer size, or a new `(0, 0)` vector before initialization.
      */
     get outputSize(): Vector2i {
         const settings = BTAPI.instance.getHardwareSettings();
 
         if (!settings) {
-            return Vector2i.zero();
+            return new Vector2i();
         }
 
         return (settings.drawingBufferSize ?? settings.displaySize).clone();
@@ -2590,14 +2591,15 @@ export const BT = {
      * system font.
      *
      * @since 1.0.3
+     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
      * @param text - Text string to measure.
-     * @returns Width and height in pixels, or `Vector2i.zero()` before engine initialization.
+     * @returns Width and height in pixels, or a new `(0, 0)` vector before engine initialization.
      */
     systemPrintMeasure: (text: string): Vector2i => {
         const font = BTAPI.instance.getSystemFont();
 
         if (!font) {
-            return Vector2i.zero();
+            return new Vector2i();
         }
 
         const size = font.measureTextSize(text);
