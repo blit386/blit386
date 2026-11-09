@@ -816,13 +816,7 @@ function main() {
         return;
     }
 
-    let history;
-    try {
-        history = generate();
-    } catch (error) {
-        console.error(`[gen-api-history] ${error instanceof Error ? error.message : String(error)}`);
-        process.exit(1);
-    }
+    const history = generate();
     const json = `${JSON.stringify(history, null, 2)}\n`;
 
     if (isCheck) {
