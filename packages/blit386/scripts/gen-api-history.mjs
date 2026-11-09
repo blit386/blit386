@@ -23,6 +23,8 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
+import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TSCONFIG_PATH = join(ROOT, 'tsconfig.json');
 export const ENTRY_FILE = join(ROOT, 'src', 'BLIT386.ts');
@@ -36,6 +38,16 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * that bumps `package.json` `version` after a release ships.
  */
 const UNRELEASED_VERSION = '1.8.1';
+
+/**
+ * Versions past `UNRELEASED_VERSION` a tag may name on purpose. Each entry is a release already
+ * planned on a milestone; drop it once `UNRELEASED_VERSION` catches up.
+ * 1.9.0: `@changed 1.9.0` on `BT.renderAt` (BT-727, on the 1.9.0 milestone).
+ */
+const ALLOWED_FUTURE_VERSIONS = ['1.9.0'];
+
+/** A tag version is a plain `major.minor.patch` - no `v` prefix, no pre-release suffix. */
+const PLAIN_SEMVER = /^\d+\.\d+\.\d+$/u;
 
 /** Compiler options used when no real tsconfig is supplied (fixture / unit-test programs). */
 export const DEFAULT_TEST_COMPILER_OPTIONS = {
@@ -506,11 +518,70 @@ export function resolveTagDate(tag, runOptions = {}) {
         const output = execFileSync('git', ['log', '-1', '--format=%aI', tag], {
             cwd,
             encoding: 'utf8',
+            env: gitEnvWithoutRepoLocation(),
+            stdio: ['ignore', 'pipe', 'ignore'], // a missing tag is an expected answer, not noise
         }).trim();
 
         return output.length > 0 ? output : null;
     } catch {
         return null;
+    }
+}
+
+/**
+ * Lists every `@since` / `@changed` / `@deprecated` version that is not plain semver, or that
+ * is past `unreleasedVersion` without being named in `allowedFutureVersions`.
+ *
+ * @param {Record<string, { since: string | null, changes: Array<{ version: string }>, deprecated: { version: string | null } | null }>} symbols
+ * @param {{ unreleasedVersion: string, allowedFutureVersions?: string[] }} context
+ * @returns {string[]} One readable line per problem, sorted; empty when every version is valid.
+ */
+export function findVersionProblems(symbols, context) {
+    const allowed = context.allowedFutureVersions ?? [];
+    const problems = [];
+
+    for (const [name, entry] of Object.entries(symbols)) {
+        const tagged = [
+            ['since', entry.since],
+            ...entry.changes.map((change) => ['changed', change.version]),
+            ['deprecated', entry.deprecated?.version ?? null],
+        ];
+        for (const [tag, version] of tagged) {
+            if (version === null) {
+                continue;
+            }
+            if (!PLAIN_SEMVER.test(version)) {
+                problems.push(`${name}: @${tag} ${JSON.stringify(version)} is not a plain major.minor.patch version`);
+            } else if (compareVersions(version, context.unreleasedVersion) > 0 && !allowed.includes(version)) {
+                problems.push(
+                    `${name}: @${tag} ${version} is past the next release ${context.unreleasedVersion} ` +
+                        '(add it to ALLOWED_FUTURE_VERSIONS if that release is planned)',
+                );
+            }
+        }
+    }
+
+    return problems.sort();
+}
+
+/**
+ * Throws when the checkout has no git tags at all. Without tags every release date resolves to
+ * `null` and `--check` reports a generic drift, so name the real cause up front.
+ *
+ * @param {{ cwd?: string }} [runOptions] - `cwd` to run git in; defaults to the repo root.
+ */
+export function assertReleaseTagsPresent(runOptions = {}) {
+    const tags = execFileSync('git', ['tag', '--list'], {
+        cwd: runOptions.cwd ?? ROOT,
+        encoding: 'utf8',
+        env: gitEnvWithoutRepoLocation(),
+    }).trim();
+
+    if (tags.length === 0) {
+        throw new Error(
+            'This is a tag-less checkout (no git tags at all), so release dates cannot be resolved. ' +
+                'Run `git fetch --tags` (or clone without --no-tags / a shallow depth) and try again.',
+        );
     }
 }
 
@@ -609,13 +680,23 @@ export function buildPagesMap(docsDir = DOCS_DIR) {
  *
  * @param {Record<string, { kind: string, since: string | null, changes: Array<object>, deprecated: object | null }>} rawSymbols
  *   Output of {@link enumerateSymbols}.
- * @param {{ packageVersion: string, unreleasedVersion: string, docsDir?: string, resolveDate?: (version: string) => string | null }} params
+ * @param {{ packageVersion: string, unreleasedVersion: string, allowedFutureVersions?: string[], docsDir?: string, resolveDate?: (version: string) => string | null }} params
  *   Assembly parameters.
  * @returns {{ packageVersion: string, unreleasedVersion: string, versions: object, symbols: object, pages: object }}
  *   Full manifest, ready for `JSON.stringify`.
  */
 export function buildApiHistoryJson(rawSymbols, params) {
-    const { packageVersion, unreleasedVersion, docsDir = DOCS_DIR, resolveDate = resolveTagDate } = params;
+    const {
+        packageVersion,
+        unreleasedVersion,
+        allowedFutureVersions = [],
+        docsDir = DOCS_DIR,
+        resolveDate = resolveTagDate,
+    } = params;
+    const problems = findVersionProblems(rawSymbols, { unreleasedVersion, allowedFutureVersions });
+    if (problems.length > 0) {
+        throw new Error(`${problems.length} invalid version tag(s):\n  ${problems.join('\n  ')}`);
+    }
     const versions = buildVersionsMap(rawSymbols, packageVersion, unreleasedVersion, resolveDate);
     const hasTag = (version) =>
         // eslint-disable-next-line security/detect-object-injection -- version string from our own versionSet, not external input
@@ -669,12 +750,14 @@ function loadPackageVersion() {
  * @returns {object} Full `docs/_api-history.json` contents (as a JS object, not yet serialized).
  */
 function generate() {
+    assertReleaseTagsPresent();
     const program = createRepoProgram();
     const rawSymbols = enumerateSymbols(program, ENTRY_FILE);
 
     return buildApiHistoryJson(rawSymbols, {
         packageVersion: loadPackageVersion(),
         unreleasedVersion: UNRELEASED_VERSION,
+        allowedFutureVersions: ALLOWED_FUTURE_VERSIONS,
     });
 }
 
@@ -760,7 +843,13 @@ function main() {
         return;
     }
 
-    const history = generate();
+    let history;
+    try {
+        history = generate();
+    } catch (error) {
+        console.error(`[gen-api-history] ${error instanceof Error ? error.message : String(error)}`);
+        process.exit(1);
+    }
     const json = `${JSON.stringify(history, null, 2)}\n`;
 
     if (isCheck) {
