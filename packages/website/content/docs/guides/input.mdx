@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-11-09T20:13:56+01:00"
+lastModified: "2026-11-09T20:40:30+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -168,8 +168,9 @@ Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
 not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
 moves elsewhere does not stay down, and the next `update()` sees its release edge (`BT.isKeyReleased`, `BT.isReleased`,
-`BT.isAnyKeyReleased`). A key pressed while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or
-Cmd+Z, is not reported as a game key, because macOS browsers never send its release.
+`BT.isAnyKeyReleased`). A press that landed since the last `update()` still reports its press edge too. A key pressed
+while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or Cmd+Z, is not reported as a game key,
+because macOS browsers never send its release.
 
 ### Raw key queries
 
@@ -466,7 +467,8 @@ value today.
 - Printable ASCII (space to `~`) arrives as itself, with Shift and AltGr applied by the keyboard layout.
 - Backspace arrives as `\x08` and Enter as `\x0d`. Both, and the printable keys, repeat while held.
 - Tab arrives as `\x09` and Escape as `\x1b`, once per press.
-- Ctrl and Cmd shortcuts type nothing.
+- Ctrl and Cmd shortcuts type nothing, and neither do Alt shortcuts such as Alt+A. Alt that changes the character (macOS
+  Option+L for `@` on a German layout) still types.
 
 <Callout type="warn" title="Physical keyboards only">
 
