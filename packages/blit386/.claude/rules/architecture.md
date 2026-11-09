@@ -113,7 +113,9 @@ src/
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector
     Rect2i.ts              # Integer rectangle
-    Color32.ts             # 32-bit RGBA color (+ srgbToLinear/linearToSrgb piecewise transfer helpers)
+    Color32.ts             # 32-bit RGBA color (re-exports the colorMath helpers)
+    colorMath.ts           # Byte clamps, INV_255, srgbToLinear/linearToSrgb piecewise transfer helpers, hex parsing, hue2rgb
+    NamedColors.ts         # Named-color registry behind Color32.registerColor/resolveNamedColor (type-only Color32 import)
     Easing.ts              # Easing curves + interpolate() (number, Vector2i, Color32, Rect2i)
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
     Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork; Vector2i/Rect2i helpers; also backs synth noise)

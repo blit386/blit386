@@ -5,37 +5,23 @@
  * and a mix of allocation-free and convenience APIs for renderer code.
  */
 
-/** Reciprocal of 255 used for fast byte-to-float normalization. */
-export const INV_255 = 1 / 255;
+import {
+    clampByte,
+    clampUnit,
+    encodeByte,
+    HEX_TABLE,
+    hue2rgb,
+    INV_255,
+    linearizeByte,
+    linearToSrgb,
+    parseHexToken,
+    srgbToLinear,
+    throwInvalidHex,
+} from './colorMath';
+import { NamedColorRegistry } from './NamedColors';
 
-/** Encoded-value breakpoint below which the sRGB transfer function is a straight line. */
-const SRGB_ENCODED_BREAKPOINT = 0.04045;
-
-/** Linear-light breakpoint below which the inverse sRGB transfer function is a straight line. */
-const SRGB_LINEAR_BREAKPOINT = 0.0031308;
-
-/** Slope of the straight toe segment of the sRGB transfer function. */
-const SRGB_TOE_SLOPE = 12.92;
-
-/** Offset applied to the power segment of the sRGB transfer function. */
-const SRGB_OFFSET = 0.055;
-
-/** Scale applied to the power segment of the sRGB transfer function. */
-const SRGB_SCALE = 1.055;
-
-/** Exponent of the power segment of the sRGB transfer function. */
-const SRGB_GAMMA = 2.4;
-
-/** Precomputed lookup table for byte-to-hex conversion. */
-const HEX_TABLE: string[] = new Array(256);
-
-/** Strict hex token validator used for exact substring checks in fromHex parsing. */
-const HEX_TOKEN_PATTERN = /^[0-9A-Fa-f]+$/;
-
-for (let i = 0; i < 256; i++) {
-    // eslint-disable-next-line security/detect-object-injection
-    HEX_TABLE[i] = i.toString(16).padStart(2, '0');
-}
+// Re-exported so engine code and tests keep importing the color helpers from './Color32'.
+export { clampByte, clampUnit, INV_255, linearToSrgb, srgbToLinear };
 
 /**
  * Mutable 32-bit RGBA color value with 8-bit channels.
@@ -72,7 +58,9 @@ export class Color32 {
     private static readonly _magenta: Color32 = Object.freeze(Color32.fromRGBAUnchecked(255, 0, 255, 255));
 
     /** Internal named-color registry used by string color resolution. */
-    private static readonly namedColors: Map<string, Color32> = Color32.createNamedMap();
+    private static readonly namedColors = new NamedColorRegistry((r, g, b, a) =>
+        Object.freeze(Color32.fromRGBAUnchecked(r, g, b, a)),
+    );
 
     /** Red channel (0-255). */
     public r: number;
@@ -224,13 +212,7 @@ export class Color32 {
      * @throws Error when name is empty after normalization or already exists.
      */
     static registerColor(name: string, color: Color32): void {
-        const normalizedName = Color32.normalizeColorName(name);
-
-        if (Color32.namedColors.has(normalizedName)) {
-            throw new Error(`Named color '${normalizedName}' is already registered.`);
-        }
-
-        Color32.namedColors.set(normalizedName, Color32.freezeSingleton(color));
+        Color32.namedColors.register(name, color);
     }
 
     /**
@@ -243,20 +225,7 @@ export class Color32 {
      * @throws Error when name is empty after normalization or not registered.
      */
     static updateColor(name: string, color: Color32): void {
-        const normalizedName = Color32.normalizeColorName(name);
-        const current = Color32.namedColors.get(normalizedName);
-
-        if (current === undefined) {
-            throw new Error(`Named color '${normalizedName}' is not registered.`);
-        }
-
-        const frozen = Color32.freezeSingleton(color);
-
-        for (const [key, value] of Color32.namedColors) {
-            if (value === current) {
-                Color32.namedColors.set(key, frozen);
-            }
-        }
+        Color32.namedColors.update(name, color);
     }
 
     /**
@@ -268,24 +237,7 @@ export class Color32 {
      * @throws Error when name is empty after normalization or not registered.
      */
     static unregisterColor(name: string): void {
-        const normalizedName = Color32.normalizeColorName(name);
-        const current = Color32.namedColors.get(normalizedName);
-
-        if (current === undefined) {
-            throw new Error(`Named color '${normalizedName}' is not registered.`);
-        }
-
-        const keysToDelete: string[] = [];
-
-        for (const [key, value] of Color32.namedColors) {
-            if (value === current) {
-                keysToDelete.push(key);
-            }
-        }
-
-        for (const key of keysToDelete) {
-            Color32.namedColors.delete(key);
-        }
+        Color32.namedColors.unregister(name);
     }
 
     /**
@@ -296,8 +248,7 @@ export class Color32 {
      * @returns Frozen singleton color, or `undefined` when the name is unknown.
      */
     static resolveNamedColor(name: string): Color32 | undefined {
-        const normalizedName = Color32.normalizeColorName(name);
-        return Color32.namedColors.get(normalizedName);
+        return Color32.namedColors.resolve(name);
     }
 
     /**
@@ -423,31 +374,6 @@ export class Color32 {
         if (sNorm === 0) {
             r = g = b = lNorm;
         } else {
-            const hue2rgb = (p: number, q: number, t: number) => {
-                let tc = t;
-                if (tc < 0) {
-                    tc += 1;
-                }
-
-                if (tc > 1) {
-                    tc -= 1;
-                }
-
-                if (tc < 1 / 6) {
-                    return p + (q - p) * 6 * tc;
-                }
-
-                if (tc < 1 / 2) {
-                    return q;
-                }
-
-                if (tc < 2 / 3) {
-                    return p + (q - p) * (2 / 3 - tc) * 6;
-                }
-
-                return p;
-            };
-
             const q = lNorm < 0.5 ? lNorm * (1 + sNorm) : lNorm + sNorm - lNorm * sNorm;
             const p = 2 * lNorm - q;
 
@@ -457,86 +383,6 @@ export class Color32 {
         }
 
         return new Color32(Math.floor(r * 255), Math.floor(g * 255), Math.floor(b * 255), a);
-    }
-
-    /**
-     * Creates the default CSS-like named-color registry.
-     *
-     * @returns Map of normalized names to frozen singleton Color32 values.
-     */
-    private static createNamedMap(): Map<string, Color32> {
-        const map = new Map<string, Color32>();
-        const define = (name: string, r: number, g: number, b: number, a: number = 255): void => {
-            map.set(name, Object.freeze(Color32.fromRGBAUnchecked(r, g, b, a)));
-        };
-        const alias = (name: string, target: string): void => {
-            const value = map.get(target);
-            if (value === undefined) {
-                throw new Error(`Named color alias target '${target}' is not registered.`);
-            }
-            map.set(name, value);
-        };
-
-        define('black', 0, 0, 0);
-        define('white', 255, 255, 255);
-        define('red', 255, 0, 0);
-        define('green', 0, 255, 0);
-        define('blue', 0, 0, 255);
-        define('yellow', 255, 255, 0);
-        define('cyan', 0, 255, 255);
-        define('magenta', 255, 0, 255);
-        define('gray', 128, 128, 128);
-        alias('grey', 'gray');
-
-        define('orange', 255, 165, 0);
-        define('pink', 255, 192, 203);
-        define('purple', 128, 0, 128);
-        define('brown', 165, 42, 42);
-        define('lime', 0, 255, 0);
-        define('navy', 0, 0, 128);
-        define('teal', 0, 128, 128);
-        define('maroon', 128, 0, 0);
-        define('olive', 128, 128, 0);
-        define('coral', 255, 127, 80);
-        define('gold', 255, 215, 0);
-        define('silver', 192, 192, 192);
-        define('indigo', 75, 0, 130);
-        define('violet', 238, 130, 238);
-        define('turquoise', 64, 224, 208);
-        define('salmon', 250, 128, 114);
-        define('khaki', 240, 230, 140);
-        define('plum', 221, 160, 221);
-        define('crimson', 220, 20, 60);
-        define('tomato', 255, 99, 71);
-        define('cornflowerblue', 100, 149, 237);
-
-        return map;
-    }
-
-    /**
-     * Normalizes a named-color key for case-insensitive lookups.
-     *
-     * @param name - Input color name.
-     * @returns Trimmed lowercase name.
-     * @throws Error when the normalized name is empty.
-     */
-    private static normalizeColorName(name: string): string {
-        const normalizedName = name.trim().toLowerCase();
-        if (normalizedName.length === 0) {
-            throw new Error('Color name cannot be empty.');
-        }
-
-        return normalizedName;
-    }
-
-    /**
-     * Clones and freezes a color so registry entries are immutable singletons.
-     *
-     * @param color - Source color to freeze.
-     * @returns Frozen singleton copy.
-     */
-    private static freezeSingleton(color: Color32): Color32 {
-        return Object.freeze(Color32.fromRGBAUnchecked(color.r, color.g, color.b, color.a));
     }
 
     /**
@@ -936,117 +782,4 @@ export class Color32 {
 
         return this;
     }
-}
-
-/**
- * Clamps a number to the 0-255 byte range and truncates to integer.
- * Optimized for the common case of color channel clamping.
- * Exported for use in other utilities that work with byte values.
- *
- * @param n - Value to clamp.
- * @returns Integer in range 0-255.
- */
-export function clampByte(n: number): number {
-    // Bitwise operations: if n < 0, use 0; if n > 255, use 255; else truncate n.
-    // This is faster than Math.max(0, Math.min(255, n)) | 0.
-    return n < 0 ? 0 : n > 255 ? 255 : n | 0;
-}
-
-/**
- * Clamps a unit interpolation factor to the closed interval [0, 1].
- *
- * @param t - Raw interpolation factor.
- * @returns Clamped factor in range 0-1.
- */
-export function clampUnit(t: number): number {
-    return t < 0 ? 0 : t > 1 ? 1 : t;
-}
-
-/**
- * Converts one encoded sRGB channel to linear light.
- *
- * The real IEC 61966-2-1 piecewise curve: a straight toe below the 0.04045
- * breakpoint, an offset power curve above it. A bare 2.2 power is roughly right
- * in the midtones and an order of magnitude wrong near black, which is exactly
- * where a fade spends its most visible frames.
- *
- * Exported for other utilities that need linear-light math; not part of the
- * public `blit386` surface.
- *
- * @param channel - Encoded channel value in range 0-1.
- * @returns Linear-light value in range 0-1.
- */
-export function srgbToLinear(channel: number): number {
-    return channel <= SRGB_ENCODED_BREAKPOINT
-        ? channel / SRGB_TOE_SLOPE
-        : ((channel + SRGB_OFFSET) / SRGB_SCALE) ** SRGB_GAMMA;
-}
-
-/**
- * Converts one linear-light channel to encoded sRGB.
- *
- * Inverse of {@link srgbToLinear}, sharing its breakpoint and constants.
- *
- * Exported for other utilities that need linear-light math; not part of the
- * public `blit386` surface.
- *
- * @param linear - Linear-light value in range 0-1.
- * @returns Encoded channel value in range 0-1.
- */
-export function linearToSrgb(linear: number): number {
-    return linear <= SRGB_LINEAR_BREAKPOINT
-        ? linear * SRGB_TOE_SLOPE
-        : SRGB_SCALE * linear ** (1 / SRGB_GAMMA) - SRGB_OFFSET;
-}
-
-/**
- * Converts one encoded sRGB byte to a linear-light byte.
- *
- * Rounds to nearest so a {@link linearizeByte} / {@link encodeByte} round trip
- * does not drift downward one level at a time.
- *
- * @param value - Encoded channel byte in range 0-255.
- * @returns Linear-light channel byte in range 0-255.
- */
-function linearizeByte(value: number): number {
-    return clampByte(Math.round(srgbToLinear(value * INV_255) * 255));
-}
-
-/**
- * Converts one linear-light byte to an encoded sRGB byte.
- *
- * @param value - Linear-light channel byte in range 0-255.
- * @returns Encoded channel byte in range 0-255.
- */
-function encodeByte(value: number): number {
-    return clampByte(Math.round(linearToSrgb(value * INV_255) * 255));
-}
-
-/**
- * Throws a standardized beginner-friendly error for invalid hex colors.
- *
- * @param hex - Original input string.
- */
-function throwInvalidHex(hex: string): never {
-    throw new Error(
-        `The color '${hex}' isn't a valid hex color. Use a format like '#FF0000' (red), '#00FF00' (green), or '#0000FF' (blue). You can also use short form like '#F00'.`,
-    );
-}
-
-/**
- * Parses an exact-length hex substring and rejects partial/invalid tokens.
- *
- * @param hex - Original full hex string.
- * @param start - Token start index in the full string.
- * @param length - Expected token length.
- * @returns Parsed base-16 number.
- */
-function parseHexToken(hex: string, start: number, length: number): number {
-    const token = hex.substring(start, start + length);
-
-    if (token.length !== length || !HEX_TOKEN_PATTERN.test(token)) {
-        throwInvalidHex(hex);
-    }
-
-    return parseInt(token, 16);
 }
