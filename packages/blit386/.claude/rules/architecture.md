@@ -121,7 +121,8 @@ src/
     ValueNoise.ts          # Seedable value noise (1D/2D/3D + fBm; [-1,1]; exported; uses hash*i)
     PerlinNoise.ts         # Seedable Perlin gradient noise (1D/2D/3D + fBm; [-1,1]; exported)
     SimplexNoise.ts        # Seedable simplex noise (2D/3D + fBm; [-1,1]; exported)
-    noiseCommon.ts         # Private fade/lerp/fBm/gradient helpers for the noise classes (not exported)
+    SeededNoise.ts         # Internal base classes for the noise classes: seed validation + allocation-free fBm loops (not exported)
+    noiseCommon.ts         # Private fade/lerp/gradient helpers and fBm defaults for the noise classes (not exported)
     FrameCapture.ts        # GPU readback + PNG export
     FrameCaptureShortcut.ts # F9 / Shift+F9 dev-mode capture shortcut gating (pure resolver + reader) and the default download filename
     globalExpose.ts        # Exposes BT on window for console debugging (dev-only by default; BootstrapOptions.exposeGlobal overrides)
