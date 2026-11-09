@@ -243,9 +243,10 @@ const PROJECT_MCP_SERVER_TYPE = 'http';
  * landing in agent context. Changing it therefore has to touch this file too, where the
  * diff reads as what it is.
  *
- * Changing the endpoint is a deliberate four-file edit: here, the root `.mcp.json`,
- * `packages/website/public/.well-known/mcp/server-card.json`, and `.zed/settings.json`
- * (`context_servers`, since Zed does not read `.mcp.json`).
+ * Changing the endpoint is a deliberate five-file edit: here, the root `.mcp.json`,
+ * `packages/website/public/.well-known/mcp/server-card.json`, `.zed/settings.json`
+ * (`context_servers`, since Zed does not read `.mcp.json`), and `ACCEPTED_SHADOW_MCP_ENTRIES` in
+ * `packages/blit386/scripts/security/mcp-preflight.mjs` (the governance gate's own copy).
  */
 const PROJECT_MCP_SERVER_URL = 'https://blit386.dev/mcp';
 

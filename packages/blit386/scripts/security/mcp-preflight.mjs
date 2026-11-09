@@ -45,14 +45,15 @@ export const SECURITY_MCP_REGISTRY = [
 ];
 
 /**
- * Shadow MCP entries accepted by governance policy. Matched on name + classification + exact
- * root-config path only - the URL half of this row is pinned separately by
- * PROJECT_MCP_SERVER_URL in ../../../../scripts/check-agent-config.mjs (findProjectMcpFailures),
- * wired into `pnpm run agents:check`. See "Accepted MCP entries" in
- * docs/security/security-runbook.md - that table and this const must stay in sync manually.
- * @type {{ name: string, classification: string }[]}
+ * Shadow MCP entries accepted by governance policy. Matched on name + classification + exact URL
+ * + a tracked repo-root config path. Manual-sync hazard: the URL also lives in
+ * PROJECT_MCP_SERVER_URL in ../../../../scripts/check-agent-config.mjs and in the "Accepted MCP
+ * entries" table of docs/security/security-runbook.md - change all three together.
+ * @type {{ name: string, classification: string, url: string }[]}
  */
-export const ACCEPTED_SHADOW_MCP_ENTRIES = [{ name: 'blit386-docs', classification: 'shadow-remote' }];
+export const ACCEPTED_SHADOW_MCP_ENTRIES = [
+    { name: 'blit386-docs', classification: 'shadow-remote', url: 'https://blit386.dev/mcp' },
+];
 
 const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json'];
 
@@ -307,7 +308,7 @@ function normalizeEntry(entry) {
  * @param {McpConfigFormat} [configFormat]
  * @returns {{
  *   path: string,
- *   servers: { name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown' }[],
+ *   servers: { name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown', url?: string }[],
  *   error: string | null,
  * }}
  */
@@ -324,7 +325,7 @@ export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
             return { path: configPath, servers: [], error: `${configFormat.key} is not an object` };
         }
 
-        /** @type {{ name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown' }[]} */
+        /** @type {{ name: string, classification: 'runlayer-managed' | 'shadow-remote' | 'shadow-stdio' | 'unknown', url?: string }[]} */
         const servers = [];
 
         for (const [name, rawEntry] of Object.entries(serversObject)) {
@@ -334,7 +335,7 @@ export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
             } else if (isRunlayerManagedEntry(entry)) {
                 servers.push({ name, classification: 'runlayer-managed' });
             } else if (entry.url.length > 0) {
-                servers.push({ name, classification: 'shadow-remote' });
+                servers.push({ name, classification: 'shadow-remote', url: entry.url });
             } else if (entry.command.length > 0) {
                 servers.push({ name, classification: 'shadow-stdio' });
             } else {
@@ -452,17 +453,27 @@ export function runMcpPreflight(options) {
     const shadowServers = governance.flatMap((config) =>
         config.servers
             .filter((server) => server.classification.startsWith('shadow'))
-            .map((server) => ({ config: config.path, name: server.name, classification: server.classification })),
+            .map((server) => ({
+                config: config.path,
+                name: server.name,
+                classification: server.classification,
+                url: server.url ?? '',
+            })),
     );
 
     // Accepted only in the repo's own tracked configs, never in a parent-directory or $HOME one.
     const trackedConfigPaths = ['.mcp.json', ...AGENT_MCP_CONFIGS.map((config) => config.file)].map((file) =>
         path.join(repoRoot, file),
     );
-    const isAcceptedShadow = (/** @type {{ config: string, name: string, classification: string }} */ server) =>
+    const isAcceptedShadow = (
+        /** @type {{ config: string, name: string, classification: string, url: string }} */ server,
+    ) =>
         trackedConfigPaths.includes(server.config) &&
         ACCEPTED_SHADOW_MCP_ENTRIES.some(
-            (entry) => entry.name === server.name && entry.classification === server.classification,
+            (entry) =>
+                entry.name === server.name &&
+                entry.classification === server.classification &&
+                entry.url === server.url,
         );
     const acceptedShadowServers = shadowServers.filter(isAcceptedShadow);
     const unacceptedShadowServers = shadowServers.filter((server) => !isAcceptedShadow(server));
@@ -613,9 +624,9 @@ export function formatPreflightSummary(report) {
  * @property {{
  *   configs: Array<{ path: string, serverNames: string[], readError: string | null, shadowServers: Array<{ name: string, classification: string }> }>,
  *   shadowCount: number,
- *   shadowServers: Array<{ config: string, name: string, classification: string }>,
- *   acceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
- *   unacceptedShadowServers: Array<{ config: string, name: string, classification: string }>,
+ *   shadowServers: Array<{ config: string, name: string, classification: string, url: string }>,
+ *   acceptedShadowServers: Array<{ config: string, name: string, classification: string, url: string }>,
+ *   unacceptedShadowServers: Array<{ config: string, name: string, classification: string, url: string }>,
  *   blockingConfigs: Array<{ path: string, reason: string }>,
  * }} governance
  * @property {{

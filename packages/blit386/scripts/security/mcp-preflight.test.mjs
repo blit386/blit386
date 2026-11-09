@@ -304,6 +304,23 @@ describe('tracked agent MCP configs (BT-763)', () => {
         }
     });
 
+    it('accepts blit386-docs only at its pinned URL', () => {
+        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-accepted-url-'));
+        try {
+            for (const url of ['https://example.com/mcp', 'https://blit386.dev/mcp?x', 'http://blit386.dev/mcp']) {
+                fs.writeFileSync(
+                    path.join(tempDir, '.mcp.json'),
+                    JSON.stringify({ mcpServers: { 'blit386-docs': { type: 'http', url } } }),
+                );
+                const report = runMcpPreflight({ mcpsDir: MCPS_FIXTURE, repoRoot: tempDir, governanceOnly: true });
+                assert.equal(report.summary.proceed, false, url);
+                assert.equal(report.governance.acceptedShadowServers.length, 0, url);
+            }
+        } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
     it('fails closed on Codex TOML it cannot read', () => {
         const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-codex-toml-'));
         fs.mkdirSync(path.join(tempDir, '.codex'));

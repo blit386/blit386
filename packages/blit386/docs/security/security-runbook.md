@@ -220,10 +220,11 @@ Acceptance is bound to the whole row, not the name: a flagged server qualifies o
 classification all match. The same name pointing at a different URL, or appearing in a config the row does not name, is
 a finding.
 
-The name, config path, and classification columns are enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
-[`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs); the URL column is
-enforced separately by `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs` (`pnpm run agents:check`). Both are
-hand-synced to this table - there is no shared import between them.
+Every column is enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
+[`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs), so the standalone
+governance audit fails on a different URL by itself. `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs`
+(`pnpm run agents:check`) pins the same URL in each config file. Both are hand-synced to this table - there is no shared
+import between them.
 
 | Server | URL | Declared in | Expected classification |
 | --- | --- | --- | --- |
