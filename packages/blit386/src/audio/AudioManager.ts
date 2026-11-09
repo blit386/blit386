@@ -14,15 +14,7 @@ import type { EasingFunction } from '../utils/Easing';
 import { audioFadeNotFiniteError, audioVolumeNotFiniteError } from '../utils/errorMessages';
 import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions, validateFinite, validateLoopRegion } from './MusicPlayer';
-import {
-    DEFAULT_PAN,
-    DEFAULT_PITCH,
-    DEFAULT_VOLUME,
-    INVALID_SOUND_REF,
-    type SoundRef,
-    type VoicePlayOptions,
-    VoicePool,
-} from './VoicePool';
+import { INVALID_SOUND_REF, type SoundRef, type VoicePlayOptions, VoicePool } from './VoicePool';
 
 /** Default (full) gain for a freshly created or reset bus. */
 const DEFAULT_BUS_VOLUME = 1;
@@ -114,6 +106,30 @@ export class AudioManager {
         this.mutedState = { main: false, music: false, sfx: false };
 
         this.onUnlockGesture = () => this.unlock();
+    }
+
+    /**
+     * SFX voice pool, or `null` before {@link attach} or after a failed one.
+     *
+     * Read directly for per-voice control and counters; only {@link playSound} goes through
+     * this class, because it carries the pre-unlock drop logic.
+     *
+     * @returns The live voice pool, or `null`.
+     */
+    public get voices(): VoicePool | null {
+        return this.voicePool;
+    }
+
+    /**
+     * Music player, or `null` before {@link attach} or after a failed one.
+     *
+     * Read directly for volume and playing state; {@link musicPlay} and {@link musicStop} stay on
+     * this class, because they carry the locked-context request logic.
+     *
+     * @returns The live music player, or `null`.
+     */
+    public get music(): MusicPlayer | null {
+        return this.musicPlayer;
     }
 
     /**
@@ -407,8 +423,7 @@ export class AudioManager {
      * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
      *
      * {@link getDroppedSfxCount} only counts these pre-unlock drops; pool-exhaustion drops (no
-     * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, surfaced
-     * through {@link getVoiceDropCount}.
+     * free or stealable slot) are tracked separately by {@link voices}' own `getDropCount()`.
      *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link VoicePlayOptions}.
@@ -422,89 +437,6 @@ export class AudioManager {
         }
 
         return this.voicePool?.play(buffer, options) ?? INVALID_SOUND_REF;
-    }
-
-    /**
-     * Stops a playing sound, optionally fading it out.
-     *
-     * @param ref - Sound to stop.
-     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
-     */
-    public soundStop(ref: SoundRef, fadeOutMs?: number): void {
-        this.voicePool?.stop(ref, fadeOutMs);
-    }
-
-    /**
-     * Reports whether a sound is still playing.
-     *
-     * @param ref - Sound to query.
-     * @returns `true` when `ref` still identifies a live voice; `false` on a stale ref or before {@link attach}.
-     */
-    public isSoundPlaying(ref: SoundRef): boolean {
-        return this.voicePool?.isPlaying(ref) ?? false;
-    }
-
-    /**
-     * Sets a sound's gain, optionally fading to it.
-     *
-     * @param ref - Sound to update.
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     */
-    public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.voicePool?.volumeSet(ref, value, fadeMs);
-    }
-
-    /**
-     * Gets a sound's current gain.
-     *
-     * @param ref - Sound to query.
-     * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale ref or before {@link attach}.
-     */
-    public soundVolumeGet(ref: SoundRef): number {
-        return this.voicePool?.volumeGet(ref) ?? DEFAULT_VOLUME;
-    }
-
-    /**
-     * Sets a sound's playback rate, optionally fading to it.
-     *
-     * @param ref - Sound to update.
-     * @param value - Target playback rate.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     */
-    public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.voicePool?.pitchSet(ref, value, fadeMs);
-    }
-
-    /**
-     * Gets a sound's current playback rate.
-     *
-     * @param ref - Sound to query.
-     * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or before {@link attach}.
-     */
-    public soundPitchGet(ref: SoundRef): number {
-        return this.voicePool?.pitchGet(ref) ?? DEFAULT_PITCH;
-    }
-
-    /**
-     * Sets a sound's stereo pan, optionally fading to it.
-     *
-     * @param ref - Sound to update.
-     * @param value - Target pan.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     */
-    public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
-        this.voicePool?.panSet(ref, value, fadeMs);
-    }
-
-    /**
-     * Gets a sound's current stereo pan.
-     *
-     * @param ref - Sound to query.
-     * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or before {@link attach}.
-     */
-    public soundPanGet(ref: SoundRef): number {
-        return this.voicePool?.panGet(ref) ?? DEFAULT_PAN;
     }
 
     /**
@@ -553,73 +485,7 @@ export class AudioManager {
     }
 
     /**
-     * Sets the music player's volume, optionally fading to it.
-     *
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     */
-    public musicVolumeSet(value: number, fadeMs?: number): void {
-        this.musicPlayer?.volumeSet(value, fadeMs);
-    }
-
-    /**
-     * Gets the music player's current target volume.
-     *
-     * @returns Current target gain, or {@link DEFAULT_VOLUME} before {@link attach}.
-     */
-    public musicVolumeGet(): number {
-        return this.musicPlayer?.volumeGet() ?? DEFAULT_VOLUME;
-    }
-
-    /**
-     * Reports whether music is currently playing.
-     *
-     * @returns `true` when the music player has a live current track.
-     */
-    public isMusicPlaying(): boolean {
-        return this.musicPlayer?.isPlaying() ?? false;
-    }
-
-    /**
-     * Returns the number of `playSound()` calls that stole an active voice slot.
-     *
-     * @returns Steal count, or `0` before {@link attach}.
-     */
-    public getVoiceStealCount(): number {
-        return this.voicePool?.getStealCount() ?? 0;
-    }
-
-    /**
-     * Returns the number of `playSound()` calls dropped because no voice slot was free or
-     * stealable. Distinct from {@link getDroppedSfxCount}, which counts requests dropped before
-     * unlock.
-     *
-     * @returns Drop count, or `0` before {@link attach}.
-     */
-    public getVoiceDropCount(): number {
-        return this.voicePool?.getDropCount() ?? 0;
-    }
-
-    /**
-     * Returns the number of currently active SFX voices.
-     *
-     * @returns Active voice count, or `0` before {@link attach}.
-     */
-    public getActiveVoiceCount(): number {
-        return this.voicePool?.getActiveVoiceCount() ?? 0;
-    }
-
-    /**
-     * Returns the fixed total number of SFX voice slots.
-     *
-     * @returns Total slot count, or `0` before {@link attach}.
-     */
-    public getVoiceCount(): number {
-        return this.voicePool?.getVoiceCount() ?? 0;
-    }
-
-    /**
-     * Lazily creates one `AnalyserNode` per bus and connects each bus gain node to its analyser,
+     * Lazily creates one `AnalyserNode` per bus and connects each bus gain node to its analyzer,
      * in parallel with the bus's existing routing (analyzers never replace or reroute existing
      * connections). A no-op on every call after the first, and before {@link attach} / after a
      * failed `attach()` (no live bus graph).
