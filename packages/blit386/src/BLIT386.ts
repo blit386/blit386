@@ -281,27 +281,6 @@ function pointerClock(): PointerClock {
     return BTAPI.instance.isUpdating ? 'update' : 'frame';
 }
 
-/**
- * Maps a single pointer button bit flag to the pointer subsystem button code.
- *
- * @param pointerFlag - One pointer button bit from `BTN_POINTER_A..D`.
- * @returns Pointer subsystem button code (one of `POINTER_BUTTON_CODES`) or `null` if not a pointer button.
- */
-function pointerFlagToPointerCode(pointerFlag: number): number | null {
-    switch (pointerFlag) {
-        case flags.BTN_POINTER_A:
-            return POINTER_BUTTON_CODES[0];
-        case flags.BTN_POINTER_B:
-            return POINTER_BUTTON_CODES[1];
-        case flags.BTN_POINTER_C:
-            return POINTER_BUTTON_CODES[2];
-        case flags.BTN_POINTER_D:
-            return POINTER_BUTTON_CODES[3];
-        default:
-            return null;
-    }
-}
-
 /** Main BLIT386 API namespace used by runtime demos. */
 export const BT = {
     /**
@@ -1992,14 +1971,12 @@ export const BT = {
         const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of flags.POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
-
-                if (pointerCode !== null && (BTAPI.instance.getPointer()?.isButtonDown(pointerCode, player) ?? false)) {
+                if (BTAPI.instance.getPointer()?.isButtonDown(pointerCode, player) ?? false) {
                     return true;
                 }
             }
@@ -2080,15 +2057,14 @@ export const BT = {
         const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of flags.POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
                 const pointer = BTAPI.instance.getPointer();
 
-                if (pointerCode === null || pointer === null) {
+                if (pointer === null) {
                     continue;
                 }
 
@@ -2184,17 +2160,12 @@ export const BT = {
         const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of flags.POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
-
-                if (
-                    pointerCode !== null &&
-                    (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player, pointerClock()) ?? false)
-                ) {
+                if (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player, pointerClock()) ?? false) {
                     return true;
                 }
             }

@@ -91,7 +91,7 @@ export type FaceButtonCode = (typeof FACE_BUTTON_FLAGS)[number];
 /** Every face-button bit (`BTN_UP` … `BTN_SELECT`). */
 export const FACE_BUTTON_MASK = (BTN_SELECT << 1) - 1;
 
-/** Pointer button bit flags `BTN_POINTER_A` … `D`, in bit order. */
+/** Pointer button bit flags `BTN_POINTER_A` … `D`, in bit order; index `i` pairs with `POINTER_BUTTON_CODES[i]`. */
 export const POINTER_FLAGS = [BTN_POINTER_A, BTN_POINTER_B, BTN_POINTER_C, BTN_POINTER_D] as const;
 
 /** Trigger button bit flags (`BTN_L2`, `BTN_R2`). Gamepad only, no keyboard fallback. */
