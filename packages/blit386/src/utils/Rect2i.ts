@@ -265,7 +265,8 @@ export class Rect2i {
      * @returns New Rect2i with the specified values.
      */
     static fromValuesUnchecked(x: number, y: number, width: number, height: number): Rect2i {
-        const r = Object.create(Rect2i.prototype) as Rect2i;
+        // Construct, then overwrite: same hidden class as `new Rect2i(...)`, raw values kept.
+        const r = new Rect2i();
 
         r.x = x;
         r.y = y;

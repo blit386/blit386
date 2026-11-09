@@ -313,7 +313,8 @@ export class Color32 {
      * @returns New Color32 with the specified values.
      */
     static fromRGBAUnchecked(r: number, g: number, b: number, a: number): Color32 {
-        const color = Object.create(Color32.prototype) as Color32;
+        // Construct, then overwrite: same hidden class as `new Color32(...)`, raw values kept.
+        const color = new Color32();
 
         color.r = r;
         color.g = g;

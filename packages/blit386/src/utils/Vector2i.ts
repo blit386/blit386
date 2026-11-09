@@ -150,7 +150,8 @@ export class Vector2i {
      * @returns New Vector2i with the specified values.
      */
     public static fromXYUnchecked(x: number, y: number): Vector2i {
-        const v = Object.create(Vector2i.prototype) as Vector2i;
+        // Construct, then overwrite: same hidden class as `new Vector2i(...)`, raw values kept.
+        const v = new Vector2i();
 
         v.x = x;
         v.y = y;
