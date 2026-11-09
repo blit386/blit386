@@ -27,24 +27,25 @@ import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
-import { SYSTEM_FONT_EXTRA_CHARS } from './system-font-extra-chars.mjs';
+import {
+    ASCII_GLYPH_COUNT,
+    ATLAS_COLS,
+    ATLAS_HEIGHT,
+    ATLAS_ROWS,
+    ATLAS_WIDTH,
+    FIRST_CHAR,
+    GLYPH_COUNT,
+    GLYPH_HEIGHT,
+    GLYPH_WIDTH,
+    LAST_CHAR,
+    SYSTEM_FONT_EXTRA_CHARS,
+} from './system-font-extra-chars.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/system-font.png');
 const OUTPUT_PATH = join(PROJECT_ROOT, 'src/assets/fonts/systemFontData.ts');
 
-const GLYPH_WIDTH = 6;
-const GLYPH_HEIGHT = 14;
-const ATLAS_COLS = 16;
-const FIRST_CHAR = 32;
-const LAST_CHAR = 126;
-const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1; // 95
-// Contiguous ASCII block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
-const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
-const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
-const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
-const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
 const ON_THRESHOLD = 128; // Red channel >= this means "on".
 const CHECK_FLAG = '--check';
 

@@ -255,9 +255,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          # api:since:check and api:history:check resolve release dates from tags, and
-          # gen-api-history.mjs walks history with `git log --follow`, which returns
-          # nothing on a shallow clone.
+          # api:history:check resolves each release date with `git log -1 <tag>`, so it needs
+          # every release tag and the commits they point at - a shallow clone has neither.
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
@@ -301,6 +300,14 @@ jobs:
         run: pnpm --filter blit386 run api:getters:check
         background: true
 
+      - name: Check system font data against its PNG
+        run: pnpm --filter blit386 run system-font:check
+        background: true
+
+      - name: Check splash logo data against its PNG
+        run: pnpm --filter blit386 run splash-logo:check
+        background: true
+
       # These are node --test suites under scripts/, which vitest (src/** only) never picks up.
       - name: Run declaration tooling tests
         run: pnpm --filter blit386 run test:declarations
@@ -320,6 +327,18 @@ jobs:
 
       - name: Run benchmark coverage check tests
         run: pnpm --filter blit386 run test:check-bench-coverage
+        background: true
+
+      - name: Run bitmap font converter tests
+        run: pnpm --filter blit386 run test:bmfont
+        background: true
+
+      - name: Run system font padding tests
+        run: pnpm --filter blit386 run test:system-font
+        background: true
+
+      - name: Run splash logo drift check tests
+        run: pnpm --filter blit386 run test:splash-logo
         background: true
 
       - wait-all:
@@ -471,8 +490,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          # test:api-history's resolveTagDate integration cases need real release tags,
-          # and the generator walks history with `git log --follow`.
+          # test:api-history's resolveTagDate and assertReleaseTagsPresent integration cases
+          # need real release tags and the commits they point at.
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false

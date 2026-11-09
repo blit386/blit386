@@ -11,6 +11,31 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 
+/** Glyph field in the .btfont output, and the BMFont `<char>` attribute it is read from, in output order. */
+const GLYPH_ATTRIBUTES = [
+    ['x', 'x'],
+    ['y', 'y'],
+    ['w', 'width'],
+    ['h', 'height'],
+    ['ox', 'xoffset'],
+    ['oy', 'yoffset'],
+    ['adv', 'xadvance'],
+];
+
+/**
+ * Prints each line to stderr and exits with status 1.
+ *
+ * @param {...string} lines - Error lines to print.
+ * @returns {never}
+ */
+function fail(...lines) {
+    for (const line of lines) {
+        console.error(line);
+    }
+
+    process.exit(1);
+}
+
 /**
  * Extracts the value of a specified attribute from an XML tag.
  *
@@ -35,9 +60,7 @@ function parseInfoTag(xmlData) {
     const infoMatch = xmlData.match(/<info[^>]+>/);
 
     if (!infoMatch) {
-        console.error('Error: Couldn’t find <info> tag in font file');
-
-        process.exit(1);
+        fail('Error: Couldn’t find <info> tag in font file');
     }
 
     const fontName = parseXmlAttribute(infoMatch[0], 'face') || 'Unknown';
@@ -45,9 +68,7 @@ function parseInfoTag(xmlData) {
     const fontSize = Math.abs(parseInt(sizeAttr, 10));
 
     if (Number.isNaN(fontSize)) {
-        console.error(`Error: Invalid font size in <info> tag: "${sizeAttr}"`);
-
-        process.exit(1);
+        fail(`Error: Invalid font size in <info> tag: "${sizeAttr}"`);
     }
 
     return { fontName, fontSize };
@@ -64,9 +85,7 @@ function parseCommonTag(xmlData, fontSize) {
     const commonMatch = xmlData.match(/<common[^>]+>/);
 
     if (!commonMatch) {
-        console.error('Error: Couldn’t find <common> tag in font file');
-
-        process.exit(1);
+        fail('Error: Couldn’t find <common> tag in font file');
     }
 
     const lineHeightAttr = parseXmlAttribute(commonMatch[0], 'lineHeight') || String(fontSize);
@@ -76,15 +95,11 @@ function parseCommonTag(xmlData, fontSize) {
     const baseline = parseInt(baselineAttr, 10);
 
     if (Number.isNaN(lineHeight)) {
-        console.error(`Error: Invalid lineHeight in <common> tag: "${lineHeightAttr}"`);
-
-        process.exit(1);
+        fail(`Error: Invalid lineHeight in <common> tag: "${lineHeightAttr}"`);
     }
 
     if (Number.isNaN(baseline)) {
-        console.error(`Error: Invalid baseline (base) in <common> tag: "${baselineAttr}"`);
-
-        process.exit(1);
+        fail(`Error: Invalid baseline (base) in <common> tag: "${baselineAttr}"`);
     }
 
     return { lineHeight, baseline };
@@ -103,24 +118,20 @@ function parsePageTag(xmlData) {
     const pageMatches = [...xmlData.matchAll(/<page[^>]+>/g)];
 
     if (pageMatches.length === 0) {
-        console.error('Error: Couldn’t find <page> tag in font file');
-
-        process.exit(1);
+        fail('Error: Couldn’t find <page> tag in font file');
     }
 
     if (pageMatches.length > 1) {
-        console.error(`Error: Multi-page BMFonts aren’t supported (found ${pageMatches.length} <page> tags)`);
-        console.error('This font uses multiple texture pages, which is not supported.');
-
-        process.exit(1);
+        fail(
+            `Error: Multi-page BMFonts aren’t supported (found ${pageMatches.length} <page> tags)`,
+            'This font uses multiple texture pages, which is not supported.',
+        );
     }
 
     const textureFilename = parseXmlAttribute(pageMatches[0][0], 'file');
 
     if (!textureFilename) {
-        console.error('Error: Couldn’t find texture filename in <page> tag');
-
-        process.exit(1);
+        fail('Error: Couldn’t find texture filename in <page> tag');
     }
 
     return textureFilename;
@@ -149,17 +160,13 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
     const normalizedFntDir = resolvedFntDir.endsWith(sep) ? resolvedFntDir : resolvedFntDir + sep;
 
     if (!resolvedTexturePath.startsWith(normalizedFntDir)) {
-        console.error(`Error: The texture path escapes the font directory: ${textureFilename}`);
-
-        process.exit(1);
+        fail(`Error: The texture path escapes the font directory: ${textureFilename}`);
     }
 
     if (embedTexture) {
         // Validate texture file existence.
         if (!existsSync(resolvedTexturePath)) {
-            console.error(`Error: The texture file was not found: ${resolvedTexturePath}`);
-
-            process.exit(1);
+            fail(`Error: The texture file was not found: ${resolvedTexturePath}`);
         }
 
         console.log(`Embedding texture: ${resolvedTexturePath}`);
@@ -172,9 +179,7 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
 
             textureValue = `data:image/png;base64,${base64}`;
         } catch (error) {
-            console.error(`Error reading the texture file: ${error.message}`);
-
-            process.exit(1);
+            fail(`Error reading the texture file: ${error.message}`);
         }
     } else {
         // Use the relative path from output file to texture.
@@ -183,9 +188,7 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
 
         // Validate texture file existence.
         if (!existsSync(resolvedTexturePath)) {
-            console.error(`Error: The texture file was not found: ${resolvedTexturePath}`);
-
-            process.exit(1);
+            fail(`Error: The texture file was not found: ${resolvedTexturePath}`);
         }
 
         // Compute a relative path from the output directory to the texture file.
@@ -207,52 +210,22 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
  * @returns {void} Does not return a value; updates the glyph object directly with parsed data.
  */
 function parseGlyphData(glyphs, char, tag, charCode) {
-    // Parse all numeric attributes with defaults.
-    const xAttr = parseXmlAttribute(tag, 'x') || '0';
-    const yAttr = parseXmlAttribute(tag, 'y') || '0';
-    const widthAttr = parseXmlAttribute(tag, 'width') || '0';
-    const heightAttr = parseXmlAttribute(tag, 'height') || '0';
-    const xoffsetAttr = parseXmlAttribute(tag, 'xoffset') || '0';
-    const yoffsetAttr = parseXmlAttribute(tag, 'yoffset') || '0';
-    const xadvanceAttr = parseXmlAttribute(tag, 'xadvance') || '0';
+    // Parse every numeric attribute (missing ones default to 0) into the glyph's short keys.
+    const glyph = Object.fromEntries(
+        GLYPH_ATTRIBUTES.map(([key, name]) => {
+            const attr = parseXmlAttribute(tag, name) || '0';
+            const value = parseInt(attr, 10);
 
-    const x = parseInt(xAttr, 10);
-    const y = parseInt(yAttr, 10);
-    const width = parseInt(widthAttr, 10);
-    const height = parseInt(heightAttr, 10);
-    const xoffset = parseInt(xoffsetAttr, 10);
-    const yoffset = parseInt(yoffsetAttr, 10);
-    const xadvance = parseInt(xadvanceAttr, 10);
+            if (Number.isNaN(value)) {
+                fail(`Error: Invalid ${name} attribute for the glyph (char code ${charCode}): "${attr}"`);
+            }
 
-    // Validate all numeric values.
-    const attributes = [
-        { name: 'x', value: x, attr: xAttr },
-        { name: 'y', value: y, attr: yAttr },
-        { name: 'width', value: width, attr: widthAttr },
-        { name: 'height', value: height, attr: heightAttr },
-        { name: 'xoffset', value: xoffset, attr: xoffsetAttr },
-        { name: 'yoffset', value: yoffset, attr: yoffsetAttr },
-        { name: 'xadvance', value: xadvance, attr: xadvanceAttr },
-    ];
-
-    for (const { name, value, attr } of attributes) {
-        if (Number.isNaN(value)) {
-            console.error(`Error: Invalid ${name} attribute for the glyph (char code ${charCode}): "${attr}"`);
-
-            process.exit(1);
-        }
-    }
+            return [key, value];
+        }),
+    );
 
     // eslint-disable-next-line security/detect-object-injection
-    glyphs[char] = {
-        x,
-        y,
-        w: width,
-        h: height,
-        ox: xoffset,
-        oy: yoffset,
-        adv: xadvance,
-    };
+    glyphs[char] = glyph;
 }
 
 /**
@@ -271,25 +244,19 @@ function parseGlyphs(xmlData) {
 
         // Validate that the ID attribute exists and is numeric.
         if (!idAttr) {
-            console.error('Error: The glyph is missing a required id attribute');
-
-            process.exit(1);
+            fail('Error: The glyph is missing a required id attribute');
         }
 
         // parseInt alone would read "65abc" as 65, so require the whole value to be an integer.
         const charCode = /^-?\d+$/.test(idAttr) ? parseInt(idAttr, 10) : Number.NaN;
 
         if (Number.isNaN(charCode)) {
-            console.error(`Error: The glyph has a non-numeric id: ${idAttr}`);
-
-            process.exit(1);
+            fail(`Error: The glyph has a non-numeric id: ${idAttr}`);
         }
 
         // fromCodePoint throws a RangeError outside the Unicode range, so reject it up front.
         if (charCode < 0 || charCode > 0x10ffff) {
-            console.error(`Error: The glyph has an id outside the Unicode range 0-0x10FFFF: ${idAttr}`);
-
-            process.exit(1);
+            fail(`Error: The glyph has an id outside the Unicode range 0-0x10FFFF: ${idAttr}`);
         }
 
         const char = String.fromCodePoint(charCode);
@@ -300,9 +267,7 @@ function parseGlyphs(xmlData) {
     }
 
     if (glyphCount === 0) {
-        console.error('Error: No glyphs are found in the font file');
-
-        process.exit(1);
+        fail('Error: No glyphs are found in the font file');
     }
 
     return { glyphs, glyphCount };
@@ -342,9 +307,7 @@ function writeOutput(outputPath, btfont, fontName, fontSize, lineHeight, baselin
 function convertBMFont(fntPath, outputPath, embedTexture = false) {
     // Validate input file exists.
     if (!existsSync(fntPath)) {
-        console.error(`Error: The input file was not found: ${fntPath}`);
-
-        process.exit(1);
+        fail(`Error: The input file was not found: ${fntPath}`);
     }
 
     console.log(`Reading: ${fntPath}`);
@@ -422,26 +385,26 @@ Examples:
     const unknownFlags = args.filter((arg) => arg.startsWith('-') && !knownFlags.includes(arg));
 
     if (unknownFlags.length > 0) {
-        console.error(`Error: Unknown flag(s): ${unknownFlags.join(', ')}`);
-        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
-        console.error('Run with --help for more information');
-
-        process.exit(1);
+        fail(
+            `Error: Unknown flag(s): ${unknownFlags.join(', ')}`,
+            'Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]',
+            'Run with --help for more information',
+        );
     }
 
     if (paths.length < 2) {
-        console.error('Error: Please provide input and output paths');
-        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
-
-        process.exit(1);
+        fail(
+            'Error: Please provide input and output paths',
+            'Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]',
+        );
     }
 
     // Validate no extra positional arguments.
     if (paths.length !== 2) {
-        console.error(`Error: Expected 2 paths, but got ${paths.length}: ${paths.join(', ')}`);
-        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
-
-        process.exit(1);
+        fail(
+            `Error: Expected 2 paths, but got ${paths.length}: ${paths.join(', ')}`,
+            'Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]',
+        );
     }
 
     const [inputPath, outputPath] = paths;

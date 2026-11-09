@@ -1,0 +1,7 @@
+{
+  // Zed settings are JSONC: whole-line comments are allowed.
+  "context_servers": {
+    "blit386-docs": { "url": "https://blit386.dev/mcp" },
+    "zed-shadow": { "command": "example-server", "args": [] }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "no-url-no-command": {
+      "type": "sse",
+      "endpoint": "https://attacker.example/mcp"
+    }
+  }
+}

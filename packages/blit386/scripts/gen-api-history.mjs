@@ -23,6 +23,9 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
+import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+import { relativeToRoot, runCheck } from './generated-file-check.mjs';
+
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TSCONFIG_PATH = join(ROOT, 'tsconfig.json');
 export const ENTRY_FILE = join(ROOT, 'src', 'BLIT386.ts');
@@ -36,6 +39,31 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * that bumps `package.json` `version` after a release ships.
  */
 const UNRELEASED_VERSION = '1.8.1';
+
+/**
+ * Versions past `UNRELEASED_VERSION` a tag may name on purpose. Each entry is a release already
+ * planned on a milestone; drop it once `UNRELEASED_VERSION` catches up.
+ * 1.9.0: `@changed 1.9.0` on `BT.renderAt` (BT-727, on the 1.9.0 milestone).
+ */
+const ALLOWED_FUTURE_VERSIONS = ['1.9.0'];
+
+/** A tag version is a plain `major.minor.patch` - no `v` prefix, no pre-release suffix. */
+const PLAIN_SEMVER = /^\d+\.\d+\.\d+$/u;
+
+/** @type {NodeJS.ProcessEnv | undefined} */
+let gitEnv;
+
+/**
+ * The scrubbed git environment, built once per run: building it spawns its own git process, and
+ * `resolveTagDate` runs once per version.
+ *
+ * @returns {NodeJS.ProcessEnv} Environment for git child processes.
+ */
+function scrubbedGitEnv() {
+    gitEnv ??= gitEnvWithoutRepoLocation();
+
+    return gitEnv;
+}
 
 /** Compiler options used when no real tsconfig is supplied (fixture / unit-test programs). */
 export const DEFAULT_TEST_COMPILER_OPTIONS = {
@@ -212,6 +240,9 @@ export function compareVersions(a, b) {
  * Derives a symbol's `status` badge: `deprecated` wins outright (it is a stronger signal than
  * release state), then `unreleased` for the configured unreleased version or missing/untagged
  * future versions, otherwise `stable`.
+ *
+ * Manual sync: `SymbolStatus` in packages/website/src/data/api-history.ts re-types these three
+ * values, and `since-badge.tsx` there compares them. Change all three places together.
  *
  * @param {{ since: string | null, deprecated: unknown }} entry - Symbol's parsed tags.
  * @param {{ packageVersion: string, unreleasedVersion: string, hasTag: (version: string) => boolean }} context
@@ -506,11 +537,70 @@ export function resolveTagDate(tag, runOptions = {}) {
         const output = execFileSync('git', ['log', '-1', '--format=%aI', tag], {
             cwd,
             encoding: 'utf8',
+            env: scrubbedGitEnv(),
+            stdio: ['ignore', 'pipe', 'ignore'], // a missing tag is an expected answer, not noise
         }).trim();
 
         return output.length > 0 ? output : null;
     } catch {
         return null;
+    }
+}
+
+/**
+ * Lists every `@since` / `@changed` / `@deprecated` version that is not plain semver, or that
+ * is past `unreleasedVersion` without being named in `allowedFutureVersions`.
+ *
+ * @param {Record<string, { since: string | null, changes: Array<{ version: string }>, deprecated: { version: string | null } | null }>} symbols
+ * @param {{ unreleasedVersion: string, allowedFutureVersions?: string[] }} context
+ * @returns {string[]} One readable line per problem, sorted; empty when every version is valid.
+ */
+export function findVersionProblems(symbols, context) {
+    const allowed = context.allowedFutureVersions ?? [];
+    const problems = [];
+
+    for (const [name, entry] of Object.entries(symbols)) {
+        const tagged = [
+            ['since', entry.since],
+            ...entry.changes.map((change) => ['changed', change.version]),
+            ['deprecated', entry.deprecated?.version ?? null],
+        ];
+        for (const [tag, version] of tagged) {
+            if (version === null) {
+                continue;
+            }
+            if (!PLAIN_SEMVER.test(version)) {
+                problems.push(`${name}: @${tag} ${JSON.stringify(version)} is not a plain major.minor.patch version`);
+            } else if (compareVersions(version, context.unreleasedVersion) > 0 && !allowed.includes(version)) {
+                problems.push(
+                    `${name}: @${tag} ${version} is past the next release ${context.unreleasedVersion} ` +
+                        '(add it to ALLOWED_FUTURE_VERSIONS if that release is planned)',
+                );
+            }
+        }
+    }
+
+    return problems.sort();
+}
+
+/**
+ * Throws when the checkout has no git tags at all. Without tags every release date resolves to
+ * `null` and `--check` reports a generic drift, so name the real cause up front.
+ *
+ * @param {{ cwd?: string }} [runOptions] - `cwd` to run git in; defaults to the repo root.
+ */
+export function assertReleaseTagsPresent(runOptions = {}) {
+    const tags = execFileSync('git', ['tag', '--list'], {
+        cwd: runOptions.cwd ?? ROOT,
+        encoding: 'utf8',
+        env: scrubbedGitEnv(),
+    }).trim();
+
+    if (tags.length === 0) {
+        throw new Error(
+            'This is a tag-less checkout (no git tags at all), so release dates cannot be resolved. ' +
+                'Run `git fetch --tags` (or clone without --no-tags / a shallow depth) and try again.',
+        );
     }
 }
 
@@ -609,13 +699,23 @@ export function buildPagesMap(docsDir = DOCS_DIR) {
  *
  * @param {Record<string, { kind: string, since: string | null, changes: Array<object>, deprecated: object | null }>} rawSymbols
  *   Output of {@link enumerateSymbols}.
- * @param {{ packageVersion: string, unreleasedVersion: string, docsDir?: string, resolveDate?: (version: string) => string | null }} params
+ * @param {{ packageVersion: string, unreleasedVersion: string, allowedFutureVersions?: string[], docsDir?: string, resolveDate?: (version: string) => string | null }} params
  *   Assembly parameters.
  * @returns {{ packageVersion: string, unreleasedVersion: string, versions: object, symbols: object, pages: object }}
  *   Full manifest, ready for `JSON.stringify`.
  */
 export function buildApiHistoryJson(rawSymbols, params) {
-    const { packageVersion, unreleasedVersion, docsDir = DOCS_DIR, resolveDate = resolveTagDate } = params;
+    const {
+        packageVersion,
+        unreleasedVersion,
+        allowedFutureVersions = [],
+        docsDir = DOCS_DIR,
+        resolveDate = resolveTagDate,
+    } = params;
+    const problems = findVersionProblems(rawSymbols, { unreleasedVersion, allowedFutureVersions });
+    if (problems.length > 0) {
+        throw new Error(`${problems.length} invalid version tag(s):\n  ${problems.join('\n  ')}`);
+    }
     const versions = buildVersionsMap(rawSymbols, packageVersion, unreleasedVersion, resolveDate);
     const hasTag = (version) =>
         // eslint-disable-next-line security/detect-object-injection -- version string from our own versionSet, not external input
@@ -669,23 +769,15 @@ function loadPackageVersion() {
  * @returns {object} Full `docs/_api-history.json` contents (as a JS object, not yet serialized).
  */
 function generate() {
+    assertReleaseTagsPresent();
     const program = createRepoProgram();
     const rawSymbols = enumerateSymbols(program, ENTRY_FILE);
 
     return buildApiHistoryJson(rawSymbols, {
         packageVersion: loadPackageVersion(),
         unreleasedVersion: UNRELEASED_VERSION,
+        allowedFutureVersions: ALLOWED_FUTURE_VERSIONS,
     });
-}
-
-/**
- * Path relative to the repo root, for readable console output.
- *
- * @param {string} filePath - Absolute file path.
- * @returns {string} Repo-relative path.
- */
-function relativeToRoot(filePath) {
-    return filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
 }
 
 /**
@@ -700,27 +792,6 @@ export function parseCliArgs(argv) {
         isCheck: argv.includes('--check'),
         isSinceCheck: argv.includes('--since-check'),
     };
-}
-
-/**
- * Runs `--check`: regenerates the manifest in memory and diffs it against the committed
- * `docs/_api-history.json`, exiting non-zero on drift. Mirrors `sync-doc-banners.mjs --check`.
- *
- * @param {string} desiredJson - Freshly generated JSON text (already `\n`-terminated).
- */
-function runCheck(desiredJson) {
-    const relativeOutput = relativeToRoot(OUTPUT_FILE);
-    const current = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : null;
-
-    if (current === desiredJson) {
-        console.log(`${relativeOutput} is up to date.`);
-
-        return;
-    }
-
-    console.error(`${relativeOutput} is out of date.`);
-    console.error('Run `pnpm run api:history` to regenerate it.');
-    process.exit(1);
 }
 
 /**
@@ -764,7 +835,7 @@ function main() {
     const json = `${JSON.stringify(history, null, 2)}\n`;
 
     if (isCheck) {
-        runCheck(json);
+        runCheck(OUTPUT_FILE, json, 'api:history');
 
         return;
     }

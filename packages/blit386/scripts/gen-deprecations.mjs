@@ -15,13 +15,14 @@
  *   node scripts/gen-deprecations.mjs            # write docs/reference-deprecations.md
  *   node scripts/gen-deprecations.mjs --check    # report drift, write nothing, exit 1
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ensureKitBuilt } from '../../../scripts/ensure-kit-built.mjs';
 
 import { buildBanner, loadPages, SITE_BASE } from './sync-doc-banners.mjs';
+import { relativeToRoot, runCheck } from './generated-file-check.mjs';
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, 'docs');
@@ -192,37 +193,6 @@ export function parseCliArgs(argv) {
     return { isCheck: argv.includes('--check') };
 }
 
-/**
- * Path relative to the repo root, for readable console output.
- *
- * @param {string} filePath - Absolute file path.
- * @returns {string} Repo-relative path.
- */
-function relativeToRoot(filePath) {
-    return filePath.startsWith(ROOT) ? filePath.slice(ROOT.length + 1) : filePath;
-}
-
-/**
- * Runs `--check`: regenerates the doc in memory and diffs it against the committed
- * `docs/reference-deprecations.md`, exiting non-zero on drift. Mirrors `gen-api-history.mjs --check`.
- *
- * @param {string} desiredMarkdown - Freshly generated markdown (already `\n`-terminated).
- */
-function runCheck(desiredMarkdown) {
-    const relativeOutput = relativeToRoot(OUTPUT_FILE);
-    const current = existsSync(OUTPUT_FILE) ? readFileSync(OUTPUT_FILE, 'utf8') : null;
-
-    if (current === desiredMarkdown) {
-        console.log(`${relativeOutput} is up to date.`);
-
-        return;
-    }
-
-    console.error(`${relativeOutput} is out of date.`);
-    console.error('Run `pnpm run api:deprecations` to regenerate it.');
-    process.exit(1);
-}
-
 /** CLI entry point. */
 async function main() {
     const { isCheck } = parseCliArgs(process.argv.slice(2));
@@ -233,7 +203,7 @@ async function main() {
     const markdown = renderDeprecationsMarkdown(MIGRATIONS);
 
     if (isCheck) {
-        runCheck(markdown);
+        runCheck(OUTPUT_FILE, markdown, 'api:deprecations');
 
         return;
     }
