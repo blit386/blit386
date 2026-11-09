@@ -111,7 +111,8 @@ src/
     TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid
     HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
-    Vector2i.ts            # Integer 2D vector
+    Vector2i.ts            # Integer 2D vector (allocating methods, statics, normalized, equality)
+    Vector2iOps.ts         # Internal base of Vector2i: *To / *InPlace families, set/copyFrom, magnitude and distance queries (not exported)
     Rect2i.ts              # Integer rectangle
     Color32.ts             # 32-bit RGBA color (re-exports the colorMath helpers)
     colorMath.ts           # Byte clamps, INV_255, srgbToLinear/linearToSrgb piecewise transfer helpers, hex parsing, hue2rgb
