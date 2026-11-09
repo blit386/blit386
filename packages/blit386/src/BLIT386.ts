@@ -99,7 +99,7 @@ import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
-import { noActivePaletteError, renderAtOptionsError, systemFontNotReadyError } from './utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE, renderAtOptionsError, SYSTEM_FONT_NOT_READY_MESSAGE } from './utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
 import { exposeGlobal, exposeInputTrace } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
@@ -1308,7 +1308,7 @@ export const BT = {
         const palette = BTAPI.instance.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         return palette;
@@ -2556,7 +2556,7 @@ export const BT = {
         const font = BTAPI.instance.getSystemFont();
 
         if (!font) {
-            throw new Error(systemFontNotReadyError());
+            throw new Error(SYSTEM_FONT_NOT_READY_MESSAGE);
         }
 
         return font;

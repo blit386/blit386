@@ -9,12 +9,12 @@
  */
 
 import {
+    RANDOM_PICK_EMPTY_MESSAGE,
+    RANDOM_WEIGHTED_EMPTY_MESSAGE,
     randomIntBoundError,
     randomIntInclusiveRangeError,
     randomIntRangeError,
-    randomPickEmptyError,
     randomSeedNotFiniteError,
-    randomWeightedEmptyError,
     randomWeightedLengthError,
     randomWeightedTotalError,
     randomWeightNotFiniteError,
@@ -260,7 +260,7 @@ export class Random {
      */
     public pick<T>(arr: readonly T[]): T {
         if (arr.length === 0) {
-            throw new RangeError(randomPickEmptyError());
+            throw new RangeError(RANDOM_PICK_EMPTY_MESSAGE);
         }
 
         return arr[this.int(arr.length)] as T;
@@ -312,7 +312,7 @@ export class Random {
      */
     public weighted<T>(items: readonly T[], weights: readonly number[]): T {
         if (items.length === 0) {
-            throw new RangeError(randomWeightedEmptyError());
+            throw new RangeError(RANDOM_WEIGHTED_EMPTY_MESSAGE);
         }
 
         if (items.length !== weights.length) {

@@ -12,7 +12,7 @@ import { isHotActive } from '../hot/HotRuntime';
 import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
-import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
+import { canvasNotFoundError, INIT_FAILED_MESSAGE } from './errorMessages';
 
 /**
  * Options for the bootstrap function.
@@ -139,7 +139,7 @@ function validateCanvas(
     } else {
         result = handleError(
             'Canvas Error',
-            CANVAS_NOT_FOUND_MESSAGE(canvasID),
+            canvasNotFoundError(canvasID),
             new Error(`Canvas element '${canvasID}' not found`),
             containerID,
             onError,

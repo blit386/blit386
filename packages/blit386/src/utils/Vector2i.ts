@@ -1,3 +1,5 @@
+import { vectorDivideByZeroError } from './errorMessages/math';
+
 /**
  * Integer 2D vector for pixel-perfect positioning.
  *
@@ -324,7 +326,7 @@ export class Vector2i {
      */
     div(scalar: number): Vector2i {
         if (scalar === 0) {
-            throw new Error("Can't divide by zero. Use a non-zero number for Vector2i.div.");
+            throw new Error(vectorDivideByZeroError('div'));
         }
 
         return new Vector2i((this.x / scalar) | 0, (this.y / scalar) | 0);
@@ -492,7 +494,7 @@ export class Vector2i {
      */
     divTo(scalar: number, out: Vector2i): Vector2i {
         if (scalar === 0) {
-            throw new Error("Can't divide by zero. Use a non-zero number for Vector2i.divTo.");
+            throw new Error(vectorDivideByZeroError('divTo'));
         }
 
         out.x = (this.x / scalar) | 0;
@@ -702,7 +704,7 @@ export class Vector2i {
      */
     divInPlace(scalar: number): this {
         if (scalar === 0) {
-            throw new Error("Can't divide by zero. Use a non-zero number for Vector2i.divInPlace.");
+            throw new Error(vectorDivideByZeroError('divInPlace'));
         }
 
         this.x = (this.x / scalar) | 0;

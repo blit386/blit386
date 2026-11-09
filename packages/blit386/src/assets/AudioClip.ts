@@ -21,10 +21,10 @@
 
 import { getAudioDecodeContext, notifyAudioClipUnload, notifyMusicHotReplace } from '../audio/audioDecodeContext';
 import {
+    AUDIO_CLIP_NOT_READY_MESSAGE,
     audioClipDecodeError,
     audioClipHttpError,
     audioClipNetworkError,
-    audioClipNotReadyError,
 } from '../utils/errorMessages';
 import { appendCacheBustQuery } from '../utils/HotReloadUrl';
 import type { SynthParams } from './synth/SynthParams';
@@ -180,13 +180,13 @@ export class AudioClip {
      * @param params - Deterministic synthesis parameters.
      * @returns A new clip wrapping the synthesized buffer.
      * @throws Error if `params` fails validation, or the engine has not registered a decode
-     *   context yet (see {@link audioClipNotReadyError}).
+     *   context yet (see {@link AUDIO_CLIP_NOT_READY_MESSAGE}).
      */
     static async synth(params: SynthParams): Promise<AudioClip> {
         const decodeContext = getAudioDecodeContext();
 
         if (decodeContext === null) {
-            throw new Error(audioClipNotReadyError());
+            throw new Error(AUDIO_CLIP_NOT_READY_MESSAGE);
         }
 
         validateSynthParams(params, decodeContext.sampleRate);
@@ -347,7 +347,7 @@ export class AudioClip {
         const decodeContext = getAudioDecodeContext();
 
         if (decodeContext === null) {
-            throw new Error(audioClipNotReadyError());
+            throw new Error(AUDIO_CLIP_NOT_READY_MESSAGE);
         }
 
         const audioData = await AudioClip.download(url, onProgress);

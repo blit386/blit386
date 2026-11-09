@@ -127,7 +127,7 @@ src/
     FrameCaptureShortcut.ts # F9 / Shift+F9 dev-mode capture shortcut gating (pure resolver + reader) and the default download filename
     globalExpose.ts        # Exposes BT on window for console debugging (dev-only by default; BootstrapOptions.exposeGlobal overrides)
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
-    errorMessages.ts       # Centralized user-facing bootstrap/runtime/asset error strings (two-tier voice); imported by Bootstrap and asset/runtime code
+    errorMessages/         # Centralized user-facing error strings (two-tier voice), one file per domain (asset, audio, bootstrap, btfont, math, palette, random, render, sprite, synth) behind an index.ts barrel; fixed text is an X_MESSAGE const, parameterized text an xError(...) builder
     urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests

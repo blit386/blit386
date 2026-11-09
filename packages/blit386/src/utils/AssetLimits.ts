@@ -3,7 +3,7 @@ import {
     assetDimensionInvalidError,
     assetDimensionTooLargeError,
     assetIndexedPixelLengthError,
-    btfontEmbeddedTextureFormatError,
+    BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphAreaTooLargeError,
     btfontGlyphCountTooLargeError,
@@ -263,7 +263,7 @@ export function validateBtfontEmbeddedTextureUri(texture: string): string | null
     }
 
     if (!lowerTexture.startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX)) {
-        return btfontEmbeddedTextureFormatError();
+        return BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE;
     }
 
     const payloadLength = texture.length - BTFONT_EMBEDDED_TEXTURE_PREFIX.length;

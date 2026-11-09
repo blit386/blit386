@@ -8,9 +8,9 @@ import {
 } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import {
+    SPRITE_NOT_INDEXIZED_MESSAGE,
+    SPRITE_TILE_GRID_MISSING_MESSAGE,
     spriteColorNotInPaletteError,
-    spriteNotIndexizedError,
-    spriteTileGridMissingError,
     spriteTileOutOfGridError,
 } from '../utils/errorMessages';
 import { normalizeAssetUrl } from '../utils/HotReloadUrl';
@@ -1037,7 +1037,7 @@ export class SpriteSheet {
      */
     getTexture(device: GPUDevice): GPUTexture {
         if (this.indexedPixels === null) {
-            throw new Error(spriteNotIndexizedError());
+            throw new Error(SPRITE_NOT_INDEXIZED_MESSAGE);
         }
 
         // No destroy(): the texture belongs to the old device, which frees it on its own destroy().
@@ -1266,7 +1266,7 @@ export function writeGridTileRect(
     const tileSize = sheet.tileSize;
 
     if (tileSize === null) {
-        throw new Error(spriteTileGridMissingError());
+        throw new Error(SPRITE_TILE_GRID_MISSING_MESSAGE);
     }
 
     if (row !== undefined) {
