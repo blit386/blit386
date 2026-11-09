@@ -21,6 +21,8 @@ import {
     BTN_UP,
     BTN_X,
     BTN_Y,
+    FACE_BUTTON_FLAGS,
+    FACE_BUTTON_MASK,
 } from './buttonFlags';
 
 /** Default analog dead zone for stick axes. */
@@ -72,29 +74,14 @@ const AXIS_RIGHT_Y = 3;
 const AXIS_TRIGGER_L = 4;
 const AXIS_TRIGGER_R = 5;
 
-/** `BTN_UP` through `BTN_SELECT`: the buttons the any-button helpers cover. */
-const STANDARD_BUTTON_FLAGS = [
-    BTN_UP,
-    BTN_DOWN,
-    BTN_LEFT,
-    BTN_RIGHT,
-    BTN_A,
-    BTN_B,
-    BTN_X,
-    BTN_Y,
-    BTN_L,
-    BTN_R,
-    BTN_START,
-    BTN_SELECT,
-] as const;
-
-export const VALID_BUTTON_FLAGS = [...STANDARD_BUTTON_FLAGS, BTN_L2, BTN_R2] as const;
+/** Every flag a gamepad can set: the face buttons plus the two digital triggers. */
+export const VALID_BUTTON_FLAGS = [...FACE_BUTTON_FLAGS, BTN_L2, BTN_R2] as const;
 
 /**
- * The standard flags OR-ed together; the mask behind the any-button helpers. The trigger buttons
+ * The face buttons OR-ed together; the mask behind the any-button helpers. The trigger buttons
  * are left out on purpose: `BT.isAnyButton*` is documented to cover `BTN_UP` to `BTN_SELECT` only.
  */
-export const ANY_BUTTON_MASK = STANDARD_BUTTON_FLAGS.reduce((mask, flag) => mask | flag, 0);
+export const ANY_BUTTON_MASK = FACE_BUTTON_MASK;
 
 export const VALID_AXIS_INDICES = [
     AXIS_LEFT_X,
