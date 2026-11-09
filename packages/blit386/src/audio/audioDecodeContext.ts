@@ -1,100 +1,43 @@
 /**
- * Module-scoped audio decode/unload seam that `AudioClip` depends on for decoding
- * synthesized buffers and for unload notification.
+ * Module-scoped seam between `AudioManager` and `AudioClip`: the decode context `AudioClip`
+ * decodes and synthesizes against, and the two callbacks it fires on unload and hot-replace.
  *
- * Follows the module-level state style used in `AssetLoader.ts`: plain
- * module-scoped variables rather than a class, since there is exactly one
- * live decode context and one unload handler per engine instance.
+ * Follows the module-level state style used in `AssetLoader.ts`: one plain mutable object
+ * rather than a class, since there is exactly one live audio subsystem per engine instance.
+ * `AudioManager.attach()` fills it in; `AudioManager.detach()` puts the idle defaults back.
  */
 
-/** Current decode `AudioContext`, or `null` when no context is registered. */
-let decodeContext: AudioContext | null = null;
+/** Shape of {@link audioHooks}. */
+interface Hooks {
+    /** Context `AudioClip.load()` and `AudioClip.synth()` decode against, or `null` when none is attached. */
+    context: AudioContext | null;
 
-/**
- * Registers the `AudioContext` that `AudioClip.load()` will use to decode
- * audio data, or clears the registration.
- *
- * Called by {@link AudioManager.attach} / {@link AudioManager.detach} so this
- * registry stays in sync with the live context lifecycle.
- *
- * @param context - Context to register, or `null` to clear it.
- */
-export function setAudioDecodeContext(context: AudioContext | null): void {
-    decodeContext = context;
+    /**
+     * Called by `AudioClip.unload()` and `AudioClip.hotReload()` with the buffer being released.
+     * `AudioManager` wires `VoicePool.stopVoicesUsingBuffer` here so an unloaded clip can never
+     * keep playing from a stale node.
+     */
+    onUnload: (buffer: AudioBuffer) => void;
+
+    /**
+     * Called by `AudioClip.hotReload()` after swapping a clip's buffer in place. `AudioManager`
+     * wires `MusicPlayer.hotReplaceCurrentBuffer` here (see BT-305) so a hot-reloaded music track
+     * keeps playing. Returns whether playback restarted with `newBuffer`.
+     */
+    onHotReplace: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean;
 }
 
-/**
- * Returns the currently registered decode `AudioContext`.
- *
- * @returns The registered context, or `null` when none is registered.
- */
-export function getAudioDecodeContext(): AudioContext | null {
-    return decodeContext;
-}
+/** Defaults while no audio subsystem is attached: no context, no-op callbacks. */
+const IDLE: Readonly<Hooks> = Object.freeze({
+    context: null,
+    onUnload: () => {},
+    onHotReplace: () => false,
+});
 
-/**
- * Handler invoked by `AudioClip.unload()` with the buffer being released.
- *
- * `AudioManager.attach()` registers `VoicePool.stopVoicesUsingBuffer` here so an unloaded
- * clip's audio can never keep playing from a stale node; `AudioManager.detach()` restores the
- * no-op default. Defaults to a no-op before the first `attach()`.
- */
-let audioClipUnloadHandler: (buffer: AudioBuffer) => void = () => {};
+/** The live hooks. Read by `AudioClip`; written only by `AudioManager.attach()` and {@link resetAudioHooks}. */
+export const audioHooks: Hooks = { ...IDLE };
 
-/**
- * Registers the handler invoked by `AudioClip.unload()` with the released buffer.
- *
- * @param handler - Handler to invoke on unload.
- */
-export function setAudioClipUnloadHandler(handler: (buffer: AudioBuffer) => void): void {
-    audioClipUnloadHandler = handler;
-}
-
-/**
- * Invokes the registered unload handler with the buffer being released.
- *
- * Called by `AudioClip.unload()`; a no-op until a voice pool registers a
- * handler via {@link setAudioClipUnloadHandler}.
- *
- * @param buffer - Buffer being released.
- */
-export function notifyAudioClipUnload(buffer: AudioBuffer): void {
-    audioClipUnloadHandler(buffer);
-}
-
-/**
- * Handler invoked by `AudioClip.hotReload()` after swapping a clip's buffer in
- * place, to restart the music player if the replaced buffer was the current track.
- *
- * `AudioManager.attach()` registers `MusicPlayer.hotReplaceCurrentBuffer` here (see
- * BT-305) so a hot-reloaded music track keeps playing without a manual `BT.musicPlay`
- * call; `AudioManager.detach()` restores the no-op default. Defaults to a no-op
- * returning `false` before the first `attach()`.
- *
- * @returns Whether the handler restarted playback with the new buffer.
- */
-let musicHotReplaceHandler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean = () => false;
-
-/**
- * Registers the handler invoked by `AudioClip.hotReload()` to restart the current
- * music track when its buffer was just hot-replaced.
- *
- * @param handler - Handler to invoke; returns whether it restarted playback.
- */
-export function setMusicHotReplaceHandler(handler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean): void {
-    musicHotReplaceHandler = handler;
-}
-
-/**
- * Invokes the registered music hot-replace handler with the old and new buffers.
- *
- * Called by `AudioClip.hotReload()`; a no-op (returns `false`) until a music player
- * registers a handler via {@link setMusicHotReplaceHandler}.
- *
- * @param oldBuffer - Buffer being replaced.
- * @param newBuffer - Replacement buffer.
- * @returns Whether the music player restarted playback with `newBuffer`.
- */
-export function notifyMusicHotReplace(oldBuffer: AudioBuffer, newBuffer: AudioBuffer): boolean {
-    return musicHotReplaceHandler(oldBuffer, newBuffer);
+/** Restores the idle defaults, so the hooks never point at a closed context or a dropped pool. */
+export function resetAudioHooks(): void {
+    Object.assign(audioHooks, IDLE);
 }

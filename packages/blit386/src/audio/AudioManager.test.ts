@@ -24,7 +24,7 @@ import {
 } from '../__test__/webaudio-mock';
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
-import { notifyMusicHotReplace } from './audioDecodeContext';
+import { audioHooks } from './audioDecodeContext';
 import { AudioManager, UNLOCK_GESTURE_EVENTS } from './AudioManager';
 import { MusicPlayer } from './MusicPlayer';
 import { INVALID_SOUND_REF } from './VoicePool';
@@ -124,13 +124,38 @@ describe('AudioManager', () => {
             expect(() => audio.attach(canvas, 16)).not.toThrow();
             expect(audio.isUnlocked()).toBe(false);
         });
+
+        it('closes a context created before the bus graph threw', () => {
+            const MockContext = globalThis.AudioContext;
+
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            Object.defineProperty(globalThis, 'AudioContext', {
+                value: function GainlessAudioContext(): AudioContext {
+                    const context = new MockContext();
+
+                    context.createGain = () => {
+                        throw new Error('createGain failed');
+                    };
+
+                    return context;
+                },
+                writable: true,
+                configurable: true,
+            });
+
+            audio.attach(canvas, 16);
+
+            expect(getMockContext().closeCallCount).toBe(1);
+            expect(audio.voices).toBeNull();
+            expect(audioHooks.context).toBeNull();
+        });
     });
 
     describe('music hot-replace wiring', () => {
         it('registers a music hot-replace handler on attach that delegates to the music player', () => {
             audio.attach(canvas, 16);
 
-            const restarted = notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
+            const restarted = audioHooks.onHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
 
             expect(restarted).toBe(false); // nothing playing yet, but the handler ran without throwing
         });
@@ -139,7 +164,7 @@ describe('AudioManager', () => {
             audio.attach(canvas, 16);
             audio.detach();
 
-            expect(notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
+            expect(audioHooks.onHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
         });
     });
 
@@ -396,24 +421,11 @@ describe('AudioManager', () => {
 
             const firstContext = getMockContext();
             const firstAnalyzers = firstContext.createAnalyserCalls;
-            const firstMain = nthGainNode(firstContext.createGainCalls, 0);
-            const firstMusic = nthGainNode(firstContext.createGainCalls, 1);
-            const firstSfx = nthGainNode(firstContext.createGainCalls, 2);
-            const disconnectSpies = [
-                vi.spyOn(firstMain as unknown as GainNode, 'disconnect'),
-                vi.spyOn(firstMusic as unknown as GainNode, 'disconnect'),
-                vi.spyOn(firstSfx as unknown as GainNode, 'disconnect'),
-            ];
 
             audio.detach();
 
-            for (const spy of disconnectSpies) {
-                expect(spy).toHaveBeenCalledTimes(1);
-            }
-
-            expect(disconnectSpies[0]).toHaveBeenCalledWith(firstAnalyzers[0]);
-            expect(disconnectSpies[1]).toHaveBeenCalledWith(firstAnalyzers[1]);
-            expect(disconnectSpies[2]).toHaveBeenCalledWith(firstAnalyzers[2]);
+            // Closing the context drops the whole graph, taps included; no per-node disconnect needed.
+            expect(firstContext.closeCallCount).toBe(1);
 
             audio.attach(canvas, 16);
             audio.enableBusMetering();
@@ -664,57 +676,52 @@ describe('AudioManager', () => {
         it('soundStop stops a playing sound', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            audio.soundStop(ref);
+            audio.voices?.stop(ref);
 
-            expect(audio.isSoundPlaying(ref)).toBe(false);
+            expect(audio.voices?.isPlaying(ref)).toBe(false);
         });
 
         it('soundStop accepts an optional fadeOutMs without throwing', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            expect(() => audio.soundStop(ref, 200)).not.toThrow();
+            expect(() => audio.voices?.stop(ref, 200)).not.toThrow();
         });
 
         it('isSoundPlaying reports true for a live sound and false for an invalid ref', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            expect(audio.isSoundPlaying(ref)).toBe(true);
-            expect(audio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+            expect(audio.voices?.isPlaying(ref)).toBe(true);
+            expect(audio.voices?.isPlaying(INVALID_SOUND_REF)).toBe(false);
         });
 
         it('soundVolumeSet and soundVolumeGet round-trip', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            audio.soundVolumeSet(ref, 0.4);
+            audio.voices?.volumeSet(ref, 0.4);
 
-            expect(audio.soundVolumeGet(ref)).toBe(0.4);
+            expect(audio.voices?.volumeGet(ref)).toBe(0.4);
         });
 
         it('soundPitchSet and soundPitchGet round-trip', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            audio.soundPitchSet(ref, 1.5);
+            audio.voices?.pitchSet(ref, 1.5);
 
-            expect(audio.soundPitchGet(ref)).toBe(1.5);
+            expect(audio.voices?.pitchGet(ref)).toBe(1.5);
         });
 
         it('soundPanSet and soundPanGet round-trip', () => {
             const ref = audio.playSound(createMockAudioBuffer());
 
-            audio.soundPanSet(ref, -0.5);
+            audio.voices?.panSet(ref, -0.5);
 
-            expect(audio.soundPanGet(ref)).toBe(-0.5);
+            expect(audio.voices?.panGet(ref)).toBe(-0.5);
         });
 
         it('every accessor reports inert defaults on a manager that was never attached', () => {
             const detachedAudio = new AudioManager();
 
-            expect(detachedAudio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
-            expect(detachedAudio.soundVolumeGet(INVALID_SOUND_REF)).toBe(1);
-            expect(detachedAudio.soundPitchGet(INVALID_SOUND_REF)).toBe(1);
-            expect(detachedAudio.soundPanGet(INVALID_SOUND_REF)).toBe(0);
-            expect(() => detachedAudio.soundStop(INVALID_SOUND_REF)).not.toThrow();
-            expect(() => detachedAudio.soundVolumeSet(INVALID_SOUND_REF, 0.5)).not.toThrow();
+            expect(detachedAudio.voices).toBeNull();
         });
     });
 
@@ -726,10 +733,7 @@ describe('AudioManager', () => {
         it('every accessor reports zero on a manager that was never attached', () => {
             const detachedAudio = new AudioManager();
 
-            expect(detachedAudio.getVoiceCount()).toBe(0);
-            expect(detachedAudio.getActiveVoiceCount()).toBe(0);
-            expect(detachedAudio.getVoiceStealCount()).toBe(0);
-            expect(detachedAudio.getVoiceDropCount()).toBe(0);
+            expect(detachedAudio.voices).toBeNull();
         });
 
         it('getVoiceCount returns the configured slot count after attach', () => {
@@ -739,7 +743,7 @@ describe('AudioManager', () => {
 
             audio.attach(canvas, 3);
 
-            expect(audio.getVoiceCount()).toBe(3);
+            expect(audio.voices?.getVoiceCount()).toBe(3);
         });
 
         it('getActiveVoiceCount reflects live voices once unlocked', async () => {
@@ -758,7 +762,7 @@ describe('AudioManager', () => {
             audio.playSound(createMockAudioBuffer());
             audio.playSound(createMockAudioBuffer());
 
-            expect(audio.getActiveVoiceCount()).toBe(2);
+            expect(audio.voices?.getActiveVoiceCount()).toBe(2);
         });
 
         it('getVoiceStealCount reflects pool steals once the pool is full', async () => {
@@ -777,7 +781,7 @@ describe('AudioManager', () => {
             audio.playSound(createMockAudioBuffer(), { priority: 5 });
             audio.playSound(createMockAudioBuffer(), { priority: 5 });
 
-            expect(audio.getVoiceStealCount()).toBe(1);
+            expect(audio.voices?.getStealCount()).toBe(1);
         });
 
         it('getVoiceDropCount reflects pool-exhaustion drops, distinct from pre-unlock drops', async () => {
@@ -796,7 +800,7 @@ describe('AudioManager', () => {
             audio.playSound(createMockAudioBuffer(), { priority: 5 });
             audio.playSound(createMockAudioBuffer(), { priority: 1 });
 
-            expect(audio.getVoiceDropCount()).toBe(1);
+            expect(audio.voices?.getDropCount()).toBe(1);
             expect(audio.getDroppedSfxCount()).toBe(0);
         });
     });
@@ -822,7 +826,7 @@ describe('AudioManager', () => {
             audio.attach(canvas, 16);
             expect(() => audio.playSound(createMockAudioBuffer())).not.toThrow();
             expect(ref).not.toEqual(INVALID_SOUND_REF);
-            expect(audio.isSoundPlaying(ref)).toBe(false);
+            expect(audio.voices?.isPlaying(ref)).toBe(false);
         });
     });
 
@@ -851,7 +855,7 @@ describe('AudioManager', () => {
 
             audio.musicPlay(createMockAudioBuffer());
 
-            expect(audio.isMusicPlaying()).toBe(false);
+            expect(audio.music?.isPlaying()).toBe(false);
             expect(audio.hasRememberedMusicRequest()).toBe(true);
 
             // No voice was actually started - the request is only remembered, never dropped
@@ -874,6 +878,13 @@ describe('AudioManager', () => {
             audio.attach(canvas, 16);
 
             expect(() => audio.musicPlay(createMockAudioBuffer(), { volume: Number.NaN })).toThrow('finite');
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
+        it('musicPlay with a non-finite overlap throws while locked and remembers nothing', () => {
+            audio.attach(canvas, 16);
+
+            expect(() => audio.musicPlay(createMockAudioBuffer(), { overlap: Number.NaN })).toThrow('finite');
             expect(audio.hasRememberedMusicRequest()).toBe(false);
         });
 
@@ -937,7 +948,7 @@ describe('AudioManager', () => {
             expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
                 0,
             );
-            expect(audio.isMusicPlaying()).toBe(false);
+            expect(audio.music?.isPlaying()).toBe(false);
         });
 
         it('starts playback immediately once unlocked', async () => {
@@ -951,7 +962,7 @@ describe('AudioManager', () => {
 
             audio.musicPlay(createMockAudioBuffer());
 
-            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.music?.isPlaying()).toBe(true);
             expect(audio.hasRememberedMusicRequest()).toBe(false);
         });
 
@@ -960,7 +971,7 @@ describe('AudioManager', () => {
 
             audio.musicPlay(createMockAudioBuffer(), { volume: 0.5 });
 
-            expect(audio.isMusicPlaying()).toBe(false);
+            expect(audio.music?.isPlaying()).toBe(false);
 
             const context = getMockContext();
 
@@ -970,7 +981,7 @@ describe('AudioManager', () => {
                 expect(audio.isUnlocked()).toBe(true);
             });
 
-            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.music?.isPlaying()).toBe(true);
             expect(audio.hasRememberedMusicRequest()).toBe(false);
 
             // The remembered request actually started a live voice, not just flipped the flag.
@@ -1064,7 +1075,7 @@ describe('AudioManager', () => {
 
                 audio.musicStop();
 
-                expect(audio.isMusicPlaying()).toBe(false);
+                expect(audio.music?.isPlaying()).toBe(false);
             });
 
             it('musicStop accepts an optional fadeMs without throwing', () => {
@@ -1076,20 +1087,18 @@ describe('AudioManager', () => {
             it('musicVolumeSet and musicVolumeGet round-trip', () => {
                 audio.musicPlay(createMockAudioBuffer());
 
-                audio.musicVolumeSet(0.4);
+                audio.music?.volumeSet(0.4);
 
-                expect(audio.musicVolumeGet()).toBe(0.4);
+                expect(audio.music?.volumeGet()).toBe(0.4);
             });
         });
 
         it('every accessor reports inert defaults on a manager that was never attached', () => {
             const detachedAudio = new AudioManager();
 
-            expect(detachedAudio.isMusicPlaying()).toBe(false);
-            expect(detachedAudio.musicVolumeGet()).toBe(1);
+            expect(detachedAudio.music).toBeNull();
             expect(() => detachedAudio.musicPlay(createMockAudioBuffer())).not.toThrow();
             expect(() => detachedAudio.musicStop()).not.toThrow();
-            expect(() => detachedAudio.musicVolumeSet(0.5)).not.toThrow();
         });
 
         it('detach stops music playback', async () => {
@@ -1102,9 +1111,13 @@ describe('AudioManager', () => {
             });
 
             audio.musicPlay(createMockAudioBuffer());
+
+            const player = audio.music;
+
             audio.detach();
 
-            expect(audio.isMusicPlaying()).toBe(false);
+            expect(player?.isPlaying()).toBe(false);
+            expect(audio.music).toBeNull();
         });
     });
 
