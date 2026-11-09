@@ -151,3 +151,19 @@ describe('PerlinNoise', () => {
         }
     });
 });
+
+describe('PerlinNoise seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        const n = new PerlinNoise(1);
+
+        expect(() => n.seed(undefined as unknown as number)).toThrow(RangeError);
+        expect(() => n.seed(undefined as unknown as number)).toThrow(
+            "Can't seed PerlinNoise with undefined: it must be a finite number",
+        );
+        expect(() => new PerlinNoise(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still treats an omitted seed as 0', () => {
+        expect(() => new PerlinNoise()).not.toThrow();
+    });
+});

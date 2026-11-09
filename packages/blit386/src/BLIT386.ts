@@ -1342,7 +1342,9 @@ export const BT = {
      *
      * @since 1.5.0
      * @changed 1.7.1 Documented precedence over the `?seed=N` URL parameter.
+     * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @example
      * BT.randomSeed(1234);
      * const a = BT.random.next();

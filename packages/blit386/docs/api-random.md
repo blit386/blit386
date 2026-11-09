@@ -49,7 +49,9 @@ value. The shared `BT.random` can also be seeded from the URL: `?seed=N` (since 
 
 The engine keeps one shared `Random` instance on the `BT` facade. `BT.random` is a live reference (same instance across
 reads, like `BT.palette`). It is time-seeded when the engine singleton is created; call `BT.randomSeed(seed)` to make a
-run reproducible.
+run reproducible. A seed must be a finite number - only its lower 32 bits are used. `BT.randomSeed`, `new Random(seed)`,
+and the noise classes' constructors and `seed()` throw a `RangeError` for `NaN`, `undefined`, or `Infinity`, which would
+otherwise all collapse to seed `0`.
 
 ```ts twoslash
 import { BT } from 'blit386';

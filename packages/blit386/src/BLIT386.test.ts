@@ -2843,3 +2843,14 @@ describe('BT splash getters', () => {
         spy.mockRestore();
     });
 });
+
+describe('BT.randomSeed validation', () => {
+    it('throws a RangeError for NaN and keeps the current stream', () => {
+        BT.randomSeed(42);
+
+        const expected = new Random(42).next();
+
+        expect(() => BT.randomSeed(Number.NaN)).toThrow(RangeError);
+        expect(BT.random.next()).toBe(expected);
+    });
+});

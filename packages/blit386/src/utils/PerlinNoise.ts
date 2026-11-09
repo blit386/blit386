@@ -11,6 +11,7 @@
  * @since 1.5.0
  */
 
+import { randomSeedNotFiniteError } from './errorMessages';
 import { hash1i, hash2i, hash3i } from './hash';
 import {
     DEFAULT_LACUNARITY,
@@ -53,6 +54,7 @@ const SCALE_3D = 0.982;
  * @changed 1.8.1 `noise1D` and `fbm1D` samples are twice as large and `noise2D` / `fbm2D` about 1.5 times as large,
  *   so 1D and 2D noise reach about `-1` and `1` as documented. Seeded Perlin worlds keep their shape but change
  *   amplitude. 3D is unchanged.
+ * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
  */
 export class PerlinNoise {
     /** World / stream seed (lower 32 bits). */
@@ -62,9 +64,14 @@ export class PerlinNoise {
      * Creates a Perlin-noise sampler. Omit `seed` to use `0` (same default as coordinate hashes).
      *
      * @param seed - Any finite number; only its lower 32 bits affect the field.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public constructor(seed = 0) {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('PerlinNoise', seed));
+        }
+
         this.worldSeed = seed >>> 0;
     }
 
@@ -72,9 +79,14 @@ export class PerlinNoise {
      * Reseeds the noise field. Same seed restarts the same spatial pattern.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public seed(seed: number): void {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('PerlinNoise', seed));
+        }
+
         this.worldSeed = seed >>> 0;
     }
 

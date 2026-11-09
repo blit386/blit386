@@ -114,3 +114,19 @@ describe('ValueNoise', () => {
         }
     });
 });
+
+describe('ValueNoise seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        const n = new ValueNoise(1);
+
+        expect(() => n.seed(undefined as unknown as number)).toThrow(RangeError);
+        expect(() => n.seed(undefined as unknown as number)).toThrow(
+            "Can't seed ValueNoise with undefined: it must be a finite number",
+        );
+        expect(() => new ValueNoise(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still treats an omitted seed as 0', () => {
+        expect(() => new ValueNoise()).not.toThrow();
+    });
+});

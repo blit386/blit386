@@ -114,3 +114,19 @@ describe('SimplexNoise', () => {
         }
     });
 });
+
+describe('SimplexNoise seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        const n = new SimplexNoise(1);
+
+        expect(() => n.seed(undefined as unknown as number)).toThrow(RangeError);
+        expect(() => n.seed(undefined as unknown as number)).toThrow(
+            "Can't seed SimplexNoise with undefined: it must be a finite number",
+        );
+        expect(() => new SimplexNoise(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still treats an omitted seed as 0', () => {
+        expect(() => new SimplexNoise()).not.toThrow();
+    });
+});

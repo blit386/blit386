@@ -462,3 +462,18 @@ describe('Random', () => {
         });
     });
 });
+
+describe('Random seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        expect(() => new Random(Number.POSITIVE_INFINITY)).toThrow(RangeError);
+        expect(() => new Random(Number.POSITIVE_INFINITY)).toThrow(
+            "Can't seed Random with Infinity: it must be a finite number",
+        );
+        expect(() => new Random(1).seed(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still accepts an omitted seed and any finite number', () => {
+        expect(() => new Random()).not.toThrow();
+        expect(new Random(2 ** 40 + 5).seedValue).toBe(5);
+    });
+});

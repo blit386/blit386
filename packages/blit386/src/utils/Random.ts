@@ -12,6 +12,7 @@ import {
     randomIntInclusiveRangeError,
     randomIntRangeError,
     randomPickEmptyError,
+    randomSeedNotFiniteError,
     randomWeightedEmptyError,
     randomWeightedLengthError,
     randomWeightedTotalError,
@@ -47,6 +48,7 @@ const DIRECTIONS8: readonly (readonly [number, number])[] = [
  * Seeded PRNG with integer-first generators and stream control (`seed` / `clone` / `fork`).
  *
  * @since 1.5.0
+ * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
  */
 export class Random {
     /** Internal 32-bit generator state, mutated on every draw. */
@@ -59,9 +61,14 @@ export class Random {
      * Creates a PRNG. Omit `seed` to time-seed from `Date.now()` (lower 32 bits).
      *
      * @param seed - Any finite number; only its lower 32 bits affect the sequence.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public constructor(seed: number = Date.now()) {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('Random', seed));
+        }
+
         this.state = seed >>> 0;
         this.lastSeed = this.state;
     }
@@ -85,9 +92,14 @@ export class Random {
      * normalized `seed`.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public seed(seed: number): void {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('Random', seed));
+        }
+
         this.state = seed >>> 0;
         this.lastSeed = this.state;
     }

@@ -8,6 +8,7 @@
  * @since 1.5.0
  */
 
+import { randomSeedNotFiniteError } from './errorMessages';
 import { hash1i, hash2i, hash3i } from './hash';
 import {
     DEFAULT_LACUNARITY,
@@ -27,6 +28,7 @@ import {
  * @since 1.5.0
  * @changed 1.8.1 Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).
  *   Seed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0.
+ * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
  */
 export class ValueNoise {
     /** World / stream seed (lower 32 bits). */
@@ -36,9 +38,14 @@ export class ValueNoise {
      * Creates a value-noise sampler. Omit `seed` to use `0` (same default as coordinate hashes).
      *
      * @param seed - Any finite number; only its lower 32 bits affect the field.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public constructor(seed = 0) {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('ValueNoise', seed));
+        }
+
         this.worldSeed = seed >>> 0;
     }
 
@@ -46,9 +53,14 @@ export class ValueNoise {
      * Reseeds the noise field. Same seed restarts the same spatial pattern.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public seed(seed: number): void {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('ValueNoise', seed));
+        }
+
         this.worldSeed = seed >>> 0;
     }
 

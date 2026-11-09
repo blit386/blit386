@@ -918,6 +918,23 @@ export function musicLoopRangeError(
 }
 
 /**
+ * Returns the error message for a seed that is not a finite number, on {@link Random} and the noise classes.
+ *
+ * Mirrors the `?seed=` URL parameter's warning in `core/SeedUrlParam.ts`: `seed >>> 0` would turn
+ * `NaN`, `undefined`, or `Infinity` into seed `0` without a word.
+ *
+ * @param owner - Class being seeded (`'Random'`, `'PerlinNoise'`, ...).
+ * @param seed - Invalid seed value that was supplied.
+ * @returns User-facing error string.
+ */
+export function randomSeedNotFiniteError(owner: string, seed: unknown): string {
+    return (
+        `Can't seed ${owner} with ${String(seed)}: it must be a finite number. ` +
+        'Pass a whole number such as 1234; only its lower 32 bits are used'
+    );
+}
+
+/**
  * Returns the error message for {@link Random.pick} when the array is empty.
  *
  * @returns User-facing error string.
