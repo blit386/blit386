@@ -12,14 +12,20 @@
  */
 
 import { AssetLoader } from './assets/AssetLoader';
+import type {
+    AudioClipLoadOptions,
+    AudioClipLoadPhase,
+    AudioClipProgress,
+    AudioClipProgressCallback,
+} from './assets/AudioClip';
 import { AudioClip } from './assets/AudioClip';
-import type { TextSize } from './assets/BitmapFont';
+import type { Glyph, TextSize } from './assets/BitmapFont';
 import { BitmapFont } from './assets/BitmapFont';
 import type { NineSliceMode, NineSliceOptions } from './assets/NineSlice';
 import { NineSlice } from './assets/NineSlice';
-import { MAX_PALETTE_SIZE, Palette } from './assets/Palette';
+import { MAX_PALETTE_SIZE, Palette, type PaletteJSON } from './assets/Palette';
 import type { ExposureFadeOptions } from './assets/PaletteEffect';
-import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
+import type { IndexedSpriteLoadResult, SpriteSheetStatus, SpriteUV } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
 import type {
     SynthEnvelope,
@@ -41,6 +47,7 @@ import {
     type IBTDemo,
     type KeyboardLayout,
     mergeHardwareSettings,
+    type OutputUpscaleFilter,
     type OverlayAudioMeterStyle,
     type OverlayRow,
     type OverlayStyle,
@@ -94,7 +101,13 @@ import {
 import type { SplashState } from './splash';
 import type { BootstrapOptions, DemoConstructor } from './utils/Bootstrap';
 import { bootstrap as bootstrapImpl } from './utils/Bootstrap';
-import { displayError, getCanvas, getErrorContainerID, logErrorOnce } from './utils/BootstrapHelpers';
+import {
+    displayError,
+    type ErrorContent,
+    getCanvas,
+    getErrorContainerID,
+    logErrorOnce,
+} from './utils/BootstrapHelpers';
 import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
@@ -3133,14 +3146,21 @@ export {
 };
 export type {
     AudioBus,
+    AudioClipLoadOptions,
+    AudioClipLoadPhase,
+    AudioClipProgress,
+    AudioClipProgressCallback,
     Backend,
     BootstrapOptions,
+    DemoConstructor,
     EasingFunction,
     Effect,
     EffectTier,
+    ErrorContent,
     ExposureFadeOptions,
     FrameCaptureOptions,
     FrameCaptureSize,
+    Glyph,
     HardwareSettings,
     HotContext,
     HotReloadContext,
@@ -3149,10 +3169,12 @@ export type {
     MusicPlayOptions,
     NineSliceMode,
     NineSliceOptions,
+    OutputUpscaleFilter,
     OverlayAudioMeterStyle,
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartStyle,
+    PaletteJSON,
     PreferredOrientation,
     RenderAtFrom,
     RenderAtOptions,
@@ -3162,6 +3184,8 @@ export type {
     SoundStopOptions,
     SplashState,
     SpriteDrawParams,
+    SpriteSheetStatus,
+    SpriteUV,
     SynthEnvelope,
     SynthParams,
     SynthPitchSweep,

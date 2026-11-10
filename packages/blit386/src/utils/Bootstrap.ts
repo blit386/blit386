@@ -81,6 +81,8 @@ export interface BootstrapOptions {
 
 /**
  * Constructor type for demo classes.
+ *
+ * @since 1.8.1
  */
 export type DemoConstructor = new () => IBTDemo;
 

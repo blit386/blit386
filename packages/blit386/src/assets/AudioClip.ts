@@ -31,11 +31,17 @@ import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
 
-/** Phase reported by {@link AudioClipProgressCallback} during a load. */
+/**
+ * Phase reported by {@link AudioClipProgressCallback} during a load.
+ *
+ * @since 1.8.1
+ */
 export type AudioClipLoadPhase = 'download' | 'decoding';
 
 /**
  * Progress snapshot reported to an {@link AudioClipLoadOptions.onProgress} callback.
+ *
+ * @since 1.8.1
  */
 export interface AudioClipProgress {
     /** Which stage of the load this snapshot reports. */
@@ -48,10 +54,18 @@ export interface AudioClipProgress {
     ratio: number | null;
 }
 
-/** Callback invoked with {@link AudioClipProgress} snapshots during a load. */
+/**
+ * Callback invoked with {@link AudioClipProgress} snapshots during a load.
+ *
+ * @since 1.8.1
+ */
 export type AudioClipProgressCallback = (progress: AudioClipProgress) => void;
 
-/** Options accepted by {@link AudioClip.load} and {@link AudioClip.loadAll}. */
+/**
+ * Options accepted by {@link AudioClip.load} and {@link AudioClip.loadAll}.
+ *
+ * @since 1.8.1
+ */
 export interface AudioClipLoadOptions {
     /**
      * Called with download and decode progress snapshots.

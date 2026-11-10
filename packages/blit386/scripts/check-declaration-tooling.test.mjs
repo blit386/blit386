@@ -8,7 +8,9 @@ import {
     findDriftWarnings,
     findMissingBtDeclarationMembers,
     findMissingViteDeclarationMembers,
+    findUnexportedDeclarations,
     findViteDeclarationSizeFailure,
+    INTERNAL_BASE_CLASSES,
     REQUIRED_BT_DECLARATION_MEMBERS,
     REQUIRED_VITE_DECLARATION_MEMBERS,
     validateDeclarationTooling,
@@ -118,5 +120,47 @@ describe('check-declaration-tooling', () => {
             '[vite:dts] Analysis will use the bundled TypeScript version 5.9.3\n[vite:dts] Declaration files built';
         const failures = validateDeclarationTooling(log, { requireOutputFile: false });
         assert.deepEqual(failures, []);
+    });
+});
+
+describe('findUnexportedDeclarations', () => {
+    it('reports a type a public signature uses but the rollup does not export', () => {
+        const dts = [
+            'declare interface Hidden {',
+            '    x: number;',
+            '}',
+            'export declare function use(h: Hidden): void;',
+            'export { }',
+        ].join('\n');
+
+        assert.deepEqual(findUnexportedDeclarations(dts), [
+            'dist/blit386.d.ts declares Hidden, which a public signature uses, but does not export it',
+        ]);
+    });
+
+    it('accepts exported types, abstract classes, enums, and names in an export list', () => {
+        const dts = [
+            'export declare type A = number;',
+            'export declare abstract class B {}',
+            'export declare enum C { D }',
+            'declare type E = string;',
+            'export { E, E as F }',
+        ].join('\n');
+
+        assert.deepEqual(findUnexportedDeclarations(dts), []);
+    });
+
+    it('ignores unexported values, which only back typeof references', () => {
+        const dts = ['declare const LAYOUTS: readonly ["a"];', 'declare function blip(seed?: number): void;'].join(
+            '\n',
+        );
+
+        assert.deepEqual(findUnexportedDeclarations(dts), []);
+    });
+
+    it('allows the inheritance-only base classes', () => {
+        const dts = INTERNAL_BASE_CLASSES.map((name) => `declare abstract class ${name} {}`).join('\n');
+
+        assert.deepEqual(findUnexportedDeclarations(dts), []);
     });
 });

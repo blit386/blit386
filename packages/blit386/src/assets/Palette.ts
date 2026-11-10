@@ -48,8 +48,10 @@ const RGB_BYTES_PER_COLOR = 3;
  *
  * `colors` stores `#RRGGBBAA` values and `names` maps friendly aliases to
  * palette indices.
+ *
+ * @since 1.8.1
  */
-type Serialized = {
+export type PaletteJSON = {
     colors: string[];
     names?: Record<string, number>;
     size: number;
@@ -213,7 +215,7 @@ export class Palette {
      * @throws Error if the payload shape or size is invalid.
      */
     public static fromJSON(data: object): Palette {
-        const json = data as Partial<Serialized>;
+        const json = data as Partial<PaletteJSON>;
         const { colors, names, size } = json;
 
         if (Array.isArray(colors) && typeof size === 'number') {
@@ -603,7 +605,7 @@ export class Palette {
      *
      * @returns Plain object containing size, colors, and optional names.
      */
-    public toJSON(): Serialized {
+    public toJSON(): PaletteJSON {
         return {
             colors: this.colors.map((color) => color.toHex()),
             names: Object.fromEntries(this.namedIndices.entries()),

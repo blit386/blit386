@@ -6,6 +6,8 @@ import { Vector2i } from '../utils/Vector2i';
 /**
  * Magnification filter used by the upscale pass between the pixel chain
  * (logical resolution) and the display chain (output resolution).
+ *
+ * @since 1.8.1
  */
 export type OutputUpscaleFilter = 'nearest' | 'linear';
 

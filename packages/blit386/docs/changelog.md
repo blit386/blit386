@@ -101,6 +101,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Types that public signatures already used can now be imported by name: `AudioClipLoadOptions`, `AudioClipLoadPhase`,
+  `AudioClipProgress`, `AudioClipProgressCallback`, `DemoConstructor`, `ErrorContent`, `Glyph`, `OutputUpscaleFilter`,
+  `PaletteJSON` (what `Palette.toJSON()` returns), `SpriteSheetStatus`, and `SpriteUV` (the `out` argument of
+  `SpriteSheet.getUVsTo`). A build check now fails when a public signature uses a type the package does not export.
 - One bad draw call no longer blanks the game. A `BT.drawRect(rect, -1)` in `render()` used to empty the canvas
   container (canvas included) and rebuild the error panel and its `console.error` line every frame. Now each distinct
   message is reported once and the game keeps running: dev builds show the panel above the canvas, release builds only

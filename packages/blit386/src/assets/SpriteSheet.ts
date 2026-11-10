@@ -37,11 +37,17 @@ const TEXTURE_LAYER_COUNT = 1;
  * replacement image is in flight - normal construction always resolves an
  * image beforehand, so a sheet starts (and, once reloaded, settles back to)
  * `'ready'`.
+ *
+ * @since 1.8.1
  */
-type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
+export type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
 
-/** Normalized UV coordinates (0.0-1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1). */
-type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
+/**
+ * Normalized UV coordinates (0.0-1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1).
+ *
+ * @since 1.8.1
+ */
+export type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 
 /**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so

@@ -18,6 +18,8 @@ import { SpriteSheet } from './SpriteSheet';
 
 /**
  * Runtime glyph metadata used by the renderer.
+ *
+ * @since 1.8.1
  */
 export interface Glyph {
     /** Source rectangle in the font texture atlas. */

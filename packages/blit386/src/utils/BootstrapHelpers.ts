@@ -26,6 +26,8 @@ let errorContainerID = DEFAULT_CONTAINER_ID;
 /**
  * Content that can be displayed in an error message.
  * Use string for plain text or object for text with code formatting.
+ *
+ * @since 1.8.1
  */
 export type ErrorContent =
     | string

@@ -126,9 +126,11 @@ Public types are rolled up during `pnpm run build` via `vite-plugin-dts` and API
 TypeScript to the same version API Extractor bundles (see [Developer Experience](developer-experience-guide.md)).
 
 - `pnpm run test:declarations` - Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns, required
-  `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
+  `BT` getters in rolled-up `.d.ts`, forgotten exports, and alignment log parsing). Included in `pnpm run preflight`.
 - CI - after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in the
-  `.github/workflows/ci.yml` `build-library` and `bundle-size` jobs to fail on drift warnings and version mismatch.
+  `.github/workflows/ci.yml` `build-library` and `bundle-size` jobs to fail on drift warnings, version mismatch, and
+  forgotten exports: a type the rolled-up `.d.ts` declares (because a public signature uses it) but does not export.
+  Only the inheritance-only base classes in `INTERNAL_BASE_CLASSES` may stay unexported.
 - Manual - `pnpm run build 2>&1 | tee build.log && node scripts/check-declaration-tooling.mjs build.log`
 
 ## Commands

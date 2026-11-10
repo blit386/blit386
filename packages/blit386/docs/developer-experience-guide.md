@@ -326,9 +326,10 @@ that `dist/blit386.d.ts` still rolls up cleanly. Re-run `pnpm run typecheck` aft
 stricter WebGPU typings may require small test/production fixes (for example `ArrayBuffer`-backed uniform buffers).
 
 CI guard: the `build-engine` job runs `node scripts/check-declaration-tooling.mjs` on the `pnpm run build` log after
-each build. It fails on known drift-warning patterns and verifies the API Extractor bundled TypeScript version matches
-`package.json`. Locally: `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log`, or run
-`pnpm run test:declarations` for the checker unit tests.
+each build. It fails on known drift-warning patterns, verifies the API Extractor bundled TypeScript version matches
+`package.json`, and fails when a public signature uses a type the package does not export. Locally: `pnpm run build`
+then `node scripts/check-declaration-tooling.mjs build.log`, or run `pnpm run test:declarations` for the checker unit
+tests.
 
 ## Maintenance checklist
 
