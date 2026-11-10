@@ -84,7 +84,7 @@ import {
     Vignette,
 } from 'blit386';
 
-import { GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
+import { GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -519,7 +519,9 @@ class Demo {
         // peak is how strong this specific burst is, scaled by the bell-curve envelope.
         const peak = this.glitchPeak * envelope;
 
-        if (this.glitchType === 'hshift') {
+        // GLITCH_TYPE holds the shared fault names, the same ones GLITCH_TYPES_VROLL
+        // picks from, so these checks can never drift out of step with that list.
+        if (this.glitchType === GLITCH_TYPE.HSHIFT) {
             // H-HOLD: a horizontal band shift in the pixel-tier index buffer, as if the
             // image slipped sideways on the tube.
             this.pixelGlitch.intensity = peak;
@@ -527,18 +529,18 @@ class Demo {
             // The torn edges also pick up a faint red/blue fringe, like a real set
             // struggling to keep the picture aligned during a horizontal-hold fault.
             this.aberration.aberration = ABERRATION_BASE + peak * 4;
-        } else if (this.glitchType === 'noise') {
+        } else if (this.glitchType === GLITCH_TYPE.NOISE) {
             // SNOW: extra random grain on top of the base noise.
             this.noise.amount = NOISE_BASE + peak * 0.1;
-        } else if (this.glitchType === 'flicker') {
+        } else if (this.glitchType === GLITCH_TYPE.FLICKER) {
             // DIM: the brightness drops as if the tube needs warming up. Lerp from
             // FLICKER_BASE down to FLICKER_DIP, scaled by peak so a strong burst dims
             // deeper than a weak one.
             this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * peak;
-        } else if (this.glitchType === 'interference') {
+        } else if (this.glitchType === GLITCH_TYPE.INTERFERENCE) {
             // GHOST: a faint ghost copy of the image appears (aerial reflection).
             this.interference.amount = peak * 0.07;
-        } else if (this.glitchType === 'vroll') {
+        } else if (this.glitchType === GLITCH_TYPE.VROLL) {
             // V-ROLL: the scan band speeds up and brightens, like a vertical sync loss.
             this.rollLine.amount = ROLL_BASE + peak * 0.35;
             this.rollLine.speed = ROLL_SPEED + peak * 1.8;

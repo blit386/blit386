@@ -88,7 +88,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_DIRECTIONS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -270,35 +270,36 @@ class Demo {
         // Held keys and the on-screen D-pad both scroll. isKeyDown is "held right now",
         // which is safe to read from either update() or render() - unlike a key press,
         // which is a one-off event and must be read here.
-        if (BT.isKeyDown('ArrowLeft') || ui.dpad.isDown('left')) {
+        if (BT.isKeyDown('ArrowLeft') || ui.dpad.isDown(UI_DIRECTIONS.LEFT)) {
             this.camX -= SCROLL_SPEED;
         }
 
-        if (BT.isKeyDown('ArrowRight') || ui.dpad.isDown('right')) {
+        if (BT.isKeyDown('ArrowRight') || ui.dpad.isDown(UI_DIRECTIONS.RIGHT)) {
             this.camX += SCROLL_SPEED;
         }
 
-        if (BT.isKeyDown('ArrowUp') || ui.dpad.isDown('up')) {
+        if (BT.isKeyDown('ArrowUp') || ui.dpad.isDown(UI_DIRECTIONS.UP)) {
             this.camY -= SCROLL_SPEED;
         }
 
-        if (BT.isKeyDown('ArrowDown') || ui.dpad.isDown('down')) {
+        if (BT.isKeyDown('ArrowDown') || ui.dpad.isDown(UI_DIRECTIONS.DOWN)) {
             this.camY += SCROLL_SPEED;
         }
 
         // A swipe throws the view half a screen's width (320 pixels) in one go, so a
         // phone can cover ground without holding anything down. Swiping left pulls the
         // world left, so the view moves right - the same way a photo moves under your
-        // finger.
+        // finger. ui.swipe() answers with one of the UI_DIRECTIONS names (LEFT, RIGHT,
+        // UP, DOWN), or null when there was no swipe.
         const swipe = ui.swipe();
 
-        if (swipe === 'left') {
+        if (swipe === UI_DIRECTIONS.LEFT) {
             this.camX += SWIPE_DISTANCE;
-        } else if (swipe === 'right') {
+        } else if (swipe === UI_DIRECTIONS.RIGHT) {
             this.camX -= SWIPE_DISTANCE;
-        } else if (swipe === 'up') {
+        } else if (swipe === UI_DIRECTIONS.UP) {
             this.camY += SWIPE_DISTANCE;
-        } else if (swipe === 'down') {
+        } else if (swipe === UI_DIRECTIONS.DOWN) {
             this.camY -= SWIPE_DISTANCE;
         }
     }
