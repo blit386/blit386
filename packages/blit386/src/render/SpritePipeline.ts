@@ -25,6 +25,9 @@ const VALUES_PER_VERTEX = 5;
  */
 const VERTEX_STRIDE = 20;
 
+/** One texture batch: a run of vertices drawn with one per-texture bind group. */
+type Batch = { bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number };
+
 /**
  * Batched WebGPU pipeline for indexed-palette sprite rendering.
  *
@@ -78,17 +81,17 @@ export class SpritePipeline {
     private currentBindGroup: GPUBindGroup | null = null;
 
     /** Cache of per-texture bind groups (group 1) for reuse. WeakMap allows GC to collect destroyed textures. */
-    private readonly textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
+    private textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
 
     /** Sprite batches to render (one per texture). */
-    private readonly batches: Array<{ bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number }> = [];
+    private readonly batches: Batch[] = [];
 
     /**
      * Pool of reusable batch-entry objects, indexed in parallel with {@link batches}.
      * Never truncated by {@link reset}, so a steady-state batch count reuses the same
      * objects frame after frame instead of allocating a fresh literal per flush.
      */
-    private readonly batchEntryPool: Array<{ bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number }> = [];
+    private readonly batchEntryPool: Batch[] = [];
 
     /** Total sprite vertices across all flushed batches. */
     private totalVertices: number = 0;
@@ -264,6 +267,12 @@ export class SpritePipeline {
         const row = SPRITE_ORIENTATIONS[orientation] as SpriteOrientation;
         const fw = row.swap ? srcRect.height : srcRect.width;
         const fh = row.swap ? srcRect.width : srcRect.height;
+
+        // An empty or inverted source draws nothing, as on the software backend.
+        if (fw <= 0 || fh <= 0) {
+            return;
+        }
+
         const px0 = -1 / (4 * destW);
         const py0 = -1 / (4 * destH);
         const px1 = fw + px0;
@@ -341,14 +350,32 @@ export class SpritePipeline {
      * @param renderPass - Active render pass encoder.
      */
     encodePass(renderPass: GPURenderPassEncoder): void {
-        // Flush any remaining vertices into the batch queue.
+        const batchCount = this.endBatch();
+
+        this.upload();
+        this.encodeBatches(renderPass, 0, batchCount);
+    }
+
+    /**
+     * Closes the open texture batch, so later quads start a new one.
+     *
+     * @returns Number of closed batches this frame, the end mark for {@link encodeBatches}.
+     */
+    endBatch(): number {
         this.flushCurrentBatch();
 
-        if (this.batches.length === 0 || this.totalVertices === 0) {
+        return this.batches.length;
+    }
+
+    /**
+     * Uploads every closed batch's vertices in one write. Call {@link endBatch} first, and once
+     * per frame before {@link encodeBatches}.
+     */
+    upload(): void {
+        if (this.totalVertices === 0) {
             return;
         }
 
-        // Upload all sprite vertices at once.
         // Safe assertions: these resources are created in init() before any rendering.
         (this.device as GPUDevice).queue.writeBuffer(
             this.vertexBuffer as GPUBuffer,
@@ -357,13 +384,30 @@ export class SpritePipeline {
             0,
             this.totalVertices * VERTEX_STRIDE,
         );
+    }
+
+    /**
+     * Encodes the closed batches `from` (inclusive) to `to` (exclusive), so a caller can interleave
+     * sprite batches with primitive ranges in call order (see `SceneBatch`).
+     *
+     * @param renderPass - Active render pass encoder.
+     * @param from - First batch index.
+     * @param to - Batch index to stop before; equal to `from` encodes nothing.
+     */
+    encodeBatches(renderPass: GPURenderPassEncoder, from: number, to: number): void {
+        if (from >= to) {
+            return;
+        }
 
         renderPass.setPipeline(this.pipeline as GPURenderPipeline);
         renderPass.setVertexBuffer(0, this.vertexBuffer as GPUBuffer);
         renderPass.setBindGroup(0, this.sharedBindGroup as GPUBindGroup);
 
         // Draw each batch with its own per-texture bind group (group 1).
-        for (const batch of this.batches) {
+        for (let i = from; i < to; i++) {
+            // eslint-disable-next-line security/detect-object-injection
+            const batch = this.batches[i] as Batch;
+
             renderPass.setBindGroup(1, batch.bindGroup);
             renderPass.draw(batch.vertexCount, 1, batch.vertexStart, 0);
         }
@@ -407,6 +451,15 @@ export class SpritePipeline {
      */
     private async createPipeline(displaySize: Vector2i, targetFormat: GPUTextureFormat): Promise<void> {
         const device = this.device as GPUDevice;
+
+        // A re-run of init() replaces everything: cached texture groups and queued batches came from the old
+        // 'auto' layout, so both go.
+        this.uniformBuffer?.destroy();
+        this.uniformBuffer = null;
+        this.vertexBuffer?.destroy();
+        this.vertexBuffer = null;
+        this.textureBindGroups = new WeakMap();
+        this.reset();
 
         const shaderModule = device.createShaderModule({
             label: 'Sprite Shader',
@@ -452,10 +505,10 @@ export class SpritePipeline {
                 @fragment
                 fn fs_main(input: VertexOutput) -> @location(0) u32 {
                     let dims = textureDimensions(spriteTexture);
-                    let coords = vec2<i32>(
-                        i32(input.uv.x * f32(dims.x)),
-                        i32(input.uv.y * f32(dims.y))
-                    );
+                    let coords = vec2<i32>(floor(input.uv * vec2<f32>(dims)));
+
+                    // A source rect past the sheet edge: discard like the software blit, never load out of bounds.
+                    if (any(coords < vec2<i32>(0)) || any(coords >= vec2<i32>(dims))) { discard; }
 
                     // r8uint: single-channel unsigned integer index.
                     let rawIndex = textureLoad(spriteTexture, coords, 0).r;
@@ -560,6 +613,11 @@ export class SpritePipeline {
         vBR: number,
         paletteOffset: number,
     ): void {
+        // A non-positive size draws nothing, as on the software backend (cullMode 'none' would draw it mirrored).
+        if (size.x <= 0 || size.y <= 0) {
+            return;
+        }
+
         // Flush if switching textures.
         if (this.currentTexture !== texture) {
             if (this.vertexCount > 0) {

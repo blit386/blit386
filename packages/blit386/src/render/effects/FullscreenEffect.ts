@@ -1,14 +1,7 @@
+import type { OutputUpscaleFilter } from '../../core/IBTDemo';
 import type { Vector2i } from '../../utils/Vector2i';
 import type { Effect, EffectTier } from './Effect';
 import { VS_WGSL } from './fullscreenVS';
-
-/**
- * Sampler magnification/minification mode used by a fullscreen effect.
- *
- * - `'linear'` - bilinear filtering (default for display-tier effects).
- * - `'nearest'` - point sampling, palette-friendly for pixel-tier effects.
- */
-export type EffectSamplerFilter = 'nearest' | 'linear';
 
 /**
  * Base class for typical fullscreen post-processing effects.
@@ -40,7 +33,7 @@ export abstract class FullscreenEffect implements Effect {
      * display-tier effects). Pixel-tier effects can override to `'nearest'` to
      * preserve palette colors during sampling.
      */
-    protected readonly samplerFilter: EffectSamplerFilter = 'linear';
+    protected readonly samplerFilter: OutputUpscaleFilter = 'linear';
 
     /** Human-readable label for GPU debug names. */
     protected abstract readonly label: string;

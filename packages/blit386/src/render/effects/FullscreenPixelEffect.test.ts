@@ -1,9 +1,9 @@
 /**
  * Unit tests for {@link FullscreenPixelEffect}.
  *
- * Covers the shared `r8uint` / RGBA init paths, bind-group caching, encode-pass
- * clear values, disposal / re-init, and the defensive uninitialized / missing-
- * sampler guards. Concrete pixel effects (`PixelGlitch`, `PixelMosaic`) have
+ * Covers the `r8uint` init path, the non-`r8uint` rejection, bind-group caching,
+ * encode-pass clear values, disposal / re-init, and the uninitialized guards.
+ * Concrete pixel effects (`PixelGlitch`, `PixelMosaic`) have
  * their own colocated suites for param layout.
  */
 
@@ -145,18 +145,16 @@ describe('FullscreenPixelEffect dispose and re-init', () => {
         }).not.toThrow();
     });
 
-    it('re-init with a different format succeeds after dispose', () => {
+    it('re-init succeeds after dispose', () => {
         const device = createMockGPUDevice();
-        const createSampler = vi.spyOn(device, 'createSampler');
+        const createPipeline = vi.spyOn(device, 'createRenderPipeline');
         const fx = new StubPixelEffect();
 
         fx.init(device, UINT_FORMAT, SIZE);
-        expect(createSampler).not.toHaveBeenCalled();
-
         fx.dispose();
-        fx.init(device, RGBA_FORMAT, SIZE);
+        fx.init(device, UINT_FORMAT, SIZE);
 
-        expect(createSampler).toHaveBeenCalledTimes(1);
+        expect(createPipeline).toHaveBeenCalledTimes(2);
     });
 });
 
@@ -194,63 +192,15 @@ describe('FullscreenPixelEffect uninitialized guards', () => {
     });
 });
 
-describe('FullscreenPixelEffect RGBA fallback path', () => {
-    it('init creates a nearest sampler for non-r8uint formats', () => {
+describe('FullscreenPixelEffect non-r8uint formats', () => {
+    it('init throws for a float chain format and creates nothing', () => {
         const device = createMockGPUDevice();
-        const createSampler = vi.spyOn(device, 'createSampler');
-        const fx = new StubPixelEffect();
+        const createPipeline = vi.spyOn(device, 'createRenderPipeline');
 
-        fx.init(device, RGBA_FORMAT, SIZE);
-
-        expect(createSampler).toHaveBeenCalledTimes(1);
-        expect(createSampler.mock.calls[0]?.[0]?.magFilter).toBe('nearest');
-        expect(createSampler.mock.calls[0]?.[0]?.minFilter).toBe('nearest');
-    });
-
-    it('encodePass uses float clear alpha 1 and includes the sampler at binding 2', () => {
-        const device = createMockGPUDevice();
-        const createBindGroup = vi.spyOn(device, 'createBindGroup');
-        const fx = new StubPixelEffect();
-        fx.init(device, RGBA_FORMAT, SIZE);
-
-        const encoder = device.createCommandEncoder();
-        const beginSpy = vi.spyOn(encoder, 'beginRenderPass');
-        const sourceView = { label: 'src' } as unknown as GPUTextureView;
-        const destView = { label: 'dst' } as unknown as GPUTextureView;
-
-        fx.encodePass(encoder, sourceView, destView);
-
-        const passDescriptor = beginSpy.mock.calls[0]?.[0];
-        const firstColorAttachment = passDescriptor?.colorAttachments
-            ? [...passDescriptor.colorAttachments][0]
-            : undefined;
-        expect(firstColorAttachment?.clearValue).toEqual({ r: 0, g: 0, b: 0, a: 1 });
-
-        const entries = [...(createBindGroup.mock.calls[0]?.[0]?.entries ?? [])];
-        expect(entries).toHaveLength(3);
-        expect(entries[0]?.binding).toBe(0);
-        expect(entries[1]?.binding).toBe(1);
-        expect(entries[1]?.resource).toBe(sourceView);
-        expect(entries[2]?.binding).toBe(2);
-        expect(entries[2]?.resource).toBe(asInternal(fx).sampler);
-    });
-
-    it('throws when the RGBA cache path is entered without a sampler', () => {
-        const device = createMockGPUDevice();
-        const fx = new StubPixelEffect();
-        fx.init(device, RGBA_FORMAT, SIZE);
-
-        asInternal(fx).sampler = null;
-
-        const encoder = device.createCommandEncoder();
-
-        expect(() =>
-            fx.encodePass(
-                encoder,
-                { label: 'src' } as unknown as GPUTextureView,
-                { label: 'dst' } as unknown as GPUTextureView,
-            ),
-        ).toThrow('StubPixelEffect.encodePass: sampler missing for RGBA pixel chain.');
+        expect(() => new StubPixelEffect().init(device, RGBA_FORMAT, SIZE)).toThrow(
+            'StubPixelEffect: pixel-tier effects run on the r8uint chain only (got rgba8unorm).',
+        );
+        expect(createPipeline).not.toHaveBeenCalled();
     });
 });
 

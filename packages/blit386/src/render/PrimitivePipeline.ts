@@ -129,6 +129,11 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
+        // A non-positive size draws nothing, as on the software backend (cullMode 'none' would fill it mirrored).
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+
         const x0 = rect.x;
         const y0 = rect.y;
         const x1 = rect.x + rect.width;
@@ -215,6 +220,11 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
+        // A non-positive size draws nothing, as on the software backend.
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+
         const x0 = rect.x;
         const y0 = rect.y;
         const x1 = rect.x + rect.width - 1;
@@ -268,7 +278,19 @@ export class PrimitivePipeline {
             return;
         }
 
-        // Upload all vertex data at once.
+        this.upload();
+        this.encodeRange(renderPass, 0, this.vertexCount);
+    }
+
+    /**
+     * Uploads every vertex queued this frame in one write. Call once per frame before
+     * {@link encodeRange}.
+     */
+    upload(): void {
+        if (this.vertexCount === 0) {
+            return;
+        }
+
         // Safe assertions: these resources are created in init() before any rendering.
         (this.device as GPUDevice).queue.writeBuffer(
             this.vertexBuffer as GPUBuffer,
@@ -277,12 +299,26 @@ export class PrimitivePipeline {
             0,
             this.vertexCount * VERTEX_STRIDE,
         );
+    }
+
+    /**
+     * Encodes one draw over a range of the uploaded vertices, so a caller can interleave primitive
+     * ranges with sprite batches in call order (see `SceneBatch`).
+     *
+     * @param renderPass - Active render pass encoder.
+     * @param firstVertex - First vertex of the range.
+     * @param vertexCount - Number of vertices to draw; `0` encodes nothing.
+     */
+    encodeRange(renderPass: GPURenderPassEncoder, firstVertex: number, vertexCount: number): void {
+        if (vertexCount === 0) {
+            return;
+        }
 
         renderPass.setPipeline(this.pipeline as GPURenderPipeline);
         renderPass.setBindGroup(0, this.bindGroup as GPUBindGroup);
         renderPass.setVertexBuffer(0, this.vertexBuffer as GPUBuffer);
 
-        renderPass.draw(this.vertexCount, 1, 0, 0);
+        renderPass.draw(vertexCount, 1, firstVertex, 0);
     }
 
     /**

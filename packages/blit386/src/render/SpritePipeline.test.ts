@@ -761,3 +761,116 @@ describe('oriented and stretched sprite quads', () => {
         });
     });
 });
+
+describe('non-positive sizes draw nothing, like the software backend (BT-756)', () => {
+    const pipeline = new SpritePipeline();
+    const sheet = SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16).fill(1));
+
+    beforeAll(async () => {
+        installMockNavigatorGPU();
+        await pipeline.init(createMockGPUDevice(), new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+    });
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    it.each([
+        ['negative width', new Rect2i(2, 0, -1, 2)],
+        ['zero height', new Rect2i(0, 0, 2, 0)],
+    ])('queues no vertices for a source rect with %s on every sprite path', (_name, src) => {
+        pipeline.reset();
+        pipeline.drawSprite(sheet, src, new Vector2i(2, 0));
+        pipeline.drawSpriteOriented(sheet, src, new Vector2i(2, 0), 0, 1);
+        pipeline.drawSpriteStretched(sheet, src, 0, 0, 4, 4, 0, 0);
+
+        expect(pipeline.getFrameSubmittedVertices()).toBe(0);
+    });
+
+    it('queues no vertices for a stretched draw into a non-positive box', () => {
+        pipeline.reset();
+        pipeline.drawSpriteStretched(sheet, new Rect2i(0, 0, 2, 2), 0, 0, -4, 4, 0, 0);
+
+        expect(pipeline.getFrameSubmittedVertices()).toBe(0);
+    });
+});
+
+describe('out-of-bounds texels and re-init (BT-756)', () => {
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    it('discards a fragment whose texel lies outside the sheet instead of loading it', async () => {
+        installMockNavigatorGPU();
+
+        const device = createMockGPUDevice();
+        const createShaderModule = vi.spyOn(device, 'createShaderModule');
+
+        await new SpritePipeline().init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+
+        const code = createShaderModule.mock.calls[0]?.[0].code ?? '';
+
+        expect(code).toContain('floor(input.uv * vec2<f32>(dims))');
+        expect(code).toContain('any(coords < vec2<i32>(0)) || any(coords >= vec2<i32>(dims))');
+    });
+
+    it('destroys the old uniform and vertex buffers when init() runs again', async () => {
+        installMockNavigatorGPU();
+
+        const device = createMockGPUDevice();
+        const createBuffer = vi.spyOn(device, 'createBuffer');
+        const pipeline = new SpritePipeline();
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+
+        const first = createBuffer.mock.results.map((result) => vi.spyOn(result.value as GPUBuffer, 'destroy'));
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+
+        expect(first.length).toBeGreaterThan(0);
+        for (const destroy of first) {
+            expect(destroy).toHaveBeenCalledTimes(1);
+        }
+    });
+
+    it('builds a fresh texture bind group after init() runs again', async () => {
+        installMockNavigatorGPU();
+
+        const device = createMockGPUDevice();
+        const pipeline = new SpritePipeline();
+        const sheet = SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16).fill(1));
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+        pipeline.reset();
+
+        const createBindGroup = vi.spyOn(device, 'createBindGroup');
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        createBindGroup.mockClear();
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+
+        // The old group came from the old pipeline's 'auto' layout, which the new pipeline rejects.
+        expect(createBindGroup).toHaveBeenCalledTimes(1);
+    });
+
+    it('builds a fresh texture bind group when init() runs again without a reset()', async () => {
+        installMockNavigatorGPU();
+
+        const device = createMockGPUDevice();
+        const pipeline = new SpritePipeline();
+        const sheet = SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16).fill(1));
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+
+        const createBindGroup = vi.spyOn(device, 'createBindGroup');
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        createBindGroup.mockClear();
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+
+        // Same sheet as before init(): the texture-switch check must not skip the rebuild.
+        expect(createBindGroup).toHaveBeenCalledTimes(1);
+    });
+});

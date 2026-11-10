@@ -22,8 +22,6 @@ export class PixelMosaic extends FullscreenPixelEffect {
     /** vec2 resolution + blockSize + 1 pad = 16 bytes. */
     protected readonly uniformBytes = 16;
 
-    protected readonly fragmentShaderRgba = UNSUPPORTED_WGSL;
-
     protected readonly fragmentShaderUint = FRAGMENT_UINT_WGSL;
 
     /**
@@ -45,23 +43,6 @@ export class PixelMosaic extends FullscreenPixelEffect {
         u[3] = 0;
     }
 }
-
-const UNSUPPORTED_WGSL = `
-struct Params {
-    resolution: vec2<f32>,
-    blockSize: f32,
-    _pad: f32,
-}
-
-@group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var src: texture_2d<f32>;
-@group(0) @binding(2) var samp: sampler;
-
-@fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-}
-`;
 
 const FRAGMENT_UINT_WGSL = `
 struct Params {

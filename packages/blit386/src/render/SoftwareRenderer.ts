@@ -1,106 +1,18 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
-import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { clipSpriteSourceRectXYTo } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
-import { Rect2i } from '../utils/Rect2i';
+import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
+import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { ClippedLine } from './clipLine';
 import { clipBresenhamLine } from './clipLine';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
-import type { SpriteOrientation } from './SpriteOrientation';
-import { SPRITE_ORIENTATIONS, stretchSampleIndex } from './SpriteOrientation';
-
-/** A queued filled-rectangle or outline-rectangle draw command. */
-type RectCommand = {
-    kind: 'rectFill' | 'rect';
-    x0: number;
-    y0: number;
-    width: number;
-    height: number;
-    paletteIndex: number;
-    cameraX: number;
-    cameraY: number;
-};
-
-/** A queued line draw command between two endpoints. */
-type LineCommand = {
-    kind: 'line';
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
-    paletteIndex: number;
-    cameraX: number;
-    cameraY: number;
-};
-
-/** A queued filled-rectangle, outline-rectangle, or line draw command. */
-type PrimitiveCommand = RectCommand | LineCommand;
-
-/** A queued sprite blit command, storing the source sheet and destination position. */
-type SpriteCommand = {
-    kind: 'sprite';
-    spriteSheet: SpriteSheet;
-    srcRect: Rect2i;
-    destPos: Vector2i;
-    paletteOffset: number;
-    /** Row of {@link SPRITE_ORIENTATIONS}; `0` takes the unchanged {@link blitIndexedRect} path. */
-    orientation: number;
-    cameraX: number;
-    cameraY: number;
-};
-
-/**
- * A queued stretched / scaled sprite blit: the post-flags footprint stretched into a destination box.
- * Stores numbers only, so queuing copies nothing the caller owns and allocates no Rect2i.
- */
-type StretchedSpriteCommand = {
-    kind: 'spriteStretched';
-    spriteSheet: SpriteSheet;
-    srcX: number;
-    srcY: number;
-    srcW: number;
-    srcH: number;
-    destX: number;
-    destY: number;
-    destW: number;
-    destH: number;
-    paletteOffset: number;
-    /** Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`. */
-    orientation: number;
-    cameraX: number;
-    cameraY: number;
-};
-
-/**
- * A queued bitmap text draw command. Glyph shapes are resolved once at queue time into
- * `glyphData` (6 ints per glyph: srcX, srcY, srcWidth, srcHeight, destOffsetX, destOffsetY) so
- * replay can blit each glyph without re-walking the string or re-looking up glyph metrics.
- */
-type BitmapTextCommand = {
-    kind: 'bitmapText';
-    spriteSheet: SpriteSheet;
-    glyphData: Int32Array;
-    glyphCount: number;
-    pos: Vector2i;
-    paletteOffset: number;
-    cameraX: number;
-    cameraY: number;
-};
-
-/** Union of all queued draw commands accumulated between `beginFrame` and `endFrame`. */
-type DrawCommand = PrimitiveCommand | SpriteCommand | StretchedSpriteCommand | BitmapTextCommand;
-
-/** Pending `captureFrame` promise callbacks, held until the next `endFrame`. */
-type Pending = {
-    resolve: (blob: Blob) => void;
-    reject: (reason?: unknown) => void;
-};
+import { SoftwareFrameCaptures } from './SoftwareFrameCaptures';
+import type { DrawCommand } from './SoftwareRaster';
+import { SoftwareRaster } from './SoftwareRaster';
 
 /** Alias for either the offscreen or on-screen 2D rendering context variant. */
 type Canvas2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
@@ -136,19 +48,24 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private palette: Palette | null = null;
     private clearPaletteIndex: number = 0;
     private cameraOffset: Vector2i = Vector2i.zero();
-    private readonly clipScratch = new Rect2i();
     /** Reused clip result so lines allocate nothing per call. */
     private readonly clippedLine: ClippedLine = { x: 0, y: 0, err: 0, steps: 0 };
     private readonly commands: DrawCommand[] = [];
-    private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
-    private pending: Pending | null = null;
-    /** Pending public `captureFrameAtDisplaySize` request. */
-    private pendingDisplaySize: Pending | null = null;
-    /** Pending F9 / Shift+F9 `captureFrameForShortcut` request - its own slot, see {@link IRenderer}. */
-    private pendingShortcutDisplaySize: Pending | null = null;
+    /** The three capture slots, settled at the end of the next frame. */
+    private readonly captures = new SoftwareFrameCaptures();
+    /** Rasterizes the queued commands into {@link imageData}. */
+    private readonly raster: SoftwareRaster;
     private primitiveSubmittedVertices = 0;
     private spriteSubmittedVertices = 0;
+
+    /** Reused result of {@link getFrameDiagnostics}, so the overlay allocates nothing per frame. */
+    private readonly frameDiagnostics = {
+        primitiveOverflowCount: 0,
+        spriteOverflowCount: 0,
+        primitiveSubmittedVertices: 0,
+        spriteSubmittedVertices: 0,
+    };
 
     /**
      * Creates a software renderer bound to the given canvas.
@@ -161,36 +78,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.canvas = canvas;
         this.displaySize = displaySize.clone();
         this.outputSize = (outputSize ?? displaySize).clone();
-    }
-
-    /**
-     * Direct reference to the logical canvas's `ImageData.data`, written into by every raster
-     * method. Available once {@link init} has created `imageData`.
-     *
-     * @returns The frame's RGBA pixel buffer.
-     * @throws If accessed before a successful {@link init} call.
-     */
-    private get framePixels(): Uint8ClampedArray {
-        if (!this.imageData) {
-            throw new Error('SoftwareRenderer.framePixels: renderer not initialized.');
-        }
-
-        return this.imageData.data;
-    }
-
-    /**
-     * `Uint32Array` view over the same buffer as {@link framePixels}, for word-at-a-time writes
-     * (see {@link fillFrame}). Available once {@link init} has created `imageData`.
-     *
-     * @returns The frame buffer, viewed as one `Uint32Array` word per pixel.
-     * @throws If accessed before a successful {@link init} call.
-     */
-    private get wordView(): Uint32Array {
-        if (!this.frameWordView) {
-            throw new Error('SoftwareRenderer.wordView: renderer not initialized.');
-        }
-
-        return this.frameWordView;
+        this.raster = new SoftwareRaster(this.displaySize);
     }
 
     /**
@@ -212,18 +100,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Narrows {@link logicalCanvas} to `OffscreenCanvas`, guarding the `typeof` check first so
-     * the `instanceof` test never throws in a browser where the global does not exist (see
-     * {@link createLogicalCanvas}'s own fallback).
-     *
-     * @param canvas - Candidate logical canvas.
-     * @returns True when `canvas` is an `OffscreenCanvas`.
-     */
-    private static isOffscreenCanvas(canvas: OffscreenCanvas | HTMLCanvasElement): canvas is OffscreenCanvas {
-        return typeof OffscreenCanvas !== 'undefined' && canvas instanceof OffscreenCanvas;
-    }
-
-    /**
      * Initializes the 2D canvas contexts and backing image buffer.
      *
      * @returns `true` when contexts are ready; otherwise `false`.
@@ -231,9 +107,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     async init(): Promise<boolean> {
         // Re-init replaces the logical canvas; captures queued against the old one must
         // not settle from the rebuilt scene (mirrors WebGPURenderer.init()).
-        for (const request of this.takePendingDisplaySizeRequests()) {
-            request.reject(new Error("Can't capture frame: renderer was reset before the frame rendered"));
-        }
+        this.destroy();
 
         this.canvas.width = this.outputSize.x;
         this.canvas.height = this.outputSize.y;
@@ -261,9 +135,17 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             this.imageData = new ImageData(this.displaySize.x, this.displaySize.y);
         }
 
-        this.frameWordView = new Uint32Array(this.imageData.data.buffer);
+        this.raster.attach(this.imageData);
 
         return true;
+    }
+
+    /**
+     * Rejects every pending capture. Called on every {@link init} and when the engine drops
+     * the renderer; the canvases go with the renderer, so there is nothing else to release.
+     */
+    destroy(): void {
+        this.captures.rejectAll(RENDERER_RESET_MESSAGE);
     }
 
     /**
@@ -273,6 +155,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      */
     setPalette(palette: Palette): void {
         this.palette = palette;
+        this.raster.palette = palette;
 
         if (this.clearPaletteIndex >= this.palette.size) {
             this.clearPaletteIndex = 0;
@@ -319,32 +202,21 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     endFrame(): void {
         if (!this.imageData) {
             this.commands.length = 0;
-
-            if (this.pending) {
-                this.pending.reject(
-                    new Error("Can't save this frame - the renderer hasn't finished initializing yet."),
-                );
-                this.pending = null;
-            }
-
-            for (const request of this.takePendingDisplaySizeRequests()) {
-                request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));
-            }
+            this.captures.rejectUninitialized();
 
             return;
         }
 
         const clearColor = this.resolveClearColor();
 
-        this.fillFrame(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        this.raster.fillFrame(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 
         for (const command of this.commands) {
-            this.replayCommand(command);
+            this.raster.replay(command);
         }
 
         this.presentFrame();
-        this.resolvePending();
-        this.resolvePendingDisplaySize();
+        this.captures.settle(this.canvas, this.logicalCanvas);
         this.commands.length = 0;
     }
 
@@ -357,12 +229,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Diagnostic counters for the current frame.
      */
     getFrameDiagnostics(): OverlayRendererDiagnostics {
-        return {
-            primitiveOverflowCount: 0,
-            spriteOverflowCount: 0,
-            primitiveSubmittedVertices: this.primitiveSubmittedVertices,
-            spriteSubmittedVertices: this.spriteSubmittedVertices,
-        };
+        this.frameDiagnostics.primitiveSubmittedVertices = this.primitiveSubmittedVertices;
+        this.frameDiagnostics.spriteSubmittedVertices = this.spriteSubmittedVertices;
+
+        return this.frameDiagnostics;
     }
 
     /**
@@ -490,8 +360,8 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param srcRect - Source region within the sprite sheet in pixels.
      * @param destPos - Destination position in logical coordinates.
      * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
-     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, from `resolveSpriteOrientation` (`0` replays through
-     *   the unchanged {@link blitIndexedRect} path).
+     * @param orientation - Row of `SPRITE_ORIENTATIONS`, from `resolveSpriteOrientation` (`0` replays through
+     *   the unchanged `SoftwareRaster` blit path).
      */
     drawSpriteOriented(
         spriteSheet: SpriteSheet,
@@ -524,7 +394,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param destW - Box width in pixels (at least 1).
      * @param destH - Box height in pixels (at least 1).
      * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
-     * @param orientation - Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`.
+     * @param orientation - Row of `SPRITE_ORIENTATIONS`, `0`-`7`.
      */
     drawSpriteStretched(
         spriteSheet: SpriteSheet,
@@ -632,17 +502,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured frame as a PNG `Blob`.
      */
     captureFrame(): Promise<Blob> {
-        if (this.pending) {
-            this.pending.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrame() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pending = { resolve, reject };
-        });
+        return this.captures.output();
     }
 
     /**
@@ -655,17 +515,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
      */
     captureFrameAtDisplaySize(): Promise<Blob> {
-        if (this.pendingDisplaySize) {
-            this.pendingDisplaySize.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrameAtDisplaySize() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pendingDisplaySize = { resolve, reject };
-        });
+        return this.captures.display();
     }
 
     /**
@@ -675,17 +525,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
      */
     captureFrameForShortcut(): Promise<Blob> {
-        if (this.pendingShortcutDisplaySize) {
-            this.pendingShortcutDisplaySize.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrameForShortcut() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pendingShortcutDisplaySize = { resolve, reject };
-        });
+        return this.captures.shortcut();
     }
 
     /**
@@ -777,28 +617,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Returns every pending display-size request (public and shortcut slots) and clears
-     * both slots, so the caller settles them all from one logical-canvas export.
-     *
-     * @returns Pending requests, possibly empty.
-     */
-    private takePendingDisplaySizeRequests(): Pending[] {
-        const requests: Pending[] = [];
-
-        if (this.pendingDisplaySize) {
-            requests.push(this.pendingDisplaySize);
-            this.pendingDisplaySize = null;
-        }
-
-        if (this.pendingShortcutDisplaySize) {
-            requests.push(this.pendingShortcutDisplaySize);
-            this.pendingShortcutDisplaySize = null;
-        }
-
-        return requests;
-    }
-
-    /**
      * Queues a filled rectangle draw command from scalar bounds. Shared by {@link drawRectFill}
      * and {@link drawPixel} so neither has to allocate a `Rect2i` just to shuttle four numbers
      * into the command queue.
@@ -842,549 +660,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Fills the entire `framePixels` buffer with a solid RGBA color via a single word-at-a-time
-     * fill over {@link wordView}. Packing matches {@link Color32.toUint32}'s ABGR layout, which on
-     * little-endian platforms lays out as byte0=r, byte1=g, byte2=b, byte3=a - the same RGBA byte
-     * order `framePixels` itself uses.
-     *
-     * @param r - Red channel (0-255).
-     * @param g - Green channel (0-255).
-     * @param b - Blue channel (0-255).
-     * @param a - Alpha channel (0-255).
-     */
-    private fillFrame(r: number, g: number, b: number, a: number): void {
-        const packed = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
-
-        this.wordView.fill(packed);
-    }
-
-    /**
-     * Dispatches a single draw command to the appropriate rasterizer.
-     *
-     * @param command - Command to replay into `framePixels`.
-     */
-    private replayCommand(command: DrawCommand): void {
-        switch (command.kind) {
-            case 'rectFill':
-                this.rasterRectFill(
-                    command.x0,
-                    command.y0,
-                    command.width,
-                    command.height,
-                    command.paletteIndex,
-                    command.cameraX,
-                    command.cameraY,
-                );
-                return;
-
-            case 'rect':
-                this.rasterRect(
-                    command.x0,
-                    command.y0,
-                    command.width,
-                    command.height,
-                    command.paletteIndex,
-                    command.cameraX,
-                    command.cameraY,
-                );
-                return;
-
-            case 'line':
-                this.rasterLine(
-                    command.x0,
-                    command.y0,
-                    command.x1,
-                    command.y1,
-                    command.paletteIndex,
-                    command.cameraX,
-                    command.cameraY,
-                );
-                return;
-
-            case 'sprite':
-                this.rasterSprite(command);
-                return;
-
-            case 'spriteStretched':
-                this.rasterSpriteStretched(command);
-                return;
-
-            case 'bitmapText':
-                this.rasterBitmapText(command);
-                return;
-        }
-    }
-
-    /**
-     * Rasterizes a filled rectangle into `framePixels`, clipped to display bounds.
-     *
-     * @param x - Left edge in world coordinates.
-     * @param y - Top edge in world coordinates.
-     * @param width - Rectangle width in pixels.
-     * @param height - Rectangle height in pixels.
-     * @param paletteIndex - Palette entry index for the fill color.
-     * @param cameraX - Horizontal camera offset to subtract.
-     * @param cameraY - Vertical camera offset to subtract.
-     */
-    private rasterRectFill(
-        x: number,
-        y: number,
-        width: number,
-        height: number,
-        paletteIndex: number,
-        cameraX: number,
-        cameraY: number,
-    ): void {
-        const color = this.resolveColor(paletteIndex);
-
-        if (!color || width <= 0 || height <= 0) {
-            return;
-        }
-
-        const startX = Math.max(0, x - cameraX);
-        const startY = Math.max(0, y - cameraY);
-        const endX = Math.min(this.displaySize.x, x - cameraX + width);
-        const endY = Math.min(this.displaySize.y, y - cameraY + height);
-        const pixels = this.framePixels;
-
-        for (let py = startY; py < endY; py++) {
-            for (let px = startX; px < endX; px++) {
-                this.writePixelUnchecked(pixels, px, py, color.r, color.g, color.b, 255);
-            }
-        }
-    }
-
-    /**
-     * Rasterizes a four-sided outline rectangle by drawing four lines.
-     *
-     * @param x - Left edge in world coordinates.
-     * @param y - Top edge in world coordinates.
-     * @param width - Rectangle width in pixels.
-     * @param height - Rectangle height in pixels.
-     * @param paletteIndex - Palette entry index for the border color.
-     * @param cameraX - Horizontal camera offset to subtract.
-     * @param cameraY - Vertical camera offset to subtract.
-     */
-    private rasterRect(
-        x: number,
-        y: number,
-        width: number,
-        height: number,
-        paletteIndex: number,
-        cameraX: number,
-        cameraY: number,
-    ): void {
-        if (width <= 0 || height <= 0) {
-            return;
-        }
-
-        const x1 = x + width - 1;
-        const y1 = y + height - 1;
-
-        this.rasterLine(x, y, x1, y, paletteIndex, cameraX, cameraY);
-        this.rasterLine(x, y1, x1, y1, paletteIndex, cameraX, cameraY);
-        this.rasterLine(x, y + 1, x, y1 - 1, paletteIndex, cameraX, cameraY);
-        this.rasterLine(x1, y + 1, x1, y1 - 1, paletteIndex, cameraX, cameraY);
-    }
-
-    /**
-     * Rasterizes a line using Bresenham's algorithm.
-     *
-     * @param x0 - Start X in world coordinates.
-     * @param y0 - Start Y in world coordinates.
-     * @param x1 - End X in world coordinates.
-     * @param y1 - End Y in world coordinates.
-     * @param paletteIndex - Palette entry index for the line color.
-     * @param cameraX - Horizontal camera offset to subtract.
-     * @param cameraY - Vertical camera offset to subtract.
-     */
-    private rasterLine(
-        x0: number,
-        y0: number,
-        x1: number,
-        y1: number,
-        paletteIndex: number,
-        cameraX: number,
-        cameraY: number,
-    ): void {
-        const color = this.resolveColor(paletteIndex);
-        if (!color) {
-            return;
-        }
-
-        const sx0 = x0 - cameraX;
-        const sy0 = y0 - cameraY;
-        const tx = x1 - cameraX;
-        const ty = y1 - cameraY;
-        const clip = this.clippedLine;
-
-        // Start at the first on-screen pixel so a huge or off-screen line costs only its visible length.
-        if (!clipBresenhamLine(sx0, sy0, tx, ty, 0, 0, this.displaySize.x - 1, this.displaySize.y - 1, clip)) {
-            return;
-        }
-
-        const dx = Math.abs(tx - sx0);
-        const dy = Math.abs(ty - sy0);
-        const sx = sx0 < tx ? 1 : -1;
-        const sy = sy0 < ty ? 1 : -1;
-        let err = clip.err;
-        let cx = clip.x;
-        let cy = clip.y;
-        const pixels = this.framePixels;
-
-        for (let i = 0; i < clip.steps; i++) {
-            this.writePixel(pixels, cx, cy, color.r, color.g, color.b, 255);
-
-            const e2 = err * 2;
-
-            if (e2 > -dy) {
-                err -= dy;
-                cx += sx;
-            }
-
-            if (e2 < dx) {
-                err += dx;
-                cy += sy;
-            }
-        }
-    }
-
-    /**
-     * Rasterizes a sprite by iterating its source rect and writing palette-resolved pixels.
-     * Index 0 is treated as transparent and skipped.
-     *
-     * @param command - Sprite draw command with sheet, source rect, destination, and camera state.
-     */
-    private rasterSprite(command: SpriteCommand): void {
-        const indexedPixels = command.spriteSheet.getIndexedPixelsRef();
-
-        if (command.orientation !== 0) {
-            this.blitIndexedRectOriented(indexedPixels, command);
-            return;
-        }
-
-        this.blitIndexedRect(
-            indexedPixels,
-            command.spriteSheet.width,
-            command.spriteSheet.height,
-            command.srcRect.x,
-            command.srcRect.y,
-            command.srcRect.width,
-            command.srcRect.height,
-            command.destPos.x - command.cameraX,
-            command.destPos.y - command.cameraY,
-            command.paletteOffset,
-        );
-    }
-
-    /**
-     * Rasterizes a bitmap text command by blitting each precomputed glyph rect. Glyph shapes
-     * were resolved once at queue time (see {@link drawBitmapText}), so this loop does not
-     * look up glyph metrics or allocate per glyph.
-     *
-     * @param command - Bitmap text command with sheet, precomputed glyph data, position, and camera state.
-     */
-    private rasterBitmapText(command: BitmapTextCommand): void {
-        const indexedPixels = command.spriteSheet.getIndexedPixelsRef();
-        const sheetWidth = command.spriteSheet.width;
-        const sheetHeight = command.spriteSheet.height;
-
-        for (let i = 0; i < command.glyphCount; i++) {
-            const base = i * 6;
-
-            this.blitIndexedRect(
-                indexedPixels,
-                sheetWidth,
-                sheetHeight,
-                // eslint-disable-next-line security/detect-object-injection
-                command.glyphData[base] ?? 0,
-                command.glyphData[base + 1] ?? 0,
-                command.glyphData[base + 2] ?? 0,
-                command.glyphData[base + 3] ?? 0,
-                command.pos.x + (command.glyphData[base + 4] ?? 0) - command.cameraX,
-                command.pos.y + (command.glyphData[base + 5] ?? 0) - command.cameraY,
-                command.paletteOffset,
-            );
-        }
-    }
-
-    /**
-     * Blits an indexed-pixel source rectangle to a destination position, resolving each
-     * non-transparent pixel through the active palette. Shared by {@link rasterSprite} and
-     * {@link rasterBitmapText} so neither call site allocates a command object per blit.
-     *
-     * @param indexedPixels - Source sheet's indexed-pixel buffer (row-major, one byte per pixel).
-     * @param sheetWidth - Source sheet width in pixels.
-     * @param sheetHeight - Source sheet height in pixels.
-     * @param srcX - Source rect X in sheet coordinates.
-     * @param srcY - Source rect Y in sheet coordinates.
-     * @param srcWidth - Source rect width.
-     * @param srcHeight - Source rect height.
-     * @param destX - Destination X in logical coordinates (camera already applied).
-     * @param destY - Destination Y in logical coordinates (camera already applied).
-     * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
-     */
-    private blitIndexedRect(
-        indexedPixels: Uint8Array,
-        sheetWidth: number,
-        sheetHeight: number,
-        srcX: number,
-        srcY: number,
-        srcWidth: number,
-        srcHeight: number,
-        destX: number,
-        destY: number,
-        paletteOffset: number,
-    ): void {
-        const clipped = this.clipScratch;
-
-        if (!clipSpriteSourceRectXYTo(srcX, srcY, srcWidth, srcHeight, sheetWidth, sheetHeight, clipped)) {
-            return;
-        }
-
-        const destOffsetX = clipped.x - srcX;
-        const destOffsetY = clipped.y - srcY;
-        const pixels = this.framePixels;
-
-        for (let y = 0; y < clipped.height; y++) {
-            for (let x = 0; x < clipped.width; x++) {
-                const rawIndex = indexedPixels[(clipped.y + y) * sheetWidth + (clipped.x + x)] ?? 0;
-
-                const color = this.resolveTexel(rawIndex, paletteOffset);
-
-                if (!color) {
-                    continue;
-                }
-
-                this.writePixel(
-                    pixels,
-                    destX + destOffsetX + x,
-                    destY + destOffsetY + y,
-                    color.r,
-                    color.g,
-                    color.b,
-                    255,
-                );
-            }
-        }
-    }
-
-    /**
-     * Blits a sprite command's source rect through its orientation's point map. Same clipping,
-     * transparency, and palette rules as {@link blitIndexedRect}; each source texel `(i, j)` lands on
-     * the footprint texel given by the point map with `sw - 1` / `sh - 1` (texel centers).
-     *
-     * @param indexedPixels - Source sheet's indexed-pixel buffer.
-     * @param command - Sprite command with a non-zero orientation.
-     */
-    private blitIndexedRectOriented(indexedPixels: Uint8Array, command: SpriteCommand): void {
-        const { srcRect, spriteSheet } = command;
-        const clipped = this.clipScratch;
-
-        if (
-            !clipSpriteSourceRectXYTo(
-                srcRect.x,
-                srcRect.y,
-                srcRect.width,
-                srcRect.height,
-                spriteSheet.width,
-                spriteSheet.height,
-                clipped,
-            )
-        ) {
-            return;
-        }
-
-        const row = SPRITE_ORIENTATIONS[command.orientation] as SpriteOrientation;
-        // Full source size, not the clipped one, so clipped texels keep the placement the GPU quad gives them.
-        const maxX = (row.swap ? srcRect.height : srcRect.width) - 1;
-        const maxY = (row.swap ? srcRect.width : srcRect.height) - 1;
-        const destX = command.destPos.x - command.cameraX;
-        const destY = command.destPos.y - command.cameraY;
-        const sheetWidth = spriteSheet.width;
-        const pixels = this.framePixels;
-
-        for (let y = clipped.y; y < clipped.y + clipped.height; y++) {
-            const j = y - srcRect.y;
-
-            for (let x = clipped.x; x < clipped.x + clipped.width; x++) {
-                const rawIndex = indexedPixels[y * sheetWidth + x] ?? 0;
-
-                const color = this.resolveTexel(rawIndex, command.paletteOffset);
-
-                if (!color) {
-                    continue;
-                }
-
-                const i = x - srcRect.x;
-                const u = row.swap ? j : i;
-                const v = row.swap ? i : j;
-
-                this.writePixel(
-                    pixels,
-                    destX + (row.flipX ? maxX - u : u),
-                    destY + (row.flipY ? maxY - v : v),
-                    color.r,
-                    color.g,
-                    color.b,
-                    255,
-                );
-            }
-        }
-    }
-
-    /**
-     * Rasterizes a stretched sprite: every destination pixel inside the screen picks its footprint texel
-     * with `stretchSampleIndex`, inverts the orientation (texel centers, so `fw - 1` / `fh - 1`), and
-     * reads that source texel. Same transparency and palette rules as {@link blitIndexedRect}; texels
-     * outside the sheet are skipped so clipped sources keep their placement.
-     *
-     * @param command - Stretched sprite command.
-     */
-    private rasterSpriteStretched(command: StretchedSpriteCommand): void {
-        const { spriteSheet } = command;
-        const indexedPixels = spriteSheet.getIndexedPixelsRef();
-        const sheetW = spriteSheet.width;
-        const sheetH = spriteSheet.height;
-        const row = SPRITE_ORIENTATIONS[command.orientation] as SpriteOrientation;
-        const fw = row.swap ? command.srcH : command.srcW;
-        const fh = row.swap ? command.srcW : command.srcH;
-        const left = command.destX - command.cameraX;
-        const top = command.destY - command.cameraY;
-        const x0 = Math.max(0, left);
-        const y0 = Math.max(0, top);
-        const x1 = Math.min(this.displaySize.x, left + command.destW);
-        const y1 = Math.min(this.displaySize.y, top + command.destH);
-        const pixels = this.framePixels;
-
-        for (let y = y0; y < y1; y++) {
-            const fy = stretchSampleIndex(y - top, fh, command.destH);
-            const v = row.flipY ? fh - 1 - fy : fy;
-
-            for (let x = x0; x < x1; x++) {
-                const fx = stretchSampleIndex(x - left, fw, command.destW);
-                const u = row.flipX ? fw - 1 - fx : fx;
-                const sx = command.srcX + (row.swap ? v : u);
-                const sy = command.srcY + (row.swap ? u : v);
-
-                if (sx < 0 || sy < 0 || sx >= sheetW || sy >= sheetH) {
-                    continue;
-                }
-
-                const rawIndex = indexedPixels[sy * sheetW + sx] ?? 0;
-
-                const color = this.resolveTexel(rawIndex, command.paletteOffset);
-
-                if (!color) {
-                    continue;
-                }
-
-                this.writePixelUnchecked(pixels, x, y, color.r, color.g, color.b, 255);
-            }
-        }
-    }
-
-    /**
-     * Writes one RGBA pixel into `pixels`, bounds-checked against the display size.
-     *
-     * `pixels` is taken as a parameter (the caller's own {@link framePixels} read, done once per
-     * raster call) rather than read from `this` here, since this runs once per pixel and
-     * `framePixels` is a checked accessor - re-reading it per pixel would re-run that check on
-     * every call.
-     *
-     * @param pixels - Destination buffer, from {@link framePixels}.
-     * @param x - Pixel X in logical coordinates.
-     * @param y - Pixel Y in logical coordinates.
-     * @param r - Red channel (0-255).
-     * @param g - Green channel (0-255).
-     * @param b - Blue channel (0-255).
-     * @param a - Alpha channel (0-255).
-     */
-    private writePixel(
-        pixels: Uint8ClampedArray,
-        x: number,
-        y: number,
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-    ): void {
-        if (x < 0 || y < 0 || x >= this.displaySize.x || y >= this.displaySize.y) {
-            return;
-        }
-
-        const index = (y * this.displaySize.x + x) * 4;
-
-        // eslint-disable-next-line security/detect-object-injection
-        pixels[index] = r;
-        pixels[index + 1] = g;
-        pixels[index + 2] = b;
-        pixels[index + 3] = a;
-    }
-
-    /**
-     * Writes one RGBA pixel into `pixels` without a bounds check. Callers must guarantee
-     * `(x, y)` already lies within `[0, displaySize)` - used by loops that pre-clamp their
-     * range, such as {@link rasterRectFill}. See {@link writePixel} for why `pixels` is a
-     * parameter rather than a `this.framePixels` read.
-     *
-     * @param pixels - Destination buffer, from {@link framePixels}.
-     * @param x - Pixel X in logical coordinates, already known in-bounds.
-     * @param y - Pixel Y in logical coordinates, already known in-bounds.
-     * @param r - Red channel (0-255).
-     * @param g - Green channel (0-255).
-     * @param b - Blue channel (0-255).
-     * @param a - Alpha channel (0-255).
-     */
-    private writePixelUnchecked(
-        pixels: Uint8ClampedArray,
-        x: number,
-        y: number,
-        r: number,
-        g: number,
-        b: number,
-        a: number,
-    ): void {
-        const index = (y * this.displaySize.x + x) * 4;
-
-        // eslint-disable-next-line security/detect-object-injection
-        pixels[index] = r;
-        pixels[index + 1] = g;
-        pixels[index + 2] = b;
-        pixels[index + 3] = a;
-    }
-
-    /**
-     * Resolves a palette index to a `Color32` for primitive, sprite, and text drawing.
-     * Returns `null` for out-of-range indices and fully transparent colors, the same
-     * texels the WebGPU sprite shader discards.
-     *
-     * @param paletteIndex - Palette entry index to look up.
-     * @returns Resolved color, or `null` when the pixel should not be drawn.
-     */
-    private resolveColor(paletteIndex: number): Color32 | null {
-        if (!this.palette || paletteIndex >= this.palette.size) {
-            return null;
-        }
-
-        const color = this.palette.getRef(paletteIndex);
-
-        return color.a === 0 ? null : color;
-    }
-
-    /**
-     * Resolves a sprite or glyph texel: index `0` is always transparent, otherwise the
-     * offset index goes through {@link resolveColor}.
-     *
-     * @param rawIndex - Stored texel index from the sheet.
-     * @param paletteOffset - Per-draw palette offset.
-     * @returns Resolved color, or `null` when the pixel should not be drawn.
-     */
-    private resolveTexel(rawIndex: number, paletteOffset: number): Color32 | null {
-        return rawIndex === TRANSPARENT_PALETTE_INDEX ? null : this.resolveColor((rawIndex + paletteOffset) >>> 0);
-    }
-
-    /**
      * Returns the clear color from the palette. Falls back to `Color32.black`
      * when no palette is set or the index is out of range.
      *
@@ -1414,114 +689,5 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.logicalCtx.putImageData(this.imageData, 0, 0);
         this.outputCtx.clearRect(0, 0, this.outputSize.x, this.outputSize.y);
         this.outputCtx.drawImage(this.logicalCanvas, 0, 0, this.outputSize.x, this.outputSize.y);
-    }
-
-    /**
-     * Resolves or rejects the pending `captureFrame` promise using `canvas.toBlob`.
-     * Clears `pending` after handling.
-     */
-    private resolvePending(): void {
-        if (!this.pending) {
-            return;
-        }
-
-        if (typeof this.canvas.toBlob !== 'function') {
-            this.pending.reject(
-                new Error(
-                    "Can't save this frame - your browser doesn't support canvas image export. Try Chrome or Edge.",
-                ),
-            );
-
-            this.pending = null;
-
-            return;
-        }
-
-        const request = this.pending;
-
-        this.pending = null;
-        this.canvas.toBlob((blob) => {
-            if (!blob) {
-                request.reject(
-                    new Error(
-                        "Can't save this frame - something went wrong exporting the canvas image. Try again on the next frame.",
-                    ),
-                );
-                return;
-            }
-            request.resolve(blob);
-        }, 'image/png');
-    }
-
-    /**
-     * Resolves or rejects the pending `captureFrameAtDisplaySize` /
-     * `captureFrameForShortcut` promises by exporting `logicalCanvas` (the pre-upscale,
-     * logical-resolution buffer) instead of the output `canvas`. Both slots settle from
-     * the same single export. Handles both `OffscreenCanvas.convertToBlob` and the
-     * plain-canvas `HTMLCanvasElement.toBlob` fallback, since `logicalCanvas` may be
-     * either. Clears both slots after handling.
-     */
-    private resolvePendingDisplaySize(): void {
-        const requests = this.takePendingDisplaySizeRequests();
-
-        if (requests.length === 0) {
-            return;
-        }
-
-        // Fan one export out to every pending slot.
-        const request: Pending = {
-            resolve: (blob) => {
-                for (const pending of requests) {
-                    pending.resolve(blob);
-                }
-            },
-            reject: (error) => {
-                for (const pending of requests) {
-                    pending.reject(error);
-                }
-            },
-        };
-        const canvas = this.logicalCanvas;
-
-        if (!canvas) {
-            request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));
-
-            return;
-        }
-
-        if (SoftwareRenderer.isOffscreenCanvas(canvas)) {
-            canvas
-                .convertToBlob({ type: 'image/png' })
-                .then((blob) => request.resolve(blob))
-                .catch((error: unknown) => {
-                    request.reject(error instanceof Error ? error : new Error(String(error)));
-                });
-
-            return;
-        }
-
-        if (typeof canvas.toBlob !== 'function') {
-            request.reject(
-                new Error(
-                    "Can't save this frame - your browser doesn't support canvas image export. Try Chrome or Edge.",
-                ),
-            );
-
-            return;
-        }
-
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                request.reject(
-                    new Error(
-                        "Can't save this frame - something went wrong exporting the canvas image. Try again on the next frame.",
-                    ),
-                );
-
-                return;
-            }
-
-            request.resolve(blob);
-        }, 'image/png');
     }
 }

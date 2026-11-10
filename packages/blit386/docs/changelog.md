@@ -83,6 +83,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `null`, and `keyboardLayout: null` logged a warning. Now the setting takes its default, or stays unset where it has
   none (`isSplashEnabled` then follows the URL flags and dev mode). `null` for `displaySize`, `drawingBufferSize`, or
   `maxCanvasSize` still fails with the same clear size error. TypeScript already rejects these `null`s.
+- Behavior change for custom pixel-tier effects: `FullscreenPixelEffect` runs on the `r8uint` pixel chain only, which is
+  the only chain the engine ever builds. Its unused RGBA path is gone: `init` throws for any other format, the protected
+  `sampler` field is removed, and `fragmentShaderRgba` is no longer read, so a subclass can drop it. `PixelGlitch` and
+  `PixelMosaic` are unchanged on screen. See
+  [Writing a custom effect](guide-post-process-effects.md#writing-a-custom-effect).
 - `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.1 with no engine API change of their own. The scaffolder's
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
@@ -96,6 +101,23 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- WebGPU draws keep the order `render()` called them in. It used to draw every primitive (rects, lines, pixels) before
+  every sprite (sprites, `BT.systemPrint`, `BT.printFont`) in a frame, so a `BT.drawRectFill` HUD bar drawn over a
+  sprite background disappeared under it on WebGPU while the software backend showed it on top. See
+  [Draw order](api-rendering.md#draw-order).
+- A 1-pixel-tall `BT.drawRect` on the software backend draws only its own row. Its side lines used to run backwards and
+  paint one pixel above and below each end, which WebGPU never did.
+- A rect or sprite source with a zero or negative width or height draws nothing on WebGPU, as it already did on the
+  software backend. WebGPU used to fill a negative-width rect backwards, draw a width-0 outline as two columns, and draw
+  a negative-width sprite source mirrored. See [Empty and negative sizes](api-rendering.md#empty-and-negative-sizes).
+- A partially transparent palette slot shows the page behind the canvas the same way on both backends. The software
+  backend used to draw every slot fully opaque except the clear color, and WebGPU handed the canvas straight color where
+  it expects premultiplied, so a 50% slot looked brighter than intended. See
+  [Partially transparent palette slots](api-rendering.md#partially-transparent-palette-slots).
+- A `BT.drawSprite` source rect that runs past the sheet edge draws only the part inside the sheet on WebGPU, as on the
+  software backend. The sprite shader used to read texels outside the texture, whose value depends on the GPU driver.
+- A `BT.captureFrame()` still pending when `BT.init` restarts the engine rejects with "renderer was reset" instead of
+  never settling. The old renderer was dropped without rejecting its pending captures.
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl

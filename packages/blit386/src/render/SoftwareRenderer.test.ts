@@ -991,3 +991,122 @@ describe('SoftwareRenderer line viewport clipping', () => {
         expect(lit).toEqual(referencePixels(30, -20, 70, 20, 40, -6));
     });
 });
+
+describe('SoftwareRenderer backend parity (BT-756)', () => {
+    beforeEach(() => {
+        logicalContext.lastImageData = null;
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                constructor(
+                    public width: number,
+                    public height: number,
+                    public data: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4),
+                ) {}
+            },
+        );
+        vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    /** A 16x16 software renderer with {@link makePalette} installed. */
+    async function createRenderer(): Promise<SoftwareRenderer> {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(16, 16));
+
+        await renderer.init();
+        renderer.setPalette(makePalette());
+
+        return renderer;
+    }
+
+    /** Lists every pixel of the last frame whose alpha is non-zero, as `x,y`. */
+    function drawnPixels(): string[] {
+        const frame = logicalContext.lastImageData as ImageData;
+        const drawn: string[] = [];
+
+        for (let y = 0; y < frame.height; y++) {
+            for (let x = 0; x < frame.width; x++) {
+                if (getPixel(frame, frame.width, x, y)[3] !== 0) {
+                    drawn.push(`${x},${y}`);
+                }
+            }
+        }
+
+        return drawn;
+    }
+
+    it('draws a 1-pixel-tall drawRect as exactly its own row, like PrimitivePipeline', async () => {
+        const renderer = await createRenderer();
+
+        renderer.beginFrame();
+        renderer.drawRect(new Rect2i(5, 5, 4, 1), 1);
+        renderer.endFrame();
+
+        expect(drawnPixels()).toEqual(['5,5', '6,5', '7,5', '8,5']);
+    });
+
+    it('draws a 2-pixel-tall drawRect as exactly its two rows', async () => {
+        const renderer = await createRenderer();
+
+        renderer.beginFrame();
+        renderer.drawRect(new Rect2i(5, 5, 3, 2), 1);
+        renderer.endFrame();
+
+        expect(drawnPixels()).toEqual(['5,5', '6,5', '7,5', '5,6', '6,6', '7,6']);
+    });
+
+    it('writes the palette slot alpha for every drawn pixel, matching the clear color', async () => {
+        const renderer = await createRenderer();
+        const palette = makePalette();
+        const half = new Color32(0, 255, 0, 128);
+
+        palette.set(4, half);
+        renderer.setPalette(palette);
+
+        const sheet = SpriteSheet.fromIndexedPixels(2, 2, new Uint8Array(4).fill(4));
+
+        renderer.beginFrame();
+        renderer.setClearColor(4);
+        renderer.drawRectFill(new Rect2i(0, 0, 2, 2), 4);
+        renderer.drawLine(new Vector2i(0, 4), new Vector2i(3, 7), 4);
+        renderer.drawSprite(sheet, new Rect2i(0, 0, 2, 2), new Vector2i(6, 0), 0);
+        renderer.drawSpriteOriented(sheet, new Rect2i(0, 0, 2, 2), new Vector2i(9, 0), 0, 1);
+        renderer.drawSpriteStretched(sheet, new Rect2i(0, 0, 2, 2), 12, 0, 4, 4, 0, 0);
+        renderer.endFrame();
+
+        const frame = logicalContext.lastImageData as ImageData;
+        const expected = [0, 255, 0, 128];
+
+        expect(getPixel(frame, 16, 15, 15)).toEqual(expected); // clear
+        expect(getPixel(frame, 16, 1, 1)).toEqual(expected); // rect fill
+        expect(getPixel(frame, 16, 3, 7)).toEqual(expected); // line
+        expect(getPixel(frame, 16, 7, 1)).toEqual(expected); // sprite
+        expect(getPixel(frame, 16, 10, 1)).toEqual(expected); // oriented sprite
+        expect(getPixel(frame, 16, 13, 3)).toEqual(expected); // stretched sprite
+    });
+
+    it('destroy() rejects every pending capture slot', async () => {
+        const renderer = await createRenderer();
+        const captures = [
+            renderer.captureFrame(),
+            renderer.captureFrameAtDisplaySize(),
+            renderer.captureFrameForShortcut(),
+        ];
+
+        renderer.destroy();
+
+        for (const capture of captures) {
+            await expect(capture).rejects.toThrow('renderer was reset');
+        }
+    });
+});

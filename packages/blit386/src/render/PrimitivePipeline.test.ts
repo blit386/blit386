@@ -621,3 +621,30 @@ describe('diagonal line viewport clipping', () => {
         expect(queuedPixels(pipeline)).toEqual(referencePixels(300, -200, 900, 400, 400, -60));
     });
 });
+
+describe('non-positive sizes draw nothing, like the software backend (BT-756)', () => {
+    const pipeline = new PrimitivePipeline();
+
+    beforeAll(async () => {
+        installMockNavigatorGPU();
+        await pipeline.init(createMockGPUDevice(), new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+    });
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    it.each([
+        ['negative width', new Rect2i(10, 10, -5, 4)],
+        ['negative height', new Rect2i(10, 10, 4, -5)],
+        ['zero width', new Rect2i(10, 10, 0, 3)],
+        ['zero height', new Rect2i(10, 10, 3, 0)],
+    ])('queues no vertices for drawRectFill, clearRect and drawRect with %s', (_name, rect) => {
+        pipeline.reset();
+        pipeline.drawRectFill(rect, 1);
+        pipeline.clearRect(rect, 1);
+        pipeline.drawRect(rect, 1);
+
+        expect(pipeline.getFrameSubmittedVertices()).toBe(0);
+    });
+});

@@ -1,7 +1,7 @@
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
+import type { OutputUpscaleFilter } from '../core/IBTDemo';
 import type { Vector2i } from '../utils/Vector2i';
 import { VS_WGSL } from './effects/fullscreenVS';
-import type { UpscaleFilter } from './UpscalePass';
 
 /**
  * Fullscreen pass that reads an `r8uint` palette-index texture, resolves indices through
@@ -17,7 +17,7 @@ export class PaletteResolveUpscalePass {
     private uniformBuffer: GPUBuffer | null = null;
     /** logicalW, logicalH, filterLinear (0|1), pad */
     private uniformData: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(16));
-    private filterMode: UpscaleFilter = 'nearest';
+    private filterMode: OutputUpscaleFilter = 'nearest';
     private bindGroups = new WeakMap<GPUTextureView, GPUBindGroup>();
 
     /** Cached encode params so redundant uniform uploads are skipped when unchanged. */
@@ -34,7 +34,7 @@ export class PaletteResolveUpscalePass {
      * @param filter - `'nearest'` or `'linear'` magnification (linear blends resolved RGBA neighbors).
      * @param paletteBuffer - Shared {@link MAX_PALETTE_SIZE}-entry palette uniform buffer (same as scene pipelines).
      */
-    init(device: GPUDevice, destFormat: GPUTextureFormat, filter: UpscaleFilter, paletteBuffer: GPUBuffer): void {
+    init(device: GPUDevice, destFormat: GPUTextureFormat, filter: OutputUpscaleFilter, paletteBuffer: GPUBuffer): void {
         this.uniformBuffer?.destroy();
         this.uniformBuffer = null;
         this.bindGroups = new WeakMap();
@@ -206,7 +206,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let sy = clamp(i32(floor(in.uv.y * lhf)), 0, lh - 1);
         let idx = textureLoad(srcIndices, vec2<i32>(sx, sy), 0).r;
         let color = palette.colors[idx];
-        return vec4<f32>(color.rgb, color.a);
+        return vec4<f32>(color.rgb * color.a, color.a);
     }
 
     let px = in.uv.x * lwf - 0.5;
@@ -225,11 +225,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 
     let top = mix(c00, c10, fx);
     let bot = mix(c01, c11, fx);
-    let pm = mix(top, bot, fy);
-
-    if (pm.a <= 0.0) {
-        return vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    }
-    return vec4<f32>(pm.rgb / pm.a, pm.a);
+    // Already premultiplied, which the 'premultiplied' canvas expects.
+    return mix(top, bot, fy);
 }
 `;

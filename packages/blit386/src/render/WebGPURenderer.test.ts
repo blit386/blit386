@@ -31,6 +31,7 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { PrimitivePipeline } from './PrimitivePipeline';
+import type { SceneBatch } from './SceneBatch';
 import type { SpritePipeline } from './SpritePipeline';
 import { WebGPURenderer } from './WebGPURenderer';
 
@@ -55,7 +56,34 @@ type PipelineAccess = {
  * @returns Primitive, sprite, overlay, and overlay-top pipeline instances.
  */
 function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
-    return renderer as unknown as PipelineAccess;
+    const internals = renderer as unknown as {
+        scene: SceneBatch;
+        overlay: {
+            tiers: [PrimitivePipeline | null, SpritePipeline | null, PrimitivePipeline | null, SpritePipeline | null];
+        };
+    };
+
+    // Getters, so a lazily allocated overlay pipeline is read live, as it was off the renderer itself.
+    return {
+        get primitives() {
+            return internals.scene.primitives;
+        },
+        get sprites() {
+            return internals.scene.sprites;
+        },
+        get overlayPrimitives() {
+            return internals.overlay.tiers[0];
+        },
+        get overlayTopPrimitives() {
+            return internals.overlay.tiers[2];
+        },
+        get overlaySprites() {
+            return internals.overlay.tiers[1];
+        },
+        get overlayTopSprites() {
+            return internals.overlay.tiers[3];
+        },
+    };
 }
 
 /**
@@ -500,10 +528,10 @@ describe('with initialized renderer', () => {
         const pipelines = getRendererPipelines(renderer);
         const encodeOrder: string[] = [];
 
-        vi.spyOn(pipelines.primitives, 'encodePass').mockImplementation(() => {
+        vi.spyOn(pipelines.primitives, 'encodeRange').mockImplementation(() => {
             encodeOrder.push('primitives');
         });
-        vi.spyOn(pipelines.sprites, 'encodePass').mockImplementation(() => {
+        vi.spyOn(pipelines.sprites, 'encodeBatches').mockImplementation(() => {
             encodeOrder.push('sprites');
         });
         vi.spyOn(requirePipeline(pipelines.overlayPrimitives), 'encodePass').mockImplementation(() => {
@@ -1055,7 +1083,7 @@ describe('frame capture', () => {
         const publicCapture = renderer.captureFrameAtDisplaySize();
 
         // Simulate the resolvePass === null window submitFrame used to hang in.
-        (renderer as unknown as { resolvePass: unknown }).resolvePass = null;
+        (renderer as unknown as { post: { resolvePass: unknown } }).post.resolvePass = null;
 
         renderer.beginFrame();
         renderer.endFrame(0);
@@ -1706,5 +1734,40 @@ describe('post-process effects', () => {
         expect(displayEffect.encodeSpy).toHaveBeenCalledTimes(1);
         expect(pixelEffect.updateSpy).toHaveBeenCalledTimes(1);
         expect(displayEffect.updateSpy).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('destroy (BT-756)', () => {
+    it('rejects every pending capture slot and releases the frame GPU resources', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const renderer = new WebGPURenderer(
+                createMockGPUDevice(),
+                createMockGPUCanvasContext(),
+                new Vector2i(4, 4),
+            );
+
+            expect(await renderer.init()).toBe(true);
+
+            const captures = [
+                renderer.captureFrame(),
+                renderer.captureFrameAtDisplaySize(),
+                renderer.captureFrameForShortcut(),
+            ];
+            const internals = renderer as unknown as { paletteBuffer: GPUBuffer | null };
+            const paletteDestroy = vi.spyOn(internals.paletteBuffer as GPUBuffer, 'destroy');
+
+            renderer.destroy();
+
+            for (const capture of captures) {
+                await expect(capture).rejects.toThrow('renderer was reset');
+            }
+
+            expect(paletteDestroy).toHaveBeenCalledOnce();
+            expect(internals.paletteBuffer).toBeNull();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
     });
 });

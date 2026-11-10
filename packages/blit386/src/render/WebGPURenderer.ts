@@ -2,46 +2,32 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
+import type { OutputUpscaleFilter } from '../core/IBTDemo';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
-import { FrameCapture } from '../utils/FrameCapture';
+import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
-import { PaletteResolveUpscalePass } from './PaletteResolveUpscalePass';
-import { PostProcessChain } from './PostProcessChain';
-import { PrimitivePipeline } from './PrimitivePipeline';
-import { SpritePipeline } from './SpritePipeline';
-import type { UpscaleFilter } from './UpscalePass';
+import { OverlayPipelines } from './OverlayPipelines';
+import { SceneBatch } from './SceneBatch';
+import { WebGPUFrameCaptures } from './WebGPUFrameCaptures';
+import { LOGICAL_TARGET_FORMAT, WebGPUPostProcess } from './WebGPUPostProcess';
 
 /**
  * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes.
  */
 const PALETTE_BUFFER_SIZE = MAX_PALETTE_SIZE * 4 * 4;
 
-/** Logical scene + pixel chain format (palette index in the red channel). */
-const LOGICAL_TARGET_FORMAT: GPUTextureFormat = 'r8uint';
-
 /**
  * WebGPU renderer implementing {@link IRenderer}.
  *
  * `WebGPURenderer` owns frame begin/end, clear color, camera state, palette
- * buffer, frame capture, and the two-tier post-process pipeline. Actual draw
- * batching is delegated to {@link PrimitivePipeline} and {@link SpritePipeline}.
- *
- * Per-frame stage flow:
- *
- * ```text
- * scene (r8uint logical) -> [pixel chain, r8uint]
- *                        -> palette resolve + upscale (rgba)
- *                        -> [display chain, rgba]
- *                        -> swap chain
- * ```
- *
- * Pixel-tier effects always run in the index-native logical domain. RGBA output
- * exists only after palette resolve/upscale, so display-tier effects remain
- * unchanged while the obsolete logical RGBA path is removed.
+ * buffer, frame capture, and the two-tier post-process pipeline. Demo draws go
+ * through {@link SceneBatch}, which keeps primitives and sprites in call order;
+ * overlay draws go to the fixed-order {@link OverlayPipelines} tiers. Everything
+ * after the scene pass (effect chains, palette resolve, upscale) lives in
+ * {@link WebGPUPostProcess}.
  */
 export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /** WebGPU device for GPU operations. */
@@ -52,19 +38,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
     /** Logical render target resolution in pixels (`displaySize`). */
     private readonly displaySize: Vector2i;
-
-    /** Output drawing-buffer size in pixels (matches the swap chain). */
-    private readonly outputSize: Vector2i;
-
-    /** Magnification filter used between the pixel chain and the display chain. */
-    private readonly upscaleFilterMode: UpscaleFilter;
-
-    /**
-     * True when the caller explicitly provided an `outputSize` (i.e. set
-     * `drawingBufferSize` in `configure()`), enabling display-tier effects
-     * regardless of whether the output resolution differs from the logical one.
-     */
-    private readonly isDisplayTierEnabled: boolean;
 
     /** Palette index used for the frame clear color. Defaults to 0 (transparent). */
     private clearPaletteIndex: number = 0;
@@ -77,29 +50,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     private readonly cameraOffset: Vector2i = new Vector2i(0, 0);
 
-    /** Frame capture manager for PNG export at `outputSize` (public `captureFrame()`). */
-    private readonly frameCapture = new FrameCapture();
-
-    /**
-     * Frame capture manager for the public `captureFrame({ size: 'display' })` path, which
-     * captures at logical `displaySize` rather than `outputSize`. Kept separate from
-     * {@link frameCapture} and {@link shortcutFrameCapture} so the three capture paths
-     * never contend for the same pending-request slot.
-     */
-    private readonly displayFrameCapture = new FrameCapture();
-
-    /**
-     * Frame capture manager for the F9 / Shift+F9 dev-mode shortcuts, which capture at
-     * logical `displaySize` like {@link displayFrameCapture} but from their own slot, so
-     * a keypress and a public display-size capture never supersede each other.
-     */
-    private readonly shortcutFrameCapture = new FrameCapture();
-
-    /** Both display-size slots, so {@link submitFrame} can service them with one resolve pass. */
-    private readonly displayCaptureSlots: readonly FrameCapture[] = [
-        this.displayFrameCapture,
-        this.shortcutFrameCapture,
-    ];
+    /** The three capture slots and their shared logical capture target. */
+    private readonly captures: WebGPUFrameCaptures;
 
     /** Active palette for color lookups and GPU upload. */
     private palette: Palette | null = null;
@@ -109,16 +61,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
     /** Reusable staging buffer for GPU palette uploads. Avoids per-frame allocation. */
     private readonly paletteStaging = new Float32Array(MAX_PALETTE_SIZE * 4);
-
-    /**
-     * Reusable pipeline-list scratch arrays for {@link getFrameDiagnostics}. Avoids allocating
-     * two arrays per call; entries may be `null` when the matching overlay pipeline has not
-     * been allocated yet.
-     */
-    private readonly scratchPrimitivePipelines: Array<PrimitivePipeline | null> = [null, null, null];
-
-    /** See {@link scratchPrimitivePipelines}. */
-    private readonly scratchSpritePipelines: Array<SpritePipeline | null> = [null, null, null];
 
     /** Reusable result object for {@link getFrameDiagnostics}. Avoids allocating a literal per call. */
     private readonly frameDiagnostics: {
@@ -140,81 +82,14 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     private isPaletteDirty: boolean = false;
 
-    /** Pipeline for palette-indexed geometry (pixels, lines, rectangles). */
-    private readonly primitives: PrimitivePipeline;
+    /** Demo-tier primitives and sprites, encoded in call order. */
+    private readonly scene = new SceneBatch();
 
-    /**
-     * Primitives encoded after the sprite pass (overlay bars, etc.).
-     *
-     * Lazily allocated: stays `null` until {@link isOverlayEnabled} is true at {@link init}
-     * time, or the first call to {@link drawBarFill} - whichever comes first. Every consumer
-     * of this field (reset, encode, camera offset) must handle `null`.
-     */
-    private overlayPrimitives: PrimitivePipeline | null = null;
+    /** Overlay bars and labels, encoded after the demo tier in a fixed tier order. */
+    private readonly overlay: OverlayPipelines;
 
-    /** Pipeline for textured quads (sprites, bitmap text). */
-    private readonly sprites: SpritePipeline;
-
-    /**
-     * Sprites encoded after overlay bar primitives (overlay labels, etc.).
-     *
-     * Lazily allocated: stays `null` until {@link isOverlayEnabled} is true at {@link init}
-     * time, or the first call to {@link drawLabel} - whichever comes first. Every consumer
-     * of this field (reset, encode, camera offset) must handle `null`.
-     */
-    private overlaySprites: SpritePipeline | null = null;
-
-    /**
-     * Primitives encoded after overlay label sprites (tooltip chrome, etc.).
-     *
-     * Lazily allocated: stays `null` until {@link isOverlayEnabled} is true at {@link init}
-     * time, or the first call to {@link drawBarFillOnTop} - whichever comes first. Every
-     * consumer of this field (reset, encode, camera offset) must handle `null`.
-     */
-    private overlayTopPrimitives: PrimitivePipeline | null = null;
-
-    /**
-     * Sprites encoded after overlay top primitives (tooltip labels, etc.).
-     *
-     * Lazily allocated: stays `null` until {@link isOverlayEnabled} is true at {@link init}
-     * time, or the first call to {@link drawLabelOnTop} - whichever comes first. Every
-     * consumer of this field (reset, encode, camera offset) must handle `null`.
-     */
-    private overlayTopSprites: SpritePipeline | null = null;
-
-    /**
-     * Whether overlay pipelines should be eagerly allocated at {@link init} time rather than
-     * lazily on first overlay draw. Mirrors `HardwareSettings.isOverlayEnabled`.
-     */
-    private readonly isOverlayEnabled: boolean;
-
-    /** Pixel-tier post-process chain (logical resolution). */
-    private pixelChain: PostProcessChain | null = null;
-
-    /** Display-tier post-process chain (output resolution). */
-    private displayChain: PostProcessChain | null = null;
-
-    /** Pass that resolves logical palette indices to RGBA and upscales to output size. */
-    private resolvePass: PaletteResolveUpscalePass | null = null;
-
-    /** Logical-resolution scene framebuffer; allocated lazily. */
-    private sceneTex: GPUTexture | null = null;
-
-    /** Stable view of the scene framebuffer. */
-    private sceneTexView: GPUTextureView | null = null;
-
-    /**
-     * Display-size (logical) RGBA capture target for the Shift+F9 shortcut; allocated
-     * lazily. Resolved directly from the `r8uint` scene texture, bypassing the drawing-
-     * buffer upscale and any display-tier post-process effects.
-     */
-    private displayCaptureTex: GPUTexture | null = null;
-
-    /** Stable view of {@link displayCaptureTex}. */
-    private displayCaptureTexView: GPUTextureView | null = null;
-
-    /** Cached swap-chain format used by lazy texture creation. */
-    private swapFormat: GPUTextureFormat | null = null;
+    /** Scene framebuffer, effect chains, and palette resolve + upscale. */
+    private readonly post: WebGPUPostProcess;
 
     /**
      * Creates a renderer bound to an initialized device and canvas context.
@@ -236,18 +111,21 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         context: GPUCanvasContext,
         displaySize: Vector2i,
         outputSize?: Vector2i,
-        upscaleFilter: UpscaleFilter = 'nearest',
+        upscaleFilter: OutputUpscaleFilter = 'nearest',
         isOverlayEnabled: boolean = true,
     ) {
         this.device = device;
         this.context = context;
         this.displaySize = displaySize.clone();
-        this.isDisplayTierEnabled = outputSize !== undefined;
-        this.outputSize = (outputSize ?? displaySize).clone();
-        this.upscaleFilterMode = upscaleFilter;
-        this.isOverlayEnabled = isOverlayEnabled;
-        this.primitives = new PrimitivePipeline();
-        this.sprites = new SpritePipeline();
+        this.captures = new WebGPUFrameCaptures(device, this.displaySize);
+        this.overlay = new OverlayPipelines(device, this.displaySize, LOGICAL_TARGET_FORMAT, isOverlayEnabled);
+        this.post = new WebGPUPostProcess(
+            device,
+            this.displaySize,
+            (outputSize ?? displaySize).clone(),
+            upscaleFilter,
+            outputSize !== undefined,
+        );
     }
 
     /**
@@ -257,23 +135,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     async init(): Promise<boolean> {
         try {
-            // Release any GPU resources from a previous init() call (e.g.
-            // device-loss recovery) so nothing leaks.
-            this.paletteBuffer?.destroy();
-            this.paletteBuffer = null;
-            this.pixelChain?.dispose();
-            this.pixelChain = null;
-            this.displayChain?.dispose();
-            this.displayChain = null;
-            this.resolvePass?.dispose();
-            this.resolvePass = null;
-            this.rejectPendingDisplayCaptures("Can't capture frame: renderer was reset before the frame rendered");
-            this.sceneTex?.destroy();
-            this.sceneTex = null;
-            this.sceneTexView = null;
-            this.displayCaptureTex?.destroy();
-            this.displayCaptureTex = null;
-            this.displayCaptureTexView = null;
+            // Release any GPU resources from a previous init() call so nothing leaks.
+            this.destroy();
 
             // Create shared palette uniform buffer (MAX_PALETTE_SIZE entries x vec4f).
             this.paletteBuffer = this.device.createBuffer({
@@ -290,31 +153,13 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             // Primitive and sprite pipelines run at logical resolution. The
             // viewport is automatic since each pass binds a target view; only
             // the camera scaling here cares about logical size.
-            await this.primitives.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
-            await this.sprites.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
+            await this.scene.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
 
             // Overlay pipelines are lazily allocated: eagerly (re)initialize them here only
             // when overlay is enabled, or when a prior lazy draw call (or a prior init()
             // before a device-loss recovery) already allocated one.
-            this.overlayPrimitives = await this.initOverlayPrimitivePipeline(this.overlayPrimitives);
-            this.overlayTopPrimitives = await this.initOverlayPrimitivePipeline(this.overlayTopPrimitives);
-            this.overlaySprites = await this.initOverlaySpritePipeline(this.overlaySprites);
-            this.overlayTopSprites = await this.initOverlaySpritePipeline(this.overlayTopSprites);
-
-            this.swapFormat = navigator.gpu.getPreferredCanvasFormat();
-
-            // Pixel chain operates at logical resolution (320x240 etc.).
-            this.pixelChain = new PostProcessChain(this.device, LOGICAL_TARGET_FORMAT, this.displaySize, 'pixel');
-
-            // Display chain operates at output resolution. When there is no
-            // upscale (output == logical), display-tier effects still run, but
-            // they sample the same-size source. We allocate the chain regardless
-            // so the rest of the engine can introspect it.
-            this.displayChain = new PostProcessChain(this.device, this.swapFormat, this.outputSize, 'display');
-
-            // Resolve + optional upscale sits between logical and display tiers.
-            this.resolvePass = new PaletteResolveUpscalePass();
-            this.resolvePass.init(this.device, this.swapFormat, this.upscaleFilterMode, this.paletteBuffer);
+            await this.overlay.init(this.paletteBuffer);
+            this.post.init(this.paletteBuffer);
 
             return true;
         } catch (error) {
@@ -322,6 +167,17 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
             return false;
         }
+    }
+
+    /**
+     * Rejects every pending capture and releases the palette buffer, effect chains, resolve
+     * pass, and frame textures. Called on every {@link init} and when the engine drops the renderer.
+     */
+    destroy(): void {
+        this.captures.destroy(RENDERER_RESET_MESSAGE);
+        this.paletteBuffer?.destroy();
+        this.paletteBuffer = null;
+        this.post.destroy();
     }
 
     /**
@@ -371,12 +227,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
-        this.primitives.reset();
-        this.overlayPrimitives?.reset();
-        this.overlayTopPrimitives?.reset();
-        this.sprites.reset();
-        this.overlaySprites?.reset();
-        this.overlayTopSprites?.reset();
+        this.scene.reset();
+        this.overlay.reset();
     }
 
     /**
@@ -410,12 +262,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
         const swapChainView = swapTexture.createView();
         const commandEncoder = this.device.createCommandEncoder({ label: 'Render Commands' });
-        const isPixelChainActive = this.pixelChain?.isActive() ?? false;
-        const isDisplayChainActive = this.displayChain?.isActive() ?? false;
-        const sceneView = this.resolveSceneView(isPixelChainActive);
 
-        this.encodeScenePass(commandEncoder, sceneView);
-        this.encodePostProcess(commandEncoder, swapChainView, isPixelChainActive, isDisplayChainActive, deltaMs);
+        this.encodeScenePass(commandEncoder, this.post.sceneTarget());
+        this.post.encode(commandEncoder, swapChainView, deltaMs);
         this.submitFrame(commandEncoder, swapTexture);
     }
 
@@ -428,41 +277,14 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Diagnostic counters for the current frame.
      */
     getFrameDiagnostics(): OverlayRendererDiagnostics {
-        this.scratchPrimitivePipelines[0] = this.primitives;
-        this.scratchPrimitivePipelines[1] = this.overlayPrimitives;
-        this.scratchPrimitivePipelines[2] = this.overlayTopPrimitives;
-        this.scratchSpritePipelines[0] = this.sprites;
-        this.scratchSpritePipelines[1] = this.overlaySprites;
-        this.scratchSpritePipelines[2] = this.overlayTopSprites;
+        const diagnostics = this.frameDiagnostics;
+        const { primitives, sprites } = this.scene;
 
-        let primitiveOverflowCount = 0;
-        let primitiveSubmittedVertices = 0;
-
-        for (const pipeline of this.scratchPrimitivePipelines) {
-            if (!pipeline) {
-                continue;
-            }
-
-            primitiveOverflowCount += pipeline.getFrameOverflowCount();
-            primitiveSubmittedVertices += pipeline.getFrameSubmittedVertices();
-        }
-
-        let spriteOverflowCount = 0;
-        let spriteSubmittedVertices = 0;
-
-        for (const pipeline of this.scratchSpritePipelines) {
-            if (!pipeline) {
-                continue;
-            }
-
-            spriteOverflowCount += pipeline.getFrameOverflowCount();
-            spriteSubmittedVertices += pipeline.getFrameSubmittedVertices();
-        }
-
-        this.frameDiagnostics.primitiveOverflowCount = primitiveOverflowCount;
-        this.frameDiagnostics.spriteOverflowCount = spriteOverflowCount;
-        this.frameDiagnostics.primitiveSubmittedVertices = primitiveSubmittedVertices;
-        this.frameDiagnostics.spriteSubmittedVertices = spriteSubmittedVertices;
+        diagnostics.primitiveOverflowCount = primitives.getFrameOverflowCount();
+        diagnostics.primitiveSubmittedVertices = primitives.getFrameSubmittedVertices();
+        diagnostics.spriteOverflowCount = sprites.getFrameOverflowCount();
+        diagnostics.spriteSubmittedVertices = sprites.getFrameSubmittedVertices();
+        this.overlay.addDiagnostics(diagnostics);
 
         return this.frameDiagnostics;
     }
@@ -474,7 +296,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.drawRectFill(rect, paletteIndex);
+        this.scene.usePrimitives().drawRectFill(rect, paletteIndex);
     }
 
     /**
@@ -484,7 +306,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawBarFill(rect: Rect2i, paletteIndex: number): void {
-        this.getOverlayPrimitives().drawRectFill(rect, paletteIndex);
+        this.overlay.bars().drawRectFill(rect, paletteIndex);
     }
 
     /**
@@ -494,7 +316,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawBarFillOnTop(rect: Rect2i, paletteIndex: number): void {
-        this.getOverlayTopPrimitives().drawRectFill(rect, paletteIndex);
+        this.overlay.topBars().drawRectFill(rect, paletteIndex);
     }
 
     /**
@@ -516,7 +338,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawPixelXY(x: number, y: number, paletteIndex: number): void {
-        this.primitives.drawPixelXY(x, y, paletteIndex);
+        this.scene.usePrimitives().drawPixelXY(x, y, paletteIndex);
     }
 
     /**
@@ -528,7 +350,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void {
-        this.primitives.drawLine(p0, p1, paletteIndex);
+        this.scene.usePrimitives().drawLine(p0, p1, paletteIndex);
     }
 
     /**
@@ -538,7 +360,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.drawRect(rect, paletteIndex);
+        this.scene.usePrimitives().drawRect(rect, paletteIndex);
     }
 
     /**
@@ -548,7 +370,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     clearRect(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.clearRect(rect, paletteIndex);
+        this.scene.usePrimitives().clearRect(rect, paletteIndex);
     }
 
     /**
@@ -560,7 +382,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied at draw time (default 0).
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
-        this.sprites.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+        this.scene.useSprites().drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
     }
 
     /**
@@ -579,7 +401,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         paletteOffset: number,
         orientation: number,
     ): void {
-        this.sprites.drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
+        this.scene.useSprites().drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
     }
 
     /**
@@ -604,7 +426,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         paletteOffset: number,
         orientation: number,
     ): void {
-        this.sprites.drawSpriteStretched(spriteSheet, srcRect, destX, destY, destW, destH, paletteOffset, orientation);
+        this.scene
+            .useSprites()
+            .drawSpriteStretched(spriteSheet, srcRect, destX, destY, destW, destH, paletteOffset, orientation);
     }
 
     /**
@@ -617,7 +441,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
-        this.sprites.drawBitmapText(font, pos, text, paletteOffset);
+        this.scene.useSprites().drawBitmapText(font, pos, text, paletteOffset);
     }
 
     /**
@@ -629,7 +453,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
      */
     drawLabel(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
-        this.getOverlaySprites().drawBitmapText(font, pos, text, paletteOffset);
+        this.overlay.labels().drawBitmapText(font, pos, text, paletteOffset);
     }
 
     /**
@@ -641,7 +465,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
      */
     drawLabelOnTop(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
-        this.getOverlayTopSprites().drawBitmapText(font, pos, text, paletteOffset);
+        this.overlay.topLabels().drawBitmapText(font, pos, text, paletteOffset);
     }
 
     /**
@@ -652,7 +476,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame.
      */
     captureFrame(): Promise<Blob> {
-        return this.frameCapture.request();
+        return this.captures.requestOutput();
     }
 
     /**
@@ -667,7 +491,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
      */
     captureFrameAtDisplaySize(): Promise<Blob> {
-        return this.displayFrameCapture.request();
+        return this.captures.requestDisplay();
     }
 
     /**
@@ -677,15 +501,14 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
      */
     captureFrameForShortcut(): Promise<Blob> {
-        return this.shortcutFrameCapture.request();
+        return this.captures.requestShortcut();
     }
 
     /**
      * Sets the camera offset for scrolling.
      *
-     * The offset is propagated to all scene pipelines: `primitives`,
-     * `overlayPrimitives`, `overlayTopPrimitives`, `sprites`, `overlaySprites`,
-     * and `overlayTopSprites`.
+     * The offset is propagated to the demo-tier {@link SceneBatch} and the four
+     * overlay pipelines.
      *
      * @param offset - Camera position in pixels.
      */
@@ -694,12 +517,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         // this.cameraOffset in place instead of allocating a new Vector2i, while still
         // keeping the stored offset independent of the caller's `offset` object.
         offset.cloneTo(this.cameraOffset);
-        this.primitives.setCameraOffset(this.cameraOffset);
-        this.overlayPrimitives?.setCameraOffset(this.cameraOffset);
-        this.overlayTopPrimitives?.setCameraOffset(this.cameraOffset);
-        this.sprites.setCameraOffset(this.cameraOffset);
-        this.overlaySprites?.setCameraOffset(this.cameraOffset);
-        this.overlayTopSprites?.setCameraOffset(this.cameraOffset);
+        this.scene.setCameraOffset(this.cameraOffset);
+        this.overlay.setCameraOffset(this.cameraOffset);
     }
 
     /**
@@ -719,12 +538,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         // to the frozen Vector2i.zero() singleton (setCameraOffset()'s cloneTo() would then
         // try to mutate a frozen object on the next call).
         this.cameraOffset.set(0, 0);
-        this.primitives.setCameraOffset(this.cameraOffset);
-        this.overlayPrimitives?.setCameraOffset(this.cameraOffset);
-        this.overlayTopPrimitives?.setCameraOffset(this.cameraOffset);
-        this.sprites.setCameraOffset(this.cameraOffset);
-        this.overlaySprites?.setCameraOffset(this.cameraOffset);
-        this.overlayTopSprites?.setCameraOffset(this.cameraOffset);
+        this.scene.setCameraOffset(this.cameraOffset);
+        this.overlay.setCameraOffset(this.cameraOffset);
     }
 
     /**
@@ -741,19 +556,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      *   set in `configure()`.
      */
     addEffect(effect: Effect): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.addEffect: renderer not initialized.');
-        }
-
-        if (effect.tier === 'display' && !this.isDisplayTierEnabled) {
-            throw new Error(
-                'WebGPURenderer.addEffect: display-tier effects require drawingBufferSize to be set in configure().',
-            );
-        }
-
-        const chain = effect.tier === 'pixel' ? this.pixelChain : this.displayChain;
-
-        chain.add(effect);
+        this.post.add(effect);
     }
 
     /**
@@ -768,16 +571,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @throws If the renderer has not been initialized.
      */
     removeEffect(effect: Effect): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.removeEffect: renderer not initialized.');
-        }
-
-        const [primary, fallback] =
-            effect.tier === 'pixel' ? [this.pixelChain, this.displayChain] : [this.displayChain, this.pixelChain];
-
-        if (!primary.remove(effect)) {
-            fallback.remove(effect);
-        }
+        this.post.remove(effect);
     }
 
     /**
@@ -786,28 +580,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @throws If the renderer has not been initialized.
      */
     clearEffects(): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.clearEffects: renderer not initialized.');
-        }
-
-        this.pixelChain.clear();
-        this.displayChain.clear();
-    }
-
-    /**
-     * Rejects any pending display-size capture (public or shortcut slot). Called when
-     * {@link resolvePass} is gone - during teardown / device-loss re-init, and from
-     * {@link submitFrame} when a frame is submitted without it - so an awaited capture
-     * fails with a clear message instead of hanging forever.
-     *
-     * @param message - Rejection message.
-     */
-    private rejectPendingDisplayCaptures(message: string): void {
-        for (const capture of this.displayCaptureSlots) {
-            if (capture.hasPending()) {
-                capture.reject(new Error(message));
-            }
-        }
+        this.post.clear();
     }
 
     /**
@@ -824,12 +597,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         } catch (error) {
             console.error('[WebGPURenderer] Failed to get current texture:', error);
 
-            this.primitives.reset();
-            this.overlayPrimitives?.reset();
-            this.overlayTopPrimitives?.reset();
-            this.sprites.reset();
-            this.overlaySprites?.reset();
-            this.overlayTopSprites?.reset();
+            this.scene.reset();
+            this.overlay.reset();
 
             return null;
         }
@@ -837,184 +606,13 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         if (swapTexture.width === 0 || swapTexture.height === 0) {
             console.warn('[WebGPURenderer] Texture has zero dimensions, skipping frame');
 
-            this.primitives.reset();
-            this.overlayPrimitives?.reset();
-            this.overlayTopPrimitives?.reset();
-            this.sprites.reset();
-            this.overlaySprites?.reset();
-            this.overlayTopSprites?.reset();
+            this.scene.reset();
+            this.overlay.reset();
 
             return null;
         }
 
         return swapTexture;
-    }
-
-    /**
-     * (Re)initializes an overlay primitive pipeline for {@link init}.
-     *
-     * Constructs a new pipeline only when `existing` is `null` and {@link isOverlayEnabled}
-     * is true; otherwise reuses `existing` as-is. An already-allocated pipeline (whether from
-     * a prior lazy draw call or a prior `init()`) is always re-initialized, since `init()` may
-     * be re-entered for device-loss recovery.
-     *
-     * @param existing - Current pipeline instance, or `null` if not yet allocated.
-     * @returns The pipeline to store, or `null` when overlay stays disabled and unallocated.
-     */
-    private async initOverlayPrimitivePipeline(existing: PrimitivePipeline | null): Promise<PrimitivePipeline | null> {
-        if (!existing && !this.isOverlayEnabled) {
-            return null;
-        }
-
-        const pipeline = existing ?? new PrimitivePipeline();
-
-        await pipeline.init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT);
-        pipeline.setCameraOffset(this.cameraOffset);
-
-        return pipeline;
-    }
-
-    /**
-     * (Re)initializes an overlay sprite pipeline for {@link init}.
-     *
-     * Constructs a new pipeline only when `existing` is `null` and {@link isOverlayEnabled}
-     * is true; otherwise reuses `existing` as-is. An already-allocated pipeline (whether from
-     * a prior lazy draw call or a prior `init()`) is always re-initialized, since `init()` may
-     * be re-entered for device-loss recovery.
-     *
-     * @param existing - Current pipeline instance, or `null` if not yet allocated.
-     * @returns The pipeline to store, or `null` when overlay stays disabled and unallocated.
-     */
-    private async initOverlaySpritePipeline(existing: SpritePipeline | null): Promise<SpritePipeline | null> {
-        if (!existing && !this.isOverlayEnabled) {
-            return null;
-        }
-
-        const pipeline = existing ?? new SpritePipeline();
-
-        await pipeline.init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT);
-        pipeline.setCameraOffset(this.cameraOffset);
-
-        return pipeline;
-    }
-
-    /**
-     * Logs a lazy overlay pipeline's initialization failure and clears its field back to
-     * `null` via `clearField`, so the next draw call retries construction from scratch
-     * instead of reusing an instance whose GPU resources never finished initializing (its
-     * `vertexBuffer`/`pipeline` would still be `null`, which would otherwise crash
-     * `encodePass()` on the next `endFrame()`).
-     *
-     * @param pipelineName - Field name for the log message (e.g. `'overlayPrimitives'`).
-     * @param clearField - Callback that resets the owning field to `null`.
-     * @param error - Rejection reason from the pipeline's `init()` call.
-     */
-    private handleLazyOverlayInitFailure(pipelineName: string, clearField: () => void, error: unknown): void {
-        console.error(`[WebGPURenderer] Failed to initialize ${pipelineName} pipeline:`, error);
-        clearField();
-    }
-
-    /**
-     * Returns the overlay-primitive pipeline used by {@link drawBarFill}, lazily constructing
-     * and initializing it on first use.
-     *
-     * `PrimitivePipeline.init()` performs only synchronous WebGPU calls today (no real
-     * `await` inside it), so its GPU/CPU setup completes before this method returns even
-     * though the returned promise is intentionally not awaited here - `drawBarFill()` is a
-     * synchronous public API and cannot await. If `PrimitivePipeline.init()` ever gains real
-     * async work, this call site needs to change too. A rejection (e.g. GPU resource creation
-     * failure) is caught via {@link handleLazyOverlayInitFailure} rather than left as an
-     * unhandled rejection.
-     *
-     * @returns Initialized overlay-primitive pipeline.
-     */
-    private getOverlayPrimitives(): PrimitivePipeline {
-        if (!this.overlayPrimitives) {
-            this.overlayPrimitives = new PrimitivePipeline();
-            void this.overlayPrimitives
-                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
-                .catch((error: unknown) => {
-                    this.handleLazyOverlayInitFailure(
-                        'overlayPrimitives',
-                        () => (this.overlayPrimitives = null),
-                        error,
-                    );
-                });
-            this.overlayPrimitives.setCameraOffset(this.cameraOffset);
-        }
-
-        return this.overlayPrimitives;
-    }
-
-    /**
-     * Returns the overlay-top-primitive pipeline used by {@link drawBarFillOnTop}, lazily
-     * constructing and initializing it on first use. See {@link getOverlayPrimitives} for why
-     * the un-awaited `init()` call is safe and how a failure is handled.
-     *
-     * @returns Initialized overlay-top-primitive pipeline.
-     */
-    private getOverlayTopPrimitives(): PrimitivePipeline {
-        if (!this.overlayTopPrimitives) {
-            this.overlayTopPrimitives = new PrimitivePipeline();
-            void this.overlayTopPrimitives
-                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
-                .catch((error: unknown) => {
-                    this.handleLazyOverlayInitFailure(
-                        'overlayTopPrimitives',
-                        () => (this.overlayTopPrimitives = null),
-                        error,
-                    );
-                });
-            this.overlayTopPrimitives.setCameraOffset(this.cameraOffset);
-        }
-
-        return this.overlayTopPrimitives;
-    }
-
-    /**
-     * Returns the overlay-sprite pipeline used by {@link drawLabel}, lazily constructing and
-     * initializing it on first use. See {@link getOverlayPrimitives} for why the un-awaited
-     * `init()` call is safe and how a failure is handled.
-     *
-     * @returns Initialized overlay-sprite pipeline.
-     */
-    private getOverlaySprites(): SpritePipeline {
-        if (!this.overlaySprites) {
-            this.overlaySprites = new SpritePipeline();
-            void this.overlaySprites
-                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
-                .catch((error: unknown) => {
-                    this.handleLazyOverlayInitFailure('overlaySprites', () => (this.overlaySprites = null), error);
-                });
-            this.overlaySprites.setCameraOffset(this.cameraOffset);
-        }
-
-        return this.overlaySprites;
-    }
-
-    /**
-     * Returns the overlay-top-sprite pipeline used by {@link drawLabelOnTop}, lazily
-     * constructing and initializing it on first use. See {@link getOverlayPrimitives} for why
-     * the un-awaited `init()` call is safe and how a failure is handled.
-     *
-     * @returns Initialized overlay-top-sprite pipeline.
-     */
-    private getOverlayTopSprites(): SpritePipeline {
-        if (!this.overlayTopSprites) {
-            this.overlayTopSprites = new SpritePipeline();
-            void this.overlayTopSprites
-                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
-                .catch((error: unknown) => {
-                    this.handleLazyOverlayInitFailure(
-                        'overlayTopSprites',
-                        () => (this.overlayTopSprites = null),
-                        error,
-                    );
-                });
-            this.overlayTopSprites.setCameraOffset(this.cameraOffset);
-        }
-
-        return this.overlayTopSprites;
     }
 
     /**
@@ -1035,9 +633,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Encodes the scene render pass into the supplied target view.
      *
-     * Draw order: `primitives`, `sprites`, `overlayPrimitives` (overlay bars via
-     * {@link drawBarFill}), `overlaySprites` (overlay labels via {@link drawLabel}),
-     * `overlayTopPrimitives` ({@link drawBarFillOnTop}), then `overlayTopSprites`
+     * Draw order: the demo tier ({@link SceneBatch}, primitives and sprites in call
+     * order), then the overlay tiers ({@link OverlayPipelines}): bars ({@link drawBarFill}),
+     * labels ({@link drawLabel}), top bars ({@link drawBarFillOnTop}), top labels
      * ({@link drawLabelOnTop}).
      *
      * @param encoder - Active command encoder.
@@ -1062,49 +660,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             ],
         });
 
-        this.primitives.encodePass(renderPass);
-        this.sprites.encodePass(renderPass);
-        this.overlayPrimitives?.encodePass(renderPass);
-        this.overlaySprites?.encodePass(renderPass);
-        this.overlayTopPrimitives?.encodePass(renderPass);
-        this.overlayTopSprites?.encodePass(renderPass);
+        this.scene.encode(renderPass);
+        this.overlay.encode(renderPass);
 
         renderPass.end();
-    }
-
-    /**
-     * Encodes the optional pixel chain, upscale pass, and display chain in the
-     * correct order based on which chains are active.
-     *
-     * @param encoder - Active command encoder.
-     * @param swapChainView - Current swap-chain view (final destination).
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
-     * @param isDisplayChainActive - Whether the display chain has any registered effects.
-     * @param deltaMs - Milliseconds of effect time since the previous frame.
-     */
-    private encodePostProcess(
-        encoder: GPUCommandEncoder,
-        swapChainView: GPUTextureView,
-        isPixelChainActive: boolean,
-        isDisplayChainActive: boolean,
-        deltaMs: number,
-    ): void {
-        if (isPixelChainActive && this.pixelChain) {
-            this.pixelChain.encode(encoder, deltaMs, this.pixelChainDestView());
-        }
-
-        // Resolve logical r8uint indices into RGBA (and upscale if needed) before
-        // any display-tier RGBA effects run.
-        if (this.resolvePass) {
-            const resolveSrc = this.requireSceneTexView();
-            const resolveDest = isDisplayChainActive ? this.requireDisplayChainInput() : swapChainView;
-
-            this.resolvePass.encode(encoder, resolveSrc, resolveDest, this.displaySize);
-        }
-
-        if (isDisplayChainActive && this.displayChain) {
-            this.displayChain.encode(encoder, deltaMs, swapChainView);
-        }
     }
 
     /**
@@ -1115,159 +674,15 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param swapTexture - Current swap-chain texture (capture source).
      */
     private submitFrame(encoder: GPUCommandEncoder, swapTexture: GPUTexture): void {
-        const isCapturing = this.frameCapture.hasPending();
-
-        if (isCapturing) {
-            this.frameCapture.executeInEncoder(this.device, swapTexture, encoder);
-        }
-
-        const isCapturingDisplaySize = this.encodeDisplayCaptures(encoder);
-
+        this.post.encodeCaptures(this.captures, encoder, swapTexture);
         this.device.queue.submit([encoder.finish()]);
-
-        if (isCapturing) {
-            void this.frameCapture.resolve(this.device);
-        }
-
-        if (isCapturingDisplaySize) {
-            for (const capture of this.displayCaptureSlots) {
-                if (capture.hasPending()) {
-                    void capture.resolve(this.device);
-                }
-            }
-        }
+        this.captures.resolve();
 
         // Defensive reset so the pipeline state is clean even if beginFrame() is not
         // called next. beginFrame() also resets; this prevents stale data from
         // persisting across frames.
-        this.primitives.reset();
-        this.overlayPrimitives?.reset();
-        this.overlayTopPrimitives?.reset();
-        this.sprites.reset();
-        this.overlaySprites?.reset();
-        this.overlayTopSprites?.reset();
-    }
-
-    /**
-     * Picks the texture view the scene render pass should target this frame.
-     *
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
-     * @returns Stable view to render the scene into.
-     */
-    private resolveSceneView(isPixelChainActive: boolean): GPUTextureView {
-        if (isPixelChainActive && this.pixelChain) {
-            return this.pixelChain.getInputView();
-        }
-
-        // Logical scene is always index-native. It must be resolved to RGBA in a
-        // dedicated pass, even when output size equals logical size and no effects
-        // are active.
-        return this.requireSceneTexView();
-    }
-
-    /**
-     * Picks the destination view for the pixel chain's last pass.
-     *
-     * @returns Destination view for the final pixel-chain pass.
-     */
-    private pixelChainDestView(): GPUTextureView {
-        return this.requireSceneTexView();
-    }
-
-    /**
-     * Lazily allocates the logical-resolution scene framebuffer and returns its view.
-     *
-     * @returns Stable view of the scene framebuffer.
-     */
-    private requireSceneTexView(): GPUTextureView {
-        if (!this.sceneTexView) {
-            this.sceneTex = this.device.createTexture({
-                label: 'Renderer Scene Framebuffer',
-                size: { width: this.displaySize.x, height: this.displaySize.y, depthOrArrayLayers: 1 },
-                format: LOGICAL_TARGET_FORMAT,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-            });
-
-            this.sceneTexView = this.sceneTex.createView();
-        }
-
-        return this.sceneTexView;
-    }
-
-    /**
-     * Records the display-size readback for every pending slot in
-     * {@link displayCaptureSlots}: one resolve pass into the shared capture target, then
-     * one texture-to-buffer copy per pending slot. Without {@link resolvePass} (teardown /
-     * device-loss window) the pending captures are rejected instead of left hanging.
-     *
-     * @param encoder - Active command encoder.
-     * @returns `true` when at least one display-size capture was recorded.
-     */
-    private encodeDisplayCaptures(encoder: GPUCommandEncoder): boolean {
-        if (!this.displayCaptureSlots.some((capture) => capture.hasPending())) {
-            return false;
-        }
-
-        if (!this.resolvePass) {
-            this.rejectPendingDisplayCaptures("Can't capture frame: renderer resolve pass not initialized");
-
-            return false;
-        }
-
-        const destView = this.requireDisplayCaptureTexView();
-
-        this.resolvePass.encode(encoder, this.requireSceneTexView(), destView, this.displaySize);
-
-        if (this.displayCaptureTex) {
-            for (const capture of this.displayCaptureSlots) {
-                if (capture.hasPending()) {
-                    capture.executeInEncoder(this.device, this.displayCaptureTex, encoder);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Lazily allocates the display-size (logical) RGBA capture target used by
-     * {@link captureFrameAtDisplaySize} and returns its view.
-     *
-     * @returns Stable view of the display-size capture target.
-     */
-    private requireDisplayCaptureTexView(): GPUTextureView {
-        if (!this.displayCaptureTexView) {
-            if (!this.swapFormat) {
-                throw new Error('WebGPURenderer.requireDisplayCaptureTexView: swap format not initialized.');
-            }
-
-            this.displayCaptureTex = this.device.createTexture({
-                label: 'Renderer Display-Size Capture Target',
-                size: { width: this.displaySize.x, height: this.displaySize.y, depthOrArrayLayers: 1 },
-                format: this.swapFormat,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-            });
-
-            this.displayCaptureTexView = this.displayCaptureTex.createView();
-        }
-
-        return this.displayCaptureTexView;
-    }
-
-    /**
-     * Returns the display chain's input view, which becomes the upscale pass's
-     * destination when the display chain is active.
-     *
-     * @returns Stable input view of the display chain.
-     */
-    private requireDisplayChainInput(): GPUTextureView {
-        const chain = this.displayChain;
-
-        if (!chain?.isActive()) {
-            throw new Error('WebGPURenderer.requireDisplayChainInput: display chain inactive.');
-        }
-
-        return chain.getInputView();
+        this.scene.reset();
+        this.overlay.reset();
     }
 
     /**

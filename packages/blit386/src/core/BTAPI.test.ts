@@ -1961,6 +1961,22 @@ describe('BTAPI', () => {
             expect(clearEffects).toHaveBeenCalledTimes(1);
         });
 
+        it('should reject a captureFrame still pending when init restarts (BT-756)', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const firstRenderer = BTAPI.instance.getRenderer();
+
+            if (firstRenderer === null) {
+                throw new Error('expected a renderer after init');
+            }
+
+            const pending = firstRenderer.captureFrame();
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            await expect(pending).rejects.toThrow('renderer was reset');
+        });
+
         it('should release the old device and renderer when a restart has invalid settings', async () => {
             expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
 

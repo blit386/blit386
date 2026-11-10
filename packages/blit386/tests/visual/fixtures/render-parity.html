@@ -1,0 +1,133 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Render Backend Parity (BT-756)</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+            // Signal test readiness regardless of success/failure.
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
+
+            // BT-756 cases where WebGPU used to draw differently from the software blit. The hash picks one:
+            // '#order' a sprite then a rect fill over it, '#reverse' the opposite, '#text' system text under
+            // a later rect outline, '#sizes' empty and negative rects and sprite sources beside a 1px-tall outline,
+            // '#alpha' a half-transparent slot over opaque draws, '#oob' sprite sources running past the sheet edge.
+            const mode = location.hash.slice(1);
+            const BG = 1;
+            const RED = 2;
+            const GREEN = 3;
+            const WHITE = 4;
+            const HALF_GREEN = 5;
+            const BLOCK = 16;
+
+            function createPalette() {
+                const palette = new Palette(16);
+
+                palette.set(BG, new Color32(0, 0, 0, 255));
+                palette.set(RED, new Color32(255, 0, 0, 255));
+                palette.set(GREEN, new Color32(0, 255, 0, 255));
+                palette.set(WHITE, new Color32(255, 255, 255, 255));
+                palette.set(HALF_GREEN, new Color32(0, 255, 0, 128));
+
+                return palette;
+            }
+
+            // A solid 16x16 block of the RED slot.
+            function createSheet() {
+                return SpriteSheet.fromIndexedPixels(BLOCK, BLOCK, new Uint8Array(BLOCK * BLOCK).fill(RED));
+            }
+
+            class RenderParityTest {
+                sheet = null;
+
+                configure() {
+                    // No blit386() Vite plugin here, so disable the splash.
+                    return { isSplashEnabled: false, displaySize: new Vector2i(320, 240), targetFPS: 60 };
+                }
+
+                async init() {
+                    BT.paletteSet(createPalette());
+                    this.sheet = createSheet();
+
+                    return true;
+                }
+
+                update() {}
+
+                render() {
+                    BT.clear(BG);
+
+                    const src = new Rect2i(0, 0, BLOCK, BLOCK);
+
+                    if (mode === 'order') {
+                        // The bar is drawn last, so it must cover the middle of the sprite on both backends.
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), GREEN);
+                    } else if (mode === 'reverse') {
+                        // The sprite is drawn last, so it must cover the middle of the bar.
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), GREEN);
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                    } else if (mode === 'text') {
+                        // A later outline crosses the glyphs, then a later sprite covers part of the outline.
+                        BT.systemPrint(new Vector2i(10, 10), WHITE, 'ORDER');
+                        BT.drawRect(new Rect2i(8, 12, 40, 3), GREEN);
+                        BT.drawSprite(this.sheet, src, new Vector2i(30, 8));
+                    } else if (mode === 'sizes') {
+                        // Every draw except the last one has a zero or negative size and must draw nothing.
+                        BT.drawRectFill(new Rect2i(40, 40, -20, 8), GREEN);
+                        BT.drawRect(new Rect2i(60, 40, 0, 3), GREEN);
+                        BT.clearRect(new Rect2i(70, 40, 4, -2), GREEN);
+                        BT.drawSprite(this.sheet, new Rect2i(2, 0, -1, 2), new Vector2i(80, 40));
+                        BT.drawSprite(this.sheet, new Rect2i(2, 0, -1, 2), new Rect2i(100, 40, 8, 8), {});
+                        BT.drawSprite(this.sheet, src, new Rect2i(120, 40, -8, 8), {});
+                        BT.drawRect(new Rect2i(10, 60, 6, 1), WHITE);
+                    } else if (mode === 'alpha') {
+                        // The half slot replaces what is under it, so the black page shows through at 50%.
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), HALF_GREEN);
+                        BT.drawLine(new Vector2i(8, 40), new Vector2i(40, 50), HALF_GREEN);
+                        BT.systemPrint(new Vector2i(10, 60), HALF_GREEN, 'HALF');
+                    } else if (mode === 'oob') {
+                        // Only the part of each source inside the 16x16 sheet draws; the rest stays background.
+                        BT.drawRectFill(new Rect2i(0, 0, 120, 40), GREEN);
+                        BT.drawSprite(this.sheet, new Rect2i(8, 8, 16, 16), new Vector2i(4, 4));
+                        BT.drawSprite(this.sheet, new Rect2i(-4, -4, 12, 12), new Vector2i(28, 4));
+                        BT.drawSprite(this.sheet, new Rect2i(8, 0, 16, 8), new Rect2i(48, 4, 32, 16), {});
+                        BT.drawSprite(this.sheet, new Rect2i(8, 0, 16, 8), new Vector2i(88, 4), { flags: BT.ROT_90_CW });
+                    }
+
+                    // Signal render complete, publishing the backend that actually started.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(RenderParityTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

@@ -35,8 +35,6 @@ export class PixelGlitch extends FullscreenPixelEffect {
     /** vec2 resolution + intensity + bandHeight + seed + 3 pads = 32 bytes. */
     protected readonly uniformBytes = 32;
 
-    protected readonly fragmentShaderRgba = UNSUPPORTED_WGSL;
-
     protected readonly fragmentShaderUint = FRAGMENT_UINT_WGSL;
 
     /**
@@ -59,28 +57,6 @@ export class PixelGlitch extends FullscreenPixelEffect {
         u[4] = this.seed;
     }
 }
-
-/** Unused RGBA path retained only so {@link FullscreenPixelEffect} can compile both branches. */
-const UNSUPPORTED_WGSL = `
-struct Params {
-    resolution: vec2<f32>,
-    intensity: f32,
-    bandHeight: f32,
-    seed: f32,
-    _pad0: f32,
-    _pad1: f32,
-    _pad2: f32,
-}
-
-@group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var src: texture_2d<f32>;
-@group(0) @binding(2) var samp: sampler;
-
-@fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
-}
-`;
 
 const FRAGMENT_UINT_WGSL = `
 struct Params {

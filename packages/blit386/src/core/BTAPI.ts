@@ -2679,6 +2679,8 @@ export class BTAPI {
             this.renderer?.clearEffects();
         }
 
+        // Before the device goes, so a captureFrame() still pending rejects instead of hanging.
+        this.renderer?.destroy();
         this.device?.destroy();
         this.device = null;
         this.context = null;

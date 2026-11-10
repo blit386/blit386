@@ -18,6 +18,9 @@ import type { Effect } from './effects/Effect';
  * 1. Call {@link IRenderer.init} once after construction.
  * 2. Per frame: {@link IRenderer.beginFrame} -> draw calls -> {@link IRenderer.endFrame}.
  * 3. Palette must be set via {@link IRenderer.setPalette} before the first {@link IRenderer.beginFrame}.
+ *
+ * Every backend draws in call order and draws nothing for a rect, sprite source, or stretch target
+ * whose width or height is zero or less; the software backend is the pixel spec.
  */
 export interface IRenderer {
     /**
@@ -217,6 +220,15 @@ export interface IRenderer {
      * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
      */
     captureFrameForShortcut(): Promise<Blob>;
+
+    /**
+     * Rejects every pending capture and releases the frame resources the backend holds outside
+     * its draw pipelines (on WebGPU the palette buffer, effect chains, and frame textures). Pipeline
+     * buffers stay; the engine destroys the `GPUDevice` right after. The engine calls it when it drops
+     * a renderer (a `BT.init` restart), so an awaited `BT.captureFrame()` fails instead of hanging.
+     * {@link init} calls it first on a re-run.
+     */
+    destroy(): void;
 
     /**
      * Sets the camera offset for scrolling.
