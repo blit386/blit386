@@ -210,6 +210,20 @@ describe('transformBody MDX component depth (BT-774)', () => {
     });
 });
 
+describe('transformBody link targets (BT-774)', () => {
+    const API_DIR = 'packages/website/scripts/__fixtures__/sync-docs/api';
+
+    test('keeps a link title out of the rewritten path', () => {
+        const { body } = transformBody('[api](renderer.md "The renderer")', API_DIR);
+        assert.equal(body, '[api](/docs/api/renderer "The renderer")');
+    });
+
+    test('keeps balanced parentheses inside the target', () => {
+        const { body } = transformBody('[notes](notes_(draft).md) after', API_DIR);
+        assert.equal(body, `[notes](https://github.com/blit386/blit386/blob/main/${API_DIR}/notes_(draft).md) after`);
+    });
+});
+
 describe('MDX_COMPONENTS matches press.config.tsx (BT-774)', () => {
     test('lists exactly the PascalCase components the site registers', () => {
         const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
