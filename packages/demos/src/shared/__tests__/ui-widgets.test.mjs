@@ -633,8 +633,44 @@ describe('press ownership', () => {
 
         const one = ctx.hitRects.get('One');
 
-        // The 1 px band inside both inflated rects; the upper button's center is nearer.
+        // The 1 px band inside both inflated rects; the upper button's rect is nearer.
         pressY = one.y + one.h + 2;
         assert.deepEqual(frame(), [true, false]);
+    });
+
+    it('claims a press once, at the first begin() of its frame', (t) => {
+        // Later groups' begin() calls run after earlier groups' end() rewrote their rects, so
+        // a second claim in the same frame could see a mix of this frame's and last frame's.
+        let pressed = false;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: (_button, slot) => pressed && slot === 0,
+            isDown: (_button, slot) => pressed && slot === 0,
+            pointerPos: () => ({ x: 11, y: 10 }),
+        });
+
+        const ctx = createReadyContext();
+        const claims = t.mock.method(ctx, 'nearestWidgetAt');
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            checkbox(ctx, 'Left', false);
+            ctx.end();
+            ctx.begin(UI_ANCHORS.TOP_RIGHT);
+            checkbox(ctx, 'Right', false);
+            ctx.end();
+        };
+
+        frame();
+        pressed = true;
+        frame();
+        assert.equal(claims.mock.callCount(), 1);
+
+        // Released, then pressed again: a new press gets a new claim.
+        pressed = false;
+        frame();
+        pressed = true;
+        frame();
+        assert.equal(claims.mock.callCount(), 2);
     });
 });

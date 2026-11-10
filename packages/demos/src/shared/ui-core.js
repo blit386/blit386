@@ -205,7 +205,8 @@ class UiContext extends UiInput {
      * Per-frame bookkeeping, run by whichever kit call comes first in a frame (begin(), the
      * D-pad, a tooltip) and skipped by the rest. Prunes with the ids the previous frame
      * flushed, so a widget that stopped being declared drops out of hitRects instead of
-     * leaving a dead zone, starts a fresh recorded group list, and reads the display size.
+     * leaving a dead zone, clears the press claims, starts a fresh recorded group list,
+     * and reads the display size.
      */
     startFrame() {
         const ticks = BT.ticks;
@@ -217,6 +218,7 @@ class UiContext extends UiInput {
         this.frameTick = ticks;
 
         this.pruneHitRects();
+        this.pressClaimed.fill(false);
         this.frameGroups.length = 0;
         this.display = BT.displaySize;
         this.renderedSinceTick = true;

@@ -133,6 +133,12 @@ class UiInput {
     /** @type {(string | null)[]} */
     pressOwner = [null, null, null, null];
 
+    // Whether each slot's current press edge has claimed a widget. The edge stays true for
+    // every begin() in its frame, but later groups run after earlier ones rewrote their
+    // rects, so once a widget is claimed the rest of the frame keeps it. Cleared when the
+    // edge is gone and at every new frame (UiContext.startFrame()).
+    pressClaimed = [false, false, false, false];
+
     // Scratch state for nearestWidgetAt(); the visitor is created once so the scan
     // allocates nothing.
     claimX = 0;
@@ -257,9 +263,16 @@ class UiInput {
             }
 
             if (p.pressed) {
-                this.pressOwner[slot] = this.nearestWidgetAt(p.x, p.y);
-            } else if (!p.down) {
-                this.pressOwner[slot] = null;
+                if (!this.pressClaimed[slot]) {
+                    this.pressOwner[slot] = this.nearestWidgetAt(p.x, p.y);
+                    this.pressClaimed[slot] = this.pressOwner[slot] !== null;
+                }
+            } else {
+                this.pressClaimed[slot] = false;
+
+                if (!p.down) {
+                    this.pressOwner[slot] = null;
+                }
             }
         }
 
