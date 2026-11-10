@@ -19,6 +19,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | Question | Where to look |
 | --- | --- |
 | Is this API exported publicly? | The trailing `export { ... }` / `export type { ... }` block at the end of `src/BLIT386.ts` |
+| Where is a `BT` member defined? | `src/bt/<part>.ts` (`lifecycle`, `audio`, `palette`, `effects`, `draw`, `camera`, `pointer`, `buttons`, `constants`); `src/BLIT386.ts` merges the parts into `BT` with `Object.defineProperties`, so getters stay getters. Shared helpers live in `src/bt/internal.ts` |
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` - not docs |
 | What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) - not docs |
 | What error message style should I use? | `docs/voice.md`, then the domain files in `src/utils/errorMessages/`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
@@ -68,16 +69,16 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 - Pointer previous state has two clocks: `PointerInput.endUpdate` rolls the update clock right after `demo.update()`,
   `PointerInput.endFrame` rolls the frame clock at the end of each rendered frame. `BT.isPressed` / `BT.isReleased` for
   `BTN_POINTER_*`, `BT.pointerDelta(To)`, and `BT.pointerScrollDelta` read the update clock inside `update()` and the
-  frame clock elsewhere (`pointerClock()` in `BLIT386.ts`); the overlay reads the frame clock. Keyboard and gamepad have
-  one clock: press/release edges and `inputString` clear once per fixed-update tick (`KeyboardInput.endUpdate` /
-  `GamepadInput.endUpdate`, right after `demo.update()`), which always runs before that frame's `render()`; the gamepad
-  is still polled once per render frame (`GamepadInput.endFrame`), and that poll never rolls edges over. Call
-  `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, `BT.isPressed` / `BT.isReleased` for keyboard and gamepad
-  buttons, and `BT.isAnyKey*` / `BT.isAnyButton*` edges from `update()`, never `render()` - reading an edge from
-  `render()` races the update tick that already cleared it and intermittently misses presses under rapid input.
-  `BT.isKeyDown` / `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing
-  semantics) and the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were
-  dropped ~20% of the time because the overlay itself read the toggle key's edge from the render phase
+  frame clock elsewhere (`pointerClock()` in `src/bt/internal.ts`); the overlay reads the frame clock. Keyboard and
+  gamepad have one clock: press/release edges and `inputString` clear once per fixed-update tick
+  (`KeyboardInput.endUpdate` / `GamepadInput.endUpdate`, right after `demo.update()`), which always runs before that
+  frame's `render()`; the gamepad is still polled once per render frame (`GamepadInput.endFrame`), and that poll never
+  rolls edges over. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, `BT.isPressed` / `BT.isReleased` for
+  keyboard and gamepad buttons, and `BT.isAnyKey*` / `BT.isAnyButton*` edges from `update()`, never `render()` - reading
+  an edge from `render()` races the update tick that already cleared it and intermittently misses presses under rapid
+  input. `BT.isKeyDown` / `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md`
+  (Frame-timing semantics) and the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine
+  overlay were dropped ~20% of the time because the overlay itself read the toggle key's edge from the render phase
 - Pointer input that lands in a render frame with no `update()` step (display faster than `targetFPS`) - press, release,
   movement, wheel - reaches the next `update()`, and a frame with several updates reports each pointer edge to the first
   only; render-side readers (the overlay) still see each edge once per rendered frame. A down and up that both land

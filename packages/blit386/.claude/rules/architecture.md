@@ -9,7 +9,18 @@ The file tree below is illustrative, not exhaustive - it highlights notable subs
 
 ```text
 src/
-  BLIT386.ts              # Public API (BT namespace + export block for classes, helpers, presets)
+  BLIT386.ts              # Public API: merges the src/bt/ parts into the BT namespace (Object.defineProperties, so getters stay getters) + export block for classes, helpers, presets
+  bt/
+    constants.ts          # FLIP_* / ROT_* / BTN_* / PLAYER_* / AXIS_* and the default keyboard tables
+    lifecycle.ts          # init, size and time getters, readiness, splash, testState, captureFrame, renderAt, resume, downloadFrame
+    audio.ts              # Bus volume and mute, sound effects, music, synth presets
+    palette.ts            # Active palette, palette effects, BT.random, spritesRefresh
+    effects.ts            # effectAdd / effectRemove / effectClear and the BT.preset stacks
+    draw.ts               # Clearing, primitives, system and bitmap text, sprites, tiles, nine-slice
+    camera.ts             # cameraSet, camera, cameraClamp, cameraReset
+    pointer.ts            # Pointer position / delta / scroll / activity, cursor
+    buttons.ts            # Button, key, and gamepad state and edges, keyboard maps, axes, any-key / any-button
+    internal.ts           # Shared helpers: beginner runtime errors, drawReady, pointerClock, settingsOrDefault (not public)
   docs/
     consumer-doc-imports.test.ts # Guards README/docs import paths against BLIT386.ts exports
   core/

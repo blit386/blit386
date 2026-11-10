@@ -108,36 +108,67 @@ const BT_DECLARATION_OPENERS = [
     /\binterface\s+BT\s*\{/,
 ];
 
+/** `BT` typed as an intersection of its parts: `declare const BT: typeof constants & typeof lifecycle;`. */
+const BT_INTERSECTION_DECLARATION = /(?:export\s+)?declare\s+const\s+BT\s*:\s*((?:typeof\s+\w+\s*&?\s*)+);/;
+
 /**
- * Extracts the `{ ... }` body of the public `BT` declaration from rolled-up `.d.ts` text.
+ * Returns the balanced `{ ... }` block that starts at the first `{` after `fromIndex`.
+ *
+ * @param {string} text Text to scan.
+ * @param {number} fromIndex Where the declaration opener matched.
+ * @returns {string | null} Balanced brace block, or null when it never closes.
+ */
+function braceBlockAfter(text, fromIndex) {
+    const openBrace = text.indexOf('{', fromIndex);
+    if (openBrace < 0) {
+        return null;
+    }
+
+    const body = text.slice(openBrace);
+    let depth = 0;
+    for (let i = 0; i < body.length; i++) {
+        const char = body.charAt(i);
+        if (char === '{') {
+            depth++;
+        } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+                return body.slice(0, i + 1);
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Extracts the `{ ... }` body of the public `BT` declaration from rolled-up `.d.ts` text. When `BT` is typed as an
+ * intersection of `typeof` parts (the facade assembled from `src/bt/`), returns each part's block joined by newlines.
  *
  * @param {string} dtsText Contents of `dist/blit386.d.ts`.
- * @returns {string | null} Balanced brace block for `BT`, or null when not found.
+ * @returns {string | null} Balanced brace block(s) for `BT`, or null when not found.
  */
 export function extractBtDeclarationBlock(dtsText) {
+    const intersection = BT_INTERSECTION_DECLARATION.exec(dtsText);
+    if (intersection) {
+        const blocks = [...intersection[1].matchAll(/typeof\s+(\w+)/g)].map(([, part]) => {
+            const opener = new RegExp(`declare\\s+const\\s+${part}\\s*:\\s*\\{`).exec(dtsText);
+
+            return opener ? braceBlockAfter(dtsText, opener.index) : null;
+        });
+
+        return blocks.every((block) => block !== null) ? blocks.join('\n') : null;
+    }
+
     for (const opener of BT_DECLARATION_OPENERS) {
         const match = opener.exec(dtsText);
         if (!match) {
             continue;
         }
 
-        const openBrace = dtsText.indexOf('{', match.index);
-        if (openBrace < 0) {
-            continue;
-        }
-
-        const body = dtsText.slice(openBrace);
-        let depth = 0;
-        for (let i = 0; i < body.length; i++) {
-            const char = body.charAt(i);
-            if (char === '{') {
-                depth++;
-            } else if (char === '}') {
-                depth--;
-                if (depth === 0) {
-                    return body.slice(0, i + 1);
-                }
-            }
+        const block = braceBlockAfter(dtsText, match.index);
+        if (block !== null) {
+            return block;
         }
     }
 

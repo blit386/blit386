@@ -85,6 +85,24 @@ describe('check-declaration-tooling', () => {
         assert.equal(extractBtDeclarationBlock(dts), '{ readonly ticks: number; }');
     });
 
+    it('extractBtDeclarationBlock joins the parts of a BT typed as an intersection of typeof parts', () => {
+        const dts = [
+            'export declare const BT: typeof constants & typeof lifecycle;',
+            'declare const constants: { readonly FLIP_H: number; };',
+            'declare const lifecycle: { readonly activeBackend: Backend | null; };',
+        ].join('\n');
+        assert.equal(
+            extractBtDeclarationBlock(dts),
+            '{ readonly FLIP_H: number; }\n{ readonly activeBackend: Backend | null; }',
+        );
+    });
+
+    it('extractBtDeclarationBlock returns null when a typeof part is missing', () => {
+        const dts =
+            'export declare const BT: typeof constants & typeof lifecycle;\ndeclare const constants: { a: 1; };';
+        assert.equal(extractBtDeclarationBlock(dts), null);
+    });
+
     it('findViteDeclarationSizeFailure passes for a real-sized declaration file', () => {
         assert.deepEqual(findViteDeclarationSizeFailure(3370), []);
     });
