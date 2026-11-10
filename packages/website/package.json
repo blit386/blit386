@@ -92,6 +92,6 @@
     "twoslash": "^0.3.9",
     "typescript": "^6.0.3",
     "vitest": "^4.1.12",
-    "wrangler": "4.137.0"
+    "wrangler": "4.149.0"
   }
 }
