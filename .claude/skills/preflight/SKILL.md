@@ -38,9 +38,9 @@ whole-repo check - they never had a per-package copy to begin with, since they g
 `audit:modules:check` (the audit ledger in `.claude/skills/audit/modules.md` against the units derived from the tree).
 The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip
 `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`,
-`audit:modules:check`, and `bump:check` entirely, so a push only exercises them once the per-package checks are clean.
-That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether
-the per-package quality jobs pass.
+`audit:modules:check`, `bump:check`, and `test:root` entirely, so a push only exercises them once the per-package checks
+are clean. That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless
+of whether the per-package quality jobs pass.
 
 ## Steps
 
@@ -135,18 +135,14 @@ same scrub is inline in `packages/blit386/scripts/gen-api-history.test.mjs`. Gua
 
 ## packages/kit and packages/create-blit386
 
-Neither package has its own combined `preflight` script post-monorepo-merge (the old `create-blit386-workspace` root
-that provided it - `format`, `lint`, `spellcheck`, `knip`, `docs:links`, `agents:check`, and the `test:agent-config` /
-`test:bump-lockstep` / `test:compact-tables` package tests - was retired in BT-404; unifying it is tracked as follow-up
-tooling work, not part of this skill). Until that lands, run the checks that do exist for each package, plus the
-root-wide ones that already cover both:
+`pnpm --filter @blit386/kit run preflight` runs `typecheck` (the CLI and `content/hooks`), `knip`, and `test` (whose
+`pretest` builds the kit first). `pnpm --filter create-blit386 run preflight` runs `typecheck`, `knip`, builds the kit
+(the scaffolder's tests import its `dist/`), builds the scaffolder, then runs `test`. These mirror the `quality-kit` /
+`build-test-kit` and `quality-scaffolder` / `build-test-scaffolder` CI jobs.
 
-- Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`,
-  `pnpm run bump:check` (lockstep versions and the derived `engineRange` / `BLIT386_RANGE` pair)
-- Per package: `pnpm --filter @blit386/kit run typecheck` / `pnpm --filter @blit386/kit run test`, and
-  `pnpm --filter create-blit386 run typecheck` / `pnpm --filter create-blit386 run test`
-- `pnpm run build` inside each package directory when `dist/` is missing or stale (the test suites shell out to built
-  artifacts)
+Neither package defines `format:check`, `spellcheck`, or `docs:links`; the root pass covers them (`format:check`,
+`docs:links`, `agents:check`, `bump:check` for the lockstep versions and the derived `engineRange` / `BLIT386_RANGE`
+pair).
 
 See `/test kit` (or `create-blit386`) for the full suite breakdown and `/kit-audit` for the drift checklist that a
 preflight run does not cover.
@@ -166,10 +162,12 @@ No combined `preflight` script exists at root; run what does:
   drift against the kit adapters (`scripts/sync-maintainer-agents.mjs`)
 - `pnpm run bump:check` - lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`
   and fails when a checked-in value differs
+- `pnpm run test:root` - every root `scripts/**/*.test.mjs` suite (the checkers above, the sync scripts, the build
+  locks, `bump-lockstep`, spellcheck coverage). `quality-root` in CI runs the same script
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
 (`pnpm --filter "...[ref...HEAD]" --if-present run preflight` - committed changes only, so uncommitted files never widen
-the scope), then - only if that succeeds - runs these six root-level checks unconditionally on every push, since pnpm's
+the scope), then - only if that succeeds - runs these root-level checks unconditionally on every push, since pnpm's
 per-package `--filter` dispatch only looks at files under `packages/*` and would otherwise miss a root-only change
 entirely. `bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails
 both the push and CI, on top of the existing per-commit gates below.
@@ -178,16 +176,3 @@ Before any of that, `.husky/pre-push` scans the commits being pushed and rejects
 `.husky/check-author.sh`) on either the author or the committer, so a rebase or cherry-pick under a sandbox `user.*`
 override is caught too. For a new remote branch the range is `<sha> --not --remotes` (only commits no remote has yet),
 not the whole history.
-
-The following are not part of that pre-push gate - run them directly when auditing. All five do run in CI, so a
-regression they would catch surfaces on the PR rather than at push time:
-
-- `pnpm run test:agent-config` - unit tests for the `agents:check` script itself. Runs in `quality-root` in
-  `.github/workflows/ci.yml`, which is gated only on the run not being a label event
-- `pnpm run test:cursor-commands` - unit tests for the `sync-cursor-commands.mjs` script itself. Runs in `quality-root`
-  in `.github/workflows/ci.yml`, alongside the repo-wide `sync:cursor-commands:check` run described above
-- `pnpm run test:maintainer-agents` - unit tests for the `sync-maintainer-agents.mjs` script itself. Runs in
-  `quality-root` alongside `sync:maintainer-agents:check`
-- `pnpm run test:bump-lockstep` - unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
-  `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`). Runs in `build-test-scaffolder`, the one CI job that
-  exercises it - and that job is path-filtered, so it only fires when the `scaffolder` or `shared` filter matches

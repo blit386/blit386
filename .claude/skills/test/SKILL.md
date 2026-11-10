@@ -183,7 +183,7 @@ Not covered: visual regression of generated games (nothing renders a canvas), a 
 a generated project, npm publish or registry propagation. Some `agents sync` cases are skipped when git is unavailable
 (they need a three-way merge).
 
-Root-level script tests that exercise shared tooling (part of the relevant package's `preflight`, not this suite):
+Root-level script tests that exercise shared tooling (run by the root `test:root` script, not this suite):
 `test:agent-config` (`.agents/skills` symlink integrity), `test:compact-tables` (the compact Markdown table Prettier
 plugin). This repo's own Claude Code and Cursor shell guard is the kit's `shell-safety.cjs` entry, run in place and
 covered by `packages/kit/test/shell-safety.test.mjs`.

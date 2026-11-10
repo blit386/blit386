@@ -41,7 +41,8 @@
     "report-kit-docs-drift": "node scripts/report-kit-docs-drift.mjs",
     "test:report-kit-docs-drift": "node --test scripts/report-kit-docs-drift.test.mjs",
     "security:audit": "pnpm audit --audit-level=moderate",
-    "security:audit:prod": "pnpm audit --prod --audit-level=moderate"
+    "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
+    "test:root": "node --test \"scripts/**/*.test.mjs\""
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",

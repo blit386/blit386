@@ -99,16 +99,13 @@ jobs:
               - 'packages/blit386/playwright.config.ts'
               # Holds the test:visual:parity script the job runs.
               - 'packages/blit386/package.json'
-            # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
-            # build-test-scaffolder runs test:bump-lockstep. Root scripts a package script runs
-            # (ensure-engine-built.mjs, ensure-kit-built.mjs, build-lock.mjs) sit in that package's
-            # filter above. Every other root script and every scripts/ test suite feeds only
-            # quality-root, which runs unconditionally (no `if`, no `needs`), so it has no entry here.
+            # Root scripts a package script runs (ensure-engine-built.mjs, ensure-kit-built.mjs,
+            # build-lock.mjs) sit in that package's filter above. Every other root script and every
+            # scripts/**/*.test.mjs suite (test:root) feeds only quality-root, which runs
+            # unconditionally (no `if`, no `needs`), so it has no entry here.
             scaffolder:
               - 'packages/create-blit386/**'
               - 'packages/kit/**'
-              - 'scripts/bump-lockstep.mjs'
-              - 'scripts/bump-lockstep.test.mjs'
 
   quality-root:
     name: Code Quality (root)
@@ -136,32 +133,16 @@ jobs:
         run: pnpm run docs:links
         background: true
 
-      - name: Run markdown-links tests
-        run: pnpm run test:markdown-links
-        background: true
-
       - name: Check agent config drift
         run: pnpm run agents:check
-        background: true
-
-      - name: Run agent-config tests
-        run: pnpm run test:agent-config
         background: true
 
       - name: Check cursor commands drift
         run: pnpm run sync:cursor-commands:check
         background: true
 
-      - name: Run cursor-commands tests
-        run: pnpm run test:cursor-commands
-        background: true
-
       - name: Check maintainer agent dogfood drift
         run: pnpm run sync:maintainer-agents:check
-        background: true
-
-      - name: Run maintainer-agents tests
-        run: pnpm run test:maintainer-agents
         background: true
 
       # The audit ledger (.claude/skills/audit/modules.md) must name every unit the tree derives;
@@ -170,50 +151,15 @@ jobs:
         run: pnpm run audit:modules:check
         background: true
 
-      - name: Run audit-modules tests
-        run: pnpm run test:audit-modules
-        background: true
-
-      - name: Run kit-docs-drift tests
-        run: pnpm run test:check-kit-docs-drift
-        background: true
-
-      - name: Run linear-client tests
-        run: pnpm run test:linear-client
-        background: true
-
-      - name: Run report-kit-docs-drift tests
-        run: pnpm run test:report-kit-docs-drift
-        background: true
-
       # Lockstep drift is cross-package: the `scaffolder` paths filter does not cover the engine's
       # own package.json, so this belongs in the job that always runs.
       - name: Check lockstep versions
         run: pnpm run bump:check
         background: true
 
-      - name: Run compact-tables tests
-        run: pnpm run test:compact-tables
-        background: true
-
-      - name: Run spellcheck coverage tests
-        run: pnpm run test:spellcheck-coverage
-        background: true
-
-      - name: Run build-lock tests
-        run: pnpm run test:build-lock
-        background: true
-
-      - name: Run ensure-engine-built tests
-        run: pnpm run test:ensure-engine-built
-        background: true
-
-      - name: Run ensure-kit-built tests
-        run: pnpm run test:ensure-kit-built
-        background: true
-
-      - name: Run ci-workflow-benchmark tests
-        run: pnpm run test:ci-workflow-benchmark
+      # Every scripts/**/*.test.mjs suite, the same script the pre-push root pass runs.
+      - name: Run root script tests
+        run: pnpm run test:root
         background: true
 
       - wait-all:
@@ -840,6 +786,3 @@ jobs:
 
       - name: Run scaffolder tests
         run: pnpm --filter create-blit386 run test
-
-      - name: Run lockstep bump tests
-        run: pnpm run test:bump-lockstep

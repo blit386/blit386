@@ -15,13 +15,13 @@ network). These are environment artifacts, not code bugs - do not "fix" them by 
 - Hooks amplify those two artifacts. The pre-push hook runs `preflight` (which includes `typecheck` + `lint`) for the
   packages changed since the upstream ref (every package when more than one ref is pushed or no base ref resolves),
   then - only if that succeeds - one root-level pass: `format:check`, `docs:links`, `agents:check`,
-  `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check` (`docs:links` and
-  `agents:check` are not package-scoped, so they were removed from every package's own `preflight` chain to stop running
-  2-4x per push - see the `preflight` skill). A failed package preflight skips that root-level pass entirely; the
-  bench-coverage reminder runs last and never fails the push. The lint-staged pre-commit hook runs `biome` / `prettier`
-  / `eslint --fix` / `cspell` on staged files. When the only failures are the tag-less / no-network artifacts above,
-  push with `--no-verify` after confirming the real checks (`typecheck`, `lint`, `format:check`, `spellcheck`) pass on
-  their own.
+  `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`, `test:root`
+  (`docs:links` and `agents:check` are not package-scoped, so they were removed from every package's own `preflight`
+  chain to stop running 2-4x per push - see the `preflight` skill). A failed package preflight skips that root-level
+  pass entirely; the bench-coverage reminder runs last and never fails the push. The lint-staged pre-commit hook runs
+  `biome` / `prettier` / `eslint --fix` / `cspell` on staged files. When the only failures are the tag-less / no-network
+  artifacts above, push with `--no-verify` after confirming the real checks (`typecheck`, `lint`, `format:check`,
+  `spellcheck`) pass on their own.
 - `.agents/skills/*` are symlinks to `.claude/skills/*`. Edit the `.claude` copy once and both update; do not treat them
   as two files to patch.
 - `pnpm run spellcheck` in `packages/blit386` scopes to that package's `src/`, `docs/`, and `README.md`, so it does not

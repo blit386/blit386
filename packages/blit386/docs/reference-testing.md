@@ -386,7 +386,7 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | Job | Gated on | What it runs |
 | --- | --- | --- |
 | `changes` | always | Path filters; emits the per-package booleans every job below reads |
-| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `bump:check`, and the root `test:*` Node suites for those scripts - repo-wide, so they run once rather than per package |
+| `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`, and `test:root` (every root `scripts/**/*.test.mjs` suite, the same script the pre-push root pass runs) - repo-wide, so they run once rather than per package |
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check`, `api:getters:check`, `system-font:check`, `splash-logo:check`, and the `scripts/` Node suites (`test:declarations`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:bmfont`, `test:system-font`, `test:splash-logo`) |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
@@ -397,7 +397,7 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, `check:well-known-schemas`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
 | `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs), then `check:deploy-size` and `check:well-known-urls` |
 | `quality-kit` / `build-test-kit` | kit | `typecheck`, `knip`; then build and `node --test` |
-| `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests and `test:bump-lockstep` |
+| `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests |
 
 Jobs needing full git history ask the shared setup action for it: `quality-engine` and `test-engine` take
 `fetch-depth: 0` plus `fetch-tags: true` (the API-history generator resolves each release date with `git log -1 <tag>`,
