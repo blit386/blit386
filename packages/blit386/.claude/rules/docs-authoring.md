@@ -35,7 +35,8 @@ When to use which:
 
 - `Callout` - notes, tips, warnings, gotchas. Replaces `> Note:` blockquotes.
 - `TypeTable` - option/field/parameter reference tables (name, type, default, description).
-- `Steps` - sequential procedures, one `### heading` per step.
+- `Steps` - sequential procedures; prefer one `### heading` per step (guidance - no check enforces it, so a page can
+  drift, as `docs/guide-palette.md` did).
 - `Tabs` - genuine alternatives (per-OS commands, npm/pnpm, preferred-vs-manual).
 - `Accordions` - collapsible advanced detail or troubleshooting.
 - `Cards` - the trailing See Also section.
