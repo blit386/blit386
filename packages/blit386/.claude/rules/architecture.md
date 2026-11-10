@@ -59,6 +59,8 @@ src/
   render/
     IRenderer.ts           # Backend-agnostic renderer contract (interface)
     WebGPURenderer.ts      # WebGPU concrete renderer implementing IRenderer
+    SceneBatch.ts          # WebGPU demo tier: one primitive + one sprite pipeline encoded in call order (segment list)
+    OverlayPipelines.ts    # WebGPU overlay tiers (bars, labels, top bars, top labels): lazy allocation, fixed encode order
     SoftwareRenderer.ts    # Canvas 2D software fallback implementing IRenderer
     PrimitivePipeline.ts   # Batched geometry writing palette indices (pixels, lines, rects)
     clipLine.ts            # Integer viewport clip for Bresenham lines (clipBresenhamLine); shared by SoftwareRenderer and PrimitivePipeline

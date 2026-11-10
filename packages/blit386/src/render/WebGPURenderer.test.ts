@@ -56,7 +56,12 @@ type PipelineAccess = {
  * @returns Primitive, sprite, overlay, and overlay-top pipeline instances.
  */
 function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
-    const internals = renderer as unknown as Omit<PipelineAccess, 'primitives' | 'sprites'> & { scene: SceneBatch };
+    const internals = renderer as unknown as {
+        scene: SceneBatch;
+        overlay: {
+            tiers: [PrimitivePipeline | null, SpritePipeline | null, PrimitivePipeline | null, SpritePipeline | null];
+        };
+    };
 
     // Getters, so a lazily allocated overlay pipeline is read live, as it was off the renderer itself.
     return {
@@ -67,16 +72,16 @@ function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
             return internals.scene.sprites;
         },
         get overlayPrimitives() {
-            return internals.overlayPrimitives;
+            return internals.overlay.tiers[0];
         },
         get overlayTopPrimitives() {
-            return internals.overlayTopPrimitives;
+            return internals.overlay.tiers[2];
         },
         get overlaySprites() {
-            return internals.overlaySprites;
+            return internals.overlay.tiers[1];
         },
         get overlayTopSprites() {
-            return internals.overlayTopSprites;
+            return internals.overlay.tiers[3];
         },
     };
 }
