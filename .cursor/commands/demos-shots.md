@@ -66,7 +66,8 @@ Edit `POSES_BY_SLUG` in `packages/demos/_shots/poses.js`. A pose is `{ id, at }`
 
 ### 5. Add a lint rule
 
-Add a pure function in `src/shared/ui-lint.js`, append its name to `LINT_RULES`, add cases to
+Add a pure function in `src/shared/ui-lint.js`, call it from `lintSnapshot()` (a rule only runs once that calls it),
+append its name to `LINT_RULES`, add cases to
 `src/shared/__tests__/ui-lint.test.mjs`, re-capture, and confirm the badge appears.
 
 ### 6. Before a PR
