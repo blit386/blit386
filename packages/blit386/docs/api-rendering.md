@@ -539,6 +539,10 @@ BT.drawRectFill(new Rect2i(8, 20, 32, 8), 3); // covers the middle of the sprite
 
 The engine overlay is the one exception: it always draws above the game.
 
+On WebGPU, each switch between a primitive draw (pixels, lines, rects) and a sprite or text draw starts a new GPU draw
+call. Alternating the two for hundreds of entities costs more than drawing every sprite and then every rect, so group
+draws by kind wherever their order does not matter.
+
 ### Empty and negative sizes
 
 A rect or sprite source with a width or height of zero or less draws nothing, on every draw call: `BT.drawRectFill`,
