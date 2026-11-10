@@ -213,6 +213,8 @@ const MDX_OPEN_PATTERN = new RegExp(`<${MDX_NAME}`, 'gu');
 const MDX_CLOSE_PATTERN = new RegExp(`</${MDX_NAME}`, 'gu');
 /** A `<` that starts no registered component tag; it is text to MDX-escape. */
 const NON_MDX_ANGLE_PATTERN = new RegExp(`<(?!/?${MDX_NAME})`, 'gu');
+/** A whole registered tag on one line (open, close, or self-closing) with no `<` or `>` in its props. */
+const MDX_WHOLE_TAG_PATTERN = new RegExp(`(</?${MDX_NAME}[^<>]*>)`, 'gu');
 /** A self-closing tag that is not a registered component (`<br/>`), so its `/>` closes nothing. */
 const NON_MDX_SELF_CLOSE_PATTERN = new RegExp(`<(?!${MDX_NAME})[A-Za-z][^<>]*/>`, 'gu');
 
@@ -355,10 +357,36 @@ const transformBody = (markdown, sourceRepoDir, source = sourceRepoDir) => {
         // angle brackets verbatim; only plain prose gets MDX-escaped.
         const isMdxLine = mdxDepth > 0 || opens > 0 || closes > 0;
 
+        // Exception: a line that starts outside any component and whose every tag is whole on
+        // this line (`Text {x} <Since symbol="A" />`) escapes the text outside its components.
+        const wholeTags = segments
+            .filter((_segment, index) => index % 2 === 0)
+            .reduce((count, segment) => count + (segment.match(MDX_WHOLE_TAG_PATTERN) ?? []).length, 0);
+        const canSplitTags = mdxDepth === 0 && isMdxLine && wholeTags === opens + closes;
+        let lineDepth = 0;
+        /** Escape the pieces of a prose segment that sit outside every component on this line. */
+        const escapeOutsideTags = (segment) =>
+            segment
+                .split(MDX_WHOLE_TAG_PATTERN)
+                .map((piece, index) => {
+                    if (index % 2 === 0) {
+                        return lineDepth > 0 ? piece : escapeMdxText(piece);
+                    }
+
+                    lineDepth += piece.startsWith('</') ? -1 : piece.endsWith('/>') ? 0 : 1;
+
+                    return piece;
+                })
+                .join('');
+
         const rendered = segments
             .map((segment, index) => {
                 if (index % 2 === 1) {
                     return segment;
+                }
+
+                if (canSplitTags) {
+                    return escapeOutsideTags(segment);
                 }
 
                 return isMdxLine ? segment : escapeMdxText(segment);

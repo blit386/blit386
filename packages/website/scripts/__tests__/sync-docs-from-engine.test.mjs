@@ -205,6 +205,16 @@ describe('transformBody MDX component depth (BT-774)', () => {
         assert.ok(body.endsWith('&#123;prose&#125;'));
     });
 
+    test('escapes prose braces on a line that also holds an inline component', () => {
+        const { body } = transformBody('Returns {x} here <Since symbol="Foo" />', 'docs');
+        assert.equal(body, 'Returns &#123;x&#125; here <Since symbol="Foo" />');
+    });
+
+    test('escapes only the text outside a one-line component', () => {
+        const { body } = transformBody('{x} <Callout type={{ a: 1 }}>{y}</Callout> {z}', 'docs');
+        assert.equal(body, '&#123;x&#125; <Callout type={{ a: 1 }}>{y}</Callout> &#123;z&#125;');
+    });
+
     test('fails when a component is still open at the end of the document', () => {
         assert.throws(() => transformBody('<Callout>\nnever closed', 'docs'), /depth 1 at end/u);
     });
