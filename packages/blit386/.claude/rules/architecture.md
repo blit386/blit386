@@ -65,7 +65,6 @@ src/
     SpritePipeline.ts      # Batched textured quads (sprites, bitmap text); applies SpriteDrawParams flags/scale/pivot/stretch
     SpriteOrientation.ts   # FLIP_*/ROT_* bits, mask -> orientation lookup, the one orientation table both backends read
     PostProcessChain.ts    # Tier-aware fullscreen effect chain
-    UpscalePass.ts         # RGBA texture upscale helper (tests / utilities)
     PaletteResolveUpscalePass.ts # r8uint palette indices -> RGBA + upscale
     effects/
       Effect.ts            # Effect interface + EffectTier
