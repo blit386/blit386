@@ -115,7 +115,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   container (canvas included) and rebuild the error panel and its `console.error` line every frame. Now each distinct
   message is reported once and the game keeps running: dev builds show the panel above the canvas, release builds only
   log it. Draw errors also go to the `containerID` passed to `bootstrap()` instead of always `canvas-container`, and
-  `displayError` keeps the container's other children. See [Bootstrap](api-core.md#bootstrap).
+  `displayError` keeps the container's other children. A successful hot reload clears the panel, and the error shows
+  again if the fix did not take. See [Bootstrap](api-core.md#bootstrap).
 - WebGPU draws keep the order `render()` called them in. It used to draw every primitive (rects, lines, pixels) before
   every sprite (sprites, `BT.systemPrint`, `BT.printFont`) in a frame, so a `BT.drawRectFill` HUD bar drawn over a
   sprite background disappeared under it on WebGPU while the software backend showed it on top. See

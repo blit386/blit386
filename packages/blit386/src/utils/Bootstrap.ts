@@ -12,6 +12,7 @@ import { isHotActive } from '../hot/HotRuntime';
 import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
 import {
+    clearErrorPanel,
     DEFAULT_CANVAS_ID,
     DEFAULT_CONTAINER_ID,
     displayError,
@@ -253,7 +254,14 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
     }
 
     if (isHotActive()) {
-        return hotSwapDemo(DemoClass);
+        const isSwapped = await hotSwapDemo(DemoClass);
+
+        // The swap may have fixed whatever raised the panel; if not, the error shows again on its next call.
+        if (isSwapped) {
+            clearErrorPanel();
+        }
+
+        return isSwapped;
     }
 
     console.error(

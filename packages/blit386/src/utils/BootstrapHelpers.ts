@@ -107,6 +107,23 @@ export function getErrorContainerID(): string {
 }
 
 /**
+ * Removes the error panel from the error container and forgets the messages it showed, so the same error can show
+ * again if it comes back.
+ *
+ * Internal: called after a successful hot swap, when the code that raised the error may have been fixed.
+ */
+export function clearErrorPanel(): void {
+    const container = document.getElementById(errorContainerID);
+
+    if (!container) {
+        return;
+    }
+
+    container.querySelector(`:scope > [${PANEL_ATTRIBUTE}]`)?.remove();
+    shownByContainer.delete(container);
+}
+
+/**
  * Displays an error message in the page UI.
  * Adds a styled error box to the container, pinned to the top of the viewport, and logs the message once with
  * `console.error`. Leaves everything else in the container (the game's canvas) in place, replaces its own previous
