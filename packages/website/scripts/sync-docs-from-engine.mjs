@@ -192,17 +192,34 @@ const rewriteTarget = (target, sourceRepoDir, sitePaths = SITE_PATHS) => {
 };
 
 /**
+ * The PascalCase MDX components the site registers: Fumadocs' `defaultMdxComponents` plus
+ * the ones `getMdxComponents` in `press.config.tsx` adds. Manual-sync copy (that file cannot
+ * be imported from a build script); the sync-docs-from-engine test fails when they disagree.
+ * Any other `<Name` in prose, such as `Array<T>`, is text, not a component.
+ */
+const MDX_COMPONENTS = new Set([
+    ...['Callout', 'CalloutContainer', 'CalloutDescription', 'CalloutTitle', 'Card', 'Cards'],
+    ...['CodeBlockTab', 'CodeBlockTabs', 'CodeBlockTabsList', 'CodeBlockTabsTrigger'],
+    ...['Accordion', 'Accordions', 'File', 'Files', 'Folder', 'InlineTOC', 'Step', 'Steps', 'Tab', 'Tabs'],
+    ...['TypeTable', 'Popup', 'PopupContent', 'PopupTrigger', 'AuthorByline', 'CommunityConnect'],
+    ...['DemoEmbed', 'DemoShowcase', 'VideoEmbed', 'HomeHero', 'ApiAvailability', 'PageChangelog', 'Since'],
+]);
+const MDX_NAME = `(?:${[...MDX_COMPONENTS].join('|')})(?![\\w])`;
+const MDX_OPEN_PATTERN = new RegExp(`<${MDX_NAME}`, 'gu');
+const MDX_CLOSE_PATTERN = new RegExp(`</${MDX_NAME}`, 'gu');
+/** A `<` that starts no registered component tag; it is text to MDX-escape. */
+const NON_MDX_ANGLE_PATTERN = new RegExp(`<(?!/?${MDX_NAME})`, 'gu');
+/** A self-closing tag that is not a registered component (`<br/>`), so its `/>` closes nothing. */
+const NON_MDX_SELF_CLOSE_PATTERN = new RegExp(`<(?!${MDX_NAME})[A-Za-z][^<>]*/>`, 'gu');
+
+/**
  * Escape characters that MDX would otherwise parse as JSX or expressions. A
- * bare `<` (e.g. `<50`) or `{` in prose must render literally, but MDX
- * component tags (PascalCase opening tags such as `<Callout>` and their
- * closing counterparts `</Callout>`) are intentional and must pass through
- * unchanged. Applied only to text outside inline code and fenced blocks.
+ * bare `<` (e.g. `<50`, `Array<T>`) or `{` in prose must render literally, but
+ * registered MDX component tags (`<Callout>`, `</Callout>`) are intentional and
+ * must pass through unchanged. Applied only to text outside inline code and fenced blocks.
  */
 const escapeMdxText = (text) =>
-    text
-        .replace(/<(?![A-Z]|\/[A-Z])/gu, '&lt;')
-        .replaceAll('{', '&#123;')
-        .replaceAll('}', '&#125;');
+    text.replace(NON_MDX_ANGLE_PATTERN, '&lt;').replaceAll('{', '&#123;').replaceAll('}', '&#125;');
 
 /** A fence line: up to any indent, a run of 3+ backticks or tildes (group 1), then the rest (group 2). */
 const FENCE_PATTERN = /^\s*(`{3,}|~{3,})(.*)$/u;
@@ -216,7 +233,7 @@ const FENCE_PATTERN = /^\s*(`{3,}|~{3,})(.*)$/u;
  * together with the text of every stripped comment, so the caller can warn
  * about comments that look like real content rather than tooling directives.
  */
-const transformBody = (markdown, sourceRepoDir) => {
+const transformBody = (markdown, sourceRepoDir, source = sourceRepoDir) => {
     // Matches an inline code span (group 1) OR a full markdown link whose label
     // may itself contain inline code, e.g. [`code`](url) (groups 2+3). Processing
     // left-to-right means code spans are consumed first, so link-like text inside
@@ -268,18 +285,18 @@ const transformBody = (markdown, sourceRepoDir) => {
         return result;
     };
 
-    // Depth of open MDX component blocks (PascalCase elements such as <Callout>,
+    // Depth of open MDX component blocks (registered components such as <Callout>,
     // <Tabs>, <TypeTable>). Inside a component, JSX expression attributes like
     // `type={{ ... }}` and `items={[ ... ]}` must pass through verbatim; escaping
     // their braces as prose would corrupt the JSX. Counted on prose segments only
     // so tags inside `inline code` never affect the depth.
     let mdxDepth = 0;
 
-    /** Count opening, closing, and self-closing PascalCase tags in a prose segment. */
+    /** Count opening, closing, and self-closing registered component tags in a prose segment. */
     const countMdxTags = (segment) => ({
-        opens: (segment.match(/<[A-Z][A-Za-z0-9]*/gu) ?? []).length,
-        closes: (segment.match(/<\/[A-Z][A-Za-z0-9]*/gu) ?? []).length,
-        selfCloses: (segment.match(/\/>/gu) ?? []).length,
+        opens: (segment.match(MDX_OPEN_PATTERN) ?? []).length,
+        closes: (segment.match(MDX_CLOSE_PATTERN) ?? []).length,
+        selfCloses: (segment.replace(NON_MDX_SELF_CLOSE_PATTERN, '').match(/\/>/gu) ?? []).length,
     });
 
     const lines = markdown.split('\n').map((line) => {
@@ -341,10 +358,18 @@ const transformBody = (markdown, sourceRepoDir) => {
             })
             .join('');
 
-        mdxDepth = Math.max(0, mdxDepth + opens - closes - selfCloses);
+        mdxDepth += opens - closes - selfCloses;
 
         return rendered;
     });
+
+    // A miscounted tag silently switches escaping off (or on) for the rest of the page, so fail here.
+    if (mdxDepth !== 0) {
+        throw new Error(
+            `Unbalanced MDX component tags in ${source}: depth ${mdxDepth} at end of document, expected 0. ` +
+                'Look for a missing close tag or a component not registered in press.config.tsx.',
+        );
+    }
 
     return { body: lines.join('\n'), comments: strippedComments };
 };
@@ -457,7 +482,7 @@ const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } 
     const { title, body } = extractTitleAndBody(raw, src);
     const sourceRepoDir = posix.dirname(`${ENGINE_DOCS_REPO_DIR}/${src}`);
     const trimmedBody = dropDuplicateIntro(stripGeneratedNote(stripSiteBanner(body)), description);
-    const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir);
+    const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir, `${ENGINE_DOCS_REPO_DIR}/${src}`);
     const banner = [
         `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
@@ -608,6 +633,7 @@ export {
     renderPage,
     PAGES,
     API_HISTORY_MIRROR,
+    MDX_COMPONENTS,
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

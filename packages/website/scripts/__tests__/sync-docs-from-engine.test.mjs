@@ -1,7 +1,7 @@
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +25,7 @@ const {
     summarizeComment,
     getLastModified,
     renderPage,
+    MDX_COMPONENTS,
 } = await import('../sync-docs-from-engine.mjs');
 
 // Injected site-paths map for rewriteTarget tests; matches what the fixture produces.
@@ -185,6 +186,42 @@ describe('transformBody fences (BT-774)', () => {
     test('a ~~~ line does not close a backtick fence', () => {
         const fenced = '```text\n~~~\n{still code}\n```';
         assert.equal(transformBody(fenced, 'docs').body, fenced);
+    });
+});
+
+describe('transformBody MDX component depth (BT-774)', () => {
+    test('an unregistered generic like Array<T> in prose is escaped and opens nothing', () => {
+        const { body } = transformBody('returns Array<T> here\n\nthen {braces} later', 'docs');
+        assert.equal(body, 'returns Array&lt;T> here\n\nthen &#123;braces&#125; later');
+    });
+
+    test('a lowercase <br/> inside a component does not close it', () => {
+        const input = '<Callout>\na<br/>b\n{expression}\n</Callout>';
+        assert.equal(transformBody(input, 'docs').body, input);
+    });
+
+    test('a multi-line self-closing component still closes', () => {
+        const { body } = transformBody('<TypeTable type={{\n  a: 1,\n}} />\n\n{prose}', 'docs');
+        assert.ok(body.endsWith('&#123;prose&#125;'));
+    });
+
+    test('fails when a component is still open at the end of the document', () => {
+        assert.throws(() => transformBody('<Callout>\nnever closed', 'docs'), /depth 1 at end/u);
+    });
+});
+
+describe('MDX_COMPONENTS matches press.config.tsx (BT-774)', () => {
+    test('lists exactly the PascalCase components the site registers', () => {
+        const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+        const config = readFileSync(join(pkg, 'press.config.tsx'), 'utf8');
+        const added = /\.\.\.defaultMdxComponents,([\s\S]*?)\};/u.exec(config)?.[1] ?? '';
+        const defaults = readFileSync(join(pkg, 'node_modules', 'fumadocs-ui', 'dist', 'mdx.d.ts'), 'utf8');
+        const registered = new Set(
+            [...added.matchAll(/^\s+([A-Z]\w*),$/gmu), ...defaults.matchAll(/^\s+([A-Z]\w*): typeof/gmu)].map(
+                (match) => match[1],
+            ),
+        );
+        assert.deepEqual([...MDX_COMPONENTS].sort(), [...registered].sort());
     });
 });
 

@@ -529,6 +529,10 @@ export default defineConfig({
          * InlineTOC). Callout, Card/Cards, and code blocks already ship
          * in `defaultMdxComponents`. The relative-link override mirrors the adapter
          * default so in-page links keep resolving.
+         *
+         * Manual-sync hazard: `MDX_COMPONENTS` in scripts/sync-docs-from-engine.mjs lists the
+         * same PascalCase names so the mirror generator knows which tags are components; its
+         * test fails when a name is added here and not there.
          */
         fumadocsMdx({
             async getMdxComponents(page) {
