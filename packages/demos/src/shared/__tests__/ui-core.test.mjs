@@ -496,3 +496,30 @@ describe('UiContext per-frame engine reads', () => {
         assert.equal(calls.displaySize, 3);
     });
 });
+
+describe('UiContext frames without ui.tick()', () => {
+    it('prunes a hit rect that stopped being drawn and resets the recorded groups', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+        const frame = (labels) => {
+            BT.ticks++;
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+
+            for (const text of labels) {
+                checkbox(ctx, text, false);
+            }
+
+            ctx.end();
+        };
+
+        ctx.recording = true;
+        frame(['Loop', 'Mute']);
+        frame(['Loop']);
+        frame(['Loop']);
+
+        assert.ok(ctx.hitRects.has('Loop'));
+        assert.ok(!ctx.hitRects.has('Mute'));
+        assert.equal(ctx.snapshot().groups.length, 1);
+    });
+});

@@ -165,6 +165,13 @@ class UiContext {
      */
     frameHitIds = new Set();
 
+    // Created once so pruning allocates no iterator; deleting the visited entry is safe.
+    pruneVisitor = (_rec, id, map) => {
+        if (!this.frameHitIds.has(id)) {
+            map.delete(id);
+        }
+    };
+
     // The two scratch objects reused for every BT draw call at flush time. The engine
     // copies their numbers into its vertex buffers synchronously, so mutating and reusing
     // one instance across many calls is safe.
@@ -214,6 +221,10 @@ class UiContext {
     // True after any begin() ran; the first tick() afterwards empties the mailbox, so a
     // press is delivered to exactly one render frame and never lingers.
     renderedSinceTick = false;
+
+    // BT.ticks when startFrame() last ran. A new engine tick starts a new frame even in a
+    // demo that never calls ui.tick() (display-only UI may skip it).
+    frameTick = -1;
 
     // Counts update ticks (used by the swipe recognizer to time gestures).
     tickCount = 0;
@@ -461,9 +472,13 @@ class UiContext {
      * leaving a dead zone, starts a fresh recorded group list, and reads the display size.
      */
     startFrame() {
-        if (this.renderedSinceTick) {
+        const ticks = BT.ticks;
+
+        if (this.renderedSinceTick && ticks === this.frameTick) {
             return;
         }
+
+        this.frameTick = ticks;
 
         this.pruneHitRects();
         this.frameGroups.length = 0;
@@ -738,12 +753,7 @@ class UiContext {
      * their old location instead of leaving a permanent dead zone.
      */
     pruneHitRects() {
-        for (const id of this.hitRects.keys()) {
-            if (!this.frameHitIds.has(id)) {
-                this.hitRects.delete(id);
-            }
-        }
-
+        this.hitRects.forEach(this.pruneVisitor);
         this.frameHitIds.clear();
     }
 
