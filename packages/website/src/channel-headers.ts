@@ -1,4 +1,5 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
+import { NEXT_CHANNEL } from './channel-vars.mjs';
 import { HTTP_HEAD, isGetOrHead } from './http-methods';
 
 const NOINDEX_ROBOTS_TXT = 'User-agent: *\nDisallow: /\n';
@@ -27,7 +28,7 @@ export function channelHeadersPlugin<C extends ConfigContext = ConfigContext>():
             return [
                 async (c, next) => {
                     const isNextChannel =
-                        (c.env as { BLIT386_CHANNEL?: string } | undefined)?.BLIT386_CHANNEL === 'next';
+                        (c.env as { BLIT386_CHANNEL?: string } | undefined)?.BLIT386_CHANNEL === NEXT_CHANNEL;
 
                     if (!isNextChannel) {
                         return next();

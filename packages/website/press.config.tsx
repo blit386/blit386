@@ -48,11 +48,12 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { blog, docs } from './.source/server';
+import { NEXT_CHANNEL } from './src/channel-vars.mjs';
 
 // Set only in the deploy-website-next CI job (see .github/workflows/deploy.yml). Each channel
 // is a fully separate build and deploy, so this is resolved once here rather than threaded
 // into the deployed Worker as a wrangler var read at request time.
-const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
+const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === NEXT_CHANNEL;
 
 const SITE_BASE_URL = IS_NEXT_CHANNEL ? 'https://next.blit386.dev' : 'https://blit386.dev';
 const PRODUCTION_SITE_URL = 'https://blit386.dev';
@@ -529,6 +530,10 @@ export default defineConfig({
          * InlineTOC). Callout, Card/Cards, and code blocks already ship
          * in `defaultMdxComponents`. The relative-link override mirrors the adapter
          * default so in-page links keep resolving.
+         *
+         * Manual-sync hazard: `MDX_COMPONENTS` in scripts/sync-docs-from-engine.mjs lists the
+         * same PascalCase names so the mirror generator knows which tags are components; its
+         * test fails when a name is added here and not there.
          */
         fumadocsMdx({
             async getMdxComponents(page) {

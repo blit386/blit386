@@ -180,7 +180,7 @@ const markdownPage = ({ sourcePath, release, description, title: titleOverride }
     const source = fillPlaceholders(readFileSync(sourcePath, 'utf8'), PACKAGE_MANAGER_VARS, repoRel(sourcePath));
     const { fields, body: withoutFrontmatter } = splitFrontmatter(source);
     const { title, body } = extractTitleAndBody(withoutFrontmatter, sourcePath);
-    const { body: transformed } = transformBody(body, repoRel(dirname(sourcePath)));
+    const { body: transformed } = transformBody(body, repoRel(dirname(sourcePath)), repoRel(sourcePath));
 
     return {
         title: titleOverride ?? title,

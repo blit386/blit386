@@ -1,10 +1,9 @@
 ---
-# Generated from blit386/docs/reference-testing.md by scripts/sync-docs-from-engine.mjs.
+# Generated from packages/blit386/docs/reference-testing.md by scripts/sync-docs-from-engine.mjs.
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Testing"
 description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
 lastModified: "2026-11-09T20:11:43+01:00"
-editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-testing.md"
 ---
 
 BLIT386 uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
@@ -120,7 +119,7 @@ go after `--` (`pnpm run bench:compare -- --threshold 10`); the separator itself
 ## Declaration tooling checks
 
 Public types are rolled up during `pnpm run build` via `vite-plugin-dts` and API Extractor. The workspace pins
-TypeScript to the same version API Extractor bundles (see [Developer Experience](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md)).
+TypeScript to the same version API Extractor bundles (see [Developer Experience](https://github.com/blit386/blit386/blob/main/packages/blit386/docs/developer-experience-guide.md)).
 
 - `pnpm run test:declarations` - Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns, required
   `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
@@ -406,7 +405,7 @@ could not run at all before the monorepo merge, because the docs-site repository
 \- so a stale published mirror was only ever caught by hand.
 
 The six workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, `deploy.yml`, `mcp-governance-audit.yml` (the monthly
-MCP governance scan from the [security runbook](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)), and `kit-docs-drift.yml` (advisory drift
+MCP governance scan from the [security runbook](https://github.com/blit386/blit386/blob/main/packages/blit386/docs/security/security-runbook.md)), and `kit-docs-drift.yml` (advisory drift
 between `_api-history.json` and the kit docs, reported to Linear, never a status check); CodeQL runs from GitHub's
 default setup rather than a checked-in workflow. On pull requests, `pr-checks.yml` complements `ci.yml` with
 Conventional Commits validation only; every other gate - knip, bundle size, doc links, agent-config drift - runs inside

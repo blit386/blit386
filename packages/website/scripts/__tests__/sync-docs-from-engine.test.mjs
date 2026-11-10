@@ -1,7 +1,7 @@
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,8 +24,8 @@ const {
     isToolingDirective,
     summarizeComment,
     getLastModified,
-    editUrlFor,
     renderPage,
+    MDX_COMPONENTS,
 } = await import('../sync-docs-from-engine.mjs');
 
 // Injected site-paths map for rewriteTarget tests; matches what the fixture produces.
@@ -86,8 +86,8 @@ describe('rewriteTarget', () => {
 
     test('falls back to GitHub blob URL for unknown file path', () => {
         assert.equal(
-            rewriteTarget('unknown.md', 'docs/api', TEST_PATHS),
-            'https://github.com/blit386/blit386/blob/main/docs/api/unknown.md',
+            rewriteTarget('unknown.md', 'packages/blit386/docs/api', TEST_PATHS),
+            'https://github.com/blit386/blit386/blob/main/packages/blit386/docs/api/unknown.md',
         );
     });
 
@@ -100,8 +100,8 @@ describe('rewriteTarget', () => {
 
     test('preserves fragment on GitHub fallback', () => {
         assert.equal(
-            rewriteTarget('unknown.md#heading', 'docs', TEST_PATHS),
-            'https://github.com/blit386/blit386/blob/main/docs/unknown.md#heading',
+            rewriteTarget('unknown.md#heading', 'packages/blit386/docs', TEST_PATHS),
+            'https://github.com/blit386/blit386/blob/main/packages/blit386/docs/unknown.md#heading',
         );
     });
 
@@ -171,6 +171,88 @@ describe('transformBody', () => {
     });
 });
 
+describe('transformBody fences (BT-774)', () => {
+    test('passes a ~~~ fence through unchanged', () => {
+        const input = '~~~ts\nconst a = {b: 1};\n~~~';
+        assert.equal(transformBody(input, 'docs').body, input);
+    });
+
+    test('a three-backtick example inside a four-backtick fence does not close it', () => {
+        const fenced = '````md\n```ts\nconst a = {b: 1};\n```\n{still code}\n````';
+        const { body } = transformBody(`${fenced}\n\n{prose}`, 'docs');
+        assert.equal(body, `${fenced}\n\n&#123;prose&#125;`);
+    });
+
+    test('a ~~~ line does not close a backtick fence', () => {
+        const fenced = '```text\n~~~\n{still code}\n```';
+        assert.equal(transformBody(fenced, 'docs').body, fenced);
+    });
+});
+
+describe('transformBody MDX component depth (BT-774)', () => {
+    test('an unregistered generic like Array<T> in prose is escaped and opens nothing', () => {
+        const { body } = transformBody('returns Array<T> here\n\nthen {braces} later', 'docs');
+        assert.equal(body, 'returns Array&lt;T> here\n\nthen &#123;braces&#125; later');
+    });
+
+    test('a lowercase <br/> inside a component does not close it', () => {
+        const input = '<Callout>\na<br/>b\n{expression}\n</Callout>';
+        assert.equal(transformBody(input, 'docs').body, input);
+    });
+
+    test('a multi-line self-closing component still closes', () => {
+        const { body } = transformBody('<TypeTable type={{\n  a: 1,\n}} />\n\n{prose}', 'docs');
+        assert.ok(body.endsWith('&#123;prose&#125;'));
+    });
+
+    test('escapes prose braces on a line that also holds an inline component', () => {
+        const { body } = transformBody('Returns {x} here <Since symbol="Foo" />', 'docs');
+        assert.equal(body, 'Returns &#123;x&#125; here <Since symbol="Foo" />');
+    });
+
+    test('escapes only the text outside a one-line component', () => {
+        const { body } = transformBody('{x} <Callout type={{ a: 1 }}>{y}</Callout> {z}', 'docs');
+        assert.equal(body, '&#123;x&#125; <Callout type={{ a: 1 }}>{y}</Callout> &#123;z&#125;');
+    });
+
+    test('fails when a component is still open at the end of the document', () => {
+        assert.throws(() => transformBody('<Callout>\nnever closed', 'docs'), /depth 1 at end/u);
+    });
+});
+
+describe('transformBody link targets (BT-774)', () => {
+    const API_DIR = 'packages/website/scripts/__fixtures__/sync-docs/api';
+
+    test('keeps a link title out of the rewritten path', () => {
+        const { body } = transformBody('[api](renderer.md "The renderer")', API_DIR);
+        assert.equal(body, '[api](/docs/api/renderer "The renderer")');
+    });
+
+    test('keeps a parenthesized link title out of the rewritten path', () => {
+        const { body } = transformBody('[api](renderer.md (The renderer))', API_DIR);
+        assert.equal(body, '[api](/docs/api/renderer (The renderer))');
+    });
+
+    test('keeps balanced parentheses inside the target', () => {
+        const { body } = transformBody('[notes](notes_(draft).md) after', API_DIR);
+        assert.equal(body, `[notes](https://github.com/blit386/blit386/blob/main/${API_DIR}/notes_(draft).md) after`);
+    });
+});
+
+describe('MDX_COMPONENTS matches press.config.tsx (BT-774)', () => {
+    test('lists exactly the PascalCase components the site registers', async () => {
+        const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+        const config = readFileSync(join(pkg, 'press.config.tsx'), 'utf8');
+        const added = /\.\.\.defaultMdxComponents,([\s\S]*?)\};/u.exec(config)?.[1] ?? '';
+        const { default: defaults } = await import('fumadocs-ui/mdx');
+        const registered = new Set([
+            ...[...added.matchAll(/^\s+([A-Z]\w*)\s*[,:]/gmu)].map((match) => match[1]),
+            ...Object.keys(defaults).filter((name) => /^[A-Z]/u.test(name)),
+        ]);
+        assert.deepEqual([...MDX_COMPONENTS].sort(), [...registered].sort());
+    });
+});
+
 describe('extractTitleAndBody', () => {
     test('extracts H1 as title and returns remaining body', () => {
         const { title, body } = extractTitleAndBody('# My Title\n\nBody text.', 'test.md');
@@ -224,6 +306,13 @@ describe('stripSiteBanner', () => {
     test('leaves content without a banner unchanged', () => {
         const input = 'No banner here.';
         assert.equal(stripSiteBanner(input), input);
+    });
+});
+
+describe('stripSiteBanner with more than one banner (BT-774)', () => {
+    test('removes every banner and keeps the paragraphs around them apart', () => {
+        const banner = '<!-- blit386.dev-banner:start -->\nbanner\n<!-- blit386.dev-banner:end -->';
+        assert.equal(stripSiteBanner(`${banner}\n\nFirst.\n\n${banner}\n\nSecond.`), 'First.\n\nSecond.');
     });
 });
 
@@ -288,12 +377,6 @@ describe('summarizeComment', () => {
     test('does not truncate exactly-120-char collapsed strings', () => {
         const exact = 'a'.repeat(120);
         assert.equal(summarizeComment(exact), exact);
-    });
-});
-
-describe('editUrlFor', () => {
-    test('builds a GitHub blob URL under docs/ for the given source', () => {
-        assert.equal(editUrlFor('api/core.md'), 'https://github.com/blit386/blit386/blob/main/docs/api/core.md');
     });
 });
 
@@ -424,16 +507,32 @@ describe('getLastModified', () => {
     });
 });
 
-describe('renderPage frontmatter (lastModified, editUrl)', () => {
-    const FIXTURE_PAGE = { src: 'api/with-components.md', description: 'Version-history components demo.' };
+describe('renderPage links resolve against the monorepo root (BT-774)', () => {
+    // The fixture engine docs live at this repo-relative path, the way the real ones live at
+    // packages/blit386/docs. A GitHub fallback must carry the full path, not just docs/...
+    const FIXTURE_REPO_DIR = 'packages/website/scripts/__fixtures__/sync-docs';
+    const BLOB = 'https://github.com/blit386/blit386/blob/main';
+    const { contents } = renderPage({ src: 'api/with-links.md', description: 'Links fixture.' });
 
-    test('always includes editUrl pointing at the engine GitHub blob', () => {
-        const { contents } = renderPage(FIXTURE_PAGE);
-        assert.match(
-            contents,
-            /editUrl: "https:\/\/github\.com\/blit386\/blit386\/blob\/main\/docs\/api\/with-components\.md"/u,
-        );
+    test('a published doc still becomes a site path', () => {
+        assert.ok(contents.includes('[Renderer](/docs/api/renderer)'));
     });
+
+    test('an unpublished doc links to its real monorepo path', () => {
+        assert.ok(contents.includes(`[Unpublished](${BLOB}/${FIXTURE_REPO_DIR}/api/unpublished.md)`));
+    });
+
+    test('a link above the docs root stays inside the package', () => {
+        assert.ok(contents.includes(`[Readme](${BLOB}/packages/website/scripts/__fixtures__/README.md)`));
+    });
+
+    test('writes no editUrl (nothing renders an edit link)', () => {
+        assert.ok(!contents.includes('editUrl:'));
+    });
+});
+
+describe('renderPage frontmatter (lastModified)', () => {
+    const FIXTURE_PAGE = { src: 'api/with-components.md', description: 'Version-history components demo.' };
 
     test('includes lastModified with the injected date when available', () => {
         const { contents } = renderPage(FIXTURE_PAGE, { lastModifiedFor: () => '2026-02-01T00:00:00Z' });
