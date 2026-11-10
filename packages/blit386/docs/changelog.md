@@ -109,6 +109,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   backend used to draw every slot fully opaque except the clear color, and WebGPU handed the canvas straight color where
   it expects premultiplied, so a 50% slot looked brighter than intended. See
   [Partially transparent palette slots](api-rendering.md#partially-transparent-palette-slots).
+- A `BT.drawSprite` source rect that runs past the sheet edge draws only the part inside the sheet on WebGPU, as on the
+  software backend. The sprite shader used to read texels outside the texture, whose value depends on the GPU driver.
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl

@@ -81,7 +81,7 @@ export class SpritePipeline {
     private currentBindGroup: GPUBindGroup | null = null;
 
     /** Cache of per-texture bind groups (group 1) for reuse. WeakMap allows GC to collect destroyed textures. */
-    private readonly textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
+    private textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
 
     /** Sprite batches to render (one per texture). */
     private readonly batches: Batch[] = [];
@@ -452,6 +452,14 @@ export class SpritePipeline {
     private async createPipeline(displaySize: Vector2i, targetFormat: GPUTextureFormat): Promise<void> {
         const device = this.device as GPUDevice;
 
+        // A re-run of init() replaces everything: cached texture groups came from the old 'auto' layout.
+        this.uniformBuffer?.destroy();
+        this.uniformBuffer = null;
+        this.vertexBuffer?.destroy();
+        this.vertexBuffer = null;
+        this.textureBindGroups = new WeakMap();
+        this.currentBindGroup = null;
+
         const shaderModule = device.createShaderModule({
             label: 'Sprite Shader',
             code: `
@@ -496,10 +504,10 @@ export class SpritePipeline {
                 @fragment
                 fn fs_main(input: VertexOutput) -> @location(0) u32 {
                     let dims = textureDimensions(spriteTexture);
-                    let coords = vec2<i32>(
-                        i32(input.uv.x * f32(dims.x)),
-                        i32(input.uv.y * f32(dims.y))
-                    );
+                    let coords = vec2<i32>(floor(input.uv * vec2<f32>(dims)));
+
+                    // A source rect past the sheet edge: discard like the software blit, never load out of bounds.
+                    if (any(coords < vec2<i32>(0)) || any(coords >= vec2<i32>(dims))) { discard; }
 
                     // r8uint: single-channel unsigned integer index.
                     let rawIndex = textureLoad(spriteTexture, coords, 0).r;
