@@ -1357,6 +1357,8 @@ export const BT = {
      * @param start - First palette index in the cycling range (inclusive).
      * @param end - Last palette index in the cycling range (inclusive).
      * @param speed - Steps per second. Positive = forward, negative = backward.
+     * @throws Error if no palette is set, `speed` is not finite, `start` or `end` is not an integer, `start` is 0
+     *   or not below `end`, or `end` is past the palette.
      */
     paletteCycle: (start: number, end: number, speed: number): void => {
         BTAPI.instance.paletteCycle(start, end, speed);
@@ -1379,6 +1381,7 @@ export const BT = {
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
+     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
      */
     paletteFade: (target: Palette, durationMs: number, easing?: EasingFunction): void => {
         BTAPI.instance.paletteFade(target, durationMs, easing);
@@ -1419,6 +1422,7 @@ export const BT = {
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param options - Highlight lead and easing curve.
+     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
      */
     paletteFadeExposure: (target: Palette, durationMs: number, options?: ExposureFadeOptions): void => {
         BTAPI.instance.paletteFadeExposure(target, durationMs, options);
@@ -1438,6 +1442,8 @@ export const BT = {
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
+     * @throws Error if no palette is set, `start` or `end` is not an integer, `start` is 0 or greater than
+     *   `end`, `end` is past the palette, or `durationMs` is not a non-negative finite number.
      */
     paletteFadeRange: (
         start: number,
@@ -1459,6 +1465,7 @@ export const BT = {
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
+     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
      */
     paletteFlash: (color: Color32, durationMs: number): void => {
         BTAPI.instance.paletteFlash(color, durationMs);
@@ -1474,6 +1481,8 @@ export const BT = {
      * @changed 1.8.1 Rejects slot 0 before writing anything.
      * @param indexA - First palette index.
      * @param indexB - Second palette index.
+     * @throws Error if no palette is set, either index is 0 (slot 0 is always transparent), or either index
+     *   is past the palette.
      */
     paletteSwap: (indexA: number, indexB: number): void => {
         BTAPI.instance.paletteSwap(indexA, indexB);
@@ -2559,7 +2568,8 @@ export const BT = {
     /**
      * Draws text using the built-in 6x14 system font.
      *
-     * The system font covers printable ASCII (characters 32-126). For custom
+     * The system font covers printable ASCII (characters 32-126) plus extra glyphs: dashes, accented Latin, media
+     * icons, arrows, Greek capitals, and more ({@link BT.systemFont}'s `codePoints` lists them all). For custom
      * bitmap fonts with proportional glyphs, use {@link BT.printFont} instead.
      *
      * @since 1.0.3
