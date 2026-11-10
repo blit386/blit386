@@ -19,10 +19,11 @@ Run the package's spellcheck, then fix all reported errors.
   YAML config files; check one by hand with `pnpm exec cspell <path>`
 - `website`: `pnpm run spellcheck` checks `content/**/*.{md,mdx}`, `src/**/*.{ts,tsx}`, the package's root `*.{md,mdx}`,
   and `CLAUDE.md`
-- `kit` / `create-blit386`: no package-local `spellcheck` script yet (the combined one lived in the retired
-  `create-blit386-workspace` root and covered `packages/*/src/**/*.ts`, `packages/*/README.md`,
-  `packages/kit/content/**/*.md`, `.claude/skills/**/*.md`, `.claude/rules/**/*.md`, and the repo-root Markdown files
-  together). Until a replacement script lands, run `pnpm exec cspell <path>` directly against the files you changed
+- `website` also checks its three hand-authored `content/docs/*.mdx` pages; the generated mirror under
+  `content/docs/*/**` is excluded in `cspell.json`
+- `kit` / `create-blit386`: no package-local script; run `pnpm run spellcheck:kit` from the repo root. It checks every
+  code and Markdown file in `packages/kit` and `packages/create-blit386` (templates excluded) plus `.claude/skills/**`,
+  and runs in CI's `quality-root` and the pre-push root pass
 - Capture the full error output
 
 2. Analyze each error

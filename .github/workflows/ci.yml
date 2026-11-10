@@ -133,6 +133,11 @@ jobs:
         run: pnpm run docs:links
         background: true
 
+      # kit, create-blit386 and .claude/skills have no package spellcheck of their own.
+      - name: Spell check kit, scaffolder and skills
+        run: pnpm run spellcheck:kit
+        background: true
+
       - name: Check agent config drift
         run: pnpm run agents:check
         background: true

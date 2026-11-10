@@ -30,9 +30,9 @@ whole-repo check - they never had a per-package copy to begin with, since they g
 `audit:modules:check` (the audit ledger in `.claude/skills/audit/modules.md` against the units derived from the tree).
 The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip
 `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`,
-`audit:modules:check`, `bump:check`, and `test:root` entirely, so a push only exercises them once the per-package checks
-are clean. That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless
-of whether the per-package quality jobs pass.
+`audit:modules:check`, `bump:check`, `spellcheck:kit`, and `test:root` entirely, so a push only exercises them once the
+per-package checks are clean. That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so
+it runs regardless of whether the per-package quality jobs pass.
 
 ## Steps
 
@@ -133,8 +133,8 @@ same scrub is inline in `packages/blit386/scripts/gen-api-history.test.mjs`. Gua
 `build-test-kit` and `quality-scaffolder` / `build-test-scaffolder` CI jobs.
 
 Neither package defines `format:check`, `spellcheck`, or `docs:links`; the root pass covers them (`format:check`,
-`docs:links`, `agents:check`, `bump:check` for the lockstep versions and the derived `engineRange` / `BLIT386_RANGE`
-pair).
+`spellcheck:kit`, `docs:links`, `agents:check`, `bump:check` for the lockstep versions and the derived `engineRange` /
+`BLIT386_RANGE` pair).
 
 See `/test kit` (or `create-blit386`) for the full suite breakdown and `/kit-audit` for the drift checklist that a
 preflight run does not cover.
@@ -154,6 +154,8 @@ No combined `preflight` script exists at root; run what does:
   drift against the kit adapters (`scripts/sync-maintainer-agents.mjs`)
 - `pnpm run bump:check` - lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`
   and fails when a checked-in value differs
+- `pnpm run spellcheck:kit` - cspell over `packages/kit`, `packages/create-blit386`, and `.claude/skills`, which have no
+  package spellcheck of their own
 - `pnpm run test:root` - every root `scripts/**/*.test.mjs` suite (the checkers above, the sync scripts, the build
   locks, `bump-lockstep`, spellcheck coverage). `quality-root` in CI runs the same script
 

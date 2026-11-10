@@ -263,6 +263,7 @@ pnpm run sync:maintainer-agents       # Generate Antigravity/Codex/Gemini/Copilo
 pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
 pnpm run bump -- X.Y.Z                # Lockstep version bump across blit386, @blit386/kit, create-blit386
 pnpm run bump:check                   # Check lockstep versions and the derived engine ranges
+pnpm run spellcheck:kit               # Spellcheck packages/kit, packages/create-blit386 and .claude/skills
 pnpm run test:root                    # Every root scripts/**/*.test.mjs suite (CI quality-root and pre-push run it)
 pnpm run test:cursor-commands         # Cursor commands sync script tests
 pnpm run test:maintainer-agents       # Maintainer agents sync script tests
