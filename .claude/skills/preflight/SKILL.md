@@ -50,7 +50,8 @@ package preflights pass (see `/preflight root` below); in CI, `quality-root` has
 - `sync:doc-banners:check` - blit386.dev banner freshness on every published doc
 - `api:since:check` - every public export carries an `@since` tag
 - `api:history:check` - `docs/_api-history.json` matches the source version tags
-- `api:getters:check` - every public `BT.*` getter and method has a mention in `.claude/rules/bt-api-getters.md`
+- `api:getters:check` - every public `BT.*` getter is listed under "Prefer getters" and every method under "Keep as
+  methods" in `.claude/rules/bt-api-getters.md`, and neither list names a removed member
 - `api:deprecations:check` - `docs/reference-deprecations.md` matches the kit's migration registry
   (`scripts/gen-deprecations.mjs --check`)
 - `system-font:check` - `src/assets/fonts/systemFontData.ts` matches `assets/system-font.png` and the extra-chars list
