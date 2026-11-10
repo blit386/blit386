@@ -2160,7 +2160,7 @@
         },
         {
           "version": "1.7.0",
-          "note": "Exposes `BT` on `window.BT` after bootstrap finishes, gated by\n{@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode})."
+          "note": "Exposes `BT` on `window.BT` after bootstrap finishes, gated by\n{@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}). It is exposed on every path, a failed\nboot included, so the console can still inspect the engine; a harness that waits for a running game should\npoll `window.BT?.isReady`, not the presence of `window.BT`."
         },
         {
           "version": "1.8.1",

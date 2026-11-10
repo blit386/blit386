@@ -3081,7 +3081,9 @@ export const BT = {
  *   double-bootstrap guard and returns `false` otherwise - previously it silently started a
  *   second, unstoppable `GameLoop`.
  * @changed 1.7.0 Exposes `BT` on `window.BT` after bootstrap finishes, gated by
- *   {@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}).
+ *   {@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}). It is exposed on every path, a failed
+ *   boot included, so the console can still inspect the engine; a harness that waits for a running game should
+ *   poll `window.BT?.isReady`, not the presence of `window.BT`.
  * @changed 1.8.1 An `onSuccess` callback that throws is logged and no longer replaces the running game with an
  *   error panel, fires `onError`, or makes `bootstrap()` resolve `false`.
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).

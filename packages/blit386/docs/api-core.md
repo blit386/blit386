@@ -610,7 +610,9 @@ them again in `init()`. A `BT.renderAt` seek already running finishes before the
 the restart runs rejects, as it does before the first init.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
-matching the error text from a premature `renderAt`.
+matching the error text from a premature `renderAt`. In a dev build, `bootstrap()` sets `window.BT` when it finishes
+whether the boot succeeded or failed, so the console can still inspect a broken game. Wait on `window.BT?.isReady`, not
+on `window.BT` existing.
 
 ```ts twoslash
 import { BT } from 'blit386';

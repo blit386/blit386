@@ -604,8 +604,9 @@ Pointer transitions:
 
 To check that a click or key reached `update()` exactly once, record what each update and each rendered frame saw. Dev
 builds have `window.__btInputTrace` next to `window.BT`, under the same rule: present while the dev server runs the
-game, absent in a built game unless `BootstrapOptions.exposeGlobal` turns it on. It is a debugging aid, not part of the
-`BT` API.
+game, absent in a built game unless `BootstrapOptions.exposeGlobal` turns it on. Like `window.BT`, it is set when
+`bootstrap()` finishes even if the boot failed, so check `window.BT?.isReady` before recording. It is a debugging aid,
+not part of the `BT` API.
 
 ```js
 window.__btInputTrace.start(); // or start({ maxEntries: 2000 }); the default keeps 10000 entries

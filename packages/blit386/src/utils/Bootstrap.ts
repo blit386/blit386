@@ -72,7 +72,8 @@ export interface BootstrapOptions {
      * Whether to assign the `BT` namespace to `window.BT`, for browser-console debugging
      * (`window.BT.captureFrame()`). Undefined follows `BT.isDevMode` - exposed in development,
      * not in a consumer's production build. Set `true` to force it on in release too, or `false`
-     * to disable it even in development.
+     * to disable it even in development. Applied when `bootstrap()` finishes, whether the boot
+     * succeeded or failed - poll `window.BT?.isReady` to wait for a running game.
      *
      * @since 1.7.0
      */
