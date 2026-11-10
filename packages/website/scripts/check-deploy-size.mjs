@@ -14,8 +14,8 @@
  * or network needed), not a re-measurement: it is the figure Cloudflare enforces, and
  * wrangler decides which `dist/server` files are modules.
  *
- * Requires a build to have already run (`pnpm run build`) - see `preflight` in
- * package.json for the ordering.
+ * Requires a build to have already run (`pnpm run build`). Not part of `preflight`: CI's
+ * `build-website` job runs it right after the build.
  *
  * Usage:
  *   node scripts/check-deploy-size.mjs

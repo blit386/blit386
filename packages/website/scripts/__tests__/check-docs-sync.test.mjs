@@ -172,6 +172,12 @@ describe('findUntrackedGeneratedPages', () => {
 
         assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), ['content/docs/guides/new-page.mdx']);
     });
+
+    test('flags an untracked API history copy (BT-774)', () => {
+        const untrackedFiles = ['src/data/api-history.generated.json'];
+
+        assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), untrackedFiles);
+    });
 });
 
 describe('listUntrackedDocsFiles', () => {
@@ -201,5 +207,17 @@ describe('listUntrackedDocsFiles', () => {
         writeFileSync(join(guidesDir, 'new-page.mdx'), '---\ntitle: "New Page"\n---\n\nBody.\n');
 
         assert.deepEqual(listUntrackedDocsFiles(repoDir), ['content/docs/guides/new-page.mdx']);
+    });
+
+    // sync:docs also writes the API history copy, so the drift check has to look at it too (BT-774).
+    test('lists an untracked API history copy outside content/docs', () => {
+        const dataDir = join(repoDir, 'src', 'data');
+        mkdirSync(dataDir, { recursive: true });
+        writeFileSync(join(dataDir, 'api-history.generated.json'), '{}\n');
+
+        assert.deepEqual(listUntrackedDocsFiles(repoDir), [
+            'content/docs/guides/new-page.mdx',
+            'src/data/api-history.generated.json',
+        ]);
     });
 });

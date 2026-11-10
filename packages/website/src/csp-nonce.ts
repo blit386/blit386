@@ -1,4 +1,5 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
+import { REPORT_ONLY_ENABLED } from './channel-vars.mjs';
 import { buildCsp, generateNonce } from './csp';
 import { HTTP_GET } from './http-methods';
 
@@ -19,9 +20,6 @@ export interface HtmlRewriterLike {
 }
 
 declare const HTMLRewriter: new () => HtmlRewriterLike;
-
-/** `1` in the `BLIT386_CSP_REPORT_ONLY` Worker var switches a deployment to report-only. */
-const REPORT_ONLY_ENABLED = '1';
 
 interface CspEnv {
     BLIT386_CSP_REPORT_ONLY?: string;
