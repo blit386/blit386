@@ -116,7 +116,7 @@ Lead with what is genuinely still open - that is the answer the user wants. Then
 milestone and status fixes you are recommending but did not apply. If the review found work worth its own issue, file it
 with the `linear-issue` skill rather than burying it in a checkbox.
 
-## Linear mechanics that bite
+## Linear and git mechanics that bite
 
 - `patch` anchors must match the current content **exactly once**, and one failing operation aborts the whole call with
   nothing saved. Re-read with `get_issue` and copy anchors from that output rather than from memory.
