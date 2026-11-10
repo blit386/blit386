@@ -218,6 +218,11 @@ describe('transformBody link targets (BT-774)', () => {
         assert.equal(body, '[api](/docs/api/renderer "The renderer")');
     });
 
+    test('keeps a parenthesized link title out of the rewritten path', () => {
+        const { body } = transformBody('[api](renderer.md (The renderer))', API_DIR);
+        assert.equal(body, '[api](/docs/api/renderer (The renderer))');
+    });
+
     test('keeps balanced parentheses inside the target', () => {
         const { body } = transformBody('[notes](notes_(draft).md) after', API_DIR);
         assert.equal(body, `[notes](https://github.com/blit386/blit386/blob/main/${API_DIR}/notes_(draft).md) after`);

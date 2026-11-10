@@ -239,11 +239,12 @@ const FENCE_PATTERN = /^\s*(`{3,}|~{3,})(.*)$/u;
 const transformBody = (markdown, sourceRepoDir, source = sourceRepoDir) => {
     // Matches an inline code span (group 1) OR a full markdown link whose label
     // may itself contain inline code, e.g. [`code`](url) (groups 2+3), with an
-    // optional "title" (group 4). The target may hold one level of balanced
-    // parentheses. Processing left-to-right means code spans are consumed first,
+    // optional title in any CommonMark form, "t", 't', or (t) (group 4). The
+    // target may hold one level of balanced parentheses. Processing
+    // left-to-right means code spans are consumed first,
     // so link-like text inside a code span is never mistaken for a real link target.
     const linkTokenPattern =
-        /(`[^`]*`)|(\[(?:`[^`]*`|[^\]`])*\])\(\s*((?:[^()\s]|\([^()\s]*\))+)(\s+(?:"[^"]*"|'[^']*'))?\s*\)/gu;
+        /(`[^`]*`)|(\[(?:`[^`]*`|[^\]`])*\])\(\s*((?:[^()\s]|\([^()\s]*\))+)(\s+(?:"[^"]*"|'[^']*'|\([^()]*\)))?\s*\)/gu;
     const inlineCodePattern = /(`[^`]*`)/u;
     const strippedComments = [];
     // The opening run of the fence we are inside (e.g. "```" or "~~~~"), or '' outside one.
