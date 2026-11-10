@@ -87,6 +87,14 @@ const UI_ANCHORS = {
     TOP_BAR: 'topBar',
 };
 
+// The four directions the D-pad keys and ui.swipe() report.
+const UI_DIRECTIONS = Object.freeze({
+    UP: 'up',
+    DOWN: 'down',
+    LEFT: 'left',
+    RIGHT: 'right',
+});
+
 // The engine tracks up to four pointers: slot 0 is the mouse, slots 1-3 are touches.
 const POINTER_SLOTS = 4;
 
@@ -1052,5 +1060,6 @@ export {
     hitContains,
     ROW_H,
     UI_ANCHORS,
+    UI_DIRECTIONS,
     UiContext,
 };

@@ -108,14 +108,7 @@ TRY THIS
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage } from './shared/canvas-sprites.js';
-import {
-    applyTheme,
-    THEME_DEFAULT_START_SLOT,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
-    ui,
-    UI_ANCHORS,
-} from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
@@ -264,9 +257,9 @@ const VARIANT_TABLE = [
 const VARIANT_COUNT = VARIANT_TABLE.length;
 
 // Overlay colors. configure() runs before applyTheme(), so these are the slots the theme
-// will fill (start + offset), not this.theme, which does not exist yet.
-const UI_TEXT = THEME_DEFAULT_START_SLOT + THEME_TEXT_OFFSET;
-const UI_PANEL = THEME_DEFAULT_START_SLOT + THEME_PANEL_OFFSET;
+// will fill, not this.theme, which does not exist yet.
+const UI_TEXT = defaultThemeSlot('text');
+const UI_PANEL = defaultThemeSlot('panel');
 
 // One opaque color. Alpha 255 so indexize() can match it exactly.
 function rgb(r, g, b) {

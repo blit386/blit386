@@ -44,31 +44,14 @@ const THEME_COLORS = [
     { key: 'buttonHover', name: 'ui_button_hover', hex: '#45577d' }, // Button fill under the mouse.
 ];
 
-// Resolved palette indices, filled in by applyTheme(). Widgets read `T.text`, `T.panel`,
-// and so on instead of raw numbers. `ready` lets the kit give a helpful error when a demo
-// forgets to call applyTheme() before drawing UI.
-//
-// `T` is a single module-level object, not per-palette state: calling applyTheme() again
-// (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
-// is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
-// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
-// exactly one UiContext and it always draws with the most recently applied theme. It would
-// stop being safe the moment two palettes/themes need to be live at once (multiple demos in
-// one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
-// patch here.
 // applyTheme()'s default startSlot. Exported so a demo that must reference this slot before
 // calling applyTheme() (for example inside configure(), which runs before init()) can point
 // at the same constant instead of repeating the literal 240.
 const THEME_DEFAULT_START_SLOT = 240;
 
-// Offsets of individual theme colors within the twelve-color block, for demos that need a
-// slot number before applyTheme() has run (see configure() below, which runs before init()).
-// Exported so those demos derive from THEME_COLORS' actual order instead of repeating a
-// literal offset that would silently go stale if the color list above is ever reordered.
-const THEME_PANEL_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'panel');
-const THEME_TEXT_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'text');
-
-// The slot a theme color lands in when applyTheme() runs with its default startSlot.
+// The slot a theme color lands in when applyTheme() runs with its default startSlot. For
+// demos that need a slot number before applyTheme() has run (configure() runs before
+// init()); it follows THEME_COLORS' actual order, so a reorder never leaves a stale literal.
 function defaultThemeSlot(key) {
     return THEME_DEFAULT_START_SLOT + THEME_COLORS.findIndex((entry) => entry.key === key);
 }
@@ -110,6 +93,18 @@ const BUTTON_LOOK = Object.freeze({
     WARN: 'warn', // A failure flash: resting fill, warm rim.
 });
 
+// Resolved palette indices, filled in by applyTheme(). Widgets read `T.text`, `T.panel`,
+// and so on instead of raw numbers. `ready` lets the kit give a helpful error when a demo
+// forgets to call applyTheme() before drawing UI.
+//
+// `T` is a single module-level object, not per-palette state: calling applyTheme() again
+// (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
+// is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
+// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
+// exactly one UiContext and it always draws with the most recently applied theme. It would
+// stop being safe the moment two palettes/themes need to be live at once (multiple demos in
+// one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
+// patch here.
 const T = {
     bg: 0,
     shadow: 0,
@@ -464,14 +459,13 @@ export {
     applyTheme,
     BUTTON_LOOK,
     buttonFillSlice,
+    defaultThemeSlot,
     litRimColor,
     solidSlice,
     T,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
     TOOLTIP_CAP_BOTTOM,
     TOOLTIP_CAP_TOP,
     TOOLTIP_CAP_X,

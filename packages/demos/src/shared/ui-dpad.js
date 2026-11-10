@@ -15,19 +15,19 @@
  * toggle, and most thumbs rest on the right half of a phone anyway.
  */
 
-import { hitContains } from './ui-core.js';
+import { hitContains, UI_ANCHORS, UI_DIRECTIONS } from './ui-core.js';
 import { T } from './ui-theme.js';
 
 // Widget ids for the four keys. They live in the shared hit-rectangle map, which also
 // means the swipe recognizer automatically ignores swipes that start on the D-pad.
 const DPAD_IDS = {
-    up: 'ui:dpad:up',
-    down: 'ui:dpad:down',
-    left: 'ui:dpad:left',
-    right: 'ui:dpad:right',
+    [UI_DIRECTIONS.UP]: 'ui:dpad:up',
+    [UI_DIRECTIONS.DOWN]: 'ui:dpad:down',
+    [UI_DIRECTIONS.LEFT]: 'ui:dpad:left',
+    [UI_DIRECTIONS.RIGHT]: 'ui:dpad:right',
 };
 
-const DIRECTIONS = ['up', 'down', 'left', 'right'];
+const DIRECTIONS = Object.values(UI_DIRECTIONS);
 
 // Touch targets are generous: every key's hit rectangle grows by this many pixels per
 // side, so the gaps between keys and near-misses still register.
@@ -112,11 +112,11 @@ function drawArrow(ctx, dir, keyX, keyY, size, color) {
         // Row `i` counts away from the tip; each row is two pixels wider than the last.
         const span = i + 1;
 
-        if (dir === 'up') {
+        if (dir === UI_DIRECTIONS.UP) {
             ctx.flushRect.set(centerX - span, centerY + start + i, 2 * span, 1);
-        } else if (dir === 'down') {
+        } else if (dir === UI_DIRECTIONS.DOWN) {
             ctx.flushRect.set(centerX - span, centerY - start - i, 2 * span, 1);
-        } else if (dir === 'left') {
+        } else if (dir === UI_DIRECTIONS.LEFT) {
             ctx.flushRect.set(centerX + start + i, centerY - span, 1, 2 * span);
         } else {
             ctx.flushRect.set(centerX - start - i, centerY - span, 1, 2 * span);
@@ -153,15 +153,17 @@ function dpadWidget(ctx, opts = {}) {
     const size = typeof opts.size === 'number' ? opts.size : 34;
     const gap = typeof opts.gap === 'number' ? opts.gap : 4;
     const margin = typeof opts.margin === 'number' ? opts.margin : 8;
-    const corner = opts.corner || 'bottomRight';
+    const corner = opts.corner || UI_ANCHORS.BOTTOM_RIGHT;
 
     // The cross fits a square of three keys plus two gaps on each axis.
     const total = 3 * size + 2 * gap;
     ctx.startFrame();
 
     const display = ctx.display;
-    const baseX = corner === 'bottomLeft' || corner === 'topLeft' ? margin : display.x - margin - total;
-    const baseY = corner === 'topLeft' || corner === 'topRight' ? margin : display.y - margin - total;
+    const baseX =
+        corner === UI_ANCHORS.BOTTOM_LEFT || corner === UI_ANCHORS.TOP_LEFT ? margin : display.x - margin - total;
+    const baseY =
+        corner === UI_ANCHORS.TOP_LEFT || corner === UI_ANCHORS.TOP_RIGHT ? margin : display.y - margin - total;
     const step = size + gap;
 
     for (const dir of DIRECTIONS) {
@@ -184,11 +186,11 @@ function drawKey(ctx, dir, baseX, baseY, step, size) {
     let keyX = baseX + step;
     let keyY = baseY + step;
 
-    if (dir === 'up') {
+    if (dir === UI_DIRECTIONS.UP) {
         keyY = baseY;
-    } else if (dir === 'down') {
+    } else if (dir === UI_DIRECTIONS.DOWN) {
         keyY = baseY + 2 * step;
-    } else if (dir === 'left') {
+    } else if (dir === UI_DIRECTIONS.LEFT) {
         keyX = baseX;
     } else {
         keyX = baseX + 2 * step;

@@ -245,8 +245,9 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do not "fix" that
   order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use `THEME_OVERLAY_STYLE` (and
-  `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, literal slot numbers (240 +
-  offset) with a comment on a custom `startSlot`, or dedicated scene slots
+  `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, `defaultThemeSlot(key)` for
+  any one theme color on the default theme, literal slot numbers with a comment on a custom `startSlot`, or dedicated
+  scene slots
 - Every demo must be usable on touch: key-triggered actions get a `ui.button` with a `{ key }` binding, directional
   input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (`keyboard-input`, `gamepad-input`,
   `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true. One deliberate

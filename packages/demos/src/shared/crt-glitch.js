@@ -38,25 +38,48 @@ const NOISE_BASE = 0.025;
 // Pixel-tier glitch band height, identical across the three full-color demos.
 const PIXEL_GLITCH_BAND_HEIGHT = 6;
 
+// Every glitch key, once. Demos compare `this.glitchType` against these instead of
+// re-typing the strings, and both type lists below are built from them.
+const GLITCH_TYPE = Object.freeze({
+    HSHIFT: 'hshift',
+    CHROMASPLIT: 'chromasplit',
+    NOISE: 'noise',
+    FLICKER: 'flicker',
+    INTERFERENCE: 'interference',
+    VROLL: 'vroll',
+});
+
 // The five full-color TV faults: horizontal tear, chroma split, snow, brightness
 // waver, ghosting. Used by crt-pipboy.js, snake-game.js, basics-enhanced.js.
-const GLITCH_TYPES_CHROMA = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
+const GLITCH_TYPES_CHROMA = [
+    GLITCH_TYPE.HSHIFT,
+    GLITCH_TYPE.CHROMASPLIT,
+    GLITCH_TYPE.NOISE,
+    GLITCH_TYPE.FLICKER,
+    GLITCH_TYPE.INTERFERENCE,
+];
 
 // The five Tesla Orava B/W faults: horizontal tear, snow, brightness waver, ghosting,
 // vertical roll (no chroma split - a B/W tube has no color channels). Used by
 // sprite-effects.js and logo-lowres.js.
-const GLITCH_TYPES_VROLL = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
+const GLITCH_TYPES_VROLL = [
+    GLITCH_TYPE.HSHIFT,
+    GLITCH_TYPE.NOISE,
+    GLITCH_TYPE.FLICKER,
+    GLITCH_TYPE.INTERFERENCE,
+    GLITCH_TYPE.VROLL,
+];
 
 // Canonical on-screen label for every glitch key across both groups. Any demo with a
 // HUD looks a key up here instead of hand-typing its own label map.
 const GLITCH_LABELS = {
     none: 'NONE',
-    hshift: 'H-HOLD',
-    chromasplit: 'CHROMA',
-    noise: 'SNOW',
-    flicker: 'DIM',
-    interference: 'GHOST',
-    vroll: 'V-ROLL',
+    [GLITCH_TYPE.HSHIFT]: 'H-HOLD',
+    [GLITCH_TYPE.CHROMASPLIT]: 'CHROMA',
+    [GLITCH_TYPE.NOISE]: 'SNOW',
+    [GLITCH_TYPE.FLICKER]: 'DIM',
+    [GLITCH_TYPE.INTERFERENCE]: 'GHOST',
+    [GLITCH_TYPE.VROLL]: 'V-ROLL',
 };
 
 /**
@@ -89,15 +112,15 @@ function applyGlitchUniforms(instance, envelope) {
 
     resetGlitchUniforms(instance);
 
-    if (instance.glitchType === 'hshift') {
+    if (instance.glitchType === GLITCH_TYPE.HSHIFT) {
         instance.pixelGlitch.intensity = peak;
-    } else if (instance.glitchType === 'chromasplit') {
+    } else if (instance.glitchType === GLITCH_TYPE.CHROMASPLIT) {
         instance.aberration.aberration = ABERRATION_BASE + peak * 4;
-    } else if (instance.glitchType === 'noise') {
+    } else if (instance.glitchType === GLITCH_TYPE.NOISE) {
         instance.noise.amount = NOISE_BASE + peak * 0.08;
-    } else if (instance.glitchType === 'flicker') {
+    } else if (instance.glitchType === GLITCH_TYPE.FLICKER) {
         instance.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
-    } else if (instance.glitchType === 'interference') {
+    } else if (instance.glitchType === GLITCH_TYPE.INTERFERENCE) {
         instance.interference.amount = peak * 0.06;
     }
 }
@@ -114,6 +137,7 @@ export {
     GLITCH_INTENSITY_MAX,
     GLITCH_INTENSITY_MIN,
     GLITCH_LABELS,
+    GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     GLITCH_TYPES_VROLL,
     NOISE_BASE,
