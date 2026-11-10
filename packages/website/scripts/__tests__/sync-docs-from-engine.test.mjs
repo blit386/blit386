@@ -236,7 +236,7 @@ describe('MDX_COMPONENTS matches press.config.tsx (BT-774)', () => {
         const added = /\.\.\.defaultMdxComponents,([\s\S]*?)\};/u.exec(config)?.[1] ?? '';
         const { default: defaults } = await import('fumadocs-ui/mdx');
         const registered = new Set([
-            ...[...added.matchAll(/^\s+([A-Z]\w*),$/gmu)].map((match) => match[1]),
+            ...[...added.matchAll(/^\s+([A-Z]\w*)\s*[,:]/gmu)].map((match) => match[1]),
             ...Object.keys(defaults).filter((name) => /^[A-Z]/u.test(name)),
         ]);
         assert.deepEqual([...MDX_COMPONENTS].sort(), [...registered].sort());
