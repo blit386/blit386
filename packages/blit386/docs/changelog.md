@@ -100,6 +100,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   every sprite (sprites, `BT.systemPrint`, `BT.printFont`) in a frame, so a `BT.drawRectFill` HUD bar drawn over a
   sprite background disappeared under it on WebGPU while the software backend showed it on top. See
   [Draw order](api-rendering.md#draw-order).
+- A 1-pixel-tall `BT.drawRect` on the software backend draws only its own row. Its side lines used to run backwards and
+  paint one pixel above and below each end, which WebGPU never did.
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl

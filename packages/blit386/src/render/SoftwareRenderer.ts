@@ -983,6 +983,13 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
         this.rasterLine(x, y, x1, y, paletteIndex, cameraX, cameraY);
         this.rasterLine(x, y1, x1, y1, paletteIndex, cameraX, cameraY);
+
+        // Top and bottom rows already cover a 1- or 2-pixel-tall rect; a side line from y + 1 to y1 - 1 would run
+        // backwards past it. Same rule as PrimitivePipeline.drawRect.
+        if (height <= 2) {
+            return;
+        }
+
         this.rasterLine(x, y + 1, x, y1 - 1, paletteIndex, cameraX, cameraY);
         this.rasterLine(x1, y + 1, x1, y1 - 1, paletteIndex, cameraX, cameraY);
     }

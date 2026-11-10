@@ -991,3 +991,77 @@ describe('SoftwareRenderer line viewport clipping', () => {
         expect(lit).toEqual(referencePixels(30, -20, 70, 20, 40, -6));
     });
 });
+
+describe('SoftwareRenderer backend parity (BT-756)', () => {
+    beforeEach(() => {
+        logicalContext.lastImageData = null;
+        vi.stubGlobal(
+            'ImageData',
+            class MockImageData {
+                constructor(
+                    public width: number,
+                    public height: number,
+                    public data: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4),
+                ) {}
+            },
+        );
+        vi.stubGlobal('OffscreenCanvas', MockOffscreenCanvas);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    /** A 16x16 software renderer with {@link makePalette} installed. */
+    async function createRenderer(): Promise<SoftwareRenderer> {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: canvasGet2d(context),
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(16, 16));
+
+        await renderer.init();
+        renderer.setPalette(makePalette());
+
+        return renderer;
+    }
+
+    /** Lists every pixel of the last frame whose alpha is non-zero, as `x,y`. */
+    function drawnPixels(): string[] {
+        const frame = logicalContext.lastImageData as ImageData;
+        const drawn: string[] = [];
+
+        for (let y = 0; y < frame.height; y++) {
+            for (let x = 0; x < frame.width; x++) {
+                if (getPixel(frame, frame.width, x, y)[3] !== 0) {
+                    drawn.push(`${x},${y}`);
+                }
+            }
+        }
+
+        return drawn;
+    }
+
+    it('draws a 1-pixel-tall drawRect as exactly its own row, like PrimitivePipeline', async () => {
+        const renderer = await createRenderer();
+
+        renderer.beginFrame();
+        renderer.drawRect(new Rect2i(5, 5, 4, 1), 1);
+        renderer.endFrame();
+
+        expect(drawnPixels()).toEqual(['5,5', '6,5', '7,5', '8,5']);
+    });
+
+    it('draws a 2-pixel-tall drawRect as exactly its two rows', async () => {
+        const renderer = await createRenderer();
+
+        renderer.beginFrame();
+        renderer.drawRect(new Rect2i(5, 5, 3, 2), 1);
+        renderer.endFrame();
+
+        expect(drawnPixels()).toEqual(['5,5', '6,5', '7,5', '5,6', '6,6', '7,6']);
+    });
+});
