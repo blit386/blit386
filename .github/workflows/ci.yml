@@ -60,14 +60,27 @@ jobs:
               - '.prettierignore'
               - 'commitlint.config.js'
               - '.husky/**'
+              # Sets the Node version every job runs on.
+              - '.node-version'
             engine:
               - 'packages/blit386/**'
+              # api:deprecations:check generates docs/reference-deprecations.md from this registry.
+              - 'packages/kit/src/migrations/**'
+              # gen-deprecations.mjs (api:deprecations:check) imports ensure-kit-built.mjs, which imports build-lock.mjs.
+              - 'scripts/ensure-kit-built.mjs'
+              - 'scripts/build-lock.mjs'
             demos:
               - 'packages/demos/**'
               - 'packages/blit386/**'
+              # dev, build and knip run ensure-engine-built.mjs, which imports build-lock.mjs.
+              - 'scripts/ensure-engine-built.mjs'
+              - 'scripts/build-lock.mjs'
             website:
               - 'packages/website/**'
               - 'packages/blit386/**'
+              # build and test run ensure-engine-built.mjs, which imports build-lock.mjs.
+              - 'scripts/ensure-engine-built.mjs'
+              - 'scripts/build-lock.mjs'
               # Sources of the generated Build a Game pages (scripts/sync-kit-pages.mjs), so
               # sync:docs:check catches a stale mirror in the PR that changed them.
               - 'packages/kit/content/**'
@@ -87,11 +100,10 @@ jobs:
               # Holds the test:visual:parity script the job runs.
               - 'packages/blit386/package.json'
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
-            # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
-            # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
-            # ...) - checkers and their *.test.mjs suites alike - only feed quality-root's
-            # steps, which already run unconditionally (quality-root has no `if` and no `needs`) - so it
-            # deliberately has no filter entry here.
+            # build-test-scaffolder runs test:bump-lockstep. Root scripts a package script runs
+            # (ensure-engine-built.mjs, ensure-kit-built.mjs, build-lock.mjs) sit in that package's
+            # filter above. Every other root script and every scripts/ test suite feeds only
+            # quality-root, which runs unconditionally (no `if`, no `needs`), so it has no entry here.
             scaffolder:
               - 'packages/create-blit386/**'
               - 'packages/kit/**'

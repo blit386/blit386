@@ -375,10 +375,12 @@ Triggers on push to `main` and on pull requests targeting `main` (`opened`, `syn
 does not retrigger the workflow).
 
 The pipeline is path-filtered. A `changes` job runs [`dorny/paths-filter`](https://github.com/dorny/paths-filter) first
-and emits one boolean per package plus a `shared` flag for root configs, `scripts/`, and `.github/`; every package job
-is gated on its own filter or on `shared`. So an engine-only pull request does not rebuild the demos, and a website-only
-one touches neither. Two filters deliberately span packages: `demos` includes `packages/blit386/**` because demos
-consumes the engine as `workspace:*`, and `website` includes `packages/blit386/docs/**` because that is what
+and emits one boolean per package plus a `shared` flag for root configs, `.node-version`, and `.github/`; every package
+job is gated on its own filter or on `shared`. A root `scripts/` file that a package script runs (`ensure-engine-built`,
+`ensure-kit-built`, `build-lock`) sits in that package's filter, and the engine filter also covers the kit migration
+registry that `api:deprecations:check` reads. So an engine-only pull request does not rebuild the demos, and a
+website-only one touches neither. Two filters deliberately span packages: `demos` includes `packages/blit386/**` because
+demos consumes the engine as `workspace:*`, and `website` includes `packages/blit386/docs/**` because that is what
 `sync:docs:check` mirrors.
 
 | Job | Gated on | What it runs |
