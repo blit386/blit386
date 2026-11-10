@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Rendering"
 description: "Primitives, sprites, text, post-process effects, and frame capture."
-lastModified: "2026-10-24T08:29:36+02:00"
+lastModified: "2026-11-10T13:43:38+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
 ---
 
@@ -475,8 +475,9 @@ no `tint` field. Older sketches that used `Color32` / `ColorArg` as a 4th argume
 
 #### Software-renderer parity
 
-No accepted field degrades. The software blit is the pixel spec; WebGPU must match it. The 1:1 path stays today's
-`blitIndexedRect` / UV quad emission.
+No accepted field degrades. The software blit is the pixel spec; WebGPU must match it (the general rules are in
+[Draw order and backend parity](#draw-order-and-backend-parity)). The 1:1 path stays today's `blitIndexedRect` / UV quad
+emission.
 
 | Field | Parity |
 | --- | --- |
@@ -512,6 +513,40 @@ shader picks up the new color automatically; calling `spritesRefresh()` is waste
 RGBA values are gone.
 
 </Callout>
+
+## Draw order and backend parity
+
+Both backends draw the same pixels; the software renderer is the reference, and WebGPU follows it.
+
+### Draw order
+
+Draws land in the order your `render()` calls them. A later draw covers an earlier one wherever they overlap, whatever
+kind each is: a `BT.drawRectFill` HUD bar drawn after a sprite background sits on top of it, and a `BT.drawRect` frame
+drawn after `BT.systemPrint` text crosses the glyphs.
+
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(16, 16)); // background
+BT.drawRectFill(new Rect2i(8, 20, 32, 8), 3); // covers the middle of the sprite
+```
+
+The engine overlay is the one exception: it always draws above the game.
+
+### Empty and negative sizes
+
+A rect or sprite source with a width or height of zero or less draws nothing, on every draw call: `BT.drawRectFill`,
+`BT.drawRect`, `BT.clearRect`, `BT.drawSprite` and its stretched and oriented forms. A computed bar width that goes
+negative, or a shrinking outline that reaches zero, simply disappears. A 1-pixel-tall `BT.drawRect` draws exactly its
+one row.
+
+### Partially transparent palette slots
+
+Each pixel holds one palette slot, and draws never blend with each other: a later draw replaces the slot underneath it.
+A slot's alpha takes effect only when the frame is shown, where it decides how much of the page behind the canvas shows
+through. A slot at 50% alpha, used for the clear color or any draw, shows the page at 50%. Alpha `0` is special: a draw
+in a fully transparent slot is skipped, so the pixel underneath stays.
 
 ## Text
 
@@ -674,6 +709,9 @@ waiting for a loop frame that never comes, and runs after every `renderAt` calle
 The display-size capture has its own pending slot on the renderer, separate from the F9 / Shift+F9 dev shortcuts, so an
 agent's capture and a keypress in the same frame both resolve. Two `{ size: 'display' }` requests in the same frame
 still reject the earlier one, as two `BT.captureFrame()` calls always have.
+
+A capture still waiting for its frame when `BT.init` restarts the engine rejects with "renderer was reset" instead of
+waiting forever, on both backends and for every size.
 
 <DemoEmbed demo="image-output" title="BLIT386 image output demo" />
 
