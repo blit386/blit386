@@ -28,6 +28,9 @@ const mockHardwareSettings = (displaySize = new Vector2i(320, 240), targetFPS = 
 });
 
 function setupErrorContainer(): HTMLDivElement {
+    // The error panel is dev-only (BT-765); release builds only log.
+    globalThis.__BLIT386_DEV__ = true;
+
     const existingContainer = document.getElementById(DEFAULT_CONTAINER_ID);
 
     if (existingContainer instanceof HTMLDivElement) {
@@ -42,6 +45,8 @@ function setupErrorContainer(): HTMLDivElement {
 }
 
 function clearErrorContainer(): void {
+    globalThis.__BLIT386_DEV__ = undefined;
+
     const container = document.getElementById(DEFAULT_CONTAINER_ID);
     if (container?.parentElement) {
         container.parentElement.removeChild(container);

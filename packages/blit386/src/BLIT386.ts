@@ -94,7 +94,7 @@ import {
 import type { SplashState } from './splash';
 import type { BootstrapOptions, DemoConstructor } from './utils/Bootstrap';
 import { bootstrap as bootstrapImpl } from './utils/Bootstrap';
-import { displayError, getCanvas } from './utils/BootstrapHelpers';
+import { displayError, getCanvas, getErrorContainerID, logErrorOnce } from './utils/BootstrapHelpers';
 import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
@@ -112,14 +112,20 @@ import { ValueNoise } from './utils/ValueNoise';
 import { Vector2i } from './utils/Vector2i';
 
 /**
- * Shows a beginner-friendly runtime error in the canvas container and console.
+ * Reports a beginner-friendly runtime error once per distinct message, without stopping the game.
+ *
+ * Dev builds show a panel in the bootstrap container (the canvas stays) and log it; release builds only log it, so
+ * players never see engine wording. Repeats - a bad draw call runs every frame - do nothing.
  *
  * @param message - Human-readable guidance to display.
  * @param title - Short heading for the error panel.
  */
 function showBeginnerRuntimeError(message: string, title: string = 'Demo Error'): void {
-    displayError(title, message);
-    console.error(`[BT] ${title}: ${message}`);
+    if (BTAPI.instance.isDevMode()) {
+        displayError(title, message, getErrorContainerID());
+    } else {
+        logErrorOnce(title, message);
+    }
 }
 
 /**
@@ -1485,9 +1491,11 @@ export const BT = {
      * {@link Effect} instance owns its own GPU resources and may be mutated
      * each frame from demo code.
      *
+     * When the engine is not ready, or the effect call fails, reports the error once (a panel in dev builds, the
+     * console in release) instead of throwing; the game keeps running.
+     *
      * @since 1.0.3
      * @param effect - Effect instance to append.
-     * When the engine is not ready, shows a canvas error instead of throwing.
      */
     effectAdd: (effect: Effect): void => {
         if (!isRendererReady()) {
@@ -1508,9 +1516,11 @@ export const BT = {
      * Searches both tiers and disposes the effect from whichever chain holds
      * it. Removing an effect that was never added is a no-op.
      *
+     * When the engine is not ready, or the effect call fails, reports the error once (a panel in dev builds, the
+     * console in release) instead of throwing; the game keeps running.
+     *
      * @since 1.0.3
      * @param effect - Effect instance to remove.
-     * When the engine is not ready, shows a canvas error instead of throwing.
      */
     effectRemove: (effect: Effect): void => {
         if (!isRendererReady()) {
@@ -1528,7 +1538,8 @@ export const BT = {
     /**
      * Removes every registered post-processing effect across both tiers.
      *
-     * When the engine is not ready, shows a canvas error instead of throwing.
+     * When the engine is not ready, or the effect call fails, reports the error once (a panel in dev builds, the
+     * console in release) instead of throwing; the game keeps running.
      *
      * @since 1.0.3
      */

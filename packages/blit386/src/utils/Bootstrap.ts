@@ -11,7 +11,13 @@ import type { IBTDemo } from '../core/IBTDemo';
 import { isHotActive } from '../hot/HotRuntime';
 import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
-import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
+import {
+    DEFAULT_CANVAS_ID,
+    DEFAULT_CONTAINER_ID,
+    displayError,
+    getCanvas,
+    setErrorContainerID,
+} from './BootstrapHelpers';
 import { canvasNotFoundError, INIT_FAILED_MESSAGE } from './errorMessages';
 
 /**
@@ -295,6 +301,8 @@ export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOp
     const canvasID = providedCanvasID ?? canvasId ?? DEFAULT_CANVAS_ID;
     const containerID = providedContainerID ?? containerId ?? DEFAULT_CONTAINER_ID;
     const isWaitingForDOMReady = providedIsWaitingForDOMReady ?? waitForDOMReady ?? true;
+
+    setErrorContainerID(containerID);
 
     let success: boolean;
 

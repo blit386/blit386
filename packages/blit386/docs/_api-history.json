@@ -2092,7 +2092,12 @@
     "displayError": {
       "kind": "function",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Keeps the container's other children (the canvas) instead of emptying it, shows each distinct message\nonce per container, and logs it once with `console.error`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

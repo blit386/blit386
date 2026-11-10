@@ -81,6 +81,14 @@ const canvas = getCanvas('my-canvas'); // returns null on missing element
 displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 ```
 
+`displayError` pins its panel to the top of the page and leaves the canvas in the container, replaces its own previous
+panel, and logs each message once with `console.error`. Showing the same message again does nothing, so it is safe to
+call from a frame loop.
+
+The engine uses the same panel for its own runtime errors, such as a draw call with a bad palette index or a draw call
+made before the engine is ready. Those never stop the game and never throw: dev builds show the panel in the
+`bootstrap()` container, release builds only log, and each distinct message appears once.
+
 - `bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
   scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
 
