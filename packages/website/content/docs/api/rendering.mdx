@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Rendering"
 description: "Primitives, sprites, text, post-process effects, and frame capture."
-lastModified: "2026-11-10T14:06:57+01:00"
+lastModified: "2026-11-10T15:05:19+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
 ---
 
@@ -533,6 +533,10 @@ BT.drawRectFill(new Rect2i(8, 20, 32, 8), 3); // covers the middle of the sprite
 ```
 
 The engine overlay is the one exception: it always draws above the game.
+
+On WebGPU, each switch between a primitive draw (pixels, lines, rects) and a sprite or text draw starts a new GPU draw
+call. Alternating the two for hundreds of entities costs more than drawing every sprite and then every rect, so group
+draws by kind wherever their order does not matter.
 
 ### Empty and negative sizes
 
