@@ -12,7 +12,8 @@
  *    "command" records with panel-relative coordinates to a preallocated pool, and ui.end()
  *    resolves the panel's origin and replays the commands through the real BT draw calls.
  *    All the pool objects are allocated once and reused, so steady-state rendering allocates
- *    nothing - the one performance rule that actually matters in render().
+ *    nothing but the one BT.displaySize copy per frame - the one performance rule that
+ *    actually matters in render().
  *
  * 2. One-frame-old hit rectangles. A widget cannot know its absolute position while it is
  *    being declared (see above), so interaction tests use the rectangle the widget ended up
@@ -173,6 +174,14 @@ class UiContext {
     edgeRect = new Rect2i(0, 0, 0, 0);
 
     flushVec = new Vector2i(0, 0);
+
+    // Scratch for BT.pointerPosTo(); BT.pointerPos() would clone a fresh vector per call.
+    posScratch = new Vector2i(0, 0);
+
+    // The logical display size, read once per frame by startFrame(). BT.displaySize returns a
+    // copy, so that one read is the kit's only per-frame allocation (the engine has no
+    // write-into-out form of it).
+    display = new Vector2i(0, 0);
 
     /**
      * Render-side pointer snapshot, refreshed at every begin(). `pressed` uses the engine's
@@ -364,7 +373,7 @@ class UiContext {
             // may already report the slot as inactive, so the last stored position doubles
             // as the release position (used by the swipe recognizer).
             if (down) {
-                const pos = BT.pointerPos(slot);
+                const pos = BT.pointerPosTo(this.posScratch, slot);
 
                 rec.x = pos.x;
                 rec.y = pos.y;
@@ -407,7 +416,7 @@ class UiContext {
             p.down = p.active && BT.isDown(BT.BTN_POINTER_A, slot);
 
             if (p.active || p.pressed) {
-                const pos = BT.pointerPos(slot);
+                const pos = BT.pointerPosTo(this.posScratch, slot);
 
                 p.x = pos.x;
                 p.y = pos.y;
@@ -446,6 +455,23 @@ class UiContext {
     }
 
     /**
+     * Per-frame bookkeeping, run by whichever kit call comes first in a frame (begin(), the
+     * D-pad, a tooltip) and skipped by the rest. Prunes with the ids the previous frame
+     * flushed, so a widget that stopped being declared drops out of hitRects instead of
+     * leaving a dead zone, starts a fresh recorded group list, and reads the display size.
+     */
+    startFrame() {
+        if (this.renderedSinceTick) {
+            return;
+        }
+
+        this.pruneHitRects();
+        this.frameGroups.length = 0;
+        this.display = BT.displaySize;
+        this.renderedSinceTick = true;
+    }
+
+    /**
      * Starts a widget group. Every begin() must be paired with one end().
      *
      * @param {'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'topBar'} anchor -
@@ -467,17 +493,8 @@ class UiContext {
             throw new Error('ui.begin: the previous group is still open. Did you forget ui.end()?');
         }
 
-        // The first begin() since the last tick() starts a new frame's worth of widget
-        // declarations. Prune now, using the ids the previous frame flushed, so a widget
-        // that stopped being declared drops out of hitRects instead of leaving a dead zone.
-        if (!this.renderedSinceTick) {
-            this.pruneHitRects();
-            this.frameGroups.length = 0;
-        }
-
+        this.startFrame();
         this.refreshPointerSnapshot();
-
-        this.renderedSinceTick = true;
 
         this.inGroup = true;
         this.anchor = anchor;
@@ -508,7 +525,7 @@ class UiContext {
             throw new Error('ui.end: no group is open. Call ui.begin() first.');
         }
 
-        const display = BT.displaySize;
+        const display = this.display;
 
         // Final width: fixed if the demo asked for one, the full screen for a top bar,
         // otherwise the widest declared row - never wider than the screen allows.

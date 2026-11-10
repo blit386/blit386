@@ -234,7 +234,9 @@ function tooltip(ctx, anchor, label, opts = {}) {
     // letters. FONT_H includes line spacing, so the height is trimmed back to hug the glyphs.
     const width = label.length * FONT_W + TOOLTIP_CAP_X * 2 + TOOLTIP_EXTRA_W;
     const height = FONT_H + TOOLTIP_CAP_TOP + TOOLTIP_CAP_BOTTOM - TOOLTIP_TRIM_H;
-    const display = BT.displaySize;
+    ctx.startFrame();
+
+    const display = ctx.display;
     const minY = opts.minY ?? 0;
     const gap = opts.gap ?? TOOLTIP_GAP;
 

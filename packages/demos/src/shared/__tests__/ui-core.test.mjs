@@ -6,10 +6,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { Rect2i } from 'blit386';
+import { BT, Rect2i } from 'blit386';
 
 import { CMD_RECT_FILL, CMD_RECT_STROKE, hitContains, UI_ANCHORS } from '../ui-core.js';
+import { dpadWidget } from '../ui-dpad.js';
 import { BUTTON_LOOK, buttonFillSlice, solidSlice, T } from '../ui-theme.js';
+import { checkbox, tooltip } from '../ui-widgets.js';
 import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
@@ -435,5 +437,62 @@ describe('UiContext.drawButtonFill', () => {
         assert.equal(drawn[2], buttonFillSlice(5, 7));
         assert.notEqual(drawn[2], drawn[0]);
         assert.throws(() => ctx.drawButtonFill(rect, 5, 256), /integer from 1 to 255/);
+    });
+});
+
+describe('UiContext per-frame engine reads', () => {
+    it('never calls the cloning BT.pointerPos() and reads BT.displaySize once per frame', (t) => {
+        const calls = { pointerPos: 0, displaySize: 0 };
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot <= 1,
+            isPressed: () => false,
+            isDown: () => true,
+            pointerPos: () => {
+                calls.pointerPos++;
+
+                return { x: 20, y: 20 };
+            },
+            pointerPosTo: (out) => {
+                out.x = 20;
+                out.y = 20;
+
+                return out;
+            },
+        });
+        // stubBt() saved the real descriptor first, so its cleanup restores it.
+        Object.defineProperty(BT, 'displaySize', {
+            configurable: true,
+            get: () => {
+                calls.displaySize++;
+
+                return { x: 320, y: 180 };
+            },
+        });
+
+        const ctx = createReadyContext();
+        const anchor = new Rect2i(100, 100, 20, 10);
+        const frame = () => {
+            ctx.tick();
+            dpadWidget(ctx, { show: 'always' });
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            checkbox(ctx, 'Loop', false);
+            ctx.end();
+            ctx.begin(UI_ANCHORS.BOTTOM_RIGHT);
+            checkbox(ctx, 'Mute', false);
+            ctx.end();
+            tooltip(ctx, anchor, 'Hint');
+        };
+
+        frame();
+        calls.pointerPos = 0;
+        calls.displaySize = 0;
+
+        for (let i = 0; i < 3; i++) {
+            frame();
+        }
+
+        assert.equal(calls.pointerPos, 0);
+        assert.equal(calls.displaySize, 3);
     });
 });

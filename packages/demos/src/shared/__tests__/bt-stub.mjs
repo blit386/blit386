@@ -22,7 +22,9 @@ const STUB_KEYS = [
     'isDown',
     'isPressed',
     'pointerPos',
+    'pointerPosTo',
     'isKeyPressed',
+    'ticks',
     'displaySize',
     'drawRectFill',
     'drawRect',
@@ -35,7 +37,9 @@ const SAFE_DEFAULTS = {
     isDown: () => false,
     isPressed: () => false,
     pointerPos: () => ({ x: 0, y: 0 }),
+    pointerPosTo: null, // filled in by stubBt() from pointerPos unless overridden
     isKeyPressed: () => false,
+    ticks: 0,
     displaySize: { x: 320, y: 180 },
     drawRectFill: () => {},
     drawRect: () => {},
@@ -54,6 +58,17 @@ const SAFE_DEFAULTS = {
  */
 function stubBt(t, overrides = {}) {
     const merged = { ...SAFE_DEFAULTS, ...overrides };
+
+    // The kit reads positions through the zero-alloc pointerPosTo(); a test that overrides
+    // only pointerPos() still drives it.
+    merged.pointerPosTo ??= (out, slot = 0) => {
+        const pos = merged.pointerPos(slot);
+
+        out.x = pos.x;
+        out.y = pos.y;
+
+        return out;
+    };
     const originals = new Map();
 
     for (const key of STUB_KEYS) {

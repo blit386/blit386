@@ -233,7 +233,8 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
 - `ui.tick()` as the first line of `update()` whenever the demo uses `{ key }` bindings, gestures, or the D-pad. This is
   what makes keyboard bindings edge-safe - never read `BT.isKeyPressed` in `render()` yourself
 - `ui.begin(anchor)` / widgets / `ui.end()` in `render()`. Widget identity is the label; pass `{ id }` for duplicates.
-  The kit allocates nothing per frame, so calling it at 60 FPS is fine
+  The kit allocates nothing per frame beyond one `BT.displaySize` copy (it reads pointers through `BT.pointerPosTo`), so
+  calling it at 60 FPS is fine
 - Kit panels, buttons, and meters are nine-slice sprites, and the engine draws every primitive (`BT.drawRectFill`,
   `BT.drawRect`, ...) before every sprite. Artwork a demo draws inside a `ui.panel()` (the space a `ui.spacer()`
   reserves) must use `ui.drawRectFill` / `ui.drawRect` - the same arguments, drawn as sprites so they land on top. A

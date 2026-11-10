@@ -159,7 +159,9 @@ function dpadWidget(ctx, opts = {}) {
 
     // The cross fits a square of three keys plus two gaps on each axis.
     const total = 3 * size + 2 * gap;
-    const display = BT.displaySize;
+    ctx.startFrame();
+
+    const display = ctx.display;
     const baseX = corner === 'bottomLeft' || corner === 'topLeft' ? margin : display.x - margin - total;
     const baseY = corner === 'topLeft' || corner === 'topRight' ? margin : display.y - margin - total;
     const step = size + gap;

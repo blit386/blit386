@@ -31,7 +31,8 @@
  * { id: '...' } option in that case.
  *
  * Performance: widgets queue draw commands into preallocated pools and reuse every object,
- * so steady-state frames allocate nothing - safe to call from render() at 60 FPS.
+ * so steady-state frames allocate nothing but one display-size read - safe to call from
+ * render() at 60 FPS.
  */
 
 import { FONT_W, UI_ANCHORS, UiContext } from './ui-core.js';
