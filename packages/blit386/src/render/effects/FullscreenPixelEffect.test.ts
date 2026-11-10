@@ -2,7 +2,8 @@
  * Unit tests for {@link FullscreenPixelEffect}.
  *
  * Covers the `r8uint` init path, the non-`r8uint` rejection, bind-group caching,
- * encode-pass clear values, disposal / re-init, and the uninitialized guards. Concrete pixel effects (`PixelGlitch`, `PixelMosaic`) have
+ * encode-pass clear values, disposal / re-init, and the uninitialized guards.
+ * Concrete pixel effects (`PixelGlitch`, `PixelMosaic`) have
  * their own colocated suites for param layout.
  */
 

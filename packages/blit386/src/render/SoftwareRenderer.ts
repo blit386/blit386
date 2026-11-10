@@ -12,6 +12,7 @@ import type { ClippedLine } from './clipLine';
 import { clipBresenhamLine } from './clipLine';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
+import { SoftwareFrameCaptures } from './SoftwareFrameCaptures';
 import type { SpriteOrientation } from './SpriteOrientation';
 import { SPRITE_ORIENTATIONS, stretchSampleIndex } from './SpriteOrientation';
 
@@ -96,12 +97,6 @@ type BitmapTextCommand = {
 /** Union of all queued draw commands accumulated between `beginFrame` and `endFrame`. */
 type DrawCommand = PrimitiveCommand | SpriteCommand | StretchedSpriteCommand | BitmapTextCommand;
 
-/** Pending `captureFrame` promise callbacks, held until the next `endFrame`. */
-type Pending = {
-    resolve: (blob: Blob) => void;
-    reject: (reason?: unknown) => void;
-};
-
 /** Alias for either the offscreen or on-screen 2D rendering context variant. */
 type Canvas2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
 
@@ -142,11 +137,8 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private readonly commands: DrawCommand[] = [];
     private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
-    private pending: Pending | null = null;
-    /** Pending public `captureFrameAtDisplaySize` request. */
-    private pendingDisplaySize: Pending | null = null;
-    /** Pending F9 / Shift+F9 `captureFrameForShortcut` request - its own slot, see {@link IRenderer}. */
-    private pendingShortcutDisplaySize: Pending | null = null;
+    /** The three capture slots, settled at the end of the next frame. */
+    private readonly captures = new SoftwareFrameCaptures();
     private primitiveSubmittedVertices = 0;
     private spriteSubmittedVertices = 0;
 
@@ -212,18 +204,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Narrows {@link logicalCanvas} to `OffscreenCanvas`, guarding the `typeof` check first so
-     * the `instanceof` test never throws in a browser where the global does not exist (see
-     * {@link createLogicalCanvas}'s own fallback).
-     *
-     * @param canvas - Candidate logical canvas.
-     * @returns True when `canvas` is an `OffscreenCanvas`.
-     */
-    private static isOffscreenCanvas(canvas: OffscreenCanvas | HTMLCanvasElement): canvas is OffscreenCanvas {
-        return typeof OffscreenCanvas !== 'undefined' && canvas instanceof OffscreenCanvas;
-    }
-
-    /**
      * Initializes the 2D canvas contexts and backing image buffer.
      *
      * @returns `true` when contexts are ready; otherwise `false`.
@@ -269,14 +249,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * the renderer; the canvases go with the renderer, so there is nothing else to release.
      */
     destroy(): void {
-        if (this.pending) {
-            this.pending.reject(new Error(RENDERER_RESET_MESSAGE));
-            this.pending = null;
-        }
-
-        for (const request of this.takePendingDisplaySizeRequests()) {
-            request.reject(new Error(RENDERER_RESET_MESSAGE));
-        }
+        this.captures.rejectAll(RENDERER_RESET_MESSAGE);
     }
 
     /**
@@ -332,17 +305,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     endFrame(): void {
         if (!this.imageData) {
             this.commands.length = 0;
-
-            if (this.pending) {
-                this.pending.reject(
-                    new Error("Can't save this frame - the renderer hasn't finished initializing yet."),
-                );
-                this.pending = null;
-            }
-
-            for (const request of this.takePendingDisplaySizeRequests()) {
-                request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));
-            }
+            this.captures.rejectUninitialized();
 
             return;
         }
@@ -356,8 +319,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         }
 
         this.presentFrame();
-        this.resolvePending();
-        this.resolvePendingDisplaySize();
+        this.captures.settle(this.canvas, this.logicalCanvas);
         this.commands.length = 0;
     }
 
@@ -645,17 +607,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured frame as a PNG `Blob`.
      */
     captureFrame(): Promise<Blob> {
-        if (this.pending) {
-            this.pending.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrame() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pending = { resolve, reject };
-        });
+        return this.captures.output();
     }
 
     /**
@@ -668,17 +620,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
      */
     captureFrameAtDisplaySize(): Promise<Blob> {
-        if (this.pendingDisplaySize) {
-            this.pendingDisplaySize.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrameAtDisplaySize() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pendingDisplaySize = { resolve, reject };
-        });
+        return this.captures.display();
     }
 
     /**
@@ -688,17 +630,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise that resolves with the captured logical frame as a PNG `Blob`.
      */
     captureFrameForShortcut(): Promise<Blob> {
-        if (this.pendingShortcutDisplaySize) {
-            this.pendingShortcutDisplaySize.reject(
-                new Error(
-                    'A capture is already in progress. Wait for the first captureFrameForShortcut() to finish before requesting another.',
-                ),
-            );
-        }
-
-        return new Promise<Blob>((resolve, reject) => {
-            this.pendingShortcutDisplaySize = { resolve, reject };
-        });
+        return this.captures.shortcut();
     }
 
     /**
@@ -787,28 +719,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         }
 
         return clip.steps * SoftwareRenderer.QUAD_VERTEX_COUNT;
-    }
-
-    /**
-     * Returns every pending display-size request (public and shortcut slots) and clears
-     * both slots, so the caller settles them all from one logical-canvas export.
-     *
-     * @returns Pending requests, possibly empty.
-     */
-    private takePendingDisplaySizeRequests(): Pending[] {
-        const requests: Pending[] = [];
-
-        if (this.pendingDisplaySize) {
-            requests.push(this.pendingDisplaySize);
-            this.pendingDisplaySize = null;
-        }
-
-        if (this.pendingShortcutDisplaySize) {
-            requests.push(this.pendingShortcutDisplaySize);
-            this.pendingShortcutDisplaySize = null;
-        }
-
-        return requests;
     }
 
     /**
@@ -1434,114 +1344,5 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.logicalCtx.putImageData(this.imageData, 0, 0);
         this.outputCtx.clearRect(0, 0, this.outputSize.x, this.outputSize.y);
         this.outputCtx.drawImage(this.logicalCanvas, 0, 0, this.outputSize.x, this.outputSize.y);
-    }
-
-    /**
-     * Resolves or rejects the pending `captureFrame` promise using `canvas.toBlob`.
-     * Clears `pending` after handling.
-     */
-    private resolvePending(): void {
-        if (!this.pending) {
-            return;
-        }
-
-        if (typeof this.canvas.toBlob !== 'function') {
-            this.pending.reject(
-                new Error(
-                    "Can't save this frame - your browser doesn't support canvas image export. Try Chrome or Edge.",
-                ),
-            );
-
-            this.pending = null;
-
-            return;
-        }
-
-        const request = this.pending;
-
-        this.pending = null;
-        this.canvas.toBlob((blob) => {
-            if (!blob) {
-                request.reject(
-                    new Error(
-                        "Can't save this frame - something went wrong exporting the canvas image. Try again on the next frame.",
-                    ),
-                );
-                return;
-            }
-            request.resolve(blob);
-        }, 'image/png');
-    }
-
-    /**
-     * Resolves or rejects the pending `captureFrameAtDisplaySize` /
-     * `captureFrameForShortcut` promises by exporting `logicalCanvas` (the pre-upscale,
-     * logical-resolution buffer) instead of the output `canvas`. Both slots settle from
-     * the same single export. Handles both `OffscreenCanvas.convertToBlob` and the
-     * plain-canvas `HTMLCanvasElement.toBlob` fallback, since `logicalCanvas` may be
-     * either. Clears both slots after handling.
-     */
-    private resolvePendingDisplaySize(): void {
-        const requests = this.takePendingDisplaySizeRequests();
-
-        if (requests.length === 0) {
-            return;
-        }
-
-        // Fan one export out to every pending slot.
-        const request: Pending = {
-            resolve: (blob) => {
-                for (const pending of requests) {
-                    pending.resolve(blob);
-                }
-            },
-            reject: (error) => {
-                for (const pending of requests) {
-                    pending.reject(error);
-                }
-            },
-        };
-        const canvas = this.logicalCanvas;
-
-        if (!canvas) {
-            request.reject(new Error("Can't save this frame - the renderer hasn't finished initializing yet."));
-
-            return;
-        }
-
-        if (SoftwareRenderer.isOffscreenCanvas(canvas)) {
-            canvas
-                .convertToBlob({ type: 'image/png' })
-                .then((blob) => request.resolve(blob))
-                .catch((error: unknown) => {
-                    request.reject(error instanceof Error ? error : new Error(String(error)));
-                });
-
-            return;
-        }
-
-        if (typeof canvas.toBlob !== 'function') {
-            request.reject(
-                new Error(
-                    "Can't save this frame - your browser doesn't support canvas image export. Try Chrome or Edge.",
-                ),
-            );
-
-            return;
-        }
-
-        canvas.toBlob((blob) => {
-            if (!blob) {
-                request.reject(
-                    new Error(
-                        "Can't save this frame - something went wrong exporting the canvas image. Try again on the next frame.",
-                    ),
-                );
-
-                return;
-            }
-
-            request.resolve(blob);
-        }, 'image/png');
     }
 }
