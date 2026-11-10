@@ -36,8 +36,11 @@ private poll(): void // not pollGamepads()
 // Bloom.ts
 const FRAGMENT_WGSL // not BLOOM_FRAGMENT_WGSL
 
-// Palette.ts (file-local type)
-type Serialized = { … } // not PaletteJSON or JSON (JSON shadows global)
+// FrameCapture.ts (file-local type)
+type Resolve = (blob: Blob) => void; // not FrameCaptureResolve
+
+// Palette.ts (public type - the rule does not apply)
+export type PaletteJSON = { … } // in the BLIT386.ts export block, so it keeps the class name; never rename it
 
 // pointerSlot.ts (pointer wire codes)
 const CODE_A = 20; // OK - short local name; not BTN_A, which input/buttonFlags.ts already exports as a bit
