@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Palette"
 description: "Palette setup, built-in presets, HUD preset, serialization, and palette effects."
-lastModified: "2026-11-07T13:17:14+01:00"
+lastModified: "2026-11-10T17:38:02+01:00"
 ---
 
 The palette is the single color authority for all rendering. Index `0` is always transparent and is never drawn. Set an
@@ -176,6 +176,10 @@ palette.getNamedColor('player'); // → Color32 at that slot
 `hud_*` aliases are registered automatically by `applyHUD()`.
 
 ## Serialization
+
+<Since symbol="PaletteJSON" />
+
+`palette.toJSON()` returns a `PaletteJSON`, the plain object `Palette.fromJSON` reads back.
 
 ```ts twoslash
 import { Color32, Palette } from 'blit386';

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Assets"
 description: "Sprite sheets, bitmap fonts, and asset loading."
-lastModified: "2026-11-07T15:13:42+01:00"
+lastModified: "2026-11-10T17:38:02+01:00"
 ---
 
 Looking for audio assets? `AudioClip` loading is documented separately in [API: Audio](/docs/api/audio#loading).
@@ -224,6 +224,19 @@ declare const indexedPixels: Uint8Array<ArrayBuffer>;
 const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
 ```
 
+<Since symbol="SpriteUV" />
+
+For your own rendering code, `sheet.getUVs(rect)` converts a pixel rectangle to a `SpriteUV`: normalized `u0`, `v0`
+(top-left) and `u1`, `v1` (bottom-right) texture coordinates. `getUVsTo(rect, out)` writes into an existing object
+instead of allocating one.
+
+```ts twoslash
+import { Rect2i, SpriteSheet } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 } in [0, 1]
+```
+
 ## Palette offset
 
 Pass a `paletteOffset` (per-draw shift, not an absolute slot) to `BT.drawSprite()` and `BT.printFont()` to remap stored
@@ -242,9 +255,11 @@ BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
 ## Bitmap fonts
 
 <Since symbol="BitmapFont" />
+<Since symbol="Glyph" />
 
 Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loading, register colors in the palette and
-indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
+indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup). `font.getGlyph(char)`
+returns one character's `Glyph` (its source rectangle, offset, and advance), or `null` when the font has none.
 
 ```ts twoslash
 import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
@@ -283,8 +298,10 @@ glyph tables and texture.
   sheet's current `width`/`height` when that matters.
 </Callout>
 
-Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1`) tracking a
-replacement fetch while it's in flight - useful for a per-sheet loading indicator, or combine with
+<Since symbol="SpriteSheetStatus" />
+
+Each `SpriteSheet` also exposes `status` (a `SpriteSheetStatus`: `'loading' | 'ready' | 'failed'`) and `progress` (`0`
+or `1`) tracking a replacement fetch while it's in flight - useful for a per-sheet loading indicator, or combine with
 [`BT.loadingAssetsCount`](#loading-assets) for a single engine-wide signal. A normally loaded sheet is always `'ready'`
 with `progress: 1.0`, since its image has already resolved by the time the sheet is constructed.
 
