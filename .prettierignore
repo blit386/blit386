@@ -1,9 +1,7 @@
 # Prettier ignore - Markdown and YAML only (TS/JS/JSON/CSS use Biome)
 
-# Lock files (never format)
+# Lock file (never format)
 pnpm-lock.yaml
-package-lock.json
-yarn.lock
 
 # Dependencies
 node_modules/
@@ -25,16 +23,6 @@ test-results/
 # Scaffolder ownership manifest and pristine kit copies (create-blit386). Reformatting
 # .blit/base/ makes `blit agents sync` report drift on files nobody edited.
 .blit/
-
-# Generated/minified files
-**/*.min.css
-vite.config.*.timestamp-*
-
-# JSON is handled by Biome
-*.json
-
-# packages/demos: HTML pages use Handlebars syntax, Prettier would break them
-*.html
 
 # packages/website: Waku/fumadocs-mdx codegen output
 .source/

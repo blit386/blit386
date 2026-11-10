@@ -46,8 +46,8 @@ verified by:
 
 1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
 2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
-3. Preflight checks (`/preflight demos`) - format:check, lint, test, spellcheck, knip, check:demo-registry,
-   check:demo-comment-links, build
+3. Preflight checks (`/preflight demos`) - lint, test, spellcheck, knip, check:demo-registry, check:demo-comment-links,
+   build
 
 What to do instead: verify a new demo with `pnpm run dev` + manual exercise; confirm no build regression with
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with

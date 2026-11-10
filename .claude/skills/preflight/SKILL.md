@@ -25,22 +25,23 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 
 ## docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
 
-`docs:links` and `agents:check` are not package-scoped - each package's copy of the script
+`format:check`, `docs:links` and `agents:check` are not package-scoped - each package's copy of the script
 (`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
 `package.json` invoked it. They used to be listed in every package's `preflight` chain too, which meant
 `.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
 one push - most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
-`preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`,
-`pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a
-package in isolation. `sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only,
-whole-repo check - they never had a per-package copy to begin with, since they generate against root `.claude/skills/` /
-`.cursor/commands/` and the maintainer dogfood agent configs regardless of which package changed, as is
-`audit:modules:check` (the audit ledger in `.claude/skills/audit/modules.md` against the units derived from the tree).
-The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip
-`format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`,
-`audit:modules:check`, `bump:check`, `spellcheck:kit`, and `test:root` entirely, so a push only exercises them once the
-per-package checks are clean. That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so
-it runs regardless of whether the per-package quality jobs pass.
+`preflight` scripts for that reason (`format:check` in BT-783); run them explicitly (`pnpm run format:check`,
+`pnpm run docs:links`, `pnpm run agents:check`, `pnpm run sync:cursor-commands:check`,
+`pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a package in isolation.
+`sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only, whole-repo check - they
+never had a per-package copy to begin with, since they generate against root `.claude/skills/` / `.cursor/commands/` and
+the maintainer dogfood agent configs regardless of which package changed, as is `audit:modules:check` (the audit ledger
+in `.claude/skills/audit/modules.md` against the units derived from the tree). The root-level pass only runs when
+`PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`,
+`agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`,
+`spellcheck:kit`, and `test:root` entirely, so a push only exercises them once the per-package checks are clean. That
+gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether the
+per-package quality jobs pass.
 
 ## Steps
 
@@ -55,7 +56,6 @@ it runs regardless of whether the per-package quality jobs pass.
 
 `cd packages/blit386 && pnpm run preflight`, or `pnpm --filter blit386 run preflight`. Runs:
 
-- `format:check` - Biome (TS/JS/JSON/CSS) + Prettier (MD/YAML)
 - `lint` - ESLint
 - `typecheck` - TypeScript strict
 - `spellcheck` - cspell over `src/**/*.{ts,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
@@ -78,7 +78,6 @@ it runs regardless of whether the per-package quality jobs pass.
 
 `cd packages/demos && pnpm run preflight`, or `pnpm --filter blit386-demos run preflight`. Runs:
 
-- `format:check` - Biome (JS/JSON/CSS) + Prettier (MD/YAML)
 - `lint` - ESLint
 - `test` - `node --test` over `scripts/__tests__`, `plugins/__tests__`, `src/shared/__tests__`, and `_shots/__tests__`
   (pure helpers, the shared UI kit, and the `/shots` page - not demo content); builds `packages/blit386/dist/` first via
@@ -99,7 +98,6 @@ No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 
 `cd packages/website && pnpm run preflight`, or `pnpm --filter blit386-website run preflight`. Runs:
 
-- `format:check` - Biome (lint + format) + Prettier
 - `typecheck` - fumadocs-mdx + tsc
 - `test` - `test:scripts` (`node --test scripts/__tests__/*.test.mjs`) then `test:unit:coverage` (Vitest over
   `src/**/*.test.ts`, the Worker plugins); builds the engine first via `../../scripts/ensure-engine-built.mjs`
@@ -121,7 +119,7 @@ diffs the working tree against the index, so an unstaged regeneration still read
 is committed, this never comes up.
 
 That job does not lint this package - its `lint` is `biome check .`, which the repo-wide `pnpm run format:check` in
-`quality-root` already covers. Local `format:check` here still runs Biome, so preflight loses nothing.
+`quality-root` and the pre-push root pass already cover.
 
 No MCP security preflight here (unlike `blit386` - see `/security-run`).
 

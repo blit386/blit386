@@ -222,7 +222,11 @@
     "xadvance",
     "xoffset",
     "yoffset",
-    "Zhang"
+    "Zhang",
+    "lstart",
+    "repost",
+    "TOCTOU",
+    "uncontended"
   ],
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": [

@@ -179,7 +179,6 @@ pnpm --filter blit386 run preflight   # or the package you're working in
 Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. The example above,
 `packages/blit386`'s `preflight`, runs:
 
-- Code formatting checks (`format:check`)
 - Linting (`lint`, with `--max-warnings 0`)
 - TypeScript type checks (`typecheck`)
 - Spell checking (`spellcheck`)
@@ -200,6 +199,8 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Compact-table Prettier plugin tests (`test:compact-tables`)
 - Spellcheck coverage tests (`test:spellcheck-coverage`)
 - Security preflight tests (`test:security-preflight`)
+
+Formatting (`format:check`) is repo-wide, so it runs once from the root instead of in each package's `preflight`.
 
 `docs:links`, `agents:check`, `sync:cursor-commands:check`, and `sync:maintainer-agents:check` are **not** part of any
 package's `preflight`. Each is a root-only script that walks (or generates against) the whole repo regardless of which
