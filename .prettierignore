@@ -24,6 +24,13 @@ test-results/
 # .blit/base/ makes `blit agents sync` report drift on files nobody edited.
 .blit/
 
+# Every Prettier script globs only md/mdx/mdc/yml/yaml, but a directory-level run (an
+# editor, `prettier --write .github`) would still reformat these: JSON is Biome's and
+# includes byte-checked generated files (.github/hooks/blit.json), and the demos' HTML
+# pages use Handlebars syntax Prettier breaks.
+*.json
+*.html
+
 # packages/website: Waku/fumadocs-mdx codegen output
 .source/
 
