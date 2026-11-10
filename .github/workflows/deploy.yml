@@ -132,7 +132,7 @@ jobs:
       # deploy always runs the same wrangler as local `pnpm run deploy` / `pnpm run start`
       # (packages/website/package.json's wrangler devDependency, not wrangler-action's own
       # default) - a Renovate bump to that devDependency and this pin must move together,
-      # or the two silently drift. All four wrangler-action steps in this file share the
+      # or the two silently drift; renovate.json's `wrangler` group puts both in one PR. All four wrangler-action steps in this file share the
       # same pin and packageManager for the same reason, even where (deploy-demos*) neither
       # setting is strictly required by the job itself.
       - name: Deploy to Cloudflare Workers

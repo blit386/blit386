@@ -1,9 +1,7 @@
 # Prettier ignore - Markdown and YAML only (TS/JS/JSON/CSS use Biome)
 
-# Lock files (never format)
+# Lock file (never format)
 pnpm-lock.yaml
-package-lock.json
-yarn.lock
 
 # Dependencies
 node_modules/
@@ -26,14 +24,11 @@ test-results/
 # .blit/base/ makes `blit agents sync` report drift on files nobody edited.
 .blit/
 
-# Generated/minified files
-**/*.min.css
-vite.config.*.timestamp-*
-
-# JSON is handled by Biome
+# Every Prettier script globs only md/mdx/mdc/yml/yaml, but a directory-level run (an
+# editor, `prettier --write .github`) would still reformat these: JSON is Biome's and
+# includes byte-checked generated files (.github/hooks/blit.json), and the demos' HTML
+# pages use Handlebars syntax Prettier breaks.
 *.json
-
-# packages/demos: HTML pages use Handlebars syntax, Prettier would break them
 *.html
 
 # packages/website: Waku/fumadocs-mdx codegen output

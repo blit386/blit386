@@ -680,7 +680,7 @@ describe('check-agent-config', () => {
         });
 
         it('returns null when the directory is not a git repository', () => {
-            const root = mkdtempSync(join(tmpdir(), 'agent-config-nogit-'));
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-no-git-'));
 
             try {
                 assert.equal(isRootMcpIgnoredByGit(root), null);
@@ -809,7 +809,7 @@ describe('check-agent-config under a symlinked temp root', () => {
     });
 
     it('ignores a Finder .DS_Store in .agents/skills', () => {
-        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-dsstore-'));
+        const root = mkdtempSync(join(tmpdir(), 'agent-config-skills-ds-store-'));
         mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
         mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
         writeFileSync(join(root, '.agents', 'skills', '.DS_Store'), '');

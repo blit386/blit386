@@ -13,9 +13,10 @@ network). These are environment artifacts, not code bugs - do not "fix" them by 
   references) returning 403 through a sandbox proxy; every relative/internal link still resolves. Confirm all failures
   are external before treating one as real.
 - Hooks amplify those two artifacts. The pre-push hook runs `preflight` (which includes `typecheck` + `lint`) for the
-  packages changed since the upstream ref (every package when more than one ref is pushed or no base ref resolves),
-  then - only if that succeeds - one root-level pass: `format:check`, `docs:links`, `agents:check`,
-  `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check` (`docs:links` and
+  packages changed since the pushed ref's remote tip (falling back to the upstream ref, then `origin/main`; every
+  package when more than one ref is pushed or no base ref resolves; nothing for a delete-only push), then - only if that
+  succeeds - one root-level pass: `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`,
+  `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`, `spellcheck:kit`, `test:root` (`docs:links` and
   `agents:check` are not package-scoped, so they were removed from every package's own `preflight` chain to stop running
   2-4x per push - see the `preflight` skill). A failed package preflight skips that root-level pass entirely; the
   bench-coverage reminder runs last and never fails the push. The lint-staged pre-commit hook runs `biome` / `prettier`

@@ -94,12 +94,12 @@ pnpm-debug.log*
 # Cache
 .eslintcache
 .cache/
-.knip-output.json
+
 
 # Temporary folders
 tmp/
 temp/
-scripts/.tmp-agent-config-mcp-*/
+
 
 # Cross-process build locks (scripts/build-lock.mjs, used by
 # ensure-engine-built.mjs) - created and removed at runtime; a crashed process can leave one behind
