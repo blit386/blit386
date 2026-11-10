@@ -83,6 +83,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `null`, and `keyboardLayout: null` logged a warning. Now the setting takes its default, or stays unset where it has
   none (`isSplashEnabled` then follows the URL flags and dev mode). `null` for `displaySize`, `drawingBufferSize`, or
   `maxCanvasSize` still fails with the same clear size error. TypeScript already rejects these `null`s.
+- Behavior change for custom pixel-tier effects: `FullscreenPixelEffect` runs on the `r8uint` pixel chain only, which is
+  the only chain the engine ever builds. Its unused RGBA path is gone: `init` throws for any other format, the protected
+  `sampler` field is removed, and `fragmentShaderRgba` is no longer read, so a subclass can drop it. `PixelGlitch` and
+  `PixelMosaic` are unchanged on screen. See
+  [Writing a custom effect](guide-post-process-effects.md#writing-a-custom-effect).
 - `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.1 with no engine API change of their own. The scaffolder's
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention

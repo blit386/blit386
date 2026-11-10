@@ -1561,7 +1561,12 @@
     "FullscreenPixelEffect": {
       "kind": "class",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "`r8uint` only: the unused RGBA path is gone, so `fragmentShaderRgba` is no longer read, the protected `sampler` field is removed, and `init` throws for any other chain format."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

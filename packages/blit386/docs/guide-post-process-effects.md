@@ -405,9 +405,9 @@ Notes
 
 <Since symbol="FullscreenPixelEffect" />
 
-Extend `FullscreenPixelEffect` for logical `r8uint` chains. Provide both `fragmentShaderUint` (sample `texture_2d<u32>`
-at `@group(0) @binding(1)`, output `vec4<u32>`) and `fragmentShaderRgba` (only used if a float pixel format is ever
-passed to `init`; keep it minimal). Implement `writeUniforms` like display-tier effects.
+Extend `FullscreenPixelEffect` for the logical `r8uint` chain. Provide `fragmentShaderUint` (sample `texture_2d<u32>` at
+`@group(0) @binding(1)`, output `vec4<u32>`) and implement `writeUniforms` like display-tier effects. `init` throws for
+any chain format other than `r8uint`, and there is no sampler: read texels with `textureLoad`.
 
 - Integer clears use index `0`; treat palette slot `0` as transparent where appropriate.
 - For data-dependent control flow that calls `textureSample`, switch to `textureSampleLevel(..., 0.0)` - WGSL forbids

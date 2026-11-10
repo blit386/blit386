@@ -4,10 +4,9 @@ import { VS_WGSL } from './fullscreenVS';
 
 /**
  * Base class for pixel-tier fullscreen effects on the logical `r8uint` chain.
- * Includes an RGBA fragment path for compatibility; production wiring always
- * uses the `r8uint` attachment format.
  *
  * @since 1.0.3
+ * @changed 1.8.1 `r8uint` only: the unused RGBA path is gone, so `fragmentShaderRgba` is no longer read, the protected `sampler` field is removed, and `init` throws for any other chain format.
  */
 export abstract class FullscreenPixelEffect implements Effect {
     readonly tier = 'pixel' as const;
@@ -18,27 +17,21 @@ export abstract class FullscreenPixelEffect implements Effect {
     /** Byte size of the uniform block (multiple of 16). */
     protected abstract readonly uniformBytes: number;
 
-    /** Fragment WGSL when {@link init} receives a floating-point chain format. */
-    protected abstract readonly fragmentShaderRgba: string;
-
-    /** Fragment WGSL when {@link init} receives `r8uint` chain format. */
+    /** Fragment WGSL: samples `texture_2d<u32>` at binding 1 and writes a palette index. */
     protected abstract readonly fragmentShaderUint: string;
 
     protected device: GPUDevice | null = null;
     protected pipeline: GPURenderPipeline | null = null;
     protected uniformBuffer: GPUBuffer | null = null;
     protected uniformData: Float32Array<ArrayBuffer> | null = null;
-    protected sampler: GPUSampler | null = null;
-    private attachmentFormat: GPUTextureFormat | null = null;
 
-    private bindGroupsFloat = new WeakMap<GPUTextureView, GPUBindGroup>();
-    private bindGroupsUint = new WeakMap<GPUTextureView, GPUBindGroup>();
+    private bindGroups = new WeakMap<GPUTextureView, GPUBindGroup>();
 
     /**
      * Builds WGSL module and GPU pipeline for the supplied chain format.
      *
      * @param device - WebGPU device.
-     * @param format - Pixel chain attachment format (`r8uint` or float swap format).
+     * @param format - Pixel chain attachment format; must be `r8uint`.
      * @param _chainSize - Chain resolution (unused by base; subclasses may read via uniforms).
      */
     init(device: GPUDevice, format: GPUTextureFormat, _chainSize: Vector2i): void {
@@ -48,16 +41,18 @@ export abstract class FullscreenPixelEffect implements Effect {
             );
         }
 
+        if (format !== 'r8uint') {
+            throw new Error(`${this.label}: pixel-tier effects run on the r8uint chain only (got ${format}).`);
+        }
+
         this.disposeGPUState();
 
         this.device = device;
-        this.attachmentFormat = format;
         this.uniformData = new Float32Array(new ArrayBuffer(this.uniformBytes));
 
-        const fragment = format === 'r8uint' ? this.fragmentShaderUint : this.fragmentShaderRgba;
         const module = device.createShaderModule({
             label: `${this.label} Shader`,
-            code: VS_WGSL + fragment,
+            code: VS_WGSL + this.fragmentShaderUint,
         });
 
         this.pipeline = device.createRenderPipeline({
@@ -73,16 +68,6 @@ export abstract class FullscreenPixelEffect implements Effect {
             size: this.uniformBytes,
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
-
-        if (format !== 'r8uint') {
-            this.sampler = device.createSampler({
-                label: `${this.label} Sampler`,
-                magFilter: 'nearest',
-                minFilter: 'nearest',
-                addressModeU: 'clamp-to-edge',
-                addressModeV: 'clamp-to-edge',
-            });
-        }
     }
 
     /**
@@ -113,14 +98,12 @@ export abstract class FullscreenPixelEffect implements Effect {
         }
 
         const bindGroup = this.getOrCreateBindGroup(sourceView);
-        const uintClear = this.attachmentFormat === 'r8uint';
-
         const pass = encoder.beginRenderPass({
             label: `${this.label} Pass`,
             colorAttachments: [
                 {
                     view: destView,
-                    clearValue: uintClear ? { r: 0, g: 0, b: 0, a: 0 } : { r: 0, g: 0, b: 0, a: 1 },
+                    clearValue: { r: 0, g: 0, b: 0, a: 0 },
                     loadOp: 'clear',
                     storeOp: 'store',
                 },
@@ -144,30 +127,25 @@ export abstract class FullscreenPixelEffect implements Effect {
     protected abstract writeUniforms(deltaMs: number, sourceSize: Vector2i): void;
 
     /**
-     * Drops GPU handles so the effect can be re-initialized with a different chain format.
+     * Drops GPU handles so the effect can be re-initialized.
      */
     private disposeGPUState(): void {
         this.uniformBuffer?.destroy();
         this.uniformBuffer = null;
         this.pipeline = null;
-        this.sampler = null;
         this.device = null;
         this.uniformData = null;
-        this.attachmentFormat = null;
-        this.bindGroupsFloat = new WeakMap();
-        this.bindGroupsUint = new WeakMap();
+        this.bindGroups = new WeakMap();
     }
 
     /**
-     * Creates or returns a cached bind group for the active RGBA vs uint sampling layout.
+     * Creates or returns the cached bind group for {@link sourceView}.
      *
      * @param sourceView - Texture view feeding this fullscreen pass.
      * @returns Bind group bound to {@link sourceView}.
      */
     private getOrCreateBindGroup(sourceView: GPUTextureView): GPUBindGroup {
-        const uint = this.attachmentFormat === 'r8uint';
-        const cache = uint ? this.bindGroupsUint : this.bindGroupsFloat;
-        const cached = cache.get(sourceView);
+        const cached = this.bindGroups.get(sourceView);
         if (cached) {
             return cached;
         }
@@ -176,26 +154,16 @@ export abstract class FullscreenPixelEffect implements Effect {
             throw new Error(`${this.label}.encodePass: effect was not initialized.`);
         }
 
-        const layout = this.pipeline.getBindGroupLayout(0);
-        const entries: GPUBindGroupEntry[] = [{ binding: 0, resource: { buffer: this.uniformBuffer } }];
-
-        if (uint) {
-            entries.push({ binding: 1, resource: sourceView });
-        } else {
-            if (!this.sampler) {
-                throw new Error(`${this.label}.encodePass: sampler missing for RGBA pixel chain.`);
-            }
-
-            entries.push({ binding: 1, resource: sourceView }, { binding: 2, resource: this.sampler });
-        }
-
         const bindGroup = this.device.createBindGroup({
             label: `${this.label} Bind Group`,
-            layout,
-            entries,
+            layout: this.pipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: this.uniformBuffer } },
+                { binding: 1, resource: sourceView },
+            ],
         });
 
-        cache.set(sourceView, bindGroup);
+        this.bindGroups.set(sourceView, bindGroup);
 
         return bindGroup;
     }
