@@ -3,7 +3,7 @@ import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
 import { FrameCapture } from '../utils/FrameCapture';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
@@ -254,23 +254,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     async init(): Promise<boolean> {
         try {
-            // Release any GPU resources from a previous init() call (e.g.
-            // device-loss recovery) so nothing leaks.
-            this.paletteBuffer?.destroy();
-            this.paletteBuffer = null;
-            this.pixelChain?.dispose();
-            this.pixelChain = null;
-            this.displayChain?.dispose();
-            this.displayChain = null;
-            this.resolvePass?.dispose();
-            this.resolvePass = null;
-            this.rejectPendingDisplayCaptures("Can't capture frame: renderer was reset before the frame rendered");
-            this.sceneTex?.destroy();
-            this.sceneTex = null;
-            this.sceneTexView = null;
-            this.displayCaptureTex?.destroy();
-            this.displayCaptureTex = null;
-            this.displayCaptureTexView = null;
+            // Release any GPU resources from a previous init() call so nothing leaks.
+            this.destroy();
 
             // Create shared palette uniform buffer (MAX_PALETTE_SIZE entries x vec4f).
             this.paletteBuffer = this.device.createBuffer({
@@ -318,6 +303,32 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
             return false;
         }
+    }
+
+    /**
+     * Rejects every pending capture and releases the palette buffer, effect chains, resolve
+     * pass, and frame textures. Called on every {@link init} and when the engine drops the renderer.
+     */
+    destroy(): void {
+        if (this.frameCapture.hasPending()) {
+            this.frameCapture.reject(new Error(RENDERER_RESET_MESSAGE));
+        }
+
+        this.rejectPendingDisplayCaptures(RENDERER_RESET_MESSAGE);
+        this.paletteBuffer?.destroy();
+        this.paletteBuffer = null;
+        this.pixelChain?.dispose();
+        this.pixelChain = null;
+        this.displayChain?.dispose();
+        this.displayChain = null;
+        this.resolvePass?.dispose();
+        this.resolvePass = null;
+        this.sceneTex?.destroy();
+        this.sceneTex = null;
+        this.sceneTexView = null;
+        this.displayCaptureTex?.destroy();
+        this.displayCaptureTex = null;
+        this.displayCaptureTexView = null;
     }
 
     /**

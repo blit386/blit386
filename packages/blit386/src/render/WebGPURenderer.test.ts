@@ -1731,3 +1731,38 @@ describe('post-process effects', () => {
         expect(displayEffect.updateSpy).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('destroy (BT-756)', () => {
+    it('rejects every pending capture slot and releases the frame GPU resources', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const renderer = new WebGPURenderer(
+                createMockGPUDevice(),
+                createMockGPUCanvasContext(),
+                new Vector2i(4, 4),
+            );
+
+            expect(await renderer.init()).toBe(true);
+
+            const captures = [
+                renderer.captureFrame(),
+                renderer.captureFrameAtDisplaySize(),
+                renderer.captureFrameForShortcut(),
+            ];
+            const internals = renderer as unknown as { paletteBuffer: GPUBuffer | null };
+            const paletteDestroy = vi.spyOn(internals.paletteBuffer as GPUBuffer, 'destroy');
+
+            renderer.destroy();
+
+            for (const capture of captures) {
+                await expect(capture).rejects.toThrow('renderer was reset');
+            }
+
+            expect(paletteDestroy).toHaveBeenCalledOnce();
+            expect(internals.paletteBuffer).toBeNull();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
+    });
+});

@@ -84,6 +84,9 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
     );
 }
 
+/** A capture was still waiting for a frame when its renderer was destroyed or re-initialized (BT.init restart). */
+export const RENDERER_RESET_MESSAGE = "Can't capture frame: renderer was reset before the frame rendered";
+
 /**
  * `BT.renderAt()` called before the game loop exists - before init() finished, or while the splash is up.
  */

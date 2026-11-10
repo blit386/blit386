@@ -5,7 +5,7 @@ import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { clipSpriteSourceRectXYTo } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { ClippedLine } from './clipLine';
@@ -231,9 +231,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     async init(): Promise<boolean> {
         // Re-init replaces the logical canvas; captures queued against the old one must
         // not settle from the rebuilt scene (mirrors WebGPURenderer.init()).
-        for (const request of this.takePendingDisplaySizeRequests()) {
-            request.reject(new Error("Can't capture frame: renderer was reset before the frame rendered"));
-        }
+        this.destroy();
 
         this.canvas.width = this.outputSize.x;
         this.canvas.height = this.outputSize.y;
@@ -264,6 +262,21 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.frameWordView = new Uint32Array(this.imageData.data.buffer);
 
         return true;
+    }
+
+    /**
+     * Rejects every pending capture. Called on every {@link init} and when the engine drops
+     * the renderer; the canvases go with the renderer, so there is nothing else to release.
+     */
+    destroy(): void {
+        if (this.pending) {
+            this.pending.reject(new Error(RENDERER_RESET_MESSAGE));
+            this.pending = null;
+        }
+
+        for (const request of this.takePendingDisplaySizeRequests()) {
+            request.reject(new Error(RENDERER_RESET_MESSAGE));
+        }
     }
 
     /**

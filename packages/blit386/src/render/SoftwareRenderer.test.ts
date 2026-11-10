@@ -1094,4 +1094,19 @@ describe('SoftwareRenderer backend parity (BT-756)', () => {
         expect(getPixel(frame, 16, 10, 1)).toEqual(expected); // oriented sprite
         expect(getPixel(frame, 16, 13, 3)).toEqual(expected); // stretched sprite
     });
+
+    it('destroy() rejects every pending capture slot', async () => {
+        const renderer = await createRenderer();
+        const captures = [
+            renderer.captureFrame(),
+            renderer.captureFrameAtDisplaySize(),
+            renderer.captureFrameForShortcut(),
+        ];
+
+        renderer.destroy();
+
+        for (const capture of captures) {
+            await expect(capture).rejects.toThrow('renderer was reset');
+        }
+    });
 });

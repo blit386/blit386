@@ -222,6 +222,13 @@ export interface IRenderer {
     captureFrameForShortcut(): Promise<Blob>;
 
     /**
+     * Rejects every pending capture and releases the GPU or canvas resources {@link init} made.
+     * The engine calls it when it drops a renderer (a `BT.init` restart), so an awaited
+     * `BT.captureFrame()` fails instead of hanging. {@link init} calls it first on a re-run.
+     */
+    destroy(): void;
+
+    /**
      * Sets the camera offset for scrolling.
      *
      * @param offset - Camera position in pixels.

@@ -715,6 +715,9 @@ The display-size capture has its own pending slot on the renderer, separate from
 agent's capture and a keypress in the same frame both resolve. Two `{ size: 'display' }` requests in the same frame
 still reject the earlier one, as two `BT.captureFrame()` calls always have.
 
+A capture still waiting for its frame when `BT.init` restarts the engine rejects with "renderer was reset" instead of
+waiting forever, on both backends and for every size.
+
 <DemoEmbed demo="image-output" title="BLIT386 image output demo" />
 
 <Callout title="Internal implementation note">

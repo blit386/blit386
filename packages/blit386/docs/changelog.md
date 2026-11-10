@@ -111,6 +111,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   [Partially transparent palette slots](api-rendering.md#partially-transparent-palette-slots).
 - A `BT.drawSprite` source rect that runs past the sheet edge draws only the part inside the sheet on WebGPU, as on the
   software backend. The sprite shader used to read texels outside the texture, whose value depends on the GPU driver.
+- A `BT.captureFrame()` still pending when `BT.init` restarts the engine rejects with "renderer was reset" instead of
+  never settling. The old renderer was dropped without rejecting its pending captures.
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl
