@@ -1900,7 +1900,7 @@ export const BT = {
      * Backward-compatible alias for {@link isPointerActive}.
      *
      * @since 1.0.3
-     * @deprecated Deprecated since 1.0.3 (2026-05-31). Use {@link isPointerActive} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isPointerActive} instead.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns `true` while the slot has live position data.
      */
@@ -2032,7 +2032,7 @@ export const BT = {
      * Backward-compatible alias for {@link isDown}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isDown} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isDown} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads / keyboard, or pointer slot.
      * @returns `true` while the button remains pressed.
@@ -2134,7 +2134,7 @@ export const BT = {
      * Backward-compatible alias for {@link isPressed}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isPressed} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isPressed} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot.
      * @param repeatRate - Optional repeat interval in fixed ticks (`0`/omitted = edge only).
@@ -2228,7 +2228,7 @@ export const BT = {
      * Backward-compatible alias for {@link isReleased}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isReleased} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isReleased} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot.
      * @returns `true` on the release frame.
@@ -2308,7 +2308,7 @@ export const BT = {
      * Backward-compatible alias for {@link isGamepadConnected}.
      *
      * @since 1.0.3
-     * @deprecated Deprecated since 1.0.3 (2026-05-31). Use {@link isGamepadConnected} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isGamepadConnected} instead.
      * @param player - Zero-based player index (`0`..`3`).
      * @returns `true` when a gamepad is available for that slot.
      */
@@ -2343,7 +2343,7 @@ export const BT = {
      * Backward-compatible alias for {@link isKeyDown}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isKeyDown} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyDown} instead.
      * @param key - DOM keyboard code string.
      * @returns `true` while the key remains pressed.
      */
@@ -2377,7 +2377,7 @@ export const BT = {
      * Backward-compatible alias for {@link isKeyPressed}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isKeyPressed} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyPressed} instead.
      * @param key - DOM keyboard code string.
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
      * @returns `true` on the press edge (and on repeat ticks when configured).
@@ -2407,7 +2407,7 @@ export const BT = {
      * Backward-compatible alias for {@link isKeyReleased}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isKeyReleased} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyReleased} instead.
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.
      */

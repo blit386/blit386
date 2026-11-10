@@ -197,7 +197,7 @@ export interface HardwareSettings {
     isDetectingDroppedFrames?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isDetectingDroppedFrames} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isDetectingDroppedFrames} instead.
      */
     detectDroppedFrames?: boolean;
 
@@ -352,7 +352,7 @@ export interface HardwareSettings {
     isOverlayEnabled?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayEnabled} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayEnabled} instead.
      */
     overlayEnabled?: boolean;
 
@@ -364,7 +364,7 @@ export interface HardwareSettings {
     isOverlayVisibleAtStart?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayVisibleAtStart} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayVisibleAtStart} instead.
      */
     overlayVisibleAtStart?: boolean;
 
@@ -376,7 +376,7 @@ export interface HardwareSettings {
     isOverlayToggleHintVisible?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayToggleHintVisible} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayToggleHintVisible} instead.
      */
     overlayToggleHintVisible?: boolean;
 
@@ -388,7 +388,7 @@ export interface HardwareSettings {
     isOverlayToggleEnabled?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayToggleEnabled} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayToggleEnabled} instead.
      */
     overlayToggleEnabled?: boolean;
 
@@ -410,7 +410,7 @@ export interface HardwareSettings {
     isOverlayPaletteEnabled?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayPaletteEnabled} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayPaletteEnabled} instead.
      */
     overlayPaletteView?: boolean;
 
@@ -445,7 +445,7 @@ export interface HardwareSettings {
     isOverlayTimingChartEnabled?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayTimingChartEnabled} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayTimingChartEnabled} instead.
      */
     overlayTimingChart?: boolean;
 
@@ -478,7 +478,7 @@ export interface HardwareSettings {
     isOverlayRendererDiagnosticsBarEnabled?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isOverlayRendererDiagnosticsBarEnabled} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isOverlayRendererDiagnosticsBarEnabled} instead.
      */
     overlayRendererDiagnosticsBar?: boolean;
 

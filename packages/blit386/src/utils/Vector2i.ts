@@ -478,7 +478,7 @@ export class Vector2i extends Vector2iOps {
     /**
      * Backward-compatible alias for {@link isEqual}.
      *
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isEqual} instead.
      * @param other - Vector to compare with.
      * @returns True if both x and y components are equal.
      */

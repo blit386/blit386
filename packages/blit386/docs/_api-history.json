@@ -408,7 +408,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isDown} instead."
       },
@@ -419,7 +419,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isPressed} instead."
       },
@@ -430,7 +430,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isReleased} instead."
       },
@@ -621,7 +621,7 @@
       "since": "1.0.3",
       "changes": [],
       "deprecated": {
-        "version": "1.0.3",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isGamepadConnected} instead."
       },
@@ -909,7 +909,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isKeyDown} instead."
       },
@@ -920,7 +920,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isKeyPressed} instead."
       },
@@ -931,7 +931,7 @@
       "since": "0.1.0",
       "changes": [],
       "deprecated": {
-        "version": "0.1.0",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isKeyReleased} instead."
       },
@@ -1156,7 +1156,7 @@
       "since": "1.0.3",
       "changes": [],
       "deprecated": {
-        "version": "1.0.3",
+        "version": "1.1.1",
         "date": "2026-05-31",
         "note": "Use {@link isPointerActive} instead."
       },

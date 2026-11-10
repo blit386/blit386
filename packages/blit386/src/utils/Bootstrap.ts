@@ -33,7 +33,7 @@ export interface BootstrapOptions {
     canvasID?: string;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `canvasID` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `canvasID` instead.
      */
     canvasId?: string;
 
@@ -44,7 +44,7 @@ export interface BootstrapOptions {
     containerID?: string;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `containerID` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `containerID` instead.
      */
     containerId?: string;
 
@@ -64,7 +64,7 @@ export interface BootstrapOptions {
     isWaitingForDOMReady?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `isWaitingForDOMReady` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `isWaitingForDOMReady` instead.
      */
     waitForDOMReady?: boolean;
 
