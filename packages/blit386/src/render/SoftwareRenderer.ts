@@ -949,7 +949,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
         for (let py = startY; py < endY; py++) {
             for (let px = startX; px < endX; px++) {
-                this.writePixelUnchecked(pixels, px, py, color.r, color.g, color.b, 255);
+                this.writePixelUnchecked(pixels, px, py, color.r, color.g, color.b, color.a);
             }
         }
     }
@@ -1040,7 +1040,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         const pixels = this.framePixels;
 
         for (let i = 0; i < clip.steps; i++) {
-            this.writePixel(pixels, cx, cy, color.r, color.g, color.b, 255);
+            this.writePixel(pixels, cx, cy, color.r, color.g, color.b, color.a);
 
             const e2 = err * 2;
 
@@ -1170,7 +1170,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                     color.r,
                     color.g,
                     color.b,
-                    255,
+                    color.a,
                 );
             }
         }
@@ -1234,7 +1234,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                     color.r,
                     color.g,
                     color.b,
-                    255,
+                    color.a,
                 );
             }
         }
@@ -1286,7 +1286,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                     continue;
                 }
 
-                this.writePixelUnchecked(pixels, x, y, color.r, color.g, color.b, 255);
+                this.writePixelUnchecked(pixels, x, y, color.r, color.g, color.b, color.a);
             }
         }
     }

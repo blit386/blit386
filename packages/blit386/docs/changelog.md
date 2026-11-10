@@ -105,6 +105,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A rect or sprite source with a zero or negative width or height draws nothing on WebGPU, as it already did on the
   software backend. WebGPU used to fill a negative-width rect backwards, draw a width-0 outline as two columns, and draw
   a negative-width sprite source mirrored. See [Empty and negative sizes](api-rendering.md#empty-and-negative-sizes).
+- A partially transparent palette slot shows the page behind the canvas the same way on both backends. The software
+  backend used to draw every slot fully opaque except the clear color, and WebGPU handed the canvas straight color where
+  it expects premultiplied, so a 50% slot looked brighter than intended. See
+  [Partially transparent palette slots](api-rendering.md#partially-transparent-palette-slots).
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl

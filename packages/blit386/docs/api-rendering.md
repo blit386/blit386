@@ -546,6 +546,13 @@ A rect or sprite source with a width or height of zero or less draws nothing, on
 negative, or a shrinking outline that reaches zero, simply disappears. A 1-pixel-tall `BT.drawRect` draws exactly its
 one row.
 
+### Partially transparent palette slots
+
+Each pixel holds one palette slot, and draws never blend with each other: a later draw replaces the slot underneath it.
+A slot's alpha takes effect only when the frame is shown, where it decides how much of the page behind the canvas shows
+through. A slot at 50% alpha, used for the clear color or any draw, shows the page at 50%. Alpha `0` is special: a draw
+in a fully transparent slot is skipped, so the pixel underneath stays.
+
 ## Text
 
 ### System font

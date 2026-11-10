@@ -31,12 +31,14 @@
 
             // BT-756 cases where WebGPU used to draw differently from the software blit. The hash picks one:
             // '#order' a sprite then a rect fill over it, '#reverse' the opposite, '#text' system text under
-            // a later rect outline, '#sizes' empty and negative rects and sprite sources beside a 1px-tall outline.
+            // a later rect outline, '#sizes' empty and negative rects and sprite sources beside a 1px-tall outline,
+            // '#alpha' a half-transparent slot over opaque draws.
             const mode = location.hash.slice(1);
             const BG = 1;
             const RED = 2;
             const GREEN = 3;
             const WHITE = 4;
+            const HALF_GREEN = 5;
             const BLOCK = 16;
 
             function createPalette() {
@@ -46,6 +48,7 @@
                 palette.set(RED, new Color32(255, 0, 0, 255));
                 palette.set(GREEN, new Color32(0, 255, 0, 255));
                 palette.set(WHITE, new Color32(255, 255, 255, 255));
+                palette.set(HALF_GREEN, new Color32(0, 255, 0, 128));
 
                 return palette;
             }
@@ -99,6 +102,12 @@
                         BT.drawSprite(this.sheet, new Rect2i(2, 0, -1, 2), new Rect2i(100, 40, 8, 8), {});
                         BT.drawSprite(this.sheet, src, new Rect2i(120, 40, -8, 8), {});
                         BT.drawRect(new Rect2i(10, 60, 6, 1), WHITE);
+                    } else if (mode === 'alpha') {
+                        // The half slot replaces what is under it, so the black page shows through at 50%.
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), HALF_GREEN);
+                        BT.drawLine(new Vector2i(8, 40), new Vector2i(40, 50), HALF_GREEN);
+                        BT.systemPrint(new Vector2i(10, 60), HALF_GREEN, 'HALF');
                     }
 
                     // Signal render complete, publishing the backend that actually started.

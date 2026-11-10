@@ -1064,4 +1064,34 @@ describe('SoftwareRenderer backend parity (BT-756)', () => {
 
         expect(drawnPixels()).toEqual(['5,5', '6,5', '7,5', '5,6', '6,6', '7,6']);
     });
+
+    it('writes the palette slot alpha for every drawn pixel, matching the clear color', async () => {
+        const renderer = await createRenderer();
+        const palette = makePalette();
+        const half = new Color32(0, 255, 0, 128);
+
+        palette.set(4, half);
+        renderer.setPalette(palette);
+
+        const sheet = SpriteSheet.fromIndexedPixels(2, 2, new Uint8Array(4).fill(4));
+
+        renderer.beginFrame();
+        renderer.setClearColor(4);
+        renderer.drawRectFill(new Rect2i(0, 0, 2, 2), 4);
+        renderer.drawLine(new Vector2i(0, 4), new Vector2i(3, 7), 4);
+        renderer.drawSprite(sheet, new Rect2i(0, 0, 2, 2), new Vector2i(6, 0), 0);
+        renderer.drawSpriteOriented(sheet, new Rect2i(0, 0, 2, 2), new Vector2i(9, 0), 0, 1);
+        renderer.drawSpriteStretched(sheet, new Rect2i(0, 0, 2, 2), 12, 0, 4, 4, 0, 0);
+        renderer.endFrame();
+
+        const frame = logicalContext.lastImageData as ImageData;
+        const expected = [0, 255, 0, 128];
+
+        expect(getPixel(frame, 16, 15, 15)).toEqual(expected); // clear
+        expect(getPixel(frame, 16, 1, 1)).toEqual(expected); // rect fill
+        expect(getPixel(frame, 16, 3, 7)).toEqual(expected); // line
+        expect(getPixel(frame, 16, 7, 1)).toEqual(expected); // sprite
+        expect(getPixel(frame, 16, 10, 1)).toEqual(expected); // oriented sprite
+        expect(getPixel(frame, 16, 13, 3)).toEqual(expected); // stretched sprite
+    });
 });
