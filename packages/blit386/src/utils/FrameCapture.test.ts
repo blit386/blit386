@@ -10,7 +10,14 @@ import { PNG } from 'pngjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
-import { alignedBytesPerRow, downloadBlob, FrameCapture, pixelBufferToPNG, swizzleBGRAtoRGBA } from './FrameCapture';
+import {
+    alignedBytesPerRow,
+    downloadBlob,
+    FrameCapture,
+    pixelBufferToPNG,
+    swizzleBGRAtoRGBA,
+    toStraightAlpha,
+} from './FrameCapture';
 import { defaultFrameCaptureFilename } from './FrameCaptureShortcut';
 
 /**
@@ -476,5 +483,54 @@ describe('pixelBufferToPNG decoded dimensions (regression)', () => {
         expect(decoded.height).toBe(height);
         expect(decoded.width).not.toBe(320);
         expect(decoded.height).not.toBe(240);
+    });
+});
+
+describe('premultiplied readback (BT-756)', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('toStraightAlpha restores straight color and leaves opaque and transparent pixels alone', () => {
+        // Half-alpha green as the premultiplied canvas stores it, then opaque red, then fully transparent.
+        const data = new Uint8ClampedArray([0, 128, 0, 128, 255, 0, 0, 255, 0, 0, 0, 0]);
+
+        toStraightAlpha(data);
+
+        expect(Array.from(data)).toEqual([0, 255, 0, 128, 255, 0, 0, 255, 0, 0, 0, 0]);
+    });
+
+    it('pixelBufferToPNG writes straight alpha, like the software backend captures', async () => {
+        let written: Uint8ClampedArray | null = null;
+
+        vi.stubGlobal(
+            'ImageData',
+            class {
+                constructor(public data: Uint8ClampedArray) {}
+            },
+        );
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class {
+                getContext(): { putImageData: (imageData: { data: Uint8ClampedArray }) => void } {
+                    return {
+                        putImageData: (imageData) => {
+                            written = imageData.data;
+                        },
+                    };
+                }
+
+                convertToBlob(): Promise<Blob> {
+                    return Promise.resolve(new Blob());
+                }
+            },
+        );
+
+        // One BGRA pixel: premultiplied half-alpha red (b, g, r, a).
+        const buffer = new Uint8Array([0, 0, 128, 128]).buffer;
+
+        await pixelBufferToPNG(buffer, 1, 1, 4, true);
+
+        expect(Array.from(written ?? [])).toEqual([255, 0, 0, 128]);
     });
 });

@@ -546,7 +546,8 @@ one row.
 Each pixel holds one palette slot, and draws never blend with each other: a later draw replaces the slot underneath it.
 A slot's alpha takes effect only when the frame is shown, where it decides how much of the page behind the canvas shows
 through. A slot at 50% alpha, used for the clear color or any draw, shows the page at 50%. Alpha `0` is special: a draw
-in a fully transparent slot is skipped, so the pixel underneath stays.
+in a fully transparent slot is skipped, so the pixel underneath stays. `BT.captureFrame()` stores the slot's color with
+its alpha on both backends, so a 50% red slot comes out as red at alpha 128 in the PNG.
 
 ## Text
 

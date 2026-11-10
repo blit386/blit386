@@ -1,8 +1,8 @@
 /**
  * Utilities for capturing a rendered WebGPU frame as a PNG blob.
  *
- * The module handles row alignment, optional BGRA swizzling, GPU readback, and
- * browser-side PNG encoding.
+ * The module handles row alignment, optional BGRA swizzling, straight-alpha conversion, GPU
+ * readback, and browser-side PNG encoding.
  */
 
 /** WebGPU row alignment requirement (bytes per row must be a multiple of 256). */
@@ -66,9 +66,34 @@ export function swizzleBGRAtoRGBA(data: Uint8ClampedArray): void {
 }
 
 /**
+ * Converts premultiplied RGBA to straight RGBA in place. The WebGPU canvas is configured with
+ * `alphaMode: 'premultiplied'`, so every readback holds `rgb * a`, while `ImageData` expects straight
+ * alpha. Opaque and fully transparent pixels are left as they are.
+ *
+ * @param data - Pixel array in RGBA order (4 bytes per pixel), premultiplied.
+ */
+export function toStraightAlpha(data: Uint8ClampedArray): void {
+    for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
+        const alpha = data[i + 3] ?? 0;
+
+        if (alpha === 0 || alpha === 255) {
+            continue;
+        }
+
+        const scale = 255 / alpha;
+
+        // Uint8ClampedArray rounds and clamps on assignment.
+        // eslint-disable-next-line security/detect-object-injection -- typed array indexed by loop counter
+        data[i] = (data[i] ?? 0) * scale;
+        data[i + 1] = (data[i + 1] ?? 0) * scale;
+        data[i + 2] = (data[i + 2] ?? 0) * scale;
+    }
+}
+
+/**
  * Converts a raw pixel buffer into a PNG image Blob.
  *
- * @param buffer - Raw pixel data (potentially padded and in BGRA order).
+ * @param buffer - Raw premultiplied pixel data (potentially padded and in BGRA order).
  * @param width - Image width in pixels.
  * @param height - Image height in pixels.
  * @param paddedBytesPerRow - Bytes per row including GPU alignment padding.
@@ -97,6 +122,8 @@ export async function pixelBufferToPNG(
     if (isBGRA) {
         swizzleBGRAtoRGBA(pixels);
     }
+
+    toStraightAlpha(pixels);
 
     const imageData = new ImageData(pixels, width, height);
     const offscreen = new OffscreenCanvas(width, height);
