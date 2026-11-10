@@ -300,6 +300,16 @@ function pointerClock(): PointerClock {
     return BTAPI.instance.isUpdating ? 'update' : 'frame';
 }
 
+/**
+ * Returns the loaded hardware settings, or {@link defaultConfig} before `BT.init()` loads them, so a getter read
+ * early reports the configure default.
+ *
+ * @returns Effective hardware settings.
+ */
+function settingsOrDefault(): HardwareSettings {
+    return BTAPI.instance.getHardwareSettings() ?? defaultConfig();
+}
+
 /** Main BLIT386 API namespace used by runtime demos. */
 export const BT = {
     /**
@@ -651,12 +661,12 @@ export const BT = {
      * the canvas element's CSS size. Each read returns a clone.
      *
      * @since 1.0.4
-     * @returns Configured logical size, or `Vector2i.zero()` before initialization.
+     * @changed 1.8.1 Before initialization, returns the configure default (`320×240`) instead of the frozen
+     *   `Vector2i.zero()`.
+     * @returns Configured logical size, or the default `320×240` before initialization.
      */
     get displaySize(): Vector2i {
-        const settings = BTAPI.instance.getHardwareSettings();
-
-        return settings ? settings.displaySize.clone() : Vector2i.zero();
+        return settingsOrDefault().displaySize.clone();
     },
 
     /**
@@ -666,11 +676,11 @@ export const BT = {
      * display-tier post-process). Each read returns a clone when non-null.
      *
      * @since 1.1.0
-     * @returns Configured drawing-buffer size, or `null` when not set.
+     * @changed 1.8.1 Before initialization, returns the configure default (`640×480`) instead of `null`.
+     * @returns Configured drawing-buffer size, `null` when not set, or the default `640×480` before initialization.
      */
     get drawingBufferSize(): Vector2i | null {
-        const settings = BTAPI.instance.getHardwareSettings();
-        const size = settings?.drawingBufferSize;
+        const size = settingsOrDefault().drawingBufferSize;
 
         return size ? size.clone() : null;
     },
@@ -681,15 +691,12 @@ export const BT = {
      * Each read returns a clone.
      *
      * @since 1.0.4
-     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
-     * @returns Effective output buffer size, or a new `(0, 0)` vector before initialization.
+     * @changed 1.8.1 Before initialization, returns the configure default (`640×480`) instead of the frozen
+     *   `Vector2i.zero()`.
+     * @returns Effective output buffer size, or the default `640×480` before initialization.
      */
     get outputSize(): Vector2i {
-        const settings = BTAPI.instance.getHardwareSettings();
-
-        if (!settings) {
-            return new Vector2i();
-        }
+        const settings = settingsOrDefault();
 
         return (settings.drawingBufferSize ?? settings.displaySize).clone();
     },
@@ -704,9 +711,7 @@ export const BT = {
      * @returns Target updates per second, or `60` before initialization.
      */
     get targetFPS(): number {
-        const settings = BTAPI.instance.getHardwareSettings();
-
-        return settings ? settings.targetFPS : 60;
+        return settingsOrDefault().targetFPS;
     },
 
     /**
@@ -1759,7 +1764,8 @@ export const BT = {
      * Current global camera offset (clone; safe to mutate without affecting the engine).
      *
      * @since 1.0.4
-     * @returns Camera translation in display pixels.
+     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
+     * @returns Camera translation in display pixels; `(0, 0)` before initialization.
      */
     get camera(): Vector2i {
         return BTAPI.instance.getCameraOffset();
@@ -1797,16 +1803,18 @@ export const BT = {
      * Returns the position of the pointer in the given slot, in display coordinates.
      *
      * Slot 0 is the mouse; slots 1 through 3 are touch / pen contacts assigned
-     * in arrival order. Returns `Vector2i.zero()` when the engine has not been
+     * in arrival order. Returns a new `(0, 0)` when the engine has not been
      * initialized, the slot index is out of `[0, 3]`, or the slot has no live
      * pointer.
      *
      * @since 1.0.3
+     * @changed 1.8.1 Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen
+     *   `Vector2i.zero()`.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns Pointer position in display coordinates.
      */
     pointerPos: (pointerIndex: number = 0): Vector2i => {
-        return BTAPI.instance.getPointer()?.getPos(pointerIndex) ?? Vector2i.zero();
+        return BTAPI.instance.getPointer()?.getPos(pointerIndex) ?? new Vector2i();
     },
 
     /**
@@ -1865,16 +1873,16 @@ export const BT = {
      * rendered frame (read anywhere else).
      *
      * Read from `update()` it covers every frame rendered since the last update, so a drag or a flick moves at the
-     * same speed on a 60 Hz and a 120 Hz display. Returns `Vector2i.zero()` when the engine is not initialized or
+     * same speed on a 60 Hz and a 120 Hz display. Returns a new `(0, 0)` when the engine is not initialized or
      * `pointerIndex` is out of range.
      *
      * @since 1.0.3
-     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame.
+     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame. Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns Movement in display coordinates.
      */
     pointerDelta: (pointerIndex: number = 0): Vector2i => {
-        return BTAPI.instance.getPointer()?.getDelta(pointerIndex, pointerClock()) ?? Vector2i.zero();
+        return BTAPI.instance.getPointer()?.getDelta(pointerIndex, pointerClock()) ?? new Vector2i();
     },
 
     /**
@@ -2265,9 +2273,12 @@ export const BT = {
      * Logical button state is the OR of all listed keys. Only players `0` and `1`
      * support keyboard; other indices no-op. `button` must be one face-button
      * bit flag (`BT.BTN_UP` … `BT.BTN_SELECT`). Pass an empty key list
-     * to clear keyboard bindings for that button until remapped again.
+     * to clear keyboard bindings for that button until remapped again. A call made
+     * before `BT.init()` is kept: `init()` seeds the layout from `configure()`, then
+     * reapplies it.
      *
      * @since 1.0.3
+     * @changed 1.8.1 A call made before `BT.init()` survives the layout seed instead of being discarded.
      * @param player - Zero-based player index (`0` or `1`).
      * @param button - Face button constant.
      * @param keys - DOM key codes (for example `'Space'`, `'KeyW'`).

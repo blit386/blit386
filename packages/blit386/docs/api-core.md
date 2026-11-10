@@ -309,6 +309,39 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   before the demo's own `init()`, in release builds too, so a `randomSeed` call there still wins. See
   [API: Random](api-random.md#engine-default-btrandom).
 
+### Before `BT.init()`
+
+Every `BT` member can be read before `BT.init()` resolves, for example from a loading screen or a test. The rule: a
+value with a configure default returns that default as a fresh, mutable copy; a value with no sensible default
+(`palette`, `systemFont`) throws; a value that only exists once something has started returns `null`, `0`, `false`, or
+`(0, 0)`.
+
+| Member | Before `BT.init()` | Why |
+| --- | --- | --- |
+| `displaySize` | `320×240` | Configure default |
+| `drawingBufferSize`, `outputSize` | `640×480` | Configure default |
+| `targetFPS` / `deltaSeconds` | `60` / `1/60` | Configure default |
+| `requestedBackend`, `activeBackend` | `null` | Nothing was requested or started yet |
+| `timeSeconds`, `ticks`, `renderAlpha` | `0` | The loop has not run |
+| `camera`, `pointerPos()`, `pointerDelta()`, `systemPrintMeasure()` | a new `(0, 0)` | No camera, pointer, or font yet |
+| `pointerScrollDelta`, `gamepadCount`, `loadingAssetsCount` | `0` | Nothing tracked yet |
+| `inputString` | `''` | No key events yet |
+| `isReady`, `isSplashVisible`, `isAudioUnlocked`, `isMusicPlaying` | `false` | Nothing started |
+| `isDown`, `isKeyDown`, `isPointerActive`, `isGamepadConnected`, and the other input queries | `false` / `0` | No input attached |
+| `nativeScreenToDisplayPos()` | `null` | No canvas yet |
+| `splashState` | `'disabled'` | The splash resolves during `init()` |
+| `isDevMode`, `isReducedMotionPreferred`, `screenOrientation`, `random` | live value | Need no engine |
+| `audioVolumeGet()`, `musicVolumeGet()` | `1` | Bus default |
+| `testState()` | `{ ticks: 0, backend: null, state: null }` | No game running |
+| `palette`, `systemFont` | throws | No default exists, and a silent stand-in would hide the bug |
+| `inputMap()` | kept | `init()` seeds the layout, then reapplies the call |
+| `musicPlay()`, `musicStop()` | validate their options, then do nothing | A bad `volume` or `fadeMs` fails the same way before and after init |
+| Draw calls (`drawRect`, `systemPrint`, ...) | report "engine not ready" once, draw nothing | Drawing belongs in `update()` / `render()` |
+
+Since 1.8.1, `displaySize`, `drawingBufferSize`, and `outputSize` return the configure default (they returned `(0, 0)`
+or `null` before), `camera` and `pointerPos()` / `pointerDelta()` return a new vector instead of a frozen one, and an
+early `inputMap()` call is no longer discarded.
+
 ### Screen orientation
 
 <Since symbol="BT.screenOrientation" />

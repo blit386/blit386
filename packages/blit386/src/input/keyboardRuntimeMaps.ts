@@ -19,21 +19,36 @@ let player0Keys: Map<number, string[]>;
 /** Runtime face-button → key-code lists for keyboard player 1. */
 let player1Keys: Map<number, string[]>;
 
+/** Whether `BTAPI` has seeded the maps from `configure()` yet; flips once, on the first {@link setKeyboardLayout}. */
+let isSeeded = false;
+
+/** `BT.inputMap` calls made before the first seed, replayed on top of it so a call before `BT.init()` is kept. */
+const earlyOverrides: [player: number, button: number, codes: string[]][] = [];
+
 /**
  * Replaces both runtime maps with fresh copies of the active layout's defaults.
  */
 export function resetKeyboardFaceButtonMaps(): void {
     [player0Keys, player1Keys] = createDefaultKeyboardRuntimeMaps(activeLayout);
+    earlyOverrides.length = 0;
 }
 
 /**
- * Sets the active keyboard layout and reseeds both runtime maps from its defaults.
+ * Sets the active keyboard layout and reseeds both runtime maps from its defaults. On the first call, overrides set
+ * before it (a `BT.inputMap` call before `BT.init()`) are reapplied on top; later calls (a restart) start clean.
  *
  * @param layout - Layout to seed from.
  */
 export function setKeyboardLayout(layout: KeyboardLayout): void {
+    const pending = isSeeded ? [] : [...earlyOverrides];
+
     activeLayout = layout;
+    isSeeded = true;
     resetKeyboardFaceButtonMaps();
+
+    for (const [player, button, codes] of pending) {
+        setKeyboardFaceButtonKeys(player, button, codes);
+    }
 }
 
 /**
@@ -67,6 +82,12 @@ export function setKeyboardFaceButtonKeys(player: number, button: number, codes:
         player0Keys.set(button, codes);
     } else if (player === 1) {
         player1Keys.set(button, codes);
+    } else {
+        return;
+    }
+
+    if (!isSeeded) {
+        earlyOverrides.push([player, button, codes]);
     }
 }
 

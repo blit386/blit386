@@ -104,13 +104,13 @@ describe('BT.displaySize', () => {
         vi.restoreAllMocks();
     });
 
-    it('returns zero vector when hardware settings are not available', () => {
+    it('returns the configure default when hardware settings are not available', () => {
         vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
 
         const size = BT.displaySize;
 
-        expect(size.x).toBe(0);
-        expect(size.y).toBe(0);
+        expect(size.x).toBe(320);
+        expect(size.y).toBe(240);
     });
 
     it('returns a clone of displaySize from hardware settings', () => {
@@ -128,10 +128,10 @@ describe('BT.drawingBufferSize', () => {
         vi.restoreAllMocks();
     });
 
-    it('returns null when hardware settings are not available', () => {
+    it('returns the configure default when hardware settings are not available', () => {
         vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
 
-        expect(BT.drawingBufferSize).toBeNull();
+        expect(BT.drawingBufferSize?.isEqual(new Vector2i(640, 480))).toBe(true);
     });
 
     it('returns null when drawingBufferSize was not configured', () => {
@@ -175,22 +175,22 @@ describe('BT.outputSize', () => {
         vi.restoreAllMocks();
     });
 
-    it('returns zero vector when hardware settings are not available', () => {
+    it('returns the configure default when hardware settings are not available', () => {
         vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
 
         const size = BT.outputSize;
 
-        expect(size.x).toBe(0);
-        expect(size.y).toBe(0);
+        expect(size.x).toBe(640);
+        expect(size.y).toBe(480);
     });
 
-    it('returns a mutable zero vector when hardware settings are not available', () => {
+    it('returns a mutable vector when hardware settings are not available', () => {
         vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue(null);
 
         const size = BT.outputSize;
 
         expect(() => size.addInPlace(new Vector2i(1, 1))).not.toThrow();
-        expect(size.x).toBe(1);
+        expect(size.x).toBe(641);
     });
 
     it('matches displaySize when drawingBufferSize is omitted', () => {

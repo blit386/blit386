@@ -17,7 +17,7 @@ import {
 import { getIndexedSheets, type SpriteSheet, writeGridTileRect, writeTileRect } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager, DEFAULT_BUS_VOLUME } from '../audio/AudioManager';
-import type { MusicPlayOptions } from '../audio/MusicPlayer';
+import { type MusicPlayOptions, validateFinite } from '../audio/MusicPlayer';
 import {
     DEFAULT_PAN,
     DEFAULT_PITCH,
@@ -973,6 +973,9 @@ export class BTAPI {
     public musicPlay(clip: AudioClip, options?: MusicPlayOptions): void {
         // Unlike soundPlay, not dropped while seeking: one track is never a burst, and a replayed
         // musicPlay leaves the seeked frame's track queued in the parked context for BT.resume().
+        // Validate before the early returns, so a bad option fails the same way before init or before the clip loads.
+        validateFinite(options?.fadeMs, options?.volume, 'BT.musicPlay', options?.overlap);
+
         if (clip.buffer === null) {
             return;
         }
@@ -986,6 +989,7 @@ export class BTAPI {
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
     public musicStop(fadeMs?: number): void {
+        validateFinite(fadeMs, undefined, 'BT.musicStop');
         this.audio?.musicStop(fadeMs);
     }
 
@@ -1764,7 +1768,7 @@ export class BTAPI {
      * @returns Current camera position offset.
      */
     public getCameraOffset(): Vector2i {
-        return this.renderer?.getCameraOffset() ?? Vector2i.zero();
+        return this.renderer?.getCameraOffset() ?? new Vector2i();
     }
 
     /**

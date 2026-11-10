@@ -371,18 +371,17 @@ export class PointerInput {
     /**
      * Returns the position of the pointer in slot `slot` in display coordinates.
      *
-     * Returns `Vector2i.zero()` when the slot index is out of `[0, POINTER_SLOT_COUNT - 1]`.
-     * Valid slots return a clone; invalid slots return the shared zero singleton
-     * (do not mutate the return value when the slot is invalid).
+     * Returns a new `(0, 0)` when the slot index is out of `[0, POINTER_SLOT_COUNT - 1]`.
+     * Either way the result is the caller's to mutate.
      *
      * @param slot - Pointer slot index (0 = mouse, 1-3 = touch / pen).
-     * @returns Pointer position in display coordinates, or `Vector2i.zero()` for invalid slots.
+     * @returns Pointer position in display coordinates, or a new `(0, 0)` for invalid slots.
      */
     public getPos(slot: number): Vector2i {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
-            return Vector2iImpl.zero();
+            return new Vector2iImpl();
         }
 
         return s.pos.clone();
@@ -415,7 +414,7 @@ export class PointerInput {
      * Returns the position delta for slot `slot` since the last `endFrame()` (`'frame'`) or `endUpdate()`
      * (`'update'`).
      *
-     * Returns `Vector2i.zero()` when the slot index is out of range.
+     * Returns a new `(0, 0)` when the slot index is out of range.
      *
      * @param slot - Pointer slot index.
      * @param clock - Which previous state to compare against.
@@ -425,7 +424,7 @@ export class PointerInput {
         const s = this.getSlotOrNull(slot);
 
         if (s === null) {
-            return Vector2iImpl.zero();
+            return new Vector2iImpl();
         }
 
         const prev = clock === 'update' ? s.updatePrevPos : s.prevPos;

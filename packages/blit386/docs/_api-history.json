@@ -467,7 +467,12 @@
     "BT.camera": {
       "kind": "getter",
       "since": "1.0.4",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -537,7 +542,12 @@
     "BT.displaySize": {
       "kind": "getter",
       "since": "1.0.4",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization, returns the configure default (`320×240`) instead of the frozen\n`Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -619,7 +629,12 @@
     "BT.drawingBufferSize": {
       "kind": "getter",
       "since": "1.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization, returns the configure default (`640×480`) instead of `null`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -695,7 +710,12 @@
     "BT.inputMap": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "A call made before `BT.init()` survives the layout seed instead of being discarded."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1027,7 +1047,7 @@
       "changes": [
         {
           "version": "1.8.1",
-          "note": "Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`."
+          "note": "Before initialization, returns the configure default (`640×480`) instead of the frozen\n`Vector2i.zero()`."
         }
       ],
       "deprecated": null,
@@ -1147,7 +1167,7 @@
       "changes": [
         {
           "version": "1.8.1",
-          "note": "Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame."
+          "note": "Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame. Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`."
         }
       ],
       "deprecated": null,
@@ -1168,7 +1188,12 @@
     "BT.pointerPos": {
       "kind": "method",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.8.1",
+          "note": "Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen\n`Vector2i.zero()`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

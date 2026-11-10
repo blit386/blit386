@@ -35,6 +35,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- Behavior change: reading `BT.displaySize`, `BT.drawingBufferSize`, or `BT.outputSize` before `BT.init()` returns the
+  configure default (`320×240`, `640×480`, `640×480`) instead of `(0, 0)` or `null`. `BT.camera`, `BT.pointerPos()`, and
+  `BT.pointerDelta()` return a new vector before init (and for an out-of-range slot), so writing to it no longer throws.
+  `BT.inputMap()` called before `BT.init()` is now kept instead of being wiped when `init()` seeds the keyboard layout.
+  `BT.musicPlay()` and `BT.musicStop()` reject a non-finite `volume`, `fadeMs`, or `overlap` before init and while the
+  clip is still loading, the same as after. The full table is in [Before `BT.init()`](api-core.md#before-btinit).
 - Behavior change: `BT.randomSeed`, `new Random(seed)`, `random.seed()`, the `BT.synthPreset` factories, and the
   `ValueNoise` / `PerlinNoise` / `SimplexNoise` constructors and `seed()` throw a `RangeError` when the seed is not a
   finite number. `NaN`, `undefined`, `Infinity`, or a seed parsed from bad text used to become seed `0` silently, so
