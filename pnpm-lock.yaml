@@ -122,9 +122,6 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
-      husky:
-        specifier: ^9.1.7
-        version: 9.1.7
       knip:
         specifier: ^6.32.0
         version: 6.32.2
