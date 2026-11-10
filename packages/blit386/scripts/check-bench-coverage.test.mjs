@@ -79,7 +79,7 @@ describe('checkBenchCoverage', () => {
 });
 
 describe('HOT_PATH_DIRS', () => {
-    it('names exactly the six directories documented in .claude/rules/bench-coverage.md', () => {
+    it('names exactly the seven directories documented in .claude/rules/bench-coverage.md', () => {
         assert.deepEqual(HOT_PATH_DIRS, [
             'src/render/',
             'src/input/',
@@ -87,6 +87,7 @@ describe('HOT_PATH_DIRS', () => {
             'src/core/',
             'src/assets/',
             'src/utils/',
+            'src/bt/',
         ]);
     });
 });
