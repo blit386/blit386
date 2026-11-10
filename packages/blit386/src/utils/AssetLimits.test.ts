@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     ASSET_DIMENSION_LIMITS,
-    clipSpriteSourceRect,
-    computeSafePixelArea,
+    clipSpriteSourceRectXYTo,
     MAX_ASSET_DIMENSION,
     MAX_ASSET_PIXELS,
     MAX_BTFONT_EMBEDDED_TEXTURE_BYTES,
@@ -60,17 +59,6 @@ describe('AssetLimits', () => {
             const error = validateIndexedPixelInput(MAX_ASSET_DIMENSION, MAX_ASSET_DIMENSION);
 
             expect(error).toContain('too many pixels');
-        });
-    });
-
-    describe('computeSafePixelArea', () => {
-        it('returns null for invalid dimensions', () => {
-            expect(computeSafePixelArea(0, 16)).toBeNull();
-            expect(computeSafePixelArea(16, Number.POSITIVE_INFINITY)).toBeNull();
-        });
-
-        it('returns the pixel count for valid dimensions', () => {
-            expect(computeSafePixelArea(16, 16)).toBe(256);
         });
     });
 
@@ -148,36 +136,30 @@ describe('AssetLimits', () => {
         });
     });
 
-    describe('clipSpriteSourceRect', () => {
+    describe('clipSpriteSourceRectXYTo', () => {
         it('clips rectangles to the sheet bounds', () => {
-            const clipped = clipSpriteSourceRect(new Rect2i(-2, -1, 5, 4), 4, 4);
+            const out = new Rect2i();
 
-            expect(clipped).toEqual({ x: 0, y: 0, width: 3, height: 3 });
+            expect(clipSpriteSourceRectXYTo(-2, -1, 5, 4, 4, 4, out)).toBe(true);
+            expect(out).toEqual(new Rect2i(0, 0, 3, 3));
         });
 
-        it('returns null for oversized blits after clipping', () => {
-            const clipped = clipSpriteSourceRect(
-                new Rect2i(0, 0, ASSET_DIMENSION_LIMITS.maxWidth, ASSET_DIMENSION_LIMITS.maxHeight),
-                ASSET_DIMENSION_LIMITS.maxWidth,
-                ASSET_DIMENSION_LIMITS.maxHeight,
-            );
+        it('rejects oversized blits after clipping', () => {
+            const { maxWidth, maxHeight } = ASSET_DIMENSION_LIMITS;
 
-            expect(clipped).toBeNull();
+            expect(clipSpriteSourceRectXYTo(0, 0, maxWidth, maxHeight, maxWidth, maxHeight, new Rect2i())).toBe(false);
         });
 
-        it('returns null for rectangles with non-positive size', () => {
-            expect(clipSpriteSourceRect(new Rect2i(0, 0, 0, 2), 4, 4)).toBeNull();
+        it('rejects rectangles with non-positive size', () => {
+            expect(clipSpriteSourceRectXYTo(0, 0, 0, 2, 4, 4, new Rect2i())).toBe(false);
         });
 
-        it('returns null for non-integer source rectangles', () => {
-            const srcRect = new Rect2i(0, 0, 2, 2);
-            srcRect.x = 0.5;
-
-            expect(clipSpriteSourceRect(srcRect, 4, 4)).toBeNull();
+        it('rejects non-integer source rectangles', () => {
+            expect(clipSpriteSourceRectXYTo(0.5, 0, 2, 2, 4, 4, new Rect2i())).toBe(false);
         });
 
-        it('returns null for rectangles fully outside the sheet', () => {
-            expect(clipSpriteSourceRect(new Rect2i(10, 10, 2, 2), 4, 4)).toBeNull();
+        it('rejects rectangles fully outside the sheet', () => {
+            expect(clipSpriteSourceRectXYTo(10, 10, 2, 2, 4, 4, new Rect2i())).toBe(false);
         });
     });
 });

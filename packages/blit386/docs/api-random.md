@@ -49,7 +49,10 @@ value. The shared `BT.random` can also be seeded from the URL: `?seed=N` (since 
 
 The engine keeps one shared `Random` instance on the `BT` facade. `BT.random` is a live reference (same instance across
 reads, like `BT.palette`). It is time-seeded when the engine singleton is created; call `BT.randomSeed(seed)` to make a
-run reproducible.
+run reproducible. A seed must be a finite number - only its lower 32 bits are used. `BT.randomSeed`, `new Random(seed)`,
+`random.seed()`, and the noise classes' constructors and `seed()` throw a `RangeError` for `NaN` or `Infinity`, which
+would otherwise collapse to seed `0`. `BT.randomSeed()` and `seed()` also reject `undefined`; a constructor called
+without a seed uses its default.
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -79,7 +82,7 @@ identically; a separate `Random` you own is yours to reseed.
 | `pick(arr)` | One element from a non-empty array |
 | `shuffle(arr)` | New shuffled copy (Fisher-Yates) |
 | `shuffleInPlace(arr)` | Shuffle the array in place and return it |
-| `weighted(items, weights)` | One item by relative non-negative weights |
+| `weighted(items, weights)` | One item by relative finite weights (a negative weight counts as 0) |
 | `angle()` | Float in `[0, 2π)` radians |
 | `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
 | `insideRect(rect)` | Integer point in half-open `rect` |
@@ -181,7 +184,10 @@ classes are distinct from the post-process `Noise` display effect (GPU grain).
 
 Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`, including the
 [1.8.1 seed change](#coordinate-hashing). Call `seed(n)` to switch fields. fBm defaults: `octaves = 4`,
-`persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so fBm stays in approximately `[-1, 1]`.
+`persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so fBm stays inside `[-1, 1]`, but octaves
+partly cancel, so in practice value and simplex fBm reach about `±0.9` and Perlin fBm about `±0.8` in 1D and `±0.65` in
+2D and 3D. Sampling `noise2D(x, 0)` along a whole-number row gives Perlin only about half its range; use `noise1D` for a
+single line.
 
 ```ts twoslash
 import { PerlinNoise, SimplexNoise, ValueNoise } from 'blit386';
@@ -191,7 +197,7 @@ const perlin = new PerlinNoise(9001);
 const simplex = new SimplexNoise(9001);
 
 value.noise2D(12.5, -3.25); // [-1, 1]
-perlin.fbm2D(0.1, 0.2); // multi-octave, still ~[-1, 1]
+perlin.fbm2D(0.1, 0.2); // multi-octave, inside [-1, 1] (Perlin fBm about ±0.65)
 simplex.noise3D(1, 2, 3);
 ```
 

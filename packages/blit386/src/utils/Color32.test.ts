@@ -590,6 +590,11 @@ describe('toUint32', () => {
         expect((packed >>> 24) & 0xff).toBe(255); // A
     });
 
+    it('returns an unsigned value when alpha is 128 or more', () => {
+        expect(Color32.red.toUint32()).toBe(0xff0000ff);
+        expect(new Color32(0, 0, 0, 128).toUint32()).toBe(0x80000000);
+    });
+
     it('roundtrips with fromUint32', () => {
         const c = new Color32(12, 34, 56, 78);
         const roundtripped = Color32.fromUint32(c.toUint32());

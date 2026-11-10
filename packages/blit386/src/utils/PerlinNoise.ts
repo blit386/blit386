@@ -12,30 +12,21 @@
  */
 
 import { hash1i, hash2i, hash3i } from './hash';
-import {
-    DEFAULT_LACUNARITY,
-    DEFAULT_OCTAVES,
-    DEFAULT_PERSISTENCE,
-    fade,
-    fbm1,
-    fbm2,
-    fbm3,
-    grad2,
-    grad3,
-    lerp,
-} from './noiseCommon';
+import { fade, grad2, grad3, lerp } from './noiseCommon';
+import { SeededNoise1D } from './SeededNoise';
 
 /**
- * Scale so 1D Perlin (unit ±1 gradients) stays in approximately `[-1, 1]`.
- * Max of faded grads is 1 at cell edges in the classic formulation.
+ * Scale for 1D Perlin with ±1 gradients. The raw peak is exactly `0.5`, at a cell midpoint
+ * between two gradients pointing at each other, so `2` maps it onto `[-1, 1]`.
  */
-const SCALE_1D = 1;
+const SCALE_1D = 2;
 
 /**
  * Scale for 2D Perlin with the eight GRAD2 directions (including diagonals of length √2).
- * Empirically keeps samples in approximately `[-1, 1]`.
+ * The raw peak is exactly `1`, at a cell center where all four diagonal gradients point
+ * outward, so samples already span `[-1, 1]`.
  */
-const SCALE_2D = 0.6616;
+const SCALE_2D = 1;
 
 /**
  * Scale for 3D Perlin with the twelve mid-edge GRAD3 directions.
@@ -49,29 +40,21 @@ const SCALE_3D = 0.982;
  * @since 1.5.0
  * @changed 1.8.1 Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).
  *   Seed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0.
+ * @changed 1.8.1 `noise1D` and `fbm1D` samples are twice as large and `noise2D` / `fbm2D` about 1.5 times as large,
+ *   so 1D and 2D noise reach about `-1` and `1` as documented. Seeded Perlin worlds keep their shape but change
+ *   amplitude. 3D is unchanged.
+ * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
  */
-export class PerlinNoise {
-    /** World / stream seed (lower 32 bits). */
-    private worldSeed: number;
-
+export class PerlinNoise extends SeededNoise1D {
     /**
      * Creates a Perlin-noise sampler. Omit `seed` to use `0` (same default as coordinate hashes).
      *
      * @param seed - Any finite number; only its lower 32 bits affect the field.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public constructor(seed = 0) {
-        this.worldSeed = seed >>> 0;
-    }
-
-    /**
-     * Reseeds the noise field. Same seed restarts the same spatial pattern.
-     *
-     * @param seed - Any finite number; only its lower 32 bits are used.
-     * @since 1.5.0
-     */
-    public seed(seed: number): void {
-        this.worldSeed = seed >>> 0;
+        super('PerlinNoise', seed);
     }
 
     /**
@@ -161,68 +144,5 @@ export class PerlinNoise {
         const x11 = lerp(n011, n111, u);
 
         return lerp(lerp(x00, x10, v), lerp(x01, x11, v), w) * SCALE_3D;
-    }
-
-    /**
-     * Fractal Brownian motion over {@link noise1D}.
-     *
-     * @param x - Continuous world coordinate.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
-     * @returns Normalized fBm in approximately `[-1, 1]`.
-     * @since 1.5.0
-     */
-    public fbm1D(
-        x: number,
-        octaves = DEFAULT_OCTAVES,
-        persistence = DEFAULT_PERSISTENCE,
-        lacunarity = DEFAULT_LACUNARITY,
-    ): number {
-        return fbm1((sx) => this.noise1D(sx), x, octaves, persistence, lacunarity);
-    }
-
-    /**
-     * Fractal Brownian motion over {@link noise2D}.
-     *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
-     * @returns Normalized fBm in approximately `[-1, 1]`.
-     * @since 1.5.0
-     */
-    public fbm2D(
-        x: number,
-        y: number,
-        octaves = DEFAULT_OCTAVES,
-        persistence = DEFAULT_PERSISTENCE,
-        lacunarity = DEFAULT_LACUNARITY,
-    ): number {
-        return fbm2((sx, sy) => this.noise2D(sx, sy), x, y, octaves, persistence, lacunarity);
-    }
-
-    /**
-     * Fractal Brownian motion over {@link noise3D}.
-     *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
-     * @param z - Continuous world Z.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
-     * @returns Normalized fBm in approximately `[-1, 1]`.
-     * @since 1.5.0
-     */
-    public fbm3D(
-        x: number,
-        y: number,
-        z: number,
-        octaves = DEFAULT_OCTAVES,
-        persistence = DEFAULT_PERSISTENCE,
-        lacunarity = DEFAULT_LACUNARITY,
-    ): number {
-        return fbm3((sx, sy, sz) => this.noise3D(sx, sy, sz), x, y, z, octaves, persistence, lacunarity);
     }
 }

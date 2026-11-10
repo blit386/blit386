@@ -21,8 +21,8 @@ import { C64_HEX, CGA_HEX, GAMEBOY_HEX, NES_HEX, PICO8_HEX, VGA_HEX } from './pa
 /**
  * Palette slot that is always transparent, regardless of palette size.
  *
- * `errorMessages.ts#hudStartSlotError` re-types this value in its message text instead of importing it, to avoid a
- * circular import (this file already imports from `errorMessages.ts`) - keep the two in sync by hand.
+ * `errorMessages/palette.ts#hudStartSlotError` re-types this value in its message text instead of importing it, to avoid
+ * a circular import (this file already imports from `errorMessages`) - keep the two in sync by hand.
  */
 export const TRANSPARENT_PALETTE_INDEX = 0;
 

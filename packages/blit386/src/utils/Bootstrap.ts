@@ -12,7 +12,7 @@ import { isHotActive } from '../hot/HotRuntime';
 import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
-import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
+import { canvasNotFoundError, INIT_FAILED_MESSAGE } from './errorMessages';
 
 /**
  * Options for the bootstrap function.
@@ -42,7 +42,10 @@ export interface BootstrapOptions {
      */
     containerId?: string;
 
-    /** Custom callback on successful initialization. */
+    /**
+     * Custom callback on successful initialization. If it throws synchronously, the error is logged and the game keeps
+     * running.
+     */
     onSuccess?: () => void;
 
     /** Custom callback on initialization error. */
@@ -91,7 +94,7 @@ interface Result {
 async function waitForDOM(): Promise<void> {
     if (document.readyState === 'loading') {
         await new Promise<void>((resolve) => {
-            document.addEventListener('DOMContentLoaded', () => resolve());
+            document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
         });
     }
 }
@@ -139,7 +142,7 @@ function validateCanvas(
     } else {
         result = handleError(
             'Canvas Error',
-            CANVAS_NOT_FOUND_MESSAGE(canvasID),
+            canvasNotFoundError(canvasID),
             new Error(`Canvas element '${canvasID}' not found`),
             containerID,
             onError,
@@ -194,7 +197,12 @@ async function initDemo(
     if (initialized) {
         console.log('[BT] Demo started successfully');
 
-        onSuccess?.();
+        // The game is already running: a bug in the caller's callback is logged, never turned into a boot failure.
+        try {
+            onSuccess?.();
+        } catch (err) {
+            console.error('[BT] onSuccess threw after the game started; the game keeps running:', err);
+        }
 
         result = { success: true };
     } else {

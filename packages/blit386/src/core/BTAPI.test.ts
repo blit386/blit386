@@ -55,7 +55,7 @@ import type { SpriteDrawParams } from '../render/SpriteOrientation';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
-import { paletteEffectEndOutOfRangeError, paletteEffectSlotZeroError } from '../utils/errorMessages';
+import { PALETTE_EFFECT_SLOT_ZERO_MESSAGE, paletteEffectEndOutOfRangeError } from '../utils/errorMessages';
 import type * as FrameCaptureModule from '../utils/FrameCapture';
 import { downloadBlob } from '../utils/FrameCapture';
 import { Rect2i } from '../utils/Rect2i';
@@ -7085,7 +7085,7 @@ describe('BTAPI palette effect ranges', () => {
         resetSingleton();
     });
 
-    const slotZero = paletteEffectSlotZeroError();
+    const slotZero = PALETTE_EFFECT_SLOT_ZERO_MESSAGE;
 
     function snapshot(): string {
         const palette = (BTAPI.instance as unknown as { palette: Palette }).palette;

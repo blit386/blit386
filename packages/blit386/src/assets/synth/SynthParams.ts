@@ -9,7 +9,7 @@
 /**
  * Oscillator waveform shapes accepted by {@link SynthParams.waveform} - the single source of
  * truth {@link SynthWaveform} is derived from, and that validation/error-message code reuses
- * (see `synthValidation.ts` and `errorMessages.ts`) so the accepted set can never drift out of
+ * (see `synthValidation.ts` and `errorMessages/synth.ts`) so the accepted set can never drift out of
  * sync between the type, the validator, and the error text.
  */
 export const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'] as const;

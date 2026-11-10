@@ -83,13 +83,15 @@ import { PerlinNoise } from 'blit386';
 // in init():
 this.terrain = new PerlinNoise(9001);
 for (let x = 0; x < 320; x++) {
-  const n = this.terrain.noise2D(x * 0.02, 0); // about -1 to 1
+  const n = this.terrain.noise1D(x * 0.02); // -1 to 1
   this.groundY.push(Math.floor(120 + n * 40)); // round: screen coordinates are whole numbers
 }
 ```
 
 The `0.02` controls the size of the features - smaller means broader, smoother hills. `ValueNoise` and `SimplexNoise`
-are alternatives with slightly different looks.
+are alternatives with slightly different looks. Engine 1.8.1 changed what a non-zero seed builds and made Perlin
+`noise1D` / `noise2D` reach the full `-1` to `1`, so a world saved as a seed on an older engine comes out different -
+save the generated map if it must stay identical.
 
 When you want an unrelated yes-or-no answer per tile instead of a smooth slope, use a hash:
 

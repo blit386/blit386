@@ -11,10 +11,10 @@ import {
     assetDimensionInvalidError,
     assetDimensionTooLargeError,
     assetIndexedPixelLengthError,
+    AUDIO_CLIP_NOT_READY_MESSAGE,
     audioClipDecodeError,
     audioClipHttpError,
     audioClipNetworkError,
-    audioClipNotReadyError,
     audioClipSynthDurationTooLongError,
     audioClipSynthInvalidWaveformError,
     audioClipSynthNonNegativeFieldError,
@@ -26,39 +26,39 @@ import {
     audioClipSynthUnitRangeFieldError,
     audioOptionNotFiniteError,
     audioStartTimeInvalidError,
-    btfontEmbeddedTextureFormatError,
+    BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphCountTooLargeError,
     btfontJsonTooLargeError,
-    CANVAS_NOT_FOUND_MESSAGE,
+    canvasNotFoundError,
     INIT_FAILED_MESSAGE,
     keyboardLayoutUnknownWarning,
-    noActivePaletteError,
-    OVERLAY_NO_BACKEND,
+    NO_ACTIVE_PALETTE_MESSAGE,
+    OVERLAY_NO_BACKEND_MESSAGE,
     paletteIndexNegativeError,
     paletteIndexOutOfRangeError,
     renderDimensionAreaTooLargeError,
     renderDimensionGPULimitError,
     renderDimensionInvalidError,
     renderDimensionTooLargeError,
+    SPRITE_NOT_INDEXIZED_MESSAGE,
     spriteColorNotInPaletteError,
-    spriteNotIndexizedError,
     WEBGPU_ADAPTER_MESSAGE,
     WEBGPU_DEVICE_MESSAGE,
 } from './errorMessages';
 
 describe('errorMessages', () => {
-    describe('CANVAS_NOT_FOUND_MESSAGE', () => {
+    describe('canvasNotFoundError', () => {
         it('should interpolate the canvas ID into the message', () => {
-            expect(CANVAS_NOT_FOUND_MESSAGE('blit386-canvas')).toContain('blit386-canvas');
+            expect(canvasNotFoundError('blit386-canvas')).toContain('blit386-canvas');
         });
 
         it('should produce different messages for different canvas IDs', () => {
-            expect(CANVAS_NOT_FOUND_MESSAGE('canvas-a')).not.toBe(CANVAS_NOT_FOUND_MESSAGE('canvas-b'));
+            expect(canvasNotFoundError('canvas-a')).not.toBe(canvasNotFoundError('canvas-b'));
         });
 
         it('should mention canvas element syntax', () => {
-            expect(CANVAS_NOT_FOUND_MESSAGE('my-canvas')).toContain('<canvas');
+            expect(canvasNotFoundError('my-canvas')).toContain('<canvas');
         });
     });
 
@@ -95,14 +95,14 @@ describe('errorMessages', () => {
         });
     });
 
-    describe('OVERLAY_NO_BACKEND', () => {
+    describe('OVERLAY_NO_BACKEND_MESSAGE', () => {
         it('should be a non-empty string', () => {
-            expect(typeof OVERLAY_NO_BACKEND).toBe('string');
-            expect(OVERLAY_NO_BACKEND.length).toBeGreaterThan(0);
+            expect(typeof OVERLAY_NO_BACKEND_MESSAGE).toBe('string');
+            expect(OVERLAY_NO_BACKEND_MESSAGE.length).toBeGreaterThan(0);
         });
 
         it('should mention backend readiness', () => {
-            expect(OVERLAY_NO_BACKEND).toContain("backend isn't ready");
+            expect(OVERLAY_NO_BACKEND_MESSAGE).toContain("backend isn't ready");
         });
     });
 
@@ -185,8 +185,8 @@ describe('asset limit error message helpers', () => {
         );
     });
 
-    it('btfontEmbeddedTextureFormatError requires a PNG data URI', () => {
-        expect(btfontEmbeddedTextureFormatError()).toContain('data:image/png;base64');
+    it('BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE requires a PNG data URI', () => {
+        expect(BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE).toContain('data:image/png;base64');
     });
 
     it('btfontEmbeddedTextureTooLargeError includes the payload cap', () => {
@@ -200,17 +200,17 @@ describe('asset limit error message helpers', () => {
 });
 
 describe('runtime error message helpers', () => {
-    describe('noActivePaletteError', () => {
+    describe('NO_ACTIVE_PALETTE_MESSAGE', () => {
         it('returns a non-empty string', () => {
-            expect(noActivePaletteError().length).toBeGreaterThan(0);
+            expect(NO_ACTIVE_PALETTE_MESSAGE.length).toBeGreaterThan(0);
         });
 
         it('mentions BT.paletteSet', () => {
-            expect(noActivePaletteError()).toContain('BT.paletteSet');
+            expect(NO_ACTIVE_PALETTE_MESSAGE).toContain('BT.paletteSet');
         });
 
         it('is consistent across calls', () => {
-            expect(noActivePaletteError()).toBe(noActivePaletteError());
+            expect(NO_ACTIVE_PALETTE_MESSAGE).toBe(NO_ACTIVE_PALETTE_MESSAGE);
         });
     });
 
@@ -268,21 +268,21 @@ describe('runtime error message helpers', () => {
         });
     });
 
-    describe('spriteNotIndexizedError', () => {
+    describe('SPRITE_NOT_INDEXIZED_MESSAGE', () => {
         it('returns a non-empty string', () => {
-            expect(spriteNotIndexizedError().length).toBeGreaterThan(0);
+            expect(SPRITE_NOT_INDEXIZED_MESSAGE.length).toBeGreaterThan(0);
         });
 
         it('mentions SpriteSheet.loadIndexed', () => {
-            expect(spriteNotIndexizedError()).toContain('SpriteSheet.loadIndexed');
+            expect(SPRITE_NOT_INDEXIZED_MESSAGE).toContain('SpriteSheet.loadIndexed');
         });
 
         it('mentions indexize as the manual path', () => {
-            expect(spriteNotIndexizedError()).toContain('indexize');
+            expect(SPRITE_NOT_INDEXIZED_MESSAGE).toContain('indexize');
         });
 
         it('is consistent across calls', () => {
-            expect(spriteNotIndexizedError()).toBe(spriteNotIndexizedError());
+            expect(SPRITE_NOT_INDEXIZED_MESSAGE).toBe(SPRITE_NOT_INDEXIZED_MESSAGE);
         });
     });
 });
@@ -386,20 +386,20 @@ describe('audio clip error message helpers', () => {
         });
     });
 
-    describe('audioClipNotReadyError', () => {
+    describe('AUDIO_CLIP_NOT_READY_MESSAGE', () => {
         it('returns a non-empty string', () => {
-            expect(audioClipNotReadyError().length).toBeGreaterThan(0);
+            expect(AUDIO_CLIP_NOT_READY_MESSAGE.length).toBeGreaterThan(0);
         });
 
         it('mentions waiting for BT.init() before loading an AudioClip', () => {
-            const message = audioClipNotReadyError();
+            const message = AUDIO_CLIP_NOT_READY_MESSAGE;
 
             expect(message).toContain('BT.init()');
             expect(message).toContain('AudioClip');
         });
 
         it('is consistent across calls', () => {
-            expect(audioClipNotReadyError()).toBe(audioClipNotReadyError());
+            expect(AUDIO_CLIP_NOT_READY_MESSAGE).toBe(AUDIO_CLIP_NOT_READY_MESSAGE);
         });
     });
 

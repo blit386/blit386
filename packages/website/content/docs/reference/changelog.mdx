@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-09T20:34:53+01:00"
+lastModified: "2026-11-09T20:52:02+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -32,6 +32,16 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- Behavior change: `BT.randomSeed`, `new Random(seed)`, `random.seed()`, the `BT.synthPreset` factories, and the
+  `ValueNoise` / `PerlinNoise` / `SimplexNoise` constructors and `seed()` throw a `RangeError` when the seed is not a
+  finite number. `NaN`, `undefined`, `Infinity`, or a seed parsed from bad text used to become seed `0` silently, so
+  every bad seed produced the same world. Omitting the seed still works (time-seeded for `Random`, `0` for noise and
+  presets). See [Random](/docs/api/random).
+- Behavior change: `PerlinNoise` 1D and 2D samples now reach about `-1` and `1`, as documented. `noise1D` / `fbm1D`
+  stayed within `±0.5` and `noise2D` / `fbm2D` within about `±0.66`, so a threshold such as `noise2D(x, y) > 0.7` never
+  fired and terrain came out flatter than designed. 1D output is now twice as large and 2D about 1.5 times, so seeded
+  Perlin worlds keep their shape but change amplitude; 3D and `ValueNoise` / `SimplexNoise` are unchanged. Perlin fBm
+  stays narrower than a single octave (about `±0.8` in 1D, `±0.65` in 2D). See [Random](/docs/api/random#pattern-noise).
 - `blit386` now declares an optional peer dependency on `vite` `>=6`, the first version that calls the `hotUpdate` hook
   the `blit386/vite` plugin uses for asset hot reload. Engine-only projects without Vite see no warning. A project on
   Vite 5 is now told: pnpm and yarn warn, and npm may refuse to install until Vite is upgraded, instead of asset edits
@@ -83,6 +93,22 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- A `bootstrap()` `onSuccess` callback that throws no longer tears down a game that already started. The error used to
+  reach bootstrap's own error handler, which replaced the canvas with an "Unexpected Error" panel, called `onError`, and
+  resolved `false` while the game loop kept running and `BT.isReady` was `true`. It is now logged to the console, and
+  `bootstrap()` resolves `true`. See [Core](/docs/api/core).
+- `Random.int()` and `Random.intInclusive()` explain a bound outside the 32-bit integer range instead of wrapping it:
+  `random.int(2 ** 31)` used to fail with a confusing `maxExclusive > min` message about a negative bound.
+  `Random.weighted()` throws for a weight that is not a finite number; an `Infinity` weight used to make it return the
+  last item every time. A `NaN` weight used to count as 0 and now throws as well, so a weight computed as
+  `score / total` needs a guard when `total` can be 0. See [Random](/docs/api/random).
+- `Color32.toUint32()` returns an unsigned 32-bit value, as documented. Every color with alpha 128 or more came back
+  negative (`Color32.red.toUint32()` was `-16776961`, not `0xff0000ff`), so comparing it to a hex literal or using it as
+  a map key next to `>>> 0` values failed. `Color32.fromUint32` accepted both forms and is unchanged.
+- `Vector2i.normalized()` on a zero vector, `BT.outputSize` before init, and `BT.systemPrintMeasure()` before init
+  return a new `(0, 0)` vector. They used to hand out the frozen `Vector2i.zero()`, so
+  `velocity.normalized().mulInPlace(speed)` threw `TypeError` only when the entity stood still. See
+  [Core types](/docs/api/core-types).
 - `BT.musicPlay` with a non-finite `overlap` (`NaN` or `Infinity`) now throws before anything changes. It used to fade
   out the current track first and then throw, leaving silence. `BT.soundPlay` now rejects a non-finite `priority` the
   same way it already rejected a bad `volume`, `pitch` or `pan` (once audio has unlocked - a locked call is still

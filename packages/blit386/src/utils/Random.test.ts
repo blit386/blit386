@@ -462,3 +462,46 @@ describe('Random', () => {
         });
     });
 });
+
+describe('Random seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        expect(() => new Random(Number.POSITIVE_INFINITY)).toThrow(RangeError);
+        expect(() => new Random(Number.POSITIVE_INFINITY)).toThrow(
+            "Can't seed Random with Infinity: it must be a finite number",
+        );
+        expect(() => new Random(1).seed(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still accepts an omitted seed and any finite number', () => {
+        expect(() => new Random()).not.toThrow();
+        expect(new Random(2 ** 40 + 5).seedValue).toBe(5);
+    });
+});
+
+describe('Random bounds and weights validation', () => {
+    it('explains a bound outside the 32-bit integer range instead of wrapping it', () => {
+        const rng = new Random(1);
+
+        expect(() => rng.int(2 ** 31)).toThrow(RangeError);
+        expect(() => rng.int(2 ** 31)).toThrow('Random.int() works with whole numbers from -2147483648 to 2147483647');
+        expect(() => rng.intInclusive(0, 2 ** 31)).toThrow('Random.intInclusive() works with whole numbers');
+        expect(() => rng.intInclusive(Number.NaN, 5)).toThrow(RangeError);
+    });
+
+    it('still accepts the largest 32-bit bound and fractional bounds', () => {
+        const rng = new Random(1);
+
+        expect(rng.int(2 ** 31 - 1)).toBeGreaterThanOrEqual(0);
+        expect(rng.int(0.5, 3.9)).toBeLessThan(3);
+    });
+
+    it('rejects a weight that is not a finite number', () => {
+        const rng = new Random(1);
+
+        expect(() => rng.weighted(['a', 'b'], [1, Number.POSITIVE_INFINITY])).toThrow(RangeError);
+        expect(() => rng.weighted(['a', 'b'], [1, Number.POSITIVE_INFINITY])).toThrow(
+            'Random.weighted() needs finite weights (got Infinity at index 1)',
+        );
+        expect(() => rng.weighted(['a', 'b'], [Number.NaN, 1])).toThrow(RangeError);
+    });
+});
