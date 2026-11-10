@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { Rect2i } from 'blit386';
+import { BT, Rect2i } from 'blit386';
 
 import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
@@ -672,5 +672,42 @@ describe('press ownership', () => {
         pressed = true;
         frame();
         assert.equal(claims.mock.callCount(), 2);
+    });
+
+    it('claims a new press after a release no begin() saw, once a new frame starts', (t) => {
+        // Rows at y 4 and 14: (11, 8) is on the first checkbox, (11, 18) on the second.
+        let pressed = false;
+        let pressY = 8;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: (_button, slot) => pressed && slot === 0,
+            isDown: (_button, slot) => pressed && slot === 0,
+            pointerPos: () => ({ x: 11, y: pressY }),
+        });
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'First', false);
+            const second = checkbox(ctx, 'Second', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        pressed = true;
+        assert.deepEqual(frame(), [true, false]);
+
+        // The release happens on a frame that draws no UI, so no begin() ever sees it.
+        BT.ticks += 1;
+        pressed = false;
+
+        // A new engine tick, a new press on the second checkbox.
+        BT.ticks += 1;
+        pressed = true;
+        pressY = 18;
+        assert.deepEqual(frame(), [false, true]);
     });
 });
