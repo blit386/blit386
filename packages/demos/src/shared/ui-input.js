@@ -126,13 +126,15 @@ class UiInput {
 
     capturedSlot = -1;
 
-    // Which widget id each pointer slot's current press belongs to (null: none). Inflated hit
-    // rects of stacked rows overlap, so a press claims exactly one widget - the one whose own rect
-    // (before the growth) is nearest - at its press edge, and only that widget sees it until release.
+    // Which widget id each pointer slot's current press belongs to (null: none). Inflated
+    // hit rects of stacked rows overlap, so a press claims exactly one widget - the one
+    // whose own rect (before the growth) is nearest - at its press edge, and only that
+    // widget sees it until release.
     /** @type {(string | null)[]} */
     pressOwner = [null, null, null, null];
 
-    // Scratch state for nearestWidgetAt(); the visitor is created once so the scan allocates nothing.
+    // Scratch state for nearestWidgetAt(); the visitor is created once so the scan
+    // allocates nothing.
     claimX = 0;
 
     claimY = 0;
