@@ -142,25 +142,23 @@ function showBeginnerRuntimeError(message: string, title: string = 'Demo Error')
 }
 
 /**
- * Returns whether the renderer has been initialized and can accept draw calls.
+ * Checks that the renderer exists and, when it does not, reports a draw call made before bootstrap finished.
  *
- * @returns True when drawing APIs are ready to run.
+ * @param methodName - BT method name being called.
+ * @returns `true` when the call can go ahead.
  */
-function isRendererReady(): boolean {
-    return BTAPI.instance.getRenderer() !== null;
-}
+function drawReady(methodName: string): boolean {
+    if (BTAPI.instance.getRenderer() !== null) {
+        return true;
+    }
 
-/**
- * Shows a friendly error when a draw call is made before bootstrap finishes.
- *
- * @param methodName - BT method name that was called too early.
- */
-function reportEngineNotReady(methodName: string): void {
     showBeginnerRuntimeError(
         `Can't use BT.${methodName}() yet because the engine is still starting.\n` +
             "The engine isn't ready yet. Make sure all drawing happens inside update() or render().",
         'Engine Not Ready',
     );
+
+    return false;
 }
 
 /**
@@ -739,7 +737,7 @@ export const BT = {
      */
     get deltaSeconds(): number {
         const fps = BT.targetFPS;
-        const validatedFps = Number.isFinite(fps) && fps > 0 ? fps : 60;
+        const validatedFps = Number.isFinite(fps) && fps > 0 ? fps : defaultConfig().targetFPS;
 
         return 1 / validatedFps;
     },
@@ -1525,8 +1523,7 @@ export const BT = {
      * @param effect - Effect instance to append.
      */
     effectAdd: (effect: Effect): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('effectAdd');
+        if (!drawReady('effectAdd')) {
             return;
         }
 
@@ -1550,8 +1547,7 @@ export const BT = {
      * @param effect - Effect instance to remove.
      */
     effectRemove: (effect: Effect): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('effectRemove');
+        if (!drawReady('effectRemove')) {
             return;
         }
 
@@ -1571,8 +1567,7 @@ export const BT = {
      * @since 1.0.3
      */
     effectClear: (): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('effectClear');
+        if (!drawReady('effectClear')) {
             return;
         }
 
@@ -1607,8 +1602,7 @@ export const BT = {
      * @param paletteIndex - Palette index for the full-screen clear pass.
      */
     clear: (paletteIndex: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('clear');
+        if (!drawReady('clear')) {
             return;
         }
 
@@ -1627,8 +1621,7 @@ export const BT = {
      * @param paletteIndex - Palette color index.
      */
     clearRect: (rect: Rect2i, paletteIndex: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('clearRect');
+        if (!drawReady('clearRect')) {
             return;
         }
 
@@ -1655,8 +1648,7 @@ export const BT = {
      * @param maybeColor - Palette index when using numeric overload.
      */
     drawPixel: (posOrX: Vector2i | number, yOrColor: number, maybeColor?: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawPixel');
+        if (!drawReady('drawPixel')) {
             return;
         }
 
@@ -1698,8 +1690,7 @@ export const BT = {
      * @param paletteIndex - Palette color index.
      */
     drawLine: (p0: Vector2i, p1: Vector2i, paletteIndex: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawLine');
+        if (!drawReady('drawLine')) {
             return;
         }
 
@@ -1718,8 +1709,7 @@ export const BT = {
      * @param paletteIndex - Palette color index.
      */
     drawRect: (rect: Rect2i, paletteIndex: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawRect');
+        if (!drawReady('drawRect')) {
             return;
         }
 
@@ -1738,8 +1728,7 @@ export const BT = {
      * @param paletteIndex - Palette color index.
      */
     drawRectFill: (rect: Rect2i, paletteIndex: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawRectFill');
+        if (!drawReady('drawRectFill')) {
             return;
         }
 
@@ -2591,8 +2580,7 @@ export const BT = {
      * @param text - String to render.
      */
     systemPrint: (pos: Vector2i, paletteIndex: number, text: string): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('systemPrint');
+        if (!drawReady('systemPrint')) {
             return;
         }
 
@@ -2642,8 +2630,7 @@ export const BT = {
      * @param paletteOffset - Shift added to every stored glyph index before palette lookup (default 0).
      */
     printFont: (font: BitmapFont, pos: Vector2i, text: string, paletteOffset?: number): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('printFont');
+        if (!drawReady('printFont')) {
             return;
         }
 
@@ -2853,8 +2840,7 @@ export const BT = {
         destPos: Vector2i | Rect2i,
         paletteOffsetOrParams?: number | SpriteDrawParams,
     ): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawSprite');
+        if (!drawReady('drawSprite')) {
             return;
         }
 
@@ -2936,8 +2922,7 @@ export const BT = {
         arg5?: number | Vector2i,
         arg6?: number,
     ): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawTile');
+        if (!drawReady('drawTile')) {
             return;
         }
 
@@ -3019,8 +3004,7 @@ export const BT = {
      * BT.drawNineSlice(this.panel, new Rect2i(20, 20, 120, 64));
      */
     drawNineSlice: (nineSlice: NineSlice, destRect: Rect2i, paletteOffset: number = 0): void => {
-        if (!isRendererReady()) {
-            reportEngineNotReady('drawNineSlice');
+        if (!drawReady('drawNineSlice')) {
             return;
         }
 
