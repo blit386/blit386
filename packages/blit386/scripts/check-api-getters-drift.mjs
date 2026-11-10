@@ -170,6 +170,8 @@ export function findMissingTierBMentions(flagNames, ruleContent) {
         );
 }
 
+/** Prefix `enumerateSymbols` puts on `BT` namespace members. */
+const BT_MEMBER_PREFIX = 'BT.';
 /** Rule-file section that must list every `BT` getter. */
 const GETTERS_HEADING = '## Prefer getters';
 /** Rule-file section that must list every `BT` method. */
@@ -184,7 +186,7 @@ const HEADING_BY_KIND = new Map([
  * Lowercase inline-code names in the two lists that are not `BT` members on purpose: literal values, the
  * `configure()` hook, `BT.preset` members, and argument names. Anything else there must be a live member.
  */
-export const NON_MEMBER_NAMES = new Set([
+const NON_MEMBER_NAMES = new Set([
     'null',
     'true',
     'false',
@@ -289,8 +291,8 @@ function main() {
     const ruleContent = readFileSync(RULE_FILE_PATH, 'utf8');
     const memberKinds = new Map(
         Object.entries(symbols)
-            .filter(([name]) => name.startsWith('BT.'))
-            .map(([name, info]) => [name.slice('BT.'.length), info.kind]),
+            .filter(([name]) => name.startsWith(BT_MEMBER_PREFIX))
+            .map(([name, info]) => [name.slice(BT_MEMBER_PREFIX.length), info.kind]),
     );
     const failures = [
         ...findMissingRuleMentions(memberNames, ruleContent),
