@@ -10,6 +10,7 @@ directory or demo cannot be forgotten. How the units are read: `SKILL.md` in thi
 | --- | --- | --- | --- | --- |
 | `engine-assets` | code | packages/blit386/src/assets, packages/blit386/assets | 2026-11-08 | BT-754 |
 | `engine-audio` | code | packages/blit386/src/audio | 2026-11-08 | BT-753 |
+| `engine-bt` | code | packages/blit386/src/bt | - | - |
 | `engine-core` | code | packages/blit386/src/core | 2026-11-08 | BT-759 |
 | `engine-hot` | code | packages/blit386/src/hot | 2026-11-08 | BT-760 |
 | `engine-input` | code | packages/blit386/src/input | 2026-11-08 | BT-755 |
