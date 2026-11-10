@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { NEXT_CHANNEL, REPORT_ONLY_ENABLED } from '../src/channel-vars.mjs';
 
 const WRANGLER_CONFIG = 'dist/server/wrangler.json';
 const REQUIRED_FLAG = 'nodejs_compat';
@@ -54,8 +55,8 @@ export const patchWranglerConfig = (config, options = {}) => {
             ? { ...config.assets, run_worker_first: true }
             : config.assets;
     const extraVars = {
-        ...(isNextChannel ? { BLIT386_CHANNEL: 'next' } : {}),
-        ...(isCspReportOnly ? { BLIT386_CSP_REPORT_ONLY: '1' } : {}),
+        ...(isNextChannel ? { BLIT386_CHANNEL: NEXT_CHANNEL } : {}),
+        ...(isCspReportOnly ? { BLIT386_CSP_REPORT_ONLY: REPORT_ONLY_ENABLED } : {}),
     };
     const vars = Object.keys(extraVars).length > 0 ? { ...config.vars, ...extraVars } : config.vars;
     const observability = { ...config.observability, enabled: true };
@@ -109,8 +110,8 @@ export const stripPrerenderedPages = (source) => {
 
 /** Patches the built Worker in place: the deployed wrangler.json, Waku's build metadata, and every createRequire call. */
 const main = () => {
-    const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
-    const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === '1';
+    const isNextChannel = process.env.BLIT386_CHANNEL === NEXT_CHANNEL;
+    const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === REPORT_ONLY_ENABLED;
     const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')), {
         isNextChannel,
         isCspReportOnly,
