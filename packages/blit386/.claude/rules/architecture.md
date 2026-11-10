@@ -63,6 +63,7 @@ src/
     OverlayPipelines.ts    # WebGPU overlay tiers (bars, labels, top bars, top labels): lazy allocation, fixed encode order
     SoftwareRenderer.ts    # Canvas 2D software fallback implementing IRenderer
     SoftwareFrameCaptures.ts # Software capture slots (output, display, F9 shortcut) and the one PNG export they share
+    SoftwareRaster.ts      # Software draw-command types + rasterizer replaying them into the RGBA frame (BT-58 rewrites this seam)
     PrimitivePipeline.ts   # Batched geometry writing palette indices (pixels, lines, rects)
     clipLine.ts            # Integer viewport clip for Bresenham lines (clipBresenhamLine); shared by SoftwareRenderer and PrimitivePipeline
     SpritePipeline.ts      # Batched textured quads (sprites, bitmap text); applies SpriteDrawParams flags/scale/pivot/stretch
