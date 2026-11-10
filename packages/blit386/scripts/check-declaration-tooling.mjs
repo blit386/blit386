@@ -109,7 +109,8 @@ const BT_DECLARATION_OPENERS = [
 ];
 
 /** `BT` typed as an intersection of its parts: `declare const BT: typeof constants & typeof lifecycle;`. */
-const BT_INTERSECTION_DECLARATION = /(?:export\s+)?declare\s+const\s+BT\s*:\s*((?:typeof\s+\w+\s*&?\s*)+);/;
+const BT_INTERSECTION_DECLARATION =
+    /(?:export\s+)?declare\s+const\s+BT\s*:\s*(typeof\s+\w+(?:\s*&\s*typeof\s+\w+)*)\s*;/;
 
 /**
  * Returns the balanced `{ ... }` block that starts at the first `{` after `fromIndex`.
