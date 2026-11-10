@@ -24,7 +24,7 @@
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { gitEnv } from './git-env.mjs';
-import { PAGES } from './sync-docs-from-engine.mjs';
+import { API_HISTORY_MIRROR, PAGES } from './sync-docs-from-engine.mjs';
 import { SECTION as KIT_SECTION } from './sync-kit-pages.mjs';
 
 const DIFF_FILE_HEADER_PATTERN = /^(?:\+\+\+ |--- )/u;
@@ -38,6 +38,9 @@ const LAST_MODIFIED_LINE_PATTERN = /^[+-]lastModified: /u;
  * necessarily body content, never frontmatter, however its lines read.
  */
 const FRONTMATTER_HUNK_START_LIMIT = 8;
+
+/** Everything `sync:docs` writes: the MDX mirror and the API history copy the `Since` components read. */
+const MIRROR_PATHS = ['content/docs', API_HISTORY_MIRROR];
 
 /**
  * Classify a `git diff -- content/docs` unified diff: `'clean'` (no diff),
@@ -81,12 +84,12 @@ const classifyDocsDiff = (diffText) => {
 };
 
 /**
- * List untracked, non-ignored files under `content/docs`. `git diff` (used above) never reports
+ * List untracked, non-ignored files under `MIRROR_PATHS`. `git diff` (used above) never reports
  * an untracked path at all, so a brand-new mirror page that `sync:docs` wrote but nobody staged
  * is invisible to `classifyDocsDiff` - this is the other half of what a clean verdict must check.
  */
 const listUntrackedDocsFiles = (cwd = process.cwd()) =>
-    execFileSync('git', ['ls-files', '--others', '--exclude-standard', '--', 'content/docs'], {
+    execFileSync('git', ['ls-files', '--others', '--exclude-standard', '--', ...MIRROR_PATHS], {
         cwd,
         encoding: 'utf8',
         env: gitEnv(),
@@ -107,7 +110,9 @@ const findUntrackedGeneratedPages = (untrackedFiles, pages = PAGES) => {
     // scripts/sync-kit-pages.mjs owns this whole directory, so everything in it is generated.
     const kitPrefix = `content/docs/${KIT_SECTION}/`;
 
-    return untrackedFiles.filter((file) => expected.has(file) || file.startsWith(kitPrefix));
+    return untrackedFiles.filter(
+        (file) => file === API_HISTORY_MIRROR || expected.has(file) || file.startsWith(kitPrefix),
+    );
 };
 
 const main = () => {
@@ -128,7 +133,7 @@ const main = () => {
         return;
     }
 
-    const diff = execFileSync('git', ['diff', '--no-color', '--', 'content/docs'], {
+    const diff = execFileSync('git', ['diff', '--no-color', '--', ...MIRROR_PATHS], {
         encoding: 'utf8',
         env: gitEnv(),
     });

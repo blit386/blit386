@@ -42,7 +42,9 @@ const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
 const API_HISTORY_SRC = join(ENGINE_DOCS, '_api-history.json');
-const API_HISTORY_DEST = join(ROOT, 'src', 'data', 'api-history.generated.json');
+/** The API history copy, package-relative; `check-docs-sync.mjs` diffs it alongside `content/docs`. */
+const API_HISTORY_MIRROR = 'src/data/api-history.generated.json';
+const API_HISTORY_DEST = join(ROOT, API_HISTORY_MIRROR);
 
 /**
  * Load and validate the sitemap manifest from `packages/blit386`. Presence in
@@ -593,6 +595,7 @@ export {
     getLastModified,
     renderPage,
     PAGES,
+    API_HISTORY_MIRROR,
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
