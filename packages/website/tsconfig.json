@@ -1,24 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    /* This package predates the shared base and does not opt into its stricter
-       checks (noUnusedLocals, verbatimModuleSyntax, isolatedModules, etc.) - disabled
-       below to keep typecheck behavior identical to before the merge. */
     "target": "ES2023",
     "lib": ["dom", "dom.iterable", "ES2023"],
     "types": ["mdx", "node", "react", "react-dom"],
     "jsx": "react-jsx",
     "allowJs": true,
     "checkJs": true,
-    "verbatimModuleSyntax": false,
-    "isolatedModules": false,
     "sourceMap": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": false,
-    "exactOptionalPropertyTypes": false,
-    "noImplicitReturns": false,
-    "noImplicitOverride": false
+    /* The one base check still off: turning it on costs 44 errors, mostly in tests (BT-784). */
+    "exactOptionalPropertyTypes": false
   },
   "include": ["src", "content", "*.ts", "*.tsx", "scripts/__tests__"],
   "exclude": ["node_modules", "dist", ".source"]
