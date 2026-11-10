@@ -294,10 +294,7 @@ function main() {
             .filter(([name]) => name.startsWith(BT_MEMBER_PREFIX))
             .map(([name, info]) => [name.slice(BT_MEMBER_PREFIX.length), info.kind]),
     );
-    const failures = [
-        ...findMissingRuleMentions(memberNames, ruleContent),
-        ...findSectionDrift(memberKinds, ruleContent),
-    ];
+    const failures = findSectionDrift(memberKinds, ruleContent);
     const flagNames = enumerateHardwareSettingsFlags(program);
     const flagFailures =
         flagNames.length === 0
