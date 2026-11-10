@@ -261,10 +261,10 @@ reviews:
       instructions: >-
         Reusable command workflows shared by every package, most taking a package argument (`format <package>`,
         `preflight <package>`, `pr <package>`, `review <package>`, `deep-review <package>`, `spellcheck <package>`,
-        `test <package>`, `security-run <package>`, `release <package>`); a few are package-fixed (`issue-audit`,
-        `perf`, `kit-audit`, `demos-new`). American English; no emoji; keep `pnpm run <script>` / `pnpm --filter <name>
-        run <script>` command forms accurate for the package they describe. Plain hyphen-minus (-) for parenthetical
-        breaks and ranges in prose and comments - never the en dash or em dash.
+        `test <package>`, `security-run <package>`, `release <package>`); a few are package-fixed (`perf`, `kit-audit`,
+        `demos-new`, `demos-shots`, `audit`, `release-review`). American English; no emoji; keep `pnpm run <script>` /
+        `pnpm --filter <name> run <script>` command forms accurate for the package they describe. Plain hyphen-minus (-)
+        for parenthetical breaks and ranges in prose and comments - never the en dash or em dash.
   auto_review:
     enabled: false
     labels: ['cr']

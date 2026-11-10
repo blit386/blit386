@@ -31,6 +31,8 @@ For every word flagged by cspell, determine if it is:
 
 - A typo - a misspelled word in source code, comments, strings, or content
 - A legitimate term - a technical term, brand name, abbreviation, or proper noun cspell doesn't know
+- A fragment - a non-word piece of prose (a split identifier, a hyphenated half-word, a truncated token). Reword the
+  source so the fragment disappears; never add a fragment to the dictionary
 
 3. Fix typos in source files
 

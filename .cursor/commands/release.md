@@ -48,17 +48,10 @@ LAST_TAG=$(git describe --tags --abbrev=0)
 echo $LAST_TAG
 ```
 
-Get the tag's commit date and convert to UTC:
+Get the tag's commit date in UTC:
 
 ```bash
-TAG_COMMIT=$(git rev-list -n 1 $LAST_TAG)
-TAG_RAW=$(git log -1 --format="%aI" $TAG_COMMIT)
-TAG_DATE=$(python3 -c "
-from datetime import datetime, timezone
-raw = '$TAG_RAW'.strip()
-dt = datetime.fromisoformat(raw)
-print(dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
-")
+TAG_DATE=$(TZ=UTC git log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%ad "$LAST_TAG")
 echo "Last tag: $LAST_TAG, UTC date: $TAG_DATE"
 ```
 
@@ -142,8 +135,8 @@ A PR touching more than one published package's directory goes in each relevant 
 `packages/demos/` or `packages/website/` (unpublished, internal) belongs there too since neither ships to npm.
 
 **Within `## Engine (blit386)`**, sub-group by topic using this table (this is presentational grouping carried over from
-when RELEASE.md was engine-only - it is not exhaustive, the root `CLAUDE.md` scope list is longer). Give each
-non-matching scope its own topic-matched `###` heading instead of forcing it into a generic bucket:
+when RELEASE.md was engine-only - it is not exhaustive, the scope list in `packages/blit386/CLAUDE.md` ("Git scopes") is
+longer). Give each non-matching scope its own topic-matched `###` heading instead of forcing it into a generic bucket:
 
 | Group heading | Match pattern |
 | --- | --- |
@@ -282,8 +275,8 @@ missing from the changelog is a gap to add.
 
 For each new/changed public symbol in this release, grep across `packages/blit386/docs/*.md` (api-core.md, the relevant
 guide-*.md, api-browser-support.md, …) to confirm it's actually documented, not just `@since`-tagged. Also check the
-root `CLAUDE.md`'s "Where the detail lives" table: a release that adds a new subsystem or notable API surface usually
-needs a row there.
+root `CLAUDE.md`'s "Where the detail lives" list: a release that adds a new subsystem or notable API surface usually
+needs an entry there.
 
 Then check the two downstream packages:
 

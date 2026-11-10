@@ -2,7 +2,9 @@
 /**
  * Fails when a public `BT.*` getter or method has no inline-code mention in
  * `.claude/rules/bt-api-getters.md`, catching the class of drift where a new getter/method ships
- * without the hand-maintained rule being updated to teach it. Reuses `gen-api-history.mjs`'s
+ * without the hand-maintained rule being updated to teach it. Also fails when a getter is not listed under
+ * "Prefer getters" or a method under "Keep as methods", or when either list names something that is no longer a
+ * `BT` member. Reuses `gen-api-history.mjs`'s
  * TypeScript-compiled symbol extraction instead of parsing `src/BLIT386.ts` a second way.
  *
  * Usage:
@@ -168,6 +170,108 @@ export function findMissingTierBMentions(flagNames, ruleContent) {
         );
 }
 
+/** Prefix `enumerateSymbols` puts on `BT` namespace members. */
+const BT_MEMBER_PREFIX = 'BT.';
+/** Rule-file section that must list every `BT` getter. */
+const GETTERS_HEADING = '## Prefer getters';
+/** Rule-file section that must list every `BT` method. */
+const METHODS_HEADING = '## Keep as methods';
+/** Section each naming-relevant kind must be listed under. */
+const HEADING_BY_KIND = new Map([
+    ['getter', GETTERS_HEADING],
+    ['method', METHODS_HEADING],
+]);
+
+/**
+ * Lowercase inline-code names in the two lists that are not `BT` members on purpose: literal values, the
+ * `configure()` hook, `BT.preset` members, and argument names. Anything else there must be a live member.
+ */
+const NON_MEMBER_NAMES = new Set([
+    'null',
+    'true',
+    'false',
+    'configure',
+    'crtPipBoy',
+    'amber',
+    'green',
+    'paletteOffset',
+    'out',
+]);
+
+/**
+ * Returns one `## ` section of the rule file, from its heading up to the next `## ` heading.
+ *
+ * @param {string} ruleContent - Full text of `bt-api-getters.md`.
+ * @param {string} heading - The section's heading line prefix, e.g. `'## Prefer getters'`.
+ * @returns {string | undefined} The section text, or `undefined` when the heading is absent.
+ */
+export function extractSection(ruleContent, heading) {
+    const start = ruleContent.startsWith(heading) ? 0 : ruleContent.indexOf(`\n${heading}`);
+
+    if (start === -1) {
+        return undefined;
+    }
+
+    const end = ruleContent.indexOf('\n## ', start + 1);
+
+    return ruleContent.slice(start, end === -1 ? undefined : end);
+}
+
+/**
+ * Collects the names a section mentions as a bare or call-syntax inline code span starting with a lowercase
+ * letter (`` `paletteFade` ``, `` `isDown(...)` ``). `BT.`-prefixed spans are skipped: the rule uses them only
+ * in its Good/Bad examples, where a removed name is the point.
+ *
+ * @param {string} sectionText - One section of the rule file.
+ * @returns {Set<string>} The mentioned names.
+ */
+function mentionedNames(sectionText) {
+    return new Set([...sectionText.matchAll(/`([a-z][A-Za-z0-9]*)(?:`|\()/g)].map((match) => match[1]));
+}
+
+/**
+ * Checks section membership and stale names: every getter must be listed under "Prefer getters" and every
+ * method under "Keep as methods" (allowlisted deprecated aliases exempt), and every lowercase name either
+ * section lists must be a live `BT` member or in `NON_MEMBER_NAMES`.
+ *
+ * @param {Map<string, string>} memberKinds - Bare `BT` member name to its `enumerateSymbols` kind.
+ * @param {string} ruleContent - Full text of `bt-api-getters.md`.
+ * @param {ReadonlySet<string>} [allowlist] - Members exempt from the membership check.
+ * @returns {string[]} Human-readable failure messages (empty when clean).
+ */
+export function findSectionDrift(memberKinds, ruleContent, allowlist = NO_INLINE_MENTION_ALLOWLIST) {
+    const failures = [];
+    const mentionsByHeading = new Map();
+
+    for (const heading of HEADING_BY_KIND.values()) {
+        const section = extractSection(ruleContent, heading);
+
+        if (section === undefined) {
+            failures.push(`The "${heading}" section is missing from .claude/rules/bt-api-getters.md`);
+        } else {
+            mentionsByHeading.set(heading, mentionedNames(section));
+        }
+    }
+
+    for (const [name, kind] of memberKinds) {
+        const heading = HEADING_BY_KIND.get(kind);
+
+        if (heading && !allowlist.has(name) && mentionsByHeading.get(heading)?.has(name) === false) {
+            failures.push(`BT.${name} is a ${kind} but is not listed under "${heading}"`);
+        }
+    }
+
+    for (const [heading, names] of mentionsByHeading) {
+        for (const name of names) {
+            if (!memberKinds.has(name) && !NON_MEMBER_NAMES.has(name)) {
+                failures.push(`\`${name}\` is listed under "${heading}" but is not a BT member (removed or renamed?)`);
+            }
+        }
+    }
+
+    return failures;
+}
+
 /**
  * Kinds `enumerateSymbols` may report for a `BT` namespace member. Only `method` and `getter`
  * fall under `bt-api-getters.md`'s naming convention (getters vs. methods); `const` covers plain
@@ -185,7 +289,12 @@ function main() {
         .map(([name]) => name);
     const memberNames = deriveBtMemberNames(namingRelevantNames);
     const ruleContent = readFileSync(RULE_FILE_PATH, 'utf8');
-    const failures = findMissingRuleMentions(memberNames, ruleContent);
+    const memberKinds = new Map(
+        Object.entries(symbols)
+            .filter(([name]) => name.startsWith(BT_MEMBER_PREFIX))
+            .map(([name, info]) => [name.slice(BT_MEMBER_PREFIX.length), info.kind]),
+    );
+    const failures = findSectionDrift(memberKinds, ruleContent);
     const flagNames = enumerateHardwareSettingsFlags(program);
     const flagFailures =
         flagNames.length === 0
@@ -196,7 +305,7 @@ function main() {
 
     if (failures.length === 0 && flagFailures.length === 0) {
         console.log(
-            `All ${memberNames.length} public BT.* getters and methods are mentioned in ${relativeToRoot(RULE_FILE_PATH)}.`,
+            `All ${memberNames.length} public BT.* getters and methods are listed in their sections of ${relativeToRoot(RULE_FILE_PATH)}.`,
         );
         console.log(
             `All ${flagNames.length} ${HARDWARE_SETTINGS_INTERFACE} is*/has* flags are mentioned in the Tier B row.`,
@@ -206,9 +315,7 @@ function main() {
     }
 
     if (failures.length > 0) {
-        console.error(
-            `${failures.length} public BT.* getter(s)/method(s) missing from ${relativeToRoot(RULE_FILE_PATH)}:`,
-        );
+        console.error(`${failures.length} BT.* getter/method drift(s) in ${relativeToRoot(RULE_FILE_PATH)}:`);
 
         for (const failure of failures) {
             console.error(`  - ${failure}`);

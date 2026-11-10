@@ -7,8 +7,10 @@ import { createProgramFromFiles, ENTRY_FILE, ROOT } from './gen-api-history.mjs'
 import {
     deriveBtMemberNames,
     enumerateHardwareSettingsFlags,
+    extractSection,
     extractTierBRow,
     findMissingRuleMentions,
+    findSectionDrift,
     findMissingTierBMentions,
     NO_INLINE_MENTION_ALLOWLIST,
 } from './check-api-getters-drift.mjs';
@@ -169,5 +171,77 @@ describe('findMissingTierBMentions', () => {
 
         assert.equal(failures.length, 1);
         assert.match(failures[0], /Tier B row/);
+    });
+});
+
+describe('findSectionDrift', () => {
+    const rule = [
+        '## Prefer getters',
+        '',
+        '- Loop: `ticks`, `deltaSeconds` (reseed with `randomSeed`)',
+        '',
+        'Bad: `BT.fps()` (removed)',
+        '',
+        '## Keep as methods',
+        '',
+        '- Mutations: `randomSeed`, `isDown(BT.BTN_A)`, `printFont` (`paletteOffset`, not `null`)',
+        '',
+        '## Constants',
+        '',
+        '`ticksPerSecond`',
+    ].join('\n');
+    const kinds = new Map([
+        ['ticks', 'getter'],
+        ['deltaSeconds', 'getter'],
+        ['randomSeed', 'method'],
+        ['isDown', 'method'],
+        ['printFont', 'method'],
+        ['BTN_A', 'const'],
+    ]);
+
+    it('extracts a section up to the next ## heading', () => {
+        const section = extractSection(rule, '## Prefer getters');
+
+        assert.match(section, /deltaSeconds/);
+        assert.doesNotMatch(section, /isDown/);
+        assert.equal(extractSection(rule, '## Missing'), undefined);
+    });
+
+    it('passes when every member sits in its section, ignoring prose cross-references and BT.-prefixed examples', () => {
+        assert.deepEqual(findSectionDrift(kinds, rule, new Set()), []);
+    });
+
+    it('fails for a getter listed only under Keep as methods', () => {
+        const failures = findSectionDrift(new Map([...kinds, ['isDown', 'getter']]), rule, new Set());
+
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /BT\.isDown is a getter but is not listed under "## Prefer getters"/);
+    });
+
+    it('fails for a method listed only under Prefer getters', () => {
+        const failures = findSectionDrift(new Map([...kinds, ['ticks', 'method']]), rule, new Set());
+
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /BT\.ticks is a method but is not listed under "## Keep as methods"/);
+    });
+
+    it('fails for a listed name that is no longer a BT member', () => {
+        const withoutTicks = new Map([...kinds].filter(([name]) => name !== 'ticks'));
+        const failures = findSectionDrift(withoutTicks, rule, new Set());
+
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /`ticks` is listed under "## Prefer getters" but is not a BT member/);
+    });
+
+    it('ignores names outside the two sections and exempts allowlisted members', () => {
+        const failures = findSectionDrift(new Map([...kinds, ['keyDown', 'method']]), rule, new Set(['keyDown']));
+
+        assert.deepEqual(failures, []);
+    });
+
+    it('fails when a section heading is missing', () => {
+        const failures = findSectionDrift(kinds, rule.replace('## Keep as methods', '## Methods'), new Set());
+
+        assert.ok(failures.some((failure) => /"## Keep as methods" section is missing/.test(failure)));
     });
 });

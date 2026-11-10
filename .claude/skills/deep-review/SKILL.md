@@ -25,7 +25,7 @@ pushing significant changes or creating pull requests.
   `pnpm run security:mcp-preflight` with the session MCP descriptor path and `--allow-fallback`. See
   [docs/security/security-runbook.md](../../../packages/blit386/docs/security/security-runbook.md). Do not skip scans
   when Opsera/JFrog/Semgrep MCP is degraded; use documented fallbacks.
-- `website`, `kit`, `create-blit386`, `root` have no MCP security preflight - skip straight to step 3.
+- `website`, `kit`, `create-blit386`, `root` have no MCP security preflight - skip straight to step 2.
 
 2. Run preflight checks
 

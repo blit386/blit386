@@ -69,8 +69,10 @@ Two silent hardcoded copies are not an option. That is the exact shape of every 
 (`sprite-effects`, `logo-lowres`) had silently diverged to a variant that dropped `chromasplit` and added `vroll`, and
 every `this.glitchType === 'hshift'` branch re-typed the literal again. Nothing in the toolchain could tell an
 intentional variant from a typo, because plain JavaScript demos have no compiler backstop at all. The fix is the shape
-this rule asks for: both variants now live once, as `GLITCH_TYPES_CHROMA` and `GLITCH_TYPES_VROLL` in
-`packages/demos/src/shared/crt-glitch.js`, and every demo imports the one it means.
+this rule asks for, in two parts that both had to move: the names live once as the frozen `GLITCH_TYPE` object in
+`packages/demos/src/shared/crt-glitch.js`, both variants are built from it there as `GLITCH_TYPES_CHROMA` and
+`GLITCH_TYPES_VROLL`, and every comparison site reads `this.glitchType === GLITCH_TYPE.HSHIFT` instead of re-typing the
+string. Extracting the arrays alone would have left every `=== 'hshift'` branch as a silent copy.
 
 ## What doing it right looks like
 
