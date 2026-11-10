@@ -112,10 +112,11 @@ export const stripPrerenderedPages = (source) => {
 const main = () => {
     const isNextChannel = process.env.BLIT386_CHANNEL === NEXT_CHANNEL;
     const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === REPORT_ONLY_ENABLED;
-    const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')), {
-        isNextChannel,
-        isCspReportOnly,
-    });
+    const config = JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8'));
+    // Without an assets block there is nowhere to put run_worker_first, and markdown negotiation
+    // silently stops working, so fail the build the way stripPrerenderedPages does.
+    if (config.assets === undefined) throw new Error(`${WRANGLER_CONFIG} has no assets block for run_worker_first`);
+    const patchedConfig = patchWranglerConfig(config, { isNextChannel, isCspReportOnly });
     writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(patchedConfig, null, 2)}\n`);
 
     const bytesBefore = statSync(BUILD_METADATA_FILE).size;

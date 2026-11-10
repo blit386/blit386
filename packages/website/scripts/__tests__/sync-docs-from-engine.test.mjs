@@ -295,6 +295,13 @@ describe('stripSiteBanner', () => {
     });
 });
 
+describe('stripSiteBanner with more than one banner (BT-774)', () => {
+    test('removes every banner and keeps the paragraphs around them apart', () => {
+        const banner = '<!-- blit386.dev-banner:start -->\nbanner\n<!-- blit386.dev-banner:end -->';
+        assert.equal(stripSiteBanner(`${banner}\n\nFirst.\n\n${banner}\n\nSecond.`), 'First.\n\nSecond.');
+    });
+});
+
 describe('stripGeneratedNote', () => {
     test('removes the generated-notice block, including its blockquote body', () => {
         const input =

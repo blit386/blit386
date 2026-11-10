@@ -30,7 +30,11 @@ export const SITE_BASE = 'https://blit386.dev/docs';
 const BANNER_START = '<!-- blit386.dev-banner:start -->';
 const BANNER_END = '<!-- blit386.dev-banner:end -->';
 
-/** Match every banner block plus the blank lines that surround it (global: strips duplicates too). */
+/**
+ * Match every banner block plus the blank lines that surround it (global: strips duplicates too).
+ * Manual-sync hazard: `SITE_BANNER_REGION` in packages/website/scripts/sync-docs-from-engine.mjs
+ * is a copy, so the docs mirror strips exactly what this file inserts.
+ */
 const BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/gu;
 
 /** Load the published-page list (src + site path) from the sitemap manifest. */

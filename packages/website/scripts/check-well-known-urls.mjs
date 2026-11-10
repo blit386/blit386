@@ -17,8 +17,8 @@
  * corpus from the Cloudflare `ASSETS` binding at request time - there is no static
  * route manifest to inspect and no dist/ file to check for existence.
  *
- * Requires a build to have already run (`pnpm run build`) - see `preflight` in
- * package.json for the ordering.
+ * Requires a build to have already run (`pnpm run build`). Not part of `preflight`: CI's
+ * `build-website` job runs it after the build.
  *
  * Usage:
  *   node scripts/check-well-known-urls.mjs
@@ -28,6 +28,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WELL_KNOWN_FILES } from './check-well-known-schemas.mjs';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = join(PACKAGE_ROOT, 'public');
@@ -137,13 +138,10 @@ function collectAdvertisedPathsFromRepo() {
         join(PUBLIC_DIR, '.well-known', 'agent-skills', 'blit386-docs', 'SKILL.md'),
         'utf8',
     );
-    const jsonDocPaths = [
-        join(PUBLIC_DIR, '.well-known', 'mcp', 'server-card.json'),
-        join(PUBLIC_DIR, '.well-known', 'api-catalog'),
-        join(PUBLIC_DIR, '.well-known', 'oauth-authorization-server'),
-        join(PUBLIC_DIR, '.well-known', 'oauth-protected-resource'),
-    ];
-    const jsonDocs = jsonDocPaths.map((path) => JSON.parse(readFileSync(path, 'utf8')));
+    // The agent-skills index is covered through SKILL.md above.
+    const jsonDocs = WELL_KNOWN_FILES.filter(({ label }) => !label.includes('agent-skills')).map(({ path }) =>
+        JSON.parse(readFileSync(path, 'utf8')),
+    );
 
     return collectAdvertisedPaths({ webmcpSource, skillMdSource, jsonDocs });
 }
@@ -254,11 +252,11 @@ function describeError(error) {
 }
 
 /**
- * Sends the two JSON-RPC calls `webmcp.js` itself makes to `/mcp` and asserts each
- * response carries real content, not just a 200.
+ * Sends one JSON-RPC `tools/call` to `/mcp` per MCP tool (`search_docs`, `get_doc_page`,
+ * `get_docs_summary`) and asserts each response carries real content, not just a 200.
  *
  * @param {string} baseUrl
- * @returns {Promise<string[]>} Failure messages (empty when both calls succeed).
+ * @returns {Promise<string[]>} Failure messages (empty when every call succeeds).
  */
 async function checkMcpEndpoint(baseUrl) {
     /** @type {string[]} */

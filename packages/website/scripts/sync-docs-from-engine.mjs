@@ -411,12 +411,16 @@ const dropDuplicateIntro = (body, description) => {
  * `packages/blit386` injects below each published doc's H1, plus the blank lines around
  * it. The banner is a GitHub-only signpost; the live site must never tell its
  * own readers to go to the site, so it is stripped before anything else runs.
- * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`.
+ * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`. Manual-sync hazard: a copy of
+ * that file's `BANNER_REGION` (not exported), global so a doc with two banners loses both.
  */
-const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/u;
+const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/gu;
+
+/** Replace every match of a sentinel region with one paragraph break, leaving the body flush. */
+const stripRegion = (pattern) => (markdown) => markdown.replace(pattern, '\n\n').replace(/^\n+/u, '');
 
 /** Remove the engine's GitHub-only site banner, leaving the body flush at its first real line. */
-const stripSiteBanner = (markdown) => markdown.replace(SITE_BANNER_REGION, '\n').replace(/^\n+/u, '');
+const stripSiteBanner = stripRegion(SITE_BANNER_REGION);
 
 /**
  * Match a "this file is generated, do not hand-edit" notice block (sentinels and all), the way a
@@ -427,10 +431,10 @@ const stripSiteBanner = (markdown) => markdown.replace(SITE_BANNER_REGION, '\n')
  * `renderPage`), so the engine doc's version would be redundant, unstripped, visible body content
  * here instead of a comment.
  */
-const GENERATED_NOTE_REGION = /\n*<!-- generated:start -->[\s\S]*?<!-- generated:end -->\n*/u;
+const GENERATED_NOTE_REGION = /\n*<!-- generated:start -->[\s\S]*?<!-- generated:end -->\n*/gu;
 
 /** Remove the engine's GitHub-only "generated, do not edit" notice, leaving the body flush. */
-const stripGeneratedNote = (markdown) => markdown.replace(GENERATED_NOTE_REGION, '\n').replace(/^\n+/u, '');
+const stripGeneratedNote = stripRegion(GENERATED_NOTE_REGION);
 
 /**
  * Look up the last commit date (ISO 8601, author date) that touched a source doc in
@@ -576,19 +580,9 @@ const main = () => {
 
     // Mirror the engine's JSDoc-driven API version history alongside the docs it
     // annotates. `src/data/api-history.ts` (a typed loader) reads this file at
-    // build time; it is a generated artifact like the MDX pages above. A missing
-    // source (e.g. an engine checkout that predates the extractor) skips this
-    // step rather than aborting the whole docs sync.
-    let apiHistorySrc;
-    try {
-        apiHistorySrc = readFileSync(API_HISTORY_SRC, 'utf8');
-    } catch {
-        console.warn(`warning: ${relative(ROOT, API_HISTORY_SRC)} not found; skipping API history mirror.`);
-    }
-    if (apiHistorySrc !== undefined) {
-        writeFileSync(API_HISTORY_DEST, apiHistorySrc);
-        written.push(API_HISTORY_DEST);
-    }
+    // build time; it is a generated artifact like the MDX pages above.
+    writeFileSync(API_HISTORY_DEST, readFileSync(API_HISTORY_SRC, 'utf8'));
+    written.push(API_HISTORY_DEST);
 
     for (const [section, entries] of sections) {
         const sectionDir = join(CONTENT_DOCS, section);
