@@ -239,11 +239,11 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   `BT.drawRect`, ...) before every sprite. Artwork a demo draws inside a `ui.panel()` (the space a `ui.spacer()`
   reserves) must use `ui.drawRectFill` / `ui.drawRect` - the same arguments, drawn as sprites so they land on top. A
   plain `BT.drawRectFill` there is hidden under the panel
-- `ui-core.js` carries a `debug` overlay (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by
-  default so the allocates-nothing rule holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`,
-  `margin`). `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page only. The page takes `snapshot()`
-  before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do not "fix" that
-  order
+- `ui-core.js` (layout and flush, extending the pointer and hit-test state in `ui-input.js`) carries a `debug` overlay
+  (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by default so the allocates-nothing rule
+  holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`, `margin`). `ui.js` publishes the context on
+  `globalThis.__blitDemoUi` for that page only. The page takes `snapshot()` before `captureFrame` on purpose - the
+  capture's extra render would double the recorded groups - so do not "fix" that order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use `THEME_OVERLAY_STYLE` (and
   `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, `defaultThemeSlot(key)` for
   any one theme color on the default theme, literal slot numbers with a comment on a custom `startSlot`, or dedicated

@@ -106,18 +106,8 @@ const BUTTON_LOOK = Object.freeze({
 // one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
 // patch here.
 const T = {
-    bg: 0,
-    shadow: 0,
-    panel: 0,
-    border: 0,
-    text: 0,
-    dim: 0,
-    header: 0,
-    accent: 0,
-    warm: 0,
-    info: 0,
-    button: 0,
-    buttonHover: 0,
+    // One slot field per THEME_COLORS key (T.bg, T.panel, ...), zero until applyTheme().
+    ...Object.fromEntries(THEME_COLORS.map(({ key }) => [key, 0])),
     ready: false,
 
     // The nine-slices ui.panel(), ui.button(), ui.meter(), and ui.tooltip() draw with,
@@ -276,6 +266,18 @@ function buildSlice(art, cap, fillSlot, rimSlot, caps) {
 const solidSlices = new Map();
 
 /**
+ * Throws unless `slot` is a palette slot the kit can draw with (slot 0 is see-through).
+ *
+ * @param {number} slot - The slot to check.
+ * @param {string} what - What the slot is for, for the error message ('a rectangle', ...).
+ */
+function checkSlot(slot, what) {
+    if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
+        throw new Error(`ui: ${what}'s palette slot must be an integer from 1 to 255, got ${slot}.`);
+    }
+}
+
+/**
  * Returns a 1x1 one-color nine-slice for `slot`, which the kit stretches over a box to draw
  * a rectangle as a sprite. The engine draws every primitive (BT.drawRectFill and friends)
  * before every sprite, so a primitive can never land on top of a nine-slice panel - sprite
@@ -288,9 +290,7 @@ function solidSlice(slot) {
     let slice = solidSlices.get(slot);
 
     if (slice === undefined) {
-        if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
-            throw new Error(`ui: a rectangle's palette slot must be an integer from 1 to 255, got ${slot}.`);
-        }
+        checkSlot(slot, 'a rectangle');
 
         slice = buildSlice(SOLID_ART, SOLID_ART_CAP, slot, slot);
         solidSlices.set(slot, slice);
@@ -304,18 +304,6 @@ function solidSlice(slot) {
 // slot (and its border slot by default), so applyTheme() clears this cache whenever it
 // reinstalls the theme.
 const buttonFillSlices = new Map();
-
-/**
- * Throws unless `slot` is a palette slot a button fill or rim can use.
- *
- * @param {number} slot - The slot to check.
- * @param {string} role - 'fill' or 'rim', for the error message.
- */
-function checkButtonSlot(slot, role) {
-    if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
-        throw new Error(`ui: a button ${role}'s palette slot must be an integer from 1 to 255, got ${slot}.`);
-    }
-}
 
 /**
  * Returns the kit's rounded button face with its fill in palette slot `slot`, for cells
@@ -332,8 +320,8 @@ function buttonFillSlice(slot, rimSlot = T.border) {
     let slice = buttonFillSlices.get(key);
 
     if (slice === undefined) {
-        checkButtonSlot(slot, 'fill');
-        checkButtonSlot(rimSlot, 'rim');
+        checkSlot(slot, 'a button fill');
+        checkSlot(rimSlot, 'a button rim');
 
         slice = buildSlice(BUTTON_ART, BUTTON_ART_CAP, slot, rimSlot);
         buttonFillSlices.set(key, slice);
@@ -439,20 +427,7 @@ function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
 
     // Hand back a copy of the slot map (not `T` itself) so a demo cannot accidentally
     // repoint the slots the widgets draw with.
-    return {
-        bg: T.bg,
-        shadow: T.shadow,
-        panel: T.panel,
-        border: T.border,
-        text: T.text,
-        dim: T.dim,
-        header: T.header,
-        accent: T.accent,
-        warm: T.warm,
-        info: T.info,
-        button: T.button,
-        buttonHover: T.buttonHover,
-    };
+    return Object.fromEntries(THEME_COLORS.map(({ key }) => [key, T[key]]));
 }
 
 export {

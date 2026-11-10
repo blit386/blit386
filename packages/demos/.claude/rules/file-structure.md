@@ -8,7 +8,7 @@ Canonical reference: [CLAUDE.md](../../CLAUDE.md) (Layout, Adding a New Demo, Fi
 | Path | Holds |
 | --- | --- |
 | `src/<topic>.js` | One demo per file (53 today); number-free kebab-case, the filename is the slug |
-| `src/shared/` | The UI kit (`ui.js` entry; `ui-core`, `ui-widgets`, `ui-theme`, `ui-dpad`, `ui-gestures`, `ui-lint`), `key-names.js`, `canvas-sprites.js`, `crt-glitch.js`, `post-process-backend.js`, and `__tests__/` |
+| `src/shared/` | The UI kit (`ui.js` entry; `ui-core`, `ui-input`, `ui-widgets`, `ui-theme`, `ui-dpad`, `ui-gestures`, `ui-lint`), `key-names.js`, `canvas-sprites.js`, `crt-glitch.js`, `post-process-backend.js`, and `__tests__/` |
 | `plugins/` | `virtual-demos.js` (serves `src/*.js` as pages), `demo-order.js` (`DEMO_ORDER`), `demo-registry.js`, `demo-vintage-urls.js`, `social-meta.js`, `sitemap.js`, `channel-headers.js`, `highlight-demo-source.js`, `html-escape.js`, and `__tests__/` |
 | `_partials/` | `layout.html` (the one page template), `demo-shell*.js` (banner, combobox, nav, analytics), `source-panel*.js`, `capture-expose.js` |
 | `_shots/` | The `/shots` capture gallery and the `/` demo sheet: `poses.js`, `capture*.js`, `gallery.js`, `shots.{html,js,css}`, `sheet.{html,js,css}`, `sheet-entries.js`, review aids, and `__tests__/` |
