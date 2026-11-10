@@ -5,23 +5,19 @@ import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OutputUpscaleFilter } from '../core/IBTDemo';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
-import { FrameCapture } from '../utils/FrameCapture';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
 import { OverlayPipelines } from './OverlayPipelines';
-import { PaletteResolveUpscalePass } from './PaletteResolveUpscalePass';
-import { PostProcessChain } from './PostProcessChain';
 import { SceneBatch } from './SceneBatch';
+import { WebGPUFrameCaptures } from './WebGPUFrameCaptures';
+import { LOGICAL_TARGET_FORMAT, WebGPUPostProcess } from './WebGPUPostProcess';
 
 /**
  * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes.
  */
 const PALETTE_BUFFER_SIZE = MAX_PALETTE_SIZE * 4 * 4;
-
-/** Logical scene + pixel chain format (palette index in the red channel). */
-const LOGICAL_TARGET_FORMAT: GPUTextureFormat = 'r8uint';
 
 /**
  * WebGPU renderer implementing {@link IRenderer}.
@@ -29,20 +25,9 @@ const LOGICAL_TARGET_FORMAT: GPUTextureFormat = 'r8uint';
  * `WebGPURenderer` owns frame begin/end, clear color, camera state, palette
  * buffer, frame capture, and the two-tier post-process pipeline. Demo draws go
  * through {@link SceneBatch}, which keeps primitives and sprites in call order;
- * overlay draws go to the fixed-order {@link OverlayPipelines} tiers.
- *
- * Per-frame stage flow:
- *
- * ```text
- * scene (r8uint logical) -> [pixel chain, r8uint]
- *                        -> palette resolve + upscale (rgba)
- *                        -> [display chain, rgba]
- *                        -> swap chain
- * ```
- *
- * Pixel-tier effects always run in the index-native logical domain. RGBA output
- * exists only after palette resolve/upscale, so display-tier effects remain
- * unchanged while the obsolete logical RGBA path is removed.
+ * overlay draws go to the fixed-order {@link OverlayPipelines} tiers. Everything
+ * after the scene pass (effect chains, palette resolve, upscale) lives in
+ * {@link WebGPUPostProcess}.
  */
 export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /** WebGPU device for GPU operations. */
@@ -53,19 +38,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
     /** Logical render target resolution in pixels (`displaySize`). */
     private readonly displaySize: Vector2i;
-
-    /** Output drawing-buffer size in pixels (matches the swap chain). */
-    private readonly outputSize: Vector2i;
-
-    /** Magnification filter used between the pixel chain and the display chain. */
-    private readonly upscaleFilterMode: OutputUpscaleFilter;
-
-    /**
-     * True when the caller explicitly provided an `outputSize` (i.e. set
-     * `drawingBufferSize` in `configure()`), enabling display-tier effects
-     * regardless of whether the output resolution differs from the logical one.
-     */
-    private readonly isDisplayTierEnabled: boolean;
 
     /** Palette index used for the frame clear color. Defaults to 0 (transparent). */
     private clearPaletteIndex: number = 0;
@@ -78,29 +50,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     private readonly cameraOffset: Vector2i = new Vector2i(0, 0);
 
-    /** Frame capture manager for PNG export at `outputSize` (public `captureFrame()`). */
-    private readonly frameCapture = new FrameCapture();
-
-    /**
-     * Frame capture manager for the public `captureFrame({ size: 'display' })` path, which
-     * captures at logical `displaySize` rather than `outputSize`. Kept separate from
-     * {@link frameCapture} and {@link shortcutFrameCapture} so the three capture paths
-     * never contend for the same pending-request slot.
-     */
-    private readonly displayFrameCapture = new FrameCapture();
-
-    /**
-     * Frame capture manager for the F9 / Shift+F9 dev-mode shortcuts, which capture at
-     * logical `displaySize` like {@link displayFrameCapture} but from their own slot, so
-     * a keypress and a public display-size capture never supersede each other.
-     */
-    private readonly shortcutFrameCapture = new FrameCapture();
-
-    /** Both display-size slots, so {@link submitFrame} can service them with one resolve pass. */
-    private readonly displayCaptureSlots: readonly FrameCapture[] = [
-        this.displayFrameCapture,
-        this.shortcutFrameCapture,
-    ];
+    /** The three capture slots and their shared logical capture target. */
+    private readonly captures: WebGPUFrameCaptures;
 
     /** Active palette for color lookups and GPU upload. */
     private palette: Palette | null = null;
@@ -137,33 +88,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /** Overlay bars and labels, encoded after the demo tier in a fixed tier order. */
     private readonly overlay: OverlayPipelines;
 
-    /** Pixel-tier post-process chain (logical resolution). */
-    private pixelChain: PostProcessChain | null = null;
-
-    /** Display-tier post-process chain (output resolution). */
-    private displayChain: PostProcessChain | null = null;
-
-    /** Pass that resolves logical palette indices to RGBA and upscales to output size. */
-    private resolvePass: PaletteResolveUpscalePass | null = null;
-
-    /** Logical-resolution scene framebuffer; allocated lazily. */
-    private sceneTex: GPUTexture | null = null;
-
-    /** Stable view of the scene framebuffer. */
-    private sceneTexView: GPUTextureView | null = null;
-
-    /**
-     * Display-size (logical) RGBA capture target for the Shift+F9 shortcut; allocated
-     * lazily. Resolved directly from the `r8uint` scene texture, bypassing the drawing-
-     * buffer upscale and any display-tier post-process effects.
-     */
-    private displayCaptureTex: GPUTexture | null = null;
-
-    /** Stable view of {@link displayCaptureTex}. */
-    private displayCaptureTexView: GPUTextureView | null = null;
-
-    /** Cached swap-chain format used by lazy texture creation. */
-    private swapFormat: GPUTextureFormat | null = null;
+    /** Scene framebuffer, effect chains, and palette resolve + upscale. */
+    private readonly post: WebGPUPostProcess;
 
     /**
      * Creates a renderer bound to an initialized device and canvas context.
@@ -191,10 +117,15 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         this.device = device;
         this.context = context;
         this.displaySize = displaySize.clone();
-        this.isDisplayTierEnabled = outputSize !== undefined;
-        this.outputSize = (outputSize ?? displaySize).clone();
-        this.upscaleFilterMode = upscaleFilter;
+        this.captures = new WebGPUFrameCaptures(device, this.displaySize);
         this.overlay = new OverlayPipelines(device, this.displaySize, LOGICAL_TARGET_FORMAT, isOverlayEnabled);
+        this.post = new WebGPUPostProcess(
+            device,
+            this.displaySize,
+            (outputSize ?? displaySize).clone(),
+            upscaleFilter,
+            outputSize !== undefined,
+        );
     }
 
     /**
@@ -228,21 +159,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             // when overlay is enabled, or when a prior lazy draw call (or a prior init()
             // before a device-loss recovery) already allocated one.
             await this.overlay.init(this.paletteBuffer);
-
-            this.swapFormat = navigator.gpu.getPreferredCanvasFormat();
-
-            // Pixel chain operates at logical resolution (320x240 etc.).
-            this.pixelChain = new PostProcessChain(this.device, LOGICAL_TARGET_FORMAT, this.displaySize, 'pixel');
-
-            // Display chain operates at output resolution. When there is no
-            // upscale (output == logical), display-tier effects still run, but
-            // they sample the same-size source. We allocate the chain regardless
-            // so the rest of the engine can introspect it.
-            this.displayChain = new PostProcessChain(this.device, this.swapFormat, this.outputSize, 'display');
-
-            // Resolve + optional upscale sits between logical and display tiers.
-            this.resolvePass = new PaletteResolveUpscalePass();
-            this.resolvePass.init(this.device, this.swapFormat, this.upscaleFilterMode, this.paletteBuffer);
+            this.post.init(this.paletteBuffer);
 
             return true;
         } catch (error) {
@@ -257,25 +174,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * pass, and frame textures. Called on every {@link init} and when the engine drops the renderer.
      */
     destroy(): void {
-        if (this.frameCapture.hasPending()) {
-            this.frameCapture.reject(new Error(RENDERER_RESET_MESSAGE));
-        }
-
-        this.rejectPendingDisplayCaptures(RENDERER_RESET_MESSAGE);
+        this.captures.destroy(RENDERER_RESET_MESSAGE);
         this.paletteBuffer?.destroy();
         this.paletteBuffer = null;
-        this.pixelChain?.dispose();
-        this.pixelChain = null;
-        this.displayChain?.dispose();
-        this.displayChain = null;
-        this.resolvePass?.dispose();
-        this.resolvePass = null;
-        this.sceneTex?.destroy();
-        this.sceneTex = null;
-        this.sceneTexView = null;
-        this.displayCaptureTex?.destroy();
-        this.displayCaptureTex = null;
-        this.displayCaptureTexView = null;
+        this.post.destroy();
     }
 
     /**
@@ -360,12 +262,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
         const swapChainView = swapTexture.createView();
         const commandEncoder = this.device.createCommandEncoder({ label: 'Render Commands' });
-        const isPixelChainActive = this.pixelChain?.isActive() ?? false;
-        const isDisplayChainActive = this.displayChain?.isActive() ?? false;
-        const sceneView = this.resolveSceneView(isPixelChainActive);
 
-        this.encodeScenePass(commandEncoder, sceneView);
-        this.encodePostProcess(commandEncoder, swapChainView, isPixelChainActive, isDisplayChainActive, deltaMs);
+        this.encodeScenePass(commandEncoder, this.post.sceneTarget());
+        this.post.encode(commandEncoder, swapChainView, deltaMs);
         this.submitFrame(commandEncoder, swapTexture);
     }
 
@@ -577,7 +476,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame.
      */
     captureFrame(): Promise<Blob> {
-        return this.frameCapture.request();
+        return this.captures.requestOutput();
     }
 
     /**
@@ -592,7 +491,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
      */
     captureFrameAtDisplaySize(): Promise<Blob> {
-        return this.displayFrameCapture.request();
+        return this.captures.requestDisplay();
     }
 
     /**
@@ -602,7 +501,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Promise resolving to a PNG Blob of the rendered frame at `displaySize`.
      */
     captureFrameForShortcut(): Promise<Blob> {
-        return this.shortcutFrameCapture.request();
+        return this.captures.requestShortcut();
     }
 
     /**
@@ -657,19 +556,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      *   set in `configure()`.
      */
     addEffect(effect: Effect): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.addEffect: renderer not initialized.');
-        }
-
-        if (effect.tier === 'display' && !this.isDisplayTierEnabled) {
-            throw new Error(
-                'WebGPURenderer.addEffect: display-tier effects require drawingBufferSize to be set in configure().',
-            );
-        }
-
-        const chain = effect.tier === 'pixel' ? this.pixelChain : this.displayChain;
-
-        chain.add(effect);
+        this.post.add(effect);
     }
 
     /**
@@ -684,16 +571,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @throws If the renderer has not been initialized.
      */
     removeEffect(effect: Effect): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.removeEffect: renderer not initialized.');
-        }
-
-        const [primary, fallback] =
-            effect.tier === 'pixel' ? [this.pixelChain, this.displayChain] : [this.displayChain, this.pixelChain];
-
-        if (!primary.remove(effect)) {
-            fallback.remove(effect);
-        }
+        this.post.remove(effect);
     }
 
     /**
@@ -702,28 +580,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @throws If the renderer has not been initialized.
      */
     clearEffects(): void {
-        if (!this.pixelChain || !this.displayChain) {
-            throw new Error('WebGPURenderer.clearEffects: renderer not initialized.');
-        }
-
-        this.pixelChain.clear();
-        this.displayChain.clear();
-    }
-
-    /**
-     * Rejects any pending display-size capture (public or shortcut slot). Called when
-     * {@link resolvePass} is gone - during teardown / device-loss re-init, and from
-     * {@link submitFrame} when a frame is submitted without it - so an awaited capture
-     * fails with a clear message instead of hanging forever.
-     *
-     * @param message - Rejection message.
-     */
-    private rejectPendingDisplayCaptures(message: string): void {
-        for (const capture of this.displayCaptureSlots) {
-            if (capture.hasPending()) {
-                capture.reject(new Error(message));
-            }
-        }
+        this.post.clear();
     }
 
     /**
@@ -810,41 +667,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Encodes the optional pixel chain, upscale pass, and display chain in the
-     * correct order based on which chains are active.
-     *
-     * @param encoder - Active command encoder.
-     * @param swapChainView - Current swap-chain view (final destination).
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
-     * @param isDisplayChainActive - Whether the display chain has any registered effects.
-     * @param deltaMs - Milliseconds of effect time since the previous frame.
-     */
-    private encodePostProcess(
-        encoder: GPUCommandEncoder,
-        swapChainView: GPUTextureView,
-        isPixelChainActive: boolean,
-        isDisplayChainActive: boolean,
-        deltaMs: number,
-    ): void {
-        if (isPixelChainActive && this.pixelChain) {
-            this.pixelChain.encode(encoder, deltaMs, this.pixelChainDestView());
-        }
-
-        // Resolve logical r8uint indices into RGBA (and upscale if needed) before
-        // any display-tier RGBA effects run.
-        if (this.resolvePass) {
-            const resolveSrc = this.requireSceneTexView();
-            const resolveDest = isDisplayChainActive ? this.requireDisplayChainInput() : swapChainView;
-
-            this.resolvePass.encode(encoder, resolveSrc, resolveDest, this.displaySize);
-        }
-
-        if (isDisplayChainActive && this.displayChain) {
-            this.displayChain.encode(encoder, deltaMs, swapChainView);
-        }
-    }
-
-    /**
      * Adds the optional frame-capture readback, submits the command buffer,
      * and resets per-frame pipeline state.
      *
@@ -852,155 +674,15 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param swapTexture - Current swap-chain texture (capture source).
      */
     private submitFrame(encoder: GPUCommandEncoder, swapTexture: GPUTexture): void {
-        const isCapturing = this.frameCapture.hasPending();
-
-        if (isCapturing) {
-            this.frameCapture.executeInEncoder(this.device, swapTexture, encoder);
-        }
-
-        const isCapturingDisplaySize = this.encodeDisplayCaptures(encoder);
-
+        this.post.encodeCaptures(this.captures, encoder, swapTexture);
         this.device.queue.submit([encoder.finish()]);
-
-        if (isCapturing) {
-            void this.frameCapture.resolve(this.device);
-        }
-
-        if (isCapturingDisplaySize) {
-            for (const capture of this.displayCaptureSlots) {
-                if (capture.hasPending()) {
-                    void capture.resolve(this.device);
-                }
-            }
-        }
+        this.captures.resolve();
 
         // Defensive reset so the pipeline state is clean even if beginFrame() is not
         // called next. beginFrame() also resets; this prevents stale data from
         // persisting across frames.
         this.scene.reset();
         this.overlay.reset();
-    }
-
-    /**
-     * Picks the texture view the scene render pass should target this frame.
-     *
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
-     * @returns Stable view to render the scene into.
-     */
-    private resolveSceneView(isPixelChainActive: boolean): GPUTextureView {
-        if (isPixelChainActive && this.pixelChain) {
-            return this.pixelChain.getInputView();
-        }
-
-        // Logical scene is always index-native. It must be resolved to RGBA in a
-        // dedicated pass, even when output size equals logical size and no effects
-        // are active.
-        return this.requireSceneTexView();
-    }
-
-    /**
-     * Picks the destination view for the pixel chain's last pass.
-     *
-     * @returns Destination view for the final pixel-chain pass.
-     */
-    private pixelChainDestView(): GPUTextureView {
-        return this.requireSceneTexView();
-    }
-
-    /**
-     * Lazily allocates the logical-resolution scene framebuffer and returns its view.
-     *
-     * @returns Stable view of the scene framebuffer.
-     */
-    private requireSceneTexView(): GPUTextureView {
-        if (!this.sceneTexView) {
-            this.sceneTex = this.device.createTexture({
-                label: 'Renderer Scene Framebuffer',
-                size: { width: this.displaySize.x, height: this.displaySize.y, depthOrArrayLayers: 1 },
-                format: LOGICAL_TARGET_FORMAT,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-            });
-
-            this.sceneTexView = this.sceneTex.createView();
-        }
-
-        return this.sceneTexView;
-    }
-
-    /**
-     * Records the display-size readback for every pending slot in
-     * {@link displayCaptureSlots}: one resolve pass into the shared capture target, then
-     * one texture-to-buffer copy per pending slot. Without {@link resolvePass} (teardown /
-     * device-loss window) the pending captures are rejected instead of left hanging.
-     *
-     * @param encoder - Active command encoder.
-     * @returns `true` when at least one display-size capture was recorded.
-     */
-    private encodeDisplayCaptures(encoder: GPUCommandEncoder): boolean {
-        if (!this.displayCaptureSlots.some((capture) => capture.hasPending())) {
-            return false;
-        }
-
-        if (!this.resolvePass) {
-            this.rejectPendingDisplayCaptures("Can't capture frame: renderer resolve pass not initialized");
-
-            return false;
-        }
-
-        const destView = this.requireDisplayCaptureTexView();
-
-        this.resolvePass.encode(encoder, this.requireSceneTexView(), destView, this.displaySize);
-
-        if (this.displayCaptureTex) {
-            for (const capture of this.displayCaptureSlots) {
-                if (capture.hasPending()) {
-                    capture.executeInEncoder(this.device, this.displayCaptureTex, encoder);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Lazily allocates the display-size (logical) RGBA capture target used by
-     * {@link captureFrameAtDisplaySize} and returns its view.
-     *
-     * @returns Stable view of the display-size capture target.
-     */
-    private requireDisplayCaptureTexView(): GPUTextureView {
-        if (!this.displayCaptureTexView) {
-            if (!this.swapFormat) {
-                throw new Error('WebGPURenderer.requireDisplayCaptureTexView: swap format not initialized.');
-            }
-
-            this.displayCaptureTex = this.device.createTexture({
-                label: 'Renderer Display-Size Capture Target',
-                size: { width: this.displaySize.x, height: this.displaySize.y, depthOrArrayLayers: 1 },
-                format: this.swapFormat,
-                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-            });
-
-            this.displayCaptureTexView = this.displayCaptureTex.createView();
-        }
-
-        return this.displayCaptureTexView;
-    }
-
-    /**
-     * Returns the display chain's input view, which becomes the upscale pass's
-     * destination when the display chain is active.
-     *
-     * @returns Stable input view of the display chain.
-     */
-    private requireDisplayChainInput(): GPUTextureView {
-        const chain = this.displayChain;
-
-        if (!chain?.isActive()) {
-            throw new Error('WebGPURenderer.requireDisplayChainInput: display chain inactive.');
-        }
-
-        return chain.getInputView();
     }
 
     /**

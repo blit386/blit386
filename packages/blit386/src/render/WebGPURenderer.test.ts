@@ -1083,7 +1083,7 @@ describe('frame capture', () => {
         const publicCapture = renderer.captureFrameAtDisplaySize();
 
         // Simulate the resolvePass === null window submitFrame used to hang in.
-        (renderer as unknown as { resolvePass: unknown }).resolvePass = null;
+        (renderer as unknown as { post: { resolvePass: unknown } }).post.resolvePass = null;
 
         renderer.beginFrame();
         renderer.endFrame(0);
