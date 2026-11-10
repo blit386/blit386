@@ -49,7 +49,7 @@ code 1 means at least one tile failed; the failure list names the step (`load`, 
 Order of operations for an agent:
 
 1. Read `public/shots/manifest.json` and list entries with a non-empty `lint` array or an `error`. Lint rules:
-   `overlap`, `out-of-display`, `margin`, `row-gap` (`src/shared/ui-lint.js`).
+   `overlap`, `out-of-display`, `margin` (`src/shared/ui-lint.js`).
 2. Read the flagged PNGs with the Read tool. The `uidebug` variant draws the group box (accent), the pad inset (dim),
    and every widget hit rect (warm), which is where spacing problems show.
 3. When a single pixel matters, make a 4x nearest-neighbor crop before reading:

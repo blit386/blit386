@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { Rect2i } from 'blit386';
+import { BT, Rect2i } from 'blit386';
 
 import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
@@ -342,20 +342,19 @@ describe('meter', () => {
 });
 
 describe('spacer', () => {
-    it('records a zero-width row so the layout lint can tell it from a gap', (t) => {
+    it('moves the layout cursor down by its height and adds no width', (t) => {
         stubBt(t);
 
         const ctx = createReadyContext();
 
-        ctx.recording = true;
         ctx.begin(UI_ANCHORS.TOP_LEFT);
+
+        const before = ctx.cursorY;
+
         spacer(ctx, 7);
+        assert.equal(ctx.cursorY - before, 7);
+        assert.equal(ctx.maxGroupW, 2 * ctx.pad);
         ctx.end();
-
-        const [row] = ctx.snapshot().groups[0].rows;
-
-        assert.equal(row.w, 0);
-        assert.equal(row.h, 7);
     });
 });
 
@@ -559,5 +558,156 @@ describe('tooltip', () => {
         } finally {
             T.ready = wasReady;
         }
+    });
+});
+
+describe('press ownership', () => {
+    // A press in the band where two inflated hit rects overlap must go to one widget only.
+    function pressAt(t, x, y) {
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: () => true,
+            isDown: () => true,
+            pointerPos: () => ({ x, y }),
+        });
+    }
+
+    it('toggles exactly one of two stacked checkboxes, the nearest', (t) => {
+        pressAt(t, 11, 15);
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'Terrain', false);
+            const second = checkbox(ctx, 'Drift', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        assert.equal(ctx.hitRects.get('Terrain').y, 4 + 3);
+        assert.equal(ctx.hitRects.get('Drift').y, 14 + 3);
+        assert.deepEqual(frame(), [true, false]);
+    });
+
+    it("gives a press on a pip's bottom edge to that pip's row, not the row below", (t) => {
+        // Rows at y 4 and 14; the first pip is drawn at y 7-16, so y 16 is its last pixel row.
+        pressAt(t, 11, 16);
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'Terrain', false);
+            const second = checkbox(ctx, 'Drift', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        assert.deepEqual(frame(), [true, false]);
+    });
+
+    it('activates exactly one of two stacked buttons', (t) => {
+        let pressY = 0;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: () => true,
+            isDown: () => true,
+            pointerPos: () => ({ x: 11, y: pressY }),
+        });
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = button(ctx, 'One', { width: 40 });
+            const second = button(ctx, 'Two', { width: 40 });
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+
+        const one = ctx.hitRects.get('One');
+
+        // The 1 px band inside both inflated rects; the upper button's rect is nearer.
+        pressY = one.y + one.h + 2;
+        assert.deepEqual(frame(), [true, false]);
+    });
+
+    it('claims a press once, at the first begin() of its frame', (t) => {
+        // Later groups' begin() calls run after earlier groups' end() rewrote their rects, so
+        // a second claim in the same frame could see a mix of this frame's and last frame's.
+        let pressed = false;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: (_button, slot) => pressed && slot === 0,
+            isDown: (_button, slot) => pressed && slot === 0,
+            pointerPos: () => ({ x: 11, y: 10 }),
+        });
+
+        const ctx = createReadyContext();
+        const claims = t.mock.method(ctx, 'nearestWidgetAt');
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            checkbox(ctx, 'Left', false);
+            ctx.end();
+            ctx.begin(UI_ANCHORS.TOP_RIGHT);
+            checkbox(ctx, 'Right', false);
+            ctx.end();
+        };
+
+        frame();
+        pressed = true;
+        frame();
+        assert.equal(claims.mock.callCount(), 1);
+
+        // Released, then pressed again: a new press gets a new claim.
+        pressed = false;
+        frame();
+        pressed = true;
+        frame();
+        assert.equal(claims.mock.callCount(), 2);
+    });
+
+    it('claims a new press after a release no begin() saw, once a new frame starts', (t) => {
+        // Rows at y 4 and 14: (11, 8) is on the first checkbox, (11, 18) on the second.
+        let pressed = false;
+        let pressY = 8;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: (_button, slot) => pressed && slot === 0,
+            isDown: (_button, slot) => pressed && slot === 0,
+            pointerPos: () => ({ x: 11, y: pressY }),
+        });
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'First', false);
+            const second = checkbox(ctx, 'Second', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        pressed = true;
+        assert.deepEqual(frame(), [true, false]);
+
+        // The release happens on a frame that draws no UI, so no begin() ever sees it.
+        BT.ticks += 1;
+        pressed = false;
+
+        // A new engine tick, a new press on the second checkbox.
+        BT.ticks += 1;
+        pressed = true;
+        pressY = 18;
+        assert.deepEqual(frame(), [false, true]);
     });
 });

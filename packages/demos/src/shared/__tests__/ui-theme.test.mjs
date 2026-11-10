@@ -11,13 +11,12 @@ import { Color32 } from 'blit386';
 import {
     applyTheme,
     BUTTON_LOOK,
+    defaultThemeSlot,
     litRimColor,
     T,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
 } from '../ui-theme.js';
 
 /**
@@ -100,8 +99,8 @@ describe('applyTheme', () => {
         const theme = applyTheme(palette, 100);
 
         assert.equal(theme.bg, 100);
-        assert.equal(theme.panel, 100 + THEME_PANEL_OFFSET);
-        assert.equal(theme.text, 100 + THEME_TEXT_OFFSET);
+        assert.equal(theme.panel, 100 + defaultThemeSlot('panel') - THEME_DEFAULT_START_SLOT);
+        assert.equal(theme.text, 100 + defaultThemeSlot('text') - THEME_DEFAULT_START_SLOT);
         assert.equal(theme.buttonHover, 111);
     });
 
@@ -262,5 +261,15 @@ describe('litRimColor', () => {
         const rim = litRimColor(palette, new Color32(255, 255, 255));
 
         assert.deepEqual([rim.r, rim.g, rim.b], [255, 255, 255]);
+    });
+});
+
+describe('defaultThemeSlot', () => {
+    it('names the slot applyTheme() gives a color at the default start slot', () => {
+        const theme = applyTheme(createFakePalette());
+
+        assert.equal(defaultThemeSlot('panel'), theme.panel);
+        assert.equal(defaultThemeSlot('text'), theme.text);
+        assert.equal(defaultThemeSlot('text'), THEME_OVERLAY_STYLE.barPaletteIndex);
     });
 });

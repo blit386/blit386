@@ -137,7 +137,7 @@ import {
     Vignette,
 } from 'blit386';
 
-import { GLITCH_LABELS, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
+import { GLITCH_LABELS, GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
@@ -766,15 +766,17 @@ class Demo {
     applyGlitchUniforms(envelope) {
         const peak = this.glitchPeak * envelope;
 
-        if (this.glitchType === 'hshift') {
+        // GLITCH_TYPE holds the shared fault names, the same ones GLITCH_TYPES_VROLL
+        // picks from, so these checks can never drift out of step with that list.
+        if (this.glitchType === GLITCH_TYPE.HSHIFT) {
             this.pixelGlitch.intensity = peak;
-        } else if (this.glitchType === 'noise') {
+        } else if (this.glitchType === GLITCH_TYPE.NOISE) {
             this.noise.amount = NOISE_BASE + peak * 0.1;
-        } else if (this.glitchType === 'flicker') {
+        } else if (this.glitchType === GLITCH_TYPE.FLICKER) {
             this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
-        } else if (this.glitchType === 'interference') {
+        } else if (this.glitchType === GLITCH_TYPE.INTERFERENCE) {
             this.interference.amount = peak * 0.07;
-        } else if (this.glitchType === 'vroll') {
+        } else if (this.glitchType === GLITCH_TYPE.VROLL) {
             this.rollLine.amount = ROLL_BASE + peak * 0.35;
             this.rollLine.speed = ROLL_SPEED + peak * 1.8;
         }

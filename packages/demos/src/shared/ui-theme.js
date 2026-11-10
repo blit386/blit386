@@ -44,31 +44,14 @@ const THEME_COLORS = [
     { key: 'buttonHover', name: 'ui_button_hover', hex: '#45577d' }, // Button fill under the mouse.
 ];
 
-// Resolved palette indices, filled in by applyTheme(). Widgets read `T.text`, `T.panel`,
-// and so on instead of raw numbers. `ready` lets the kit give a helpful error when a demo
-// forgets to call applyTheme() before drawing UI.
-//
-// `T` is a single module-level object, not per-palette state: calling applyTheme() again
-// (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
-// is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
-// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
-// exactly one UiContext and it always draws with the most recently applied theme. It would
-// stop being safe the moment two palettes/themes need to be live at once (multiple demos in
-// one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
-// patch here.
 // applyTheme()'s default startSlot. Exported so a demo that must reference this slot before
 // calling applyTheme() (for example inside configure(), which runs before init()) can point
 // at the same constant instead of repeating the literal 240.
 const THEME_DEFAULT_START_SLOT = 240;
 
-// Offsets of individual theme colors within the twelve-color block, for demos that need a
-// slot number before applyTheme() has run (see configure() below, which runs before init()).
-// Exported so those demos derive from THEME_COLORS' actual order instead of repeating a
-// literal offset that would silently go stale if the color list above is ever reordered.
-const THEME_PANEL_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'panel');
-const THEME_TEXT_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'text');
-
-// The slot a theme color lands in when applyTheme() runs with its default startSlot.
+// The slot a theme color lands in when applyTheme() runs with its default startSlot. For
+// demos that need a slot number before applyTheme() has run (configure() runs before
+// init()); it follows THEME_COLORS' actual order, so a reorder never leaves a stale literal.
 function defaultThemeSlot(key) {
     return THEME_DEFAULT_START_SLOT + THEME_COLORS.findIndex((entry) => entry.key === key);
 }
@@ -110,19 +93,21 @@ const BUTTON_LOOK = Object.freeze({
     WARN: 'warn', // A failure flash: resting fill, warm rim.
 });
 
+// Resolved palette indices, filled in by applyTheme(). Widgets read `T.text`, `T.panel`,
+// and so on instead of raw numbers. `ready` lets the kit give a helpful error when a demo
+// forgets to call applyTheme() before drawing UI.
+//
+// `T` is a single module-level object, not per-palette state: calling applyTheme() again
+// (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
+// is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
+// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
+// exactly one UiContext and it always draws with the most recently applied theme. It would
+// stop being safe the moment two palettes/themes need to be live at once (multiple demos in
+// one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
+// patch here.
 const T = {
-    bg: 0,
-    shadow: 0,
-    panel: 0,
-    border: 0,
-    text: 0,
-    dim: 0,
-    header: 0,
-    accent: 0,
-    warm: 0,
-    info: 0,
-    button: 0,
-    buttonHover: 0,
+    // One slot field per THEME_COLORS key (T.bg, T.panel, ...), zero until applyTheme().
+    ...Object.fromEntries(THEME_COLORS.map(({ key }) => [key, 0])),
     ready: false,
 
     // The nine-slices ui.panel(), ui.button(), ui.meter(), and ui.tooltip() draw with,
@@ -281,6 +266,18 @@ function buildSlice(art, cap, fillSlot, rimSlot, caps) {
 const solidSlices = new Map();
 
 /**
+ * Throws unless `slot` is a palette slot the kit can draw with (slot 0 is see-through).
+ *
+ * @param {number} slot - The slot to check.
+ * @param {string} what - What the slot is for, for the error message ('a rectangle', ...).
+ */
+function checkSlot(slot, what) {
+    if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
+        throw new Error(`ui: ${what}'s palette slot must be an integer from 1 to 255, got ${slot}.`);
+    }
+}
+
+/**
  * Returns a 1x1 one-color nine-slice for `slot`, which the kit stretches over a box to draw
  * a rectangle as a sprite. The engine draws every primitive (BT.drawRectFill and friends)
  * before every sprite, so a primitive can never land on top of a nine-slice panel - sprite
@@ -293,9 +290,7 @@ function solidSlice(slot) {
     let slice = solidSlices.get(slot);
 
     if (slice === undefined) {
-        if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
-            throw new Error(`ui: a rectangle's palette slot must be an integer from 1 to 255, got ${slot}.`);
-        }
+        checkSlot(slot, 'a rectangle');
 
         slice = buildSlice(SOLID_ART, SOLID_ART_CAP, slot, slot);
         solidSlices.set(slot, slice);
@@ -309,18 +304,6 @@ function solidSlice(slot) {
 // slot (and its border slot by default), so applyTheme() clears this cache whenever it
 // reinstalls the theme.
 const buttonFillSlices = new Map();
-
-/**
- * Throws unless `slot` is a palette slot a button fill or rim can use.
- *
- * @param {number} slot - The slot to check.
- * @param {string} role - 'fill' or 'rim', for the error message.
- */
-function checkButtonSlot(slot, role) {
-    if (!Number.isInteger(slot) || slot < 1 || slot > 255) {
-        throw new Error(`ui: a button ${role}'s palette slot must be an integer from 1 to 255, got ${slot}.`);
-    }
-}
 
 /**
  * Returns the kit's rounded button face with its fill in palette slot `slot`, for cells
@@ -337,8 +320,8 @@ function buttonFillSlice(slot, rimSlot = T.border) {
     let slice = buttonFillSlices.get(key);
 
     if (slice === undefined) {
-        checkButtonSlot(slot, 'fill');
-        checkButtonSlot(rimSlot, 'rim');
+        checkSlot(slot, 'a button fill');
+        checkSlot(rimSlot, 'a button rim');
 
         slice = buildSlice(BUTTON_ART, BUTTON_ART_CAP, slot, rimSlot);
         buttonFillSlices.set(key, slice);
@@ -444,34 +427,20 @@ function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
 
     // Hand back a copy of the slot map (not `T` itself) so a demo cannot accidentally
     // repoint the slots the widgets draw with.
-    return {
-        bg: T.bg,
-        shadow: T.shadow,
-        panel: T.panel,
-        border: T.border,
-        text: T.text,
-        dim: T.dim,
-        header: T.header,
-        accent: T.accent,
-        warm: T.warm,
-        info: T.info,
-        button: T.button,
-        buttonHover: T.buttonHover,
-    };
+    return Object.fromEntries(THEME_COLORS.map(({ key }) => [key, T[key]]));
 }
 
 export {
     applyTheme,
     BUTTON_LOOK,
     buttonFillSlice,
+    defaultThemeSlot,
     litRimColor,
     solidSlice,
     T,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
     TOOLTIP_CAP_BOTTOM,
     TOOLTIP_CAP_TOP,
     TOOLTIP_CAP_X,

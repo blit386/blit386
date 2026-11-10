@@ -100,7 +100,7 @@ import {
 } from 'blit386';
 
 import { isAvailable } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_DIRECTIONS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').Effect} Effect */
@@ -446,19 +446,19 @@ class Demo {
         // means full speed. BT.isDown() is true every tick a key or gamepad button is
         // held (it reads both at once), and ui.dpad.isDown() does the same for the touch
         // D-pad.
-        if (BT.isDown(BT.BTN_LEFT, 0) || ui.dpad.isDown('left')) {
+        if (BT.isDown(BT.BTN_LEFT, 0) || ui.dpad.isDown(UI_DIRECTIONS.LEFT)) {
             turn -= 1;
         }
 
-        if (BT.isDown(BT.BTN_RIGHT, 0) || ui.dpad.isDown('right')) {
+        if (BT.isDown(BT.BTN_RIGHT, 0) || ui.dpad.isDown(UI_DIRECTIONS.RIGHT)) {
             turn += 1;
         }
 
-        if (BT.isDown(BT.BTN_UP, 0) || ui.dpad.isDown('up')) {
+        if (BT.isDown(BT.BTN_UP, 0) || ui.dpad.isDown(UI_DIRECTIONS.UP)) {
             walk += 1;
         }
 
-        if (BT.isDown(BT.BTN_DOWN, 0) || ui.dpad.isDown('down')) {
+        if (BT.isDown(BT.BTN_DOWN, 0) || ui.dpad.isDown(UI_DIRECTIONS.DOWN)) {
             walk -= 1;
         }
 
@@ -471,11 +471,12 @@ class Demo {
         this.angle += turn * TURN_SPEED;
 
         // A swipe left or right snaps a quarter turn, handy for touch players at corners.
+        // ui.swipe() answers with one of the UI_DIRECTIONS names, or null for no swipe.
         const swipe = ui.swipe();
 
-        if (swipe === 'left') {
+        if (swipe === UI_DIRECTIONS.LEFT) {
             this.angle -= QUARTER_TURN;
-        } else if (swipe === 'right') {
+        } else if (swipe === UI_DIRECTIONS.RIGHT) {
             this.angle += QUARTER_TURN;
         }
 

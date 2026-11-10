@@ -31,21 +31,21 @@
  * { id: '...' } option in that case.
  *
  * Performance: widgets queue draw commands into preallocated pools and reuse every object,
- * so steady-state frames allocate nothing - safe to call from render() at 60 FPS.
+ * so steady-state frames allocate nothing but one display-size read - safe to call from
+ * render() at 60 FPS.
  */
 
-import { FONT_W, UI_ANCHORS, UiContext } from './ui-core.js';
+import { FONT_W, UI_ANCHORS, UI_DIRECTIONS, UiContext } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
 import {
     applyTheme,
     BUTTON_LOOK,
+    defaultThemeSlot,
     litRimColor,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
 } from './ui-theme.js';
 import {
     audioUnlockHint,
@@ -373,14 +373,14 @@ const ui = {
 export {
     applyTheme,
     BUTTON_LOOK,
+    defaultThemeSlot,
     FONT_W,
     litRimColor,
     PIP_SIZE,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
     ui,
     UI_ANCHORS,
+    UI_DIRECTIONS,
 };

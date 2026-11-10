@@ -168,14 +168,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
-import {
-    applyTheme,
-    THEME_DEFAULT_START_SLOT,
-    THEME_PANEL_OFFSET,
-    THEME_TEXT_OFFSET,
-    ui,
-    UI_ANCHORS,
-} from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -347,9 +340,9 @@ class Demo {
             // neither fade can reach. configure() runs before init(), so the slot numbers
             // are derived here rather than read from this.theme.
             overlayStyle: {
-                barPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_PANEL_OFFSET,
-                textPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_TEXT_OFFSET,
-                gapPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_PANEL_OFFSET,
+                barPaletteIndex: defaultThemeSlot('panel'),
+                textPaletteIndex: defaultThemeSlot('text'),
+                gapPaletteIndex: defaultThemeSlot('panel'),
             },
         };
     }

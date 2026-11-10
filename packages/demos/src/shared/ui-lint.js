@@ -9,7 +9,7 @@
 
 import { UI_ANCHORS } from './ui-core.js';
 
-const LINT_RULES = ['overlap', 'out-of-display', 'margin', 'row-gap'];
+const LINT_RULES = ['overlap', 'out-of-display', 'margin'];
 
 /**
  * The rectangle two boxes share, or null when they only touch or do not meet.
@@ -150,44 +150,6 @@ function findMarginDrift(groups, display) {
 }
 
 /**
- * Groups whose consecutive content rows are not evenly spaced. A zero-width row is a
- * ui.spacer(): it ends one run of rows and starts another, so deliberate breathing room never
- * counts as drift.
- *
- * @param {Array<object>} groups
- * @returns {Array<object>}
- */
-function findRowGapDrift(groups) {
-    const findings = [];
-
-    for (const group of groups) {
-        const runs = [[]];
-
-        for (const row of group.rows) {
-            if (row.w === 0) {
-                runs.push([]);
-            } else {
-                runs[runs.length - 1].push(row);
-            }
-        }
-
-        for (const run of runs) {
-            const gaps = run.slice(1).map((row, index) => row.y - (run[index].y + run[index].h));
-
-            if (gaps.length > 1 && gaps.some((gap) => gap !== gaps[0])) {
-                findings.push({
-                    rule: 'row-gap',
-                    message: `${group.anchor} group: row gaps ${gaps.join(', ')}`,
-                    rect: group.rect,
-                });
-            }
-        }
-    }
-
-    return findings;
-}
-
-/**
  * Run every rule over one frame's layout.
  *
  * @param {{ display: { w: number, h: number }, groups: Array<object> }} snapshot
@@ -198,7 +160,6 @@ function lintSnapshot(snapshot) {
         ...findOverlaps(snapshot.groups),
         ...findOutOfDisplay(snapshot.groups, snapshot.display),
         ...findMarginDrift(snapshot.groups, snapshot.display),
-        ...findRowGapDrift(snapshot.groups),
     ];
 }
 

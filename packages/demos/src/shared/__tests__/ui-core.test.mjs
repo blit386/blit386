@@ -6,10 +6,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { Rect2i } from 'blit386';
+import { BT, Rect2i } from 'blit386';
 
 import { CMD_RECT_FILL, CMD_RECT_STROKE, hitContains, UI_ANCHORS } from '../ui-core.js';
+import { dpadWidget } from '../ui-dpad.js';
 import { BUTTON_LOOK, buttonFillSlice, solidSlice, T } from '../ui-theme.js';
+import { checkbox, tooltip } from '../ui-widgets.js';
 import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
@@ -240,7 +242,7 @@ describe('UiContext snapshot', () => {
 
         const ctx = createReadyContext();
 
-        const { frameGroups, groupRows, groupWidgets } = ctx;
+        const { frameGroups, groupWidgets } = ctx;
 
         for (let frame = 0; frame < 2; frame++) {
             ctx.begin(UI_ANCHORS.TOP_LEFT);
@@ -252,13 +254,12 @@ describe('UiContext snapshot', () => {
 
         // Same array objects (never reassigned) and still empty.
         assert.equal(ctx.frameGroups, frameGroups);
-        assert.equal(ctx.groupRows, groupRows);
         assert.equal(ctx.groupWidgets, groupWidgets);
-        assert.equal(frameGroups.length + groupRows.length + groupWidgets.length, 0);
+        assert.equal(frameGroups.length + groupWidgets.length, 0);
         assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [] });
     });
 
-    it('captures groups, rows, and widgets in absolute coordinates', (t) => {
+    it('captures groups and widgets in absolute coordinates', (t) => {
         stubBt(t);
 
         const ctx = createReadyContext();
@@ -280,8 +281,6 @@ describe('UiContext snapshot', () => {
         assert.equal(group.panel, false);
         // Width = content + 2 * pad (5); height = cursor (pad - 5 + 10 + 4).
         assert.deepEqual(group.rect, { x: 320 - 4 - 50, y: 180 - 4 - 14, w: 50, h: 14 });
-        assert.equal(group.rows.length, 2);
-        assert.equal(group.rows[1].w, 0);
         assert.deepEqual(group.widgets, [
             { id: 'Play', kind: 'button', rect: { x: group.rect.x + 5, y: group.rect.y + rowY, w: 40, h: 10 } },
         ]);
@@ -435,5 +434,89 @@ describe('UiContext.drawButtonFill', () => {
         assert.equal(drawn[2], buttonFillSlice(5, 7));
         assert.notEqual(drawn[2], drawn[0]);
         assert.throws(() => ctx.drawButtonFill(rect, 5, 256), /integer from 1 to 255/);
+    });
+});
+
+describe('UiContext per-frame engine reads', () => {
+    it('never calls the cloning BT.pointerPos() and reads BT.displaySize once per frame', (t) => {
+        const calls = { pointerPos: 0, displaySize: 0 };
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot <= 1,
+            isPressed: () => false,
+            isDown: () => true,
+            pointerPos: () => {
+                calls.pointerPos++;
+
+                return { x: 20, y: 20 };
+            },
+            pointerPosTo: (out) => {
+                out.x = 20;
+                out.y = 20;
+
+                return out;
+            },
+        });
+        // stubBt() saved the real descriptor first, so its cleanup restores it.
+        Object.defineProperty(BT, 'displaySize', {
+            configurable: true,
+            get: () => {
+                calls.displaySize++;
+
+                return { x: 320, y: 180 };
+            },
+        });
+
+        const ctx = createReadyContext();
+        const anchor = new Rect2i(100, 100, 20, 10);
+        const frame = () => {
+            ctx.tick();
+            dpadWidget(ctx, { show: 'always' });
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            checkbox(ctx, 'Loop', false);
+            ctx.end();
+            ctx.begin(UI_ANCHORS.BOTTOM_RIGHT);
+            checkbox(ctx, 'Mute', false);
+            ctx.end();
+            tooltip(ctx, anchor, 'Hint');
+        };
+
+        frame();
+        calls.pointerPos = 0;
+        calls.displaySize = 0;
+
+        for (let i = 0; i < 3; i++) {
+            frame();
+        }
+
+        assert.equal(calls.pointerPos, 0);
+        assert.equal(calls.displaySize, 3);
+    });
+});
+
+describe('UiContext frames without ui.tick()', () => {
+    it('prunes a hit rect that stopped being drawn and resets the recorded groups', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+        const frame = (labels) => {
+            BT.ticks++;
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+
+            for (const text of labels) {
+                checkbox(ctx, text, false);
+            }
+
+            ctx.end();
+        };
+
+        ctx.recording = true;
+        frame(['Loop', 'Mute']);
+        frame(['Loop']);
+        frame(['Loop']);
+
+        assert.ok(ctx.hitRects.has('Loop'));
+        assert.ok(!ctx.hitRects.has('Mute'));
+        assert.equal(ctx.snapshot().groups.length, 1);
     });
 });

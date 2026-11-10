@@ -12,6 +12,8 @@
  *     if (ui.tapIn(LEFT_HALF_RECT)) { ... }      // big invisible touch zones
  */
 
+import { UI_DIRECTIONS } from './ui-core.js';
+
 // A movement counts as a swipe when the finger travels at least this many logical pixels...
 const SWIPE_MIN_PX = 18;
 
@@ -59,9 +61,9 @@ function stepGestures(ctx) {
 
         // The dominant axis wins: mostly-horizontal travel is left/right, otherwise up/down.
         if (absX >= absY) {
-            swipeDir = dx > 0 ? 'right' : 'left';
+            swipeDir = dx > 0 ? UI_DIRECTIONS.RIGHT : UI_DIRECTIONS.LEFT;
         } else {
-            swipeDir = dy > 0 ? 'down' : 'up';
+            swipeDir = dy > 0 ? UI_DIRECTIONS.DOWN : UI_DIRECTIONS.UP;
         }
     }
 }

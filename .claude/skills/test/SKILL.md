@@ -75,12 +75,13 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 | `plugins/__tests__/html-escape.test.mjs` | The shared HTML-escaping helper `virtual-demos.js` and `social-meta.js` use |
 | `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
 | `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, the nine-slice sets it builds, out-of-range guards, the fresh-copy-vs-singleton distinction |
-| `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, and the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy) |
-| `src/shared/__tests__/ui-lint.test.mjs` | The layout lint rules (`overlap`, `out-of-display`, `margin`, `row-gap`) over recorded snapshots, including the zero-width spacer exemption |
-| `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `tooltip()` docking and clamping, `spacer()` recording a zero-width row |
+| `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy), no `BT.pointerPos()` call and one `BT.displaySize` read per frame, and pruning plus a fresh group list in a demo that never calls `ui.tick()` |
+| `src/shared/__tests__/ui-lint.test.mjs` | The layout lint rules (`overlap`, `out-of-display`, `margin`) over recorded snapshots |
+| `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `tooltip()` docking and clamping, `spacer()` advancing the cursor, one press claiming exactly one of two stacked checkboxes or buttons |
 | `src/shared/__tests__/key-names.test.mjs` | `keyLabel()`: letter, digit, arrow, named-key, and numpad labels, and the pass-through for any other code |
 | `src/shared/__tests__/ui-gestures.test.mjs` | Swipe direction/threshold/time-window recognition, the widget-exclusion gate, the dominant-axis tie-break |
-| `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating |
+| `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating, its hit rects surviving the next `begin()` wherever it is drawn in the frame |
+| `src/shared/__tests__/crt-glitch.test.mjs` | Both glitch-type lists built from `GLITCH_TYPE`, and a label for every type |
 | `_shots/__tests__/poses.test.mjs` | The pose table: ids, one trigger per pose, every slug known to the registry |
 | `_shots/__tests__/manifest.test.mjs` | Manifest shape, merging a partial run into the committed manifest |
 | `_shots/__tests__/layout-model.test.mjs` | The gallery's stack and tile layout model |
