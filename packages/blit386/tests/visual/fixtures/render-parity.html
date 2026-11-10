@@ -1,0 +1,108 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Render Backend Parity (BT-756)</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+            // Signal test readiness regardless of success/failure.
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
+
+            // BT-756 cases where WebGPU used to draw differently from the software blit. The hash picks one:
+            // '#order' a sprite then a rect fill over it, '#reverse' the opposite, '#text' system text under
+            // a later rect outline.
+            const mode = location.hash.slice(1);
+            const BG = 1;
+            const RED = 2;
+            const GREEN = 3;
+            const WHITE = 4;
+            const BLOCK = 16;
+
+            function createPalette() {
+                const palette = new Palette(16);
+
+                palette.set(BG, new Color32(0, 0, 0, 255));
+                palette.set(RED, new Color32(255, 0, 0, 255));
+                palette.set(GREEN, new Color32(0, 255, 0, 255));
+                palette.set(WHITE, new Color32(255, 255, 255, 255));
+
+                return palette;
+            }
+
+            // A solid 16x16 block of the RED slot.
+            function createSheet() {
+                return SpriteSheet.fromIndexedPixels(BLOCK, BLOCK, new Uint8Array(BLOCK * BLOCK).fill(RED));
+            }
+
+            class RenderParityTest {
+                sheet = null;
+
+                configure() {
+                    // No blit386() Vite plugin here, so disable the splash.
+                    return { isSplashEnabled: false, displaySize: new Vector2i(320, 240), targetFPS: 60 };
+                }
+
+                async init() {
+                    BT.paletteSet(createPalette());
+                    this.sheet = createSheet();
+
+                    return true;
+                }
+
+                update() {}
+
+                render() {
+                    BT.clear(BG);
+
+                    const src = new Rect2i(0, 0, BLOCK, BLOCK);
+
+                    if (mode === 'order') {
+                        // The bar is drawn last, so it must cover the middle of the sprite on both backends.
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), GREEN);
+                    } else if (mode === 'reverse') {
+                        // The sprite is drawn last, so it must cover the middle of the bar.
+                        BT.drawRectFill(new Rect2i(8, 20, 32, 8), GREEN);
+                        BT.drawSprite(this.sheet, src, new Vector2i(16, 16));
+                    } else if (mode === 'text') {
+                        // A later outline crosses the glyphs, then a later sprite covers part of the outline.
+                        BT.systemPrint(new Vector2i(10, 10), WHITE, 'ORDER');
+                        BT.drawRect(new Rect2i(8, 12, 40, 3), GREEN);
+                        BT.drawSprite(this.sheet, src, new Vector2i(30, 8));
+                    }
+
+                    // Signal render complete, publishing the backend that actually started.
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(RenderParityTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

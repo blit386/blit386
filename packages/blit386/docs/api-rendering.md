@@ -480,8 +480,9 @@ no `tint` field. Older sketches that used `Color32` / `ColorArg` as a 4th argume
 
 #### Software-renderer parity
 
-No accepted field degrades. The software blit is the pixel spec; WebGPU must match it. The 1:1 path stays today's
-`blitIndexedRect` / UV quad emission.
+No accepted field degrades. The software blit is the pixel spec; WebGPU must match it (the general rules are in
+[Draw order and backend parity](#draw-order-and-backend-parity)). The 1:1 path stays today's `blitIndexedRect` / UV quad
+emission.
 
 | Field | Parity |
 | --- | --- |
@@ -517,6 +518,26 @@ shader picks up the new color automatically; calling `spritesRefresh()` is waste
 RGBA values are gone.
 
 </Callout>
+
+## Draw order and backend parity
+
+Both backends draw the same pixels; the software renderer is the reference, and WebGPU follows it.
+
+### Draw order
+
+Draws land in the order your `render()` calls them. A later draw covers an earlier one wherever they overlap, whatever
+kind each is: a `BT.drawRectFill` HUD bar drawn after a sprite background sits on top of it, and a `BT.drawRect` frame
+drawn after `BT.systemPrint` text crosses the glyphs.
+
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(16, 16)); // background
+BT.drawRectFill(new Rect2i(8, 20, 32, 8), 3); // covers the middle of the sprite
+```
+
+The engine overlay is the one exception: it always draws above the game.
 
 ## Text
 

@@ -12,6 +12,7 @@ import type { IRenderer } from './IRenderer';
 import { PaletteResolveUpscalePass } from './PaletteResolveUpscalePass';
 import { PostProcessChain } from './PostProcessChain';
 import { PrimitivePipeline } from './PrimitivePipeline';
+import { SceneBatch } from './SceneBatch';
 import { SpritePipeline } from './SpritePipeline';
 import type { UpscaleFilter } from './UpscalePass';
 
@@ -27,8 +28,9 @@ const LOGICAL_TARGET_FORMAT: GPUTextureFormat = 'r8uint';
  * WebGPU renderer implementing {@link IRenderer}.
  *
  * `WebGPURenderer` owns frame begin/end, clear color, camera state, palette
- * buffer, frame capture, and the two-tier post-process pipeline. Actual draw
- * batching is delegated to {@link PrimitivePipeline} and {@link SpritePipeline}.
+ * buffer, frame capture, and the two-tier post-process pipeline. Demo draws go
+ * through {@link SceneBatch}, which keeps primitives and sprites in call order;
+ * overlay draws go to fixed-order {@link PrimitivePipeline} / {@link SpritePipeline} tiers.
  *
  * Per-frame stage flow:
  *
@@ -140,8 +142,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     private isPaletteDirty: boolean = false;
 
-    /** Pipeline for palette-indexed geometry (pixels, lines, rectangles). */
-    private readonly primitives: PrimitivePipeline;
+    /** Demo-tier primitives and sprites, encoded in call order. */
+    private readonly scene = new SceneBatch();
 
     /**
      * Primitives encoded after the sprite pass (overlay bars, etc.).
@@ -151,9 +153,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * of this field (reset, encode, camera offset) must handle `null`.
      */
     private overlayPrimitives: PrimitivePipeline | null = null;
-
-    /** Pipeline for textured quads (sprites, bitmap text). */
-    private readonly sprites: SpritePipeline;
 
     /**
      * Sprites encoded after overlay bar primitives (overlay labels, etc.).
@@ -246,8 +245,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         this.outputSize = (outputSize ?? displaySize).clone();
         this.upscaleFilterMode = upscaleFilter;
         this.isOverlayEnabled = isOverlayEnabled;
-        this.primitives = new PrimitivePipeline();
-        this.sprites = new SpritePipeline();
     }
 
     /**
@@ -290,8 +287,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             // Primitive and sprite pipelines run at logical resolution. The
             // viewport is automatic since each pass binds a target view; only
             // the camera scaling here cares about logical size.
-            await this.primitives.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
-            await this.sprites.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
+            await this.scene.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
 
             // Overlay pipelines are lazily allocated: eagerly (re)initialize them here only
             // when overlay is enabled, or when a prior lazy draw call (or a prior init()
@@ -371,10 +367,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
-        this.primitives.reset();
+        this.scene.reset();
         this.overlayPrimitives?.reset();
         this.overlayTopPrimitives?.reset();
-        this.sprites.reset();
         this.overlaySprites?.reset();
         this.overlayTopSprites?.reset();
     }
@@ -428,10 +423,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @returns Diagnostic counters for the current frame.
      */
     getFrameDiagnostics(): OverlayRendererDiagnostics {
-        this.scratchPrimitivePipelines[0] = this.primitives;
+        this.scratchPrimitivePipelines[0] = this.scene.primitives;
         this.scratchPrimitivePipelines[1] = this.overlayPrimitives;
         this.scratchPrimitivePipelines[2] = this.overlayTopPrimitives;
-        this.scratchSpritePipelines[0] = this.sprites;
+        this.scratchSpritePipelines[0] = this.scene.sprites;
         this.scratchSpritePipelines[1] = this.overlaySprites;
         this.scratchSpritePipelines[2] = this.overlayTopSprites;
 
@@ -474,7 +469,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.drawRectFill(rect, paletteIndex);
+        this.scene.usePrimitives().drawRectFill(rect, paletteIndex);
     }
 
     /**
@@ -516,7 +511,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawPixelXY(x: number, y: number, paletteIndex: number): void {
-        this.primitives.drawPixelXY(x, y, paletteIndex);
+        this.scene.usePrimitives().drawPixelXY(x, y, paletteIndex);
     }
 
     /**
@@ -528,7 +523,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void {
-        this.primitives.drawLine(p0, p1, paletteIndex);
+        this.scene.usePrimitives().drawLine(p0, p1, paletteIndex);
     }
 
     /**
@@ -538,7 +533,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.drawRect(rect, paletteIndex);
+        this.scene.usePrimitives().drawRect(rect, paletteIndex);
     }
 
     /**
@@ -548,7 +543,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex - Palette color index.
      */
     clearRect(rect: Rect2i, paletteIndex: number): void {
-        this.primitives.clearRect(rect, paletteIndex);
+        this.scene.usePrimitives().clearRect(rect, paletteIndex);
     }
 
     /**
@@ -560,7 +555,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied at draw time (default 0).
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
-        this.sprites.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
+        this.scene.useSprites().drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
     }
 
     /**
@@ -579,7 +574,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         paletteOffset: number,
         orientation: number,
     ): void {
-        this.sprites.drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
+        this.scene.useSprites().drawSpriteOriented(spriteSheet, srcRect, destPos, paletteOffset, orientation);
     }
 
     /**
@@ -604,7 +599,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         paletteOffset: number,
         orientation: number,
     ): void {
-        this.sprites.drawSpriteStretched(spriteSheet, srcRect, destX, destY, destW, destH, paletteOffset, orientation);
+        this.scene
+            .useSprites()
+            .drawSpriteStretched(spriteSheet, srcRect, destX, destY, destW, destH, paletteOffset, orientation);
     }
 
     /**
@@ -617,7 +614,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
-        this.sprites.drawBitmapText(font, pos, text, paletteOffset);
+        this.scene.useSprites().drawBitmapText(font, pos, text, paletteOffset);
     }
 
     /**
@@ -683,9 +680,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Sets the camera offset for scrolling.
      *
-     * The offset is propagated to all scene pipelines: `primitives`,
-     * `overlayPrimitives`, `overlayTopPrimitives`, `sprites`, `overlaySprites`,
-     * and `overlayTopSprites`.
+     * The offset is propagated to the demo-tier {@link SceneBatch} and the four
+     * overlay pipelines.
      *
      * @param offset - Camera position in pixels.
      */
@@ -694,10 +690,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         // this.cameraOffset in place instead of allocating a new Vector2i, while still
         // keeping the stored offset independent of the caller's `offset` object.
         offset.cloneTo(this.cameraOffset);
-        this.primitives.setCameraOffset(this.cameraOffset);
+        this.scene.setCameraOffset(this.cameraOffset);
         this.overlayPrimitives?.setCameraOffset(this.cameraOffset);
         this.overlayTopPrimitives?.setCameraOffset(this.cameraOffset);
-        this.sprites.setCameraOffset(this.cameraOffset);
         this.overlaySprites?.setCameraOffset(this.cameraOffset);
         this.overlayTopSprites?.setCameraOffset(this.cameraOffset);
     }
@@ -719,10 +714,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         // to the frozen Vector2i.zero() singleton (setCameraOffset()'s cloneTo() would then
         // try to mutate a frozen object on the next call).
         this.cameraOffset.set(0, 0);
-        this.primitives.setCameraOffset(this.cameraOffset);
+        this.scene.setCameraOffset(this.cameraOffset);
         this.overlayPrimitives?.setCameraOffset(this.cameraOffset);
         this.overlayTopPrimitives?.setCameraOffset(this.cameraOffset);
-        this.sprites.setCameraOffset(this.cameraOffset);
         this.overlaySprites?.setCameraOffset(this.cameraOffset);
         this.overlayTopSprites?.setCameraOffset(this.cameraOffset);
     }
@@ -824,10 +818,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         } catch (error) {
             console.error('[WebGPURenderer] Failed to get current texture:', error);
 
-            this.primitives.reset();
+            this.scene.reset();
             this.overlayPrimitives?.reset();
             this.overlayTopPrimitives?.reset();
-            this.sprites.reset();
             this.overlaySprites?.reset();
             this.overlayTopSprites?.reset();
 
@@ -837,10 +830,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         if (swapTexture.width === 0 || swapTexture.height === 0) {
             console.warn('[WebGPURenderer] Texture has zero dimensions, skipping frame');
 
-            this.primitives.reset();
+            this.scene.reset();
             this.overlayPrimitives?.reset();
             this.overlayTopPrimitives?.reset();
-            this.sprites.reset();
             this.overlaySprites?.reset();
             this.overlayTopSprites?.reset();
 
@@ -1035,7 +1027,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Encodes the scene render pass into the supplied target view.
      *
-     * Draw order: `primitives`, `sprites`, `overlayPrimitives` (overlay bars via
+     * Draw order: the demo tier ({@link SceneBatch}, primitives and sprites in call
+     * order), `overlayPrimitives` (overlay bars via
      * {@link drawBarFill}), `overlaySprites` (overlay labels via {@link drawLabel}),
      * `overlayTopPrimitives` ({@link drawBarFillOnTop}), then `overlayTopSprites`
      * ({@link drawLabelOnTop}).
@@ -1062,8 +1055,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             ],
         });
 
-        this.primitives.encodePass(renderPass);
-        this.sprites.encodePass(renderPass);
+        this.scene.encode(renderPass);
         this.overlayPrimitives?.encodePass(renderPass);
         this.overlaySprites?.encodePass(renderPass);
         this.overlayTopPrimitives?.encodePass(renderPass);
@@ -1140,10 +1132,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         // Defensive reset so the pipeline state is clean even if beginFrame() is not
         // called next. beginFrame() also resets; this prevents stale data from
         // persisting across frames.
-        this.primitives.reset();
+        this.scene.reset();
         this.overlayPrimitives?.reset();
         this.overlayTopPrimitives?.reset();
-        this.sprites.reset();
         this.overlaySprites?.reset();
         this.overlayTopSprites?.reset();
     }

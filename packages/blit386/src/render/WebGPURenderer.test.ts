@@ -31,6 +31,7 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { PrimitivePipeline } from './PrimitivePipeline';
+import type { SceneBatch } from './SceneBatch';
 import type { SpritePipeline } from './SpritePipeline';
 import { WebGPURenderer } from './WebGPURenderer';
 
@@ -55,7 +56,29 @@ type PipelineAccess = {
  * @returns Primitive, sprite, overlay, and overlay-top pipeline instances.
  */
 function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
-    return renderer as unknown as PipelineAccess;
+    const internals = renderer as unknown as Omit<PipelineAccess, 'primitives' | 'sprites'> & { scene: SceneBatch };
+
+    // Getters, so a lazily allocated overlay pipeline is read live, as it was off the renderer itself.
+    return {
+        get primitives() {
+            return internals.scene.primitives;
+        },
+        get sprites() {
+            return internals.scene.sprites;
+        },
+        get overlayPrimitives() {
+            return internals.overlayPrimitives;
+        },
+        get overlayTopPrimitives() {
+            return internals.overlayTopPrimitives;
+        },
+        get overlaySprites() {
+            return internals.overlaySprites;
+        },
+        get overlayTopSprites() {
+            return internals.overlayTopSprites;
+        },
+    };
 }
 
 /**
@@ -500,10 +523,10 @@ describe('with initialized renderer', () => {
         const pipelines = getRendererPipelines(renderer);
         const encodeOrder: string[] = [];
 
-        vi.spyOn(pipelines.primitives, 'encodePass').mockImplementation(() => {
+        vi.spyOn(pipelines.primitives, 'encodeRange').mockImplementation(() => {
             encodeOrder.push('primitives');
         });
-        vi.spyOn(pipelines.sprites, 'encodePass').mockImplementation(() => {
+        vi.spyOn(pipelines.sprites, 'encodeBatches').mockImplementation(() => {
             encodeOrder.push('sprites');
         });
         vi.spyOn(requirePipeline(pipelines.overlayPrimitives), 'encodePass').mockImplementation(() => {
