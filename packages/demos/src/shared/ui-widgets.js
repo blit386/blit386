@@ -44,6 +44,9 @@ import {
 const PIP_SIZE = 10;
 const PIP_LABEL_OFFSET = 14;
 
+// How far below its row's top a pip is drawn (its label sits at the row top + 1).
+const PIP_Y = 3;
+
 // Buttons get 8 pixels of breathing room on each side of their label.
 const BUTTON_TEXT_PAD = 8;
 
@@ -278,7 +281,7 @@ function kv(ctx, key, value) {
 
 /**
  * A checkbox row: a small square "pip" (filled when on, hollow when off) plus a label.
- * The whole row is tappable. Returns the NEXT value, so demos write:
+ * The whole row is a touch target. Returns the NEXT value, so demos write:
  *
  *     this.loop = ui.checkbox('Loop', this.loop);
  *
@@ -301,8 +304,11 @@ function checkbox(ctx, text, value, opts = {}) {
     // On or hovered rows brighten so the row reads as live.
     drawPipRow(ctx, rowY, value, text, value || res.hover ? T.text : T.dim);
 
-    // The full row is the touch target, not just the little pip.
-    ctx.addHit(id, ctx.pad, rowY, contentW, ROW_H, 'checkbox');
+    // The full row width is the touch target, not just the little pip. It starts where the
+    // pip does, so a tap on the pip's bottom edge is not nearer the row below, and stops one
+    // pixel short of the pip so it only touches a button directly beneath (which starts 2 px
+    // into its own row) instead of overlapping it.
+    ctx.addHit(id, ctx.pad, rowY + PIP_Y, contentW, ROW_H - 1, 'checkbox');
 
     return res.activated || keyFired ? !value : value;
 }
@@ -320,10 +326,10 @@ function checkbox(ctx, text, value, opts = {}) {
  */
 function drawPipRow(ctx, rowY, on, text, textColor) {
     if (on) {
-        ctx.addCommand(CMD_RECT_FILL, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.accent);
+        ctx.addCommand(CMD_RECT_FILL, ctx.pad, rowY + PIP_Y, PIP_SIZE, PIP_SIZE, T.accent);
     }
 
-    ctx.addCommand(CMD_RECT_STROKE, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.border);
+    ctx.addCommand(CMD_RECT_STROKE, ctx.pad, rowY + PIP_Y, PIP_SIZE, PIP_SIZE, T.border);
     ctx.addCommand(CMD_TEXT, ctx.pad + PIP_LABEL_OFFSET, rowY + 1, 0, 0, textColor, text);
 }
 

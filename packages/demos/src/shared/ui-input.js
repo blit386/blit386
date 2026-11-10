@@ -127,8 +127,8 @@ class UiInput {
     capturedSlot = -1;
 
     // Which widget id each pointer slot's current press belongs to (null: none). Inflated hit
-    // rects of stacked rows overlap, so a press claims exactly one widget - the nearest center -
-    // at its press edge, and only that widget sees it until release.
+    // rects of stacked rows overlap, so a press claims exactly one widget - the one whose own rect
+    // (before the growth) is nearest - at its press edge, and only that widget sees it until release.
     /** @type {(string | null)[]} */
     pressOwner = [null, null, null, null];
 
@@ -147,9 +147,10 @@ class UiInput {
             return;
         }
 
-        // Doubled coordinates keep the center math in integers.
-        const dx = 2 * this.claimX - (2 * rec.x + rec.w);
-        const dy = 2 * this.claimY - (2 * rec.y + rec.h);
+        // Pixels from the point to the rect on each axis, 0 when the point is inside it. Rows
+        // stack vertically, so a wider label must not push its row's claim away.
+        const dx = Math.max(rec.x - this.claimX, 0, this.claimX - (rec.x + rec.w - 1));
+        const dy = Math.max(rec.y - this.claimY, 0, this.claimY - (rec.y + rec.h - 1));
         const dist = dx * dx + dy * dy;
 
         if (dist < this.claimDist) {
@@ -269,7 +270,8 @@ class UiInput {
 
     /**
      * The id of the cached widget rectangle nearest to (px, py) among those whose inflated
-     * rectangle contains it, or null. Ties keep the first one found.
+     * rectangle contains it, or null. A rect containing the point is at distance 0; ties keep
+     * the first one found, which is the first declared.
      *
      * @param {number} px - Point x in display pixels.
      * @param {number} py - Point y in display pixels.

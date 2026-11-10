@@ -586,9 +586,27 @@ describe('press ownership', () => {
         };
 
         frame();
-        assert.equal(ctx.hitRects.get('Terrain').y, 4);
-        assert.equal(ctx.hitRects.get('Drift').y, 14);
-        assert.deepEqual(frame(), [false, true]);
+        assert.equal(ctx.hitRects.get('Terrain').y, 4 + 3);
+        assert.equal(ctx.hitRects.get('Drift').y, 14 + 3);
+        assert.deepEqual(frame(), [true, false]);
+    });
+
+    it("gives a press on a pip's bottom edge to that pip's row, not the row below", (t) => {
+        // Rows at y 4 and 14; the first pip is drawn at y 7-16, so y 16 is its last pixel row.
+        pressAt(t, 11, 16);
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'Terrain', false);
+            const second = checkbox(ctx, 'Drift', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        assert.deepEqual(frame(), [true, false]);
     });
 
     it('activates exactly one of two stacked buttons', (t) => {
