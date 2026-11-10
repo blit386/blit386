@@ -25,14 +25,11 @@ export class WebGPUFrameCaptures {
     /** Both logical slots, serviced by one resolve pass. */
     private readonly displaySlots: readonly FrameCapture[] = [this.display, this.shortcut];
 
+    /** Every slot, for {@link resolve}. */
+    private readonly slots: readonly FrameCapture[] = [this.output, this.display, this.shortcut];
+
     /** Logical-size RGBA target the scene is resolved into for {@link displaySlots}; lazy. */
     private target: { texture: GPUTexture; view: GPUTextureView } | null = null;
-
-    /** Whether the frame being submitted recorded an output readback. */
-    private isOutputEncoded = false;
-
-    /** Whether the frame being submitted recorded a logical readback. */
-    private isDisplayEncoded = false;
 
     /**
      * Creates the slots; nothing is allocated until a logical capture is requested.
@@ -107,13 +104,9 @@ export class WebGPUFrameCaptures {
         sceneView: GPUTextureView,
         format: GPUTextureFormat | null,
     ): void {
-        this.isOutputEncoded = this.output.hasPending();
-
-        if (this.isOutputEncoded) {
+        if (this.output.hasPending()) {
             this.output.executeInEncoder(this.device, swapTexture, encoder);
         }
-
-        this.isDisplayEncoded = false;
 
         if (!this.displaySlots.some((capture) => capture.hasPending())) {
             return;
@@ -134,26 +127,18 @@ export class WebGPUFrameCaptures {
                 capture.executeInEncoder(this.device, target.texture, encoder);
             }
         }
-
-        this.isDisplayEncoded = true;
     }
 
-    /** Starts the buffer readbacks {@link encode} recorded; call right after the queue submit. */
+    /**
+     * Starts the buffer readbacks {@link encode} recorded; call right after the queue submit. A slot
+     * still pending here was recorded, since {@link encode} rejects any slot it cannot record.
+     */
     resolve(): void {
-        if (this.isOutputEncoded) {
-            void this.output.resolve(this.device);
-        }
-
-        if (this.isDisplayEncoded) {
-            for (const capture of this.displaySlots) {
-                if (capture.hasPending()) {
-                    void capture.resolve(this.device);
-                }
+        for (const capture of this.slots) {
+            if (capture.hasPending()) {
+                void capture.resolve(this.device);
             }
         }
-
-        this.isOutputEncoded = false;
-        this.isDisplayEncoded = false;
     }
 
     /**
