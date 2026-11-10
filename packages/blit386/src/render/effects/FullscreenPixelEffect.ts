@@ -1,4 +1,5 @@
 import type { Vector2i } from '../../utils/Vector2i';
+import { LOGICAL_TARGET_FORMAT } from '../WebGPUPostProcess';
 import type { Effect } from './Effect';
 import { VS_WGSL } from './fullscreenVS';
 
@@ -41,8 +42,11 @@ export abstract class FullscreenPixelEffect implements Effect {
             );
         }
 
-        if (format !== 'r8uint') {
-            throw new Error(`${this.label}: pixel-tier effects run on the r8uint chain only (got ${format}).`);
+        // fragmentShaderUint reads texture_2d<u32>, so a format change also changes that shader contract.
+        if (format !== LOGICAL_TARGET_FORMAT) {
+            throw new Error(
+                `${this.label}: pixel-tier effects run on the ${LOGICAL_TARGET_FORMAT} chain only (got ${format}).`,
+            );
         }
 
         this.disposeGPUState();
