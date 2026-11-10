@@ -561,3 +561,63 @@ describe('tooltip', () => {
         }
     });
 });
+
+describe('press ownership', () => {
+    // A press in the band where two inflated hit rects overlap must go to one widget only.
+    function pressAt(t, x, y) {
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: () => true,
+            isDown: () => true,
+            pointerPos: () => ({ x, y }),
+        });
+    }
+
+    it('toggles exactly one of two stacked checkboxes, the nearest', (t) => {
+        pressAt(t, 11, 15);
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = checkbox(ctx, 'Terrain', false);
+            const second = checkbox(ctx, 'Drift', false);
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+        assert.equal(ctx.hitRects.get('Terrain').y, 4);
+        assert.equal(ctx.hitRects.get('Drift').y, 14);
+        assert.deepEqual(frame(), [false, true]);
+    });
+
+    it('activates exactly one of two stacked buttons', (t) => {
+        let pressY = 0;
+
+        stubBt(t, {
+            isPointerActive: (slot) => slot === 0,
+            isPressed: () => true,
+            isDown: () => true,
+            pointerPos: () => ({ x: 11, y: pressY }),
+        });
+
+        const ctx = createReadyContext();
+        const frame = () => {
+            ctx.begin(UI_ANCHORS.TOP_LEFT);
+            const first = button(ctx, 'One', { width: 40 });
+            const second = button(ctx, 'Two', { width: 40 });
+            ctx.end();
+
+            return [first, second];
+        };
+
+        frame();
+
+        const one = ctx.hitRects.get('One');
+
+        // The 1 px band inside both inflated rects; the upper button's center is nearer.
+        pressY = one.y + one.h + 2;
+        assert.deepEqual(frame(), [true, false]);
+    });
+});

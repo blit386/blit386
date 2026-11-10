@@ -220,6 +220,38 @@ class UiContext {
 
     capturedSlot = -1;
 
+    // Which widget id each pointer slot's current press belongs to (null: none). Inflated hit
+    // rects of stacked rows overlap, so a press claims exactly one widget - the nearest center -
+    // at its press edge, and only that widget sees it until release.
+    /** @type {(string | null)[]} */
+    pressOwner = [null, null, null, null];
+
+    // Scratch state for nearestWidgetAt(); the visitor is created once so the scan allocates nothing.
+    claimX = 0;
+
+    claimY = 0;
+
+    claimDist = 0;
+
+    /** @type {string | null} */
+    claimId = null;
+
+    claimVisitor = (rec, id) => {
+        if (!hitContains(rec, this.claimX, this.claimY, HIT_INFLATE)) {
+            return;
+        }
+
+        // Doubled coordinates keep the center math in integers.
+        const dx = 2 * this.claimX - (2 * rec.x + rec.w);
+        const dy = 2 * this.claimY - (2 * rec.y + rec.h);
+        const dist = dx * dx + dy * dy;
+
+        if (dist < this.claimDist) {
+            this.claimDist = dist;
+            this.claimId = id;
+        }
+    };
+
     // Reused result object for widget interaction queries (never reallocated).
     interaction = { hover: false, held: false, activated: false };
 
@@ -380,6 +412,12 @@ class UiContext {
                 p.x = pos.x;
                 p.y = pos.y;
             }
+
+            if (p.pressed) {
+                this.pressOwner[slot] = this.nearestWidgetAt(p.x, p.y);
+            } else if (!p.down) {
+                this.pressOwner[slot] = null;
+            }
         }
 
         // A drag capture ends the moment its pointer is no longer held down.
@@ -387,6 +425,24 @@ class UiContext {
             this.capturedId = null;
             this.capturedSlot = -1;
         }
+    }
+
+    /**
+     * The id of the cached widget rectangle nearest to (px, py) among those whose inflated
+     * rectangle contains it, or null. Ties keep the first one found.
+     *
+     * @param {number} px - Point x in display pixels.
+     * @param {number} py - Point y in display pixels.
+     * @returns {string | null}
+     */
+    nearestWidgetAt(px, py) {
+        this.claimX = px;
+        this.claimY = py;
+        this.claimDist = Infinity;
+        this.claimId = null;
+        this.hitRects.forEach(this.claimVisitor);
+
+        return this.claimId;
     }
 
     /**
@@ -860,6 +916,11 @@ class UiContext {
                 continue;
             }
 
+            // A press belongs to the one widget it claimed (see nearestWidgetAt()).
+            if (this.pressOwner[slot] !== id) {
+                continue;
+            }
+
             const p = this.pointer[slot];
             const inside = (p.active || p.pressed) && hitContains(rec, p.x, p.y, HIT_INFLATE);
 
@@ -912,7 +973,7 @@ class UiContext {
         for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             const p = this.pointer[slot];
 
-            if (p.pressed && hitContains(rec, p.x, p.y, HIT_INFLATE)) {
+            if (p.pressed && this.pressOwner[slot] === id) {
                 this.capturedId = id;
                 this.capturedSlot = slot;
 
