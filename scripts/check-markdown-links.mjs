@@ -13,6 +13,9 @@
  * `pnpm run sync:docs`, where the source is already link-checked. The hand-authored
  * hub (`content/docs/index.mdx`) and root `content/docs/meta.json` stay in scope.
  *
+ * Test fixtures (any `__fixtures__/` directory) are skipped too: they are test input,
+ * and some link to missing files on purpose (the docs-mirror generator's fallback tests).
+ *
  * Files are checked concurrently (bounded by CONCURRENCY); each file's output
  * prints as one block once it completes, so output order follows completion
  * order rather than file order.
@@ -35,7 +38,7 @@ const CONCURRENCY = 8;
 const CHECK_TIMEOUT_MS = 300_000;
 
 /** Repo-relative path patterns to skip; see the file header for what and why. */
-const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u];
+const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u, /(?:^|\/)__fixtures__\//u];
 
 /** @param {string} rel @returns {string} */
 export const normalizeRelSep = (rel) => rel.split('\\').join('/');
