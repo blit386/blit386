@@ -22,8 +22,9 @@
  * `quality-website` job of `.github/workflows/ci.yml`. Last, because it
  * regenerates `content/docs` in the working tree.
  *
- * Source location resolves from `ENGINE_DOCS_DIR` (used by CI); locally it
- * defaults to the sibling package path `../blit386/docs`.
+ * Source location defaults to the sibling package path `../blit386/docs`;
+ * `ENGINE_DOCS_DIR` overrides it (the tests point it at a fixture). It must stay
+ * inside the monorepo, since GitHub links are built from its path there.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -494,7 +495,7 @@ const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } 
     const trimmedBody = dropDuplicateIntro(stripGeneratedNote(stripSiteBanner(body)), description);
     const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir, `${ENGINE_DOCS_REPO_DIR}/${src}`);
     const banner = [
-        `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
+        `# Generated from ${ENGINE_DOCS_REPO_DIR}/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
     ].join('\n');
     const lastModified = lastModifiedFor(src);
