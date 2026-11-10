@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-10T17:36:03+01:00"
+lastModified: "2026-11-10T17:53:46+01:00"
 ---
 
 All notable changes to blit386 are documented here, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) style,
@@ -111,7 +111,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   container (canvas included) and rebuild the error panel and its `console.error` line every frame. Now each distinct
   message is reported once and the game keeps running: dev builds show the panel above the canvas, release builds only
   log it. Draw errors also go to the `containerID` passed to `bootstrap()` instead of always `canvas-container`, and
-  `displayError` keeps the container's other children. See [Bootstrap](/docs/api/core#bootstrap).
+  `displayError` keeps the container's other children. A successful hot reload clears the panel, and the error shows
+  again if the fix did not take. See [Bootstrap](/docs/api/core#bootstrap).
 - WebGPU draws keep the order `render()` called them in. It used to draw every primitive (rects, lines, pixels) before
   every sprite (sprites, `BT.systemPrint`, `BT.printFont`) in a frame, so a `BT.drawRectFill` HUD bar drawn over a
   sprite background disappeared under it on WebGPU while the software backend showed it on top. See
