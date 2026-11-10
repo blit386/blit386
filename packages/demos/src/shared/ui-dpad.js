@@ -15,8 +15,6 @@
  * toggle, and most thumbs rest on the right half of a phone anyway.
  */
 
-import { BT } from 'blit386';
-
 import { hitContains } from './ui-core.js';
 import { T } from './ui-theme.js';
 
@@ -124,7 +122,7 @@ function drawArrow(ctx, dir, keyX, keyY, size, color) {
             ctx.flushRect.set(centerX - start - i, centerY - span, 1, 2 * span);
         }
 
-        BT.drawRectFill(ctx.flushRect, color);
+        ctx.drawRectFill(ctx.flushRect, color);
     }
 }
 
@@ -198,11 +196,11 @@ function drawKey(ctx, dir, baseX, baseY, step, size) {
 
     const isHeld = downState[dir];
 
-    // Key face: panel-colored at rest, accent-lit while held, always outlined.
+    // Key face: panel-colored at rest, accent-lit while held, always outlined. Drawn as
+    // sprites like the rest of the kit, so a panel or sprite art never hides the D-pad.
     ctx.flushRect.set(keyX, keyY, size, size);
-    BT.drawRectFill(ctx.flushRect, isHeld ? T.accent : T.panel);
-    ctx.flushRect.set(keyX, keyY, size, size);
-    BT.drawRect(ctx.flushRect, T.border);
+    ctx.drawRectFill(ctx.flushRect, isHeld ? T.accent : T.panel);
+    ctx.drawRect(ctx.flushRect, T.border);
 
     drawArrow(ctx, dir, keyX, keyY, size, isHeld ? T.bg : T.dim);
 
@@ -220,6 +218,9 @@ function drawKey(ctx, dir, baseX, baseY, step, size) {
     rec.y = keyY;
     rec.w = size;
     rec.h = size;
+
+    // Mark it alive this frame, or the next frame's first begin() prunes it.
+    ctx.frameHitIds.add(id);
 }
 
 export { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad };

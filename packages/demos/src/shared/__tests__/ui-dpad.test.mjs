@@ -10,6 +10,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { BT } from 'blit386';
+
 import { UiContext } from '../ui-core.js';
 import { applyTheme } from '../ui-theme.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from '../ui-dpad.js';
@@ -194,5 +196,29 @@ describe('dpad visibility gating', () => {
         stepDpad(ctx);
 
         assert.equal(dpadIsDown('up'), true);
+    });
+});
+
+describe('dpad hit rects across frames', () => {
+    it('keeps its rects through the next begin(), wherever the D-pad is drawn in the frame', (t) => {
+        stubBt(t);
+        applyTheme(createFakePalette());
+
+        const ctx = new UiContext();
+
+        // Frame 1: the D-pad before the frame's first begin().
+        BT.ticks++;
+        dpadWidget(ctx, { show: 'always' });
+        ctx.begin('topLeft');
+        assert.ok(ctx.hitRects.has('ui:dpad:up'));
+        ctx.end();
+
+        // Frame 2: begin() first prunes with frame 1's ids, which must include the D-pad's.
+        BT.ticks++;
+        ctx.begin('topLeft');
+        assert.ok(ctx.hitRects.has('ui:dpad:up'));
+        ctx.end();
+        dpadWidget(ctx, { show: 'always' });
+        assert.ok(ctx.hitRects.has('ui:dpad:up'));
     });
 });
