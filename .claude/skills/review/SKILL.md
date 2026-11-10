@@ -34,7 +34,7 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
   every package:
 
   ```bash
-  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json)
+  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json)
   git diff -- "${POLICY_ALLOWLIST[@]}"
   git diff --cached -- "${POLICY_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
@@ -44,7 +44,7 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
   touch, and nothing else:
 
   ```bash
-  ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json .husky/ \
+  ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json .husky/ \
     .github/ .zed/ scripts/ .devcontainer/ .coderabbit.yaml .editorconfig .gitattributes .gitignore \
     .lintstagedrc.json .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md \
     LICENSE SECURITY.md biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml \
