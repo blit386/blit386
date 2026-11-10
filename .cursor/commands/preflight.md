@@ -17,22 +17,9 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 
 ## docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
 
-`docs:links` and `agents:check` are not package-scoped - each package's copy of the script
-(`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
-`package.json` invoked it. They used to be listed in every package's `preflight` chain too, which meant
-`.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
-one push - most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
-`preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`,
-`pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a
-package in isolation. `sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only,
-whole-repo check - they never had a per-package copy to begin with, since they generate against root `.claude/skills/` /
-`.cursor/commands/` and the maintainer dogfood agent configs regardless of which package changed, as is
-`audit:modules:check` (the audit ledger in `.claude/skills/audit/modules.md` against the units derived from the tree).
-The root-level pass only runs when `PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip
-`format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`,
-`audit:modules:check`, and `bump:check` entirely, so a push only exercises them once the per-package checks are clean.
-That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether
-the per-package quality jobs pass.
+They walk the whole repo whichever `package.json` invokes them, so no package `preflight` chain runs them (and neither
+does `audit:modules:check`); run them directly or via `/preflight root`. `.husky/pre-push` runs them once, after the
+package preflights pass (see `/preflight root` below); in CI, `quality-root` has no `needs` and runs regardless.
 
 ## Steps
 
