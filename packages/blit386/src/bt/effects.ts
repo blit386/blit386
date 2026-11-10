@@ -7,7 +7,8 @@
 import { BTAPI } from '../core/BTAPI';
 import type { Effect } from '../render/effects/Effect';
 import { amber, crtPipBoy, green } from '../render/effects/presets';
-import { drawReady, reportDrawError } from './internal';
+import { drawReady } from './draw';
+import { reportDrawError } from './internal';
 
 /** Post-process effect members of `BT`. */
 export const effects = {

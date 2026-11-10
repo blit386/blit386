@@ -19,7 +19,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | Question | Where to look |
 | --- | --- |
 | Is this API exported publicly? | The trailing `export { ... }` / `export type { ... }` block at the end of `src/BLIT386.ts` |
-| Where is a `BT` member defined? | `src/bt/<part>.ts` (`lifecycle`, `audio`, `palette`, `effects`, `draw`, `camera`, `pointer`, `buttons`, `constants`); `src/BLIT386.ts` merges the parts into `BT` with `Object.defineProperties`, so getters stay getters. Shared helpers live in `src/bt/internal.ts` |
+| Where is a `BT` member defined? | `src/bt/<part>.ts` (`lifecycle`, `audio`, `palette`, `effects`, `draw`, `camera`, `pointer`, `buttons`, `constants`); `src/BLIT386.ts` merges the parts into `BT` with `Object.defineProperties`, so getters stay getters. Helpers two or more parts share live in `src/bt/internal.ts`; a one-part helper stays in its part (under Vitest an imported helper costs a getter per call, which skews the draw benches) |
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` - not docs |
 | What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) - not docs |
 | What error message style should I use? | `docs/voice.md`, then the domain files in `src/utils/errorMessages/`; shared "can't find this file" hints in `src/utils/urlHints.ts` |

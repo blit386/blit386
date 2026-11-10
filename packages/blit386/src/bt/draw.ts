@@ -9,17 +9,93 @@ import type { NineSlice } from '../assets/NineSlice';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { BTAPI } from '../core/BTAPI';
 import type { SpriteDrawParams } from '../render/SpriteOrientation';
+import { Color32 } from '../utils/Color32';
 import { SYSTEM_FONT_NOT_READY_MESSAGE } from '../utils/errorMessages';
-import type { Rect2i } from '../utils/Rect2i';
+import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
-import {
-    describeRuntimeType,
-    drawReady,
-    isVectorArg,
-    reportDrawError,
-    reportMissingAwait,
-    showBeginnerRuntimeError,
-} from './internal';
+import { reportDrawError, showBeginnerRuntimeError } from './internal';
+
+/**
+ * Checks that the renderer exists and, when it does not, reports a draw call made before bootstrap finished.
+ *
+ * @param methodName - BT method name being called.
+ * @returns `true` when the call can go ahead.
+ */
+export function drawReady(methodName: string): boolean {
+    if (BTAPI.instance.getRenderer() !== null) {
+        return true;
+    }
+
+    showBeginnerRuntimeError(
+        `Can't use BT.${methodName}() yet because the engine is still starting.\n` +
+            "The engine isn't ready yet. Make sure all drawing happens inside update() or render().",
+        'Engine Not Ready',
+    );
+
+    return false;
+}
+
+/**
+ * Treats any non-null object argument as a `Vector2i` for `BT.drawTile` dispatch.
+ *
+ * A bare `typeof value === 'object'` also matches `null`, which would let an untyped
+ * `null` argument reach `.x` / `.y` and surface a raw TypeError instead of the
+ * wrong-arguments error. Still `typeof`-based, so the dispatch stays `instanceof`-free.
+ *
+ * @param value - Argument to classify.
+ * @returns `true` for a non-null object.
+ */
+function isVectorArg(value: unknown): value is Vector2i {
+    return typeof value === 'object' && value !== null;
+}
+
+/**
+ * Converts an unknown runtime value into a concise display type label.
+ *
+ * @param value - Runtime value to inspect.
+ * @returns A short readable type description.
+ */
+function describeRuntimeType(value: unknown): string {
+    if (value === null) {
+        return 'null';
+    }
+
+    if (value === undefined) {
+        return 'undefined';
+    }
+
+    if (value instanceof Vector2i) {
+        return 'Vector2i';
+    }
+
+    if (value instanceof Rect2i) {
+        return 'Rect2i';
+    }
+
+    if (value instanceof Color32) {
+        return 'Color32';
+    }
+
+    if (value instanceof Promise) {
+        return 'Promise (missing await?)';
+    }
+
+    if (typeof value === 'object') {
+        const ctor = (value as { constructor?: { name?: string } }).constructor?.name;
+        return ctor && ctor.length > 0 ? ctor : 'object';
+    }
+
+    return typeof value;
+}
+
+/**
+ * Shows a friendly hint when a Promise was passed instead of an awaited asset.
+ *
+ * @param loadCall - Asset loader call name to reference in the message.
+ */
+function reportMissingAwait(loadCall: string): void {
+    showBeginnerRuntimeError(`Did you forget to use 'await' before ${loadCall}?`, 'Missing await');
+}
 
 /** Drawing members of `BT`. */
 export const draw = {

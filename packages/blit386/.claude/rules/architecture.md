@@ -20,7 +20,7 @@ src/
     camera.ts             # cameraSet, camera, cameraClamp, cameraReset
     pointer.ts            # Pointer position / delta / scroll / activity, cursor
     buttons.ts            # Button, key, and gamepad state and edges, keyboard maps, axes, any-key / any-button
-    internal.ts           # Shared helpers: beginner runtime errors, drawReady, pointerClock, settingsOrDefault (not public)
+    internal.ts           # Helpers two or more parts share: beginner runtime errors, pointerClock, settingsOrDefault (not public); a one-part helper such as drawReady stays in its part
   docs/
     consumer-doc-imports.test.ts # Guards README/docs import paths against BLIT386.ts exports
   core/

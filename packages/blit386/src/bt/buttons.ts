@@ -6,9 +6,29 @@
 
 import { BTAPI } from '../core/BTAPI';
 import * as flags from '../input/buttonFlags';
-import { resetKeyboardFaceButtonMaps, setKeyboardFaceButtonKeys } from '../input/keyboardRuntimeMaps';
+import {
+    getKeyboardFaceButtonKeys,
+    resetKeyboardFaceButtonMaps,
+    setKeyboardFaceButtonKeys,
+} from '../input/keyboardRuntimeMaps';
 import { POINTER_BUTTON_CODES } from '../input/PointerInput';
-import { faceButtonKeys, pointerClock } from './internal';
+import { pointerClock } from './internal';
+
+/**
+ * Returns runtime keyboard `KeyboardEvent.code` list for a face button and player,
+ * or `null` when there is no keyboard fallback (e.g. players 2-3 for face buttons).
+ *
+ * @param button - Face button constant (`BT.BTN_UP` … `BT.BTN_SELECT`).
+ * @param player - Zero-based player index.
+ * @returns Key codes for that mapping, or `null` if unsupported.
+ */
+function faceButtonKeys(button: number, player: number): readonly string[] | null {
+    if (!flags.FACE_BUTTON_FLAGS.includes(button as flags.FaceButtonCode)) {
+        return null;
+    }
+
+    return getKeyboardFaceButtonKeys(player, button);
+}
 
 /** Button, key, and gamepad input members of `BT`. */
 export const buttons = {

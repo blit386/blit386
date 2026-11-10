@@ -16,7 +16,39 @@ import type { SplashState } from '../splash';
 import { renderAtOptionsError } from '../utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions } from '../utils/FrameCapture';
 import type { Vector2i } from '../utils/Vector2i';
-import { describeTestStateError, settingsOrDefault } from './internal';
+import { settingsOrDefault } from './internal';
+
+/** `BT.testState()`'s `error` when the thrown value yields no readable message. */
+const TEST_STATE_UNREADABLE_ERROR = 'testState() threw a value with no readable message';
+
+/**
+ * Turns whatever a `testState()` hook (or its serialization) threw into an error message,
+ * without ever throwing itself: no `String(err)` (a null-prototype object has no primitive
+ * conversion), and the `message` read is guarded (a getter can throw).
+ *
+ * @param err - Value caught from the hook call or the JSON round-trip.
+ * @returns The `Error` message or thrown string, else {@link TEST_STATE_UNREADABLE_ERROR}.
+ */
+function describeTestStateError(err: unknown): string {
+    if (typeof err === 'string') {
+        return err;
+    }
+
+    try {
+        if (err instanceof Error) {
+            // Read once: a `message` getter could return a string on one read and not the next.
+            const message: unknown = err.message;
+
+            if (typeof message === 'string') {
+                return message;
+            }
+        }
+    } catch {
+        // Fall through: a throwing `message` getter or `instanceof` check.
+    }
+
+    return TEST_STATE_UNREADABLE_ERROR;
+}
 
 /** Lifecycle, sizing, timing, readiness, and capture members of `BT`. */
 export const lifecycle = {
