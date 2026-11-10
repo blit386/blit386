@@ -30,6 +30,7 @@ AUTHOR_SCAN_START=$(date +%s)
 # from a different checkout pushes other-branch. One pushed ref -> filter on its sha;
 # several -> no single range describes them, so every package runs (see below).
 PUSH_TIP="HEAD"
+PUSH_BASE=""
 PUSH_COUNT=0
 while read -r local_ref local_sha remote_ref remote_sha; do
     [ "$local_sha" = "$ZERO_SHA" ] && continue # deleting the remote ref
@@ -42,6 +43,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         push_range="$local_sha --not --remotes"
     else
         push_range="$remote_sha..$local_sha"
+        # The remote's current tip is the exact base of what this push adds; the branch's
+        # upstream can name a different branch. Unknown locally (never fetched) -> fall back.
+        if git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+            PUSH_BASE=$remote_sha
+        fi
     fi
 
     # Written to a temp file rather than piped into the while loop: a piped
@@ -58,6 +64,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     rm -f "$author_log"
 done
 echo "[timing] author scan: $(($(date +%s) - AUTHOR_SCAN_START))s"
+
+if [ "$PUSH_COUNT" -eq 0 ]; then
+    echo "Only ref deletions to push; nothing to check."
+    exit 0
+fi
 
 # Monorepo: dispatch preflight per changed package rather than running everything.
 # pnpm's "...[ref...tip]" filter selects a package plus anything downstream of it that
@@ -79,7 +90,12 @@ echo "[timing] author scan: $(($(date +%s) - AUTHOR_SCAN_START))s"
 # first push (no upstream yet) killed this hook before the origin/main fallback,
 # and on a real preflight failure skipped the "[FAIL]" message entirely.
 UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+# One pushed ref with a known remote tip -> diff against that tip; otherwise the
+# branch's upstream, then origin/main.
 BASE_REF="${UPSTREAM_REF:-origin/main}"
+if [ "$PUSH_COUNT" -eq 1 ] && [ -n "$PUSH_BASE" ]; then
+    BASE_REF=$PUSH_BASE
+fi
 
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
     if git rev-parse --verify --quiet "HEAD~1" >/dev/null 2>&1; then

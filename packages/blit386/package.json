@@ -121,7 +121,6 @@
     "splash-logo:convert": "node scripts/convert-splash-logo.mjs",
     "splash-logo:check": "node scripts/convert-splash-logo.mjs --check",
     "prepublishOnly": "pnpm run build",
-    "prepare": "husky",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
