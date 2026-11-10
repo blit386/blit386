@@ -853,4 +853,24 @@ describe('out-of-bounds texels and re-init (BT-756)', () => {
         // The old group came from the old pipeline's 'auto' layout, which the new pipeline rejects.
         expect(createBindGroup).toHaveBeenCalledTimes(1);
     });
+
+    it('builds a fresh texture bind group when init() runs again without a reset()', async () => {
+        installMockNavigatorGPU();
+
+        const device = createMockGPUDevice();
+        const pipeline = new SpritePipeline();
+        const sheet = SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16).fill(1));
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+
+        const createBindGroup = vi.spyOn(device, 'createBindGroup');
+
+        await pipeline.init(device, new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+        createBindGroup.mockClear();
+        pipeline.drawSprite(sheet, new Rect2i(0, 0, 4, 4), new Vector2i(0, 0));
+
+        // Same sheet as before init(): the texture-switch check must not skip the rebuild.
+        expect(createBindGroup).toHaveBeenCalledTimes(1);
+    });
 });

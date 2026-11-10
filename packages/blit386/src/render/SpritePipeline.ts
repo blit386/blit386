@@ -452,13 +452,14 @@ export class SpritePipeline {
     private async createPipeline(displaySize: Vector2i, targetFormat: GPUTextureFormat): Promise<void> {
         const device = this.device as GPUDevice;
 
-        // A re-run of init() replaces everything: cached texture groups came from the old 'auto' layout.
+        // A re-run of init() replaces everything: cached texture groups and queued batches came from the old
+        // 'auto' layout, so both go.
         this.uniformBuffer?.destroy();
         this.uniformBuffer = null;
         this.vertexBuffer?.destroy();
         this.vertexBuffer = null;
         this.textureBindGroups = new WeakMap();
-        this.currentBindGroup = null;
+        this.reset();
 
         const shaderModule = device.createShaderModule({
             label: 'Sprite Shader',
