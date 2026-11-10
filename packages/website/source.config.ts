@@ -40,7 +40,7 @@ export const docs = defineDocs({
 
     docs: {
         async: true,
-        schema: pageSchema.extend({ lastModified: z.coerce.date().optional(), editUrl: z.string().optional() }),
+        schema: pageSchema.extend({ lastModified: z.coerce.date().optional() }),
         postprocess: {
             includeProcessedMarkdown: true,
         },

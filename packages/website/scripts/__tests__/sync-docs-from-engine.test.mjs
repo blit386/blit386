@@ -24,7 +24,6 @@ const {
     isToolingDirective,
     summarizeComment,
     getLastModified,
-    editUrlFor,
     renderPage,
 } = await import('../sync-docs-from-engine.mjs');
 
@@ -86,8 +85,8 @@ describe('rewriteTarget', () => {
 
     test('falls back to GitHub blob URL for unknown file path', () => {
         assert.equal(
-            rewriteTarget('unknown.md', 'docs/api', TEST_PATHS),
-            'https://github.com/blit386/blit386/blob/main/docs/api/unknown.md',
+            rewriteTarget('unknown.md', 'packages/blit386/docs/api', TEST_PATHS),
+            'https://github.com/blit386/blit386/blob/main/packages/blit386/docs/api/unknown.md',
         );
     });
 
@@ -100,8 +99,8 @@ describe('rewriteTarget', () => {
 
     test('preserves fragment on GitHub fallback', () => {
         assert.equal(
-            rewriteTarget('unknown.md#heading', 'docs', TEST_PATHS),
-            'https://github.com/blit386/blit386/blob/main/docs/unknown.md#heading',
+            rewriteTarget('unknown.md#heading', 'packages/blit386/docs', TEST_PATHS),
+            'https://github.com/blit386/blit386/blob/main/packages/blit386/docs/unknown.md#heading',
         );
     });
 
@@ -291,12 +290,6 @@ describe('summarizeComment', () => {
     });
 });
 
-describe('editUrlFor', () => {
-    test('builds a GitHub blob URL under docs/ for the given source', () => {
-        assert.equal(editUrlFor('api/core.md'), 'https://github.com/blit386/blit386/blob/main/docs/api/core.md');
-    });
-});
-
 describe('getLastModified', () => {
     // Real git integration test: init a throwaway repo with one commit (at a fixed
     // author date) under docs/, matching the "docs/<src>" pathspec getLastModified
@@ -424,16 +417,32 @@ describe('getLastModified', () => {
     });
 });
 
-describe('renderPage frontmatter (lastModified, editUrl)', () => {
-    const FIXTURE_PAGE = { src: 'api/with-components.md', description: 'Version-history components demo.' };
+describe('renderPage links resolve against the monorepo root (BT-774)', () => {
+    // The fixture engine docs live at this repo-relative path, the way the real ones live at
+    // packages/blit386/docs. A GitHub fallback must carry the full path, not just docs/...
+    const FIXTURE_REPO_DIR = 'packages/website/scripts/__fixtures__/sync-docs';
+    const BLOB = 'https://github.com/blit386/blit386/blob/main';
+    const { contents } = renderPage({ src: 'api/with-links.md', description: 'Links fixture.' });
 
-    test('always includes editUrl pointing at the engine GitHub blob', () => {
-        const { contents } = renderPage(FIXTURE_PAGE);
-        assert.match(
-            contents,
-            /editUrl: "https:\/\/github\.com\/blit386\/blit386\/blob\/main\/docs\/api\/with-components\.md"/u,
-        );
+    test('a published doc still becomes a site path', () => {
+        assert.ok(contents.includes('[Renderer](/docs/api/renderer)'));
     });
+
+    test('an unpublished doc links to its real monorepo path', () => {
+        assert.ok(contents.includes(`[Unpublished](${BLOB}/${FIXTURE_REPO_DIR}/api/unpublished.md)`));
+    });
+
+    test('a link above the docs root stays inside the package', () => {
+        assert.ok(contents.includes(`[Readme](${BLOB}/packages/website/scripts/__fixtures__/README.md)`));
+    });
+
+    test('writes no editUrl (nothing renders an edit link)', () => {
+        assert.ok(!contents.includes('editUrl:'));
+    });
+});
+
+describe('renderPage frontmatter (lastModified)', () => {
+    const FIXTURE_PAGE = { src: 'api/with-components.md', description: 'Version-history components demo.' };
 
     test('includes lastModified with the injected date when available', () => {
         const { contents } = renderPage(FIXTURE_PAGE, { lastModifiedFor: () => '2026-02-01T00:00:00Z' });

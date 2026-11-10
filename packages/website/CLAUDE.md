@@ -219,11 +219,12 @@ means the commit order above wasn't followed rather than an unavoidable artifact
 re-run `pnpm run sync:docs` after the doc edit is committed and commit the result, not to ignore the failure.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
-description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
-frontmatter (`title`, `description`, `lastModified` from git, and `editUrl` into the engine's GitHub path - the last two
-consumed by `docsPageLayout`; `lastModified` is always a UTC `+00:00` timestamp, because newer git prints `Z` for the
-same instant and the generator normalizes it, so the committed mirror does not flip between machines), and copies
-`packages/blit386/docs/_api-history.json` across.
+description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs resolved
+against the monorepo root (`blob/main/packages/blit386/docs/...`), adds frontmatter (`title`, `description`, and
+`lastModified` from git, consumed by `docsPageLayout`; `lastModified` is always a UTC `+00:00` timestamp, because newer
+git prints `Z` for the same instant and the generator normalizes it, so the committed mirror does not flip between
+machines), and copies `packages/blit386/docs/_api-history.json` across. There is no `editUrl`: the site renders no edit
+link (see `docsPageLayout` in `press.config.tsx`).
 
 MDX components: the generator passes PascalCase tags through verbatim and is MDX-aware, escaping stray braces in prose
 while leaving JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact. Any component the engine docs use must

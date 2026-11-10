@@ -27,13 +27,17 @@
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, posix, relative, resolve } from 'node:path';
+import { dirname, extname, join, posix, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gitEnv } from './git-env.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_DOCS = resolve(ROOT, process.env.ENGINE_DOCS_DIR ?? '../blit386/docs');
 const ENGINE_REPO_ROOT = resolve(ENGINE_DOCS, '..');
+const REPO_ROOT = resolve(ROOT, '..', '..');
+// Where the engine docs sit in the monorepo (`packages/blit386/docs`), the base every link and
+// GitHub URL resolves against. scripts/sync-kit-pages.mjs resolves kit content the same way.
+const ENGINE_DOCS_REPO_DIR = relative(REPO_ROOT, ENGINE_DOCS).split(sep).join(posix.sep);
 const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
@@ -119,16 +123,18 @@ const loadSitemap = () => {
 const { sections: SECTION_TITLES, pages: PAGES } = loadSitemap();
 
 /**
- * Canonical engine doc (repo-relative path) to published site path, derived from
+ * Canonical engine doc (monorepo-relative path) to published site path, derived from
  * the manifest. Drives link rewriting: a link resolving to one of these keys
  * upgrades to a site-relative `/docs/...` URL; everything else falls back to
  * GitHub. Only published docs appear here, so there is no dead-route risk.
  */
-const SITE_PATHS = Object.fromEntries(PAGES.map((page) => [`docs/${page.src}`, `/docs/${page.path}`]));
+const SITE_PATHS = Object.fromEntries(
+    PAGES.map((page) => [`${ENGINE_DOCS_REPO_DIR}/${page.src}`, `/docs/${page.path}`]),
+);
 
 /** Resolve the published site path for a source file, or throw if unmapped. */
 const sitePathFor = (src) => {
-    const sitePath = SITE_PATHS[`docs/${src}`];
+    const sitePath = SITE_PATHS[`${ENGINE_DOCS_REPO_DIR}/${src}`];
 
     if (!sitePath) {
         throw new Error(`No site path mapped for engine doc "${src}". Add it to the sitemap manifest.`);
@@ -155,7 +161,8 @@ const splitFragment = (target) => {
  * - Links to published docs (those in the manifest) become site-relative
  *   (`/docs/...`).
  * - Everything else (unpublished docs, contributor-only docs, repo config,
- *   source files) becomes an absolute GitHub URL resolved against the repo root.
+ *   source files) becomes an absolute GitHub URL resolved against the monorepo root,
+ *   so `sourceRepoDir` must be monorepo-relative (`packages/blit386/docs/api`).
  */
 const rewriteTarget = (target, sourceRepoDir, sitePaths = SITE_PATHS) => {
     const trimmed = target.trim();
@@ -425,9 +432,6 @@ const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
     }
 };
 
-/** Build `packages/blit386`'s GitHub blob URL for a source doc, for the page's "edit" link. */
-const editUrlFor = (src) => `${GITHUB_BASE}/blob/main/docs/${src}`;
-
 /**
  * Build the MDX file contents for one page, plus any HTML comments stripped from it.
  * `lastModifiedFor` defaults to the real git-backed `getLastModified` and is injectable
@@ -437,7 +441,7 @@ const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } 
     const sourcePath = join(ENGINE_DOCS, src);
     const raw = readFileSync(sourcePath, 'utf8');
     const { title, body } = extractTitleAndBody(raw, src);
-    const sourceRepoDir = posix.dirname(`docs/${src}`);
+    const sourceRepoDir = posix.dirname(`${ENGINE_DOCS_REPO_DIR}/${src}`);
     const trimmedBody = dropDuplicateIntro(stripGeneratedNote(stripSiteBanner(body)), description);
     const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
@@ -449,7 +453,6 @@ const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } 
         `title: ${JSON.stringify(title)}`,
         `description: ${JSON.stringify(description)}`,
         ...(lastModified === undefined ? [] : [`lastModified: ${JSON.stringify(lastModified)}`]),
-        `editUrl: ${JSON.stringify(editUrlFor(src))}`,
     ];
     const frontmatter = `---\n${banner}\n${frontmatterFields.join('\n')}\n---`;
 
@@ -588,7 +591,6 @@ export {
     isToolingDirective,
     summarizeComment,
     getLastModified,
-    editUrlFor,
     renderPage,
     PAGES,
 };
