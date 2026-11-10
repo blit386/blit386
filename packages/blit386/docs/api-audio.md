@@ -170,6 +170,15 @@ await AudioClip.load('audio/theme.mp3', {
     ratio: { type: 'number | null', description: 'Fraction complete in [0, 1]. null when Content-Length is unknown, when the response is content-encoded (for example gzip, so the length is the compressed size), or during the single, atomic decode step.' },
   }} />
 
+<Since symbol="AudioClipLoadOptions" />
+<Since symbol="AudioClipProgress" />
+<Since symbol="AudioClipProgressCallback" />
+<Since symbol="AudioClipLoadPhase" />
+
+The second argument of `AudioClip.load` is an `AudioClipLoadOptions`. Each snapshot passed to its `onProgress` (an
+`AudioClipProgressCallback`) is an `AudioClipProgress`, whose `phase` is an `AudioClipLoadPhase`. Import the types when
+you keep a progress handler or a snapshot outside the `load` call.
+
 Release a clip's decoded buffer with `unload()` once you no longer need it:
 
 ```ts twoslash
@@ -196,12 +205,15 @@ asset type matrix.
 ## Synth
 
 <Since symbol="SynthParams" />
+<Since symbol="SynthWaveform" />
 
 `AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
 no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
 always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset. Unlike
 [Loading](#loading), there is nothing to fetch or decode from the network - a synthesized clip is ready the instant
 `synth()` resolves, even before `BT.isAudioUnlocked` is `true` (see [Unlock state](#unlock-state) above).
+
+`SynthParams.waveform` takes a `SynthWaveform`: the name of the oscillator shape the clip starts from.
 
 ```ts twoslash
 import { AudioClip } from 'blit386';
@@ -342,6 +354,10 @@ BT.isSoundPlaying(ref); // true
 BT.soundStop(ref, { fadeOutMs: 200 }); // fades out over 200 ms
 ```
 
+<Since symbol="SoundStopOptions" />
+
+`BT.soundStop` takes an optional `SoundStopOptions`; `fadeOutMs` fades the sound out instead of cutting it.
+
 <Since symbol="SoundPlayOptions" />
 
 `options` fields:
@@ -389,9 +405,10 @@ function playFootstep() {
 <Since symbol="BT.soundPitchGet" />
 <Since symbol="BT.soundPanSet" />
 <Since symbol="BT.soundPanGet" />
+<Since symbol="SoundParamSetOptions" />
 
 Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed - never
-throws):
+throws). The setters take an optional `SoundParamSetOptions` whose `fadeMs` ramps to the new value:
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';

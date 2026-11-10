@@ -29,10 +29,15 @@ The rest of the core API surface lives in dedicated pages: [Overlay](api-overlay
 
 <Since symbol="bootstrap" />
 <Since symbol="BootstrapOptions" />
+<Since symbol="IBTDemo" />
+<Since symbol="DemoConstructor" />
 
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
 (WebGPU or software fallback), and error display automatically. It returns a `Promise<boolean>`: `true` on a successful
 cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
+
+Your game is a class implementing `IBTDemo` (`init`, `update`, `render`, and the optional hooks). `bootstrap()` takes
+the class itself, typed `DemoConstructor`, and constructs it once the engine is up.
 
 ```ts twoslash
 import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
@@ -73,6 +78,7 @@ Manual utilities (for custom initialization flows):
 
 <Since symbol="getCanvas" />
 <Since symbol="displayError" />
+<Since symbol="ErrorContent" />
 
 ```ts twoslash
 import { displayError, getCanvas } from 'blit386';
@@ -81,6 +87,7 @@ const canvas = getCanvas('my-canvas'); // returns null on missing element
 displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 ```
 
+The second argument is an `ErrorContent`: a plain string, or `{ text, code }` to show a code snippet under the text.
 `displayError` pins its panel to the top of the page and leaves the canvas in the container, replaces its own previous
 panel, and logs each message once with `console.error`. Showing the same message again does nothing, so it is safe to
 call from a frame loop.
@@ -228,6 +235,7 @@ F9 copies to the OS clipboard, Shift+F9 downloads a file. Details and the size c
 ### Hardware settings
 
 <Since symbol="HardwareSettings" />
+<Since symbol="OutputUpscaleFilter" />
 
 Resolved after `configure()`; the hook may return a partial object.
 
@@ -245,7 +253,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `targetFPS` | `number` | `60` | Fixed `update()` rate (simulation ticks per second) |
 | `backend` | `'webgpu' \| 'software'` | `'webgpu'` | Force rendering backend |
 | `audioVoices` | `number` | `16` | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (when full, a new sound steals an eligible voice, or is dropped when no eligible voice exists) |
-| `outputUpscaleFilter` | `'nearest' \| 'linear'` | `'nearest'` | Upscale filter |
+| `outputUpscaleFilter` | `OutputUpscaleFilter` (`'nearest' \| 'linear'`) | `'nearest'` | Upscale filter; also the type of `FullscreenEffect.samplerFilter` |
 | `isDetectingDroppedFrames` | `boolean` | `false` | Log a console warning on missed vsync |
 | `isCapturingPointerScroll` | `boolean` | `false` | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta`; also gates `touch-action` (`none` when capturing, `pan-y` otherwise) so touch tap-hold-scroll follows the same opt-in (page scrolls over the canvas when off). The overlay palette band can also force capture (and `touch-action: none`) while a pointer is over it, even when this flag is `false` |
 | `isCapturingKeyboardScroll` | `boolean` | `false` | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off) |
@@ -416,8 +424,10 @@ devtools media emulation; `?noreducedmotion` wins when both are present.
 
 <Since symbol="BT.requestedBackend" />
 <Since symbol="BT.activeBackend" />
+<Since symbol="Backend" />
 
-Two getters disambiguate what you asked for from what is running:
+Two getters disambiguate what you asked for from what is running. Both are typed `Backend | null`, where `Backend` is
+`'webgpu' | 'software'`:
 
 | Getter | When set | Meaning |
 | --- | --- | --- |
@@ -707,6 +717,7 @@ BT.resume(); // keep playing from tick 192
 ### Splash state
 
 <Since symbol="BT.isSplashVisible" />
+<Since symbol="SplashState" />
 
 `BT.isSplashVisible` is the one-term query game code should use: `true` while the BLIT386 splash is on screen, `false`
 otherwise. The useful thing it buys an `init()` is knowing that something is covering for it, so slow optional work can
