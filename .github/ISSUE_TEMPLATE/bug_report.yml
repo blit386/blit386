@@ -1,6 +1,6 @@
 name: Bug report
 description: Report a bug in blit386
-title: '[bug] '
+title: 'fix: '
 labels:
   - bug
 body:

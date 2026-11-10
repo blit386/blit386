@@ -30,6 +30,7 @@ AUTHOR_SCAN_START=$(date +%s)
 # from a different checkout pushes other-branch. One pushed ref -> filter on its sha;
 # several -> no single range describes them, so every package runs (see below).
 PUSH_TIP="HEAD"
+PUSH_BASE=""
 PUSH_COUNT=0
 while read -r local_ref local_sha remote_ref remote_sha; do
     [ "$local_sha" = "$ZERO_SHA" ] && continue # deleting the remote ref
@@ -42,6 +43,11 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         push_range="$local_sha --not --remotes"
     else
         push_range="$remote_sha..$local_sha"
+        # The remote's current tip is the exact base of what this push adds; the branch's
+        # upstream can name a different branch. Unknown locally (never fetched) -> fall back.
+        if git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+            PUSH_BASE=$remote_sha
+        fi
     fi
 
     # Written to a temp file rather than piped into the while loop: a piped
@@ -59,13 +65,18 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 done
 echo "[timing] author scan: $(($(date +%s) - AUTHOR_SCAN_START))s"
 
+if [ "$PUSH_COUNT" -eq 0 ]; then
+    echo "Only ref deletions to push; nothing to check."
+    exit 0
+fi
+
 # Monorepo: dispatch preflight per changed package rather than running everything.
 # pnpm's "...[ref...tip]" filter selects a package plus anything downstream of it that
 # changed in the committed range ref..tip - the explicit "...tip" end matters: a bare
 # "[ref]" also counts uncommitted working-tree changes, so unrelated dirty files widened
 # a push of a few committed files into the full preflight of every package. Only
-# committed work is being pushed, so only committed work is checked; --if-present skips packages with no "preflight" script
-# (packages/kit, packages/create-blit386) instead of failing on them. --if-present
+# committed work is being pushed, so only committed work is checked; every package has a
+# "preflight" script today, and --if-present keeps a future one without it from failing. --if-present
 # must come BEFORE "run": placed after the script name, pnpm forwards it as an
 # argument to the script's own command chain instead of consuming it itself - for
 # a package whose preflight ends in "&& pnpm run build", that appends a stray
@@ -79,7 +90,12 @@ echo "[timing] author scan: $(($(date +%s) - AUTHOR_SCAN_START))s"
 # first push (no upstream yet) killed this hook before the origin/main fallback,
 # and on a real preflight failure skipped the "[FAIL]" message entirely.
 UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+# One pushed ref with a known remote tip -> diff against that tip; otherwise the
+# branch's upstream, then origin/main.
 BASE_REF="${UPSTREAM_REF:-origin/main}"
+if [ "$PUSH_COUNT" -eq 1 ] && [ -n "$PUSH_BASE" ]; then
+    BASE_REF=$PUSH_BASE
+fi
 
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
     if git rev-parse --verify --quiet "HEAD~1" >/dev/null 2>&1; then
@@ -131,14 +147,16 @@ fi
 # changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
 # configs) would otherwise run zero checks. Always run the root-level gate too.
 if [ "$PREFLIGHT_STATUS" -eq 0 ]; then
-    echo "Running root-level checks (format:check, docs:links, agents:check, sync:cursor-commands:check, sync:maintainer-agents:check, audit:modules:check, bump:check)..."
+    echo "Running root-level checks (format:check, docs:links, agents:check, sync:cursor-commands:check, sync:maintainer-agents:check, audit:modules:check, bump:check, spellcheck:kit, test:root)..."
     timed "format:check" pnpm run format:check &&
         timed "docs:links" pnpm run docs:links &&
         timed "agents:check" pnpm run agents:check &&
         timed "sync:cursor-commands:check" pnpm run sync:cursor-commands:check &&
         timed "sync:maintainer-agents:check" pnpm run sync:maintainer-agents:check &&
         timed "audit:modules:check" pnpm run audit:modules:check &&
-        timed "bump:check" pnpm run bump:check || PREFLIGHT_STATUS=$?
+        timed "bump:check" pnpm run bump:check &&
+        timed "spellcheck:kit" pnpm run spellcheck:kit &&
+        timed "test:root" pnpm run test:root || PREFLIGHT_STATUS=$?
 fi
 
 if [ "$PREFLIGHT_STATUS" -ne 0 ]; then

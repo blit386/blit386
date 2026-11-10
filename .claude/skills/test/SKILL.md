@@ -46,8 +46,8 @@ verified by:
 
 1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
 2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
-3. Preflight checks (`/preflight demos`) - format:check, lint, test, spellcheck, knip, check:demo-registry,
-   check:demo-comment-links (the production build is not part of preflight)
+3. Preflight checks (`/preflight demos`) - lint, test, spellcheck, knip, check:demo-registry, check:demo-comment-links
+   (the production build is not part of preflight)
 
 What to do instead: verify a new demo with `pnpm run dev` + manual exercise; confirm no build regression with
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with
@@ -119,7 +119,7 @@ Not covered: visual regression of generated games (nothing renders a canvas), a 
 a generated project, npm publish or registry propagation. Some `agents sync` cases are skipped when git is unavailable
 (they need a three-way merge).
 
-Root-level script tests that exercise shared tooling (part of the relevant package's `preflight`, not this suite):
+Root-level script tests that exercise shared tooling (run by the root `test:root` script, not this suite):
 `test:agent-config` (`.agents/skills` symlink integrity), `test:compact-tables` (the compact Markdown table Prettier
 plugin). This repo's own Claude Code and Cursor shell guard is the kit's `shell-safety.cjs` entry, run in place and
 covered by `packages/kit/test/shell-safety.test.mjs`.

@@ -73,6 +73,11 @@
       "minimumReleaseAge": "7 days"
     },
     {
+      "description": "wrangler moves as one PR across npm (packages/website devDependency) and github-actions (wranglerVersion in deploy.yml), or the local and deployed wrangler drift. Must stay after the GitHub Actions rule so this groupName wins",
+      "matchPackageNames": ["wrangler"],
+      "groupName": "wrangler"
+    },
+    {
       "description": "All patches - automerge",
       "matchUpdateTypes": ["patch"],
       "matchPackageNames": ["*"],

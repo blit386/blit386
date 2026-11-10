@@ -72,7 +72,9 @@
     "prepack": "tsup",
     "typecheck": "tsc --noEmit && tsc --noEmit -p content/hooks/tsconfig.json",
     "pretest": "pnpm run build",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "knip": "cd ../.. && knip --workspace packages/kit",
+    "preflight": "pnpm run typecheck && pnpm run knip && pnpm run test"
   },
   "peerDependencies": {
     "playwright-core": "^1.62.1",

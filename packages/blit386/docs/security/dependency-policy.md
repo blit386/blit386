@@ -53,9 +53,11 @@ and the `:gitSignOff` preset for the DCO workflow. Workflow `node` / `pnpm` vers
 ## Supply-chain settings
 
 [`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml) sets `minimumReleaseAge` (7 days), `trustPolicy`, and related
-pnpm 11 hardening - pnpm 11 only reads auth/registry settings from `.npmrc`, so this is the single home for all of it.
-Security-patched packages blocked by release age may be listed in `minimumReleaseAgeExclude` together with `overrides`
-in the same file. Document the reason in the PR that introduces the exclude or override.
+pnpm 11 hardening - pnpm 11 only reads auth/registry settings from `.npmrc`, so this is the single home for all of it. A
+security patch blocked by release age may be listed in `minimumReleaseAgeExclude` together with `overrides` in the same
+file, as an exact `name@version` with a dated comment, and removed once it ages past the gate. A bare package name
+exempts every future release of that package from the gate, so it is never used. Document the reason in the PR that
+introduces the exclude or override.
 
 ## GitHub Actions pinning
 

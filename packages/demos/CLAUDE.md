@@ -322,7 +322,7 @@ commands are rewritten by `rtk hook claude`; search and read tools are not - use
 | `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
 | `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
 | `capture:demo` | A native-resolution video clip of one demo's canvas for the blog (Chrome and `ffmpeg`) |
-| `preflight` | `format:check`, `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |
+| `preflight` | `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |
 | `security:audit`, `security:mcp-preflight` | `pnpm audit` at moderate level and the engine's MCP scanner preflight |
 
 The capture scripts accept a leading `--` and ignore it (`PNPM_ARG_SEPARATOR`), so `pnpm run capture:og -- basics` and

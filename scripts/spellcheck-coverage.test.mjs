@@ -61,3 +61,12 @@ for (const pkg of PACKAGES_WITH_SPELLCHECK) {
         assert.ok(count > 0, `expected packages/${pkg} spellcheck to check at least one file, got ${count}`);
     });
 }
+
+// kit, create-blit386 and .claude/skills have no package spellcheck; the root spellcheck:kit script covers them.
+test('root spellcheck:kit checks a nonzero number of files', () => {
+    const { scripts } = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8'));
+    assert.ok(scripts['spellcheck:kit'], 'root package.json has no "spellcheck:kit" script');
+
+    const count = filesCheckedCount(scripts['spellcheck:kit'], REPO_ROOT);
+    assert.ok(count > 0, `expected root spellcheck:kit to check at least one file, got ${count}`);
+});

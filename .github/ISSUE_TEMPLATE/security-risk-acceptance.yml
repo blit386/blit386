@@ -1,6 +1,6 @@
 name: Security risk acceptance
 description: Request temporary acceptance of a dependency vulnerability (moderate+)
-title: '[security] Risk acceptance: '
+title: 'chore(security): accept risk for '
 labels:
   - security
 body:
@@ -8,7 +8,7 @@ body:
     attributes:
       value: |
         Use for **moderate or higher** findings that cannot be fixed before merge.
-        See [audit-exceptions.md](../../docs/security/audit-exceptions.md) and [dependency-policy.md](../../docs/security/dependency-policy.md).
+        See [audit-exceptions.md](https://github.com/blit386/blit386/blob/main/packages/blit386/docs/security/audit-exceptions.md) and [dependency-policy.md](https://github.com/blit386/blit386/blob/main/packages/blit386/docs/security/dependency-policy.md).
 
   - type: input
     id: ghsa-ids
@@ -86,9 +86,11 @@ body:
     attributes:
       label: Implementation checklist
       options:
-        - label: Row added to docs/security/audit-exceptions.md
+        - label: Row added to packages/blit386/docs/security/audit-exceptions.md
           required: true
-        - label: GHSA added to pnpm.auditConfig.ignoreGhsas in package.json
+        - label:
+            GHSA added via `--ignore <GHSA>` in the root `security:audit` script (temporary), or to `audit.ignore` in
+            pnpm-workspace.yaml (permanent)
           required: true
         - label: Calendar reminder set to remove exception by review-by date
           required: true

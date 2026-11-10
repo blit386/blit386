@@ -40,7 +40,9 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 - Prefer `overrides` in `pnpm-workspace.yaml` and direct dependency upgrades over an ignore when a patched version
   exists.
 - If `minimumReleaseAge` in [`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml) blocks a security patch, add the
-  package to `minimumReleaseAgeExclude` in the same PR as the override and document why.
+  exact vetted `name@version` to `minimumReleaseAgeExclude` in the same PR as the override, with a comment naming the
+  advisory and the date the patch ages past the gate. Never add a bare package name: it exempts every future release
+  from the gate permanently. Remove the entry once that date passes.
 - `package.json`'s `pnpm` field is not read at all under pnpm 11. Use the `--ignore <GHSA>` flag in the `security:audit`
   script for a temporary exception, or `audit.ignore` in `pnpm-workspace.yaml` for a permanent one.
 - After any exception, still run `pnpm run security:audit:prod` - production dependencies must remain clean unless

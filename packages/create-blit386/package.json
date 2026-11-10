@@ -47,7 +47,9 @@
     "build": "tsup",
     "prepack": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "knip": "cd ../.. && knip --workspace packages/create-blit386",
+    "preflight": "pnpm run typecheck && pnpm run knip && pnpm --filter @blit386/kit run build && pnpm run build && pnpm run test"
   },
   "dependencies": {
     "@blit386/kit": "workspace:*",

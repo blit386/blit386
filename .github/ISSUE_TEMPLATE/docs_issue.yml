@@ -1,6 +1,6 @@
 name: Docs issue
 description: Report a docs problem, gap, or unclear page
-title: '[docs] '
+title: 'docs: '
 labels:
   - documentation
 body:

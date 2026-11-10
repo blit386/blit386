@@ -173,13 +173,12 @@ a combined `preflight` script - run it if the package has one:
 pnpm --filter blit386 run preflight   # or the package you're working in
 ```
 
-`kit` and `create-blit386` have no combined `preflight` script (see Available Commands below) - run their individual
-`build`, `typecheck`, and `test` scripts, plus the root-level `pnpm run format:check` (neither package defines its own).
+`kit` and `create-blit386` run `typecheck`, `knip`, their builds, and `test` in their `preflight`; neither defines
+`format:check`, so run the root-level `pnpm run format:check` too.
 
 Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. The example above,
 `packages/blit386`'s `preflight`, runs:
 
-- Code formatting checks (`format:check`)
 - Linting (`lint`, with `--max-warnings 0`)
 - TypeScript type checks (`typecheck`)
 - Spell checking (`spellcheck`)
@@ -201,6 +200,8 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Spellcheck coverage tests (`test:spellcheck-coverage`)
 - Security preflight tests (`test:security-preflight`)
 
+Formatting (`format:check`) is repo-wide, so it runs once from the root instead of in each package's `preflight`.
+
 `docs:links`, `agents:check`, `sync:cursor-commands:check`, and `sync:maintainer-agents:check` are **not** part of any
 package's `preflight`. Each is a root-only script that walks (or generates against) the whole repo regardless of which
 `package.json` invoked it, so they were pulled out of the per-package chains to stop a single push running the same
@@ -212,9 +213,9 @@ alongside the rest of the root gate, after every changed package's `preflight` p
 
 These are `packages/blit386`'s scripts - the most heavily-tooled package and the one most contributions touch. Run them
 from `packages/blit386` directly, or from the repo root with `pnpm --filter blit386 run <script>`. Other packages define
-a subset of this list in their own `package.json` (`kit` and `create-blit386` have no combined `preflight`). A handful
-of shared checks (`format:check`, `format`, `docs:links`, `agents:check`, `security:audit`, `security:audit:prod`) also
-exist as root-level scripts covering files outside any single package.
+a subset of this list in their own `package.json`. A handful of shared checks (`format:check`, `format`, `docs:links`,
+`agents:check`, `security:audit`, `security:audit:prod`) also exist as root-level scripts covering files outside any
+single package.
 
 ```bash
 pnpm run build                      # Build for production
@@ -263,6 +264,8 @@ pnpm run sync:maintainer-agents       # Generate Antigravity/Codex/Gemini/Copilo
 pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
 pnpm run bump -- X.Y.Z                # Lockstep version bump across blit386, @blit386/kit, create-blit386
 pnpm run bump:check                   # Check lockstep versions and the derived engine ranges
+pnpm run spellcheck:kit               # Spellcheck packages/kit, packages/create-blit386 and .claude/skills
+pnpm run test:root                    # Every root scripts/**/*.test.mjs suite (CI quality-root and pre-push run it)
 pnpm run test:cursor-commands         # Cursor commands sync script tests
 pnpm run test:maintainer-agents       # Maintainer agents sync script tests
 ```
