@@ -52,21 +52,21 @@ import {
 } from './core/IBTDemo';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
+import * as flags from './input/buttonFlags';
 import { clientToDisplayPos } from './input/clientToDisplayPos';
 import {
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
     DEFAULT_KEYBOARD_SINGLE_PLAYER1,
     DEFAULT_KEYBOARD_SINGLE_PLAYER2,
-    FACE_BUTTON_FLAGS,
-    type FaceButtonCode,
 } from './input/defaultKeyboardMap';
+import * as gamepadMapping from './input/gamepadMapping';
 import {
     getKeyboardFaceButtonKeys,
     resetKeyboardFaceButtonMaps,
     setKeyboardFaceButtonKeys,
 } from './input/keyboardRuntimeMaps';
-import type { PointerClock } from './input/PointerInput';
+import { POINTER_BUTTON_CODES, type PointerClock } from './input/PointerInput';
 import { BarrelDistortion } from './render/effects/display/BarrelDistortion';
 import { Bloom } from './render/effects/display/Bloom';
 import { ChromaticAberration } from './render/effects/display/ChromaticAberration';
@@ -110,18 +110,6 @@ import { SimplexNoise } from './utils/SimplexNoise';
 import { Timer } from './utils/Timer';
 import { ValueNoise } from './utils/ValueNoise';
 import { Vector2i } from './utils/Vector2i';
-
-/** Pointer button bit mask (`BTN_POINTER_A..D`). */
-const POINTER_BUTTON_MASK = (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15);
-
-// Manual sync: src/input/InputTrace.ts derives the same bits from POINTER_FLAG_SHIFT (an import would cycle).
-const POINTER_FLAGS = [1 << 12, 1 << 13, 1 << 14, 1 << 15] as const;
-
-/** Face button bit mask (`BTN_UP..BTN_SELECT`). */
-const FACE_BUTTON_MASK = (1 << 12) - 1;
-
-/** Trigger button bit flags (`BTN_L2`, `BTN_R2`). Gamepad only, no keyboard fallback. */
-const TRIGGER_BUTTON_FLAGS = [1 << 16, 1 << 17] as const;
 
 /**
  * Shows a beginner-friendly runtime error in the canvas container and console.
@@ -276,7 +264,7 @@ function describeTestStateError(err: unknown): string {
  * @returns Key codes for that mapping, or `null` if unsupported.
  */
 function faceButtonKeys(button: number, player: number): readonly string[] | null {
-    if (!FACE_BUTTON_FLAGS.includes(button as FaceButtonCode)) {
+    if (!flags.FACE_BUTTON_FLAGS.includes(button as flags.FaceButtonCode)) {
         return null;
     }
 
@@ -291,27 +279,6 @@ function faceButtonKeys(button: number, player: number): readonly string[] | nul
  */
 function pointerClock(): PointerClock {
     return BTAPI.instance.isUpdating ? 'update' : 'frame';
-}
-
-/**
- * Maps a single pointer button bit flag to the pointer subsystem button code.
- *
- * @param pointerFlag - One pointer button bit from `BTN_POINTER_A..D`.
- * @returns Pointer subsystem button code (`20..23`) or `null` if not a pointer button.
- */
-function pointerFlagToPointerCode(pointerFlag: number): number | null {
-    switch (pointerFlag) {
-        case 1 << 12:
-            return 20;
-        case 1 << 13:
-            return 21;
-        case 1 << 14:
-            return 22;
-        case 1 << 15:
-            return 23;
-        default:
-            return null;
-    }
 }
 
 /** Main BLIT386 API namespace used by runtime demos. */
@@ -361,84 +328,84 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_UP: 1 << 0,
+    BTN_UP: flags.BTN_UP,
 
     /**
      * Down button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_DOWN: 1 << 1,
+    BTN_DOWN: flags.BTN_DOWN,
 
     /**
      * Left button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_LEFT: 1 << 2,
+    BTN_LEFT: flags.BTN_LEFT,
 
     /**
      * Right button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_RIGHT: 1 << 3,
+    BTN_RIGHT: flags.BTN_RIGHT,
 
     /**
      * A button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_A: 1 << 4,
+    BTN_A: flags.BTN_A,
 
     /**
      * B button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_B: 1 << 5,
+    BTN_B: flags.BTN_B,
 
     /**
      * X button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_X: 1 << 6,
+    BTN_X: flags.BTN_X,
 
     /**
      * Y button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_Y: 1 << 7,
+    BTN_Y: flags.BTN_Y,
 
     /**
      * Left shoulder button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_L: 1 << 8,
+    BTN_L: flags.BTN_L,
 
     /**
      * Right shoulder button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_R: 1 << 9,
+    BTN_R: flags.BTN_R,
 
     /**
      * Start button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_START: 1 << 10,
+    BTN_START: flags.BTN_START,
 
     /**
      * Select button bit flag.
      *
      * @since 0.1.0
      */
-    BTN_SELECT: 1 << 11,
+    BTN_SELECT: flags.BTN_SELECT,
 
     /**
      * Primary pointer button code.
@@ -447,7 +414,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_A: 1 << 12,
+    BTN_POINTER_A: flags.BTN_POINTER_A,
 
     /**
      * Secondary pointer button code.
@@ -458,7 +425,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_B: 1 << 13,
+    BTN_POINTER_B: flags.BTN_POINTER_B,
 
     /**
      * Tertiary pointer button code.
@@ -469,7 +436,7 @@ export const BT = {
      *
      * @since 0.1.0
      */
-    BTN_POINTER_C: 1 << 14,
+    BTN_POINTER_C: flags.BTN_POINTER_C,
 
     /**
      * Auxiliary pointer button code.
@@ -479,7 +446,7 @@ export const BT = {
      *
      * @since 1.0.3
      */
-    BTN_POINTER_D: 1 << 15,
+    BTN_POINTER_D: flags.BTN_POINTER_D,
 
     /**
      * Player one index.
@@ -514,56 +481,56 @@ export const BT = {
      *
      * @since 1.0.3
      */
-    AXIS_LEFT_X: 0,
+    AXIS_LEFT_X: gamepadMapping.AXIS_LEFT_X,
 
     /**
      * Left stick vertical axis index.
      *
      * @since 1.0.3
      */
-    AXIS_LEFT_Y: 1,
+    AXIS_LEFT_Y: gamepadMapping.AXIS_LEFT_Y,
 
     /**
      * Right stick horizontal axis index.
      *
      * @since 1.0.3
      */
-    AXIS_RIGHT_X: 2,
+    AXIS_RIGHT_X: gamepadMapping.AXIS_RIGHT_X,
 
     /**
      * Right stick vertical axis index.
      *
      * @since 1.0.3
      */
-    AXIS_RIGHT_Y: 3,
+    AXIS_RIGHT_Y: gamepadMapping.AXIS_RIGHT_Y,
 
     /**
      * Left trigger axis index (0.0 to 1.0).
      *
      * @since 1.0.3
      */
-    AXIS_TRIGGER_L: 4,
+    AXIS_TRIGGER_L: gamepadMapping.AXIS_TRIGGER_L,
 
     /**
      * Right trigger axis index (0.0 to 1.0).
      *
      * @since 1.0.3
      */
-    AXIS_TRIGGER_R: 5,
+    AXIS_TRIGGER_R: gamepadMapping.AXIS_TRIGGER_R,
 
     /**
      * All face buttons (A/B/X/Y).
      *
      * @since 1.0.3
      */
-    BTN_ABXY: (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7),
+    BTN_ABXY: flags.BTN_ABXY,
 
     /**
      * Both shoulder buttons.
      *
      * @since 1.0.3
      */
-    BTN_SHOULDER: (1 << 8) | (1 << 9),
+    BTN_SHOULDER: flags.BTN_SHOULDER,
 
     /**
      * Left trigger as a digital button (down at 50% pull or more). Gamepad only:
@@ -572,7 +539,7 @@ export const BT = {
      *
      * @since 1.8.0
      */
-    BTN_L2: 1 << 16,
+    BTN_L2: flags.BTN_L2,
 
     /**
      * Right trigger as a digital button (down at 50% pull or more). Gamepad only:
@@ -581,21 +548,21 @@ export const BT = {
      *
      * @since 1.8.0
      */
-    BTN_R2: 1 << 17,
+    BTN_R2: flags.BTN_R2,
 
     /**
      * Either trigger as a digital button (`BTN_L2 | BTN_R2`).
      *
      * @since 1.8.0
      */
-    BTN_TRIGGER: (1 << 16) | (1 << 17),
+    BTN_TRIGGER: flags.BTN_TRIGGER,
 
     /**
      * Any pointer button (A/B/C/D).
      *
      * @since 1.0.3
      */
-    BTN_POINTER_ANY: (1 << 12) | (1 << 13) | (1 << 14) | (1 << 15),
+    BTN_POINTER_ANY: flags.BTN_POINTER_ANY,
 
     /**
      * Default `KeyboardEvent.code` values for player index 0 (first keyboard player).
@@ -2007,25 +1974,23 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
-
-                if (pointerCode !== null && (BTAPI.instance.getPointer()?.isButtonDown(pointerCode, player) ?? false)) {
+                if (BTAPI.instance.getPointer()?.isButtonDown(pointerCode, player) ?? false) {
                     return true;
                 }
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2039,7 +2004,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2095,18 +2060,17 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
                 const pointer = BTAPI.instance.getPointer();
 
-                if (pointerCode === null || pointer === null) {
+                if (pointer === null) {
                     continue;
                 }
 
@@ -2116,10 +2080,10 @@ export const BT = {
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
         const tick = BTAPI.instance.getTicks();
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2142,7 +2106,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2187,6 +2151,7 @@ export const BT = {
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
      * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
      * @changed 1.8.1 Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one.
+     * @changed 1.8.1 A keyboard-mapped button held when the canvas or window loses focus reports a release.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -2198,28 +2163,23 @@ export const BT = {
             return false;
         }
 
-        const pointerMask = button & POINTER_BUTTON_MASK;
+        const pointerMask = button & flags.BTN_POINTER_ANY;
 
         if (pointerMask !== 0) {
-            for (const pointerFlag of POINTER_FLAGS) {
-                if ((pointerMask & pointerFlag) === 0) {
+            for (const [i, pointerCode] of POINTER_BUTTON_CODES.entries()) {
+                if ((pointerMask & (flags.POINTER_FLAGS.at(i) ?? 0)) === 0) {
                     continue;
                 }
 
-                const pointerCode = pointerFlagToPointerCode(pointerFlag);
-
-                if (
-                    pointerCode !== null &&
-                    (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player, pointerClock()) ?? false)
-                ) {
+                if (BTAPI.instance.getPointer()?.isButtonReleased(pointerCode, player, pointerClock()) ?? false) {
                     return true;
                 }
             }
         }
 
-        const faceMask = button & FACE_BUTTON_MASK;
+        const faceMask = button & flags.FACE_BUTTON_MASK;
 
-        for (const faceButton of FACE_BUTTON_FLAGS) {
+        for (const faceButton of flags.FACE_BUTTON_FLAGS) {
             if ((faceMask & faceButton) === 0) {
                 continue;
             }
@@ -2240,7 +2200,7 @@ export const BT = {
             }
         }
 
-        for (const triggerButton of TRIGGER_BUTTON_FLAGS) {
+        for (const triggerButton of flags.TRIGGER_BUTTON_FLAGS) {
             if ((button & triggerButton) === 0) {
                 continue;
             }
@@ -2284,7 +2244,7 @@ export const BT = {
             return;
         }
 
-        if (!FACE_BUTTON_FLAGS.includes(button as FaceButtonCode)) {
+        if (!flags.FACE_BUTTON_FLAGS.includes(button as flags.FaceButtonCode)) {
             return;
         }
 
@@ -2420,9 +2380,11 @@ export const BT = {
      *
      * Call from `update()`, not `render()`: the release edge clears once per fixed-update
      * tick, which always runs before that frame's `render()`, so a release read from
-     * `render()` can be intermittently missed under rapid input.
+     * `render()` can be intermittently missed under rapid input. A key held when the canvas or the
+     * window loses focus is released then, and reports this edge on the next update.
      *
      * @since 1.1.1
+     * @changed 1.8.1 A key held when the canvas or window loses focus reports a release.
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.
      */
@@ -2443,11 +2405,14 @@ export const BT = {
     },
 
     /**
-     * Text accumulated since the last fixed-update flush from filtered `beforeinput`
-     * (and Tab / Escape where `beforeinput` is unreliable). Read during `update()`;
-     * the buffer clears at the end of each fixed update step.
+     * Text typed on the focused canvas since the last fixed-update flush, built from `keydown`:
+     * printable ASCII (32-126), `\x08` for Backspace, `\x0d` for Enter, `\x09` for Tab and `\x1b` for Escape.
+     * Characters and Backspace repeat while the key is held; Enter, Tab and Escape arrive once per press. Ctrl and Alt
+     * shortcuts type nothing. Physical keyboards only: IME composition, touch keyboards and paste do not reach it.
+     * Read during `update()`; the buffer clears at the end of each fixed update step.
      *
      * @since 1.0.4
+     * @changed 1.8.1 Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives.
      * @returns Characters typed since the last fixed-update flush.
      */
     get inputString(): string {
@@ -2486,9 +2451,11 @@ export const BT = {
      *
      * Matches RetroBlit: `true` only on the tick where no key is held any more and at least one
      * was held before. Releasing one key while another stays down does not count; use
-     * {@link isKeyReleased} for per-key edges. Call from `update()`, not `render()`.
+     * {@link isKeyReleased} for per-key edges. Losing focus while keys are held counts as the release.
+     * Call from `update()`, not `render()`.
      *
      * @since 1.8.0
+     * @changed 1.8.1 Fires when the canvas or window loses focus while keys are held.
      * @returns `true` on the tick the last held key comes up.
      */
     isAnyKeyReleased: (): boolean => {

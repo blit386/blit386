@@ -9,13 +9,13 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { FACE_BUTTON_FLAGS } from './buttonFlags';
 import {
     createDefaultKeyboardRuntimeMaps,
     DEFAULT_KEYBOARD_PLAYER1,
     DEFAULT_KEYBOARD_PLAYER2,
     DEFAULT_KEYBOARD_SINGLE_PLAYER1,
     DEFAULT_KEYBOARD_SINGLE_PLAYER2,
-    FACE_BUTTON_FLAGS,
 } from './defaultKeyboardMap';
 import {
     getKeyboardFaceButtonKeys,

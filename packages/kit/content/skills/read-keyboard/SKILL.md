@@ -70,8 +70,20 @@ comes up but another is still down; use `BT.isKeyReleased(code)` for per-key rel
 ## Typed text
 
 ```js
-this.name += BT.inputString; // characters typed this frame (a getter)
+// In update(): BT.inputString holds the keys typed since the last update (a getter).
+for (const ch of BT.inputString) {
+  if (ch === '\b') {
+    this.name = this.name.slice(0, -1); // Backspace deletes the last character
+  } else if (ch === '\r') {
+    this.submitName(); // Enter
+  } else if (ch >= ' ') {
+    this.name += ch; // a printable character; Tab and Escape (below space) are skipped
+  }
+}
 ```
+
+It needs a physical keyboard (engine 1.8.1+; older engines never fill it). Touch-screen keyboards, IME input (Chinese,
+Japanese, Korean) and paste do not reach it, and only plain ASCII characters arrive.
 
 ## Remap a face button
 

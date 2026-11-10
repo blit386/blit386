@@ -19,19 +19,23 @@ import type { Rect2i } from '../utils/Rect2i';
 import type { Vector2i } from '../utils/Vector2i';
 import { Vector2i as Vector2iImpl } from '../utils/Vector2i';
 import { clientToDisplayPos } from './clientToDisplayPos';
+import { type PointerRouter, routeDown, routeExit, routeMove, routeUp } from './pointerRouting';
+import {
+    buttonBit,
+    CODE_A,
+    CODE_D,
+    copyButtons,
+    createEmptySlot,
+    heldMask,
+    prevMask,
+    resetSlot,
+    type Slot,
+} from './pointerSlot';
+
+export { POINTER_BUTTON_CODES } from './pointerSlot';
 
 /** Maximum number of simultaneously tracked pointers (slot 0 = mouse, 1-3 = touch / pen). */
 export const POINTER_SLOT_COUNT = 4;
-
-/**
- * True for mouse events. An empty `pointerType` (synthetic events from test
- * harnesses that omit it, or a browser that cannot detect the device) counts
- * as the mouse; synthetic touch / pen events must set `pointerType` explicitly.
- *
- * @param event - DOM pointer event from the canvas.
- * @returns `true` when the event should be routed to the mouse slot.
- */
-const isMousePointer = (event: PointerEvent): boolean => event.pointerType === 'mouse' || event.pointerType === '';
 
 /**
  * Which previous state a reader compares against. `'frame'` rolls over once per rendered frame ({@link
@@ -43,133 +47,6 @@ export type PointerClock = 'frame' | 'update';
 
 /** Pixels-per-line conversion for `WheelEvent.deltaMode === DOM_DELTA_LINE`. */
 const WHEEL_LINE_HEIGHT_PX = 16;
-
-/** Primary pointer button code (mouse left / touch contact). Maps to `BT.BTN_POINTER_A`. */
-const BTN_A = 20;
-
-/** Secondary pointer button code (mouse right). Maps to `BT.BTN_POINTER_B`. */
-const BTN_B = 21;
-
-/** Tertiary pointer button code (mouse middle). Maps to `BT.BTN_POINTER_C`. */
-const BTN_C = 22;
-
-/** Auxiliary pointer button code (mouse back / forward). Maps to `BT.BTN_POINTER_D`. */
-const BTN_D = 23;
-
-/** The four button codes in `BT.BTN_POINTER_A..D` order; read by the dev-only input trace. */
-export const POINTER_BUTTON_CODES = [BTN_A, BTN_B, BTN_C, BTN_D] as const;
-
-/**
- * Bit for a pointer button code in a pending-edge mask.
- *
- * @param button - One of `BTN_A..D`.
- * @returns `1 << (button - BTN_A)`, or `0` for any other code.
- */
-const buttonBit = (button: number): number => (button >= BTN_A && button <= BTN_D ? 1 << (button - BTN_A) : 0);
-
-/** Number of pointer buttons per slot (`BTN_A..D`); every per-button array has this length. */
-const BUTTON_COUNT = POINTER_BUTTON_CODES.length;
-
-/** `PointerEvent.buttons` bits that hold each pointer button down, in `BTN_A..D` order (left, right, middle, back/forward). */
-const DOM_BUTTONS_MASKS: readonly number[] = [1, 2, 4, 24];
-
-/** Maps a DOM `PointerEvent.button` (0 left, 1 middle, 2 right, 3 back, 4 forward) to its `button - BTN_A` index. */
-const MOUSE_BUTTON_INDEX: readonly number[] = [0, 2, 1, 3, 3];
-
-/**
- * Builds a fresh all-up button-state array.
- *
- * @returns Array of {@link BUTTON_COUNT} `false` values.
- */
-const createButtons = (): boolean[] => new Array<boolean>(BUTTON_COUNT).fill(false);
-
-/**
- * Internal per-slot pointer state.
- *
- * `pos`, `prevPos` and `updatePrevPos` are reused `Vector2i` instances; allocation discipline
- * keeps the event hot path free of per-call object churn.
- */
-interface Slot {
-    /** Native `pointerId` currently bound to this slot, or `null` when the slot is empty. */
-    pointerId: number | null;
-
-    /** Source pointer device kind, or `null` when the slot is empty. */
-    pointerType: 'mouse' | 'touch' | 'pen' | null;
-
-    /** True when this slot represents an active pointer (mouse hovering, touch in contact). */
-    isActive: boolean;
-
-    /** Last known position in display coordinates (mutated in place by event handlers). */
-    pos: Vector2i;
-
-    /** Snapshot of `pos` taken at `endFrame()`; used to compute the per-frame delta. */
-    prevPos: Vector2i;
-
-    /** Held state per button, indexed by `button - BTN_A` (A, B, C, D). */
-    down: boolean[];
-
-    /** Snapshot of `down` taken at `endFrame()`, used for isPressed/released edge detection. */
-    prevDown: boolean[];
-
-    /** Snapshot of `pos` taken at `endUpdate()`; the update-clock delta. */
-    updatePrevPos: Vector2i;
-
-    /** Snapshot of `down` taken at `endUpdate()`, for update-clock edges. */
-    updatePrevDown: boolean[];
-
-    /** Buttons (bit `1 << (code - BTN_A)`) that went down since `endUpdate()`, even if they are up again. */
-    updatePendingPress: number;
-
-    /** Buttons that went up since `endUpdate()`, even if they went down first. */
-    updatePendingRelease: number;
-
-    /** Buttons that went down since `endFrame()`, even if they are up again. */
-    framePendingPress: number;
-
-    /** Buttons that went up since `endFrame()`. */
-    framePendingRelease: number;
-}
-
-/**
- * Packs a slot's four held buttons into a bitmask (see {@link buttonBit}).
- *
- * @param slot - Slot to read.
- * @returns The held-button mask.
- */
-const heldMask = (slot: Slot): number => buttonsMask(slot.down);
-
-/**
- * Packs a button-state array into a bitmask (see {@link buttonBit}).
- *
- * Unrolled on purpose: this runs on every edge query. Keep it in step with {@link BUTTON_COUNT}.
- *
- * @param buttons - Four button states in `BTN_A..D` order.
- * @returns The mask.
- */
-const buttonsMask = (buttons: readonly boolean[]): number =>
-    (buttons[0] ? 1 : 0) | (buttons[1] ? 2 : 0) | (buttons[2] ? 4 : 0) | (buttons[3] ? 8 : 0);
-
-/**
- * Packs the buttons a slot held at the last rollover of one clock into a bitmask.
- *
- * @param slot - Slot to read.
- * @param isUpdate - `true` for the update clock, `false` for the frame clock.
- * @returns The previous-state mask.
- */
-const prevMask = (slot: Slot, isUpdate: boolean): number => buttonsMask(isUpdate ? slot.updatePrevDown : slot.prevDown);
-
-/**
- * Copies one button-state array into another in place.
- *
- * @param from - Source states.
- * @param to - Destination states, same length.
- */
-const copyButtons = (from: readonly boolean[], to: boolean[]): void => {
-    for (let i = 0; i < BUTTON_COUNT; i++) {
-        // eslint-disable-next-line security/detect-object-injection -- bounded loop counter over fixed four-element arrays
-        to[i] = from[i] ?? false;
-    }
-};
 
 /**
  * DOM-backed pointer input tracker.
@@ -274,12 +151,19 @@ export class PointerInput {
      * references that {@link attach} added.
      */
     constructor() {
-        this.slots = [this.createEmptySlot(), this.createEmptySlot(), this.createEmptySlot(), this.createEmptySlot()];
+        this.slots = [createEmptySlot(), createEmptySlot(), createEmptySlot(), createEmptySlot()];
 
-        this.onMove = (event) => this.handleMove(event);
-        this.onDown = (event) => this.handleDown(event);
-        this.onUp = (event) => this.handleUp(event);
-        this.onPointerExit = (event) => this.handlePointerExit(event);
+        const router: PointerRouter = {
+            slots: this.slots,
+            idToSlot: this.idToSlot,
+            getCanvas: () => this.canvas,
+            place: (slot, clientX, clientY) => this.updateSlotPosition(slot, clientX, clientY),
+        };
+
+        this.onMove = (event) => routeMove(router, event);
+        this.onDown = (event) => routeDown(router, event);
+        this.onUp = (event) => routeUp(router, event);
+        this.onPointerExit = (event) => routeExit(router, event);
         this.onWheel = (event) => this.handleWheel(event);
         this.onContextMenu = (event) => event.preventDefault();
         this.onWindowResize = () => {
@@ -299,7 +183,7 @@ export class PointerInput {
      * - `canvas.style.touchAction` gated by the same scroll-capture state (see
      *   {@link updateTouchAction}) so the host page keeps vertical touch scroll
      *   over the canvas except while scroll capture is active
-     * - `contextmenu.preventDefault()` so right-click feeds `BTN_B`
+     * - `contextmenu.preventDefault()` so right-click feeds `CODE_B`
      *   instead of popping the OS context menu
      *
      * Also installs the {@link cachedRect} invalidation sources: a
@@ -412,7 +296,7 @@ export class PointerInput {
         this.hasUpdatedThisFrame = false;
 
         for (const slot of this.slots) {
-            this.resetSlot(slot);
+            resetSlot(slot);
         }
     }
 
@@ -614,7 +498,7 @@ export class PointerInput {
      * Reset to zero by `endFrame()` or `endUpdate()` respectively. Aggregates `WheelEvent.deltaY` across
      * all wheel events received since the last reset, normalizing
      * `deltaMode === DOM_DELTA_LINE` (1 line = 16 px) and `DOM_DELTA_PAGE`
-     * (1 page = `window.innerHeight` px).
+     * (1 page = the canvas window's `innerHeight` px).
      *
      * @param clock - Which accumulator to read.
      * @returns Vertical scroll delta in pixels.
@@ -672,14 +556,14 @@ export class PointerInput {
     /**
      * Reports whether the given pointer button is held in slot `slot`.
      *
-     * For slot 0 (mouse): `BTN_A` is left, `B` is right, `C` is middle,
+     * For slot 0 (mouse): `CODE_A` is left, `B` is right, `C` is middle,
      * `D` is back / forward (matches RetroBlit canonical, not DOM
      * `PointerEvent.button` index order).
      *
-     * For slots 1-3 (touch / pen): only `BTN_A` is ever true while the
+     * For slots 1-3 (touch / pen): only `CODE_A` is ever true while the
      * contact is down; `B`, `C`, `D` always return `false`.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @returns `true` while the button remains pressed and the slot is active.
      */
@@ -690,7 +574,7 @@ export class PointerInput {
             return false;
         }
 
-        return button >= BTN_A && button <= BTN_D && s.down[button - BTN_A] === true;
+        return button >= CODE_A && button <= CODE_D && s.down[button - CODE_A] === true;
     }
 
     /**
@@ -698,7 +582,7 @@ export class PointerInput {
      * Unlike {@link isButtonDown}, does not require the slot to be active, so press
      * edges remain visible after deactivation.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @param clock - Which previous state to compare against.
      * @returns `true` if the button went down since the last frame (`'frame'`) or update (`'update'`).
@@ -725,7 +609,7 @@ export class PointerInput {
      * Reports whether the given pointer button went up since the last frame or update (see `clock`).
      * Unlike {@link isButtonDown}, does not require the slot to be active.
      *
-     * @param button - One of `BTN_A..D`.
+     * @param button - One of `CODE_A..D`.
      * @param slot - Pointer slot index.
      * @param clock - Which previous state to compare against.
      * @returns `true` if the button went up since the last frame (`'frame'`) or update (`'update'`).
@@ -770,194 +654,6 @@ export class PointerInput {
     }
 
     /**
-     * Routes a `pointermove` event: updates slot 0 for mouse, or the slot
-     * already bound to this `pointerId` for touch / pen. Drops touch / pen
-     * moves with no slot binding (allocation only happens on `pointerdown`).
-     *
-     * @param event - DOM pointer event from the canvas.
-     */
-    private handleMove(event: PointerEvent): void {
-        if (isMousePointer(event)) {
-            const slot = this.slots[0];
-            const isPreviouslyActive = slot.isActive;
-
-            slot.pointerId = event.pointerId;
-            slot.pointerType = 'mouse';
-            slot.isActive = true;
-
-            this.updateSlotPosition(slot, event.clientX, event.clientY);
-
-            // A release outside the page never reaches pointerup, and pointerleave clears every button;
-            // `buttons` is the browser's truth, so rebuild all four from it (1 left, 2 right, 4 middle, 8/16 back/forward).
-            const heldBefore = heldMask(slot);
-
-            for (let i = 0; i < BUTTON_COUNT; i++) {
-                // eslint-disable-next-line security/detect-object-injection -- bounded loop counter over fixed-length arrays
-                slot.down[i] = (event.buttons & (DOM_BUTTONS_MASKS[i] ?? 0)) !== 0;
-            }
-
-            this.markEdges(slot, heldBefore);
-
-            // Activation: sync prevPos to the entry pos so the first frame's
-            // delta is zero rather than a jump from (0, 0) (or wherever the
-            // slot was previously zeroed) to the entry point.
-            if (!isPreviouslyActive) {
-                slot.prevPos.copyFrom(slot.pos);
-                slot.updatePrevPos.copyFrom(slot.pos);
-            }
-
-            return;
-        }
-
-        const slot = this.lookupSlotById(event.pointerId);
-
-        if (slot === null) {
-            return;
-        }
-
-        this.updateSlotPosition(slot, event.clientX, event.clientY);
-    }
-
-    /**
-     * Routes a `pointerdown` event. Mouse events claim slot 0 and set the
-     * mapped button. Touch / pen events allocate the first free slot in
-     * 1..3 and set `BTN_A`; events that arrive while all touch
-     * slots are full are dropped silently.
-     *
-     * @param event - DOM pointer event from the canvas.
-     */
-    private handleDown(event: PointerEvent): void {
-        if (isMousePointer(event)) {
-            const slot = this.slots[0];
-            const isPreviouslyActive = slot.isActive;
-
-            slot.pointerId = event.pointerId;
-            slot.pointerType = 'mouse';
-            slot.isActive = true;
-
-            this.updateSlotPosition(slot, event.clientX, event.clientY);
-
-            const heldBefore = heldMask(slot);
-
-            this.setMouseButton(slot, event.button, true);
-            this.markEdges(slot, heldBefore);
-
-            // Activation: sync prevPos so the first delta is zero. Without
-            // this, the very first read after the mouse enters would see a
-            // delta from (0, 0) to the entry point.
-            if (!isPreviouslyActive) {
-                slot.prevPos.copyFrom(slot.pos);
-                slot.updatePrevPos.copyFrom(slot.pos);
-            }
-
-            return;
-        }
-
-        // Touch or pen: route to the first free slot in 1..POINTER_SLOT_COUNT - 1.
-        if (this.idToSlot.has(event.pointerId)) {
-            return;
-        }
-
-        const slotIndex = this.allocateTouchSlot();
-
-        if (slotIndex === -1) {
-            // All touch slots are full; drop this event silently.
-            return;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection -- slotIndex returned by allocateTouchSlot is bounded to [1, POINTER_SLOT_COUNT)
-        const slot = this.slots[slotIndex];
-
-        if (slot === undefined) {
-            return;
-        }
-
-        slot.pointerId = event.pointerId;
-        slot.pointerType = event.pointerType === 'pen' ? 'pen' : 'touch';
-        slot.isActive = true;
-        slot.down[0] = true;
-        this.markEdges(slot, 0);
-
-        this.updateSlotPosition(slot, event.clientX, event.clientY);
-
-        // Touch / pen always allocates a fresh slot; sync prevPos so the
-        // first delta is zero. Without this, prevPos still holds the freed
-        // position from the previous occupant of this slot.
-        slot.prevPos.copyFrom(slot.pos);
-        slot.updatePrevPos.copyFrom(slot.pos);
-
-        this.idToSlot.set(event.pointerId, slotIndex);
-
-        // Capture so off-canvas drags keep delivering events to this canvas.
-        this.canvas?.setPointerCapture(event.pointerId);
-    }
-
-    /**
-     * Routes a `pointerup` event. Mouse events clear the matching button on
-     * slot 0 but leave the slot valid. Touch / pen events free their slot
-     * completely so a subsequent contact can reuse it.
-     *
-     * @param event - DOM pointer event from the canvas.
-     */
-    private handleUp(event: PointerEvent): void {
-        if (isMousePointer(event)) {
-            const slot = this.slots[0];
-
-            this.updateSlotPosition(slot, event.clientX, event.clientY);
-
-            const heldBefore = heldMask(slot);
-
-            this.setMouseButton(slot, event.button, false);
-
-            // Back and forward share the D button; keep it down while the other one is still held.
-            if (event.button === 3 || event.button === 4) {
-                slot.down[3] = (event.buttons & 24) !== 0;
-            }
-
-            this.markEdges(slot, heldBefore);
-
-            return;
-        }
-
-        const slotIndex = this.idToSlot.get(event.pointerId);
-
-        if (slotIndex === undefined) {
-            return;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection -- slotIndex resolved from idToSlot, always in [0, POINTER_SLOT_COUNT)
-        const slot = this.slots[slotIndex];
-
-        if (slot !== undefined) {
-            this.updateSlotPosition(slot, event.clientX, event.clientY);
-        }
-
-        this.freeSlot(slotIndex);
-    }
-
-    /**
-     * Routes a `pointercancel` (browser-initiated abort) or `pointerleave` (pointer left the canvas bounds) event.
-     * For mouse: deactivates slot 0 and clears all buttons. For touch / pen: frees the slot.
-     *
-     * @param event - DOM pointer event from the canvas.
-     */
-    private handlePointerExit(event: PointerEvent): void {
-        if (isMousePointer(event)) {
-            this.deactivateMouseSlot();
-
-            return;
-        }
-
-        const slotIndex = this.idToSlot.get(event.pointerId);
-
-        if (slotIndex === undefined) {
-            return;
-        }
-
-        this.freeSlot(slotIndex);
-    }
-
-    /**
      * Routes a `wheel` event: when scroll capture is active, normalizes `deltaY`
      * to pixels (line and page delta modes are converted), accumulates into
      * `scrollDeltaY` for the current frame, and calls `preventDefault` so the
@@ -983,7 +679,7 @@ export class PointerInput {
             pixels *= WHEEL_LINE_HEIGHT_PX;
         } else if (event.deltaMode === 2) {
             // DOM_DELTA_PAGE
-            pixels *= window.innerHeight;
+            pixels *= (this.canvasWindow ?? window).innerHeight;
         }
 
         this.scrollDeltaY += pixels;
@@ -1005,169 +701,6 @@ export class PointerInput {
         }
 
         this.canvas.style.touchAction = this.isCapturingScroll || this.isScrollCaptureForced ? 'none' : 'pan-y';
-    }
-
-    /**
-     * Builds a fresh `Slot` with newly allocated `Vector2i` instances
-     * so each slot owns its own position storage.
-     *
-     * @returns Slot in the empty / inactive state.
-     */
-    private createEmptySlot(): Slot {
-        return {
-            pointerId: null,
-            pointerType: null,
-            isActive: false,
-            pos: new Vector2iImpl(0, 0),
-            prevPos: new Vector2iImpl(0, 0),
-            down: createButtons(),
-            prevDown: createButtons(),
-            updatePrevPos: new Vector2iImpl(0, 0),
-            updatePrevDown: createButtons(),
-            updatePendingPress: 0,
-            updatePendingRelease: 0,
-            framePendingPress: 0,
-            framePendingRelease: 0,
-        };
-    }
-
-    /**
-     * Returns a slot to the empty / inactive state without reallocating its
-     * `Vector2i` storage.
-     *
-     * @param slot - Slot to reset in place.
-     */
-    private resetSlot(slot: Slot): void {
-        slot.pointerId = null;
-        slot.pointerType = null;
-        slot.isActive = false;
-        slot.pos.set(0, 0);
-        slot.prevPos.set(0, 0);
-        slot.down.fill(false);
-        slot.prevDown.fill(false);
-        slot.updatePrevPos.set(0, 0);
-        slot.updatePrevDown.fill(false);
-        slot.updatePendingPress = 0;
-        slot.updatePendingRelease = 0;
-        slot.framePendingPress = 0;
-        slot.framePendingRelease = 0;
-    }
-
-    /**
-     * Records the press and release edges between a slot's held buttons `before` a DOM event and now, on both clocks.
-     * The pending bits outlive the held state, so a tap that starts and ends between two rollovers still reports one
-     * press and one release, and they survive {@link freeSlot}.
-     *
-     * @param slot - Slot the event changed.
-     * @param before - {@link heldMask} taken before the event changed it.
-     */
-    private markEdges(slot: Slot, before: number): void {
-        const after = heldMask(slot);
-        const pressed = after & ~before;
-        const released = before & ~after;
-
-        slot.updatePendingPress |= pressed;
-        slot.framePendingPress |= pressed;
-        slot.updatePendingRelease |= released;
-        slot.framePendingRelease |= released;
-    }
-
-    /**
-     * Finds the first free touch / pen slot in `[1, POINTER_SLOT_COUNT)`.
-     *
-     * @returns Index of the free slot, or `-1` when slots 1..3 are all in use.
-     */
-    private allocateTouchSlot(): number {
-        for (let i = 1; i < POINTER_SLOT_COUNT; i++) {
-            // eslint-disable-next-line security/detect-object-injection -- bounded loop counter
-            if (this.slots[i]?.pointerId === null) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
-     * Marks a touch / pen slot inactive: clears pointerId, `isActive`, button
-     * state, and the pointerId -> slot mapping. Called on `pointerup`,
-     * `pointercancel`, and `pointerleave` for touch / pen events.
-     *
-     * Deliberately preserves `pos`, `prevPos` and `updatePrevPos` so the
-     * release-tick caller can still read the final position via `getPos` and
-     * the release velocity via `getDelta`. The next pointerdown that reuses
-     * this slot resyncs both so the first delta starts at zero.
-     *
-     * @param slotIndex - Index of the slot to free.
-     */
-    private freeSlot(slotIndex: number): void {
-        // eslint-disable-next-line security/detect-object-injection -- slotIndex resolved from idToSlot, always in [0, POINTER_SLOT_COUNT)
-        const slot = this.slots[slotIndex];
-
-        if (slot === undefined) {
-            return;
-        }
-
-        if (slot.pointerId !== null) {
-            if (this.canvas?.hasPointerCapture(slot.pointerId)) {
-                this.canvas.releasePointerCapture(slot.pointerId);
-            }
-
-            this.idToSlot.delete(slot.pointerId);
-        }
-
-        const heldBefore = heldMask(slot);
-
-        slot.pointerId = null;
-        slot.pointerType = null;
-        slot.isActive = false;
-        slot.down.fill(false);
-        this.markEdges(slot, heldBefore);
-    }
-
-    /**
-     * Deactivates slot 0 (mouse) on `pointerleave` / `pointercancel`.
-     *
-     * Clears all four buttons and sets `isActive = false`, but leaves `pos`
-     * intact so a subsequent `pointermove` can pick up where it left off.
-     */
-    private deactivateMouseSlot(): void {
-        const slot = this.slots[0];
-
-        if (slot.pointerId !== null) {
-            this.idToSlot.delete(slot.pointerId);
-        }
-
-        const heldBefore = heldMask(slot);
-
-        slot.pointerId = null;
-        slot.pointerType = null;
-        slot.isActive = false;
-        slot.down.fill(false);
-        this.markEdges(slot, heldBefore);
-    }
-
-    /**
-     * Maps a DOM `PointerEvent.button` value to the corresponding pointer
-     * button on slot 0 and sets it to `isPressed`.
-     *
-     * The mapping intentionally follows RetroBlit canonical (A=left, B=right,
-     * C=middle), not the DOM index order (where 1 is middle and 2 is right).
-     * Buttons 3 and 4 (back / forward) both map to `D`. Other values are
-     * silently ignored.
-     *
-     * @param slot - Mouse slot to update (always slot 0).
-     * @param button - DOM `PointerEvent.button` value.
-     * @param isPressed - `true` to set the button down, `false` to release it.
-     */
-    private setMouseButton(slot: Slot, button: number, isPressed: boolean): void {
-        // eslint-disable-next-line security/detect-object-injection -- DOM button code only reads a fixed lookup table; misses are undefined
-        const index = MOUSE_BUTTON_INDEX[button];
-
-        if (index !== undefined) {
-            // eslint-disable-next-line security/detect-object-injection -- index comes from MOUSE_BUTTON_INDEX, always in [0, 3]
-            slot.down[index] = isPressed;
-        }
     }
 
     /**
@@ -1237,26 +770,6 @@ export class PointerInput {
         }
 
         // eslint-disable-next-line security/detect-object-injection -- bounds checked above
-        return this.slots[index] ?? null;
-    }
-
-    /**
-     * Looks up the slot bound to a native `pointerId`, or `null` when none is bound.
-     *
-     * Resolves the `idToSlot` map and the indexed slot lookup in one
-     * helper so event handlers can early-return without repeating the guards.
-     *
-     * @param pointerId - Native `pointerId` from a DOM pointer event.
-     * @returns Slot bound to this `pointerId`, or `null` when no slot is bound.
-     */
-    private lookupSlotById(pointerId: number): Slot | null {
-        const index = this.idToSlot.get(pointerId);
-
-        if (index === undefined) {
-            return null;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection -- index originated from idToSlot, always in [0, POINTER_SLOT_COUNT)
         return this.slots[index] ?? null;
     }
 }

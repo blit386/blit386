@@ -1,7 +1,9 @@
 /**
  * Keyboard input: DOM `code` tracking, edge detection, optional tick-based repeat,
- * and text accumulation via `beforeinput` (`inputString`).
+ * and text accumulation from `keydown` `event.key` (`inputString`).
  */
+
+import { isRepeatTick } from './repeatTick';
 
 /**
  * `KeyboardEvent.code` values that scroll the host page by default.
@@ -20,6 +22,12 @@ const SCROLL_CODES: ReadonlySet<string> = new Set([
     'End',
 ]);
 
+/** Lowest code point {@link KeyboardInput.getInputString} accepts as typed text (space). */
+const FIRST_PRINTABLE = 32;
+
+/** Highest code point {@link KeyboardInput.getInputString} accepts as typed text (`~`). */
+const LAST_PRINTABLE = 126;
+
 /** Options supplied when attaching to the canvas. */
 export interface KeyboardAttachOptions {
     /**
@@ -32,7 +40,7 @@ export interface KeyboardAttachOptions {
 /**
  * Tracks held keys using `KeyboardEvent.code`, snapshots once per frame for
  * edge detection (aligned with fixed-update timing via {@link endUpdate}), and
- * accumulates filtered text from `beforeinput`.
+ * accumulates filtered text from `keydown` (a canvas never receives `beforeinput`).
  */
 export class KeyboardInput {
     /** Keys currently held (`keydown`, cleared on `keyup` / blur). */
@@ -74,8 +82,6 @@ export class KeyboardInput {
 
     private readonly onKeyUp: (event: KeyboardEvent) => void;
 
-    private readonly onBeforeInput: (event: InputEvent) => void;
-
     private readonly onBlur: () => void;
 
     /**
@@ -84,13 +90,13 @@ export class KeyboardInput {
     constructor() {
         this.onKeyDown = (event) => this.handleKeyDown(event);
         this.onKeyUp = (event) => this.handleKeyUp(event);
-        this.onBeforeInput = (event) => this.handleBeforeInput(event);
-        this.onBlur = () => this.clearAllState();
+        this.onBlur = () => this.releaseAll();
     }
 
     /**
      * Attaches listeners to the canvas and window. Also listens for `blur`
-     * on the canvas and the `window` to clear held keys and the text buffer when focus leaves either.
+     * on the canvas and the `window` to release held keys (with a release edge) when focus leaves either; typed text
+     * stays buffered for the next update.
      *
      * @param canvas - Canvas that receives keyboard events when focused.
      * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
@@ -104,7 +110,6 @@ export class KeyboardInput {
         canvas.addEventListener('keydown', this.onKeyDown);
         canvas.addEventListener('keyup', this.onKeyUp);
         canvas.addEventListener('blur', this.onBlur);
-        canvas.addEventListener('beforeinput', this.onBeforeInput as EventListener);
 
         if (typeof globalThis.window !== 'undefined') {
             globalThis.window.addEventListener('blur', this.onBlur);
@@ -121,7 +126,6 @@ export class KeyboardInput {
             canvas.removeEventListener('keydown', this.onKeyDown);
             canvas.removeEventListener('keyup', this.onKeyUp);
             canvas.removeEventListener('blur', this.onBlur);
-            canvas.removeEventListener('beforeinput', this.onBeforeInput as EventListener);
         }
 
         if (typeof globalThis.window !== 'undefined') {
@@ -199,13 +203,7 @@ export class KeyboardInput {
 
         const first = this.firstPressTick.get(code);
 
-        if (first === undefined) {
-            return false;
-        }
-
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -281,13 +279,11 @@ export class KeyboardInput {
             }
         }
 
-        if (repeatRate === undefined || repeatRate <= 0 || first === undefined) {
+        if (repeatRate === undefined || repeatRate <= 0) {
             return false;
         }
 
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -305,8 +301,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Text accumulated since the last {@link endUpdate} from `beforeinput`.
-     * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter.
+     * Text accumulated since the last {@link endUpdate} from `keydown`.
+     * Accepts printable ASCII (32-126) plus Tab, Escape, Backspace, and Enter; IME composition is not seen.
      *
      * @returns Buffered characters for the current frame.
      */
@@ -321,10 +317,6 @@ export class KeyboardInput {
      * @returns `true` if any listed code is held.
      */
     public isButtonDown(codes: readonly string[]): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         for (const code of codes) {
             if (this.held.has(code)) {
                 return true;
@@ -344,10 +336,6 @@ export class KeyboardInput {
      * @returns `true` on the initial edge or on repeat ticks when configured.
      */
     public isButtonPressed(codes: readonly string[], repeatRate: number | undefined, currentTick: number): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         const isPrevDown = codes.some((c) => this.prevHeld.has(c));
 
         // A second mapped key pressed while another was already held at the last update is not a new edge.
@@ -370,13 +358,7 @@ export class KeyboardInput {
 
         const first = this.getOrMinFirstPressTick(codes);
 
-        if (first === undefined) {
-            return false;
-        }
-
-        const dt = currentTick - first;
-
-        return dt > 0 && dt % repeatRate === 0;
+        return isRepeatTick(first, repeatRate, currentTick);
     }
 
     /**
@@ -386,10 +368,6 @@ export class KeyboardInput {
      * @returns `true` when the logical button transitions from down to up.
      */
     public isButtonReleased(codes: readonly string[]): boolean {
-        if (codes.length === 0) {
-            return false;
-        }
-
         // Another mapped key still held means the logical button never went up.
         if (this.isButtonDown(codes)) {
             return false;
@@ -422,7 +400,22 @@ export class KeyboardInput {
         return min;
     }
 
-    /** Clears held keys, repeat anchors, and text (canvas / window blur, detach). */
+    /**
+     * Releases every held key when focus leaves (canvas / window blur): each becomes a release edge for the next
+     * update, since no `keyup` will arrive for it. `prevHeld` and `pendingPress` are kept, so those edges read as
+     * down-to-up and a key pressed since the last update still reports its press. Typed text is kept too: Tab's
+     * default action moves focus off the canvas, and its `\x09` must still arrive.
+     */
+    private releaseAll(): void {
+        for (const code of this.held) {
+            this.pendingRelease.add(code);
+        }
+
+        this.held.clear();
+        this.firstPressTick.clear();
+    }
+
+    /** Clears held keys, edges, repeat anchors, and text (detach). */
     private clearAllState(): void {
         this.held.clear();
         this.prevHeld.clear();
@@ -433,7 +426,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Applies first keydown for a code and queues Tab / Escape for {@link getInputString}.
+     * Queues typed text for {@link getInputString} (OS key repeats included), then applies the first keydown for a
+     * code and queues Tab / Escape.
      *
      * @param event - DOM keydown event.
      */
@@ -451,6 +445,8 @@ export class KeyboardInput {
             return;
         }
 
+        this.appendText(event);
+
         if (this.held.has(code)) {
             return;
         }
@@ -462,7 +458,7 @@ export class KeyboardInput {
 
         this.firstPressTick.set(code, tick);
 
-        // `beforeinput` does not reliably fire for Tab / Escape; mirror text-input spec.
+        // Tab / Escape are queued once per press, not on OS key repeat.
         if (code === 'Tab') {
             this.inputBuffer += '\x09';
         } else if (code === 'Escape') {
@@ -487,42 +483,56 @@ export class KeyboardInput {
     }
 
     /**
-     * Filters `beforeinput` into {@link getInputString}.
+     * Appends the character a keydown types, or BS / CR for Backspace / Enter (CR once per press). Shortcuts type
+     * nothing (see {@link isShortcut}; Meta ones never get here).
      *
-     * @param event - DOM beforeinput event.
+     * @param event - DOM keydown event.
      */
-    private handleBeforeInput(event: InputEvent): void {
-        const inputType = event.inputType;
+    private appendText(event: KeyboardEvent): void {
+        const key: unknown = event.key;
 
-        if (inputType === 'insertText' || inputType === 'insertCompositionText') {
-            const data = event.data;
-
-            if (data === null || data === undefined) {
-                return;
-            }
-
-            for (let i = 0; i < data.length; i++) {
-                const cp = data.charCodeAt(i);
-
-                // Printable ASCII 32-127, plus Tab (9) and ESC (27) when present as text.
-                if ((cp >= 32 && cp <= 127) || cp === 9 || cp === 27) {
-                    this.inputBuffer += String.fromCharCode(cp);
-                }
-            }
-
+        // Synthetic keydowns (Chrome autofill, hand-built test events) can arrive without a `key`.
+        if (typeof key !== 'string') {
             return;
         }
 
-        if (inputType === 'deleteContentBackward') {
+        if (key === 'Backspace') {
             this.inputBuffer += '\x08';
+        } else if (key === 'Enter') {
+            // Once per press, like Tab: Enter submits, and a repeat would confirm the next screen too.
+            if (!event.repeat) {
+                this.inputBuffer += '\x0d';
+            }
+        } else if (key.length === 1 && !isShortcut(event, key)) {
+            const cp = key.charCodeAt(0);
 
-            return;
-        }
-
-        if (inputType === 'insertLineBreak' || inputType === 'insertParagraph') {
-            this.inputBuffer += '\x0d';
-
-            return;
+            if (cp >= FIRST_PRINTABLE && cp <= LAST_PRINTABLE) {
+                this.inputBuffer += key;
+            }
         }
     }
 }
+
+/**
+ * Whether a one-character keydown is a shortcut rather than typing.
+ *
+ * - Ctrl alone is a shortcut. Ctrl+Alt types: Windows reports AltGr (`@`, `{` on many layouts) that way.
+ * - Alt alone is a shortcut when the key still reports its own character (Alt+A gives `a` on Windows and Linux). When Alt
+ *   changes the character it is a macOS Option composition (Option+L gives `@` on a German layout) and types.
+ *
+ * @param event - DOM keydown event.
+ * @param key - `event.key`, already known to be one character.
+ * @returns `true` when the key should not reach {@link KeyboardInput.getInputString}.
+ */
+const isShortcut = (event: KeyboardEvent, key: string): boolean => {
+    if (event.ctrlKey) {
+        return !event.altKey;
+    }
+
+    if (!event.altKey) {
+        return false;
+    }
+
+    // shortcut: compares with the key's US position, so Alt+A on a French layout (code KeyQ) still types.
+    return event.code === `Key${key.toUpperCase()}` || event.code === `Digit${key}`;
+};

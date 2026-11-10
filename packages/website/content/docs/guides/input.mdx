@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-11-07T07:48:04+01:00"
+lastModified: "2026-11-09T20:56:11+01:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -167,8 +167,10 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
 example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `KeyboardEvent.code` (physical-key semantics),
 not `event.key` layout text. Held keys are released when the canvas or the window loses focus, so a key held while focus
-moves elsewhere does not stay down. A key pressed while Cmd (the Meta key, also the Windows key elsewhere) is held, such
-as Cmd+A or Cmd+Z, is not reported as a game key, because macOS browsers never send its release.
+moves elsewhere does not stay down, and the next `update()` sees its release edge (`BT.isKeyReleased`, `BT.isReleased`,
+`BT.isAnyKeyReleased`). A press that landed since the last `update()` still reports its press edge too. A key pressed
+while Cmd (the Meta key, also the Windows key elsewhere) is held, such as Cmd+A or Cmd+Z, is not reported as a game key,
+because macOS browsers never send its release.
 
 ### Raw key queries
 
@@ -244,7 +246,7 @@ if (BT.isAnyButtonPressed(0)) {
   the cadence is counted from the earliest key still held.
 - `isAnyKeyReleased` and `isAnyButtonReleased` mean "everything is up now". Letting go of one key while another stays
   down does not fire them; use `BT.isKeyReleased(code)` for per-key release edges. A gamepad disconnecting while buttons
-  were held counts as the release.
+  were held counts as the release, and so does the canvas or window losing focus while keys were held.
 - `isAnyButton*` covers the `BTN_UP` to `BTN_SELECT` buttons of that player's gamepad, and nothing else: no sticks, no
   triggers (neither the analog pull nor `BTN_L2` / `BTN_R2`), no keyboard, no pointers. Use `isAnyKey*` for the
   keyboard. `player` defaults to `0`.
@@ -447,11 +449,11 @@ Player constants:
 
 <Callout type="warn" title="The default dead zone is large">
 
-Default stick dead zone is `0.75` (`GamepadInput.DEFAULT_GAMEPAD_DEAD_ZONE` internally; not a public export). Filtering
-is per axis, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the remaining range is
-re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must exceed ~75% deflection
-before movement registers - much larger than typical `0.1`-`0.2` dead zones. There is no public `BT` API to change this
-value today.
+Default stick dead zone is `0.75` (`DEFAULT_GAMEPAD_DEAD_ZONE` in `input/gamepadMapping.ts` internally; not a public
+export). Filtering is per axis, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the
+remaining range is re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must
+exceed ~75% deflection before movement registers - much larger than typical `0.1`-`0.2` dead zones. There is no public
+`BT` API to change this value today.
 
 </Callout>
 
@@ -459,9 +461,23 @@ value today.
 
 <Since symbol="BT.inputString" />
 
-`BT.inputString` returns characters accumulated from filtered `beforeinput` (and Tab / Escape where needed). The buffer
-clears at the end of each fixed update step (read it during `update()`). See public JSDoc on `BT.inputString` for
-details.
+`BT.inputString` returns the text typed on the focused canvas since the last fixed update step, read from each
+`keydown`. The buffer clears at the end of every step, so read it during `update()` and keep what you need.
+
+- Printable ASCII (space to `~`) arrives as itself, with Shift and AltGr applied by the keyboard layout.
+- Backspace arrives as `\x08` and repeats while held, like the printable keys. Enter arrives as `\x0d`, once per press,
+  so holding it cannot submit twice.
+- Tab arrives as `\x09` and Escape as `\x1b`, once per press. Tab still arrives when the browser then moves focus off
+  the canvas.
+- Ctrl and Cmd shortcuts type nothing, and neither do Alt shortcuts such as Alt+A. Alt that changes the character (macOS
+  Option+L for `@` on a German layout) still types.
+
+<Callout type="warn" title="Physical keyboards only">
+
+Text entry needs a physical keyboard. IME composition (Chinese, Japanese, Korean input), touch-screen keyboards and
+paste do not reach `BT.inputString`, and characters outside ASCII are dropped.
+
+</Callout>
 
 ## Scroll delta
 

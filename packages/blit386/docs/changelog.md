@@ -96,6 +96,18 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
+  elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
+  each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl
+  and Alt shortcuts type nothing. Text typed just before the canvas loses focus, such as the Tab that moves focus away,
+  still arrives. IME composition, touch-screen keyboards and paste are not supported. See
+  [Text input buffer](guide-input.md#text-input-buffer).
+- A key held when the canvas or the window loses focus now reports a release. Blur used to drop held keys without an
+  edge, so `BT.isKeyReleased`, `BT.isReleased` and `BT.isAnyKeyReleased` never fired and a release-to-fire or
+  charge-and-release game stayed stuck after an alt-tab mid-hold. The release reaches the next `update()`, the same way
+  a gamepad disconnect already did. See [Keyboard](guide-input.md#keyboard).
+- Pointer input: a page-mode wheel (`deltaMode` 2) over a canvas inside an iframe scales by that iframe's height, not
+  the top window's, and a touch whose pointer the browser already ended no longer throws from the `pointerdown` handler.
 - A `bootstrap()` `onSuccess` callback that throws no longer tears down a game that already started. The error used to
   reach bootstrap's own error handler, which replaced the canvas with an "Unexpected Error" panel, called `onError`, and
   resolved `false` while the game loop kept running and `BT.isReady` was `true`. It is now logged to the console, and

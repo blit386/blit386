@@ -226,13 +226,7 @@ describe('KeyboardInput', () => {
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertText',
-                data: 'z',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'z', bubbles: true }));
 
         expect(kb.getInputString()).toBe('z');
 
@@ -258,19 +252,14 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
-    it('accumulates insertText into input string and clears on endFrame', () => {
+    it('accumulates typed keys into input string and clears on endFrame', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertText',
-                data: 'Hi',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH', key: 'H', shiftKey: true, bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', bubbles: true }));
 
         expect(kb.getInputString()).toBe('Hi');
 
@@ -279,110 +268,80 @@ describe('KeyboardInput', () => {
         expect(kb.getInputString()).toBe('');
     });
 
-    it('maps insertLineBreak to CR', () => {
+    it('maps Enter to CR', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertLineBreak',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
 
         expect(kb.getInputString()).toBe('\x0d');
 
         kb.detach();
     });
 
-    it('maps insertParagraph to CR', () => {
+    it('maps NumpadEnter to CR', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertParagraph',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'NumpadEnter', key: 'Enter', bubbles: true }));
 
         expect(kb.getInputString()).toBe('\x0d');
 
         kb.detach();
     });
 
-    it('insertCompositionText accumulates printable ASCII', () => {
+    it('IME composition keys type nothing (IME is not supported)', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertCompositionText',
-                data: 'Z',
-                bubbles: true,
-            }),
-        );
-
-        expect(kb.getInputString()).toBe('Z');
-
-        kb.detach();
-    });
-
-    it('ignores insertText when data is missing', () => {
-        const canvas = createCanvas();
-        const kb = new KeyboardInput();
-
-        kb.attach(canvas, { getTicks: () => tick });
-
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertText',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'Process', bubbles: true }));
 
         expect(kb.getInputString()).toBe('');
 
         kb.detach();
     });
 
-    it('filters insertText to allowed code units only', () => {
+    it('ignores keys that carry no character', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'insertText',
-                data: '\x07',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Quote', key: 'Dead', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'Unidentified', bubbles: true }));
 
         expect(kb.getInputString()).toBe('');
 
         kb.detach();
     });
 
-    it('maps deleteContentBackward to backspace in buffer', () => {
+    it('filters typed characters to printable ASCII 32-126', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
 
         kb.attach(canvas, { getTicks: () => tick });
 
-        canvas.dispatchEvent(
-            new InputEvent('beforeinput', {
-                inputType: 'deleteContentBackward',
-                bubbles: true,
-            }),
-        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', key: '\u00e9', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Delete', key: '\x7f', bubbles: true }));
+
+        expect(kb.getInputString()).toBe('');
+
+        kb.detach();
+    });
+
+    it('maps Backspace to BS in buffer', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Backspace', key: 'Backspace', bubbles: true }));
 
         expect(kb.getInputString()).toBe('\x08');
 
@@ -442,6 +401,116 @@ describe('KeyboardInput', () => {
         canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true }));
 
         expect(kb.getInputString()).toBe('\x09\x1b');
+
+        kb.detach();
+    });
+
+    it('Ctrl and Meta shortcuts type nothing', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', ctrlKey: true, bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyC', key: 'c', metaKey: true, bubbles: true }));
+
+        expect(kb.getInputString()).toBe('');
+
+        kb.detach();
+    });
+
+    it('AltGr characters (reported as Ctrl+Alt) still type', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'KeyV', key: '@', ctrlKey: true, altKey: true, bubbles: true }),
+        );
+
+        expect(kb.getInputString()).toBe('@');
+
+        kb.detach();
+    });
+
+    it('Alt shortcuts that leave the character unchanged type nothing', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        // Windows / Linux: Alt+A reports `a`, Alt+Shift+A reports `A`, Alt+1 reports `1`.
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', altKey: true, bubbles: true }));
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'KeyA', key: 'A', altKey: true, shiftKey: true, bubbles: true }),
+        );
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', altKey: true, bubbles: true }));
+
+        expect(kb.getInputString()).toBe('');
+
+        kb.detach();
+    });
+
+    it('Alt that changes the character (macOS Option) still types', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        // German Mac layout: Option+L types `@`.
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyL', key: '@', altKey: true, bubbles: true }));
+
+        expect(kb.getInputString()).toBe('@');
+
+        kb.detach();
+    });
+
+    it('OS key repeat of a held key keeps typing and deleting', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', repeat: true, bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Backspace', key: 'Backspace', bubbles: true }));
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Backspace', key: 'Backspace', repeat: true, bubbles: true }),
+        );
+
+        expect(kb.getInputString()).toBe('aa\x08\x08');
+
+        kb.detach();
+    });
+
+    it('Tab still arrives when its default action moves focus off the canvas', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA', key: 'a', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Tab', key: 'Tab', bubbles: true }));
+        canvas.dispatchEvent(new Event('blur'));
+
+        expect(kb.getInputString()).toBe('a\x09');
+
+        kb.detach();
+    });
+
+    it('Enter is sent once per press, not on OS key repeat', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
+        canvas.dispatchEvent(
+            new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', repeat: true, bubbles: true }),
+        );
+
+        expect(kb.getInputString()).toBe('\x0d');
 
         kb.detach();
     });
@@ -772,14 +841,67 @@ describe('KeyboardInput any-key helpers', () => {
         expect(kb.isAnyKeyReleased()).toBe(true);
     });
 
-    it('window blur does not report a release', () => {
+    it('window blur reports a release for the keys that were held', () => {
         down('KeyA');
         kb.endUpdate();
 
         globalThis.window.dispatchEvent(new Event('blur'));
 
         expect(kb.isAnyKeyDown()).toBe(false);
+        expect(kb.isAnyKeyReleased()).toBe(true);
+    });
+
+    it('a key held across a blur reports isKeyReleased on the next update, then nothing', () => {
+        const codes = DEFAULT_KEYBOARD_PLAYER1[1 << 0] ?? [];
+
+        down('KeyW');
+        kb.endUpdate();
+
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyDown('KeyW')).toBe(false);
+        expect(kb.isKeyReleased('KeyW')).toBe(true);
+        expect(kb.isButtonReleased(codes)).toBe(true);
+
+        kb.endUpdate();
+
+        expect(kb.isKeyReleased('KeyW')).toBe(false);
         expect(kb.isAnyKeyReleased()).toBe(false);
+        expect(kb.isButtonReleased(codes)).toBe(false);
+    });
+
+    it('a canvas blur followed by a window blur reports one release', () => {
+        down('Space');
+        kb.endUpdate();
+
+        canvas.dispatchEvent(new Event('blur'));
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        const pressed: string[] = [];
+        const released: string[] = [];
+
+        kb.collectEdges(pressed, released);
+
+        expect(released).toEqual(['Space']);
+        expect(pressed).toEqual([]);
+    });
+
+    it('a tap that lands just before a blur still reports its press', () => {
+        down('Space');
+        up('Space');
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyPressed('Space', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('Space')).toBe(true);
+        expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
+    });
+
+    it('a key pressed in the same update as a blur reports both its press and its release', () => {
+        down('KeyW');
+        globalThis.window.dispatchEvent(new Event('blur'));
+
+        expect(kb.isKeyPressed('KeyW', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('KeyW')).toBe(true);
     });
 });
 

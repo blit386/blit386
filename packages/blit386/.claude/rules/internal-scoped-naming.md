@@ -39,8 +39,8 @@ const FRAGMENT_WGSL // not BLOOM_FRAGMENT_WGSL
 // Palette.ts (file-local type)
 type Serialized = { … } // not PaletteJSON or JSON (JSON shadows global)
 
-// PointerInput.ts (module-local wire codes)
-const BTN_A = 20; // OK - short local name
+// pointerSlot.ts (pointer wire codes)
+const CODE_A = 20; // OK - short local name; not BTN_A, which input/buttonFlags.ts already exports as a bit
 // JSDoc: maps to BT.BTN_POINTER_A, not BT.BTN_A (gamepad)
 ```
 
@@ -57,4 +57,4 @@ const BTN_A = 20; // OK - short local name
 - Prefer shortening **internal** names in the same change that touches the file; do not drive renames through public
   callers.
 - After shortening a local alias, update JSDoc that references **public** API to the correct public symbol (internal
-  `BTN_A` comments must point at `BT.BTN_POINTER_A`, not `BT.BTN_A`).
+  `CODE_A` comments must point at `BT.BTN_POINTER_A`, not `BT.BTN_A`).

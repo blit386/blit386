@@ -1,0 +1,61 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: BT.inputString</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="120" id="blit386-canvas" width="160"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Palette, Vector2i } from 'blit386';
+
+            window.__INIT_FAILED__ = false;
+            window.__TYPED__ = '';
+
+            class TextInputTest {
+                configure() {
+                    return {
+                        isSplashEnabled: false,
+                        isOverlayEnabled: false,
+                        displaySize: new Vector2i(160, 120),
+                        targetFPS: 60,
+                    };
+                }
+
+                async init() {
+                    BT.paletteSet(new Palette(2));
+
+                    return true;
+                }
+
+                // Read the buffer where games read it: inside update(), before the tick clears it.
+                update() {
+                    window.__TYPED__ += BT.inputString;
+                }
+
+                render() {
+                    BT.clear(0);
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+            }
+
+            bootstrap(TextInputTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>

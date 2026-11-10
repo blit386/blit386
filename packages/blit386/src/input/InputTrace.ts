@@ -12,6 +12,7 @@
  */
 
 import { Vector2i } from '../utils/Vector2i';
+import { BTN_POINTER_A } from './buttonFlags';
 import type { GamepadInput } from './GamepadInput';
 import { GAMEPAD_PLAYER_COUNT } from './GamepadInput';
 import type { KeyboardInput } from './KeyboardInput';
@@ -23,12 +24,6 @@ const DEFAULT_MAX_ENTRIES = 10000;
 
 /** Largest accepted {@link InputTraceOptions.maxEntries}: hours of play, bounded so a typo cannot exhaust memory. */
 const MAX_ENTRIES_LIMIT = 1_000_000;
-
-/**
- * Bit of `BT.BTN_POINTER_A`; `B..D` follow. Manual sync with `POINTER_FLAGS` in `src/BLIT386.ts`
- * (importing it would cycle).
- */
-const POINTER_FLAG_SHIFT = 12;
 
 /** Which loop phase an entry was recorded in. */
 export type InputTraceClock = 'update' | 'render';
@@ -231,7 +226,7 @@ export class InputTrace {
             let pressed = 0;
             let released = 0;
 
-            let flag = 1 << POINTER_FLAG_SHIFT;
+            let flag = BTN_POINTER_A;
 
             for (const code of POINTER_BUTTON_CODES) {
                 if (pointer.isButtonPressed(code, slot, clock)) {
