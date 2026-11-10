@@ -32,7 +32,7 @@ describe('lintSnapshot', () => {
     });
 
     it('exports the rule names the page shows as badges', () => {
-        assert.deepEqual(LINT_RULES, ['overlap', 'out-of-display', 'margin', 'row-gap']);
+        assert.deepEqual(LINT_RULES, ['overlap', 'out-of-display', 'margin']);
     });
 
     it('flags two widgets whose rectangles intersect', () => {
@@ -99,34 +99,6 @@ describe('lintSnapshot', () => {
             groups: [
                 group({ pinnedX: true, pinnedY: true, rect: rect(50, 50, 20, 20) }),
                 group({ anchor: UI_ANCHORS.TOP_BAR, rect: rect(0, 0, 320, 22) }),
-            ],
-        };
-
-        assert.deepEqual(lintSnapshot(snap), []);
-    });
-
-    it('flags unequal gaps between consecutive content rows', () => {
-        const snap = {
-            display: DISPLAY,
-            groups: [
-                group({
-                    rows: [rect(9, 10, 40, 10), rect(9, 20, 40, 10), rect(9, 33, 40, 10)],
-                }),
-            ],
-        };
-        const findings = lintSnapshot(snap);
-
-        assert.equal(findings.length, 1);
-        assert.equal(findings[0].rule, 'row-gap');
-    });
-
-    it('treats a zero-width row as a deliberate spacer', () => {
-        const snap = {
-            display: DISPLAY,
-            groups: [
-                group({
-                    rows: [rect(9, 10, 40, 10), rect(9, 20, 0, 6), rect(9, 26, 40, 10), rect(9, 36, 40, 10)],
-                }),
             ],
         };
 

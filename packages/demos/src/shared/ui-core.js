@@ -316,9 +316,6 @@ class UiContext {
     /** @type {Array<object>} Groups recorded this frame (absolute coordinates). */
     frameGroups = [];
 
-    /** @type {Array<{ x: number, y: number, w: number, h: number }>} Rows of the open group. */
-    groupRows = [];
-
     /** @type {Array<{ id: string, kind: string, x: number, y: number, w: number, h: number }>} */
     groupWidgets = [];
 
@@ -526,7 +523,6 @@ class UiContext {
         this.hasPanel = false;
         this.commandCount = 0;
         this.pendingHitCount = 0;
-        this.groupRows.length = 0;
         this.groupWidgets.length = 0;
     }
 
@@ -689,7 +685,6 @@ class UiContext {
                 pad: this.pad,
                 panel: this.hasPanel,
                 rect: { x: originX, y: originY, w: groupW, h: groupH },
-                rows: this.groupRows.map((row) => ({ x: originX + row.x, y: originY + row.y, w: row.w, h: row.h })),
                 widgets: this.groupWidgets.map((hit) => ({
                     id: hit.id,
                     kind: hit.kind,
@@ -774,10 +769,6 @@ class UiContext {
 
         this.cursorY += advance;
         this.maxGroupW = Math.max(this.maxGroupW, contentW + 2 * this.pad);
-
-        if (this.recording) {
-            this.groupRows.push({ x: this.pad, y: rowY, w: contentW, h: advance });
-        }
 
         return rowY;
     }

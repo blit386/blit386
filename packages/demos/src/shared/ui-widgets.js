@@ -554,7 +554,7 @@ function spacer(ctx, px = 6) {
         throw new Error('ui.spacer: call ui.begin() first.');
     }
 
-    // A zero-width row, so the layout lint sees a deliberate spacer instead of a gap.
+    // A zero-width row: it moves the cursor down without widening the group.
     ctx.addRow(0, px);
 }
 

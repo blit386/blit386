@@ -342,20 +342,19 @@ describe('meter', () => {
 });
 
 describe('spacer', () => {
-    it('records a zero-width row so the layout lint can tell it from a gap', (t) => {
+    it('moves the layout cursor down by its height and adds no width', (t) => {
         stubBt(t);
 
         const ctx = createReadyContext();
 
-        ctx.recording = true;
         ctx.begin(UI_ANCHORS.TOP_LEFT);
+
+        const before = ctx.cursorY;
+
         spacer(ctx, 7);
+        assert.equal(ctx.cursorY - before, 7);
+        assert.equal(ctx.maxGroupW, 2 * ctx.pad);
         ctx.end();
-
-        const [row] = ctx.snapshot().groups[0].rows;
-
-        assert.equal(row.w, 0);
-        assert.equal(row.h, 7);
     });
 });
 

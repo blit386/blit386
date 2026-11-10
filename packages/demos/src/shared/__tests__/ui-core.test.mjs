@@ -242,7 +242,7 @@ describe('UiContext snapshot', () => {
 
         const ctx = createReadyContext();
 
-        const { frameGroups, groupRows, groupWidgets } = ctx;
+        const { frameGroups, groupWidgets } = ctx;
 
         for (let frame = 0; frame < 2; frame++) {
             ctx.begin(UI_ANCHORS.TOP_LEFT);
@@ -254,13 +254,12 @@ describe('UiContext snapshot', () => {
 
         // Same array objects (never reassigned) and still empty.
         assert.equal(ctx.frameGroups, frameGroups);
-        assert.equal(ctx.groupRows, groupRows);
         assert.equal(ctx.groupWidgets, groupWidgets);
-        assert.equal(frameGroups.length + groupRows.length + groupWidgets.length, 0);
+        assert.equal(frameGroups.length + groupWidgets.length, 0);
         assert.deepEqual(ctx.snapshot(), { display: { w: 320, h: 180 }, groups: [] });
     });
 
-    it('captures groups, rows, and widgets in absolute coordinates', (t) => {
+    it('captures groups and widgets in absolute coordinates', (t) => {
         stubBt(t);
 
         const ctx = createReadyContext();
@@ -282,8 +281,6 @@ describe('UiContext snapshot', () => {
         assert.equal(group.panel, false);
         // Width = content + 2 * pad (5); height = cursor (pad - 5 + 10 + 4).
         assert.deepEqual(group.rect, { x: 320 - 4 - 50, y: 180 - 4 - 14, w: 50, h: 14 });
-        assert.equal(group.rows.length, 2);
-        assert.equal(group.rows[1].w, 0);
         assert.deepEqual(group.widgets, [
             { id: 'Play', kind: 'button', rect: { x: group.rect.x + 5, y: group.rect.y + rowY, w: 40, h: 10 } },
         ]);

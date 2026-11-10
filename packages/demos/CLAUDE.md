@@ -241,9 +241,9 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   plain `BT.drawRectFill` there is hidden under the panel
 - `ui-core.js` carries a `debug` overlay (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by
   default so the allocates-nothing rule holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`,
-  `margin`, `row-gap`). `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page only. The page takes
-  `snapshot()` before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do
-  not "fix" that order
+  `margin`). `ui.js` publishes the context on `globalThis.__blitDemoUi` for that page only. The page takes `snapshot()`
+  before `captureFrame` on purpose - the capture's extra render would double the recorded groups - so do not "fix" that
+  order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use `THEME_OVERLAY_STYLE` (and
   `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, literal slot numbers (240 +
   offset) with a comment on a custom `startSlot`, or dedicated scene slots
