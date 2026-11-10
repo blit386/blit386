@@ -43,7 +43,7 @@ const FRONTMATTER_HUNK_START_LIMIT = 8;
 const MIRROR_PATHS = ['content/docs', API_HISTORY_MIRROR];
 
 /**
- * Classify a `git diff -- content/docs` unified diff: `'clean'` (no diff),
+ * Classify a `git diff -- MIRROR_PATHS` unified diff: `'clean'` (no diff),
  * `'lastModifiedOnly'` (every changed line is a `lastModified` frontmatter
  * value, and at least one such line exists), or `'drift'` (anything else,
  * including a rename or mode change with no matching content lines). Diff

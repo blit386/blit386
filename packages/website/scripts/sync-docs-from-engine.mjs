@@ -38,6 +38,9 @@ const REPO_ROOT = resolve(ROOT, '..', '..');
 // Where the engine docs sit in the monorepo (`packages/blit386/docs`), the base every link and
 // GitHub URL resolves against. scripts/sync-kit-pages.mjs resolves kit content the same way.
 const ENGINE_DOCS_REPO_DIR = relative(REPO_ROOT, ENGINE_DOCS).split(sep).join(posix.sep);
+if (ENGINE_DOCS_REPO_DIR.startsWith('..')) {
+    throw new Error(`ENGINE_DOCS_DIR ${ENGINE_DOCS} is outside the monorepo, so its GitHub links cannot resolve.`);
+}
 const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
