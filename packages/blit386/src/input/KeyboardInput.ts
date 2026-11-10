@@ -95,8 +95,8 @@ export class KeyboardInput {
 
     /**
      * Attaches listeners to the canvas and window. Also listens for `blur`
-     * on the canvas and the `window` to release held keys (with a release edge) and clear the text buffer when focus
-     * leaves either.
+     * on the canvas and the `window` to release held keys (with a release edge) when focus leaves either; typed text
+     * stays buffered for the next update.
      *
      * @param canvas - Canvas that receives keyboard events when focused.
      * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
