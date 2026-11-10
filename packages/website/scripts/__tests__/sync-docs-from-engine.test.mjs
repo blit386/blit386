@@ -230,16 +230,15 @@ describe('transformBody link targets (BT-774)', () => {
 });
 
 describe('MDX_COMPONENTS matches press.config.tsx (BT-774)', () => {
-    test('lists exactly the PascalCase components the site registers', () => {
+    test('lists exactly the PascalCase components the site registers', async () => {
         const pkg = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
         const config = readFileSync(join(pkg, 'press.config.tsx'), 'utf8');
         const added = /\.\.\.defaultMdxComponents,([\s\S]*?)\};/u.exec(config)?.[1] ?? '';
-        const defaults = readFileSync(join(pkg, 'node_modules', 'fumadocs-ui', 'dist', 'mdx.d.ts'), 'utf8');
-        const registered = new Set(
-            [...added.matchAll(/^\s+([A-Z]\w*),$/gmu), ...defaults.matchAll(/^\s+([A-Z]\w*): typeof/gmu)].map(
-                (match) => match[1],
-            ),
-        );
+        const { default: defaults } = await import('fumadocs-ui/mdx');
+        const registered = new Set([
+            ...[...added.matchAll(/^\s+([A-Z]\w*),$/gmu)].map((match) => match[1]),
+            ...Object.keys(defaults).filter((name) => /^[A-Z]/u.test(name)),
+        ]);
         assert.deepEqual([...MDX_COMPONENTS].sort(), [...registered].sort());
     });
 });
