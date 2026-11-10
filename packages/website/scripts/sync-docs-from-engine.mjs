@@ -204,6 +204,9 @@ const escapeMdxText = (text) =>
         .replaceAll('{', '&#123;')
         .replaceAll('}', '&#125;');
 
+/** A fence line: up to any indent, a run of 3+ backticks or tildes (group 1), then the rest (group 2). */
+const FENCE_PATTERN = /^\s*(`{3,}|~{3,})(.*)$/u;
+
 /**
  * Transform body lines outside fenced code blocks: strip HTML comments (MDX
  * does not support them, and source comments such as cspell directives are
@@ -221,7 +224,8 @@ const transformBody = (markdown, sourceRepoDir) => {
     const linkTokenPattern = /(`[^`]*`)|(\[(?:`[^`]*`|[^\]`])*\])\(([^)]+)\)/gu;
     const inlineCodePattern = /(`[^`]*`)/u;
     const strippedComments = [];
-    let isInFence = false;
+    // The opening run of the fence we are inside (e.g. "```" or "~~~~"), or '' outside one.
+    let openFence = '';
     let isInHtmlComment = false;
     let commentBuffer = '';
 
@@ -279,13 +283,21 @@ const transformBody = (markdown, sourceRepoDir) => {
     });
 
     const lines = markdown.split('\n').map((line) => {
-        if (/^\s*```/u.test(line)) {
-            isInFence = !isInFence;
+        // CommonMark: a fence is 3+ backticks or tildes; only a run of the same character,
+        // at least as long and with nothing after it, closes it.
+        const run = FENCE_PATTERN.exec(line);
+
+        if (openFence !== '') {
+            const isClose = run && run[1][0] === openFence[0] && run[1].length >= openFence.length && !run[2].trim();
+            openFence = isClose ? '' : openFence;
 
             return line;
         }
 
-        if (isInFence) {
+        // A backtick fence's info string cannot itself contain a backtick (that line is inline code).
+        if (run && !(run[1][0] === '`' && run[2].includes('`'))) {
+            openFence = run[1];
+
             return line;
         }
 

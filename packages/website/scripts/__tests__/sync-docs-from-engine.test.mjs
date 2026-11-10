@@ -170,6 +170,24 @@ describe('transformBody', () => {
     });
 });
 
+describe('transformBody fences (BT-774)', () => {
+    test('passes a ~~~ fence through unchanged', () => {
+        const input = '~~~ts\nconst a = {b: 1};\n~~~';
+        assert.equal(transformBody(input, 'docs').body, input);
+    });
+
+    test('a three-backtick example inside a four-backtick fence does not close it', () => {
+        const fenced = '````md\n```ts\nconst a = {b: 1};\n```\n{still code}\n````';
+        const { body } = transformBody(`${fenced}\n\n{prose}`, 'docs');
+        assert.equal(body, `${fenced}\n\n&#123;prose&#125;`);
+    });
+
+    test('a ~~~ line does not close a backtick fence', () => {
+        const fenced = '```text\n~~~\n{still code}\n```';
+        assert.equal(transformBody(fenced, 'docs').body, fenced);
+    });
+});
+
 describe('extractTitleAndBody', () => {
     test('extracts H1 as title and returns remaining body', () => {
         const { title, body } = extractTitleAndBody('# My Title\n\nBody text.', 'test.md');
