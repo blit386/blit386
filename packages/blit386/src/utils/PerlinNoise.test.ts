@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { PerlinNoise } from './PerlinNoise';
+import { Random } from './Random';
 
 describe('PerlinNoise', () => {
     it('should return the same sample for the same seed and coordinates', () => {
@@ -86,6 +87,32 @@ describe('PerlinNoise', () => {
         }
     });
 
+    it('should reach close to both ends of [-1, 1] in 1D and 2D', () => {
+        const n = new PerlinNoise(1234);
+        const coords = new Random(99);
+        let min1 = Infinity;
+        let max1 = -Infinity;
+        let min2 = Infinity;
+        let max2 = -Infinity;
+
+        for (let i = 0; i < 100_000; i++) {
+            const x = coords.float(-500, 500);
+            const y = coords.float(-500, 500);
+            const v1 = n.noise1D(x);
+            const v2 = n.noise2D(x, y);
+
+            min1 = Math.min(min1, v1);
+            max1 = Math.max(max1, v1);
+            min2 = Math.min(min2, v2);
+            max2 = Math.max(max2, v2);
+        }
+
+        expect(max1).toBeGreaterThan(0.9);
+        expect(min1).toBeLessThan(-0.9);
+        expect(max2).toBeGreaterThan(0.9);
+        expect(min2).toBeLessThan(-0.9);
+    });
+
     it('should vary continuously for small steps', () => {
         const n = new PerlinNoise(11);
         const eps = 1e-3;
@@ -122,5 +149,60 @@ describe('PerlinNoise', () => {
                 expect(v3).toBeLessThanOrEqual(1);
             }
         }
+    });
+});
+
+describe('PerlinNoise seed validation', () => {
+    it('throws a RangeError for a non-finite seed', () => {
+        const n = new PerlinNoise(1);
+
+        expect(() => n.seed(undefined as unknown as number)).toThrow(RangeError);
+        expect(() => n.seed(undefined as unknown as number)).toThrow(
+            "Can't seed PerlinNoise with undefined: it must be a finite number",
+        );
+        expect(() => new PerlinNoise(Number.NaN)).toThrow(RangeError);
+    });
+
+    it('still treats an omitted seed as 0', () => {
+        expect(() => new PerlinNoise()).not.toThrow();
+    });
+});
+
+describe('PerlinNoise fBm sums', () => {
+    // Three layers, persistence 0.4, lacunarity 3: weights 1, 0.4, 0.16 at 1x, 3x, 9x.
+    const weightSum = 1 + 0.4 + 0.16;
+
+    it('matches the hand-computed weighted sum of layers in 1D', () => {
+        const n = new PerlinNoise(7);
+        const x = 1.37;
+        const expected = (n.noise1D(x) + 0.4 * n.noise1D(3 * x) + 0.16 * n.noise1D(9 * x)) / weightSum;
+
+        expect(n.fbm1D(x, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('matches the hand-computed weighted sum of layers in 2D', () => {
+        const n = new PerlinNoise(7);
+        const [x, y] = [1.37, -2.71];
+        const expected = (n.noise2D(x, y) + 0.4 * n.noise2D(3 * x, 3 * y) + 0.16 * n.noise2D(9 * x, 9 * y)) / weightSum;
+
+        expect(n.fbm2D(x, y, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('matches the hand-computed weighted sum of layers in 3D', () => {
+        const n = new PerlinNoise(7);
+        const [x, y, z] = [1.37, -2.71, 0.53];
+        const expected =
+            (n.noise3D(x, y, z) + 0.4 * n.noise3D(3 * x, 3 * y, 3 * z) + 0.16 * n.noise3D(9 * x, 9 * y, 9 * z)) /
+            weightSum;
+
+        expect(n.fbm3D(x, y, z, 3, 0.4, 3)).toBeCloseTo(expected, 12);
+    });
+
+    it('uses the default 4 layers, persistence 0.5, lacunarity 2', () => {
+        const n = new PerlinNoise(7);
+        const x = 1.37;
+
+        expect(n.fbm1D(x)).toBeCloseTo(n.fbm1D(x, 4, 0.5, 2), 12);
+        expect(n.fbm1D(x)).not.toBeCloseTo(n.fbm1D(x, 3, 0.5, 2), 12);
     });
 });

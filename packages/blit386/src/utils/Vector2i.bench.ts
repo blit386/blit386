@@ -298,3 +298,24 @@ describe('Vector2i comparison benchmarks', () => {
         BENCH_OPTIONS,
     );
 });
+
+describe('Vector2i mixed-shape benchmarks', () => {
+    // Half the operands come from the constructor and half from fromXYUnchecked, so the one
+    // addTo() call site sees both kinds of object - polymorphic if their hidden classes differ.
+    const operands: Vector2i[] = [];
+    const out = new Vector2i();
+
+    for (let i = 0; i < 64; i++) {
+        operands.push(i % 2 === 0 ? new Vector2i(i, i + 1) : Vector2i.fromXYUnchecked(i, i + 1));
+    }
+
+    bench(
+        'mixed new + fromXYUnchecked addTo() loop',
+        () => {
+            for (let i = 0; i < operands.length - 1; i++) {
+                (operands.at(i) as Vector2i).addTo(operands.at(i + 1) as Vector2i, out);
+            }
+        },
+        BENCH_OPTIONS,
+    );
+});

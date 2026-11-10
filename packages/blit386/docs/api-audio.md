@@ -294,7 +294,8 @@ still works the same way (releases the buffer, stops any voice playing it), it j
 `BT.synthPreset` bundles six ready-made `SynthParams` factories for common sound effects: `jump`, `pickup`, `explosion`,
 `laser`, `hit`, `blip`. Each takes an optional `seed` and applies small, bounded, deterministic jitter to a couple of
 hand-picked fields (frequency, duration, or noise mix) - the same seed always renders the exact same variant, so a
-preset stays reproducible even though it varies from call to call.
+preset stays reproducible even though it varies from call to call. The seed must be a finite number: since 1.8.1 a `NaN`
+or `Infinity` seed throws a `RangeError` naming the preset instead of quietly using seed `0`.
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';

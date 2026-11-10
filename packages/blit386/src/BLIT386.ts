@@ -99,7 +99,7 @@ import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
-import { noActivePaletteError, renderAtOptionsError, systemFontNotReadyError } from './utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE, renderAtOptionsError, SYSTEM_FONT_NOT_READY_MESSAGE } from './utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions, type FrameCaptureSize } from './utils/FrameCapture';
 import { exposeGlobal, exposeInputTrace } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
@@ -662,13 +662,14 @@ export const BT = {
      * Each read returns a clone.
      *
      * @since 1.0.4
-     * @returns Effective output buffer size, or `Vector2i.zero()` before initialization.
+     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
+     * @returns Effective output buffer size, or a new `(0, 0)` vector before initialization.
      */
     get outputSize(): Vector2i {
         const settings = BTAPI.instance.getHardwareSettings();
 
         if (!settings) {
-            return Vector2i.zero();
+            return new Vector2i();
         }
 
         return (settings.drawingBufferSize ?? settings.displaySize).clone();
@@ -1213,6 +1214,8 @@ export const BT = {
      * the same seed always renders the exact same variant.
      *
      * @since 1.3.0
+     * @changed 1.8.1 Each preset throws a `RangeError` naming itself for a seed that is not a finite number (`NaN`,
+     *   `Infinity`) instead of silently using seed 0.
      * @example
      * const jumpClip = await AudioClip.synth(BT.synthPreset.jump());
      * BT.soundPlay(jumpClip);
@@ -1275,7 +1278,7 @@ export const BT = {
         const palette = BTAPI.instance.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         return palette;
@@ -1309,7 +1312,9 @@ export const BT = {
      *
      * @since 1.5.0
      * @changed 1.7.1 Documented precedence over the `?seed=N` URL parameter.
+     * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @example
      * BT.randomSeed(1234);
      * const a = BT.random.next();
@@ -2521,7 +2526,7 @@ export const BT = {
         const font = BTAPI.instance.getSystemFont();
 
         if (!font) {
-            throw new Error(systemFontNotReadyError());
+            throw new Error(SYSTEM_FONT_NOT_READY_MESSAGE);
         }
 
         return font;
@@ -2558,14 +2563,15 @@ export const BT = {
      * system font.
      *
      * @since 1.0.3
+     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
      * @param text - Text string to measure.
-     * @returns Width and height in pixels, or `Vector2i.zero()` before engine initialization.
+     * @returns Width and height in pixels, or a new `(0, 0)` vector before engine initialization.
      */
     systemPrintMeasure: (text: string): Vector2i => {
         const font = BTAPI.instance.getSystemFont();
 
         if (!font) {
-            return Vector2i.zero();
+            return new Vector2i();
         }
 
         const size = font.measureTextSize(text);
@@ -3031,6 +3037,8 @@ export const BT = {
  *   second, unstoppable `GameLoop`.
  * @changed 1.7.0 Exposes `BT` on `window.BT` after bootstrap finishes, gated by
  *   {@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}).
+ * @changed 1.8.1 An `onSuccess` callback that throws is logged and no longer replaces the running game with an
+ *   error panel, fires `onError`, or makes `bootstrap()` resolve `false`.
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.

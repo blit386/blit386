@@ -9,29 +9,33 @@
  */
 
 import {
+    RANDOM_PICK_EMPTY_MESSAGE,
+    RANDOM_WEIGHTED_EMPTY_MESSAGE,
+    randomIntBoundError,
     randomIntInclusiveRangeError,
     randomIntRangeError,
-    randomPickEmptyError,
-    randomWeightedEmptyError,
+    randomSeedNotFiniteError,
     randomWeightedLengthError,
     randomWeightedTotalError,
+    randomWeightNotFiniteError,
 } from './errorMessages';
 import { INV_2_32 } from './noiseCommon';
 import type { Rect2i } from './Rect2i';
 import { Vector2i } from './Vector2i';
 
+/** Smallest bound `| 0` keeps as-is. */
+const INT32_MIN = -(2 ** 31);
+
+/** Largest bound `| 0` keeps as-is. */
+const INT32_MAX = 2 ** 31 - 1;
+
 /** Two pi, used by {@link Random.angle}. */
 const TWO_PI = Math.PI * 2;
 
-/** Cardinal unit offsets for {@link Random.direction4} (Y-down). */
-const CARDINALS: readonly (readonly [number, number])[] = [
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-];
-
-/** Eight king-move unit offsets for {@link Random.direction8} (Y-down). */
+/**
+ * Eight king-move unit offsets for {@link Random.direction8} (Y-down). The first four rows are the
+ * cardinals {@link Random.direction4} draws from.
+ */
 const DIRECTIONS8: readonly (readonly [number, number])[] = [
     [1, 0],
     [-1, 0],
@@ -47,6 +51,9 @@ const DIRECTIONS8: readonly (readonly [number, number])[] = [
  * Seeded PRNG with integer-first generators and stream control (`seed` / `clone` / `fork`).
  *
  * @since 1.5.0
+ * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
+ * @changed 1.8.1 `int()` / `intInclusive()` throw a clear `RangeError` for a bound outside the 32-bit range instead of
+ *   wrapping it, and `weighted()` throws for a weight that is not a finite number instead of always picking the last item.
  */
 export class Random {
     /** Internal 32-bit generator state, mutated on every draw. */
@@ -59,9 +66,14 @@ export class Random {
      * Creates a PRNG. Omit `seed` to time-seed from `Date.now()` (lower 32 bits).
      *
      * @param seed - Any finite number; only its lower 32 bits affect the sequence.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public constructor(seed: number = Date.now()) {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('Random', seed));
+        }
+
         this.state = seed >>> 0;
         this.lastSeed = this.state;
     }
@@ -85,9 +97,14 @@ export class Random {
      * normalized `seed`.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
+     * @throws RangeError if `seed` is not a finite number.
      * @since 1.5.0
      */
     public seed(seed: number): void {
+        if (!Number.isFinite(seed)) {
+            throw new RangeError(randomSeedNotFiniteError('Random', seed));
+        }
+
         this.state = seed >>> 0;
         this.lastSeed = this.state;
     }
@@ -173,6 +190,7 @@ export class Random {
      * @param minOrMaxExclusive - When alone, exclusive upper bound from 0; otherwise inclusive min.
      * @param maxExclusive - Exclusive upper bound when two arguments are passed.
      * @returns Whole number in the half-open range.
+     * @throws RangeError if a bound is `NaN` or outside the 32-bit integer range, or the range is empty.
      * @since 1.5.0
      */
     public int(minOrMaxExclusive: number, maxExclusive?: number): number {
@@ -181,10 +199,10 @@ export class Random {
 
         if (maxExclusive === undefined) {
             min = 0;
-            max = minOrMaxExclusive | 0;
+            max = toBound('int', minOrMaxExclusive);
         } else {
-            min = minOrMaxExclusive | 0;
-            max = maxExclusive | 0;
+            min = toBound('int', minOrMaxExclusive);
+            max = toBound('int', maxExclusive);
         }
 
         if (max <= min) {
@@ -200,11 +218,12 @@ export class Random {
      * @param min - Inclusive lower bound.
      * @param max - Inclusive upper bound.
      * @returns Whole number in the closed range.
+     * @throws RangeError if a bound is `NaN` or outside the 32-bit integer range, or `max` is less than `min`.
      * @since 1.5.0
      */
     public intInclusive(min: number, max: number): number {
-        const lo = min | 0;
-        const hi = max | 0;
+        const lo = toBound('intInclusive', min);
+        const hi = toBound('intInclusive', max);
 
         if (hi < lo) {
             throw new RangeError(randomIntInclusiveRangeError(lo, hi));
@@ -243,7 +262,7 @@ export class Random {
      */
     public pick<T>(arr: readonly T[]): T {
         if (arr.length === 0) {
-            throw new RangeError(randomPickEmptyError());
+            throw new RangeError(RANDOM_PICK_EMPTY_MESSAGE);
         }
 
         return arr[this.int(arr.length)] as T;
@@ -289,13 +308,15 @@ export class Random {
      * Returns one item chosen by relative weights.
      *
      * @param items - Items to choose from.
-     * @param weights - Non-negative weights parallel to `items`; total must be greater than 0.
+     * @param weights - Finite weights parallel to `items` (a negative weight counts as 0); total must be greater than 0.
      * @returns Chosen item.
+     * @throws RangeError if `items` is empty, the lengths differ, a weight is not a finite number, or the total is not
+     *   greater than 0.
      * @since 1.5.0
      */
     public weighted<T>(items: readonly T[], weights: readonly number[]): T {
         if (items.length === 0) {
-            throw new RangeError(randomWeightedEmptyError());
+            throw new RangeError(RANDOM_WEIGHTED_EMPTY_MESSAGE);
         }
 
         if (items.length !== weights.length) {
@@ -307,6 +328,10 @@ export class Random {
         for (let i = 0; i < weights.length; i++) {
             // eslint-disable-next-line security/detect-object-injection -- i bounded by weights.length
             const w = weights[i] as number;
+
+            if (!Number.isFinite(w)) {
+                throw new RangeError(randomWeightNotFiniteError(i, w));
+            }
 
             total += w > 0 ? w : 0;
         }
@@ -437,7 +462,7 @@ export class Random {
      * @since 1.5.0
      */
     public direction4(): Vector2i {
-        const [x, y] = CARDINALS[this.int(4)] as readonly [number, number];
+        const [x, y] = DIRECTIONS8[this.int(4)] as readonly [number, number];
 
         return Vector2i.fromXYUnchecked(x, y);
     }
@@ -471,4 +496,21 @@ export class Random {
 
         return (t ^ (t >>> 14)) >>> 0;
     }
+}
+
+/**
+ * Truncates an integer-range bound with `| 0`, after checking it fits, so `int(2 ** 31)` explains
+ * itself instead of wrapping to a negative bound.
+ *
+ * @param method - Calling method name, for the error text.
+ * @param value - Bound to check.
+ * @returns The bound truncated toward zero.
+ * @throws RangeError if `value` is `NaN` or outside the 32-bit integer range.
+ */
+function toBound(method: string, value: number): number {
+    if (!(value >= INT32_MIN && value <= INT32_MAX)) {
+        throw new RangeError(randomIntBoundError(method, value));
+    }
+
+    return value | 0;
 }

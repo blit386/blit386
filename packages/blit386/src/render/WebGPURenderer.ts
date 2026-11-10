@@ -3,7 +3,7 @@ import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { noActivePaletteError } from '../utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
 import { FrameCapture } from '../utils/FrameCapture';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
@@ -368,7 +368,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      */
     beginFrame(): void {
         if (!this.palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         this.primitives.reset();

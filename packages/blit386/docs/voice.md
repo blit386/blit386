@@ -26,7 +26,7 @@ Rules:
 
 Where it appears: `showBeginnerRuntimeError()`, `displayError()`, canvas banners, and `throw new Error()` on any public
 API path (anything reachable from demo code via `BT.*` or a public constructor). All such messages must live in
-`src/utils/errorMessages.ts`.
+`src/utils/errorMessages/`.
 
 ### Tier 2 - Internal invariants (developer-only)
 
@@ -66,8 +66,9 @@ non-public `src/assets/` paths.
 
 ## Centralization
 
-All Tier 1 message strings live in `src/utils/errorMessages.ts`. Every public-facing throw and every
-`showBeginnerRuntimeError` call imports from there. This guarantees:
+All Tier 1 message strings live in `src/utils/errorMessages/`, one file per engine domain (`audio.ts`, `palette.ts`,
+`render.ts`, ...), re-exported by its `index.ts`. Every public-facing throw and every `showBeginnerRuntimeError` call
+imports from there. This guarantees:
 
 - Identical wording across every call site.
 - A single place to audit and update the tone.
@@ -75,7 +76,8 @@ All Tier 1 message strings live in `src/utils/errorMessages.ts`. Every public-fa
 
 Steps when adding a new Tier 1 message:
 
-1. Add an exported function or constant to `src/utils/errorMessages.ts`.
+1. Add it to the matching domain file in `src/utils/errorMessages/`: a `SOME_THING_MESSAGE` constant for fixed text, a
+   `someThingError(...)` function when the text takes parameters.
 2. Import and call it at the throw or display site.
 3. Do not inline the string at the call site.
 
@@ -89,7 +91,7 @@ guarantees.
 3. No trailing period? Thrown strings land mid-sentence in stack traces.
 4. No emoji? Nowhere in the engine - not in throws, not in banners, not in console output.
 5. Sentence case? "Slot 0 is always transparent" not "Slot 0 Is Always Transparent".
-6. Centralized? Is the string in `errorMessages.ts`, or must it go there?
+6. Centralized? Is the string in `errorMessages/`, or must it go there?
 7. Tier correct? Is this reachable from demo code? If yes, it must be Tier 1.
 
 ## See also

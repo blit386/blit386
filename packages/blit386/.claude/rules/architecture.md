@@ -116,9 +116,12 @@ src/
     TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid
     HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
-    Vector2i.ts            # Integer 2D vector
+    Vector2i.ts            # Integer 2D vector (allocating methods, statics, normalized, equality)
+    Vector2iOps.ts         # Internal base of Vector2i: *To / *InPlace families, set/copyFrom, magnitude and distance queries (not exported)
     Rect2i.ts              # Integer rectangle
-    Color32.ts             # 32-bit RGBA color (+ srgbToLinear/linearToSrgb piecewise transfer helpers)
+    Color32.ts             # 32-bit RGBA color (re-exports the colorMath helpers)
+    colorMath.ts           # Byte clamps, INV_255, srgbToLinear/linearToSrgb piecewise transfer helpers, hex parsing, hue2rgb
+    NamedColors.ts         # Named-color registry behind Color32.registerColor/resolveNamedColor (type-only Color32 import)
     Easing.ts              # Easing curves + interpolate() (number, Vector2i, Color32, Rect2i)
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
     Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork; Vector2i/Rect2i helpers; also backs synth noise)
@@ -126,12 +129,13 @@ src/
     ValueNoise.ts          # Seedable value noise (1D/2D/3D + fBm; [-1,1]; exported; uses hash*i)
     PerlinNoise.ts         # Seedable Perlin gradient noise (1D/2D/3D + fBm; [-1,1]; exported)
     SimplexNoise.ts        # Seedable simplex noise (2D/3D + fBm; [-1,1]; exported)
-    noiseCommon.ts         # Private fade/lerp/fBm/gradient helpers for the noise classes (not exported)
+    SeededNoise.ts         # Internal base classes for the noise classes: seed validation + allocation-free fBm loops (not exported)
+    noiseCommon.ts         # Private fade/lerp/gradient helpers and fBm defaults for the noise classes (not exported)
     FrameCapture.ts        # GPU readback + PNG export
     FrameCaptureShortcut.ts # F9 / Shift+F9 dev-mode capture shortcut gating (pure resolver + reader) and the default download filename
     globalExpose.ts        # Exposes BT on window for console debugging (dev-only by default; BootstrapOptions.exposeGlobal overrides)
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
-    errorMessages.ts       # Centralized user-facing bootstrap/runtime/asset error strings (two-tier voice); imported by Bootstrap and asset/runtime code
+    errorMessages/         # Centralized user-facing error strings (two-tier voice), one file per domain (asset, audio, bootstrap, btfont, math, palette, random, render, sprite, synth) behind an index.ts barrel; fixed text is an X_MESSAGE const, parameterized text an xError(...) builder
     urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests

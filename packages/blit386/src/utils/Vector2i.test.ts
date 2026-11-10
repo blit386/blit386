@@ -1473,6 +1473,14 @@ describe('Vector2i', () => {
                 expect(result.y).toBe(0);
             });
 
+            it('should return a mutable zero vector for zero input', () => {
+                const result = new Vector2i(0, 0).normalized();
+
+                expect(() => result.mulInPlace(3)).not.toThrow();
+                expect(result.isZero()).toBe(true);
+                expect(result).not.toBe(Vector2i.zero());
+            });
+
             it('should normalize (10, 0) to (1, 0)', () => {
                 const v = new Vector2i(10, 0);
                 const result = v.normalized();

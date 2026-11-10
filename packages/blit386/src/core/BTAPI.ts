@@ -53,13 +53,13 @@ import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
 import * as errorMessages from '../utils/errorMessages';
 import {
-    noActivePaletteError,
+    NO_ACTIVE_PALETTE_MESSAGE,
+    PALETTE_EFFECT_SLOT_ZERO_MESSAGE,
     paletteEffectEndOutOfRangeError,
     paletteEffectRangeOrderError,
-    paletteEffectSlotZeroError,
     paletteIndexNegativeError,
     paletteIndexOutOfRangeError,
-    spriteNotIndexizedError,
+    SPRITE_NOT_INDEXIZED_MESSAGE,
 } from '../utils/errorMessages';
 import { downloadBlob, type FrameCaptureSize, writeBlobToClipboard } from '../utils/FrameCapture';
 import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
@@ -1693,7 +1693,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         let refreshed = 0;
@@ -1793,7 +1793,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         if (!Number.isFinite(speed)) {
@@ -1822,7 +1822,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         this.assertFiniteDuration('paletteFade', durationMs);
@@ -1844,7 +1844,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         this.assertFiniteDuration('paletteFadeExposure', durationMs);
@@ -1871,7 +1871,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         if (!Number.isInteger(start) || !Number.isInteger(end) || start > end) {
@@ -1893,7 +1893,7 @@ export class BTAPI {
      */
     public paletteFlash(color: Color32, durationMs: number): void {
         if (!this.getPalette()) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         this.assertFiniteDuration('paletteFlash', durationMs);
@@ -1915,7 +1915,7 @@ export class BTAPI {
         const palette = this.getPalette();
 
         if (!palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         paletteSwap(palette, indexA, indexB);
@@ -1989,7 +1989,7 @@ export class BTAPI {
      */
     private assertEffectRange(start: number, end: number, size: number): void {
         if (start <= TRANSPARENT_PALETTE_INDEX) {
-            throw new Error(paletteEffectSlotZeroError());
+            throw new Error(PALETTE_EFFECT_SLOT_ZERO_MESSAGE);
         }
 
         if (end >= size) {
@@ -2566,7 +2566,7 @@ export class BTAPI {
         const pageTitle = typeof globalThis.document === 'undefined' ? undefined : globalThis.document.title;
 
         if (!this.activeBackend) {
-            throw new Error(errorMessages.OVERLAY_NO_BACKEND);
+            throw new Error(errorMessages.OVERLAY_NO_BACKEND_MESSAGE);
         }
 
         this.overlay = new Overlay(
@@ -3025,7 +3025,7 @@ export class BTAPI {
      */
     private requireIndexizedSheet(sheet: SpriteSheet): void {
         if (!sheet.isIndexed()) {
-            throw new Error(spriteNotIndexizedError());
+            throw new Error(SPRITE_NOT_INDEXIZED_MESSAGE);
         }
     }
 

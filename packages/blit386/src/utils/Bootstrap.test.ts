@@ -213,6 +213,29 @@ describe('bootstrap', () => {
             expect(onSuccess).toHaveBeenCalledOnce();
         });
 
+        it('should keep the canvas, log, and resolve true when onSuccess throws', async () => {
+            const { canvas, container } = setupDOM();
+
+            // Real pages put the canvas inside the container that displayError empties.
+            container.appendChild(canvas);
+
+            const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const onError = vi.fn();
+            const result = await bootstrap(MockDemo, {
+                isWaitingForDOMReady: false,
+                onError,
+                onSuccess: () => {
+                    throw new Error('analytics is down');
+                },
+            });
+
+            expect(result).toBe(true);
+            expect(canvas.isConnected).toBe(true);
+            expect(container.contains(canvas)).toBe(true);
+            expect(onError).not.toHaveBeenCalled();
+            expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('onSuccess'), expect.any(Error));
+        });
+
         it('should set canvas tabIndex to 0 and focus the canvas before engine init', async () => {
             const { canvas } = setupDOM();
 

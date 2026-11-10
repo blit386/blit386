@@ -3,8 +3,7 @@ import {
     assetDimensionInvalidError,
     assetDimensionTooLargeError,
     assetIndexedPixelLengthError,
-    assetIndexedPixelOverflowError,
-    btfontEmbeddedTextureFormatError,
+    BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphAreaTooLargeError,
     btfontGlyphCountTooLargeError,
@@ -16,8 +15,8 @@ import {
     btfontGlyphSizeTooLargeError,
     btfontJsonTooLargeError,
 } from './errorMessages';
-import { Rect2i } from './Rect2i';
-import { MAX_RENDER_DIMENSION, MAX_RENDER_PIXELS } from './RenderLimits';
+import type { Rect2i } from './Rect2i';
+import { checkSize, MAX_RENDER_DIMENSION, MAX_RENDER_PIXELS, RENDER_DIMENSION_LIMITS } from './RenderLimits';
 
 /** Maximum decoded asset width or height on either axis before CPU/GPU allocation. */
 export const MAX_ASSET_DIMENSION = MAX_RENDER_DIMENSION;
@@ -26,11 +25,7 @@ export const MAX_ASSET_DIMENSION = MAX_RENDER_DIMENSION;
 export const MAX_ASSET_PIXELS = MAX_RENDER_PIXELS;
 
 /** Shared allocation policy for sprite sheets, font atlases, and indexed pixel buffers. */
-export const ASSET_DIMENSION_LIMITS = {
-    maxWidth: MAX_ASSET_DIMENSION,
-    maxHeight: MAX_ASSET_DIMENSION,
-    maxPixels: MAX_ASSET_PIXELS,
-} as const;
+export const ASSET_DIMENSION_LIMITS = RENDER_DIMENSION_LIMITS;
 
 /** Maximum `.btfont` JSON payload size in bytes before parsing. */
 export const MAX_BTFONT_JSON_BYTES = 1_048_576;
@@ -90,51 +85,6 @@ export function formatSize(width: number, height: number): string {
 }
 
 /**
- * Computes a safe pixel count when width and height are valid asset dimensions.
- *
- * @param width - Width in pixels.
- * @param height - Height in pixels.
- * @returns Total pixels when valid, otherwise `null`.
- */
-export function computeSafePixelArea(width: number, height: number): number | null {
-    if (!isPositiveIntegerDimension(width) || !isPositiveIntegerDimension(height)) {
-        return null;
-    }
-
-    if (width > ASSET_DIMENSION_LIMITS.maxWidth || height > ASSET_DIMENSION_LIMITS.maxHeight) {
-        return null;
-    }
-
-    const area = width * height;
-
-    if (!Number.isSafeInteger(area) || area > ASSET_DIMENSION_LIMITS.maxPixels) {
-        return null;
-    }
-
-    return area;
-}
-
-/**
- * Returns whether a value is a positive finite integer suitable for pixel sizing.
- *
- * @param value - Candidate dimension.
- * @returns True when the value is a positive whole number.
- */
-function isPositiveIntegerDimension(value: number): boolean {
-    return Number.isFinite(value) && Number.isInteger(value) && value > 0;
-}
-
-/**
- * Returns whether a value is a finite integer suitable for glyph metrics.
- *
- * @param value - Candidate metric.
- * @returns True when the value is a finite whole number.
- */
-function isIntegerMetric(value: number): boolean {
-    return Number.isFinite(value) && Number.isInteger(value);
-}
-
-/**
  * Validates decoded image or indexed-buffer dimensions before allocation.
  *
  * @param context - Asset label used in error text (for example `'sprite sheet'`).
@@ -143,11 +93,13 @@ function isIntegerMetric(value: number): boolean {
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateDimensions(context: string, width: number, height: number): string | null {
-    if (!isPositiveIntegerDimension(width) || !isPositiveIntegerDimension(height)) {
+    const problem = checkSize(width, height);
+
+    if (problem === 'invalid') {
         return assetDimensionInvalidError(context, formatSize(width, height));
     }
 
-    if (width > ASSET_DIMENSION_LIMITS.maxWidth || height > ASSET_DIMENSION_LIMITS.maxHeight) {
+    if (problem === 'too-large') {
         return assetDimensionTooLargeError(
             context,
             formatSize(width, height),
@@ -156,9 +108,7 @@ export function validateDimensions(context: string, width: number, height: numbe
         );
     }
 
-    const area = width * height;
-
-    if (!Number.isSafeInteger(area) || area > ASSET_DIMENSION_LIMITS.maxPixels) {
+    if (problem === 'area') {
         return assetDimensionAreaTooLargeError(context, formatSize(width, height), ASSET_DIMENSION_LIMITS.maxPixels);
     }
 
@@ -223,11 +173,7 @@ export function validateIndexedPixelInput(width: number, height: number, pixelLe
         return dimensionError;
     }
 
-    const expectedLength = computeSafePixelArea(width, height);
-
-    if (expectedLength === null) {
-        return assetIndexedPixelOverflowError(formatSize(width, height));
-    }
+    const expectedLength = width * height;
 
     if (pixelLength !== undefined && pixelLength !== expectedLength) {
         return assetIndexedPixelLengthError(pixelLength, width, height, expectedLength);
@@ -259,7 +205,7 @@ export function assertIndexedPixelInput(width: number, height: number, pixelLeng
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontJsonByteSize(byteLength: number): string | null {
-    if (!Number.isFinite(byteLength) || byteLength < 0 || !Number.isInteger(byteLength)) {
+    if (!Number.isInteger(byteLength) || byteLength < 0) {
         return btfontJsonTooLargeError(byteLength, MAX_BTFONT_JSON_BYTES);
     }
 
@@ -277,7 +223,7 @@ export function validateBtfontJsonByteSize(byteLength: number): string | null {
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateGlyphCount(count: number): string | null {
-    if (!Number.isFinite(count) || count < 0 || !Number.isInteger(count)) {
+    if (!Number.isInteger(count) || count < 0) {
         return btfontGlyphCountTooLargeError(count, MAX_GLYPH_COUNT);
     }
 
@@ -306,7 +252,7 @@ export function validateBtfontEmbeddedTextureUri(texture: string): string | null
     }
 
     if (!lowerTexture.startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX)) {
-        return btfontEmbeddedTextureFormatError();
+        return BTFONT_EMBEDDED_TEXTURE_FORMAT_MESSAGE;
     }
 
     const payloadLength = texture.length - BTFONT_EMBEDDED_TEXTURE_PREFIX.length;
@@ -337,7 +283,7 @@ function validateBtfontGlyphMetrics(glyph: BtfontGlyphData, charLabel: string): 
     ];
 
     for (const [name, value] of metrics) {
-        if (!isIntegerMetric(value)) {
+        if (!Number.isInteger(value)) {
             return btfontGlyphMetricNotIntegerError(charLabel, name, value);
         }
     }
@@ -458,17 +404,11 @@ function areFiniteIntegers(
     sheetHeight: number,
 ): boolean {
     return (
-        Number.isFinite(srcX) &&
         Number.isInteger(srcX) &&
-        Number.isFinite(srcY) &&
         Number.isInteger(srcY) &&
-        Number.isFinite(srcWidth) &&
         Number.isInteger(srcWidth) &&
-        Number.isFinite(srcHeight) &&
         Number.isInteger(srcHeight) &&
-        Number.isFinite(sheetWidth) &&
         Number.isInteger(sheetWidth) &&
-        Number.isFinite(sheetHeight) &&
         Number.isInteger(sheetHeight)
     );
 }
@@ -477,10 +417,9 @@ function areFiniteIntegers(
  * Clips a sprite source rectangle, given as scalars, to the sheet and software blit limits,
  * writing the result into a caller-owned `out` rectangle instead of allocating one.
  *
- * Zero-allocation counterpart to {@link clipSpriteSourceRect} for hot-path callers that blit
- * many times per frame (for example, a per-glyph blit loop) and must not allocate a result
- * object per call. Mirrors the `*To(out)` convention used elsewhere on `Rect2i`/`Vector2i`
- * (e.g. {@link Rect2i.intersectTo}).
+ * Built for hot-path callers that blit many times per frame (for example, a per-glyph blit
+ * loop) and must not allocate a result object per call. Mirrors the `*To(out)` convention
+ * used elsewhere on `Rect2i`/`Vector2i` (e.g. {@link Rect2i.intersectTo}).
  *
  * @param srcX - Requested source rectangle X in sheet space.
  * @param srcY - Requested source rectangle Y in sheet space.
@@ -532,30 +471,4 @@ export function clipSpriteSourceRectXYTo(
     out.height = height;
 
     return true;
-}
-
-/**
- * Clips a sprite source rectangle to the sheet and software blit limits.
- *
- * Returns `null` when the rectangle is empty, fully outside the sheet, or still
- * too large to iterate safely after clipping. Use {@link clipSpriteSourceRectXYTo} in
- * hot paths that call this many times per frame, to avoid the allocation this makes.
- *
- * @param srcRect - Requested source rectangle in sheet space.
- * @param sheetWidth - Sprite sheet width in pixels.
- * @param sheetHeight - Sprite sheet height in pixels.
- * @returns Clipped source bounds, or `null` when the blit should be skipped.
- */
-export function clipSpriteSourceRect(
-    srcRect: Rect2i,
-    sheetWidth: number,
-    sheetHeight: number,
-): { x: number; y: number; width: number; height: number } | null {
-    const out = new Rect2i();
-
-    if (!clipSpriteSourceRectXYTo(srcRect.x, srcRect.y, srcRect.width, srcRect.height, sheetWidth, sheetHeight, out)) {
-        return null;
-    }
-
-    return { x: out.x, y: out.y, width: out.width, height: out.height };
 }

@@ -22,17 +22,12 @@ const EXPLICIT_PATH_PREFIXES = ['/', './'] as const;
  */
 export function hasExplicitLocation(url: string): boolean {
     const lowerUrl = url.toLowerCase();
-    let explicit = lowerUrl.includes('://');
 
-    if (!explicit) {
-        explicit = EXPLICIT_URL_SCHEME_PREFIXES.some((prefix) => lowerUrl.startsWith(prefix));
-    }
-
-    if (!explicit) {
-        explicit = EXPLICIT_PATH_PREFIXES.some((prefix) => url.startsWith(prefix));
-    }
-
-    return explicit;
+    return (
+        lowerUrl.includes('://') ||
+        EXPLICIT_URL_SCHEME_PREFIXES.some((prefix) => lowerUrl.startsWith(prefix)) ||
+        EXPLICIT_PATH_PREFIXES.some((prefix) => url.startsWith(prefix))
+    );
 }
 
 /**

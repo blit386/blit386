@@ -5,7 +5,7 @@ import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { clipSpriteSourceRectXYTo } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { noActivePaletteError } from '../utils/errorMessages';
+import { NO_ACTIVE_PALETTE_MESSAGE } from '../utils/errorMessages';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { ClippedLine } from './clipLine';
@@ -295,7 +295,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      */
     beginFrame(): void {
         if (!this.palette) {
-            throw new Error(noActivePaletteError());
+            throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
         }
 
         this.commands.length = 0;

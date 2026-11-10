@@ -67,11 +67,7 @@ export function resolveExposeGlobal(signals: ExposeGlobalSignals): boolean {
  * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
  */
 export function exposeGlobal(value: unknown, override?: boolean): void {
-    if (!resolveExposeGlobal({ override, devMode: isDevMode() })) {
-        return;
-    }
-
-    if (typeof globalThis.window === 'undefined') {
+    if (!canExpose(override)) {
         return;
     }
 
@@ -85,11 +81,7 @@ export function exposeGlobal(value: unknown, override?: boolean): void {
  * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
  */
 export function exposeInputTrace(trace: InputTrace, override?: boolean): void {
-    if (!resolveExposeGlobal({ override, devMode: isDevMode() })) {
-        return;
-    }
-
-    if (typeof globalThis.window === 'undefined') {
+    if (!canExpose(override)) {
         return;
     }
 
@@ -104,4 +96,14 @@ export function exposeInputTrace(trace: InputTrace, override?: boolean): void {
             return trace.isRecording;
         },
     };
+}
+
+/**
+ * Returns whether gating allows a `window` assignment and a `window` is actually present.
+ *
+ * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
+ * @returns `true` when `exposeGlobal` / `exposeInputTrace` should assign.
+ */
+function canExpose(override?: boolean): boolean {
+    return resolveExposeGlobal({ override, devMode: isDevMode() }) && typeof globalThis.window !== 'undefined';
 }

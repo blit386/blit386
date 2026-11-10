@@ -21,7 +21,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | Is this API exported publicly? | The trailing `export { ... }` / `export type { ... }` block at the end of `src/BLIT386.ts` |
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` - not docs |
 | What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) - not docs |
-| What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
+| What error message style should I use? | `docs/voice.md`, then the domain files in `src/utils/errorMessages/`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
 | What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio), `src/__test__/spriteOrientationFixture.ts` (flip/rotation oracle), `src/__test__/engineHarness.ts` (real engine at a chosen refresh rate), `src/overlay/testFixtures.ts` (overlay) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
 | How is `bt-api-getters.md` checked against the real `BT.*` surface? | `scripts/check-api-getters-drift.mjs`, wired into `pnpm run api:getters:check` (this package's own `preflight`) |
