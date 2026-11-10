@@ -28,7 +28,7 @@ repo tree from root.
 - Run `git diff --stat` to show a summary of reformatted files
 - List the number of files modified
 
-3. Verify formatting
+3. Verify formatting (skip only for a throwaway quick pass right after edits - never before a commit or PR)
 
 - Whole repo: `pnpm run format:check`. A single package: `pnpm --filter <name> run format:check` (root-level
   `format:check` also covers `kit` / `create-blit386`).
@@ -47,7 +47,7 @@ repo tree from root.
 - Line width: 120 characters
 - Quotes: single quotes
 - Semicolons: always
-- Trailing commas: always
+- Trailing commas: always in code; never in JSON/JSONC (`biome.json` sets `json.formatter.trailingCommas: none`)
 
 ## Per-package notes
 

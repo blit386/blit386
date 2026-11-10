@@ -38,8 +38,8 @@ verified by:
 
 1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
 2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
-3. Preflight checks (`/preflight demos`) - lint, test, spellcheck, knip, check:demo-registry, check:demo-comment-links,
-   build
+3. Preflight checks (`/preflight demos`) - lint, test, spellcheck, knip, check:demo-registry, check:demo-comment-links
+   (the production build is not part of preflight)
 
 What to do instead: verify a new demo with `pnpm run dev` + manual exercise; confirm no build regression with
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with
@@ -53,36 +53,8 @@ WebGPU. The shared UI kit's tests do import the real `blit386` package (for `Rec
 `pnpm run test` builds it automatically via `../../scripts/ensure-engine-built.mjs` when missing or stale, same as
 `dev`/`build`/`preview`/`knip` already do.
 
-| Test file | Covers |
-| --- | --- |
-| `scripts/__tests__/capture-demo-clip.test.mjs` | Argument parsing, URL/dimension math, ffmpeg and browser-script builders |
-| `scripts/__tests__/capture-og-image.test.mjs` | OG card argument parsing, scale-mode resolution, integer/fit/auto scale math, the ffmpeg filter graph, the `!important` canvas-prep script |
-| `scripts/__tests__/capture-demo-shots.test.mjs` | The `capture:shots` driver: argument parsing, variant validation, `/shots?auto` URL building, output-path containment |
-| `scripts/__tests__/check-demo-registry.test.mjs` | The `check:demo-registry` validation rules: each one still rejects the bad input it claims to |
-| `scripts/__tests__/check-demo-comment-links.test.mjs` | The `check:demo-comment-links` helpers: header-comment extraction, dead-host, docs-link, and demo-slug failures |
-| `plugins/__tests__/demo-registry.test.mjs` | `@description` and `@ogScale` header-tag parsing across both comment styles |
-| `plugins/__tests__/virtual-demos.test.mjs` | `renderDemoHtml` layout substitution and the dev-only vintage-URL redirect lookup |
-| `plugins/__tests__/channel-headers.test.mjs` | The pure `robots.txt` / `_headers` builders behind `channelHeadersPlugin` |
-| `plugins/__tests__/sitemap.test.mjs` | The pure sitemap XML builder behind `sitemapPlugin` |
-| `plugins/__tests__/html-escape.test.mjs` | The shared HTML-escaping helper `virtual-demos.js` and `social-meta.js` use |
-| `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
-| `src/shared/__tests__/ui-theme.test.mjs` | `applyTheme()`: default/custom `startSlot`, the 12-color block, the nine-slice sets it builds, out-of-range guards, the fresh-copy-vs-singleton distinction |
-| `src/shared/__tests__/ui-core.test.mjs` | `hitContains()`'s inclusive/exclusive edges, the draw-command pool's allocates-nothing-per-frame invariant (and its overflow-growth path), `begin()`/`end()` group invariants, layout anchor math for all five `UI_ANCHORS`, the `debug` overlay, the `snapshot()` tests (recording off allocates nothing, absolute coordinates, a fresh group list per tick, a returned copy), no `BT.pointerPos()` call and one `BT.displaySize` read per frame, and pruning plus a fresh group list in a demo that never calls `ui.tick()` |
-| `src/shared/__tests__/ui-lint.test.mjs` | The layout lint rules (`overlap`, `out-of-display`, `margin`) over recorded snapshots |
-| `src/shared/__tests__/ui-widgets.test.mjs` | `slider()` pixel/value mapping and clamping, `checkbox()` click and key-edge toggling, `pip()`'s purely-visual state, `meter()` fraction clamping, `tooltip()` docking and clamping, `spacer()` advancing the cursor, one press claiming exactly one of two stacked checkboxes or buttons |
-| `src/shared/__tests__/key-names.test.mjs` | `keyLabel()`: letter, digit, arrow, named-key, and numpad labels, and the pass-through for any other code |
-| `src/shared/__tests__/ui-gestures.test.mjs` | Swipe direction/threshold/time-window recognition, the widget-exclusion gate, the dominant-axis tie-break |
-| `src/shared/__tests__/ui-dpad.test.mjs` | `isDown`/`isPressed` edge semantics across ticks, `show: 'auto'` vs `'always'` visibility gating, its hit rects surviving the next `begin()` wherever it is drawn in the frame |
-| `src/shared/__tests__/crt-glitch.test.mjs` | Both glitch-type lists built from `GLITCH_TYPE`, and a label for every type |
-| `_shots/__tests__/poses.test.mjs` | The pose table: ids, one trigger per pose, every slug known to the registry |
-| `_shots/__tests__/manifest.test.mjs` | Manifest shape, merging a partial run into the committed manifest |
-| `_shots/__tests__/layout-model.test.mjs` | The gallery's stack and tile layout model |
-| `_shots/__tests__/keys.test.mjs` | The `/shots` keyboard map |
-| `_shots/__tests__/capture.test.mjs` | The capture engine's pure helpers |
-| `_shots/__tests__/diff.test.mjs` | `diffPixels`: changed pixels marked magenta, the rest transparent, and the size-mismatch refusal |
-| `_shots/__tests__/baseline.test.mjs` | `parseBaseline`: which `?baseline=` values the page accepts (http(s) and same-origin paths) and refuses |
-| `_shots/__tests__/findings.test.mjs` | Review findings: flags, notes, and the Markdown export |
-| `_shots/__tests__/sheet-entries.test.mjs` | The public site-index sheet's tile pick: one clean `display` capture per nav-visible demo, in nav order |
+Every test file opens with a doc comment saying what it covers - `ls` those four directories and read the headers for
+the inventory; this skill keeps no per-file list.
 
 The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
 verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM
@@ -121,47 +93,11 @@ Neither covers the rendered site itself - visual/content correctness is verified
 ## packages/kit and packages/create-blit386
 
 `node --test` suites only. No Vitest, no Playwright, no top-level `tests/` directory - each package owns its own `test/`
-folder. Every file opens with a doc comment saying what it covers; `ls packages/kit/test packages/create-blit386/test`
-is the truth if a row here drifts. Totals as of 2026-10-09: 200 cases in `packages/kit`, 76 in
-`packages/create-blit386`.
-
-`packages/kit/test` (`hook-harness.mjs` and `shell-cases.mjs` are shared fixtures, not suites):
-
-| Suite | Covers |
-| --- | --- |
-| `agents-sync.test.mjs` | `blit agents sync` when a file the kit newly ships already exists, untracked, on disk |
-| `antigravity-hooks.test.mjs` | The Antigravity adapter's hooks: `hooks.json` shape, the fail-closed guard entry, the once-per-conversation bootstrap, format-on-edit payloads |
-| `clean.test.mjs` | `blit clean`: language detection, the scaffolded-vs-modified safety check, the confirm prompt and `--yes`, the manifest hash update |
-| `codemod.test.mjs` | The migration registry and anchored codemod engine behind `blit migrate`: auto-applied renames vs. names left for review |
-| `codex-adapter.test.mjs` | The Codex adapter: `.codex/hooks.json` and `config.toml`, shipped scripts, and that the hooks block the way Codex needs |
-| `copilot-adapter.test.mjs` | The GitHub Copilot adapter: `.github/hooks/blit.json`, the setup workflow, the root `.mcp.json`, both payload shapes |
-| `doctor.test.mjs` | `blit doctor`: the kit-engine range check, the `.gitattributes` check, the docs-server config check |
-| `enable-hot-reload.test.mjs` | The vite.config hot-reload enabler and `hasBlit386VitePlugin` |
-| `env.test.mjs` | `satisfiesCaretRange` / `exceedsCaretRange`, the caret-range helpers behind `doctor` and `upgrade` |
-| `gemini-adapter.test.mjs` | The Gemini CLI adapter: `.gemini/settings.json`, shipped scripts, exit-code-2 blocking |
-| `guard-core.test.mjs` | `guard-core.cjs`: the pure path and shell classifiers every agent's hook entry shares, and the fail-closed wrapper |
-| `hook-scripts.test.mjs` | The `format-file.cjs` and `protect-files.cjs` hook scripts every generated game gets |
-| `kit-root.test.mjs` | `kitRoot()` and `resolveKitRoot()`: both ways of finding a kit package root, checked on the emitted artifacts |
-| `mcp-config.test.mjs` | The documentation-MCP config the adapters emit, compared against the website package's canonical definition |
-| `opencode.test.mjs` | The OpenCode adapter: emitted files, `opencode.json` permission lists in step with the guard core, the `kit-guard.ts` plugin |
-| `ownership.test.mjs` | The shared ownership module: which generated files the kit owns and which paths each assistant occupies |
-| `play.test.mjs` | `blit play` paths that fail before a browser opens: help, argument checks, no game folder, the missing `playwright-core` hint |
-| `shell-safety.test.mjs` | The `shell-safety.cjs` entry Claude Code and Cursor run: every case in the policy table in each agent's protocol, plus payload edge cases. Slow - spawns a process per case |
-| `skills-frontmatter.test.mjs` | Every shipped skill's frontmatter parses and stays within the cross-agent limits; flat skills layout; shared `.agents/skills/` copies byte-equal |
-| `upgrade.test.mjs` | `blit upgrade`: the not-under-git abort, and the offline bump that offers `migrate` |
-
-`packages/create-blit386/test` (`helpers.mjs` is the shared fixture, not a suite):
-
-| Suite | Covers |
-| --- | --- |
-| `scaffold.test.mjs` | The scaffold path end to end (JS and TS): expected files, no leftover placeholders, no leaked `workspace:*`, the non-TTY `--yes` fallback, optional CI |
-| `kit-parity.test.mjs` | Single-source guards against `@blit386/kit`: the resolved kit, written agent files vs. the adapters' output, manifest classes vs. `classifyFile` |
-| `agents-sync.test.mjs` | `blit agents sync` on a scaffolded game: drift check, full write path, symlink guards |
-| `agents-add.test.mjs` | `blit agents add` on a scaffolded game: Claude Code and Cursor after the fact, the all-or-nothing collision rule, the `.mcp.json` merge |
-| `agent-*.test.mjs` | One suite per assistant adapter (antigravity, claude-cursor, codex, copilot, gemini, opencode, zed): what its scaffold ships and how its `add` and `sync` merges behave |
-| `migrate.test.mjs` | `blit migrate` on a scaffolded game: the old-name preview and rewrite, the hot-reload upgrade of an older vite.config |
-| `env.test.mjs` | `meetsNodeFloor`, the Node version floor guard |
-| `pkgManager.test.mjs` | The Corepack `packageManager` field |
+folder. Every file opens with a doc comment saying what it covers, so
+`ls packages/kit/test packages/create-blit386/test` and those headers are the inventory; this skill keeps no per-file
+list. In `packages/kit/test`, `hook-harness.mjs` and `shell-cases.mjs` are shared fixtures, not suites, and
+`shell-safety.test.mjs` is slow (it spawns a process per case). In `packages/create-blit386/test`, `helpers.mjs` is the
+shared fixture and each `agent-*.test.mjs` covers one adapter.
 
 Prerequisites: a build for the scaffolder suite - it shells out to `packages/create-blit386/dist/index.js` and
 `packages/kit/dist/cli.js`. The kit package rebuilds itself through a `pretest` script; the scaffolder package does not,

@@ -15,25 +15,12 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 - Node.js >= 22.18.0 (`engines` in the root `package.json`)
 - pnpm 11.20.0 (`packageManager` in the root `package.json`)
 
-## docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
+## format:check, docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
 
-`format:check`, `docs:links` and `agents:check` are not package-scoped - each package's copy of the script
-(`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
-`package.json` invoked it. They used to be listed in every package's `preflight` chain too, which meant
-`.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
-one push - most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
-`preflight` scripts for that reason (`format:check` in BT-783); run them explicitly (`pnpm run format:check`,
-`pnpm run docs:links`, `pnpm run agents:check`, `pnpm run sync:cursor-commands:check`,
-`pnpm run sync:maintainer-agents:check`) or via `/preflight root` when checking a package in isolation.
-`sync:cursor-commands:check` and `sync:maintainer-agents:check` are the same kind of root-only, whole-repo check - they
-never had a per-package copy to begin with, since they generate against root `.claude/skills/` / `.cursor/commands/` and
-the maintainer dogfood agent configs regardless of which package changed, as is `audit:modules:check` (the audit ledger
-in `.claude/skills/audit/modules.md` against the units derived from the tree). The root-level pass only runs when
-`PREFLIGHT_STATUS` is zero - a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`,
-`agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`,
-`spellcheck:kit`, and `test:root` entirely, so a push only exercises them once the per-package checks are clean. That
-gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether the
-per-package quality jobs pass.
+They walk the whole repo whichever `package.json` invokes them, so no package `preflight` chain runs them (and neither
+does `audit:modules:check`, `spellcheck:kit` or `test:root`); `format:check` left the blit386, demos and website chains
+for the same reason in BT-783. Run them directly or via `/preflight root`. `.husky/pre-push` runs them once, after the
+package preflights pass (see `/preflight root` below); in CI, `quality-root` has no `needs` and runs regardless.
 
 ## Steps
 
@@ -55,7 +42,8 @@ per-package quality jobs pass.
 - `sync:doc-banners:check` - blit386.dev banner freshness on every published doc
 - `api:since:check` - every public export carries an `@since` tag
 - `api:history:check` - `docs/_api-history.json` matches the source version tags
-- `api:getters:check` - every public `BT.*` getter and method has a mention in `.claude/rules/bt-api-getters.md`
+- `api:getters:check` - every public `BT.*` getter is listed under "Prefer getters" and every method under "Keep as
+  methods" in `.claude/rules/bt-api-getters.md`, and neither list names a removed member
 - `api:deprecations:check` - `docs/reference-deprecations.md` matches the kit's migration registry
   (`scripts/gen-deprecations.mjs --check`)
 - `system-font:check` - `src/assets/fonts/systemFontData.ts` matches `assets/system-font.png` and the extra-chars list

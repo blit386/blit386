@@ -26,7 +26,7 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
   every package:
 
   ```bash
-  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json)
+  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json)
   git diff -- "${POLICY_ALLOWLIST[@]}"
   git diff --cached -- "${POLICY_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
@@ -36,11 +36,12 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
   touch, and nothing else:
 
   ```bash
-  ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json .husky/ \
+  ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json .husky/ \
     .github/ .zed/ scripts/ .devcontainer/ .coderabbit.yaml .editorconfig .gitattributes .gitignore \
     .lintstagedrc.json .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md \
     LICENSE SECURITY.md biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml \
-    pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json)
+    pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json .agents/ .codex/ .cursor/ .gemini/ \
+    .opencode/ opencode.json .mcp.json .node-version README.md docs/)
   git diff -- "${ROOT_ALLOWLIST[@]}"
   git diff --cached -- "${ROOT_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${ROOT_ALLOWLIST[@]}"
@@ -66,6 +67,12 @@ Shared across every package:
 - No emoji anywhere (code, comments, docs, commits)
 - American English spelling, with the documented exemptions (`AnalyserNode`, the `gray`/`grey` alias)
 - Consistent naming conventions, proper error handling (guard clauses, null checks)
+- Named constants: a literal compared at more than one site gets one named constant or literal-union type
+  (`.claude/rules/named-constants.md`)
+- Plain hyphen-minus for parenthetical breaks and ranges - no en or em dashes
+- Markdown tables stay compact (one space of padding, never aligned to the widest cell)
+- Docs sync: behavior, API, script, or workflow changes update their docs in the same change
+  (`.claude/rules/docs-sync-required.md`)
 
 `blit386`:
 
@@ -75,6 +82,8 @@ Shared across every package:
   `FrameCapture`, not `requestCapture()`); public `BT.*` and barrel exports stay unchanged
 - BT API shape: read-only zero-arg snapshots are getters (`BT.displaySize`, `BT.targetFPS`), not `BT.foo()`; actions and
   parameterized queries stay methods
+- New or changed public exports carry an `@since` tag and a matching `docs/_api-history.json` entry
+  (`packages/blit386/.claude/rules/bt-api-getters.md`)
 
 `demos`:
 
@@ -84,7 +93,7 @@ Shared across every package:
   and why. A comment that only restates the code (`// increment counter` above `i++`) is not sufficient
 - Shared UI kit only - on-screen UI comes from `src/shared/ui.js` (`applyTheme()` in `init()` before `BT.paletteSet()`,
   `ui.tick()` first in `update()`, `ui.begin()` / widgets / `ui.end()` in `render()`); never hand-rolled panels,
-  buttons, or HUD colors (`flurry` is the one intentional exception)
+  buttons, or HUD colors (the five full-screen pieces listed in `packages/demos/CLAUDE.md` are the exceptions)
 - Touch usability: every key-triggered action also has a `ui.button` with a `{ key }` binding; directional input also
   has `ui.dpadWidget()` / `ui.swipe()`
 - Keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, kit `{ key }` bindings via `ui.tick()`) read

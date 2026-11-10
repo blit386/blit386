@@ -186,14 +186,15 @@ set by `src/basics.js`; see `packages/demos/CLAUDE.md` (Documentation Style and 
 ### 5b. Capture the OG card and the shots
 
 Every demo ships with an OpenGraph card and a `/shots` capture set; `check:demo-registry` fails on a missing
-`public/social/og-<slug>.png`, and the demo stays off the all-demos sheet at `/` until it has a `display` capture. With
-the dev server running (`pnpm run dev` on :5173, or `pnpm run build && pnpm run preview` on :4173 for the OG card):
+`public/social/og-<slug>.png`, and the demo stays off the all-demos sheet at `/` until it has a `display` capture.
 
-- `pnpm run capture:og -- <slug>` writes `public/social/og-<slug>.png`; look at it before committing and add
-  `// @ogScale` only if the framing is wrong.
-- `pnpm run capture:shots -- --demos <slug>` writes `public/shots/<slug>/`. The first pose is the OG card and the index
-  tile; add a `POSES_BY_SLUG` entry in `_shots/` only when the demo needs a key press or pointer gesture to show its
-  point (see `/demos-shots`).
+- `pnpm run build && pnpm run preview`, then `pnpm run capture:og -- <slug> --force --base-url http://localhost:4173`
+  writes `public/social/og-<slug>.png`. Without `--base-url` it captures from production, where a new demo does not
+  exist yet; the dev server is not supported. Look at the card before committing and add `// @ogScale` only if the
+  framing is wrong.
+- With the dev server running (`pnpm run dev`), `pnpm run capture:shots -- --demos <slug>` writes
+  `public/shots/<slug>/`. The first pose is the OG card and the index tile; add a `POSES_BY_SLUG` entry in `_shots/`
+  only when the demo needs a key press or pointer gesture to show its point (see `/demos-shots`).
 
 ### 6. Update the docs
 
@@ -212,8 +213,8 @@ emoji, per project rules.
 - Plain JavaScript only (ES2022, no TypeScript).
 - Number-free kebab-case slug; numeric prefixes are rejected.
 - Every new demo must be appended to `DEMO_ORDER`.
-- Use the shared UI kit - never hand-roll panels, buttons, or HUD text colors (`flurry` is the only intentional
-  exception: no demo HUD).
+- Use the shared UI kit - never hand-roll panels, buttons, or HUD text colors (the five full-screen pieces with no demo
+  HUD - `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` - are the intentional exceptions).
 - Every demo must be usable on touch: key-triggered actions also get a `ui.button` with a `{ key }` binding, and
   directional input also gets `ui.dpadWidget()` / `ui.swipe()`.
 - Beginner-friendly comments are required; relaxed linting does not relax the comment rule.

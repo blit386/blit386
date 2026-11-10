@@ -9,9 +9,9 @@ network). These are environment artifacts, not code bugs - do not "fix" them by 
   or add a page), restore the committed `versions` block; the only real diff should be your intended `symbols` / `pages`
   change. `api:history:check` and the `resolveTagDate` test in `packages/blit386/scripts/gen-api-history.test.mjs` fail
   for the same tag-less reason and pass in CI.
-- `docs:links` needs outbound network. It fails only on external `https://` URLs (the `blit386.dev` banner links, the
-  Keep a Changelog and WebKit-bug references) returning 403 through a sandbox proxy; every relative/internal link still
-  resolves. Confirm all failures are external before treating one as real.
+- `docs:links` needs outbound network. It fails only on external `https://` URLs (the Keep a Changelog and WebKit-bug
+  references) returning 403 through a sandbox proxy; every relative/internal link still resolves. Confirm all failures
+  are external before treating one as real.
 - Hooks amplify those two artifacts. The pre-push hook runs `preflight` (which includes `typecheck` + `lint`) for the
   packages changed since the pushed ref's remote tip (falling back to the upstream ref, then `origin/main`; every
   package when more than one ref is pushed or no base ref resolves; nothing for a delete-only push), then - only if that
@@ -21,8 +21,8 @@ network). These are environment artifacts, not code bugs - do not "fix" them by 
   2-4x per push - see the `preflight` skill). A failed package preflight skips that root-level pass entirely; the
   bench-coverage reminder runs last and never fails the push. The lint-staged pre-commit hook runs `biome` / `prettier`
   / `eslint --fix` / `cspell` on staged files. When the only failures are the tag-less / no-network artifacts above,
-  push with `--no-verify` after confirming the real checks (`typecheck`, `lint`, `format:check`, `spellcheck`) pass on
-  their own.
+  confirm the real checks (`typecheck`, `lint`, `format:check`, `spellcheck`) pass on their own, then ask the user
+  before pushing with `--no-verify` - never skip the hook unasked.
 - `.agents/skills/*` are symlinks to `.claude/skills/*`. Edit the `.claude` copy once and both update; do not treat them
   as two files to patch.
 - `pnpm run spellcheck` in `packages/blit386` scopes to that package's `src/`, `docs/`, and `README.md`, so it does not
