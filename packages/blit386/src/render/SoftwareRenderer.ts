@@ -361,7 +361,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param destPos - Destination position in logical coordinates.
      * @param paletteOffset - Palette index offset applied to every non-transparent pixel.
      * @param orientation - Row of `SPRITE_ORIENTATIONS`, from `resolveSpriteOrientation` (`0` replays through
-     *   the unchanged {@link blitIndexedRect} path).
+     *   the unchanged `SoftwareRaster` blit path).
      */
     drawSpriteOriented(
         spriteSheet: SpriteSheet,

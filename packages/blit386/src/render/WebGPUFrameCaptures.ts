@@ -41,7 +41,10 @@ export class WebGPUFrameCaptures {
      * @param displaySize - Logical render resolution.
      */
     constructor(
+        /** WebGPU device. */
         private readonly device: GPUDevice,
+
+        /** Logical render resolution. */
         private readonly displaySize: Vector2i,
     ) {}
 

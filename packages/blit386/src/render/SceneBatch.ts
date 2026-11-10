@@ -142,7 +142,7 @@ export class SceneBatch {
     private closeSegment(): void {
         if (this.active === PRIMITIVE) {
             this.kinds.push(PRIMITIVE);
-            this.ends.push(this.primitives.getVertexCount());
+            this.ends.push(this.primitives.getFrameSubmittedVertices());
         } else if (this.active === SPRITE) {
             this.kinds.push(SPRITE);
             this.ends.push(this.sprites.endBatch());

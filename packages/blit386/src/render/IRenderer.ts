@@ -222,9 +222,11 @@ export interface IRenderer {
     captureFrameForShortcut(): Promise<Blob>;
 
     /**
-     * Rejects every pending capture and releases the GPU or canvas resources {@link init} made.
-     * The engine calls it when it drops a renderer (a `BT.init` restart), so an awaited
-     * `BT.captureFrame()` fails instead of hanging. {@link init} calls it first on a re-run.
+     * Rejects every pending capture and releases the frame resources the backend holds outside
+     * its draw pipelines (on WebGPU the palette buffer, effect chains, and frame textures). Pipeline
+     * buffers stay; the engine destroys the `GPUDevice` right after. The engine calls it when it drops
+     * a renderer (a `BT.init` restart), so an awaited `BT.captureFrame()` fails instead of hanging.
+     * {@link init} calls it first on a re-run.
      */
     destroy(): void;
 

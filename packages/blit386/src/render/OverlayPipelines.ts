@@ -55,9 +55,16 @@ export class OverlayPipelines {
      * @param isEnabled - Allocate every tier at {@link init} instead of on first draw.
      */
     constructor(
+        /** WebGPU device the pipelines are created on. */
         private readonly device: GPUDevice,
+
+        /** Logical render resolution. */
         private readonly displaySize: Vector2i,
+
+        /** Logical scene attachment format. */
         private readonly targetFormat: GPUTextureFormat,
+
+        /** Allocate every tier at {@link init} instead of on first draw. */
         private readonly isEnabled: boolean,
     ) {}
 

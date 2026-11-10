@@ -49,7 +49,7 @@ type SpriteCommand = {
     srcRect: Rect2i;
     destPos: Vector2i;
     paletteOffset: number;
-    /** Row of {@link SPRITE_ORIENTATIONS}; `0` takes the unchanged {@link blitIndexedRect} path. */
+    /** Row of `SPRITE_ORIENTATIONS`; `0` takes the unchanged `blitIndexedRect` path. */
     orientation: number;
     cameraX: number;
     cameraY: number;
@@ -104,13 +104,16 @@ export class SoftwareRaster {
     /** Active palette; `null` draws nothing. */
     palette: Palette | null = null;
 
+    /** Reused clip rect so sprite and rect draws allocate nothing per call. */
     private readonly clipScratch = new Rect2i();
 
     /** Reused clip result so lines allocate nothing per call. */
     private readonly clippedLine: ClippedLine = { x: 0, y: 0, err: 0, steps: 0 };
 
+    /** Logical canvas frame from {@link attach}; `null` before it. */
     private imageData: ImageData | null = null;
 
+    /** Word view over {@link imageData}'s buffer; `null` before {@link attach}. */
     private frameWordView: Uint32Array | null = null;
 
     /**
@@ -125,7 +128,7 @@ export class SoftwareRaster {
      * method. Available once {@link attach} has run.
      *
      * @returns The frame's RGBA pixel buffer.
-     * @throws If accessed before a successful {@link init} call.
+     * @throws If accessed before {@link attach}.
      */
     private get framePixels(): Uint8ClampedArray {
         if (!this.imageData) {
@@ -140,7 +143,7 @@ export class SoftwareRaster {
      * (see {@link fillFrame}). Available once {@link attach} has run.
      *
      * @returns The frame buffer, viewed as one `Uint32Array` word per pixel.
-     * @throws If accessed before a successful {@link init} call.
+     * @throws If accessed before {@link attach}.
      */
     private get wordView(): Uint32Array {
         if (!this.frameWordView) {
@@ -405,7 +408,7 @@ export class SoftwareRaster {
 
     /**
      * Rasterizes a bitmap text command by blitting each precomputed glyph rect. Glyph shapes
-     * were resolved once at queue time (see {@link drawBitmapText}), so this loop does not
+     * were resolved once at queue time (see `SoftwareRenderer.drawBitmapText`), so this loop does not
      * look up glyph metrics or allocate per glyph.
      *
      * @param command - Bitmap text command with sheet, precomputed glyph data, position, and camera state.

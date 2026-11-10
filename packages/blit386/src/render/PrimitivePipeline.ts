@@ -322,15 +322,6 @@ export class PrimitivePipeline {
     }
 
     /**
-     * Vertices queued so far this frame.
-     *
-     * @returns Current vertex count.
-     */
-    getVertexCount(): number {
-        return this.vertexCount;
-    }
-
-    /**
      * Clears per-frame vertex state.
      */
     reset(): void {

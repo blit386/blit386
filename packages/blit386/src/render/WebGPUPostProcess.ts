@@ -54,10 +54,19 @@ export class WebGPUPostProcess {
      * @param isDisplayTierEnabled - Whether display-tier effects may be added (`drawingBufferSize` was set).
      */
     constructor(
+        /** WebGPU device. */
         private readonly device: GPUDevice,
+
+        /** Logical render resolution. */
         private readonly displaySize: Vector2i,
+
+        /** Output drawing-buffer resolution. */
         private readonly outputSize: Vector2i,
+
+        /** Magnification filter for the resolve pass. */
         private readonly upscaleFilter: OutputUpscaleFilter,
+
+        /** Whether display-tier effects may be added (`drawingBufferSize` was set). */
         private readonly isDisplayTierEnabled: boolean,
     ) {}
 
