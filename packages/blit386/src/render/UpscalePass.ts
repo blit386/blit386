@@ -1,14 +1,6 @@
+import type { OutputUpscaleFilter } from '../core/IBTDemo';
 import type { Vector2i } from '../utils/Vector2i';
 import { VS_WGSL } from './effects/fullscreenVS';
-
-/**
- * Upscale filter applied between the pixel chain (logical resolution) and the
- * display chain (canvas output resolution).
- *
- * - `'nearest'` - point sampling, preserves crisp pixel edges. Default.
- * - `'linear'` - bilinear sampling, gives a soft "old TV" feel.
- */
-export type UpscaleFilter = 'nearest' | 'linear';
 
 /**
  * Legacy/test utility: fullscreen pass that copies a logical-resolution texture
@@ -29,7 +21,7 @@ export class UpscalePass {
     private sampler: GPUSampler | null = null;
 
     /** Filter mode this pass was initialized with. */
-    private filterMode: UpscaleFilter = 'nearest';
+    private filterMode: OutputUpscaleFilter = 'nearest';
 
     /**
      * Per-source-view bind group cache. Source views are stable for the
@@ -42,7 +34,7 @@ export class UpscalePass {
      *
      * @returns Filter mode (`'nearest'` or `'linear'`).
      */
-    get filter(): UpscaleFilter {
+    get filter(): OutputUpscaleFilter {
         return this.filterMode;
     }
 
@@ -84,7 +76,7 @@ export class UpscalePass {
      * @param format - Color attachment format (matches the swap chain).
      * @param filter - Magnification filter mode.
      */
-    init(device: GPUDevice, format: GPUTextureFormat, filter: UpscaleFilter): void {
+    init(device: GPUDevice, format: GPUTextureFormat, filter: OutputUpscaleFilter): void {
         this.device = device;
         this.filterMode = filter;
 

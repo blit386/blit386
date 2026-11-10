@@ -2,6 +2,7 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
+import type { OutputUpscaleFilter } from '../core/IBTDemo';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
 import { FrameCapture } from '../utils/FrameCapture';
@@ -14,7 +15,6 @@ import { PostProcessChain } from './PostProcessChain';
 import { PrimitivePipeline } from './PrimitivePipeline';
 import { SceneBatch } from './SceneBatch';
 import { SpritePipeline } from './SpritePipeline';
-import type { UpscaleFilter } from './UpscalePass';
 
 /**
  * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes.
@@ -59,7 +59,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     private readonly outputSize: Vector2i;
 
     /** Magnification filter used between the pixel chain and the display chain. */
-    private readonly upscaleFilterMode: UpscaleFilter;
+    private readonly upscaleFilterMode: OutputUpscaleFilter;
 
     /**
      * True when the caller explicitly provided an `outputSize` (i.e. set
@@ -235,7 +235,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         context: GPUCanvasContext,
         displaySize: Vector2i,
         outputSize?: Vector2i,
-        upscaleFilter: UpscaleFilter = 'nearest',
+        upscaleFilter: OutputUpscaleFilter = 'nearest',
         isOverlayEnabled: boolean = true,
     ) {
         this.device = device;
