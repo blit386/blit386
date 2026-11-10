@@ -539,6 +539,13 @@ BT.drawRectFill(new Rect2i(8, 20, 32, 8), 3); // covers the middle of the sprite
 
 The engine overlay is the one exception: it always draws above the game.
 
+### Empty and negative sizes
+
+A rect or sprite source with a width or height of zero or less draws nothing, on every draw call: `BT.drawRectFill`,
+`BT.drawRect`, `BT.clearRect`, `BT.drawSprite` and its stretched and oriented forms. A computed bar width that goes
+negative, or a shrinking outline that reaches zero, simply disappears. A 1-pixel-tall `BT.drawRect` draws exactly its
+one row.
+
 ## Text
 
 ### System font

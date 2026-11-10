@@ -761,3 +761,36 @@ describe('oriented and stretched sprite quads', () => {
         });
     });
 });
+
+describe('non-positive sizes draw nothing, like the software backend (BT-756)', () => {
+    const pipeline = new SpritePipeline();
+    const sheet = SpriteSheet.fromIndexedPixels(4, 4, new Uint8Array(16).fill(1));
+
+    beforeAll(async () => {
+        installMockNavigatorGPU();
+        await pipeline.init(createMockGPUDevice(), new Vector2i(320, 240), createMockPaletteBuffer(), 'r8uint');
+    });
+
+    afterAll(() => {
+        uninstallMockNavigatorGPU();
+    });
+
+    it.each([
+        ['negative width', new Rect2i(2, 0, -1, 2)],
+        ['zero height', new Rect2i(0, 0, 2, 0)],
+    ])('queues no vertices for a source rect with %s on every sprite path', (_name, src) => {
+        pipeline.reset();
+        pipeline.drawSprite(sheet, src, new Vector2i(2, 0));
+        pipeline.drawSpriteOriented(sheet, src, new Vector2i(2, 0), 0, 1);
+        pipeline.drawSpriteStretched(sheet, src, 0, 0, 4, 4, 0, 0);
+
+        expect(pipeline.getFrameSubmittedVertices()).toBe(0);
+    });
+
+    it('queues no vertices for a stretched draw into a non-positive box', () => {
+        pipeline.reset();
+        pipeline.drawSpriteStretched(sheet, new Rect2i(0, 0, 2, 2), 0, 0, -4, 4, 0, 0);
+
+        expect(pipeline.getFrameSubmittedVertices()).toBe(0);
+    });
+});

@@ -18,6 +18,9 @@ import type { Effect } from './effects/Effect';
  * 1. Call {@link IRenderer.init} once after construction.
  * 2. Per frame: {@link IRenderer.beginFrame} -> draw calls -> {@link IRenderer.endFrame}.
  * 3. Palette must be set via {@link IRenderer.setPalette} before the first {@link IRenderer.beginFrame}.
+ *
+ * Every backend draws in call order and draws nothing for a rect, sprite source, or stretch target
+ * whose width or height is zero or less; the software backend is the pixel spec.
  */
 export interface IRenderer {
     /**

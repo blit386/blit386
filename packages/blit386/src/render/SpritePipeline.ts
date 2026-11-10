@@ -267,6 +267,12 @@ export class SpritePipeline {
         const row = SPRITE_ORIENTATIONS[orientation] as SpriteOrientation;
         const fw = row.swap ? srcRect.height : srcRect.width;
         const fh = row.swap ? srcRect.width : srcRect.height;
+
+        // An empty or inverted source draws nothing, as on the software backend.
+        if (fw <= 0 || fh <= 0) {
+            return;
+        }
+
         const px0 = -1 / (4 * destW);
         const py0 = -1 / (4 * destH);
         const px1 = fw + px0;
@@ -598,6 +604,11 @@ export class SpritePipeline {
         vBR: number,
         paletteOffset: number,
     ): void {
+        // A non-positive size draws nothing, as on the software backend (cullMode 'none' would draw it mirrored).
+        if (size.x <= 0 || size.y <= 0) {
+            return;
+        }
+
         // Flush if switching textures.
         if (this.currentTexture !== texture) {
             if (this.vertexCount > 0) {

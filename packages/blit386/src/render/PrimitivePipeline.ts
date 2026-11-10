@@ -129,6 +129,11 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
+        // A non-positive size draws nothing, as on the software backend (cullMode 'none' would fill it mirrored).
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+
         const x0 = rect.x;
         const y0 = rect.y;
         const x1 = rect.x + rect.width;
@@ -215,6 +220,11 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
+        // A non-positive size draws nothing, as on the software backend.
+        if (rect.width <= 0 || rect.height <= 0) {
+            return;
+        }
+
         const x0 = rect.x;
         const y0 = rect.y;
         const x1 = rect.x + rect.width - 1;

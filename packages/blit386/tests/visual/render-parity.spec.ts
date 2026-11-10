@@ -11,6 +11,7 @@ test.describe('Render backend parity', () => {
         ['a rect fill drawn over a sprite', 'order'],
         ['a sprite drawn over a rect fill', 'reverse'],
         ['system text under a later rect outline', 'text'],
+        ['empty and negative sizes beside a 1px-tall outline', 'sizes'],
     ]) {
         test(`should render ${name} identically on WebGPU and software (BT-756)`, async ({ page }) => {
             if ((await openFixture(page, `/render-parity.html#${mode}`)) !== 'webgpu') {

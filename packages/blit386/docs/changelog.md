@@ -102,6 +102,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   [Draw order](api-rendering.md#draw-order).
 - A 1-pixel-tall `BT.drawRect` on the software backend draws only its own row. Its side lines used to run backwards and
   paint one pixel above and below each end, which WebGPU never did.
+- A rect or sprite source with a zero or negative width or height draws nothing on WebGPU, as it already did on the
+  software backend. WebGPU used to fill a negative-width rect backwards, draw a width-0 outline as two columns, and draw
+  a negative-width sprite source mirrored. See [Empty and negative sizes](api-rendering.md#empty-and-negative-sizes).
 - `BT.inputString` receives typed text. It was built from the `beforeinput` event, which browsers only send to editable
   elements, never to a canvas, so it only ever saw Tab and Escape and a name-entry screen stayed empty. It now reads
   each `keydown`: printable ASCII and Backspace (`\x08`), repeating while held, and Enter (`\x0d`) once per press; Ctrl

@@ -31,7 +31,7 @@
 
             // BT-756 cases where WebGPU used to draw differently from the software blit. The hash picks one:
             // '#order' a sprite then a rect fill over it, '#reverse' the opposite, '#text' system text under
-            // a later rect outline.
+            // a later rect outline, '#sizes' empty and negative rects and sprite sources beside a 1px-tall outline.
             const mode = location.hash.slice(1);
             const BG = 1;
             const RED = 2;
@@ -90,6 +90,15 @@
                         BT.systemPrint(new Vector2i(10, 10), WHITE, 'ORDER');
                         BT.drawRect(new Rect2i(8, 12, 40, 3), GREEN);
                         BT.drawSprite(this.sheet, src, new Vector2i(30, 8));
+                    } else if (mode === 'sizes') {
+                        // Every draw except the last one has a zero or negative size and must draw nothing.
+                        BT.drawRectFill(new Rect2i(40, 40, -20, 8), GREEN);
+                        BT.drawRect(new Rect2i(60, 40, 0, 3), GREEN);
+                        BT.clearRect(new Rect2i(70, 40, 4, -2), GREEN);
+                        BT.drawSprite(this.sheet, new Rect2i(2, 0, -1, 2), new Vector2i(80, 40));
+                        BT.drawSprite(this.sheet, new Rect2i(2, 0, -1, 2), new Rect2i(100, 40, 8, 8), {});
+                        BT.drawSprite(this.sheet, src, new Rect2i(120, 40, -8, 8), {});
+                        BT.drawRect(new Rect2i(10, 60, 6, 1), WHITE);
                     }
 
                     // Signal render complete, publishing the backend that actually started.
