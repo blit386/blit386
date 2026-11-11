@@ -79,11 +79,21 @@ Font Glyphs demo uses, so the two pages' key-cap blocks match pixel for pixel.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, BUTTON_LOOK, FONT_W, litRimColor, ui, UI_ANCHORS } from './shared/ui.js';
+import { keyLabel } from './shared/key-names.js';
+import {
+    applyTheme,
+    BUTTON_LOOK,
+    FONT_W,
+    litRimColor,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {{ code: string, label: string, x: number, y: number, w: number, pressTimer: number, releaseTimer: number }} KeyDef */
-/** @typedef {{ code: string, label: string, w?: number, gapBefore?: number, at?: number }} KeyRowEntry */
+/** @typedef {{ code: string, label?: string, w?: number, gapBefore?: number, at?: number }} KeyRowEntry */
 
 // The screen is 600x315 display pixels: exactly half of the 1200x630 social card, and the
 // same size as the System Font Glyphs demo whose cells the key caps match.
@@ -125,7 +135,9 @@ const KEY_GAP = 2;
 const UNIT = KEY_SIZE + KEY_GAP;
 
 // The whole keyboard picture as data: six rows, top to bottom, measured in units. Each
-// key has a `code` (KeyboardEvent.code string) and a `label` drawn on the cap.
+// key has a `code` (KeyboardEvent.code string). The label drawn on the cap comes from
+// keyLabel(code) in shared/key-names.js (KeyQ -> Q, ArrowUp -> an up arrow), so a key
+// only lists a `label` when the cap needs a different one (Back, Caps, Ctrl, `).
 // addKeyRow() walks each row like laying tiles on a shelf: it keeps a running position,
 // places a key, then moves right by the key's width. A key only needs extra fields when
 // it breaks the pattern: `w` for wide or narrow caps (Backspace, Enter, Space),
@@ -137,50 +149,50 @@ const KEYBOARD_ROWS = [
     // Function row: Esc, then the twelve F-keys in three clusters of four, half a unit
     // apart.
     [
-        { code: 'Escape', label: 'Esc' },
-        { code: 'F1', label: 'F1', gapBefore: 1 },
-        { code: 'F2', label: 'F2' },
-        { code: 'F3', label: 'F3' },
-        { code: 'F4', label: 'F4' },
-        { code: 'F5', label: 'F5', gapBefore: 0.5 },
-        { code: 'F6', label: 'F6' },
-        { code: 'F7', label: 'F7' },
-        { code: 'F8', label: 'F8' },
-        { code: 'F9', label: 'F9', gapBefore: 0.5 },
-        { code: 'F10', label: 'F10' },
-        { code: 'F11', label: 'F11' },
-        { code: 'F12', label: 'F12' },
+        { code: 'Escape' },
+        { code: 'F1', gapBefore: 1 },
+        { code: 'F2' },
+        { code: 'F3' },
+        { code: 'F4' },
+        { code: 'F5', gapBefore: 0.5 },
+        { code: 'F6' },
+        { code: 'F7' },
+        { code: 'F8' },
+        { code: 'F9', gapBefore: 0.5 },
+        { code: 'F10' },
+        { code: 'F11' },
+        { code: 'F12' },
     ],
     // Number row: thirteen standard keys, then a 2-unit Backspace.
     [
         { code: 'Backquote', label: '`' },
-        { code: 'Digit1', label: '1' },
-        { code: 'Digit2', label: '2' },
-        { code: 'Digit3', label: '3' },
-        { code: 'Digit4', label: '4' },
-        { code: 'Digit5', label: '5' },
-        { code: 'Digit6', label: '6' },
-        { code: 'Digit7', label: '7' },
-        { code: 'Digit8', label: '8' },
-        { code: 'Digit9', label: '9' },
-        { code: 'Digit0', label: '0' },
+        { code: 'Digit1' },
+        { code: 'Digit2' },
+        { code: 'Digit3' },
+        { code: 'Digit4' },
+        { code: 'Digit5' },
+        { code: 'Digit6' },
+        { code: 'Digit7' },
+        { code: 'Digit8' },
+        { code: 'Digit9' },
+        { code: 'Digit0' },
         { code: 'Minus', label: '-' },
         { code: 'Equal', label: '=' },
         { code: 'Backspace', label: 'Back', w: 2 },
     ],
     // QWERTY row: a 1.5-unit Tab, standard keys, and a 1.5-unit backslash.
     [
-        { code: 'Tab', label: 'Tab', w: 1.5 },
-        { code: 'KeyQ', label: 'Q' },
-        { code: 'KeyW', label: 'W' },
-        { code: 'KeyE', label: 'E' },
-        { code: 'KeyR', label: 'R' },
-        { code: 'KeyT', label: 'T' },
-        { code: 'KeyY', label: 'Y' },
-        { code: 'KeyU', label: 'U' },
-        { code: 'KeyI', label: 'I' },
-        { code: 'KeyO', label: 'O' },
-        { code: 'KeyP', label: 'P' },
+        { code: 'Tab', w: 1.5 },
+        { code: 'KeyQ' },
+        { code: 'KeyW' },
+        { code: 'KeyE' },
+        { code: 'KeyR' },
+        { code: 'KeyT' },
+        { code: 'KeyY' },
+        { code: 'KeyU' },
+        { code: 'KeyI' },
+        { code: 'KeyO' },
+        { code: 'KeyP' },
         { code: 'BracketLeft', label: '[' },
         { code: 'BracketRight', label: ']' },
         { code: 'Backslash', label: '\\', w: 1.5 },
@@ -188,35 +200,35 @@ const KEYBOARD_ROWS = [
     // Home row: a 1.75-unit Caps Lock, standard letter keys, and a 2.25-unit Enter.
     [
         { code: 'CapsLock', label: 'Caps', w: 1.75 },
-        { code: 'KeyA', label: 'A' },
-        { code: 'KeyS', label: 'S' },
-        { code: 'KeyD', label: 'D' },
-        { code: 'KeyF', label: 'F' },
-        { code: 'KeyG', label: 'G' },
-        { code: 'KeyH', label: 'H' },
-        { code: 'KeyJ', label: 'J' },
-        { code: 'KeyK', label: 'K' },
-        { code: 'KeyL', label: 'L' },
-        { code: 'Semicolon', label: ';' },
-        { code: 'Quote', label: "'" },
-        { code: 'Enter', label: 'Enter', w: 2.25 },
+        { code: 'KeyA' },
+        { code: 'KeyS' },
+        { code: 'KeyD' },
+        { code: 'KeyF' },
+        { code: 'KeyG' },
+        { code: 'KeyH' },
+        { code: 'KeyJ' },
+        { code: 'KeyK' },
+        { code: 'KeyL' },
+        { code: 'Semicolon' },
+        { code: 'Quote' },
+        { code: 'Enter', w: 2.25 },
     ],
     // Bottom letter row: a 2.25-unit left Shift, standard keys, a 2.75-unit right Shift,
     // and the up arrow pinned to the middle column of the arrow cluster.
     [
         { code: 'ShiftLeft', label: 'Shift', w: 2.25 },
-        { code: 'KeyZ', label: 'Z' },
-        { code: 'KeyX', label: 'X' },
-        { code: 'KeyC', label: 'C' },
-        { code: 'KeyV', label: 'V' },
-        { code: 'KeyB', label: 'B' },
-        { code: 'KeyN', label: 'N' },
-        { code: 'KeyM', label: 'M' },
+        { code: 'KeyZ' },
+        { code: 'KeyX' },
+        { code: 'KeyC' },
+        { code: 'KeyV' },
+        { code: 'KeyB' },
+        { code: 'KeyN' },
+        { code: 'KeyM' },
         { code: 'Comma', label: ',' },
         { code: 'Period', label: '.' },
         { code: 'Slash', label: '/' },
         { code: 'ShiftRight', label: 'Shift', w: 2.75 },
-        { code: 'ArrowUp', label: '\u2191', at: 16.5 },
+        { code: 'ArrowUp', at: 16.5 },
     ],
     // Modifier row: six 1.5-unit modifiers around a 6-unit Space, filling the same 15
     // units as every other row (6 x 1.5 + 6 = 15), then the left, down, and right arrows
@@ -229,35 +241,39 @@ const KEYBOARD_ROWS = [
         { code: 'AltRight', label: 'Alt', w: 1.5 },
         { code: 'MetaRight', label: 'Win', w: 1.5 },
         { code: 'ControlRight', label: 'Ctrl', w: 1.5 },
-        { code: 'ArrowLeft', label: '\u2190', at: 15.5 },
-        { code: 'ArrowDown', label: '\u2193' },
-        { code: 'ArrowRight', label: '\u2192' },
+        { code: 'ArrowLeft', at: 15.5 },
+        { code: 'ArrowDown' },
+        { code: 'ArrowRight' },
     ],
 ];
 
 // The keyboard is 18.5 units wide (15 for the main block, half a unit of gap, 3 for the
 // arrows) and 6 rows tall, with an extra 6 pixels between the function row and the rest.
+// Math.round() keeps the width a whole number of pixels, rounding the half-unit edge
+// the same way addKeyRow() rounds each cap's right edge.
 const KEYBOARD_UNITS_W = 18.5;
-const KEYBOARD_W = KEYBOARD_UNITS_W * UNIT - KEY_GAP;
+const KEYBOARD_W = Math.round(KEYBOARD_UNITS_W * UNIT) - KEY_GAP;
 const FN_ROW_GAP = 6;
 const KEYBOARD_H = KEYBOARD_ROWS.length * UNIT - KEY_GAP + FN_ROW_GAP;
 
 // Vertical layout under the 32-pixel title strip (a 22-pixel strip that grows by its hint
 // row): the keyboard, a 10-pixel gap, the 12-pixel legend row, another 10-pixel gap, and
-// the two 63-pixel status panels (22 title + 3 rows of 10 + 11 bottom). The whole block
+// the two 63-pixel status panels (the kit's title band, 3 rows of 10, and its bottom
+// rim). The whole block
 // is centered in the space below the strip, and everything is centered across the
 // screen.
 const TITLE_STRIP_H = 32;
 const LEGEND_H = 12;
-const STATUS_PANEL_H = 22 + 3 * 10 + 11;
+const STATUS_PANEL_H = PANEL_CONTENT_TOP + 3 * 10 + PANEL_BOTTOM;
 const BLOCK_H = KEYBOARD_H + 10 + LEGEND_H + 10 + STATUS_PANEL_H;
 const KEYBOARD_X = Math.floor((DISPLAY_W - KEYBOARD_W) / 2);
 const KEYBOARD_Y = TITLE_STRIP_H + Math.floor((DISPLAY_H - TITLE_STRIP_H - BLOCK_H) / 2);
 const LEGEND_Y = KEYBOARD_Y + KEYBOARD_H + 10;
 const STATUS_PANEL_Y = LEGEND_Y + LEGEND_H + 10;
 
-// The two status panels share the keyboard's width, 4 pixels apart.
-const STATUS_PANEL_W = (KEYBOARD_W - 4) / 2;
+// The two status panels share the keyboard's width, 4 pixels apart. Math.floor() keeps
+// each a whole number of pixels wide; the odd pixel left over stays at the right.
+const STATUS_PANEL_W = Math.floor((KEYBOARD_W - 4) / 2);
 
 // The legend: one small block per flash color and a dim label after it.
 const LEGEND_ITEMS = [
@@ -349,17 +365,7 @@ class Demo {
         // Measure the system font once so every label can be centered on its cap.
         this.glyphHeight = BT.systemPrintMeasure('M').y;
 
-        // Start every run from a clean slate. init() runs again whenever BT.renderAt()
-        // replays the demo from the start (the /shots page and the social card do that),
-        // and fields keep their old values across that replay - so the counters and the
-        // last edge are reset here, and the key list is rebuilt rather than added to.
-        // Without this, every key would sit in the list twice and each press would count
-        // twice.
-        this.lastEdge = '-';
-        this.lastCode = 'press any key';
-        this.lastTick = null;
-        this.pressCount = 0;
-        this.releaseCount = 0;
+        // Place every key cap from the KEYBOARD_ROWS table.
         this.initKeyboardLayout();
 
         return true;
@@ -374,10 +380,22 @@ class Demo {
         for (let i = 0; i < this.keys.length; i++) {
             const key = this.keys[i];
 
+            // Count both flashes down by one tick first, so a flash started below stays
+            // visible for its full FLASH_TICKS.
+            if (key.pressTimer > 0) {
+                key.pressTimer -= 1;
+            }
+
+            if (key.releaseTimer > 0) {
+                key.releaseTimer -= 1;
+            }
+
             // Whichever edge fires most recently owns the flash: starting one flash
             // cancels the other, so a fast tap cannot let two competing countdowns reach
             // zero together and skip the release color entirely.
-            if (BT.isKeyPressed(key.code)) {
+            const isPressed = BT.isKeyPressed(key.code);
+
+            if (isPressed) {
                 key.pressTimer = FLASH_TICKS;
                 key.releaseTimer = 0;
                 this.lastEdge = 'pressed';
@@ -388,20 +406,15 @@ class Demo {
 
             if (BT.isKeyReleased(key.code)) {
                 key.releaseTimer = FLASH_TICKS;
-                key.pressTimer = 0;
+
+                // A tap shorter than one tick delivers both edges in this same tick.
+                // Keep the press flash for this one tick, so it still shows before the
+                // release flash takes over on the next.
+                key.pressTimer = isPressed ? 1 : 0;
                 this.lastEdge = 'released';
                 this.lastCode = key.code;
                 this.lastTick = BT.ticks;
                 this.releaseCount += 1;
-            }
-
-            // Count both flashes down by one tick.
-            if (key.pressTimer > 0) {
-                key.pressTimer -= 1;
-            }
-
-            if (key.releaseTimer > 0) {
-                key.releaseTimer -= 1;
             }
         }
     }
@@ -565,7 +578,8 @@ class Demo {
             const x = KEYBOARD_X + Math.round(u * UNIT);
             const right = KEYBOARD_X + Math.round((u + w) * UNIT) - KEY_GAP;
 
-            this.addKey(key.code, key.label, x, y, right - x);
+            // A key without its own label gets the shared short name for its code.
+            this.addKey(key.code, key.label ?? keyLabel(key.code), x, y, right - x);
 
             u += w;
         }
@@ -573,10 +587,6 @@ class Demo {
 
     // Builds the on-screen key cap list (positions only; state lives on each entry).
     initKeyboardLayout() {
-        // A fresh, empty list every time, so a second init() replaces the caps instead of
-        // adding a second copy of each.
-        this.keys = [];
-
         // The layout itself lives in KEYBOARD_ROWS near the top of the file; here we just
         // walk the six rows and let addKeyRow() place every cap. Every row after the
         // function row sits FN_ROW_GAP pixels lower, like a real keyboard.
