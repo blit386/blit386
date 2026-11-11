@@ -1,8 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // Waku's build reads name, compatibility_date and compatibility_flags from this file into
+  // dist/server/wrangler.json, and writes a default copy here if the file is missing. The rest
+  // mirrors the deployed config so a bare `wrangler dev` after a build serves the real Worker;
+  // scripts/__tests__/root-wrangler-parity.test.mjs keeps the two in step.
   "name": "blit386",
-  "main": "./src/waku.server",
-  "compatibility_flags": ["nodejs_als"],
+  "main": "./dist/server/index.js",
+  "compatibility_flags": ["nodejs_als", "nodejs_compat"],
   "compatibility_date": "2026-06-20",
   "assets": {
     "binding": "ASSETS",
