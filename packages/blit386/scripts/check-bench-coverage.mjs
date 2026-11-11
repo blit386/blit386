@@ -8,7 +8,7 @@
  * way to know which benchmark covers a given change, and a wrong guess would train people to ignore
  * the reminder). This cannot know whether a given change actually needed a benchmark either way, so it
  * never fails - it only makes the local baseline/compare loop hard to forget about. `HOT_PATH_DIRS`
- * below and the `paths:` glob in `.claude/rules/bench-coverage.md` name the same six directories;
+ * below and the `paths:` glob in `.claude/rules/bench-coverage.md` name the same seven directories;
  * update both together.
  *
  * Usage:
@@ -23,7 +23,15 @@ import { gitEnvWithoutRepoLocation } from './git-env.mjs';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Hot-path source directories, relative to this package root. Keep in sync with `.claude/rules/bench-coverage.md`. */
-export const HOT_PATH_DIRS = ['src/render/', 'src/input/', 'src/overlay/', 'src/core/', 'src/assets/', 'src/utils/'];
+export const HOT_PATH_DIRS = [
+    'src/render/',
+    'src/input/',
+    'src/overlay/',
+    'src/core/',
+    'src/assets/',
+    'src/utils/',
+    'src/bt/',
+];
 
 /**
  * @param {string[]} changedFiles Paths relative to this package root (as `git diff --name-only` reports them).

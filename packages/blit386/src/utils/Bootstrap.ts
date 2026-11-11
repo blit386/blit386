@@ -11,7 +11,14 @@ import type { IBTDemo } from '../core/IBTDemo';
 import { isHotActive } from '../hot/HotRuntime';
 import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
-import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
+import {
+    clearErrorPanel,
+    DEFAULT_CANVAS_ID,
+    DEFAULT_CONTAINER_ID,
+    displayError,
+    getCanvas,
+    setErrorContainerID,
+} from './BootstrapHelpers';
 import { canvasNotFoundError, INIT_FAILED_MESSAGE } from './errorMessages';
 
 /**
@@ -27,7 +34,7 @@ export interface BootstrapOptions {
     canvasID?: string;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `canvasID` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `canvasID` instead.
      */
     canvasId?: string;
 
@@ -38,7 +45,7 @@ export interface BootstrapOptions {
     containerID?: string;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `containerID` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `containerID` instead.
      */
     containerId?: string;
 
@@ -58,7 +65,7 @@ export interface BootstrapOptions {
     isWaitingForDOMReady?: boolean;
 
     /**
-     * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `isWaitingForDOMReady` instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use `isWaitingForDOMReady` instead.
      */
     waitForDOMReady?: boolean;
 
@@ -66,7 +73,8 @@ export interface BootstrapOptions {
      * Whether to assign the `BT` namespace to `window.BT`, for browser-console debugging
      * (`window.BT.captureFrame()`). Undefined follows `BT.isDevMode` - exposed in development,
      * not in a consumer's production build. Set `true` to force it on in release too, or `false`
-     * to disable it even in development.
+     * to disable it even in development. Applied when `bootstrap()` finishes, whether the boot
+     * succeeded or failed - poll `window.BT?.isReady` to wait for a running game.
      *
      * @since 1.7.0
      */
@@ -75,6 +83,8 @@ export interface BootstrapOptions {
 
 /**
  * Constructor type for demo classes.
+ *
+ * @since 1.8.1
  */
 export type DemoConstructor = new () => IBTDemo;
 
@@ -244,7 +254,14 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
     }
 
     if (isHotActive()) {
-        return hotSwapDemo(DemoClass);
+        const isSwapped = await hotSwapDemo(DemoClass);
+
+        // The swap may have fixed whatever raised the panel; if not, the error shows again on its next call.
+        if (isSwapped) {
+            clearErrorPanel();
+        }
+
+        return isSwapped;
     }
 
     console.error(
@@ -295,6 +312,8 @@ export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOp
     const canvasID = providedCanvasID ?? canvasId ?? DEFAULT_CANVAS_ID;
     const containerID = providedContainerID ?? containerId ?? DEFAULT_CONTAINER_ID;
     const isWaitingForDOMReady = providedIsWaitingForDOMReady ?? waitForDOMReady ?? true;
+
+    setErrorContainerID(containerID);
 
     let success: boolean;
 

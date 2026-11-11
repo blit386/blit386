@@ -21,7 +21,7 @@ import { BTAPI } from '../core/BTAPI';
 import type { IBTDemo } from '../core/IBTDemo';
 import type * as HotRuntimeModule from '../hot/HotRuntime';
 import { bootstrap } from './Bootstrap';
-import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID } from './BootstrapHelpers';
+import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError } from './BootstrapHelpers';
 
 vi.mock('../hot/HotRuntime', async (importOriginal) => {
     const actual = await importOriginal<typeof HotRuntimeModule>();
@@ -307,6 +307,42 @@ describe('bootstrap', () => {
 
             expect(result).toBe(true);
             expect(hotSwapDemo).toHaveBeenCalledExactlyOnceWith(MockDemo);
+        });
+
+        it('clears the error panel after a successful hot swap, so a repeat of the error shows again', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+            const { hotSwapDemo } = await import('../hot/HotSwap');
+            const { container } = setupDOM();
+
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(true);
+            vi.mocked(hotSwapDemo).mockResolvedValue(true);
+            displayError('Demo Error', 'hot-swap fixed it');
+
+            await bootstrap(MockDemo, { isWaitingForDOMReady: false });
+
+            expect(container.querySelectorAll('[data-bt-error]')).toHaveLength(0);
+
+            displayError('Demo Error', 'hot-swap fixed it');
+
+            expect(container.querySelectorAll('[data-bt-error]')).toHaveLength(1);
+        });
+
+        it('keeps the error panel when the hot swap fails', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+            const { hotSwapDemo } = await import('../hot/HotSwap');
+            const { container } = setupDOM();
+
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+            vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(true);
+            vi.mocked(hotSwapDemo).mockResolvedValue(false);
+            displayError('Demo Error', 'hot-swap did not help');
+
+            await bootstrap(MockDemo, { isWaitingForDOMReady: false });
+
+            expect(container.querySelectorAll('[data-bt-error]')).toHaveLength(1);
         });
 
         it('does not touch the canvas when routing to hotSwapDemo', async () => {

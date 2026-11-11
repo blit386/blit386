@@ -108,36 +108,68 @@ const BT_DECLARATION_OPENERS = [
     /\binterface\s+BT\s*\{/,
 ];
 
+/** `BT` typed as an intersection of its parts: `declare const BT: typeof constants & typeof lifecycle;`. */
+const BT_INTERSECTION_DECLARATION =
+    /(?:export\s+)?declare\s+const\s+BT\s*:\s*(typeof\s+\w+(?:\s*&\s*typeof\s+\w+)*)\s*;/;
+
 /**
- * Extracts the `{ ... }` body of the public `BT` declaration from rolled-up `.d.ts` text.
+ * Returns the balanced `{ ... }` block that starts at the first `{` after `fromIndex`.
+ *
+ * @param {string} text Text to scan.
+ * @param {number} fromIndex Where the declaration opener matched.
+ * @returns {string | null} Balanced brace block, or null when it never closes.
+ */
+function braceBlockAfter(text, fromIndex) {
+    const openBrace = text.indexOf('{', fromIndex);
+    if (openBrace < 0) {
+        return null;
+    }
+
+    const body = text.slice(openBrace);
+    let depth = 0;
+    for (let i = 0; i < body.length; i++) {
+        const char = body.charAt(i);
+        if (char === '{') {
+            depth++;
+        } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+                return body.slice(0, i + 1);
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Extracts the `{ ... }` body of the public `BT` declaration from rolled-up `.d.ts` text. When `BT` is typed as an
+ * intersection of `typeof` parts (the facade assembled from `src/bt/`), returns each part's block joined by newlines.
  *
  * @param {string} dtsText Contents of `dist/blit386.d.ts`.
- * @returns {string | null} Balanced brace block for `BT`, or null when not found.
+ * @returns {string | null} Balanced brace block(s) for `BT`, or null when not found.
  */
 export function extractBtDeclarationBlock(dtsText) {
+    const intersection = BT_INTERSECTION_DECLARATION.exec(dtsText);
+    if (intersection) {
+        const blocks = [...intersection[1].matchAll(/typeof\s+(\w+)/g)].map(([, part]) => {
+            const opener = new RegExp(`declare\\s+const\\s+${part}\\s*:\\s*\\{`).exec(dtsText);
+
+            return opener ? braceBlockAfter(dtsText, opener.index) : null;
+        });
+
+        return blocks.every((block) => block !== null) ? blocks.join('\n') : null;
+    }
+
     for (const opener of BT_DECLARATION_OPENERS) {
         const match = opener.exec(dtsText);
         if (!match) {
             continue;
         }
 
-        const openBrace = dtsText.indexOf('{', match.index);
-        if (openBrace < 0) {
-            continue;
-        }
-
-        const body = dtsText.slice(openBrace);
-        let depth = 0;
-        for (let i = 0; i < body.length; i++) {
-            const char = body.charAt(i);
-            if (char === '{') {
-                depth++;
-            } else if (char === '}') {
-                depth--;
-                if (depth === 0) {
-                    return body.slice(0, i + 1);
-                }
-            }
+        const block = braceBlockAfter(dtsText, match.index);
+        if (block !== null) {
+            return block;
         }
     }
 
@@ -165,6 +197,53 @@ export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUI
         const pattern = new RegExp(`\\breadonly\\s+${member}\\s*:`, 'm');
         if (!pattern.test(btBlock)) {
             failures.push(`dist/blit386.d.ts is missing BT getter: ${member}`);
+        }
+    }
+
+    return failures;
+}
+
+/**
+ * Inheritance-only base classes that stay out of the export block on purpose: callers reach their members through the
+ * exported subclass (`Vector2i`, the noise classes), and nothing public takes or returns the base type itself.
+ */
+export const INTERNAL_BASE_CLASSES = ['SeededNoise', 'SeededNoise1D', 'Vector2iOps'];
+
+/** A top-level type declaration in the rollup: `declare [abstract] type|interface|class|enum Name`. */
+const TYPE_DECLARATION = /^(export\s+)?declare\s+(?:abstract\s+)?(?:type|interface|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
+
+/** An `export { a, b as c }` list in the rollup. */
+const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
+
+/**
+ * Finds types the rolled-up declarations contain but do not export (forgotten exports).
+ *
+ * API Extractor copies into the rollup only what an exported signature reaches, so every type declared there without
+ * `export` is a type a public signature uses that callers cannot import by name. Values (`declare const`,
+ * `declare function`) are not checked: they appear for `typeof` references and are not importable types.
+ *
+ * @param {string} dtsText Contents of `dist/blit386.d.ts`.
+ * @param {readonly string[]} [allowed] Names that may stay unexported.
+ * @returns {string[]} Human-readable failure messages (empty when every type is exported).
+ */
+export function findUnexportedDeclarations(dtsText, allowed = INTERNAL_BASE_CLASSES) {
+    const exported = new Set();
+
+    for (const [, list] of dtsText.matchAll(EXPORT_LIST)) {
+        for (const entry of list.split(',')) {
+            const name = entry.trim().split(/\s+as\s+/)[0];
+
+            if (name) {
+                exported.add(name);
+            }
+        }
+    }
+
+    const failures = [];
+
+    for (const [, exportKeyword, name] of dtsText.matchAll(TYPE_DECLARATION)) {
+        if (!exportKeyword && !exported.has(name) && !allowed.includes(name)) {
+            failures.push(`dist/blit386.d.ts declares ${name}, which a public signature uses, but does not export it`);
         }
     }
 
@@ -228,6 +307,7 @@ export function validateDeclarationTooling(logText, options = {}) {
     } else if (requireOutputFile) {
         const dtsText = fs.readFileSync(DECLARATION_OUTPUT, 'utf8');
         failures.push(...findMissingBtDeclarationMembers(dtsText));
+        failures.push(...findUnexportedDeclarations(dtsText));
     }
 
     if (requireOutputFile && !fs.existsSync(VITE_DECLARATION_OUTPUT)) {

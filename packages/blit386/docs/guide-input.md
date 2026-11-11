@@ -73,8 +73,8 @@ if (BT.isPointerActive(1)) {
 }
 ```
 
-`BT.pointerPos()` returns `Vector2i.zero()` when the slot index is out of `[0, 3]` or the engine is not initialized.
-`BT.pointerDelta()` similarly returns `Vector2i.zero()` for invalid slots.
+`BT.pointerPos()` returns a new `(0, 0)` when the slot index is out of `[0, 3]` or the engine is not initialized.
+`BT.pointerDelta()` similarly returns a new `(0, 0)` for invalid slots.
 
 Read from `update()`, `BT.pointerDelta()` is the movement since the previous `update()`, however many frames rendered in
 between, so a drag or a flick moves at the same speed on a 60 Hz and a 120 Hz display. Read from `render()`, it is the
@@ -104,8 +104,8 @@ BT.pointerDeltaTo(deltaScratch); // slot 0 (mouse)
 BT.pointerPosTo(posScratch, 1); // slot 1 (first touch)
 ```
 
-Both write `(0, 0)` into `out` under the same conditions `pointerPos()`/`pointerDelta()` return `Vector2i.zero()` for
-(invalid slot, engine not initialized), and return `out` itself so the call can be chained.
+Both write `(0, 0)` into `out` under the same conditions `pointerPos()`/`pointerDelta()` return `(0, 0)` for (invalid
+slot, engine not initialized), and return `out` itself so the call can be chained.
 
 ## Buttons
 
@@ -604,8 +604,9 @@ Pointer transitions:
 
 To check that a click or key reached `update()` exactly once, record what each update and each rendered frame saw. Dev
 builds have `window.__btInputTrace` next to `window.BT`, under the same rule: present while the dev server runs the
-game, absent in a built game unless `BootstrapOptions.exposeGlobal` turns it on. It is a debugging aid, not part of the
-`BT` API.
+game, absent in a built game unless `BootstrapOptions.exposeGlobal` turns it on. Like `window.BT`, it is set when
+`bootstrap()` finishes even if the boot failed, so check `window.BT?.isReady` before recording. It is a debugging aid,
+not part of the `BT` API.
 
 ```js
 window.__btInputTrace.start(); // or start({ maxEntries: 2000 }); the default keeps 10000 entries

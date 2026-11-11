@@ -497,7 +497,7 @@ export class Color32 {
     /**
      * Backward-compatible alias for {@link isEqual}.
      *
-     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isEqual} instead.
      * @param other - Color to compare with.
      * @returns True if all RGBA channels are identical.
      */

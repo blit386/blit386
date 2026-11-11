@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-11-09T21:40:14+01:00"
+lastModified: "2026-11-10T17:53:46+01:00"
 ---
 
 The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/overlay) (HUD configure flags and style),
@@ -23,10 +23,15 @@ The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/o
 
 <Since symbol="bootstrap" />
 <Since symbol="BootstrapOptions" />
+<Since symbol="IBTDemo" />
+<Since symbol="DemoConstructor" />
 
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
 (WebGPU or software fallback), and error display automatically. It returns a `Promise<boolean>`: `true` on a successful
 cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
+
+Your game is a class implementing `IBTDemo` (`init`, `update`, `render`, and the optional hooks). `bootstrap()` takes
+the class itself, typed `DemoConstructor`, and constructs it once the engine is up.
 
 ```ts twoslash
 import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
@@ -67,6 +72,7 @@ Manual utilities (for custom initialization flows):
 
 <Since symbol="getCanvas" />
 <Since symbol="displayError" />
+<Since symbol="ErrorContent" />
 
 ```ts twoslash
 import { displayError, getCanvas } from 'blit386';
@@ -74,6 +80,16 @@ import { displayError, getCanvas } from 'blit386';
 const canvas = getCanvas('my-canvas'); // returns null on missing element
 displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 ```
+
+The second argument is an `ErrorContent`: a plain string, or `{ text, code }` to show a code snippet under the text.
+`displayError` pins its panel to the top of the page and leaves the canvas in the container, replaces its own previous
+panel, and logs each message once with `console.error`. Showing the same message again does nothing, so it is safe to
+call from a frame loop.
+
+The engine uses the same panel for its own runtime errors, such as a draw call with a bad palette index or a draw call
+made before the engine is ready. Those never stop the game and never throw: dev builds show the panel in the
+`bootstrap()` container, release builds only log, and each distinct message appears once. A successful
+[hot reload](/docs/guides/hot-reload) removes the panel; if the error is still there, its next call shows it again.
 
 - `bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
   scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
@@ -214,6 +230,7 @@ F9 copies to the OS clipboard, Shift+F9 downloads a file. Details and the size c
 ### Hardware settings
 
 <Since symbol="HardwareSettings" />
+<Since symbol="OutputUpscaleFilter" />
 
 Resolved after `configure()`; the hook may return a partial object.
 
@@ -231,7 +248,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `targetFPS` | `number` | `60` | Fixed `update()` rate (simulation ticks per second) |
 | `backend` | `'webgpu' \| 'software'` | `'webgpu'` | Force rendering backend |
 | `audioVoices` | `number` | `16` | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (when full, a new sound steals an eligible voice, or is dropped when no eligible voice exists) |
-| `outputUpscaleFilter` | `'nearest' \| 'linear'` | `'nearest'` | Upscale filter |
+| `outputUpscaleFilter` | `OutputUpscaleFilter` (`'nearest' \| 'linear'`) | `'nearest'` | Upscale filter; also the type of `FullscreenEffect.samplerFilter` |
 | `isDetectingDroppedFrames` | `boolean` | `false` | Log a console warning on missed vsync |
 | `isCapturingPointerScroll` | `boolean` | `false` | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta`; also gates `touch-action` (`none` when capturing, `pan-y` otherwise) so touch tap-hold-scroll follows the same opt-in (page scrolls over the canvas when off). The overlay palette band can also force capture (and `touch-action: none`) while a pointer is over it, even when this flag is `false` |
 | `isCapturingKeyboardScroll` | `boolean` | `false` | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off) |
@@ -294,6 +311,39 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   `BT.randomSeed(seed)` for reproducible runs, or open the page with `?seed=N` (since 1.7.1) - applied in `init()`
   before the demo's own `init()`, in release builds too, so a `randomSeed` call there still wins. See
   [API: Random](/docs/api/random#engine-default-btrandom).
+
+### Before `BT.init()`
+
+Every `BT` member can be read before `BT.init()` resolves, for example from a loading screen or a test. The rule: a
+value with a configure default returns that default as a fresh, mutable copy; a value with no sensible default
+(`palette`, `systemFont`) throws; a value that only exists once something has started returns `null`, `0`, `false`, or
+`(0, 0)`.
+
+| Member | Before `BT.init()` | Why |
+| --- | --- | --- |
+| `displaySize` | `320×240` | Configure default |
+| `drawingBufferSize`, `outputSize` | `640×480` | Configure default |
+| `targetFPS` / `deltaSeconds` | `60` / `1/60` | Configure default |
+| `requestedBackend`, `activeBackend` | `null` | Nothing was requested or started yet |
+| `timeSeconds`, `ticks`, `renderAlpha` | `0` | The loop has not run |
+| `camera`, `pointerPos()`, `pointerDelta()`, `systemPrintMeasure()` | a new `(0, 0)` | No camera, pointer, or font yet |
+| `pointerScrollDelta`, `gamepadCount`, `loadingAssetsCount` | `0` | Nothing tracked yet |
+| `inputString` | `''` | No key events yet |
+| `isReady`, `isSplashVisible`, `isAudioUnlocked`, `isMusicPlaying` | `false` | Nothing started |
+| `isDown`, `isKeyDown`, `isPointerActive`, `isGamepadConnected`, and the other input queries | `false` / `0` | No input attached |
+| `nativeScreenToDisplayPos()` | `null` | No canvas yet |
+| `splashState` | `'disabled'` | The splash resolves during `init()` |
+| `isDevMode`, `isReducedMotionPreferred`, `screenOrientation`, `random` | live value | Need no engine |
+| `audioVolumeGet()`, `musicVolumeGet()` | `1` | Bus default |
+| `testState()` | `{ ticks: 0, backend: null, state: null }` | No game running |
+| `palette`, `systemFont` | throws | No default exists, and a silent stand-in would hide the bug |
+| `inputMap()` | kept | `init()` seeds the layout, then reapplies the call |
+| `musicPlay()`, `musicStop()` | validate their options, then do nothing | A bad `volume` or `fadeMs` fails the same way before and after init |
+| Draw calls (`drawRect`, `systemPrint`, ...) | report "engine not ready" once, draw nothing | Drawing belongs in `update()` / `render()` |
+
+Since 1.8.1, `displaySize`, `drawingBufferSize`, and `outputSize` return the configure default (they returned `(0, 0)`
+or `null` before), `camera` and `pointerPos()` / `pointerDelta()` return a new vector instead of a frozen one, and an
+early `inputMap()` call is no longer discarded.
 
 ### Screen orientation
 
@@ -369,8 +419,10 @@ devtools media emulation; `?noreducedmotion` wins when both are present.
 
 <Since symbol="BT.requestedBackend" />
 <Since symbol="BT.activeBackend" />
+<Since symbol="Backend" />
 
-Two getters disambiguate what you asked for from what is running:
+Two getters disambiguate what you asked for from what is running. Both are typed `Backend | null`, where `Backend` is
+`'webgpu' | 'software'`:
 
 | Getter | When set | Meaning |
 | --- | --- | --- |
@@ -563,7 +615,9 @@ them again in `init()`. A `BT.renderAt` seek already running finishes before the
 the restart runs rejects, as it does before the first init.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
-matching the error text from a premature `renderAt`.
+matching the error text from a premature `renderAt`. In a dev build, `bootstrap()` sets `window.BT` when it finishes
+whether the boot succeeded or failed, so the console can still inspect a broken game. Wait on `window.BT?.isReady`, not
+on `window.BT` existing.
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -658,6 +712,7 @@ BT.resume(); // keep playing from tick 192
 ### Splash state
 
 <Since symbol="BT.isSplashVisible" />
+<Since symbol="SplashState" />
 
 `BT.isSplashVisible` is the one-term query game code should use: `true` while the BLIT386 splash is on screen, `false`
 otherwise. The useful thing it buys an `init()` is knowing that something is covering for it, so slow optional work can

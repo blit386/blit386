@@ -183,6 +183,10 @@ palette.getNamedColor('player'); // → Color32 at that slot
 
 ## Serialization
 
+<Since symbol="PaletteJSON" />
+
+`palette.toJSON()` returns a `PaletteJSON`, the plain object `Palette.fromJSON` reads back.
+
 ```ts twoslash
 import { Color32, Palette } from 'blit386';
 const palette = new Palette(256);

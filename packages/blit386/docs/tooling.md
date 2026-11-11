@@ -14,8 +14,8 @@ Extractor's rollup crashes on every rebuild after the first. Run the checker aga
 `pnpm run build`, never one a watch session left behind.
 
 When bumping `typescript` or `vite-plugin-dts`, confirm the build log reports the same bundled version and that
-`node scripts/check-declaration-tooling.mjs build.log` passes (log alignment plus required `BT` getters in
-`dist/blit386.d.ts`, including `requestedBackend` and `activeBackend`). See
+`node scripts/check-declaration-tooling.mjs build.log` passes (log alignment, required `BT` getters in
+`dist/blit386.d.ts` including `requestedBackend` and `activeBackend`, and no forgotten type exports). See
 [Declaration tooling](developer-experience-guide.md#declaration-tooling-typescript--api-extractor) in the DX guide for
 CI details.
 

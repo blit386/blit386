@@ -185,10 +185,10 @@ Naming conventions:
 - JSDoc required for all public API members
 - Internal scoped naming: private fields, private methods, protected members, and module-local constants/types must not
   repeat the class or file name (context already scopes them). Examples: `FrameCapture.request()` not
-  `requestCapture()`; `FRAGMENT_WGSL` in `Bloom.ts` not `BLOOM_FRAGMENT_WGSL`; file-local `Serialized` in `Palette.ts`
-  not `PaletteJSON` or `JSON`. Does not apply to `BT.*`, barrel exports, or public class methods. JSDoc that points at
-  public API uses full public names (`BT.BTN_POINTER_A`, not shortened internal aliases). See [CLAUDE.md](../CLAUDE.md)
-  (Internal scoped naming).
+  `requestCapture()`; `FRAGMENT_WGSL` in `Bloom.ts` not `BLOOM_FRAGMENT_WGSL`; file-local `Resolve` in `FrameCapture.ts`
+  not `FrameCaptureResolve`. Does not apply to `BT.*`, barrel exports (`PaletteJSON` keeps its name), or public class
+  methods. JSDoc that points at public API uses full public names (`BT.BTN_POINTER_A`, not shortened internal aliases).
+  See [CLAUDE.md](../CLAUDE.md) (Internal scoped naming).
 - `BT` getters vs. methods: zero-argument read-only snapshots are getters (`BT.displaySize.y`); actions, parameterized
   queries, and async work are methods (`BT.cameraSet`, `BT.pointerPos(0)`). Full rules: [CLAUDE.md](../CLAUDE.md) (BT
   API: getters vs. methods).
@@ -326,9 +326,10 @@ that `dist/blit386.d.ts` still rolls up cleanly. Re-run `pnpm run typecheck` aft
 stricter WebGPU typings may require small test/production fixes (for example `ArrayBuffer`-backed uniform buffers).
 
 CI guard: the `build-engine` job runs `node scripts/check-declaration-tooling.mjs` on the `pnpm run build` log after
-each build. It fails on known drift-warning patterns and verifies the API Extractor bundled TypeScript version matches
-`package.json`. Locally: `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log`, or run
-`pnpm run test:declarations` for the checker unit tests.
+each build. It fails on known drift-warning patterns, verifies the API Extractor bundled TypeScript version matches
+`package.json`, and fails when a public signature uses a type the package does not export. Locally: `pnpm run build`
+then `node scripts/check-declaration-tooling.mjs build.log`, or run `pnpm run test:declarations` for the checker unit
+tests.
 
 ## Maintenance checklist
 

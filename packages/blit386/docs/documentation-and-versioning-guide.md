@@ -49,10 +49,11 @@ copies the JSON verbatim during `pnpm run sync:docs`.
 ## Step 1: tag the symbol in source
 
 Add the tag to the JSDoc block on the symbol's original declaration - for `BT` namespace members that means the
-property/getter's JSDoc block directly in `src/BLIT386.ts`; for classes, helpers, and presets it means the declaration
-in its own source file (`src/assets/Palette.ts`, `src/utils/Color32.ts`, and so on), not the re-export line in
-`src/BLIT386.ts`. The generator resolves through re-exports via the TypeScript compiler API, so it finds the tag either
-way, but keeping tags at the real declaration is what every existing symbol already does.
+property/getter's JSDoc block in its part file under `src/bt/` (`src/bt/draw.ts`, `src/bt/audio.ts`, and so on); for
+classes, helpers, and presets it means the declaration in its own source file (`src/assets/Palette.ts`,
+`src/utils/Color32.ts`, and so on), not the re-export line in `src/BLIT386.ts`. The generator resolves through
+re-exports via the TypeScript compiler API, so it finds the tag either way, but keeping tags at the real declaration is
+what every existing symbol already does.
 
 ```ts
 /**
