@@ -49,6 +49,7 @@ import {
 } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
+import { POINTER_SLOTS } from './ui-input.js';
 import {
     applyTheme,
     BUTTON_LOOK,
@@ -193,6 +194,24 @@ const ui = {
      */
     fillRect(x, y, width, height, slot) {
         ctx.drawRectFill(fillScratch.set(x, y, width, height), slot);
+    },
+
+    /**
+     * A plus-shaped cursor marker centered on (x, y): two 1-pixel-thick arms, each `arm`
+     * pixels long on either side of the center pixel. Drawn as sprites, like
+     * ui.drawRectFill(), so it stays visible on top of a ui.panel() the pointer moves over.
+     * Reuses one scratch rectangle, so it allocates nothing.
+     *
+     * @param {number} x - Center x in display pixels.
+     * @param {number} y - Center y in display pixels.
+     * @param {number} arm - Arm length in pixels on each side of the center.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    crosshair(x, y, arm, slot) {
+        const span = arm * 2 + 1;
+
+        ctx.drawRectFill(fillScratch.set(x - arm, y, span, 1), slot);
+        ctx.drawRectFill(fillScratch.set(x, y - arm, 1, span), slot);
     },
 
     /**
@@ -423,6 +442,7 @@ export {
     PANEL_CONTENT_TOP,
     PANEL_TEXT_INSET,
     PIP_SIZE,
+    POINTER_SLOTS,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
