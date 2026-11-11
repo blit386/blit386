@@ -92,12 +92,7 @@ export default [
 
             // JSDoc rules (relaxed for demos)
             'jsdoc/check-alignment': 'warn',
-            'jsdoc/check-param-names': 'off',
             'jsdoc/check-tag-names': 'warn',
-            'jsdoc/require-jsdoc': 'off',
-            'jsdoc/require-param': 'off',
-            'jsdoc/require-returns': 'off',
-            'jsdoc/require-description': 'off',
 
             // Code quality rules
             complexity: ['warn', { max: 15 }],
@@ -138,14 +133,6 @@ export default [
 
             // Combobox key handling is one switch-like listener; splitting it hurts readability.
             complexity: ['warn', { max: 20 }],
-        },
-    },
-
-    // Config files - relaxed JSDoc
-    {
-        files: ['*.config.js', '*.config.mjs'],
-        rules: {
-            'jsdoc/require-jsdoc': 'off',
         },
     },
 
