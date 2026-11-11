@@ -9,10 +9,6 @@ description:
 
 Show text with the built-in font (no setup), or load a custom bitmap font.
 
-## When to use
-
-Use for scores, labels, titles, dialog, or any on-screen words.
-
 ## Built-in font (no file needed)
 
 The order is position, color slot, text:

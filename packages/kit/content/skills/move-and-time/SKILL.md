@@ -10,11 +10,6 @@ description:
 
 Use the engine's frame clock to move things smoothly, repeat actions on a schedule, and ease motion.
 
-## When to use
-
-Use for movement, timers, cooldowns, spawn intervals, animation frames, or anything that should happen "every N frames"
-or "over N seconds".
-
 ## Read-only clock (properties, no parentheses)
 
 ```js
@@ -31,6 +26,7 @@ update() {
 
 - `BT.ticks`, `BT.timeSeconds`, `BT.deltaSeconds`, `BT.targetFPS` - all getters.
 - `BT.ticksReset()` (method) - zero the tick counter, e.g. on restart.
+- Motion that looks stepped or jittery on a fast monitor needs drawing between updates: see `smooth-the-motion`.
 
 ## Timer helper
 

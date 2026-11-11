@@ -9,10 +9,6 @@ description:
 
 Read face buttons, shoulders, sticks, and triggers from up to four controllers.
 
-## When to use
-
-Use for controller support, analog movement, or multiple players.
-
 ## How to do it
 
 ```js

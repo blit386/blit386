@@ -13,11 +13,6 @@ Noise and coordinate hashing answer the question "what is at this spot in the wo
 coordinates and same seed always give the same answer, so a world can be enormous, generated on demand, and still
 identical every time the player walks back.
 
-## When to use
-
-Use for terrain height, cave layouts, clouds, water, procedural textures, tile variation, or scattering trees and rocks
-across a world larger than memory.
-
 This is the opposite tool to the `use-random` skill. `BT.random` is a getter for a shared generator - calling a method
 on it (`BT.random.int()`, ...) draws the _next_ value in a sequence. Noise and hashing are _stateless lookups_ by
 coordinate - ask for tile `(12, -3)` a thousand times and you get the same answer a thousand times.

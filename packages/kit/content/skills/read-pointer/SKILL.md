@@ -9,10 +9,6 @@ description:
 
 Mouse, touch, and pen share one "pointer" API with up to four slots. Slot 0 is the mouse or first touch.
 
-## When to use
-
-Use for clicking, dragging, painting, aiming, scrolling, or touch controls.
-
 ## How to do it
 
 ```js
