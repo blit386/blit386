@@ -6,7 +6,7 @@
 
 import { buildRows, demoNeighbor, moveFocus, visibleOrder } from './layout-model.js';
 import { CAPTION_SEPARATOR, entryKey } from './manifest.js';
-import { OUTPUT_VARIANT, VARIANTS } from './poses.js';
+import { DISPLAY_VARIANT, OUTPUT_VARIANT, VARIANTS } from './poses.js';
 
 const ROW_SCROLL_FRACTION = 0.9;
 
@@ -119,7 +119,7 @@ function createGallery(root, hooks) {
         stacked: true,
         expanded: new Set(),
         filter: '',
-        variant: 'display',
+        variant: DISPLAY_VARIANT,
         lint: true,
         diff: 'current',
         diffFor: null,
@@ -140,7 +140,7 @@ function createGallery(root, hooks) {
             return view.variant;
         }
 
-        return VARIANTS.find((variant) => entry.variants[variant]) ?? 'display';
+        return VARIANTS.find((variant) => entry.variants[variant]) ?? DISPLAY_VARIANT;
     }
 
     /** A collapsed stack shows its size; the first tile of an expanded stack shows a collapse mark. Either toggles it. */

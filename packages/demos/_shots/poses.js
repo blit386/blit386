@@ -195,11 +195,15 @@ const INPUT_KEYS = ['keys', 'pointer', 'touch'];
 // display: the native palette buffer, crisp, the default. output: the drawing buffer with
 // display-tier effects (CRT), possibly larger. uidebug: display plus the kit's layout boxes.
 // software: display under ?backend=software. touch: display after a touch contact.
+const DISPLAY_VARIANT = 'display';
 const OUTPUT_VARIANT = 'output';
+const UIDEBUG_VARIANT = 'uidebug';
+const SOFTWARE_VARIANT = 'software';
+const TOUCH_VARIANT = 'touch';
 
-const VARIANTS = ['display', OUTPUT_VARIANT, 'uidebug', 'software', 'touch'];
+const VARIANTS = [DISPLAY_VARIANT, OUTPUT_VARIANT, UIDEBUG_VARIANT, SOFTWARE_VARIANT, TOUCH_VARIANT];
 
-const COMMITTED_VARIANTS = ['display', 'uidebug'];
+const COMMITTED_VARIANTS = [DISPLAY_VARIANT, UIDEBUG_VARIANT];
 
 /**
  * @param {string} slug
@@ -285,12 +289,16 @@ export {
     CAPTURE_SEED,
     COMMITTED_VARIANTS,
     DEFAULT_POSES,
+    DISPLAY_VARIANT,
     INPUT_TICKS,
     isKnownPose,
     jobsFor,
     OUTPUT_VARIANT,
     POSES_BY_SLUG,
     posesFor,
+    SOFTWARE_VARIANT,
+    TOUCH_VARIANT,
+    UIDEBUG_VARIANT,
     validatePoses,
     VARIANTS,
 };

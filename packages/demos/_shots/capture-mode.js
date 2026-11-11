@@ -8,10 +8,10 @@ import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { captureAll, createFrameAdapter, errorText } from './capture.js';
 import { createCapturePanel } from './capture-panel.js';
 import { imagePath, mergeManifest } from './manifest.js';
-import { isKnownPose, jobsFor } from './poses.js';
+import { COMMITTED_VARIANTS, isKnownPose, jobsFor } from './poses.js';
 import { entriesFromResults, pickShotsDirectory, saveRun } from './save.js';
 
-const DEFAULT_AUTO_VARIANTS = 'display,uidebug';
+const DEFAULT_AUTO_VARIANTS = COMMITTED_VARIANTS.join(',');
 
 // Rebuilding every tile per result would cost more than the capture itself; repaint at most this often.
 const GALLERY_REFRESH_MS = 250;
