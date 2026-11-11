@@ -166,4 +166,12 @@ export const SHELL_CASES = [
     ['git.exe push --force', 'ask'],
     ['GIT branch -D old', 'ask'],
     ['GIT branch -d old', 'allow'],
+    // BT-775: a quoted or escaped option value with a space in it is still one word (a project path with a space).
+    ['git -C "my dir" reset --hard', 'deny'],
+    ["git -C 'my dir' reset --hard", 'deny'],
+    ['git -C my\\ dir reset --hard', 'deny'],
+    ['git -C "my dir" push -f', 'ask'],
+    ['git -C "my dir" status', 'allow'],
+    ['git restore --staged "a b.js"', 'allow'],
+    ['git commit -m "fix; restore later"', 'allow'],
 ];

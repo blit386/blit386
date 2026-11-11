@@ -133,6 +133,8 @@ const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${AR
 // so every rule sees the command inside them on its own (BT-775). A command that merely quotes a destructive git command
 // between backticks or parentheses (`grep '(git clean)'`) is read as running it too.
 const COMMAND_SEPARATOR = /[\n;&|()`]/;
+// A single-quoted span, or a double-quoted one with its backslash escapes.
+const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"/g;
 
 const DENY_DESTRUCTIVE = {
     decision: 'deny',
@@ -179,14 +181,19 @@ const ASK_STASH = {
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
  */
 function isDangerousCommand(command) {
-    // A backslash-newline is a line continuation: `sh` joins the two lines into one command (BT-775). Then quotes and
-    // backslashes are dropped, so `git "reset" --hard` and `git \reset --hard` cannot dodge the word checks. The text
-    // is cut into single commands and each check asks "does any command match", so every command on every line is
+    // A backslash-newline is a line continuation: `sh` joins the two lines into one command (BT-775). The text is then
+    // read twice. Once with quotes and backslashes dropped, so `git "reset" --hard`, `git \reset --hard` and a command
+    // quoted inside `bash -c "..."` cannot dodge the word checks. Once with each quoted span (and each escaped space)
+    // kept as one word, so `git -C "my dir" reset --hard` does not read `dir` as the subcommand (BT-775). Both readings
+    // are cut into single commands and each check asks "does any command match", so every command on every line is
     // judged on its own: a `git restore --staged` earlier on the line excuses no later `git restore` (BT-775).
-    const commands = command
-        .replace(/\\\r?\n/g, ' ')
-        .replace(/['"\\]/g, '')
-        .split(COMMAND_SEPARATOR);
+    const joined = command.replace(/\\\r?\n/g, ' ');
+    const unquoted = joined.replace(/['"\\]/g, '');
+    const oneWordQuotes = joined
+        .replace(/\\[ \t]/g, '_')
+        .replace(QUOTED_SPAN, (span) => span.slice(1, -1).replace(/[\s;&|()`<>]/g, '_'))
+        .replace(/['"\\]/g, '');
+    const commands = [...unquoted.split(COMMAND_SEPARATOR), ...oneWordQuotes.split(COMMAND_SEPARATOR)];
     const any = (pattern) => commands.some((one) => pattern.test(one));
 
     const destructiveClean = commands.some(
