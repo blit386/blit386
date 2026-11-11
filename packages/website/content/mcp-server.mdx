@@ -15,6 +15,9 @@ https://blit386.dev/mcp
 
 Transport: streamable-HTTP (JSON-RPC 2.0 over POST). No authentication required.
 
+Limits: a POST must send a `Content-Length` header (`411` without one) of at most 64 KiB (`413` above that), and a
+`search_docs` query longer than 256 characters is refused with JSON-RPC error `-32602`.
+
 ## Tools
 
 | Tool | Description |
@@ -50,9 +53,17 @@ Or check a project-scoped config into your repository root as `.mcp.json`, so ev
 }
 ```
 
-Claude Code prompts once per project to approve a project-scoped server - expect that prompt the first time you open the
-project after `.mcp.json` lands. A game scaffolded with `npm create blit386@latest` already ships this `.mcp.json`, so
-its contributors get the prompt with no setup of their own.
+Claude Code asks once per project before it uses a server from `.mcp.json`. To skip that prompt, pre-approve the server
+by name in the project's `.claude/settings.json`:
+
+```json
+{
+  "enabledMcpjsonServers": ["blit386-docs"]
+}
+```
+
+A game scaffolded with `npm create blit386@latest` with Claude Code picked as an assistant already ships both files, so
+its contributors get the server with no prompt and no setup of their own.
 
 ### Claude Desktop
 
