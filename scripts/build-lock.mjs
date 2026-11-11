@@ -1,8 +1,10 @@
 /**
- * Cross-process exclusive lock for a "check freshness, build if stale" self-heal script. Shared by
- * `ensure-engine-built.mjs` and `ensure-kit-built.mjs`: both shell out from `packages/demos` and
- * `packages/website`, which pnpm's default workspace concurrency runs in parallel (`.husky/pre-push`'s
- * `pnpm --filter "...[ref]" run preflight`, or a plain `pnpm -r build`). Without a lock, two processes
+ * Cross-process exclusive lock for a "check freshness, build if stale" self-heal script, used by
+ * `ensure-engine-built.mjs`, which shells out from `packages/demos` and `packages/website`; pnpm's
+ * default workspace concurrency runs those in parallel (`.husky/pre-push`'s
+ * `pnpm --filter "...[ref]" run preflight`, or a plain `pnpm -r build`). `ensure-kit-built.mjs` runs
+ * in-process from sequential callers and takes no lock; it shares only the freshness helpers at the
+ * bottom of this file. Without a lock, two processes
  * can both see a stale `dist/` at the same instant and both spawn an independent rebuild writing into
  * the same `dist/` at once - confirmed to intermittently corrupt `vite-plugin-dts`/API Extractor's
  * declaration bundling with errors like "referenced path was not found: .../amber.d.ts".
@@ -28,8 +30,11 @@
  */
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO_ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 
 /** Milliseconds between polls while waiting for another process's build or lock. */
 const LOCK_POLL_MS = 200;
@@ -223,4 +228,28 @@ const releaseBuildLock = (lockDir) => {
     rmSync(lockDir, { recursive: true, force: true });
 };
 
-export { acquireLockOrConfirmBuilt, getNewestMtimeMs, getProcessStart, reclaimAbandonedLock, releaseBuildLock };
+/** Whether the build output `entry` exists and is no older than the newest file under `sourceDir`. */
+const isBuilt = (
+    entry,
+    sourceDir,
+    exists = existsSync,
+    getBuiltMtimeMs = (path) => statSync(path).mtimeMs,
+    getSourceMtimeMs = getNewestMtimeMs,
+) => exists(entry) && getBuiltMtimeMs(entry) >= getSourceMtimeMs(sourceDir);
+
+/** `pnpm --filter <filter> run build`, run from the repo root, as `spawnSync` arguments. */
+const buildCommand = (filter) => ({
+    command: 'pnpm',
+    args: ['--filter', filter, 'run', 'build'],
+    cwd: REPO_ROOT,
+});
+
+export {
+    acquireLockOrConfirmBuilt,
+    buildCommand,
+    getNewestMtimeMs,
+    getProcessStart,
+    isBuilt,
+    reclaimAbandonedLock,
+    releaseBuildLock,
+};

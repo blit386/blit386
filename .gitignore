@@ -102,8 +102,10 @@ temp/
 
 
 # Cross-process build locks (scripts/build-lock.mjs, used by
-# ensure-engine-built.mjs) - created and removed at runtime; a crashed process can leave one behind
+# ensure-engine-built.mjs) - created and removed at runtime; a crashed process can leave one behind,
+# and a lost reclaim race can leave a renamed .reap-* copy
 /.ensure-engine-built.lock/
+/.ensure-engine-built.lock.reap-*/
 
 # Superpowers skill scratch (task briefs, review diffs, progress ledger)
 .superpowers/
