@@ -196,7 +196,7 @@ export class RendererSetup {
 /**
  * Reads backend override from the current URL query string.
  *
- * Also called by the hot-swap runtime ({@link tryHardReload} in `src/hot/HotSwap.ts`) so a
+ * Also called by the hot-swap runtime (`tryHardReload` in `src/hot/HotSwap.ts`) so a
  * hot-swap candidate's resolved settings can be normalized the same way `init()` normalizes
  * the running settings, before the two are diffed for a Tier 3 hard reload.
  *

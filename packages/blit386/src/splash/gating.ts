@@ -72,8 +72,8 @@ export function resolveSplashEnabled(signals: SplashGatingSignals): boolean {
 /**
  * Reads the valueless splash flags from the current URL.
  *
- * Uses the `globalThis.location` guard idiom established by
- * `BTAPI.getBackendQueryOverride`, so this stays safe in Node and SSR.
+ * Uses the `globalThis.location` guard idiom established by `getBackendQueryOverride`
+ * in `core/engine/RendererSetup.ts`, so this stays safe in Node and SSR.
  *
  * @returns Which flags are present; both `false` when there is no location.
  */
