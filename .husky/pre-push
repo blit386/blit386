@@ -121,7 +121,7 @@ fi
 # repo location, and are set on hook subprocesses all the same. The hook's own git
 # usage above is finished by this point, and every command below runs with the repo
 # root as cwd, so plain discovery is what we want. Call sites scrub these too
-# (packages/website/scripts/git-env.mjs); this is the containment that also covers
+# (scripts/lib/git-env.mjs); this is the containment that also covers
 # preflight steps nobody has written yet.
 GIT_LOCAL_ENV_VARS=$(git rev-parse --local-env-vars 2>/dev/null || true)
 if [ -n "$GIT_LOCAL_ENV_VARS" ]; then
