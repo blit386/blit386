@@ -20,7 +20,6 @@ Guides:
 Reference:
   - Game Loop: https://blit386.dev/docs/api/game-loop#interpolating-render-state-with-renderalpha
   - Audio: https://blit386.dev/docs/api/audio#synth
-  - Overlay: https://blit386.dev/docs/api/overlay#event-tags
 
 ---
 
@@ -54,7 +53,6 @@ WHAT YOU WILL LEARN
   whoosh whose pitch and volume scale with throw speed, and a thud on hard wall hits.
   Both play through BT.soundPlay(clip, { pitch, volume }).
 - A tiny physics step per tick: gravity, air drag, floor friction, damped wall bounces.
-- BT.assignTag() marks every throw on the overlay's timing chart.
 
 TRY THIS
 --------
@@ -63,14 +61,12 @@ TRY THIS
   while moving to throw it. A faster flick makes a higher, louder whoosh.
 - On a touchscreen, each finger can grab its own ball - up to three at once (slots 1-3).
 - Drop a ball from high up and listen: hard landings thud, gentle settling is silent.
-- Press the backquote key (`) to open the engine overlay. Each throw drops a "Throw slot
-  N" tag on the timing chart.
 
 */
 
 import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, POINTER_SLOTS, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {{ x: number, y: number, prevX: number, prevY: number, vx: number, vy: number, color: number, grabbedBy: number }} Ball */
@@ -90,8 +86,6 @@ const C_BALL_OUTLINE = 1; // outline drawn around any grabbed ball
 
 // Tint for the ball under the mouse cursor when no slot is grabbing it.
 const C_BALL_HIGHLIGHT = 2;
-const C_CHART_UPDATE = 3; // dim gray for the overlay timing chart's update bars
-const C_CHART_RENDER = 4; // white for the chart's render bars and throw tags
 
 // Three balls, each its own color so it is easy to track which is which.
 const BALL_COLORS = [5, 6, 7];
@@ -180,9 +174,8 @@ class Demo {
     lineFrom = new Vector2i(0, 0);
     lineTo = new Vector2i(0, 0);
 
-    // Tells the engine the screen size and which palette slots to use for the timing
-    // chart overlay. The chart shows update() and render() time side by side so you can
-    // see when a ball throw causes a spike.
+    // Tells the engine the screen size, keeps the screen awake, and turns the engine
+    // overlay off so nothing covers the box the balls bounce in.
     configure() {
         return {
             // Set the logical display size (how many pixels the demo draws at).
@@ -194,6 +187,8 @@ class Demo {
             // play; unsupported browsers ignore it.
             isWakeLockEnabled: true,
 
+            // No engine overlay: its panel and the backquote key that opens it are both
+            // switched off, so the whole screen belongs to the balls.
             isOverlayEnabled: false,
         };
     }
@@ -225,11 +220,9 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        // Scene colors: the ball rings, the timing chart bars, and the balls themselves.
+        // Scene colors: the ball rings and the balls themselves.
         this.palette.set(C_BALL_OUTLINE, new Color32(255, 255, 255));
         this.palette.set(C_BALL_HIGHLIGHT, new Color32(255, 220, 120));
-        this.palette.set(C_CHART_UPDATE, new Color32(150, 160, 180));
-        this.palette.set(C_CHART_RENDER, new Color32(255, 255, 255));
 
         this.palette.set(BALL_COLORS[0], new Color32(255, 100, 110));
         this.palette.set(BALL_COLORS[1], new Color32(120, 220, 130));
@@ -264,7 +257,7 @@ class Demo {
         // Walk every pointer slot. The mouse (slot 0) and touches (1-3) all use
         // BTN_POINTER_A as the "primary" button; for touches that is automatic ("contact
         // made = A held"), for the mouse it is the left button.
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             // Edge: pointer just went down on this slot. Try to grab a ball.
             if (BT.isPressed(BT.BTN_POINTER_A, slot)) {
                 this.tryGrab(slot);
@@ -325,8 +318,22 @@ class Demo {
             }
         }
 
-        // Find the topmost ball whose disc covers the pointer. Iterating in reverse so
-        // the visually topmost ball wins when balls overlap.
+        // Grab the topmost free ball under the pointer, if there is one.
+        const index = this.ballIndexAt(pos.x, pos.y);
+
+        if (index >= 0) {
+            const ball = this.balls[index];
+            ball.grabbedBy = slot;
+            ball.vx = 0;
+            ball.vy = 0;
+        }
+    }
+
+    // Returns the index of the topmost free (not held) ball whose disc covers the point
+    // (x, y), or -1 when there is none. Shared by grabbing and by the hover ring.
+    ballIndexAt(x, y) {
+        // Iterating in reverse so the visually topmost ball wins when balls overlap: the
+        // last ball in the list is drawn last, on top of the others.
         for (let i = this.balls.length - 1; i >= 0; i--) {
             const ball = this.balls[i];
 
@@ -336,26 +343,20 @@ class Demo {
 
             // Inside the disc when the squared distance to the center is at most the
             // squared radius - comparing squares avoids a square root.
-            const dx = ball.x - pos.x;
-            const dy = ball.y - pos.y;
+            const dx = ball.x - x;
+            const dy = ball.y - y;
 
             if (dx * dx + dy * dy <= BALL_RADIUS * BALL_RADIUS) {
-                ball.grabbedBy = slot;
-                ball.vx = 0;
-                ball.vy = 0;
-                return;
+                return i;
             }
         }
+
+        return -1;
     }
 
     // Releases whatever ball this slot is holding, launching it with the pointer's
     // release-tick velocity (scaled and clamped to MAX_THROW_SPEED).
     tryThrow(slot) {
-        // Mark this throw on the overlay timing chart so you can see exactly when a throw
-        // happened and which pointer slot caused it. The template string inserts the slot
-        // number so repeated throws from different fingers are distinct.
-        BT.assignTag(`Throw slot ${slot}`);
-
         for (const ball of this.balls) {
             if (ball.grabbedBy !== slot) {
                 continue;
@@ -553,16 +554,7 @@ class Demo {
         let hoverIndex = -1;
 
         if (mousePos !== null && mousePos.y >= HUD_HEIGHT) {
-            for (let i = this.balls.length - 1; i >= 0; i--) {
-                const ball = this.balls[i];
-                const dx = ball.x - mousePos.x;
-                const dy = ball.y - mousePos.y;
-
-                if (dx * dx + dy * dy <= BALL_RADIUS * BALL_RADIUS) {
-                    hoverIndex = i;
-                    break;
-                }
-            }
+            hoverIndex = this.ballIndexAt(mousePos.x, mousePos.y);
         }
 
         for (let i = 0; i < this.balls.length; i++) {
@@ -595,20 +587,18 @@ class Demo {
     // Small crosshair at every active pointer position so users can see where each finger
     // or the mouse currently is.
     renderCursors() {
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             if (!BT.isPointerActive(slot)) {
                 continue;
             }
 
             const pos = BT.pointerPos(slot);
-            const span = CURSOR_ARM * 2 + 1;
 
-            // Two 1-pixel-thick arms, drawn with ui.drawRectFill(), the sprite version of
-            // BT.drawRectFill(): the engine draws every BT.drawLine() and
-            // BT.drawRectFill() before any sprite, and the title strip is a sprite, so a
-            // plain line would vanish whenever the pointer moved over it.
-            ui.drawRectFill(this.tempRect.set(pos.x - CURSOR_ARM, pos.y, span, 1), this.theme.text);
-            ui.drawRectFill(this.tempRect.set(pos.x, pos.y - CURSOR_ARM, 1, span), this.theme.text);
+            // ui.crosshair() draws two 1-pixel-thick arms as sprites: the engine draws
+            // every BT.drawLine() and BT.drawRectFill() before any sprite, and the title
+            // strip is a sprite, so a plain line would vanish whenever the pointer moved
+            // over it.
+            ui.crosshair(pos.x, pos.y, CURSOR_ARM, this.theme.text);
         }
     }
 
