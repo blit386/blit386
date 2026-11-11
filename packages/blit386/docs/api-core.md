@@ -40,7 +40,7 @@ Your game is a class implementing `IBTDemo` (`init`, `update`, `render`, and the
 the class itself, typed `DemoConstructor`, and constructs it once the engine is up. Every hook in one place:
 
 <TypeTable type={{
-    configure: { type: '() => Partial<HardwareSettings>', description: 'Optional. Display size, backend, target FPS, overlay, and the other hardware settings; omitted fields keep the engine defaults' },
+    configure: { type: '() => Partial<HardwareSettings>', description: 'Optional. Display size, backend, target FPS, overlay, and the other hardware settings; omitted fields keep the engine defaults, unless you return `displaySize` - then optional fields you omit, such as `drawingBufferSize`, stay unset' },
     init: { type: '() => Promise<boolean>', required: true, description: 'Called once after the backend is up. Load assets and set the palette; resolve false to abort' },
     update: { type: '() => void', required: true, description: 'Fixed-timestep simulation at targetFPS: zero or more calls per rendered frame. Read input edges here' },
     render: { type: '() => void', required: true, description: 'Once per animation frame. Issue every draw call here' },
@@ -235,8 +235,8 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 <Callout title="Capturing at displaySize instead of outputSize">
 
 Pass `{ size: 'display' }` to `BT.captureFrame()` or `BT.downloadFrame()` for one PNG pixel per logical pixel, without
-display-tier effects; the F9 / Shift+F9 dev shortcuts use the same path (Shift+F9 waits for `BT.resume()` while
-`BT.renderAt` holds the loop). See [Which size?](api-rendering.md#which-size).
+display-tier effects; the F9 / Shift+F9 dev shortcuts use the same path (Shift+F9 does nothing while `BT.renderAt` holds
+the loop). See [Which size?](api-rendering.md#which-size).
 
 </Callout>
 
@@ -625,9 +625,9 @@ game loop, detaches input and audio, and destroys the previous GPU device before
 ever runs and a "back to title" restart does not leak GPU memory. Sprite sheets and fonts you kept from the earlier run
 rebuild their texture on the new device the next time they are drawn. The palette, palette effects, and post-process
 effects do not carry over: `BT.palette` throws until the new `init()` calls `BT.paletteSet()`, so set them again there.
-The BLIT386 splash plays once per page load, so a restart runs your `init()` without it and `BT.splashState` stays
-`'done'`. A `BT.renderAt` seek already running finishes before the restart begins, and one called while the restart runs
-rejects, as it does before the first init.
+The BLIT386 splash plays once per page load, so a restart runs your `init()` without it and `BT.splashState` keeps its
+value (`'done'` when the splash played). A `BT.renderAt` seek already running finishes before the restart begins, and
+one called while the restart runs rejects, as it does before the first init.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`. In a dev build, `bootstrap()` sets `window.BT` when it finishes
