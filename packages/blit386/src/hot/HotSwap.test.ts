@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BTAPI } from '../core/BTAPI';
 import { GameLoop } from '../core/GameLoop';
 import type { HardwareSettings, IBTDemo } from '../core/IBTDemo';
-import { mergeHardwareSettings } from '../core/IBTDemo';
+import { mergeHardwareSettings } from '../core/mergeHardwareSettings';
 import type { DemoConstructor } from '../utils/Bootstrap';
 import { Color32 } from '../utils/Color32';
 import { Vector2i } from '../utils/Vector2i';

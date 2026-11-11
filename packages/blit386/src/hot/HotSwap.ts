@@ -10,7 +10,7 @@
 
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings, IBTDemo } from '../core/IBTDemo';
-import { mergeHardwareSettings } from '../core/IBTDemo';
+import { mergeHardwareSettings } from '../core/mergeHardwareSettings';
 import type { DemoConstructor } from '../utils/Bootstrap';
 import type { Vector2i } from '../utils/Vector2i';
 import { announce, nextGeneration, requestHardReload } from './HotRuntime';

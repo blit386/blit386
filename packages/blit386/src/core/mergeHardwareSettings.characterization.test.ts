@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { Color32 } from '../utils/Color32';
 import { Vector2i } from '../utils/Vector2i';
 import type { HardwareSettings } from './IBTDemo';
-import { defaultConfig, mergeHardwareSettings } from './IBTDemo';
+import { defaultConfig, mergeHardwareSettings } from './mergeHardwareSettings';
 
 const NULL_VECTOR = null as unknown as Vector2i;
 

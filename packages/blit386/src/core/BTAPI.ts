@@ -83,7 +83,7 @@ import {
     MAX_AUDIO_VOICES,
     mergeHardwareSettings,
     needsOverlayRendererDiagnostics,
-} from './IBTDemo';
+} from './mergeHardwareSettings';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';

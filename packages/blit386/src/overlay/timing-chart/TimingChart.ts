@@ -3,7 +3,7 @@
  */
 
 import type { BitmapFont } from '../../assets/BitmapFont';
-import type { OverlayTimingChartDiagnosticsMode } from '../../core/IBTDemo';
+import type { OverlayTimingChartDiagnosticsMode } from '../../core/mergeHardwareSettings';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';

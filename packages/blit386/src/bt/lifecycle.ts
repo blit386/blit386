@@ -5,13 +5,8 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
-import {
-    type Backend,
-    defaultConfig,
-    type IBTDemo,
-    type RenderAtOptions,
-    type TestStateSnapshot,
-} from '../core/IBTDemo';
+import type { Backend, IBTDemo, RenderAtOptions, TestStateSnapshot } from '../core/IBTDemo';
+import { defaultConfig } from '../core/mergeHardwareSettings';
 import type { SplashState } from '../splash';
 import { renderAtOptionsError } from '../utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions } from '../utils/FrameCapture';

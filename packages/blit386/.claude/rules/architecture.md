@@ -26,6 +26,7 @@ src/
   core/
     BTAPI.ts               # Internal singleton managing subsystems (lazy-loads WebGPURenderer on WebGPU init); readiness gate behind BT.isReady, and the BT.renderAt seek path (seek -> stop/park loop -> buildReplayDemo fresh instance for 'start' -> GameLoop.step; restartParkedLoop backs BT.resume)
     IBTDemo.ts             # Demo interface (incl. optional testState() hook) + HardwareSettings (keyboardLayout, KEYBOARD_LAYOUTS) + TestStateSnapshot
+    mergeHardwareSettings.ts # defaultConfig(), the configure() merge into HardwareSettings, audio voice default/cap, overlay diagnostics switches
     GameLoop.ts            # Fixed-timestep game loop; step(n) runs n updates + one render synchronously (the primitive behind BT.renderAt)
     SeedUrlParam.ts        # ?seed=N URL parameter: pure resolver + reader, seeds BT.random before the game's init()
     WebGPUContext.ts       # WebGPU adapter/device/context setup
