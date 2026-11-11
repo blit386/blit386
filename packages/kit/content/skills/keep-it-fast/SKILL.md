@@ -11,11 +11,6 @@ description: >-
 A BLIT386 game gets 16 milliseconds to think and draw each frame. That is a lot - until you do something wasteful sixty
 times a second. Almost every slow BLIT386 game is slow for one of the reasons below.
 
-## When to use
-
-Use when the game stutters or drops frames, when it gets slower the longer it runs, when sprites start disappearing for
-no obvious reason, or when the user asks how to make the game run faster.
-
 ## First: measure, do not guess
 
 Turn on the overlay before you change any code. It tells you whether you are slow in `update()` (your logic) or
@@ -84,22 +79,6 @@ argument - the object to write the answer into:
 - `BT.drawTile(sheet, index, pos)` instead of `BT.drawSprite(sheet, new Rect2i(...), pos)` for grid sheets - it reuses
   one rectangle inside the engine (engine 1.8.0+)
 
-```js
-// One reused vector, read every frame for all four pointer slots.
-async init() {
-    this.pointerScratch = new Vector2i(0, 0);
-    return true;
-}
-
-update() {
-    for (let slot = 0; slot < 4; slot++) {
-        if (!BT.isPointerActive(slot)) continue;
-        BT.pointerPosTo(this.pointerScratch, slot);
-        this.paintAt(this.pointerScratch);
-    }
-}
-```
-
 Only do this where it repeats. Reading the mouse once per frame with plain `BT.pointerPos(0)` is one object a frame and
 costs nothing worth reading harder code for.
 
@@ -140,8 +119,9 @@ A 500x500 tile map is 250,000 tiles. The screen holds about 300 of them.
 
 ## Rule 4: there is a budget, and going over it drops your sprites silently
 
-Each frame the engine has room for roughly **8,300 sprites**, and separately for roughly **8,300 shapes**. Sprites and
-shapes have their own budgets and do not compete for each other's room.
+On WebGPU, each frame has room for roughly **8,300 sprites**, and separately for roughly **8,300 shapes**. Sprites and
+shapes have their own budgets and do not compete for each other's room. The software fallback has no such budget; it
+just gets slower.
 
 Shapes all cost the same: a rectangle, a line, and even a single pixel are each drawn as two triangles, so each one
 costs the same slice of the budget. An outlined rectangle (`BT.drawRect`) is four lines, so it costs four.
@@ -154,10 +134,7 @@ rule 3, not a bigger budget.
 ## Key calls
 
 - `BT.assignTag(label)` (method) - mark a moment on the overlay timing chart. Needs `isOverlayTimingChartEnabled`.
-- `Vector2i.lerpTo(a, b, t, out)` / `rect.intersectTo(other, out)` (methods) - the no-litter versions.
-- `rect.set(x, y, w, h)` / `vec.set(x, y)` / `vec.copyFrom(other)` (methods) - reuse an object instead of making one.
-- `BT.pointerPosTo(out, slot?)` / `BT.pointerDeltaTo(out, slot?)` (methods, engine 1.7.0+) - the no-litter pointer
-  reads; see the `read-pointer` skill.
+- The no-litter calls are listed under rule 1; the `read-pointer` skill covers `BT.pointerPosTo`.
 - Configure flags: `isOverlayTimingChartEnabled`, `isOverlayRendererDiagnosticsBarEnabled`.
 
 ## Notes
