@@ -41,8 +41,10 @@ clipping.
 - `.btfont` files may reference either a relative PNG path or an embedded PNG data URI.
 - Embedded textures must use `data:image/png;base64,...` and stay within the embedded payload cap above.
 - Other `data:` schemes (for example JPEG) are rejected before image decode.
-- A texture path is joined to the `.btfont` file's folder and must stay on the same origin as the font file. A texture
-  on another site (`https://other.example/atlas.png`, `//other.example/atlas.png`) throws an `AssetLimitError`.
+- A texture path is joined to the `.btfont` file's folder, and the joined URL must stay on the font file's origin. Only
+  a font loaded by a bare file name (`font.btfont`) can leave it: its texture is used as written, so
+  `https://other.example/atlas.png` throws an `AssetLimitError`. For `fonts/font.btfont` the same texture joins to the
+  same-origin path `fonts/https://other.example/atlas.png` and fails as an ordinary missing file.
 - Decoded atlas dimensions use the same width, height, and pixel-area limits as sprite sheets.
 - Prefer separate PNG files for large atlases so the JSON payload stays under the JSON size limit.
 
