@@ -56,12 +56,13 @@ WHAT YOU WILL LEARN
 - Palette offsets: BT.drawSprite(sheet, srcRect, position, paletteOffset) shifts every
   pixel's palette index by paletteOffset, so one sprite image yields any number of color
   variants with no extra textures and no per-pixel work.
-- Registering a sprite's colors with SpriteSheet.loadColorsIntoPalette() and
-  SpriteSheet.loadIndexed(), and reading the registered Color32 list back.
+- Registering a sprite's colors with SpriteSheet.loadIndexed(), and reading the
+  registered Color32 list back from its result.
 - palette.fillBlock(start, source, transform) to write one recolored copy of the base
   colors per theme block.
 - Static blocks built once in init() versus dynamic blocks rewritten every tick in
-  update(), with plain loops to avoid allocating a closure per tick.
+  update(), with plain loops to avoid allocating a closure per tick, and an effect made
+  purely by switching offsets between static blocks.
 - Color32.luminance, Color32.fromHSL(), and Color32.lerp() as recoloring tools.
 - BT.effectAdd() with a pixel-tier effect (PixelGlitch) and a display-tier chain, plus a
   tick-driven fault state machine timed with BT.random.
@@ -76,12 +77,13 @@ registers the sprite's unique opaque colors at COLOR_BASE (slot 12) - six colors
 test sprite, so block 0 occupies slots 12-17. Each further block is a recolored copy of
 those six colors, colorCount slots higher: block k starts at COLOR_BASE + k * colorCount.
 Drawing with paletteOffset = k * colorCount makes every pixel land in block k instead of
-block 0. Thirteen blocks fit in slots 12-89, far below the shared UI theme at 240-251.
+block 0. Twelve blocks fit in slots 12-83, far below the shared UI theme at 240-251.
 
 Blocks 0-7 (original, silhouette, damage white, damage red, team red, team blue, team
-green, frozen) are filled once in init(). Blocks 8-12 (damage flash, ghost, invincible,
-poison, day/night) are rewritten every tick in update(); render() only changes the offset
-it draws with.
+green, frozen) are filled once in init(). Blocks 8-11 (ghost, invincible, poison,
+day/night) are rewritten every tick in update(). The damage flash needs no block of its
+own: render() only changes the offset it draws with, switching between the damage white,
+damage red, and original blocks.
 
 FULLSCREEN CRT
 --------------
@@ -139,7 +141,7 @@ import {
 
 import { GLITCH_LABELS, GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, centeredTextX, defaultThemeSlot, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
@@ -155,30 +157,30 @@ import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').Flicker} Flicker */
 /** @typedef {import('blit386').Bloom} Bloom */
 
-// Where sprite colors start in the palette. The 13 theme blocks stack upward from here:
-// with the 6-color test sprite the top block ends at slot 89, far below the shared UI
+// Where sprite colors start in the palette. The 12 theme blocks stack upward from here:
+// with the 6-color test sprite the top block ends at slot 83, far below the shared UI
 // theme colors at slots 240-251.
 const COLOR_BASE = 12;
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
-// the overlay styles below cannot read this.theme yet - these constants spell out where
-// each theme color will land once init() runs. UI_GAP is a static slot outside both the
-// sprite theme range (12-89) and the applyTheme() range (240-251), set directly in
-// init().
-const UI_BG = 240; // 'ui_bg' - deep navy screen background
-const UI_TEXT = 244; // 'ui_text' - off-white primary text
-const UI_DIM = 245; // 'ui_text_dim' - secondary gray text
+// the overlay styles below cannot read this.theme yet - defaultThemeSlot() returns the
+// slot each theme color will land in once init() runs, following the kit's own color
+// order. UI_GAP is a static slot outside both the sprite theme range (12-83) and the
+// applyTheme() range (240-251), set directly in init().
+const UI_BG = defaultThemeSlot('bg'); // deep navy screen background
+const UI_TEXT = defaultThemeSlot('text'); // off-white primary text
+const UI_DIM = defaultThemeSlot('dim'); // secondary gray text
 const UI_GAP = 252; // gray gap between overlay bands
-const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart warnings)
-const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars)
-const UI_WARM = 248; // 'ui_accent_warm' - orange (chart error frames)
-const UI_INFO = 249; // 'ui_info' - light blue (chart tags)
+const UI_HEADER = defaultThemeSlot('header'); // warm amber (render bars, chart warnings)
+const UI_ACCENT = defaultThemeSlot('accent'); // phosphor green (update bars)
+const UI_WARM = defaultThemeSlot('warm'); // orange (chart error frames)
+const UI_INFO = defaultThemeSlot('info'); // light blue (chart tags)
 
 // Theme block indices (as palette offsets from COLOR_BASE). Each block contains one entry
 // per unique sprite color - that count lives in this.colorCount, read in init(). Offset =
-// blockIndex * colorCount. Blocks 0-7 are static; blocks 8-12 are dynamic (rewritten in
-// update()).
+// blockIndex * colorCount. Blocks 0-7 are static; blocks 8-11 are dynamic (rewritten in
+// update()). The damage flash has no block: render() alternates blocks 2 and 3.
 //
 //   Block 0 (offset 0):                 Original sprite colors.
 //   Block 1 (offset colorCount):        Silhouette - all colors near-black.
@@ -188,11 +190,10 @@ const UI_INFO = 249; // 'ui_info' - light blue (chart tags)
 //   Block 5 (offset 5 * colorCount):    Team blue.
 //   Block 6 (offset 6 * colorCount):    Team green.
 //   Block 7 (offset 7 * colorCount):    Frozen (cool blue).
-//   Block 8 (offset 8 * colorCount):    Damage flash (dynamic: alternating white/red).
-//   Block 9 (offset 9 * colorCount):    Ghost (dynamic: pulsing low alpha).
-//   Block 10 (offset 10 * colorCount):  Invincibility (dynamic: hue rotation).
-//   Block 11 (offset 11 * colorCount):  Poison (dynamic: pulsing green brightness).
-//   Block 12 (offset 12 * colorCount):  Day/night ambient (dynamic: brightness cycle).
+//   Block 8 (offset 8 * colorCount):    Ghost (dynamic: pulsing low alpha).
+//   Block 9 (offset 9 * colorCount):    Invincibility (dynamic: hue rotation).
+//   Block 10 (offset 10 * colorCount):  Poison (dynamic: pulsing green brightness).
+//   Block 11 (offset 11 * colorCount):  Day/night ambient (dynamic: brightness cycle).
 const BLOCK_ORIGINAL = 0;
 const BLOCK_SILHOUETTE = 1;
 const BLOCK_DAMAGE_WHITE = 2;
@@ -201,11 +202,15 @@ const BLOCK_TEAM_RED = 4;
 const BLOCK_TEAM_BLUE = 5;
 const BLOCK_TEAM_GREEN = 6;
 const BLOCK_FROZEN = 7;
-const BLOCK_DAMAGE_FLASH = 8; // dynamic
-const BLOCK_GHOST = 9; // dynamic
-const BLOCK_INVINCIBLE = 10; // dynamic
-const BLOCK_POISON = 11; // dynamic
-const BLOCK_DAYNIGHT = 12; // dynamic
+const BLOCK_GHOST = 8; // dynamic
+const BLOCK_INVINCIBLE = 9; // dynamic
+const BLOCK_POISON = 10; // dynamic
+const BLOCK_DAYNIGHT = 11; // dynamic
+
+// The damage flash: for FLASH_TICKS ticks after each damage event, render() switches
+// between the damage-white and damage-red blocks every FLASH_STEP_TICKS ticks.
+const FLASH_TICKS = 30;
+const FLASH_STEP_TICKS = 3;
 
 // Logical game resolution (where render() draws). The demos page scales this up on
 // screen.
@@ -250,7 +255,8 @@ const DAYNIGHT_BAR_W = 180;
 const DAYNIGHT_PHASES = ['Day', 'Sunset', 'Night', 'Dawn'];
 
 // The cells of the two effect panels: which theme block to draw with, the effect's
-// name and its text color role, and a note on when a game would use it.
+// name and its text color role, and a note on when a game would use it. The Damage cell
+// sets isDamageFlash instead of a block: render() picks its block from the flash age.
 const STATIC_CELLS = [
     { block: BLOCK_ORIGINAL, name: 'Normal', color: 'text', note: 'Default look' },
     { block: BLOCK_SILHOUETTE, name: 'Silhouette', color: 'text', note: 'Stealth' },
@@ -261,7 +267,7 @@ const STATIC_CELLS = [
 ];
 
 const ANIMATED_CELLS = [
-    { block: BLOCK_DAMAGE_FLASH, name: 'Damage', color: 'warm', note: 'Hit flash' },
+    { isDamageFlash: true, name: 'Damage', color: 'warm', note: 'Hit flash' },
     { block: BLOCK_GHOST, name: 'Ghost', color: 'info', note: 'Spirit form' },
     { block: BLOCK_INVINCIBLE, name: 'Invincible', color: 'text', note: 'Power-up' },
     { block: BLOCK_POISON, name: 'Poisoned', color: 'accent', note: 'Damage over time' },
@@ -353,6 +359,9 @@ class Demo {
     // Reused for every sprite position in render(), so drawing allocates no new
     // Vector2i.
     drawPos = new Vector2i(0, 0);
+
+    // Reused for every rectangle of the day/night time bar, for the same reason.
+    barRect = new Rect2i();
 
     /** @type {PixelGlitch | null} */
     pixelGlitch = null;
@@ -456,7 +465,7 @@ class Demo {
         };
     }
 
-    // Sets up the palette, builds all 13 theme blocks, loads the sprite, and builds the
+    // Sets up the palette, builds all 12 theme blocks, loads the sprite, and builds the
     // CRT stack when WebGPU is active. Returns false when the sprite fails to load.
     async init() {
         console.log('[SpriteEffectsDemo] Initializing...');
@@ -464,7 +473,7 @@ class Demo {
         this.palette = BT.paletteCreate(256);
 
         // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
-        // high palette slots (240-251), far above the sprite theme blocks (slots 12-89
+        // high palette slots (240-251), far above the sprite theme blocks (slots 12-83
         // with the 6-color test sprite), and returns a map of friendly names to those
         // slots (this.theme.bg, .panel, ...). All captions and legends draw with these.
         this.theme = applyTheme(this.palette);
@@ -473,11 +482,23 @@ class Demo {
         // directly.
         this.palette.set(UI_GAP, new Color32(60, 60, 70));
 
-        // Register the sprite colors: scan the PNG and write every unique opaque color
-        // into the palette starting at COLOR_BASE. The returned array is those colors
-        // sorted darkest-first by luminance. The theme-block builders below recolor each
-        // of them into a higher block.
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, COLOR_BASE);
+        // Load and indexize the sprite. loadIndexed() scans the PNG, writes every unique
+        // opaque color into the palette starting at COLOR_BASE (block 0), and converts
+        // each pixel to the palette index of its color. Its `colors` result is that list
+        // of Color32, sorted darkest-first by luminance; the theme-block builders below
+        // recolor each of them into a higher block. A missing or broken PNG lands in the
+        // catch, and returning false tells the engine not to start the demo.
+        try {
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE);
+            this.sheet = indexed.sheet;
+            this.charRect = indexed.srcRect;
+            this.baseColors = indexed.colors;
+            console.log(`[SpriteEffectsDemo] Loaded sprite: ${this.charRect.width}x${this.charRect.height}px`);
+        } catch (error) {
+            console.error('[SpriteEffectsDemo] Failed to load sprite:', error);
+            return false;
+        }
+
         const colorCount = this.baseColors.length;
         this.colorCount = colorCount;
 
@@ -485,10 +506,10 @@ class Demo {
         // colorCount.
         this.buildStaticThemeBlocks();
 
-        // Dynamic blocks (8-12) start as copies of the original. update() replaces them
+        // Dynamic blocks (8-11) start as copies of the original. update() replaces them
         // each tick. palette.fillBlock(start, source, transform) writes
         // transform(baseColor) into one slot per base color, starting at `start`.
-        for (let block = BLOCK_DAMAGE_FLASH; block <= BLOCK_DAYNIGHT; block++) {
+        for (let block = BLOCK_GHOST; block <= BLOCK_DAYNIGHT; block++) {
             this.palette.fillBlock(
                 COLOR_BASE + block * colorCount,
                 this.baseColors,
@@ -496,19 +517,7 @@ class Demo {
             );
         }
 
-        // Load and indexize the sprite. loadIndexed() registers the colors again at
-        // COLOR_BASE in luminance order, matching baseColors, and overwrites block 0
-        // with that list. It then converts each pixel to the palette index of its color.
-        try {
-            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE);
-            this.sheet = indexed.sheet;
-            this.charRect = this.sheet.fullRect();
-            BT.paletteSet(this.palette);
-            console.log(`[SpriteEffectsDemo] Loaded sprite: ${this.charRect.width}x${this.charRect.height}px`);
-        } catch (error) {
-            console.error('[SpriteEffectsDemo] Failed to load sprite:', error);
-            return false;
-        }
+        BT.paletteSet(this.palette);
 
         // Fault state is shared by both backends - initialize it once before the CRT
         // check. BT.random.int(min, max) returns a whole number in [min, max), so this
@@ -537,11 +546,10 @@ class Demo {
         return true;
     }
 
-    // Advances animTime and rewrites all five dynamic theme blocks, then steps the CRT
-    // fault machine when the stack is active. The damage flash alternates the
-    // damage-white and damage-red recipes every 3 ticks for 30 ticks after each damage
-    // event; ghost pulses alpha between 40 and 180; invincibility rotates hue around the
-    // color wheel; poison pulses brightness; day/night cycles brightness over 20 seconds.
+    // Advances animTime, starts a damage event every 3 seconds, and rewrites all four
+    // dynamic theme blocks, then steps the CRT fault machine when the stack is active.
+    // Ghost pulses alpha between 40 and 180; invincibility rotates hue around the color
+    // wheel; poison pulses brightness; day/night cycles brightness over 20 seconds.
     update() {
         this.animTime += BT.deltaSeconds;
 
@@ -549,12 +557,12 @@ class Demo {
             return;
         }
 
-        // Trigger a damage event every 3 seconds (180 ticks).
+        // Trigger a damage event every 3 seconds (180 ticks). render() reads this tick
+        // to pick the flash's block (see damageFlashBlock()).
         if (BT.ticks % 180 === 0) {
             this.damageFlashTick = BT.ticks;
         }
 
-        this.updateDamageFlashBlock();
         this.updateGhostBlock();
         this.updateInvincibleBlock();
         this.updatePoisonBlock();
@@ -587,7 +595,8 @@ class Demo {
         this.renderStaticEffects();
         this.renderDynamicEffects();
 
-        // The Day/night panel, right of the Animated one.
+        // Then the Day/night panel to the right of the Animated one: the sprite under a
+        // slowly cycling ambient light, with a time bar below it.
         this.renderDayNightCycle();
 
         // Software renderer: warn on-canvas that the Tesla Orava look is missing. A small
@@ -610,7 +619,7 @@ class Demo {
         if (this.effectsAvailable) {
             this.overlayRowData[0].leftText = 'Tesla Orava: ON';
 
-            const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
+            const faultLabel = GLITCH_LABELS[this.glitchType] ?? GLITCH_LABELS[GLITCH_TYPE.NONE];
             const faultValue = this.glitchTicksLeft > 0 ? Math.round(this.glitchPeak * 100) : 0;
 
             this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
@@ -627,46 +636,64 @@ class Demo {
     // Builds the Tesla Orava effect chain once in init(): the pixel-tier band tear plus
     // the display-tier tube look, in back-to-front order.
     setupCrtStack() {
-        // Pixel tier: indexed-buffer horizontal band tear (V-hold style).
+        // Pixel tier: indexed-buffer horizontal band tear (V-hold style). The picture is
+        // cut into 4-pixel bands that can slide sideways; intensity 0 keeps it off until
+        // a wobble or an H-HOLD fault turns it up.
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 4;
         this.pixelGlitch.intensity = 0;
         BT.effectAdd(this.pixelGlitch);
 
         // Display tier: Tesla Orava B/W tube - curved glass, faint grille, soft halation.
+        // Curvature 0.07 bends the picture just enough to read as a glass tube.
         this.barrel = new BarrelDistortion();
         this.barrel.curvature = 0.07;
 
+        // Wavy horizontal distortion. Off at rest; only the GHOST fault raises it.
         this.interference = new Interference();
         this.interference.amount = INTERFERENCE_BASE;
 
+        // The bright band that always scrolls down the tube: amount is its brightness,
+        // speed how fast it travels.
         this.rollLine = new RollLine();
         this.rollLine.amount = ROLL_BASE;
         this.rollLine.speed = ROLL_SPEED;
 
+        // Dark lines between picture rows. amount sets how dark they get, strength how
+        // sharp their edges are (negative is softer), and density one line per logical
+        // pixel row.
         this.scanlines = new Scanlines();
         this.scanlines.amount = 0.42;
         this.scanlines.strength = -7;
         this.scanlines.density = DISPLAY_H;
 
+        // The tube's phosphor grille: intensity 0.07 keeps it faint, size is the grille
+        // cell in output pixels, and border the dark gap around each cell.
         this.mask = new RGBMask();
         this.mask.intensity = 0.07;
         this.mask.size = 5;
         this.mask.border = 0.45;
 
+        // Light darkening toward the corners, like the bezel shading a real tube.
         this.vignette = new Vignette();
         this.vignette.amount = 0.1;
 
+        // Faint static grain. The SNOW fault raises it above this resting value.
         this.noise = new Noise();
         this.noise.amount = NOISE_BASE;
 
+        // Overall brightness. 1.0 is full brightness; the DIM fault dips it.
         this.flicker = new Flicker();
         this.flicker.amount = FLICKER_BASE;
 
+        // Soft phosphor glow around bright pixels: spread is how far it reaches, glow how
+        // strong it is.
         this.bloom = new Bloom();
         this.bloom.spread = 2.2;
         this.bloom.glow = 0.09;
 
+        // Add the display-tier effects in back-to-front order: the engine runs them in
+        // the order they were added.
         for (const fx of [
             this.barrel,
             this.interference,
@@ -685,11 +712,15 @@ class Demo {
     // Drives the RollLine scroll, the TV fault bursts, and the occasional subtle band
     // offset wobble. A fault burst takes priority: while one runs, the wobble is skipped.
     updateCrtEffects() {
+        // The time-driven effects animate from the engine clock, so they keep moving
+        // smoothly whatever else happens this tick.
         const seconds = BT.timeSeconds;
         this.rollLine.time = seconds;
         this.noise.time = seconds;
         this.interference.time = seconds;
 
+        // A fault burst is running: reset to the resting look, layer the fault on top at
+        // this tick's envelope strength, and count the burst down.
         if (this.glitchTicksLeft > 0) {
             // t runs 0 to 1 over the burst; sin(t * PI) is a 0 -> 1 -> 0 envelope.
             const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
@@ -700,6 +731,8 @@ class Demo {
 
             this.glitchTicksLeft--;
 
+            // The burst just ended: wait a fresh random time before the next fault, and
+            // hold off the band wobble too so the two never run back to back.
             if (this.glitchTicksLeft <= 0) {
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
                 this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
@@ -708,8 +741,11 @@ class Demo {
             return;
         }
 
+        // No fault: start from the resting look every tick.
         this.applyRestingCrtUniforms();
 
+        // A band wobble is running: ease PixelGlitch in and out, keeping its seed fixed
+        // so the same bands slide for the whole wobble.
         if (this.bandWobbleTicksLeft > 0) {
             // Same sine envelope as the fault bursts, scaled to the wobble's intensity.
             const t = 1 - (this.bandWobbleTicksLeft - 1) / this.bandWobbleDuration;
@@ -719,11 +755,14 @@ class Demo {
             this.pixelGlitch.seed = this.bandWobbleSeed;
             this.bandWobbleTicksLeft--;
 
+            // The wobble just ended: switch the tear off and wait before the next one.
             if (this.bandWobbleTicksLeft <= 0) {
                 this.pixelGlitch.intensity = 0;
                 this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
+            // No wobble: count down, and when the wait runs out start one with a random
+            // length and a fresh seed (which picks the bands that slide).
             this.bandWobbleCooldown--;
 
             if (this.bandWobbleCooldown <= 0) {
@@ -733,6 +772,7 @@ class Demo {
             }
         }
 
+        // Count down to the next fault burst.
         this.glitchCooldown--;
 
         if (this.glitchCooldown <= 0) {
@@ -764,14 +804,20 @@ class Demo {
         // GLITCH_TYPE holds the shared fault names, the same ones GLITCH_TYPES_VROLL
         // picks from, so these checks can never drift out of step with that list.
         if (this.glitchType === GLITCH_TYPE.HSHIFT) {
+            // H-HOLD: the band tear slides rows sideways at the burst's strength.
             this.pixelGlitch.intensity = peak;
         } else if (this.glitchType === GLITCH_TYPE.NOISE) {
+            // SNOW: static grain rises up to 0.1 above its resting level.
             this.noise.amount = NOISE_BASE + peak * 0.1;
         } else if (this.glitchType === GLITCH_TYPE.FLICKER) {
+            // DIM: brightness sinks from FLICKER_BASE toward FLICKER_DIP and back. It
+            // follows the envelope alone, so every DIM fault dips equally deep.
             this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
         } else if (this.glitchType === GLITCH_TYPE.INTERFERENCE) {
+            // GHOST: a wavy distortion up to 0.07 strong, from nothing at rest.
             this.interference.amount = peak * 0.07;
         } else if (this.glitchType === GLITCH_TYPE.VROLL) {
+            // V-ROLL: the roll band gets brighter and races down the tube faster.
             this.rollLine.amount = ROLL_BASE + peak * 0.35;
             this.rollLine.speed = ROLL_SPEED + peak * 1.8;
         }
@@ -780,7 +826,7 @@ class Demo {
     // Builds the 7 static recolored blocks (1-7) from the base colors. Called once in
     // init() - these never change after setup.
     buildStaticThemeBlocks() {
-        // Block 0 (original) holds the sprite's own colors, written by the loaders in
+        // Block 0 (original) holds the sprite's own colors, written by the loader in
         // init(). n is how many unique colors the sprite has - every block is n slots
         // wide.
         const n = this.colorCount;
@@ -861,45 +907,12 @@ class Demo {
         });
     }
 
-    // The 5 update*Block() methods below run every tick (called from update()), unlike
+    // The 4 update*Block() methods below run every tick (called from update()), unlike
     // buildStaticThemeBlocks() which runs once in init(). They stay as plain for loops
     // instead of palette.fillBlock(start, source, transform) calls on purpose: fillBlock
     // takes a transform function, and writing `(base) => ...` inline at each call site
     // would create a new closure 60 times a second. A raw loop allocates nothing extra
     // per tick beyond the Color32 it writes.
-
-    // Damage flash: alternates between the damage-white and damage-red recipes every 3
-    // ticks for the first 30 ticks after a damage event, then returns to the original
-    // colors.
-    updateDamageFlashBlock() {
-        const flashAge = BT.ticks - this.damageFlashTick;
-        const n = this.colorCount;
-
-        for (let i = 0; i < n; i++) {
-            const base = this.baseColors[i];
-            const lum = Math.floor(base.luminance);
-
-            let color;
-
-            if (flashAge < 30) {
-                // Math.floor(flashAge / 3) % 2 alternates 0 and 1 every 3 ticks: 0 =
-                // white, 1 = red.
-                const phase = Math.floor(flashAge / 3) % 2;
-                const whitened = Math.floor(128 + lum * 0.5);
-                const redShift = Math.min(255, lum + 80);
-
-                color =
-                    phase === 0
-                        ? new Color32(whitened, whitened, whitened, base.a)
-                        : new Color32(redShift, Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a);
-            } else {
-                // Outside the flash window: the original color.
-                color = new Color32(base.r, base.g, base.b, base.a);
-            }
-
-            this.palette.set(COLOR_BASE + BLOCK_DAMAGE_FLASH * n + i, color);
-        }
-    }
 
     // Ghost: the sprite appears semi-transparent with a blue-white tint. Alpha pulses
     // between 40 and 180 on a sine wave, three radians per second.
@@ -930,17 +943,14 @@ class Demo {
         for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
 
-            // Color32.fromHSL(hue, saturation, lightness) takes hue in degrees (0-360)
-            // and saturation and lightness as percentages (0-100). Lightness follows the
-            // base color's luminance so darker parts stay darker.
+            // Color32.fromHSL(hue, saturation, lightness, alpha) takes hue in degrees
+            // (0-360), saturation and lightness as percentages (0-100), and the alpha we
+            // keep from the base color. Lightness follows the base color's luminance so
+            // darker parts stay darker.
             const lum = base.luminance;
             const lightness = 30 + (lum / 255) * 40; // 30-70 percent
-            const rainbow = Color32.fromHSL(hue, 100, lightness);
 
-            this.palette.set(
-                COLOR_BASE + BLOCK_INVINCIBLE * n + i,
-                new Color32(rainbow.r, rainbow.g, rainbow.b, base.a),
-            );
+            this.palette.set(COLOR_BASE + BLOCK_INVINCIBLE * n + i, Color32.fromHSL(hue, 100, lightness, base.a));
         }
     }
 
@@ -992,19 +1002,34 @@ class Demo {
     }
 
     // Draws one effect cell: the sprite drawn with the cell's palette offset, then its
-    // name and note centered under it. Every character of the system font is FONT_W (6)
-    // pixels wide, so a caption is text.length * FONT_W pixels wide, and starting it half
-    // that width left of the middle centers it.
+    // name and note centered under it. The kit's centeredTextX() returns the whole-pixel
+    // x that centers a caption's letters on a column.
     renderCell(cellX, panelY, cell) {
-        const centerX = cellX + CELL_W / 2;
+        const centerX = cellX + Math.floor(CELL_W / 2);
 
         // The palette offset picks the theme block: block k starts k * colorCount slots
         // above block 0, so every pixel of the sprite lands in that block's colors.
-        this.drawPos.set(centerX - ART_CENTER_X, panelY + SPRITE_TOP);
-        BT.drawSprite(this.sheet, this.charRect, this.drawPos, cell.block * this.colorCount);
+        const block = cell.isDamageFlash ? this.damageFlashBlock() : cell.block;
 
-        ui.caption(centerX - (cell.name.length * FONT_W) / 2, panelY + NAME_Y, cell.name, { color: cell.color });
-        ui.caption(centerX - (cell.note.length * FONT_W) / 2, panelY + NOTE_Y, cell.note, { color: 'dim' });
+        this.drawPos.set(centerX - ART_CENTER_X, panelY + SPRITE_TOP);
+        BT.drawSprite(this.sheet, this.charRect, this.drawPos, block * this.colorCount);
+
+        ui.caption(centeredTextX(centerX, cell.name), panelY + NAME_Y, cell.name, { color: cell.color });
+        ui.caption(centeredTextX(centerX, cell.note), panelY + NOTE_Y, cell.note, { color: 'dim' });
+    }
+
+    // Picks the theme block the Damage cell draws with this frame. For FLASH_TICKS ticks
+    // after a damage event it switches between damage white and damage red every
+    // FLASH_STEP_TICKS ticks: Math.floor(age / FLASH_STEP_TICKS) % 2 alternates 0 and 1.
+    // After that it is the original block. No palette slot changes - only the offset.
+    damageFlashBlock() {
+        const flashAge = BT.ticks - this.damageFlashTick;
+
+        if (flashAge >= FLASH_TICKS) {
+            return BLOCK_ORIGINAL;
+        }
+
+        return Math.floor(flashAge / FLASH_STEP_TICKS) % 2 === 0 ? BLOCK_DAMAGE_WHITE : BLOCK_DAMAGE_RED;
     }
 
     // Draws the Static panel: six effects whose theme blocks were built once in init() -
@@ -1054,14 +1079,14 @@ class Demo {
         // ui.drawRect(): the same arguments as BT.drawRectFill() and BT.drawRect(), but
         // drawn as sprites so they land on top of the panel instead of under it. The
         // track is the darker screen background, so it stands out from the panel fill.
-        ui.drawRectFill(new Rect2i(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.bg);
+        ui.drawRectFill(this.barRect.set(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.bg);
 
         // The bar is split into four equal quarters, one per phase, by three thin tick
         // lines in the border color.
         const quarterW = DAYNIGHT_BAR_W / DAYNIGHT_PHASES.length;
 
         for (let i = 1; i < DAYNIGHT_PHASES.length; i++) {
-            ui.drawRectFill(new Rect2i(barX + i * quarterW, barY, 1, barHeight), this.theme.border);
+            ui.drawRectFill(this.barRect.set(barX + i * quarterW, barY, 1, barHeight), this.theme.border);
         }
 
         // cycle runs 0-1 over 1200 ticks, the same clock updateDayNightBlock() uses.
@@ -1069,20 +1094,21 @@ class Demo {
         const markerX = barX + Math.floor((DAYNIGHT_BAR_W - 1) * cycle);
 
         // The marker is painted with the last slot of the day/night block (COLOR_BASE +
-        // 12 * colorCount + colorCount - 1). The base colors are sorted darkest first, so
+        // 11 * colorCount + colorCount - 1). The base colors are sorted darkest first, so
         // that is the sprite's brightest color: bright at noon, a dim blue at midnight,
         // always visible against the dark track.
         const markerSlot = COLOR_BASE + BLOCK_DAYNIGHT * this.colorCount + this.colorCount - 1;
 
-        ui.drawRect(new Rect2i(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.border);
-        ui.drawRectFill(new Rect2i(markerX - 1, barY - 2, 3, barHeight + 4), markerSlot);
+        ui.drawRect(this.barRect.set(barX, barY, DAYNIGHT_BAR_W, barHeight), this.theme.border);
+        ui.drawRectFill(this.barRect.set(markerX - 1, barY - 2, 3, barHeight + 4), markerSlot);
 
-        // Phase labels, each centered in its own quarter of the bar.
+        // Phase labels, each centered on the middle of its own quarter of the bar.
+        // Math.floor keeps that middle a whole pixel, since a quarter is 45 pixels wide.
         for (let i = 0; i < DAYNIGHT_PHASES.length; i++) {
             const label = DAYNIGHT_PHASES[i];
-            const labelX = barX + i * quarterW + (quarterW - label.length * FONT_W) / 2;
+            const quarterMiddle = Math.floor(barX + (i + 0.5) * quarterW);
 
-            ui.caption(labelX, barY + barHeight + 2, label, { color: 'dim' });
+            ui.caption(centeredTextX(quarterMiddle, label), barY + barHeight + 2, label, { color: 'dim' });
         }
     }
 }
