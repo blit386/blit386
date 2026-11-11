@@ -31,7 +31,7 @@ import { InputTrace } from '../input/InputTrace';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
-import type { OverlayAudioSnapshot, OverlayDrawTarget, OverlayTimingSnapshot } from '../overlay';
+import type { OverlayDrawTarget } from '../overlay';
 import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
@@ -64,8 +64,9 @@ import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../u
 import { Random } from '../utils/Random';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import { OverlayDiagnostics } from './engine/OverlayDiagnostics';
 import { RendererSetup } from './engine/RendererSetup';
-import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
+import type { FrameDropCallback } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
 import { DEFAULT_AUDIO_VOICES, needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
@@ -74,33 +75,6 @@ import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { readSeedUrlParam } from './SeedUrlParam';
 import { WakeLock } from './WakeLock';
-
-/** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
-type Writable<T> = { -readonly [K in keyof T]: T[K] };
-
-/** All-zero overlay timing, copied into the reused snapshot at construction and on every init. */
-const ZERO_OVERLAY_TIMING: OverlayTimingSnapshot = Object.freeze({
-    frameMs: 0,
-    updateMs: 0,
-    renderMs: 0,
-    updateSteps: 0,
-    drawCalls: 0,
-    droppedFrames: 0,
-    primitiveOverflowCount: 0,
-    spriteOverflowCount: 0,
-    primitiveSubmittedVertices: 0,
-    spriteSubmittedVertices: 0,
-});
-
-/** All-zero overlay audio snapshot; `levels` is replaced, never written through, so sharing it is safe. */
-const ZERO_AUDIO_SNAPSHOT: OverlayAudioSnapshot = Object.freeze({
-    levels: Object.freeze({ main: 0, music: 0, sfx: 0 }),
-    activeVoices: 0,
-    totalVoices: 0,
-    voiceStealCount: 0,
-    voiceDropCount: 0,
-    preUnlockDropCount: 0,
-});
 
 /**
  * `KeyboardEvent.code` for the dev-mode frame-capture shortcuts: bare F9 copies the frame to
@@ -178,6 +152,34 @@ export class BTAPI {
      * Shared with the parts in `core/engine/`; not part of the BT API.
      */
     public activeBackend: Backend | null = null;
+
+    /**
+     * Accumulated fixed-step update time for the frame currently being rendered.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public pendingUpdateMs = 0;
+
+    /**
+     * Number of fixed-step updates accumulated for the current render frame.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public pendingUpdateSteps = 0;
+
+    /**
+     * Number of demo draw API calls issued since the last rendered frame.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public pendingDrawCalls = 0;
+
+    /**
+     * Audio context, bus graph, and unlock state. Created during {@link init}.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public audio: AudioManager | null = null;
 
     /**
      * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
@@ -316,17 +318,8 @@ export class BTAPI {
     /** Built-in 6x14 system font for BT.systemPrint(). */
     private systemFont: BitmapFont | null = null;
 
-    /** Accumulated fixed-step update time for the frame currently being rendered. */
-    private pendingUpdateMs = 0;
-
-    /** Number of fixed-step updates accumulated for the current render frame. */
-    private pendingUpdateSteps = 0;
-
     /** True only while the demo's `update()` runs; lets `BT.isPressed` hand carried pointer presses to update alone. */
     private updating = false;
-
-    /** Number of demo draw API calls issued since the last rendered frame. */
-    private pendingDrawCalls = 0;
 
     /** Scratch for the resolved `SpriteDrawParams.scale`, so params draws allocate nothing. */
     private readonly spriteScaleScratch = new Vector2i(1, 1);
@@ -378,34 +371,6 @@ export class BTAPI {
     /** Bitmask of palette indices referenced by demo draw calls this frame. */
     private readonly framePaletteUsageMask = new Uint8Array(USAGE_CAPACITY);
 
-    /** Reused timing snapshot passed into the overlay each frame. */
-    private readonly overlayTiming: Writable<OverlayTimingSnapshot> = { ...ZERO_OVERLAY_TIMING };
-
-    /** Reused audio snapshot passed into the overlay each frame; populated by {@link captureAudioDiagnostics}. */
-    private readonly audioSnapshot: Writable<OverlayAudioSnapshot> = { ...ZERO_AUDIO_SNAPSHOT };
-
-    /** Pending renderer diagnostics captured after overlay draws; copied into {@link overlayTiming} at frame end. */
-    private readonly pendingRendererDiagnostics: {
-        primitiveOverflowCount: number;
-        spriteOverflowCount: number;
-        primitiveSubmittedVertices: number;
-        spriteSubmittedVertices: number;
-    } = {
-        primitiveOverflowCount: 0,
-        spriteOverflowCount: 0,
-        primitiveSubmittedVertices: 0,
-        spriteSubmittedVertices: 0,
-    };
-
-    /** When true, {@link captureRendererDiagnostics} reads renderer pipeline counters each frame. */
-    private isCollectRendererDiagnosticsEnabled = false;
-
-    /**
-     * When true, {@link attachAudioSubsystem} enables bus metering and
-     * {@link captureAudioDiagnostics} reads audio bus/voice counters each frame.
-     */
-    private isCollectAudioMetersEnabled = false;
-
     /** Pointer / mouse / touch input subsystem. Created during {@link init}. */
     private pointer: PointerInput | null = null;
 
@@ -414,9 +379,6 @@ export class BTAPI {
 
     /** Gamepad input. Created during {@link init}. */
     private gamepad: GamepadInput | null = null;
-
-    /** Audio context, bus graph, and unlock state. Created during {@link init}. */
-    private audio: AudioManager | null = null;
 
     /** Screen wake lock subsystem. Created and attached during {@link init} only when
      *  {@link HardwareSettings.isWakeLockEnabled} is true. */
@@ -430,6 +392,9 @@ export class BTAPI {
 
     /** Hardware settings and renderer construction for init(). */
     private readonly rendererSetup = new RendererSetup(this);
+
+    /** Timing, renderer and audio snapshots for the overlay. */
+    private readonly diagnostics = new OverlayDiagnostics(this);
 
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
@@ -2021,7 +1986,7 @@ export class BTAPI {
 
         this.updateIntervalMs = updateInterval;
 
-        this.isCollectAudioMetersEnabled =
+        this.diagnostics.isCollectAudioMetersEnabled =
             hwSettings.isOverlayEnabled !== false && hwSettings.isOverlayAudioMetersEnabled === true;
 
         console.log('[BT] Hardware settings:', {
@@ -2077,19 +2042,17 @@ export class BTAPI {
         const isFrameDropCallbackNeeded =
             hwSettings.isDetectingDroppedFrames === true || hwSettings.isOverlayTimingChartEnabled === true;
         const onFrameDrop: FrameDropCallback | undefined = isFrameDropCallbackNeeded
-            ? (event) => this.handleFrameDrop(event, hwSettings.isDetectingDroppedFrames === true)
+            ? (event) => this.diagnostics.handleFrameDrop(event, hwSettings.isDetectingDroppedFrames === true)
             : undefined;
 
-        this.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
+        this.diagnostics.isCollectRendererDiagnosticsEnabled = needsOverlayRendererDiagnostics(hwSettings);
 
         this.pendingUpdateMs = 0;
         this.lastRenderClockMs = 0;
         this.pendingUpdateSteps = 0;
         this.pendingDrawCalls = 0;
         this.lastCameraOffset = Vector2i.zero();
-        Object.assign(this.overlayTiming, ZERO_OVERLAY_TIMING);
-        this.resetPendingRendererDiagnostics();
-        Object.assign(this.audioSnapshot, ZERO_AUDIO_SNAPSHOT);
+        this.diagnostics.reset();
 
         this.loop = new GameLoop(
             updateInterval,
@@ -2185,15 +2148,15 @@ export class BTAPI {
                             this.keyboard,
                             this.loop?.getTicks() ?? 0,
                             this.getDemoOverlayRows,
-                            this.overlayTiming,
+                            this.diagnostics.overlayTiming,
                             this.palette,
                             this.framePaletteUsageMask,
-                            this.audioSnapshot,
+                            this.diagnostics.audioSnapshot,
                         );
                     }
 
-                    this.captureRendererDiagnostics();
-                    this.captureAudioDiagnostics();
+                    this.diagnostics.captureRendererDiagnostics();
+                    this.diagnostics.captureAudioDiagnostics();
 
                     this.renderer.endFrame(this.consumeFrameDeltaMs());
                 }
@@ -2207,22 +2170,11 @@ export class BTAPI {
                 // callback does), so a press polled here survives a frame that runs no update.
                 this.gamepad?.endFrame();
 
-                this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);
-                this.overlayTiming.updateMs = this.pendingUpdateMs;
-                this.overlayTiming.renderMs = renderMs;
-                this.overlayTiming.updateSteps = this.pendingUpdateSteps;
-                this.overlayTiming.drawCalls = this.pendingDrawCalls;
-                this.overlayTiming.droppedFrames = 0;
-                this.overlayTiming.primitiveOverflowCount = this.pendingRendererDiagnostics.primitiveOverflowCount;
-                this.overlayTiming.spriteOverflowCount = this.pendingRendererDiagnostics.spriteOverflowCount;
-                this.overlayTiming.primitiveSubmittedVertices =
-                    this.pendingRendererDiagnostics.primitiveSubmittedVertices;
-                this.overlayTiming.spriteSubmittedVertices = this.pendingRendererDiagnostics.spriteSubmittedVertices;
+                this.diagnostics.commitFrame(frameStartMs, renderMs);
 
                 this.pendingUpdateMs = 0;
                 this.pendingUpdateSteps = 0;
                 this.pendingDrawCalls = 0;
-                this.resetPendingRendererDiagnostics();
             },
             onFrameDrop,
         );
@@ -2567,7 +2519,7 @@ export class BTAPI {
         this.audio = new AudioManager();
         this.audio.attach(canvas, hw.audioVoices ?? DEFAULT_AUDIO_VOICES);
 
-        if (this.isCollectAudioMetersEnabled) {
+        if (this.diagnostics.isCollectAudioMetersEnabled) {
             this.audio.enableBusMetering();
         }
     }
@@ -2661,26 +2613,6 @@ export class BTAPI {
             this.clearInputSubsystems();
 
             return false;
-        }
-    }
-
-    /**
-     * Records dropped-frame severity for the timing chart and optionally logs a warning.
-     *
-     * The {@link GameLoop} auto-calibrates its baseline to the actual rAF cadence,
-     * so sustained slowness re-baselines instead of generating sustained log spam.
-     *
-     * @param event - Dropped-frame event from {@link GameLoop}.
-     * @param logToConsole - When true, emits a one-line console warning.
-     */
-    private handleFrameDrop(event: FrameDropEvent, logToConsole: boolean): void {
-        this.overlayTiming.droppedFrames = event.droppedFrames;
-
-        if (logToConsole) {
-            console.warn(
-                `[BT] Dropped ${event.droppedFrames} frame(s) ` +
-                    `(frame time ${event.deltaTime.toFixed(1)}ms, expected ${event.expectedInterval.toFixed(1)}ms)`,
-            );
         }
     }
 
@@ -2858,53 +2790,6 @@ export class BTAPI {
      */
     private markDrawCall(): void {
         this.pendingDrawCalls++;
-    }
-
-    /**
-     * Clears pending renderer diagnostics when collection is disabled or after frame rollover.
-     */
-    private resetPendingRendererDiagnostics(): void {
-        this.pendingRendererDiagnostics.primitiveOverflowCount = 0;
-        this.pendingRendererDiagnostics.spriteOverflowCount = 0;
-        this.pendingRendererDiagnostics.primitiveSubmittedVertices = 0;
-        this.pendingRendererDiagnostics.spriteSubmittedVertices = 0;
-    }
-
-    /**
-     * Reads renderer pipeline diagnostic counters when overlay diagnostics collection is enabled.
-     *
-     * Must run after demo and overlay draws and before {@link IRenderer.endFrame}
-     * resets pipeline batch state.
-     */
-    private captureRendererDiagnostics(): void {
-        if (!this.isCollectRendererDiagnosticsEnabled || !this.renderer) {
-            return;
-        }
-
-        const diagnostics = this.renderer.getFrameDiagnostics();
-
-        this.pendingRendererDiagnostics.primitiveOverflowCount = diagnostics.primitiveOverflowCount;
-        this.pendingRendererDiagnostics.spriteOverflowCount = diagnostics.spriteOverflowCount;
-        this.pendingRendererDiagnostics.primitiveSubmittedVertices = diagnostics.primitiveSubmittedVertices;
-        this.pendingRendererDiagnostics.spriteSubmittedVertices = diagnostics.spriteSubmittedVertices;
-    }
-
-    /**
-     * Reads audio bus levels and voice counters when overlay audio metering is enabled.
-     *
-     * Must run after demo and overlay draws, mirroring {@link captureRendererDiagnostics}.
-     */
-    private captureAudioDiagnostics(): void {
-        if (!this.isCollectAudioMetersEnabled || !this.audio) {
-            return;
-        }
-
-        this.audioSnapshot.levels = this.audio.getBusLevels();
-        this.audioSnapshot.activeVoices = this.audio.voices?.getActiveVoiceCount() ?? 0;
-        this.audioSnapshot.totalVoices = this.audio.voices?.getVoiceCount() ?? 0;
-        this.audioSnapshot.voiceStealCount = this.audio.voices?.getStealCount() ?? 0;
-        this.audioSnapshot.voiceDropCount = this.audio.voices?.getDropCount() ?? 0;
-        this.audioSnapshot.preUnlockDropCount = this.audio.getDroppedSfxCount();
     }
 
     /**
