@@ -1064,7 +1064,9 @@ export class SpriteSheet {
 
     /**
      * Calculates normalized UV coordinates for a sprite region.
-     * Converts pixel coordinates to 0.0-1.0 texture coordinate range.
+     * Converts pixel coordinates to 0.0-1.0 texture coordinate range. A rect that runs past the
+     * sheet edge is not clamped and gives values outside 0-1; both renderers draw only its
+     * in-sheet part.
      *
      * @param rect - Source rectangle in pixel coordinates.
      * @returns Object with u0, v0 (top-left) and u1, v1 (bottom-right) UV coordinates.
@@ -1075,7 +1077,8 @@ export class SpriteSheet {
 
     /**
      * Calculates normalized UV coordinates for a sprite region into a caller-owned object.
-     * Zero-allocation variant of {@link getUVs} for per-draw hot paths.
+     * Zero-allocation variant of {@link getUVs} for per-draw hot paths. Like `getUVs`, it does
+     * not clamp a rect that runs past the sheet edge.
      *
      * @param rect - Source rectangle in pixel coordinates.
      * @param out - Object to write the u0, v0, u1, v1 UV coordinates into.

@@ -236,13 +236,14 @@ const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
 
 For your own rendering code, `sheet.getUVs(rect)` converts a pixel rectangle to a `SpriteUV`: normalized `u0`, `v0`
 (top-left) and `u1`, `v1` (bottom-right) texture coordinates. `getUVsTo(rect, out)` writes into an existing object
-instead of allocating one.
+instead of allocating one. A rectangle that runs past the sheet edge is not clamped, so its values fall outside
+`[0, 1]`; `BT.drawSprite` draws only the part inside the sheet on both backends.
 
 ```ts twoslash
 import { Rect2i, SpriteSheet } from 'blit386';
 declare const sheet: SpriteSheet;
 // ---cut---
-const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 } in [0, 1]
+const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 }, in [0, 1] inside the sheet
 ```
 
 ## Palette offset
