@@ -16,6 +16,7 @@ import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
 import type { Palette } from './Palette';
+import { readStreamedBody } from './readStreamedBody';
 import { SpriteSheet } from './SpriteSheet';
 
 /**
@@ -437,33 +438,15 @@ export class BitmapFont {
             return response.text();
         }
 
-        const reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let total = 0;
-
-        for (;;) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-                break;
-            }
-
-            total += value.byteLength;
-
+        const bytes = await readStreamedBody(response.body, (total) => {
             const sizeError = validateBtfontJsonByteSize(total);
 
             if (sizeError) {
-                await reader.cancel();
-
                 throw new AssetLimitError(sizeError);
             }
+        });
 
-            chunks.push(value);
-        }
-
-        const decoder = new TextDecoder();
-
-        return chunks.map((chunk) => decoder.decode(chunk, { stream: true })).join('') + decoder.decode();
+        return new TextDecoder().decode(bytes);
     }
 
     /**

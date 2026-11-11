@@ -27,6 +27,7 @@ import {
     audioClipNetworkError,
 } from '../utils/errorMessages';
 import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
+import { readStreamedBody } from './readStreamedBody';
 import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
@@ -511,46 +512,15 @@ export class AudioClip {
             return response.arrayBuffer();
         }
 
-        const reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let bytesReceived = 0;
-
-        for (;;) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-                break;
-            }
-
+        const bytes = await readStreamedBody(response.body, (bytesReceived) => {
             onChunk();
-            chunks.push(value);
-            bytesReceived += value.byteLength;
 
             if (totalBytes !== null) {
                 onProgress?.({ phase: 'download', ratio: bytesReceived / totalBytes });
             }
-        }
+        });
 
-        return AudioClip.concatChunks(chunks, bytesReceived);
-    }
-
-    /**
-     * Concatenates streamed body chunks into a single `ArrayBuffer`.
-     *
-     * @param chunks - Chunks read from the response body stream, in order.
-     * @param totalBytes - Combined byte length of `chunks`.
-     * @returns Backing buffer of a `Uint8Array` holding all chunks in order.
-     */
-    private static concatChunks(chunks: Uint8Array[], totalBytes: number): ArrayBuffer {
-        const merged = new Uint8Array(totalBytes);
-        let offset = 0;
-
-        for (const chunk of chunks) {
-            merged.set(chunk, offset);
-            offset += chunk.byteLength;
-        }
-
-        return merged.buffer;
+        return bytes.buffer;
     }
 
     /**
