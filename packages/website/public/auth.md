@@ -17,10 +17,10 @@ without credentials or registration. No claim ceremony or token exchange is need
 | --- | --- |
 | Scopes supported | none (all content is public) |
 | Identity types supported | anonymous |
-| Bearer method | header |
+| Bearer method | none (no token is needed) |
 
 ## Agent catalog
 
-- Agent skills index: `https://blit386.dev/.well-known/agent-skills/blit386-docs/SKILL.md`
+- Agent skills index: `https://blit386.dev/.well-known/agent-skills/index.json`
 - API catalog: `https://blit386.dev/.well-known/api-catalog`
 - LLMs index: `https://blit386.dev/llms.txt`
