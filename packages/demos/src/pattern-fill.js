@@ -45,12 +45,20 @@ WHAT YOU WILL LEARN
   at the screen edge.
 - Building the full list of tile positions once in init() so render() allocates nothing.
 
+TRY THIS
+--------
+
+- Change DISPLAY_H to 608 (exactly 38 tiles) and the half-height last row disappears.
+- Change DISPLAY_W to 968 and a half-width column of tiles appears on the right edge too.
+- Swap PATTERN_URL for another 16x16 PNG in public/sprites and reload.
+
 */
 
 import { bootstrap, BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').Palette} Palette */
 
+// The logical screen size, in pixels.
 const DISPLAY_W = 960;
 const DISPLAY_H = 600;
 
@@ -58,10 +66,13 @@ const DISPLAY_H = 600;
 const PATTERN_URL = '/sprites/pattern-16-2.png';
 const TILE_SIZE = 16;
 
+// One small picture repeated across the whole screen.
 class Demo {
+    // The colors the picture uses; loadIndexed() fills them in.
     /** @type {Palette | null} */
     palette = null;
 
+    // The loaded picture, ready to draw from.
     /** @type {SpriteSheet | null} */
     sheet = null;
 
@@ -70,6 +81,8 @@ class Demo {
     /** @type {Array<{ pos: Vector2i, src: Rect2i }>} */
     tiles = [];
 
+    // Sets the screen size and switches the engine overlay off, so nothing covers the
+    // pattern.
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -88,6 +101,8 @@ class Demo {
             const art = await SpriteSheet.loadIndexed(PATTERN_URL, this.palette, 1, { sort: 'none' });
             this.sheet = art.sheet;
         } catch (error) {
+            // The file is missing or broken: report it and stop. Returning false tells
+            // the engine that setup failed.
             console.error('[PatternFillDemo] Failed to load the pattern:', error);
             return false;
         }
@@ -109,10 +124,10 @@ class Demo {
         return true;
     }
 
-    update() {
-        // Nothing moves: the pattern is the whole demo.
-    }
+    // Nothing moves: the pattern is the whole demo, so there is no logic to run.
+    update() {}
 
+    // Draws every tile in the list built by init().
     render() {
         // No clear needed: the tiles cover every pixel of the screen.
         for (const tile of this.tiles) {
@@ -121,4 +136,5 @@ class Demo {
     }
 }
 
+// Hand the Demo class to the engine, which calls init() and then runs the loop.
 bootstrap(Demo);
