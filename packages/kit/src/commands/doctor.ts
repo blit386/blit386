@@ -11,6 +11,7 @@ import {
     isGitRepo,
     kitDocsReviewedAt,
     kitEngineRange,
+    pmAddArgs,
     readProject,
     satisfiesCaretRange,
 } from '../env';
@@ -103,7 +104,7 @@ export function runDoctor(): void {
     if (version) {
         out(ui.success(`blit386 ${version} installed`));
     } else {
-        out(ui.warn('blit386 is not installed yet. Run your install command (for example `npm install`).'));
+        out(ui.warn(`blit386 is not installed yet. Run \`${pm} install\`.`));
     }
 
     // Kit-engine compatibility (D14): compare the engine range this kit was written for against what is installed.
@@ -132,7 +133,11 @@ export function runDoctor(): void {
         } else {
             out('');
             out(ui.warn(`This kit needs blit386 ${engineRange}, but ${version} is installed.`));
-            out(ui.info('Update blit386 to match: run `npm update blit386` (or `npx blit upgrade`).'));
+            out(
+                ui.info(
+                    `Update blit386 to match: run \`${pm} ${pmAddArgs(pm, `blit386@${engineRange}`).join(' ')}\` (or \`npx blit upgrade\`).`,
+                ),
+            );
         }
     }
 
