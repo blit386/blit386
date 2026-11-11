@@ -1,15 +1,19 @@
 /**
- * Shared browser plumbing for the demo capture scripts.
+ * Shared browser and ffmpeg plumbing for the demo capture scripts.
  *
  * `capture-demo-clip.mjs` (video) and `capture-og-image.mjs` (social cards) drive installed
  * Google Chrome the same way - open a demo in `?embed` mode, wait for the engine to finish
- * async WebGPU init, then read from the canvas - but produce completely different output. Only
- * that shared skeleton lives here; neither script's pipeline does.
+ * async WebGPU init, then read from the canvas - and both finish with an ffmpeg pass, but they
+ * produce completely different output. `capture-demo-shots.mjs` only launches the browser and
+ * opens the /shots page, which does its own capturing. Only that shared skeleton lives here;
+ * no script's pipeline does.
  *
  * Each script launches its own browser, so a half-finished clip capture cannot leave page state
  * that a card capture inherits. The card script reuses the one browser it launched across every
  * demo in the run.
  */
+import { spawnSync } from 'node:child_process';
+
 import { chromium } from 'playwright-core';
 
 // #region Configuration
@@ -45,6 +49,17 @@ export function sleep(seconds) {
 }
 
 /**
+ * Join a site origin and a path, whether or not the origin ends in a slash.
+ *
+ * @param {string} baseUrl Site origin, e.g. `https://demos.blit386.dev` (trailing slash optional).
+ * @param {string} path Path without a leading slash.
+ * @returns {string} `${baseUrl}/${path}`.
+ */
+export function siteUrl(baseUrl, path) {
+    return `${baseUrl.replace(/\/$/u, '')}/${path}`;
+}
+
+/**
  * Build the canvas-only embed URL for a demo slug.
  *
  * @param {string} baseUrl Site origin, e.g. `https://demos.blit386.dev` (trailing slash optional).
@@ -52,7 +67,43 @@ export function sleep(seconds) {
  * @returns {string} `${baseUrl}/${slug}?embed`.
  */
 export function buildEmbedUrl(baseUrl, slug) {
-    return `${baseUrl.replace(/\/$/u, '')}/${slug}?embed`;
+    return `${siteUrl(baseUrl, slug)}?embed`;
+}
+
+/**
+ * Throw unless ffmpeg is on PATH. Call it before the slow browser work, not after.
+ *
+ * @param {string} step What ffmpeg is needed for, for the error message.
+ * @returns {void}
+ * @throws {Error} When ffmpeg cannot be run.
+ */
+export function requireFfmpeg(step) {
+    const probe = spawnSync('ffmpeg', ['-hide_banner', '-version'], { stdio: 'ignore' });
+
+    if (probe.error || probe.status !== 0) {
+        throw new Error(`ffmpeg is required for ${step} but was not found on PATH.`);
+    }
+}
+
+/**
+ * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
+ *
+ * @param {string[]} args Arguments for `ffmpeg`, output path last.
+ * @returns {void}
+ * @throws {Error} When ffmpeg is missing or exits non-zero.
+ */
+export function runFfmpeg(args) {
+    console.log(`\n$ ffmpeg ${args.join(' ')}\n`);
+
+    const result = spawnSync('ffmpeg', args, { stdio: 'inherit' });
+
+    if (result.error) {
+        throw new Error(`Failed to run ffmpeg: ${result.error.message}`);
+    }
+
+    if (result.status !== 0) {
+        throw new Error(`ffmpeg exited with status ${result.status}`);
+    }
 }
 
 /**

@@ -33,7 +33,7 @@ import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { FILENAME_PATTERN } from '../plugins/demo-registry.js';
 import { parseCliArgs } from './cli-args.mjs';
-import { launchCaptureBrowser } from './playwright-session.mjs';
+import { launchCaptureBrowser, siteUrl } from './playwright-session.mjs';
 
 // #region Configuration
 
@@ -145,7 +145,7 @@ export function selectChanged(changedPaths, order) {
 export function buildAutoUrl(baseUrl, slugs, variants) {
     const params = new URLSearchParams({ demos: slugs.join(','), variants: variants.join(',') });
 
-    return `${baseUrl.replace(/\/$/u, '')}/${SHOTS_PATH}?auto&${params.toString()}`;
+    return `${siteUrl(baseUrl, SHOTS_PATH)}?auto&${params.toString()}`;
 }
 
 /**

@@ -32,7 +32,6 @@
  * at /demos/<slug>.html instead and is not supported. Use `pnpm run build && pnpm run preview`
  * to capture a demo that is not deployed yet.
  */
-import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -56,6 +55,8 @@ import {
     buildWebGPUProbeScript,
     CANVAS_ID,
     launchCaptureBrowser,
+    requireFfmpeg,
+    runFfmpeg,
 } from './playwright-session.mjs';
 import { parseCliArgs } from './cli-args.mjs';
 
@@ -487,25 +488,6 @@ Usage: pnpm run capture:og -- <slug> [options]
 `;
 
 /**
- * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
- *
- * @param {string[]} args Arguments for `ffmpeg`, output path last.
- * @returns {void}
- * @throws {Error} When ffmpeg is missing or exits non-zero.
- */
-function runFfmpeg(args) {
-    const result = spawnSync('ffmpeg', args, { stdio: 'inherit' });
-
-    if (result.error) {
-        throw new Error(`Failed to run ffmpeg: ${result.error.message}`);
-    }
-
-    if (result.status !== 0) {
-        throw new Error(`ffmpeg exited with status ${result.status}`);
-    }
-}
-
-/**
  * Render the finished card from the native screenshot, then delete the screenshot unless
  * `--keep-intermediate` asked to keep it. The delete runs on failure too: a leftover
  * `og-<slug>.native.png` in public/social/ is not gitignored, so it would be committed and
@@ -608,8 +590,13 @@ async function main() {
     // missing @description is check:demo-registry's business, not a reason to noise up a capture.
     const originalWarn = console.warn;
     console.warn = () => {};
-    const registry = buildRegistry(PACKAGE_ROOT);
-    console.warn = originalWarn;
+    let registry;
+
+    try {
+        registry = buildRegistry(PACKAGE_ROOT);
+    } finally {
+        console.warn = originalWarn;
+    }
 
     const ogScaleBySlug = new Map(registry.map((entry) => [entry.slug, entry.ogScale]));
     const pending = options.force
@@ -640,11 +627,7 @@ async function main() {
     }
 
     // Fail before opening a browser, not after 46 screenshots.
-    const ffmpegProbe = spawnSync('ffmpeg', ['-hide_banner', '-version'], { stdio: 'ignore' });
-
-    if (ffmpegProbe.error || ffmpegProbe.status !== 0) {
-        throw new Error('ffmpeg is required for the card render but was not found on PATH.');
-    }
+    requireFfmpeg('the card render');
 
     mkdirSync(outDir, { recursive: true });
 

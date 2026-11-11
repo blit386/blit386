@@ -33,8 +33,8 @@ import { DEMO_ORDER } from '../plugins/demo-order.js';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, '..', 'blit386', 'docs');
 
-/** Hostnames a header link must never point at - matched as an exact host or a `.`-suffix. */
-const PLACEHOLDER_DOMAIN_SUFFIXES = ['vancura.dev'];
+/** Hostname a header link must never point at - matched as the exact host or a `.`-suffix. */
+const PLACEHOLDER_DOMAIN = 'vancura.dev';
 
 const URL_PATTERN = /https:\/\/[^\s)'"]+/gu;
 
@@ -117,7 +117,7 @@ function isPlaceholderUrl(url) {
     }
 
     const host = parsed.hostname;
-    return PLACEHOLDER_DOMAIN_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+    return host === PLACEHOLDER_DOMAIN || host.endsWith(`.${PLACEHOLDER_DOMAIN}`);
 }
 
 /**

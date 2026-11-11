@@ -29,6 +29,8 @@ import {
     buildWebGPUProbeScript,
     CANVAS_ID,
     launchCaptureBrowser,
+    requireFfmpeg,
+    runFfmpeg,
     sleep,
 } from './playwright-session.mjs';
 import { parseCliArgs } from './cli-args.mjs';
@@ -311,24 +313,6 @@ const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out
 `;
 
 /**
- * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
- *
- * @param {string[]} args Arguments for `ffmpeg`, output path last.
- * @returns {void}
- */
-function runFfmpeg(args) {
-    console.log(`\n$ ffmpeg ${args.join(' ')}\n`);
-
-    const result = spawnSync('ffmpeg', args, { stdio: 'inherit' });
-    if (result.error) {
-        throw new Error(`Failed to run ffmpeg: ${result.error.message}`);
-    }
-    if (result.status !== 0) {
-        throw new Error(`ffmpeg exited with status ${result.status}`);
-    }
-}
-
-/**
  * Parse argv, capture the demo's canvas, upscale it, and hand off to encode-video.mjs.
  *
  * @returns {Promise<void>}
@@ -373,10 +357,7 @@ const main = async () => {
         // Fail fast on a missing ffmpeg before the timed recording, not after - ffmpeg is
         // only actually invoked post-capture (see runFfmpeg below), so without this check a
         // missing binary would waste the full --duration wait and discard a good recording.
-        const ffmpegProbe = spawnSync('ffmpeg', ['-hide_banner', '-version'], { stdio: 'ignore' });
-        if (ffmpegProbe.error || ffmpegProbe.status !== 0) {
-            throw new Error('ffmpeg is required for the upscale step but was not found on PATH.');
-        }
+        requireFfmpeg('the upscale step');
 
         let browser;
 
