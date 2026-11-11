@@ -6,6 +6,8 @@
  * for hot-reload registry lookups that may see slightly different-looking but
  * equivalent URLs (relative vs. rooted, or a `blit386:asset-changed` payload URL
  * that formats a path differently than a demo's original load call).
+ *
+ * {@link resolveAgainstDocument} is also used outside hot reload, by the `.btfont` texture origin check.
  */
 
 /**
@@ -47,5 +49,16 @@ export function appendCacheBustQuery(url: string): string {
  * @returns Normalized pathname, for example `/images/hero.png`.
  */
 export function normalizeAssetUrl(url: string): string {
-    return new URL(url, typeof document === 'undefined' ? 'http://localhost/' : document.baseURI).pathname;
+    return resolveAgainstDocument(url).pathname;
+}
+
+/**
+ * Resolves a URL the way `Image.src` and `fetch` do: against `document.baseURI`, or a
+ * placeholder origin root outside a document (Node, where the asset classes are unit tested).
+ *
+ * @param url - Relative or absolute URL.
+ * @returns The absolute URL.
+ */
+export function resolveAgainstDocument(url: string): URL {
+    return new URL(url, typeof document === 'undefined' ? 'http://localhost/' : document.baseURI);
 }

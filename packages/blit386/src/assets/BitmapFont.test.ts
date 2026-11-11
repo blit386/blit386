@@ -571,6 +571,30 @@ describe('BitmapFont', () => {
         });
     });
 
+    describe('texture origin', () => {
+        it.each(['http://evil.example/atlas.png', '//evil.example/atlas.png'])(
+            'rejects a texture on another origin (%s) without loading it',
+            async (texture) => {
+                const imageSources: string[] = [];
+                vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+                vi.stubGlobal(
+                    'fetch',
+                    vi.fn().mockResolvedValue(mockFontFetchResponse({ ...MOCK_FONT_DATA, texture })),
+                );
+
+                await expect(BitmapFont.load('font.btfont')).rejects.toBeInstanceOf(AssetLimitError);
+                expect(imageSources).toEqual([]);
+            },
+        );
+
+        it('loads an absolute texture URL on the same origin as the font', async () => {
+            const texture = 'http://localhost/fonts/atlas.png';
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse({ ...MOCK_FONT_DATA, texture })));
+
+            await expect(BitmapFont.load('font.btfont')).resolves.toBeInstanceOf(BitmapFont);
+        });
+    });
+
     describe('default metadata fallbacks', () => {
         it('should use defaults when name, size, lineHeight, baseline are missing', async () => {
             vi.stubGlobal(

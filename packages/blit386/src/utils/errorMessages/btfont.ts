@@ -40,6 +40,19 @@ export function btfontEmbeddedTextureTooLargeError(payloadLength: number, maxPay
 }
 
 /**
+ * Returns the error message when a `.btfont` texture path leads to a different origin than the font file.
+ *
+ * @param textureUrl - Texture URL as the font would have requested it.
+ * @returns User-facing error string.
+ */
+export function btfontTextureOtherOriginError(textureUrl: string): string {
+    return (
+        `The font texture '${textureUrl}' is on a different site than the font file, so it was not loaded. ` +
+        'Put the PNG next to the .btfont file and use a relative path in the texture field'
+    );
+}
+
+/**
  * Returns the error message when a `.btfont` file defines too many glyphs.
  *
  * @param count - Number of glyph entries found.

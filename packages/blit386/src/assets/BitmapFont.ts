@@ -8,6 +8,7 @@ import {
     validateBtfontGlyphAtlasBounds,
     validateBtfontGlyphDataPreAtlas,
     validateBtfontJsonByteSize,
+    validateBtfontTextureOrigin,
     validateGlyphCount,
 } from '../utils/AssetLimits';
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
@@ -363,7 +364,10 @@ export class BitmapFont {
      *
      * The font descriptor can reference either an embedded PNG data URI
      * (`data:image/png;base64,...`) or a texture file path relative to the font JSON file.
+     * A texture path that leads to a different origin than the font file is rejected.
      *
+     * @changed 1.8.1 Rejects a `texture` path that leads to another origin than the `.btfont` file
+     *   (for example an absolute `https://` URL on another site) with an `AssetLimitError`.
      * @param url - Path to the .btfont file.
      * @returns Loaded bitmap font instance.
      * @throws Error if the font descriptor or texture cannot be loaded.
@@ -676,15 +680,19 @@ export class BitmapFont {
      * @param texture - Data URI (starts with "data:") or relative path.
      * @param url - URL of the .btfont file (used to resolve relative paths).
      * @returns Loaded texture image for the font atlas.
+     * @throws AssetLimitError (as a rejection) if the texture path leads to another origin than the font file.
      */
     private static loadTexture(texture: string, url: string): Promise<HTMLImageElement> {
-        // Embedded PNG data URIs are validated in parseBtfontFile before decode;
-        // relative paths are resolved against the .btfont file's directory.
-        const textureUrl = texture.toLowerCase().startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX)
-            ? texture
-            : url.substring(0, url.lastIndexOf('/') + 1) + texture;
+        // Embedded PNG data URIs are validated in parseBtfontFile before decode.
+        if (texture.toLowerCase().startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX)) {
+            return BitmapFont.loadImage(texture);
+        }
 
-        return BitmapFont.loadImage(textureUrl);
+        // Relative paths are joined to the .btfont file's directory; the result must stay on its origin.
+        const textureUrl = url.substring(0, url.lastIndexOf('/') + 1) + texture;
+        const originError = validateBtfontTextureOrigin(textureUrl, url);
+
+        return originError ? Promise.reject(new AssetLimitError(originError)) : BitmapFont.loadImage(textureUrl);
     }
 
     /**

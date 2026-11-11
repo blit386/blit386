@@ -201,6 +201,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `BT.paletteCycle` with a very large `speed` no longer freezes the game. A speed of `1e9` used to rotate the range
   about 17 million times in one tick. Whole turns of the range are now skipped, so a tick does at most one turn of work
   and lands on the same colors. A tick that lands exactly on whole turns no longer marks the palette dirty.
+- Behavior change: `BitmapFont.load` now rejects a `.btfont` whose `texture` leads to another site than the font file,
+  with an `AssetLimitError`. A font loaded by a bare file name (`font.btfont`) could point its texture at any absolute
+  URL, which loaded a cross-origin image and later tainted the canvas. Relative paths and embedded data URIs load as
+  before. See [Asset size limits](api-assets.md#asset-size-limits).
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
