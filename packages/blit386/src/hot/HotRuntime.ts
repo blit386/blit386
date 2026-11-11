@@ -44,6 +44,9 @@ let generation = 0;
 /** Asset kinds accepted by {@link isAssetChangedPayload}; any other kind is ignored as malformed, and only `'other'` hard-reloads. */
 const KNOWN_ASSET_TYPES: ReadonlySet<string> = new Set(ASSET_KINDS);
 
+/** Tail of the pending reload chain per asset URL; an entry is dropped once its last run settles. */
+const reloadChains = new Map<string, Promise<void>>();
+
 /** What each in-place asset kind is matched against, for the miss log in {@link routeAssetChanged}. */
 const MATCH_TARGETS = { image: 'sprite sheet', audio: 'sound', font: 'font' } as const;
 
@@ -156,13 +159,7 @@ async function hotReloadFontAsset(url: string): Promise<boolean> {
  *
  * @param payload - Asset-changed event payload from the Vite plugin.
  */
-async function routeAssetChanged(payload: unknown): Promise<void> {
-    if (!isAssetChangedPayload(payload)) {
-        console.error('[BT] Ignoring a malformed asset-changed event:', payload);
-
-        return;
-    }
-
+async function routeAssetChanged(payload: AssetChangedPayload): Promise<void> {
     try {
         let isMatched: boolean;
 
@@ -199,10 +196,32 @@ async function routeAssetChanged(payload: unknown): Promise<void> {
  * broken or unexpected asset event can never crash the game loop - on failure this
  * logs and leaves the currently running state intact.
  *
+ * Reloads of one URL run one after another, never side by side: two quick saves
+ * would otherwise race, and the older decode finishing last would put the older
+ * image back on screen. Each run cache-busts when it starts, so the last one fetches
+ * the newest bytes. The first event for an idle URL starts at once (synchronously up
+ * to its first `await`); `routeAssetChanged` never rejects, so a chain cannot break.
+ *
  * @param payload - Asset-changed event payload from the Vite plugin.
  */
 function handleAssetChanged(payload: unknown): void {
-    void routeAssetChanged(payload);
+    if (!isAssetChangedPayload(payload)) {
+        console.error('[BT] Ignoring a malformed asset-changed event:', payload);
+
+        return;
+    }
+
+    const { url } = payload;
+    const previous = reloadChains.get(url);
+    const run = previous ? previous.then(() => routeAssetChanged(payload)) : routeAssetChanged(payload);
+
+    reloadChains.set(url, run);
+
+    void run.finally(() => {
+        if (reloadChains.get(url) === run) {
+            reloadChains.delete(url);
+        }
+    });
 }
 
 /**

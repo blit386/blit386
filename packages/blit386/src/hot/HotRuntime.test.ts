@@ -405,5 +405,47 @@ describe('HotRuntime', () => {
             await new Promise((resolve) => setTimeout(resolve, 0));
             expect(infoSpy).not.toHaveBeenCalled();
         });
+
+        it('leaves the newer save on the sheet when two loads of one URL resolve out of order', async () => {
+            // Call n of hotReloadImage hands out image n; the two events are fired in save order.
+            const images = [{ width: 1 }, { width: 2 }] as HTMLImageElement[];
+            const pending: (() => void)[] = [];
+            const unclaimed = [...images];
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockImplementation(() => {
+                const image = unclaimed.shift();
+
+                return new Promise((resolve) => {
+                    pending.push(() => {
+                        if (image) {
+                            resolve(image);
+                        }
+                    });
+                });
+            });
+            const fakeSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
+            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: '/hero.png', type: 'image', timestamp: 1 });
+            handler({ url: '/hero.png', type: 'image', timestamp: 2 });
+
+            // Settle whatever is pending newest first, the way a slow decode of the older save finishes last.
+            for (let settled = 0; settled < images.length; ) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                while (pending.length > 0) {
+                    pending.pop()?.();
+                    settled += 1;
+                }
+            }
+
+            await vi.waitFor(() => expect(fakeSheet.hotReplaceImage).toHaveBeenCalledTimes(2));
+            expect(vi.mocked(fakeSheet.hotReplaceImage).mock.lastCall?.[0]).toBe(images[1]);
+        });
     });
 });

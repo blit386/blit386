@@ -225,6 +225,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   plugin always sends a rooted path, so a relative-path sound was never replaced, and a relative-path image was cached a
   second time under the rooted path, so a later `SpriteSheet.load('sprites/hero.png')` got the old image back. A save
   that matches nothing loaded now logs one console line instead of passing silently.
+- Two quick saves of one asset no longer leave the older version on screen. Their reloads ran side by side, and when the
+  older one finished decoding last it replaced the newer image. Reloads of one file now run one after another.
 - The `blit386/vite` plugin now watches Vite's own `publicDir` by default. Before, the default `assetDirs` was a fixed
   `public`, so a game with `publicDir: 'static'` got no asset hot reload and no message. With `publicDir: false` nothing
   is watched by default. An explicit `assetDirs` behaves as before.
