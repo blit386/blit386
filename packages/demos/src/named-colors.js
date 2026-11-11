@@ -80,20 +80,13 @@ import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
 // palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
 // strip, the captions, and the Tips panel.
-import { applyTheme, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
-// Palette slots for this demo's own colors. Slot 0 stays transparent. Panels, captions,
-// and status text draw with the shared UI theme instead (installed by applyTheme() in
-// init()), so only two kinds of slots live down here: the overlay timing chart's bar
-// colors, and the lesson's swatch slots.
-//
-// The chart slots exist because configure() runs BEFORE init() installs the theme, so the
-// chart style cannot point at theme slots. init() copies the matching theme colors here.
-const C_CHART_UPDATE = 1; // timing chart: update() bar (the theme's blue-gray border)
-const C_CHART_RENDER = 2; // timing chart: render() bar (the theme's off-white text)
-const C_CHART_TAG = 3; // timing chart: tag labels (the theme's green accent)
+// Palette slots for this demo's own colors: the lesson's swatch slots. Slot 0 stays
+// transparent. Panels, captions, status text, and the overlay timing chart all draw with
+// the shared UI theme instead (installed by applyTheme() in init()).
 const C_TOMATO = 5; // swatch slot for the built-in name "tomato"
 const C_CORNFLOWER = 6; // swatch slot for the built-in name "cornflowerblue"
 const C_CUSTOM_DYNAMIC = 7; // swatch slot for the animated custom name "demo-dynamic"
@@ -162,14 +155,17 @@ class Demo {
     // Rect2i.
     swatchRect = new Rect2i(0, 0, 0, 0);
 
-    // Opt in to the overlay timing chart, with bar colors that match the UI theme.
+    // Opt in to the overlay timing chart, with bar colors from the UI theme: blue-gray
+    // update() bars, off-white render() bars, and green tag labels. configure() runs
+    // before init() installs the theme, but defaultThemeSlot() already knows which slot
+    // (240-251) each theme color will land in.
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_CHART_UPDATE,
-                renderBarPaletteIndex: C_CHART_RENDER,
-                tagPaletteIndex: C_CHART_TAG,
+                updateBarPaletteIndex: defaultThemeSlot('border'),
+                renderBarPaletteIndex: defaultThemeSlot('text'),
+                tagPaletteIndex: defaultThemeSlot('accent'),
             },
         };
     }
@@ -177,13 +173,6 @@ class Demo {
     // Builds the palette and registers the custom named colors. Returns true when ready.
     async init() {
         this.palette = BT.paletteCreate(256);
-
-        // Overlay timing chart colors. These copy the shared theme's hex values into the
-        // low slots configure() pointed the chart style at (see the note on the C_CHART_*
-        // constants above for why the chart cannot use theme slots directly).
-        this.palette.set(C_CHART_UPDATE, Color32.fromHex('#5a6480')); // theme border
-        this.palette.set(C_CHART_RENDER, Color32.fromHex('#e6ecf5')); // theme text
-        this.palette.set(C_CHART_TAG, Color32.fromHex('#7dffa5')); // theme accent green
 
         // Fallback gray for the moments when demo-optional is unregistered.
         this.palette.set(C_OPTIONAL_FALLBACK, new Color32(80, 80, 80));
