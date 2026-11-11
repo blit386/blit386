@@ -38,7 +38,8 @@ call that drives it and filled with rectangles that never move but whose colors 
      cyan, laid out diagonally and cycling at 4 steps per second.
 
 Every 3 seconds the demo also swaps two fire slots with BT.paletteSwap() and names them
-for about a second in orange, on the right of the fire panel's title row.
+for about a second in orange, on the right of the fire panel's title row. The pair moves
+on by one slot at every swap, so the caption changes each time.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -80,13 +81,14 @@ UPDATE VS RENDER
     values.
 
 The band headings are drawn with the shared UI kit (src/shared/ui.js); its theme colors
-live in slots 240-251, far away from every cycling range.
+live in slots 240-251, far away from every cycling range. The engine overlay borrows the
+same theme colors through THEME_OVERLAY_STYLE.
 
 TRY THIS
 --------
 
-- Press the backquote key (`) to open the engine overlay. The timing chart shows that
-  update() does almost nothing - the rotation happens inside the engine.
+- The engine overlay starts open (the backquote key (`) hides it). Its update() reading
+  stays near 0.0 ms - the rotation happens inside the engine, not in this demo's code.
 - Watch the fire panel's title row: every 3 seconds it names the two slots that just
   swapped. The two colors trade places in the rotating ring for good, so the fire
   gradient slowly gets scrambled.
@@ -98,7 +100,15 @@ import { bootstrap, BT, Color32 } from 'blit386';
 // PANEL_CONTENT_TOP, PANEL_BOTTOM, and PANEL_TEXT_INSET say where things land inside a
 // titled kit panel: content starts 22 pixels below its top edge, the panel ends 11 pixels
 // below the last row, and text starts 10 pixels in from its left edge.
-import { applyTheme, PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET, ui, UI_ANCHORS } from './shared/ui.js';
+import {
+    applyTheme,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PANEL_TEXT_INSET,
+    THEME_OVERLAY_STYLE,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -116,8 +126,9 @@ const SKY_SPEED = 0.5;
 
 // Palette swap demo: every SWAP_INTERVAL ticks, swap two fire slots to show
 // BT.paletteSwap(). A tick is one fixed update; 180 ticks is 3 seconds at 60 ticks per
-// second.
+// second. The swap caption stays up for SWAP_LABEL_TICKS (1 second).
 const SWAP_INTERVAL = 180;
+const SWAP_LABEL_TICKS = 60;
 
 // Layout of the three kit panels on the 320x240 screen, 4 pixels from the edges and 8
 // apart, stacked top to bottom. The bottom 13 pixels stay clear for the overlay's toggle
@@ -144,16 +155,6 @@ const BLOCK_H = 5;
 const GRID_W = 288;
 
 // Slot 0 is always transparent (reserved by the engine).
-
-// Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
-// theme, so the overlay style cannot use theme slots - instead it points at these six
-// low slots, which init() fills by hand with fixed colors.
-const C_OVERLAY_TAG = 1; // chart milestone tags (white)
-const C_OVERLAY_BAR = 2; // overlay bar background (very dark navy)
-const C_OVERLAY_RENDER = 3; // timing chart render bars (dark blue)
-const C_OVERLAY_TEXT = 4; // overlay text and chart update bars (golden yellow)
-const C_OVERLAY_WARN = 5; // timing chart warnings (cool gray-blue)
-const C_OVERLAY_ERR = 6; // timing chart error bars (dark gray-violet)
 
 // Sky gradient: slots 10-19 (10 slots).
 const C_SKY_BASE = 10;
@@ -190,6 +191,9 @@ class Demo {
     // Tick of the last swap, so we know when the next one is due.
     lastSwapTick = 0;
 
+    // How many swaps have happened so far. The next pair is picked from it.
+    swapCount = 0;
+
     // Which two slots were last swapped, for the caption.
     swappedA = 0;
     swappedB = 0;
@@ -197,19 +201,16 @@ class Demo {
     // Whether the swap caption is currently shown.
     showSwapLabel = false;
 
-    // Palette cycling runs in the engine every tick; the timing chart shows update vs
-    // render time. The overlay style colors come from the dedicated low slots set in
-    // init().
+    // Opens the engine overlay at start with two rows of its palette grid, so you can
+    // watch the cycled slots rotate there too. configure() runs before init(), but
+    // THEME_OVERLAY_STYLE already knows which slots the UI theme will land in (240-251),
+    // so the overlay can use the theme colors.
     configure() {
         return {
             isOverlayPaletteEnabled: true,
             isOverlayVisibleAtStart: true,
             overlayPaletteRowsVisible: 2,
-            overlayStyle: {
-                barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_OVERLAY_TEXT,
-                gapPaletteIndex: C_OVERLAY_BAR,
-            },
+            overlayStyle: THEME_OVERLAY_STYLE,
         };
     }
 
@@ -217,16 +218,8 @@ class Demo {
     async init() {
         console.log('[PaletteCyclingDemo] Initializing...');
 
+        // A fresh palette with 256 empty slots for the gradients and the UI theme.
         this.palette = BT.paletteCreate(256);
-
-        // Colors for the engine overlay (the stats HUD). They live in low slots so
-        // configure() could name them before the UI theme existed.
-        this.palette.set(C_OVERLAY_TAG, new Color32(255, 255, 255));
-        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20));
-        this.palette.set(C_OVERLAY_RENDER, new Color32(20, 24, 36));
-        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80));
-        this.palette.set(C_OVERLAY_WARN, new Color32(120, 130, 160));
-        this.palette.set(C_OVERLAY_ERR, new Color32(70, 70, 90));
 
         // The three gradients below all use the fillGradient() helper defined above the
         // class; each one only supplies its own start and end channel values.
@@ -283,22 +276,27 @@ class Demo {
     update() {
         const tick = BT.ticks;
 
-        // The pair is not random - it is computed from the tick counter, so each swap
-        // picks a predictable pair: tick % FIRE_SLOTS and (tick + 3) % FIRE_SLOTS. `%` is
-        // the remainder after division, so both land inside the 6 fire slots.
+        // The pair is not random - it comes from the swap counter, so it moves on by one
+        // slot at every swap: swapCount % FIRE_SLOTS and (swapCount + 3) % FIRE_SLOTS.
+        // `%` is the remainder after division, so both land inside the 6 fire slots.
+        // (Using the tick counter instead would pick the same pair every time: swaps
+        // happen every 180 ticks, and 180 % 6 is 0.)
         if (tick - this.lastSwapTick >= SWAP_INTERVAL) {
             // Two slots within the fire range, always 3 apart.
-            this.swappedA = C_FIRE_BASE + (tick % FIRE_SLOTS);
-            this.swappedB = C_FIRE_BASE + ((tick + 3) % FIRE_SLOTS);
+            this.swappedA = C_FIRE_BASE + (this.swapCount % FIRE_SLOTS);
+            this.swappedB = C_FIRE_BASE + ((this.swapCount + 3) % FIRE_SLOTS);
+            this.swapCount++;
 
+            // Trade the two colors and show the caption.
             BT.paletteSwap(this.swappedA, this.swappedB);
             this.showSwapLabel = true;
 
+            // Remember when this swap happened, so the next one waits a full interval.
             this.lastSwapTick = tick;
         }
 
-        // Hide the swap caption after 60 ticks (1 second).
-        if (this.showSwapLabel && tick - this.lastSwapTick > 60) {
+        // Hide the swap caption after SWAP_LABEL_TICKS (1 second).
+        if (this.showSwapLabel && tick - this.lastSwapTick > SWAP_LABEL_TICKS) {
             this.showSwapLabel = false;
         }
     }
@@ -306,8 +304,10 @@ class Demo {
     // Draws the three animated bands and their kit-panel headings. No Color32 objects
     // here - only palette indices.
     render() {
+        // Start every frame from the theme's dark background.
         BT.clear(this.theme.bg);
 
+        // One titled panel per band, top to bottom.
         this.renderSkyPanel();
         this.renderFirePanel();
         this.renderWaterPanel();
@@ -315,10 +315,11 @@ class Demo {
 
     // Opens and closes a titled kit panel with an empty body `artH` pixels tall. The
     // artwork is drawn after it with ui.fillRect(), not BT.drawRectFill(): kit panels are
-    // sprites, and the engine draws every BT.drawRectFill() before any sprite - so a plain
-    // one would hide under the panel. ui.fillRect() takes the box as x, y, width, height
-    // and a palette slot, but draws a sprite, which lands on top in call order.
+    // sprites, and the engine draws every BT.drawRectFill() before any sprite - so a
+    // plain one would hide under the panel. ui.fillRect() takes the box as x, y, width,
+    // height and a palette slot, but draws a sprite, which lands on top in call order.
     renderPanel(y, artH, title) {
+        // A full-width group at a fixed spot, a titled frame, and an empty band for art.
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y, width: PANEL_W });
         ui.panel(title);
         ui.spacer(artH);
@@ -331,9 +332,11 @@ class Demo {
     renderSkyPanel() {
         this.renderPanel(SKY_PANEL_Y, SKY_ART_H, 'BT.paletteCycle(10, 19, 0.5)');
 
+        // The stripes start at the panel's text inset, one pixel under the title strip.
         const x = EDGE + PANEL_TEXT_INSET;
         const top = SKY_PANEL_Y + PANEL_CONTENT_TOP + 1;
 
+        // Stripe i uses sky slot i, so the ten stripes show the ten sky slots in order.
         for (let i = 0; i < SKY_SLOTS; i++) {
             ui.fillRect(x, top + i * 3, PANEL_W - 2 * PANEL_TEXT_INSET, 3, C_SKY_BASE + i);
         }
@@ -347,6 +350,7 @@ class Demo {
     renderFirePanel() {
         this.renderPanel(FIRE_PANEL_Y, FIRE_ART_H, 'BT.paletteCycle(30, 35, -6)');
 
+        // Center the 288-pixel-wide grid in the panel, right under the title strip.
         const x0 = EDGE + (PANEL_W - GRID_W) / 2;
         const top = FIRE_PANEL_Y + PANEL_CONTENT_TOP;
 
@@ -356,6 +360,8 @@ class Demo {
             const phase = Math.floor((Math.sin(col * 0.8) + 1) * 1.5);
 
             for (let row = 0; row < FIRE_ART_H / BLOCK_H; row++) {
+                // One slot further along the gradient per row, wrapping back to the
+                // first fire slot after the sixth.
                 const slot = C_FIRE_BASE + ((row + phase) % FIRE_SLOTS);
 
                 ui.fillRect(x0 + col * FIRE_COL_STEP, top + row * BLOCK_H, FIRE_COL_STEP - 1, BLOCK_H, slot);
@@ -379,11 +385,14 @@ class Demo {
     renderWaterPanel() {
         this.renderPanel(WATER_PANEL_Y, WATER_ART_H, 'BT.paletteCycle(50, 57, 4)');
 
+        // Center the grid in the panel, right under the title strip.
         const x0 = EDGE + (PANEL_W - GRID_W) / 2;
         const top = WATER_PANEL_Y + PANEL_CONTENT_TOP;
 
         for (let row = 0; row < WATER_ART_H / BLOCK_H; row++) {
             for (let col = 0; col < WATER_COLS; col++) {
+                // Column plus row picks the slot, so each block is one step further
+                // along than its left and upper neighbors - a diagonal gradient.
                 const slot = C_WATER_BASE + ((col + row) % WATER_SLOTS);
 
                 ui.fillRect(x0 + col * WATER_COL_STEP, top + row * BLOCK_H, WATER_COL_STEP - 1, BLOCK_H, slot);
