@@ -122,139 +122,25 @@ your score and position; edits to `init()` re-run setup (optional `onHotReload` 
 
 ## Working with an AI assistant
 
-If you use Claude Code, open `CLAUDE.md` for the full project guide. Rules loaded automatically from `.claude/rules/`
-tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand. `.mcp.json` points Claude
-Code at the BLIT386 documentation server, and `.claude/settings.json` pre-approves it, so once you have trusted the
-project folder your assistant can search the live docs without a further prompt.
+Each assistant you set up has its own files. Trust the project folder when your assistant asks, or it ignores them.
+Copilot, Antigravity, Codex, Gemini CLI, OpenCode, and Zed read their skills from `.agents/skills/`.
 
-If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
-it at the same documentation server.
-
-If you use OpenCode, it reads this file and the skills in `.agents/skills/` on its own. `opencode.json` points it at the
-same documentation server, turns on the formatters (Biome for code, Prettier for Markdown and YAML), and keeps it from
-editing lock files and `.env` files or running destructive git commands. OpenCode has no trust prompt, so it loads
-`.opencode/plugins/kit-guard.ts` the moment you open the project - the file's first lines say exactly what it does.
-
-If you use Zed, `.zed/settings.json` turns on format on save, formats JavaScript, TypeScript, and JSON with Biome, and
-points Zed at the same documentation server. Zed reads this file and the skills in `.agents/skills/` on its own. To use
-it:
-
-- Trust the project when Zed asks (Restricted Mode). Until you do, Zed ignores everything in `.zed/`.
-- Install the Biome extension (`zed: extensions`, search for Biome), or the formatter setting has nothing to run.
-- Zed cannot take safety rules from project files, so the hard rules above are all its agent has, and they are only
-  instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
-  It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
-  destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or `git switch`,
-  `git restore`, `git clean`, `git checkout-index -f`, `git read-tree --reset`, force push, a push that deletes remote
-  branches or mirrors, `git branch -D`, `git stash drop` or `clear`, and a git alias or push setting given with `-c` for
-  one command). It does not stop the agent from changing those files through a terminal command, so keep terminal
-  approval on if you need that boundary:
-
-```json
-{
-  "agent": {
-    "tool_permissions": {
-      "tools": {
-        "edit_file": {
-          "always_deny": [
-            { "pattern": "(^|/)(package-lock\\.json|pnpm-lock\\.yaml|bun\\.lockb)$|\\.lock$" },
-            { "pattern": "(^|/)\\.env(\\.(local|development|production|test))?(\\.local)?$" }
-          ]
-        },
-        "write_file": {
-          "always_deny": [
-            { "pattern": "(^|/)(package-lock\\.json|pnpm-lock\\.yaml|bun\\.lockb)$|\\.lock$" },
-            { "pattern": "(^|/)\\.env(\\.(local|development|production|test))?(\\.local)?$" }
-          ]
-        },
-        "terminal": {
-          "always_deny": [
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+reset\\s+([^\\s;&|<>]+\\s+)*--h(a(rd?)?)?([^A-Za-z-]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(--|\\.)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+(checkout|switch)\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z]*f[a-zA-Z]*|--f(o(r(ce?)?)?)?|--di(s(c(a(r(d(-(c(h(a(n(g(es?)?)?)?)?)?)?)?)?)?)?)?)?)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout\\s+([^\\s;&|<>]+\\s+)*(-[a-zA-Z0-9]*[23p][a-zA-Z0-9]*|--ou(rs?)?|--th(e(i(rs?)?)?)?|--no-over(l(ay?)?)|--pathspec-f[^\\s;&|<>]*|--patch?)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+checkout(\\s+[^\\s;&|<>]+)*\\s+[^\\s;&|<>]*(\\.[A-Za-z][A-Za-z0-9]*['\"]?|/['\"]?|[*?\\[][^\\s;&|<>]*)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+restore\\b"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+clean\\b"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+push(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z]*[fd][a-zA-Z]*|--force[^\\s;&|<>]*|\\+[^\\s;&|<>]+|--de(l(e(te?)?)?)?|--mi(r(r(or?)?)?)?|:[^\\s;&|<>]+)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "[Gg][Ii][Tt](\\.[Ee][Xx][Ee])?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+branch(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*D[a-zA-Z0-9]*|-[a-zA-Z0-9]*(d[a-zA-Z0-9]*f|f[a-zA-Z0-9]*d)[a-zA-Z0-9]*|(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--d(e(l(e(te?)?)?)?)?)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force?)|(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--force?)(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*d[a-zA-Z0-9]*|--d(e(l(e(te?)?)?)?)?))(\\s|[;&|<>)`]|$)",
-              "case_sensitive": true
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+stash\\s+(drop|clear)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+(checkout-index(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--f(o(r(ce?)?)?)?)|read-tree(\\s+[^\\s;&|<>]+)*\\s+--res(et?)?)(\\s|[;&|<>)`]|$)"
-            },
-            {
-              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+(-c|--config-env)(\\s+|=)(alias\\.|remote\\.\\S*\\.(push|mirror)(=|\\s|$))"
-            }
-          ]
-        }
-      }
-    }
-  }
-}
-```
-
-Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
-others. For the same reason the git patterns are blunter than the hooks other assistants get: every `git restore` is
-denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. The snippet only
-denies, so a force push (`-f`, `--force-with-lease`, or a `+` refspec), a remote branch delete or mirror push, a forced
-branch delete, and a stash drop or clear are refused outright where the other hooks ask you first. Zed removes quotes
-before it matches, so after `-C`, `-c`, or `--git-dir` the snippet cannot tell where the value ends and reads every
-later word as a possible command: `git -C game commit -m "clean up"` is refused too. Run
-`cd game && git commit -m "clean up"` instead. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows
-what a pattern matches.
-
-If you use Antigravity, `.agents/skills/` holds the skills, `.agents/hooks.json` adds the same safety checks (it refuses
-edits to lock files and `.env`, and destructive git commands) and formats each file after an edit, and
-`.agents/mcp_config.json` points it at the documentation server. Antigravity ignores all of that until you trust the
-workspace, so choose "trust" when it asks the first time you open the project.
-
-If you use Gemini CLI, `.gemini/settings.json` points it at this file (`context.fileName`), registers the same
-documentation server, and wires the edit and shell guards. Skills load from `.agents/skills/`. Gemini CLI ignores that
-whole settings file until you trust the folder, so trust the folder when Gemini CLI asks.
-
-If you use Codex (the CLI or the IDE extension; the desktop app is not confirmed to read these project files), it reads
-this file and the skills in `.agents/skills/` on its own. `.codex/config.toml` points it at the same documentation
-server, and `.codex/hooks.json` adds the safety checks (it refuses edits to lock files and `.env`, and destructive git
-commands) and formats each file after an edit. Codex ignores both files at first:
-
-- Trust the project when Codex asks the first time you open it. That turns on the documentation server.
-- Run `/hooks` and approve each of the project's hooks. Until you do, the game has no guardrails. Codex asks for this
-  once per hook, and again after a kit update changes one.
-
-Some git commands (`git push --force`, `git branch -D`, `git stash drop`) need your go-ahead under other assistants;
-Codex cannot ask, so it refuses them. Run those yourself when you mean to.
-
-If you use GitHub Copilot (in VS Code, the Copilot CLI, or the cloud agent you assign issues to on github.com), it reads
-this file and the skills in `.agents/skills/` on its own. `.github/hooks/blit.json` adds the safety checks (it refuses
-edits to lock files and `.env`, and destructive git commands), formats each file after an edit, and installs
-dependencies when a session starts. `.mcp.json` points both VS Code and the Copilot CLI at the documentation server.
-Trust the folder when VS Code or the Copilot CLI asks: until you do, the hooks and the documentation server stay off.
-The cloud agent prepares its sandbox with `.github/workflows/copilot-setup-steps.yml`, but it cannot read an MCP server
-from project files - add `blit386-docs` (`https://blit386.dev/mcp`) in the repository's Copilot settings on github.com
-if you want it there.
-
-For other assistants (Windsurf and others), this file is your assistant's home base.
+- Claude Code: `CLAUDE.md`, rules in `.claude/rules/`, skills in `.claude/skills/`, and the docs server in `.mcp.json`,
+  pre-approved by `.claude/settings.json`.
+- Cursor: rules in `.cursor/rules/`, skills in `.cursor/skills/`, and the docs server in `.cursor/mcp.json`.
+- GitHub Copilot (VS Code, the Copilot CLI, the cloud agent): safety and format hooks in `.github/hooks/blit.json`, the
+  docs server in `.mcp.json`, and `.github/workflows/copilot-setup-steps.yml` for the cloud agent, which needs
+  `blit386-docs` (`https://blit386.dev/mcp`) added in the repository's Copilot settings on github.com.
+- Antigravity: safety and format hooks in `.agents/hooks.json`, and the docs server in `.agents/mcp_config.json`.
+- Codex (the CLI or the IDE extension): safety and format hooks in `.codex/hooks.json`, and the docs server in
+  `.codex/config.toml`. Run `/hooks` and approve each hook, or the game has no guardrails; Codex refuses the git
+  commands other assistants ask you about, so run those yourself.
+- Gemini CLI: `.gemini/settings.json` points it at this file and the docs server, and wires the edit and shell guards.
+- OpenCode: `opencode.json` sets the docs server, the formatters, and the safety rules. It has no trust prompt and loads
+  `.opencode/plugins/kit-guard.ts` as soon as you open the project; the file's first lines say what it does.
+- Zed: `.zed/settings.json` sets format on save and the docs server. Zed cannot take safety rules from project files;
+  `docs/zed.md` has a snippet to paste into your own settings.
+- Any other assistant (Windsurf and others): this file is its home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
 `npx blit agents add copilot`, `npx blit agents add antigravity`, `npx blit agents add codex`,
