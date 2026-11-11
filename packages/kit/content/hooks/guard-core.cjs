@@ -75,7 +75,7 @@ const shortCluster = (letter) => `-${ALPHANUMERIC}*${letter}${ALPHANUMERIC}*`;
 const ARG_CHAR = '[^ \\t\\v\\f\\r;&|<>]';
 // Anywhere in the arguments (`reset -q --hard`, `reset HEAD --hard`) and from its shortest prefix: git runs `--h`,
 // `--ha` and `--har` as `--hard` too, while `--help` is a different option and passes (BT-641). It ends on any
-// character that cannot continue the option, not ARG_END, so `(git reset --hard)` and a backtick form still count.
+// character that cannot continue the option, not ARG_END.
 const HARD_OPTION = '--h(a(rd?)?)?';
 const RESET_HARD = new RegExp(`${GIT_PREFIX}reset${ARGS}${HARD_OPTION}([^A-Za-z-]|$)`);
 // `--` anywhere in the arguments, so `git checkout HEAD -- x` counts as well as `git checkout -- x` (BT-617).
@@ -124,8 +124,11 @@ const BRANCH_FORCED_DELETE = new RegExp(
     `${GIT_PREFIX}branch${ARGS}(${shortCluster('D')}|-${ALPHANUMERIC}*(d${ALPHANUMERIC}*f|f${ALPHANUMERIC}*d)${ALPHANUMERIC}*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})${ARG_END}`,
 );
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
-// What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`).
-const COMMAND_SEPARATOR = /[\n;&|]/;
+// What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`), plus
+// the parentheses and backticks around a subshell or a command substitution (`(git ...)`, `$(git ...)`, `` `git ...` ``),
+// so every rule sees the command inside them on its own (BT-775). A command that merely quotes a destructive git command
+// between backticks or parentheses (`grep '(git clean)'`) is read as running it too.
+const COMMAND_SEPARATOR = /[\n;&|()`]/;
 
 const DENY_DESTRUCTIVE = {
     decision: 'deny',

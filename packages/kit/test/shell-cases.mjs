@@ -147,4 +147,16 @@ export const SHELL_CASES = [
     ['git clean -n && git -c clean.requireForce=false clean -d', 'deny'],
     ['git restore --staged a.js && git status', 'allow'],
     ['git push origin main && echo -f', 'allow'],
+    // BT-775: a subshell or a command substitution is a command of its own, for every rule.
+    ['(git checkout .)', 'deny'],
+    ['echo $(git checkout .)', 'deny'],
+    ['`git checkout .`', 'deny'],
+    ['(git checkout -f)', 'deny'],
+    ['(git -c clean.requireForce=false clean)', 'deny'],
+    ['(git restore a.js)', 'deny'],
+    ['(git restore --staged a.js) && git restore b.js', 'deny'],
+    ['(git stash clear)', 'ask'],
+    ['(git push -f)', 'ask'],
+    ['(git branch -D old)', 'ask'],
+    ['echo $(git rev-parse HEAD)', 'allow'],
 ];
