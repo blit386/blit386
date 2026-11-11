@@ -150,16 +150,24 @@ export function renderSheetHtml({ template, entriesJson, isDevMode, robotsMeta, 
  * @returns {string | null} The live entry's urlPath, or null when no redirect applies.
  */
 export function resolveVintageRedirect(requestedSlug, vintageUrls, registry) {
-    const vintageMapping = Object.entries(vintageUrls).find(([vintageSlug]) => vintageSlug === requestedSlug);
-
-    if (!vintageMapping) {
+    if (!Object.hasOwn(vintageUrls, requestedSlug)) {
         return null;
     }
 
-    const currentSlug = vintageMapping[1];
-    const liveEntry = registry.find((entry) => entry.slug === currentSlug);
+    // `requestedSlug` is an own key of the map, checked above.
+    // eslint-disable-next-line security/detect-object-injection
+    const currentSlug = vintageUrls[requestedSlug];
 
-    return liveEntry ? liveEntry.urlPath : null;
+    return registry.find((entry) => entry.slug === currentSlug)?.urlPath ?? null;
+}
+
+/**
+ * JSON for a `<script>` body: `<` escaped so no value can close the element.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function inlineJson(value) {
+    return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
 /**
@@ -205,44 +213,10 @@ export function virtualDemos() {
     /**
      * Find the registry entry whose virtual HTML path matches an absolute module id.
      * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "basics.html")
-     * @returns {object | null}
+     * @returns {object | undefined}
      */
     function findEntryByAbsPath(absPath) {
-        for (const entry of registry) {
-            if (resolve(demosDir, `${entry.slug}.html`) === absPath) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Find the registry entry for a demo slug.
-     * @param {string} slug - Demo slug, e.g. "basics"
-     * @returns {object | null}
-     */
-    function findEntryBySlug(slug) {
-        for (const entry of registry) {
-            if (entry.slug === slug) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Find the registry entry whose source file is the given absolute path. Used by the watcher to
-     * tell a top-level demo entry (src/<slug>.js) apart from a src/shared/*.js change.
-     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "basics.js")
-     * @returns {object | null}
-     */
-    function findEntryBySourcePath(absPath) {
-        for (const entry of registry) {
-            if (entry.sourcePath === absPath) {
-                return entry;
-            }
-        }
-        return null;
+        return registry.find((entry) => resolve(demosDir, `${entry.slug}.html`) === absPath);
     }
 
     /**
@@ -260,9 +234,9 @@ export function virtualDemos() {
             reloadTemplate();
         }
 
-        const demoListJson = JSON.stringify(
+        const demoListJson = inlineJson(
             registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
-        ).replaceAll('<', '\\u003c');
+        );
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
 
@@ -303,9 +277,7 @@ export function virtualDemos() {
      */
     function renderShots() {
         const template = readFileSync(resolve(rootDir, ...SHOTS_TEMPLATE_PATH), 'utf-8');
-        const demoListJson = JSON.stringify(
-            registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
-        ).replaceAll('<', '\\u003c');
+        const demoListJson = inlineJson(registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })));
 
         const engineVersion = JSON.parse(
             readFileSync(resolve(rootDir, '..', 'blit386', 'package.json'), 'utf-8'),
@@ -329,12 +301,12 @@ export function virtualDemos() {
             throw new Error(`${SHOTS_MANIFEST_PATH.join('/')} has no entries array`);
         }
 
-        const entriesJson = JSON.stringify(
+        const entriesJson = inlineJson(
             sheetEntries(
                 manifest.entries,
                 registry.filter((e) => !e.isNavHidden),
             ),
-        ).replaceAll('<', '\\u003c');
+        );
 
         return renderSheetHtml({
             template,
@@ -346,17 +318,44 @@ export function virtualDemos() {
         });
     }
 
+    /**
+     * Point every directory at a new root.
+     * @param {string} dir - Absolute Vite root.
+     * @returns {void}
+     */
+    function setRoot(dir) {
+        rootDir = dir;
+        partialsDir = resolve(rootDir, '_partials');
+        demosDir = resolve(rootDir, 'demos');
+        srcDir = resolve(rootDir, 'src');
+        shotsDir = resolve(rootDir, '_shots');
+    }
+
+    /**
+     * Send one rendered page through Vite's HTML transforms, or hand a render error to Vite.
+     * @param {import('vite').ViteDevServer} server
+     * @param {string} url - Page URL for transformIndexHtml.
+     * @param {() => string | Promise<string>} render
+     * @param {import('node:http').ServerResponse} res
+     * @param {(error?: unknown) => void} next
+     * @returns {Promise<void>}
+     */
+    async function serveHtml(server, url, render, res, next) {
+        try {
+            const html = await server.transformIndexHtml(url, await render());
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(html);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     return {
         name: 'virtual-demos',
         enforce: 'pre',
 
         config(userConfig) {
-            rootDir = resolve(userConfig.root ?? process.cwd());
-            partialsDir = resolve(rootDir, '_partials');
-            demosDir = resolve(rootDir, 'demos');
-            srcDir = resolve(rootDir, 'src');
-            shotsDir = resolve(rootDir, '_shots');
-
+            setRoot(resolve(userConfig.root ?? process.cwd()));
             reloadTemplate();
             reload();
 
@@ -379,11 +378,7 @@ export function virtualDemos() {
         },
 
         configResolved(config) {
-            rootDir = config.root;
-            partialsDir = resolve(rootDir, '_partials');
-            demosDir = resolve(rootDir, 'demos');
-            srcDir = resolve(rootDir, 'src');
-            shotsDir = resolve(rootDir, '_shots');
+            setRoot(config.root);
             isDevMode = config.command === 'serve';
         },
 
@@ -463,7 +458,7 @@ export function virtualDemos() {
                     return;
                 }
 
-                const entry = findEntryBySourcePath(changedPath);
+                const entry = registry.find((e) => e.sourcePath === changedPath);
 
                 if (!entry) {
                     return;
@@ -503,27 +498,11 @@ export function virtualDemos() {
                 const url = req.url.split('?')[0];
 
                 if (url === '/') {
-                    try {
-                        let html = renderSheet();
-                        html = await server.transformIndexHtml(`/${INDEX_SLUG}.html`, html);
-                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                        res.end(html);
-                    } catch (error) {
-                        next(error);
-                    }
-                    return;
+                    return serveHtml(server, `/${INDEX_SLUG}.html`, renderSheet, res, next);
                 }
 
                 if (url === `/${SHOTS_SLUG}` || url === `/${SHOTS_SLUG}.html`) {
-                    try {
-                        let html = renderShots();
-                        html = await server.transformIndexHtml(`/${SHOTS_SLUG}.html`, html);
-                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                        res.end(html);
-                    } catch (error) {
-                        next(error);
-                    }
-                    return;
+                    return serveHtml(server, `/${SHOTS_SLUG}.html`, renderShots, res, next);
                 }
 
                 const demoMatch = url.match(URL_PATTERN);
@@ -542,20 +521,13 @@ export function virtualDemos() {
                     return;
                 }
 
-                const entry = findEntryBySlug(requestedSlug);
+                const entry = registry.find((e) => e.slug === requestedSlug);
 
                 if (!entry) {
                     return next();
                 }
 
-                try {
-                    let html = await renderHtml(entry);
-                    html = await server.transformIndexHtml(url, html);
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    res.end(html);
-                } catch (error) {
-                    next(error);
-                }
+                return serveHtml(server, url, () => renderHtml(entry), res, next);
             });
         },
     };
