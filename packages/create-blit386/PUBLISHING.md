@@ -24,8 +24,7 @@ assumed; see the SemVer choice bullet in the pre-bump checklist below.
 ## Golden rules (read these first)
 
 1. Do not publish kit content that documents a new engine API before that engine version is on npm. See "Release order:
-   engine first" below. This is the one rule that can currently break real users' games. (Audio content needed `1.3.0`;
-   hot-reload / `blit386/vite` / `BT.loadingAssetsCount` content needs `1.4.0`, which is live on npm.)
+   engine first" below. This is the one rule that can currently break real users' games.
 2. Always use `pnpm publish`, never `npm publish`. `create-blit386` depends on `@blit386/kit` via `workspace:*`, and
    only pnpm rewrites that to a real version number when publishing. `npm publish` would ship a broken
    `"@blit386/kit": "workspace:*"` dependency.
@@ -36,7 +35,7 @@ assumed; see the SemVer choice bullet in the pre-bump checklist below.
    Every release publishes all three packages, including any with no changes since the last release - that is the
    accepted cost of lockstep, matching how Babel and Angular operate. Do not add logic to skip an unchanged package.
 5. Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`). One tag per release, covering all three packages - there is
-   only one tag series now that they share a version, matching every existing tag in the repo (`0.1.0` through `1.7.1`).
+   only one tag series now that they share a version, matching every existing tag in the repo.
 6. Publishing is manual-only. There is no CI publish workflow and no `NPM_TOKEN` secret - see "Publishing is
    manual-only" below for why. Every release is `pnpm publish` (or, for the engine, `pnpm run release`) from vancura's
    machine. With two-factor auth on, that means one package at a time, each needing a fresh one-time code (`--otp`).
@@ -60,7 +59,7 @@ the manual-only decision above is reversed first.
 
 ## Release order: engine first
 
-The `blit386` engine, `@blit386/kit`, and `create-blit386` version independently, but the kit's content _describes_ the
+The `blit386` engine, `@blit386/kit`, and `create-blit386` release together, but the kit's content _describes_ the
 engine, so it can describe an engine that does not exist yet. Before publishing a kit release that documents new engine
 API, confirm that engine version is already on npm:
 
@@ -71,8 +70,7 @@ npm view blit386 version
 If the kit ships first, every newly scaffolded game gets a skill or doc telling the player's AI assistant to call an
 engine function that does not exist yet - the assistant will write code that throws, in a project aimed at a
 twelve-year-old. The correct sequence is always: publish the engine (its own release process), confirm it is live, then
-release the kit content that depends on it. This rule generalizes to every future engine API the kit documents, not just
-audio.
+release the kit content that depends on it. This rule covers every engine API the kit documents.
 
 ## One-time setup
 
