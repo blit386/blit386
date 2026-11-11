@@ -34,11 +34,11 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-A dark screen with a title strip across the top and two equal panels just below it. On
-the left, live readouts for pointer slot 0 - whether it is active, its position, how far
-it moved this frame, how far the wheel turned, and a meter that fills as you scroll
-down. On the right, four pips labeled A to D that light up while the matching mouse
-button is held, and a count of the touch slots (1-3) in use.
+A dark screen with a title strip across the top and two equal panels just below it. On the
+left, live readouts for pointer slot 0 - whether it is active, its position, how far it
+moved in the last update tick, how far the wheel turned in that tick, and a meter that
+fills as you scroll down. On the right, four pips labeled A to D that light up while the
+matching mouse button is held, and a count of the touch slots (1-3) in use.
 
 A white crosshair follows your mouse (or your finger), trailing a cyan line through its
 last 24 positions. The crosshair stays on top of the panels; the trail passes behind
@@ -51,14 +51,18 @@ WHAT YOU WILL LEARN
 - The pointer slot model: slot 0 is always the mouse, slots 1-3 are fingers (or a pen) in
   the order they touched down.
 - BT.isPointerActive(slot) says whether a slot has a live pointer right now.
-- BT.pointerPos(slot) and BT.pointerDelta(slot) return the position and the movement
-  since the last update, both in display pixels.
+- BT.pointerPos(slot) returns the position and BT.pointerDelta(slot) the movement, both
+  in display pixels. Read inside update(), the delta is the movement since the previous
+  update tick; read anywhere else, such as render(), it is the movement since the
+  previous drawn frame.
 - BT.isDown(BT.BTN_POINTER_A, 0) and friends read the four mouse buttons: A is left, B is
   right, C is middle, D is the back or forward button. Touch slots only ever report A.
-- BT.pointerScrollDelta is the wheel movement since the last update. It stays 0 unless
-  configure() sets isCapturingPointerScroll: true.
+- BT.pointerScrollDelta is the wheel movement, on the same two clocks as the delta. It
+  stays 0 unless configure() sets isCapturingPointerScroll: true.
 - BT.hideCursor() hides the OS cursor so a drawn crosshair can take its place.
-- Pointer state is held state, not an edge, so reading it from render() is safe.
+- Position and buttons are held state, so render() can read them directly. The two
+  deltas are read in update() and kept for the readouts, so the numbers on screen match
+  the per-tick movement the scroll meter adds up.
 
 TRY THIS
 --------
@@ -71,13 +75,21 @@ TRY THIS
   reserved for the mouse). The wheel and the extra buttons have no touch equivalent, so a
   one-line note appears in the bottom-right corner once a touch is seen. Pointer Paint
   (https://demos.blit386.dev/pointer-paint) uses all four slots at once.
-- Press the backquote key (`) to open the engine overlay and watch the timing chart.
 
 */
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+import {
+    applyTheme,
+    centeredTextX,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_SHRINK,
+    PANEL_CONTENT_TOP,
+    POINTER_SLOTS,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -100,12 +112,13 @@ const SCROLL_SENSITIVITY = 0.25;
 
 // Layout: two equal panels, 152 pixels wide and 8 apart, sit 4 pixels below the
 // 22-pixel title strip and 4 pixels from the screen sides (4 + 152 + 8 + 152 + 4 = 320).
-// Both reserve 63 pixels of rows, so they end on the same line. Everything below them is
-// open space for the crosshair.
+// Both reserve 63 pixels of rows, so they end on the same line: the kit's title band
+// (PANEL_CONTENT_TOP), the rows, and its bottom rim (PANEL_BOTTOM). Everything below
+// them is open space for the crosshair.
 const PANEL_Y = 26;
 const READOUTS_W = 152;
 const BUTTONS_W = 152;
-const PANELS_BOTTOM = PANEL_Y + 22 + 63 + 11;
+const PANELS_BOTTOM = PANEL_Y + PANEL_CONTENT_TOP + 63 + PANEL_BOTTOM;
 
 // Half the length of each crosshair arm, in pixels.
 const CROSSHAIR_ARM = 6;
@@ -124,9 +137,8 @@ class Demo {
     // oldest, so the trail shows the cursor's recent path. Each entry is [x, y].
     trail = [];
 
-    // Reused for the two crosshair arms and the two ends of each trail segment, so
-    // drawing allocates no new objects.
-    armRect = new Rect2i(0, 0, 0, 0);
+    // Reused for the two ends of each trail segment, so drawing allocates no new
+    // objects.
     lineFrom = new Vector2i(0, 0);
     lineTo = new Vector2i(0, 0);
 
@@ -135,12 +147,21 @@ class Demo {
     // the readouts panel shows it as a 0..1 fill.
     scrollPos = 0;
 
-    // Turns on wheel capture and the overlay timing chart.
+    // Slot 0's movement and wheel turn in the most recent update tick, saved by update()
+    // for the readouts panel.
+    deltaX = 0;
+    deltaY = 0;
+    wheel = 0;
+
+    // Turns on wheel capture and turns the engine overlay off.
     configure() {
         return {
             // Opt into canvas wheel capture so BT.pointerScrollDelta works and the page
             // does not scroll while the pointer is over the demo.
             isCapturingPointerScroll: true,
+
+            // No engine overlay: its panel and the backquote key that opens it are both
+            // switched off, so the two readout panels have the screen to themselves.
             isOverlayEnabled: false,
         };
     }
@@ -197,10 +218,19 @@ class Demo {
             this.trail.push([pos.x, pos.y]);
         }
 
+        // The two deltas run on two clocks. Read here in update(), they measure what
+        // happened since the previous update tick; read in render(), they would measure
+        // since the previous drawn frame instead. Save this tick's values so the readouts
+        // show the same movement the scroll meter adds up.
+        const delta = BT.pointerDelta(0);
+        this.deltaX = delta.x;
+        this.deltaY = delta.y;
+        this.wheel = BT.pointerScrollDelta;
+
         // Convert the scroll delta (CSS pixels of scrolling) into a small movement.
         // Multiplying by a fraction makes one wheel click move the meter a few pixels
         // instead of jumping a full screen height.
-        this.scrollPos += BT.pointerScrollDelta * SCROLL_SENSITIVITY;
+        this.scrollPos += this.wheel * SCROLL_SENSITIVITY;
 
         // Keep the scroll position inside the visible range, using the display height
         // rather than a hard-coded 240.
@@ -236,15 +266,12 @@ class Demo {
     }
 
     // Readouts panel in the top-left: pointer position, delta, wheel delta, whether slot
-    // 0 is active, and a meter showing the accumulated scroll position. The raw
-    // BT.pointer* reads here are the whole point of the demo - pointer state (unlike
-    // keyboard edges) is safe to read from render().
+    // 0 is active, and a meter showing the accumulated scroll position. Position and
+    // the active flag are held state, safe to read here in render(); the two deltas
+    // were saved by update(), so they follow the update clock.
     renderReadouts() {
         // Is the mouse currently over the canvas?
         const active = BT.isPointerActive(0);
-
-        // How far the wheel moved this frame (positive = scrolling down).
-        const scroll = BT.pointerScrollDelta;
 
         // The panel starts just below the title strip, at a fixed width so its edge does
         // not jump while the numbers in it change length.
@@ -257,23 +284,23 @@ class Demo {
         // keeps the last known values after the mouse leaves, so they would be stale.
         if (active) {
             const pos = BT.pointerPos(0);
-            const delta = BT.pointerDelta(0);
 
             ui.kv('Pos', `${pos.x},${pos.y}`);
-            ui.kv('Delta', `${delta.x},${delta.y}`);
+            ui.kv('Delta', `${this.deltaX},${this.deltaY}`);
         } else {
             ui.kv('Pos', '--,--');
             ui.kv('Delta', '--,--');
         }
 
         // toFixed(1) turns the number into text with one digit after the decimal point,
-        // so the readout does not jitter through long fractions.
-        ui.kv('Wheel', scroll.toFixed(1));
+        // so the readout does not jitter through long fractions. Positive means the
+        // wheel turned down.
+        ui.kv('Wheel', this.wheel.toFixed(1));
 
         // The meter fills up as you scroll down and empties as you scroll up. Dividing by
         // the display height turns 0..240 pixels into the 0..1 fraction the meter
         // expects.
-        ui.meter('Scroll pos', this.scrollPos / BT.displaySize.y, { width: READOUTS_W - 20 });
+        ui.meter('Scroll pos', this.scrollPos / BT.displaySize.y, { width: READOUTS_W - PANEL_CONTENT_SHRINK });
 
         ui.end();
     }
@@ -297,7 +324,7 @@ class Demo {
         // the readouts panel beside it (4 pips x 10 + 13 + 10).
         let touches = 0;
 
-        for (let slot = 1; slot < 4; slot++) {
+        for (let slot = 1; slot < POINTER_SLOTS; slot++) {
             if (BT.isPointerActive(slot)) {
                 touches++;
             }
@@ -351,16 +378,11 @@ class Demo {
         const pos = BT.pointerPos(slot);
 
         // Two 1-pixel-thick arms that cross at the pointer, each 13 pixels long (6 on
-        // either side plus the center pixel). They are drawn with ui.drawRectFill(), the
-        // sprite version of BT.drawRectFill(): the engine draws every BT.drawLine() and
-        // BT.drawRectFill() before any sprite, and the kit panels are sprites, so a plain
-        // line would vanish under a panel whenever the pointer moved over one.
-        const span = CROSSHAIR_ARM * 2 + 1;
-
-        this.armRect.set(pos.x - CROSSHAIR_ARM, pos.y, span, 1);
-        ui.drawRectFill(this.armRect, C_CROSSHAIR);
-        this.armRect.set(pos.x, pos.y - CROSSHAIR_ARM, 1, span);
-        ui.drawRectFill(this.armRect, C_CROSSHAIR);
+        // either side plus the center pixel). ui.crosshair() draws them as sprites: the
+        // engine draws every BT.drawLine() and BT.drawRectFill() before any sprite, and
+        // the kit panels are sprites, so a plain line would vanish under a panel whenever
+        // the pointer moved over one.
+        ui.crosshair(pos.x, pos.y, CROSSHAIR_ARM, C_CROSSHAIR);
     }
 
     // "Move pointer over canvas" hint, centered in the open space under the panels.
@@ -372,16 +394,15 @@ class Demo {
         }
 
         // The open space runs from the bottom of the panels to the bottom of the screen.
-        // Every character of the system font is FONT_W (6) pixels wide, so starting the
-        // text half its width left of the middle centers it; a caption's capital letters
-        // cover 7 rows starting 1 row above the y it is given, so centerY - 2 centers
-        // them vertically.
+        // centeredTextX() works out where the text must start so it sits centered on
+        // centerX; a caption's capital letters cover 7 rows starting 1 row above the y it
+        // is given, so centerY - 2 centers them vertically.
         const text = 'Move pointer over canvas';
         const screen = BT.displaySize;
         const centerX = Math.floor(screen.x / 2);
         const centerY = Math.floor((PANELS_BOTTOM + screen.y) / 2);
 
-        ui.caption(centerX - (text.length * FONT_W) / 2, centerY - 2, text, { color: 'dim' });
+        ui.caption(centeredTextX(centerX, text), centerY - 2, text, { color: 'dim' });
     }
 
     // First active pointer slot this frame: mouse (0) preferred, then touch (1-3).
@@ -391,7 +412,7 @@ class Demo {
             return 0;
         }
 
-        for (let slot = 1; slot < 4; slot++) {
+        for (let slot = 1; slot < POINTER_SLOTS; slot++) {
             if (BT.isPointerActive(slot)) {
                 return slot;
             }

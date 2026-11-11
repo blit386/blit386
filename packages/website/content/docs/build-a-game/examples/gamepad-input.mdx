@@ -162,7 +162,9 @@ const ARENA_Y = TOP_Y + CONTROLS_PANEL_H + GAP;
 const ARENA_W = LEFT_W;
 const ARENA_H = COLUMN_BOTTOM - ARENA_Y;
 
-// Names of the three pod colors, in the same order A cycles through them.
+// The three pod color slots and their names, in the same order A cycles through them.
+// podColorIndex picks one entry from each list.
+const POD_COLORS = [C_POD_A, C_POD_B, C_POD_C];
 const POD_COLOR_NAMES = ['green', 'red', 'blue'];
 
 // Pod size in pixels: 10 at rest, up to 10 more at full trigger pull. POD_SPEED is how
@@ -407,17 +409,10 @@ class Demo {
         }
     }
 
-    // Returns the palette slot of the current pod color.
+    // Returns the palette slot of the current pod color. POD_COLORS[i] reads entry
+    // number i from the list, counting from 0, so index 1 gives C_POD_B.
     currentPodColor() {
-        if (this.podColorIndex === 0) {
-            return C_POD_A;
-        }
-
-        if (this.podColorIndex === 1) {
-            return C_POD_B;
-        }
-
-        return C_POD_C;
+        return POD_COLORS[this.podColorIndex];
     }
 
     // Converts trigger pressure (0 to 1) into the pod's size in whole pixels.
