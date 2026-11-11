@@ -68,14 +68,18 @@ const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 // stands alone, so `git --no-pager grep -n restore` reads `grep` as the subcommand (BT-749). Same shape as the
 // Zed snippet in `content/AGENTS.md`, except that a value may not start with `-`: otherwise `-C -C -C ...` parses
 // two ways per option and a backtracking engine goes exponential (a value-like `-x` is read as an option instead).
-const GIT_PREFIX = `git(${SPACE}+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*|${SPACE}+-${NON_SPACE}+)*${SPACE}+`;
+// The name itself in any case and with an optional `.exe` (BT-775): on a case-insensitive file system `GIT` runs git,
+// and on Windows so does `git.exe` - the same reason `isProtectedPath` compares lowercase. Only the name: every option
+// after it stays case-sensitive (`-D` is not `-d`).
+const GIT = '[Gg][Ii][Tt](\\.[Ee][Xx][Ee])?';
+const GIT_PREFIX = `${GIT}(${SPACE}+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*|${SPACE}+-${NON_SPACE}+)*${SPACE}+`;
 // A short-flag cluster holding `letter`, as git accepts bundled short flags (`-uf` is `-u -f`).
 const shortCluster = (letter) => `-${ALPHANUMERIC}*${letter}${ALPHANUMERIC}*`;
 
 const ARG_CHAR = '[^ \\t\\v\\f\\r;&|<>]';
 // Anywhere in the arguments (`reset -q --hard`, `reset HEAD --hard`) and from its shortest prefix: git runs `--h`,
 // `--ha` and `--har` as `--hard` too, while `--help` is a different option and passes (BT-641). It ends on any
-// character that cannot continue the option, not ARG_END, so `(git reset --hard)` and a backtick form still count.
+// character that cannot continue the option, not ARG_END.
 const HARD_OPTION = '--h(a(rd?)?)?';
 const RESET_HARD = new RegExp(`${GIT_PREFIX}reset${ARGS}${HARD_OPTION}([^A-Za-z-]|$)`);
 // `--` anywhere in the arguments, so `git checkout HEAD -- x` counts as well as `git checkout -- x` (BT-617).
@@ -124,6 +128,35 @@ const BRANCH_FORCED_DELETE = new RegExp(
     `${GIT_PREFIX}branch${ARGS}(${shortCluster('D')}|-${ALPHANUMERIC}*(d${ALPHANUMERIC}*f|f${ALPHANUMERIC}*d)${ALPHANUMERIC}*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})${ARG_END}`,
 );
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
+// Config set for one run (`-c key=value`, `--config-env=key=VAR`) that `key` starts. An inline alias can stand for any
+// subcommand (`git -c alias.n=reset n --hard`), so it is denied outright; an agent never needs one. An inline push
+// refspec or mirror mode changes what a plain `git push` does - `+main` forces, `:main` deletes, and a `--config-env`
+// value is not visible at all - so any of them asks, whatever the value (BT-775). git reads section and key names in
+// any case (`ALIAS.n` is `alias.n`), so those match in any case; the remote name between them is case-sensitive.
+const anyCase = (word) => word.replace(/[a-z]/g, (letter) => `[${letter}${letter.toUpperCase()}]`);
+const inlineConfig = (key) => new RegExp(`${GIT}${ARGS}(-c|--config-env)(=|${SPACE}+)${key}`);
+const INLINE_ALIAS = inlineConfig(`${anyCase('alias')}\\.`);
+const INLINE_PUSH_CONFIG = inlineConfig(
+    `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})(=|${ARG_END})`,
+);
+// Plumbing with the same effect as `git checkout -- .` and `git reset --hard` (BT-775): `checkout-index -f` overwrites
+// worktree files from the index, `read-tree --reset` (from `--res`, its shortest unique prefix) throws the index away.
+const CHECKOUT_INDEX_FORCE = new RegExp(
+    `${GIT_PREFIX}checkout-index${ARGS}(${shortCluster('f')}|${FORCE_OPTION})${ARG_END}`,
+);
+const READ_TREE_RESET = new RegExp(`${GIT_PREFIX}read-tree${ARGS}--res(et?)?${ARG_END}`);
+// A push that deletes or overwrites remote branches without a force flag (BT-775): `--delete` (from `--de`; `--d` is
+// also `--dry-run`) or `-d`, a `:branch` refspec, and `--mirror` (from `--mi`).
+const PUSH_DELETE = new RegExp(
+    `${GIT_PREFIX}push${ARGS}(${shortCluster('d')}|--de(l(e(te?)?)?)?|--mi(r(r(or?)?)?)?|:${ARG_CHAR}+)${ARG_END}`,
+);
+// What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`), plus
+// the parentheses and backticks around a subshell or a command substitution (`(git ...)`, `$(git ...)`, `` `git ...` ``),
+// so every rule sees the command inside them on its own (BT-775). A command that merely quotes a destructive git command
+// between backticks or parentheses (`grep '(git clean)'`) is read as running it too.
+const COMMAND_SEPARATOR = /[\n;&|()`]/;
+// A single-quoted span, or a double-quoted one with its backslash escapes.
+const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"/g;
 
 const DENY_DESTRUCTIVE = {
     decision: 'deny',
@@ -135,6 +168,18 @@ const ASK_FORCE_PUSH = {
     decision: 'ask',
     userMessage: 'Force push detected. Confirm before continuing.',
     agentMessage: 'Force push rewrites history. Ask the user for explicit confirmation first.',
+};
+const ASK_PUSH_CONFIG = {
+    decision: 'ask',
+    userMessage: 'Push settings given inline (-c remote.<name>.push or .mirror) detected. Confirm before continuing.',
+    agentMessage:
+        'An inline remote.<name>.push or .mirror setting changes what git push sends: it can force-push, delete, or mirror remote branches. Ask the user for explicit confirmation first.',
+};
+const ASK_PUSH_DELETE = {
+    decision: 'ask',
+    userMessage: 'Remote branch delete or mirror push detected. Confirm before continuing.',
+    agentMessage:
+        'git push --delete, a :branch refspec, or --mirror deletes or overwrites branches on the remote. Ask the user for explicit confirmation first.',
 };
 const ASK_BRANCH_DELETE = {
     decision: 'ask',
@@ -155,38 +200,77 @@ const ASK_STASH = {
  *
  * - Deny (no override): `git reset --hard`, `git checkout` onto paths (`--` anywhere, `.`, or a file-like argument),
  *   `git checkout` / `git switch` with `-f`, `--force` or `--discard-changes`, `git restore` in any form that touches
- *   the worktree, and `git clean` unless it is a dry run with no force flag. Each destroys content no git object was
- *   ever created for (uncommitted changes, untracked files), so no approval after the fact can bring it back.
- *   `git restore --staged` without `--worktree` only resets the index and leaves the files alone, so it is the
- *   one safe restore. `git clean` is denied by default rather than by force flag, because
- *   `git -c clean.requireForce=false clean -d` deletes without naming one.
- * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`, `git branch -D` (or `-d` with
- *   `-f`), and `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits
- *   reachable for a while, so approving one is not approving something irreversible.
+ *   the worktree, `git clean` unless it is a dry run with no force flag, the plumbing forms `git checkout-index -f`
+ *   and `git read-tree --reset`, and an alias given with `-c` in any case (it can stand for any of these). Each
+ *   overwrites or discards, in place, content no git object was ever created for (uncommitted changes, untracked
+ *   files), so no approval after the fact can bring it back. `git restore --staged` without `--worktree` only resets
+ *   the index and leaves the files alone, so it is the one safe restore. `git clean` is denied by default rather than
+ *   by force flag, because `git -c clean.requireForce=false clean -d` deletes without naming one. Deleting files or a
+ *   whole worktree (`git rm -f`, `git worktree remove --force`) is not covered: it is the same judgment as `rm -rf`,
+ *   which the guard never polices, and agents remove their own scratch worktrees routinely.
+ * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`; a push refspec or mirror mode
+ *   given with `-c` / `--config-env`, in any case; `git push --delete`, a `:branch` refspec, or `--mirror`;
+ *   `git branch -D` (or `-d` with `-f`); and `git stash drop/clear`. These can discard work too, but reflog (or the
+ *   remote's) keeps the commits reachable for a while, so approving one is not approving something irreversible.
  *
  * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
+ *
+ * This is a tripwire for honest mistakes, not a sandbox: it reads the command text, so anything that builds the
+ * command at run time - `$IFS`, a variable (`g=git; $g ...`), `eval`, `GIT_CONFIG_*` environment config, or an alias
+ * set earlier with `git config` - gets past it.
  *
  * @param {string} command - The raw command text.
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
  */
 function isDangerousCommand(command) {
-    // Quotes and backslashes are dropped first, so `git "reset" --hard` and `git \reset --hard` cannot dodge
-    // the word checks. Each check asks "does any line match", so a multi-line command is caught on any line.
-    const lines = command.replace(/['"\\]/g, '').split('\n');
-    const any = (pattern) => lines.some((line) => pattern.test(line));
+    // A backslash-newline is a line continuation: `sh` joins the two lines into one command (BT-775). The text is then
+    // read twice. Once with quotes and backslashes dropped, so `git "reset" --hard`, `git \reset --hard` and a command
+    // quoted inside `bash -c "..."` cannot dodge the word checks. Once with each quoted span (and each escaped space)
+    // kept as one word, so `git -C "my dir" reset --hard` does not read `dir` as the subcommand (BT-775). Both readings
+    // are cut into single commands and each check asks "does any command match", so every command on every line is
+    // judged on its own: a `git restore --staged` earlier on the line excuses no later `git restore` (BT-775).
+    const joined = command.replace(/\\\r?\n/g, ' ');
+    const unquoted = joined.replace(/['"\\]/g, '');
+    const oneWordQuotes = joined
+        .replace(/\\[ \t]/g, '_')
+        .replace(QUOTED_SPAN, (span) => span.slice(1, -1).replace(/[\s;&|()`<>]/g, '_'))
+        .replace(/['"\\]/g, '');
+    const commands = [...unquoted.split(COMMAND_SEPARATOR), ...oneWordQuotes.split(COMMAND_SEPARATOR)];
+    const any = (pattern) => commands.some((one) => pattern.test(one));
 
-    const destructiveClean = any(CLEAN) && (any(CLEAN_FORCE) || !any(CLEAN_DRY_RUN));
-    const destructiveRestore = any(RESTORE) && (!any(RESTORE_STAGED) || any(RESTORE_WORKTREE));
+    const destructiveClean = commands.some(
+        (one) => CLEAN.test(one) && (CLEAN_FORCE.test(one) || !CLEAN_DRY_RUN.test(one)),
+    );
+    const destructiveRestore = commands.some(
+        (one) => RESTORE.test(one) && (!RESTORE_STAGED.test(one) || RESTORE_WORKTREE.test(one)),
+    );
 
     const destructiveCheckout =
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
-    if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore) {
+    const destructivePlumbing = any(CHECKOUT_INDEX_FORCE) || any(READ_TREE_RESET);
+
+    if (
+        any(RESET_HARD) ||
+        destructiveCheckout ||
+        destructiveClean ||
+        destructiveRestore ||
+        destructivePlumbing ||
+        any(INLINE_ALIAS)
+    ) {
         return DENY_DESTRUCTIVE;
     }
 
     if (any(FORCE_PUSH)) {
         return ASK_FORCE_PUSH;
+    }
+
+    if (any(INLINE_PUSH_CONFIG)) {
+        return ASK_PUSH_CONFIG;
+    }
+
+    if (any(PUSH_DELETE)) {
+        return ASK_PUSH_DELETE;
     }
 
     if (any(BRANCH_FORCED_DELETE)) {

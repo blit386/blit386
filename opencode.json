@@ -130,7 +130,19 @@
       "git branch --force --delete*": "ask",
       "git branch * --force --delete*": "ask",
       "git stash drop*": "ask",
-      "git stash clear*": "ask"
+      "git stash clear*": "ask",
+      "git *-c alias.*": "deny",
+      "git *--config-env*alias.*": "deny",
+      "git *-c * push*": "ask",
+      "git *--config-env* push*": "ask",
+      "git checkout-index *": "deny",
+      "git read-tree *--res*": "deny",
+      "git push -d*": "ask",
+      "git push * -d*": "ask",
+      "git push *--de*": "ask",
+      "git push * :*": "ask",
+      "git push :*": "ask",
+      "git push *--mi*": "ask"
     }
   },
   "mcp": {

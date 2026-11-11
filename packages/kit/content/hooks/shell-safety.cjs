@@ -15,7 +15,23 @@
 // Node only: no `sh` (absent from Cursor's Windows hook PATH) and no `python3`.
 
 const { readFileSync } = require('node:fs');
-const { failClosed, isDangerousCommand, parsePayload, UNREADABLE } = require('./guard-core.cjs');
+
+// JSON.stringify drops the undefined messages, so an allow is just {"permission":"allow"}.
+const cursorAnswer = (permission, userMessage, agentMessage) =>
+    `${JSON.stringify({ permission, user_message: userMessage, agent_message: agentMessage })}\n`;
+
+// A guard core that will not load (missing, or crashing as it loads) blocks too, answered both ways like an
+// unreadable payload below: Claude Code lets the call through on any exit code other than 2 (BT-775).
+let guardCore;
+try {
+    guardCore = require('./guard-core.cjs');
+} catch (error) {
+    const message = `The guard could not run, so the request was blocked: ${error.message}`;
+    process.stdout.write(cursorAnswer('deny', message, message));
+    process.stderr.write(`${message}\n`);
+    process.exit(2);
+}
+const { failClosed, isDangerousCommand, parsePayload, UNREADABLE } = guardCore;
 
 /** The first non-empty `command` or `raw_command` string anywhere in the payload, depth first. */
 function findCommand(node) {
@@ -48,10 +64,6 @@ const request = failClosed(() => {
         verdict: isDangerousCommand(findCommand(payload)),
     };
 });
-
-// JSON.stringify drops the undefined messages, so an allow is just {"permission":"allow"}.
-const cursorAnswer = (permission, userMessage, agentMessage) =>
-    `${JSON.stringify({ permission, user_message: userMessage, agent_message: agentMessage })}\n`;
 
 if (request === UNREADABLE) {
     // The agent cannot be told from an unreadable payload, so answer both ways. Cursor reads the JSON (and

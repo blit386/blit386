@@ -1086,8 +1086,10 @@ export function generateCopilotAdapter(root: string, vars: TemplateVars): Genera
  * (`git branch -d old -f`), and an abbreviated branch delete or force flag (`git branch --del -f`). `--force-w` and
  * longer push prefixes are covered, since `*--force*` matches them. `test/opencode.test.mjs` runs one case table
  * through both, so an edit on either side that is not mirrored fails the kit tests. The `kit-guard.ts` plugin enforces
- * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`); it can only
- * block, so an ask-tier form these globs miss (`git push -uvf`, `git branch -d old -f`) runs without a prompt.
+ * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`) or spell in every
+ * case (`-c ALIAS.n=...`); it can only block, so an ask-tier form these globs miss (`git push -uvf`,
+ * `git branch -d old -f`, and any ask-tier command written inside a subshell, with an uppercase or `.exe` git, or with
+ * a quoted option value) runs without a prompt.
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -1196,6 +1198,25 @@ const OPENCODE_PERMISSION = {
         ),
         'git stash drop*': 'ask',
         'git stash clear*': 'ask',
+        // Config given for one command: an alias can stand for any subcommand, and a push refspec or mirror mode can
+        // force, delete, or mirror on a plain push (BT-775). git reads config keys in any case and a glob cannot, so
+        // every push given inline config asks, which also covers a `--config-env` value nobody can read; the plugin
+        // denies an alias in any case.
+        'git *-c alias.*': 'deny',
+        'git *--config-env*alias.*': 'deny',
+        'git *-c * push*': 'ask',
+        'git *--config-env* push*': 'ask',
+        // Plumbing that discards like `checkout --` and `reset --hard`; every `checkout-index` is denied, which is
+        // coarser than the guard core (it denies only `-f`), since a `-f` can sit anywhere in a short-flag cluster.
+        'git checkout-index *': 'deny',
+        'git read-tree *--res*': 'deny',
+        // A push that deletes or overwrites remote branches: `--delete` / `-d`, a `:branch` refspec, `--mirror`.
+        'git push -d*': 'ask',
+        'git push * -d*': 'ask',
+        'git push *--de*': 'ask',
+        'git push * :*': 'ask',
+        'git push :*': 'ask',
+        'git push *--mi*': 'ask',
     },
 } as const;
 
