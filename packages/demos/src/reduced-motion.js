@@ -93,7 +93,7 @@ frame instead of fading and dissolving.
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
+import { applyTheme, FONT_W, THEME_OVERLAY_STYLE, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {{ x: number, y: number, z: number, prevZ: number, speedScale: number }} Star */
@@ -211,9 +211,6 @@ const LAMP_LABEL_Y = LAMP_RECT.y + 2;
 const READOUT_X = LAMP_RECT.x;
 const READOUT_Y = LAMP_RECT.y + 18;
 const READOUT_RIGHT_X = HOUSING_RECT.x + HOUSING_RECT.width - 6;
-
-// Every character of the system font is 6 pixels wide; its letters fill 5 of them.
-const FONT_W = 6;
 
 // Depth thresholds picking which of the three star colors to draw with.
 const BAND_FAR_Z = 1.0;
@@ -650,7 +647,9 @@ class Demo {
         BT.systemPrint(this.headVec.set(LAMP_LABEL_X, LAMP_LABEL_Y), C_LAMP_RIM, 'WARP');
 
         // The phase in capitals on the left, and the jump count right-aligned under the
-        // label: its letters end on READOUT_RIGHT_X.
+        // label: its letters end on READOUT_RIGHT_X. Each system font character is FONT_W
+        // (6) pixels wide but its letters fill only 5, so the visible text is one pixel
+        // narrower than length x FONT_W.
         const jumps = `x${this.jumpCount}`;
 
         BT.systemPrint(this.headVec.set(READOUT_X, READOUT_Y), C_LAMP_RIM, this.phase.toUpperCase());
@@ -664,7 +663,7 @@ class Demo {
     // Top-left panel: what the system said, what the override says, and proof the hook
     // fires. The phase and the jump count are on the instrument housing (see drawLamp()).
     drawStatusPanel() {
-        ui.begin('topLeft', { x: MARGIN, y: BAND_TOP, width: LEFT_PANEL_W, kvCols: STATUS_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: BAND_TOP, width: LEFT_PANEL_W, kvCols: STATUS_KV_COLS });
         ui.panel('Reduced motion');
         ui.kv('OS pref', this.osPrefersReduced ? 'reduce' : 'no-pref');
         ui.kv('Override', this.forceReduced ? 'on' : 'off');
@@ -689,7 +688,7 @@ class Demo {
 
     // Left panel under the status: the two controls, both usable by key and by touch.
     drawControlPanel() {
-        ui.begin('topLeft', { x: MARGIN, y: CONTROLS_Y, width: LEFT_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: CONTROLS_Y, width: LEFT_PANEL_W });
         ui.panel('Controls');
 
         // A checkbox, not a button, because this is a lasting on/off state. The { key }
@@ -714,7 +713,7 @@ class Demo {
 
     // Bottom-right panel: exactly what changes when reduced motion is on.
     drawLegendPanel() {
-        ui.begin('topLeft', { x: LEGEND_X, y: LEGEND_Y, width: LEGEND_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LEGEND_X, y: LEGEND_Y, width: LEGEND_W });
         ui.panel('When reduced');
         ui.label('Stars   20% speed', { color: 'dim' });
         ui.label('Streaks dots only', { color: 'dim' });

@@ -120,12 +120,8 @@ const POSES_BY_SLUG = {
         { id: 'start', at: 0 },
     ],
 
-    // Pressing Space ducks the music: the Music slider drops to 0.25 and the Hold meter
-    // starts draining. It comes first so it also drives the OG card.
-    'audio-buses': [
-        { id: 'duck', at: 1, keys: ['Space'] },
-        { id: 'start', at: 0 },
-    ],
+    // No audio-buses entry on purpose: its Space alert ducks the music only once audio is
+    // unlocked, and a capture never unlocks audio, so a Space pose would look like 'start'.
 
     // Pressing 2 switches the crossfade chart to Track B's eased blend, the most telling of
     // the three profiles; it comes first so it also drives the OG card.
@@ -139,11 +135,11 @@ const POSES_BY_SLUG = {
         { id: 'cruise', at: 1 },
     ],
 
-    // E plays the Explosion preset and R rolls a recipe in the same step, so the "Last"
-    // row and the randomizer readout are both filled. It comes first so it also drives
-    // the OG card.
+    // R rolls a recipe, so the randomizer readout is filled. It comes first so it also
+    // drives the OG card. A preset key cannot fill the "Last" row here: the demo only
+    // plays a preset once audio is unlocked, and a capture never unlocks audio.
     'synth-toy': [
-        { id: 'played', at: 1, keys: ['KeyE', 'KeyR'] },
+        { id: 'rolled', at: 1, keys: ['KeyR'] },
         { id: 'start', at: 1 },
     ],
 

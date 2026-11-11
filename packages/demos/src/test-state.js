@@ -59,7 +59,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
+import { applyTheme, THEME_OVERLAY_STYLE, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').TestStateSnapshot} TestStateSnapshot */
 
@@ -163,6 +163,7 @@ class Demo {
         };
     }
 
+    // Builds the palette once: the shared UI theme plus the four scene colors.
     async init() {
         // The palette is local because no later frame changes a slot. applyTheme() still
         // has to run before BT.paletteSet(): it paints the shared UI colors into slots
@@ -183,6 +184,7 @@ class Demo {
         return true;
     }
 
+    // Runs once per fixed tick. Only the UI kit needs it here.
     update() {
         // First line: lets the kit latch key presses and taps for the buttons below. This
         // demo does not move anything here. The square's position is a picture of
@@ -190,6 +192,7 @@ class Demo {
         ui.tick();
     }
 
+    // Draws one frame: the controls, the clock and snapshot panels, and the orbit.
     render() {
         BT.clear(C_BG);
 
@@ -226,7 +229,7 @@ class Demo {
     drawControls() {
         const buttonW = RIGHT_W - PANEL_CONTENT_SHRINK;
 
-        ui.begin('topLeft', { x: RIGHT_X, y: CONTROLS_Y, width: RIGHT_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_X, y: CONTROLS_Y, width: RIGHT_W });
         ui.panel('Try it');
 
         if (ui.button('A Add point', { key: 'KeyA', width: buttonW })) {
@@ -253,7 +256,7 @@ class Demo {
 
     // Top-left: the live clock, and the tick count from just before the last reset.
     drawClock() {
-        ui.begin('topLeft', { x: MARGIN, y: MARGIN, width: LEFT_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: MARGIN, width: LEFT_W });
         ui.panel('Clock');
 
         // BT.ticks counts finished update() steps. BT.ticksReset() sets it to 0, and the
@@ -281,7 +284,7 @@ class Demo {
         // score and marker; other values are not reshaped into null.
         const copied = snap.state;
 
-        ui.begin('topLeft', { x: MARGIN, y: SNAPSHOT_Y, width: LEFT_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: SNAPSHOT_Y, width: LEFT_W });
         ui.panel('Snapshot');
 
         // Same number as BT.ticks, copied at the moment BT.testState() ran.
@@ -351,7 +354,7 @@ class Demo {
     // ui.drawRect() and ui.drawRectFill() draw as sprites in call order, so they land on
     // top of the panel; plain BT.drawRect() would be hidden under it.
     drawOrbit() {
-        ui.begin('topLeft', { x: RIGHT_X, y: MARGIN, width: RIGHT_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_X, y: MARGIN, width: RIGHT_W });
         ui.panel('BT.ticks, drawn');
         ui.spacer(ORBIT_PANEL_H - PANEL_CONTENT_TOP - PANEL_BOTTOM_PAD);
         ui.end();
