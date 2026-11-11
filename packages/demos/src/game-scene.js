@@ -27,7 +27,6 @@ Guides:
   - Game Loop: https://blit386.dev/docs/guides/game-loop#smoothing-motion-between-updates
   - Audio: https://blit386.dev/docs/guides/audio#playing-music
   - Random: https://blit386.dev/docs/guides/random#deterministic-by-default
-  - Overlay: https://blit386.dev/docs/guides/overlay#custom-rows
 
 Reference:
   - Palette: https://blit386.dev/docs/api/palette#per-draw-offset
@@ -36,7 +35,6 @@ Reference:
   - Audio: https://blit386.dev/docs/api/audio#loop-points
   - Rendering: https://blit386.dev/docs/api/rendering#frame-capture
   - Easing: https://blit386.dev/docs/api/easing#applyeasing
-  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows-optional
 
 ---
 
@@ -66,13 +64,13 @@ A 640x240 world seen through a 320x240 window. From back to front:
   corner with a Save PNG button (Image Output), and Status in the top-right corner with
   the score and the time of day. Until sound is unlocked, the standard "enable sound"
   hint sits on the grass in the bottom-left corner.
-- Score, rock position, and day phase as engine overlay rows above the FPS bar.
 
 WHAT YOU WILL LEARN
 -------------------
 
-- Palette-first lighting: every ambient-lit color is written into a dedicated palette
-  slot in update(); render() passes palette indices only (see below).
+- Palette-first lighting: update() multiplies every base color by the ambient light with
+  Color32.multiply() and writes the result into a dedicated palette slot; render() passes
+  palette indices only, never a Color32.
 - Per-draw palette offsets: BT.drawSprite(sheet, rect, pos, spriteColorCount) shifts the
   rock's pixel indices into a second "ambient" block of slots that update() re-lights
   every tick.
@@ -90,27 +88,6 @@ WHAT YOU WILL LEARN
 - BT.downloadFrame(filename) from a UI kit button bound to Space, with a busy flag while
   the promise is pending.
 - BT.random.int(min, max) for the sparkle scatter.
-- Overlay configuration: overlayRows(), overlayStyle, overlayTimingChartStyle, the palette
-  grid (isOverlayPaletteEnabled, 32 columns, 3 visible rows), and hiding the toggle hint
-  with isOverlayToggleHintVisible: false.
-
-HOW THE DAY/NIGHT PALETTE WORKS
--------------------------------
-
-Instead of computing base.multiply(ambient) in render() and passing a Color32 to draw
-calls, update() pre-computes those multiplied colors and stores them in dedicated palette
-slots. render() only ever uses palette index numbers.
-
-Color32.multiply() scales each channel of the base color by the matching channel of the
-ambient color and returns a new Color32 - like shining a colored light on a surface: a
-blue light on a red wall gives a darker, purplish result.
-
-Example: the grass fill has a base color (50, 140, 70) and a reserved slot C_GRASS. Every
-tick update() computes grassBaseColor.multiply(ambient) and writes it to C_GRASS.
-render() calls BT.drawRectFill(rect, C_GRASS) - no Color32 needed there.
-
-The ambient color itself comes from a cosine over the 1200-tick cycle: bright and warm
-(255, 255, 255) at the start, cool and dark (70, 75, 120) halfway through.
 
 TRY THIS
 --------
@@ -121,9 +98,6 @@ TRY THIS
 - Click anywhere or press any key once to unlock audio; the music starts from its intro
   and then loops between 1.5 s and 7.9 s. Listen for the chime every 5 seconds as the day
   phase changes.
-- Press Backquote (`) to open the engine overlay. The three custom rows show the score,
-  the rock's world position, and the day phase; the palette grid at the bottom shows the
-  scene slots re-lighting as the day turns.
 
 */
 
@@ -176,8 +150,10 @@ const SCORE_INTERVAL_TICKS = 60;
 // A batch of sparkles every 30 ticks.
 const PARTICLE_SPAWN_INTERVAL = 30;
 
-// Full day/night loop: 1200 ticks, 20 seconds at 60 ticks per second.
+// Full day/night loop: 1200 ticks, 20 seconds at 60 ticks per second. Each quarter of the
+// loop has a label, in order from the bright start of the cycle.
 const DAY_NIGHT_CYCLE_TICKS = 1200;
+const DAY_PHASE_LABELS = ['Day', 'Toward dusk', 'Night', 'Toward dawn'];
 
 // Camera smoothing: each tick the camera steps 14 percent closer to its target.
 const CAMERA_LERP = 0.14;
@@ -194,8 +170,10 @@ const SKY_PARALLAX = 0.22;
 // How many sky bands cover the sky from y = 0 to GROUND_Y.
 const SKY_BANDS = 20;
 
-// Size of the rotating pool of particle palette slots.
+// Size of the rotating pool of particle palette slots, and how long one sparkle lives
+// (72 ticks, 1.2 seconds).
 const MAX_PARTICLES = 20;
+const PARTICLE_LIFE_TICKS = 72;
 
 // Static scene slot (never changes after init). UI text and panel colors come from the
 // shared UI kit theme (slots 240 and up); the slots below belong to the scene itself.
@@ -216,17 +194,8 @@ const C_BUILDING_BASE = 32;
 // Clouds: one slot at 40.
 const C_CLOUD = 40;
 
-// Overlay text and timing-chart colors: 41..44, dimmed with the scene at night.
-const C_HUD_ERROR = 41; // timing-chart error markers only (no overlay text uses it)
-const C_HUD_SCORE = 42;
-const C_HUD_POS = 43;
-const C_HUD_PHASE = 44; // colors the day-phase overlay row (Day / Night / ...)
-
 // Hero shadow: 45.
 const C_HERO_SHADOW = 45;
-
-// Overlay bar fill (text slots reuse C_HUD_SCORE / C_HUD_POS / C_HUD_PHASE).
-const C_OVERLAY_BAR = 46;
 
 // Particle slots: 50..69 (MAX_PARTICLES = 20).
 const PARTICLE_SLOT_START = 50;
@@ -359,63 +328,23 @@ class Demo {
     skyTop = new Color32(40, 70, 140);
     skyHorizon = new Color32(120, 170, 220);
 
-    // Overlay base colors (text rows plus the timing-chart error marker), before the ambient
-    // is applied.
-    hudErrorBase = new Color32(255, 230, 180);
-    hudScoreBase = new Color32(200, 220, 255);
-    hudPosBase = new Color32(180, 200, 180);
-    hudPhaseBase = new Color32(150, 150, 160);
-
-    // Reused every frame for the overlay rows: score, rock position, day phase.
-    overlayRowData = [
-        { leftText: 'Score 0', textPaletteIndex: C_HUD_SCORE },
-        { leftText: 'Rock (0, 0)', textPaletteIndex: C_HUD_POS },
-        { leftText: 'Day', textPaletteIndex: C_HUD_PHASE },
-    ];
-
-    // Palette slots for the engine overlay bars (the FPS strip keeps the engine
-    // defaults). The live palette grid at the bottom of the overlay shows which slots
-    // this frame's draw calls use, which is handy for the day/night tinting and the
-    // sprite palette blocks: 32 swatches per row, 3 visible rows, scroll to browse all
-    // 256 slots.
+    // Engine settings, read once before init().
     configure() {
         return {
-            // The engine normally draws a small toggle hint in the bottom-left corner so
-            // people know they can press Backquote (`) to open the stats overlay. This is
-            // an immersive game scene, so the hint is hidden to keep the picture clean.
-            // The overlay still works: ` reveals the full dev HUD (timing chart and
-            // palette grid) on demand, ` again hides it. Teaching demos leave the hint
-            // visible (the default) so newcomers can find it.
+            // The engine normally draws a small "press ` for stats" hint in the
+            // bottom-left corner. This is an immersive scene, so the hint is hidden; `
+            // still opens the overlay. Teaching demos leave the hint visible.
             isOverlayToggleHintVisible: false,
 
             // Space is the Save PNG shortcut; keep the page from scrolling when it is
             // pressed.
             isCapturingKeyboardScroll: true,
-
-            isOverlayPaletteEnabled: true,
-            overlayPaletteColumns: 32,
-            overlayPaletteRowsVisible: 3,
-            overlayStyle: {
-                barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_HUD_SCORE,
-                gapPaletteIndex: C_OVERLAY_BAR,
-            },
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_HUD_POS,
-                renderBarPaletteIndex: C_HUD_SCORE,
-                warningPaletteIndex: C_HUD_PHASE,
-                errorPaletteIndex: C_HUD_ERROR,
-                tagPaletteIndex: C_HUD_POS,
-            },
         };
     }
 
     // Loads the hero sprite sheet, builds the palette, places buildings and clouds, and
     // starts the audio.
     async init() {
-        console.log('[GameSceneDemo] Initializing...');
-
         // Create the palette and set the static slots. The shared UI kit needs its
         // twelve theme colors in the palette before any widget draws. applyTheme() writes
         // them into high slots (240 and up), far above this demo's scene slots, which end
@@ -425,8 +354,6 @@ class Demo {
         applyTheme(this.palette);
 
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
-        // Overlay row backgrounds.
-        this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 180));
 
         // Pre-fill the particle slots as transparent.
         for (let i = 0; i < MAX_PARTICLES; i++) {
@@ -461,7 +388,6 @@ class Demo {
         this.heroSheet = indexed.sheet;
         this.heroSprite = this.heroSheet.fullRect();
         BT.paletteSet(this.palette);
-        console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
 
         // Read the hero's real size from the loaded sheet (44x44 for test.png), the same
         // way Basics Enhanced and Logo Low-Res do. Every bit of math below - movement
@@ -480,8 +406,6 @@ class Demo {
 
         // Place the camera on the hero to start.
         this.cameraXFloat = this.heroPos.x - DISPLAY_W / 2 + this.heroSize.x / 2;
-        this.cameraPos.x = Math.floor(this.cameraXFloat);
-        this.cameraPos.y = 0;
         this.clampCamera();
 
         // Snap cameraPrevPos to match the starting camera position so the very first
@@ -495,8 +419,6 @@ class Demo {
 
         // Load and start all sound: music, the day/night chime, and the capture blip.
         await this.initAudio();
-
-        console.log('[GameSceneDemo] Ready.');
 
         return true;
     }
@@ -584,8 +506,8 @@ class Demo {
         this.lastDayPhaseLabel = currentPhase;
     }
 
-    // Draws the world layers back to front. Score, position, and phase text are handled
-    // by the engine overlay. Every draw call uses palette index numbers only, no Color32.
+    // Draws the world layers back to front. Every draw call uses palette index numbers
+    // only, no Color32.
     render() {
         BT.clear(C_BLACK);
 
@@ -612,19 +534,6 @@ class Demo {
         // HUD panels and capture controls, in screen space (not scrolled with the
         // world).
         this.renderHud();
-
-        // Score, rock position, and day phase are drawn in overlayRows() above the FPS
-        // bar.
-    }
-
-    // Score, rock position, and day/night phase for the engine overlay. The text colors
-    // are updated each tick in updateWorldPalette() so they dim at night.
-    overlayRows() {
-        this.overlayRowData[0].leftText = `Score ${this.score}`;
-        this.overlayRowData[1].leftText = `Rock (${this.heroPos.x}, ${this.heroPos.y})`;
-        this.overlayRowData[2].leftText = this.getDayPhaseLabel();
-
-        return this.overlayRowData;
     }
 
     // Fills groundTileIds with alternating grass/dirt tile IDs for one 16 px row
@@ -642,46 +551,19 @@ class Demo {
     // Places buildings and clouds once at startup, and stores the building base colors in
     // separate arrays so update() can apply the ambient.
     buildWorldDecor() {
+        // Each building stands on the walkway's far edge, so its top is WALKWAY_Y minus
+        // its height. fill is the light checker color, outline the dark one.
         const rawBuildings = [
-            {
-                x: 40,
-                y: WALKWAY_Y - 52,
-                w: 36,
-                h: 52,
-                fill: new Color32(140, 90, 70),
-                outline: new Color32(80, 50, 40),
-            },
-            {
-                x: 200,
-                y: WALKWAY_Y - 70,
-                w: 44,
-                h: 70,
-                fill: new Color32(110, 120, 140),
-                outline: new Color32(60, 70, 90),
-            },
-            {
-                x: 380,
-                y: WALKWAY_Y - 46,
-                w: 32,
-                h: 46,
-                fill: new Color32(160, 100, 100),
-                outline: new Color32(100, 50, 50),
-            },
-            {
-                x: 500,
-                y: WALKWAY_Y - 60,
-                w: 40,
-                h: 60,
-                fill: new Color32(120, 130, 100),
-                outline: new Color32(70, 80, 60),
-            },
+            { x: 40, w: 36, h: 52, fill: new Color32(140, 90, 70), outline: new Color32(80, 50, 40) },
+            { x: 200, w: 44, h: 70, fill: new Color32(110, 120, 140), outline: new Color32(60, 70, 90) },
+            { x: 380, w: 32, h: 46, fill: new Color32(160, 100, 100), outline: new Color32(100, 50, 50) },
+            { x: 500, w: 40, h: 60, fill: new Color32(120, 130, 100), outline: new Color32(70, 80, 60) },
         ];
 
         // Fresh arrays every call, never push() onto the old ones: a second call would
-        // leave 8 buildings whose palette slots spill past slot 39 into the cloud,
-        // overlay, and walkway colors. Array.map returns a new array with one result per
-        // entry.
-        this.buildings = rawBuildings.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h }));
+        // leave 8 buildings whose palette slots spill past slot 39 into the cloud and
+        // walkway colors. Array.map returns a new array with one result per entry.
+        this.buildings = rawBuildings.map((b) => ({ x: b.x, y: WALKWAY_Y - b.h, w: b.w, h: b.h }));
         this.buildingFills = rawBuildings.map((b) => b.fill);
         this.buildingOutlines = rawBuildings.map((b) => b.outline);
 
@@ -713,7 +595,9 @@ class Demo {
     }
 
     // Recalculates every ambient-dependent palette entry. Called every tick in update()
-    // so render() always has up-to-date slot values.
+    // so render() always has up-to-date slot values. Color32.multiply() scales each
+    // channel of a base color by the matching channel of the ambient color, like shining
+    // a colored light on a surface: a blue light on a red wall gives a darker purple.
     updateWorldPalette() {
         const ambient = this.getAmbientTint();
 
@@ -746,13 +630,6 @@ class Demo {
         // Clouds.
         this.palette.set(C_CLOUD, this.cloudBaseColor.multiply(ambient));
 
-        // Engine overlay text: a subtle night tint on the score / position / phase rows.
-        // The kit HUD panels keep their fixed theme colors and does not dim at night.
-        this.palette.set(C_HUD_ERROR, this.hudErrorBase.multiply(ambient));
-        this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
-        this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
-        this.palette.set(C_HUD_PHASE, this.hudPhaseBase.multiply(ambient));
-
         // Hero shadow, softer at night.
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60);
         this.palette.set(C_HERO_SHADOW, new Color32(0, 0, 0, shadowAlpha));
@@ -771,8 +648,8 @@ class Demo {
         // The sky camera x is only a fraction of the real one, so clouds drift slower
         // than the ground. It uses the same interpolated camera position as the ground
         // layer, so the two never drift apart from each other frame to frame.
-        const paraX = Math.floor(this.cameraRenderPos.x * SKY_PARALLAX);
-        BT.cameraSet(new Vector2i(paraX, 0));
+        this.tempVec.set(Math.floor(this.cameraRenderPos.x * SKY_PARALLAX), 0);
+        BT.cameraSet(this.tempVec);
 
         // Each band is GROUND_Y / SKY_BANDS pixels tall.
         const bandH = Math.ceil(GROUND_Y / SKY_BANDS);
@@ -915,18 +792,29 @@ class Demo {
         // Remember where the camera was before this tick's follow-lerp moves it.
         this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
 
+        // Step 14 percent of the remaining distance. At walking speed this easing trails
+        // the rock by about 6 pixels in either direction, which is what makes the
+        // camera feel soft instead of glued on.
         const targetCamX = this.heroPos.x - DISPLAY_W / 2 + this.heroSize.x / 2;
         this.cameraXFloat += (targetCamX - this.cameraXFloat) * CAMERA_LERP;
-        this.cameraPos.x = Math.floor(this.cameraXFloat);
         this.clampCamera();
     }
 
-    // Keeps cameraPos.x between 0 and WORLD_W - DISPLAY_W.
+    // Keeps the camera between 0 and WORLD_W - DISPLAY_W. The whole-pixel cameraPos is
+    // worked out from the float, and the float is only pulled back when the clamp
+    // actually moved the camera. Resetting the float to the whole pixel every tick would
+    // throw away the fraction each step adds, so a slow step (under one pixel) would
+    // never land and the camera would stall several pixels behind the rock.
     clampCamera() {
+        this.cameraPos.x = Math.floor(this.cameraXFloat);
+
         const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
-        this.cameraPos.x = clamped.x;
-        this.cameraPos.y = clamped.y;
-        this.cameraXFloat = this.cameraPos.x;
+
+        if (clamped.x !== this.cameraPos.x) {
+            this.cameraXFloat = clamped.x;
+        }
+
+        this.cameraPos.set(clamped.x, clamped.y);
     }
 
     // +1 score every SCORE_INTERVAL_TICKS.
@@ -966,9 +854,9 @@ class Demo {
         }
     }
 
-    // Removes particles older than 72 ticks (1.2 seconds).
+    // Removes particles older than PARTICLE_LIFE_TICKS.
     cleanupParticles(tick) {
-        this.particles = this.particles.filter((p) => tick - p.spawnTick < 72);
+        this.particles = this.particles.filter((p) => tick - p.spawnTick < PARTICLE_LIFE_TICKS);
     }
 
     // Updates each particle's palette slot with its current color. The hue comes from
@@ -979,7 +867,7 @@ class Demo {
 
         for (const p of this.particles) {
             const age = tick - p.spawnTick;
-            const fade = 1 - age / 72;
+            const fade = 1 - age / PARTICLE_LIFE_TICKS;
             const alpha = Math.floor(200 * fade);
 
             const hue = (p.spawnTick * 7 + age * 4) % 360;
@@ -1068,23 +956,11 @@ class Demo {
     }
 
     // Human-readable label for the current point in the day/night cycle. `tick` defaults
-    // to BT.ticks.
+    // to BT.ticks. The cycle splits into four equal quarters, one label each.
     getDayPhaseLabel(tick = BT.ticks) {
-        const phaseTick = tick % DAY_NIGHT_CYCLE_TICKS;
+        const quarter = Math.floor(((tick % DAY_NIGHT_CYCLE_TICKS) / DAY_NIGHT_CYCLE_TICKS) * 4);
 
-        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25) {
-            return 'Day';
-        }
-
-        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.5) {
-            return 'Toward dusk';
-        }
-
-        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.75) {
-            return 'Night';
-        }
-
-        return 'Toward dawn';
+        return DAY_PHASE_LABELS[quarter];
     }
 }
 
