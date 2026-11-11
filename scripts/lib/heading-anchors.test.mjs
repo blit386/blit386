@@ -30,6 +30,12 @@ describe('headingAnchors', () => {
         assert.deepEqual([...headingAnchors('## Usage\n\n## Usage\n')], ['usage', 'usage-1']);
     });
 
+    it('never lets markup through to an id', () => {
+        const [id] = headingAnchors('## <scr<script>ipt> tag\n');
+
+        assert.match(id, /^[\w-]+-tag$/u);
+    });
+
     it('skips heading-like lines inside fenced code', () => {
         assert.deepEqual([...headingAnchors('## Real\n\n```sh\n# a shell comment\n```\n')], ['real']);
     });

@@ -9,8 +9,9 @@
  * to do the same for repo Markdown.
  *
  * shortcut: a line-based ATX scan, not a Markdown parser. Setext headings, headings inside lists
- * or block quotes, and fumadocs' `[#custom-id]` suffix are not handled; none occur in the docs
- * today. Upgrade to a remark pass if a page starts using one.
+ * or block quotes, inline HTML or JSX in a heading, and fumadocs' `[#custom-id]` suffix are not
+ * handled; none occur in the docs today. Upgrade to a remark pass if a page starts using one.
+ * Markup that does reach the slugger is harmless: it keeps only letters, digits, `-` and `_`.
  */
 import GithubSlugger from 'github-slugger';
 
@@ -19,7 +20,6 @@ const FENCE_PATTERN = /^ {0,3}(?:```|~~~)/u;
 const HEADING_PATTERN = /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/u;
 // The page shows a link's text, not its target, so the id is built from the text alone.
 const LINK_PATTERN = /!?\[([^\]]*)\]\([^)]*\)/gu;
-const HTML_TAG_PATTERN = /<[^>]+>/gu;
 
 /**
  * @param {string} markdown Page source.
@@ -39,7 +39,7 @@ export function headingAnchors(markdown) {
         const text = inFence ? undefined : line.match(HEADING_PATTERN)?.[1];
 
         if (text !== undefined) {
-            anchors.add(slugger.slug(text.replace(LINK_PATTERN, '$1').replace(HTML_TAG_PATTERN, '')));
+            anchors.add(slugger.slug(text.replace(LINK_PATTERN, '$1')));
         }
     }
 
