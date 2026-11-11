@@ -8,6 +8,8 @@
  * use-hot-reload skill) can finish the job.
  */
 
+import { maskSource } from '../source-mask';
+
 /** Outcome of inspecting / rewriting one vite.config source string. */
 export type HotReloadViteStatus = 'already' | 'added' | 'missing-config' | 'unsupported' | 'skipped-engine';
 
@@ -171,25 +173,40 @@ function matchingBraceEnd(source: string, openIndex: number): number | null {
 }
 
 /**
- * Insert the `blit386/vite` import after the last existing import, or at the top of the file.
+ * Insert the `blit386/vite` import on the line after the last existing import statement, or at the top of the file.
+ *
+ * Searches a masked copy (comments and string contents blanked), so a statement spanning several lines is found whole
+ * and a commented-out import counts for nothing. Returns null when code follows the last import on its own line (an
+ * import attribute such as `with { type: 'json' }`, or a second statement), where no insertion point is safe.
  */
-function insertImport(source: string): string {
-    if (/from\s+['"]blit386\/vite['"]/.test(source)) {
+function insertImport(source: string): string | null {
+    if (/from\s+['"]blit386\/vite['"]/.test(maskSource(source, true))) {
         return source;
     }
 
-    const importMatches = [...source.matchAll(/^import\s.+;?\s*$/gm)];
-    const last = importMatches.at(-1);
+    // An import statement ends at its module string: `import x from 'm'`, `import { a,\n b } from 'm'`, `import 'm'`.
+    // A line comment after it is blank in the mask, so the match runs on to the end of that line.
+    const masked = maskSource(source);
+    const statements = [...masked.matchAll(/^import\s[^'"]*(['"])[^'"\n]*\1[ \t]*;?[ \t]*(?=\r?\n|$)/gm)];
+    const last = statements.at(-1);
     if (!last || last.index === undefined) {
         return `${IMPORT_LINE}\n${source}`;
     }
 
     const insertAt = last.index + last[0].length;
-    const before = source.slice(0, insertAt);
-    const after = source.slice(insertAt);
-    // Keep a single blank line between the import block and the rest when the file already had one.
-    const spacer = after.startsWith('\n\n') || after.startsWith('\r\n\r\n') ? '' : '\n';
-    return `${before}\n${IMPORT_LINE}${spacer}${after}`;
+    // A block comment opened on that line would swallow the new import.
+    if (source.slice(last.index, insertAt).includes('/*')) {
+        return null;
+    }
+
+    // The last import that does not end its own line is not this match: some import ends later in the file.
+    const lastStart = [...masked.matchAll(/^import\s/gm)].at(-1)?.index;
+    if (lastStart !== last.index) {
+        return null;
+    }
+
+    const eol = source.startsWith('\r\n', insertAt) ? '\r\n' : '\n';
+    return `${source.slice(0, insertAt)}${eol}${IMPORT_LINE}${source.slice(insertAt)}`;
 }
 
 /**
@@ -242,7 +259,7 @@ export function enableHotReloadInViteConfig(source: string): HotReloadViteResult
     }
 
     const text = insertImport(ensured.text);
-    if (text === source) {
+    if (text === null || text === source) {
         return { text: source, changed: false, status: 'unsupported' };
     }
 
