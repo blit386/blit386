@@ -25,7 +25,16 @@ function exportMarkdown(findings, setStatus) {
 }
 
 function startFindings({ gallery, setStatus, renderInfo }) {
-    const findings = createFindings(localStorage);
+    // Merely reading `localStorage` throws where site storage is blocked; findings then last one page load.
+    let storage = { getItem: () => null, setItem: () => {} };
+
+    try {
+        storage = localStorage;
+    } catch {
+        // Keep the in-memory stand-in above.
+    }
+
+    const findings = createFindings(storage);
 
     const hooks = {
         toggleFlag(key) {
