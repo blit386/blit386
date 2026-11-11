@@ -98,14 +98,22 @@ TRY THIS
 
 import { AudioClip, bootstrap, BT } from 'blit386';
 
-import { applyTheme, FONT_W, THEME_OVERLAY_AUDIO_METER_STYLE, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
+import {
+    applyTheme,
+    PANEL_CONTENT_SHRINK,
+    PANEL_CONTENT_TOP,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    ui,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SynthParams} SynthParams */
 
 // The waveform shapes AudioClip.synth() accepts. The engine exports this list only as a
 // TypeScript type, not as a runtime value, so we spell it out here ourselves - the
-// randomizer picks one of these five names at random for every roll.
+// randomizer picks one of these five names at random for every roll. Keep it in step by
+// hand with SYNTH_WAVEFORMS in packages/blit386/src/assets/synth/SynthParams.ts.
 const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 
 // One entry per preset. Each `factory` asks BT.synthPreset for a fresh, hand-tuned recipe
@@ -130,12 +138,14 @@ const PRESET_PANEL_W = 174;
 const RANDOM_PANEL_X = 184;
 const RANDOM_PANEL_W = 132;
 
-// Panel metrics from the UI kit: content starts 22 pixels below a panel's top edge
-// (under its title) and 9 pixels in from its left edge, and is 20 pixels narrower than
-// the panel.
-const PANEL_CONTENT_TOP = 22;
+// A panel's content starts this many pixels in from its left edge. How far below the top
+// edge it starts (PANEL_CONTENT_TOP) and how much narrower than the panel a full-width
+// row is (PANEL_CONTENT_SHRINK) come from the UI kit.
 const PANEL_CONTENT_X = 9;
-const PANEL_CONTENT_SHRINK = 20;
+
+// One text row of the UI kit, and the gap under the key hint before the keypad.
+const ROW_H = 10;
+const HINT_GAP = 4;
 
 // The presets form a keypad of two columns and three rows, all buttons the same width.
 // The kit stacks a group's rows top to bottom, so the keypad reserves its space inside
@@ -147,7 +157,7 @@ const PRESET_ROW_H = 27;
 const PRESET_GRID_X = PRESET_PANEL_X + PANEL_CONTENT_X;
 
 // The keypad starts under the panel title and the one-line key hint.
-const PRESET_GRID_Y = PANEL_Y + PANEL_CONTENT_TOP + 14;
+const PRESET_GRID_Y = PANEL_Y + PANEL_CONTENT_TOP + ROW_H + HINT_GAP;
 const PRESET_GRID_H = (PRESET_DEFINITIONS.length / PRESET_COLUMNS) * PRESET_ROW_H;
 
 // A group pinned with pad 0 starts its first row 5 pixels above the y it is given, so
@@ -161,8 +171,7 @@ const PRESET_PANEL_FILLER = 1;
 const RANDOM_PANEL_FILLER = 6;
 const PANEL_TRAILING_SPACE = 5;
 
-// One text row of the UI kit, and where the "Last" row sits: under the keypad.
-const ROW_H = 10;
+// Where the "Last" row sits: under the keypad.
 const LAST_ROW_Y = PRESET_GRID_Y + PRESET_GRID_H + PRESET_PANEL_FILLER;
 
 // The value column of the randomizer readout starts after this many characters, so the
@@ -258,6 +267,11 @@ class Demo {
     /** @type {number | null} */
     lastPresetIndex = null;
 
+    // Index of a preset a button asked for that has not played yet, or null. render()
+    // fills it in, and update() plays it once sound is unlocked.
+    /** @type {number | null} */
+    pendingPresetIndex = null;
+
     // The most recently rolled random recipe, or null before the first roll.
     /** @type {SynthParams | null} */
     lastRandomParams = null;
@@ -304,7 +318,8 @@ class Demo {
         return true;
     }
 
-    // Runs the UI kit's once-per-tick housekeeping.
+    // Runs the UI kit's once-per-tick housekeeping, then plays a preset a button asked
+    // for.
     //
     // The preset keys (J/P/E/L/H/B and R) are bound to the buttons declared in render()
     // via their { key } option. ui.tick() is where the kit safely catches those presses -
@@ -312,6 +327,16 @@ class Demo {
     // never in render() (keyboard-input explains why in detail).
     update() {
         ui.tick();
+
+        // The press that unlocks the page still sees BT.isAudioUnlocked as false, because
+        // the browser finishes unlocking a moment later, and a sound played then is
+        // dropped. So the preset waits here until the unlock lands, and only then does
+        // "Last" change - it always names a sound you heard. Audio Basics does the same.
+        if (this.pendingPresetIndex !== null && BT.isAudioUnlocked) {
+            BT.soundPlay(this.presetClips[this.pendingPresetIndex]);
+            this.lastPresetIndex = this.pendingPresetIndex;
+            this.pendingPresetIndex = null;
+        }
     }
 
     // Clears the screen and declares the whole UI: the status line, the preset keypad on
@@ -324,17 +349,10 @@ class Demo {
         this.renderRandomPanel();
     }
 
-    // One centered line just under the overlay bars: the shared unlock reminder in warm
-    // orange until sound is unlocked, then a dim reminder of the controls.
+    // One centered line just under the overlay bars: the kit's shared unlock reminder in
+    // warm orange until sound is unlocked, then this dim reminder of the controls.
     renderStatusLine() {
-        const isLocked = !BT.isAudioUnlocked;
-        const text = isLocked ? 'Click or press a key to enable sound' : 'Tap a button, or press its key.';
-
-        // FONT_W is the width of one character; the last one's empty spacing column is
-        // left out, so the visible letters are what gets centered.
-        const x = Math.floor(BT.displaySize.x / 2) - Math.floor((text.length * FONT_W - 1) / 2);
-
-        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
+        ui.statusLine(STATUS_Y, 'Tap a button, or press its key.');
     }
 
     // Left-hand panel: a keypad of six preset buttons, plus the last one played. Each
@@ -343,14 +361,13 @@ class Demo {
     //
     // A group is drawn the moment it ends, in call order, so the panel comes first with
     // empty rows where the keypad and the "Last" row go, and those are placed on top of
-    // it afterwards. The "Last" row comes after the buttons, so a press shows up in it on
-    // the same frame.
+    // it afterwards. A press shows up in the "Last" row on the next tick, once update()
+    // has played it.
     renderPresetPanel() {
         ui.begin('topLeft', { x: PRESET_PANEL_X, y: PANEL_Y, width: PRESET_PANEL_W });
         ui.panel('Presets');
         ui.label('Keys J P E L H B or tap', { color: 'dim' });
-        ui.spacer(4);
-        ui.spacer(PRESET_GRID_H + PRESET_PANEL_FILLER + ROW_H + PANEL_TRAILING_SPACE);
+        ui.spacer(HINT_GAP + PRESET_GRID_H + PRESET_PANEL_FILLER + ROW_H + PANEL_TRAILING_SPACE);
         ui.end();
 
         for (let i = 0; i < PRESET_DEFINITIONS.length; i++) {
@@ -361,14 +378,16 @@ class Demo {
             ui.begin('topLeft', { x, y, pad: 0 });
 
             if (ui.button(def.label, { key: def.code, width: PRESET_BUTTON_W })) {
-                // Play the pre-rendered clip and remember it for the "Last" row below.
-                BT.soundPlay(this.presetClips[i]);
-                this.lastPresetIndex = i;
+                // Ask for this preset's pre-rendered clip. update() plays it on its next
+                // tick, once sound is unlocked.
+                this.pendingPresetIndex = i;
             }
 
             ui.end();
         }
 
+        // The "Last" row: the name of the preset that played most recently ('-' before
+        // the first), in its own group pinned under the keypad.
         const lastLabel = this.lastPresetIndex === null ? '-' : PRESET_DEFINITIONS[this.lastPresetIndex].name;
 
         ui.begin('topLeft', { x: PRESET_GRID_X, y: LAST_ROW_Y + PINNED_ROW_SHIFT, pad: 0 });

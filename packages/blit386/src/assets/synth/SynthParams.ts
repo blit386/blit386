@@ -11,6 +11,9 @@
  * truth {@link SynthWaveform} is derived from, and that validation/error-message code reuses
  * (see `synthValidation.ts` and `errorMessages/synth.ts`) so the accepted set can never drift out of
  * sync between the type, the validator, and the error text.
+ *
+ * Manual-sync hazard: the public barrel does not export this list, so the synth-toy demo
+ * (`packages/demos/src/synth-toy.js`) keeps its own copy. Change both together.
  */
 export const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'] as const;
 
