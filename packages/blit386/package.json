@@ -91,7 +91,7 @@
     "test:api-deprecations": "node --test scripts/gen-deprecations.test.mjs",
     "test:api-getters": "node --test scripts/check-api-getters-drift.test.mjs",
     "test:bench-compare": "node --test scripts/compare-tier-1-benchmarks.test.mjs",
-    "test:compact-tables": "node --test ../../scripts/prettier-plugin-compact-tables.test.mjs",
+    "test:compact-tables": "node --test ../../scripts/prettier-plugin-compact-tables.test.mjs ../../scripts/prettier-plugin-compact-tables.template.test.mjs",
     "test:bmfont": "node --test scripts/convert-bmfont.test.mjs",
     "test:system-font": "node --test scripts/system-font-pad.test.mjs",
     "test:splash-logo": "node --test scripts/convert-splash-logo.test.mjs",

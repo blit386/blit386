@@ -5,7 +5,7 @@
  * `create-blit386`) shares it via the root Prettier config - no per-package mirror needed. It is still hand-mirrored
  * into `_GAMES_/blit-ball`, which stays a separate repo outside this workspace - keep that copy identical. The
  * scaffolder template (`packages/create-blit386/templates/base/scripts/`) carries the same code under a
- * beginner-facing opening comment.
+ * beginner-facing opening comment; `prettier-plugin-compact-tables.template.test.mjs` requires both to format alike.
  *
  * Prettier pads every table cell out to the width of the widest cell in its column, so editing a single cell rewrites
  * every row of the table. This plugin keeps Prettier's whole Markdown printer and replaces only the `table` case with
