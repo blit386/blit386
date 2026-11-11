@@ -633,45 +633,45 @@ describe('BTAPI', () => {
         });
 
         it('setClearColor should not throw before init', () => {
-            expect(() => BTAPI.instance.setClearColor(1)).not.toThrow();
+            expect(() => BTAPI.instance.draw.setClearColor(1)).not.toThrow();
         });
 
         it('clearRect should not throw before init', () => {
-            expect(() => BTAPI.instance.clearRect(new Rect2i(0, 0, 10, 10), 1)).not.toThrow();
+            expect(() => BTAPI.instance.draw.clearRect(new Rect2i(0, 0, 10, 10), 1)).not.toThrow();
         });
 
         it('drawPixel should not throw before init', () => {
-            expect(() => BTAPI.instance.drawPixel(new Vector2i(0, 0), 2)).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawPixel(new Vector2i(0, 0), 2)).not.toThrow();
         });
 
         it('drawLine should not throw before init', () => {
-            expect(() => BTAPI.instance.drawLine(new Vector2i(0, 0), new Vector2i(10, 10), 3)).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawLine(new Vector2i(0, 0), new Vector2i(10, 10), 3)).not.toThrow();
         });
 
         it('drawRect should not throw before init', () => {
-            expect(() => BTAPI.instance.drawRect(new Rect2i(0, 0, 10, 10), 4)).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawRect(new Rect2i(0, 0, 10, 10), 4)).not.toThrow();
         });
 
         it('drawRectFill should not throw before init', () => {
-            expect(() => BTAPI.instance.drawRectFill(new Rect2i(0, 0, 10, 10), 5)).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawRectFill(new Rect2i(0, 0, 10, 10), 5)).not.toThrow();
         });
 
         it('drawSystemText should not throw before init', () => {
-            expect(() => BTAPI.instance.drawSystemText(new Vector2i(0, 0), 8, 'test')).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawSystemText(new Vector2i(0, 0), 8, 'test')).not.toThrow();
         });
 
         it('drawSprite should not throw before init', () => {
             const mockSheet = { isIndexed: () => true } as unknown as SpriteSheet;
             expect(() =>
-                BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0)),
+                BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0)),
             ).not.toThrow();
         });
 
         it('drawSprite should throw when sprite sheet is not indexized', () => {
             const mockSheet = { isIndexed: () => false } as unknown as SpriteSheet;
-            expect(() => BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0))).toThrow(
-                "This sprite sheet hasn't been prepared yet.",
-            );
+            expect(() =>
+                BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0)),
+            ).toThrow("This sprite sheet hasn't been prepared yet.");
         });
 
         describe('drawSpriteWithParams', () => {
@@ -684,7 +684,7 @@ describe('BTAPI', () => {
                 ['an array', []],
             ])('throws for %s params', (label, params) => {
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(sheet, src, dest, params as unknown as SpriteDrawParams),
+                    BTAPI.instance.draw.drawSpriteWithParams(sheet, src, dest, params as unknown as SpriteDrawParams),
                 ).toThrow(`got ${label}`);
             });
 
@@ -693,7 +693,7 @@ describe('BTAPI', () => {
                 ['Vector2i(2, 1)', new Vector2i(2, 1)],
             ])('throws for a Rect2i destination with scale %s', (_label, scale) => {
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), { scale }),
+                    BTAPI.instance.draw.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), { scale }),
                 ).toThrow('takes no scale');
             });
 
@@ -705,24 +705,24 @@ describe('BTAPI', () => {
                 const params: SpriteDrawParams = scale === undefined ? {} : { scale };
 
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), params),
+                    BTAPI.instance.draw.drawSpriteWithParams(sheet, src, new Rect2i(0, 0, 8, 8), params),
                 ).not.toThrow();
             });
 
             it.each([0, -1, 1.5, Number.NaN])('throws for scale %s, pointing at a Rect2i destination', (scale) => {
-                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, { scale })).toThrow(
+                expect(() => BTAPI.instance.draw.drawSpriteWithParams(sheet, src, dest, { scale })).toThrow(
                     'Rect2i destination',
                 );
             });
 
             it('throws for a destination that is neither a Vector2i nor a Rect2i', () => {
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(sheet, src, { x: 0, y: 0 } as unknown as Vector2i, {}),
+                    BTAPI.instance.draw.drawSpriteWithParams(sheet, src, { x: 0, y: 0 } as unknown as Vector2i, {}),
                 ).toThrow('Vector2i or Rect2i destination');
             });
 
             it('throws for a flag bit outside 0x1f, naming the constants', () => {
-                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, { flags: 1 << 5 })).toThrow(
+                expect(() => BTAPI.instance.draw.drawSpriteWithParams(sheet, src, dest, { flags: 1 << 5 })).toThrow(
                     /BT\.FLIP_H.*BT\.ROT_270_CW/,
                 );
             });
@@ -730,7 +730,7 @@ describe('BTAPI', () => {
             it('reads params without mutating them', () => {
                 const params = Object.freeze({ flags: 1, paletteOffset: 2 });
 
-                expect(() => BTAPI.instance.drawSpriteWithParams(sheet, src, dest, params)).not.toThrow();
+                expect(() => BTAPI.instance.draw.drawSpriteWithParams(sheet, src, dest, params)).not.toThrow();
             });
         });
 
@@ -741,7 +741,7 @@ describe('BTAPI', () => {
 
             registerIndexedSheet(mockSheet);
             BTAPI.instance.palettes.setPalette(palette);
-            BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
+            BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
             BTAPI.instance.palettes.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
@@ -751,13 +751,13 @@ describe('BTAPI', () => {
         it('drawBitmapText should not throw before init', () => {
             const mockSheet = { isIndexed: () => true } as unknown as SpriteSheet;
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
-            expect(() => BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi')).not.toThrow();
+            expect(() => BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi')).not.toThrow();
         });
 
         it('drawBitmapText should throw when font sprite sheet is not indexized', () => {
             const mockSheet = { isIndexed: () => false } as unknown as SpriteSheet;
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
-            expect(() => BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi')).toThrow(
+            expect(() => BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi')).toThrow(
                 "This sprite sheet hasn't been prepared yet.",
             );
         });
@@ -770,7 +770,7 @@ describe('BTAPI', () => {
 
             registerIndexedSheet(mockSheet);
             BTAPI.instance.palettes.setPalette(palette);
-            BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi');
+            BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi');
             BTAPI.instance.palettes.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
@@ -2527,7 +2527,7 @@ describe('BTAPI', () => {
                 const render = await initFourByOne();
                 BTAPI.instance.getRenderer()?.beginFrame();
 
-                BTAPI.instance.drawPixelXY(1.5, 0.5, 1);
+                BTAPI.instance.draw.drawPixelXY(1.5, 0.5, 1);
 
                 expect(render()).toEqual(PIXEL_1);
             });
@@ -2539,7 +2539,7 @@ describe('BTAPI', () => {
 
                 pos.x = 1.5;
                 pos.y = 0.5;
-                BTAPI.instance.drawPixel(pos, 1);
+                BTAPI.instance.draw.drawPixel(pos, 1);
 
                 expect(render()).toEqual(PIXEL_1);
             });
@@ -4192,8 +4192,8 @@ describe('BTAPI', () => {
             BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
-            BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
-            BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'ab');
+            BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
+            BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'ab');
 
             expect(markSpy).not.toHaveBeenCalled();
         });
@@ -4222,8 +4222,8 @@ describe('BTAPI', () => {
             BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
-            BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
-            BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'a');
+            BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
+            BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'a');
 
             expect(markSpy).toHaveBeenCalledTimes(2);
         });
@@ -4253,7 +4253,7 @@ describe('BTAPI', () => {
             const dest = new Vector2i(5, 6);
             const params = { flags: 4 | 1, paletteOffset: 3 };
 
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, params);
             params.flags = 0;
 
             expect(orientedSpy).toHaveBeenCalledWith(mockSheet, src, dest, 3, 5);
@@ -4261,8 +4261,8 @@ describe('BTAPI', () => {
             expect(markSpy).toHaveBeenCalledWith(src, 3, expect.anything());
 
             // Identity spellings (no flags, or ROT_180_CW | FLIP_H | FLIP_V) take the plain drawSprite path.
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, { flags: 8 | 1 | 2, paletteOffset: 4 });
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, {});
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, { flags: 8 | 1 | 2, paletteOffset: 4 });
 
             expect(renderer.drawSprite).toHaveBeenNthCalledWith(1, mockSheet, src, dest, 0);
             expect(renderer.drawSprite).toHaveBeenNthCalledWith(2, mockSheet, src, dest, 4);
@@ -4295,22 +4295,22 @@ describe('BTAPI', () => {
             const params: SpriteDrawParams = { flags: 4, scale: new Vector2i(3, 2), paletteOffset: 1 };
 
             // ROT_90_CW: footprint 32x16, times (3, 2) in screen axes = 96x32.
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(5, 6), params);
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Vector2i(5, 6), params);
             expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 5, 6, 96, 32, 1, 4);
 
             params.scale = 1;
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(1, 2, 30, 50), params);
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Rect2i(1, 2, 30, 50), params);
             expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 1, 2, 30, 50, 1, 4);
 
             // Neutral scale on a point keeps the plain path (flags 0 -> drawSprite).
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(0, 0), { scale: 1 });
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Vector2i(0, 0), { scale: 1 });
             expect(renderer.drawSprite).toHaveBeenCalledWith(mockSheet, src, new Vector2i(0, 0), 0);
             expect(stretchedSpy).toHaveBeenCalledTimes(2);
 
             // Empty boxes draw nothing and do not throw.
             markSpy.mockClear();
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 0, 10), {});
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 10, -3), {});
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 0, 10), {});
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Rect2i(0, 0, 10, -3), {});
             expect(stretchedSpy).toHaveBeenCalledTimes(2);
             expect(markSpy).not.toHaveBeenCalled();
         });
@@ -4339,8 +4339,8 @@ describe('BTAPI', () => {
             const dest = new Rect2i(0, 0, 20, 20);
 
             expect(() => {
-                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 0, 8), dest, {});
-                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 8, 0), dest, {});
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 0, 8), dest, {});
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, 8, 0), dest, {});
             }).not.toThrow();
             expect(stretchedSpy).not.toHaveBeenCalled();
         });
@@ -4371,18 +4371,18 @@ describe('BTAPI', () => {
             // Public mutable fields can hold fractions or NaN after construction.
             dest.x = 1.9;
             dest.width = 10.7;
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, {});
             expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 1, 2, 10, 10, 0, 0);
 
             dest.width = Number.NaN;
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, {});
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, {});
             expect(stretchedSpy).toHaveBeenCalledTimes(1);
 
             // A scaled Vector2i dest has the same public mutable fields and is truncated the same way.
             const point = new Vector2i(3, 4);
             point.x = 3.6;
             point.y = 4.2;
-            BTAPI.instance.drawSpriteWithParams(mockSheet, src, point, { scale: 2 });
+            BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, point, { scale: 2 });
             expect(stretchedSpy).toHaveBeenLastCalledWith(mockSheet, src, 3, 4, 16, 16, 0, 0);
         });
 
@@ -4450,11 +4450,16 @@ describe('BTAPI', () => {
                     const { mockSheet, lastCorner } = await setup();
                     const [mx, my] = ORIENTATIONS.at(row)?.[1](px, py) ?? [Number.NaN, Number.NaN];
 
-                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(4, 4, SW, SH), new Vector2i(50, 60), {
-                        flags,
-                        pivot: new Vector2i(px, py),
-                        scale,
-                    });
+                    BTAPI.instance.draw.drawSpriteWithParams(
+                        mockSheet,
+                        new Rect2i(4, 4, SW, SH),
+                        new Vector2i(50, 60),
+                        {
+                            flags,
+                            pivot: new Vector2i(px, py),
+                            scale,
+                        },
+                    );
 
                     expect(lastCorner()).toEqual([50 - mx * scale, 60 - my * scale]);
                 },
@@ -4465,7 +4470,7 @@ describe('BTAPI', () => {
                 const src = new Rect2i(0, 0, SW, SH);
 
                 // ROT_90_CW maps (1, 0) to (2, 1); footprint 2x3 times (3, 2) = 6x6.
-                BTAPI.instance.drawSpriteWithParams(mockSheet, src, new Vector2i(20, 20), {
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, new Vector2i(20, 20), {
                     flags: 4,
                     pivot: new Vector2i(1, 0),
                     scale: new Vector2i(3, 2),
@@ -4479,11 +4484,11 @@ describe('BTAPI', () => {
                 const dest = new Vector2i(10, 10);
                 const params: SpriteDrawParams = { flags: 1, pivot: new Vector2i(0, 0), scale: 1, paletteOffset: 0 };
 
-                BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, params);
                 expect(lastCorner()).toEqual([7, 10]);
 
                 params.pivot = undefined;
-                BTAPI.instance.drawSpriteWithParams(mockSheet, src, dest, params);
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, src, dest, params);
                 expect(lastCorner()).toEqual([10, 10]);
             });
 
@@ -4492,7 +4497,7 @@ describe('BTAPI', () => {
                 const dest = new Vector2i(10, 10);
                 const pivot = new Vector2i(1, 1);
 
-                BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), dest, { pivot });
+                BTAPI.instance.draw.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), dest, { pivot });
                 const passed = vi.mocked(renderer.drawSprite).mock.calls[0]?.[2];
 
                 expect(passed).not.toBe(dest);
@@ -4504,10 +4509,15 @@ describe('BTAPI', () => {
                 const { mockSheet } = await setup();
 
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), new Rect2i(0, 0, 8, 8), {
-                        pivot: new Vector2i(0, 0),
-                        scale: 1,
-                    }),
+                    BTAPI.instance.draw.drawSpriteWithParams(
+                        mockSheet,
+                        new Rect2i(0, 0, SW, SH),
+                        new Rect2i(0, 0, 8, 8),
+                        {
+                            pivot: new Vector2i(0, 0),
+                            scale: 1,
+                        },
+                    ),
                 ).toThrow('takes no pivot');
             });
 
@@ -4518,7 +4528,7 @@ describe('BTAPI', () => {
                 const { mockSheet } = await setup();
 
                 expect(() =>
-                    BTAPI.instance.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), new Vector2i(0, 0), {
+                    BTAPI.instance.draw.drawSpriteWithParams(mockSheet, new Rect2i(0, 0, SW, SH), new Vector2i(0, 0), {
                         pivot: pivot as unknown as Vector2i,
                     }),
                 ).toThrow('pivot');
@@ -4547,7 +4557,7 @@ describe('BTAPI', () => {
                 stubRendererDrawCalls();
 
                 expect(() =>
-                    BTAPI.instance.drawSprite(
+                    BTAPI.instance.draw.drawSprite(
                         makeIndexizedSpriteSheet(vi.fn()),
                         new Rect2i(0, 0, 8, 8),
                         new Rect2i(0, 0, 16, 16) as unknown as Vector2i,
@@ -4561,7 +4571,7 @@ describe('BTAPI', () => {
                 stubRendererDrawCalls();
 
                 expect(() =>
-                    BTAPI.instance.drawSprite(
+                    BTAPI.instance.draw.drawSprite(
                         makeIndexizedSpriteSheet(vi.fn()),
                         new Rect2i(0, 0, 8, 8),
                         new Rect2i(0, 0, 16, 16) as unknown as Vector2i,
@@ -4594,7 +4604,7 @@ describe('BTAPI', () => {
             expect(overlay?.isBodyVisible).toBe(false);
             expect(overlay?.isTrackingPaletteUsage).toBe(false);
 
-            BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
+            BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
 
             expect(markSpy).not.toHaveBeenCalled();
         });
@@ -4624,7 +4634,7 @@ describe('BTAPI', () => {
             expect(overlay?.isBodyVisible).toBe(false);
             expect(overlay?.isTrackingPaletteUsage).toBe(false);
 
-            BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
+            BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
 
             expect(markSpy).not.toHaveBeenCalled();
         });
@@ -4654,8 +4664,8 @@ describe('BTAPI', () => {
                 init: vi.fn().mockResolvedValue(true),
                 update: vi.fn(),
                 render: vi.fn(() => {
-                    BTAPI.instance.drawPixel(new Vector2i(4, 4), usedSlots[0]);
-                    BTAPI.instance.drawPixel(new Vector2i(5, 5), usedSlots[1]);
+                    BTAPI.instance.draw.drawPixel(new Vector2i(4, 4), usedSlots[0]);
+                    BTAPI.instance.draw.drawPixel(new Vector2i(5, 5), usedSlots[1]);
                 }),
             };
 
@@ -4781,11 +4791,11 @@ describe('BTAPI', () => {
 
             const textPaletteIndex = 8;
 
-            BTAPI.instance.drawSystemText(new Vector2i(0, 0), textPaletteIndex, 'hello');
+            BTAPI.instance.draw.drawSystemText(new Vector2i(0, 0), textPaletteIndex, 'hello');
 
             expect(glyphScanSpy).not.toHaveBeenCalled();
 
-            const usageMask = (BTAPI.instance as unknown as { framePaletteUsageMask: Uint8Array })
+            const usageMask = (BTAPI.instance as unknown as { draw: { framePaletteUsageMask: Uint8Array } }).draw
                 .framePaletteUsageMask;
             const scratch: number[] = [];
 
@@ -4816,7 +4826,7 @@ describe('BTAPI', () => {
             BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
-            BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'ab');
+            BTAPI.instance.draw.drawBitmapText(mockFont, new Vector2i(0, 0), 'ab');
 
             expect(markSpy).toHaveBeenCalledTimes(2);
         });
@@ -4837,12 +4847,12 @@ describe('BTAPI', () => {
                 const renderCall = render.mock.calls.length;
 
                 if (renderCall === 1) {
-                    BTAPI.instance.drawPixel(new Vector2i(0, 0), 9);
+                    BTAPI.instance.draw.drawPixel(new Vector2i(0, 0), 9);
                     return;
                 }
 
                 if (renderCall >= 3) {
-                    BTAPI.instance.drawPixel(new Vector2i(0, 0), 7);
+                    BTAPI.instance.draw.drawPixel(new Vector2i(0, 0), 7);
                 }
             });
 
@@ -4993,7 +5003,7 @@ describe('BTAPI', () => {
         it('draws 1:1 corners and stretched edges and center when the box fits', async () => {
             const { quads, offsets, sheet } = await setup();
 
-            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(100, 50, 20, 15), 2);
+            BTAPI.instance.draw.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(100, 50, 20, 15), 2);
 
             expect(quads).toEqual([
                 { kind: 'sprite', src: [4, 4, 2, 3], box: [100, 50, 2, 3] },
@@ -5013,7 +5023,7 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
 
             // x: 4 < 2 + 3 -> [1, 0, 3]; y: 4 < 3 + 2 -> [2, 0, 2].
-            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 4, 4));
+            BTAPI.instance.draw.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 4, 4));
 
             expect(quads).toEqual([
                 { kind: 'sprite', src: [4, 4, 1, 2], box: [0, 0, 1, 2] },
@@ -5027,7 +5037,7 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
 
             // x fits: [2, 15, 3]; y: 4 < 5 -> [2, 0, 2].
-            BTAPI.instance.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 20, 4));
+            BTAPI.instance.draw.drawNineSlice(NineSlice.fromSheet(sheet, OUTER, INNER), new Rect2i(0, 0, 20, 4));
 
             expect(quads).toEqual([
                 { kind: 'sprite', src: [4, 4, 2, 2], box: [0, 0, 2, 2] },
@@ -5044,7 +5054,7 @@ describe('BTAPI', () => {
             const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
 
             // x: [2, 12, 3]; y: [3, 7, 2]. Strips: top 5 wide -> 5, 5, 2; center 5x4 -> cols 5, 5, 2 x rows 4, 3.
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
 
             expect(quads.every((quad) => quad.kind === 'sprite')).toBe(true);
             expect(quads).toHaveLength(1 + 3 + 1 + 2 + 6 + 2 + 1 + 3 + 1);
@@ -5067,7 +5077,7 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
             const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'stretch' });
 
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 17, 12));
 
             const stretched = quads.filter((quad) => quad.kind === 'stretched');
 
@@ -5079,7 +5089,7 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
             const bar = NineSlice.fromSheet(sheet, new Rect2i(0, 20, 12, 6), new Rect2i(4, 20, 4, 6));
 
-            BTAPI.instance.drawNineSlice(bar, new Rect2i(0, 0, 30, 6));
+            BTAPI.instance.draw.drawNineSlice(bar, new Rect2i(0, 0, 30, 6));
 
             expect(quads).toEqual([
                 { kind: 'stretched', src: [0, 20, 4, 6], box: [0, 0, 4, 6] },
@@ -5097,7 +5107,7 @@ describe('BTAPI', () => {
                 for (let w = 0; w <= 20; w++) {
                     for (let h = 0; h <= 20; h++) {
                         quads.length = 0;
-                        BTAPI.instance.drawNineSlice(slice, new Rect2i(-3, 5, w, h));
+                        BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(-3, 5, w, h));
 
                         expectExactCoverage(quads, w, h);
                     }
@@ -5109,19 +5119,19 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
             const slice = NineSlice.fromSheet(sheet, OUTER, INNER);
 
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 0, 10));
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 10, -3));
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 0, 10));
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 10, -3));
 
             const nan = new Rect2i(0, 0, 10, 10);
             nan.width = Number.NaN;
-            BTAPI.instance.drawNineSlice(slice, nan);
+            BTAPI.instance.draw.drawNineSlice(slice, nan);
 
             expect(quads).toHaveLength(0);
 
             const fractional = new Rect2i(0, 0, 20, 15);
             fractional.x = 1.9;
             fractional.width = 20.7;
-            BTAPI.instance.drawNineSlice(slice, fractional);
+            BTAPI.instance.draw.drawNineSlice(slice, fractional);
 
             expect(quads[0]?.box).toEqual([1, 0, 2, 3]);
             expect(quads[2]?.box).toEqual([18, 0, 3, 3]);
@@ -5148,9 +5158,9 @@ describe('BTAPI', () => {
             const { quads, sheet } = await setup();
             const [slice, dest, offset] = args(NineSlice.fromSheet(sheet, OUTER, INNER));
 
-            expect(() => BTAPI.instance.drawNineSlice(slice as NineSlice, dest as Rect2i, offset as number)).toThrow(
-                fragment,
-            );
+            expect(() =>
+                BTAPI.instance.draw.drawNineSlice(slice as NineSlice, dest as Rect2i, offset as number),
+            ).toThrow(fragment);
             expect(quads).toHaveLength(0);
         });
 
@@ -5159,7 +5169,10 @@ describe('BTAPI', () => {
             const rawSheet = new SpriteSheet(null, new Vector2i(32, 32));
 
             expect(() =>
-                BTAPI.instance.drawNineSlice(NineSlice.fromSheet(rawSheet, OUTER, INNER), new Rect2i(0, 0, 20, 15)),
+                BTAPI.instance.draw.drawNineSlice(
+                    NineSlice.fromSheet(rawSheet, OUTER, INNER),
+                    new Rect2i(0, 0, 20, 15),
+                ),
             ).toThrow("hasn't been prepared");
             expect(quads).toHaveLength(0);
         });
@@ -5169,7 +5182,7 @@ describe('BTAPI', () => {
             const slice = NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' });
             const before = pendingDrawCalls();
 
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 17, 12), 1);
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 17, 12), 1);
 
             expect(quads.length).toBeGreaterThan(1);
             expect(pendingDrawCalls() - before).toBe(1);
@@ -5178,7 +5191,7 @@ describe('BTAPI', () => {
 
             const afterFirst = pendingDrawCalls();
 
-            BTAPI.instance.drawNineSlice(slice, new Rect2i(0, 0, 0, 12));
+            BTAPI.instance.draw.drawNineSlice(slice, new Rect2i(0, 0, 0, 12));
 
             expect(pendingDrawCalls() - afterFirst).toBe(0);
         });
@@ -5192,7 +5205,7 @@ describe('BTAPI', () => {
             });
 
             // x: [2, 3, 3]; the top strip is 5 wide but only 3 columns show.
-            BTAPI.instance.drawNineSlice(
+            BTAPI.instance.draw.drawNineSlice(
                 NineSlice.fromSheet(sheet, OUTER, INNER, { edges: 'tile', center: 'tile' }),
                 new Rect2i(0, 0, 8, 12),
             );
@@ -6149,7 +6162,7 @@ describe('BTAPI', () => {
 
     describe('assertPaletteIndex', () => {
         it('throws when index is negative (no palette set)', () => {
-            expect(() => BTAPI.instance.drawPixel(new Vector2i(0, 0), -1)).toThrow('0 or higher');
+            expect(() => BTAPI.instance.draw.drawPixel(new Vector2i(0, 0), -1)).toThrow('0 or higher');
         });
 
         it('throws when index is out of range for the active palette', () => {
@@ -6157,7 +6170,9 @@ describe('BTAPI', () => {
 
             BTAPI.instance.palettes.setPalette(palette);
 
-            expect(() => BTAPI.instance.drawPixel(new Vector2i(0, 0), 20)).toThrow('The color number 20 is too big');
+            expect(() => BTAPI.instance.draw.drawPixel(new Vector2i(0, 0), 20)).toThrow(
+                'The color number 20 is too big',
+            );
         });
     });
 

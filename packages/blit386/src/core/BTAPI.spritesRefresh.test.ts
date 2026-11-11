@@ -85,7 +85,7 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const idle = indexedSheet(GREEN, before);
 
         BTAPI.instance.palettes.setPalette(before);
-        BTAPI.instance.drawSprite(drawn, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
+        BTAPI.instance.draw.drawSprite(drawn, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
 
         // Same colors, swapped slots.
         BTAPI.instance.palettes.setPalette(twoColorPalette(GREEN, RED));
@@ -120,7 +120,7 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
         BTAPI.instance.palettes.setPalette(palette);
-        BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
+        BTAPI.instance.draw.drawSprite(mockSheet, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
         BTAPI.instance.palettes.spritesRefresh();
 
         expect(reindexize).not.toHaveBeenCalled();

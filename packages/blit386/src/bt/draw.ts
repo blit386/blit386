@@ -114,7 +114,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.setClearColor(paletteIndex);
+            BTAPI.instance.draw.setClearColor(paletteIndex);
         } catch (error) {
             reportDrawError(error);
         }
@@ -133,7 +133,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.clearRect(rect, paletteIndex);
+            BTAPI.instance.draw.clearRect(rect, paletteIndex);
         } catch (error) {
             reportDrawError(error);
         }
@@ -161,12 +161,12 @@ export const draw = {
 
         try {
             if (posOrX instanceof Vector2i && maybeColor === undefined) {
-                BTAPI.instance.drawPixel(posOrX, yOrColor);
+                BTAPI.instance.draw.drawPixel(posOrX, yOrColor);
                 return;
             }
 
             if (typeof posOrX === 'number' && typeof maybeColor === 'number') {
-                BTAPI.instance.drawPixelXY(posOrX, yOrColor, maybeColor);
+                BTAPI.instance.draw.drawPixelXY(posOrX, yOrColor, maybeColor);
                 return;
             }
 
@@ -202,7 +202,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.drawLine(p0, p1, paletteIndex);
+            BTAPI.instance.draw.drawLine(p0, p1, paletteIndex);
         } catch (error) {
             reportDrawError(error);
         }
@@ -221,7 +221,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.drawRect(rect, paletteIndex);
+            BTAPI.instance.draw.drawRect(rect, paletteIndex);
         } catch (error) {
             reportDrawError(error);
         }
@@ -240,7 +240,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.drawRectFill(rect, paletteIndex);
+            BTAPI.instance.draw.drawRectFill(rect, paletteIndex);
         } catch (error) {
             reportDrawError(error);
         }
@@ -288,7 +288,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.drawSystemText(pos, paletteIndex, text);
+            BTAPI.instance.draw.drawSystemText(pos, paletteIndex, text);
         } catch (error) {
             reportDrawError(error);
         }
@@ -343,7 +343,7 @@ export const draw = {
                 return;
             }
 
-            BTAPI.instance.drawBitmapText(font, pos, text, paletteOffset);
+            BTAPI.instance.draw.drawBitmapText(font, pos, text, paletteOffset);
         } catch (error) {
             reportDrawError(error);
         }
@@ -434,10 +434,10 @@ export const draw = {
             // allocation on the fast path. Later overloads slot into the non-object branch.
             if (typeof srcRect === 'object') {
                 if (typeof paletteOffsetOrParams === 'object') {
-                    BTAPI.instance.drawSpriteWithParams(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
+                    BTAPI.instance.draw.drawSpriteWithParams(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
                 } else {
                     // Typed callers cannot reach here with a Rect2i; untyped ones hit BTAPI's dev-mode guard.
-                    BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos as Vector2i, paletteOffsetOrParams);
+                    BTAPI.instance.draw.drawSprite(spriteSheet, srcRect, destPos as Vector2i, paletteOffsetOrParams);
                 }
 
                 return;
@@ -517,7 +517,7 @@ export const draw = {
             if (isVectorArg(rowOrDestPos)) {
                 // (sheet, index, destPos, paletteOffset?)
                 if (!isVectorArg(arg4)) {
-                    BTAPI.instance.drawTile(spriteSheet, colOrIndex, undefined, rowOrDestPos, arg4);
+                    BTAPI.instance.draw.drawTile(spriteSheet, colOrIndex, undefined, rowOrDestPos, arg4);
                     return;
                 }
             } else if (isVectorArg(arg5)) {
@@ -526,12 +526,12 @@ export const draw = {
                     const tileW = typeof arg4 === 'number' ? arg4 : arg4.x;
                     const tileH = typeof arg4 === 'number' ? arg4 : arg4.y;
 
-                    BTAPI.instance.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
+                    BTAPI.instance.draw.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
                     return;
                 }
             } else if (isVectorArg(arg4)) {
                 // (sheet, col, row, destPos, paletteOffset?)
-                BTAPI.instance.drawTile(spriteSheet, colOrIndex, rowOrDestPos, arg4, arg5);
+                BTAPI.instance.draw.drawTile(spriteSheet, colOrIndex, rowOrDestPos, arg4, arg5);
                 return;
             }
 
@@ -589,7 +589,7 @@ export const draw = {
         }
 
         try {
-            BTAPI.instance.drawNineSlice(nineSlice, destRect, paletteOffset);
+            BTAPI.instance.draw.drawNineSlice(nineSlice, destRect, paletteOffset);
         } catch (error) {
             reportDrawError(error);
         }
