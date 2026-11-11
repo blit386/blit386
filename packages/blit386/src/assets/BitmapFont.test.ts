@@ -1024,6 +1024,16 @@ describe('BitmapFont', () => {
                 await expect(font.hotReload('test.btfont', null)).rejects.toThrow("Can't find the font file");
             });
 
+            it('keeps the old atlas and glyphs when a glyph falls outside the new atlas', async () => {
+                const glyphA = font.getGlyph('A');
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+                vi.stubGlobal('Image', createStubImage({ width: 16, height: 16 }));
+
+                await expect(font.hotReload('test.btfont', null)).rejects.toBeInstanceOf(AssetLimitError);
+                expect(font.getSpriteSheet().width).toBe(64);
+                expect(font.getGlyph('A')).toBe(glyphA);
+            });
+
             it('cache-busts a relative texture path but not an embedded data URI', async () => {
                 const relativeData = { ...MOCK_FONT_DATA, texture: 'atlas.png' };
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(relativeData)));

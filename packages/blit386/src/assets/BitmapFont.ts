@@ -3,6 +3,7 @@ import {
     assertImageElementWithinLimits,
     AssetLimitError,
     BTFONT_EMBEDDED_TEXTURE_PREFIX,
+    getDecodedImageSize,
     validateBtfontEmbeddedTextureUri,
     validateBtfontGlyphAtlasBounds,
     validateBtfontGlyphDataPreAtlas,
@@ -1008,7 +1009,8 @@ export class BitmapFont {
      *
      * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed font file. Re-fetches a cache-busted copy of the
-     * `.btfont` JSON, rebuilds the glyph tables and measurement cache in place, and
+     * `.btfont` JSON, checks every glyph against the new texture, then
+     * rebuilds the glyph tables and measurement cache in place and
      * replaces the underlying sprite sheet's image via
      * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
      * already indexized). `name`/`size`/`lineHeight`/`baseline` are not updated by a
@@ -1030,14 +1032,11 @@ export class BitmapFont {
         BitmapFont.validateGlyphEntriesPreAtlas(glyphEntries);
 
         const image = await BitmapFont.loadTexture(BitmapFont.bustTextureUrl(data.texture), url);
+        const atlas = getDecodedImageSize(image);
+        // Check the glyphs against the new atlas before swapping it, so a bad file leaves the font untouched.
+        const { glyphs, asciiGlyphs } = BitmapFont.buildGlyphsFromEntries(glyphEntries, atlas.width, atlas.height);
 
         this.spriteSheet.hotReplaceImage(image, palette);
-
-        const { glyphs, asciiGlyphs } = BitmapFont.buildGlyphsFromEntries(
-            glyphEntries,
-            this.spriteSheet.width,
-            this.spriteSheet.height,
-        );
 
         this.glyphs = glyphs;
         this.fallbackGlyph = resolveFallbackGlyph(glyphs);

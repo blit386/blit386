@@ -189,6 +189,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   from the active palette, the sheet took the new size and image but kept the old palette indices and texture. It now
   keeps its old image, size and pixels, is marked `failed`, and the next good save replaces it. See
   [Hot reload](guide-hot-reload.md#asset-hot-replace-matrix).
+- A `.btfont` hot reload whose glyphs do not fit the new texture no longer breaks the font. It used to swap the texture
+  first and then throw, so the old glyph rectangles pointed into the new image. The glyphs are now checked against the
+  new texture before anything changes, and a bad file leaves the font as it was.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
