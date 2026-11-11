@@ -104,6 +104,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   options such as `-C dir` before the command) plus `git push -f`, a `+` refspec, `git branch -D` or `-d` with `-f` in
   any spelling, and `git stash drop` / `clear`; and the starter templates no longer ship a dev-only `window.__game` (use
   `BT.testState()`; `blit play` still falls back to it for older games).
+- Behavior change: `BT.init()` now resolves `false`, with a console error naming the field, when the overlay is enabled
+  and `overlayTimingChartHeight`, `overlayAudioMeterHeight` or `overlayPaletteColumns` is not a whole number of at least
+  `1` (a fractional `22.5`, or `0`), or when a field of `overlayStyle`, `overlayTimingChartStyle` or
+  `overlayAudioMeterStyle` is not a whole-number palette index from `0` to `255`. These values used to be accepted, so a
+  fractional height drew the overlay bands at fractional positions. See [Valid values](api-overlay.md#valid-values).
 
 ### Fixed
 

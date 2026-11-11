@@ -32,7 +32,13 @@ import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
 import type { OverlayAudioSnapshot, OverlayDrawTarget } from '../overlay';
-import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
+import {
+    createOverlayLayout,
+    findOverlaySettingsError,
+    Overlay,
+    OVERLAY_TOGGLE_KEY_CODE,
+    resolveOverlayTopLeftLabel,
+} from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
@@ -2527,7 +2533,7 @@ export class BTAPI {
      * Reads and validates demo `configure()` output into resolved hardware settings.
      *
      * @param demo - Demo implementing {@link IBTDemo}.
-     * @returns `false` when hardware settings are invalid (bad dimensions, targetFPS, or audioVoices).
+     * @returns `false` when hardware settings are invalid (bad dimensions, targetFPS, audioVoices, or overlay numbers).
      */
     private loadHardwareSettings(demo: IBTDemo): boolean {
         try {
@@ -2560,6 +2566,14 @@ export class BTAPI {
 
         if (audioVoices !== undefined && (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > 64)) {
             console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices)}`);
+
+            return false;
+        }
+
+        const overlaySettingsError = findOverlaySettingsError(this.hwSettings);
+
+        if (overlaySettingsError) {
+            console.error(`[BT] ${overlaySettingsError}`);
 
             return false;
         }

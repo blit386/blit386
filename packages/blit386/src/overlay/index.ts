@@ -60,3 +60,4 @@ export type {
     OverlayTimingSnapshot,
     PaletteGridLayout,
 } from './types';
+export { findOverlaySettingsError } from './validateSettings';

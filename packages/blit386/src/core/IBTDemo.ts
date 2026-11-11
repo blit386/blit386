@@ -419,6 +419,8 @@ export interface HardwareSettings {
     /**
      * Maximum palette swatches per row in the overlay grid. When unset, the engine
      * picks the widest column count that fits {@link HardwareSettings.displaySize}.
+     *
+     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayPaletteColumns?: number;
 
@@ -435,6 +437,8 @@ export interface HardwareSettings {
      * and as defaults for custom {@link OverlayRow} entries that omit per-row colors.
      *
      * When omitted, the overlay uses palette index `1` for bars and gaps and `2` for text.
+     *
+     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayStyle?: OverlayStyle;
 
@@ -454,6 +458,8 @@ export interface HardwareSettings {
     /**
      * Height in pixels of the timing chart band when {@link isOverlayTimingChartEnabled} is `true`.
      * Defaults to 22 pixels when omitted.
+     *
+     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayTimingChartHeight?: number;
 
@@ -461,6 +467,8 @@ export interface HardwareSettings {
      * Optional palette indices for the timing chart band. Update/render bar colors default to
      * {@link OverlayStyle} bar/text indices; warning/error/event slots control semantic
      * chart tints and future tag markers.
+     *
+     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayTimingChartStyle?: OverlayTimingChartStyle;
 
@@ -500,6 +508,7 @@ export interface HardwareSettings {
      * Defaults to 13 pixels when omitted.
      *
      * @since 1.3.0
+     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayAudioMeterHeight?: number;
 
@@ -508,6 +517,7 @@ export interface HardwareSettings {
      * {@link OverlayStyle} text/gap indices; warning/clip slots control semantic level tints.
      *
      * @since 1.3.0
+     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayAudioMeterStyle?: OverlayAudioMeterStyle;
 }

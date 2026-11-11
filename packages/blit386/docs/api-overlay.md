@@ -336,6 +336,20 @@ function configure(): Partial<HardwareSettings> {
 }
 ```
 
+### Valid values
+
+While the overlay is enabled, `BT.init()` checks these numbers and resolves `false` with a console error naming the
+field when one is out of range:
+
+- `overlayTimingChartHeight`, `overlayAudioMeterHeight`, and `overlayPaletteColumns` must be whole numbers of at least
+  `1`. A fractional value such as `22.5`, or `0`, is rejected.
+- Every field of `overlayStyle`, `overlayTimingChartStyle`, and `overlayAudioMeterStyle` must be a whole-number palette
+  index from `0` to `255`.
+- `overlayPaletteRowsVisible` is not rejected: it is truncated and clamped to the palette's row count.
+
+Behavior change in 1.8.1: before, these values were accepted as-is, so a fractional height drew bands at fractional
+positions.
+
 ## API history
 
 <ApiAvailability page="api/overlay" />

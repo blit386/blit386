@@ -1866,6 +1866,58 @@ describe('BTAPI', () => {
             expect(result).toBe(false);
         });
 
+        describe('overlay configure numbers', () => {
+            /** Mock demo whose configure() adds overlay fields to the base mock settings. */
+            function makeOverlayDemo(overlay: Record<string, unknown>): IBTDemo {
+                const demo = makeMockDemo();
+                const base = (demo.configure as () => Record<string, unknown>)();
+
+                return { ...demo, configure: vi.fn().mockReturnValue({ ...base, ...overlay }) };
+            }
+
+            it.each([
+                ['fractional overlayTimingChartHeight', { overlayTimingChartHeight: 22.5 }],
+                ['zero overlayTimingChartHeight', { overlayTimingChartHeight: 0 }],
+                ['fractional overlayAudioMeterHeight', { overlayAudioMeterHeight: 22.5 }],
+                ['fractional overlayPaletteColumns', { overlayPaletteColumns: 7.5 }],
+                ['zero overlayPaletteColumns', { overlayPaletteColumns: 0 }],
+                ['overlayStyle.barPaletteIndex past 255', { overlayStyle: { barPaletteIndex: 256 } }],
+                [
+                    'negative overlayTimingChartStyle.tagPaletteIndex',
+                    { overlayTimingChartStyle: { tagPaletteIndex: -1 } },
+                ],
+                [
+                    'fractional overlayAudioMeterStyle.levelBarPaletteIndex',
+                    { overlayAudioMeterStyle: { levelBarPaletteIndex: 1.5 } },
+                ],
+            ])('should return false for %s', async (_label, overlay) => {
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+                const result = await BTAPI.instance.init(makeOverlayDemo(overlay), makeMockCanvas());
+
+                expect(result).toBe(false);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(Object.keys(overlay)[0] ?? ''));
+            });
+
+            it('should accept whole-number heights, columns and palette indices 0-255', async () => {
+                const demo = makeOverlayDemo({
+                    overlayTimingChartHeight: 32,
+                    overlayAudioMeterHeight: 13,
+                    overlayPaletteColumns: 16,
+                    overlayStyle: { barPaletteIndex: 0, textPaletteIndex: 255 },
+                    overlayTimingChartStyle: { tagPaletteIndex: 5 },
+                    overlayAudioMeterStyle: { clipPaletteIndex: 4, trackPaletteIndex: null },
+                });
+
+                expect(await BTAPI.instance.init(demo, makeMockCanvas())).toBe(true);
+            });
+
+            it('should ignore overlay numbers while the overlay is disabled', async () => {
+                const demo = makeOverlayDemo({ isOverlayEnabled: false, overlayTimingChartHeight: 22.5 });
+
+                expect(await BTAPI.instance.init(demo, makeMockCanvas())).toBe(true);
+            });
+        });
+
         it('should accept the default audioVoices (16)', async () => {
             const result = await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
 
