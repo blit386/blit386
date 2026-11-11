@@ -8,7 +8,7 @@ import { SECURITY_HEADERS } from './security-headers';
  * The slice of Cloudflare's `HTMLRewriter` this plugin uses.
  *
  * Declared locally rather than pulled from `@cloudflare/workers-types`, the same way
- * `markdown-negotiation.ts` declares `AssetsBinding`: this package's `tsconfig.json` compiles with
+ * `plugin-context.ts` declares `AssetsBinding`: this package's `tsconfig.json` compiles with
  * `lib: ["dom", ...]`, and the Workers types collide with it wholesale.
  */
 interface RewriterElement {

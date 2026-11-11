@@ -56,6 +56,7 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | Cloudflare size limits (25 MiB per asset, 64 MiB uncompressed Worker) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
 | Cloudflare security headers | `public/_headers`, with the non-CSP values defined in `src/security-headers.ts` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
+| The `ASSETS` binding type and a page's markdown (`core:get-text`), shared by the Worker plugins | `src/plugin-context.ts` |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 
 Six Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),

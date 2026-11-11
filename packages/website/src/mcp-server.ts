@@ -1,4 +1,5 @@
 import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
+import { getAssets, getPageText } from './plugin-context';
 
 const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
@@ -58,13 +59,6 @@ interface CorpusEntry {
     body: string;
     // `body` lowercased, pre-computed for scoring.
     bodyLower: string;
-}
-
-// Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
-// Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
-// Mirrors the same shape used by `markdown-negotiation.ts`.
-interface AssetsBinding {
-    fetch: (request: Request) => Promise<Response>;
 }
 
 const MCP_TOOLS = [
@@ -266,14 +260,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             // Reuse the same runtime markdown extraction the markdown
                             // negotiation plugin relies on, so the body text matches the
                             // pages agents actually receive.
-                            let body = '';
-                            for (const adapter of this.adapters) {
-                                const text = await adapter['core:get-text']?.call(this, page);
-                                if (text !== undefined) {
-                                    body = text;
-                                    break;
-                                }
-                            }
+                            const body = (await getPageText(this, page)) ?? '';
 
                             const heading = `${title} ${description}`;
                             return {
@@ -473,7 +460,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         if (name === 'get_docs_summary') {
-                            const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
+                            const assets = getAssets(c.env);
                             if (!assets) {
                                 return rpcError(id, INTERNAL_ERROR, 'Internal error: summary unavailable');
                             }
