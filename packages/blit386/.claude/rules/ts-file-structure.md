@@ -35,8 +35,7 @@ When adding or moving code in library TypeScript (`src/`). **Class member order 
 
 ## Cross-cutting
 
-- Keep a **deprecated alias adjacent to its canonical member** (`equals` after `isEqual`; `handleToggle` after
-  `handleInput`).
+- Keep a **deprecated alias adjacent to its canonical member** (`equals` after `isEqual`).
 - Cluster method families deliberately: new-allocating (`add`) → `*To` zero-alloc → `*InPlace` → queries (`isEqual`) →
   `clone` / `toString` last.
 - One blank line between members; a blank line before `return` and between logical blocks inside method bodies.

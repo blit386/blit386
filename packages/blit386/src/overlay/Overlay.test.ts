@@ -123,13 +123,7 @@ describe('Overlay', () => {
 
         expect(overlay.isTrackingPaletteUsage).toBe(true);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isTrackingPaletteUsage).toBe(false);
     });
@@ -206,23 +200,11 @@ describe('Overlay', () => {
 
         expect(overlay.isBodyVisible).toBe(false);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isBodyVisible).toBe(true);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            2,
-        );
+        overlay.handleFrameInput(null, true, 2);
 
         expect(overlay.isBodyVisible).toBe(false);
     });
@@ -925,7 +907,7 @@ describe('Overlay', () => {
 
         const renderer = createMockRenderer();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+        overlay.handleFrameInput(null, true, 1);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
@@ -942,7 +924,7 @@ describe('Overlay', () => {
 
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+        overlay.handleFrameInput(null, true, 2);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
@@ -993,7 +975,7 @@ describe('Overlay', () => {
 
         const renderer = createMockRenderer();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+        overlay.handleFrameInput(null, true, 1);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
@@ -1010,7 +992,7 @@ describe('Overlay', () => {
 
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+        overlay.handleFrameInput(null, true, 2);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
@@ -1034,13 +1016,7 @@ describe('Overlay', () => {
 
         expect(overlay.isBodyVisible).toBe(false);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: () => true,
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isBodyVisible).toBe(false);
     });

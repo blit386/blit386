@@ -31,7 +31,6 @@ import {
     OVERLAY_MS_FIELD_WIDTH,
     OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
 } from './constants';
-import { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
 import { Toggle } from './input/Toggle';
 import { padOverlayField } from './labels';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
@@ -367,23 +366,6 @@ export class Overlay {
         pointer?.setIsScrollCaptureForced(isScrollCaptureForced);
 
         this.#toggle.handleInput(pointer, isTogglePressed, this.#layout.toggleRect, isPointerPressConsumed);
-    }
-
-    /**
-     * Handles toggle input (Backquote and bottom-left corner press).
-     *
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link handleFrameInput} instead. Unlike
-     * `handleFrameInput`, this reads the keyboard directly at call time, so it remains susceptible to
-     * missing a Backquote press that a fixed-update tick already consumed this frame.
-     *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
-     */
-    handleToggle(pointer: PointerInput | null, keyboard: KeyboardInput | null, currentTick: number): void {
-        const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
-
-        this.handleFrameInput(pointer, isTogglePressed, currentTick);
     }
 
     /**

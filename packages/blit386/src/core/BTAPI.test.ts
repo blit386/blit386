@@ -4840,12 +4840,12 @@ describe('BTAPI', () => {
 
             drainRafUntilRenderCount(1);
 
-            overlay?.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+            overlay?.handleFrameInput(null, true, 1);
             expect(overlay?.isTrackingPaletteUsage).toBe(false);
 
             drainRafUntilRenderCount(2);
 
-            overlay?.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+            overlay?.handleFrameInput(null, true, 2);
             expect(overlay?.isTrackingPaletteUsage).toBe(true);
 
             overlaySpy.mockClear();

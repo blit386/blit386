@@ -1,9 +1,8 @@
-import type { KeyboardInput } from '../../input/KeyboardInput';
 import type { PointerInput } from '../../input/PointerInput';
 import { POINTER_SLOT_COUNT } from '../../input/PointerInput';
 import type { Rect2i } from '../../utils/Rect2i';
 import { isPointerInOverlayToggleCorner } from '../layout/layoutHelpers';
-import { OVERLAY_TOGGLE_KEY_CODE, POINTER_PRIMARY_BUTTON } from './constants';
+import { POINTER_PRIMARY_BUTTON } from './constants';
 
 /**
  * Handles overlay body visibility toggle input (Backquote and corner pointer).
@@ -76,27 +75,5 @@ export class Toggle {
                 return;
             }
         }
-    }
-
-    /**
-     * Backward-compatible alias for {@link handleInput}.
-     *
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link handleInput} instead.
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
-     * @param toggleRect - Bottom-left toggle hit region.
-     * @param isPointerPressConsumed - When true, skip pointer corner toggle.
-     */
-    handleToggle(
-        pointer: PointerInput | null,
-        keyboard: KeyboardInput | null,
-        currentTick: number,
-        toggleRect: Rect2i,
-        isPointerPressConsumed = false,
-    ): void {
-        const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
-
-        this.handleInput(pointer, isTogglePressed, toggleRect, isPointerPressConsumed);
     }
 }
