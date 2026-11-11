@@ -96,26 +96,17 @@ Invariants:
 
 ## API
 
-### `BT.effectAdd(effect: Effect): void`
+### `BT.effectAdd`, `BT.effectRemove`, `BT.effectClear`
 
-Appends an effect to the chain matching its declared `tier`. Effects can be added at any time; the first add allocates
-the chain's offscreen render targets, the second add allocates a second target for ping-pong. Fails if the engine has
-not been initialized, if a `tier='display'` effect is added without `drawingBufferSize`, or if the active backend is
-`'software'` (Canvas 2D does not support post-process effects). A failed call reports the error once instead of throwing
-(see [Bootstrap](api-core.md#bootstrap)) and the game keeps running. At runtime, gate registration with
-`BT.activeBackend === 'webgpu'` (not `BT.requestedBackend` - WebGPU may have been requested but fallen back). See
-[api-core.md](api-core.md#requested-vs-active-backend).
+Signatures, the software-backend rule, and the preset helpers are in
+[API: Rendering - Post-process effects](api-rendering.md#post-process-effects). What the chain does with them:
 
-### `BT.effectRemove(effect: Effect): void`
-
-Removes a previously registered effect. Searches both tiers and disposes the effect from whichever chain holds it.
-Removing an effect that was never added is a no-op. When the last effect in either chain is removed, that chain's
-offscreen textures are destroyed. Fails in `'software'` mode, like `BT.effectAdd`.
-
-### `BT.effectClear(): void`
-
-Removes every effect in both tiers and destroys all offscreen GPU resources. Fails in `'software'` mode, like
-`BT.effectAdd`.
+- `BT.effectAdd` appends to the chain matching the effect's `tier`. The first add allocates that chain's offscreen
+  render target and the second a ping-pong target.
+- `BT.effectRemove` searches both tiers; removing an effect that was never added does nothing. Removing a chain's last
+  effect destroys its offscreen textures, and `BT.effectClear` does that for both chains.
+- Gate every call on `BT.activeBackend === 'webgpu'`, not `BT.requestedBackend` (WebGPU may have been requested but
+  fallen back) - see [Requested vs. active backend](api-core.md#requested-vs-active-backend).
 
 ### `Effect` interface
 
@@ -153,28 +144,16 @@ The base class `FullscreenEffect` handles most display-tier boilerplate (pipelin
 cache). Pixel-tier effects extend `FullscreenPixelEffect`, which compiles separate WGSL for `r8uint` (`texture_2d<u32>`)
 vs. RGBA paths - see [Writing a custom effect](#writing-a-custom-effect) below.
 
-### `HardwareSettings`
+### Which settings enable which tier
 
-```ts twoslash
-import type { Vector2i } from 'blit386';
-// ---cut---
-interface HardwareSettings {
-  displaySize: Vector2i;
-  drawingBufferSize?: Vector2i; // drives drawing buffer + CSS, enables display tier
-  outputUpscaleFilter?: 'nearest' | 'linear'; // default 'nearest'
-  targetFPS: number;
-  isDetectingDroppedFrames?: boolean;
-  backend?: 'webgpu' | 'software'; // default 'webgpu'; 'software' disables all post-process effects
-}
-```
+The full field list is in [Hardware settings](api-core.md#hardware-settings). For effects, only the tier rule matters:
+the display tier needs an explicit `drawingBufferSize`, and adding a display effect without one fails.
 
-When `drawingBufferSize` is omitted from a `configure()` return value that includes `displaySize`, the WebGPU drawing
-buffer matches `displaySize`. Palette resolve still runs (logical indices to RGBA at that size). The display tier
-remains unavailable (adding a display effect throws) because no explicit output buffer was configured.
-
-If the demo does not implement `configure()`, or returns a partial object without `displaySize` (for example only
-`{ targetFPS: 30 }`), the engine merges with `defaultConfig()`, which does set `drawingBufferSize` (`640×480` for
-`320×240` logical), so the display tier remains available unless you set a custom `displaySize` and omit output sizing.
+- A `configure()` that returns `displaySize` but omits `drawingBufferSize` gets a drawing buffer the size of
+  `displaySize`. Palette resolve still runs, but the display tier is unavailable.
+- No `configure()`, or a partial one without `displaySize` (for example only `{ targetFPS: 30 }`), merges with
+  `defaultConfig()`, which sets `drawingBufferSize` (`640×480` for `320×240` logical), so the display tier is available.
+- `backend: 'software'` disables every effect.
 
 ## Pixel-tier effects
 
