@@ -113,7 +113,7 @@ async function installBenchRenderer(): Promise<SoftwareRenderer> {
     const api = BTAPI.instance as unknown as { renderer: SoftwareRenderer | null };
     api.renderer = renderer;
 
-    BTAPI.instance.setPalette(makeBenchPalette());
+    BTAPI.instance.palettes.setPalette(makeBenchPalette());
 
     return renderer;
 }

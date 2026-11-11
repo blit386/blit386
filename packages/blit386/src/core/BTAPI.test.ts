@@ -616,7 +616,7 @@ describe('BTAPI', () => {
         });
 
         it('getPalette should return null before palette is set', () => {
-            expect(BTAPI.instance.getPalette()).toBeNull();
+            expect(BTAPI.instance.palettes.getPalette()).toBeNull();
         });
 
         it('getCameraOffset should return a zero vector before init', () => {
@@ -740,9 +740,9 @@ describe('BTAPI', () => {
             const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
             registerIndexedSheet(mockSheet);
-            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.palettes.setPalette(palette);
             BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
-            BTAPI.instance.spritesRefresh();
+            BTAPI.instance.palettes.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
             unregisterIndexedSheet(mockSheet);
@@ -769,9 +769,9 @@ describe('BTAPI', () => {
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
 
             registerIndexedSheet(mockSheet);
-            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.palettes.setPalette(palette);
             BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'hi');
-            BTAPI.instance.spritesRefresh();
+            BTAPI.instance.palettes.spritesRefresh();
 
             expect(reindexize).toHaveBeenCalledWith(palette);
             unregisterIndexedSheet(mockSheet);
@@ -829,9 +829,9 @@ describe('BTAPI', () => {
         it('setPalette should store the provided palette before init', () => {
             const palette = new Palette(16);
 
-            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.palettes.setPalette(palette);
 
-            expect(BTAPI.instance.getPalette()).toBe(palette);
+            expect(BTAPI.instance.palettes.getPalette()).toBe(palette);
         });
     });
 
@@ -845,7 +845,7 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const internals = BTAPI.instance as unknown as {
                 loop: GameLoop;
@@ -938,8 +938,8 @@ describe('BTAPI', () => {
             const palette = makeRampPalette(10);
             const before = describePalette(palette);
 
-            BTAPI.instance.setPalette(palette);
-            BTAPI.instance.paletteFlash(new Color32(255, 255, 255), 100);
+            BTAPI.instance.palettes.setPalette(palette);
+            BTAPI.instance.palettes.paletteFlash(new Color32(255, 255, 255), 100);
 
             loop.stop();
             // 10 ticks is 166 ms and the flash lasts 100 ms. Updated once per render, the flash would
@@ -954,11 +954,11 @@ describe('BTAPI', () => {
 
             vi.mocked(demo.update).mockImplementation(() => {
                 if (BTAPI.instance.getTicks() === 10) {
-                    BTAPI.instance.paletteFlash(new Color32(255, 255, 255), 100);
+                    BTAPI.instance.palettes.paletteFlash(new Color32(255, 255, 255), 100);
                 }
 
                 if (BTAPI.instance.getTicks() === 20) {
-                    BTAPI.instance.paletteFadeRange(9, 15, makeRampPalette(200), 2000);
+                    BTAPI.instance.palettes.paletteFadeRange(9, 15, makeRampPalette(200), 2000);
                 }
             });
 
@@ -966,11 +966,11 @@ describe('BTAPI', () => {
             const run = (stepSizes: number[]): string => {
                 const palette = makeRampPalette(10);
 
-                BTAPI.instance.setPalette(palette); // drops running effects
+                BTAPI.instance.palettes.setPalette(palette); // drops running effects
                 loop.resetTicks();
                 // Speed 1 crosses a whole step exactly at tick 60 - a float boundary that one large
                 // catch-up delta and sixty small deltas can land on opposite sides of.
-                BTAPI.instance.paletteCycle(1, 8, 1);
+                BTAPI.instance.palettes.paletteCycle(1, 8, 1);
 
                 for (const size of stepSizes) {
                     loop.step(size);
@@ -988,8 +988,8 @@ describe('BTAPI', () => {
             const { loop } = await bootForClock();
             const palette = makeRampPalette(10);
 
-            BTAPI.instance.setPalette(palette);
-            BTAPI.instance.paletteCycle(1, 8, 30);
+            BTAPI.instance.palettes.setPalette(palette);
+            BTAPI.instance.palettes.paletteCycle(1, 8, 30);
 
             loop.stop();
             loop.step(5);
@@ -1043,7 +1043,7 @@ describe('BTAPI', () => {
         /** Boots a demo whose update/render are spies; returns the demo and private loop. */
         async function boot(demo: IBTDemo = makeMockDemo()): Promise<{ demo: IBTDemo; loop: GameLoop }> {
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             return { demo, loop: (BTAPI.instance as unknown as { loop: GameLoop }).loop };
         }
@@ -1108,7 +1108,7 @@ describe('BTAPI', () => {
             const renderer = (BTAPI.instance as unknown as { renderer: { clearEffects: () => void } }).renderer;
             const clearSpy = vi.spyOn(renderer, 'clearEffects');
 
-            BTAPI.instance.paletteCycle(1, 4, 1);
+            BTAPI.instance.palettes.paletteCycle(1, 4, 1);
             await BTAPI.instance.seek.renderAt(0.5);
 
             expect(clearSpy).toHaveBeenCalled();
@@ -1226,7 +1226,7 @@ describe('BTAPI', () => {
 
                 await boot(first);
                 vi.spyOn(CountingDemo.prototype, 'init').mockImplementationOnce(async () => {
-                    BTAPI.instance.paletteCycle(1, 4, 1);
+                    BTAPI.instance.palettes.paletteCycle(1, 4, 1);
 
                     return false;
                 });
@@ -1426,7 +1426,7 @@ describe('BTAPI', () => {
                 },
             );
             await BTAPI.instance.init(demo, makeMock2DCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             await expect(BTAPI.instance.seek.renderAt(1)).resolves.toBeUndefined();
             expect(demo.init).toHaveBeenCalledTimes(2);
@@ -1437,8 +1437,8 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             vi.mocked(demo.init).mockImplementation(async () => {
-                BTAPI.instance.setPalette(Palette.pico8());
-                BTAPI.instance.paletteCycle(1, 4, 1);
+                BTAPI.instance.palettes.setPalette(Palette.pico8());
+                BTAPI.instance.palettes.paletteCycle(1, 4, 1);
 
                 return true;
             });
@@ -1452,8 +1452,8 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             vi.mocked(demo.init).mockImplementation(async () => {
-                BTAPI.instance.setPalette(Palette.pico8());
-                BTAPI.instance.paletteCycle(1, 4, 1);
+                BTAPI.instance.palettes.setPalette(Palette.pico8());
+                BTAPI.instance.palettes.paletteCycle(1, 4, 1);
 
                 return true;
             });
@@ -1471,8 +1471,8 @@ describe('BTAPI', () => {
             const demo = makeMockDemo();
 
             vi.mocked(demo.init).mockImplementation(async () => {
-                BTAPI.instance.setPalette(Palette.pico8());
-                BTAPI.instance.paletteCycle(1, 4, 1);
+                BTAPI.instance.palettes.setPalette(Palette.pico8());
+                BTAPI.instance.palettes.paletteCycle(1, 4, 1);
 
                 return true;
             });
@@ -1647,7 +1647,7 @@ describe('BTAPI', () => {
                 getBoundingClientRect: () => ({ left: 0, top: 0, width: 320, height: 240 }),
             });
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
 
             vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockResolvedValue(new Blob());
@@ -1822,7 +1822,7 @@ describe('BTAPI', () => {
                 pressed.push(BT.isKeyPressed('KeyZ'));
             });
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             await BTAPI.instance.seek.renderAt(0, 'current');
 
             const keydownCall = (canvas.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
@@ -2044,8 +2044,8 @@ describe('BTAPI', () => {
             const first = makeMockDemo();
 
             vi.mocked(first.init).mockImplementation(async () => {
-                BTAPI.instance.setPalette(Palette.pico8());
-                BTAPI.instance.paletteCycle(1, 4, 1);
+                BTAPI.instance.palettes.setPalette(Palette.pico8());
+                BTAPI.instance.palettes.paletteCycle(1, 4, 1);
                 BTAPI.instance.resetCamera();
 
                 return true;
@@ -2512,7 +2512,7 @@ describe('BTAPI', () => {
                 await BTAPI.instance.init(demo, makeMock2DCanvas());
                 const palette = new Palette(16);
                 palette.set(1, new Color32(200, 100, 50, 255));
-                BTAPI.instance.setPalette(palette);
+                BTAPI.instance.palettes.setPalette(palette);
 
                 return () => {
                     BTAPI.instance.getRenderer()?.endFrame(0);
@@ -2791,7 +2791,7 @@ describe('BTAPI', () => {
             );
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const maxIterations = 1000;
             let iterations = 0;
@@ -2872,7 +2872,7 @@ describe('BTAPI', () => {
 
             const gamepad = BTAPI.instance.getGamepad();
             expect(gamepad).not.toBeNull();
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const endFrameSpy = vi.spyOn(gamepad as NonNullable<typeof gamepad>, 'endFrame');
             // GameLoop.start uses a double-rAF bootstrap before the first tick.
@@ -2930,7 +2930,7 @@ describe('BTAPI', () => {
             // outputSize (drawingBufferSize ?? displaySize) resolves to 640x480 - the captured
             // PNG must match that, not the smaller logical displaySize (regression for BT-488).
             await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
 
@@ -2959,7 +2959,7 @@ describe('BTAPI', () => {
             // displaySize, the opposite of the default captureFrame()/outputSize contract
             // BT-488 confirmed.
             await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
 
@@ -2986,7 +2986,7 @@ describe('BTAPI', () => {
             // agent's capture and a human's F9 press in the same frame never supersede
             // each other - both settle, both at displaySize.
             await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
 
@@ -3040,7 +3040,7 @@ describe('BTAPI', () => {
             const canvas = makeMock2DCanvas();
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const capturePromise = BTAPI.instance.capture.captureFrame();
             const renderer = BTAPI.instance.getRenderer();
@@ -3128,7 +3128,7 @@ describe('BTAPI', () => {
             const canvas = makeMock2DCanvas();
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
 
@@ -3731,7 +3731,7 @@ describe('BTAPI', () => {
             );
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const maxIterations = 1000;
             let iterations = 0;
@@ -3937,7 +3937,7 @@ describe('BTAPI', () => {
             );
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const maxIterations = 1000;
             let iterations = 0;
@@ -4051,7 +4051,7 @@ describe('BTAPI', () => {
             );
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
 
@@ -4189,7 +4189,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
@@ -4219,7 +4219,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 16, 16), new Vector2i(0, 0));
@@ -4245,7 +4245,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
             const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
             const orientedSpy = vi.spyOn(renderer, 'drawSpriteOriented').mockImplementation(() => {});
@@ -4286,7 +4286,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
             const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
             const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
@@ -4332,7 +4332,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
             const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
             const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
@@ -4361,7 +4361,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
             const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
             const stretchedSpy = vi.spyOn(renderer, 'drawSpriteStretched').mockImplementation(() => {});
@@ -4420,7 +4420,7 @@ describe('BTAPI', () => {
                 };
 
                 await BTAPI.instance.init(demo, makeMockCanvas());
-                BTAPI.instance.setPalette(new Palette(16));
+                BTAPI.instance.palettes.setPalette(new Palette(16));
                 stubRendererDrawCalls();
                 const renderer = BTAPI.instance.getRenderer() as NonNullable<
                     ReturnType<typeof BTAPI.instance.getRenderer>
@@ -4586,7 +4586,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             const overlay = getOverlay();
@@ -4616,7 +4616,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             const overlay = getOverlay();
@@ -4660,7 +4660,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.palettes.setPalette(palette);
 
             const renderer = BTAPI.instance.getRenderer();
             expect(renderer).not.toBeNull();
@@ -4768,7 +4768,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             const systemFont = BTAPI.instance.getSystemFont();
@@ -4813,7 +4813,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             stubRendererDrawCalls();
 
             BTAPI.instance.drawBitmapText(mockFont, new Vector2i(0, 0), 'ab');
@@ -4876,7 +4876,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const overlay = getOverlay();
             expect(overlay).not.toBeNull();
@@ -4933,7 +4933,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, makeMockCanvas());
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer() as NonNullable<ReturnType<typeof BTAPI.instance.getRenderer>>;
             const quads: Quad[] = [];
@@ -5217,7 +5217,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const overlay = (BTAPI.instance as unknown as { overlay: Overlay | null }).overlay;
 
@@ -5283,7 +5283,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
             const renderer = BTAPI.instance.getRenderer();
@@ -5323,7 +5323,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             findKeydownHandler(canvas)({ code: 'F9' });
             getLoop()?.tick(20);
@@ -5349,7 +5349,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const renderer = BTAPI.instance.getRenderer();
             const captureFrameSpy = vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut');
@@ -5381,7 +5381,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             let resolveCapture: ((blob: Blob) => void) | undefined;
             const pendingCapture = new Promise<Blob>((resolve) => {
@@ -5429,7 +5429,7 @@ describe('BTAPI', () => {
             const firstCanvas = makeMockCanvas();
 
             await BTAPI.instance.init(demo, firstCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             // A capture that never resolves, standing in for a render pass that never
             // happens because stop() runs first - the same shape as a page navigation
@@ -5458,7 +5458,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
 
             await BTAPI.instance.init(demo, secondCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             vi.mocked(downloadBlob).mockClear();
 
             const secondRenderer = BTAPI.instance.getRenderer();
@@ -5573,7 +5573,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
@@ -5606,7 +5606,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             await BTAPI.instance.seek.renderAt(1, 'current');
 
             installMockClipboard();
@@ -5648,7 +5648,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
@@ -5688,7 +5688,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
             const renderer = BTAPI.instance.getRenderer();
@@ -5719,7 +5719,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
@@ -5754,7 +5754,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
 
@@ -5800,7 +5800,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
 
@@ -5854,7 +5854,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
 
@@ -5905,7 +5905,7 @@ describe('BTAPI', () => {
             const firstCanvas = makeMockCanvas();
 
             await BTAPI.instance.init(demo, firstCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
 
@@ -5932,7 +5932,7 @@ describe('BTAPI', () => {
             const mockBlob = new Blob(['png-data'], { type: 'image/png' });
 
             await BTAPI.instance.init(demo, secondCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
             mockClipboard.write.mockClear();
 
             const secondRenderer = BTAPI.instance.getRenderer();
@@ -5965,7 +5965,7 @@ describe('BTAPI', () => {
             const firstCanvas = makeMockCanvas();
 
             await BTAPI.instance.init(demo, firstCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             installMockClipboard();
 
@@ -5992,7 +5992,7 @@ describe('BTAPI', () => {
             const secondCanvas = makeMockCanvas();
 
             await BTAPI.instance.init(demo, secondCanvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             let resolveCurrentCapture: ((blob: Blob) => void) | undefined;
             const currentCapture = new Promise<Blob>((resolve) => {
@@ -6041,7 +6041,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             const mockClipboard = installMockClipboard();
 
@@ -6082,7 +6082,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             Object.defineProperty(globalThis, 'navigator', {
                 value: { ...globalThis.navigator, clipboard: clipboardValue },
@@ -6122,7 +6122,7 @@ describe('BTAPI', () => {
             };
 
             await BTAPI.instance.init(demo, canvas);
-            BTAPI.instance.setPalette(new Palette(16));
+            BTAPI.instance.palettes.setPalette(new Palette(16));
 
             Object.defineProperty(globalThis, 'navigator', {
                 value: { ...globalThis.navigator, clipboard: { write: vi.fn() } },
@@ -6155,7 +6155,7 @@ describe('BTAPI', () => {
         it('throws when index is out of range for the active palette', () => {
             const palette = new Palette(16);
 
-            BTAPI.instance.setPalette(palette);
+            BTAPI.instance.palettes.setPalette(palette);
 
             expect(() => BTAPI.instance.drawPixel(new Vector2i(0, 0), 20)).toThrow('The color number 20 is too big');
         });
@@ -6514,7 +6514,7 @@ describe('camera reset persistence through the real game loop', () => {
         };
 
         await BTAPI.instance.init(demo, makeMockCanvas());
-        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.palettes.setPalette(new Palette(16));
 
         // GameLoop.start() double-rAF-bootstraps before its first real tick.
         drainOneFrame();
@@ -6649,7 +6649,7 @@ describe('gamepad edges through the real game loop', () => {
         pads[0] = makePad(false);
 
         await BTAPI.instance.init(demo, makeMockCanvas());
-        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.palettes.setPalette(new Palette(16));
 
         // GameLoop.start() double-rAF-bootstraps before its first real tick.
         runFrame(4);
@@ -6681,44 +6681,47 @@ describe('gamepad edges through the real game loop', () => {
 
 describe('BTAPI.paletteFadeExposure', () => {
     afterEach(() => {
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.paletteClearEffects();
     });
 
     it('registers an effect when a palette is active', () => {
-        BTAPI.instance.setPalette(new Palette(16));
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.setPalette(new Palette(16));
+        BTAPI.instance.palettes.paletteClearEffects();
 
-        BTAPI.instance.paletteFadeExposure(new Palette(16), 500);
+        BTAPI.instance.palettes.paletteFadeExposure(new Palette(16), 500);
 
         expect(activeEffectCount()).toBe(1);
     });
 
     it('accepts a highlight lead and easing curve', () => {
-        BTAPI.instance.setPalette(new Palette(16));
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.setPalette(new Palette(16));
+        BTAPI.instance.palettes.paletteClearEffects();
 
         expect(() =>
-            BTAPI.instance.paletteFadeExposure(new Palette(16), 500, { highlightLead: 0.75, easing: 'ease-out' }),
+            BTAPI.instance.palettes.paletteFadeExposure(new Palette(16), 500, {
+                highlightLead: 0.75,
+                easing: 'ease-out',
+            }),
         ).not.toThrow();
     });
 
     it('throws for a non-finite duration', () => {
-        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.palettes.setPalette(new Palette(16));
 
-        expect(() => BTAPI.instance.paletteFadeExposure(new Palette(16), NaN)).toThrow(/paletteFadeExposure/);
+        expect(() => BTAPI.instance.palettes.paletteFadeExposure(new Palette(16), NaN)).toThrow(/paletteFadeExposure/);
     });
 });
 
 describe('BTAPI.paletteFlash (BT-759)', () => {
     afterEach(() => {
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.paletteClearEffects();
     });
 
     it.each([null, undefined, 'white'])('rejects %s as the color at the call, not on a later tick', (color) => {
-        BTAPI.instance.setPalette(new Palette(16));
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.setPalette(new Palette(16));
+        BTAPI.instance.palettes.paletteClearEffects();
 
-        expect(() => BTAPI.instance.paletteFlash(color as unknown as Color32, 100)).toThrow(
+        expect(() => BTAPI.instance.palettes.paletteFlash(color as unknown as Color32, 100)).toThrow(
             paletteFlashColorError(color),
         );
         expect(activeEffectCount()).toBe(0);
@@ -6741,7 +6744,7 @@ describe('BTAPI splash palette capture', () => {
             new PaletteEffectManager(() => now);
         (BTAPI.instance as unknown as { palette: Palette | null }).palette = splashPalette;
 
-        BTAPI.instance.beginPaletteCapture();
+        BTAPI.instance.palettes.beginPaletteCapture();
     }
 
     /**
@@ -6774,9 +6777,10 @@ describe('BTAPI splash palette capture', () => {
     }
 
     afterEach(() => {
-        BTAPI.instance.paletteClearEffects();
-        (BTAPI.instance as unknown as { isCapturingPalette: boolean }).isCapturingPalette = false;
-        (BTAPI.instance as unknown as { pendingPalette: Palette | null }).pendingPalette = null;
+        BTAPI.instance.palettes.paletteClearEffects();
+        (BTAPI.instance as unknown as { palettes: { isCapturingPalette: boolean } }).palettes.isCapturingPalette =
+            false;
+        (BTAPI.instance as unknown as { palettes: { pendingPalette: Palette | null } }).palettes.pendingPalette = null;
     });
 
     it('defers a paletteSet made while capture is armed', () => {
@@ -6787,7 +6791,7 @@ describe('BTAPI splash palette capture', () => {
         const gamePalette = new Palette(16);
         gamePalette.set(1, Color32.red);
 
-        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.palettes.setPalette(gamePalette);
 
         expect(renderPalette()).toBe(splashPalette);
     });
@@ -6795,13 +6799,13 @@ describe('BTAPI splash palette capture', () => {
     it('shows the game its own palette while capture is armed', () => {
         armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
 
-        expect(BTAPI.instance.getPalette()).toBeNull();
+        expect(BTAPI.instance.palettes.getPalette()).toBeNull();
 
         const gamePalette = new Palette(16);
 
-        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.palettes.setPalette(gamePalette);
 
-        expect(BTAPI.instance.getPalette()).toBe(gamePalette);
+        expect(BTAPI.instance.palettes.getPalette()).toBe(gamePalette);
     });
 
     it('installs the captured palette blackened at handoff', () => {
@@ -6810,8 +6814,8 @@ describe('BTAPI splash palette capture', () => {
         const gamePalette = new Palette(16);
         gamePalette.set(1, Color32.white);
 
-        BTAPI.instance.setPalette(gamePalette);
-        BTAPI.instance.endPaletteCapture();
+        BTAPI.instance.palettes.setPalette(gamePalette);
+        BTAPI.instance.palettes.endPaletteCapture();
 
         const live = renderPalette();
 
@@ -6825,8 +6829,8 @@ describe('BTAPI splash palette capture', () => {
         const gamePalette = new Palette(16);
         gamePalette.set(1, Color32.white);
 
-        BTAPI.instance.setPalette(gamePalette);
-        BTAPI.instance.endPaletteCapture(true);
+        BTAPI.instance.palettes.setPalette(gamePalette);
+        BTAPI.instance.palettes.endPaletteCapture(true);
 
         const live = renderPalette();
 
@@ -6841,7 +6845,7 @@ describe('BTAPI splash palette capture', () => {
 
         armWithSplashPalette(splashPalette);
 
-        BTAPI.instance.endPaletteCapture(true);
+        BTAPI.instance.palettes.endPaletteCapture(true);
 
         expect(splashPalette.get(16).r).toBe(0);
         expect(activeEffectCount()).toBe(0);
@@ -6854,8 +6858,8 @@ describe('BTAPI splash palette capture', () => {
         gamePalette.set(1, Color32.white);
         gamePalette.set(2, new Color32(40, 60, 80));
 
-        BTAPI.instance.setPalette(gamePalette);
-        BTAPI.instance.endPaletteCapture();
+        BTAPI.instance.palettes.setPalette(gamePalette);
+        BTAPI.instance.palettes.endPaletteCapture();
 
         advanceEffects(HANDOFF_FADE_MS);
 
@@ -6866,12 +6870,12 @@ describe('BTAPI splash palette capture', () => {
     it('applies paletteSet immediately again after handoff', () => {
         armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
 
-        BTAPI.instance.setPalette(new Palette(16));
-        BTAPI.instance.endPaletteCapture();
+        BTAPI.instance.palettes.setPalette(new Palette(16));
+        BTAPI.instance.palettes.endPaletteCapture();
 
         const later = new Palette(16);
 
-        BTAPI.instance.setPalette(later);
+        BTAPI.instance.palettes.setPalette(later);
 
         expect(renderPalette()).toBe(later);
     });
@@ -6882,7 +6886,7 @@ describe('BTAPI splash palette capture', () => {
 
         armWithSplashPalette(splashPalette);
 
-        BTAPI.instance.endPaletteCapture();
+        BTAPI.instance.palettes.endPaletteCapture();
 
         advanceEffects(HANDOFF_FADE_MS);
 
@@ -6898,9 +6902,9 @@ describe('BTAPI splash palette capture', () => {
         const reindexize = vi.fn();
         const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
-        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.palettes.setPalette(gamePalette);
         registerIndexedSheet(mockSheet);
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(reindexize).toHaveBeenCalledWith(gamePalette);
         expect(reindexize).not.toHaveBeenCalledWith(splashPalette);
@@ -6913,9 +6917,9 @@ describe('BTAPI splash palette capture', () => {
         const gamePalette = new Palette(16);
         gamePalette.set(1, Color32.white);
 
-        BTAPI.instance.setPalette(gamePalette);
-        BTAPI.instance.paletteFade(new Palette(16), 1000);
-        BTAPI.instance.endPaletteCapture();
+        BTAPI.instance.palettes.setPalette(gamePalette);
+        BTAPI.instance.palettes.paletteFade(new Palette(16), 1000);
+        BTAPI.instance.palettes.endPaletteCapture();
 
         // Only the handoff fade survives.
         expect(activeEffectCount()).toBe(1);
@@ -7127,7 +7131,7 @@ describe('BTAPI splash lifecycle in init', () => {
         const replacement = new Palette(16);
         const swapped = await BTAPI.instance.hotReplaceDemo(
             makeSplashDemo({}, () => {
-                BTAPI.instance.setPalette(replacement);
+                BTAPI.instance.palettes.setPalette(replacement);
             }),
         );
 
@@ -7181,8 +7185,9 @@ describe('BTAPI splash lifecycle in init', () => {
 
             // Runs after the splash has already failed. Capture must still be armed,
             // so this is held for the handoff rather than applied straight to screen.
-            BTAPI.instance.setPalette(gamePalette);
-            capturedWhileInitRan = (BTAPI.instance as unknown as { pendingPalette: Palette | null }).pendingPalette;
+            BTAPI.instance.palettes.setPalette(gamePalette);
+            capturedWhileInitRan = (BTAPI.instance as unknown as { palettes: { pendingPalette: Palette | null } })
+                .palettes.pendingPalette;
         });
 
         const initPromise = BTAPI.instance.init(demo, makeMockCanvas());
@@ -7209,7 +7214,9 @@ describe('BTAPI splash lifecycle in init', () => {
         await expect(initPromise).rejects.toThrow('splash frame exploded');
 
         expect(capturedWhileInitRan).toBe(gamePalette);
-        expect((BTAPI.instance as unknown as { isCapturingPalette: boolean }).isCapturingPalette).toBe(false);
+        expect(
+            (BTAPI.instance as unknown as { palettes: { isCapturingPalette: boolean } }).palettes.isCapturingPalette,
+        ).toBe(false);
     });
 
     it('keeps the active palette in step with the splash when init() sets none', async () => {
@@ -7262,7 +7269,7 @@ describe('BTAPI splash lifecycle in init', () => {
 
             await BTAPI.instance.init(
                 makeSplashDemo({ isSplashEnabled: true }, () => {
-                    BTAPI.instance.setPalette(gamePalette);
+                    BTAPI.instance.palettes.setPalette(gamePalette);
                 }),
                 makeMockCanvas(),
             );
@@ -7312,18 +7319,18 @@ describe('BTAPI palette effect ranges', () => {
     }
 
     it('paletteCycle rejects slot 0 at the call', () => {
-        expect(() => BTAPI.instance.paletteCycle(0, 3, 1)).toThrow(slotZero);
+        expect(() => BTAPI.instance.palettes.paletteCycle(0, 3, 1)).toThrow(slotZero);
         expect(activeEffectCount()).toBe(0);
     });
 
     it('paletteCycle rejects an end past the palette size at the call', () => {
-        expect(() => BTAPI.instance.paletteCycle(1, 16, 1)).toThrow(paletteEffectEndOutOfRangeError(16, 16));
-        expect(() => BTAPI.instance.paletteCycle(1, 40, 1)).toThrow(paletteEffectEndOutOfRangeError(40, 16));
+        expect(() => BTAPI.instance.palettes.paletteCycle(1, 16, 1)).toThrow(paletteEffectEndOutOfRangeError(16, 16));
+        expect(() => BTAPI.instance.palettes.paletteCycle(1, 40, 1)).toThrow(paletteEffectEndOutOfRangeError(40, 16));
         expect(activeEffectCount()).toBe(0);
     });
 
     it('paletteCycle accepts the last slot', () => {
-        BTAPI.instance.paletteCycle(1, 15, 1);
+        BTAPI.instance.palettes.paletteCycle(1, 15, 1);
 
         expect(activeEffectCount()).toBe(1);
     });
@@ -7331,36 +7338,38 @@ describe('BTAPI palette effect ranges', () => {
     it('paletteCycle requires an active palette', () => {
         (BTAPI.instance as unknown as { palette: Palette | null }).palette = null;
 
-        expect(() => BTAPI.instance.paletteCycle(1, 3, 1)).toThrow(/No palette set yet/);
+        expect(() => BTAPI.instance.palettes.paletteCycle(1, 3, 1)).toThrow(/No palette set yet/);
     });
 
     it('paletteFadeRange requires an active palette', () => {
         (BTAPI.instance as unknown as { palette: Palette | null }).palette = null;
 
-        expect(() => BTAPI.instance.paletteFadeRange(1, 3, Palette.pico8(), 500)).toThrow(/No palette set yet/);
+        expect(() => BTAPI.instance.palettes.paletteFadeRange(1, 3, Palette.pico8(), 500)).toThrow(
+            /No palette set yet/,
+        );
     });
 
     it('paletteFadeRange rejects slot 0 at the call', () => {
-        expect(() => BTAPI.instance.paletteFadeRange(0, 15, Palette.pico8(), 500)).toThrow(slotZero);
+        expect(() => BTAPI.instance.palettes.paletteFadeRange(0, 15, Palette.pico8(), 500)).toThrow(slotZero);
         expect(activeEffectCount()).toBe(0);
     });
 
     it('paletteFadeRange rejects an end past the palette size at the call', () => {
-        expect(() => BTAPI.instance.paletteFadeRange(1, 16, Palette.pico8(), 500)).toThrow(
+        expect(() => BTAPI.instance.palettes.paletteFadeRange(1, 16, Palette.pico8(), 500)).toThrow(
             paletteEffectEndOutOfRangeError(16, 16),
         );
         expect(activeEffectCount()).toBe(0);
     });
 
     it('paletteFadeRange rejects start greater than end', () => {
-        expect(() => BTAPI.instance.paletteFadeRange(5, 3, Palette.pico8(), 500)).toThrow();
+        expect(() => BTAPI.instance.palettes.paletteFadeRange(5, 3, Palette.pico8(), 500)).toThrow();
     });
 
     it('paletteSwap with slot 0 throws and leaves the palette unchanged', () => {
         const before = snapshot();
 
-        expect(() => BTAPI.instance.paletteSwap(5, 0)).toThrow(slotZero);
-        expect(() => BTAPI.instance.paletteSwap(0, 5)).toThrow(slotZero);
+        expect(() => BTAPI.instance.palettes.paletteSwap(5, 0)).toThrow(slotZero);
+        expect(() => BTAPI.instance.palettes.paletteSwap(0, 5)).toThrow(slotZero);
         expect(snapshot()).toBe(before);
     });
 });

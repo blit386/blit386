@@ -110,7 +110,7 @@ async function hotReloadImageAsset(url: string): Promise<boolean> {
         return false;
     }
 
-    const palette = BTAPI.instance.getPalette();
+    const palette = BTAPI.instance.palettes.getPalette();
 
     for (const sheet of sheets) {
         // A failing sheet is already marked 'failed' by hotReplaceImage; keep going so the rest don't stay 'loading'.
@@ -140,7 +140,7 @@ async function hotReloadFontAsset(url: string): Promise<boolean> {
         return false;
     }
 
-    const palette = BTAPI.instance.getPalette();
+    const palette = BTAPI.instance.palettes.getPalette();
 
     await Promise.all([...fonts].map((font) => font.hotReload(url, palette)));
 

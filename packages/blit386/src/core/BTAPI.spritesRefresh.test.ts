@@ -84,12 +84,12 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const drawn = indexedSheet(RED, before);
         const idle = indexedSheet(GREEN, before);
 
-        BTAPI.instance.setPalette(before);
+        BTAPI.instance.palettes.setPalette(before);
         BTAPI.instance.drawSprite(drawn, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
 
         // Same colors, swapped slots.
-        BTAPI.instance.setPalette(twoColorPalette(GREEN, RED));
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.setPalette(twoColorPalette(GREEN, RED));
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(drawn.getIndexedPixels()[0]).toBe(2);
         expect(idle.getIndexedPixels()[0]).toBe(1);
@@ -119,9 +119,9 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const reindexize = vi.fn();
         const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
 
-        BTAPI.instance.setPalette(palette);
+        BTAPI.instance.palettes.setPalette(palette);
         BTAPI.instance.drawSprite(mockSheet, new Rect2i(0, 0, 1, 1), new Vector2i(0, 0));
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(reindexize).not.toHaveBeenCalled();
     });
@@ -130,13 +130,13 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const sheet = indexedSheet(RED, twoColorPalette(RED, GREEN));
 
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        BTAPI.instance.setPalette(twoColorPalette(GREEN, GREEN));
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.setPalette(twoColorPalette(GREEN, GREEN));
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(sheet.getIndexedPixels()[0]).toBe(1);
 
-        BTAPI.instance.setPalette(twoColorPalette(GREEN, RED));
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.setPalette(twoColorPalette(GREEN, RED));
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(sheet.getIndexedPixels()[0]).toBe(2);
     });
@@ -146,8 +146,8 @@ describe('BTAPI.spritesRefresh tracking', () => {
         const sheet = indexedSheet([GREEN, RED], twoColorPalette(RED, GREEN));
 
         vi.spyOn(console, 'error').mockImplementation(() => {});
-        BTAPI.instance.setPalette(twoColorPalette(GREEN, GREEN));
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.setPalette(twoColorPalette(GREEN, GREEN));
+        BTAPI.instance.palettes.spritesRefresh();
 
         expect(Array.from(sheet.getIndexedPixels())).toEqual([2, 1]);
     });

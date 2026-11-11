@@ -221,7 +221,7 @@ describe('HotRuntime', () => {
                 hotReplaceImage: vi.fn(),
             } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
             vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
-            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: 'hero.png', type: 'image', timestamp: 1 });
@@ -246,7 +246,7 @@ describe('HotRuntime', () => {
                 hotReplaceImage: vi.fn(),
             } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
             vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([failingSheet, healthySheet]));
-            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
             const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
             const handler = registerAndCaptureAssetHandler(HotRuntime);
@@ -272,7 +272,7 @@ describe('HotRuntime', () => {
                 hotReplaceImage: vi.fn(),
             } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
             vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
-            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: 'hero.png', type: 'image', timestamp: 1 });
@@ -334,7 +334,7 @@ describe('HotRuntime', () => {
                 ReturnType<typeof BitmapFontModule.BitmapFont.load>
             >;
             vi.spyOn(BitmapFontModule, 'getHotReloadFonts').mockReturnValue(new Set([fakeFont]));
-            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: 'font.btfont', type: 'font', timestamp: 1 });
@@ -428,7 +428,7 @@ describe('HotRuntime', () => {
                 hotReplaceImage: vi.fn(),
             } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
             vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
-            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: '/hero.png', type: 'image', timestamp: 1 });

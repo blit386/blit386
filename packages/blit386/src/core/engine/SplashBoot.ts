@@ -108,8 +108,8 @@ export class SplashBoot {
         // Install it as the active palette, not just on the renderer: endPaletteCapture()
         // reads this.engine.palette to fade the splash down when the game never sets one of its
         // own, and the two must not disagree while the splash is the thing on screen.
-        this.engine.installPalette(splash.palette);
-        this.engine.beginPaletteCapture();
+        this.engine.palettes.installPalette(splash.palette);
+        this.engine.palettes.beginPaletteCapture();
         splash.attachSkipInput(globalThis);
         splash.start(reducedMotion);
 
@@ -159,7 +159,7 @@ export class SplashBoot {
                 this.engine.effectRemove(dissolve);
             }
 
-            this.engine.endPaletteCapture(reducedMotion);
+            this.engine.palettes.endPaletteCapture(reducedMotion);
             this.engine.drainInputEdges(0);
         }
     }

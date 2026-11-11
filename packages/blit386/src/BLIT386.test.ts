@@ -811,7 +811,7 @@ describe('BT.paletteSet', () => {
     });
 
     it('delegates to BTAPI.instance.setPalette', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'setPalette').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'setPalette').mockReturnValue(undefined);
         const palette = new Palette(16);
 
         BT.paletteSet(palette);
@@ -846,13 +846,13 @@ describe('BT.palette', () => {
     it('returns palette when one is set', () => {
         const palette = new Palette(16);
 
-        vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(palette);
+        vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(palette);
 
         expect(BT.palette).toBe(palette);
     });
 
     it('throws when no palette is set', () => {
-        vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
         expect(() => BT.palette).toThrow('No palette set yet. Call BT.paletteSet');
     });
@@ -2855,7 +2855,7 @@ describe('BT.paletteFadeExposure', () => {
     });
 
     it('delegates to BTAPI.instance.paletteFadeExposure', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'paletteFadeExposure').mockReturnValue(undefined);
         const target = new Palette(16);
 
         BT.paletteFadeExposure(target, 500);
@@ -2864,7 +2864,7 @@ describe('BT.paletteFadeExposure', () => {
     });
 
     it('passes the options bag through unchanged', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'paletteFadeExposure').mockReturnValue(undefined);
         const target = new Palette(16);
         const options = { highlightLead: 0.8, easing: 'ease-in-out' } as const;
 
