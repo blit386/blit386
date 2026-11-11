@@ -22,8 +22,13 @@ the supported 1.x line and credit you in the release notes (unless you prefer to
 
 ## Scope
 
-blit386 is a client-side WebGPU rendering library. Security concerns are primarily:
+This policy covers every package in this repository:
 
-- Supply chain (dependencies)
-- Build pipeline integrity
-- WebGPU resource handling
+- `blit386` - a client-side WebGPU rendering library: WebGPU resource handling and asset loading.
+- `create-blit386` and `@blit386/kit` - they write files into a user's project and install agent hooks that run
+  unattended inside AI assistants (shell and file guards, format-on-edit, a session-start install), so a flaw there runs
+  on the user's machine.
+- The docs site at [blit386.dev](https://blit386.dev), including its public `/mcp` documentation server.
+- The demos site at [demos.blit386.dev](https://demos.blit386.dev) and its security headers.
+- Supply chain (dependencies) and build pipeline integrity for all of the above. The dependency rules are in
+  [`packages/blit386/docs/security/dependency-policy.md`](packages/blit386/docs/security/dependency-policy.md).

@@ -5,6 +5,12 @@
 - **Branch:** `bt-417-reduced-motion-support`
 - **Package:** `packages/blit386` (engine)
 
+> Superseded in part (BT-626, commit `ee983371`): `Orientation.setOnChange()` and `ReducedMotion.setOnChange()` no
+> longer exist, and `hotReplaceDemo()` no longer rebinds them. Both subsystems now expose only `attach` / `detach`, and
+> the engine attaches each once with a closure that calls the live demo's hook at call time
+> (`this.engine.demo?.onReducedMotionChange?.(...)` in `packages/blit386/src/core/engine/Subsystems.ts`), so a hot swap
+> needs no rebinding. The rest of this record stands.
+
 ## Problem
 
 The engine has no way to read the browser's `prefers-reduced-motion` setting. Games and demos that want to reduce

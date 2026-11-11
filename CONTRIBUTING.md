@@ -123,13 +123,10 @@ Signed-off-by: Your Name <your.email@example.com>
 - `revert` - Revert a previous commit
 
 Suggested scopes are conventions only - commitlint does not enforce a scope enum. Each package's own `CLAUDE.md` lists
-the scopes its history uses; for the engine (`packages/blit386/CLAUDE.md`, "Git scopes") that is, by frequency:
+the scopes its history uses (for the engine, the "Git scopes" section of `packages/blit386/CLAUDE.md`).
 
-`docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`, `release`, `security`,
-`input`, `deps` / `deps-dev`, `visual`, `camera`. Rare/legacy: `examples`.
-
-Prefer an existing scope from that list over inventing a new one. Files outside every package (root configs, `.claude/`,
-`.husky/`, `.github/`) use the `repo` scope.
+Prefer an existing scope from the package's list over inventing a new one. Files outside every package (root configs,
+`.claude/`, `.husky/`, `.github/`) use the `repo` scope.
 
 ### Example Commits
 
@@ -166,39 +163,14 @@ All code must follow the project's style guidelines:
 
 ### Pre-commit Checks
 
-Before committing, run the checks for the package you changed (requires the Node.js version above). Most packages define
-a combined `preflight` script - run it if the package has one:
+Before committing, run the `preflight` script of each package you changed (requires the Node.js version above):
 
 ```bash
 pnpm --filter blit386 run preflight   # or the package you're working in
 ```
 
-`kit` and `create-blit386` run `typecheck`, `knip`, their builds, and `test` in their `preflight`; neither defines
-`format:check`, so run the root-level `pnpm run format:check` too.
-
-Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. The example above,
-`packages/blit386`'s `preflight`, runs:
-
-- Linting (`lint`, with `--max-warnings 0`)
-- TypeScript type checks (`typecheck`)
-- Spell checking (`spellcheck`)
-- Unused export and dependency checks (`knip`)
-- Doc site banner check (`sync:doc-banners:check`)
-- API `@since` tag check (`api:since:check`)
-- API history manifest check (`api:history:check`)
-- `BT.*` getter documentation drift check (`api:getters:check`)
-- Deprecation timeline drift check against the kit's migration registry (`api:deprecations:check`)
-- Unit tests (`test:unit`)
-- Declaration tooling tests (`test:declarations`)
-- Agent config drift checker tests (`test:agent-config`)
-- API history generator tests (`test:api-history`)
-- API getter drift checker tests (`test:api-getters`)
-- Deprecation timeline generator tests (`test:api-deprecations`)
-- Benchmark comparison script tests (`test:bench-compare`)
-- Benchmark coverage reminder tests (`test:check-bench-coverage`)
-- Compact-table Prettier plugin tests (`test:compact-tables`)
-- Spellcheck coverage tests (`test:spellcheck-coverage`)
-- Security preflight tests (`test:security-preflight`)
+Every package defines one, and the `preflight` entry in that package's `package.json` is the list of checks it runs.
+Pre-commit (lint-staged) and `preflight` agree: both reject ESLint warnings and Biome errors.
 
 Formatting (`format:check`) is repo-wide, so it runs once from the root instead of in each package's `preflight`.
 
@@ -207,68 +179,8 @@ package's `preflight`. Each is a root-only script that walks (or generates again
 `package.json` invoked it, so they were pulled out of the per-package chains to stop a single push running the same
 full-repo check two to four times. Run them once from the repo root (`pnpm run docs:links`, `pnpm run agents:check`,
 `pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`); `.husky/pre-push` runs them there,
-alongside the rest of the root gate, after every changed package's `preflight` passes.
-
-### Available Commands
-
-These are `packages/blit386`'s scripts - the most heavily-tooled package and the one most contributions touch. Run them
-from `packages/blit386` directly, or from the repo root with `pnpm --filter blit386 run <script>`. Other packages define
-a subset of this list in their own `package.json`. A handful of shared checks (`format:check`, `format`, `docs:links`,
-`agents:check`, `security:audit`, `security:audit:prod`) also exist as root-level scripts covering files outside any
-single package.
-
-```bash
-pnpm run build                      # Build for production
-pnpm run lint                       # Lint code
-pnpm run lint:fix                   # Fix linting issues
-pnpm run format                     # Format code
-pnpm run format:check               # Check formatting
-pnpm run typecheck                  # Run TypeScript checks
-pnpm run spellcheck                 # Check spelling
-pnpm run knip                       # Find unused exports and dependencies
-pnpm run docs:links                 # Check Markdown links
-pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer, root .mcp.json, cursor rules parity, cursor .mcp.json, maintainer dogfood)
-pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
-pnpm run sync:doc-banners:check     # Check doc site banner drift
-pnpm run api:history                # Regenerate API version-history manifest
-pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
-pnpm run api:history:check          # Check API version-history manifest drift
-pnpm run api:deprecations           # Regenerate docs/reference-deprecations.md from the kit's migration registry
-pnpm run api:deprecations:check     # Check the deprecation timeline for drift
-pnpm run system-font:check          # Check systemFontData.ts for drift against the system font PNG
-pnpm run splash-logo:check          # Check the splash logoData.ts for drift against its PNG
-pnpm run security:audit             # Dependency security audit (moderate+)
-pnpm run security:audit:prod        # Production-deps-only security audit
-pnpm run security:mcp-preflight     # MCP security preflight checks
-pnpm run test                       # Run unit tests (alias for test:unit)
-pnpm run test:unit                  # Run unit tests
-pnpm run test:declarations          # Declaration tooling checker tests
-pnpm run test:agent-config          # Agent config drift checker tests
-pnpm run test:api-history           # API history generator tests
-pnpm run test:api-deprecations      # Deprecation timeline generator tests
-pnpm run test:security-preflight    # Security preflight tests
-pnpm run test:visual                # Playwright visual regression (local; not in preflight)
-pnpm run bench                      # CPU benchmarks (Vitest bench)
-pnpm run bench:baseline             # Benchmarks into benchmark-baseline.json (run on main)
-pnpm run bench:json                 # Benchmarks into benchmark-results.json (run on the branch)
-pnpm run bench:compare              # Compare the two with a 25% regression threshold
-pnpm run preflight                  # Run all quality checks
-```
-
-Root-only scripts, run from the repo root (`package.json` there), that no package defines:
-
-```bash
-pnpm run sync:cursor-commands         # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
-pnpm run sync:cursor-commands:check   # Check .cursor/commands/*.md for drift against .claude/skills/*/SKILL.md
-pnpm run sync:maintainer-agents       # Generate Antigravity/Codex/Gemini/Copilot/OpenCode hooks + docs-MCP from kit adapters
-pnpm run sync:maintainer-agents:check # Check those maintainer dogfood files for byte drift
-pnpm run bump -- X.Y.Z                # Lockstep version bump across blit386, @blit386/kit, create-blit386
-pnpm run bump:check                   # Check lockstep versions and the derived engine ranges
-pnpm run spellcheck:kit               # Spellcheck packages/kit, packages/create-blit386 and .claude/skills
-pnpm run test:root                    # Every root scripts/**/*.test.mjs suite (CI quality-root and pre-push run it)
-pnpm run test:cursor-commands         # Cursor commands sync script tests
-pnpm run test:maintainer-agents       # Maintainer agents sync script tests
-```
+alongside the rest of the root gate, after every changed package's `preflight` passes. The root `package.json` lists
+every other root-only script (`bump`, `bump:check`, `spellcheck:kit`, `test:root`, and the sync generators).
 
 ## Pull Request Process
 
@@ -277,13 +189,13 @@ pnpm run test:maintainer-agents       # Maintainer agents sync script tests
 3. Make your changes
 4. Ensure all commits are signed off (DCO)
 5. Follow the commit message format
-6. Run `pnpm run preflight` to ensure code quality
+6. Run `pnpm --filter <package> run preflight` for each package you changed
 7. Push to your fork
 8. Open a pull request against `main`
 
 The pull request form is pre-filled from [`.github/pull_request_template.md`](.github/pull_request_template.md). Use
-that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight`, documentation updates, and visual
-tests when renderer output could change.
+that checklist for DCO sign-off, Conventional Commit titles, `pnpm --filter <package> run preflight`, documentation
+updates, and visual tests when renderer output could change.
 
 All pull requests will be reviewed by maintainers. The DCO check and other CI checks must pass before a PR can be
 merged. `main` is protected and squash merging is disabled, so PRs land as merge commits - your branch's own commits
@@ -330,6 +242,8 @@ To report a bug, propose a feature, or flag a docs problem, use the guided forms
 - [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) - reproduction, expected vs actual, backend, environment
 - [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml) - problem, proposed API, palette-first fit
 - [Docs issue](.github/ISSUE_TEMPLATE/docs_issue.yml) - affected page and what is wrong or missing
+- [Security risk acceptance](.github/ISSUE_TEMPLATE/security-risk-acceptance.yml) - temporary acceptance of a moderate+
+  dependency vulnerability that cannot be fixed before merge
 
 See `.github/ISSUE_TEMPLATE/config.yml` for docs, demos, and private vulnerability reporting links.
 

@@ -179,9 +179,11 @@ depends on `blit386` from npm:
 ```bash
 npm create blit386@latest my-game
 cd my-game
-pnpm install
-pnpm run dev
+npm run dev
 ```
+
+The scaffolder installs dependencies itself with the package manager you ran it with, so keep using that one in the game
+(`pnpm create blit386@latest` gives a pnpm game).
 
 The generated project also ships the `blit` CLI (`blit run`, `blit doctor`, `blit upgrade`, `blit agents`). You do not
 need a pnpm workspace or a local engine checkout for this path.

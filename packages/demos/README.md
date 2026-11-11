@@ -268,8 +268,8 @@ WebGPU support (for the full experience) is typical in:
 These demos are thin wrappers around the library. For complete behavior, APIs, and internals, read the full docs at
 [blit386.dev](https://blit386.dev):
 
-- [Engine README](https://github.com/blit386/blit386/blob/main/README.md) - features list, quick start, bootstrap
-  helpers, manual `BT.init`, project layout
+- [Engine README](https://github.com/blit386/blit386/blob/main/packages/blit386/README.md) - overview, features, getting
+  started with `bootstrap()`, and the index of API pages
 - [Input](https://blit386.dev/docs/guides/input) - pointer slots, keyboard, gamepad, remapping
 - [Post-process effects](https://blit386.dev/docs/guides/post-process-effects) - pixel vs display tiers, presets,
   writing effects
@@ -281,7 +281,7 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
 
 ## How to Run
 
-You need both the `blit386` engine and `blit386-demos` set up as a pnpm workspace. See
+The demos run against the engine source in this monorepo's pnpm workspace, so clone the whole repository. See
 [docs/EXTERNAL-DEVELOPER-SETUP.md](docs/EXTERNAL-DEVELOPER-SETUP.md) for the full setup guide.
 
 Once the workspace is ready:

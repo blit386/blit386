@@ -40,71 +40,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit help` - list the commands.
 - `content/` - everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and
-  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/Antigravity/Codex/Copilot/Gemini CLI/OpenCode/Zed file
-  generation lives in `src/adapters/` and is exported as `@blit386/kit/adapters` so the scaffolder and
-  `blit agents sync` / `blit agents add` share one implementation; the paths it emits and their sync ownership classes
-  are defined once in `src/ownership.ts`. The same manifest drives Cursor's `.cursor/hooks.json` and Claude Code's
-  `.claude/settings.json` (format-on-edit, which formats only the file that was edited, + block-dangerous-shell). Claude
-  Code also gets a hook that blocks hand edits to lock files and `.env` files (Cursor has no pre-edit event), and a
-  SessionStart hook that installs dependencies and runs `blit doctor` when a fresh remote/web session starts, so a
-  scaffolded game works without manual setup; Cursor has no SessionStart-equivalent event, so it does not get this hook.
-  Each adapter also emits a documentation-MCP config - `.mcp.json` for Claude Code and Copilot (one shared file the
-  Copilot CLI and VS Code both read, written once when both agents are set up), `.cursor/mcp.json` for Cursor,
-  `.agents/mcp_config.json` for Antigravity, an `mcp` entry in `opencode.json` for OpenCode, an `mcpServers` entry in
-  `.gemini/settings.json` for Gemini CLI, a `[mcp_servers.blit386-docs]` table in `.codex/config.toml` for Codex -
-  registering the `blit386-docs` server at `https://blit386.dev/mcp` so an assistant can search the live docs. The
-  Claude adapter pre-approves it in `.claude/settings.json` (`enabledMcpjsonServers`), so Claude Code does not prompt
-  for it once the project folder is trusted. It also writes `.claude/launch.json`, which tells the Claude desktop app's
-  built-in browser pane how to start the game (Vite on port 5173, through your package manager), so a preview needs no
-  setup. That file is yours: the desktop app and other tools write into it, so `blit agents sync` and `blit agents add`
-  create it only when it is missing and never change, merge, or `--force` an existing one.
-
-  Antigravity gets `.agents/hooks.json` plus `.agents/hooks/` (format-on-edit, block-dangerous-shell, the lock-file /
-  `.env` guard, and a bootstrap that installs dependencies and runs `blit doctor` once per conversation, since
-  Antigravity has no session-start event), all as thin fail-closed scripts over the shared guard core, and the shared
-  `.agents/skills/` folder. It reads `AGENTS.md` natively. Antigravity ignores project config until you trust the
-  workspace. `.agents/hooks.json` is kit-owned like `.claude/settings.json`: your edits to it are kept, and
-  `blit agents sync` saves the kit version beside it as `.agents/hooks.json.new`.
-
-  Gemini CLI gets `.gemini/settings.json` (the `AGENTS.md` pointer `context.fileName`, the docs server under `httpUrl` -
-  Gemini reads `url` as SSE - and the same four hooks in Gemini's dialect, timeouts in milliseconds) plus
-  `.gemini/hooks/`. Gemini CLI ignores that file until you trust the folder, and `blit agents add gemini` merges into a
-  `.gemini/settings.json` you already have.
-
-  OpenCode gets `opencode.json` and `.opencode/plugins/kit-guard.ts`. OpenCode reads `AGENTS.md` and the shared
-  `.agents/skills/` folder by itself, so it needs no copy of either. `opencode.json` turns on the formatters (Biome for
-  code and JSON, Prettier for Markdown and YAML, as in the `format` script) (OpenCode's formatters are off until
-  enabled), denies edits to lock files and `.env` files (`.env.example` stays editable) and destructive git commands,
-  asks before a force push, and registers the docs server. The plugin asks the same guard core Claude Code's hooks use,
-  and starts the dependency install and `blit doctor` when a session begins. OpenCode has no folder trust prompt, so
-  project plugins run on open - the plugin's header comment lists everything it does. You can extend `opencode.json`:
-  `blit agents add opencode` merges the kit's entries into yours, and `blit agents sync` three-way merges your edits.
-
-  Codex gets `.codex/hooks.json`, `.codex/config.toml`, and `.codex/hooks/`, and reads `AGENTS.md` and the shared
-  `.agents/skills/` folder by itself. The hooks are the same four (the lock-file / `.env` guard and
-  block-dangerous-shell as thin fail-closed scripts over the guard core, format-on-edit, and the session-start
-  bootstrap). Codex sends an edit as raw `apply_patch` text, so the guard core parses the file paths out of the patch,
-  and each hook command finds the project from the session's directory, since Codex runs hooks there with no project
-  variable. Codex has no ask answer, so the confirm-tier git commands are refused outright. `config.toml` is one
-  `[mcp_servers.blit386-docs]` table: you can add your own settings around it, `blit agents add codex` appends the table
-  to a `config.toml` you already have, and `blit agents sync` three-way merges your edits. Codex ignores `.codex/` until
-  you trust the project, and then runs each project hook only after you approve it in `/hooks` (again whenever a kit
-  update changes it). No `.codex/rules/` (experimental, and one bad rules file switches off every rule) and no
-  `.codex/environments/` (undocumented schema).
-
-  GitHub Copilot gets `.github/hooks/blit.json` plus its scripts in `.github/hooks/`,
-  `.github/workflows/copilot-setup-steps.yml`, and the root `.mcp.json` (shared with Claude Code; the Copilot CLI and VS
-  Code both read it, so there is no `.vscode/mcp.json` to register the server a second time), and reads `AGENTS.md` and
-  the shared `.agents/skills/` folder by itself. The hooks file is the one every Copilot surface loads - the CLI, the
-  cloud agent, and VS Code - with the same four hooks, all run by one Node script, `copilot-hook.cjs`, so they work
-  under PowerShell on Windows too: the lock-file / `.env` guard and block-dangerous-shell (fail-closed, over the guard
-  core), format-on-edit (only for the tools that edit files), and the session-start bootstrap. The script reads both the
-  `toolName`/`toolArgs` payload of the CLI and VS Code's Copilot harness and the `tool_name`/`tool_input` payload of VS
-  Code's older Local harness. The setup-steps workflow installs Node and the game's dependencies in the cloud agent's
-  sandbox. The cloud agent cannot read an MCP server from the project, so the docs server has to be added in the
-  repository's Copilot settings there. Copilot ignores the hooks and the MCP configs until you trust the folder. No
-  `.github/prompts/` (prompt files are deprecated, and VS Code's Copilot harness does not load them), and no
-  `chat.tools.*.autoApprove` settings (they only prompt, so they enforce nothing).
+  the agent `hooks/` plus `hooks.manifest.json`. Per-assistant file generation lives in `src/adapters/` and is exported
+  as `@blit386/kit/adapters`, so the scaffolder and `blit agents sync` / `blit agents add` share one implementation; the
+  paths it emits and their sync ownership classes are defined once in `src/ownership.ts`. The table below lists what
+  each assistant gets.
 
 ### What each assistant gets
 
@@ -129,6 +68,27 @@ session-start bootstrap. Every guard is a thin entry over one shared `guard-core
 a push refspec or mirror mode set inline, `branch -D`, `stash drop/clear`) are the same in every assistant that can
 enforce them.
 
+Every assistant also gets a documentation-MCP config registering the `blit386-docs` server at `https://blit386.dev/mcp`,
+so it can search the live docs. A few things the table cannot show:
+
+- Trust prompts. Antigravity, Gemini CLI, Codex, GitHub Copilot, and Zed ignore the project's config until you trust the
+  folder; Codex also runs each project hook only after you approve it in `/hooks` (again whenever a kit update changes
+  it). OpenCode has no trust prompt, so its plugin runs the moment the folder opens - the plugin's header comment lists
+  everything it does. Copilot's cloud agent cannot read an MCP server from the project, so add the docs server in the
+  repository's Copilot settings. Claude Code does not prompt for the docs server once the folder is trusted: the kit
+  pre-approves it in `.claude/settings.json`.
+- Your edits. `opencode.json`, `.codex/config.toml`, `.gemini/settings.json`, and `.zed/settings.json` are yours to
+  extend: `blit agents add` merges the kit's entries into a file you already have, and `blit agents sync` three-way
+  merges your edits. Other kit-owned files such as `.claude/settings.json` and `.agents/hooks.json` keep your edits too;
+  sync saves the kit version beside them as `<file>.new`.
+- `.claude/launch.json` tells the Claude desktop app's built-in browser pane how to start the game (Vite on port 5173,
+  through your package manager). That file is yours: the desktop app and other tools write into it, so
+  `blit agents sync` and `blit agents add` create it only when it is missing and never change, merge, or `--force` an
+  existing one.
+- Zed's agent cannot take guardrails from project files, so the hard rules live in `AGENTS.md` as instructions, and
+  `docs/zed.md` carries a snippet to paste into your own Zed settings for real enforcement. The Biome formatter needs
+  Zed's Biome extension.
+
 ## The game-author skills
 
 Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it - you do not have to
@@ -138,12 +98,6 @@ still invoke one by name (`/add-sprite`). A game set up for several assistants s
 `.claude/skills/`, so the same skill can show up twice there; both copies are the same text. Antigravity, Codex, GitHub
 Copilot, Gemini CLI, OpenCode, Zed (and most other assistants) read one shared folder, `.agents/skills/<name>/SKILL.md`,
 which the kit writes once whenever such an assistant is set up.
-
-Zed gets `.zed/settings.json` (format on save, Biome as the JavaScript, TypeScript, and JSON formatter, and the
-`blit386-docs` MCP server), merged with any settings you already have. Zed's agent cannot take guardrails from project
-files, so the hard rules live in `AGENTS.md` as instructions, and `docs/zed.md` carries a snippet to paste into your own
-Zed settings for real enforcement. Zed ignores `.zed/` until you trust the project, and the Biome formatter needs the
-Biome extension.
 
 | Skill | What it is for |
 | --- | --- |

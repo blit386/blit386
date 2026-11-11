@@ -319,9 +319,10 @@ it.
 **The language service is cheap.** `fumadocs-twoslash` memoizes the twoslasher in a module-level `cachedInstance`, and
 `twoslash` caches the virtual TS environment keyed on a hash of the compiler options - every block here uses the same
 options, so exactly **one** language service serves the whole process, not one per MDX file. Replaying all 155 blocks
-through it peaks at **318 MB RSS / 120 MB heap** in 4.0 s, p50 8 ms per block, and the heap is flat: three full sweeps
-end at 318, 322, 323 MB. Dev is lazier still - with `async: true` the eager pass reads frontmatter only, so Twoslash
-runs per page you actually open. `blit386.d.ts` is **288,348 bytes**, not the ~192 KB previously claimed here.
+(the count at the time) through it peaks at **318 MB RSS / 120 MB heap** in 4.0 s, p50 8 ms per block, and the heap is
+flat: three full sweeps end at 318, 322, 323 MB. Dev is lazier still - with `async: true` the eager pass reads
+frontmatter only, so Twoslash runs per page you actually open. `blit386.d.ts` was **288,348 bytes** at the time, not the
+~192 KB previously claimed here.
 
 **The rendered payload is what costs.** A twoslashed page serves **~6.8 MB of HTML against ~0.6 MB plain** (`api/audio`
 carries 215 hover tokens), and the dev server retains roughly **2 GB of RSS per distinct page visited**, monotonically.
@@ -449,9 +450,10 @@ absolute URL on the request's own origin or `https://blit386.dev`, strips the qu
 suffix, and rejects any other host before looking anything up.
 
 `public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
-into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the
-package boundary, so the values are duplicated in `packages/kit/src/adapters/shared.ts`. Renaming the server or moving
-the endpoint means editing both; `packages/kit/test/mcp-config.test.mjs` compares them and fails when they disagree.
+into every scaffolded game, one config file per assistant (the path is `AGENT_SPECS[kind].mcpConfig` in
+`packages/kit/src/ownership.ts`), and cannot import across the package boundary, so the values are duplicated in
+`packages/kit/src/adapters/shared.ts`. Renaming the server or moving the endpoint means editing both;
+`packages/kit/test/mcp-config.test.mjs` compares them and fails when they disagree.
 
 ## Blog media
 
