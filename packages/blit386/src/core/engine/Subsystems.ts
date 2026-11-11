@@ -109,7 +109,7 @@ export class Subsystems {
      * optional {@link IBTDemo.onReducedMotionChange} looked up at call time, so hot swaps of
      * either tier reach the current handler.
      *
-     * Extracted from {@link init} to keep that method's cyclomatic complexity within the
+     * Extracted from {@link BTAPI.init} to keep that method's cyclomatic complexity within the
      * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
      * and {@link attachAudioSubsystem}.
      */
@@ -125,7 +125,7 @@ export class Subsystems {
      * Pointer/keyboard detach DOM listeners; gamepad detaches polling state; audio
      * detaches unlock listeners and closes the audio context. All subsystem
      * references are cleared so listeners/contexts do not leak across restarts. Also
-     * removes {@link handleClipboardShortcutKeydown}, the bare-F9 listener attached
+     * removes {@link FrameCaptureCommands.handleClipboardShortcutKeydown}, the bare-F9 listener attached
      * directly to the canvas outside `KeyboardInput`.
      */
     public clearInputSubsystems(): void {

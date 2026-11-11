@@ -189,10 +189,10 @@ export class FrameLoop {
     }
 
     /**
-     * Applies a deferred {@link resetCamera} to {@link lastCameraOffset}, if one is pending.
+     * Applies a deferred {@link BTAPI.resetCamera} to {@link BTAPI.lastCameraOffset}, if one is pending.
      * Called at the start of the fixed-update tick, before the demo's own `update()` runs, so a
      * `setCameraOffset()` call inside that `update()` overrides it normally - see
-     * {@link pendingCameraReset}.
+     * {@link BTAPI.pendingCameraReset}.
      */
     private commitPendingCameraReset(): void {
         if (this.engine.pendingCameraReset) {

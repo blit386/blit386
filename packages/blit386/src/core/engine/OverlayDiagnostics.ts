@@ -46,7 +46,7 @@ export class OverlayDiagnostics {
     public isCollectRendererDiagnosticsEnabled = false;
 
     /**
-     * When true, {@link attachAudioSubsystem} enables bus metering and
+     * When true, {@link Subsystems.attachAudioSubsystem} enables bus metering and
      * {@link captureAudioDiagnostics} reads audio bus/voice counters each frame.
      */
     public isCollectAudioMetersEnabled = false;

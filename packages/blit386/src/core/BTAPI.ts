@@ -160,15 +160,16 @@ export class BTAPI {
     public loop: GameLoop | null = null;
 
     /**
-     * True after `renderAt` stopped the loop, until {@link resume}; `captureFrame` then renders on demand.
+     * True after `renderAt` stopped the loop, until {@link Seek.resume}; `captureFrame` then renders on demand.
      *
      * Shared with the parts in `core/engine/`; not part of the BT API.
      */
     public isSeekParked = false;
 
     /**
-     * Settles after every {@link renderAt} called so far. Seeks chain onto it so they never interleave, and
-     * {@link resume} and {@link captureFrame} chain onto it so they act on the seeked frame, in call order.
+     * Settles after every {@link Seek.renderAt} called so far. Seeks chain onto it so they never interleave,
+     * and {@link Seek.resume} and {@link FrameCaptureCommands.captureFrame} chain onto it so they act on the
+     * seeked frame, in call order.
      *
      * Shared with the parts in `core/engine/`; not part of the BT API.
      */
@@ -195,7 +196,7 @@ export class BTAPI {
      * World camera offset last applied via {@link setCameraOffset}, persisted across frames.
      *
      * Re-applied at the start of every render pass, before the demo's `render()` runs (see
-     * the `onRender` callback built in {@link init}). Without this, a render frame with zero
+     * {@link FrameLoop.render}). Without this, a render frame with zero
      * fixed-update steps (common once the render rate approaches or exceeds the fixed update
      * rate, for example at 120 Hz) would draw the world with whatever the *previous* frame's
      * `render()` left the live offset at after its own {@link resetCamera} call for
@@ -208,7 +209,7 @@ export class BTAPI {
 
     /**
      * True when {@link resetCamera} ran and its effect on {@link lastCameraOffset} is still
-     * deferred to the next fixed-update tick (see {@link commitPendingCameraReset}).
+     * deferred to the next fixed-update tick (see {@link FrameLoop.commitPendingCameraReset}).
      *
      * `resetCamera()` is also the documented way to flip to screen space for UI at the end of
      * `render()`, with the demo's next `update()` restoring the world offset via
@@ -430,7 +431,7 @@ export class BTAPI {
      * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
      * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
      * across the restart rebuild their texture on the new device. The splash plays once per page load,
-     * so a restart runs the new `init()` without it. A {@link renderAt} seek already
+     * so a restart runs the new `init()` without it. A {@link Seek.renderAt} seek already
      * running finishes first; one called while the init runs rejects, as before init.
      *
      * @param demo - Demo implementing the IBTDemo interface.
@@ -467,8 +468,8 @@ export class BTAPI {
      * wake lock sentinel, and the orientation/reduced-motion change listeners do not leak
      * across engine restarts (relevant in tests where the same DOM persists).
      *
-     * Also clears {@link isFrameCaptureShortcutInFlight} and bumps
-     * {@link frameCaptureShortcutGeneration}. A Shift+F9 capture or bare-F9 copy in flight
+     * Also clears {@link FrameCaptureCommands.isFrameCaptureShortcutInFlight} and bumps
+     * {@link FrameCaptureCommands.frameCaptureShortcutGeneration}. A Shift+F9 capture or bare-F9 copy in flight
      * when `stop()` runs usually never settles (its render pass will now never happen), so
      * without the clear, every F9/Shift+F9 press after the next `init()` would silently
      * no-op forever. The generation bump additionally covers the rarer case where that
@@ -500,7 +501,7 @@ export class BTAPI {
      * driving the loop, swapping {@link demo} to it only on success.
      *
      * Deliberately does not delegate to {@link runDemoInit}: that method calls
-     * {@link clearInputSubsystems} on failure, which is correct for a cold-boot failure
+     * {@link Subsystems.clearInputSubsystems} on failure, which is correct for a cold-boot failure
      * (nothing else is running yet) but would tear down the pointer/keyboard/gamepad/audio
      * subsystems out from under the *previous* demo instance, which is still driving the
      * loop while this candidate's `init()` runs. A failed hot reload must leave the running
@@ -564,7 +565,8 @@ export class BTAPI {
     /**
      * Restarts the game loop after a successful hot swap when a throw in `update()` or `render()` stopped it, so
      * saving the fix resumes the game without a page reload. A no-op when the loop is running or was stopped on
-     * purpose. That includes a {@link renderAt} seek: its `stop()` clears the halt, so only {@link resume} ends a seek.
+     * purpose. That includes a {@link Seek.renderAt} seek: its `stop()` clears the halt, so only
+     * {@link Seek.resume} ends a seek.
      *
      * Input edges are drained first: the update that threw never reached its input rollover, so its presses would
      * otherwise reach the first update after the restart a second time.
@@ -600,7 +602,7 @@ export class BTAPI {
 
     /**
      * Gets the hardware settings used for the active demo (from `configure()` or
-     * {@link defaultConfig}).
+     * `defaultConfig()`).
      *
      * @returns Hardware configuration, or null if not initialized.
      */

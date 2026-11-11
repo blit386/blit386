@@ -38,7 +38,7 @@ export class FrameCaptureCommands {
     public isFrameCaptureShortcutInFlight = false;
 
     /**
-     * Incremented by {@link stop}; both shortcut methods capture the current value before
+     * Incremented by {@link BTAPI.stop}; both shortcut methods capture the current value before
      * starting and only clear {@link isFrameCaptureShortcutInFlight} in their completion
      * handler if it still matches. `FrameCapture.resolve()` captures its pending
      * resolve/reject callbacks into locals before its own `await`s, so a capture already
@@ -102,7 +102,7 @@ export class FrameCaptureCommands {
 
     /**
      * Bound `keydown` listener for the bare-F9 clipboard-copy shortcut, attached directly to
-     * the canvas by {@link attachInputSubsystems} alongside {@link KeyboardInput} rather than
+     * the canvas by {@link Subsystems.attachInputSubsystems} alongside {@link KeyboardInput} rather than
      * polled from the fixed-update tick. `navigator.clipboard.write()` needs to run inside
      * the browser's synchronous `keydown` dispatch to reliably count as tied to the
      * triggering user gesture in Firefox and Safari, which can reject the call once a task
@@ -204,7 +204,7 @@ export class FrameCaptureCommands {
     }
 
     /**
-     * Settles a pending frame capture while {@link renderAt} holds the loop stopped. Runs after every
+     * Settles a pending frame capture while {@link Seek.renderAt} holds the loop stopped. Runs after every
      * `renderAt` called so far; when a seek has parked the loop no frame end is coming, so this re-renders the
      * current tick with zero updates (no clock moves, the frame is the seeked one). Does nothing while the loop runs.
      *
