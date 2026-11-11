@@ -36,10 +36,10 @@ v.height; // aliases for x / y (useful when treating the vector as a size)
 // Static factories
 Vector2i.zero(); // (0, 0) - cached frozen singleton
 Vector2i.one(); // (1, 1) - cached frozen singleton
-Vector2i.up(); // (0, -1)
-Vector2i.down(); // (0, 1)
-Vector2i.left(); // (-1, 0)
-Vector2i.right(); // (1, 0)
+Vector2i.up(); // (0, -1) - cached frozen singleton
+Vector2i.down(); // (0, 1) - cached frozen singleton
+Vector2i.left(); // (-1, 0) - cached frozen singleton
+Vector2i.right(); // (1, 0) - cached frozen singleton
 Vector2i.fromFloat(x, y); // truncate floats → integer vector
 
 // Math utilities

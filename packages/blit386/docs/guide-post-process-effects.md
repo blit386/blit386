@@ -413,7 +413,8 @@ pixel + display:  scene -> texA -> [px...] -> sceneTex -> paletteResolve -> texA
 - `PaletteResolveUpscalePass` runs every frame on WebGPU: it resolves indices through the active palette and magnifies
   to `drawingBufferSize` using `outputUpscaleFilter` (`'nearest'` or `'linear'`), even when no display-tier effects are
   registered.
-- Frame capture (`BT.captureFrame()`) reads the swap-chain texture, so screenshots reflect the post-processed output.
+- Frame capture (`BT.captureFrame()`) at the default `size: 'output'` reads the swap-chain texture, so screenshots
+  reflect the post-processed output; `size: 'display'` skips display-tier effects.
 
 ## Full demos
 
