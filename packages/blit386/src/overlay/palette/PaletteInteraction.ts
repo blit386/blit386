@@ -779,13 +779,11 @@ export class PaletteInteraction {
         barIndex: number,
         textIndex: number,
     ): void {
-        const active = this.#layoutActiveTooltip(plan, grid, displayWidth, displayHeight);
+        const layout = this.#layoutActiveTooltip(plan, grid, displayWidth, displayHeight);
 
-        if (active === null) {
-            return;
+        if (layout !== null) {
+            drawTooltipChrome(target, layout, barIndex, textIndex);
         }
-
-        drawTooltipChrome(target, active.layout, barIndex, textIndex);
     }
 
     /**
@@ -808,13 +806,11 @@ export class PaletteInteraction {
         displayHeight: number,
         textIndex: number,
     ): void {
-        const active = this.#layoutActiveTooltip(plan, grid, displayWidth, displayHeight);
+        const layout = this.#layoutActiveTooltip(plan, grid, displayWidth, displayHeight);
 
-        if (active === null) {
-            return;
+        if (layout !== null) {
+            drawTooltipLabel(target, font, layout, this.#tooltipLabel, textIndex);
         }
-
-        drawTooltipLabel(target, font, active.layout, active.label, textIndex);
     }
 
     /**
@@ -948,14 +944,14 @@ export class PaletteInteraction {
      * @param grid - Palette grid layout.
      * @param displayWidth - Logical display width.
      * @param displayHeight - Logical display height.
-     * @returns Tooltip layout and label, or `null`.
+     * @returns Tooltip layout (label in {@link #tooltipLabel}), or `null`.
      */
     #layoutActiveTooltip(
         plan: OverlayLayoutPlan,
         grid: PaletteGridLayout,
         displayWidth: number,
         displayHeight: number,
-    ): { layout: PaletteTooltipLayout; label: string } | null {
+    ): PaletteTooltipLayout | null {
         const label = this.#resolveTooltipLabel();
 
         if (label.length === 0) {
@@ -970,9 +966,7 @@ export class PaletteInteraction {
 
         writeSwatchTopLeft(tooltipScratch.swatch, index, plan.paletteBand, grid, this.#scrollRowOffset);
 
-        const layout = layoutTooltip(tooltipScratch, tooltipScratch.swatch, label, displayWidth, displayHeight);
-
-        return { layout, label };
+        return layoutTooltip(tooltipScratch, tooltipScratch.swatch, label, displayWidth, displayHeight);
     }
 
     /**
@@ -996,27 +990,26 @@ export class PaletteInteraction {
      * @returns Tooltip label for the current hover or copy status.
      */
     #resolveTooltipLabel(): string {
-        let label: string;
-
-        if (this.#copyStatus === 'copied') {
-            label = `Copied ${this.#copyStatusIndex}`;
-        } else if (this.#copyStatus === 'failed') {
-            label = 'Copy failed';
-        } else if (this.#hoveredIndex !== null) {
-            label = String(this.#hoveredIndex);
-        } else {
-            label = '';
+        if (
+            this.#hoveredIndex === this.#tooltipLabelHoveredIndex &&
+            this.#copyStatus === this.#tooltipLabelCopyStatus &&
+            this.#copyStatusIndex === this.#tooltipLabelCopyStatusIndex
+        ) {
+            return this.#tooltipLabel;
         }
 
-        if (
-            this.#hoveredIndex !== this.#tooltipLabelHoveredIndex ||
-            this.#copyStatus !== this.#tooltipLabelCopyStatus ||
-            this.#copyStatusIndex !== this.#tooltipLabelCopyStatusIndex
-        ) {
-            this.#tooltipLabelHoveredIndex = this.#hoveredIndex;
-            this.#tooltipLabelCopyStatus = this.#copyStatus;
-            this.#tooltipLabelCopyStatusIndex = this.#copyStatusIndex;
-            this.#tooltipLabel = label;
+        this.#tooltipLabelHoveredIndex = this.#hoveredIndex;
+        this.#tooltipLabelCopyStatus = this.#copyStatus;
+        this.#tooltipLabelCopyStatusIndex = this.#copyStatusIndex;
+
+        if (this.#copyStatus === 'copied') {
+            this.#tooltipLabel = `Copied ${this.#copyStatusIndex}`;
+        } else if (this.#copyStatus === 'failed') {
+            this.#tooltipLabel = 'Copy failed';
+        } else if (this.#hoveredIndex !== null) {
+            this.#tooltipLabel = String(this.#hoveredIndex);
+        } else {
+            this.#tooltipLabel = '';
         }
 
         return this.#tooltipLabel;

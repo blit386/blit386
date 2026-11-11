@@ -34,6 +34,36 @@ const dividerScratch = new Rect2i(0, 0, 1, 0);
 const segmentScratch = new Vector2i(0, 0);
 
 /**
+ * Split segments per engine-composed label, so steady frames draw without slicing.
+ * shortcut: cleared whole once it holds 32 labels (labels change a few times a second); use an LRU if that thrashes.
+ */
+const segmentCache = new Map<string, readonly string[]>();
+
+/** Entry count at which {@link segmentCache} is cleared. */
+const SEGMENT_CACHE_LIMIT = 32;
+
+/**
+ * Returns the `|`-separated segments of `text`, cached by text.
+ *
+ * @param text - Engine-composed label.
+ * @returns Segments in draw order.
+ */
+function splitSegments(text: string): readonly string[] {
+    let segments = segmentCache.get(text);
+
+    if (segments === undefined) {
+        if (segmentCache.size >= SEGMENT_CACHE_LIMIT) {
+            segmentCache.clear();
+        }
+
+        segments = text.split('|');
+        segmentCache.set(text, segments);
+    }
+
+    return segments;
+}
+
+/**
  * Left-pads an already-formatted numeric segment with spaces to a fixed column width.
  *
  * Engine-composed rows join several of these segments with `|` dividers positioned by
@@ -108,21 +138,21 @@ export function drawOverlayLabelWithDividers(
         return;
     }
 
+    const segments = splitSegments(text);
+    const lastIndex = segments.length - 1;
     let segmentX = pos.x;
-    let segmentStart = 0;
 
     segmentScratch.y = pos.y;
 
-    for (;;) {
-        const separatorIndex = text.indexOf('|', segmentStart);
-        const isLastSegment = separatorIndex === -1;
-        const segment = isLastSegment ? text.slice(segmentStart) : text.slice(segmentStart, separatorIndex);
+    for (let index = 0; index <= lastIndex; index++) {
+        // eslint-disable-next-line security/detect-object-injection -- index bounded by segments.length
+        const segment = segments[index] as string;
 
         segmentScratch.x = segmentX;
 
         target.drawLabel(font, segmentScratch, segment, textPaletteOffset);
 
-        if (isLastSegment) {
+        if (index === lastIndex) {
             break;
         }
 
@@ -133,7 +163,6 @@ export function drawOverlayLabelWithDividers(
         target.drawBarFill(dividerScratch, gapIndex);
 
         segmentX = segmentEnd + SEGMENT_SEPARATOR_ADVANCE_PX;
-        segmentStart = separatorIndex + 1;
     }
 }
 
