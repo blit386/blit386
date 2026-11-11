@@ -124,34 +124,6 @@ function buildArrowButton(demos, options) {
 }
 
 /**
- * Build the "previous demo" arrow button.
- * @param {Array<{slug: string, navLabel: string}>} demos
- * @returns {HTMLButtonElement}
- */
-function buildPrevButton(demos) {
-    return buildArrowButton(demos, {
-        id: 'demo-banner-prev',
-        glyph: '‹',
-        ariaLabel: 'Previous demo',
-        step: -1,
-    });
-}
-
-/**
- * Build the "next demo" arrow button.
- * @param {Array<{slug: string, navLabel: string}>} demos
- * @returns {HTMLButtonElement}
- */
-function buildNextButton(demos) {
-    return buildArrowButton(demos, {
-        id: 'demo-banner-next',
-        glyph: '›',
-        ariaLabel: 'Next demo',
-        step: 1,
-    });
-}
-
-/**
  * Build the prev/combobox/next navigation group.
  * @param {Array<{slug: string, navLabel: string, title: string}>} demos
  * @param {number} currentIndex
@@ -162,9 +134,11 @@ function buildNav(demos, currentIndex) {
 
     nav.className = 'demo-banner-nav';
 
-    nav.appendChild(buildPrevButton(demos));
+    nav.appendChild(
+        buildArrowButton(demos, { id: 'demo-banner-prev', glyph: '‹', ariaLabel: 'Previous demo', step: -1 }),
+    );
     nav.appendChild(buildCombobox(demos, currentIndex));
-    nav.appendChild(buildNextButton(demos));
+    nav.appendChild(buildArrowButton(demos, { id: 'demo-banner-next', glyph: '›', ariaLabel: 'Next demo', step: 1 }));
 
     return nav;
 }
