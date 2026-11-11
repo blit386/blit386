@@ -8,13 +8,9 @@ import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { escapeHtml } from './html-escape.js';
 import { buildSocialMeta, OG_IMAGE_DIR, ogImageFile } from './social-meta.js';
+import { IS_NEXT_CHANNEL } from './sitemap.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
-
-// Set only in the deploy-demos-next CI job (see .github/workflows/deploy.yml). Read directly
-// from process.env here (this plugin runs in Node during the build, not the browser), so no
-// client-side env var plumbing is needed for the noindex meta tag or the unreleased-work banner.
-const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
 
 const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
 

@@ -2,7 +2,7 @@ import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SITE_URL } from './sitemap.js';
+import { IS_NEXT_CHANNEL, SITE_URL } from './sitemap.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const rootDir = resolve(__dirname, '..');
@@ -48,9 +48,7 @@ export function channelHeadersPlugin() {
         apply: 'build',
         closeBundle() {
             const distDir = resolve(rootDir, 'dist');
-            const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
-
-            if (!isNextChannel) {
+            if (!IS_NEXT_CHANNEL) {
                 writeFileSync(join(distDir, 'robots.txt'), buildRobotsTxt(false, SITE_URL));
                 return;
             }
