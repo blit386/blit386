@@ -59,7 +59,7 @@
       },
       "claude": {
         "event": "PreToolUse",
-        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.cjs\"",
+        "command": "sh -c 'node \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.cjs\"; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
         "matcher": "Bash",
         "timeout": 10
       },
@@ -97,7 +97,7 @@
       },
       "claude": {
         "event": "PreToolUse",
-        "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"",
+        "command": "sh -c 'node \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.cjs\"; s=$?; [ $s = 0 ] || [ $s = 2 ] || { echo \"[BLOCKED] The blit386 guard could not run, so the request was blocked.\" >&2; s=2; }; exit $s'",
         "matcher": "Edit|MultiEdit|Write",
         "timeout": 10
       },

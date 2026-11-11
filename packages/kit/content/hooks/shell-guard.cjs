@@ -7,7 +7,16 @@
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { readFileSync } = require('node:fs');
-const { failClosed, isDangerousCommand, parsePayload } = require('./guard-core.cjs');
+
+// A guard core that will not load (missing, or crashing as it loads) blocks too (BT-775).
+let guardCore;
+try {
+    guardCore = require('./guard-core.cjs');
+} catch (error) {
+    process.stderr.write(`[BLOCKED] The guard could not run, so the request was blocked: ${error.message}\n`);
+    process.exit(2);
+}
+const { failClosed, isDangerousCommand, parsePayload } = guardCore;
 
 const verdict = failClosed(() => {
     const command = parsePayload(readFileSync(0, 'utf8')).tool_input?.command;

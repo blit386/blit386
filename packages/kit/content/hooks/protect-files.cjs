@@ -7,7 +7,17 @@
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { readFileSync } = require('node:fs');
-const { failClosed, isProtectedPath, parsePayload } = require('./guard-core.cjs');
+
+// A guard core that will not load (missing, or crashing as it loads) blocks too: both agents let the edit through on
+// any exit code other than 2 (BT-775).
+let guardCore;
+try {
+    guardCore = require('./guard-core.cjs');
+} catch (error) {
+    process.stderr.write(`[BLOCKED] The guard could not run, so the request was blocked: ${error.message}\n`);
+    process.exit(2);
+}
+const { failClosed, isProtectedPath, parsePayload } = guardCore;
 
 const verdict = failClosed(() => {
     const file = parsePayload(readFileSync(0, 'utf8')).tool_input?.file_path;
