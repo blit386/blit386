@@ -283,7 +283,7 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
             // Playwright runs a string argument as an expression in the page: the caller's own code, in their local game.
             return page.evaluate(args.join(':'));
         default:
-            throw new Error(`Unknown step "${step}". Run \`blit play --help\` to see the steps.`);
+            throw new Error(`Unknown step "${step}". Run \`npx blit play --help\` to see the steps.`);
     }
 }
 
@@ -411,7 +411,7 @@ export async function runPlay(argv: string[]): Promise<void> {
     if (!playwright) {
         const pm = detectPackageManager(root);
 
-        fail('`blit play` needs the playwright-core package to drive your browser.');
+        fail('`npx blit play` needs the playwright-core package to drive your browser.');
         process.stderr.write(
             `${ui.info(`Add it once with: ${pm} ${[...pmAddArgs(pm, 'playwright-core'), '-D'].join(' ')}`)}\n`,
         );

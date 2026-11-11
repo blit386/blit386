@@ -156,7 +156,7 @@ test('blit upgrade bumps blit386 offline then offers migrate when renames are pe
             `expected migrate apply offer or schedule hint, got:\n${output}`,
         );
         assert.ok(
-            output.includes('No changes made. Run `blit migrate --write` when you are ready.'),
+            output.includes('No changes made. Run `npx blit migrate --write` when you are ready.'),
             `non-TTY should decline apply and schedule migrate --write, got:\n${output}`,
         );
     } finally {

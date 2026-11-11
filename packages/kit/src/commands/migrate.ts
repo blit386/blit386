@@ -295,7 +295,7 @@ export async function migrateProject(
                 out('');
 
                 if (!(await confirm('Change these files anyway?'))) {
-                    out(ui.info('No changes made. Save your work first, then run `blit migrate --write` again.'));
+                    out(ui.info('No changes made. Save your work first, then run `npx blit migrate --write` again.'));
                     return {
                         filesChanged,
                         appliedCount,
@@ -341,7 +341,7 @@ export async function migrateProject(
             out('');
             const n = appliedCount + (hotReloadPending ? 1 : 0);
             out(ui.info(`This was a preview of ${n} ${n === 1 ? 'change' : 'changes'}.`));
-            out(ui.info('Run `blit migrate --write` to apply them.'));
+            out(ui.info('Run `npx blit migrate --write` to apply them.'));
         }
     }
 
