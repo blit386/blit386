@@ -11,7 +11,7 @@
 
 import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync } from 'node:fs';
-import { isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 /** SHA-256 hex digest of a string. */
 export function sha256Text(text: string): string {
@@ -59,12 +59,12 @@ export function hasSymlinkedSegment(absPath: string, root: string): boolean {
 }
 
 /**
- * Reject manifest paths that are absolute, escape the project root via `..` segments, or are reached
+ * Reject manifest paths that are absolute, resolve outside the project root (`..` segments included), or are reached
  * through a symlink (the file itself or a parent directory) - lexical safety alone would still let a
  * symlink swapped in after scaffolding redirect a read or write outside the project.
  */
 export function isSafeRelPath(relPath: string, root: string): boolean {
-    if (isAbsolute(relPath) || normalize(relPath).startsWith(`..${sep}`)) {
+    if (isAbsolute(relPath)) {
         return false;
     }
 

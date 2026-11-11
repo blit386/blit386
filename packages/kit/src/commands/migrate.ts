@@ -56,6 +56,10 @@ interface HotReloadChange {
     status: HotReloadViteStatus;
 }
 
+/** Shown when the vite.config rewrite reports unsupported, whether or not anything else changed. */
+const VITE_CONFIG_UNSUPPORTED =
+    "Could not safely edit vite.config for hot reload - add `import { blit386 } from 'blit386/vite'` and `plugins: [blit386()]` by hand (see docs/hot-reload.md).";
+
 /** Summary returned to callers (used by `blit upgrade`). */
 export interface MigrateSummary {
     /** Files that had at least one auto rename. */
@@ -243,11 +247,7 @@ export async function migrateProject(
             );
         } else if (hotReload === 'unsupported') {
             out(ui.success('Your game already uses the current BLIT386 names. Nothing to rename.'));
-            out(
-                ui.warn(
-                    "Could not safely edit vite.config for hot reload - add `import { blit386 } from 'blit386/vite'` and `plugins: [blit386()]` by hand (see docs/hot-reload.md).",
-                ),
-            );
+            out(ui.warn(VITE_CONFIG_UNSUPPORTED));
         } else if (hotReload === 'skipped-engine') {
             out(ui.success('Your game already uses the current BLIT386 names. Nothing to change.'));
             out(
@@ -363,11 +363,7 @@ export async function migrateProject(
 
     if (hotReload === 'unsupported' && !hotReloadPending) {
         out('');
-        out(
-            ui.warn(
-                "Could not safely edit vite.config for hot reload - add `import { blit386 } from 'blit386/vite'` and `plugins: [blit386()]` by hand (see docs/hot-reload.md).",
-            ),
-        );
+        out(ui.warn(VITE_CONFIG_UNSUPPORTED));
     }
 
     return {
