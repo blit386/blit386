@@ -10,7 +10,8 @@ import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins/social-meta.js';
-import { INPUT_TICKS } from '../../_shots/poses.js';
+import { captureUrl } from '../../_shots/capture.js';
+import { CAPTURE_SEED, INPUT_TICKS } from '../../_shots/poses.js';
 import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
@@ -317,6 +318,13 @@ describe('buildCaptureUrl', () => {
             buildCaptureUrl('https://demos.blit386.dev/', 'basics'),
             'https://demos.blit386.dev/basics?embed&capture&seed=1',
         );
+    });
+
+    it('pins the same seed as the /shots capture, so the card and the tile draw the same frame', () => {
+        const seedOf = (url) => new URL(url, 'https://demos.blit386.dev/').searchParams.get('seed');
+
+        assert.equal(seedOf(captureUrl('/demos/', '.html', 'basics', 'display')), String(CAPTURE_SEED));
+        assert.equal(seedOf(buildCaptureUrl('https://demos.blit386.dev', 'basics')), String(CAPTURE_SEED));
     });
 });
 

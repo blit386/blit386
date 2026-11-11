@@ -49,7 +49,7 @@ import {
     OG_SCALE_DEFAULT,
     OG_SCALE_MODES,
 } from '../plugins/social-meta.js';
-import { INPUT_TICKS, posesFor } from '../_shots/poses.js';
+import { CAPTURE_SEED, INPUT_TICKS, posesFor } from '../_shots/poses.js';
 import {
     buildCanvasReadyScript,
     buildEmbedUrl,
@@ -384,22 +384,18 @@ export function buildOgFfmpegArgs(input, output, target) {
 
 // #region Browser scripts
 
-// Pins `BT.random` so a demo that scatters things randomly (starfield, seeded worlds) draws the
-// same card on every run. `renderAt` replays from the boot seed, but without `?seed=` that seed
-// is fresh per page load.
-export const OG_CAPTURE_SEED = 1;
-
 /**
  * URL of the demo page with the engine exposed on `window.BT` and its random stream pinned.
  * Keep the `capture` flag in step with `captureUrl` in `_shots/capture.js`, which builds the
- * same page for the /shots gallery (that one runs in the browser, so they cannot share code).
+ * same page for the /shots gallery. Both pin `BT.random` with CAPTURE_SEED from `_shots/poses.js`:
+ * `renderAt` replays from the boot seed, and without `?seed=` that seed is fresh per page load.
  *
  * @param {string} baseUrl Site origin.
  * @param {string} slug Demo slug.
- * @returns {string} `${baseUrl}/${slug}?embed&capture&seed=${OG_CAPTURE_SEED}`.
+ * @returns {string} `${baseUrl}/${slug}?embed&capture&seed=${CAPTURE_SEED}`.
  */
 export function buildCaptureUrl(baseUrl, slug) {
-    return `${buildEmbedUrl(baseUrl, slug)}&capture&seed=${OG_CAPTURE_SEED}`;
+    return `${buildEmbedUrl(baseUrl, slug)}&capture&seed=${CAPTURE_SEED}`;
 }
 
 /**

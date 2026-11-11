@@ -1,13 +1,13 @@
 /**
  * The capture engine of the /shots page. Drives one demo at a time inside a same-origin
- * iframe: load `<demo>?embed&capture`, seek the engine clock with BT.renderAt, inject the
+ * iframe: load `<demo>?embed&capture&seed=N`, seek the engine clock with BT.renderAt, inject the
  * pose's input, step two ticks so the shared kit latches it, and read the exact framebuffer
  * with BT.captureFrame. The frame adapter is injectable so the state machine is unit-tested
  * without a browser.
  */
 
 import { lintSnapshot } from '../src/shared/ui-lint.js';
-import { INPUT_TICKS, OUTPUT_VARIANT } from './poses.js';
+import { CAPTURE_SEED, INPUT_TICKS, OUTPUT_VARIANT } from './poses.js';
 
 const CANVAS_ID = 'blit386-canvas';
 
@@ -18,7 +18,8 @@ const STEP_TIMEOUT_MS = 10_000;
 const CANVAS_POLL_MS = 16;
 
 /**
- * Keep the `capture` flag in step with `buildCaptureUrl` in `scripts/capture-og-image.mjs`.
+ * Keep the `capture` flag in step with `buildCaptureUrl` in `scripts/capture-og-image.mjs`; the
+ * seed is shared through CAPTURE_SEED, so the tile and the OG card draw the same frame.
  *
  * @param {string} demoBase
  * @param {string} pageSuffix
@@ -27,7 +28,9 @@ const CANVAS_POLL_MS = 16;
  * @returns {string}
  */
 function captureUrl(demoBase, pageSuffix, slug, variant) {
-    return `${demoBase}${slug}${pageSuffix}?embed&capture${variant === 'software' ? '&backend=software' : ''}`;
+    const backend = variant === 'software' ? '&backend=software' : '';
+
+    return `${demoBase}${slug}${pageSuffix}?embed&capture&seed=${CAPTURE_SEED}${backend}`;
 }
 
 /**

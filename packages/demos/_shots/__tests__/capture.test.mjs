@@ -25,8 +25,8 @@ globalThis.PointerEvent ??= class {
 
 describe('captureUrl', () => {
     it('builds the dev and build forms and adds the software backend', () => {
-        assert.equal(captureUrl('/demos/', '.html', 'basics', 'display'), '/demos/basics.html?embed&capture');
-        assert.equal(captureUrl('./', '', 'basics', 'software'), './basics?embed&capture&backend=software');
+        assert.equal(captureUrl('/demos/', '.html', 'basics', 'display'), '/demos/basics.html?embed&capture&seed=1');
+        assert.equal(captureUrl('./', '', 'basics', 'software'), './basics?embed&capture&seed=1&backend=software');
     });
 });
 

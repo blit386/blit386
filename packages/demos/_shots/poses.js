@@ -27,6 +27,12 @@ const POSE_ID_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 // (scripts/capture-og-image.mjs), so a pose with keys looks the same in both.
 const INPUT_TICKS = 2;
 
+// Boot seed for `BT.random`, sent as `?seed=` by both capture URL builders (`captureUrl` in
+// capture.js and `buildCaptureUrl` in scripts/capture-og-image.mjs). Without it the engine
+// time-seeds the stream per page load, so a demo that scatters things randomly (starfield)
+// draws a different tile on every run and its OG card disagrees with its tile.
+const CAPTURE_SEED = 1;
+
 /** @type {Pose[]} */
 const DEFAULT_POSES = [
     { id: 'start', at: 0 },
@@ -276,6 +282,7 @@ function validatePoses(posesBySlug, knownSlugs) {
 }
 
 export {
+    CAPTURE_SEED,
     COMMITTED_VARIANTS,
     DEFAULT_POSES,
     INPUT_TICKS,
