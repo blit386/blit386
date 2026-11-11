@@ -1,9 +1,9 @@
 # create-blit386 - Design and Roadmap
 
-> Status (2026-10-18): latest **published** release is `1.7.1` (2026-09-27), the same `x.y.z` for `blit386`,
+> Status (2026-11-11): latest **published** release is `1.8.0` (2026-10-18), the same `x.y.z` for `blit386`,
 > `@blit386/kit`, and `create-blit386` - the three have released in lockstep since BT-410, bumped together by
 > `scripts/bump-lockstep.mjs` (`pnpm run bump -- x.y.z` from the repo root, which also derives `BLIT386_RANGE` and the
-> kit's `blit386.engineRange`). `1.8.0` is in preparation. The scaffolder lives in the `blit386/blit386` monorepo at
+> kit's `blit386.engineRange`). `1.8.1` is in preparation. The scaffolder lives in the `blit386/blit386` monorepo at
 > `packages/create-blit386/` (the standalone `blit386/create-blit386` repo named below is history; its releases page
 > moved to <https://github.com/blit386/blit386/releases>). The wizard offers eight assistants - Claude Code, Cursor,
 > Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenCode, Zed - all generated through the kit's agent registry
@@ -12,170 +12,13 @@
 > `BlitManifest` type, not a local copy. The starter game ships the `testState()` hook (engine 1.8.0+) read by
 > `BT.testState()` and `npx blit play`; `blit clean` replaces a game with the kit's empty skeleton
 > (`packages/kit/content/templates/game.{js,ts}`). The optional CI workflow runs the scaffolding package manager through
-> Corepack instead of pinning pnpm. Everything in the older status blocks below is retained as history; where a numbered
-> section still describes the two-adapter or standalone-repo era, the current `CLAUDE.md`, `PUBLISHING.md`, and
+> Corepack instead of pinning pnpm. Older status blocks live in `git log` for this file; where a numbered section still
+> describes the two-adapter or standalone-repo era, the current `CLAUDE.md`, `PUBLISHING.md`, and
 > `.claude/rules/template-structure.md` next to this file win.
->
-> Status (2026-07-24, historical): latest **published** npm release is `1.3.0` (`@blit386/kit@1.3.0` +
-> `create-blit386@1.3.0`; dist-tag `latest`). `blit386.engineRange` and `BLIT386_RANGE` are `^1.4.0`. Hot-reload content
-> ships in this cut (section 12; kit docs/skills `hot-reload.md` / `use-hot-reload`, Catcher `onHotReload` example,
-> starter `blit386()` Vite plugin). Publishing is manual-only (see the 2026-07-14 policy change below) - there is no CI
-> publish workflow. 24 skill directories under `packages/kit/content/skills/`. Claude/Cursor agent adapters are a single
-> shared module (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold and `blit agents sync` /
-> `add` (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days. Run
-> `git log --oneline -1` for the current one.)
->
-> History: first published 2026-06-09 as `@blit-tech/kit@0.1.0` + `create-blit-tech@0.1.0` (section 11); renamed to
-> `@blit386/kit` + `create-blit386` at `1.2.0` (2026-06-19); 1.0.0 shipped 2026-06-14 (see below). All Phase 1.x code
-> items merged to `main` (PRs #7-#10). All Phase 2 "Agents on tap" work is merged to `main` - the full
-> `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning / vars
-> persistence; shared-file note preservation across repeated syncs; test exit-code assertions) and the docs sweep. The
-> fully-qualified docs-sync-path commit (`9c37894`) is already in `main` - it merged as the second parent of the PR #16
-> merge commit, so there is no pending `agent-docs` follow-up (the earlier "not yet merged" note was stale).
-> `blit agents add <claude|cursor>` (Round 18, PR #17) and the kit-owned clean-merge drift fix (Round 19, PR #18) are
-> both on `main`.
->
-> Release status: 1.0.0 SHIPPED (2026-06-14). Both packages are published to npm at `1.0.0` (dist-tag `latest`):
-> `@blit386/kit@1.0.0` and `create-blit386@1.0.0` (the published scaffolder manifest pins `@blit386/kit: 1.0.0`,
-> confirming the pnpm `workspace:*` rewrite). Landed via PR #19 (squash) to `main` (`0eac7aa`); annotated git tag
-> `1.0.0` (no `v` prefix, matching `0.1.0`) created on that merged commit. Pre-1.0 features included before cutting:
-> `blit agents add` (Round 18) and the clean-merge drift fix (Round 19), plus a packaging-metadata pass
-> (repository/bugs/homepage, author object, keywords). End-to-end smoke test from npm passed (`blit doctor` green;
-> engine `1.1.1` compatible with kit `^1.1.1`; 7 kit files up to date). `BLIT386_RANGE` stays `^1.1.1`. Release notes:
-> the GitHub Release at <https://github.com/blit386/create-blit386/releases/tag/1.0.0>. Note: `main` is protected, so
-> releases land through a PR and the tag is created on the merged commit (not the pre-merge branch SHA).
->
-> Release status: 1.1.0 SHIPPED (2026-06-14). Minor bump over 1.0.0, bundling everything merged to `main` since the
-> 1.0.0 tag (PRs #20-#22): (1) the `blit migrate` codemod feature - typed migration registry + a dependency-free
-> anchored codemod engine + `blit upgrade` wiring, with the auto-vs-review split (Round 21); and (2) the generated-game
-> skills - the `migrate` AI skill (Round 22) plus the game-author capability skills and `share-the-game` (Round 23; 14
-> at the time; 24 skill directories on disk today), with Claude keeping skill YAML frontmatter and Cursor commands
-> stripping it. Both packages published to npm at `1.1.0`; the scaffolder manifest pins `@blit386/kit: 1.1.0` (pnpm
-> `workspace:*` rewrite confirmed). Landed via PR #22 (squash) to `main`; annotated git tag `1.1.0` (no `v` prefix) on
-> merged commit `a9e77fd`. `engineRange` and `BLIT386_RANGE` stay `^1.1.1`. Release notes: the GitHub Release at
-> <https://github.com/blit386/create-blit386/releases/tag/1.1.0>.
->
-> Release status: 1.2.0 SHIPPED (2026-06-19). Both packages published to npm at `1.2.0` (dist-tag `latest`):
-> `@blit386/kit@1.2.0` + `create-blit386@1.2.0`. Headline change: the package/repo rename from `create-blit-tech` +
-> `@blit-tech/kit` to `create-blit386` + `@blit386/kit` (GitHub repo `blit386/create-blit386`), plus a Claude
-> skills/rules refresh and the design doc landing in-repo (PR #34). This release also moves the engine pin forward:
-> `engineRange` and `BLIT386_RANGE` are now `^1.2.0` (was `^1.1.1`), tracking engine `blit386@1.2.0`. Landed via PR #39
-> (`chore(release): 1.2.0`) on merged commit `ec563aa`; annotated git tag `1.2.0` (no `v` prefix). Release notes: GitHub
-> Release at <https://github.com/blit386/create-blit386/releases/tag/1.2.0>.
->
-> Engine update (2026-07-13): `blit386@1.3.0` is now live on npm (`latest`), which is the version carrying the audio
-> subsystem. This opens the release-order gate in section 0 - the kit's audio content (`content/docs/audio.md`,
-> `content/skills/play-a-sound/`, plus audio rows added to `content/AGENTS.md`, `blit-api-names.md`, and
-> `show-debug-overlay`) can now be published.
->
-> Release status: 1.2.1 SHIPPED (2026-07-14). Both packages published to npm at `1.2.1` (dist-tag `latest`):
-> `@blit386/kit@1.2.1` + `create-blit386@1.2.1`. Headline change: the audio content gated above ships (PR #56), and
-> `engineRange` / `BLIT386_RANGE` move to `^1.3.0` (was `^1.2.0`) - not cosmetic, `engineRange` feeds `blit doctor`'s
-> D14 compatibility check against an already-installed engine, and leaving it at `^1.2.0` would have made `blit doctor`
-> report a false "compatible" for a project still on `blit386@1.2.0` after syncing in the new audio docs. Landed via PR
-> #60 (`chore(release): 1.2.1`) on merged commit `f19fafc`; tag `1.2.1` (no `v` prefix) on that commit. Smoke test
-> passed (`blit doctor` green; `blit386 1.3.0 is compatible with this kit (^1.3.0)`). Release notes: the GitHub Release
-> at <https://github.com/blit386/create-blit386/releases/tag/1.2.1>.
->
-> Publishing policy change (2026-07-14): this release exposed that the `NPM_TOKEN` repository secret the tag-driven
-> `publish.yml` workflow depended on was missing, so the workflow failed with `ENEEDAUTH` and `1.2.1` was published by
-> hand instead (`pnpm publish`, kit first, per the now-only path in `PUBLISHING.md`). Rather than re-provision the
-> secret, the decision is to never publish from CI again - `.github/workflows/publish.yml` is deleted, and every future
-> release is a manual `pnpm publish` from vancura's machine. `PUBLISHING.md` and the `cbt-release` skill are rewritten
-> to describe manual publishing as the only path, not a fallback. Tags are still pushed after a manual publish so the
-> repo history keeps recording releases the same way; they no longer trigger anything.
->
-> Engine update (2026-07-23): `blit386@1.4.0` is live on npm (`latest`), carrying hot reload / `blit386/vite` / asset
-> hot-replace / `BT.loadingAssetsCount`. That satisfies the release-order gate for the kit's hot-reload content
-> (section 12) the same way `blit386@1.3.0` did for audio in section 0.
->
-> Release status: 1.3.0 SHIPPED (2026-07-24). Both packages published to npm at `1.3.0` (dist-tag `latest`):
-> `@blit386/kit@1.3.0` + `create-blit386@1.3.0`. Headline change: hot-reload kit content and the starter Vite plugin for
-> engine `blit386@1.4.0` (section 12; `content/docs/hot-reload.md`, `use-hot-reload` / loading-screen skills, Catcher
-> `onHotReload` example, `blit386()` in `templates/base/vite.config.js`), and `engineRange` / `BLIT386_RANGE` move to
-> `^1.4.0` (was `^1.3.0`). Existing games opt in via `npx blit upgrade` / `npx blit migrate` (migration
-> `2026-07-23-hot-reload-vite-plugin`). Also in this cut: shared `@blit386/kit/adapters` for scaffold + agents sync,
-> Claude `settings.json` hooks for guardrail parity with Cursor, and lockstep bump script hardening
-> (`pnpm run bump -- <x.y.z>`). Manual `pnpm publish` (kit first) per the 2026-07-14 policy. Landed via
-> `chore(release): 1.3.0` PR; tag `1.3.0` (no `v` prefix) on the merged `main` commit. Release notes: the GitHub Release
-> at <https://github.com/blit386/create-blit386/releases> (tag `1.3.0` after publish).
->
-> Dogfood finding (Round 15, still holds): the kit IR is game-author altitude; the `blit386` / `blit386-demos` repos are
-> the kit's upstream maintainers, not consumer games - regenerating their `.cursor/`/`.claude/` from the current IR
-> would delete library-maintenance tooling, so those configs were left untouched (a maintainer-profile IR is future
-> work). Phase 3 migrations (Round 21-22): the kit ships a structured migration registry + codemod engine
-> (`packages/kit/src/migrations/`), a `blit migrate` command (preview by default, `--write` to apply), and
-> `blit upgrade` runs the applicable codemods after a version change. Safe renames auto-apply; ambiguous ones (`equals`,
-> `tick`, ...) are reported for review, and the `migrate` AI skill (`content/skills/migrate/`) teaches the assistant to
-> resolve them. 24 skill directories under `content/skills/` cover the full renderer / input / palette / timing / audio
-> / post-process / hot-reload surface (plus `run`, `fix`, `migrate`, `share-the-game`). `npx blit` verified
-> (2026-06-14): `blit doctor` + `blit run` pass on npm, pnpm, and yarn for a freshly scaffolded project (bun
-> intentionally out of scope; see section 7). Engine `docs/reference-deprecations.md` generation from the kit migration
-> registry shipped in-repo (BT-299, section 4.6). Still open (roadmap only - do not treat deleted GitHub issues as live
-> links): auto-stamp `blit386.engineRange` at release; section 7 verification TODOs (StackBlitz, Windows, iPad/Safari);
-> Catcher starter catch/miss sounds (deferred product work). Repo: <https://github.com/blit386/create-blit386> (public).
-> Owner: Václav (vancura). First external user: Filipek. Started: 2026-06-07. Purpose: shared source of truth for the
-> BLIT386 project scaffolder. We return to this across sessions so we do not lose decisions, findings, or deferred
-> ideas.
 
 This is the planning doc: roadmap, decisions, and monetization notes. It moved into the scaffolder repo in PR #34 and
 now lives at `packages/create-blit386/` in the public `blit386/blit386` monorepo - so write it as a doc a stranger may
 read, and keep anything genuinely private out of it.
-
----
-
-## 0. Release-order constraint: audio (READ BEFORE PUBLISHING THE KIT)
-
-> Status (2026-07-14): CLOSED - the gate is satisfied and the kit's audio content has shipped. `blit386@1.3.0` (the
-> audio-bearing engine release) went live on npm on 2026-07-13; PR #56 (`content/docs/audio.md`,
-> `content/skills/play-a-sound/`, plus edits to `content/AGENTS.md`, `content/rules/blit-api-names.md`,
-> `content/skills/show-debug-overlay/SKILL.md`, `content/skills/share-the-game/SKILL.md`,
-> `content/skills/structure-a-game/SKILL.md`, `content/docs/getting-started.md`, and
-> `content/docs/when-something-breaks.md`) merged to `main`; `@blit386/kit` and `create-blit386` published to npm at
-> `1.2.1` on 2026-07-14 (PR #60, manual `pnpm publish` - see the top status block for why manual). Correction
-> (2026-07-14): the "no version-pin bump needed" call originally made here was wrong for `engineRange` - see the "why
-> this is safe" paragraph below, now corrected. `blit386.engineRange` in `packages/kit/package.json` and `BLIT386_RANGE`
-> in `scaffold.ts` both shipped at `^1.3.0` in the `1.2.1` release. Catcher starter catch + miss sounds did not ship in
-> `1.2.1` and remain deferred product work (the starter game has no `BT.soundPlay`/`synthPreset` calls yet); tracked
-> historically under closed [#50](https://github.com/blit386/create-blit386/issues/50). Those pins later moved to
-> `^1.4.0` and shipped in the `1.3.0` release (hot reload) - see the top status block.
-
-The kit now documents the engine's audio subsystem - `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
-in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
-of it describes API that exists in the `blit386` source tree under `## 1.3.0 - Unreleased` and, at the time this section
-was written, was NOT on npm yet (`latest` was `blit386@1.2.1`, which had no audio) - see the status line above for where
-that stands now.
-
-The rule:
-
-> Do NOT publish `@blit386/kit` with the audio content until `blit386@1.3.0` is live on npm. Publish the engine first,
-> then the kit.
-
-Correction (2026-07-14): the paragraph below originally argued no version-pin change was needed. That conflated two
-different mechanisms and was wrong for one of them.
-
-`BLIT386_RANGE` (in `scaffold.ts`) is written into a freshly scaffolded game's `package.json` as its `blit386`
-dependency range. Leaving it at `^1.2.0` really would have been harmless: `npm install` always resolves to the latest
-version satisfying the range, so a fresh scaffold gets `1.3.0` regardless of whether the pin reads `^1.2.0` or `^1.3.0`.
-
-`engineRange` (in `packages/kit/package.json`) is a different mechanism entirely - it does not describe what a fresh
-install resolves to. `blit doctor` reads it via `kitEngineRange()` (`packages/kit/src/env.ts`) and compares it against
-an **already-installed** `blit386` via `satisfiesCaretRange()`, which only checks "same major, and installed >= floor"
-(`packages/kit/src/commands/doctor.ts`, the D14 compatibility check). Leaving `engineRange` at `^1.2.0` while the kit's
-own content documents 1.3.0-only API means an existing project that syncs in the new audio docs (`npx blit agents sync`
-/ `blit upgrade`) but still has `blit386@1.2.0` installed gets told "blit386 1.2.0 is compatible with this kit (^1.2.0)"
-\- a false green light, while `docs/audio.md` describes `BT.soundPlay`, which does not exist on their installed engine.
-That is the exact "docs lied to me" failure D14 exists to catch; the stale `engineRange` just made D14 blind to this
-particular drift. Bumping `engineRange` to `^1.3.0` puts that same user in the correct "needs update" branch of
-`blit doctor` instead.
-
-Conclusion: `BLIT386_RANGE` and `engineRange` are bumped to `^1.3.0` together for the `1.2.1` release - required for
-`engineRange` (the D14 compatibility check needs it), harmless-but-consistent for `BLIT386_RANGE`.
-
-If the kit shipped first, a kid would follow `docs/audio.md`, call `BT.soundPlay`, and get "not a function" - the exact
-"the docs lied to me" failure this repo exists to prevent. The audio doc and skill each carry a line telling the reader
-to run `npx blit upgrade` if `BT.soundPlay` is missing, which covers an existing project that upgrades the kit while
-sitting on an older engine, but it is a safety net, not a substitute for the publish order.
 
 ---
 
@@ -202,12 +45,12 @@ sitting on an older engine, but it is a safety net, not a substitute for the pub
 
 | # | Decision | Choice | Notes |
 | --- | --- | --- | --- |
-| D1 | Versioning model | Independent kit version | Engine on npm semver. The "kit" (AI files, docs, skills, hooks, templates) has its own version, pulled and regenerated by a project-local command. Engine and AI guidance evolve at different speeds. |
+| D1 | Versioning model | Independent kit version (superseded by lockstep, BT-410 - see 4.1) | Engine on npm semver. The "kit" (AI files, docs, skills, hooks, templates) has its own version, pulled and regenerated by a project-local command. Engine and AI guidance evolve at different speeds. |
 | D2 | Cloud strategy | Local-first now, cloud after verify | Ship `npm create blit386` for desktop first. StackBlitz is wanted and low-risk (see finding F3). Hosted playground is deferred to Ambilab (section 6). |
 | D3 | Agent support | AGENTS.md generic is canonical; generate per-agent files from it | Support all viable agents. Claude Code and Cursor files are generated from the canonical source. Generation is capability-aware, not lowest-common-denominator (Cursor hooks and contextual rules are more powerful than Claude's; use each agent's full power). |
 | D4 | Default UX | Short wizard | No silent default. 2-3 questions (JS or TS, which assistants - multi-select - or none). Kid-friendly copy for the unsure. Pros pass flags to skip. |
 | D5 | Starter game | Catcher | A real tiny game (~80 lines): move a paddle, catch falling items for points, miss and lose a life. Teaches input, score, lose condition, palette. Must not depend on post-process effects (works on software fallback per F3). |
-| D6 | Kit packaging + name | `@blit386/kit` | Its own independently-versioned package (D1). Name resolved: create a free `blit386` npm org (sole owner) for the `@blit386/*` scope; no collision with the unscoped `blit386` engine (F5). Not Ambilab. |
+| D6 | Kit packaging + name | `@blit386/kit` | Its own package, versioned in lockstep with the engine since BT-410 (see 4.1). Name resolved: create a free `blit386` npm org (sole owner) for the `@blit386/*` scope; no collision with the unscoped `blit386` engine (F5). Not Ambilab. |
 | D7 | MVP build approach | Thinnest no-agent path, on the adapter pipeline | Filipek uses no agent, so v0.1 must nail the no-agent scaffold (JS + Catcher + `blit run` / `blit upgrade` + local docs). The generator's only v0.1 target is its cheapest one: emit `AGENTS.md` (useful as a plain doc) + `docs/`. Real Claude/Cursor adapters are phase 2. Built on the pipeline so adapters slot in without re-architecture. |
 | D8 | Language support | JS in v0.1, TS in phase 2 | Template = shared base + thin language layer, so TS is an added layer later, not a fork. JS path still gets editor type-checking via JSDoc `@typedef` against the published `.d.ts`. |
 | D9 | Repo layout | Hybrid: new repo for scaffolder + kit | `create-blit386` and `@blit386/kit` live in one new repo. Leave `blit386` and `blit386-demos` as their own repos, histories, and CI. Least disruption to what already publishes. |
@@ -250,6 +93,10 @@ sitting on an older engine, but it is a safety net, not a substitute for the pub
 ## 4. Architecture
 
 ### 4.1 Three independently-versioned things (do not conflate)
+
+> Superseded in part by lockstep versioning (BT-410): the three packages now share one `x.y.z` and release together,
+> engine first (`PUBLISHING.md` next to this file). They are still three distinct things; only the versions merged. The
+> table below is kept for the distinction it draws.
 
 | Thing | What | Distribution | Cadence |
 | --- | --- | --- | --- |
@@ -890,44 +737,6 @@ Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; 
 
 ---
 
-## 11. Publishing to npm (procedure + status)
-
-> Superseded (2026-10-18): the procedure below predates lockstep versioning and the monorepo. The live procedure -
-> engine first (`pnpm run release` in `packages/blit386`), then kit, then scaffolder, one `x.y.z` from `pnpm run bump`,
-> one tag without a `v` prefix - is `PUBLISHING.md` next to this file and the root `/release` skill. Kept for the
-> release history it records.
-
-Status (verified 2026-07-24 against the npm registry): `@blit386/kit@1.3.0` and `create-blit386@1.3.0` are published and
-live (`dist-tags.latest = 1.3.0` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`
-(2026-06-14; migrate codemods + game-author skills), then `1.2.0` (2026-06-19; `create-blit-tech`/`@blit-tech/kit`
-rename to `create-blit386`/`@blit386/kit`), then `1.2.1` (2026-07-14; audio content + `engineRange` fix), then `1.3.0`
-(2026-07-24; hot reload for engine 1.4.0 - see the top status block and section 12). Git tag `1.3.0` (no `v` prefix) on
-the merged `main` commit; release notes live in the GitHub Release at
-<https://github.com/blit386/create-blit386/releases> (tag `1.3.0` after publish).
-
-Publishing is manual-only (policy change 2026-07-14, see the top status block): there is no
-`.github/workflows/publish.yml` and no `NPM_TOKEN` secret. Nothing publishes on a tag push. Tags are still cut and
-pushed after a manual publish, purely as a release marker for the repo history.
-
-Procedure (repeat for each release; bump versions first - a version, once published, is permanent):
-
-1. Commit first (`pnpm publish` refuses a dirty tree; otherwise pass `--no-git-checks`).
-2. `npm login`, then `npm whoami` must print `vancura` (sole owner of the free `blit386` org).
-3. `pnpm install && pnpm -r run build` (the `prepack` script also rebuilds on publish).
-4. Publish the KIT FIRST (the scaffolder depends on it): `pnpm --filter @blit386/kit publish` (try `--dry-run` first;
-   add `--otp=<code>` if 2FA). It is scoped; `publishConfig.access: public` keeps it a free public package.
-5. Publish the SCAFFOLDER SECOND: `pnpm --filter create-blit386 publish`. In `--dry-run`, confirm the manifest shows
-   `"@blit386/kit": "<version>"`, NOT `"workspace:*"`.
-6. Verify: `npm view @blit386/kit version`; smoke test `npm create blit386@latest smoke-test` -> install -> run.
-7. Tag the merged commit on `main` (`git tag <version> && git push origin <version>`) and publish a GitHub Release
-   (`gh release create <version> --title "Release <version>" --notes-file ...`) - this records the release; it does not
-   trigger anything.
-
-Critical rules: ALWAYS `pnpm publish`, never `npm publish` (only pnpm rewrites `workspace:*` to a real version); kit
-before scaffolder; with 2FA publish one package at a time (each needs a fresh OTP).
-
----
-
 ## 12. Hot reload (engine 1.4.0+)
 
 ### What shipped
@@ -982,6 +791,6 @@ ships both at `^1.4.0`.
 ## Changelog
 
 This doc records durable decisions, not a dated release log - chronological history (what shipped when, which PR, which
-commit) lives in `git log` and the GitHub Releases linked from section 11. When a change is genuinely a new durable
-decision, fold it into the relevant numbered section above (per-file rule in `.coderabbit.yaml`) instead of appending a
-dated entry here.
+commit) lives in `git log` and the GitHub Releases at <https://github.com/blit386/blit386/releases>. When a change is
+genuinely a new durable decision, fold it into the relevant numbered section above (per-file rule in `.coderabbit.yaml`)
+instead of appending a dated entry here.
