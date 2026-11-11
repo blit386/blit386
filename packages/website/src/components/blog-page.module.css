@@ -15,18 +15,6 @@
     @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
 }
 
-.meta {
-    @apply flex flex-wrap items-center gap-2 text-sm;
-}
-
-.date {
-    @apply text-fd-primary;
-}
-
-.tag {
-    @apply rounded-lg bg-fd-primary px-1.5 py-0.5 text-fd-primary-foreground;
-}
-
 /* End-of-post mark: a filled box glued to the end of the last block, magazine-style.
    Scoped to .prose > *:last-child so it lands on whatever the post actually ends with
    (paragraph, list, code block, ...) without touching individual post MDX. */
