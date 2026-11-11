@@ -63,6 +63,7 @@ import {
     PALETTE_EFFECT_SLOT_ZERO_MESSAGE,
     paletteEffectEndOutOfRangeError,
     paletteEffectRangeOrderError,
+    paletteFlashColorError,
     paletteIndexNegativeError,
     paletteIndexOutOfRangeError,
     SPRITE_NOT_INDEXIZED_MESSAGE,
@@ -1893,10 +1894,16 @@ export class BTAPI {
      *
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
+     * @throws Error if no palette is set, `color` is not a `Color32`, or `durationMs` is not a non-negative finite number.
      */
     public paletteFlash(color: Color32, durationMs: number): void {
         if (!this.getPalette()) {
             throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
+        }
+
+        // Plain JavaScript callers can pass anything; unchecked, a bad color throws from inside a later tick.
+        if (!(color instanceof Color32)) {
+            throw new Error(paletteFlashColorError(color));
         }
 
         this.assertFiniteDuration('paletteFlash', durationMs);

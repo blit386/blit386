@@ -237,9 +237,10 @@ export const palette = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
+     * @changed 1.8.1 Throws at the call when `color` is not a `Color32`, instead of throwing from inside a later tick.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
-     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
+     * @throws Error if no palette is set, `color` is not a `Color32`, or `durationMs` is not a non-negative finite number.
      */
     paletteFlash: (color: Color32, durationMs: number): void => {
         BTAPI.instance.paletteFlash(color, durationMs);

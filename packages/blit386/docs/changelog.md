@@ -380,6 +380,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The software renderer now logs a clear console error when it cannot start because WebGPU already uses the canvas (a
   `BT.init()` restart with `backend: 'software'`, or a fallback after WebGPU got as far as the canvas). `BT.init()` used
   to resolve `false` with only "Failed to initialize renderer". See [Browser Support](api-browser-support.md).
+- `BT.paletteFlash()` throws at the call when its color is not a `Color32`. A `null` or `undefined` color from plain
+  JavaScript used to be accepted and then threw a `TypeError` from inside the engine on the next tick, away from the
+  line that caused it. See [Palette](api-palette.md#palette-effects).
 
 ## 1.8.0 - 2026-10-18
 

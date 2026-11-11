@@ -60,6 +60,16 @@ export function paletteEffectRangeOrderError(start: number, end: number): string
 }
 
 /**
+ * Returns the error message when `BT.paletteFlash()` gets something other than a `Color32`.
+ *
+ * @param color - The value passed as the flash color.
+ * @returns User-facing error string.
+ */
+export function paletteFlashColorError(color: unknown): string {
+    return `BT.paletteFlash() needs a Color32 for the flash color, like Color32.white (got ${String(color)}).`;
+}
+
+/**
  * Returns the error message when `applyHUD` is called with `startSlot` less than 1.
  *
  * @param startSlot - The invalid start slot value that was supplied.

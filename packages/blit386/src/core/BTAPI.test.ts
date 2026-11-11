@@ -59,6 +59,7 @@ import {
     NO_ACTIVE_PALETTE_MESSAGE,
     PALETTE_EFFECT_SLOT_ZERO_MESSAGE,
     paletteEffectEndOutOfRangeError,
+    paletteFlashColorError,
     SOFTWARE_CANVAS_TAKEN_MESSAGE,
 } from '../utils/errorMessages';
 import type * as FrameCaptureModule from '../utils/FrameCapture';
@@ -6703,6 +6704,22 @@ describe('BTAPI.paletteFadeExposure', () => {
         BTAPI.instance.setPalette(new Palette(16));
 
         expect(() => BTAPI.instance.paletteFadeExposure(new Palette(16), NaN)).toThrow(/paletteFadeExposure/);
+    });
+});
+
+describe('BTAPI.paletteFlash (BT-759)', () => {
+    afterEach(() => {
+        BTAPI.instance.paletteClearEffects();
+    });
+
+    it.each([null, undefined, 'white'])('rejects %s as the color at the call, not on a later tick', (color) => {
+        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.paletteClearEffects();
+
+        expect(() => BTAPI.instance.paletteFlash(color as unknown as Color32, 100)).toThrow(
+            paletteFlashColorError(color),
+        );
+        expect(activeEffectCount()).toBe(0);
     });
 });
 
