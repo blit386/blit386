@@ -358,5 +358,5 @@ the local baseline/compare workflow.
 <Cards>
   <Card title="Testing" href="/docs/reference/testing">Unit, integration, and visual test tiers.</Card>
   <Card title="Performance Best Practices" href="/docs/performance/best-practices">When and how to optimize hot paths.</Card>
-  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">pnpm run bench and the local baseline/compare workflow.</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/packages/blit386/docs/developer-experience-guide.md">pnpm run bench and the local baseline/compare workflow.</Card>
 </Cards>

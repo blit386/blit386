@@ -467,7 +467,7 @@ on the backend-parity subset.
   <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Hot-swap tiers and asset hot-replace coverage.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Overlay integration test inventory.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Visual regression for the effect chain.</Card>
-  <Card title="Tooling" href="https://github.com/blit386/blit386/blob/main/docs/tooling.md">Declaration tooling checks.</Card>
+  <Card title="Tooling" href="https://github.com/blit386/blit386/blob/main/packages/blit386/docs/tooling.md">Declaration tooling checks.</Card>
   <Card title="Performance Testing" href="/docs/performance/testing">CPU benchmarks (test tier 4).</Card>
   <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual software backend matrix.</Card>
 </Cards>

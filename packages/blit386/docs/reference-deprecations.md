@@ -95,5 +95,5 @@ layout functions and `RenderPaletteUsage` re-exports were removed rather than ca
   <Card title="API: Core" href="/docs/api/core">Current BT getters and HardwareSettings fields.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Current input API names.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Current overlay configure flags.</Card>
-  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming and migration policy.</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/packages/blit386/docs/developer-experience-guide.md">Boolean naming and migration policy.</Card>
 </Cards>
