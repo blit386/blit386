@@ -422,6 +422,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   keeping the comments, and says which keys to copy by hand when it cannot. `blit doctor` prints install and update
   hints for the package manager the game uses, and the commands the CLI tells you to run start with `npx blit`, so they
   work from the game folder.
+- `create-blit386`: the starter game's paddle now follows a finger on a phone or tablet - it read only pointer slot 0,
+  which the engine keeps for the mouse - and a mouse resting over the game no longer switches the arrow keys off. The
+  scaffolder installs before it makes the first commit, so the commit holds the lockfile that the optional CI workflow
+  needs, and starts git on a `main` branch, the one that workflow runs on. When git cannot commit (no name or email
+  set), it says how to fix that instead of saying nothing. The optional CI workflow and the GitHub Copilot setup
+  workflow use current `actions/checkout` and `actions/setup-node` pins. A folder named after one of the game's own
+  packages (`vite`, `blit386`) gets a `-game` package name, which npm can install. A game created with Yarn 2 or later
+  gets a `.yarnrc.yml` that makes Yarn install a `node_modules` folder, which `npx blit` needs.
 
 ## 1.8.0 - 2026-10-18
 
