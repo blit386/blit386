@@ -28,12 +28,12 @@ channel they carry both the tag and the header.
 | `base-uri` | `'self'` | Blocks injected `<base>` tags. |
 | `object-src` | `'none'` | No plugins (`<object>`, `<embed>`). |
 | `script-src` | `'self' 'unsafe-inline' https://plausible.io` | Vite emits same-origin ES module bundles ([`_partials/demo-shell.js`](../_partials/demo-shell.js), demo entries); `'unsafe-inline'` covers the first-paint shell/embed stamp and the embed-only demo `import()` snippet in [`_partials/layout.html`](../_partials/layout.html). Plausible loads from `https://plausible.io`: [`_partials/demo-shell-analytics.js`](../_partials/demo-shell-analytics.js) injects its script on the shell document, on standalone `?embed` pages (docs-site and third-party iframes), and on the `/` sheet, and skips it inside the shell's own same-origin iframe so a view is counted once. |
-| `style-src` | `'self' 'unsafe-inline'` | Required: shared [`_partials/layout.html`](../_partials/layout.html) uses an inline `<style>` block. |
+| `style-src` | `'self' 'unsafe-inline'` | Required for inline `style=` attributes: the Shiki source panel colors every token through a `style="--shiki-light:...;--shiki-dark:..."` attribute ([`plugins/highlight-demo-source.js`](../plugins/highlight-demo-source.js)), and the next-channel banner (`CHANNEL_BANNER_HTML` in [`plugins/virtual-demos.js`](../plugins/virtual-demos.js)) is styled the same way. [`public/404.html`](../public/404.html) also carries a `<style>` block. [`_partials/layout.html`](../_partials/layout.html) has none. |
 | `img-src` | `'self' data: blob:` | Sprites/fonts from same origin; `blob:` for frame capture / download ([image-output](../src/image-output.js)). |
 | `font-src` | `'self' https://fonts.vancura.dev` | Same-origin bitmap fonts and Departure Mono under `/fonts/`; Pragmata Pro for the source panel is loaded from `fonts.vancura.dev` (see [`styles/demo-source.css`](../styles/demo-source.css)). |
 | `connect-src` | `'self' https://plausible.io` | `fetch` for PNG, `.btfont`, and `.wav` audio assets (the engine decodes audio through Web Audio, so audio loads are governed here, not by `media-src`); WebGPU init stays same-origin; Plausible analytics (`/api/event` on `plausible.io`). Also what the `/` sheet and `/shots` fetch (`public/shots/manifest.json` and PNGs, same origin). A cross-origin `?baseline=` URL on the deployed `/shots` page is blocked by this directive - that comparison works on the dev server only, which has no CSP. |
 | `media-src` | `'none'` | Correct today, but read the note below before adding audio or video markup. |
-| `worker-src` | `'self' blob:` | Reserved for worker/blob patterns used by capture and asset helpers. |
+| `worker-src` | `'none'` | No workers: neither the engine nor the demos, `_partials`, or `_shots` start a `Worker`, `SharedWorker`, or service worker. Allow `'self'` in the same change that adds one. |
 | `child-src` / `frame-src` | `'self'` | Same-origin only: the persistent shell loads each demo in an iframe (`?embed&source`) so demo swaps can discard the engine instance (no teardown API). External nested frames stay blocked. |
 | `form-action` | `'none'` | No form submissions. |
 | `frame-ancestors` | `'self' https://vancura.dev https://*.framer.app https://blit386.dev https://next.blit386.dev http://localhost:*` | `'self'` is required so the persistent shell can iframe the same demo (`?embed` / `?embed&source`) and so `/shots` can drive demos in its own `?embed&capture` iframe. The same rule covers every `https://demos.blit386.dev/<slug>?embed` page, so this list is the complete embed allowlist - a new host that wants to iframe a demo is added here. Also allows embedding in the Framer site, vancura.dev articles, the Fumapress docs site ([blit386.dev](https://blit386.dev)) and its `next.blit386.dev` preview channel, and any local port for testing the docs site's `DemoEmbed` against production demos before a release. |
@@ -66,7 +66,9 @@ in the same change, and update the table above.
 
 - `script-src` nonces / hashes - would require build-time CSP injection or moving all JS external (layout already
   external; not worth nonce plumbing for demos).
-- `style-src` without `'unsafe-inline'` - would require extracting layout CSS to a file (separate refactor).
+- `style-src` without `'unsafe-inline'` - would require moving the Shiki token colors from `style=` attributes to
+  classes (Shiki's class-based output), the channel banner styles into `layout.css`, and the 404 page's `<style>` into a
+  file.
 - `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` - not required for WebGPU here; may affect third-party
   embed debugging.
 - `X-Frame-Options` - superseded by `frame-ancestors`; avoid conflicting duplicate framing policy.
