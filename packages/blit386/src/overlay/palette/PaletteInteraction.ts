@@ -100,6 +100,7 @@ function isPointerOutsideBand(pointerX: number, pointerY: number, paletteBand: R
  * @param cols - Grid column count.
  * @param swatchSize - Swatch side length in pixels.
  * @param gap - Gap between swatches.
+ * @param visibleRows - Rows drawn in the band viewport; lower rows sit in the bottom padding.
  * @param scrollRowOffset - First visible grid row.
  * @param colorCount - Active palette slot count.
  * @returns Palette index, or `null` when the point is in padding or out of range.
@@ -110,6 +111,7 @@ function resolveIndexAtBandLocal(
     cols: number,
     swatchSize: number,
     gap: number,
+    visibleRows: number,
     scrollRowOffset: number,
     colorCount: number,
 ): number | null {
@@ -121,7 +123,7 @@ function resolveIndexAtBandLocal(
     const col = Math.floor(localX / pitch);
     const row = Math.floor(localY / pitch);
 
-    if (col >= cols) {
+    if (col >= cols || row >= visibleRows) {
         return null;
     }
 
@@ -171,7 +173,7 @@ export function hitTestSwatch(
     scrollRowOffset = 0,
     scrollbarTrackWidth = PALETTE_SCROLLBAR_TRACK_WIDTH_PX,
 ): number | null {
-    const { cols, swatchSize, gap } = grid;
+    const { cols, swatchSize, gap, visibleRows } = grid;
 
     if (cols <= 0 || swatchSize <= 0 || colorCount <= 0) {
         return null;
@@ -188,7 +190,16 @@ export function hitTestSwatch(
 
     const localX = pointerX - (paletteBand.x + OVERLAY_EDGE_MARGIN_PX);
     const localY = pointerY - (paletteBand.y + PALETTE_GRID_PADDING_PX);
-    const index = resolveIndexAtBandLocal(localX, localY, cols, swatchSize, gap, scrollRowOffset, colorCount);
+    const index = resolveIndexAtBandLocal(
+        localX,
+        localY,
+        cols,
+        swatchSize,
+        gap,
+        visibleRows,
+        scrollRowOffset,
+        colorCount,
+    );
 
     if (index === null) {
         return null;

@@ -161,6 +161,33 @@ describe('hitTestSwatch', () => {
         // keeps the palette grid clear; this used to overlap when the corner was 48x48.
         expect(layout.toggleRect.isContaining(new Vector2i(swatch.x + 1, swatch.y + 1))).toBe(false);
     });
+
+    it('returns null in the bottom padding of a scrollable band, below the last drawn row', () => {
+        const scrollGrid = computeGrid(320, DEFAULT_PALETTE_SWATCH_SIZE, 256, PALETTE_SWATCH_GAP_PX, undefined, 2);
+        const scrollBand = new Rect2i(0, paletteBandY(240, scrollGrid.totalHeight), 320, scrollGrid.totalHeight);
+        const lastDrawn = new Rect2i();
+
+        writeSwatchTopLeft(lastDrawn, scrollGrid.cols + 5, scrollBand, scrollGrid);
+
+        expect(scrollGrid.visibleRows).toBe(2);
+        expect(hitTestSwatch(lastDrawn.x + 1, lastDrawn.y + 1, scrollBand, scrollGrid, 256, hintExclusion, 320)).toBe(
+            scrollGrid.cols + 5,
+        );
+
+        for (const bandLocalY of [19, 20]) {
+            expect(
+                hitTestSwatch(
+                    lastDrawn.x + 1,
+                    scrollBand.y + bandLocalY,
+                    scrollBand,
+                    scrollGrid,
+                    256,
+                    hintExclusion,
+                    320,
+                ),
+            ).toBeNull();
+        }
+    });
 });
 
 describe('palette scroll helpers', () => {

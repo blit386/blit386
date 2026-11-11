@@ -355,6 +355,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   simply drops can be garbage-collected (during a hot-reload dev session it stays loaded until `destroy()`). A sheet
   whose colors are missing from the new palette keeps its old indices and is retried by the next refresh, instead of
   being dropped for good.
+- With `overlayPaletteRowsVisible` set, the padding below the last visible swatch row in the overlay palette band no
+  longer shows a tooltip for a row that is not drawn, and a click there no longer copies that hidden index.
 
 ## 1.8.0 - 2026-10-18
 
