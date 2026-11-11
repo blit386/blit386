@@ -219,9 +219,9 @@ function edgeColorAt(depth, along) {
     return (along - PANEL_CAP) % 4 < 2 ? ART_COLORS.dash : ART_COLORS.edgeMid;
 }
 
-// Picks the color of one pixel of the 18x18 panel. `dx` and `dy` are the distance from
-// the nearest left/right and top/bottom outer edge, which lets the same rules paint all
-// four corners and all four edges.
+// Picks the color of one pixel of the 18x18 panel at (`x`, `y`). It first works out
+// `dx` and `dy`, the distance from the nearest left/right and top/bottom outer edge,
+// which lets the same rules paint all four corners and all four edges.
 function panelColorAt(x, y) {
     const dx = Math.min(x, PANEL_SIZE - 1 - x);
     const dy = Math.min(y, PANEL_SIZE - 1 - y);
@@ -287,12 +287,15 @@ function buildArtSheet() {
     // Start fully transparent, so the gap between the panel and the bar stays empty.
     ctx.clearRect(0, 0, SHEET_W, SHEET_H);
 
+    // Paint the panel one pixel at a time: the outer loop walks down the rows, the inner
+    // loop across each row, and panelColorAt() decides each pixel's color.
     for (let y = 0; y < PANEL_SIZE; y++) {
         for (let x = 0; x < PANEL_SIZE; x++) {
             plot(ctx, x, y, panelColorAt(x, y));
         }
     }
 
+    // Then the bar the same way, shifted BAR_X pixels to the right of the panel.
     for (let y = 0; y < BAR_H; y++) {
         for (let x = 0; x < BAR_W; x++) {
             plot(ctx, BAR_X + x, y, barColorAt(x, y));
@@ -305,9 +308,12 @@ function buildArtSheet() {
 // Demonstrates nine-slice panels: one asset, stretch vs tile, corner crop, recolor, and a
 // three-slice bar.
 class Demo {
+    // Every color the art and the UI draw with, built in init().
     /** @type {Palette | null} */
     palette = null;
 
+    // The sheet painted in code by buildArtSheet(): the panel on the left, the bar on the
+    // right. Built in init().
     /** @type {SpriteSheet | null} */
     sheet = null;
 
@@ -323,11 +329,15 @@ class Demo {
     fileSheet = null;
 
     // The nine-slices. All are built once in init(). They are frozen, finished assets.
-    stretchPanel = null;
-    tilePanel = null;
-    mixedPanel = null;
-    bar = null;
-    filePanel = null;
+    stretchPanel = null; // the code-painted panel, every part stretched to fit
+    tilePanel = null; // the same panel, edges and center repeated at real size
+    mixedPanel = null; // tiled edges around a stretched center
+    bar = null; // the three-slice bar: two end caps and a tiled middle
+    filePanel = null; // the panel loaded from public/sprites/panel.png
+
+    // The three section 2 panels in MODE_NAMES order, so renderModes() can loop over them
+    // without building a new list every frame.
+    modePanels = [];
 
     // Every box this demo draws more than once is built in init() too, never inside
     // render().
@@ -350,6 +360,8 @@ class Demo {
     // The tick the open animation started on. The Replay button sets it to "now".
     tweenStart = 0;
 
+    // Asks for a display big enough to show all six sections side by side. Runs before
+    // init().
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -415,11 +427,15 @@ class Demo {
         return true;
     }
 
+    // Runs at a fixed rate (60 times per second). The kit only needs its per-tick
+    // housekeeping here; the animations read BT.ticks in render().
     update() {
         // Always first: this latches the Replay button's R key shortcut.
         ui.tick();
     }
 
+    // Draws the whole screen once per refresh: clear to the theme background, then each
+    // of the six sections and the code panel, in order.
     render() {
         BT.clear(this.theme.bg);
 
@@ -449,6 +465,9 @@ class Demo {
         // The common UI case: a patterned border that tiles around a center that
         // stretches.
         this.mixedPanel = NineSlice.fromSheet(this.sheet, outer, inner, { edges: 'tile', center: 'stretch' });
+
+        // Section 2 draws these three in a row, in the same order as MODE_NAMES.
+        this.modePanels = [this.stretchPanel, this.tilePanel, this.mixedPanel];
 
         // A three-slice bar: `inner` touches the top AND bottom of `outer`, so there are
         // no top or bottom edges - only a left cap, a middle, and a right cap. The middle
@@ -524,10 +543,8 @@ class Demo {
     renderModes() {
         ui.caption(12, 100, 'Stretch vs tile vs mixed', { color: 'dim' });
 
-        const panels = [this.stretchPanel, this.tilePanel, this.mixedPanel];
-
-        for (let i = 0; i < panels.length; i++) {
-            BT.drawNineSlice(panels[i], this.modeRects[i]);
+        for (let i = 0; i < this.modePanels.length; i++) {
+            BT.drawNineSlice(this.modePanels[i], this.modeRects[i]);
             ui.caption(this.modeRects[i].x, 184, MODE_NAMES[i], { color: 'dim' });
         }
 
