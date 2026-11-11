@@ -7,7 +7,14 @@
  */
 
 import { lintSnapshot } from '../src/shared/ui-lint.js';
-import { CAPTURE_SEED, INPUT_TICKS, OUTPUT_VARIANT } from './poses.js';
+import {
+    CAPTURE_SEED,
+    INPUT_TICKS,
+    OUTPUT_VARIANT,
+    SOFTWARE_VARIANT,
+    TOUCH_VARIANT,
+    UIDEBUG_VARIANT,
+} from './poses.js';
 
 const CANVAS_ID = 'blit386-canvas';
 
@@ -28,7 +35,7 @@ const CANVAS_POLL_MS = 16;
  * @returns {string}
  */
 function captureUrl(demoBase, pageSuffix, slug, variant) {
-    const backend = variant === 'software' ? '&backend=software' : '';
+    const backend = variant === SOFTWARE_VARIANT ? '&backend=software' : '';
 
     return `${demoBase}${slug}${pageSuffix}?embed&capture&seed=${CAPTURE_SEED}${backend}`;
 }
@@ -183,8 +190,8 @@ async function runPose(frame, pose, variant, options) {
 
     if (ui) {
         ui.recording = true;
-        ui.debug = variant === 'uidebug';
-        ui.touchSeen = ui.touchSeen || Boolean(pose.touch) || variant === 'touch';
+        ui.debug = variant === UIDEBUG_VARIANT;
+        ui.touchSeen = ui.touchSeen || Boolean(pose.touch) || variant === TOUCH_VARIANT;
     }
 
     await stage('seek', () => seekWhenReady(engine, pose.at), STEP_TIMEOUT_MS);

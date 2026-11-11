@@ -61,7 +61,7 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 3. No `vite.config.js` edit, HTML file, or vintage-map entry is needed for a brand-new slug. On a **rename**, update the
    vacated slug's target in `VINTAGE_URLS` (`plugins/demo-vintage-urls.js`) and add a mapping for the old public path so
    bookmarks keep working.
-4. Run `pnpm run check:demo-registry` so disk, order, vintage, and nav-hidden sets stay consistent.
+4. Run `pnpm run check:demo-registry` so disk, order, and vintage sets stay consistent.
 5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL. Enforced, not
    merely expected: `check:demo-registry` fails on a missing, duplicated, or dangling README entry, naming the slug.
 6. Run `pnpm run capture:shots -- --demos <slug>` and commit the PNGs so the `/shots` gallery and the site index show
@@ -95,7 +95,9 @@ column budget, not an SEO limit: the tag must fit this repo's 120-column line wi
 `plugins/social-meta.js` builds the whole social/SEO head block - meta description, `rel=canonical`, two favicon links,
 OpenGraph, and a `SoftwareApplication` JSON-LD block - and `plugins/virtual-demos.js` substitutes it into
 `{{socialMeta}}` **last** in its replacement chain, through a function replacer, so a `$&` or another placeholder's
-literal text inside a description can never trigger a second substitution pass.
+literal text inside a description can never trigger a second substitution pass. The function-replacer rule holds for
+every placeholder in `renderDemoHtml`, `renderShotsHtml`, and `renderSheetHtml`, not only `{{socialMeta}}`: a plain
+string replacement would expand a `$&` or `` $` `` in a `@pageTitle` into template text.
 
 Two rules there are load-bearing rather than stylistic:
 
@@ -318,7 +320,7 @@ commands are rewritten by `rtk hook claude`; search and read tools are not - use
 | `dev`, `dev:watch` | Vite dev server at `http://localhost:5173` - it never opens a browser; `dev:watch` also rebuilds the engine's browser bundle on change. Both build the engine first if `packages/blit386/dist` is missing |
 | `build`, `preview` | Production build to `dist/` (flattened slugs, `_redirects`, `sitemap.xml`, `robots.txt`, `index.html`, `shots.html`) and a static server for it on port 4173 |
 | `test` | `node --test` over the `__tests__/` directories of `scripts/`, `plugins/`, `src/shared/`, and `_shots/` |
-| `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, nav-hidden set, reserved slugs, header tags, the README `## Demos` list, and OG cards |
+| `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, reserved slugs, header tags, the README `## Demos` list, and OG cards |
 | `check:demo-comment-links` | Dead `Prerequisites:` / `Guides:` / `Reference:` links in demo headers |
 | `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
 | `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
@@ -361,10 +363,10 @@ everywhere. The site index needs no rule: it is `dist/index.html`, the public de
 project (`demos.blit386.dev`) on a release tag push (`x.y.z`, no `v` prefix, no prerelease suffix) or a manual
 `workflow_dispatch`; `deploy-demos-next` deploys to the `blit386-demos-next` Pages project (`next.demos.blit386.dev`) on
 every push to main, no path filter. The `-next` job sets `BLIT386_CHANNEL=next` on the build step, which
-`plugins/virtual-demos.js` and `plugins/channel-headers.js` read directly (Node context, at build time - no client-side
-env var involved) to render the unreleased-work banner and a `noindex` meta tag into every page, append
-`X-Robots-Tag: noindex` to `dist/_headers`, and write a disallow-all `dist/robots.txt`. Production gets none of that -
-no banner, no noindex header, and `_headers` stays exactly what Vite's `public/` copy produced. Production's
-`robots.txt` instead allows everything and points crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from
-the live demo registry (site root plus every demo's canonical extensionless URL, skipped entirely on the `next`
-channel).
+`plugins/sitemap.js` reads once into `IS_NEXT_CHANNEL` (Node context, at build time - no client-side env var involved);
+`plugins/virtual-demos.js`, `plugins/channel-headers.js`, and the sitemap plugin use that constant to render the
+unreleased-work banner and a `noindex` meta tag into every page, append `X-Robots-Tag: noindex` to `dist/_headers`, and
+write a disallow-all `dist/robots.txt`. Production gets none of that - no banner, no noindex header, and `_headers`
+stays exactly what Vite's `public/` copy produced. Production's `robots.txt` instead allows everything and points
+crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from the live demo registry (site root plus every
+demo's canonical extensionless URL, skipped entirely on the `next` channel).

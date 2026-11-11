@@ -128,6 +128,21 @@ describe('renderDemoHtml', () => {
         assert.ok(html.includes('src="/src/basics.html"'));
     });
 
+    it('renders a title containing $& and $` literally', () => {
+        const html = renderDemoHtml(baseOptions({ entry: { ...ENTRY, title: 'Cost $` and $&' } }));
+
+        assert.ok(html.includes('<title>Cost $` and $&amp;</title>'), html);
+    });
+
+    it('keeps the literal {{sourcePanelScript}} inside a demo source as source text', () => {
+        const sourceHtml = '<pre>// see {{sourcePanelScript}}</pre>';
+        const sourcePanelScript = '<script>panel()</script>';
+        const html = renderDemoHtml(baseOptions({ sourceHtml, sourcePanelScript }));
+
+        assert.ok(html.includes(sourceHtml), html);
+        assert.ok(html.includes(`</div>\n${sourcePanelScript}`), html);
+    });
+
     it('leaves no unsubstituted template placeholder behind', () => {
         const html = renderDemoHtml(baseOptions());
 

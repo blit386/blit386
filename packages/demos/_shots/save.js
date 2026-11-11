@@ -9,7 +9,7 @@ import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { errorText } from './capture.js';
 import { downloadBlob } from './download.js';
 import { entryKey, imagePath, mergeManifest } from './manifest.js';
-import { isKnownPose, OUTPUT_VARIANT } from './poses.js';
+import { DISPLAY_VARIANT, isKnownPose, OUTPUT_VARIANT } from './poses.js';
 
 const MANIFEST_NAME = 'manifest.json';
 
@@ -63,7 +63,7 @@ function entriesFromResults(results) {
         if (result.ok) {
             entry.variants[result.variant] = imagePath(result.slug, result.pose, result.variant);
 
-            if (result.variant !== OUTPUT_VARIANT && (result.variant === 'display' || entry.width === 0)) {
+            if (result.variant !== OUTPUT_VARIANT && (result.variant === DISPLAY_VARIANT || entry.width === 0)) {
                 entry.width = result.width;
                 entry.height = result.height;
                 entry.lint = result.lint;

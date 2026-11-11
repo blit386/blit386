@@ -8,13 +8,9 @@ import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { escapeHtml } from './html-escape.js';
 import { buildSocialMeta, OG_IMAGE_DIR, ogImageFile } from './social-meta.js';
+import { IS_NEXT_CHANNEL } from './sitemap.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
-
-// Set only in the deploy-demos-next CI job (see .github/workflows/deploy.yml). Read directly
-// from process.env here (this plugin runs in Node during the build, not the browser), so no
-// client-side env var plumbing is needed for the noindex meta tag or the unreleased-work banner.
-const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
 
 const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
 
@@ -78,14 +74,16 @@ export function renderDemoHtml({
     socialMeta,
 }) {
     return (
+        // Every value goes in through a function replacer, so `$&` / `$1` in it is never interpreted.
+        // sourcePanelScript before sourceHtml: a demo source quoting that placeholder stays source text.
         layoutTemplate
-            .replaceAll('{{title}}', escapeHtml(entry.title))
-            .replaceAll('{{scriptFile}}', entry.scriptFile)
-            .replaceAll('{{slug}}', entry.slug)
-            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+            .replaceAll('{{title}}', () => escapeHtml(entry.title))
+            .replaceAll('{{scriptFile}}', () => entry.scriptFile)
+            .replaceAll('{{slug}}', () => entry.slug)
+            .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
             .replace('{{demoList}}', () => demoListJson)
-            .replace('{{sourceHtml}}', () => sourceHtml)
             .replace('{{sourcePanelScript}}', () => sourcePanelScript)
+            .replace('{{sourceHtml}}', () => sourceHtml)
             .replace('{{robotsMeta}}', () => robotsMeta)
             .replace('{{channelBanner}}', () => channelBanner)
             // Last in the chain on purpose. The function replacer keeps `$&` / `$1` in a demo's
@@ -109,9 +107,9 @@ export function renderDemoHtml({
  */
 export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersion = '' }) {
     return template
-        .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
-        .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
-        .replaceAll('{{engineVersion}}', engineVersion)
+        .replaceAll('{{demoBase}}', () => (isDevMode ? '/demos/' : './'))
+        .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
+        .replaceAll('{{engineVersion}}', () => engineVersion)
         .replace('{{demoList}}', () => demoListJson);
 }
 
@@ -131,8 +129,8 @@ export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersi
 export function renderSheetHtml({ template, entriesJson, isDevMode, robotsMeta, channelBanner, socialMeta }) {
     return (
         template
-            .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
-            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+            .replaceAll('{{demoBase}}', () => (isDevMode ? '/demos/' : './'))
+            .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
             .replace('{{sheetEntries}}', () => entriesJson)
             .replace('{{robotsMeta}}', () => robotsMeta)
             .replace('{{channelBanner}}', () => channelBanner)
@@ -152,16 +150,24 @@ export function renderSheetHtml({ template, entriesJson, isDevMode, robotsMeta, 
  * @returns {string | null} The live entry's urlPath, or null when no redirect applies.
  */
 export function resolveVintageRedirect(requestedSlug, vintageUrls, registry) {
-    const vintageMapping = Object.entries(vintageUrls).find(([vintageSlug]) => vintageSlug === requestedSlug);
-
-    if (!vintageMapping) {
+    if (!Object.hasOwn(vintageUrls, requestedSlug)) {
         return null;
     }
 
-    const currentSlug = vintageMapping[1];
-    const liveEntry = registry.find((entry) => entry.slug === currentSlug);
+    // `requestedSlug` is an own key of the map, checked above.
+    // eslint-disable-next-line security/detect-object-injection
+    const currentSlug = vintageUrls[requestedSlug];
 
-    return liveEntry ? liveEntry.urlPath : null;
+    return registry.find((entry) => entry.slug === currentSlug)?.urlPath ?? null;
+}
+
+/**
+ * JSON for a `<script>` body: `<` escaped so no value can close the element.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function inlineJson(value) {
+    return JSON.stringify(value).replaceAll('<', '\\u003c');
 }
 
 /**
@@ -207,44 +213,10 @@ export function virtualDemos() {
     /**
      * Find the registry entry whose virtual HTML path matches an absolute module id.
      * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "basics.html")
-     * @returns {object | null}
+     * @returns {object | undefined}
      */
     function findEntryByAbsPath(absPath) {
-        for (const entry of registry) {
-            if (resolve(demosDir, `${entry.slug}.html`) === absPath) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Find the registry entry for a demo slug.
-     * @param {string} slug - Demo slug, e.g. "basics"
-     * @returns {object | null}
-     */
-    function findEntryBySlug(slug) {
-        for (const entry of registry) {
-            if (entry.slug === slug) {
-                return entry;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Find the registry entry whose source file is the given absolute path. Used by the watcher to
-     * tell a top-level demo entry (src/<slug>.js) apart from a src/shared/*.js change.
-     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "basics.js")
-     * @returns {object | null}
-     */
-    function findEntryBySourcePath(absPath) {
-        for (const entry of registry) {
-            if (entry.sourcePath === absPath) {
-                return entry;
-            }
-        }
-        return null;
+        return registry.find((entry) => resolve(demosDir, `${entry.slug}.html`) === absPath);
     }
 
     /**
@@ -262,9 +234,7 @@ export function virtualDemos() {
             reloadTemplate();
         }
 
-        const demoListJson = JSON.stringify(
-            registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
-        ).replaceAll('<', '\\u003c');
+        const demoListJson = inlineJson(registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })));
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
 
@@ -299,15 +269,12 @@ export function virtualDemos() {
     }
 
     /**
-     * Render the /shots gallery page. Every registry entry is listed, nav-hidden ones included:
-     * the gallery exists to look at all of them.
+     * Render the /shots gallery page, listing every registry entry.
      * @returns {string}
      */
     function renderShots() {
         const template = readFileSync(resolve(rootDir, ...SHOTS_TEMPLATE_PATH), 'utf-8');
-        const demoListJson = JSON.stringify(
-            registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
-        ).replaceAll('<', '\\u003c');
+        const demoListJson = inlineJson(registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })));
 
         const engineVersion = JSON.parse(
             readFileSync(resolve(rootDir, '..', 'blit386', 'package.json'), 'utf-8'),
@@ -331,12 +298,7 @@ export function virtualDemos() {
             throw new Error(`${SHOTS_MANIFEST_PATH.join('/')} has no entries array`);
         }
 
-        const entriesJson = JSON.stringify(
-            sheetEntries(
-                manifest.entries,
-                registry.filter((e) => !e.isNavHidden),
-            ),
-        ).replaceAll('<', '\\u003c');
+        const entriesJson = inlineJson(sheetEntries(manifest.entries, registry));
 
         return renderSheetHtml({
             template,
@@ -348,17 +310,44 @@ export function virtualDemos() {
         });
     }
 
+    /**
+     * Point every directory at a new root.
+     * @param {string} dir - Absolute Vite root.
+     * @returns {void}
+     */
+    function setRoot(dir) {
+        rootDir = dir;
+        partialsDir = resolve(rootDir, '_partials');
+        demosDir = resolve(rootDir, 'demos');
+        srcDir = resolve(rootDir, 'src');
+        shotsDir = resolve(rootDir, '_shots');
+    }
+
+    /**
+     * Send one rendered page through Vite's HTML transforms, or hand a render error to Vite.
+     * @param {import('vite').ViteDevServer} server
+     * @param {string} url - Page URL for transformIndexHtml.
+     * @param {() => string | Promise<string>} render
+     * @param {import('node:http').ServerResponse} res
+     * @param {(error?: unknown) => void} next
+     * @returns {Promise<void>}
+     */
+    async function serveHtml(server, url, render, res, next) {
+        try {
+            const html = await server.transformIndexHtml(url, await render());
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(html);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     return {
         name: 'virtual-demos',
         enforce: 'pre',
 
         config(userConfig) {
-            rootDir = resolve(userConfig.root ?? process.cwd());
-            partialsDir = resolve(rootDir, '_partials');
-            demosDir = resolve(rootDir, 'demos');
-            srcDir = resolve(rootDir, 'src');
-            shotsDir = resolve(rootDir, '_shots');
-
+            setRoot(resolve(userConfig.root ?? process.cwd()));
             reloadTemplate();
             reload();
 
@@ -381,11 +370,7 @@ export function virtualDemos() {
         },
 
         configResolved(config) {
-            rootDir = config.root;
-            partialsDir = resolve(rootDir, '_partials');
-            demosDir = resolve(rootDir, 'demos');
-            srcDir = resolve(rootDir, 'src');
-            shotsDir = resolve(rootDir, '_shots');
+            setRoot(config.root);
             isDevMode = config.command === 'serve';
         },
 
@@ -465,7 +450,7 @@ export function virtualDemos() {
                     return;
                 }
 
-                const entry = findEntryBySourcePath(changedPath);
+                const entry = registry.find((e) => e.sourcePath === changedPath);
 
                 if (!entry) {
                     return;
@@ -505,27 +490,11 @@ export function virtualDemos() {
                 const url = req.url.split('?')[0];
 
                 if (url === '/') {
-                    try {
-                        let html = renderSheet();
-                        html = await server.transformIndexHtml(`/${INDEX_SLUG}.html`, html);
-                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                        res.end(html);
-                    } catch (error) {
-                        next(error);
-                    }
-                    return;
+                    return serveHtml(server, `/${INDEX_SLUG}.html`, renderSheet, res, next);
                 }
 
                 if (url === `/${SHOTS_SLUG}` || url === `/${SHOTS_SLUG}.html`) {
-                    try {
-                        let html = renderShots();
-                        html = await server.transformIndexHtml(`/${SHOTS_SLUG}.html`, html);
-                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                        res.end(html);
-                    } catch (error) {
-                        next(error);
-                    }
-                    return;
+                    return serveHtml(server, `/${SHOTS_SLUG}.html`, renderShots, res, next);
                 }
 
                 const demoMatch = url.match(URL_PATTERN);
@@ -544,20 +513,13 @@ export function virtualDemos() {
                     return;
                 }
 
-                const entry = findEntryBySlug(requestedSlug);
+                const entry = registry.find((e) => e.slug === requestedSlug);
 
                 if (!entry) {
                     return next();
                 }
 
-                try {
-                    let html = await renderHtml(entry);
-                    html = await server.transformIndexHtml(url, html);
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    res.end(html);
-                } catch (error) {
-                    next(error);
-                }
+                return serveHtml(server, url, () => renderHtml(entry), res, next);
             });
         },
     };

@@ -17,6 +17,10 @@ export const SITE_URL = 'https://demos.blit386.dev';
 // URLs in its canonical, og:url, or og:image tags.
 export const NEXT_SITE_URL = 'https://next.demos.blit386.dev';
 
+// True on that preview channel: BLIT386_CHANNEL=next is set only in the deploy-demos-next CI job.
+// Read in Node at build time, so no client-side env var plumbing is needed.
+export const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
+
 /**
  * Build the sitemap XML body for the live demo registry: the site root plus every demo's
  * canonical, extensionless URL, in registry order. Pure and exported so it can be
@@ -53,7 +57,7 @@ export function sitemapPlugin() {
         name: 'demo-sitemap',
         apply: 'build',
         closeBundle() {
-            if (process.env.BLIT386_CHANNEL === 'next') {
+            if (IS_NEXT_CHANNEL) {
                 return;
             }
 
