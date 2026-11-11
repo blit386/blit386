@@ -81,7 +81,7 @@
         @apply border-red-600 text-red-600;
 
         &:after {
-            @apply pl-2 content-['–_Unreleased'];
+            @apply pl-2 content-['-_Unreleased'];
         }
     }
 }
