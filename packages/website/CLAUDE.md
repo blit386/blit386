@@ -59,12 +59,13 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | The `ASSETS` binding type and a page's markdown (`core:get-text`), shared by the Worker plugins | `src/plugin-context.ts` |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 
-Six Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),
-`channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin` (`src/markdown-negotiation.ts`),
-`mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and `methodGuardPlugin` (`src/method-guard.ts`) -
-plus the `blog-post-date` helper (`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a
-post's `date` frontmatter). The rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap,
-takumi OG images, and link validation.
+Seven Fumapress `ServerPlugin`s are local to this package rather than upstream. Six live in `src/`: `cspNoncePlugin`
+(`src/csp-nonce.ts`), `channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin`
+(`src/markdown-negotiation.ts`), `mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and
+`methodGuardPlugin` (`src/method-guard.ts`). The seventh, `blogIndexOgImagePlugin`, is defined inline in
+`press.config.tsx` to give `/blog` an OG card - plus the `blog-post-date` helper (`src/blog-post-date.ts`, which exists
+because the framework's adapter cannot read a post's `date` frontmatter). The rest of the chain in `press.config.tsx` is
+stock: flexsearch, blog, llms, sitemap, takumi OG images, and link validation.
 
 ## Content-Security-Policy
 
@@ -146,9 +147,10 @@ in under a second, and rewriting it would be churn with no gain.
 - A real binding needs `assets.directory` pointing at `dist/public`, which exists only after a full build - and
   `preflight` runs `test` before `build`. A fixture directory avoids that at the cost of a second, test-only Wrangler
   config to keep in step with the real one.
-- It would weaken the `channel-headers` test. `workerd` has no populated `process.env`, so a `process.env`
-  implementation would fail there for the wrong reason. Under Node the test can point `process.env.BLIT386_CHANNEL` at
-  the opposite value from `c.env` and assert the binding still wins - which no `process.env` implementation can pass.
+- It would weaken the `channel-headers` test. Under `nodejs_compat` `workerd` copies Worker vars into `process.env`, so
+  inside the pool the two always agree and a `process.env` implementation would pass. Under Node the test can point
+  `process.env.BLIT386_CHANNEL` at the opposite value from `c.env` and assert the binding still wins - which no
+  `process.env` implementation can pass.
 
 Accepted gap: nothing here exercises `workerd`'s response-header mutability. BT-464 asked whether that gap hid a bug -
 `channel-headers.ts` mutates the `ASSETS` response in place, which the fetch spec forbids - and the answer was no:
@@ -168,7 +170,7 @@ at request time, and `markdown-negotiation.ts` forwarding to `ASSETS` and fallin
 either, expect those tests to be the ones that stop you.
 
 `src/webmcp.test.ts` covers `public/webmcp.js`, the browser-side WebMCP bridge - a different shape of problem from the
-six `ServerPlugin`s above, since it is a plain `<script defer>` (`press.config.tsx`), not `type="module"`, with no
+`ServerPlugin`s above, since it is a plain `<script defer>` (`press.config.tsx`), not `type="module"`, with no
 `import`/`export` of its own. It is deliberately outside `tsconfig.json`'s `include` (it targets `document.modelContext`
 / `navigator.modelContext`, an experimental API with no `lib.dom.d.ts` types), so the test reads the file as text and
 runs it with `vm.runInThisContext({ filename })` against stubbed `document` / `navigator` / `window` / `fetch` rather
@@ -366,8 +368,8 @@ fumapress bump and a waku bump as two PRs, neither installable on its own.
 **Do not move `waku` past beta.6 while `fumapress` is on 0.7.x.** waku beta.8 is sanctioned only by `fumapress` 1.0.0
 beta.1 or beta.2, and nothing published sanctions beta.9 at all. That release is a rewrite rather than a bump: it
 renames `ServerPlugin` to `PressPlugin` and `ConfigContext` to `AppShape`, and moves layouts onto the config object. All
-six local plugins in `src/` plus every `createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would
-need reworking.
+seven local plugins (six in `src/`, one inline in `press.config.tsx`) plus every `createDocsLayoutPage` and
+`createRootLayout` call in `press.config.tsx` would need reworking.
 
 Two behavioral changes came in with 0.7.x and are already absorbed. Takumi went v1 to v2 (0.7.2), which re-tuned the
 WebP encoder - OG cards are roughly 55% smaller with pixel-identical output, so **file size is not a validity signal
@@ -404,9 +406,9 @@ This requires `run_worker_first: true` on the assets config. Cloudflare otherwis
 the Worker runs and matches assets by path alone, ignoring `Accept`, so the Worker would never see canonical doc
 requests. With the Worker first, the plugin re-implements assets-first by forwarding non-negotiated requests to the
 `ASSETS` binding. Waku regenerates `dist/server/wrangler.json` on every build, so `scripts/patch-wrangler.mjs` injects
-`run_worker_first` there; the root `wrangler.jsonc` carries it only for parity. Cloudflare's managed "Markdown for
-Agents" feature is not used - it needs Pro+ and only rewrites origin HTML on proxied zones, not Worker-rendered
-responses.
+`run_worker_first` there; the root `wrangler.jsonc` carries it too, so a bare `wrangler dev` matches the deploy.
+Cloudflare's managed "Markdown for Agents" feature is not used - it needs Pro+ and only rewrites origin HTML on proxied
+zones, not Worker-rendered responses.
 
 **Non-GET/HEAD requests are refused, not rendered** (BT-587). `markdownNegotiationPlugin` only forwards GET and HEAD to
 `ASSETS`, so a `POST /docs/api/rendering` used to fall through to Waku and render the whole page on demand (2.2 MB, 100+
@@ -497,22 +499,25 @@ push-triggered `ci.yml` run):
   instead of production - all baked into the static HTML once during the build (`process.env.BLIT386_CHANNEL`, Node
   context). `src/channel-headers.ts` sets `X-Robots-Tag: noindex` and serves a disallow-all `robots.txt` the same way,
   but reads `c.env.BLIT386_CHANNEL` at **request time** instead: that module's top level re-runs inside the deployed
-  Worker on every cold start (to rebuild the Fumapress plugin list), where `process.env.BLIT386_CHANNEL` is not the CI
-  build step's shell value - confirmed locally with `wrangler dev`, where relying on the build-time value silently never
-  set the header at all. `scripts/patch-wrangler.mjs` injects `vars.BLIT386_CHANNEL: 'next'` into
-  `dist/server/wrangler.json` for exactly this reason.
+  Worker on every cold start (to rebuild the Fumapress plugin list), where the CI build step's shell env is gone and the
+  channel arrives only as a Worker var. `scripts/patch-wrangler.mjs` injects `vars.BLIT386_CHANNEL: 'next'` into
+  `dist/server/wrangler.json` for exactly this reason. Under `nodejs_compat` `workerd` also copies that var into
+  `process.env` (which is why the request-time `/feed.xml` links to `next.blit386.dev`), but `c.env` is the binding
+  itself and `channel-headers.test.ts` pins that it wins.
 
 The Worker is named `blit386` (custom domain `blit386.dev`); the preview Worker is `blit386-next` (custom domain
-`next.blit386.dev`). The root `wrangler.jsonc` also declares `"name": "blit386"`, but that value never actually reaches
-Cloudflare - both deploy paths pass `--name` explicitly. The root config exists for parity (notably `run_worker_first`);
-the config actually deployed is `dist/server/wrangler.json`, regenerated by Waku on every build and then patched by
-`scripts/patch-wrangler.mjs`.
+`next.blit386.dev`). The config actually deployed is `dist/server/wrangler.json`, regenerated by Waku on every build and
+then patched by `scripts/patch-wrangler.mjs`. Waku builds it from the root `wrangler.jsonc`, reading only `name`,
+`compatibility_date`, and `compatibility_flags` (and writing a default root copy when the file is missing, so it cannot
+be deleted). The root file's other keys mirror the patched config so a bare `wrangler dev` after a build serves the real
+Worker; `scripts/__tests__/root-wrangler-parity.test.mjs` fails when the two drift. Its `"name": "blit386"` never
+reaches Cloudflare - both deploy paths pass `--name` explicitly.
 
 Both Workers run with `observability.enabled: true` (BT-441), so Workers Logs captures every invocation - the only way
 to see a runtime error on `blit386.dev`'s `/mcp` JSON-RPC endpoint or the markdown-negotiation path without reproducing
 it locally. Same injection story as `run_worker_first`: `scripts/patch-wrangler.mjs` sets it on the generated
-`dist/server/wrangler.json`, and the root `wrangler.jsonc` carries it only for parity. Query logs via the Cloudflare
-dashboard (Workers & Pages -> `blit386` or `blit386-next` -> Logs) or
+`dist/server/wrangler.json`, and the root `wrangler.jsonc` carries it too. Query logs via the Cloudflare dashboard
+(Workers & Pages -> `blit386` or `blit386-next` -> Logs) or
 `pnpm --filter blit386-website exec wrangler tail <worker-name>` - running through the workspace `exec` invokes the
 pinned local `wrangler` devDependency rather than whatever a bare `wrangler` on `PATH` resolves to.
 

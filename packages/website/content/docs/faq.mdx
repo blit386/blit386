@@ -22,8 +22,8 @@ change is required. Use `BT.activeBackend` at runtime to check which backend is 
 
 ### Can I force the software renderer even in a WebGPU-capable browser?
 
-Yes. Pass `backend: 'software'` in `HardwareSettings` when calling `bootstrap()`, or append `?backend=software` to the
-page URL during development.
+Yes. Return `backend: 'software'` in the `HardwareSettings` object from your game's `configure()`, or append
+`?backend=software` to the page URL during development.
 
 ### Does BLIT386 use WebGL instead of WebGPU?
 
@@ -34,19 +34,16 @@ browser, but BLIT386 does not use WebGL.
 
 ### Are all features available in the software renderer?
 
-Most are. The notable exception is post-process effects: calling `BT.effectAdd()` in software mode throws an error
-because the effect pipeline requires WebGPU compute and render passes. Gate effect registration on
-`BT.activeBackend === 'webgpu'`. See [API: Rendering](/docs/api/rendering) for the full list.
-
-### Does the software renderer look different from the WebGPU renderer?
-
-Palette resolution, integer coordinates, and sprite rendering are designed to match. The software renderer does not
-support post-process effects (CRT scanlines, bloom, barrel distortion, etc.), so scenes that rely on those effects will
-look different when the fallback is active. The engine overlay shows the active backend in its renderer diagnostics bar.
+All but one. Palette resolution, integer coordinates, sprite rendering, input, and audio (Web Audio only, never the GPU)
+behave the same on both backends. The exception is post-process effects (CRT scanlines, bloom, barrel distortion, etc.),
+which need WebGPU. In software mode `BT.effectAdd()` does not throw: it reports the error once (a panel in dev builds,
+the console in release) and adds nothing, so a `try`/`catch` fallback around it never runs. Gate effect calls on
+`BT.activeBackend === 'webgpu'` instead. See [API: Rendering](/docs/api/rendering) for details. The engine overlay shows
+the active backend in its renderer diagnostics bar.
 
 ### How do I test fallback behavior locally?
 
-Append `?backend=software` to the dev-server URL, or set `backend: 'software'` in `HardwareSettings`. The
+Append `?backend=software` to the dev-server URL, or return `backend: 'software'` from `configure()`. The
 [Software Fallback Smoke Matrix](/docs/performance/smoke-matrix) lists the manual checklist used to verify parity.
 
 ## Setup and installation
@@ -87,8 +84,9 @@ and the [Changelog](/docs/reference/changelog) for the release history.
 ### Why is there no sound?
 
 Browsers refuse to start audio until the user interacts with the page, so BLIT386 starts in a locked state. On
-`BT.init()` the engine installs one-shot `pointerdown`, `keydown`, and `touchstart` listeners on the canvas; the first
-gesture unlocks the audio context for the rest of the session and `BT.isAudioUnlocked` flips to `true`.
+`BT.init()` the engine listens on the canvas for `pointerdown`, `pointerup`, `touchend`, and `keydown`: the first click,
+key press, or tap (a tap counts when the finger lifts) unlocks the audio context for the rest of the session, and
+`BT.isAudioUnlocked` flips to `true`.
 
 The two playback paths behave differently while still locked:
 
@@ -98,11 +96,6 @@ The two playback paths behave differently while still locked:
 Loading is unaffected: `AudioClip.load()` and `AudioClip.synth()` both work while locked, because decoding does not need
 an unlocked context. If a game must make noise immediately, either wait for `BT.isAudioUnlocked`, or prompt for a click
 or key press first. See the [Audio Guide](/docs/guides/audio).
-
-### Does audio work in the software renderer?
-
-Yes. Audio is Web Audio only and never touches the GPU, so it behaves identically on the WebGPU and Canvas 2D backends.
-Post-process effects remain the only WebGPU-only feature.
 
 ## Reporting
 

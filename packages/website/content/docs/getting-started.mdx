@@ -7,25 +7,50 @@ There are two ways to start with BLIT386: the scaffolder (recommended) or a manu
 
 ## Scaffolder (recommended)
 
-The quickest path is the scaffolder. It works with npm, pnpm, yarn, or bun and generates a ready-to-run Vite project
-with the engine installed, a starter game, local docs, and the `blit` CLI:
+The quickest path is the scaffolder. It works with npm, pnpm, yarn, or bun, generates a ready-to-run Vite project with a
+starter game, local docs, and the `blit` CLI, and installs the dependencies for you. The starter is JavaScript unless
+you pick TypeScript:
+
+<Tabs items={['JavaScript', 'TypeScript']}>
+
+<Tab value="JavaScript">
 
 ```bash
 npm create blit386@latest my-game
-```
-
-Then start the dev server:
-
-```bash
 cd my-game
-npm install
 npm run dev
 ```
 
+</Tab>
+
+<Tab value="TypeScript">
+
+```bash
+npm create blit386@latest my-game -- --ts
+cd my-game
+npm run dev
+```
+
+</Tab>
+
+</Tabs>
+
+In a terminal the scaffolder asks for the language, which AI coding assistants to set up, and whether to add GitHub
+Actions CI. Without an interactive terminal (an AI agent or CI) it takes the defaults: JavaScript, no assistant files,
+no CI. These flags go after the `--` with npm:
+
+| Flag | Effect |
+| --- | --- |
+| `--ts` | Use the TypeScript starter instead of JavaScript |
+| `--yes`, `-y` | Skip the prompts and take the defaults |
+| `--no-install` | Do not install dependencies (run `npm install` yourself before `npm run dev`) |
+| `--no-git` | Do not initialize a git repository |
+
 The generated project includes a playable starter, an `index.html`, a Vite config, and a kid-friendly `README.md`. See
-[create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) for the scaffolder. The `blit`
-project CLI (`blit run`, `blit doctor`, `blit upgrade`, `blit clean`) lives in
-[`@blit386/kit`](https://github.com/blit386/blit386/tree/main/packages/kit).
+[create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) for the scaffolder. Inside the
+project, `npx blit <command>` runs the project CLI from
+[`@blit386/kit`](https://github.com/blit386/blit386/tree/main/packages/kit): `run`, `play`, `doctor`, `upgrade`,
+`migrate`, `agents`, `clean`, and `help`.
 
 ## Manual install
 
@@ -79,11 +104,14 @@ void bootstrap(Game);
 draw call, and return `true` from `init()` so the engine knows startup succeeded.
 
 `bootstrap()` defaults to a canvas with id `blit386-canvas` inside a `canvas-container` element. See
-[API: Core](/docs/api/core) for `BootstrapOptions`, the resolution model, the game loop, and the full configure surface.
+[API: Core](/docs/api/core) for `BootstrapOptions`, initialization, the resolution model, and the full configure
+surface.
 
 ## Where to go next
 
-- [API: Core](/docs/api/core) - bootstrap, the game loop, camera, `Timer`, and core types.
+- [API: Core](/docs/api/core) - bootstrap, initialization, and default configuration.
+- [API: Game Loop](/docs/api/game-loop), [API: Camera](/docs/api/camera), and [API: Core Types](/docs/api/core-types) -
+  timing and `Timer`, the camera offset, and `Vector2i` / `Rect2i` / `Color32`.
 - [API: Rendering](/docs/api/rendering) - primitives, sprites, text, post-process, and frame capture.
 - [API: Audio](/docs/api/audio) - bus volume and mute, sound and music playback, the procedural synth.
 - [Palette Guide](/docs/guides/palette) - the palette-first workflow.

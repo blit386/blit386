@@ -118,10 +118,10 @@ copies one to your clipboard when you click it, which is mostly there so I stop 
 
 ### The kit
 
-`blit clean` replaces `src/game.ts` with an empty skeleton - the same `init` / `update` / `render` shape, no drawing, no
-input handling - for when the scaffolded example has served its purpose and you want the file to stop being someone
-else's code. It touches nothing else, warns before replacing a file that no longer matches what was scaffolded, and
-always asks first unless you pass `--yes`.
+`blit clean` replaces `src/game.js` (or `src/game.ts`) with an empty skeleton - the same `init` / `update` / `render`
+shape, no drawing, no input handling - for when the scaffolded example has served its purpose and you want the file to
+stop being someone else's code. It touches nothing else, warns before replacing a file that no longer matches what was
+scaffolded, and always asks first unless you pass `--yes`.
 
 Cursor support is back: rules, commands, hooks, and MCP config, generated from the same shared definitions Claude Code's
 files come from, with a parity check in CI so the two cannot quietly drift apart again. And the deprecations reference
