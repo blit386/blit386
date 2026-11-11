@@ -205,6 +205,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   with an `AssetLimitError`. A font loaded by a bare file name (`font.btfont`) could point its texture at any absolute
   URL, which loaded a cross-origin image and later tainted the canvas. Relative paths and embedded data URIs load as
   before. See [Asset size limits](api-assets.md#asset-size-limits).
+- Saving an image while the game is still loading it no longer leaves the old image cached. The reload was cached under
+  the watcher's path, and the game's own load then cached the older image under the game's path, so the next
+  `AssetLoader.loadImage` returned the old pixels. The reload now takes over the game's cache entry.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:

@@ -266,9 +266,11 @@ export class AssetLoader {
      * result under the key the caller loaded it with, so demo-held references from
      * {@link AssetLoader.getImage} stay valid.
      *
-     * The key is found by normalized URL (`normalizeAssetUrl`), because the dev asset
-     * watcher always sends a rooted path while a game may have loaded `sprites/hero.png`.
-     * A second cached spelling of the same file is evicted so its next load refetches.
+     * The key is found by normalized URL (`normalizeAssetUrl`) among cached and in-flight
+     * keys, because the dev asset watcher always sends a rooted path while a game may have
+     * loaded `sprites/hero.png`. A second spelling of the same file is evicted so its next
+     * load refetches. A game load still in flight resolves its own caller with the old image,
+     * but no longer caches it over the reloaded one.
      *
      * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed image file.
@@ -279,9 +281,9 @@ export class AssetLoader {
      */
     static async hotReloadImage(url: string): Promise<HTMLImageElement> {
         const target = normalizeAssetUrl(url);
-        const [cacheKey = url, ...duplicates] = [...loadedImages.keys()].filter(
-            (key) => normalizeAssetUrl(key) === target,
-        );
+        // In-flight keys count too: an image still loading when its save arrives must re-cache under the game's key.
+        const keys = new Set([...loadedImages.keys(), ...loadingPromises.keys()]);
+        const [cacheKey = url, ...duplicates] = [...keys].filter((key) => normalizeAssetUrl(key) === target);
 
         for (const key of duplicates) {
             AssetLoader.evict(key);
