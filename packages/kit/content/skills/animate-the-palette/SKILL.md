@@ -10,12 +10,29 @@ description:
 
 Create motion and mood without redrawing anything by animating palette slots: cycling, fading, flashing, swapping.
 
-## When to use
+## Start each effect once
 
-Use for flowing water or fire, day-night transitions, hit flashes, theme switches, or any "the whole screen shifts
-color" effect.
+Every call starts a new effect. `update()` runs about 60 times a second, so a `BT.paletteCycle` written straight into it
+stacks 60 cycles a second, and a fade restarted every step never moves. Start an endless effect once, from the first
+`update()` behind a flag, and a one-off effect on an event such as a key press:
 
-## The effects (call from update() or init())
+```js
+update() {
+    if (!this.isWaterFlowing) {
+        BT.paletteCycle(1, 8, 0.5); // runs until you clear it
+        this.isWaterFlowing = true;
+    }
+
+    if (BT.isPressed(BT.BTN_A, 0)) {
+        BT.paletteFlash(Color32.white, 120); // once per press
+    }
+}
+```
+
+Not from `init()`: a real build plays the BLIT386 splash over `init()` and drops every effect started there, so an
+effect that works in a dev build vanishes from the shipped game. Setting slots with `palette.set()` in `init()` is fine.
+
+## The effects
 
 ```js
 // Continuously rotate slots [start..end]. Great for waterfalls, lava, marquees.
@@ -71,27 +88,6 @@ One catch worth knowing: a palette fade works per slot, not per pixel. A dark ob
 the dark schedule no matter what is around it, because the engine only knows its slot number. Fading up from black or
 down to black always looks right; in a busy scene, look at it before shipping it.
 
-## Building the target palette (engine 1.7.0+)
-
-A fade target is a whole `Palette`, and it is usually the current one with every color pushed the same way. Build it
-with `fillBlock` rather than a loop of `set()` calls:
-
-```js
-async init() {
-    this.nightPalette = BT.paletteCreate(16);
-
-    // Same colors, cooled and dimmed - one call, starting at slot 1.
-    this.nightPalette.fillBlock(1, this.dayColors, (color) =>
-        new Color32(color.r * 0.4, color.g * 0.5, color.b * 0.8),
-    );
-
-    return true;
-}
-```
-
-`fillBlock(start, source, transform)` writes `transform(source[i], i)` into slot `start + i` and returns the next free
-slot, so a second block can start where the first ended.
-
 ## When the effects move (engine 1.8.0+)
 
 Effects advance once per `update()` step, right after your `update()` returns, on the engine's tick clock - not per
@@ -99,15 +95,17 @@ rendered frame and not by wall time. Two things follow:
 
 - They run at the same speed on a 60 Hz and a 144 Hz display, and `BT.renderAt(seconds)` reproduces them exactly, so a
   seeked screenshot shows the fade where a live player would see it.
-- Start effects, and write to palette slots, in `init()` or `update()` - never in `render()`. A `palette.set()` in
-  `render()` lands after the effects already ran for that step, and a seek runs `render()` only once at the end.
+- Start effects in `update()` and write to palette slots in `init()` or `update()` - never in `render()`. A
+  `palette.set()` in `render()` lands after the effects already ran for that step, and a seek runs `render()` only once
+  at the end.
 - `BT.ticksReset()` pauses every effect for one step instead of running it backwards. An effect's time counts from when
   you added it, so an effect started after an idle gap begins at its start, not partway through.
 
 ## Notes
 
 - These animate the active palette; set one up first (use-palette skill).
-- A fade target is a whole `Palette` - build the "night" palette once in `init()`.
+- A fade target is a whole `Palette` - build the "night" palette once in `init()`. The use-palette skill shows
+  `fillBlock`, which copies a whole block of colors with one change applied (dimmed, tinted) in one call.
 - Slots past the end of the target palette are left alone. Hand `paletteFadeExposure` a small target palette and it only
   touches that many slots, which is how two different fades can run at once on one palette.
 - A theme swap (new colors in the same slots, with `BT.paletteSet` or the effects above) needs nothing else: sprites
