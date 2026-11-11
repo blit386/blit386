@@ -49,25 +49,6 @@ export interface AssetServeContext {
 }
 
 /**
- * Maps an absolute file path to its served URL when it falls under one of `assetDirs`.
- *
- * @param file - Absolute file path.
- * @param assetDirs - Resolved, absolute asset directories.
- * @returns A leading-slash URL relative to the matching asset dir, or `null` when `file` is outside all of them.
- */
-export function resolveAssetUrl(file: string, assetDirs: readonly string[]): string | null {
-    for (const dir of assetDirs) {
-        const relative = path.relative(dir, file);
-
-        if (relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative)) {
-            return `/${relative.split(path.sep).join('/')}`;
-        }
-    }
-
-    return null;
-}
-
-/**
  * Maps an absolute file path to the pathname Vite serves it at: `base` plus the path relative to
  * `publicDir` when the file is inside it, otherwise `base` plus the path relative to `root`. This is
  * the pathname the engine caches the asset under (`normalizeAssetUrl`), encoded the same way: the standard URL parser
@@ -79,13 +60,7 @@ export function resolveAssetUrl(file: string, assetDirs: readonly string[]): str
  *   `publicDir` and `root`.
  */
 export function resolveServedUrl(file: string, serve: AssetServeContext): string | null {
-    const inside = (dir: string): string | null => {
-        const relative = dir.length > 0 ? path.relative(dir, file) : '';
-
-        return relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : null;
-    };
-
-    const relative = inside(serve.publicDir) ?? inside(serve.root);
+    const relative = inside(serve.publicDir, file) ?? inside(serve.root, file);
 
     if (relative === null) {
         return null;
@@ -132,8 +107,8 @@ export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | u
     }
 
     // assetDirs only decides which files are watched; the URL follows Vite's serving rules.
-    const watched = resolveAssetUrl(params.file, params.assetDirs);
-    const url = watched === null ? null : resolveServedUrl(params.file, params.serve);
+    const isWatched = params.assetDirs.some((dir) => inside(dir, params.file) !== null);
+    const url = isWatched ? resolveServedUrl(params.file, params.serve) : null;
 
     if (url === null) {
         return undefined;
@@ -154,4 +129,17 @@ export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | u
     }
 
     return undefined;
+}
+
+/**
+ * Returns `file`'s path relative to `dir` when it lies strictly inside it.
+ *
+ * @param dir - Absolute directory, or `''` for none (never contains anything).
+ * @param file - Absolute file path.
+ * @returns The relative path, or `null` when `file` is `dir` itself or outside it.
+ */
+function inside(dir: string, file: string): string | null {
+    const relative = dir.length > 0 ? path.relative(dir, file) : '';
+
+    return relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : null;
 }
