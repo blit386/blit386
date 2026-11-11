@@ -238,13 +238,6 @@ const RAMP_HEIGHT = 22;
 // is where the overlay lives.
 const PANEL_Y = RAMP_TOP + RAMP_HEIGHT + 6;
 
-// Copies a list of colors into a palette, starting at `firstSlot`.
-function fillColors(palette, firstSlot, colors) {
-    for (let i = 0; i < colors.length; i++) {
-        palette.set(firstSlot + i, colors[i]);
-    }
-}
-
 // Writes plain black into `count` slots starting at `firstSlot`, for the "faded out"
 // targets.
 function fillBlack(palette, firstSlot, count) {
@@ -389,9 +382,11 @@ class Demo {
         }
 
         // The same colors again, as the left half's "fully lit" target. The plain fade
-        // takes an explicit slot range, so its targets are full size.
+        // takes an explicit slot range, so its targets are full size. fillBlock() copies
+        // a list of colors into consecutive slots; its last argument may change each
+        // color on the way in, and `(c) => c` passes them through unchanged.
         this.plainLit = BT.paletteCreate(256);
-        fillColors(this.plainLit, PLAIN_FIRST_SLOT, this.sceneColors);
+        this.plainLit.fillBlock(PLAIN_FIRST_SLOT, this.sceneColors, (c) => c);
 
         // The two "faded out" targets: the same runs of slots, but black.
         this.expDark = BT.paletteCreate(EXPOSURE_TARGET_SIZE);
@@ -440,6 +435,7 @@ class Demo {
         // Lets the UI kit latch key presses, taps, and slider drags.
         ui.tick();
 
+        // Fire this step's fades (once), then move on when the step has run its course.
         const tick = BT.ticks;
 
         this.triggerPhaseEffect();
@@ -559,6 +555,7 @@ class Demo {
 
         BT.drawSprite(this.sheet, this.spriteRect, new Vector2i(originX + this.sceneX, SCENE_TOP), paletteOffset);
 
+        // The swatch strip reads the same run of slots the picture just used.
         this.renderRamp(originX, firstSlot);
     }
 
@@ -580,4 +577,5 @@ class Demo {
     }
 }
 
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

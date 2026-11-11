@@ -223,7 +223,8 @@ widget list and options. Never hand-roll panels, buttons, or HUD text colors in 
 the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` (a bare-bones starter
 plus four immersive/showcase pieces, none with a demo HUD). Beside the kit, `src/shared/` holds `key-names.js`
 (`keyLabel(code)` for on-screen key names), `canvas-sprites.js` (offscreen-canvas sprite art), `crt-glitch.js` (the
-shared TV-fault constants), and `post-process-backend.js`.
+shared TV-fault constants, plus `isMotionEffect()` for CRT demos that honor reduced motion), and
+`post-process-backend.js`.
 
 The invariants below are covered by `node:test` unit tests in `src/shared/__tests__/` (slot allocation and collisions,
 the draw-command pool's allocates-nothing-per-frame claim, layout anchor math, widget value mapping, gesture and D-pad
@@ -241,7 +242,9 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
 - Kit panels, buttons, and meters are nine-slice sprites, and the engine draws every primitive (`BT.drawRectFill`,
   `BT.drawRect`, ...) before every sprite. Artwork a demo draws inside a `ui.panel()` (the space a `ui.spacer()`
   reserves) must use `ui.drawRectFill` / `ui.drawRect` - the same arguments, drawn as sprites so they land on top. A
-  plain `BT.drawRectFill` there is hidden under the panel
+  plain `BT.drawRectFill` there is hidden under the panel. `ui.fillRect(x, y, width, height, slot)` is the same fill
+  without a `Rect2i` of the demo's own, and `PANEL_CONTENT_TOP`, `PANEL_BOTTOM`, and `PANEL_TEXT_INSET` from `ui.js` say
+  where a titled panel's content starts and ends - import them instead of re-typing 22, 11, and 10
 - `ui-core.js` (layout and flush, extending the pointer and hit-test state in `ui-input.js`) carries a `debug` overlay
   (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by default so the allocates-nothing rule
   holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`, `margin`). `ui.js` publishes the context on
@@ -256,9 +259,10 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true. One deliberate
   exception: `raycasting` has no panel, so its C (CRT on/off) and R (back to start) shortcuts are keyboard-only - touch
   players still walk with the D-pad and swipes. Do not add buttons back to it
-- Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from `src/shared/post-process-backend.js`, set
+- Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_LINES` from `src/shared/post-process-backend.js`, set
   `this.effectsAvailable = isAvailable()` after `init()` (it checks `BT.activeBackend`, not `requestedBackend`), and
-  show the note when effects are skipped
+  show the note when effects are skipped - one `ui.label()` per line, since the one-line `SOFTWARE_FALLBACK_NOTE` is 330
+  pixels wide and kit labels do not wrap
 
 ## Hot Reload
 

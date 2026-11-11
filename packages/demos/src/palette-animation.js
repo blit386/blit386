@@ -38,7 +38,8 @@ while render() draws the same rectangles every frame:
      Notes beside it name the top and bottom slots.
   3. Flashing Health Bar - a 240 pixel bar filled with one slot (80). Simulated health
      drains from 100 toward 0 over 6 seconds and then starts over; at 30 or below the slot
-     alternates between red and white every 8 ticks.
+     alternates between red and white every 8 ticks. When the player prefers reduced
+     motion it turns a steady white instead of blinking.
   4. Cycling Water Strip - 18 tiles using three slots (90-92). Every 8 ticks the bright
      highlight moves to the next slot, so a ripple seems to travel along the strip.
 
@@ -51,8 +52,9 @@ WHAT YOU WILL LEARN
 - Color32.fromHSL(hue, saturation, lightness) for walking around the color wheel.
 - Math.sin() for a flicker, `%` (remainder) for wrapping counters, BT.deltaSeconds and
   BT.ticks for timing.
-- Keeping animated slots clear of the slots other code owns (the UI kit theme in 240-251,
-  the overlay colors in 2-5).
+- Keeping animated slots clear of the slots other code owns (the UI kit theme in
+  240-251, which the engine overlay borrows too).
+- Honoring BT.isReducedMotionPreferred: no fast blinking when the player asks for calm.
 
 WHAT IS PALETTE ANIMATION?
 --------------------------
@@ -71,8 +73,8 @@ beautiful technique to understand, and BLIT386 lets you do it the same way.
 UPDATE VS RENDER
 ----------------
 
-  - init() builds one palette: fixed colors for the engine overlay and the shared UI kit
-    theme, placeholders for every animated slot, then BT.paletteSet(). It calls update()
+  - init() builds one palette: the shared UI kit theme, placeholders for every animated
+    slot, then BT.paletteSet(). It calls update()
     once so the first frame already has real colors.
   - update() computes new Color32 values and writes them into slots 10-41, 50-69, 80, and
     90-92 every tick.
@@ -80,7 +82,8 @@ UPDATE VS RENDER
     the colors behind the indices changed, not because render() passes new colors.
 
 The panels are drawn with the shared UI kit (src/shared/ui.js); its theme colors live in
-slots 240-251, far away from every slot this demo animates.
+slots 240-251, far away from every slot this demo animates. The engine overlay borrows
+the same theme colors (THEME_OVERLAY_STYLE and defaultThemeSlot()).
 
 TRY THIS
 --------
@@ -88,14 +91,23 @@ TRY THIS
 - Press the backquote key (`) to open the engine overlay. Its palette grid is turned on
   with 64 columns: watch slots 10-41 rotate, 50-69 flicker, 80 flash, and 90-92 ripple
   while slots 240-251 stay put.
-- The overlay's gap color is slot 80, the health-bar slot, so the thin dividers in the
-  overlay flash along with the bar when health runs low.
+- Add ?reducedmotion to the URL: the health bar turns a steady white at low health
+  instead of blinking.
 
 */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import {
+    applyTheme,
+    defaultThemeSlot,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PANEL_TEXT_INSET,
+    THEME_OVERLAY_STYLE,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -123,8 +135,12 @@ const FIRE_COL_W = 80;
 const WATER_SLOTS = 3;
 
 // Health bar: the slot flips between red and white every FLASH_PERIOD ticks. A tick is
-// one fixed update; 8 ticks is about 0.13 seconds at 60 ticks per second.
+// one fixed update; 8 ticks is about 0.13 seconds at 60 ticks per second. The colors are
+// named so the steady reduced-motion version reuses the same white.
 const FLASH_PERIOD = 8;
+const HEALTH_FLASH_RED = new Color32(255, 50, 50);
+const HEALTH_FLASH_WHITE = new Color32(255, 255, 255);
+const HEALTH_STEADY_RED = new Color32(200, 40, 40);
 
 // How low the simulated health must fall before the bar starts flashing. Health counts
 // down from HEALTH_MAX toward 0, then starts over.
@@ -142,12 +158,8 @@ const PANEL_X = 8;
 const PANEL_W = 504;
 const PANEL_GAP = 8;
 
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
-// in from the panel edge, and a label row is 10 pixels tall.
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
-const PANEL_TEXT_INSET = 10;
+// A label row inside a kit panel is 10 pixels tall. (Where a titled panel's content
+// starts and ends comes from the kit: PANEL_CONTENT_TOP, PANEL_BOTTOM, PANEL_TEXT_INSET.)
 const LABEL_ROW_H = 10;
 
 // Empty bands that ui.spacer() reserves for the artwork drawn inside each panel. Artwork
@@ -193,14 +205,6 @@ const WATER_TILE_STEP = 17;
 // UI kit adds its own 12 theme colors in slots 240-251 (see init()), safely above
 // everything listed here. Slot 0 is always transparent - reserved by the engine.
 
-// Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
-// theme, so the overlay style cannot use theme slots - instead it points at these four
-// low slots, which init() fills by hand with fixed colors.
-const C_OVERLAY_BAR = 2; // overlay bar background (very dark navy)
-const C_OVERLAY_ERR = 3; // timing chart error bars (dark blue)
-const C_OVERLAY_TEXT = 4; // overlay text and chart update bars (golden yellow)
-const C_OVERLAY_DIM = 5; // chart render and warning bars (cool gray-blue)
-
 // Gradient section: 32 slots, one per swatch column. update() rewrites all 32 every tick
 // to scroll the hue.
 const C_GRAD_BASE = 10; // slots 10-41
@@ -245,49 +249,44 @@ class Demo {
     tempRect = new Rect2i(0, 0, 0, 0);
 
     // A wider canvas, the overlay's palette grid (64 columns), and overlay colors from
-    // the dedicated low slots - plus the animated health slot as a playful gap color.
+    // the shared UI theme. configure() runs before init(), but THEME_OVERLAY_STYLE and
+    // defaultThemeSlot() already know which slots the theme will land in (240-251).
     configure() {
         return {
+            // A 520x390 screen, shown at up to twice that size in the browser.
             displaySize: new Vector2i(520, 390),
             maxCanvasSize: new Vector2i(520 * 2, 390 * 2),
+
+            // The overlay's palette grid, 64 slots per row, so all four animated ranges
+            // are visible at once.
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 64,
-            overlayStyle: {
-                barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_OVERLAY_TEXT,
-                // The gap reuses the animated health slot, so it flashes with the demo.
-                gapPaletteIndex: C_HEALTH_BAR,
-            },
+            overlayStyle: THEME_OVERLAY_STYLE,
+
+            // The timing chart, drawn in theme colors: amber update bars, gray render
+            // and warning bars, warm orange errors, and amber tags.
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_OVERLAY_TEXT,
-                renderBarPaletteIndex: C_OVERLAY_DIM,
-                warningPaletteIndex: C_OVERLAY_DIM,
-                errorPaletteIndex: C_OVERLAY_ERR,
-                tagPaletteIndex: C_OVERLAY_TEXT,
+                updateBarPaletteIndex: defaultThemeSlot('header'),
+                renderBarPaletteIndex: defaultThemeSlot('dim'),
+                warningPaletteIndex: defaultThemeSlot('dim'),
+                errorPaletteIndex: defaultThemeSlot('warm'),
+                tagPaletteIndex: defaultThemeSlot('header'),
             },
         };
     }
 
-    // Builds the palette (overlay slots, placeholders for the animated slots, the shared
-    // UI theme), activates it, then runs update() once so every animated slot has real
+    // Builds the palette (placeholders for the animated slots, the shared UI theme),
+    // activates it, then runs update() once so every animated slot has real
     // colors before the first render().
     async init() {
         console.log('[PaletteAnimationDemo] Initializing...');
 
         // Build the main palette. Think of this as setting up the paint box before you
-        // start painting. Static entries (overlay colors, UI theme) go in now and never
-        // change. Dynamic entries (gradient, fire, health, water) start as placeholders
-        // and get overwritten in update() every tick.
+        // start painting. Static entries (the UI theme) go in now and never change.
+        // Dynamic entries (gradient, fire, health, water) start as placeholders and get
+        // overwritten in update() every tick.
         this.palette = BT.paletteCreate(256);
-
-        // Colors for the engine overlay (the stats HUD). They match the shared UI theme's
-        // look but live in low slots so configure() could name them before the theme
-        // existed.
-        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20)); // very dark navy
-        this.palette.set(C_OVERLAY_ERR, new Color32(20, 24, 36)); // dark blue
-        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80)); // golden yellow
-        this.palette.set(C_OVERLAY_DIM, new Color32(120, 130, 160)); // cool gray-blue
 
         // Placeholders for the animated slots: black for the gradient and fire, red for
         // the health bar, dark blue for the water. The first update() call below replaces
@@ -429,17 +428,22 @@ class Demo {
     }
 
     // Health bar: flips one slot between red and white every FLASH_PERIOD ticks, but only
-    // while health is critically low. Otherwise the slot holds a steady red.
+    // while health is critically low. Otherwise the slot holds a steady red. A player who
+    // prefers reduced motion gets a steady white at low health instead - a 3.75-flashes-
+    // per-second blink is exactly what that setting asks to avoid.
     updateHealthBar(tick) {
-        if (this.health <= HEALTH_LOW) {
+        if (this.health > HEALTH_LOW) {
+            // Healthy: steady red.
+            this.palette.set(C_HEALTH_BAR, HEALTH_STEADY_RED);
+        } else if (BT.isReducedMotionPreferred) {
+            // Critical, but calm: white says "danger" without blinking.
+            this.palette.set(C_HEALTH_BAR, HEALTH_FLASH_WHITE);
+        } else {
             // Math.floor(tick / FLASH_PERIOD) counts up by one every FLASH_PERIOD ticks,
             // and % 2 turns that count into 0, 1, 0, 1, ... - so the color flips every 8
             // ticks.
             const flashOn = Math.floor(tick / FLASH_PERIOD) % 2 === 0;
-            this.palette.set(C_HEALTH_BAR, flashOn ? new Color32(255, 50, 50) : new Color32(255, 255, 255));
-        } else {
-            // Healthy: steady red.
-            this.palette.set(C_HEALTH_BAR, new Color32(200, 40, 40));
+            this.palette.set(C_HEALTH_BAR, flashOn ? HEALTH_FLASH_RED : HEALTH_FLASH_WHITE);
         }
     }
 
@@ -483,15 +487,6 @@ class Demo {
         ui.panel(title);
     }
 
-    // Fills a rectangle on top of a kit panel. Kit panels are sprites, and the engine
-    // draws every BT.drawRectFill() before any sprite - so a plain one would hide under
-    // the panel. ui.drawRectFill() takes the same rectangle and palette slot but draws a
-    // sprite, which lands on top in the order we call it.
-    fillOnPanel(x, y, width, height, slot) {
-        this.tempRect.set(x, y, width, height);
-        ui.drawRectFill(this.tempRect, slot);
-    }
-
     // Panel 1: the scrolling gradient bar, across the full width. 32 rectangles sit
     // inside it, each using a different palette slot. Because update() rotates the hues
     // in those slots, the bar appears to scroll.
@@ -504,12 +499,15 @@ class Demo {
         ui.end();
 
         // The swatches are centered in the panel, ART_GAP pixels below the label row.
+        // ui.fillRect() fills a box with one palette slot, like BT.drawRectFill(), but as
+        // a sprite: kit panels are sprites, and the engine draws every BT.drawRectFill()
+        // before any sprite, so a plain one would hide under the panel.
         const stripW = GRAD_SLOTS * GRAD_SWATCH_W;
         const x0 = PANEL_X + (PANEL_W - stripW) / 2;
         const y = GRAD_PANEL_Y + PANEL_CONTENT_TOP + LABEL_ROW_H + ART_GAP;
 
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            this.fillOnPanel(x0 + i * GRAD_SWATCH_W, y, GRAD_SWATCH_W, GRAD_SWATCH_H, C_GRAD_BASE + i);
+            ui.fillRect(x0 + i * GRAD_SWATCH_W, y, GRAD_SWATCH_W, GRAD_SWATCH_H, C_GRAD_BASE + i);
         }
     }
 
@@ -528,7 +526,7 @@ class Demo {
 
         for (let i = 0; i < FIRE_SLOTS; i++) {
             const y = colBottom - (i + 1) * FIRE_BAND_H;
-            this.fillOnPanel(colX, y, FIRE_COL_W, FIRE_BAND_H, C_FIRE_BASE + i);
+            ui.fillRect(colX, y, FIRE_COL_W, FIRE_BAND_H, C_FIRE_BASE + i);
         }
 
         // Notes beside the column: the slot at the very top, the sin() flicker in the
@@ -552,9 +550,7 @@ class Demo {
 
         this.beginPanel(RIGHT_PANEL_X, LOWER_PANELS_Y, RIGHT_PANEL_W, 'Flashing Health Bar - slot 80');
         ui.spacer(HEALTH_SPACER);
-        ui.label(isCritical ? 'CRITICAL! slot 80 flashes red/white' : 'Healthy: slot 80 = steady red', {
-            color: isCritical ? 'warm' : 'dim',
-        });
+        ui.label(this.healthStatusText(isCritical), { color: isCritical ? 'warm' : 'dim' });
         ui.end();
 
         // The bar sits in the middle of the band the spacer reserved.
@@ -568,18 +564,28 @@ class Demo {
 
         // Background trough (dark, always full width) with a theme-colored outline.
         // ui.drawRect() is the sprite version of BT.drawRect(), for the same reason as
-        // fillOnPanel(): it has to show on top of the kit panel.
-        this.fillOnPanel(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H, this.theme.bg);
+        // ui.fillRect(): it has to show on top of the kit panel.
+        ui.fillRect(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H, this.theme.bg);
         this.tempRect.set(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H);
         ui.drawRect(this.tempRect, this.theme.border);
 
         // The filled part uses C_HEALTH_BAR, which update() flashes when health is low.
-        this.fillOnPanel(barX, barY, barW, HEALTH_BAR_H, C_HEALTH_BAR);
+        ui.fillRect(barX, barY, barW, HEALTH_BAR_H, C_HEALTH_BAR);
 
         // The health value as text right of the bar, in the theme's amber heading color.
         // labelY = barY + 3 puts the 7-pixel-tall digits on rows barY + 2 to barY + 8,
         // the middle of the 12-pixel bar.
         ui.caption(barX + HEALTH_BAR_W + 8, barY + 3, `HP ${this.health}`, { color: 'header' });
+    }
+
+    // The status line under the health bar: what slot 80 is doing right now.
+    healthStatusText(isCritical) {
+        if (!isCritical) {
+            return 'Healthy: slot 80 = steady red';
+        }
+
+        // Under reduced motion updateHealthBar() holds white instead of flashing.
+        return BT.isReducedMotionPreferred ? 'CRITICAL! slot 80 = steady white' : 'CRITICAL! slot 80 flashes red/white';
     }
 
     // Panel 4: the water strip, bottom right. The tiles each use one of the three water
@@ -590,6 +596,8 @@ class Demo {
         ui.spacer(WATER_SPACER);
         ui.end();
 
+        // The tiles start at the panel's text inset, one gap below the label row, in the
+        // band the spacer above reserved for them.
         const x0 = RIGHT_PANEL_X + PANEL_TEXT_INSET;
         const y = WATER_PANEL_Y + PANEL_CONTENT_TOP + LABEL_ROW_H + ART_GAP;
 
@@ -597,7 +605,7 @@ class Demo {
             // i % WATER_SLOTS maps the tile index to one of the three water slots.
             const slot = C_WATER_BASE + (i % WATER_SLOTS);
 
-            this.fillOnPanel(x0 + i * WATER_TILE_STEP, y, WATER_TILE_STEP - 1, WATER_TILE_H, slot);
+            ui.fillRect(x0 + i * WATER_TILE_STEP, y, WATER_TILE_STEP - 1, WATER_TILE_H, slot);
         }
     }
 }

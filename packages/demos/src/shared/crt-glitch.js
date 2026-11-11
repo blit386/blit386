@@ -18,7 +18,11 @@
  * (different tuning constants, logo-lowres's hshift also drives chroma aberration, its
  * flicker scales by peak instead of envelope) and keep their own bespoke apply methods -
  * they only import the type list and labels from here, not the shared functions.
+ *
+ * isMotionEffect() is shared by every CRT demo that honors BT.isReducedMotionPreferred.
  */
+
+import { Flicker, Interference, Noise, RollLine } from 'blit386';
 
 // Glitch state-machine tuning shared by crt-pipboy.js, snake-game.js, and
 // basics-enhanced.js. sprite-effects.js and logo-lowres.js use their own, different
@@ -39,8 +43,10 @@ const NOISE_BASE = 0.025;
 const PIXEL_GLITCH_BAND_HEIGHT = 6;
 
 // Every glitch key, once. Demos compare `this.glitchType` against these instead of
-// re-typing the strings, and both type lists below are built from them.
+// re-typing the strings, and both type lists below are built from them. NONE is the idle
+// value between bursts; it is in neither list, so a burst never picks it.
 const GLITCH_TYPE = Object.freeze({
+    NONE: 'none',
     HSHIFT: 'hshift',
     CHROMASPLIT: 'chromasplit',
     NOISE: 'noise',
@@ -73,7 +79,7 @@ const GLITCH_TYPES_VROLL = [
 // Canonical on-screen label for every glitch key across both groups. Any demo with a
 // HUD looks a key up here instead of hand-typing its own label map.
 const GLITCH_LABELS = {
-    none: 'NONE',
+    [GLITCH_TYPE.NONE]: 'NONE',
     [GLITCH_TYPE.HSHIFT]: 'H-HOLD',
     [GLITCH_TYPE.CHROMASPLIT]: 'CHROMA',
     [GLITCH_TYPE.NOISE]: 'SNOW',
@@ -125,6 +131,19 @@ function applyGlitchUniforms(instance, envelope) {
     }
 }
 
+/**
+ * Is this one of the CRT effects that moves or blinks on its own - grain that changes
+ * every frame, a brightness flicker, a band rolling down the screen, or rows jittering
+ * sideways? CRT demos leave these out of the chain while the player prefers reduced
+ * motion (raycasting.js skips Noise and RollLine the same way).
+ *
+ * @param {object} fx - A post-process effect instance.
+ * @returns {boolean}
+ */
+function isMotionEffect(fx) {
+    return fx instanceof Flicker || fx instanceof Interference || fx instanceof Noise || fx instanceof RollLine;
+}
+
 export {
     ABERRATION_BASE,
     applyGlitchUniforms,
@@ -140,6 +159,7 @@ export {
     GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     GLITCH_TYPES_VROLL,
+    isMotionEffect,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,

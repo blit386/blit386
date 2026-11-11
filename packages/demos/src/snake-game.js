@@ -116,6 +116,7 @@ import {
     GLITCH_COOLDOWN_MIN,
     GLITCH_INTENSITY_MAX,
     GLITCH_INTENSITY_MIN,
+    GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
@@ -296,9 +297,9 @@ class Demo {
     // Total length of the current burst in ticks, used to shape its envelope.
     glitchDuration = 0;
 
-    // Which glitch is running - a key from GLITCH_TYPES_CHROMA, or 'none'.
+    // Which glitch is running - a key from GLITCH_TYPES_CHROMA, or GLITCH_TYPE.NONE.
     /** @type {string} */
-    glitchType = 'none';
+    glitchType = GLITCH_TYPE.NONE;
 
     // Peak intensity of the current burst, from GLITCH_INTENSITY_MIN to MAX.
     glitchPeak = 0;
@@ -576,7 +577,7 @@ class Demo {
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
-        this.glitchType = 'none';
+        this.glitchType = GLITCH_TYPE.NONE;
         this.glitchPeak = 0;
     }
 

@@ -11,6 +11,7 @@ import { describe, it } from 'node:test';
 import { BT, Rect2i } from 'blit386';
 
 import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '../ui-core.js';
+import { PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
 import { button, checkbox, label, meter, panel, pip, slider, spacer, tooltip } from '../ui-widgets.js';
 import { stubBt } from './bt-stub.mjs';
@@ -463,6 +464,32 @@ describe('panel', () => {
         ctx.end();
 
         assert.equal(panelH, 22);
+    });
+
+    it('lays out a titled panel exactly where the exported geometry constants say', (t) => {
+        let panelH = 0;
+
+        stubBt(t, {
+            drawNineSlice: (_slice, rect) => {
+                panelH = Math.max(panelH, rect.height);
+            },
+        });
+
+        const ctx = createReadyContext();
+        const spacerH = 30;
+
+        ctx.begin(UI_ANCHORS.TOP_LEFT);
+        panel(ctx, 'Title');
+
+        const titleX = ctx.commands[ctx.commandCount - 1].x;
+
+        spacer(ctx, spacerH);
+        const contentTop = ctx.cursorY - spacerH;
+        ctx.end();
+
+        assert.equal(titleX, PANEL_TEXT_INSET);
+        assert.equal(contentTop, PANEL_CONTENT_TOP);
+        assert.equal(panelH, PANEL_CONTENT_TOP + spacerH + PANEL_BOTTOM);
     });
 });
 

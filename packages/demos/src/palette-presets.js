@@ -97,9 +97,9 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
-
-/** @typedef {import('blit386').Palette} Palette */
+// PANEL_CONTENT_TOP and PANEL_BOTTOM say where a titled kit panel's content starts (22
+// pixels below its top edge) and where the panel ends (11 pixels below the last row).
+import { applyTheme, defaultThemeSlot, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 // How many ticks the live view shows each preset. A tick is one fixed update; at 60 ticks
 // per second, 120 ticks is 2 seconds.
@@ -116,11 +116,6 @@ const PANEL_X = 6;
 const PANEL_W = 508;
 const PRESETS_PANEL_Y = 69;
 const PANEL_GAP = 6;
-
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip).
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
 
 // Inside the presets panel each row is a name column, then the swatches. The text starts
 // 10 pixels in from the panel edge (the same inset as the panel title); the swatches all
@@ -151,13 +146,13 @@ const LIVE_SWATCH_SLOT = 200;
 // Shared UI theme slots used by configure(). applyTheme() (see init()) writes the twelve
 // shared UI colors into palette slots 240-251 - its default start slot, safely above this
 // demo's swatch slots (10-181) and live-view slots (200-215). configure() runs BEFORE
-// init(), so the overlay styles below have to name those slots as plain numbers instead
-// of reading this.theme.
-const THEME_BG = 240; // deep navy screen background
-const THEME_HEADER = 246; // warm amber header text
-const THEME_ACCENT = 247; // phosphor green accent
-const THEME_WARM = 248; // warm orange (warnings)
-const THEME_INFO = 249; // info blue
+// init(), so it cannot read this.theme yet; defaultThemeSlot() answers the same question
+// ahead of time: which slot a theme color will land in.
+const THEME_BG = defaultThemeSlot('bg'); // deep navy screen background
+const THEME_HEADER = defaultThemeSlot('header'); // warm amber header text
+const THEME_ACCENT = defaultThemeSlot('accent'); // phosphor green accent
+const THEME_WARM = defaultThemeSlot('warm'); // warm orange (warnings)
+const THEME_INFO = defaultThemeSlot('info'); // info blue
 
 // Shows the six built-in palette presets side by side, plus a live view that cycles
 // through them and a named palette slot.
@@ -329,14 +324,14 @@ class Demo {
         return this.overlayRowData;
     }
 
-    // Copies the current preset's first 16 slots into the live-view slots (200-215). Any
-    // slot past the preset's size turns black. render() shows the new colors on the next
-    // frame without changing a single draw call.
+    // Copies the current preset's first LIVE_SWATCH_COUNT (16) slots into the live-view
+    // slots (200-215). Any slot past the preset's size turns black. render() shows the new
+    // colors on the next frame without changing a single draw call.
     updateLiveSwatches() {
         const preset = this.presets[this.currentPresetIndex];
-        const maxColors = Math.min(preset.size, 16);
+        const maxColors = Math.min(preset.size, LIVE_SWATCH_COUNT);
 
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < LIVE_SWATCH_COUNT; i++) {
             if (i < maxColors) {
                 this.palette.set(LIVE_SWATCH_SLOT + i, preset.get(i));
             } else {

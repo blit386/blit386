@@ -90,7 +90,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
-/** @typedef {import('blit386').Color32} Color32 */
 
 // These numbers are the palette "addresses". We name them so the code reads well. Slot 0
 // is always transparent and reserved - never write to it.
@@ -152,6 +151,13 @@ class Demo {
 
     /** @type {Color32 | null} */
     lerpColorB = null;
+
+    // One rectangle and one position, reused by every draw call in render(). The two
+    // strips draw one 1-pixel column at a time - nearly 600 rectangles a frame - so
+    // building a new Rect2i for each would hand the garbage collector a pile of
+    // throwaway objects 60 times a second. set() rewrites them in place instead.
+    drawRect = new Rect2i(0, 0, 0, 0);
+    textPos = new Vector2i(0, 0);
 
     // Optional engine settings. We keep the default 320x240 screen, open the overlay from
     // the start, and show its palette grid with 4 visible rows (scroll for the rest).
@@ -292,6 +298,8 @@ class Demo {
         // the series uses this same widget, so all headers look identical everywhere.
         ui.caption(6, 50, '1: NAMED COLORS (shortcuts)');
 
+        // The swatch row sits 11 pixels under its header; each swatch is 11 pixels tall,
+        // tall enough for one line of system-font label.
         const rowY = 61;
         const swatchH = 11;
 
@@ -326,11 +334,13 @@ class Demo {
                 entry.index === C_CYAN_N;
             const labelColor = isLight ? C_BLACK : C_WHITE;
 
-            // Fill a rectangle with that color.
-            BT.drawRectFill(new Rect2i(x, rowY, swatchW, swatchH), entry.index);
+            // The swatch itself: the palette slot is the only color information the draw
+            // call needs.
+            BT.drawRectFill(this.drawRect.set(x, rowY, swatchW, swatchH), entry.index);
 
-            // Print the label into the swatch.
-            BT.systemPrint(new Vector2i(x + 2, rowY - 1), labelColor, entry.label);
+            // The label sits 2 pixels in from the swatch's left edge and 1 pixel up, so
+            // the system font's capitals land inside the 11-pixel swatch.
+            BT.systemPrint(this.textPos.set(x + 2, rowY - 1), labelColor, entry.label);
         }
     }
 
@@ -343,6 +353,7 @@ class Demo {
     drawHslRainbowSection() {
         ui.caption(6, 84, '2: HSL RAINBOW (fromHSL, scrolling hue)');
 
+        // The strip spans the full screen width, 11 pixels under its header.
         const stripY = 95;
         const stripH = 11;
 
@@ -354,7 +365,7 @@ class Demo {
             // Math.min keeps it inside the range.
             const slot = Math.min(Math.floor((x / 320) * HSL_SLOTS), HSL_SLOTS - 1);
 
-            BT.drawRectFill(new Rect2i(x, stripY, 1, stripH), C_HSL_BASE + slot);
+            BT.drawRectFill(this.drawRect.set(x, stripY, 1, stripH), C_HSL_BASE + slot);
         }
     }
 
@@ -369,13 +380,14 @@ class Demo {
     drawLerpSection() {
         ui.caption(6, 118, '3: LERP: slide + pulse (see comments)');
 
+        // Top of the A and B squares and the gradient bar, 11 pixels under the header.
         const barY = 129;
 
         // The two end squares are the "lamps" at full brightness: pure A and pure B.
-        BT.drawRectFill(new Rect2i(6, barY, 11, 11), C_LERP_A);
-        BT.systemPrint(new Vector2i(8, barY - 1), C_BLACK, 'A');
-        BT.drawRectFill(new Rect2i(300, barY, 11, 11), C_LERP_B);
-        BT.systemPrint(new Vector2i(302, barY - 1), C_BLACK, 'B');
+        BT.drawRectFill(this.drawRect.set(6, barY, 11, 11), C_LERP_A);
+        BT.systemPrint(this.textPos.set(8, barY - 1), C_BLACK, 'A');
+        BT.drawRectFill(this.drawRect.set(300, barY, 11, 11), C_LERP_B);
+        BT.systemPrint(this.textPos.set(302, barY - 1), C_BLACK, 'B');
 
         // The gradient bar: each column is another step on the dimmer between A and B.
         // update() already wrote 32 blended colors into slots C_LERP_BASE and up.
@@ -386,14 +398,15 @@ class Demo {
         for (let i = 0; i < barW; i++) {
             // Pick which of the 32 pre-blended dimmer steps this pixel column uses.
             const slot = Math.min(Math.floor((i / barW) * LERP_SLOTS), LERP_SLOTS - 1);
-            BT.drawRectFill(new Rect2i(barX + i, barY, 1, barH), C_LERP_BASE + slot);
+            BT.drawRectFill(this.drawRect.set(barX + i, barY, 1, barH), C_LERP_BASE + slot);
         }
 
         // The thin strip: one slot whose t value waves back and forth, so the whole
         // strip pulses. In update(), pulseT follows a sine wave, so the dimmer slides A
         // to B to A smoothly.
-        BT.drawRectFill(new Rect2i(24, barY + 15, 268, 11), C_PULSE);
+        BT.drawRectFill(this.drawRect.set(24, barY + 15, 268, 11), C_PULSE);
     }
 }
 
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);
