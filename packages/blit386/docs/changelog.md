@@ -198,6 +198,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A sound hot reload no longer brings back a clip that `unload()` released while the new file was downloading, and two
   reloads of one clip started by hand no longer leave the music player on the first new buffer. The clip's buffer is now
   read after the download, not before it.
+- `BT.paletteCycle` with a very large `speed` no longer freezes the game. A speed of `1e9` used to rotate the range
+  about 17 million times in one tick. Whole turns of the range are now skipped, so a tick does at most one turn of work
+  and lands on the same colors. A tick that lands exactly on whole turns no longer marks the palette dirty.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:

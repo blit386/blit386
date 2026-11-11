@@ -181,53 +181,29 @@ export class CycleEffect implements PaletteEffect {
 
             this.accumulator += (this.speed * deltaMs) / msPerSecond;
 
-            // Only crossing a whole step actually mutates the palette; a slow cycle
-            // spends most ticks just accumulating fractional progress.
-            const crossedForward = this.applyForwardSteps(palette);
-            const crossedBackward = this.applyBackwardSteps(palette);
+            // Only whole steps mutate the palette; a slow cycle spends most ticks accumulating.
+            const steps = Math.trunc(this.accumulator);
 
-            if (crossedForward || crossedBackward) {
+            this.accumulator -= steps;
+
+            // Whole turns of the range change nothing, so a huge speed costs at most one turn per tick.
+            // shortcut: a speed past ~1e307 overflows the accumulator to NaN and the cycle stops; no caller gets near it.
+            const netSteps = steps % (this.end - this.start + 1);
+
+            for (let i = 0; i < Math.abs(netSteps); i++) {
+                if (netSteps > 0) {
+                    this.rotateForward(palette);
+                } else {
+                    this.rotateBackward(palette);
+                }
+            }
+
+            if (netSteps !== 0) {
                 palette.markDirty();
             }
         }
 
         return true; // Runs indefinitely.
-    }
-
-    /**
-     * Drains the forward accumulator, rotating entries toward lower indices one step at a time.
-     *
-     * @param palette - Palette whose entries are rotated.
-     * @returns `true` if at least one forward step was applied.
-     */
-    private applyForwardSteps(palette: Palette): boolean {
-        let crossed = false;
-
-        while (this.accumulator >= 1) {
-            this.accumulator -= 1;
-            this.rotateForward(palette);
-            crossed = true;
-        }
-
-        return crossed;
-    }
-
-    /**
-     * Drains the backward accumulator, rotating entries toward higher indices one step at a time.
-     *
-     * @param palette - Palette whose entries are rotated.
-     * @returns `true` if at least one backward step was applied.
-     */
-    private applyBackwardSteps(palette: Palette): boolean {
-        let crossed = false;
-
-        while (this.accumulator <= -1) {
-            this.accumulator += 1;
-            this.rotateBackward(palette);
-            crossed = true;
-        }
-
-        return crossed;
     }
 
     /**
