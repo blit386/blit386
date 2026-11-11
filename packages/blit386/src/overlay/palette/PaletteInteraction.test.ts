@@ -7,10 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from '../constants';
-import { createOverlayLayout } from '../layout/layoutHelpers';
+import { createOverlayLayout, overlayToggleHintIconX } from '../layout/layoutHelpers';
 import { hintBarY, paletteBandY } from '../layout/layoutPlan';
 import type { OverlayLayoutPlan } from '../layout/types';
+import { hintIconY } from '../OverlayToggleIcon';
 import { mockFont } from '../testFixtures';
+import { ICON_HEIGHT, ICON_WIDTH } from '../toggleIconData';
 import {
     clampScrollRowOffset,
     drawTooltipChrome,
@@ -32,7 +34,6 @@ import {
     PALETTE_SCROLLBAR_EDGE_PADDING_PX,
     PALETTE_SCROLLBAR_MIN_THUMB_HEIGHT_PX,
     PALETTE_SWATCH_GAP_PX,
-    resolveHintExclusionRect,
     writeScrollbarRects,
     writeSwatchTopLeft,
 } from './PaletteView';
@@ -46,7 +47,7 @@ function paletteOnlyPlan(paletteBand: Rect2i): OverlayLayoutPlan {
 function goldenHintExclusion(): Rect2i {
     const layout = createOverlayLayout(320, 240, 14);
 
-    return resolveHintExclusionRect(hintBarY(layout.displayHeight), layout.displayWidth);
+    return new Rect2i(overlayToggleHintIconX(), hintIconY(hintBarY(layout.displayHeight)), ICON_WIDTH, ICON_HEIGHT);
 }
 
 describe('hitTestSwatch', () => {
@@ -62,15 +63,7 @@ describe('hitTestSwatch', () => {
 
         writeSwatchTopLeft(swatch, index, paletteBand, grid);
 
-        const hit = hitTestSwatch(
-            swatch.x + 1,
-            swatch.y + 1,
-            paletteBand,
-            grid,
-            256,
-            hintExclusion,
-            layout.displayWidth,
-        );
+        const hit = hitTestSwatch(swatch.x + 1, swatch.y + 1, paletteBand, grid, 256);
 
         expect(hit).toBe(index);
     });
@@ -81,27 +74,15 @@ describe('hitTestSwatch', () => {
         writeSwatchTopLeft(swatch, 0, paletteBand, grid);
         const gapX = swatch.x + grid.swatchSize;
 
-        expect(
-            hitTestSwatch(gapX, swatch.y + 1, paletteBand, grid, 256, hintExclusion, layout.displayWidth),
-        ).toBeNull();
+        expect(hitTestSwatch(gapX, swatch.y + 1, paletteBand, grid, 256)).toBeNull();
 
         const gapY = swatch.y + grid.swatchSize;
 
-        expect(
-            hitTestSwatch(swatch.x + 1, gapY, paletteBand, grid, 256, hintExclusion, layout.displayWidth),
-        ).toBeNull();
+        expect(hitTestSwatch(swatch.x + 1, gapY, paletteBand, grid, 256)).toBeNull();
     });
 
     it('returns null over the hint exclusion band', () => {
-        const hit = hitTestSwatch(
-            hintExclusion.x + 1,
-            hintExclusion.y + 1,
-            paletteBand,
-            grid,
-            256,
-            hintExclusion,
-            layout.displayWidth,
-        );
+        const hit = hitTestSwatch(hintExclusion.x + 1, hintExclusion.y + 1, paletteBand, grid, 256);
 
         expect(hit).toBeNull();
     });
@@ -112,19 +93,7 @@ describe('hitTestSwatch', () => {
 
         writeSwatchTopLeft(swatch, 31, paletteBand, grid);
 
-        expect(
-            hitTestSwatch(
-                layout.displayWidth - 1,
-                swatch.y + 1,
-                paletteBand,
-                grid,
-                256,
-                hintExclusion,
-                layout.displayWidth,
-                0,
-                trackWidth,
-            ),
-        ).toBeNull();
+        expect(hitTestSwatch(layout.displayWidth - 1, swatch.y + 1, paletteBand, grid, 256, 0, trackWidth)).toBeNull();
     });
 
     it('applies scroll row offset to visible row mapping', () => {
@@ -134,18 +103,7 @@ describe('hitTestSwatch', () => {
 
         writeSwatchTopLeft(swatch, index, paletteBand, grid, scrollRowOffset);
 
-        expect(
-            hitTestSwatch(
-                swatch.x + 1,
-                swatch.y + 1,
-                paletteBand,
-                grid,
-                256,
-                hintExclusion,
-                layout.displayWidth,
-                scrollRowOffset,
-            ),
-        ).toBe(index);
+        expect(hitTestSwatch(swatch.x + 1, swatch.y + 1, paletteBand, grid, 256, scrollRowOffset)).toBe(index);
     });
 
     it('hits the bottom-left palette swatch, which no longer overlaps the shrunk toggle rect', () => {
@@ -154,9 +112,7 @@ describe('hitTestSwatch', () => {
 
         writeSwatchTopLeft(swatch, index, paletteBand, grid);
 
-        expect(
-            hitTestSwatch(swatch.x + 1, swatch.y + 1, paletteBand, grid, 256, hintExclusion, layout.displayWidth),
-        ).toBe(index);
+        expect(hitTestSwatch(swatch.x + 1, swatch.y + 1, paletteBand, grid, 256)).toBe(index);
         // The 17x13 toggle rect matches the hint bar footprint exactly, so the row gap above it
         // keeps the palette grid clear; this used to overlap when the corner was 48x48.
         expect(layout.toggleRect.isContaining(new Vector2i(swatch.x + 1, swatch.y + 1))).toBe(false);
@@ -170,22 +126,10 @@ describe('hitTestSwatch', () => {
         writeSwatchTopLeft(lastDrawn, scrollGrid.cols + 5, scrollBand, scrollGrid);
 
         expect(scrollGrid.visibleRows).toBe(2);
-        expect(hitTestSwatch(lastDrawn.x + 1, lastDrawn.y + 1, scrollBand, scrollGrid, 256, hintExclusion, 320)).toBe(
-            scrollGrid.cols + 5,
-        );
+        expect(hitTestSwatch(lastDrawn.x + 1, lastDrawn.y + 1, scrollBand, scrollGrid, 256)).toBe(scrollGrid.cols + 5);
 
         for (const bandLocalY of [19, 20]) {
-            expect(
-                hitTestSwatch(
-                    lastDrawn.x + 1,
-                    scrollBand.y + bandLocalY,
-                    scrollBand,
-                    scrollGrid,
-                    256,
-                    hintExclusion,
-                    320,
-                ),
-            ).toBeNull();
+            expect(hitTestSwatch(lastDrawn.x + 1, scrollBand.y + bandLocalY, scrollBand, scrollGrid, 256)).toBeNull();
         }
     });
 });
@@ -477,8 +421,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         expect(consumed).toBe(true);
@@ -549,8 +491,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         await vi.waitFor(() => {
@@ -598,8 +538,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         await vi.waitFor(async () => {
@@ -624,8 +562,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         interaction.drawTooltipLabel(
@@ -669,8 +605,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         for (let tick = 11; tick <= 25; tick++) {
@@ -740,8 +674,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
         interaction.drawTooltipLabel(
             renderer as never,
@@ -780,8 +712,6 @@ describe('PaletteInteraction clipboard', () => {
             plan,
             grid,
             256,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
         );
 
         await vi.waitFor(async () => {

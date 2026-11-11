@@ -356,8 +356,6 @@ export class Overlay {
                     plan,
                     grid,
                     colorCount,
-                    plan.hintBar.y,
-                    this.#layout.displayWidth,
                 );
 
                 isPointerPressConsumed =
@@ -731,8 +729,6 @@ export class Overlay {
                 plan.paletteBand,
                 palette ?? null,
                 paletteGrid,
-                plan.hintBar.y,
-                this.#layout.displayWidth,
                 usedPaletteMask,
                 this.#idxText,
                 this.#paletteInteraction.scrollRowOffset,
@@ -744,14 +740,7 @@ export class Overlay {
 
             this.#paletteInteraction.tickCopyStatus(currentTick);
 
-            this.#paletteInteraction.updateHover(
-                pointer,
-                plan,
-                paletteGrid,
-                colorCount,
-                plan.hintBar.y,
-                this.#layout.displayWidth,
-            );
+            this.#paletteInteraction.updateHover(pointer, plan, paletteGrid, colorCount);
 
             this.#bars.drawRowGaps(renderer, plan, this.#idxGap);
             this.#bars.drawClusterSeparators(renderer, plan, this.#idxGap, true, true);

@@ -2,18 +2,15 @@
  * Live palette swatch grid for the overlay bottom band.
  *
  * {@link computeGrid} picks adaptive column counts from the active palette
- * size; {@link PaletteView.draw} renders indexed swatches with gaps, unused-slot
- * markers, and toggle-icon exclusion.
+ * size; {@link PaletteView.draw} renders indexed swatches with gaps and unused-slot
+ * markers.
  */
 
 import type { Palette } from '../../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../../assets/Palette';
 import { Rect2i } from '../../utils/Rect2i';
 import { OVERLAY_EDGE_MARGIN_PX } from '../layout/constants';
-import { overlayToggleHintIconX } from '../layout/layoutHelpers';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
-import { hintIconY } from '../OverlayToggleIcon';
-import { ICON_HEIGHT, ICON_WIDTH } from '../toggleIconData';
 import type { PaletteGridLayout } from '../types';
 
 /** Default swatch size in pixels. */
@@ -158,74 +155,6 @@ export function computeGrid(
     const totalHeight = gridRowStackHeight(visibleRows, swatchSize, gap) + PALETTE_GRID_PADDING_PX * 2;
 
     return { cols, rows, visibleRows, swatchSize, gap, totalHeight };
-}
-
-/**
- * Returns whether two axis-aligned rects overlap (zero allocation).
- *
- * @param ax - Left edge of rect A.
- * @param ay - Top edge of rect A.
- * @param aw - Width of rect A.
- * @param ah - Height of rect A.
- * @param bx - Left edge of rect B.
- * @param by - Top edge of rect B.
- * @param bw - Width of rect B.
- * @param bh - Height of rect B.
- * @returns `true` when the rects overlap.
- */
-function doRectsOverlap(
-    ax: number,
-    ay: number,
-    aw: number,
-    ah: number,
-    bx: number,
-    by: number,
-    bw: number,
-    bh: number,
-): boolean {
-    return !(bx >= ax + aw || bx + bw <= ax || by >= ay + ah || by + bh <= ay);
-}
-
-/**
- * Returns whether a swatch rect intersects an exclusion region.
- *
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param exclusion - Region to avoid (for example the toggle hint icon).
- * @returns `true` when any part of the swatch overlaps the exclusion rect.
- */
-function doesSwatchIntersectExclusion(x: number, y: number, swatchSize: number, exclusion: Rect2i): boolean {
-    return doRectsOverlap(x, y, swatchSize, swatchSize, exclusion.x, exclusion.y, exclusion.width, exclusion.height);
-}
-
-/** Cached hint exclusion rect; recomputed only when layout inputs change. */
-const hintExclusionCache = {
-    hintBarTopY: Number.NaN,
-    displayWidth: Number.NaN,
-    rect: new Rect2i(),
-};
-
-/**
- * Returns the screen-space rect reserved for the bottom-left toggle hint icon.
- *
- * Reuses {@link hintExclusionCache.rect} when `hintBarTopY` and `displayWidth` match the previous call.
- *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @param displayWidth - Logical display width (cache key only; icon X is margin-based).
- * @returns Exclusion rect for swatch placement and hit testing.
- */
-export function resolveHintExclusionRect(hintBarTopY: number, displayWidth: number): Rect2i {
-    if (hintExclusionCache.hintBarTopY === hintBarTopY && hintExclusionCache.displayWidth === displayWidth) {
-        return hintExclusionCache.rect;
-    }
-
-    hintExclusionCache.hintBarTopY = hintBarTopY;
-    hintExclusionCache.displayWidth = displayWidth;
-
-    hintExclusionCache.rect.set(overlayToggleHintIconX(), hintIconY(hintBarTopY), ICON_WIDTH, ICON_HEIGHT);
-
-    return hintExclusionCache.rect;
 }
 
 /** Preferred side length for the filled marker drawn inside unused swatches. */
@@ -389,7 +318,6 @@ export function writeSwatchTopLeft(
  * @param paletteBand - Palette band rect from layout plan.
  * @param colorCount - Active palette slot count.
  * @param grid - Precomputed grid layout.
- * @param hintExclusion - Region to skip for the toggle hint icon.
  * @param usedMask - Per-frame usage mask from BTAPI.
  * @param unusedMarkIndex - Palette index for unused swatch marker fills.
  * @param scrollRowOffset - First visible grid row (default `0`).
@@ -399,7 +327,6 @@ function drawSwatchGrid(
     paletteBand: Rect2i,
     colorCount: number,
     grid: PaletteGridLayout,
-    hintExclusion: Rect2i,
     usedMask: Uint8Array,
     unusedMarkIndex: number,
     scrollRowOffset = 0,
@@ -414,12 +341,6 @@ function drawSwatchGrid(
         writeSwatchTopLeft(swatchScratch, index, paletteBand, grid, scrollRowOffset);
         const x = swatchScratch.x;
         const y = swatchScratch.y;
-
-        // Reserve only the toggle hint icon band; do not clip against the 17×13 toggle hit rect
-        // (it overlaps many grid rows and would truncate every row below it).
-        if (doesSwatchIntersectExclusion(x, y, swatchSize, hintExclusion)) {
-            continue;
-        }
 
         drawSwatch(target, swatchScratch, markerScratch, x, y, swatchSize, index, usedMask, unusedMarkIndex);
     }
@@ -557,8 +478,6 @@ export class PaletteView {
      * @param paletteBand - Palette band rect from layout plan.
      * @param palette - Active demo palette.
      * @param grid - Precomputed grid layout.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width for hint exclusion cache key.
      * @param usedMask - Per-frame usage mask populated during demo render.
      * @param unusedMarkIndex - Palette index for unused swatch marker fills.
      * @param scrollRowOffset - First visible grid row (default `0`).
@@ -570,8 +489,6 @@ export class PaletteView {
         paletteBand: Rect2i,
         palette: Palette | null,
         grid: PaletteGridLayout,
-        hintBarTopY: number,
-        displayWidth: number,
         usedMask: Uint8Array,
         unusedMarkIndex: number,
         scrollRowOffset = 0,
@@ -582,18 +499,7 @@ export class PaletteView {
             return;
         }
 
-        const hintExclusion = resolveHintExclusionRect(hintBarTopY, displayWidth);
-
-        drawSwatchGrid(
-            target,
-            paletteBand,
-            palette.size,
-            grid,
-            hintExclusion,
-            usedMask,
-            unusedMarkIndex,
-            scrollRowOffset,
-        );
+        drawSwatchGrid(target, paletteBand, palette.size, grid, usedMask, unusedMarkIndex, scrollRowOffset);
 
         drawScrollbar(target, paletteBand, grid, scrollRowOffset, scrollbarTrackWidth, scrollbarThumbIndex);
     }

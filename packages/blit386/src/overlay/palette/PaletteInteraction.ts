@@ -18,7 +18,6 @@ import {
     computeScrollbarThumbHeight,
     PALETTE_GRID_PADDING_PX,
     PALETTE_SCROLLBAR_EDGE_PADDING_PX,
-    resolveHintExclusionRect,
     writeScrollbarRects,
     writeSwatchTopLeft,
 } from './PaletteView';
@@ -48,31 +47,6 @@ const tooltipScratch = {
     outlineEdge: new Rect2i(),
     textPos: new Vector2i(),
 };
-
-/**
- * Returns whether a palette slot at the given swatch origin overlaps the hint exclusion rect.
- *
- * @param swatchX - Swatch left edge in display pixels.
- * @param swatchY - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param hintExclusion - Region reserved for the toggle hint icon.
- * @returns `true` when the swatch should not receive hits or draws.
- */
-function isSwatchOverlappingWithHintExclusion(
-    swatchX: number,
-    swatchY: number,
-    swatchSize: number,
-    hintExclusion: Rect2i,
-): boolean {
-    const ex = hintExclusion;
-
-    return !(
-        ex.x >= swatchX + swatchSize ||
-        ex.x + ex.width <= swatchX ||
-        ex.y >= swatchY + swatchSize ||
-        ex.y + ex.height <= swatchY
-    );
-}
 
 /**
  * Tests whether a pointer lies outside the palette band, including the scrollbar track.
@@ -156,8 +130,6 @@ function resolveIndexAtBandLocal(
  * @param paletteBand - Palette band rect from the layout plan.
  * @param grid - Precomputed grid layout.
  * @param colorCount - Active palette slot count.
- * @param hintExclusion - Region to skip for the toggle hint icon.
- * @param displayWidth - Logical display width for scrollbar track exclusion.
  * @param scrollRowOffset - First visible grid row (default `0`).
  * @param scrollbarTrackWidth - Right-edge track width excluded from hits (default {@link PALETTE_SCROLLBAR_TRACK_WIDTH_PX}).
  * @returns Palette index, or `null` when the pointer is not over a hittable swatch.
@@ -168,8 +140,6 @@ export function hitTestSwatch(
     paletteBand: Rect2i,
     grid: PaletteGridLayout,
     colorCount: number,
-    hintExclusion: Rect2i,
-    displayWidth: number,
     scrollRowOffset = 0,
     scrollbarTrackWidth = PALETTE_SCROLLBAR_TRACK_WIDTH_PX,
 ): number | null {
@@ -179,10 +149,7 @@ export function hitTestSwatch(
         return null;
     }
 
-    const bandRight =
-        Math.min(paletteBand.x + paletteBand.width, displayWidth) -
-        scrollbarTrackWidth -
-        PALETTE_SCROLLBAR_EDGE_PADDING_PX;
+    const bandRight = paletteBand.x + paletteBand.width - scrollbarTrackWidth - PALETTE_SCROLLBAR_EDGE_PADDING_PX;
 
     if (isPointerOutsideBand(pointerX, pointerY, paletteBand, bandRight)) {
         return null;
@@ -190,30 +157,7 @@ export function hitTestSwatch(
 
     const localX = pointerX - (paletteBand.x + OVERLAY_EDGE_MARGIN_PX);
     const localY = pointerY - (paletteBand.y + PALETTE_GRID_PADDING_PX);
-    const index = resolveIndexAtBandLocal(
-        localX,
-        localY,
-        cols,
-        swatchSize,
-        gap,
-        visibleRows,
-        scrollRowOffset,
-        colorCount,
-    );
-
-    if (index === null) {
-        return null;
-    }
-
-    const swatchScratch = tooltipScratch.swatch;
-
-    writeSwatchTopLeft(swatchScratch, index, paletteBand, grid, scrollRowOffset);
-
-    if (isSwatchOverlappingWithHintExclusion(swatchScratch.x, swatchScratch.y, swatchSize, hintExclusion)) {
-        return null;
-    }
-
-    return index;
+    return resolveIndexAtBandLocal(localX, localY, cols, swatchSize, gap, visibleRows, scrollRowOffset, colorCount);
 }
 
 /**
@@ -639,16 +583,12 @@ export class PaletteInteraction {
      * @param plan - Layout plan for this frame.
      * @param grid - Palette grid layout.
      * @param colorCount - Active palette slot count.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width.
      */
     updateHover(
         pointer: PointerInput | null,
         plan: OverlayLayoutPlan,
         grid: PaletteGridLayout,
         colorCount: number,
-        hintBarTopY: number,
-        displayWidth: number,
     ): void {
         if (plan.paletteBand.height <= 0 || grid.cols <= 0) {
             this.#hoveredIndex = null;
@@ -662,7 +602,6 @@ export class PaletteInteraction {
             return;
         }
 
-        const hintExclusion = resolveHintExclusionRect(hintBarTopY, displayWidth);
         let hovered: number | null = null;
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
@@ -677,8 +616,6 @@ export class PaletteInteraction {
                 plan.paletteBand,
                 grid,
                 colorCount,
-                hintExclusion,
-                displayWidth,
                 this.#scrollRowOffset,
                 this.#scrollbarTrackWidth,
             );
@@ -701,8 +638,6 @@ export class PaletteInteraction {
      * @param plan - Layout plan for this frame.
      * @param grid - Palette grid layout.
      * @param colorCount - Active palette slot count.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width.
      * @returns `true` when a swatch press was handled (toggle should be skipped).
      */
     handlePress(
@@ -711,16 +646,12 @@ export class PaletteInteraction {
         plan: OverlayLayoutPlan,
         grid: PaletteGridLayout,
         colorCount: number,
-        hintBarTopY: number,
-        displayWidth: number,
     ): boolean {
         if (plan.paletteBand.height <= 0 || grid.cols <= 0 || !pointer) {
             return false;
         }
 
         this.tickCopyStatus(currentTick);
-
-        const hintExclusion = resolveHintExclusionRect(hintBarTopY, displayWidth);
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
             if (!pointer.isButtonPressed(POINTER_PRIMARY_BUTTON, slot)) {
@@ -734,8 +665,6 @@ export class PaletteInteraction {
                 plan.paletteBand,
                 grid,
                 colorCount,
-                hintExclusion,
-                displayWidth,
                 this.#scrollRowOffset,
                 this.#scrollbarTrackWidth,
             );
