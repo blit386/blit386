@@ -64,6 +64,11 @@ const PANEL_CONTENT_TOP = 18 + PANEL_INSET;
 const PANEL_BOTTOM = 6 + PANEL_INSET + PANEL_INSET_BOTTOM_EXTRA;
 const PANEL_TEXT_INSET = 6 + PANEL_INSET;
 
+// How much narrower than its panel the demos draw a full-width widget: the title inset's
+// worth of room on both sides. Demos that size a widget from a fixed panel width
+// subtract this instead of re-typing 20.
+const PANEL_CONTENT_SHRINK = 2 * PANEL_TEXT_INSET;
+
 // Height of a title-only ui.begin('topBar') strip after ui.panel(title). panel() leaves
 // cursorY at 18; end() pads out to this so the header line is not pressed to the rim.
 const TOP_BAR_MIN_H = 22;
@@ -657,6 +662,7 @@ export {
     FULL_WIDTH,
     hitContains,
     PANEL_BOTTOM,
+    PANEL_CONTENT_SHRINK,
     PANEL_CONTENT_TOP,
     PANEL_TEXT_INSET,
     ROW_H,

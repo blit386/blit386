@@ -244,7 +244,8 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   reserves) must use `ui.drawRectFill` / `ui.drawRect` - the same arguments, drawn as sprites so they land on top. A
   plain `BT.drawRectFill` there is hidden under the panel. `ui.fillRect(x, y, width, height, slot)` is the same fill
   without a `Rect2i` of the demo's own, and `PANEL_CONTENT_TOP`, `PANEL_BOTTOM`, and `PANEL_TEXT_INSET` from `ui.js` say
-  where a titled panel's content starts and ends - import them instead of re-typing 22, 11, and 10
+  where a titled panel's content starts and ends - import them instead of re-typing 22, 11, and 10. A full-width row is
+  `PANEL_CONTENT_SHRINK` (20) narrower than its panel
 - `ui-core.js` (layout and flush, extending the pointer and hit-test state in `ui-input.js`) carries a `debug` overlay
   (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by default so the allocates-nothing rule
   holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`, `margin`). `ui.js` publishes the context on

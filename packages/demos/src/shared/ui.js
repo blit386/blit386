@@ -40,6 +40,7 @@ import { Rect2i } from 'blit386';
 import {
     FONT_W,
     PANEL_BOTTOM,
+    PANEL_CONTENT_SHRINK,
     PANEL_CONTENT_TOP,
     PANEL_TEXT_INSET,
     UI_ANCHORS,
@@ -404,6 +405,7 @@ export {
     FONT_W,
     litRimColor,
     PANEL_BOTTOM,
+    PANEL_CONTENT_SHRINK,
     PANEL_CONTENT_TOP,
     PANEL_TEXT_INSET,
     PIP_SIZE,
