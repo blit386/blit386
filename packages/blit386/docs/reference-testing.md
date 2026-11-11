@@ -393,7 +393,7 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check`, `api:getters:check`, `system-font:check`, `splash-logo:check`, and the `scripts/` Node suites (`test:declarations`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:bmfont`, `test:system-font`, `test:splash-logo`) |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
-| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (92 KB) |
+| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (94 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry`, `check:demo-comment-links`, `test` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
