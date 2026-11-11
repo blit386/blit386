@@ -370,7 +370,8 @@ one-off entry for a single file with `"command": "pnpm", "args": ["exec", "vites
 
 ## CI integration
 
-GitHub Actions runs unit tests and quality gates in CI. Visual regression is local-only today (see below).
+GitHub Actions runs unit tests, quality gates, and the baseline-free backend-parity subset of the visual tests. The
+baseline screenshot suite is local-only (see below).
 
 ### `ci.yml` (`CI` workflow)
 
@@ -392,6 +393,7 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | `quality-root` | always | `format:check`, `docs:links`, `agents:check`, `sync:cursor-commands:check`, `sync:maintainer-agents:check`, `audit:modules:check`, `bump:check`, `spellcheck:kit` (kit, scaffolder and `.claude/skills`), and `test:root` (every root `scripts/**/*.test.mjs` suite, the same script the pre-push root pass runs) - repo-wide, so they run once rather than per package |
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check`, `api:getters:check`, `system-font:check`, `splash-logo:check`, and the `scripts/` Node suites (`test:declarations`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:bmfont`, `test:system-font`, `test:splash-logo`) |
+| `visual-parity` | engine `src/`, `tests/visual/`, `playwright.config.ts`, `package.json`, or shared | `test:visual:parity` under SwiftShader WebGPU, retries off - only the baseline-free WebGPU-vs-software parity tests (see [What runs in CI](#what-runs-in-ci)) |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
 | `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (94 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
@@ -429,19 +431,20 @@ doc-link gates all live in `ci.yml`. It does not run unit or visual tests.
 | --- | --- |
 | `commitlint` | Conventional Commits validation for PR commits |
 
-### Visual regression (not in CI)
+### Visual regression baselines (not in CI)
 
-<Callout type="warn" title="Visual tests run locally only">
+<Callout type="warn" title="Baseline visual tests run locally only">
 
-`pnpm run test:visual` requires Chrome with WebGPU and is not executed in GitHub Actions. That is intentional: Actions
+The full `pnpm run test:visual` suite, with its stored baseline screenshots, requires Chrome with WebGPU and is not
+executed in GitHub Actions; only the baseline-free `visual-parity` job above runs there. That is intentional: Actions
 minutes are a real cost for a solo project, so visual regression stays a manual gate (the decision recorded on
 [BT-319](https://linear.app/vancura/issue/BT-319/140-cleanup)). Run it locally before merging renderer, palette, or
 post-process changes; use `pnpm run test:visual:update` when baselines change intentionally. `pnpm run preflight` does
 not include visual tests.
 
 Unit-level coverage of `src/render/effects` (enforced by a per-directory Vitest threshold at 80%) is the primary
-automated protection for the post-process path. Visual snapshots remain the pixel-correctness check, but they are not
-what CI gates on.
+automated protection for the post-process path. Baseline snapshots remain the pixel-correctness check, but CI gates only
+on the backend-parity subset.
 
 </Callout>
 
