@@ -103,12 +103,18 @@ same way.
 
 ## Mouse, touch, and pen
 
-These share one set of calls (a "pointer"). Slot `0` is the main one:
+These share one set of calls (a "pointer"), and the engine tracks four pointers at once in numbered slots. Slot `0` is
+the mouse. Slots `1` to `3` are fingers and pens, filled in the order they touch the screen, so on a phone the first
+finger is slot `1`, never slot `0`. A game that should work with both a mouse and a touch screen checks all four:
 
 ```js
-if (BT.isPointerActive(0)) {
-  const p = BT.pointerPos(0); // a Vector2i in screen pixels
-  // ...use p.x and p.y...
+update() {
+  for (let slot = 0; slot < 4; slot++) {
+    if (BT.isPressed(BT.BTN_POINTER_A, slot)) {
+      const p = BT.pointerPos(slot); // a Vector2i in screen pixels
+      this.tapAt(p.x, p.y);
+    }
+  }
 }
 ```
 
@@ -116,16 +122,17 @@ Mouse, touch, and pen positions are already in display pixels. If you listen to 
 file dropped on the canvas), `BT.nativeScreenToDisplayPos(event.clientX, event.clientY)` converts its coordinates the
 same way, or returns `null` when there is no valid position.
 
-Clicks and taps use the same three questions: `BT.isPressed(BT.BTN_POINTER_A, 0)` is the frame the button or finger went
-down, `BT.isDown` while it is held, `BT.isReleased` the frame it came up. Read them in `update()`: a click, a release,
-or a drag that lands between two steps on a fast display waits for the next `update()`, and `BT.pointerDelta(0)` there
-is the movement since the previous `update()` (engine 1.8.1+), so nothing is lost and a click counts once. A click that
-goes down and up within one step still shows as both pressed and released on that `update()`.
+Clicks and taps use the same three questions: `BT.isPressed(BT.BTN_POINTER_A, slot)` is the frame the button or finger
+went down, `BT.isDown` while it is held, `BT.isReleased` the frame it came up. Read them in `update()`: a click, a
+release, or a drag that lands between two steps on a fast display waits for the next `update()`, and
+`BT.pointerDelta(slot)` there is the movement since the previous `update()` (engine 1.8.1+), so nothing is lost and a
+click counts once. A click that goes down and up within one step still shows as both pressed and released on that
+`update()`.
 
 ### Mouse wheel
 
-The mouse wheel also scrolls the web page by default. If your game reads `BT.pointerScrollDelta` (for example to zoom
-the camera), opt in so the page does not move while you play:
+`BT.pointerScrollDelta` stays `0` until you opt in to wheel capture, and while it is off the wheel scrolls the web page
+instead. A game that reads the wheel (for example to zoom the camera) needs this in `configure()`:
 
 ```js
 configure() {
