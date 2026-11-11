@@ -25,9 +25,13 @@
  *   - Maintainer dogfood configs for Antigravity, Codex, Gemini CLI, Copilot, and
  *     OpenCode (installed by `scripts/sync-maintainer-agents.mjs`): each config
  *     file exists and parses, the docs server uses that agent's URL key, guards
- *     are wired, on-disk hook scripts under the agent `hooks/` dirs symlink into
- *     `packages/kit/content/hooks/`, and git does not ignore `.codex/hooks.json`.
- *     Missing scripts and byte drift are `sync:maintainer-agents:check`.
+ *     are wired, and git does not ignore `.codex/hooks.json`. Missing scripts,
+ *     hook symlinks and byte drift are `sync:maintainer-agents:check`.
+ *   - Cursor's hand-maintained hooks: `.cursor/hooks.json` wires
+ *     `shell-safety.cjs`, and every `.cursor/hooks/*.cjs` is a working symlink
+ *     into `packages/kit/content/hooks/`.
+ *   - Every script a hook command in `.claude/settings.json` or
+ *     `.cursor/hooks.json` runs exists.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
@@ -433,18 +437,12 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
 }
 
 /**
- * Agent hook directories the monorepo dogfoods. Presence of individual scripts is
- * `sync:maintainer-agents:check`; this check only asserts each on-disk `*.cjs` /
- * `*.sh` under these dirs is a symlink into `packages/kit/content/hooks/`.
- * MANUAL-SYNC HAZARD: prefixes match `packages/kit/src/ownership.ts`.
+ * Hook directories whose kit symlinks are maintained by hand, so no sync script byte-checks them:
+ * every `*.cjs` here must be a working symlink into `packages/kit/content/hooks/`. The generated
+ * agents' hook dirs are not listed: `sync:maintainer-agents:check` already compares every symlink
+ * it plans there. `.cursor/hooks/format-and-check.sh` is the repo's own script, not a kit link.
  */
-export const MAINTAINER_HOOK_DIRS = [
-    '.agents/hooks',
-    '.codex/hooks',
-    '.gemini/hooks',
-    '.github/hooks',
-    '.opencode/hooks',
-];
+const HAND_MAINTAINED_HOOK_DIRS = ['.cursor/hooks'];
 
 /**
  * One dogfood config file's structural contract. Byte drift is
@@ -483,6 +481,10 @@ export const MAINTAINER_CONFIG_SPECS = [
             forbidKeys: ['type'],
             forbidReason: 'Cursor reserves it for local stdio servers',
         },
+    },
+    {
+        path: '.cursor/hooks.json',
+        needles: [{ text: 'shell-safety.cjs', missing: '.cursor/hooks.json does not wire shell-safety.cjs' }],
     },
     {
         path: '.agents/hooks.json',
@@ -638,7 +640,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
 }
 
 /**
- * Verifies each maintainer hook script is a working symlink into `packages/kit/content/hooks/<same-name>`.
+ * Verifies each hand-maintained hook script is a working symlink into `packages/kit/content/hooks/<same-name>`.
  *
  * @param {Array<{ path: string, isSymlink: boolean, resolvedBasename: string | null }>} entries
  * @returns {string[]}
@@ -729,7 +731,7 @@ export function checkMaintainerAgentConfigs(root) {
         failures.push(...findMaintainerConfigFailures(spec, content, disk));
     }
 
-    const hookEntries = listMaintainerHookScriptPaths(root).map((relPath) =>
+    const hookEntries = listHandMaintainedHookScriptPaths(root).map((relPath) =>
         readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath),
     );
 
@@ -739,16 +741,16 @@ export function checkMaintainerAgentConfigs(root) {
 }
 
 /**
- * Project-relative `*.cjs` / `*.sh` paths currently under {@link MAINTAINER_HOOK_DIRS}.
+ * Project-relative `*.cjs` paths currently under {@link HAND_MAINTAINED_HOOK_DIRS}.
  *
  * @param {string} root Absolute repo root.
  * @returns {string[]}
  */
-function listMaintainerHookScriptPaths(root) {
+function listHandMaintainedHookScriptPaths(root) {
     /** @type {string[]} */
     const paths = [];
 
-    for (const dir of MAINTAINER_HOOK_DIRS) {
+    for (const dir of HAND_MAINTAINED_HOOK_DIRS) {
         const absDir = join(root, dir);
 
         if (!existsSync(absDir)) {
@@ -756,7 +758,7 @@ function listMaintainerHookScriptPaths(root) {
         }
 
         for (const name of readdirSync(absDir)) {
-            if (/\.(?:cjs|sh)$/u.test(name)) {
+            if (name.endsWith('.cjs')) {
                 paths.push(`${dir}/${name}`);
             }
         }
@@ -999,6 +1001,55 @@ export function checkClaudeShellSafetyHook(root) {
           ];
 }
 
+/** Config files whose hook commands name repo scripts: Claude's via `$CLAUDE_PROJECT_DIR/`, Cursor's root-relative. */
+const HOOK_COMMAND_CONFIGS = ['.claude/settings.json', '.cursor/hooks.json'];
+const CLAUDE_PROJECT_DIR_PATTERN = /\$\{?CLAUDE_PROJECT_DIR\}?\//gu;
+const HOOK_SCRIPT_PATTERN = /\.(?:[cm]?js|sh)$/u;
+
+/** @param {unknown} value @returns {string[]} Every string under a `command` key, at any depth. */
+function hookCommands(value) {
+    if (Array.isArray(value)) {
+        return value.flatMap(hookCommands);
+    }
+
+    if (value === null || typeof value !== 'object') {
+        return [];
+    }
+
+    return Object.entries(value).flatMap(([key, child]) =>
+        key === 'command' && typeof child === 'string' ? [child] : hookCommands(child),
+    );
+}
+
+/**
+ * Script paths a hook config's commands run that do not exist, so a kit rename cannot leave a hook
+ * pointing at nothing (Cursor runs a missing file without exiting 2, which fails open).
+ *
+ * @param {string} configPath Repo-relative config path, for messages.
+ * @param {string | null} content Config contents, or `null` when missing (reported elsewhere).
+ * @param {(relPath: string) => boolean} exists Whether a repo-relative path exists.
+ * @returns {string[]}
+ */
+export function findHookScriptPathFailures(configPath, content, exists) {
+    if (content === null) {
+        return [];
+    }
+
+    let commands;
+
+    try {
+        commands = hookCommands(JSON.parse(content));
+    } catch (error) {
+        return [`${configPath} is not parseable as JSON: ${error instanceof Error ? error.message : error}`];
+    }
+
+    return commands
+        .flatMap((command) => command.replace(CLAUDE_PROJECT_DIR_PATTERN, '').split(/\s+/u))
+        .map((token) => token.replaceAll(/["']/gu, ''))
+        .filter((token) => token.includes('/') && HOOK_SCRIPT_PATTERN.test(token) && !exists(token))
+        .map((path) => `${configPath} runs ${path}, which does not exist`);
+}
+
 /** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
 function runAllChecks() {
     const failures = [];
@@ -1036,6 +1087,16 @@ function runAllChecks() {
     collect(failures, '.', checkClaudeProtectFilesHook(REPO_ROOT));
     collect(failures, '.', checkClaudeShellSafetyHook(REPO_ROOT));
 
+    for (const configPath of HOOK_COMMAND_CONFIGS) {
+        collect(
+            failures,
+            '.',
+            findHookScriptPathFailures(configPath, readFileIfExists(join(REPO_ROOT, configPath)), (relPath) =>
+                existsSync(join(REPO_ROOT, relPath)),
+            ),
+        );
+    }
+
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
         collect(failures, `packages/${packageName}`, checkAgentsPointer(root));
@@ -1058,7 +1119,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood, cursor hooks, hook script paths).',
     );
 }
 
