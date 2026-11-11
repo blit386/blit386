@@ -228,26 +228,11 @@ BT.ROT_180_CW; // rotate 180°
 BT.ROT_270_CW; // rotate 270° clockwise
 ```
 
-```ts twoslash
-import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
-// ---cut---
-// 1. Fast path. Unchanged since 0.1.0.
-declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
-
-// 2. Params object (1.8.0). `params` is required here: without it, a call is overload 1.
-declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
-
-interface SpriteDrawParams {
-  flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
-  pivot?: Vector2i | undefined; // source pixels, before flags (default undefined: top-left placement)
-  scale?: number | Vector2i; // positive integers, screen axes, after flags (default 1)
-  paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
-}
-```
-
-- The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
-  hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
-  never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a `Vector2i`.
+- Every field is optional: `flags` defaults to `0`, `pivot` to `undefined` (top-left placement), `scale` to `1`, and
+  `paletteOffset` to `0`. The params object is read, never mutated or retained. The engine copies the numbers it needs
+  before returning, so a hot loop can allocate `params` once and write fields between draws. Create it with every field
+  present so its shape never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a
+  `Vector2i`.
 - With a `Vector2i` dest and no `pivot`, `dest` is the top-left of the post-flags, post-scale footprint. A 16×32 sprite
   with `ROT_90_CW` covers 32×16, growing down and right from `dest`; with `scale: 2` it covers 64×32.
 - `pivot` is a point in source pixels relative to the source rect's top-left, in `[0, sw] x [0, sh]` (corner
