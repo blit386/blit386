@@ -218,6 +218,18 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   the `assetDirs` entry alone, so the engine never found the asset it had loaded; it now builds the URL the way Vite
   serves the file (`base` plus the path under `publicDir`, or under the project root outside it). `assetDirs` only
   chooses which files are watched.
+- Saving an asset whose name contains `@`, `+`, `,`, `;`, `=`, `&`, `$` or `:` (`hero@2x.png`) now hot reloads it. The
+  plugin percent-encoded those characters while the engine keys the asset by the browser's own URL form, so the save
+  replaced nothing and logged nothing. The plugin now builds the URL the way the browser does.
+- Asset hot reload now finds a sound or image the game loaded by a relative path (`AudioClip.load('sfx/boom.wav')`). The
+  plugin always sends a rooted path, so a relative-path sound was never replaced, and a relative-path image was cached a
+  second time under the rooted path, so a later `SpriteSheet.load('sprites/hero.png')` got the old image back. A save
+  that matches nothing loaded now logs one console line instead of passing silently.
+- The `blit386/vite` plugin now rejects option values it would misread, with an error naming the option. An unknown
+  asset kind (`'images'`) was broadcast and dropped by the page, `assetTypes` keys like `png` or `.PNG` never matched,
+  `fullReloadOnUnknownAssets: 'false'` counted as true, and a string `assetDirs` failed with `.map is not a function`.
+- Two quick saves of one asset no longer leave the older version on screen. Their reloads ran side by side, and when the
+  older one finished decoding last it replaced the newer image. Reloads of one file now run one after another.
 - The `blit386/vite` plugin now watches Vite's own `publicDir` by default. Before, the default `assetDirs` was a fixed
   `public`, so a game with `publicDir: 'static'` got no asset hot reload and no message. With `publicDir: false` nothing
   is watched by default. An explicit `assetDirs` behaves as before.
@@ -293,8 +305,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   un-clipped line. See [Primitives](api-rendering.md#primitives).
 - A second `BT.init()` after the first one resolved now restarts cleanly. It used to start a new game loop without
   stopping the old one, so the game ran at double speed, and it leaked the previous `GPUDevice`. The old loop now stops,
-  the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. An `init()` made while
-  another is still running is still rejected. See [Initialization](api-core.md#initialization).
+  the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. The BLIT386 splash
+  plays once per page load, not again on the restart. An `init()` made while another is still running is still rejected.
+  See [Initialization](api-core.md#initialization).
 - `BT.drawPixel` with a fractional coordinate now truncates toward zero, like `Vector2i`. On the software backend it
   used to write the color at a shifted byte offset and corrupt the neighboring pixels.
 - A keyboard key no longer stays held when focus leaves the canvas mid-press (it used to swallow the next press), and a

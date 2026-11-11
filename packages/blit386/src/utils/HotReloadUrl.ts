@@ -41,9 +41,11 @@ export function appendCacheBustQuery(url: string): string {
  * own URL, or an explicit `<base href>`), not just its origin, so a page served from a nested
  * path (for example `/games/my-game/`) needs the same resolution here to produce a matching key.
  *
+ * Outside a document (Node, where the asset classes are unit tested) it resolves against a placeholder origin root.
+ *
  * @param url - URL to normalize.
  * @returns Normalized pathname, for example `/images/hero.png`.
  */
 export function normalizeAssetUrl(url: string): string {
-    return new URL(url, document.baseURI).pathname;
+    return new URL(url, typeof document === 'undefined' ? 'http://localhost/' : document.baseURI).pathname;
 }

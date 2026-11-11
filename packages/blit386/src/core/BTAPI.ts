@@ -233,6 +233,12 @@ export class BTAPI {
     /** Active splash, or null when gating turned it off. One-shot per page load. */
     private splash: Splash | null = null;
 
+    /** True once an init has resolved splash gating; later inits never create a splash. */
+    private isSplashResolved = false;
+
+    /** True when this run is a restart after gating resolved, so its `init()` runs without the boot splash. */
+    private isRestartAfterSplash = false;
+
     /** Game loop managing fixed-timestep updates and variable-rate rendering. */
     private loop: GameLoop | null = null;
 
@@ -498,7 +504,8 @@ export class BTAPI {
      * Calling `init()` again after an earlier call resolved restarts the engine cleanly: it runs
      * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
      * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
-     * across the restart rebuild their texture on the new device. A {@link renderAt} seek already
+     * across the restart rebuild their texture on the new device. The splash plays once per page load,
+     * so a restart runs the new `init()` without it. A {@link renderAt} seek already
      * running finishes first; one called while the init runs rejects, as before init.
      *
      * @param demo - Demo implementing the IBTDemo interface.
@@ -2055,7 +2062,14 @@ export class BTAPI {
 
         // Splash gating resolves here, before the game's init() is invoked, so
         // init() observes 'disabled' or 'fadingIn' and never an undecided state.
-        this.splash = createSplashIfEnabled(hwSettings);
+        // One-shot per page load: a "back to title" restart keeps the finished boot
+        // splash (splashState stays 'done') and runs init() without it.
+        this.isRestartAfterSplash = this.isSplashResolved;
+
+        if (!this.isSplashResolved) {
+            this.splash = createSplashIfEnabled(hwSettings);
+            this.isSplashResolved = true;
+        }
 
         // `?seed=N` lands here, before the game's init(), so a BT.randomSeed() call in init()
         // still wins. Read in release builds too: a seed in a shared URL is the point. Not
@@ -3423,8 +3437,9 @@ export class BTAPI {
 
         // Live, the splash handoff (endPaletteCapture) dropped every palette effect init() started
         // behind the splash. Replaying init() without the splash must drop them too, or the seek
-        // shows a cycle the live run never ran. `splash` is set once at boot and never cleared.
-        if (this.splash) {
+        // shows a cycle the live run never ran. `splash` is set once at boot and never cleared, so
+        // a restart, whose live init() ran without it and kept its effects, is excluded.
+        if (this.splash && !this.isRestartAfterSplash) {
             this.paletteEffects.clear();
         }
     }
@@ -3489,7 +3504,7 @@ export class BTAPI {
     private async runDemoInitWithSplash(demo: IBTDemo, hwSettings: HardwareSettings): Promise<boolean> {
         const splash = this.splash;
 
-        if (!splash) {
+        if (!splash || this.isRestartAfterSplash) {
             return this.runDemoInit(demo);
         }
 

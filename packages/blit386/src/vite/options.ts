@@ -5,7 +5,13 @@
 
 import path from 'node:path';
 
-import type { AssetChangedPayload } from '../hot/protocol';
+import { ASSET_KINDS, type AssetChangedPayload } from '../hot/protocol';
+import {
+    vitePluginAssetDirsError,
+    vitePluginAssetKindError,
+    vitePluginBooleanOptionError,
+    vitePluginExtensionKeyError,
+} from '../utils/errorMessages/vite';
 
 /**
  * Asset kind used to route a changed asset to the right hot-replace handler.
@@ -104,12 +110,15 @@ export function defaultInclude(id: string): boolean {
  * @param publicDir - Vite's resolved `publicDir` (absolute, or `''` for `publicDir: false`). When given and
  *   `options.assetDirs` is not, it becomes the only asset directory (none for `''`).
  * @returns Fully resolved options.
+ * @throws Error naming the option when a value has the wrong shape (the options come from plain-JS config files).
  */
 export function resolveOptions(
     options: Blit386PluginOptions | undefined,
     root: string,
     publicDir?: string,
 ): ResolvedBlit386PluginOptions {
+    validateOptions(options ?? {});
+
     const defaultDirs = publicDir === undefined ? DEFAULT_ASSET_DIRS : publicDir === '' ? [] : [publicDir];
     const assetDirs = (options?.assetDirs ?? defaultDirs).map((dir) => path.resolve(root, dir));
     const assetTypes = new Map(Object.entries({ ...DEFAULT_ASSET_TYPES, ...options?.assetTypes }));
@@ -120,4 +129,33 @@ export function resolveOptions(
         assetTypes,
         fullReloadOnUnknownAssets: options?.fullReloadOnUnknownAssets ?? true,
     };
+}
+
+/**
+ * Throws a clear error for an option value a plain-JS `vite.config.js` can pass but the plugin would misread: an
+ * unknown asset kind, an extension key that never matches (no dot, uppercase), a non-boolean flag, or a non-list
+ * `assetDirs`.
+ *
+ * @param options - User-provided options, read as untyped values.
+ */
+function validateOptions(options: Blit386PluginOptions): void {
+    const { assetDirs, assetTypes, fullReloadOnUnknownAssets }: Record<string, unknown> = { ...options };
+
+    if (assetDirs !== undefined && (!Array.isArray(assetDirs) || !assetDirs.every((dir) => typeof dir === 'string'))) {
+        throw new Error(vitePluginAssetDirsError(assetDirs));
+    }
+
+    if (fullReloadOnUnknownAssets !== undefined && typeof fullReloadOnUnknownAssets !== 'boolean') {
+        throw new Error(vitePluginBooleanOptionError('fullReloadOnUnknownAssets', fullReloadOnUnknownAssets));
+    }
+
+    for (const [extension, kind] of Object.entries(assetTypes ?? {})) {
+        if (extension.length < 2 || !extension.startsWith('.') || extension !== extension.toLowerCase()) {
+            throw new Error(vitePluginExtensionKeyError(extension));
+        }
+
+        if (!(ASSET_KINDS as readonly unknown[]).includes(kind)) {
+            throw new Error(vitePluginAssetKindError(extension, kind, ASSET_KINDS));
+        }
+    }
 }

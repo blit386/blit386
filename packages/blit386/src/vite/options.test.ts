@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import type { Blit386PluginOptions } from './options';
 import { defaultInclude, resolveOptions } from './options';
 
 describe('defaultInclude', () => {
@@ -85,5 +86,34 @@ describe('resolveOptions', () => {
         const resolved = resolveOptions({ fullReloadOnUnknownAssets: false }, '/project');
 
         expect(resolved.fullReloadOnUnknownAssets).toBe(false);
+    });
+});
+
+describe('resolveOptions validation', () => {
+    // vite.config.js files are plain JavaScript, so these shapes reach the plugin with no compiler in the way.
+    const resolveUnchecked = (options: unknown) => () => resolveOptions(options as Blit386PluginOptions, '/project');
+
+    it('rejects an asset kind that does not exist', () => {
+        expect(resolveUnchecked({ assetTypes: { '.png': 'images' } })).toThrow(
+            /assetTypes\['\.png'\] is "images".*'image', 'audio', 'font', 'other'/,
+        );
+    });
+
+    it('rejects an extension key without a leading dot', () => {
+        expect(resolveUnchecked({ assetTypes: { png: 'image' } })).toThrow(/assetTypes has the key 'png'.*'\.png'/);
+    });
+
+    it('rejects an uppercase extension key, which would never match', () => {
+        expect(resolveUnchecked({ assetTypes: { '.PNG': 'image' } })).toThrow(/assetTypes has the key '\.PNG'/);
+    });
+
+    it('rejects a string where fullReloadOnUnknownAssets needs a boolean', () => {
+        expect(resolveUnchecked({ fullReloadOnUnknownAssets: 'false' })).toThrow(
+            /fullReloadOnUnknownAssets is "false".*true or false/,
+        );
+    });
+
+    it('rejects a single string where assetDirs needs a list', () => {
+        expect(resolveUnchecked({ assetDirs: 'public' })).toThrow(/assetDirs must be a list.*Got "public"/);
     });
 });

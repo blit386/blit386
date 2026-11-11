@@ -1,5 +1,5 @@
 import { assertImageElementWithinLimits } from '../utils/AssetLimits';
-import { appendCacheBustQuery } from '../utils/HotReloadUrl';
+import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
 
 /**
@@ -263,18 +263,31 @@ export class AssetLoader {
 
     /**
      * Re-loads an already-cached image with a cache-busted request, re-caching the
-     * result under the original `url` key so demo-held references from
+     * result under the key the caller loaded it with, so demo-held references from
      * {@link AssetLoader.getImage} stay valid.
+     *
+     * The key is found by normalized URL (`normalizeAssetUrl`), because the dev asset
+     * watcher always sends a rooted path while a game may have loaded `sprites/hero.png`.
+     * A second cached spelling of the same file is evicted so its next load refetches.
      *
      * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed image file.
      *
-     * @param url - Cache key (and fetch URL) of the image to hot-reload.
-     * @returns The freshly loaded image element, cached under `url`.
+     * @param url - Fetch URL of the image to hot-reload; also the cache key when nothing cached matches it.
+     * @returns The freshly loaded image element, cached under the matching key.
      * @throws Error if the cache-busted image fails to load.
      */
     static async hotReloadImage(url: string): Promise<HTMLImageElement> {
-        return startLoading(appendCacheBustQuery(url), url);
+        const target = normalizeAssetUrl(url);
+        const [cacheKey = url, ...duplicates] = [...loadedImages.keys()].filter(
+            (key) => normalizeAssetUrl(key) === target,
+        );
+
+        for (const key of duplicates) {
+            AssetLoader.evict(key);
+        }
+
+        return startLoading(appendCacheBustQuery(url), cacheKey);
     }
 
     /**

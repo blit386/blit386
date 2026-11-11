@@ -26,7 +26,7 @@ import {
     audioClipHttpError,
     audioClipNetworkError,
 } from '../utils/errorMessages';
-import { appendCacheBustQuery } from '../utils/HotReloadUrl';
+import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
 import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
@@ -258,25 +258,36 @@ export class AudioClip {
      * reflect the buffer decoded at initial load time and are not updated by a
      * hot reload.
      *
-     * @param url - Cache key (and fetch URL) of the clip to hot-reload.
+     * Cached clips are matched by normalized URL (`normalizeAssetUrl`), because the dev
+     * asset watcher always sends a rooted path while a game may have loaded `sfx/boom.wav`.
+     *
+     * @param url - Fetch URL of the clip to hot-reload, matched against every cache key by normalized URL.
      * @returns `true` if a cached clip was found and reloaded; `false` if no clip is
-     *   cached under `url` (never loaded, or already unloaded).
+     *   cached under a matching URL (never loaded, or already unloaded).
      * @throws Error if the cache-busted fetch or decode fails.
      */
     static async hotReload(url: string): Promise<boolean> {
-        const clip = resolvedClips.get(url);
+        const target = normalizeAssetUrl(url);
+        const replaced: [AudioClip, AudioBuffer][] = [];
 
-        if (!clip || clip.decodedBuffer === null) {
+        for (const [key, clip] of resolvedClips) {
+            if (clip.decodedBuffer !== null && normalizeAssetUrl(key) === target) {
+                replaced.push([clip, clip.decodedBuffer]);
+            }
+        }
+
+        if (replaced.length === 0) {
             return false;
         }
 
-        const oldBuffer = clip.decodedBuffer;
         const newBuffer = await AudioClip.fetchAndDecode(appendCacheBustQuery(url));
 
-        clip.decodedBuffer = newBuffer;
+        for (const [clip, oldBuffer] of replaced) {
+            clip.decodedBuffer = newBuffer;
 
-        audioHooks.onUnload(oldBuffer);
-        audioHooks.onHotReplace(oldBuffer, newBuffer);
+            audioHooks.onUnload(oldBuffer);
+            audioHooks.onHotReplace(oldBuffer, newBuffer);
+        }
 
         return true;
     }

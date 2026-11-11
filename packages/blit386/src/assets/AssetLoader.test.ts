@@ -370,6 +370,25 @@ describe('AssetLoader', () => {
                 "Can't find the image 'missing.png'",
             );
         });
+
+        it('re-caches under the key the caller loaded with when the event carries the rooted path', async () => {
+            await AssetLoader.loadImage('sprites/hero.png');
+
+            const reloaded = await AssetLoader.hotReloadImage('/sprites/hero.png');
+
+            expect(AssetLoader.getImage('sprites/hero.png')).toBe(reloaded);
+            expect(AssetLoader.isLoaded('/sprites/hero.png')).toBe(false);
+        });
+
+        it('evicts a second spelling of the same file so its next load fetches the new image', async () => {
+            await AssetLoader.loadImage('sprites/hero.png');
+            await AssetLoader.loadImage('./sprites/hero.png');
+
+            const reloaded = await AssetLoader.hotReloadImage('/sprites/hero.png');
+
+            expect(AssetLoader.getImage('sprites/hero.png')).toBe(reloaded);
+            expect(AssetLoader.isLoaded('./sprites/hero.png')).toBe(false);
+        });
     });
 
     describe('loadingCount', () => {

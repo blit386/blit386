@@ -1,28 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { ASSET_CHANGED_EVENT } from '../hot/protocol';
-import { assetTypeForFile, handleAssetHotUpdate, resolveAssetUrl, resolveServedUrl } from './assets';
+import { assetTypeForFile, handleAssetHotUpdate, resolveServedUrl } from './assets';
 import type { AssetKind } from './options';
-
-describe('resolveAssetUrl', () => {
-    it('maps a file under an asset dir to a leading-slash relative URL', () => {
-        expect(resolveAssetUrl('/project/public/sprites/hero.png', ['/project/public'])).toBe('/sprites/hero.png');
-    });
-
-    it('returns null for a file outside every asset dir', () => {
-        expect(resolveAssetUrl('/project/src/main.ts', ['/project/public'])).toBeNull();
-    });
-
-    it('returns null for the asset dir itself (no relative remainder)', () => {
-        expect(resolveAssetUrl('/project/public', ['/project/public'])).toBeNull();
-    });
-
-    it('checks multiple asset dirs in order', () => {
-        expect(resolveAssetUrl('/project/assets/sfx/blip.wav', ['/project/public', '/project/assets'])).toBe(
-            '/sfx/blip.wav',
-        );
-    });
-});
 
 describe('assetTypeForFile', () => {
     const assetTypes = new Map<string, AssetKind>([
@@ -170,5 +150,61 @@ describe('resolveServedUrl', () => {
 
     it('returns null for a file outside both publicDir and root', () => {
         expect(resolveServedUrl('/elsewhere/hero.png', serve)).toBeNull();
+    });
+});
+
+// The watched-dir cases of the removed resolveAssetUrl tests, carried over to its only caller.
+describe('handleAssetHotUpdate watched-dir check', () => {
+    const serve = { base: '/', publicDir: '/project/public', root: '/project' };
+    const assetTypes = new Map<string, AssetKind>([
+        ['.png', 'image'],
+        ['.wav', 'audio'],
+    ]);
+
+    function update(file: string, assetDirs: readonly string[]) {
+        const send = vi.fn();
+        const result = handleAssetHotUpdate({
+            file,
+            environmentName: 'client',
+            send,
+            assetDirs,
+            serve,
+            assetTypes,
+            fullReloadOnUnknownAssets: true,
+        });
+
+        return { result, send };
+    }
+
+    it('broadcasts a file under an asset dir', () => {
+        const { result, send } = update('/project/public/sprites/hero.png', ['/project/public']);
+
+        expect(result).toEqual([]);
+        expect(send).toHaveBeenCalledExactlyOnceWith(
+            expect.objectContaining({ data: expect.objectContaining({ url: '/sprites/hero.png' }) }),
+        );
+    });
+
+    it('defers for a file outside every asset dir, even one Vite serves from the root', () => {
+        const { result, send } = update('/project/src/main.ts', ['/project/public']);
+
+        expect(result).toBeUndefined();
+        expect(send).not.toHaveBeenCalled();
+    });
+
+    it('defers for the asset dir itself (no path inside it)', () => {
+        const { result, send } = update('/project/public', ['/project/public']);
+
+        expect(result).toBeUndefined();
+        expect(send).not.toHaveBeenCalled();
+    });
+
+    it('checks every asset dir, not only the first', () => {
+        const { result, send } = update('/project/assets/sfx/blip.wav', ['/project/public', '/project/assets']);
+
+        expect(result).toEqual([]);
+        expect(send).toHaveBeenCalledExactlyOnceWith(
+            expect.objectContaining({ data: expect.objectContaining({ url: '/assets/sfx/blip.wav', type: 'audio' }) }),
+        );
     });
 });

@@ -44,6 +44,12 @@ let generation = 0;
 /** Asset kinds accepted by {@link isAssetChangedPayload}; any other kind is ignored as malformed, and only `'other'` hard-reloads. */
 const KNOWN_ASSET_TYPES: ReadonlySet<string> = new Set(ASSET_KINDS);
 
+/** Tail of the pending reload chain per asset URL; an entry is dropped once its last run settles. */
+const reloadChains = new Map<string, Promise<void>>();
+
+/** What each in-place asset kind is matched against, for the miss log in {@link routeAssetChanged}. */
+const MATCH_TARGETS = { image: 'sprite sheet', audio: 'sound', font: 'font' } as const;
+
 /**
  * Narrows an unknown HMR event payload to {@link AssetChangedPayload}.
  *
@@ -75,8 +81,9 @@ function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload
  * resolved), so `SpriteSheet.status`/`progress` track the replacement in flight.
  *
  * @param url - Changed image URL, matching whatever the engine cached it under.
+ * @returns `true` when at least one sheet was loaded from `url`.
  */
-async function hotReloadImageAsset(url: string): Promise<void> {
+async function hotReloadImageAsset(url: string): Promise<boolean> {
     const sheets = getHotReloadSheets(url);
 
     if (sheets) {
@@ -100,7 +107,7 @@ async function hotReloadImageAsset(url: string): Promise<void> {
     }
 
     if (!sheets || sheets.size === 0) {
-        return;
+        return false;
     }
 
     const palette = BTAPI.instance.getPalette();
@@ -113,6 +120,8 @@ async function hotReloadImageAsset(url: string): Promise<void> {
             console.error(`[BT] Image hot replace failed for a sheet loaded from '${url}':`, error);
         }
     }
+
+    return true;
 }
 
 /**
@@ -122,17 +131,20 @@ async function hotReloadImageAsset(url: string): Promise<void> {
  * No-ops when no font is registered under `url` - a benign miss, not an error.
  *
  * @param url - Changed `.btfont` URL, matching whatever the font was loaded from.
+ * @returns `true` when at least one font was loaded from `url`.
  */
-async function hotReloadFontAsset(url: string): Promise<void> {
+async function hotReloadFontAsset(url: string): Promise<boolean> {
     const fonts = getHotReloadFonts(url);
 
     if (!fonts || fonts.size === 0) {
-        return;
+        return false;
     }
 
     const palette = BTAPI.instance.getPalette();
 
     await Promise.all([...fonts].map((font) => font.hotReload(url, palette)));
+
+    return true;
 }
 
 /**
@@ -142,34 +154,36 @@ async function hotReloadFontAsset(url: string): Promise<void> {
  * Routes by `payload.type`: `AssetLoader`/`SpriteSheet` for `'image'`, `AudioClip`
  * for `'audio'`, the `BitmapFont` registry for `'font'`, and {@link requestHardReload}
  * for anything else (belt-and-suspenders - the plugin already full-reloads
- * unrecognized asset extensions itself).
+ * unrecognized asset extensions itself). Logs one info line when an in-place kind
+ * matched nothing loaded, so a save that changed nothing on screen is not silent.
  *
  * @param payload - Asset-changed event payload from the Vite plugin.
  */
-async function routeAssetChanged(payload: unknown): Promise<void> {
-    if (!isAssetChangedPayload(payload)) {
-        console.error('[BT] Ignoring a malformed asset-changed event:', payload);
-
-        return;
-    }
-
+async function routeAssetChanged(payload: AssetChangedPayload): Promise<void> {
     try {
+        let isMatched: boolean;
+
         switch (payload.type) {
             case 'image':
-                await hotReloadImageAsset(payload.url);
+                isMatched = await hotReloadImageAsset(payload.url);
                 break;
 
             case 'audio':
-                await AudioClip.hotReload(payload.url);
+                isMatched = await AudioClip.hotReload(payload.url);
                 break;
 
             case 'font':
-                await hotReloadFontAsset(payload.url);
+                isMatched = await hotReloadFontAsset(payload.url);
                 break;
 
             default:
                 requestHardReload(`Unrecognized asset type '${payload.type}' for '${payload.url}'`);
-                break;
+
+                return;
+        }
+
+        if (!isMatched) {
+            console.info(`[BT] No loaded ${MATCH_TARGETS[payload.type]} uses '${payload.url}'; nothing to replace`);
         }
     } catch (err) {
         console.error(`[BT] Asset hot reload failed for '${payload.url}':`, err);
@@ -182,10 +196,32 @@ async function routeAssetChanged(payload: unknown): Promise<void> {
  * broken or unexpected asset event can never crash the game loop - on failure this
  * logs and leaves the currently running state intact.
  *
+ * Reloads of one URL run one after another, never side by side: two quick saves
+ * would otherwise race, and the older decode finishing last would put the older
+ * image back on screen. Each run cache-busts when it starts, so the last one fetches
+ * the newest bytes. The first event for an idle URL starts at once (synchronously up
+ * to its first `await`); `routeAssetChanged` never rejects, so a chain cannot break.
+ *
  * @param payload - Asset-changed event payload from the Vite plugin.
  */
 function handleAssetChanged(payload: unknown): void {
-    void routeAssetChanged(payload);
+    if (!isAssetChangedPayload(payload)) {
+        console.error('[BT] Ignoring a malformed asset-changed event:', payload);
+
+        return;
+    }
+
+    const { url } = payload;
+    const previous = reloadChains.get(url);
+    const run = previous ? previous.then(() => routeAssetChanged(payload)) : routeAssetChanged(payload);
+
+    reloadChains.set(url, run);
+
+    void run.finally(() => {
+        if (reloadChains.get(url) === run) {
+            reloadChains.delete(url);
+        }
+    });
 }
 
 /**

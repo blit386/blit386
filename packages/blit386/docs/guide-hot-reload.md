@@ -87,6 +87,14 @@ the instance changed. Module-level constants referenced from methods are effecti
   `init()`, the constructor, or a class field initializer) or fall back to a full page reload / dev server restart.
 </Callout>
 
+<Callout type="warn" title="A handler you bind yourself keeps the old method">
+  The prototype swap reaches every method looked up on `this` when it runs. A listener you register yourself with a
+  bound copy, such as `canvas.addEventListener('pointerdown', this.onTap.bind(this))`, holds the function from before
+  the save, so editing `onTap` changes nothing for that listener. Look the method up at call time instead:
+  `(event) => this.onTap(event)`. A [Tier 2](#tier-2-initconstructor-change) re-init also leaves the old instance's
+  listeners attached beside the ones the new `init()` adds, so each save adds another copy.
+</Callout>
+
 ### Tier 2: init/constructor change
 
 If `init()`, the constructor, or a class field initializer changed, a Tier 1 swap is not safe - the running instance was
@@ -346,6 +354,10 @@ runtime cost or behavior change to ship):
       default: 'true',
     },
   }} />
+
+A value of the wrong shape stops Vite from loading the config, with an error naming the option: an asset kind that is
+not one of the four, an `assetTypes` key without its leading dot or in uppercase (`png` or `.PNG` would never match a
+file), `fullReloadOnUnknownAssets` as a string, or `assetDirs` as one string instead of a list.
 
 A game that keeps level data or animation descriptors under `public/levels/` is already covered by the default `public`
 watch, so only the extension needs registering. You can register `.json` as its own asset kind (it is routed through the
