@@ -27,6 +27,7 @@ import {
     audioClipNetworkError,
 } from '../utils/errorMessages';
 import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
+import { readStreamedBody } from './readStreamedBody';
 import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
@@ -85,6 +86,13 @@ const resolvedClips = new Map<string, AudioClip>();
 
 /** In-flight load promises keyed by the URL currently being fetched, for dedup. */
 const inFlightLoads = new Map<string, Promise<AudioClip>>();
+
+/**
+ * Bumped by {@link AudioClip.clear}, so a load that started before the clear can tell it
+ * must not re-cache its clip. `AssetLoader` keeps one generation per key because it also
+ * evicts single keys; clips are only ever cleared all at once, so one counter is enough.
+ */
+let cacheEpoch = 0;
 
 /**
  * Decoded audio asset with its winning source URL and buffer-derived metadata.
@@ -234,14 +242,20 @@ export class AudioClip {
     }
 
     /**
-     * Clears the resolved-clip cache. In-flight requests aren't aborted and
-     * may repopulate the cache once complete.
+     * Clears the resolved-clip cache. In-flight requests aren't aborted, but they no
+     * longer repopulate the cache or count toward {@link AudioClip.loadingCount} once
+     * cleared.
      *
      * Primarily intended for tests or explicit asset-lifecycle resets. Does
      * not call {@link unload} on cached clips - their buffers stay decoded
      * until each clip is unloaded explicitly.
+     *
+     * @changed 1.8.1 A load still in flight during `clear()` no longer re-caches its clip
+     *   when it finishes, and no longer drops a newer load of the same URL from the
+     *   in-flight count.
      */
     static clear(): void {
+        cacheEpoch++;
         resolvedClips.clear();
         inFlightLoads.clear();
     }
@@ -263,33 +277,37 @@ export class AudioClip {
      *
      * @param url - Fetch URL of the clip to hot-reload, matched against every cache key by normalized URL.
      * @returns `true` if a cached clip was found and reloaded; `false` if no clip is
-     *   cached under a matching URL (never loaded, or already unloaded).
+     *   cached under a matching URL (never loaded, or already unloaded), or every match
+     *   was unloaded while the new copy was downloading.
      * @throws Error if the cache-busted fetch or decode fails.
      */
     static async hotReload(url: string): Promise<boolean> {
         const target = normalizeAssetUrl(url);
-        const replaced: [AudioClip, AudioBuffer][] = [];
+        const matches = [...resolvedClips].filter(
+            ([key, clip]) => clip.decodedBuffer !== null && normalizeAssetUrl(key) === target,
+        );
 
-        for (const [key, clip] of resolvedClips) {
-            if (clip.decodedBuffer !== null && normalizeAssetUrl(key) === target) {
-                replaced.push([clip, clip.decodedBuffer]);
-            }
-        }
-
-        if (replaced.length === 0) {
+        if (matches.length === 0) {
             return false;
         }
 
         const newBuffer = await AudioClip.fetchAndDecode(appendCacheBustQuery(url));
+        let isReplaced = false;
 
-        for (const [clip, oldBuffer] of replaced) {
-            clip.decodedBuffer = newBuffer;
+        // Read each buffer after the await: an unload() or another reload may have changed it meanwhile.
+        for (const [, clip] of matches) {
+            const oldBuffer = clip.decodedBuffer;
 
-            audioHooks.onUnload(oldBuffer);
-            audioHooks.onHotReplace(oldBuffer, newBuffer);
+            if (oldBuffer !== null) {
+                clip.decodedBuffer = newBuffer;
+                isReplaced = true;
+
+                audioHooks.onUnload(oldBuffer);
+                audioHooks.onHotReplace(oldBuffer, newBuffer);
+            }
         }
 
-        return true;
+        return isReplaced;
     }
 
     /**
@@ -312,10 +330,13 @@ export class AudioClip {
             return inFlight;
         }
 
+        const epoch = cacheEpoch;
         const promise = AudioClip.fetchAndDecode(url, options?.onProgress).then((buffer) => {
             const clip = new AudioClip(url, buffer);
 
-            resolvedClips.set(url, clip);
+            if (epoch === cacheEpoch) {
+                resolvedClips.set(url, clip);
+            }
 
             return clip;
         });
@@ -325,7 +346,10 @@ export class AudioClip {
         try {
             return await promise;
         } finally {
-            inFlightLoads.delete(url);
+            // A clear() may have let a newer load of this URL take the slot; leave that one alone.
+            if (inFlightLoads.get(url) === promise) {
+                inFlightLoads.delete(url);
+            }
         }
     }
 
@@ -488,46 +512,15 @@ export class AudioClip {
             return response.arrayBuffer();
         }
 
-        const reader = response.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let bytesReceived = 0;
-
-        for (;;) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-                break;
-            }
-
+        const bytes = await readStreamedBody(response.body, (bytesReceived) => {
             onChunk();
-            chunks.push(value);
-            bytesReceived += value.byteLength;
 
             if (totalBytes !== null) {
                 onProgress?.({ phase: 'download', ratio: bytesReceived / totalBytes });
             }
-        }
+        });
 
-        return AudioClip.concatChunks(chunks, bytesReceived);
-    }
-
-    /**
-     * Concatenates streamed body chunks into a single `ArrayBuffer`.
-     *
-     * @param chunks - Chunks read from the response body stream, in order.
-     * @param totalBytes - Combined byte length of `chunks`.
-     * @returns Backing buffer of a `Uint8Array` holding all chunks in order.
-     */
-    private static concatChunks(chunks: Uint8Array[], totalBytes: number): ArrayBuffer {
-        const merged = new Uint8Array(totalBytes);
-        let offset = 0;
-
-        for (const chunk of chunks) {
-            merged.set(chunk, offset);
-            offset += chunk.byteLength;
-        }
-
-        return merged.buffer;
+        return bytes.buffer;
     }
 
     /**

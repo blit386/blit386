@@ -14,7 +14,9 @@ import {
     btfontGlyphOutsideAtlasError,
     btfontGlyphSizeTooLargeError,
     btfontJsonTooLargeError,
+    btfontTextureOtherOriginError,
 } from './errorMessages';
+import { resolveAgainstDocument } from './HotReloadUrl';
 import type { Rect2i } from './Rect2i';
 import { checkSize, MAX_RENDER_DIMENSION, MAX_RENDER_PIXELS, RENDER_DIMENSION_LIMITS } from './RenderLimits';
 
@@ -262,6 +264,20 @@ export function validateBtfontEmbeddedTextureUri(texture: string): string | null
     }
 
     return null;
+}
+
+/**
+ * Validates that a `.btfont` texture URL stays on the font file's origin, so a font cannot
+ * pull its atlas from another site (a cross-origin load that would also taint the canvas).
+ *
+ * @param textureUrl - Texture URL as the font will request it (not a data URI).
+ * @param fontUrl - URL the `.btfont` file was loaded from.
+ * @returns A user-facing error message when the origins differ, otherwise `null`.
+ */
+export function validateBtfontTextureOrigin(textureUrl: string, fontUrl: string): string | null {
+    return resolveAgainstDocument(textureUrl).origin === resolveAgainstDocument(fontUrl).origin
+        ? null
+        : btfontTextureOtherOriginError(textureUrl);
 }
 
 /**

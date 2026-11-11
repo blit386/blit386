@@ -1,4 +1,3 @@
-import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { isHotActive } from '../hot/HotRuntime';
 import {
     assertDimensions,
@@ -6,29 +5,27 @@ import {
     assertIndexedPixelInput,
     getDecodedImageSize,
 } from '../utils/AssetLimits';
-import { Color32 } from '../utils/Color32';
-import {
-    SPRITE_NOT_INDEXIZED_MESSAGE,
-    SPRITE_TILE_GRID_MISSING_MESSAGE,
-    spriteColorNotInPaletteError,
-    spriteTileOutOfGridError,
-} from '../utils/errorMessages';
-import { normalizeAssetUrl } from '../utils/HotReloadUrl';
+import type { Color32 } from '../utils/Color32';
+import { SPRITE_NOT_INDEXIZED_MESSAGE } from '../utils/errorMessages';
 import { Rect2i } from '../utils/Rect2i';
-import { assertTileCoordinate, assertTileSize } from '../utils/TileGrid';
 import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
+import { HotReloadRegistry } from './hotReloadRegistry';
 import type { Palette } from './Palette';
-import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from './Palette';
+import {
+    createIndexedTexture,
+    mapRgbaPixelsToIndexed,
+    markUniqueIndicesInRect,
+    readRgbaPixels,
+    registerIndexedSheet,
+    sourceLabel,
+    unregisterIndexedSheet,
+    writePaletteColors,
+} from './spriteIndexing';
+import { toTileSize, writeGridTileRect } from './spriteTileGrid';
 
-/** Reused per-call bitmask of sheet indices seen while scanning a source rect. */
-const MARK_INDICES_IN_RECT_SCRATCH = new Uint8Array(MAX_PALETTE_SIZE);
-
-/** RGBA byte stride per pixel when reading decoded image data. */
-const RGBA_BYTES_PER_PIXEL = 4;
-
-/** Depth or array-layer count for a 2-D GPU texture descriptor. */
-const TEXTURE_LAYER_COUNT = 1;
+export { getIndexedSheets, registerIndexedSheet, unregisterIndexedSheet } from './spriteIndexing';
+export { writeGridTileRect, writeTileRect } from './spriteTileGrid';
 
 /**
  * Lifecycle status of a sprite sheet's backing image data.
@@ -51,11 +48,10 @@ export type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 
 /**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so
- * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded
- * from a changed image. Populated only while {@link isHotActive} (no production
- * memory cost); entries are removed in {@link SpriteSheet.destroy}.
+ * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded from a
+ * changed image. Entries are removed in {@link SpriteSheet.destroy}.
  */
-const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
+const hotReloadSheets = new HotReloadRegistry<SpriteSheet>();
 
 /**
  * Returns every registered sheet loaded from a URL matching `url` after normalization.
@@ -67,288 +63,7 @@ const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
  * @returns Matching sheets, or `undefined` when none are registered.
  */
 export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | undefined {
-    return hotReloadRegistry.get(normalizeAssetUrl(url));
-}
-
-/**
- * Every live indexized sheet, for `BT.spritesRefresh`. Held through `WeakRef` so a
- * sheet the game drops without calling `destroy()` can still be garbage-collected -
- * except while hot reload is active, when the strong `hotReloadRegistry` keeps every
- * loaded sheet until `destroy()`. `indexedRefs` maps each sheet to its one ref, so
- * unregistering is O(1).
- */
-const indexedSheets = new Set<WeakRef<SpriteSheet>>();
-
-/** Maps each registered sheet to its entry in `indexedSheets`. */
-const indexedRefs = new WeakMap<SpriteSheet, WeakRef<SpriteSheet>>();
-
-/**
- * Adds a sheet to the indexized-sheet registry. Idempotent.
- *
- * Internal - called by {@link SpriteSheet.indexize}.
- *
- * @param sheet - Sheet that has just been indexized.
- */
-export function registerIndexedSheet(sheet: SpriteSheet): void {
-    if (indexedRefs.has(sheet)) {
-        return;
-    }
-
-    // Drop refs to collected sheets here too, so a game that never refreshes doesn't grow the set.
-    for (const stale of indexedSheets) {
-        if (!stale.deref()) {
-            indexedSheets.delete(stale);
-        }
-    }
-
-    const ref = new WeakRef(sheet);
-
-    indexedRefs.set(sheet, ref);
-    indexedSheets.add(ref);
-}
-
-/**
- * Removes a sheet from the indexized-sheet registry. No-op when it is not registered.
- *
- * Internal - called by {@link SpriteSheet.destroy} and by `BT.spritesRefresh` when a
- * sheet can no longer be re-mapped.
- *
- * @param sheet - Sheet to forget.
- */
-export function unregisterIndexedSheet(sheet: SpriteSheet): void {
-    const ref = indexedRefs.get(sheet);
-
-    if (ref) {
-        indexedSheets.delete(ref);
-        indexedRefs.delete(sheet);
-    }
-}
-
-/**
- * Returns every indexized sheet that is still alive and not destroyed, drawn or not,
- * dropping entries whose sheet has been garbage-collected.
- *
- * Internal - used by `BT.spritesRefresh`.
- *
- * @returns Live registered sheets, in registration order.
- */
-export function getIndexedSheets(): SpriteSheet[] {
-    const live: SpriteSheet[] = [];
-
-    for (const ref of indexedSheets) {
-        const sheet = ref.deref();
-
-        if (sheet) {
-            live.push(sheet);
-        } else {
-            indexedSheets.delete(ref);
-        }
-    }
-
-    return live;
-}
-
-/**
- * Tells whether a channel is a whole number in 0-255, so it packs into a lookup key without collisions.
- *
- * @param value - Channel value to check.
- * @returns `true` for an integer from 0 to 255.
- */
-function isByte(value: number): boolean {
-    return Number.isInteger(value) && value >= 0 && value <= 255;
-}
-
-/**
- * Maps retained RGBA bytes to palette indices for one sprite sheet.
- *
- * @param w - Image width in pixels.
- * @param h - Image height in pixels.
- * @param rgba - RGBA byte buffer (`w * h * 4` bytes).
- * @param palette - Active palette used for color lookup.
- * @param imageSrc - Source label for error messages.
- * @returns Palette index per pixel (`w * h` bytes).
- */
-function mapRgbaPixelsToIndexed(
-    w: number,
-    h: number,
-    rgba: Uint8Array,
-    palette: Palette,
-    imageSrc: string,
-): Uint8Array<ArrayBuffer> {
-    const indexed = new Uint8Array(w * h);
-    const pixelCount = w * h;
-
-    // Packed RGB -> slot. Filled from the top slot down so the lowest matching slot wins, like
-    // Palette.findColor. Only alpha 255 entries: pixel colors always have alpha 255, so findColor
-    // never matched a semi-transparent entry either.
-    const slotByRgb = new Map<number, number>();
-
-    for (let slot = palette.size - 1; slot >= 0; slot--) {
-        const entry = palette.getRef(slot);
-
-        // Whole-byte channels only: a palette effect can write a fraction or an out-of-range value through
-        // getRef, which the packing would turn into a false match; findColor's strict equality never matched one.
-        if (entry.a === 255 && isByte(entry.r) && isByte(entry.g) && isByte(entry.b)) {
-            slotByRgb.set((entry.r << 16) | (entry.g << 8) | entry.b, slot);
-        }
-    }
-
-    for (let i = 0; i < pixelCount; i++) {
-        const base = i * RGBA_BYTES_PER_PIXEL;
-        const a = rgba[base + 3];
-
-        if (a === 0) {
-            // Index 0 is the transparent sentinel - the shader discards any pixel with rawIndex == 0.
-            // eslint-disable-next-line security/detect-object-injection
-            indexed[i] = 0;
-            continue;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection
-        const r = rgba[base] ?? 0;
-        const g = rgba[base + 1] ?? 0;
-        const b = rgba[base + 2] ?? 0;
-        const index = slotByRgb.get((r << 16) | (g << 8) | b) ?? -1;
-
-        if (index === -1) {
-            const hex =
-                '#' +
-                r.toString(16).padStart(2, '0') +
-                g.toString(16).padStart(2, '0') +
-                b.toString(16).padStart(2, '0');
-            const x = i % w;
-            const y = Math.floor(i / w);
-            throw new Error(spriteColorNotInPaletteError(x, y, imageSrc, hex));
-        }
-
-        // eslint-disable-next-line security/detect-object-injection
-        indexed[i] = index;
-    }
-
-    return indexed;
-}
-
-/**
- * Collects unique opaque RGB colors from a flat RGBA byte buffer.
- *
- * @param data - RGBA bytes in row-major order.
- * @returns Deduped opaque colors with alpha forced to 255.
- */
-function collectUniqueOpaqueColors(data: Uint8Array): Color32[] {
-    const seen = new Set<number>();
-    const collected: Color32[] = [];
-
-    for (let i = 0; i < data.length; i += RGBA_BYTES_PER_PIXEL) {
-        const a = data[i + 3] ?? 0;
-
-        if (a === 0) {
-            continue;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection
-        const r = data[i] ?? 0;
-        const g = data[i + 1] ?? 0;
-        const b = data[i + 2] ?? 0;
-
-        // Pack RGB into a single 24-bit integer for fast Set lookup.
-        const key = (r << 16) | (g << 8) | b;
-
-        if (seen.has(key)) {
-            continue;
-        }
-
-        seen.add(key);
-        collected.push(new Color32(r, g, b, 255));
-    }
-
-    return collected;
-}
-
-/**
- * Validates that opaque colors can be written into consecutive palette slots.
- *
- * @param collected - Colors to register.
- * @param palette - Target palette.
- * @param startSlot - First destination slot.
- * @throws RangeError when `startSlot` is invalid or the colors do not fit.
- */
-function assertOpaqueColorsFitInPalette(collected: Color32[], palette: Palette, startSlot: number): void {
-    if (collected.length > 0) {
-        if (startSlot < TRANSPARENT_PALETTE_INDEX + 1) {
-            throw new RangeError(
-                `loadColorsIntoPalette: startSlot ${startSlot} is invalid (slot ${TRANSPARENT_PALETTE_INDEX} is reserved for transparency).`,
-            );
-        }
-
-        const endSlot = startSlot + collected.length - 1;
-
-        if (endSlot >= palette.size) {
-            throw new RangeError(
-                `loadColorsIntoPalette: ${collected.length} colors do not fit in palette size ${palette.size} starting at slot ${startSlot}.`,
-            );
-        }
-    }
-}
-
-/**
- * Writes collected colors into consecutive palette slots.
- *
- * @param collected - Colors in write order.
- * @param palette - Target palette.
- * @param startSlot - First destination slot.
- */
-function writeCollectedColors(collected: Color32[], palette: Palette, startSlot: number): void {
-    collected.forEach((color, index) => {
-        palette.set(startSlot + index, color);
-    });
-}
-
-/**
- * Marks palette indices referenced by non-zero pixels inside a bounded scan rect.
- *
- * @param pixels - Indexed pixel buffer for the full sheet.
- * @param sheetWidth - Sheet width in pixels.
- * @param startX - Inclusive left bound in sheet coordinates.
- * @param startY - Inclusive top bound in sheet coordinates.
- * @param endX - Exclusive right bound in sheet coordinates.
- * @param endY - Exclusive bottom bound in sheet coordinates.
- * @param paletteOffset - Palette offset applied at draw time.
- * @param usedMask - Mutable usage mask indexed by resolved palette slot.
- * @param seenSheetIndices - Per-call scratch mask for deduplicating sheet indices.
- */
-function markUniqueIndicesInBounds(
-    pixels: Uint8Array,
-    sheetWidth: number,
-    startX: number,
-    startY: number,
-    endX: number,
-    endY: number,
-    paletteOffset: number,
-    usedMask: Uint8Array,
-    seenSheetIndices: Uint8Array,
-): void {
-    const rectWidth = endX - startX;
-    const pixelCount = (endY - startY) * rectWidth;
-
-    for (let flat = 0; flat < pixelCount; flat++) {
-        const y = startY + Math.floor(flat / rectWidth);
-        const x = startX + (flat % rectWidth);
-        const sheetIndex = pixels[y * sheetWidth + x] ?? 0;
-
-        if (sheetIndex === TRANSPARENT_PALETTE_INDEX) {
-            continue;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection -- sheet indices are 0-255
-        if (seenSheetIndices[sheetIndex] === 1) {
-            continue;
-        }
-
-        // eslint-disable-next-line security/detect-object-injection -- sheet indices are 0-255
-        seenSheetIndices[sheetIndex] = 1;
-
-        markIndexUsed(usedMask, sheetIndex + paletteOffset);
-    }
+    return hotReloadSheets.get(url);
 }
 
 /**
@@ -527,7 +242,7 @@ export class SpriteSheet {
      *   created from raw indexed data.
      */
     private get sourceName(): string {
-        return this.image?.src ? `'${this.image.src}'` : '(unnamed)';
+        return sourceLabel(this.image);
     }
 
     /**
@@ -549,7 +264,10 @@ export class SpriteSheet {
         sheet._tileSize = tileSize;
 
         sheet.sourceUrl = url;
-        sheet.registerForHotReload();
+
+        if (isHotActive()) {
+            hotReloadSheets.add(url, sheet);
+        }
 
         return sheet;
     }
@@ -640,22 +358,7 @@ export class SpriteSheet {
 
         const { width: w, height: h } = getDecodedImageSize(image);
 
-        const data = SpriteSheet.readRgbaPixels(image, w, h);
-        const collected = collectUniqueOpaqueColors(data);
-        const sortMode = options?.sort ?? 'luminance';
-
-        if (sortMode === 'luminance') {
-            collected.sort((c1, c2) => c1.luminance - c2.luminance);
-        }
-
-        // Validate the full destination range up front so a mid-loop palette.set()
-        // throw (out-of-range slot, or opaque color at reserved slot 0) cannot
-        // leave the palette partially mutated. All collected colors are opaque,
-        // so startSlot must be at least 1.
-        assertOpaqueColorsFitInPalette(collected, palette, startSlot);
-        writeCollectedColors(collected, palette, startSlot);
-
-        return collected;
+        return writePaletteColors(readRgbaPixels(image, w, h), palette, startSlot, options?.sort ?? 'luminance');
     }
 
     /**
@@ -685,25 +388,6 @@ export class SpriteSheet {
     }
 
     /**
-     * Decodes an image's pixels via an off-screen canvas and returns a flat
-     * RGBA byte buffer. Shared by `indexize` and `loadColorsIntoPalette`.
-     *
-     * @param image - Source HTML image element.
-     * @param w - Image width in pixels.
-     * @param h - Image height in pixels.
-     * @returns Flat RGBA byte array (`w * h * RGBA_BYTES_PER_PIXEL` bytes).
-     */
-    private static readRgbaPixels(image: HTMLImageElement, w: number, h: number): Uint8Array<ArrayBuffer> {
-        const canvas = new OffscreenCanvas(w, h);
-        const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
-
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(image, 0, 0);
-
-        return new Uint8Array(ctx.getImageData(0, 0, w, h).data.buffer.slice(0)) as Uint8Array<ArrayBuffer>;
-    }
-
-    /**
      * Converts the sprite sheet's RGBA pixels to palette indices.
      *
      * Each non-transparent pixel is looked up in the provided palette via exact
@@ -727,7 +411,7 @@ export class SpriteSheet {
         const w = this.size.x;
         const h = this.size.y;
 
-        this.rgbaPixels = SpriteSheet.readRgbaPixels(this.image, w, h);
+        this.rgbaPixels = readRgbaPixels(this.image, w, h);
         this.indexedPixels = mapRgbaPixelsToIndexed(w, h, this.rgbaPixels, palette, this.sourceName);
 
         this.invalidateTexture();
@@ -828,16 +512,14 @@ export class SpriteSheet {
      * an already-indexized sheet when `palette` is `null`, since there is nothing safe
      * to reindex against.
      *
-     * If `indexize()` throws partway (a pixel color from the new image is missing from
-     * `palette`), this sheet is left with the new image/size but a stale, mismatched
-     * `indexedPixels`/texture until a subsequent successful hot reload - an accepted
-     * dev-only-path risk, not a production code path. {@link status} is set to
-     * `'failed'` and the error is rethrown.
+     * The new pixels are indexed before anything is swapped, so when that fails (a pixel
+     * color from the new image is missing from `palette`) the sheet keeps its old image,
+     * size, indices and texture. {@link status} is set to `'failed'` and the error is rethrown.
      *
      * @param image - Newly loaded replacement image.
-     * @param palette - Active palette, used to re-run `indexize` when the sheet was
+     * @param palette - Active palette, used to re-index the new pixels when the sheet was
      *   already indexized.
-     * @throws If the replacement image exceeds engine size limits, or `indexize()` throws.
+     * @throws If the replacement image exceeds engine size limits, or a pixel color is not in `palette`.
      */
     hotReplaceImage(image: HTMLImageElement, palette: Palette | null): void {
         if (!this.image) {
@@ -857,16 +539,20 @@ export class SpriteSheet {
         try {
             assertImageElementWithinLimits('sprite sheet', image);
 
-            this.image = image;
-            const decoded = getDecodedImageSize(image);
+            const { width, height } = getDecodedImageSize(image);
+            let { rgbaPixels, indexedPixels } = this;
 
-            this._size = Object.freeze(new Vector2i(decoded.width, decoded.height));
-
-            if (this.indexedPixels !== null && palette !== null) {
-                this.indexize(palette);
-            } else {
-                this.invalidateTexture();
+            // Index into locals first: a throw here must leave the sheet exactly as it was.
+            if (indexedPixels !== null && palette !== null) {
+                rgbaPixels = readRgbaPixels(image, width, height);
+                indexedPixels = mapRgbaPixelsToIndexed(width, height, rgbaPixels, palette, sourceLabel(image));
             }
+
+            this.image = image;
+            this._size = Object.freeze(new Vector2i(width, height));
+            this.rgbaPixels = rgbaPixels;
+            this.indexedPixels = indexedPixels;
+            this.invalidateTexture();
 
             this._status = 'ready';
             this._progress = 1.0;
@@ -945,28 +631,8 @@ export class SpriteSheet {
      * @param usedMask - Mutable usage mask indexed by resolved palette slot.
      */
     markPaletteIndicesInRect(srcRect: Rect2i, paletteOffset: number, usedMask: Uint8Array): void {
-        const pixels = this.indexedPixels;
-
-        if (pixels !== null) {
-            const sheetWidth = this.size.x;
-            const startX = Math.max(0, srcRect.x);
-            const startY = Math.max(0, srcRect.y);
-            const endX = Math.min(this.size.x, srcRect.x + srcRect.width);
-            const endY = Math.min(this.size.y, srcRect.y + srcRect.height);
-            const seenSheetIndices = MARK_INDICES_IN_RECT_SCRATCH;
-
-            seenSheetIndices.fill(0);
-            markUniqueIndicesInBounds(
-                pixels,
-                sheetWidth,
-                startX,
-                startY,
-                endX,
-                endY,
-                paletteOffset,
-                usedMask,
-                seenSheetIndices,
-            );
+        if (this.indexedPixels !== null) {
+            markUniqueIndicesInRect(this.indexedPixels, this.size.x, this.size.y, srcRect, paletteOffset, usedMask);
         }
     }
 
@@ -1053,16 +719,17 @@ export class SpriteSheet {
         }
 
         if (this.texture === null) {
-            this.createIndexedTexture(device);
+            this.texture = createIndexedTexture(device, this.size.x, this.size.y, this.indexedPixels);
         }
 
-        // Safe assertion: createIndexedTexture always initializes this.texture.
-        return this.texture as GPUTexture;
+        return this.texture;
     }
 
     /**
      * Calculates normalized UV coordinates for a sprite region.
-     * Converts pixel coordinates to 0.0-1.0 texture coordinate range.
+     * Converts pixel coordinates to 0.0-1.0 texture coordinate range. A rect that runs past the
+     * sheet edge is not clamped and gives values outside 0-1; both renderers draw only its
+     * in-sheet part.
      *
      * @param rect - Source rectangle in pixel coordinates.
      * @returns Object with u0, v0 (top-left) and u1, v1 (bottom-right) UV coordinates.
@@ -1073,7 +740,8 @@ export class SpriteSheet {
 
     /**
      * Calculates normalized UV coordinates for a sprite region into a caller-owned object.
-     * Zero-allocation variant of {@link getUVs} for per-draw hot paths.
+     * Zero-allocation variant of {@link getUVs} for per-draw hot paths. Like `getUVs`, it does
+     * not clamp a rect that runs past the sheet edge.
      *
      * @param rect - Source rectangle in pixel coordinates.
      * @param out - Object to write the u0, v0, u1, v1 UV coordinates into.
@@ -1098,40 +766,15 @@ export class SpriteSheet {
      */
     destroy(): void {
         this.invalidateTexture();
-        this.unregisterFromHotReload();
+
+        if (this.sourceUrl !== null) {
+            hotReloadSheets.delete(this.sourceUrl, this);
+        }
+
         unregisterIndexedSheet(this);
 
         this.rgbaPixels = null;
         this.indexedPixels = null;
-    }
-
-    /**
-     * Creates and uploads an `r8uint` GPU texture from the palette index data.
-     *
-     * Called lazily by `getTexture()` after `indexize()` has been invoked.
-     * Uses `writeTexture` because `r8uint` does not support `copyExternalImageToTexture`.
-     *
-     * @param device - WebGPU device for texture creation.
-     */
-    private createIndexedTexture(device: GPUDevice): void {
-        assertDimensions('sprite sheet texture', this.size.x, this.size.y);
-
-        const extent = [this.size.x, this.size.y, TEXTURE_LAYER_COUNT];
-
-        this.texture = device.createTexture({
-            label: 'Sprite Sheet Indexed Texture',
-            size: extent,
-            format: 'r8uint',
-            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-        });
-
-        // Safe assertion: createIndexedTexture is only called when indexedPixels !== null.
-        device.queue.writeTexture(
-            { texture: this.texture },
-            this.indexedPixels as Uint8Array<ArrayBuffer>,
-            { bytesPerRow: this.size.x },
-            extent,
-        );
     }
 
     /**
@@ -1146,148 +789,4 @@ export class SpriteSheet {
             this.texture = null;
         }
     }
-
-    /**
-     * Registers this sheet in the dev-only hot-reload registry under its normalized
-     * source URL, when a Vite HMR context is active. Called by {@link SpriteSheet.load}.
-     */
-    private registerForHotReload(): void {
-        if (this.sourceUrl === null || !isHotActive()) {
-            return;
-        }
-
-        const key = normalizeAssetUrl(this.sourceUrl);
-        const bucket = hotReloadRegistry.get(key) ?? new Set<SpriteSheet>();
-
-        bucket.add(this);
-        hotReloadRegistry.set(key, bucket);
-    }
-
-    /**
-     * Removes this sheet from the hot-reload registry, pruning an empty bucket.
-     * Called by {@link SpriteSheet.destroy}.
-     */
-    private unregisterFromHotReload(): void {
-        if (this.sourceUrl === null) {
-            return;
-        }
-
-        const key = normalizeAssetUrl(this.sourceUrl);
-        const bucket = hotReloadRegistry.get(key);
-
-        if (!bucket) {
-            return;
-        }
-
-        bucket.delete(this);
-
-        if (bucket.size === 0) {
-            hotReloadRegistry.delete(key);
-        }
-    }
-}
-
-/**
- * Validates a tile size given as a number (square) or a `Vector2i` and returns
- * it as a frozen `Vector2i` copy. Shared by the {@link SpriteSheet.tileSize}
- * setter and the `tileSize` option of `load` / `loadIndexed`.
- *
- * @param value - Tile size in pixels.
- * @returns Frozen tile size.
- * @throws RangeError if the size is not a positive integer on both axes.
- */
-function toTileSize(value: number | Vector2i): Vector2i {
-    const tileW = typeof value === 'number' ? value : value.x;
-    const tileH = typeof value === 'number' ? value : value.y;
-
-    assertTileSize(tileW, tileH);
-
-    return Object.freeze(new Vector2i(tileW, tileH));
-}
-
-/**
- * Writes the source rectangle of one tile into `out`, validating the tile size
- * and checking the tile against the sheet's current grid of whole tiles.
- *
- * Engine-internal: shared by {@link SpriteSheet.tileRect} and `BT.drawTile` so
- * both apply the same bounds rules. Not re-exported from the package entry.
- *
- * @param out - Rectangle to write into.
- * @param sheet - Sheet whose current size bounds the grid.
- * @param col - Zero-based column.
- * @param row - Zero-based row.
- * @param tileW - Tile width in pixels.
- * @param tileH - Tile height in pixels.
- * @returns `out`, for chaining.
- * @throws RangeError for an invalid size or coordinate, or a tile outside the grid.
- */
-export function writeTileRect(
-    out: Rect2i,
-    sheet: SpriteSheet,
-    col: number,
-    row: number,
-    tileW: number,
-    tileH: number,
-): Rect2i {
-    assertTileSize(tileW, tileH);
-    assertTileCoordinate('column', col);
-    assertTileCoordinate('row', row);
-
-    const columns = Math.floor(sheet.width / tileW);
-    const rows = Math.floor(sheet.height / tileH);
-
-    if (col >= columns || row >= rows) {
-        throw new RangeError(spriteTileOutOfGridError(`(${col}, ${row})`, columns, rows));
-    }
-
-    out.x = col * tileW;
-    out.y = row * tileH;
-    out.width = tileW;
-    out.height = tileH;
-
-    return out;
-}
-
-/**
- * Writes the source rectangle of one tile into `out` using the sheet's own
- * {@link SpriteSheet.tileSize}: a row-major index when `row` is `undefined`,
- * otherwise a column and row.
- *
- * Engine-internal; not re-exported from the package entry.
- *
- * @param out - Rectangle to write into.
- * @param sheet - Sheet with a tile grid.
- * @param colOrIndex - Row-major index when `row` is `undefined`, otherwise the column.
- * @param row - Zero-based row, or `undefined` for the index form.
- * @returns `out`, for chaining.
- * @throws Error if the sheet has no tile size.
- * @throws RangeError for an invalid coordinate or a tile outside the grid.
- */
-export function writeGridTileRect(
-    out: Rect2i,
-    sheet: SpriteSheet,
-    colOrIndex: number,
-    row: number | undefined,
-): Rect2i {
-    const tileSize = sheet.tileSize;
-
-    if (tileSize === null) {
-        throw new Error(SPRITE_TILE_GRID_MISSING_MESSAGE);
-    }
-
-    if (row !== undefined) {
-        return writeTileRect(out, sheet, colOrIndex, row, tileSize.x, tileSize.y);
-    }
-
-    assertTileCoordinate('index', colOrIndex);
-
-    const columns = Math.floor(sheet.width / tileSize.x);
-    const rows = Math.floor(sheet.height / tileSize.y);
-
-    // Also covers a zero-tile grid (tile larger than the sheet), so the modulo below never divides by zero.
-    if (colOrIndex >= columns * rows) {
-        throw new RangeError(spriteTileOutOfGridError(`index ${colOrIndex}`, columns, rows));
-    }
-
-    return writeTileRect(out, sheet, colOrIndex % columns, Math.floor(colOrIndex / columns), tileSize.x, tileSize.y);
 }

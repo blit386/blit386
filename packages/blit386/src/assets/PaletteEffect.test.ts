@@ -442,6 +442,31 @@ describe('CycleEffect', () => {
 
         markDirtySpy.mockRestore();
     });
+
+    it('does at most one turn of work per tick for a huge speed, landing where steps % range length lands', () => {
+        const palette = makeTestPalette();
+        const expected = makeTestPalette();
+        const getRefSpy = vi.spyOn(palette, 'getRef');
+
+        // 1e9 steps over the 15-entry range 1-15 is 1e9 % 15 = 10 net steps.
+        new CycleEffect(1, 15, 1e9).update(palette, 1000);
+        new CycleEffect(1, 15, 10).update(expected, 1000);
+
+        for (let i = 1; i < 16; i++) {
+            expect(palette.getRef(i).isEqual(expected.getRef(i))).toBe(true);
+        }
+        expect(getRefSpy.mock.calls.length).toBeLessThan(15 * 17 * 2);
+    });
+
+    it('does not mark the palette dirty when a tick lands on whole turns of the range', () => {
+        const palette = makeTestPalette();
+        const effect = new CycleEffect(1, 3, 3);
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        effect.update(palette, 1000);
+
+        expect(markDirtySpy).not.toHaveBeenCalled();
+    });
 });
 
 describe('FadeEffect', () => {

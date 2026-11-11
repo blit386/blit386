@@ -138,6 +138,35 @@ describe('AudioClip', () => {
 
             expect(AudioClip.isLoaded('test.mp3')).toBe(false);
         });
+
+        it('does not re-cache a load that settles after clear(), or drop the newer load', async () => {
+            const responders: Array<() => void> = [];
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(
+                    () =>
+                        new Promise((resolve) => {
+                            responders.push(() => resolve(mockAudioFetchResponse()));
+                        }),
+                ),
+            );
+
+            const stale = AudioClip.load('late.mp3');
+            AudioClip.clear();
+            const fresh = AudioClip.load('late.mp3');
+
+            responders[0]?.();
+            await stale;
+
+            expect(AudioClip.isLoaded('late.mp3')).toBe(false);
+            expect(AudioClip.loadingCount).toBe(1);
+
+            responders[1]?.();
+            const clip = await fresh;
+
+            expect(AudioClip.getClip('late.mp3')).toBe(clip);
+            expect(AudioClip.loadingCount).toBe(0);
+        });
     });
 
     describe('loadingCount', () => {
@@ -824,6 +853,60 @@ describe('AudioClip', () => {
             await expect(AudioClip.hotReload('/sfx/boom.wav')).resolves.toBe(true);
             expect(clip.buffer).not.toBe(oldBuffer);
             expect(AudioClip.getClip('sfx/boom.wav')).toBe(clip);
+        });
+
+        /**
+         * Stubs `fetch` so every call waits until the test releases it.
+         *
+         * @returns Release callbacks, one per fetch call, in call order.
+         */
+        function stubDeferredFetch(): Array<() => void> {
+            const responders: Array<() => void> = [];
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(
+                    () =>
+                        new Promise((resolve) => {
+                            responders.push(() => resolve(mockAudioFetchResponse()));
+                        }),
+                ),
+            );
+
+            return responders;
+        }
+
+        it('leaves a clip unloaded when unload() lands while its reload is in flight', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            const clip = await AudioClip.load('gone.mp3');
+            const musicHandler = vi.fn().mockReturnValue(true);
+            audioHooks.onHotReplace = musicHandler;
+            const responders = stubDeferredFetch();
+
+            const reload = AudioClip.hotReload('gone.mp3');
+            clip.unload();
+            responders[0]?.();
+
+            await expect(reload).resolves.toBe(false);
+            expect(clip.buffer).toBeNull();
+            expect(musicHandler).not.toHaveBeenCalled();
+        });
+
+        it('hands the second of two overlapping reloads the buffer the first one installed', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            const clip = await AudioClip.load('twice.mp3');
+            const musicHandler = vi.fn().mockReturnValue(true);
+            audioHooks.onHotReplace = musicHandler;
+            const responders = stubDeferredFetch();
+
+            const first = AudioClip.hotReload('twice.mp3');
+            const second = AudioClip.hotReload('twice.mp3');
+            responders[0]?.();
+            await first;
+            const firstBuffer = clip.buffer;
+            responders[1]?.();
+            await second;
+
+            expect(musicHandler).toHaveBeenLastCalledWith(firstBuffer, clip.buffer);
         });
     });
 });

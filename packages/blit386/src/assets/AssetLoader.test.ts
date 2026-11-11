@@ -509,5 +509,20 @@ describe('AssetLoader', () => {
 
             expect(AssetLoader.getImage('evicted.png')).toBeNull();
         });
+
+        it('re-caches under the game key when the image is still loading as its hot reload arrives', async () => {
+            const gameLoad = AssetLoader.loadImage('sprites/hero.png');
+            const reload = AssetLoader.hotReloadImage('/sprites/hero.png');
+
+            expect(instances).toHaveLength(2);
+
+            instances[1]?.onload?.();
+            const reloaded = await reload;
+            instances[0]?.onload?.();
+            await gameLoad;
+
+            expect(AssetLoader.getImage('sprites/hero.png')).toBe(reloaded);
+            expect(AssetLoader.isLoaded('/sprites/hero.png')).toBe(false);
+        });
     });
 });

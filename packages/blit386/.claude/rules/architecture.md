@@ -95,14 +95,25 @@ src/
   assets/
     AssetLoader.ts         # Image loading with caching
     SpriteSheet.ts         # GPU texture wrapper (+ loadIndexed convenience path)
+    spriteIndexing.ts      # SpriteSheet palette indexing: indexized-sheet registry (BT.spritesRefresh), RGBA-to-index mapping, loadColorsIntoPalette colors, used-index scan, r8uint upload
+    spriteTileGrid.ts      # Tile size validation and tile source-rect writers shared by SpriteSheet.tileRect and BT.drawTile
     NineSlice.ts           # Frozen nine-slice asset (NineSlice.fromSheet) + per-axis split helper used by BT.drawNineSlice
-    BitmapFont.ts          # Bitmap font system (.btfont)
+    BitmapFont.ts          # Bitmap font system (.btfont): glyph lookup, measuring, hot reload
+    btfontFile.ts          # .btfont file loading for BitmapFont: capped read, parse, validation, glyph table, texture load, load errors
+    hotReloadRegistry.ts   # Dev-only registry of live SpriteSheets and BitmapFonts per normalized URL, read by HotRuntime
+    readStreamedBody.ts    # Streamed response-body reader shared by AudioClip and the .btfont loader
     SystemFont.ts          # Built-in system font factory (createSystemFont; used by BT.systemPrint)
     fonts/systemFontData.ts # Glyph bitmap data backing SystemFont
     AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists, synth() factory
     synth/                 # Deterministic synthesis engine backing AudioClip.synth (SynthParams, envelope/pitch/waveform math, validation, synthPresets sound library)
     Palette.ts             # 256-entry indexed color palette
-    PaletteEffect.ts       # Palette effect system (cycle, fade, exposure fade, flash, swap)
+    PaletteEffect.ts       # PaletteEffect interface, PaletteEffectManager, paletteSwap; re-exports the effect classes below
+    CycleEffect.ts         # BT.paletteCycle: range rotation, at most one turn of work per tick
+    FadeEffect.ts          # BT.paletteFade: whole-palette eased fade
+    FadeRangeEffect.ts     # BT.paletteFadeRange: eased fade over a slot range
+    ExposureFadeEffect.ts  # BT.paletteFadeExposure: linear-light fade with luminance lead (+ ExposureFadeOptions)
+    FlashEffect.ts         # BT.paletteFlash: snapshot, flood, restore
+    paletteFade.ts         # Fade helpers shared by the effects (range snapshot, eased progress, per-entry lerp)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
   input/
     PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); two previous-state clocks - endUpdate for update() readers, endFrame for render-side readers and the overlay
@@ -129,8 +140,8 @@ src/
     CanvasLayoutStyles.ts  # Canvas layout CSS custom properties helper
     RenderLimits.ts        # Render dimension validation (8192 px per axis; 16,777,216 total pixels)
     AssetLimits.ts         # Asset dimension validation, btfont/glyph limits, sprite-blit clipping
-    TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid
-    HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont
+    TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid (spriteTileGrid.ts)
+    HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont. resolveAgainstDocument also backs the .btfont texture origin check in AssetLimits
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector (allocating methods, statics, normalized, equality)
     Vector2iOps.ts         # Internal base of Vector2i: *To / *InPlace families, set/copyFrom, magnitude and distance queries (not exported)

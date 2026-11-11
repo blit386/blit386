@@ -41,6 +41,8 @@ clipping.
 - `.btfont` files may reference either a relative PNG path or an embedded PNG data URI.
 - Embedded textures must use `data:image/png;base64,...` and stay within the embedded payload cap above.
 - Other `data:` schemes (for example JPEG) are rejected before image decode.
+- A texture path is joined to the `.btfont` file's folder and must stay on the same origin as the font file. A texture
+  on another site (`https://other.example/atlas.png`, `//other.example/atlas.png`) throws an `AssetLimitError`.
 - Decoded atlas dimensions use the same width, height, and pixel-area limits as sprite sheets.
 - Prefer separate PNG files for large atlases so the JSON payload stays under the JSON size limit.
 
@@ -234,13 +236,14 @@ const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
 
 For your own rendering code, `sheet.getUVs(rect)` converts a pixel rectangle to a `SpriteUV`: normalized `u0`, `v0`
 (top-left) and `u1`, `v1` (bottom-right) texture coordinates. `getUVsTo(rect, out)` writes into an existing object
-instead of allocating one.
+instead of allocating one. A rectangle that runs past the sheet edge is not clamped, so its values fall outside
+`[0, 1]`; `BT.drawSprite` draws only the part inside the sheet on both backends.
 
 ```ts twoslash
 import { Rect2i, SpriteSheet } from 'blit386';
 declare const sheet: SpriteSheet;
 // ---cut---
-const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 } in [0, 1]
+const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 }, in [0, 1] inside the sheet
 ```
 
 ## Palette offset

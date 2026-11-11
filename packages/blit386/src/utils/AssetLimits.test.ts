@@ -12,6 +12,7 @@ import {
     validateBtfontGlyphData,
     validateBtfontGlyphDataPreAtlas,
     validateBtfontJsonByteSize,
+    validateBtfontTextureOrigin,
     validateDimensions,
     validateGlyphCount,
     validateIndexedPixelInput,
@@ -75,6 +76,16 @@ describe('AssetLimits', () => {
             const error = validateGlyphCount(MAX_GLYPH_COUNT + 1);
 
             expect(error).toContain(MAX_GLYPH_COUNT.toLocaleString('en-US'));
+        });
+    });
+
+    describe('validateBtfontTextureOrigin', () => {
+        it('accepts a texture next to the font and rejects one on another origin', () => {
+            expect(validateBtfontTextureOrigin('fonts/atlas.png', 'fonts/font.btfont')).toBeNull();
+            expect(validateBtfontTextureOrigin('https://cdn.example/a.png', 'https://cdn.example/f.btfont')).toBeNull();
+            expect(validateBtfontTextureOrigin('https://evil.example/a.png', 'font.btfont')).toContain(
+                'https://evil.example/a.png',
+            );
         });
     });
 
