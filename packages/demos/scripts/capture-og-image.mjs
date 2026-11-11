@@ -48,6 +48,7 @@ import {
     OG_IMAGE_WIDTH,
     OG_SCALE_DEFAULT,
     OG_SCALE_MODES,
+    ogImageFile,
 } from '../plugins/social-meta.js';
 import { CAPTURE_SEED, INPUT_TICKS, posesFor } from '../_shots/poses.js';
 import {
@@ -200,8 +201,6 @@ export function parseArgs(argv) {
 // #region Path and dimension math
 
 /**
- * Output path for one demo's card.
- *
  * Resolve the output directory.
  *
  * The default resolves against the package, not the caller's cwd, so running the script from
@@ -230,7 +229,7 @@ export function resolveOutDir(out, cwd, packageRoot = PACKAGE_ROOT) {
  * @returns {string} `<outDir>/og-<slug>.png`.
  */
 export function buildOgImagePath(outDir, slug) {
-    return join(outDir, `og-${slug}.png`);
+    return join(outDir, ogImageFile(slug));
 }
 
 /**
@@ -241,7 +240,7 @@ export function buildOgImagePath(outDir, slug) {
  * @returns {string} `<outDir>/og-<slug>.native.png`.
  */
 export function buildNativeImagePath(outDir, slug) {
-    return join(outDir, `og-${slug}.native.png`);
+    return join(outDir, ogImageFile(slug).replace(/\.png$/u, '.native.png'));
 }
 
 /**

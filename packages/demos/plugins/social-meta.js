@@ -19,6 +19,17 @@ export const OG_IMAGE_DIR = 'social';
 export const OG_IMAGE_FALLBACK = 'og-default.png';
 
 /**
+ * File name of a demo's own card under OG_IMAGE_DIR. The one place the name is spelled: the
+ * og:image tag, the build's existence check, the capture script, and the registry gate all use it.
+ *
+ * @param {string} slug - Demo slug.
+ * @returns {string} `og-<slug>.png`.
+ */
+export function ogImageFile(slug) {
+    return `og-${slug}.png`;
+}
+
+/**
  * How `scripts/capture-og-image.mjs` fits a demo's canvas onto the card.
  *
  * - `auto` - integer when it already fills most of the card, otherwise fit. The default, and
@@ -65,7 +76,7 @@ export function buildSocialMeta({ entry, isNextChannel = false, hasOgImage = fal
     // flattenDemosPlugin then moves to dist/ root, leaving the path pointing outside dist/.
     // Absolute https:// URLs are skipped as external, so they survive both untouched.
     const pageUrl = `${origin}/${entry.slug}`;
-    const imageFile = hasOgImage ? `og-${entry.slug}.png` : OG_IMAGE_FALLBACK;
+    const imageFile = hasOgImage ? ogImageFile(entry.slug) : OG_IMAGE_FALLBACK;
     const imageUrl = `${origin}/${OG_IMAGE_DIR}/${imageFile}`;
 
     const title = escapeHtml(entry.title);

@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { buildRegistry, HEADER_SCAN_BYTES, NAV_HIDDEN_SLUGS, RESERVED_SLUGS } from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
-import { OG_IMAGE_DIR, OG_SCALE_MODES } from '../plugins/social-meta.js';
+import { OG_IMAGE_DIR, OG_SCALE_MODES, ogImageFile } from '../plugins/social-meta.js';
 
 export { RESERVED_SLUGS };
 
@@ -350,10 +350,10 @@ function findHeaderTagFailures(registry) {
 function findMissingOgCardFailures(registry) {
     return registry
         .map((entry) => entry.slug)
-        .filter((slug) => !existsSync(join(ROOT, 'public', OG_IMAGE_DIR, `og-${slug}.png`)))
+        .filter((slug) => !existsSync(join(ROOT, 'public', OG_IMAGE_DIR, ogImageFile(slug))))
         .map(
             (slug) =>
-                `public/${OG_IMAGE_DIR}/og-${slug}.png is missing - capture it with \`pnpm run capture:og -- ${slug}\``,
+                `public/${OG_IMAGE_DIR}/${ogImageFile(slug)} is missing - capture it with \`pnpm run capture:og -- ${slug}\``,
         );
 }
 
