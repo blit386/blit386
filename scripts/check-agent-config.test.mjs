@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { gitEnv } from '../packages/website/scripts/git-env.mjs';
+import { gitEnv } from './lib/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
     checkClaudeProtectFilesHook,

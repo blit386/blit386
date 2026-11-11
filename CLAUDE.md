@@ -62,6 +62,10 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
 - A `packages/blit386/docs/` change reaches blit386.dev only after `pnpm run sync:docs` runs in `packages/website`
   (`packages/website/scripts/sync-docs-from-engine.mjs`, default source `../blit386/docs`); `sync:docs:check` fails when
   `packages/website/content/docs` is stale.
+- Every `git` subprocess a script spawns, in any package, passes `env: gitEnv()` from `scripts/lib/git-env.mjs`. Scripts
+  run under `.husky/pre-push`, which exports `GIT_DIR` into every child; it outranks `cwd` and `-C`, so an unguarded
+  `git init` in a fixture repo re-initializes the real one and writes `bare = true` into the shared `.git/config`.
+  `scripts/lib/git-env.test.mjs` guards it.
 
 ## Where the detail lives
 

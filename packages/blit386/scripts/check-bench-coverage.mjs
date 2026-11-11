@@ -18,7 +18,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -63,7 +63,7 @@ export function changedFilesSince(baseRef, cwd = ROOT) {
         const output = execFileSync('git', ['diff', '--name-only', '--relative', `${baseRef}...HEAD`, '--', 'src'], {
             cwd,
             encoding: 'utf8',
-            env: gitEnvWithoutRepoLocation(),
+            env: gitEnv(),
         });
 
         return output.split('\n').filter(Boolean);

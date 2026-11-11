@@ -30,10 +30,8 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
 4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `website`, `content`, `ci`, `docs`, `deps`,
    `config`. `main` is protected - land changes via PR
-5. Every `git` subprocess spawned from `scripts/` passes `env: gitEnv()` ([`scripts/git-env.mjs`](scripts/git-env.mjs)).
-   These scripts run under `.husky/pre-push`, which exports `GIT_DIR` into every child; it outranks `cwd` and `-C`, so
-   an unguarded `git init` in a fixture repo re-initializes the real one and writes `bare = true` into the shared
-   `.git/config`, breaking git in the main checkout and every worktree. `scripts/__tests__/git-env.test.mjs` guards it
+5. Every `git` subprocess spawned from `scripts/` passes `env: gitEnv()` from the root
+   [`scripts/lib/git-env.mjs`](../../scripts/lib/git-env.mjs) - a monorepo-wide rule, see the root `CLAUDE.md`
 
 ## Where to Find Information
 
@@ -50,7 +48,7 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | How mirror drift is checked | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` (in `preflight` and in CI) |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test:scripts`) |
 | Worker plugin test coverage | `src/**/*.test.ts` (Vitest, via `pnpm run test:unit`) - see Test runners |
-| Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
+| Why every git subprocess passes `gitEnv()` | root `scripts/lib/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
 | Cloudflare size limits (25 MiB per asset, 64 MiB uncompressed Worker) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |

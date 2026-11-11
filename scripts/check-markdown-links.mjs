@@ -26,6 +26,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { gitEnv } from './lib/git-env.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
@@ -63,6 +64,7 @@ function listTrackedMarkdownFiles() {
         output = execFileSync('git', ['ls-files', '*.md', '*.mdx'], {
             cwd: ROOT,
             encoding: 'utf8',
+            env: gitEnv(),
         });
     } catch {
         console.error('ERROR: docs:links requires a git checkout to enumerate tracked markdown.');

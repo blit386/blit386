@@ -23,7 +23,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { gitEnv } from './git-env.mjs';
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 import { API_HISTORY_MIRROR, PAGES } from './sync-docs-from-engine.mjs';
 import { SECTION as KIT_SECTION } from './sync-kit-pages.mjs';
 

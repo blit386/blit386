@@ -29,6 +29,7 @@ import {
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { FILENAME_PATTERN } from '../plugins/demo-registry.js';
@@ -234,7 +235,7 @@ export function isInsideRealDir(outDir, path) {
 // #region Main
 
 function changedPathsFromGit() {
-    const git = (args) => execFileSync('git', args, { cwd: PACKAGE_ROOT, encoding: 'utf8' });
+    const git = (args) => execFileSync('git', args, { cwd: PACKAGE_ROOT, encoding: 'utf8', env: gitEnv() });
     const mergeBase = git(['merge-base', 'origin/main', 'HEAD']).trim();
     // --full-name keeps untracked paths repo-relative, like diff --name-only.
     const untracked = git(['ls-files', '--others', '--exclude-standard', '--full-name']);

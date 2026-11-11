@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { gitEnv } from '../git-env.mjs';
+import { gitEnv } from './git-env.mjs';
 
 // Every variable git reads to locate a repository. Kept here as the test's own list rather than
 // imported from git-env.mjs, so a variable dropped from the implementation fails the test instead
