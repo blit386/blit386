@@ -463,13 +463,7 @@ export class BitmapFont {
      * @returns Trimmed name when `value` is a non-empty string; otherwise `'Unknown'`.
      */
     private static resolveDisplayName(value: unknown): string {
-        let name = 'Unknown';
-
-        if (typeof value === 'string' && value.length > 0) {
-            name = value;
-        }
-
-        return name;
+        return typeof value === 'string' && value.length > 0 ? value : 'Unknown';
     }
 
     /**
@@ -481,13 +475,8 @@ export class BitmapFont {
      */
     private static resolvePositiveMetric(value: unknown, fallback: number): number {
         const parsed = BitmapFont.parseMetricValue(value);
-        let metric = fallback;
 
-        if (Number.isFinite(parsed) && parsed > 0) {
-            metric = parsed;
-        }
-
-        return metric;
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
     }
 
     /**
@@ -497,15 +486,7 @@ export class BitmapFont {
      * @returns Parsed number, or `NaN` when the value cannot be coerced.
      */
     private static parseMetricValue(value: unknown): number {
-        let parsed = Number.NaN;
-
-        if (typeof value === 'number') {
-            parsed = value;
-        } else if (typeof value === 'string') {
-            parsed = Number(value);
-        }
-
-        return parsed;
+        return typeof value === 'number' || typeof value === 'string' ? Number(value) : Number.NaN;
     }
 
     /**
@@ -571,18 +552,12 @@ export class BitmapFont {
      * @returns Whether the data is valid.
      */
     private static isValidFileData(data: unknown): data is FileData {
-        let valid = false;
-
-        if (typeof data === 'object' && data !== null) {
-            const record = data as Record<string, unknown>;
-            const texture = record.texture;
-
-            if (typeof texture === 'string' && texture.length > 0 && isPlainRecord(record.glyphs)) {
-                valid = true;
-            }
-        }
-
-        return valid;
+        return (
+            isPlainRecord(data) &&
+            typeof data.texture === 'string' &&
+            data.texture.length > 0 &&
+            isPlainRecord(data.glyphs)
+        );
     }
 
     /**
@@ -728,13 +703,10 @@ export class BitmapFont {
      */
     private static buildExtensionHint(url: string, expectedExtension: string): string {
         const extension = extractExtension(url);
-        let hint = '';
 
-        if (extension !== '' && extension !== expectedExtension) {
-            hint = `The extension '${extension}' looks wrong for this file. Did you mean '${expectedExtension}'?`;
-        }
-
-        return hint;
+        return extension !== '' && extension !== expectedExtension
+            ? `The extension '${extension}' looks wrong for this file. Did you mean '${expectedExtension}'?`
+            : '';
     }
 
     /**
