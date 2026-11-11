@@ -132,6 +132,9 @@ audit:
 minimumReleaseAge: 10080
 blockExoticSubdeps: true
 strictDepBuilds: true
+minimumReleaseAgeExclude:
+  # Renovate security update: react-server-dom-webpack@19.2.9
+  - react-server-dom-webpack@19.2.9
 
 # minimumReleaseAgeExclude is deliberately absent. When a security patch is still inside
 # the 7-day window, add `minimumReleaseAgeExclude:` with the exact vetted `name@version`
