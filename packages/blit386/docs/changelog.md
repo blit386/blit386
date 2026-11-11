@@ -221,6 +221,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - Saving an asset whose name contains `@`, `+`, `,`, `;`, `=`, `&`, `$` or `:` (`hero@2x.png`) now hot reloads it. The
   plugin percent-encoded those characters while the engine keys the asset by the browser's own URL form, so the save
   replaced nothing and logged nothing. The plugin now builds the URL the way the browser does.
+- Asset hot reload now finds a sound or image the game loaded by a relative path (`AudioClip.load('sfx/boom.wav')`). The
+  plugin always sends a rooted path, so a relative-path sound was never replaced, and a relative-path image was cached a
+  second time under the rooted path, so a later `SpriteSheet.load('sprites/hero.png')` got the old image back. A save
+  that matches nothing loaded now logs one console line instead of passing silently.
 - The `blit386/vite` plugin now watches Vite's own `publicDir` by default. Before, the default `assetDirs` was a fixed
   `public`, so a game with `publicDir: 'static'` got no asset hot reload and no message. With `publicDir: false` nothing
   is watched by default. An explicit `assetDirs` behaves as before.

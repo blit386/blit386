@@ -377,5 +377,33 @@ describe('HotRuntime', () => {
                 expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('broken.mp3'), expect.any(Error)),
             );
         });
+
+        it.each([
+            ['/sfx/unknown.wav', 'audio'],
+            ['/fonts/unknown.btfont', 'font'],
+            ['/sprites/unknown.png', 'image'],
+        ])('logs one line when the %s event matches nothing loaded', async (url, type) => {
+            vi.spyOn(AudioClip, 'hotReload').mockResolvedValue(false);
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({} as HTMLImageElement);
+            const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url, type, timestamp: 1 });
+
+            await vi.waitFor(() => expect(infoSpy).toHaveBeenCalledExactlyOnceWith(expect.stringContaining(url)));
+        });
+
+        it('logs nothing when an event replaces a loaded asset', async () => {
+            vi.spyOn(AudioClip, 'hotReload').mockResolvedValue(true);
+            const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: '/sfx/boom.wav', type: 'audio', timestamp: 1 });
+
+            await vi.waitFor(() => expect(AudioClip.hotReload).toHaveBeenCalledOnce());
+            // A macrotask turn drains every microtask the routing awaits, so a miss log would have run by now.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(infoSpy).not.toHaveBeenCalled();
+        });
     });
 });

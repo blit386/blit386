@@ -814,5 +814,16 @@ describe('AudioClip', () => {
             await expect(AudioClip.hotReload('flaky.mp3')).rejects.toThrow();
             expect(clip.buffer).toBe(oldBuffer);
         });
+
+        it('reloads a clip loaded by a relative path when the event carries the rooted path', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('sfx/boom.wav');
+            const oldBuffer = clip.buffer;
+
+            await expect(AudioClip.hotReload('/sfx/boom.wav')).resolves.toBe(true);
+            expect(clip.buffer).not.toBe(oldBuffer);
+            expect(AudioClip.getClip('sfx/boom.wav')).toBe(clip);
+        });
     });
 });
