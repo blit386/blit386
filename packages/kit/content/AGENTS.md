@@ -76,19 +76,19 @@ bootstrap(Game);
 When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
 this game already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, GitHub Copilot, Antigravity, OpenCode, or Zed,
-  it is already configured (`.mcp.json` for Claude Code and Copilot, `.cursor/mcp.json` for Cursor,
-  `.agents/mcp_config.json` for Antigravity, `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your
-  assistant three tools: `search_docs` (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's
-  full text, from a URL `search_docs` returned), and `get_docs_summary` (the whole site's contents in one compact
-  block).
+- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, GitHub Copilot, Antigravity, Codex, Gemini CLI,
+  OpenCode, or Zed, it is already configured (`.mcp.json` for Claude Code and Copilot, `.cursor/mcp.json` for Cursor,
+  `.agents/mcp_config.json` for Antigravity, `.codex/config.toml` for Codex, `.gemini/settings.json` for Gemini CLI,
+  `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your assistant three tools: `search_docs`
+  (full-text search - page titles, URLs, and excerpts), `get_doc_page` (one page's full text, from a URL `search_docs`
+  returned), and `get_docs_summary` (the whole site's contents in one compact block).
 - No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
 - Want a complete program to learn from? https://blit386.dev/docs/build-a-game publishes this file, the guides, and the
   skills for the current release, plus full example games.
 - Reading a page? Request its URL with the header `Accept: text/markdown` and the site returns markdown instead of HTML
   \- far less to wade through.
 
-The `ask-the-docs` skill walks an assistant through all three. The source code lives at
+The `ask-the-docs` skill walks an assistant through all of these. The source code lives at
 https://github.com/blit386/blit386 - go there only when the documentation itself does not answer the question.
 
 ## Running the game
@@ -107,9 +107,8 @@ The `blit` helper is installed inside the project (it ships with `@blit386/kit`)
 Always invoke it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.
 
 While the dev server is running, most saves hot-reload instead of wiping the page: edits to `update()` / `render()` keep
-your score and position; edits to `init()` re-run setup (optional `onHotReload` can copy fields across - see the
-commented example in `src/game.js` / `src/game.ts`); edits to `configure()` screen settings reload the page; files under
-`public/` swap in place. Details: `docs/hot-reload.md`.
+your score and position; edits to `init()` re-run setup (optional `onHotReload` can copy fields across); edits to
+`configure()` screen settings reload the page; files under `public/` swap in place. Details: `docs/hot-reload.md`.
 
 ## Good habits
 
