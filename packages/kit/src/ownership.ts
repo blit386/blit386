@@ -100,8 +100,9 @@ export const OPENCODE_HOOKS_DIR = `${OPENCODE_DIR}hooks/`;
 export const OPENCODE_KIT_GUARD = `${OPENCODE_DIR}plugins/kit-guard.ts`;
 
 /**
- * Zed's generated configuration. `settings.json` is user-extendable JSON (Zed also allows comments), so like the MCP
- * configs it is merged structurally by `blit agents add` and three-way merged by `sync`.
+ * Zed's generated configuration. `settings.json` is user-extendable JSONC (comments and trailing commas allowed), so like
+ * the MCP configs it is merged by `blit agents add` (`tryMergeZedSettings`, which never re-serializes a file that has
+ * comments) and three-way merged by `sync`.
  */
 export const ZED_DIR = '.zed/';
 export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;

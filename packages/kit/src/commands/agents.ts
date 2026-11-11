@@ -44,6 +44,7 @@ import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-sa
 import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
 import { readManifest } from '../read-manifest';
+import { maskSource } from '../source-mask';
 import { ui } from '../messages';
 import {
     AGENT_KINDS,
@@ -255,6 +256,67 @@ function tryMergeCodexConfig(existingContent: string, generatedContent: string):
     return isDeepStrictEqual(table, kitTable) ? existingContent : null;
 }
 
+/** Mark every comma that closes a JSONC object or array (`[1, 2,]`) for removal, ignoring commas inside strings. */
+function withoutTrailingCommas(text: string, masked: string): string {
+    return text.replace(/,(?=\s*[}\]])/g, (comma, offset: number) => (masked[offset] === ',' ? ' ' : comma));
+}
+
+/**
+ * Merge the kit's `.zed/settings.json` into a hand-written one. Zed reads the file as JSONC, so it may hold comments and
+ * trailing commas. A file without comments merges like any JSON config (trailing commas dropped). A file with comments
+ * is never re-serialized, because the comments are the user's: the kit's keys are inserted as text before its closing
+ * brace when it has none of them, and anything else is the collision path (`zedHandMergeHint` says what to copy).
+ */
+function tryMergeZedSettings(existingContent: string, generatedContent: string): string | null {
+    const masked = maskSource(existingContent);
+    const noComments = maskSource(existingContent, true);
+    const json = withoutTrailingCommas(noComments, masked);
+
+    if (noComments === existingContent) {
+        return tryMergeJsonConfig(json, generatedContent);
+    }
+
+    let existing: unknown;
+
+    try {
+        existing = JSON.parse(json);
+    } catch {
+        return null;
+    }
+
+    const kit = JSON.parse(generatedContent) as Record<string, unknown>;
+
+    if (!isPlainObject(existing) || Object.keys(kit).some((key) => key in existing)) {
+        return null;
+    }
+
+    // Insert after the last thing before the closing brace that is not a comment, at the indent the file already uses.
+    const close = masked.lastIndexOf('}');
+    const at = masked.slice(0, close).trimEnd().length;
+    const indent = /\n([ \t]+)\S/.exec(existingContent.slice(0, close))?.[1] ?? '  ';
+    const eol = existingContent.includes('\r\n') ? '\r\n' : '\n';
+    const entries = Object.entries(kit).map(
+        ([key, value]) =>
+            `${indent}${JSON.stringify(key)}: ${JSON.stringify(value, null, 2).replaceAll('\n', `${eol}${indent}`)}`,
+    );
+    const comma = /[{,]$/.test(masked.slice(0, at)) ? '' : ',';
+
+    return `${existingContent.slice(0, at)}${comma}${eol}${entries.join(`,${eol}`)}${existingContent.slice(at)}`;
+}
+
+/** For a commented `.zed/settings.json` the kit would not edit, the line that says which keys to copy by hand. */
+function zedHandMergeHint(existingContent: string, generatedContent: string): string | null {
+    if (maskSource(existingContent, true) === existingContent) {
+        return null;
+    }
+
+    const keys = new Intl.ListFormat('en', { type: 'conjunction' }).format(
+        Object.keys(JSON.parse(generatedContent) as object).map((key) => `\`${key}\``),
+    );
+
+    return `${ZED_SETTINGS_JSON} has comments, so I did not rewrite it. Copy ${keys} from ${ZED_SETTINGS_JSON}.new into it by hand.`;
+}
+
 /** Config paths `runAddAgent` merges into an untracked existing copy instead of colliding with it. */
 const CONFIG_MERGES: Readonly<Record<string, ConfigMerge>> = {
     [ROOT_MCP_JSON]: tryMergeJsonConfig,
@@ -262,7 +324,7 @@ const CONFIG_MERGES: Readonly<Record<string, ConfigMerge>> = {
     [GEMINI_SETTINGS_JSON]: tryMergeGeminiSettings,
     [ANTIGRAVITY_MCP_JSON]: tryMergeJsonConfig,
     [OPENCODE_JSON]: tryMergeJsonConfig,
-    [ZED_SETTINGS_JSON]: tryMergeJsonConfig,
+    [ZED_SETTINGS_JSON]: tryMergeZedSettings,
     [CODEX_CONFIG_TOML]: tryMergeCodexConfig,
 };
 
@@ -862,6 +924,15 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         for (const file of collisions) {
             if (writeRel(root, `${file.path}.new`, file.content)) {
                 out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+
+                const hint =
+                    file.path === ZED_SETTINGS_JSON
+                        ? zedHandMergeHint(readFileSync(resolve(root, file.path), 'utf8'), file.content)
+                        : null;
+
+                if (hint !== null) {
+                    out(ui.info(hint));
+                }
             } else {
                 out(ui.warn(`Skipping unsafe path: ${file.path}.new`));
             }

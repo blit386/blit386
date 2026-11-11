@@ -147,3 +147,83 @@ test('blit agents add zed aborts when the user already set format_on_save differ
         rmSync(work, { recursive: true, force: true });
     }
 });
+
+/** Zed's own project settings file opens with `//` lines; this one adds a block comment and a trailing comma. */
+const COMMENTED_SETTINGS = `// Folder-specific settings
+//
+// For a full list of overridable settings, see the Zed documentation.
+{
+  /* the theme I like */
+  "theme": "One Dark",
+}
+`;
+
+/** Read JSONC the way Zed does: comments and trailing commas allowed (a JS object literal accepts both). */
+function parseJsonc(text) {
+    return new Function(`return (${text});`)();
+}
+
+/** Scaffold a no-agent game with `content` as its `.zed/settings.json`, run `add zed`, and return what happened. */
+function addZedOver(work, content) {
+    const project = join(work, 'zed-jsonc-game');
+    scaffold({ targetDir: project, projectName: 'zed-jsonc-game', ...PNPM_SCAFFOLD_COMMANDS, agents: [] });
+    const settingsPath = join(project, '.zed', 'settings.json');
+    mkdirSync(dirname(settingsPath), { recursive: true });
+    writeFileSync(settingsPath, content);
+    return { settingsPath, ...runBlit(project, ['agents', 'add', 'zed']) };
+}
+
+test('blit agents add zed adds its keys to a commented .zed/settings.json and keeps every comment', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-zed-jsonc-'));
+
+    try {
+        const { settingsPath, exitCode, output } = addZedOver(work, COMMENTED_SETTINGS);
+        assert.equal(exitCode, 0, `a clean merge should exit 0, got:\n${output}`);
+        assert.ok(!existsSync(`${settingsPath}.new`), 'a clean merge leaves no .new copy');
+
+        const merged = readFileSync(settingsPath, 'utf8');
+        for (const comment of [
+            '// Folder-specific settings\n//\n// For a full list of overridable settings, see the Zed documentation.\n{\n',
+            '  /* the theme I like */\n  "theme": "One Dark",',
+        ]) {
+            assert.ok(merged.includes(comment), `expected the user's text unchanged, got:\n${merged}`);
+        }
+
+        const settings = parseJsonc(merged);
+        assert.equal(settings.theme, 'One Dark');
+        assert.equal(settings.format_on_save, 'on');
+        assert.ok(settings.context_servers[MCP_SERVER_NAME]);
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add zed leaves a commented .zed/settings.json that already has context_servers alone', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-zed-jsonc-conflict-'));
+    const content = `// mine\n{\n  "context_servers": {}\n}\n`;
+
+    try {
+        const { settingsPath, exitCode, output } = addZedOver(work, content);
+        assert.notEqual(exitCode, 0);
+        assert.equal(readFileSync(settingsPath, 'utf8'), content, 'the commented file must stay byte for byte');
+        assert.ok(existsSync(`${settingsPath}.new`));
+        assert.ok(output.includes('context_servers'), `expected the key to copy by hand, got:\n${output}`);
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add zed merges a .zed/settings.json whose only oddity is a trailing comma', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-zed-trailing-'));
+
+    try {
+        const { settingsPath, exitCode, output } = addZedOver(work, '{\n  "theme": "One Dark",\n}\n');
+        assert.equal(exitCode, 0, `a clean merge should exit 0, got:\n${output}`);
+        assert.ok(!existsSync(`${settingsPath}.new`));
+        const merged = JSON.parse(readFileSync(settingsPath, 'utf8'));
+        assert.equal(merged.theme, 'One Dark');
+        assert.ok(merged.context_servers[MCP_SERVER_NAME]);
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
