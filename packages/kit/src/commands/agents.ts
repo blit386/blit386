@@ -43,7 +43,7 @@ import { detectPackageManager, findProjectRoot, type PackageManager } from '../e
 import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-safety';
 import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
-import { readManifest } from '../read-manifest';
+import { isObject, readManifest } from '../read-manifest';
 import { maskSource } from '../source-mask';
 import { ui } from '../messages';
 import {
@@ -64,9 +64,14 @@ import {
 /** Merges the kit's generated config into a user's untracked copy; null means "collision, do not merge". */
 type ConfigMerge = (existingContent: string, generatedContent: string) => string | null;
 
-/** True for a plain JSON object (not an array or null) - the only shape a JSON config map allows. */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
+/** Parse `text` as a JSON object; null when it is not valid JSON or not a plain object. */
+function parseJsonObject(text: string): Record<string, unknown> | null {
+    try {
+        const value: unknown = JSON.parse(text);
+        return isObject(value) ? value : null;
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -107,7 +112,7 @@ function mergeJsonObjects(
 
         if (current === undefined) {
             merged[key] = value;
-        } else if (isPlainObject(current) && isPlainObject(value)) {
+        } else if (isObject(current) && isObject(value)) {
             const inner = MCP_SERVER_MAP_KEYS.includes(key)
                 ? mergeServerMaps(current, value)
                 : mergeJsonObjects(current, value);
@@ -133,15 +138,9 @@ function mergeJsonObjects(
  * overridden): the caller falls back to the collision (`.new` + abort) path.
  */
 function tryMergeJsonConfig(existingContent: string, generatedContent: string): string | null {
-    let existing: unknown;
+    const existing = parseJsonObject(existingContent);
 
-    try {
-        existing = JSON.parse(existingContent);
-    } catch {
-        return null;
-    }
-
-    if (!isPlainObject(existing)) {
+    if (existing === null) {
         return null;
     }
 
@@ -158,15 +157,9 @@ function tryMergeJsonConfig(existingContent: string, generatedContent: string): 
  * or an MCP server of the kit's name exists with different content.
  */
 function tryMergeGeminiSettings(existingContent: string, generatedContent: string): string | null {
-    let existing: unknown;
+    const existing = parseJsonObject(existingContent);
 
-    try {
-        existing = JSON.parse(existingContent);
-    } catch {
-        return null;
-    }
-
-    if (!isPlainObject(existing)) {
+    if (existing === null) {
         return null;
     }
 
@@ -179,9 +172,9 @@ function tryMergeGeminiSettings(existingContent: string, generatedContent: strin
     const { context, mcpServers, hooks } = existing;
 
     if (
-        (context !== undefined && !isPlainObject(context)) ||
-        (mcpServers !== undefined && !isPlainObject(mcpServers)) ||
-        (hooks !== undefined && !isPlainObject(hooks))
+        (context !== undefined && !isObject(context)) ||
+        (mcpServers !== undefined && !isObject(mcpServers)) ||
+        (hooks !== undefined && !isObject(hooks))
     ) {
         return null;
     }
@@ -276,17 +269,10 @@ function tryMergeZedSettings(existingContent: string, generatedContent: string):
         return tryMergeJsonConfig(json, generatedContent);
     }
 
-    let existing: unknown;
-
-    try {
-        existing = JSON.parse(json);
-    } catch {
-        return null;
-    }
-
+    const existing = parseJsonObject(json);
     const kit = JSON.parse(generatedContent) as Record<string, unknown>;
 
-    if (!isPlainObject(existing) || Object.keys(kit).some((key) => key in existing)) {
+    if (existing === null || Object.keys(kit).some((key) => key in existing)) {
         return null;
     }
 
@@ -514,6 +500,29 @@ function gitThreeWayMerge(current: string, basePath: string, incoming: string): 
     } finally {
         rmSync(scratch, { recursive: true, force: true });
     }
+}
+
+/**
+ * Write the refreshed `.blit/manifest.json`: `kitVersion`, the entries sorted by path for stable diffs, and `createdAt`
+ * and `vars` carried over when the manifest that was read had them.
+ */
+function writeManifest(
+    root: string,
+    manifest: ReadBlitManifest,
+    kitVersion: string,
+    entries: Iterable<ReadBlitManifest['files'][number]>,
+): void {
+    const refreshed: ReadBlitManifest = {
+        kitVersion,
+        files: [...entries].sort((a, b) => a.path.localeCompare(b.path)),
+    };
+    if (manifest.createdAt !== undefined) {
+        refreshed.createdAt = manifest.createdAt;
+    }
+    if (manifest.vars !== undefined) {
+        refreshed.vars = manifest.vars;
+    }
+    writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
 }
 
 /** Running tally of what the sync did, printed as a Tier-1 summary at the end. */
@@ -759,18 +768,7 @@ export function runFullSync(
         entryByPath.delete(entry.path);
     }
 
-    // Write the refreshed manifest, preserving createdAt and vars when present.
-    const refreshed: ReadBlitManifest = {
-        kitVersion: newKitVersion,
-        files: [...entryByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
-    };
-    if (manifest.createdAt !== undefined) {
-        refreshed.createdAt = manifest.createdAt;
-    }
-    if (manifest.vars !== undefined) {
-        refreshed.vars = manifest.vars;
-    }
-    writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
+    writeManifest(root, manifest, newKitVersion, entryByPath.values());
 
     printSummary(out, tally);
 
@@ -978,17 +976,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         added.push(relPath);
     }
 
-    const refreshed: ReadBlitManifest = {
-        kitVersion: manifest.kitVersion,
-        files: [...entryByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
-    };
-    if (manifest.createdAt !== undefined) {
-        refreshed.createdAt = manifest.createdAt;
-    }
-    if (manifest.vars !== undefined) {
-        refreshed.vars = manifest.vars;
-    }
-    writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
+    writeManifest(root, manifest, manifest.kitVersion, entryByPath.values());
 
     for (const path of added) {
         out(ui.success(mergedPaths.has(path) ? `Merged ${path}.` : `Added ${path}.`));

@@ -12,7 +12,7 @@ import { BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest } from './manifest';
 import { ui } from './messages';
 
 /** True for a plain JSON object (not an array or null). */
-function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
