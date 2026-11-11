@@ -10,6 +10,7 @@ import {
     findMalformedLinkFailures,
     findPlaceholderLinkFailures,
 } from '../check-demo-comment-links.mjs';
+import { headingAnchors } from '../../../../scripts/lib/heading-anchors.mjs';
 
 describe('check-demo-comment-links', () => {
     describe('extractHeaderComment', () => {
@@ -136,6 +137,36 @@ describe('check-demo-comment-links', () => {
             const failures = findDocsLinkFailures(urls, sitemapPaths);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /no matching page.*guides\/nope/);
+        });
+    });
+
+    describe('findDocsLinkFailures fragments', () => {
+        const sitemapPaths = new Set(['api/overlay']);
+        const anchorsByPath = new Map([['api/overlay', headingAnchors('# Overlay\n\n### Custom rows (optional)\n')]]);
+
+        it('passes when the fragment is a heading id on the page', () => {
+            const urls = ['https://blit386.dev/docs/api/overlay#custom-rows-optional'];
+            assert.deepEqual(findDocsLinkFailures(urls, sitemapPaths, anchorsByPath), []);
+        });
+
+        it('passes a link with no fragment', () => {
+            assert.deepEqual(
+                findDocsLinkFailures(['https://blit386.dev/docs/api/overlay'], sitemapPaths, anchorsByPath),
+                [],
+            );
+        });
+
+        it('fails when the fragment is not a heading id on the page', () => {
+            const urls = ['https://blit386.dev/docs/api/overlay#custom-rows'];
+            const failures = findDocsLinkFailures(urls, sitemapPaths, anchorsByPath);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /no heading "#custom-rows".*api\/overlay/);
+        });
+
+        it('fails a dead fragment through findCommentLinkFailures', () => {
+            const source = '// Demo.\n// Reference: https://blit386.dev/docs/api/overlay#custom-rows\n';
+            const failures = findCommentLinkFailures(source, { sitemapPaths, anchorsByPath, demoSlugs: new Set() });
+            assert.equal(failures.length, 1);
         });
     });
 

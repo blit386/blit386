@@ -67,7 +67,8 @@ package preflights pass (see `/preflight root` below); in CI, `quality-root` has
 - `knip` - unused exports and dependencies
 - `check:demo-registry` - `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
 - `check:demo-comment-links` - no `vancura.dev` links in `src/*.js` header comments, and every `blit386.dev/docs/...` /
-  `demos.blit386.dev/<slug>` link there resolves against `_sitemap.json` / `DEMO_ORDER`
+  `demos.blit386.dev/<slug>` link there resolves against `_sitemap.json` / `DEMO_ORDER`, including a docs link's
+  `#fragment` against the page's heading ids (`scripts/lib/heading-anchors.mjs`)
 
 The production build is not part of `preflight` - CI's `build-demos` job gates it. Run `pnpm run build` by hand to check
 it locally.

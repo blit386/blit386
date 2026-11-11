@@ -20,7 +20,7 @@ Guides:
 Reference:
   - Rendering: https://blit386.dev/docs/api/rendering#post-process-effects
   - Game Loop: https://blit386.dev/docs/api/game-loop#interpolating-render-state-with-renderalpha
-  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows
+  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows-optional
 
 ---
 
