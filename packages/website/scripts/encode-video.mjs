@@ -118,7 +118,7 @@ const USAGE = `Usage: pnpm run encode:video -- <input> --out <dir> [options]
  * @property {string} posterAt Timestamp of the frame to lift as the poster, in any syntax
  *   ffmpeg's `-ss` accepts (`'0'`, `'12.5'`, `'00:00:03.5'`). Pick a frame that reads well
  *   as a still, since it is what a visitor sees before playback starts.
- * @property {number} [fps] Output frame rate. Absent means keep the source rate, which is
+ * @property {number | undefined} [fps] Output frame rate. Absent means keep the source rate, which is
  *   almost always right; set it only to halve a 60 fps capture for a smaller file.
  * @property {number} av1Crf AV1 constant-rate factor, 0-63, lower is better quality. 28 is
  *   visually clean on flat content; drop to 24 if monospace text rings, raise to 32 when

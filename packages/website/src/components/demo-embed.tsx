@@ -4,7 +4,7 @@ interface DemoEmbedProps {
     demo: string;
     title: string;
     fill?: boolean;
-    className?: string;
+    className?: string | undefined;
 }
 
 // The demos site isn't running in production during `waku dev`, so local development

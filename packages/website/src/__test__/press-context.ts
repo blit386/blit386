@@ -44,8 +44,8 @@ export function createFakeLoader(pages: Page[]): { loader: FakeLoader; calls: Fa
 
 export interface FakePageInput {
     url: string;
-    title?: string;
-    description?: string;
+    title?: string | undefined;
+    description?: string | undefined;
     /** Content-source name. `feedPlugin` selects on `type === 'blog'`. */
     type?: string;
     /** Extra frontmatter, for example `{ date: '2026-06-25' }`. */

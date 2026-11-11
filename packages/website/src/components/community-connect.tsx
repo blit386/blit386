@@ -18,7 +18,7 @@ export function CommunityConnect({ title = 'Connect', className }: CommunityConn
                         key={`${dest.platform}:${dest.label}`}
                         href={dest.url}
                         title={dest.label}
-                        external={dest.external}
+                        {...(dest.external !== undefined && { external: dest.external })}
                     />
                 ))}
             </Cards>

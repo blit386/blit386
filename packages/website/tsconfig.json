@@ -7,9 +7,7 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "checkJs": true,
-    "sourceMap": false,
-    /* The one base check still off: turning it on costs 44 errors, mostly in tests (BT-784). */
-    "exactOptionalPropertyTypes": false
+    "sourceMap": false
   },
   "include": ["src", "content", "*.ts", "*.tsx", "scripts/__tests__"],
   "exclude": ["node_modules", "dist", ".source"]

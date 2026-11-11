@@ -17,8 +17,8 @@ interface BlogIndexPageProps {
 interface BlogPostSummary {
     url: string;
     title: string;
-    description?: string;
-    date?: Date;
+    description?: string | undefined;
+    date?: Date | undefined;
 }
 
 /**
