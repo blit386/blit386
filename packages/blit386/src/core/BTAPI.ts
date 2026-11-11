@@ -31,7 +31,7 @@ import { InputTrace } from '../input/InputTrace';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
-import type { OverlayAudioSnapshot, OverlayDrawTarget } from '../overlay';
+import type { OverlayAudioSnapshot, OverlayDrawTarget, OverlayTimingSnapshot } from '../overlay';
 import {
     createOverlayLayout,
     findOverlaySettingsError,
@@ -87,6 +87,30 @@ import { initWebGPU } from './WebGPUContext';
 
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
+
+/** All-zero overlay timing, copied into the reused snapshot at construction and on every init. */
+const ZERO_OVERLAY_TIMING: OverlayTimingSnapshot = Object.freeze({
+    frameMs: 0,
+    updateMs: 0,
+    renderMs: 0,
+    updateSteps: 0,
+    drawCalls: 0,
+    droppedFrames: 0,
+    primitiveOverflowCount: 0,
+    spriteOverflowCount: 0,
+    primitiveSubmittedVertices: 0,
+    spriteSubmittedVertices: 0,
+});
+
+/** All-zero overlay audio snapshot; `levels` is replaced, never written through, so sharing it is safe. */
+const ZERO_AUDIO_SNAPSHOT: OverlayAudioSnapshot = Object.freeze({
+    levels: Object.freeze({ main: 0, music: 0, sfx: 0 }),
+    activeVoices: 0,
+    totalVoices: 0,
+    voiceStealCount: 0,
+    voiceDropCount: 0,
+    preUnlockDropCount: 0,
+});
 
 /**
  * `KeyboardEvent.code` for the dev-mode frame-capture shortcuts: bare F9 copies the frame to
@@ -345,39 +369,10 @@ export class BTAPI {
     private readonly framePaletteUsageMask = new Uint8Array(USAGE_CAPACITY);
 
     /** Reused timing snapshot passed into the overlay each frame. */
-    private readonly overlayTiming: {
-        frameMs: number;
-        updateMs: number;
-        renderMs: number;
-        updateSteps: number;
-        drawCalls: number;
-        droppedFrames: number;
-        primitiveOverflowCount: number;
-        spriteOverflowCount: number;
-        primitiveSubmittedVertices: number;
-        spriteSubmittedVertices: number;
-    } = {
-        frameMs: 0,
-        updateMs: 0,
-        renderMs: 0,
-        updateSteps: 0,
-        drawCalls: 0,
-        droppedFrames: 0,
-        primitiveOverflowCount: 0,
-        spriteOverflowCount: 0,
-        primitiveSubmittedVertices: 0,
-        spriteSubmittedVertices: 0,
-    };
+    private readonly overlayTiming: Writable<OverlayTimingSnapshot> = { ...ZERO_OVERLAY_TIMING };
 
     /** Reused audio snapshot passed into the overlay each frame; populated by {@link captureAudioDiagnostics}. */
-    private readonly audioSnapshot: Writable<OverlayAudioSnapshot> = {
-        levels: { main: 0, music: 0, sfx: 0 },
-        activeVoices: 0,
-        totalVoices: 0,
-        voiceStealCount: 0,
-        voiceDropCount: 0,
-        preUnlockDropCount: 0,
-    };
+    private readonly audioSnapshot: Writable<OverlayAudioSnapshot> = { ...ZERO_AUDIO_SNAPSHOT };
 
     /** Pending renderer diagnostics captured after overlay draws; copied into {@link overlayTiming} at frame end. */
     private readonly pendingRendererDiagnostics: {
@@ -440,9 +435,6 @@ export class BTAPI {
 
         return BTAPI._instance;
     }
-
-    // TODO: Additional subsystems for future implementation:
-    // AssetManager
 
     /**
      * Whether the demo's `update()` is running right now (false during `render()` and between frames).
@@ -2111,24 +2103,9 @@ export class BTAPI {
         this.pendingUpdateSteps = 0;
         this.pendingDrawCalls = 0;
         this.lastCameraOffset = Vector2i.zero();
-        this.overlayTiming.frameMs = 0;
-        this.overlayTiming.updateMs = 0;
-        this.overlayTiming.renderMs = 0;
-        this.overlayTiming.updateSteps = 0;
-        this.overlayTiming.drawCalls = 0;
-        this.overlayTiming.droppedFrames = 0;
-        this.overlayTiming.primitiveOverflowCount = 0;
-        this.overlayTiming.spriteOverflowCount = 0;
-        this.overlayTiming.primitiveSubmittedVertices = 0;
-        this.overlayTiming.spriteSubmittedVertices = 0;
+        Object.assign(this.overlayTiming, ZERO_OVERLAY_TIMING);
         this.resetPendingRendererDiagnostics();
-
-        this.audioSnapshot.levels = { main: 0, music: 0, sfx: 0 };
-        this.audioSnapshot.activeVoices = 0;
-        this.audioSnapshot.totalVoices = 0;
-        this.audioSnapshot.voiceStealCount = 0;
-        this.audioSnapshot.voiceDropCount = 0;
-        this.audioSnapshot.preUnlockDropCount = 0;
+        Object.assign(this.audioSnapshot, ZERO_AUDIO_SNAPSHOT);
 
         this.loop = new GameLoop(
             updateInterval,
@@ -2445,23 +2422,9 @@ export class BTAPI {
     }
 
     /**
-     * Copies the current frame to the OS clipboard as a PNG, for the bare-F9 dev-mode
-     * shortcut. Called synchronously from {@link handleClipboardShortcutKeydown}'s DOM
-     * keydown handler, not polled from the update tick - see that field's doc comment for
-     * why. Errors are logged, not thrown, so a failed copy never crashes the caller.
-     *
-     * Deliberately not `async`/`await`: this method's own body must stay synchronous up to
-     * the `navigator.clipboard.write()` call inside {@link writeBlobToClipboard}, so the
-     * call happens within the same synchronous call stack as the triggering `keydown`
-     * event - some browsers invalidate sticky user activation once a task boundary (not
-     * just a microtask/await) has passed, and reject `clipboard.write()` as not
-     * user-initiated if it runs after one. Passing the still-pending
-     * `captureFrameForShortcut()` promise straight into `writeBlobToClipboard` (rather
-     * than awaiting it here first) is what keeps the write call itself synchronous; the
-     * capture completing is unavoidably async (it waits on the next render pass's GPU
-     * readback), so this is the most that can be done to keep the write attempt tied to the
-     * gesture. Captures at logical `BT.displaySize`, matching the Shift+F9 save shortcut,
-     * not `BT.outputSize`.
+     * Copies the current frame to the OS clipboard as a PNG, for the bare-F9 dev-mode shortcut, at logical
+     * `BT.displaySize`. Synchronous up to `navigator.clipboard.write()` so the write stays tied to the keypress -
+     * see {@link handleClipboardShortcutKeydown}. Errors are logged, not thrown.
      */
     private copyFrameViaShortcut(): void {
         if (!this.renderer) {
