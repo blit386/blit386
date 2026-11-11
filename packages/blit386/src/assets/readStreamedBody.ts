@@ -1,6 +1,6 @@
 /**
  * Streamed response-body reader shared by `AudioClip` (download progress and idle timeout)
- * and `BitmapFont` (`.btfont` size cap).
+ * and the `.btfont` loader in `btfontFile.ts` (size cap).
  */
 
 /**

@@ -96,7 +96,10 @@ src/
     AssetLoader.ts         # Image loading with caching
     SpriteSheet.ts         # GPU texture wrapper (+ loadIndexed convenience path)
     NineSlice.ts           # Frozen nine-slice asset (NineSlice.fromSheet) + per-axis split helper used by BT.drawNineSlice
-    BitmapFont.ts          # Bitmap font system (.btfont)
+    BitmapFont.ts          # Bitmap font system (.btfont): glyph lookup, measuring, hot reload
+    btfontFile.ts          # .btfont file loading for BitmapFont: capped read, parse, validation, glyph table, texture load, load errors
+    hotReloadRegistry.ts   # Dev-only registry of live SpriteSheets and BitmapFonts per normalized URL, read by HotRuntime
+    readStreamedBody.ts    # Streamed response-body reader shared by AudioClip and the .btfont loader
     SystemFont.ts          # Built-in system font factory (createSystemFont; used by BT.systemPrint)
     fonts/systemFontData.ts # Glyph bitmap data backing SystemFont
     AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists, synth() factory
