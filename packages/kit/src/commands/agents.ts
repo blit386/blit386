@@ -360,7 +360,7 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
     const driftCount = missing.length + modified.length;
 
     if (driftCount === 0) {
-        out(ui.success(`${unchanged} kit-managed file${unchanged === 1 ? '' : 's'} are up to date.`));
+        out(ui.success(`${unchanged} kit-managed ${unchanged === 1 ? 'file is' : 'files are'} up to date.`));
         return 0;
     }
 
@@ -375,7 +375,7 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
     out('');
     out(
         ui.info(
-            `${driftCount} file${driftCount === 1 ? '' : 's'} have drifted. Run \`npx blit agents sync\` to update them.`,
+            `${driftCount} ${driftCount === 1 ? 'file has' : 'files have'} drifted. Run \`npx blit agents sync\` to update them.`,
         ),
     );
 

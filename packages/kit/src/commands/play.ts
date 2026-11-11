@@ -56,7 +56,7 @@ Example:
 /**
  * The game reads the mouse button once per step (1/60 s). A click that is over sooner than that is never seen, so
  * `click` holds the button down for a few steps. Engine 1.8.1+ also catches a zero-delay click; the hold stays so
- * games pinned to 1.8.0 (the kit's `engineRange` is `^1.8.0`) still see it.
+ * games pinned to 1.8.0, which the kit's `engineRange` still allows, see it.
  */
 const CLICK_HOLD_MS = 100;
 
@@ -317,7 +317,9 @@ async function playSteps(page: Page, root: string, url: URL, steps: string[]): P
             { timeout: START_TIMEOUT_MS },
         )
         .catch(() => {
-            throw new Error(`The game did not start within 20 seconds at ${url.href}. Is it a dev build?`);
+            throw new Error(
+                `The game did not start within ${START_TIMEOUT_MS / 1000} seconds at ${url.href}. Is it a dev build?`,
+            );
         });
 
     // Send keys to the game, not the page. Focus instead of a click, so the pointer stays out of the way.
