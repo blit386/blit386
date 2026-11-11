@@ -29,8 +29,8 @@ WHAT YOU WILL SEE
 
 A 640x400 screen on the UI kit's navy background, split into captioned sections:
 
-- Top-left: six shapes, each loaded from its own 16x16 PNG - Square, Circle, Tri, Star,
-  Heart, Gem.
+- Top-left: six shapes, each loaded from its own 16x16 PNG - Square, Circle, Triangle,
+  Star, Heart, Gem.
 - Below them: the same star four times, recolored by palette offset - Original, Fire, Ice,
   Void.
 - Below that: the triangle facing Up, Right, Down, and Left using flip and rotate flags,
@@ -118,9 +118,8 @@ const COLOR_BASE = 10;
 const SHAPE_CELL = 16;
 
 // The six shapes: the caption under each one and the PNG that holds it. This single list
-// drives both the loader in init() and the captions in render(). The captions sit 50
-// pixels apart, so the longer names are shortened ('Triangle', 'Gem') to keep each label
-// inside its column.
+// drives both the loader in init() and the captions in render(). The captions sit 55
+// pixels apart, wide enough for the longest name, 'Triangle' (8 letters of 6 pixels).
 const SHAPES = [
     { name: 'Square', url: '/sprites/square-16.png' },
     { name: 'Circle', url: '/sprites/circle-16.png' },
@@ -189,6 +188,7 @@ const PIVOT_COMPARISONS = [
 // Sprite sheets, cell picking, palette offsets, flip and rotate flags, scale, pivot, and
 // stretching into a Rect2i - all on one 640x400 screen.
 class Demo {
+    // The color list every sprite and caption draws from, built in init().
     /** @type {Palette | null} */
     palette = null;
 
@@ -237,9 +237,10 @@ class Demo {
     centerPivot = null;
     cornerPivot = null;
 
-    // Scratch values for the Pivot section: a dest point and a small square that marks
-    // it. render() rewrites them with set() instead of creating new ones every frame.
-    pivotDest = new Vector2i(0, 0);
+    // Scratch values: a dest point every draw call in render() reuses, and a small square
+    // that marks a pivot point. render() rewrites them with set() instead of creating
+    // new ones every frame.
+    dest = new Vector2i(0, 0);
     pivotMark = new Rect2i(0, 0, 3, 3);
 
     // One reusable params object for BT.drawSprite. Create it with every field present
@@ -372,7 +373,7 @@ class Demo {
 
         for (let i = 0; i < SHAPES.length; i++) {
             const destX = 12 + i * shapeSpacing;
-            BT.drawTile(this.sheets[i], 0, new Vector2i(destX, shapeY), 0);
+            BT.drawTile(this.sheets[i], 0, this.dest.set(destX, shapeY), 0);
             ui.caption(destX, shapeY + 24, SHAPES[i].name, { color: 'dim' });
         }
 
@@ -387,7 +388,7 @@ class Demo {
 
         for (let i = 0; i < themes.length; i++) {
             const destX = 12 + i * themeSpacing;
-            BT.drawTile(this.starSheet, 0, new Vector2i(destX, themeY), n * i);
+            BT.drawTile(this.starSheet, 0, this.dest.set(destX, themeY), n * i);
             ui.caption(12 + i * themeSpacing, themeY + 24, themes[i], { color: 'dim' });
         }
 
@@ -402,7 +403,7 @@ class Demo {
         for (let i = 0; i < FACINGS.length; i++) {
             const destX = 12 + i * shapeSpacing;
             params.flags = FACINGS[i].flags;
-            BT.drawSprite(this.triangleSheet, this.triangleRect, new Vector2i(destX, facingY), params);
+            BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(destX, facingY), params);
             ui.caption(destX, facingY + 24, FACINGS[i].name, { color: 'dim' });
         }
 
@@ -423,7 +424,7 @@ class Demo {
         // ROT_90_CW points the triangle right, ROT_270_CW points it left.
         params.flags = this.isFacingLeft ? BT.ROT_270_CW : BT.ROT_90_CW;
 
-        BT.drawSprite(this.triangleSheet, this.triangleRect, new Vector2i(playerX, facingY), params);
+        BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(playerX, facingY), params);
 
         this.renderScale(params); // right column: scale
         this.renderPivot(params); // left column, below flags: pivot
@@ -452,24 +453,24 @@ class Demo {
 
         for (const s of UNIFORM_SCALES) {
             params.scale = s;
-            BT.drawSprite(this.starSheet, this.starRect, new Vector2i(x, baselineY - SHAPE_CELL * s), params);
+            BT.drawSprite(this.starSheet, this.starRect, this.dest.set(x, baselineY - SHAPE_CELL * s), params);
             ui.caption(x, baselineY + 10, `${s}x`, { color: 'dim' });
             x += SHAPE_CELL * s + 12;
         }
 
         // Uneven whole-number scales: 3x wide, then 3x tall.
         params.scale = this.wideScale;
-        BT.drawSprite(this.starSheet, this.starRect, new Vector2i(left, baselineY + 36), params);
+        BT.drawSprite(this.starSheet, this.starRect, this.dest.set(left, baselineY + 36), params);
         ui.caption(left, baselineY + 60, 'Vector2i(3, 1)', { color: 'dim' });
 
         params.scale = this.tallScale;
-        BT.drawSprite(this.starSheet, this.starRect, new Vector2i(left + 100, baselineY + 24), params);
+        BT.drawSprite(this.starSheet, this.starRect, this.dest.set(left + 100, baselineY + 24), params);
         ui.caption(left + 100, baselineY + 80, 'Vector2i(1, 3)', { color: 'dim' });
 
         // Turned a quarter turn, then 3x wide: still 48 pixels wide on screen.
         params.flags = BT.ROT_90_CW;
         params.scale = this.wideScale;
-        BT.drawSprite(this.triangleSheet, this.triangleRect, new Vector2i(left + 160, baselineY + 36), params);
+        BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(left + 160, baselineY + 36), params);
         ui.caption(left + 160, baselineY + 60, 'ROT_90_CW + (3, 1)', { color: 'dim' });
 
         // Leave the shared params object neutral for the next section.
@@ -501,7 +502,7 @@ class Demo {
 
             params.flags = PLANTED_POSES[i].flags;
             params.scale = PLANTED_POSES[i].scale;
-            BT.drawSprite(this.triangleSheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_PLANTED_Y), params);
+            BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(destX, PIVOT_PLANTED_Y), params);
             this.markPivotDest(destX, PIVOT_PLANTED_Y);
         }
 
@@ -519,10 +520,10 @@ class Demo {
             params.flags = PIVOT_COMPARISONS[i].flags;
 
             params.pivot = undefined;
-            BT.drawSprite(this.triangleSheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_CORNER_Y), params);
+            BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(destX, PIVOT_CORNER_Y), params);
 
             params.pivot = this.cornerPivot;
-            BT.drawSprite(this.triangleSheet, this.triangleRect, this.pivotDest.set(destX, PIVOT_CORNER_Y), params);
+            BT.drawSprite(this.triangleSheet, this.triangleRect, this.dest.set(destX, PIVOT_CORNER_Y), params);
 
             this.markPivotDest(destX, PIVOT_CORNER_Y);
 
