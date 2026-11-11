@@ -341,6 +341,8 @@ class Demo {
     lineBottom = new Vector2i(0, 0);
     rect = new Rect2i(0, 0, 0, 0);
 
+    // Engine settings, read once before init(): the small screen, the bigger drawing
+    // buffer the CRT effects need, and the one-player keyboard layout.
     configure() {
         return {
             displaySize: new Vector2i(SCREEN_W, SCREEN_H),
@@ -360,6 +362,8 @@ class Demo {
         };
     }
 
+    // Runs once at start: builds the palette (scene colors, the shaded wall ramps, the
+    // kit theme), sets up the CRT chain when WebGPU is active, and places the player.
     async init() {
         this.palette = BT.paletteCreate(256);
 
@@ -415,6 +419,8 @@ class Demo {
         return true;
     }
 
+    // Runs every tick: handles the C and R shortcuts, reads the keys, sticks, D-pad and
+    // swipes, turns and moves the player through the maze, and checks for the exit.
     update() {
         // First line: lets the kit latch key presses, touches, swipes, and the D-pad.
         ui.tick();
@@ -498,6 +504,8 @@ class Demo {
         }
     }
 
+    // Draws one frame: ceiling and floor, then one ray per screen column for the walls,
+    // then the minimap and the kit's controls on top.
     render() {
         // Top half ceiling, bottom half floor. The walls are drawn on top of both.
         this.rect.set(0, 0, SCREEN_W, SCREEN_H / 2);
