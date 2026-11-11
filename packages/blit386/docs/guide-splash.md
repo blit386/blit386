@@ -33,6 +33,10 @@ So with no configuration at all, a production build shows the splash and a dev s
 instance but never the splash; it still drops the palette effects the handoff would have dropped, so the seeked frame
 matches the live one.
 
+It plays once per page load. A second `BT.init()` that restarts the game (a "back to title" flow) runs the new `init()`
+straight away, without the logo or its hold, and `BT.splashState` stays `'done'`. Only an init that failed before the
+splash was decided (bad `configure()` settings, no renderer) leaves it to play on the next one.
+
 ### Turning it off
 
 ```ts twoslash

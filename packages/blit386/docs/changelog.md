@@ -302,8 +302,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   un-clipped line. See [Primitives](api-rendering.md#primitives).
 - A second `BT.init()` after the first one resolved now restarts cleanly. It used to start a new game loop without
   stopping the old one, so the game ran at double speed, and it leaked the previous `GPUDevice`. The old loop now stops,
-  the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. An `init()` made while
-  another is still running is still rejected. See [Initialization](api-core.md#initialization).
+  the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. The BLIT386 splash
+  plays once per page load, not again on the restart. An `init()` made while another is still running is still rejected.
+  See [Initialization](api-core.md#initialization).
 - `BT.drawPixel` with a fractional coordinate now truncates toward zero, like `Vector2i`. On the software backend it
   used to write the color at a shifted byte offset and corrupt the neighboring pixels.
 - A keyboard key no longer stays held when focus leaves the canvas mid-press (it used to swallow the next press), and a

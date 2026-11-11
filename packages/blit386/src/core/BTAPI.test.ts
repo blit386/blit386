@@ -1459,6 +1459,25 @@ describe('BTAPI', () => {
             expect(activeEffectCount()).toBe(0);
         });
 
+        it("from 'start' keeps palette effects after a restart, which runs init() without the boot splash", async () => {
+            const demo = makeMockDemo();
+
+            vi.mocked(demo.init).mockImplementation(async () => {
+                BTAPI.instance.setPalette(Palette.pico8());
+                BTAPI.instance.paletteCycle(1, 4, 1);
+
+                return true;
+            });
+            await boot(demo);
+            // Stand-in for a boot that showed the splash (see the test above); the restart below does not replay it.
+            (BTAPI.instance as unknown as { splash: object | null }).splash = {};
+            await boot(demo);
+
+            await BTAPI.instance.renderAt(0.5);
+
+            expect(activeEffectCount()).toBe(1);
+        });
+
         it("from 'current' steps forward only and rejects a past target", async () => {
             const { demo } = await boot();
 
@@ -6876,6 +6895,35 @@ describe('BTAPI splash lifecycle in init', () => {
 
         expect(BTAPI.instance.getSplashState()).toBe('done');
         expect(BTAPI.instance.isSplashVisible()).toBe(false);
+    });
+
+    it('plays once per page load, so a BT.init restart runs the new init() without it', async () => {
+        const startSpy = vi.spyOn(Splash.prototype, 'start');
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        let stateDuringRestartInit: string | undefined;
+        const restarted = makeSplashDemo({ isSplashEnabled: true }, () => {
+            stateDuringRestartInit = BTAPI.instance.getSplashState();
+        });
+        const ok = await BTAPI.instance.init(restarted, makeMockCanvas());
+
+        expect(ok).toBe(true);
+        expect(startSpy).toHaveBeenCalledOnce();
+        expect(restarted.init).toHaveBeenCalledOnce();
+        expect(stateDuringRestartInit).toBe('done');
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+        expect(BTAPI.instance.isInitialized()).toBe(true);
+    });
+
+    it('still plays on the next init when the first one failed before the splash was decided', async () => {
+        const startSpy = vi.spyOn(Splash.prototype, 'start');
+        const broken = makeSplashDemo({ isSplashEnabled: true, displaySize: new Vector2i(0, 0) });
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        await expect(BTAPI.instance.init(broken, makeMockCanvas())).resolves.toBe(false);
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        expect(startSpy).toHaveBeenCalledOnce();
     });
 
     it('does not start the game loop until the splash is done', async () => {
