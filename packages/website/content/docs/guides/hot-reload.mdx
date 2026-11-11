@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Hot Reload"
 description: "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
-lastModified: "2026-11-11T07:52:43+01:00"
+lastModified: "2026-11-11T08:14:34+01:00"
 ---
 
 `HotContext`, `registerHotReload`, `HotReloadContext`, and `IBTDemo.onHotReload` live in
@@ -228,9 +228,9 @@ event for anything it recognizes. The engine routes that event by file type:
 
 | Asset type | What happens |
 | --- | --- |
-| Image (`.png`, `.gif`, `.webp`, `.jpg`, `.jpeg`) | Every registered `SpriteSheet` built from that URL swaps its texture in place, re-running `indexize()` against the active palette when the sheet was already indexized. See the dimension-change caveat below. |
+| Image (`.png`, `.gif`, `.webp`, `.jpg`, `.jpeg`) | Every registered `SpriteSheet` built from that URL swaps its texture in place, re-running `indexize()` against the active palette when the sheet was already indexized. If the new image has a color the palette lacks, that sheet keeps its old image and is marked `failed`. See the dimension-change caveat below. |
 | Audio (`.wav`, `.mp3`, `.ogg`, `.flac`) | The same `AudioClip` instance swaps its decoded buffer in place - demo-held references stay valid. Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track, playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial load and are not updated. |
-| Bitmap font (`.btfont`) | The same `BitmapFont` instance rebuilds its glyph tables and texture in place. `name`/`size`/`lineHeight`/`baseline` are frozen at their original values - only glyph data and the texture update. |
+| Bitmap font (`.btfont`) | The same `BitmapFont` instance rebuilds its glyph tables and texture in place. `name`/`size`/`lineHeight`/`baseline` are frozen at their original values - only glyph data and the texture update. A file whose glyphs fall outside its new texture is rejected and the font keeps its old texture and glyphs. |
 | Palette | Nothing hot-reload-specific needed - `BT.palette` is already a live reference, so mutating a slot with `palette.set()` takes effect on the very next frame regardless of how the change was triggered. |
 | Anything else | Falls back to a full page reload (`fullReloadOnUnknownAssets`, default `true` - see [Plugin options](#plugin-options)). |
 

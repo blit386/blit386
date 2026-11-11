@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-11-11T07:50:40+01:00"
+lastModified: "2026-11-11T08:19:38+01:00"
 ---
 
 All notable changes to blit386 are documented here, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) style,
@@ -181,6 +181,29 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet
   is marked `failed` and logged with the image URL, and the rest still get the new image. See
   [Hot reload](/docs/guides/hot-reload).
+- A sprite sheet whose image hot replace fails no longer ends up half replaced. When the new image had a color missing
+  from the active palette, the sheet took the new size and image but kept the old palette indices and texture. It now
+  keeps its old image, size and pixels, is marked `failed`, and the next good save replaces it. See
+  [Hot reload](/docs/guides/hot-reload#asset-hot-replace-matrix).
+- A `.btfont` hot reload whose glyphs do not fit the new texture no longer breaks the font. It used to swap the texture
+  first and then throw, so the old glyph rectangles pointed into the new image. The glyphs are now checked against the
+  new texture before anything changes, and a bad file leaves the font as it was.
+- `AudioClip.clear()` now also stops loads already in flight from re-caching their clip when they finish. Such a load
+  also used to remove a newer load of the same URL from the in-flight list, so a second request started a duplicate
+  download and `BT.loadingAssetsCount` read too low.
+- A sound hot reload no longer brings back a clip that `unload()` released while the new file was downloading, and two
+  reloads of one clip started by hand no longer leave the music player on the first new buffer. The clip's buffer is now
+  read after the download, not before it.
+- `BT.paletteCycle` with a very large `speed` no longer freezes the game. A speed of `1e9` used to rotate the range
+  about 17 million times in one tick. Whole turns of the range are now skipped, so a tick does at most one turn of work
+  and lands on the same colors. A tick that lands exactly on whole turns no longer marks the palette dirty.
+- Behavior change: `BitmapFont.load` now rejects a `.btfont` whose `texture` leads to another site than the font file,
+  with an `AssetLimitError`. A font loaded by a bare file name (`font.btfont`) could point its texture at any absolute
+  URL, which loaded a cross-origin image and later tainted the canvas. Relative paths and embedded data URIs load as
+  before. See [Asset size limits](/docs/api/assets#asset-size-limits).
+- Saving an image while the game is still loading it no longer leaves the old image cached. The reload was cached under
+  the watcher's path, and the game's own load then cached the older image under the game's path, so the next
+  `AssetLoader.loadImage` returned the old pixels. The reload now takes over the game's cache entry.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
