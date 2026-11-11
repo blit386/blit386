@@ -23,7 +23,7 @@
  * and applyCrtChain() is the remove-then-re-add rebuild those demos run when the
  * preference changes. stepGlitchMachine() is the burst state machine of the full-color
  * group, and createPipboyChain() builds the PipBoy CRT stack for demos that reuse that
- * look (snake-game.js).
+ * look (snake-game.js, basics-enhanced.js).
  */
 
 import {
@@ -233,9 +233,10 @@ function stepGlitchMachine(instance) {
 /**
  * Builds the PipBoy CRT stack and stores each effect on `instance` under the names the
  * glitch functions above expect. Manual-sync hazard: crt-pipboy.js wires the same stack
- * by hand on purpose (its lesson is every parameter in view), and basics-enhanced.js has
- * a copy too. Change the tuning in all three together. Registers nothing: the caller adds `instance.pixelGlitch` with
- * BT.effectAdd() and passes the returned display list to applyCrtChain().
+ * by hand on purpose (its lesson is every parameter in view). Change the tuning in both
+ * together. Registers nothing: the caller adds `instance.pixelGlitch` with BT.effectAdd()
+ * and passes the returned display list to applyCrtChain() (snake-game.js and
+ * basics-enhanced.js).
  *
  * @param {object} instance - The demo's `this`.
  * @param {number} curvature - Barrel distortion strength; crt-pipboy.js uses 0.05.

@@ -1,6 +1,6 @@
 /*
 
-Basics Enhanced: the Basics bouncing sprite behind a hand-built CRT post-process chain.
+Basics Enhanced: the Basics bouncing sprite behind the PipBoy CRT post-process chain.
 @description The bouncing sprite from Basics again, with optional visual effects over the same PipBoy palette.
 
 Part of the BLIT386 demo series.
@@ -49,13 +49,19 @@ WHAT YOU WILL LEARN
      drawingBufferSize (960x720 here, 3x logical). Effects here work in full-color RGB
      and can blur, warp, tint, and bloom the final image. The other ten effects in this
      demo live here.
-- Why hand-compose ten display-tier effects instead of calling BT.preset.crtPipBoy() as
-  CRT Toggle does: keeping each effect object lets update() drive individual uniforms
-  from a state machine. The glitch machine picks one of five glitch types, ramps it up
-  over a sine envelope, and ramps it down again.
+- Why compose ten display-tier effects instead of calling BT.preset.crtPipBoy() as CRT
+  Toggle does: keeping each effect object lets update() drive individual uniforms from a
+  state machine. The stack comes from createPipboyChain() and the machine from
+  stepGlitchMachine(), both shared with the PipBoy CRT and Snake demos in
+  src/shared/crt-glitch.js; PipBoy CRT wires the same stack by hand, one parameter at a
+  time. The machine picks one of five glitch types, ramps it up over a sine envelope,
+  and ramps it down again.
 - BT.effectAdd(effect) registers effects in draw order: the first added runs first.
 - Animated effects (RollLine, Noise, Interference) need BT.timeSeconds fed into their
   time uniform every tick.
+- BT.isReducedMotionPreferred: applyCrtChain() leaves the moving effects (grain,
+  flicker, roll line, interference) out and the glitch bursts stay off, and
+  onReducedMotionChange() rebuilds the chain when the preference changes.
 - Smoothing a 30-tick-per-second simulation with BT.renderAlpha and Vector2i.lerp, the
   same fix Basics explains in detail.
 - Overlay customization: overlayStyle, overlayTimingChartStyle, overlayRows(), and
@@ -81,59 +87,23 @@ TRY THIS
 
 */
 
-import {
-    BarrelDistortion,
-    Bloom,
-    bootstrap,
-    BT,
-    ChromaticAberration,
-    Color32,
-    Flicker,
-    Interference,
-    Noise,
-    PixelGlitch,
-    RGBMask,
-    RollLine,
-    Scanlines,
-    SpriteSheet,
-    Vector2i,
-    Vignette,
-} from 'blit386';
+import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 
 import {
-    ABERRATION_BASE,
-    applyGlitchUniforms,
-    FLICKER_BASE,
-    GLITCH_ACTIVE_MAX,
-    GLITCH_ACTIVE_MIN,
+    applyCrtChain,
+    createPipboyChain,
     GLITCH_COOLDOWN_MAX,
     GLITCH_COOLDOWN_MIN,
-    GLITCH_INTENSITY_MAX,
-    GLITCH_INTENSITY_MIN,
     GLITCH_LABELS,
     GLITCH_TYPE,
-    GLITCH_TYPES_CHROMA,
-    NOISE_BASE,
-    PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
+    stepGlitchMachine,
 } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
-/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
-/** @typedef {import('blit386').PixelGlitch} PixelGlitch */
-/** @typedef {import('blit386').BarrelDistortion} BarrelDistortion */
-/** @typedef {import('blit386').ChromaticAberration} ChromaticAberration */
-/** @typedef {import('blit386').Interference} Interference */
-/** @typedef {import('blit386').RollLine} RollLine */
-/** @typedef {import('blit386').Scanlines} Scanlines */
-/** @typedef {import('blit386').RGBMask} RGBMask */
-/** @typedef {import('blit386').Vignette} Vignette */
-/** @typedef {import('blit386').Noise} Noise */
-/** @typedef {import('blit386').Flicker} Flicker */
-/** @typedef {import('blit386').Bloom} Bloom */
 
 // Palette slots match the Basics demo so the two demos read as the same scene.
 const C_BG = 1; // almost-black with a faint green tint
@@ -145,6 +115,13 @@ const C_OVERLAY_ERROR = 5; // red tint for timing-chart error markers
 const SPRITE_BASE = 10;
 const SPRITE_URL = '/sprites/logo-1.png';
 const TARGET_FPS = 30;
+
+// Logical screen size. The scanlines get one dark band per logical row (DISPLAY_H).
+const DISPLAY_W = 320;
+const DISPLAY_H = 240;
+
+// Barrel distortion strength: how strongly the picture bulges like curved glass.
+const CRT_CURVATURE = 0.05;
 
 // The display-tier chain runs on an output buffer larger than the logical screen: 3x.
 const OUTPUT_W = 960;
@@ -184,42 +161,14 @@ class Demo {
     /** @type {Rect2i | null} */
     spriteRect = null;
 
-    // --- Post-process effect handles (WebGPU only) ---
+    // --- Post-process effects (WebGPU only) ---
 
-    // Pixel tier: shifts horizontal bands in the index buffer before palette resolve.
-    /** @type {PixelGlitch | null} */
-    pixelGlitch = null;
-
-    // Display tier: the CRT stack, run on the upscaled RGBA buffer after palette resolve.
-    /** @type {BarrelDistortion | null} */
-    barrel = null;
-
-    /** @type {ChromaticAberration | null} */
-    aberration = null;
-
-    /** @type {Interference | null} */
-    interference = null;
-
-    /** @type {RollLine | null} */
-    rollLine = null;
-
-    /** @type {Scanlines | null} */
-    scanlines = null;
-
-    /** @type {RGBMask | null} */
-    mask = null;
-
-    /** @type {Vignette | null} */
-    vignette = null;
-
-    /** @type {Noise | null} */
-    noise = null;
-
-    /** @type {Flicker | null} */
-    flicker = null;
-
-    /** @type {Bloom | null} */
-    bloom = null;
+    // createPipboyChain() in init() stores each effect on the demo by name: pixelGlitch
+    // (pixel tier, shifts bands of the index buffer before palette resolve) and barrel,
+    // aberration, interference, rollLine, scanlines, mask, vignette, noise, flicker, and
+    // bloom (display tier, on the upscaled RGBA buffer). crtEffects keeps the
+    // display-tier ones in chain order so applyCrtChain() can rebuild the chain.
+    crtEffects = [];
 
     // --- Glitch state machine (same idea as the PipBoy CRT demo) ---
 
@@ -250,14 +199,16 @@ class Demo {
         { leftText: 'Glitch NONE', textPaletteIndex: C_OVERLAY_AMBER },
     ];
 
+    // Sets the logical screen, the 3x output buffer the CRT chain runs on, 30 ticks per
+    // second, and the overlay's colors and timing chart.
     configure() {
         return {
-            displaySize: new Vector2i(320, 240),
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             // The display-tier CRT runs on the upscaled RGBA buffer, 3x logical here.
             drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
             // The demos layout may scale the canvas up to 4x logical on screen; the
             // engine default cap is 960x720.
-            maxCanvasSize: new Vector2i(320 * 4, 240 * 4),
+            maxCanvasSize: new Vector2i(DISPLAY_W * 4, DISPLAY_H * 4),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
             isDetectingDroppedFrames: true,
@@ -280,6 +231,8 @@ class Demo {
         };
     }
 
+    // Builds the palette, loads the logo, and (under WebGPU) sets up the CRT chain and
+    // the first glitch countdown.
     async init() {
         // --- Palette (matches the Basics demo PipBoy green scene) ---
         this.palette = BT.paletteCreate(256);
@@ -290,12 +243,10 @@ class Demo {
         this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60));
         this.palette.set(C_OVERLAY_ERROR, new Color32(200, 70, 70));
 
-        // --- Sprite load (same two-step path as the Basics demo) ---
-        // Step 1: scan the PNG and copy every unique color into palette slots starting at
-        // SPRITE_BASE, so indexed drawing knows which slot each pixel uses.
-        await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
-
-        // Step 2: loadIndexed builds the GPU sheet plus a full-image source rectangle.
+        // --- Sprite load (the same single call as the Basics demo) ---
+        // loadIndexed copies every unique color of the PNG into palette slots from
+        // SPRITE_BASE up (sort: 'none' keeps them in the order they appear), then builds
+        // the GPU sheet plus a full-image source rectangle.
         const indexed = await SpriteSheet.loadIndexed(SPRITE_URL, this.palette, SPRITE_BASE, { sort: 'none' });
         this.spriteSheet = indexed.sheet;
         this.spriteRect = indexed.srcRect;
@@ -327,67 +278,15 @@ class Demo {
             return true;
         }
 
-        // --- Pixel tier: chunky band glitch on the index buffer ---
-        this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT;
-        // Intensity 0 means no shift; the state machine raises it during hshift bursts.
-        this.pixelGlitch.intensity = 0;
+        // --- The PipBoy CRT stack ---
+        // The pixel-tier glitch runs on the index buffer, so it is added on its own. The
+        // display-tier list goes through applyCrtChain(), which registers it in draw
+        // order (the first added runs first) and leaves out the moving effects while the
+        // player prefers reduced motion. The glitch machine changes aberration,
+        // interference, noise, and flicker during a burst and restores them afterwards.
+        this.crtEffects = createPipboyChain(this, CRT_CURVATURE, DISPLAY_H);
         BT.effectAdd(this.pixelGlitch);
-
-        // --- Display tier: hand-built CRT chain ---
-        // Resting values; the glitch machine mutates aberration, interference, noise, and
-        // flicker during a burst and restores them afterwards.
-        this.barrel = new BarrelDistortion();
-        this.barrel.curvature = 0.05;
-
-        this.aberration = new ChromaticAberration();
-        this.aberration.aberration = ABERRATION_BASE;
-
-        this.interference = new Interference();
-        this.interference.amount = 0;
-
-        this.rollLine = new RollLine();
-        this.rollLine.amount = 0.1;
-        this.rollLine.speed = 1.0;
-
-        this.scanlines = new Scanlines();
-        this.scanlines.amount = 0.55;
-        this.scanlines.strength = -8;
-        this.scanlines.density = 240;
-
-        this.mask = new RGBMask();
-        this.mask.intensity = 0.18;
-        this.mask.size = 6;
-        this.mask.border = 0.5;
-
-        this.vignette = new Vignette();
-        this.vignette.amount = 0.35;
-
-        this.noise = new Noise();
-        this.noise.amount = NOISE_BASE;
-
-        this.flicker = new Flicker();
-        this.flicker.amount = FLICKER_BASE;
-
-        this.bloom = new Bloom();
-        this.bloom.spread = 3.0;
-        this.bloom.glow = 0.18;
-
-        // Register every display-tier effect in draw order: the first added runs first.
-        for (const fx of [
-            this.barrel,
-            this.aberration,
-            this.interference,
-            this.rollLine,
-            this.scanlines,
-            this.mask,
-            this.vignette,
-            this.noise,
-            this.flicker,
-            this.bloom,
-        ]) {
-            BT.effectAdd(fx);
-        }
+        applyCrtChain(this.crtEffects);
 
         // BT.random is the engine's shared random number generator. int(min, max) returns
         // a whole number from min up to but not including max, so this waits a random
@@ -401,6 +300,8 @@ class Demo {
         return true;
     }
 
+    // Moves the logo, then (under WebGPU) feeds the CRT clock and runs the glitch
+    // machine.
     update() {
         // --- Bounce logic (same rules as Basics; game logic lives only in update()) ---
         // Remember where the logo was before this tick moves it, so render() can draw a
@@ -426,53 +327,26 @@ class Demo {
             BT.assignTag('V');
         }
 
-        // Animated CRT uniforms need elapsed time; skip when effects are unavailable.
-        if (this.effectsAvailable) {
-            const seconds = BT.timeSeconds;
-            this.rollLine.time = seconds;
-            this.noise.time = seconds;
-            this.interference.time = seconds;
-        } else {
+        // The software renderer has no CRT chain, so there is nothing more to drive.
+        if (!this.effectsAvailable) {
             return;
         }
 
-        // --- Glitch state machine (PipBoy CRT demo pattern) ---
-        if (this.glitchTicksLeft > 0) {
-            // Inside a burst: build a 0 -> 1 -> 0 envelope so the effect ramps in and
-            // out. t goes from 0 at burst start to 1 on the last tick; sin(t * PI) is a
-            // smooth hump.
-            const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
-            const envelope = Math.sin(t * Math.PI);
-            applyGlitchUniforms(this, envelope);
+        // Animated CRT uniforms need elapsed time, fed every tick.
+        const seconds = BT.timeSeconds;
+        this.rollLine.time = seconds;
+        this.noise.time = seconds;
+        this.interference.time = seconds;
 
-            this.glitchTicksLeft--;
-
-            if (this.glitchTicksLeft <= 0) {
-                // Burst finished: return effect uniforms to their calm resting values.
-                resetGlitchUniforms(this);
-
-                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-            }
-
-            return;
-        }
-
-        // Idle between bursts: count down the cooldown ticks.
-        this.glitchCooldown--;
-
-        if (this.glitchCooldown <= 0) {
-            // Roll a new burst. pick() returns one item of a list; float(min, max) is the
-            // decimal counterpart of int().
-            this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
-            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-            this.glitchTicksLeft = this.glitchDuration;
-            this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-
-            // Fresh seed so the PixelGlitch band noise looks different each burst.
-            this.pixelGlitch.seed = BT.random.float(0, 1000);
+        // One tick of the glitch state machine (the PipBoy CRT demo's pattern): ramp a
+        // running burst over its envelope, or count down and roll the next one. The
+        // bursts stay off while the player prefers reduced motion.
+        if (!BT.isReducedMotionPreferred) {
+            stepGlitchMachine(this);
         }
     }
 
+    // Clears the screen, draws the logo at its smoothed position, and prints the hint.
     render() {
         // Clear the logical framebuffer to the PipBoy background color (slot C_BG, set in
         // init()).
@@ -509,6 +383,23 @@ class Demo {
         // Position, bounces, CRT stack, and glitch readout live in overlayRows(), not
         // here. After this pass finishes, WebGPU runs the CRT post-process chain on the
         // result.
+    }
+
+    // The engine calls this when the reduced-motion preference changes while the demo
+    // runs. A burst in flight is cut short so the screen settles at once, and the chain
+    // is rebuilt with or without the moving effects.
+    onReducedMotionChange() {
+        if (!this.effectsAvailable) {
+            return;
+        }
+
+        if (this.glitchTicksLeft > 0) {
+            this.glitchTicksLeft = 0;
+            this.glitchType = GLITCH_TYPE.NONE;
+            resetGlitchUniforms(this);
+        }
+
+        applyCrtChain(this.crtEffects);
     }
 
     // Position, bounces, CRT status, and glitch readout: the Basics rows plus two more.
