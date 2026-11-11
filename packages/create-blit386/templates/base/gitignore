@@ -12,3 +12,6 @@ screenshots/
 
 # Your own Claude Code settings; the shared ones in .claude/settings.json are tracked
 .claude/settings.local.json
+
+# Yarn 2+ keeps its install bookkeeping here; only needed on this computer
+.yarn/install-state.gz

@@ -43,6 +43,15 @@ import { NODE_FLOOR } from './env';
 /** blit386 version range written into the generated package.json. */
 const BLIT386_RANGE = '^1.8.0';
 
+/**
+ * Yarn 2+ (a `yarn@2.x` or later `packageManager` pin) installs with Plug'n'Play by default, which makes no
+ * `node_modules`: `npx blit`, the `biome.json` `$schema` path, and the agent hooks would all miss the local packages.
+ * Such a game gets this `.yarnrc.yml` so Yarn installs a classic `node_modules` instead.
+ */
+const YARN_BERRY_PIN = /^yarn@(?:[2-9]|[1-9]\d+)\./;
+const YARNRC_FILE = '.yarnrc.yml';
+const YARNRC_CONTENT = 'nodeLinker: node-modules\n';
+
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';
 const CURSOR_DIR = '.cursor';
@@ -281,6 +290,12 @@ export function scaffold(options: ScaffoldOptions): void {
     if (options.packageManager === undefined) {
         const pkgPath = join(options.targetDir, 'package.json');
         writeFileSync(pkgPath, readFileSync(pkgPath, 'utf8').replace(/^[ \t]*"packageManager": "",\r?\n/m, ''));
+    }
+
+    if (YARN_BERRY_PIN.test(options.packageManager ?? '')) {
+        const yarnrc = join(options.targetDir, YARNRC_FILE);
+        writeFileSync(yarnrc, YARNRC_CONTENT);
+        writtenPaths.add(yarnrc);
     }
 
     if (options.includeCi) {

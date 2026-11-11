@@ -31,6 +31,10 @@
   `ACTIONS_SETUP_NODE` in the kit's `src/adapters/copilot.ts`); bump both together - `test/agent-copilot.test.mjs` fails
   when they drift. Renovate does not scan `templates/`, so `test/ci-pins.test.mjs` holds the template to the SHAs the
   repo's own `.github/workflows/` use.
+- A game whose `packageManager` pin is Yarn 2 or later also gets a `.yarnrc.yml` with `nodeLinker: node-modules`
+  (written in code by `scaffold()`, not a template): Yarn's default Plug'n'Play makes no `node_modules`, and `npx blit`,
+  the `biome.json` `$schema` path, and the agent hooks all rely on one. Teaching `yarn blit` instead would leave the
+  schema path and every hook broken.
 - `biome.json` lists `!.blit` in `files.includes` and `.prettierignore` lists `.blit/`: the pristine kit copies under
   `.blit/base/` must never be reformatted, or `blit agents sync` reports edits the user did not make (root `CLAUDE.md`).
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
