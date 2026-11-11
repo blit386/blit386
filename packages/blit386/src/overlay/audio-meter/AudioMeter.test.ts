@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { Rect2i } from '../../utils/Rect2i';
 import {
     createMockRenderer,
     getBitmapTextCalls,
     getRectFillCalls,
     mockFont,
     OVERLAY_EDGE_MARGIN_PX,
-} from '../testFixtures';
+} from '../../__test__/overlayFixtures';
+import { Rect2i } from '../../utils/Rect2i';
 import type { OverlayAudioSnapshot } from '../types';
 import { AudioMeter } from './AudioMeter';
 import { AUDIO_METER_BAR_GAP_PX, AUDIO_METER_BAR_WIDTH_PX } from './constants';

@@ -4,6 +4,15 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
+import {
+    createMockRenderer,
+    customRowBarY,
+    getBitmapTextCalls,
+    getRectFillCalls,
+    mockFont,
+    OVERLAY_EDGE_MARGIN_PX,
+    OVERLAY_TOP_TEXT_Y,
+} from '../__test__/overlayFixtures';
 import { Palette } from '../assets/Palette';
 import type { OverlayAudioMeterStyle } from '../core/IBTDemo';
 import { markIndexUsed } from '../core/RenderPaletteUsage';
@@ -22,15 +31,6 @@ import { hintBarY, paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
 import { hintIconY } from './OverlayToggleIcon';
 import { computeGrid, writeScrollbarRects, writeSwatchTopLeft } from './palette/PaletteView';
-import {
-    createMockRenderer,
-    customRowBarY,
-    getBitmapTextCalls,
-    getRectFillCalls,
-    mockFont,
-    OVERLAY_EDGE_MARGIN_PX,
-    OVERLAY_TOP_TEXT_Y,
-} from './testFixtures';
 import type { OverlayAudioSnapshot } from './types';
 
 /** Default overlay tests use the 13 px hint bar (palette grid opt-in off). */

@@ -4,6 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockFont } from '../../__test__/overlayFixtures';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from '../constants';
@@ -11,7 +12,6 @@ import { createOverlayLayout, overlayToggleHintIconX } from '../layout/layoutHel
 import { hintBarY, paletteBandY } from '../layout/layoutPlan';
 import type { OverlayLayoutPlan } from '../layout/types';
 import { hintIconY } from '../OverlayToggleIcon';
-import { mockFont } from '../testFixtures';
 import { ICON_HEIGHT, ICON_WIDTH } from '../toggleIconData';
 import {
     clampScrollRowOffset,

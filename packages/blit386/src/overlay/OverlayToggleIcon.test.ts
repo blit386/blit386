@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { createMockRenderer } from '../__test__/overlayFixtures';
 import { overlayToggleHintIconX } from './layout/layoutHelpers';
 import { hintBarY } from './layout/layoutPlan';
 import { hintIconY, toggleIcon } from './OverlayToggleIcon';
-import { createMockRenderer } from './testFixtures';
 import { ICON_HEIGHT, ICON_MASK, ICON_WIDTH } from './toggleIconData';
 
 describe('overlayToggleHintIconPos', () => {

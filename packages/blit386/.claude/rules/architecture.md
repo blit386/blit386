@@ -45,18 +45,20 @@ src/
   overlay/
     Overlay.ts             # Orchestrator: sample, toggle, layout plan, delegate draws
     OverlayDrawTarget.ts   # Internal draw port (drawBarFill / drawLabel); not on IRenderer or BT
-    OverlayToggleIcon.ts   # Bottom-left bitmap toggle hint icon draw + anchor/exclusion helpers
-    toggleIconData.ts      # Inline row-major mask data for the toggle hint icon
+    OverlayToggleIcon.ts   # Bottom-left bitmap toggle hint icon draw + icon Y anchor
+    toggleIconData.ts      # Toggle hint icon as row strings; ICON_MASK derived from them
+    bandStyle.ts           # Shared chrome palette index fallback + value-to-band-height scaling
+    drawOutline.ts         # 1 px on-top outline shared by the palette tooltip and the toggle hit debug view
+    validateSettings.ts    # Configure-time checks for overlay sizes and palette indices (BT.init resolves false on a bad value)
     constants.ts           # Overlay layout and style constants
     labels.ts              # Overlay label strings and formatting helpers
     types.ts               # OverlayRow and related types
     index.ts               # Overlay subsystem public exports for BTAPI and unit tests
-    testFixtures.ts        # Shared mock renderer + snapshot helpers for overlay unit tests
     layout/                # layoutPlan, layoutHelpers, layout types/constants
     bars/                  # OverlayBars (Bars.ts)
     timing-chart/          # TimingChart, severity, style, tags, constants
     audio-meter/           # AudioMeter (per-bus level bars + voices/steal/drop text), style, constants
-    palette/               # PaletteView, PaletteInteraction (swatch hover tooltip, clipboard copy, scroll)
+    palette/               # PaletteView (grid draw), PaletteInteraction (hover, copy, scroll state), hitTest (swatch + scrollbar hits), tooltip (layout, draw, clipboard write)
     sampling/              # FpsSampler, TimingSampler
     input/                 # Toggle
   splash/
@@ -170,6 +172,7 @@ src/
     webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
     spriteOrientationFixture.ts # Shared ABC/DEF sprite source + grid oracle for every flip/rotation mask (used by both backends' tests)
     engineHarness.ts       # Test-only: boots the real BTAPI (software backend, fake canvas), owns the rAF clock, dispatches input between frames, records per-update/per-render reads (refresh-rate tests)
+    overlayFixtures.ts     # Shared mock renderer + snapshot helpers for overlay unit tests
     setup.ts               # Vitest global setup (GPU constants)
 ```
 

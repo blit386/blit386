@@ -5,6 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockFont } from '../__test__/overlayFixtures';
 import type * as Rect2iModule from '../utils/Rect2i';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
@@ -12,7 +13,6 @@ import { createOverlayLayout } from './layout/layoutHelpers';
 import { paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
 import { computeGrid, writeSwatchTopLeft } from './palette/PaletteView';
-import { mockFont } from './testFixtures';
 import type { OverlayTimingSnapshot } from './types';
 
 const { rect2iAllocStats } = vi.hoisted(() => ({ rect2iAllocStats: { count: 0 } }));

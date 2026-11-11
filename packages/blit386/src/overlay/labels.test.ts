@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createMockRenderer, getBitmapTextCalls, mockFont } from '../__test__/overlayFixtures';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { OVERLAY_DIVIDER_GAP_PX, SYSTEM_CHAR_ADVANCE } from './constants';
@@ -9,7 +10,6 @@ import {
     padOverlayField,
     resolveOverlayTopLeftLabel,
 } from './labels';
-import { createMockRenderer, getBitmapTextCalls, mockFont } from './testFixtures';
 
 describe('padOverlayField', () => {
     it('left-pads shorter text with spaces to reach the fixed width', () => {
