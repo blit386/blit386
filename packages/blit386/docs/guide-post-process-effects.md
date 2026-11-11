@@ -91,7 +91,7 @@ Invariants:
 - Only the display chain has effects: scene → logical composite → resolve → display chain → swap chain.
 - The last display-tier effect writes to the swap chain when display effects are active; otherwise palette resolve
   writes directly to the swap chain.
-- Adding a `tier='display'` effect when `drawingBufferSize` is unset throws with a clear message - display effects need
+- Adding a `tier='display'` effect when `drawingBufferSize` is unset fails with a clear message - display effects need
   an output buffer larger than the logical framebuffer to operate.
 
 ## API
@@ -99,9 +99,10 @@ Invariants:
 ### `BT.effectAdd(effect: Effect): void`
 
 Appends an effect to the chain matching its declared `tier`. Effects can be added at any time; the first add allocates
-the chain's offscreen render targets, the second add allocates a second target for ping-pong. Throws if the engine has
+the chain's offscreen render targets, the second add allocates a second target for ping-pong. Fails if the engine has
 not been initialized, if a `tier='display'` effect is added without `drawingBufferSize`, or if the active backend is
-`'software'` (Canvas 2D does not support post-process effects). At runtime, gate registration with
+`'software'` (Canvas 2D does not support post-process effects). A failed call reports the error once instead of throwing
+(see [Bootstrap](api-core.md#bootstrap)) and the game keeps running. At runtime, gate registration with
 `BT.activeBackend === 'webgpu'` (not `BT.requestedBackend` - WebGPU may have been requested but fallen back). See
 [api-core.md](api-core.md#requested-vs-active-backend).
 
@@ -109,11 +110,12 @@ not been initialized, if a `tier='display'` effect is added without `drawingBuff
 
 Removes a previously registered effect. Searches both tiers and disposes the effect from whichever chain holds it.
 Removing an effect that was never added is a no-op. When the last effect in either chain is removed, that chain's
-offscreen textures are destroyed. Throws in `'software'` mode.
+offscreen textures are destroyed. Fails in `'software'` mode, like `BT.effectAdd`.
 
 ### `BT.effectClear(): void`
 
-Removes every effect in both tiers and destroys all offscreen GPU resources. Throws in `'software'` mode.
+Removes every effect in both tiers and destroys all offscreen GPU resources. Fails in `'software'` mode, like
+`BT.effectAdd`.
 
 ### `Effect` interface
 

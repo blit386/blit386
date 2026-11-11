@@ -622,8 +622,10 @@ Both chains add zero cost when empty.
 
 <Callout type="warn" title="WebGPU only">
 
-Post-process is unsupported by the Canvas 2D software backend - calling `effectAdd` in software mode throws a clear
-error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
+Post-process is unsupported by the Canvas 2D software backend. In software mode `effectAdd`, `effectRemove`, and
+`effectClear` all fail: each reports the error once (a panel in dev builds, the console in release, see
+[Bootstrap](api-core.md#bootstrap)) and changes nothing. Gate every effect call, scene-change clears included, on
+`BT.activeBackend === 'webgpu'`.
 
 </Callout>
 
@@ -646,7 +648,7 @@ BT.effectAdd(new Bloom());
 BT.effectAdd(new PixelGlitch()); // pixel-tier effect
 
 // Remove or clear
-BT.effectRemove(effect); // remove one; no-op if not found
+BT.effectRemove(effect); // remove one; no-op on WebGPU if not found
 BT.effectClear(); // remove all from both chains
 
 // One-line presets (return arrays of Effect)
