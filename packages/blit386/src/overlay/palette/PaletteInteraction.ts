@@ -6,9 +6,9 @@
 import type { BitmapFont } from '../../assets/BitmapFont';
 import type { PointerInput } from '../../input/PointerInput';
 import { POINTER_SLOT_COUNT } from '../../input/PointerInput';
+import { CODE_A } from '../../input/pointerSlot';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
-import { POINTER_PRIMARY_BUTTON } from '../input/constants';
 import type { OverlayLayoutPlan } from '../layout/types';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
 import type { PaletteGridLayout } from '../types';
@@ -162,7 +162,7 @@ export class PaletteInteraction {
 
             const pos = pointer.getPos(slot);
 
-            if (pointer.isButtonPressed(POINTER_PRIMARY_BUTTON, slot)) {
+            if (pointer.isButtonPressed(CODE_A, slot)) {
                 if (
                     isPointerInScrollbarTrack(
                         pos.x,
@@ -295,7 +295,7 @@ export class PaletteInteraction {
         this.tickCopyStatus(currentTick);
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
-            if (!pointer.isButtonPressed(POINTER_PRIMARY_BUTTON, slot)) {
+            if (!pointer.isButtonPressed(CODE_A, slot)) {
                 continue;
             }
 
@@ -433,7 +433,7 @@ export class PaletteInteraction {
         let isTogglePressConsumed = false;
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
-            if (!pointer.isButtonDown(POINTER_PRIMARY_BUTTON, slot) || !pointer.isActive(slot)) {
+            if (!pointer.isButtonDown(CODE_A, slot) || !pointer.isActive(slot)) {
                 if (this.#scrollDragSlot === slot) {
                     this.#scrollDragSlot = null;
                 }

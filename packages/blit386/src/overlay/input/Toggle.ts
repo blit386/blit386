@@ -1,7 +1,7 @@
 import type { PointerInput } from '../../input/PointerInput';
 import { POINTER_SLOT_COUNT } from '../../input/PointerInput';
+import { CODE_A } from '../../input/pointerSlot';
 import type { Rect2i } from '../../utils/Rect2i';
-import { POINTER_PRIMARY_BUTTON } from './constants';
 
 /**
  * Handles overlay body visibility toggle input (Backquote and corner pointer).
@@ -62,7 +62,7 @@ export class Toggle {
         }
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
-            if (!pointer.isButtonPressed(POINTER_PRIMARY_BUTTON, slot)) {
+            if (!pointer.isButtonPressed(CODE_A, slot)) {
                 continue;
             }
 

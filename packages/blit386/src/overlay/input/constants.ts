@@ -6,6 +6,3 @@ export const OVERLAY_TOGGLE_CORNER_HEIGHT = 13;
 
 /** `KeyboardEvent.code` for the tilde / backquote toggle key. */
 export const OVERLAY_TOGGLE_KEY_CODE = 'Backquote';
-
-/** Pointer primary button code (mouse left / touch). */
-export const POINTER_PRIMARY_BUTTON = 20;
