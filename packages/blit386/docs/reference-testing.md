@@ -73,9 +73,9 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   match what was sent (Node + software backend; see [Refresh-rate tests](#refresh-rate-tests))
 - Overlay - colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
-  `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
-  `RenderPaletteUsage` mask helpers (`markIndexUsed`, `collectUsedIndices`), toggle hit-testing, and `updateAndRender`
-  integration (Node)
+  `PaletteView.computeGrid` width/size matrix, palette `hitTest` / `tooltip` helpers and `PaletteInteraction` state, a
+  hovered-frame allocation check (`Overlay.alloc.test.ts`), `RenderPaletteUsage` mask helpers (`markIndexUsed`,
+  `collectUsedIndices`), toggle hit-testing, and `updateAndRender` integration (Node)
 - FrameCapture - GPU readback, PNG conversion (Node + GPU mocks + browser stubs)
 - consumer-doc-imports - `src/docs/consumer-doc-imports.test.ts` guards README/docs import paths against `BLIT386.ts`
   exports

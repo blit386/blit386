@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { hintIconY } from '../OverlayToggleIcon';
 import { computeGrid } from '../palette/PaletteView';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_ROW_GAP_PX } from './constants';
 import { createOverlayLayout } from './layoutHelpers';
@@ -124,7 +125,6 @@ describe('buildOverlayLayoutPlan', () => {
             height: 13,
         });
 
-        expect(plan.audioMeterTextPos.y).toBe(plan.audioMeterBar.y);
         expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
     });
 
@@ -283,5 +283,24 @@ describe('buildOverlayLayoutPlan', () => {
         );
 
         expect(cappedGrid.totalHeight).toBeLessThan(paletteGrid.totalHeight);
+    });
+
+    it('keeps the palette band above the toggle hint icon, so no swatch can sit under it', () => {
+        const scratch = createOverlayLayoutPlanScratch();
+        const layout = createOverlayLayout(320, 240, 14);
+        const base = { ...createDefaultLayoutConfig(320, 240, 14, 0), isOverlayPaletteEnabled: true };
+        const configs = [
+            { ...base, paletteGrid: computeGrid(320) },
+            { ...base, paletteGrid: computeGrid(320, undefined, 256, 1, undefined, 2) },
+            { ...base, customRowCount: 3, paletteGrid: computeGrid(320) },
+            { ...base, isOverlayAudioMetersEnabled: true, paletteGrid: computeGrid(320) },
+        ];
+
+        for (const config of configs) {
+            const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+            expect(plan.paletteBand.height).toBeGreaterThan(0);
+            expect(plan.paletteBand.y + plan.paletteBand.height).toBeLessThanOrEqual(hintIconY(plan.hintBar.y));
+        }
     });
 });

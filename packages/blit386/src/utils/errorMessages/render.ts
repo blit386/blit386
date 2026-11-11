@@ -29,6 +29,18 @@ export const OVERLAY_NO_BACKEND_MESSAGE =
     "Couldn't start the overlay because the rendering backend isn't ready yet. Try initializing the engine before creating the overlay.";
 
 /**
+ * Returns the error message for an overlay configure number outside its allowed range.
+ *
+ * @param field - Hardware settings field (or `style.field` path) that holds the bad value.
+ * @param value - Rejected value.
+ * @param range - Plain-English description of the allowed values.
+ * @returns User-facing error string.
+ */
+export function overlaySettingRangeError(field: string, value: unknown, range: string): string {
+    return `${field} must be ${range} (got ${String(value)}). Update configure() to return a valid value`;
+}
+
+/**
  * Returns the error message for a render dimension that is not a positive whole-number pixel size.
  *
  * @param field - Hardware settings field that contains the invalid size.

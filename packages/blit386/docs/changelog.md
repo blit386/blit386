@@ -104,6 +104,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   options such as `-C dir` before the command) plus `git push -f`, a `+` refspec, `git branch -D` or `-d` with `-f` in
   any spelling, and `git stash drop` / `clear`; and the starter templates no longer ship a dev-only `window.__game` (use
   `BT.testState()`; `blit play` still falls back to it for older games).
+- Behavior change: `BT.init()` now resolves `false`, with a console error naming the field, when the overlay is enabled
+  and `overlayTimingChartHeight`, `overlayAudioMeterHeight` or `overlayPaletteColumns` is not a whole number of at least
+  `1` (a fractional `22.5`, or `0`), or when a field of `overlayStyle`, `overlayTimingChartStyle` or
+  `overlayAudioMeterStyle` is not a whole-number palette index from `0` to `255`. These values used to be accepted, so a
+  fractional height drew the overlay bands at fractional positions. See [Valid values](api-overlay.md#valid-values).
 
 ### Fixed
 
@@ -355,6 +360,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   simply drops can be garbage-collected (during a hot-reload dev session it stays loaded until `destroy()`). A sheet
   whose colors are missing from the new palette keeps its old indices and is retried by the next refresh, instead of
   being dropped for good.
+- With `overlayPaletteRowsVisible` set, the padding below the last visible swatch row in the overlay palette band no
+  longer shows a tooltip for a row that is not drawn, and a click there no longer copies that hidden index.
+- The overlay's `Copied N` / `Copy failed` swatch tooltip clears after its usual 0.75 s when `BT.ticksReset()` or a
+  `BT.renderAt` replay restarts the tick counter while it shows. It used to stay up for as many ticks as had passed
+  before the reset.
+- The overlay's Present FPS no longer dips each time the overlay body is shown again. It was sampled only while the body
+  was visible, so the first frame after 10 s hidden read about 53 instead of 60 and took about 30 frames to recover.
 
 ## 1.8.0 - 2026-10-18
 

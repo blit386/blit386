@@ -8,21 +8,16 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
-import type {
-    Backend,
-    OverlayAudioMeterStyle,
-    OverlayRow,
-    OverlayStyle,
-    OverlayTimingChartDiagnosticsMode,
-    OverlayTimingChartStyle,
-} from '../core/IBTDemo';
+import type { Backend, OverlayRow, OverlayTimingChartDiagnosticsMode } from '../core/IBTDemo';
+import { resolveOverlayTimingChartDiagnostics } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import { POINTER_SLOT_COUNT, type PointerInput } from '../input/PointerInput';
-import { Rect2i } from '../utils/Rect2i';
+import type { Rect2i } from '../utils/Rect2i';
 import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
 import type { AudioMeterDrawStyle } from './audio-meter/style';
 import { resolveAudioMeterStyle } from './audio-meter/style';
+import { resolveOverlayChromeIndices } from './bandStyle';
 import { OverlayBars } from './bars/Bars';
 import {
     DEFAULT_IDX_BG,
@@ -31,12 +26,12 @@ import {
     OVERLAY_MS_FIELD_WIDTH,
     OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
 } from './constants';
-import { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
+import { drawOutline } from './drawOutline';
 import { Toggle } from './input/Toggle';
 import { padOverlayField } from './labels';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
 import type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
-import type { OverlayDrawTarget, OverlayRenderer } from './OverlayDrawTarget';
+import type { OverlayRenderer } from './OverlayDrawTarget';
 import { toggleIcon } from './OverlayToggleIcon';
 import { PaletteInteraction } from './palette/PaletteInteraction';
 import { computeGrid, DEFAULT_PALETTE_GRID, PaletteView } from './palette/PaletteView';
@@ -46,23 +41,10 @@ import { DEFAULT_TIMING_CHART_HEIGHT } from './timing-chart/constants';
 import type { TimingChartDrawStyle } from './timing-chart/style';
 import { resolveTimingChartStyle } from './timing-chart/style';
 import { TimingChart } from './timing-chart/TimingChart';
-import type { OverlayAudioSnapshot, OverlayTimingSnapshot } from './types';
+import type { OverlayAudioSnapshot, OverlaySettings, OverlayTimingSnapshot } from './types';
 
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
-
-/**
- * Resolves overlay bar/text/gap palette indices from optional {@link OverlayStyle}.
- *
- * @param style - Optional configure-time overlay style.
- * @returns Resolved palette indices for overlay chrome.
- */
-function resolveStyleIndices(style?: OverlayStyle): { bg: number; gap: number; text: number } {
-    const bg = style?.barPaletteIndex ?? DEFAULT_IDX_BG;
-    const text = style?.textPaletteIndex ?? DEFAULT_IDX_TEXT;
-
-    return { bg, text, gap: style?.gapPaletteIndex ?? bg };
-}
 
 /**
  * Creates a timing chart instance and resets its ring buffer when enabled.
@@ -89,16 +71,6 @@ function createTimingChart(
 }
 
 /**
- * Creates an audio meter instance with the given feature flag.
- *
- * @param isEnabled - Whether the audio meter band is active.
- * @returns Configured {@link AudioMeter} for the overlay.
- */
-function createAudioMeter(isEnabled: boolean): AudioMeter {
-    return new AudioMeter(isEnabled);
-}
-
-/**
  * Screen-space overlay HUD rendered after demo content each frame.
  *
  * Internal to the engine; demos do not instantiate this class. Use
@@ -122,9 +94,6 @@ export class Overlay {
     readonly #isToggleHintVisible: boolean;
 
     readonly #isToggleHitDebugVisible: boolean;
-
-    /** Scratch edge rect for the toggle hit-zone debug outline (one overlay draw at a time). */
-    readonly #toggleHitDebugEdge = new Rect2i();
 
     readonly #bars: OverlayBars = new OverlayBars();
 
@@ -214,72 +183,44 @@ export class Overlay {
      *
      * @param layout - Cached display layout from {@link createOverlayLayout}.
      * @param topLeftLabel - Short title shown on the top-left.
-     * @param targetFps - Configured fixed-update rate for the target FPS line.
      * @param activeBackend - Backend started by BTAPI (`webgpu` or `software`).
-     * @param style - Optional palette indices from {@link HardwareSettings.overlayStyle}.
-     * @param isOverlayPaletteEnabled - When true, draws the live palette swatch grid.
-     * @param paletteColumns - Optional max swatches per row from {@link HardwareSettings.overlayPaletteColumns}.
-     * @param paletteRowsVisible - Optional max visible palette grid rows from {@link HardwareSettings.overlayPaletteRowsVisible}.
-     * @param isOverlayTimingChartEnabled - When true, draws the update/render timing chart band.
-     * @param timingChartStyle - Optional timing chart palette overrides.
-     * @param timingChartHeight - Chart band height in pixels (default 22).
-     * @param timingChartDiagnostics - Chart renderer diagnostic mode (`minimal`, `rich`, or `false`).
-     * @param isOverlayRendererDiagnosticsBarEnabled - When true, draws the GPU diagnostics text row.
-     * @param isOverlayVisibleAtStart - Initial overlay body visibility (default false).
-     * @param isOverlayToggleHintVisible - Draw toggle hint while body hidden (default true).
-     * @param isOverlayToggleEnabled - Enable Backquote and corner toggle input (default true).
-     * @param isOverlayToggleHitDebugVisible - Draw a 1 px outline of the toggle hit region (default false).
-     * @param isOverlayAudioMetersEnabled - When true, draws the per-bus level and voice/steal/drop band.
-     * @param audioMeterStyle - Optional audio meter palette overrides.
-     * @param audioMeterHeight - Audio meter band height in pixels (default 13).
+     * @param settings - Overlay fields of {@link HardwareSettings} plus `targetFPS`; unset fields take
+     * the configure defaults.
      */
-    constructor(
-        layout: OverlayLayout,
-        topLeftLabel: string,
-        targetFps: number,
-        activeBackend: Backend,
-        style?: OverlayStyle,
-        isOverlayPaletteEnabled = false,
-        paletteColumns?: number,
-        paletteRowsVisible?: number,
-        isOverlayTimingChartEnabled = false,
-        timingChartStyle?: OverlayTimingChartStyle,
-        timingChartHeight?: number,
-        timingChartDiagnostics: OverlayTimingChartDiagnosticsMode = false,
-        isOverlayRendererDiagnosticsBarEnabled = false,
-        isOverlayVisibleAtStart = false,
-        isOverlayToggleHintVisible = true,
-        isOverlayToggleEnabled = true,
-        isOverlayToggleHitDebugVisible = false,
-        isOverlayAudioMetersEnabled = false,
-        audioMeterStyle?: OverlayAudioMeterStyle,
-        audioMeterHeight?: number,
-    ) {
+    constructor(layout: OverlayLayout, topLeftLabel: string, activeBackend: Backend, settings: OverlaySettings) {
+        const targetFps = settings.targetFPS;
+        const style = settings.overlayStyle;
+
         this.#layout = layout;
         this.#topLeftLabel = topLeftLabel;
         this.#targetFps = targetFps;
-        this.#fps = new FpsSampler(this.#targetFps);
+        this.#fps = new FpsSampler(targetFps);
 
-        const indices = resolveStyleIndices(style);
+        const indices = resolveOverlayChromeIndices(style);
 
-        this.#idxBg = indices.bg;
-        this.#idxText = indices.text;
-        this.#idxGap = indices.gap;
+        this.#idxBg = indices.barIndex;
+        this.#idxText = indices.textIndex;
+        this.#idxGap = indices.gapIndex;
         this.#topRightLabel = `${activeBackend}|${layout.displayWidth}x${layout.displayHeight}`;
-        this.#timingChartStyle = resolveTimingChartStyle(style, timingChartStyle);
-        this.#timingChartHeight = timingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
-        this.#timingChart = createTimingChart(layout, isOverlayTimingChartEnabled, targetFps, timingChartDiagnostics);
-        this.#isOverlayRendererDiagnosticsBarEnabled = isOverlayRendererDiagnosticsBarEnabled;
-        this.#audioMeterStyle = resolveAudioMeterStyle(style, audioMeterStyle);
-        this.#audioMeterHeight = audioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
-        this.#audioMeter = createAudioMeter(isOverlayAudioMetersEnabled);
-        this.#paletteView = new PaletteView(isOverlayPaletteEnabled);
+        this.#timingChartStyle = resolveTimingChartStyle(style, settings.overlayTimingChartStyle);
+        this.#timingChartHeight = settings.overlayTimingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
+        this.#timingChart = createTimingChart(
+            layout,
+            settings.isOverlayTimingChartEnabled === true,
+            targetFps,
+            resolveOverlayTimingChartDiagnostics(settings),
+        );
+        this.#isOverlayRendererDiagnosticsBarEnabled = settings.isOverlayRendererDiagnosticsBarEnabled === true;
+        this.#audioMeterStyle = resolveAudioMeterStyle(style, settings.overlayAudioMeterStyle);
+        this.#audioMeterHeight = settings.overlayAudioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
+        this.#audioMeter = new AudioMeter(settings.isOverlayAudioMetersEnabled === true);
+        this.#paletteView = new PaletteView(settings.isOverlayPaletteEnabled === true);
         this.#paletteInteraction = new PaletteInteraction(targetFps);
-        this.#paletteColumns = paletteColumns;
-        this.#paletteRowsVisible = paletteRowsVisible;
-        this.#toggle = new Toggle(isOverlayVisibleAtStart, isOverlayToggleEnabled);
-        this.#isToggleHintVisible = isOverlayToggleHintVisible;
-        this.#isToggleHitDebugVisible = isOverlayToggleHitDebugVisible;
+        this.#paletteColumns = settings.overlayPaletteColumns;
+        this.#paletteRowsVisible = settings.overlayPaletteRowsVisible;
+        this.#toggle = new Toggle(settings.isOverlayVisibleAtStart === true, settings.isOverlayToggleEnabled !== false);
+        this.#isToggleHintVisible = settings.isOverlayToggleHintVisible !== false;
+        this.#isToggleHitDebugVisible = settings.isOverlayToggleHitDebugVisible === true;
     }
 
     /**
@@ -356,8 +297,6 @@ export class Overlay {
                     plan,
                     grid,
                     colorCount,
-                    plan.hintBar.y,
-                    this.#layout.displayWidth,
                 );
 
                 isPointerPressConsumed =
@@ -369,23 +308,6 @@ export class Overlay {
         pointer?.setIsScrollCaptureForced(isScrollCaptureForced);
 
         this.#toggle.handleInput(pointer, isTogglePressed, this.#layout.toggleRect, isPointerPressConsumed);
-    }
-
-    /**
-     * Handles toggle input (Backquote and bottom-left corner press).
-     *
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link handleFrameInput} instead. Unlike
-     * `handleFrameInput`, this reads the keyboard directly at call time, so it remains susceptible to
-     * missing a Backquote press that a fixed-update tick already consumed this frame.
-     *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
-     */
-    handleToggle(pointer: PointerInput | null, keyboard: KeyboardInput | null, currentTick: number): void {
-        const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
-
-        this.handleFrameInput(pointer, isTogglePressed, currentTick);
     }
 
     /**
@@ -415,18 +337,15 @@ export class Overlay {
         usedPaletteMask: Uint8Array = EMPTY_PALETTE_USAGE_MASK,
         audioSnapshot?: OverlayAudioSnapshot,
     ): void {
-        // Chart history keeps advancing while hidden so re-show reflects demo-only timing.
+        // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
         this.#sampleTiming(timing);
         this.#sampleAudio(audioSnapshot);
+        this.#fps.sample();
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 
         if (!isBodyVisible && !this.#isToggleHintVisible && !this.#isToggleHitDebugVisible) {
             return;
-        }
-
-        if (isBodyVisible) {
-            this.#fps.sample();
         }
 
         const customRows = isBodyVisible ? getCustomRows?.() : undefined;
@@ -704,20 +623,14 @@ export class Overlay {
         this.#barStyle.barIndex = this.#idxBg;
         this.#barStyle.textIndex = this.#idxText;
 
-        let topMetricsLabel = '';
-        let topTimingLabel = '';
-        let rendererDiagnosticsLabel = '';
         const paletteGrid = layoutConfig.paletteGrid ?? DEFAULT_PALETTE_GRID;
 
         if (isBodyVisible) {
             this.#composeTopLabels();
 
-            topMetricsLabel = this.#cachedTopMetricsLabel;
-            topTimingLabel = this.#cachedTopTimingLabel;
-
-            if (this.#isOverlayRendererDiagnosticsBarEnabled) {
-                rendererDiagnosticsLabel = this.#timing.formatRendererDiagnosticsLabel();
-            }
+            const rendererDiagnosticsLabel = this.#isOverlayRendererDiagnosticsBarEnabled
+                ? this.#timing.formatRendererDiagnosticsLabel()
+                : '';
 
             this.#bars.drawTopBars(renderer, plan, this.#idxBg);
             this.#timingChart.draw(renderer, plan.timingChart, this.#timingChartStyle, font, currentTick);
@@ -734,8 +647,6 @@ export class Overlay {
                 plan.paletteBand,
                 palette ?? null,
                 paletteGrid,
-                plan.hintBar.y,
-                this.#layout.displayWidth,
                 usedPaletteMask,
                 this.#idxText,
                 this.#paletteInteraction.scrollRowOffset,
@@ -747,24 +658,12 @@ export class Overlay {
 
             this.#paletteInteraction.tickCopyStatus(currentTick);
 
-            this.#paletteInteraction.updateHover(
-                pointer,
-                plan,
-                paletteGrid,
-                colorCount,
-                plan.hintBar.y,
-                this.#layout.displayWidth,
-            );
+            this.#paletteInteraction.updateHover(pointer, plan, paletteGrid, colorCount);
 
             this.#bars.drawRowGaps(renderer, plan, this.#idxGap);
-            this.#bars.drawClusterSeparators(renderer, plan, this.#idxGap, true, true);
-        }
-
-        if (isBodyVisible) {
+            this.#bars.drawClusterSeparators(renderer, plan, this.#idxGap);
             this.#bars.drawHintBarFill(renderer, plan, this.#idxBg);
-        }
 
-        if (isBodyVisible) {
             if (customRows !== undefined && customRows.length > 0) {
                 this.#bars.drawCustomRowLabels(renderer, font, plan, customRows, this.#barStyle);
             }
@@ -777,8 +676,8 @@ export class Overlay {
                 this.#idxGap,
                 this.#topLeftLabel,
                 this.#topRightLabel,
-                topMetricsLabel,
-                topTimingLabel,
+                this.#cachedTopMetricsLabel,
+                this.#cachedTopTimingLabel,
                 rendererDiagnosticsLabel,
             );
         }
@@ -821,30 +720,7 @@ export class Overlay {
         }
 
         if (this.#isToggleHitDebugVisible) {
-            this.#drawToggleHitDebug(renderer);
-        }
-    }
-
-    /**
-     * Draws a 1 px outline of the bottom-left toggle hit region for hit-zone tuning.
-     *
-     * @param target - Overlay draw target.
-     */
-    #drawToggleHitDebug(target: OverlayDrawTarget): void {
-        const rect = this.#layout.toggleRect;
-        const edge = this.#toggleHitDebugEdge;
-        const x0 = rect.x;
-        const y0 = rect.y;
-        const x1 = rect.x + rect.width - 1;
-        const y1 = rect.y + rect.height - 1;
-        const color = this.#idxText;
-
-        target.drawBarFillOnTop(edge.set(x0, y0, x1 - x0 + 1, 1), color);
-        target.drawBarFillOnTop(edge.set(x0, y1, x1 - x0 + 1, 1), color);
-
-        if (y1 - y0 > 1) {
-            target.drawBarFillOnTop(edge.set(x0, y0 + 1, 1, y1 - y0 - 1), color);
-            target.drawBarFillOnTop(edge.set(x1, y0 + 1, 1, y1 - y0 - 1), color);
+            drawOutline(renderer, this.#layout.toggleRect, this.#idxText);
         }
     }
 }

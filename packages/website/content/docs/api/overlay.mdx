@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-10-18T15:51:13+02:00"
+lastModified: "2026-11-11T09:01:12+01:00"
 ---
 
 Configure-time flags, style objects, and worked examples for the engine overlay HUD. For the higher-level subsystem
@@ -223,8 +223,8 @@ Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` 
 
 The overlay label `Present: N FPS` is not the same as `BT.targetFPS`:
 
-- Present FPS reflects how often `render()` runs (browser refresh rate). It is sampled only while the overlay body is
-  visible.
+- Present FPS reflects how often `render()` runs (browser refresh rate). It keeps sampling while the overlay body is
+  hidden, so it reads right as soon as the body is shown again.
 - Target is the fixed `update()` rate (`BT.targetFPS`).
 
 How the timing numbers are sourced:
@@ -331,6 +331,20 @@ function configure(): Partial<HardwareSettings> {
   };
 }
 ```
+
+### Valid values
+
+While the overlay is enabled, `BT.init()` checks these numbers and resolves `false` with a console error naming the
+field when one is out of range:
+
+- `overlayTimingChartHeight`, `overlayAudioMeterHeight`, and `overlayPaletteColumns` must be whole numbers of at least
+  `1`. A fractional value such as `22.5`, or `0`, is rejected.
+- Every field of `overlayStyle`, `overlayTimingChartStyle`, and `overlayAudioMeterStyle` must be a whole-number palette
+  index from `0` to `255`.
+- `overlayPaletteRowsVisible` is not rejected: it is truncated and clamped to the palette's row count.
+
+Behavior change in 1.8.1: before, these values were accepted as-is, so a fractional height drew bands at fractional
+positions.
 
 ## API history
 

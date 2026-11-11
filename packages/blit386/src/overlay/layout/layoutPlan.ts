@@ -11,7 +11,7 @@ import { Vector2i } from '../../utils/Vector2i';
 import { DEFAULT_AUDIO_METER_HEIGHT } from '../audio-meter/constants';
 import { DEFAULT_TIMING_CHART_HEIGHT } from '../timing-chart/constants';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
-import { overlayRightAlignedDividerLabelX } from './layoutHelpers';
+import { customBarY, overlayRightAlignedDividerLabelX } from './layoutHelpers';
 import type { OverlayLayoutConfig, OverlayLayoutPlan } from './types';
 
 /** Mutable scratch object reused by {@link buildOverlayLayoutPlan}. */
@@ -31,7 +31,6 @@ export interface OverlayLayoutPlanScratch {
     topMetricsPos: Vector2i;
     topTimingPos: Vector2i;
     rendererDiagnosticsPos: Vector2i;
-    audioMeterTextPos: Vector2i;
     rowGapRects: Rect2i[];
     topClusterSeparator: Rect2i;
     bottomClusterSeparator: Rect2i;
@@ -59,7 +58,6 @@ export function createOverlayLayoutPlanScratch(): OverlayLayoutPlanScratch {
         topMetricsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         topTimingPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rendererDiagnosticsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
-        audioMeterTextPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rowGapRects: [],
         topClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
         bottomClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
@@ -313,10 +311,8 @@ export function buildOverlayLayoutPlan(
             continue;
         }
 
-        const barY = footerStackTopY - (rowIndex + 1) * (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX);
-
         bar.x = 0;
-        bar.y = barY;
+        bar.y = customBarY(footerStackTopY, rowIndex);
         bar.width = displayWidth;
         bar.height = OVERLAY_BAR_HEIGHT;
     }
@@ -389,15 +385,11 @@ export function buildOverlayLayoutPlan(
         scratch.audioMeterBar.y = meterY;
         scratch.audioMeterBar.width = displayWidth;
         scratch.audioMeterBar.height = meterHeight;
-        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
-        scratch.audioMeterTextPos.y = meterY + OVERLAY_TOP_TEXT_Y;
     } else {
         scratch.audioMeterBar.x = 0;
         scratch.audioMeterBar.y = preAudioMeterBottom;
         scratch.audioMeterBar.width = displayWidth;
         scratch.audioMeterBar.height = 0;
-        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
-        scratch.audioMeterTextPos.y = preAudioMeterBottom + OVERLAY_TOP_TEXT_Y;
     }
 
     scratch.toggleRect.x = toggleRect.x;

@@ -24,17 +24,3 @@ describe('Toggle.handleInput', () => {
         expect(toggle.isBodyVisible).toBe(false);
     });
 });
-
-describe('Toggle.handleToggle (deprecated)', () => {
-    it('still toggles from a raw keyboard edge for backward compatibility', () => {
-        const toggle = new Toggle(false, true);
-        const keyboard = {
-            isKeyPressed: (key: string, _repeatRate: number | undefined, tick: number): boolean =>
-                key === 'Backquote' && tick === 5,
-        };
-
-        toggle.handleToggle(null, keyboard as never, 5, new Rect2i(0, 0, 17, 13), false);
-
-        expect(toggle.isBodyVisible).toBe(true);
-    });
-});

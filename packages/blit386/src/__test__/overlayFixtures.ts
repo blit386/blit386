@@ -5,11 +5,11 @@
 import { vi } from 'vitest';
 
 import type { BitmapFont } from '../assets/BitmapFont';
+import { OVERLAY_BAR_HEIGHT } from '../overlay/layout/constants';
+import { customBarY } from '../overlay/layout/layoutHelpers';
+import type { OverlayRenderer } from '../overlay/OverlayDrawTarget';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
-import { OVERLAY_BAR_HEIGHT } from './layout/constants';
-import { customBarY } from './layout/layoutHelpers';
-import type { OverlayRenderer } from './OverlayDrawTarget';
 
 /** Parsed {@link OverlayDrawTarget.drawLabel} call from a mock renderer. */
 export type BitmapTextCall = {
@@ -145,4 +145,9 @@ export function customRowBarY(displayHeight: number, rowIndex: number, footerHei
 
 export const mockFont = { lineHeight: 14 } as BitmapFont;
 
-export { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './layout/constants';
+export {
+    OVERLAY_BAR_HEIGHT,
+    OVERLAY_EDGE_MARGIN_PX,
+    OVERLAY_ROW_GAP_PX,
+    OVERLAY_TOP_TEXT_Y,
+} from '../overlay/layout/constants';

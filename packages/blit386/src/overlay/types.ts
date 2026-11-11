@@ -1,4 +1,31 @@
-import type { AudioBus } from '../core/IBTDemo';
+import type { AudioBus, HardwareSettings } from '../core/IBTDemo';
+
+/** {@link HardwareSettings} fields the overlay reads at construction. */
+type OverlaySettingKey =
+    | 'overlayStyle'
+    | 'isOverlayPaletteEnabled'
+    | 'overlayPaletteColumns'
+    | 'overlayPaletteRowsVisible'
+    | 'isOverlayTimingChartEnabled'
+    | 'overlayTimingChartStyle'
+    | 'overlayTimingChartHeight'
+    | 'overlayTimingChartDiagnostics'
+    | 'isOverlayRendererDiagnosticsBarEnabled'
+    | 'isOverlayVisibleAtStart'
+    | 'isOverlayToggleHintVisible'
+    | 'isOverlayToggleEnabled'
+    | 'isOverlayToggleHitDebugVisible'
+    | 'isOverlayAudioMetersEnabled'
+    | 'overlayAudioMeterStyle'
+    | 'overlayAudioMeterHeight';
+
+/**
+ * Configure-time settings the overlay is built from: the overlay fields of {@link HardwareSettings}
+ * (same names, same defaults) plus the fixed-update rate. BTAPI passes its merged settings as is.
+ */
+export type OverlaySettings = Pick<HardwareSettings, 'targetFPS'> & {
+    readonly [K in OverlaySettingKey]?: HardwareSettings[K] | undefined;
+};
 
 /**
  * Per-frame WebGPU pipeline diagnostic counters for overlay timing/chart internals.

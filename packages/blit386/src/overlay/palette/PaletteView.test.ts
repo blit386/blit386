@@ -9,11 +9,9 @@ import { markIndexUsed } from '../../core/RenderPaletteUsage';
 import { Rect2i } from '../../utils/Rect2i';
 import { DEFAULT_IDX_TEXT } from '../constants';
 import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX } from '../layout/constants';
-import { createOverlayLayout } from '../layout/layoutHelpers';
 import { hintBarY, paletteBandY } from '../layout/layoutPlan';
 import {
     computeGrid,
-    computeUnusedSwatchMarkerRect,
     DEFAULT_PALETTE_SWATCH_SIZE,
     gridRowStackHeight,
     gridRowWidth,
@@ -22,6 +20,7 @@ import {
     PaletteView,
     pickGridColumnCount,
     resolveGridVisibleRows,
+    writeUnusedSwatchMarkerRect,
 } from './PaletteView';
 
 /** Builds a usage mask from palette slot indices for tests. */
@@ -162,24 +161,31 @@ describe('resolveGridVisibleRows', () => {
     });
 });
 
-describe('computeUnusedSwatchMarkerRect', () => {
+describe('writeUnusedSwatchMarkerRect', () => {
+    const markerRect = (x: number, y: number, swatchSize: number): Rect2i => {
+        const rect = new Rect2i();
+
+        writeUnusedSwatchMarkerRect(rect, x, y, swatchSize);
+
+        return rect;
+    };
+
     it('returns a centered 3x3 marker for a 7px swatch', () => {
-        expect(computeUnusedSwatchMarkerRect(10, 20, 7)).toEqual(new Rect2i(12, 22, 3, 3));
+        expect(markerRect(10, 20, 7)).toEqual(new Rect2i(12, 22, 3, 3));
     });
 
     it('returns a zero-area rect for non-positive swatch sizes', () => {
-        expect(computeUnusedSwatchMarkerRect(10, 20, 0)).toEqual(new Rect2i(10, 20, 0, 0));
-        expect(computeUnusedSwatchMarkerRect(10, 20, -2)).toEqual(new Rect2i(10, 20, 0, 0));
+        expect(markerRect(10, 20, 0)).toEqual(new Rect2i(10, 20, 0, 0));
+        expect(markerRect(10, 20, -2)).toEqual(new Rect2i(10, 20, 0, 0));
     });
 
     it('clamps marker size for small swatches', () => {
-        expect(computeUnusedSwatchMarkerRect(0, 0, 4)).toEqual(new Rect2i(1, 1, 1, 1));
+        expect(markerRect(0, 0, 4)).toEqual(new Rect2i(1, 1, 1, 1));
     });
 });
 
 describe('PaletteView.draw', () => {
     it('draws filled swatches for used indices and empty X marks for unused slots', () => {
-        const layout = createOverlayLayout(320, 240, 14);
         const palette = Palette.cga();
         const usedMask = buildUsageMask([5]);
         const swatchSize = DEFAULT_PALETTE_SWATCH_SIZE;
@@ -196,8 +202,6 @@ describe('PaletteView.draw', () => {
             new Rect2i(0, paletteBandTop, 320, grid.totalHeight),
             palette,
             grid,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
             usedMask,
             DEFAULT_IDX_TEXT,
         );
@@ -243,7 +247,6 @@ describe('PaletteView.draw', () => {
     });
 
     it('draws swatches with gaps between cells', () => {
-        const layout = createOverlayLayout(320, 240, 14);
         const palette = Palette.cga();
         const usedMask = buildUsageMask([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
         const swatchSize = DEFAULT_PALETTE_SWATCH_SIZE;
@@ -260,8 +263,6 @@ describe('PaletteView.draw', () => {
             new Rect2i(0, paletteBandTop, 320, grid.totalHeight),
             palette,
             grid,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
             usedMask,
             DEFAULT_IDX_TEXT,
         );
@@ -288,7 +289,6 @@ describe('PaletteView.draw', () => {
     });
 
     it('keeps palette swatches above the dedicated hint bar', () => {
-        const layout = createOverlayLayout(320, 240, 14);
         const palette = new Palette(256);
         const grid = computeGrid(320, DEFAULT_PALETTE_SWATCH_SIZE, palette.size, 1, 36);
         const paletteBandTop = paletteBandY(240, grid.totalHeight);
@@ -302,8 +302,6 @@ describe('PaletteView.draw', () => {
             new Rect2i(0, paletteBandTop, 320, grid.totalHeight),
             palette,
             grid,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
             buildUsageMask([0]),
             DEFAULT_IDX_TEXT,
         );
@@ -323,8 +321,6 @@ describe('PaletteView.draw', () => {
             new Rect2i(0, 201, 320, 39),
             Palette.cga(),
             computeGrid(320),
-            227,
-            320,
             buildUsageMask([1, 2, 3]),
             DEFAULT_IDX_TEXT,
         );
@@ -333,7 +329,6 @@ describe('PaletteView.draw', () => {
     });
 
     it('draws only the visible row window when scroll offset is non-zero', () => {
-        const layout = createOverlayLayout(320, 240, 14);
         const palette = new Palette(256);
         const grid = computeGrid(320, DEFAULT_PALETTE_SWATCH_SIZE, palette.size, 1, undefined, 3);
         const scrollRowOffset = 2;
@@ -348,8 +343,6 @@ describe('PaletteView.draw', () => {
             new Rect2i(0, paletteBandTop, 320, grid.totalHeight),
             palette,
             grid,
-            hintBarY(layout.displayHeight),
-            layout.displayWidth,
             usedMask,
             DEFAULT_IDX_TEXT,
             scrollRowOffset,

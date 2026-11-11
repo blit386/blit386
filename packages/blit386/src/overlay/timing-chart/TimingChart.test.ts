@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { createMockRenderer, getLabelOnTopCalls, getRectFillCalls, mockFont } from '../../__test__/overlayFixtures';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
-import { createMockRenderer, getLabelOnTopCalls, getRectFillCalls, mockFont } from '../testFixtures';
 import { TIMING_CHART_FULL_SCALE_MS } from './constants';
 import { computeTimingChartBarHeight, computeTimingChartDotY } from './style';
 import {

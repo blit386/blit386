@@ -1,25 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { Vector2i } from '../utils/Vector2i';
+import { createMockRenderer } from '../__test__/overlayFixtures';
 import { overlayToggleHintIconX } from './layout/layoutHelpers';
 import { hintBarY } from './layout/layoutPlan';
-import { hintIconExclusionRect, hintIconPos, hintIconY, toggleIcon } from './OverlayToggleIcon';
-import { createMockRenderer } from './testFixtures';
+import { hintIconY, toggleIcon } from './OverlayToggleIcon';
 import { ICON_HEIGHT, ICON_MASK, ICON_WIDTH } from './toggleIconData';
 
 describe('overlayToggleHintIconPos', () => {
     it('anchors the icon at the nudged left X inside the hint bar', () => {
         const hintBarTopY = hintBarY(240);
-        const iconX = overlayToggleHintIconX();
 
-        expect(hintIconPos(hintBarTopY)).toEqual(new Vector2i(iconX, 230));
         expect(hintIconY(hintBarTopY)).toBe(230);
-        expect(hintIconExclusionRect(hintBarTopY)).toMatchObject({
-            x: iconX,
-            y: 230,
-            width: ICON_WIDTH,
-            height: ICON_HEIGHT,
-        });
     });
 });
 

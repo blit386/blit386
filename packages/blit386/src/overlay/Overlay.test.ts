@@ -4,6 +4,15 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
+import {
+    createMockRenderer,
+    customRowBarY,
+    getBitmapTextCalls,
+    getRectFillCalls,
+    mockFont,
+    OVERLAY_EDGE_MARGIN_PX,
+    OVERLAY_TOP_TEXT_Y,
+} from '../__test__/overlayFixtures';
 import { Palette } from '../assets/Palette';
 import type { OverlayAudioMeterStyle } from '../core/IBTDemo';
 import { markIndexUsed } from '../core/RenderPaletteUsage';
@@ -16,20 +25,12 @@ import {
     createOverlayLayout,
     overlayRightAlignedDividerLabelX,
     overlayRightAlignedTextX,
+    overlayToggleHintIconX,
 } from './layout/layoutHelpers';
 import { hintBarY, paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
-import { hintIconPos } from './OverlayToggleIcon';
+import { hintIconY } from './OverlayToggleIcon';
 import { computeGrid, writeScrollbarRects, writeSwatchTopLeft } from './palette/PaletteView';
-import {
-    createMockRenderer,
-    customRowBarY,
-    getBitmapTextCalls,
-    getRectFillCalls,
-    mockFont,
-    OVERLAY_EDGE_MARGIN_PX,
-    OVERLAY_TOP_TEXT_Y,
-} from './testFixtures';
 import type { OverlayAudioSnapshot } from './types';
 
 /** Default overlay tests use the 13 px hint bar (palette grid opt-in off). */
@@ -70,28 +71,25 @@ function createOverlay(
     label: string,
     options: OverlayTestOptions = {},
 ): Overlay {
-    return new Overlay(
-        layout,
-        label,
-        60,
-        options.backend ?? 'webgpu',
-        options.style,
-        options.isOverlayPaletteEnabled ?? PALETTE_GRID_OFF,
-        options.paletteColumns,
-        options.paletteRowsVisible,
-        options.isOverlayTimingChartEnabled ?? false,
-        options.overlayTimingChartStyle,
-        options.overlayTimingChartHeight,
-        options.overlayTimingChartDiagnostics ?? false,
-        options.isOverlayRendererDiagnosticsBarEnabled ?? false,
-        options.isOverlayVisibleAtStart ?? false,
-        options.isOverlayToggleHintVisible ?? true,
-        options.isOverlayToggleEnabled ?? true,
-        options.isOverlayToggleHitDebugVisible ?? false,
-        options.isOverlayAudioMetersEnabled ?? false,
-        options.audioMeterStyle,
-        options.audioMeterHeight,
-    );
+    return new Overlay(layout, label, options.backend ?? 'webgpu', {
+        targetFPS: 60,
+        overlayStyle: options.style,
+        isOverlayPaletteEnabled: options.isOverlayPaletteEnabled ?? PALETTE_GRID_OFF,
+        overlayPaletteColumns: options.paletteColumns,
+        overlayPaletteRowsVisible: options.paletteRowsVisible,
+        isOverlayTimingChartEnabled: options.isOverlayTimingChartEnabled ?? false,
+        overlayTimingChartStyle: options.overlayTimingChartStyle,
+        overlayTimingChartHeight: options.overlayTimingChartHeight,
+        overlayTimingChartDiagnostics: options.overlayTimingChartDiagnostics ?? false,
+        isOverlayRendererDiagnosticsBarEnabled: options.isOverlayRendererDiagnosticsBarEnabled ?? false,
+        isOverlayVisibleAtStart: options.isOverlayVisibleAtStart ?? false,
+        isOverlayToggleHintVisible: options.isOverlayToggleHintVisible ?? true,
+        isOverlayToggleEnabled: options.isOverlayToggleEnabled ?? true,
+        isOverlayToggleHitDebugVisible: options.isOverlayToggleHitDebugVisible ?? false,
+        isOverlayAudioMetersEnabled: options.isOverlayAudioMetersEnabled ?? false,
+        overlayAudioMeterStyle: options.audioMeterStyle,
+        overlayAudioMeterHeight: options.audioMeterHeight,
+    });
 }
 
 /** Builds a usage mask from palette slot indices for tests. */
@@ -123,13 +121,7 @@ describe('Overlay', () => {
 
         expect(overlay.isTrackingPaletteUsage).toBe(true);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isTrackingPaletteUsage).toBe(false);
     });
@@ -206,23 +198,11 @@ describe('Overlay', () => {
 
         expect(overlay.isBodyVisible).toBe(false);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isBodyVisible).toBe(true);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: (key: string) => key === 'Backquote',
-            } as never,
-            2,
-        );
+        overlay.handleFrameInput(null, true, 2);
 
         expect(overlay.isBodyVisible).toBe(false);
     });
@@ -241,7 +221,7 @@ describe('Overlay', () => {
         const topRightX = overlayRightAlignedDividerLabelX('webgpu|320x240', 320);
         const metricsY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y;
         const timingY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y;
-        const iconPos = hintIconPos(hintBarY(240));
+        const iconPos = new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarY(240)));
 
         expect(calls).toHaveLength(9);
 
@@ -471,7 +451,7 @@ describe('Overlay', () => {
     it('draws hint-only path while body is hidden and toggle hint is visible', () => {
         const overlay = createOverlay(createOverlayLayout(320, 240, 14), 'Demo');
         const renderer = createMockRenderer();
-        const iconPos = hintIconPos(hintBarY(240));
+        const iconPos = new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarY(240)));
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
 
@@ -925,7 +905,7 @@ describe('Overlay', () => {
 
         const renderer = createMockRenderer();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+        overlay.handleFrameInput(null, true, 1);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
@@ -942,7 +922,7 @@ describe('Overlay', () => {
 
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+        overlay.handleFrameInput(null, true, 2);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
@@ -993,7 +973,7 @@ describe('Overlay', () => {
 
         const renderer = createMockRenderer();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+        overlay.handleFrameInput(null, true, 1);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
@@ -1010,7 +990,7 @@ describe('Overlay', () => {
 
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
-        overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+        overlay.handleFrameInput(null, true, 2);
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
@@ -1034,13 +1014,7 @@ describe('Overlay', () => {
 
         expect(overlay.isBodyVisible).toBe(false);
 
-        overlay.handleToggle(
-            null,
-            {
-                isKeyPressed: () => true,
-            } as never,
-            1,
-        );
+        overlay.handleFrameInput(null, true, 1);
 
         expect(overlay.isBodyVisible).toBe(false);
     });
@@ -1207,5 +1181,39 @@ describe('Overlay', () => {
             // Tracks still draw (3, one per bus) since the band reserves space; no level fills without a sample.
             expect(barWidthBars).toHaveLength(3);
         });
+    });
+});
+
+describe('Overlay present FPS', () => {
+    it('does not dip when the body is shown again after 10 s hidden', () => {
+        const frameMs = 1000 / 60;
+        let nowMs = 0;
+        const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', { isOverlayVisibleAtStart: true });
+        const renderFrame = (renderer = createMockRenderer()): ReturnType<typeof createMockRenderer> => {
+            nowMs += frameMs;
+            overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+            return renderer;
+        };
+
+        for (let frame = 0; frame < 120; frame++) {
+            renderFrame();
+        }
+
+        overlay.handleFrameInput(null, true, 1);
+
+        for (let frame = 0; frame < 600; frame++) {
+            renderFrame();
+        }
+
+        overlay.handleFrameInput(null, true, 2);
+
+        const presentLabel = getBitmapTextCalls(renderFrame()).find((call) => call.text.startsWith('Present'));
+
+        nowSpy.mockRestore();
+
+        expect(presentLabel?.text).toBe('Present  60 FPS');
     });
 });

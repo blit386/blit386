@@ -52,7 +52,7 @@ const CODE_A = 20; // OK - short local name; not BTN_A, which input/buttonFlags.
 - `BT` namespace members, `HardwareSettings` / `BootstrapOptions` fields, or anything in the `BLIT386.ts` export block
 - Public methods on exported classes (`Palette.toJSON()`, `SpriteSheet.loadIndexed()`, …)
 - Documented public constants (`BT.BTN_POINTER_*`, preset effect names, overlay configure flags)
-- Cross-subsystem method names when two types expose similar verbs (e.g. keep `Overlay.handleToggle()` vs
+- Cross-subsystem method names when two types expose similar verbs (e.g. keep `Overlay.handleFrameInput()` vs
   `Toggle.handleInput()`)
 
 ## When refactoring existing code
