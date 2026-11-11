@@ -95,7 +95,9 @@ column budget, not an SEO limit: the tag must fit this repo's 120-column line wi
 `plugins/social-meta.js` builds the whole social/SEO head block - meta description, `rel=canonical`, two favicon links,
 OpenGraph, and a `SoftwareApplication` JSON-LD block - and `plugins/virtual-demos.js` substitutes it into
 `{{socialMeta}}` **last** in its replacement chain, through a function replacer, so a `$&` or another placeholder's
-literal text inside a description can never trigger a second substitution pass.
+literal text inside a description can never trigger a second substitution pass. The function-replacer rule holds for
+every placeholder in `renderDemoHtml`, `renderShotsHtml`, and `renderSheetHtml`, not only `{{socialMeta}}`: a plain
+string replacement would expand a `$&` or `` $` `` in a `@pageTitle` into template text.
 
 Two rules there are load-bearing rather than stylistic:
 

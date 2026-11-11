@@ -78,14 +78,16 @@ export function renderDemoHtml({
     socialMeta,
 }) {
     return (
+        // Every value goes in through a function replacer, so `$&` / `$1` in it is never interpreted.
+        // sourcePanelScript before sourceHtml: a demo source quoting that placeholder stays source text.
         layoutTemplate
-            .replaceAll('{{title}}', escapeHtml(entry.title))
-            .replaceAll('{{scriptFile}}', entry.scriptFile)
-            .replaceAll('{{slug}}', entry.slug)
-            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+            .replaceAll('{{title}}', () => escapeHtml(entry.title))
+            .replaceAll('{{scriptFile}}', () => entry.scriptFile)
+            .replaceAll('{{slug}}', () => entry.slug)
+            .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
             .replace('{{demoList}}', () => demoListJson)
-            .replace('{{sourceHtml}}', () => sourceHtml)
             .replace('{{sourcePanelScript}}', () => sourcePanelScript)
+            .replace('{{sourceHtml}}', () => sourceHtml)
             .replace('{{robotsMeta}}', () => robotsMeta)
             .replace('{{channelBanner}}', () => channelBanner)
             // Last in the chain on purpose. The function replacer keeps `$&` / `$1` in a demo's
@@ -109,9 +111,9 @@ export function renderDemoHtml({
  */
 export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersion = '' }) {
     return template
-        .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
-        .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
-        .replaceAll('{{engineVersion}}', engineVersion)
+        .replaceAll('{{demoBase}}', () => (isDevMode ? '/demos/' : './'))
+        .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
+        .replaceAll('{{engineVersion}}', () => engineVersion)
         .replace('{{demoList}}', () => demoListJson);
 }
 
@@ -131,8 +133,8 @@ export function renderShotsHtml({ template, demoListJson, isDevMode, engineVersi
 export function renderSheetHtml({ template, entriesJson, isDevMode, robotsMeta, channelBanner, socialMeta }) {
     return (
         template
-            .replaceAll('{{demoBase}}', isDevMode ? '/demos/' : './')
-            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+            .replaceAll('{{demoBase}}', () => (isDevMode ? '/demos/' : './'))
+            .replaceAll('{{pageSuffix}}', () => (isDevMode ? '.html' : ''))
             .replace('{{sheetEntries}}', () => entriesJson)
             .replace('{{robotsMeta}}', () => robotsMeta)
             .replace('{{channelBanner}}', () => channelBanner)
