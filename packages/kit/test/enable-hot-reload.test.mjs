@@ -233,3 +233,74 @@ test('enableHotReloadInViteConfig keeps CRLF line endings on the import it adds'
         JSON.stringify(result.text),
     );
 });
+
+test('enableHotReloadInViteConfig ignores a commented-out plugins key and adds a real one', () => {
+    const commented = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+    // plugins: [],
+    server: { open: true },
+});
+`;
+    const result = enableHotReloadInViteConfig(commented);
+    assert.equal(result.status, 'added');
+    assert.ok(result.text.includes('    // plugins: [],\n'), 'the comment must stay as it was');
+    assert.ok(result.text.includes('defineConfig({\n    plugins: [blit386()],\n'), `got:\n${result.text}`);
+});
+
+test('enableHotReloadInViteConfig leaves a nested rollupOptions plugins list alone', () => {
+    const nested = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+    build: { rollupOptions: { plugins: [] } },
+});
+`;
+    const result = enableHotReloadInViteConfig(nested);
+    assert.equal(result.status, 'added');
+    assert.ok(result.text.includes('rollupOptions: { plugins: [] }'), 'the Rollup list must stay empty');
+    assert.ok(result.text.includes('defineConfig({\n    plugins: [blit386()],\n'), `got:\n${result.text}`);
+});
+
+test('enableHotReloadInViteConfig does not take blit386() in a comment for the plugin', () => {
+    const mention = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+    // TODO: add blit386() here
+    server: { open: true },
+});
+`;
+    const result = enableHotReloadInViteConfig(mention);
+    assert.equal(result.status, 'added');
+    assert.ok(result.text.includes('plugins: [blit386()],'), `got:\n${result.text}`);
+});
+
+test('enableHotReloadInViteConfig indents the new plugins key like the keys around it', () => {
+    const twoSpaces = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+  server: { open: true },
+});
+`;
+    const result = enableHotReloadInViteConfig(twoSpaces);
+    assert.ok(result.text.includes('defineConfig({\n  plugins: [blit386()],\n  server:'), `got:\n${result.text}`);
+});
+
+for (const [label, body] of [
+    ['a shorthand plugins key', 'plugins,'],
+    ['a quoted plugins key', "'plugins': [react()],"],
+    ['plugins from a variable', 'plugins: shared,'],
+    ['a spread', '...base,'],
+]) {
+    test(`enableHotReloadInViteConfig reports unsupported for ${label}`, () => {
+        const source = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+    ${body}
+    server: { open: true },
+});
+`;
+        const result = enableHotReloadInViteConfig(source);
+        assert.equal(result.status, 'unsupported');
+        assert.equal(result.changed, false);
+    });
+}

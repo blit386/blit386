@@ -50,122 +50,25 @@ export function hasBlit386VitePlugin(source: string): boolean {
 }
 
 /**
- * Locate the `{` … `}` of a single `defineConfig({ ... })` call.
+ * Locate the `{` … `}` of the single `defineConfig({ ... })` call in a masked source (see `maskSource`), so calls and
+ * braces inside comments and strings do not count.
  *
  * Returns null when there is not exactly one match, or when braces do not balance.
  */
-function findUniqueDefineConfigObject(source: string): { openBrace: number; closeBrace: number } | null {
-    const hits: number[] = [];
-    const re = /defineConfig\s*\(\s*\{/g;
-    let match = re.exec(source);
-    while (match !== null) {
-        hits.push(match.index + match[0].length - 1);
-        match = re.exec(source);
-    }
-
-    if (hits.length !== 1) {
+function findUniqueDefineConfigObject(masked: string): { openBrace: number; closeBrace: number } | null {
+    const hits = [...masked.matchAll(/defineConfig\s*\(\s*\{/g)];
+    const hit = hits.length === 1 ? hits[0] : undefined;
+    if (hit?.index === undefined) {
         return null;
     }
 
-    const openBrace = hits[0];
-    if (openBrace === undefined) {
-        return null;
-    }
-    const closeBrace = matchingBraceEnd(source, openBrace);
-    if (closeBrace === null) {
-        return null;
-    }
-
-    return { openBrace, closeBrace };
-}
-
-/** Walk from an opening `{` to its matching `}`, ignoring braces inside strings and comments. */
-function matchingBraceEnd(source: string, openIndex: number): number | null {
+    const openBrace = hit.index + hit[0].length - 1;
     let depth = 0;
-    let inSingle = false;
-    let inDouble = false;
-    let inTemplate = false;
-    let inLineComment = false;
-    let inBlockComment = false;
-
-    for (let i = openIndex; i < source.length; i++) {
-        const ch = source.charAt(i);
-        const next = source[i + 1];
-
-        if (inLineComment) {
-            if (ch === '\n') {
-                inLineComment = false;
-            }
-            continue;
-        }
-        if (inBlockComment) {
-            if (ch === '*' && next === '/') {
-                inBlockComment = false;
-                i++;
-            }
-            continue;
-        }
-        if (inSingle) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === "'") {
-                inSingle = false;
-            }
-            continue;
-        }
-        if (inDouble) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === '"') {
-                inDouble = false;
-            }
-            continue;
-        }
-        if (inTemplate) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === '`') {
-                inTemplate = false;
-            }
-            continue;
-        }
-
-        if (ch === '/' && next === '/') {
-            inLineComment = true;
-            i++;
-            continue;
-        }
-        if (ch === '/' && next === '*') {
-            inBlockComment = true;
-            i++;
-            continue;
-        }
-        if (ch === "'") {
-            inSingle = true;
-            continue;
-        }
-        if (ch === '"') {
-            inDouble = true;
-            continue;
-        }
-        if (ch === '`') {
-            inTemplate = true;
-            continue;
-        }
-
-        if (ch === '{') {
+    for (let i = openBrace; i < masked.length; i++) {
+        if (masked[i] === '{') {
             depth++;
-        } else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-                return i;
-            }
+        } else if (masked[i] === '}' && --depth === 0) {
+            return { openBrace, closeBrace: i };
         }
     }
 
@@ -210,36 +113,63 @@ function insertImport(source: string): string | null {
 }
 
 /**
- * Ensure `plugins: [blit386(), ...]` appears inside the unique `defineConfig({ ... })` object.
+ * Ensure `plugins: [blit386(), ...]` appears at the top level of the unique `defineConfig({ ... })` object.
  *
- * Returns null when the config shape is too unusual to rewrite safely. Does not touch `plugins`
- * arrays that live outside that object.
+ * Returns null when the config shape is too unusual to rewrite safely: a `plugins` key that is not one plain
+ * `plugins: [` (quoted, shorthand, a variable, or two of them), or a spread, which could replace the key we add. A
+ * `plugins` list nested deeper (`build.rollupOptions.plugins`) or inside a comment is not the Vite list and is ignored.
  */
 function ensurePluginsInDefineConfig(source: string): { text: string; already: boolean } | null {
-    const block = findUniqueDefineConfigObject(source);
+    const masked = maskSource(source);
+    const block = findUniqueDefineConfigObject(masked);
     if (!block) {
         return null;
     }
 
-    const body = source.slice(block.openBrace + 1, block.closeBrace);
-    if (PLUGIN_CALL.test(body)) {
+    if (PLUGIN_CALL.test(masked.slice(block.openBrace + 1, block.closeBrace))) {
         return { text: source, already: true };
     }
 
-    let newBody: string;
-    const emptyPlugins = /plugins\s*:\s*\[\s*\]/;
-    const pluginsOpen = /plugins\s*:\s*\[/;
-
-    if (emptyPlugins.test(body)) {
-        newBody = body.replace(emptyPlugins, 'plugins: [blit386()]');
-    } else if (pluginsOpen.test(body)) {
-        newBody = body.replace(pluginsOpen, 'plugins: [blit386(), ');
-    } else {
-        newBody = `\n    plugins: [blit386()],${body}`;
+    // The object's top level, comments blanked and every nested bracket's contents blanked, at the source's offsets.
+    // Top-level strings stay, so a quoted `'plugins'` key is seen; a string value holding `plugins` or `...` only
+    // makes the answer unsupported, never a wrong edit.
+    const text = maskSource(source, true);
+    let depth = 0;
+    let top = '';
+    for (let i = block.openBrace + 1; i < block.closeBrace; i++) {
+        const ch = masked.charAt(i);
+        if ('{[('.includes(ch)) {
+            top += depth++ === 0 ? ch : ' ';
+        } else if ('}])'.includes(ch)) {
+            top += --depth === 0 ? ch : ' ';
+        } else {
+            top += depth === 0 ? text.charAt(i) : ' ';
+        }
     }
 
-    const text = `${source.slice(0, block.openBrace + 1)}${newBody}${source.slice(block.closeBrace)}`;
-    return { text, already: false };
+    const mentions = [...top.matchAll(/\bplugins\b/g)];
+    if (top.includes('...') || mentions.length > 1) {
+        return null;
+    }
+
+    const at = block.openBrace + 1;
+    if (mentions.length === 0) {
+        const indent = /\n([ \t]*)\S/.exec(source.slice(at, block.closeBrace))?.[1] ?? '    ';
+        const eol = source.includes('\r\n') ? '\r\n' : '\n';
+        return {
+            text: `${source.slice(0, at)}${eol}${indent}plugins: [blit386()],${source.slice(at)}`,
+            already: false,
+        };
+    }
+
+    const key = /(?<![\w$'"`])plugins\s*:\s*\[/.exec(top);
+    if (key === null || key.index !== mentions[0]?.index) {
+        return null;
+    }
+
+    const open = at + key.index + key[0].length;
+    const call = /^\s*\]/.test(masked.slice(open)) ? 'blit386()' : 'blit386(), ';
+    return { text: `${source.slice(0, open)}${call}${source.slice(open)}`, already: false };
 }
 
 /**
