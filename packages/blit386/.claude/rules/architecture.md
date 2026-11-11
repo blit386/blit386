@@ -95,6 +95,8 @@ src/
   assets/
     AssetLoader.ts         # Image loading with caching
     SpriteSheet.ts         # GPU texture wrapper (+ loadIndexed convenience path)
+    spriteIndexing.ts      # SpriteSheet palette indexing: indexized-sheet registry (BT.spritesRefresh), RGBA-to-index mapping, loadColorsIntoPalette colors, used-index scan, r8uint upload
+    spriteTileGrid.ts      # Tile size validation and tile source-rect writers shared by SpriteSheet.tileRect and BT.drawTile
     NineSlice.ts           # Frozen nine-slice asset (NineSlice.fromSheet) + per-axis split helper used by BT.drawNineSlice
     BitmapFont.ts          # Bitmap font system (.btfont): glyph lookup, measuring, hot reload
     btfontFile.ts          # .btfont file loading for BitmapFont: capped read, parse, validation, glyph table, texture load, load errors
@@ -138,7 +140,7 @@ src/
     CanvasLayoutStyles.ts  # Canvas layout CSS custom properties helper
     RenderLimits.ts        # Render dimension validation (8192 px per axis; 16,777,216 total pixels)
     AssetLimits.ts         # Asset dimension validation, btfont/glyph limits, sprite-blit clipping
-    TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid
+    TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid (spriteTileGrid.ts)
     HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont. resolveAgainstDocument also backs the .btfont texture origin check in AssetLimits
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector (allocating methods, statics, normalized, equality)
