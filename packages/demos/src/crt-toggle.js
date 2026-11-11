@@ -73,7 +73,7 @@ SOFTWARE FALLBACK
 
 In software renderer mode (no WebGPU, or ?backend=software in the URL) post-process
 effects are unavailable. The squares and bars still animate; the toggle is disabled and
-the panel says "CRT: N/A" with a one-line explanation.
+the panel says "CRT: N/A" with a two-line explanation.
 
 Why auto-toggle instead of a button? This demo is about the effect API, not controls.
 Auto-toggling keeps the ON/OFF comparison hands-free. Pointer and keyboard input have
@@ -92,7 +92,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 // Internal pixel resolution.
@@ -374,8 +374,12 @@ class Demo {
             ui.label('Auto-toggles every 2s', { color: 'dim' });
         } else {
             // Software renderer: no post-processing at all, so explain the reduced mode.
+            // The note comes as two lines because one would run off the 320-pixel screen.
             ui.label('CRT: N/A', { color: 'dim' });
-            ui.label(SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
+
+            for (const line of SOFTWARE_FALLBACK_LINES) {
+                ui.label(line, { color: 'warm' });
+            }
         }
 
         ui.end();

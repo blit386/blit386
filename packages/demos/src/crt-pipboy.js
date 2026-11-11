@@ -173,7 +173,7 @@ import {
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
 } from './shared/crt-glitch.js';
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel-art look.
@@ -542,11 +542,16 @@ class Demo {
             this.renderBlinkingCursor();
         }
 
-        // In software mode the CRT stack is skipped - say so with a kit label. Omitting
-        // ui.panel() keeps the group borderless, so it reads as a single caption line.
+        // In software mode the CRT stack is skipped - say so with kit labels. Omitting
+        // ui.panel() keeps the group borderless, so it reads as a plain two-line caption.
+        // The note comes as two lines because one would run off the 320-pixel screen.
         if (!this.effectsAvailable) {
             ui.begin(UI_ANCHORS.BOTTOM_LEFT);
-            ui.label(SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
+
+            for (const line of SOFTWARE_FALLBACK_LINES) {
+                ui.label(line, { color: 'warm' });
+            }
+
             ui.end();
         }
     }

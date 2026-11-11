@@ -117,7 +117,7 @@ import {
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
 } from './shared/crt-glitch.js';
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -149,11 +149,6 @@ const TARGET_FPS = 30;
 // The display-tier chain runs on an output buffer larger than the logical screen: 3x.
 const OUTPUT_W = 960;
 const OUTPUT_H = 720;
-
-// The shared fallback note is one long sentence, too wide for a 320-pixel screen in the
-// 6-pixel-wide system font. split('. ') cuts it at the sentence break into two shorter
-// lines the UI kit draws one under the other.
-const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 // The Basics demo plus a hand-built CRT post-process chain and periodic glitch bursts.
 class Demo {
@@ -501,10 +496,10 @@ class Demo {
         // the small symbol in the bottom-left corner of the canvas.
         ui.label('Press ~ or click/tap the symbol below', { color: 'dim' });
 
-        // Software renderer: warn that the CRT look is missing. The shared note was split
-        // into two lines up top (FALLBACK_LINES) so it fits the screen width.
+        // Software renderer: warn that the CRT look is missing. The shared note comes as
+        // two lines (SOFTWARE_FALLBACK_LINES) so it fits the screen width.
         if (!this.effectsAvailable) {
-            for (const line of FALLBACK_LINES) {
+            for (const line of SOFTWARE_FALLBACK_LINES) {
                 ui.label(line, { color: 'warm' });
             }
         }

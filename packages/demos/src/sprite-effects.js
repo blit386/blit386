@@ -138,7 +138,7 @@ import {
 } from 'blit386';
 
 import { GLITCH_LABELS, GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -283,11 +283,6 @@ const GLITCH_ACTIVE_MIN = 4;
 const GLITCH_ACTIVE_MAX = 24;
 const GLITCH_INTENSITY_MIN = 0.3;
 const GLITCH_INTENSITY_MAX = 0.95;
-
-// The shared fallback note is one long sentence. split('. ') cuts the string at the
-// sentence break, giving an array of two shorter lines the UI kit draws one under the
-// other when the software renderer is active (same pattern as the Basics Enhanced demo).
-const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 // Resting values for the fault-driven display effects.
 const FLICKER_BASE = 1.0;
@@ -596,12 +591,12 @@ class Demo {
         this.renderDayNightCycle();
 
         // Software renderer: warn on-canvas that the Tesla Orava look is missing. A small
-        // borderless kit group in the top-left corner; the shared note was split into two
-        // lines up top (FALLBACK_LINES) so it stays short.
+        // borderless kit group in the top-left corner; the shared note comes as two lines
+        // (SOFTWARE_FALLBACK_LINES) so it stays short.
         if (!this.effectsAvailable) {
             ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 2, pad: 2 });
 
-            for (const line of FALLBACK_LINES) {
+            for (const line of SOFTWARE_FALLBACK_LINES) {
                 ui.label(line, { color: 'warm' });
             }
 

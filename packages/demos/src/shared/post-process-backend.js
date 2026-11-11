@@ -9,8 +9,14 @@
 
 import { BT } from 'blit386';
 
-// Short on-screen note shown when effects are skipped (fits one or two systemPrint lines).
-const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT effects.';
+// On-screen note shown when effects are skipped, as two lines: the one-line form is 330
+// pixels wide in the 6-pixel system font, wider than a 320-pixel screen. Kit labels do not
+// wrap, so demos print one ui.label() per line.
+const SOFTWARE_FALLBACK_LINES = Object.freeze(['Post-process needs WebGPU.', 'Running without CRT effects.']);
+
+// The same note on one line. It is 330 pixels wide, so it only fits a screen wider than
+// the 320-pixel one most demos use.
+const SOFTWARE_FALLBACK_NOTE = SOFTWARE_FALLBACK_LINES.join(' ');
 
 /**
  * @returns {boolean} True when fullscreen post-process effects can be registered.
@@ -19,4 +25,4 @@ function isAvailable() {
     return BT.activeBackend === 'webgpu';
 }
 
-export { isAvailable, SOFTWARE_FALLBACK_NOTE };
+export { isAvailable, SOFTWARE_FALLBACK_LINES, SOFTWARE_FALLBACK_NOTE };

@@ -256,9 +256,10 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
   `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true. One deliberate
   exception: `raycasting` has no panel, so its C (CRT on/off) and R (back to start) shortcuts are keyboard-only - touch
   players still walk with the D-pad and swipes. Do not add buttons back to it
-- Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from `src/shared/post-process-backend.js`, set
+- Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_LINES` from `src/shared/post-process-backend.js`, set
   `this.effectsAvailable = isAvailable()` after `init()` (it checks `BT.activeBackend`, not `requestedBackend`), and
-  show the note when effects are skipped
+  show the note when effects are skipped - one `ui.label()` per line, since the one-line `SOFTWARE_FALLBACK_NOTE` is 330
+  pixels wide and kit labels do not wrap
 
 ## Hot Reload
 
