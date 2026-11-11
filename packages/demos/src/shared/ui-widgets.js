@@ -510,6 +510,10 @@ function meter(ctx, text, fraction, opts = {}) {
     }
 }
 
+// The kit's one wording for the "enable sound" prompt, shared by audioUnlockHint() and
+// statusLine() so the two can never disagree.
+const AUDIO_UNLOCK_TEXT = 'Click or press a key to enable sound';
+
 /**
  * The standard "enable sound" prompt every audio demo shows, kept in one place so
  * the wording and color can never drift between demos. Browsers refuse to play any
@@ -530,10 +534,38 @@ function audioUnlockHint(ctx, opts = {}) {
         return;
     }
 
-    const text =
-        typeof opts.text === 'string' && opts.text.length > 0 ? opts.text : 'Click or press a key to enable sound';
+    const text = typeof opts.text === 'string' && opts.text.length > 0 ? opts.text : AUDIO_UNLOCK_TEXT;
 
     label(ctx, text, { color: 'warm' });
+}
+
+/**
+ * The x to print `text` at so its letters are centered on column `centerX`. The last
+ * character's empty spacing column is left out, so the visible letters are what centers.
+ *
+ * @param {number} centerX - The column to center on, in display pixels.
+ * @param {string} text - The text that will be printed.
+ * @returns {number} The left edge to pass to caption().
+ */
+function centeredTextX(centerX, text) {
+    return centerX - Math.floor((text.length * FONT_W - 1) / 2);
+}
+
+/**
+ * One centered line of text across the display at row `y`, for audio demos: the
+ * kit's warm "enable sound" wording while audio is still locked, then `unlockedText`
+ * in dim once BT.isAudioUnlocked flips true. Like caption(), it is its own group, so
+ * call it outside any ui.begin()/ui.end().
+ *
+ * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {number} y - Top edge of the line in display pixels.
+ * @param {string} unlockedText - What the line says once sound works.
+ */
+function statusLine(ctx, y, unlockedText) {
+    const isLocked = !BT.isAudioUnlocked;
+    const text = isLocked ? AUDIO_UNLOCK_TEXT : unlockedText;
+
+    caption(ctx, centeredTextX(Math.floor(BT.displaySize.x / 2), text), y, text, { color: isLocked ? 'warm' : 'dim' });
 }
 
 /**
@@ -568,6 +600,7 @@ export {
     audioUnlockHint,
     button,
     caption,
+    centeredTextX,
     checkbox,
     kv,
     label,
@@ -578,5 +611,6 @@ export {
     separator,
     slider,
     spacer,
+    statusLine,
     tooltip,
 };

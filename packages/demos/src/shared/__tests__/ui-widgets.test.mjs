@@ -14,6 +14,7 @@ import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '.
 import { PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
 import { button, checkbox, label, meter, panel, pip, slider, spacer, tooltip } from '../ui-widgets.js';
+import { centeredTextX, statusLine } from '../ui-widgets.js';
 import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
@@ -736,5 +737,42 @@ describe('press ownership', () => {
         pressed = true;
         pressY = 18;
         assert.deepEqual(frame(), [false, true]);
+    });
+});
+
+describe('statusLine', () => {
+    // The texts the last flush printed, with their x and color slot.
+    function printed(t, isAudioUnlocked) {
+        const calls = [];
+
+        stubBt(t, { isAudioUnlocked, systemPrint: (pos, slot, text) => calls.push({ text, x: pos.x, slot }) });
+
+        const ctx = createReadyContext();
+
+        statusLine(ctx, 64, 'Press 1');
+
+        return calls;
+    }
+
+    it('shows the kit unlock wording in warm while audio is locked', (t) => {
+        const [call] = printed(t, false);
+
+        assert.equal(call.text, 'Click or press a key to enable sound');
+        assert.equal(call.slot, T.warm);
+    });
+
+    it('shows the demo text in dim, centered on the display, once audio unlocks', (t) => {
+        const [call] = printed(t, true);
+
+        assert.equal(call.text, 'Press 1');
+        assert.equal(call.slot, T.dim);
+        assert.equal(call.x, centeredTextX(160, 'Press 1'));
+    });
+});
+
+describe('centeredTextX', () => {
+    it('centers the visible letters, leaving out the trailing spacing column', () => {
+        // Two 6-wide glyphs span 11 visible pixels, so the left edge is 5 left of center.
+        assert.equal(centeredTextX(100, 'ab'), 95);
     });
 });
