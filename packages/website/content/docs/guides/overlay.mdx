@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
-lastModified: "2026-11-11T09:01:12+01:00"
+lastModified: "2026-11-11T12:35:18+01:00"
 ---
 
 The engine overlay is a screen-space HUD drawn after each demo `render()` when `HardwareSettings.isOverlayEnabled` is
@@ -93,9 +93,8 @@ Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, te
 readout), so those separators match the row gaps between bands; each divider keeps `7px` of space to the text on both
 sides, matching the `7px` text inset from the screen edges. For demos that draw their own HUD text with
 `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white, background,
-label, header, dim, FPS) and register `hud_*` name aliases. See
-[API: Palette - applyHUD](/docs/api/palette#built-in-presets) and
-[Palette Presets - HUD](/docs/guides/palette-presets#hud-preset).
+label, header, dim, code) and register `hud_*` name aliases. See [API: Palette - applyHUD](/docs/api/palette#hud-preset)
+and [Palette Presets - HUD](/docs/guides/palette-presets#hud-preset).
 
 ```ts twoslash
 import { BT, Palette, Vector2i } from 'blit386';
