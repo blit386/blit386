@@ -543,6 +543,30 @@ function runFfmpeg(args) {
 }
 
 /**
+ * Render the finished card from the native screenshot, then delete the screenshot unless
+ * `--keep-intermediate` asked to keep it. The delete runs on failure too: a leftover
+ * `og-<slug>.native.png` in public/social/ is not gitignored, so it would be committed and
+ * deployed.
+ *
+ * @param {string} nativePath Native-resolution screenshot path.
+ * @param {string} cardPath Finished card path.
+ * @param {{ drawWidth: number, drawHeight: number }} target Scale target from computeOgScale.
+ * @param {boolean} keepIntermediate Keep the screenshot.
+ * @param {(args: string[]) => void} [run] Runs ffmpeg; injectable for tests.
+ * @returns {void}
+ * @throws {Error} Whatever `run` throws, after the cleanup.
+ */
+export function renderCard(nativePath, cardPath, target, keepIntermediate, run = runFfmpeg) {
+    try {
+        run(buildOgFfmpegArgs(nativePath, cardPath, target));
+    } finally {
+        if (!keepIntermediate) {
+            rmSync(nativePath, { force: true });
+        }
+    }
+}
+
+/**
  * Capture one demo's card. Assumes the browser and viewport are already set up.
  *
  * @param {import('playwright-core').Page} page Page from {@link launchCaptureBrowser}.
@@ -590,17 +614,14 @@ async function captureOne(page, slug, options) {
     console.log(`  canvas ${dimensions.width}x${dimensions.height}, seeking to ${at}s...`);
     await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS, keys));
 
+    const target = computeOgScale(dimensions.width, dimensions.height, scaleMode);
+
     await page.locator(`#${CANVAS_ID}`).screenshot({ path: nativePath });
 
-    const target = computeOgScale(dimensions.width, dimensions.height, scaleMode);
     console.log(
         `  ${scaleMode}: scaling ${target.scale}x to ${target.drawWidth}x${target.drawHeight}, padding to card`,
     );
-    runFfmpeg(buildOgFfmpegArgs(nativePath, cardPath, target));
-
-    if (!options.keepIntermediate) {
-        rmSync(nativePath, { force: true });
-    }
+    renderCard(nativePath, cardPath, target, options.keepIntermediate);
 }
 
 /**

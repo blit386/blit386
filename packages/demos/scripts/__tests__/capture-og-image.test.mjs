@@ -5,6 +5,8 @@
  * ffmpeg, or the filesystem.
  */
 import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
@@ -26,6 +28,7 @@ import {
     DEFAULT_OUT_DIR,
     DEFAULTS,
     parseArgs,
+    renderCard,
     resolveOutDir,
     resolveScaleMode,
     VIEWPORT_HEIGHT,
@@ -371,5 +374,41 @@ describe('buildSeekScript', () => {
 
         assert.ok(up < again && again < script.indexOf('requestAnimationFrame'));
         assert.doesNotMatch(buildSeekScript(1, 10_000), /captureFrame/);
+    });
+});
+
+describe('renderCard', () => {
+    const target = { scale: 2, drawWidth: 640, drawHeight: 480 };
+    const failingFfmpeg = () => {
+        throw new Error('ffmpeg exited with status 1');
+    };
+
+    it('removes the native screenshot when ffmpeg throws', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'og-card-'));
+        const nativePath = buildNativeImagePath(dir, 'basics');
+        writeFileSync(nativePath, 'png');
+
+        try {
+            assert.throws(
+                () => renderCard(nativePath, buildOgImagePath(dir, 'basics'), target, false, failingFfmpeg),
+                /status 1/,
+            );
+            assert.equal(existsSync(nativePath), false);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('keeps the native screenshot under --keep-intermediate', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'og-card-'));
+        const nativePath = buildNativeImagePath(dir, 'basics');
+        writeFileSync(nativePath, 'png');
+
+        try {
+            assert.throws(() => renderCard(nativePath, buildOgImagePath(dir, 'basics'), target, true, failingFfmpeg));
+            assert.equal(existsSync(nativePath), true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     });
 });
