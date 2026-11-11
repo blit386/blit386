@@ -185,6 +185,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   after it stayed in `loading` forever and kept the old pixels. Each sheet is now replaced on its own: the failing sheet
   is marked `failed` and logged with the image URL, and the rest still get the new image. See
   [Hot reload](guide-hot-reload.md).
+- A sprite sheet whose image hot replace fails no longer ends up half replaced. When the new image had a color missing
+  from the active palette, the sheet took the new size and image but kept the old palette indices and texture. It now
+  keeps its old image, size and pixels, is marked `failed`, and the next good save replaces it. See
+  [Hot reload](guide-hot-reload.md#asset-hot-replace-matrix).
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:

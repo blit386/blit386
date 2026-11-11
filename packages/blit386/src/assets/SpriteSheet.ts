@@ -527,7 +527,7 @@ export class SpriteSheet {
      *   created from raw indexed data.
      */
     private get sourceName(): string {
-        return this.image?.src ? `'${this.image.src}'` : '(unnamed)';
+        return sourceLabel(this.image);
     }
 
     /**
@@ -828,16 +828,14 @@ export class SpriteSheet {
      * an already-indexized sheet when `palette` is `null`, since there is nothing safe
      * to reindex against.
      *
-     * If `indexize()` throws partway (a pixel color from the new image is missing from
-     * `palette`), this sheet is left with the new image/size but a stale, mismatched
-     * `indexedPixels`/texture until a subsequent successful hot reload - an accepted
-     * dev-only-path risk, not a production code path. {@link status} is set to
-     * `'failed'` and the error is rethrown.
+     * The new pixels are indexed before anything is swapped, so when that fails (a pixel
+     * color from the new image is missing from `palette`) the sheet keeps its old image,
+     * size, indices and texture. {@link status} is set to `'failed'` and the error is rethrown.
      *
      * @param image - Newly loaded replacement image.
-     * @param palette - Active palette, used to re-run `indexize` when the sheet was
+     * @param palette - Active palette, used to re-index the new pixels when the sheet was
      *   already indexized.
-     * @throws If the replacement image exceeds engine size limits, or `indexize()` throws.
+     * @throws If the replacement image exceeds engine size limits, or a pixel color is not in `palette`.
      */
     hotReplaceImage(image: HTMLImageElement, palette: Palette | null): void {
         if (!this.image) {
@@ -857,16 +855,20 @@ export class SpriteSheet {
         try {
             assertImageElementWithinLimits('sprite sheet', image);
 
-            this.image = image;
-            const decoded = getDecodedImageSize(image);
+            const { width, height } = getDecodedImageSize(image);
+            let { rgbaPixels, indexedPixels } = this;
 
-            this._size = Object.freeze(new Vector2i(decoded.width, decoded.height));
-
-            if (this.indexedPixels !== null && palette !== null) {
-                this.indexize(palette);
-            } else {
-                this.invalidateTexture();
+            // Index into locals first: a throw here must leave the sheet exactly as it was.
+            if (indexedPixels !== null && palette !== null) {
+                rgbaPixels = SpriteSheet.readRgbaPixels(image, width, height);
+                indexedPixels = mapRgbaPixelsToIndexed(width, height, rgbaPixels, palette, sourceLabel(image));
             }
+
+            this.image = image;
+            this._size = Object.freeze(new Vector2i(width, height));
+            this.rgbaPixels = rgbaPixels;
+            this.indexedPixels = indexedPixels;
+            this.invalidateTexture();
 
             this._status = 'ready';
             this._progress = 1.0;
@@ -1185,6 +1187,16 @@ export class SpriteSheet {
             hotReloadRegistry.delete(key);
         }
     }
+}
+
+/**
+ * Returns a display label for an image, used in error messages.
+ *
+ * @param image - Source image, or `null` for a sheet built from raw indexed data.
+ * @returns Quoted image `src` when available, otherwise `(unnamed)`.
+ */
+function sourceLabel(image: HTMLImageElement | null): string {
+    return image?.src ? `'${image.src}'` : '(unnamed)';
 }
 
 /**

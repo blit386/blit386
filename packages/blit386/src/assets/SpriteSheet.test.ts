@@ -1237,6 +1237,30 @@ describe('SpriteSheet', () => {
                 expect(sheet.getImage()).not.toBe(newImage);
                 expect(sheet.status).toBe('failed');
             });
+
+            it('leaves the sheet unchanged when the replacement has a color missing from the palette', () => {
+                vi.stubGlobal(
+                    'OffscreenCanvas',
+                    makeOffscreenCanvasMock(new Uint8ClampedArray([255, 0, 0, 255]), 1, 1),
+                );
+
+                const palette = new Palette(16);
+                palette.set(1, new Color32(255, 0, 0, 255));
+
+                const originalImage = { width: 1, height: 1 } as HTMLImageElement;
+                const sheet = new SpriteSheet(originalImage);
+                sheet.indexize(palette);
+
+                const greenPixels = new Uint8ClampedArray([0, 255, 0, 255, 0, 255, 0, 255]);
+                vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(greenPixels, 2, 1));
+                sheet.beginHotReplace();
+
+                expect(() => sheet.hotReplaceImage({ width: 2, height: 1 } as HTMLImageElement, palette)).toThrow();
+                expect(sheet.getImage()).toBe(originalImage);
+                expect(sheet.size.x).toBe(1);
+                expect(sheet.getIndexedPixels()).toEqual(new Uint8Array([1]));
+                expect(sheet.status).toBe('failed');
+            });
         });
     });
 });
