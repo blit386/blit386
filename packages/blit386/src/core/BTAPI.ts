@@ -77,7 +77,13 @@ import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
-import { DEFAULT_AUDIO_VOICES, defaultConfig, mergeHardwareSettings, needsOverlayRendererDiagnostics } from './IBTDemo';
+import {
+    DEFAULT_AUDIO_VOICES,
+    defaultConfig,
+    MAX_AUDIO_VOICES,
+    mergeHardwareSettings,
+    needsOverlayRendererDiagnostics,
+} from './IBTDemo';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
@@ -2542,8 +2548,11 @@ export class BTAPI {
 
         const { audioVoices } = this.hwSettings;
 
-        if (audioVoices !== undefined && (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > 64)) {
-            console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices)}`);
+        if (
+            audioVoices !== undefined &&
+            (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > MAX_AUDIO_VOICES)
+        ) {
+            console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices, MAX_AUDIO_VOICES)}`);
 
             return false;
         }

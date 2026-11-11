@@ -811,6 +811,9 @@ export interface IBTDemo {
 /** Default SFX voice slot count; read by {@link defaultConfig} and the audio attach fallback in `BTAPI`. */
 export const DEFAULT_AUDIO_VOICES = 16;
 
+/** Most SFX voice slots `HardwareSettings.audioVoices` may ask for; `BT.init()` rejects more. */
+export const MAX_AUDIO_VOICES = 64;
+
 /**
  * Creates a fresh default hardware configuration for quick demos.
  *
