@@ -1,5 +1,4 @@
 import { Rect2i } from '../../utils/Rect2i';
-import type { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
 import { OVERLAY_TOGGLE_CORNER_HEIGHT, OVERLAY_TOGGLE_CORNER_WIDTH } from '../input/constants';
 import { overlayDividerLabelWidth } from '../labels';
@@ -8,7 +7,6 @@ import {
     OVERLAY_EDGE_MARGIN_PX,
     OVERLAY_ROW_GAP_PX,
     OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX,
-    OVERLAY_TOP_TEXT_Y,
 } from './constants';
 import type { OverlayLayout } from './types';
 
@@ -32,20 +30,8 @@ export function createOverlayLayout(displayWidth: number, displayHeight: number,
         displayWidth,
         displayHeight,
         lineHeight,
-        topTextY: OVERLAY_TOP_TEXT_Y,
         toggleRect,
     };
-}
-
-/**
- * Returns whether a pointer position lies inside the toggle corner rect.
- *
- * @param pos - Pointer position in display coordinates.
- * @param toggleRect - Bottom-left toggle region.
- * @returns `true` when the point is inside the rect (`Rect2i.isContaining` half-open bounds).
- */
-export function isPointerInOverlayToggleCorner(pos: Vector2i, toggleRect: Rect2i): boolean {
-    return toggleRect.isContaining(pos);
 }
 
 /**

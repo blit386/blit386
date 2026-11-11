@@ -16,10 +16,11 @@ import {
     createOverlayLayout,
     overlayRightAlignedDividerLabelX,
     overlayRightAlignedTextX,
+    overlayToggleHintIconX,
 } from './layout/layoutHelpers';
 import { hintBarY, paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
-import { hintIconPos } from './OverlayToggleIcon';
+import { hintIconY } from './OverlayToggleIcon';
 import { computeGrid, writeScrollbarRects, writeSwatchTopLeft } from './palette/PaletteView';
 import {
     createMockRenderer,
@@ -223,7 +224,7 @@ describe('Overlay', () => {
         const topRightX = overlayRightAlignedDividerLabelX('webgpu|320x240', 320);
         const metricsY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y;
         const timingY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y;
-        const iconPos = hintIconPos(hintBarY(240));
+        const iconPos = new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarY(240)));
 
         expect(calls).toHaveLength(9);
 
@@ -453,7 +454,7 @@ describe('Overlay', () => {
     it('draws hint-only path while body is hidden and toggle hint is visible', () => {
         const overlay = createOverlay(createOverlayLayout(320, 240, 14), 'Demo');
         const renderer = createMockRenderer();
-        const iconPos = hintIconPos(hintBarY(240));
+        const iconPos = new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarY(240)));
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
 

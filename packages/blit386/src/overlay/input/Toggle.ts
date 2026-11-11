@@ -1,7 +1,6 @@
 import type { PointerInput } from '../../input/PointerInput';
 import { POINTER_SLOT_COUNT } from '../../input/PointerInput';
 import type { Rect2i } from '../../utils/Rect2i';
-import { isPointerInOverlayToggleCorner } from '../layout/layoutHelpers';
 import { POINTER_PRIMARY_BUTTON } from './constants';
 
 /**
@@ -69,7 +68,7 @@ export class Toggle {
 
             const pos = pointer.getPos(slot);
 
-            if (isPointerInOverlayToggleCorner(pos, toggleRect)) {
+            if (toggleRect.isContaining(pos)) {
                 this.#isBodyVisible = !this.#isBodyVisible;
 
                 return;

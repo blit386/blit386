@@ -13,9 +13,6 @@ export interface OverlayLayout {
     /** System font line height in pixels. */
     readonly lineHeight: number;
 
-    /** Y baseline for top-bar text. */
-    readonly topTextY: number;
-
     /** Bottom-left 17×13 px region that toggles overlay body visibility on primary press. */
     readonly toggleRect: Rect2i;
 }
@@ -79,8 +76,6 @@ export interface OverlayLayoutPlan {
     readonly topTimingPos: Vector2i;
 
     readonly rendererDiagnosticsPos: Vector2i;
-
-    readonly audioMeterTextPos: Vector2i;
 
     readonly customBars: readonly Rect2i[];
 

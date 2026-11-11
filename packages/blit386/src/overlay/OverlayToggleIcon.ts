@@ -3,17 +3,13 @@
  */
 
 import { Rect2i } from '../utils/Rect2i';
-import { Vector2i } from '../utils/Vector2i';
 import { OVERLAY_BAR_HEIGHT } from './layout/constants';
 import { overlayToggleHintIconX } from './layout/layoutHelpers';
 import type { OverlayDrawTarget } from './OverlayDrawTarget';
 import { ICON_HEIGHT, ICON_MASK, ICON_WIDTH } from './toggleIconData';
 
 /** Reused fill rect for icon horizontal runs (one overlay draw at a time). */
-const iconDrawScratch = {
-    run: new Rect2i(),
-    origin: new Vector2i(),
-};
+const runScratch = new Rect2i();
 
 /**
  * Computes the icon top-left Y inside the hint bar without allocating.
@@ -23,26 +19,6 @@ const iconDrawScratch = {
  */
 export function hintIconY(hintBarTopY: number): number {
     return hintBarTopY + Math.floor((OVERLAY_BAR_HEIGHT - ICON_HEIGHT) / 2);
-}
-
-/**
- * Returns the top-left screen position for the toggle hint icon inside the hint bar.
- *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @returns Icon anchor in display pixels.
- */
-export function hintIconPos(hintBarTopY: number): Vector2i {
-    return new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarTopY));
-}
-
-/**
- * Returns the screen-space rect reserved for the toggle hint icon (palette swatch exclusion).
- *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @returns Icon bounding rect in display pixels.
- */
-export function hintIconExclusionRect(hintBarTopY: number): Rect2i {
-    return new Rect2i(overlayToggleHintIconX(), hintIconY(hintBarTopY), ICON_WIDTH, ICON_HEIGHT);
 }
 
 /**
@@ -62,11 +38,9 @@ export function toggleIcon(
     textPaletteIndex: number,
     isInverted = false,
 ): void {
-    writeHintIconOrigin(iconDrawScratch.origin, hintBarTopY);
-
-    const originX = iconDrawScratch.origin.x;
-    const originY = iconDrawScratch.origin.y;
-    const run = iconDrawScratch.run;
+    const originX = overlayToggleHintIconX();
+    const originY = hintIconY(hintBarTopY);
+    const run = runScratch;
     const foregroundBit = isInverted ? 0 : 1;
 
     for (let row = 0; row < ICON_HEIGHT; row++) {
@@ -91,15 +65,4 @@ export function toggleIcon(
             target.drawBarFillOnTop(run, textPaletteIndex);
         }
     }
-}
-
-/**
- * Writes the toggle hint icon top-left origin into {@link target} without allocating.
- *
- * @param target - Reusable vector mutated in place.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- */
-function writeHintIconOrigin(target: Vector2i, hintBarTopY: number): void {
-    target.x = overlayToggleHintIconX();
-    target.y = hintIconY(hintBarTopY);
 }

@@ -31,7 +31,6 @@ export interface OverlayLayoutPlanScratch {
     topMetricsPos: Vector2i;
     topTimingPos: Vector2i;
     rendererDiagnosticsPos: Vector2i;
-    audioMeterTextPos: Vector2i;
     rowGapRects: Rect2i[];
     topClusterSeparator: Rect2i;
     bottomClusterSeparator: Rect2i;
@@ -59,7 +58,6 @@ export function createOverlayLayoutPlanScratch(): OverlayLayoutPlanScratch {
         topMetricsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         topTimingPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rendererDiagnosticsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
-        audioMeterTextPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rowGapRects: [],
         topClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
         bottomClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
@@ -389,15 +387,11 @@ export function buildOverlayLayoutPlan(
         scratch.audioMeterBar.y = meterY;
         scratch.audioMeterBar.width = displayWidth;
         scratch.audioMeterBar.height = meterHeight;
-        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
-        scratch.audioMeterTextPos.y = meterY + OVERLAY_TOP_TEXT_Y;
     } else {
         scratch.audioMeterBar.x = 0;
         scratch.audioMeterBar.y = preAudioMeterBottom;
         scratch.audioMeterBar.width = displayWidth;
         scratch.audioMeterBar.height = 0;
-        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
-        scratch.audioMeterTextPos.y = preAudioMeterBottom + OVERLAY_TOP_TEXT_Y;
     }
 
     scratch.toggleRect.x = toggleRect.x;

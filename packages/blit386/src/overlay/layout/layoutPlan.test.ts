@@ -125,7 +125,6 @@ describe('buildOverlayLayoutPlan', () => {
             height: 13,
         });
 
-        expect(plan.audioMeterTextPos.y).toBe(plan.audioMeterBar.y);
         expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
     });
 

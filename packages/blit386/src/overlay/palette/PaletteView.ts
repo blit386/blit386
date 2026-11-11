@@ -174,7 +174,7 @@ const gridDrawScratch = {
  * @param y - Swatch top edge in display pixels.
  * @param swatchSize - Side length of the swatch.
  */
-function writeUnusedSwatchMarkerRect(target: Rect2i, x: number, y: number, swatchSize: number): void {
+export function writeUnusedSwatchMarkerRect(target: Rect2i, x: number, y: number, swatchSize: number): void {
     if (swatchSize <= 0) {
         target.set(x, y, 0, 0);
         return;
@@ -184,23 +184,6 @@ function writeUnusedSwatchMarkerRect(target: Rect2i, x: number, y: number, swatc
     const offset = Math.floor((swatchSize - markerSize) / 2);
 
     target.set(x + offset, y + offset, markerSize, markerSize);
-}
-
-/**
- * Computes the filled marker rect drawn inside an unused swatch.
- *
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @returns Marker rect clamped and centered within the swatch bounds, or a
- * zero-area rect at `(x, y)` when `swatchSize` is not positive.
- */
-export function computeUnusedSwatchMarkerRect(x: number, y: number, swatchSize: number): Rect2i {
-    const result = new Rect2i();
-
-    writeUnusedSwatchMarkerRect(result, x, y, swatchSize);
-
-    return result;
 }
 
 /**

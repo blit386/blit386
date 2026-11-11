@@ -12,7 +12,6 @@ import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX } from '../layout/constants'
 import { hintBarY, paletteBandY } from '../layout/layoutPlan';
 import {
     computeGrid,
-    computeUnusedSwatchMarkerRect,
     DEFAULT_PALETTE_SWATCH_SIZE,
     gridRowStackHeight,
     gridRowWidth,
@@ -21,6 +20,7 @@ import {
     PaletteView,
     pickGridColumnCount,
     resolveGridVisibleRows,
+    writeUnusedSwatchMarkerRect,
 } from './PaletteView';
 
 /** Builds a usage mask from palette slot indices for tests. */
@@ -161,18 +161,26 @@ describe('resolveGridVisibleRows', () => {
     });
 });
 
-describe('computeUnusedSwatchMarkerRect', () => {
+describe('writeUnusedSwatchMarkerRect', () => {
+    const markerRect = (x: number, y: number, swatchSize: number): Rect2i => {
+        const rect = new Rect2i();
+
+        writeUnusedSwatchMarkerRect(rect, x, y, swatchSize);
+
+        return rect;
+    };
+
     it('returns a centered 3x3 marker for a 7px swatch', () => {
-        expect(computeUnusedSwatchMarkerRect(10, 20, 7)).toEqual(new Rect2i(12, 22, 3, 3));
+        expect(markerRect(10, 20, 7)).toEqual(new Rect2i(12, 22, 3, 3));
     });
 
     it('returns a zero-area rect for non-positive swatch sizes', () => {
-        expect(computeUnusedSwatchMarkerRect(10, 20, 0)).toEqual(new Rect2i(10, 20, 0, 0));
-        expect(computeUnusedSwatchMarkerRect(10, 20, -2)).toEqual(new Rect2i(10, 20, 0, 0));
+        expect(markerRect(10, 20, 0)).toEqual(new Rect2i(10, 20, 0, 0));
+        expect(markerRect(10, 20, -2)).toEqual(new Rect2i(10, 20, 0, 0));
     });
 
     it('clamps marker size for small swatches', () => {
-        expect(computeUnusedSwatchMarkerRect(0, 0, 4)).toEqual(new Rect2i(1, 1, 1, 1));
+        expect(markerRect(0, 0, 4)).toEqual(new Rect2i(1, 1, 1, 1));
     });
 });
 

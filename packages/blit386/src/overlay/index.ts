@@ -14,7 +14,6 @@ export { resolveOverlayTopLeftLabel } from './labels';
 export {
     createOverlayLayout,
     customBarY,
-    isPointerInOverlayToggleCorner,
     overlayBitmapTextPaletteOffset,
     overlayRightAlignedTextX,
     overlayToggleHintIconX,
@@ -31,12 +30,7 @@ export {
 export type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
 export { Overlay } from './Overlay';
 export type { OverlayDrawTarget, OverlayRenderer } from './OverlayDrawTarget';
-export {
-    hintIconExclusionRect,
-    hintIconPos,
-    hintIconY,
-    toggleIcon,
-} from './OverlayToggleIcon';
+export { hintIconY, toggleIcon } from './OverlayToggleIcon';
 export { PaletteInteraction } from './palette/PaletteInteraction';
 export { computeGrid, PaletteView } from './palette/PaletteView';
 export { FpsSampler } from './sampling/FpsSampler';
@@ -48,7 +42,6 @@ export {
     computeTimingChartGridLineY,
     isTimingChartGridLineAtY,
     resolveTimingChartStyle,
-    shouldDrawTimingChartGridLineY,
     timingChartBaselineY,
     timingChartFrameBudgetMs,
     writeTimingChartGridMarkers,
