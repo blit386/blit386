@@ -28,7 +28,7 @@ WHAT YOU WILL SEE
 
 A 640x480 screen with no engine overlay. Along the top runs a framed strip of thin blue
 bars, one per column. Below it sits a framed window of 32-pixel tiles in four kinds of
-ground - water, rock, forest, and grass - with small pale dots (the "rocks") scattered
+ground - water, rock, forest, and grass - with small pale dots (the "pebbles") scattered
 over about one tile in five. Three panels of the same height sit along the bottom:
 "Travel" with the two jump buttons, "This world" with where you are, and "Third number"
 with the Layer slider.
@@ -88,7 +88,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_DIRECTIONS } from './shared/ui.js';
+import { applyTheme, PANEL_CONTENT_SHRINK, PANEL_CONTENT_TOP, ui, UI_DIRECTIONS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -115,11 +115,10 @@ const MID_PANEL_W = DISPLAY_W - 2 * MARGIN - 2 * GAP - 2 * PANEL_W;
 const MID_PANEL_X = MARGIN + PANEL_W + GAP;
 const RIGHT_PANEL_X = MID_PANEL_X + MID_PANEL_W + GAP;
 
-// Widgets inside a panel start 9 pixels in from its left edge and are 20 pixels narrower
-// than it, and the first row starts 22 pixels down, under the title.
+// Widgets inside a panel start 9 pixels in from its left edge. How much narrower than the
+// panel they are (PANEL_CONTENT_SHRINK) and how far down the first row starts, under the
+// title (PANEL_CONTENT_TOP), come from the UI kit.
 const PANEL_CONTENT_X = 9;
-const PANEL_CONTENT_SHRINK = 20;
-const PANEL_CONTENT_TOP = 22;
 const PANEL_CONTENT_W = PANEL_W - PANEL_CONTENT_SHRINK;
 
 // The Travel panel's two buttons sit side by side. The kit stacks a group's rows, so the
@@ -167,7 +166,7 @@ const C_BG = 1; // background behind everything
 const C_STRIP = 2; // the 1D bars along the top
 const C_INK = 3; // frames and bright marks
 const C_DIM = 4; // faded lines
-const C_ROCK_DOT = 5; // the little decorations that hash3i places
+const C_PEBBLE_DOT = 5; // the little decorations that hash3i places
 
 // The four kinds of ground, in slots 10-13. The order matters: the number a tile hashes
 // to is compared against the thresholds below in this same order.
@@ -213,9 +212,6 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Slot map for the shared UI kit theme, filled in by applyTheme() during init().
-    theme = null;
-
     // Where we are looking, measured in world pixels, left to right. Together with camY
     // this is the only thing the demo remembers about the world - and it is a position,
     // not a map.
@@ -246,7 +242,7 @@ class Demo {
         this.palette.set(C_STRIP, new Color32(126, 195, 255)); // 1D bars
         this.palette.set(C_INK, new Color32(226, 232, 244)); // frames and marks
         this.palette.set(C_DIM, new Color32(64, 72, 92)); // faded lines
-        this.palette.set(C_ROCK_DOT, new Color32(232, 214, 160)); // hash3i decorations
+        this.palette.set(C_PEBBLE_DOT, new Color32(232, 214, 160)); // hash3i decorations
 
         // The four kinds of ground: water, rock, forest, and grass.
         this.palette.set(C_TERRAIN_BASE + TERRAIN_WATER, new Color32(44, 82, 140));
@@ -255,7 +251,7 @@ class Demo {
         this.palette.set(C_TERRAIN_BASE + TERRAIN_GRASS, new Color32(86, 150, 84));
 
         // Install the shared UI colors, then hand the finished palette to the engine.
-        this.theme = applyTheme(this.palette);
+        applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
@@ -338,9 +334,9 @@ class Demo {
 
         for (let sx = left; sx <= right; sx++) {
             // The bar belongs to a world column, not a screen column, so it scrolls with
-            // the view instead of sitting still. Math.floor keeps it a whole number even
-            // when the camera is at a negative position.
-            const worldColumn = Math.floor(this.camX) + sx - left;
+            // the view instead of sitting still. camX only ever moves in whole pixels, so
+            // the column is already a whole number, even left of the start.
+            const worldColumn = this.camX + sx - left;
 
             // Same trick as the tiles: scramble the coordinate, then squash the huge
             // result down to a height that fits the strip.
@@ -399,6 +395,8 @@ class Demo {
                     continue;
                 }
 
+                // This tile's place in the world, counted in whole tiles. It is all
+                // terrainAt() and hash3i() need to know.
                 const tx = firstTileX + col;
                 const ty = firstTileY + row;
 
@@ -420,7 +418,7 @@ class Demo {
                 const isDotInside = dotX >= left && dotX + 6 <= right && dotY >= top && dotY + 6 <= bottom;
 
                 if (isDotInside && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
-                    BT.drawRectFill(new Rect2i(dotX, dotY, 6, 6), C_ROCK_DOT);
+                    BT.drawRectFill(new Rect2i(dotX, dotY, 6, 6), C_PEBBLE_DOT);
                 }
             }
         }
@@ -452,6 +450,8 @@ class Demo {
         }
 
         ui.end();
+
+        // Home gets its own tiny group too, one button width plus a gap to the right.
         ui.begin('topLeft', { x: x + PANEL_CONTENT_X + TRAVEL_BUTTON_W + GAP, y: buttonY, pad: 0 });
 
         if (ui.button('H Home', { key: 'KeyH', width: TRAVEL_BUTTON_W })) {
@@ -491,7 +491,7 @@ class Demo {
 
         ui.spacer(LAYER_NOTE_GAP);
         ui.label('Ground ignores the layer.', { color: 'dim' });
-        ui.label('Rocks do not.', { color: 'dim' });
+        ui.label('Pebbles do not.', { color: 'dim' });
         ui.end();
     }
 }

@@ -15,20 +15,53 @@ Reference:
 
 ---
 
+WHAT YOU WILL SEE
+-----------------
+
 A dark blue screen with "Hello, World!" centered on it in the built-in system font. That
 is the whole program: a palette with two colors, one clear, one print.
 
+WHAT YOU WILL LEARN
+-------------------
+
+- The shape every BLIT386 program shares: a class with init(), update(), and render(),
+  handed to bootstrap() on the last line.
+- BT.paletteCreate() and palette.set() to pick colors, and BT.paletteSet() to use them.
+- BT.clear() to fill the screen, and BT.systemPrint() to write text with the built-in
+  font.
+- BT.systemPrintMeasure() to find out how big a piece of text is, so it can be centered.
+
+TRY THIS
+--------
+
+- Change the text between the quotes and reload - it stays centered at any length.
+- Change the numbers in new Color32(18, 22, 40) to paint the background another color.
+  The three numbers are red, green, and blue, each from 0 to 255.
+- Move on to the Basics demo, which makes a sprite bounce around the screen:
+  https://demos.blit386.dev/basics
+
 */
 
+// "import" loads tools from the BLIT386 engine library - like opening a toolbox before
+// you start building.
+//   - bootstrap: starts the engine and connects your demo to it.
+//   - BT: the main engine object - you call BT.clear(), BT.systemPrint(), and so on.
+//   - Color32: one color made of Red, Green, Blue, and an optional Alpha.
+//   - Vector2i: a 2D point using whole numbers (x, y) - here, where the text goes.
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
 // Palette slots. Slot 0 is always transparent, so our colors start at 1.
 const C_BG = 1;
 const C_TEXT = 2;
 
+// The whole program. The engine calls init() once, then update() and render() over and
+// over, many times per second.
 class Demo {
+    // The list of colors this demo draws with. It starts empty (null means "nothing yet")
+    // and init() fills it in.
     palette = null;
 
+    // Runs once at the start, before anything is drawn.
     async init() {
         // A palette is a numbered list of colors. Draw calls name a slot number,
         // not a color.
@@ -39,23 +72,32 @@ class Demo {
         // Make this palette the one the engine draws with.
         BT.paletteSet(this.palette);
 
+        // Returning true tells the engine that setup worked and it can start drawing.
         return true;
     }
 
     // Nothing moves, so there is no game logic to run each tick.
     update() {}
 
+    // Draws one frame: fill the screen, then print the text on top.
     render() {
+        // Fill the whole screen with the background color.
         BT.clear(C_BG);
 
-        // Measure the text first, then place its top-left corner so the text is centered.
+        // Measure the text first, then place its top-left corner so the text is centered:
+        // half the screen, minus half the text. BT.displaySize is the screen size in
+        // pixels. Math.floor() rounds down to a whole pixel, the same way the Basics demo
+        // centers its sprite.
         const text = 'Hello, World!';
         const size = BT.systemPrintMeasure(text);
-        const x = Math.round(BT.displaySize.x / 2 - size.x / 2);
-        const y = Math.round(BT.displaySize.y / 2 - size.y / 2);
+        const x = Math.floor(BT.displaySize.x / 2 - size.x / 2);
+        const y = Math.floor(BT.displaySize.y / 2 - size.y / 2);
 
+        // Print the text at that spot, in the text color.
         BT.systemPrint(new Vector2i(x, y), C_TEXT, text);
     }
 }
 
+// Hand the Demo class to the engine. bootstrap() creates the canvas, calls init(), and
+// starts calling update() and render() for us.
 bootstrap(Demo);

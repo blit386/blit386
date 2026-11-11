@@ -212,7 +212,10 @@ intermittently drops presses under rapid input. `BT.isKeyDown` / `BT.isDown` are
 / `keydown` / `touchstart` listeners and `BT.isAudioUnlocked` flips true on the first. Before unlock, `BT.soundPlay()`
 is dropped (inert `SoundRef`, no voice) while `BT.musicPlay()` is remembered and starts the instant the context unlocks.
 Loading and synthesizing clips work fine while locked. So every audio demo shows a "click or press a key to enable
-sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX was heard. There is no
+sound" prompt gated on `BT.isAudioUnlocked` - `ui.audioUnlockHint()` as a row inside a group, or
+`ui.statusLine(y, unlockedText)` as one centered line - and never assumes a first-frame SFX was heard. The gesture that
+unlocks audio can also be a button press, and that same tick still sees `BT.isAudioUnlocked === false`: defer the sound
+until the flag flips (audio-basics' pad and pitch buttons) rather than playing it into the void. There is no
 `BT.audioUnlock()` and no `BT.soundLoad()`.
 
 ## Shared UI kit

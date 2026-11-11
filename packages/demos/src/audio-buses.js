@@ -88,8 +88,8 @@ TRY THIS
 - Click Alert, or press Space, and listen to the music dip under the alert and then swell
   back. The Music slider drops to a quarter, the Ducking panel says "ducked to 25%", and
   the Hold bar drains until the music starts coming back.
-- Drag the Music slider while the music is ducked: the "Restore" value follows it, and the
-  music comes back to that level instead.
+- Drag the Music slider while the music is ducked: your drag ends the duck on the spot,
+  the music stays where you put it, and "Restore" follows the slider.
 - Watch the overlay's main, music, and sfx level bars follow the sliders and the duck.
   Press the backquote key (`) or click the small icon in the bottom-left corner to hide or
   show the overlay.
@@ -98,7 +98,13 @@ TRY THIS
 
 import { AudioClip, bootstrap, BT, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, THEME_OVERLAY_AUDIO_METER_STYLE, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
+import {
+    applyTheme,
+    PANEL_CONTENT_SHRINK,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    ui,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -133,11 +139,10 @@ const DUCK_ROW_Y = BUS_ROW_Y + BUS_PANEL_H + PANEL_GAP;
 const DUCK_PANEL_X = MARGIN_X + BUS_PANEL_W + PANEL_GAP;
 const DUCK_PANEL_W = 2 * BUS_PANEL_W + PANEL_GAP;
 
-// Widgets inside a panel are this wide: the panel minus the kit's 10-pixel text inset on
-// each side.
-const PANEL_TEXT_INSET = 10;
-const BUS_CONTENT_W = BUS_PANEL_W - 2 * PANEL_TEXT_INSET;
-const DUCK_CONTENT_W = DUCK_PANEL_W - 2 * PANEL_TEXT_INSET;
+// Widgets inside a panel are this wide: the panel minus the kit's text inset on each side
+// (PANEL_CONTENT_SHRINK).
+const BUS_CONTENT_W = BUS_PANEL_W - PANEL_CONTENT_SHRINK;
+const DUCK_CONTENT_W = DUCK_PANEL_W - PANEL_CONTENT_SHRINK;
 
 // The ducking panel's value column starts after this many characters, so the longest key,
 // "Restore", keeps a space after it.
@@ -168,6 +173,10 @@ class Demo {
 
     /** @type {AudioClip | null} */
     alertClip = null;
+
+    // Set when the Alert button was pressed and the alert has not played yet. update()
+    // plays it once sound is unlocked.
+    isAlertPending = false;
 
     // Whether the music bus is currently ducked because of a recent alert.
     isDucking = false;
@@ -229,7 +238,7 @@ class Demo {
         return true;
     }
 
-    // Advances the duck-and-recover countdown.
+    // Plays a pending alert and advances the duck-and-recover countdown.
     //
     // ui.tick() must run first: it is the kit's once-per-tick housekeeping that (among
     // other things) safely catches the keyboard shortcuts bound to the widgets in
@@ -237,6 +246,15 @@ class Demo {
     // render() - keyboard-input explains why in detail.
     update() {
         ui.tick();
+
+        // The press that unlocks the page still sees BT.isAudioUnlocked as false, because
+        // the browser finishes unlocking a moment later, and a sound played then is
+        // dropped. So the alert waits here until the unlock lands - otherwise the music
+        // would duck for an alert nobody heard. Audio Basics does the same.
+        if (this.isAlertPending && BT.isAudioUnlocked) {
+            this.isAlertPending = false;
+            this.triggerAlert();
+        }
 
         // While ducked, count the hold down one tick at a time. When it reaches zero,
         // fade the music bus back up to the remembered volume and end the duck.
@@ -262,29 +280,18 @@ class Demo {
 
         this.renderStatusLine();
 
-        // The alert panel goes first even though it sits lower on screen: its button may
-        // duck the music this very frame, and the Music slider drawn after it should
-        // already show the dip.
-        this.renderAlertPanel();
-
         BUSES.forEach((row, column) => {
             this.renderBusPanel(row, MARGIN_X + column * (BUS_PANEL_W + PANEL_GAP));
         });
 
+        this.renderAlertPanel();
         this.renderDuckPanel();
     }
 
-    // One centered line just under the overlay bars: the shared unlock reminder in warm
-    // orange until sound is unlocked, then a dim reminder of what to try.
+    // One centered line just under the overlay bars: the kit's shared unlock reminder in
+    // warm orange until sound is unlocked, then this dim reminder of what to try.
     renderStatusLine() {
-        const isLocked = !BT.isAudioUnlocked;
-        const text = isLocked ? 'Click or press a key to enable sound' : 'Drag a slider, toggle a Mute, try the Alert.';
-
-        // FONT_W is the width of one character; the last one's empty spacing column is
-        // left out, so the visible letters are what gets centered.
-        const x = Math.floor(DISPLAY_W / 2) - Math.floor((text.length * FONT_W - 1) / 2);
-
-        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
+        ui.statusLine(STATUS_Y, 'Drag a slider, toggle a Mute, try the Alert.');
     }
 
     // One bus's panel at column `x`: what the bus carries, a volume slider, and a mute
@@ -310,9 +317,11 @@ class Demo {
         if (nextVolume !== volume) {
             BT.audioVolumeSet(row.bus, nextVolume, { fadeMs: 0 });
 
-            // While music is ducked, remember the user's latest Music slider value so
-            // update() restores that level (not the pre-duck capture) when the hold ends.
+            // Dragging Music while it is ducked ends the duck right here: the user's
+            // level wins, so update() must not fade back to the old one when the hold
+            // would have ended, and the Ducking panel stops saying "ducked".
             if (row.bus === 'music' && this.isDucking) {
+                this.isDucking = false;
                 this.preDuckMusicVolume = nextVolume;
             }
         }
@@ -337,8 +346,9 @@ class Demo {
         ui.label('Space or tap', { color: 'dim' });
         ui.spacer(4);
 
+        // Ask for the alert. update() plays it on its next tick, once sound is unlocked.
         if (ui.button('Alert', { key: 'Space', width: BUS_CONTENT_W })) {
-            this.triggerAlert();
+            this.isAlertPending = true;
         }
 
         ui.spacer(ALERT_PANEL_FILLER);

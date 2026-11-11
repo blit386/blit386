@@ -62,6 +62,7 @@ import {
     audioUnlockHint,
     button,
     caption,
+    centeredTextX,
     checkbox,
     kv,
     label,
@@ -72,6 +73,7 @@ import {
     separator,
     slider,
     spacer,
+    statusLine,
     tooltip,
 } from './ui-widgets.js';
 
@@ -243,6 +245,17 @@ const ui = {
     },
 
     /**
+     * One centered line across the display at row `y`: the kit's warm "enable sound"
+     * wording while audio is locked, then `unlockedText` in dim. Call it outside any group.
+     *
+     * @param {number} y
+     * @param {string} unlockedText
+     */
+    statusLine(y, unlockedText) {
+        statusLine(ctx, y, unlockedText);
+    },
+
+    /**
      * A "KEY: value" row with an aligned value column.
      *
      * @param {string} key
@@ -401,6 +414,7 @@ const ui = {
 export {
     applyTheme,
     BUTTON_LOOK,
+    centeredTextX,
     defaultThemeSlot,
     FONT_W,
     litRimColor,

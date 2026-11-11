@@ -24,6 +24,7 @@ const STUB_KEYS = [
     'pointerPos',
     'pointerPosTo',
     'isKeyPressed',
+    'isAudioUnlocked',
     'ticks',
     'displaySize',
     'drawRectFill',
@@ -39,6 +40,7 @@ const SAFE_DEFAULTS = {
     pointerPos: () => ({ x: 0, y: 0 }),
     pointerPosTo: null, // filled in by stubBt() from pointerPos unless overridden
     isKeyPressed: () => false,
+    isAudioUnlocked: false,
     ticks: 0,
     displaySize: { x: 320, y: 180 },
     drawRectFill: () => {},

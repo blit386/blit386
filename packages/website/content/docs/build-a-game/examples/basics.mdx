@@ -113,10 +113,9 @@ import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 // ui.* draws things like the hint label in the top-left corner.
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
-// These @typedef lines tell code editors what we mean by Palette, SpriteSheet, and
-// Rect2i. They do not change how the demo runs.
+// These @typedef lines tell code editors what we mean by Palette and Rect2i, two engine
+// types we use but never import. They do not change how the demo runs.
 /** @typedef {import('blit386').Palette} Palette */
-/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
 
 // BLIT386 uses a "palette": a numbered list of colors you choose BEFORE drawing. Think of
@@ -373,9 +372,10 @@ class Demo {
         // edge is at pos.x + size.x. We compare against displaySize.x - size.x: the
         // farthest right the corner may go while the whole sprite still fits on screen.
         //
-        // We only flip the speed here - we do not push the sprite back onto the edge. So
-        // for one tick it can sit one pixel past the wall, then travel inward again. That
-        // is normal for a simple bounce.
+        // We only flip the speed here - we do not push the sprite back. With a speed of 1
+        // the corner lands exactly on the edge, and the speed flips on that same tick. A
+        // faster speed could step past the edge before it flips; for a simple bounce like
+        // this one, that is fine.
         if (this.pos.x <= 0 || this.pos.x >= BT.displaySize.x - this.size.x) {
             // Bounce: negating speed.x reverses the horizontal direction. If it was 1
             // (going right), it becomes -1 (going left).

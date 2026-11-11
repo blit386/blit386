@@ -124,6 +124,20 @@ const LISSAJOUS_BANDS = 32;
 const C_TUNNEL_BASE = 192;
 const TUNNEL_RECTS = 20;
 
+// The smallest tunnel square we draw, in pixels. The wobble can push the innermost
+// squares to a size of 1 or even below 0, and a rectangle outline needs at least 2 pixels
+// to have an inside at all.
+const TUNNEL_MIN_SIZE = 2;
+
+// Where each pattern sits: the centers of the 2x3 grid cells, made once here instead of
+// six new Vector2i objects every frame.
+const SPIRAL_CENTER = new Vector2i(60, 80);
+const RADIAL_CENTER = new Vector2i(160, 80);
+const WAVE_CENTER = new Vector2i(260, 80);
+const CIRCLE_CENTER = new Vector2i(60, 150);
+const LISSAJOUS_CENTER = new Vector2i(160, 150);
+const TUNNEL_CENTER = new Vector2i(260, 150);
+
 // Animated mathematical patterns drawn with primitives only, six of them in a 2x3 grid.
 class Demo {
     // A clock that counts up in seconds. It makes the patterns move.
@@ -132,10 +146,6 @@ class Demo {
     // The palette holds every color we are allowed to use: a box of 256 numbered paints.
     /** @type {Palette | null} */
     palette = null;
-
-    // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
-    // init(). The UI kit draws the six captions with these slots.
-    theme = null;
 
     // These Vector2i and Rect2i objects are created once and reused every frame. Making
     // new objects inside a loop every frame can slow things down, because the browser has
@@ -222,7 +232,7 @@ class Demo {
         // slots 240-251, above every range this demo touches (the highest animated range
         // is the tunnel at 192-211), so the per-tick palette animation never collides
         // with the UI colors. Must run before BT.paletteSet().
-        this.theme = applyTheme(this.palette);
+        applyTheme(this.palette);
 
         // Step 3: activate the palette. This tells the engine "use this palette for all
         // drawing from now on".
@@ -286,14 +296,14 @@ class Demo {
         BT.clear(C_BG);
 
         // Top row: three patterns centered at y = 80.
-        this.drawSpiral(new Vector2i(60, 80));
-        this.drawRadialLines(new Vector2i(160, 80));
-        this.drawWavePattern(new Vector2i(260, 80));
+        this.drawSpiral(SPIRAL_CENTER);
+        this.drawRadialLines(RADIAL_CENTER);
+        this.drawWavePattern(WAVE_CENTER);
 
         // Bottom row: three more centered at y = 150.
-        this.drawCircleApproximation(new Vector2i(60, 150));
-        this.drawLissajous(new Vector2i(160, 150));
-        this.drawTunnel(new Vector2i(260, 150));
+        this.drawCircleApproximation(CIRCLE_CENTER);
+        this.drawLissajous(LISSAJOUS_CENTER);
+        this.drawTunnel(TUNNEL_CENTER);
 
         // Caption each grid cell so viewers know which pattern they are looking at.
         // ui.caption() is the shared UI kit's pinned one-line caption, the same widget
@@ -389,8 +399,8 @@ class Demo {
             // Interference: both waves added together, divided by 2 to keep it in range.
             // Where the waves line up they reinforce each other; where they are opposite
             // they cancel out.
-            const y3 = Math.sin((x + this.animTime * 20) * 0.2) * 15 + Math.cos((x + this.animTime * 15) * 0.15) * 10;
-            this.tempVec1.set(baseX, center.y + Math.floor(y3 / 2));
+            const y3 = (y1 + y2) / 2;
+            this.tempVec1.set(baseX, center.y + Math.floor(y3));
             BT.drawPixel(this.tempVec1, C_WAVE_3);
         }
     }
@@ -474,8 +484,9 @@ class Demo {
             const t = i / TUNNEL_RECTS;
 
             // Outer squares are large, inner ones small. The sine term adds a gentle
-            // pulsing wobble to the size.
-            const size = (1 - t) * 60 + Math.sin(this.animTime * 2 + i * 0.3) * 5;
+            // pulsing wobble to the size. Math.max() keeps the result at TUNNEL_MIN_SIZE
+            // or more: it returns whichever of its two numbers is bigger.
+            const size = Math.max(TUNNEL_MIN_SIZE, (1 - t) * 60 + Math.sin(this.animTime * 2 + i * 0.3) * 5);
 
             // Each square orbits a little around the center. The orbit radius is i, so
             // the inner squares swing farther, and i * 0.2 gives each one a different

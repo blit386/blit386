@@ -69,9 +69,10 @@ cannot suddenly blast noise at you. The engine listens for that first gesture an
 its audio for the rest of the session; BT.isAudioUnlocked flips to true once it has.
 
 Not every audio call waits the same way. A sound played with BT.soundPlay() before the
-unlock is simply dropped (the overlay's "drop" counter goes up by one). The pad waits,
-and starts the looping pop on the first tick after unlock while the button is still
-held. Music started with BT.musicPlay() is remembered and starts the instant sound
+unlock is simply dropped (the overlay's "drop" counter goes up by one). So this demo
+waits instead: a pitch button pressed while sound is still locked plays its blip on the
+first tick after the unlock, and the pad starts its looping pop then if the button is
+still held. Music started with BT.musicPlay() is remembered and starts the instant sound
 unlocks - the Music demo shows that. Volume and mute changes are kept too, and apply as
 soon as sound unlocks.
 
@@ -105,7 +106,15 @@ TRY THIS
 
 import { AudioClip, bootstrap, BT, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, THEME_OVERLAY_AUDIO_METER_STYLE, THEME_OVERLAY_STYLE, ui } from './shared/ui.js';
+import {
+    applyTheme,
+    centeredTextX,
+    PANEL_CONTENT_SHRINK,
+    PANEL_CONTENT_TOP,
+    THEME_OVERLAY_AUDIO_METER_STYLE,
+    THEME_OVERLAY_STYLE,
+    ui,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SoundRef} SoundRef */
@@ -137,12 +146,10 @@ const LEFT_PANEL_W = 140;
 const RIGHT_PANEL_X = 148;
 const RIGHT_PANEL_W = 168;
 
-// Panel metrics from the UI kit: content starts 22 pixels below a panel's top edge
-// (under its title) and 9 pixels in from its left edge, and is 20 pixels narrower than
-// the panel.
-const PANEL_CONTENT_TOP = 22;
+// A panel's content starts this many pixels in from its left edge. How far below the top
+// edge it starts (PANEL_CONTENT_TOP) and how much narrower than the panel a full-width
+// row is (PANEL_CONTENT_SHRINK) come from the UI kit.
 const PANEL_CONTENT_X = 9;
-const PANEL_CONTENT_SHRINK = 20;
 
 // The pad inside the right panel: a dark box you press and hold to play the pop. Where
 // the pointer sits inside it picks the volume (top to bottom) and the pan (left to
@@ -197,12 +204,6 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
-// The x to print `text` at so its letters are centered on column `centerX`. The last
-// character's empty spacing column is left out, so the visible letters are what centers.
-function centeredTextX(centerX, text) {
-    return centerX - Math.floor((text.length * FONT_W - 1) / 2);
-}
-
 // Two sound effects - a blip for the pitch buttons and a pop for the pad - plus the
 // "click to enable sound" prompt every browser makes necessary.
 class Demo {
@@ -223,6 +224,11 @@ class Demo {
     // Pitch of the most recently played blip, or null before the first press.
     /** @type {number | null} */
     lastKeyPitch = null;
+
+    // Pitch of a blip a button asked for that has not played yet, or null. render()
+    // fills it in, and update() plays it once sound is unlocked.
+    /** @type {number | null} */
+    pendingPitch = null;
 
     // Flash countdown, in ticks, for the click ring and the pointer panel's volume meter.
     // It is held full while the pad is pressed, so both stay lit until you let go.
@@ -296,6 +302,16 @@ class Demo {
     update() {
         ui.tick();
 
+        // Play the blip a pitch button asked for. The press that unlocks the page still
+        // sees BT.isAudioUnlocked as false (see the pad below), and a sound played then
+        // is dropped, so the blip waits here until the unlock lands. Only then does
+        // "Last pitch" change, so it always names a sound you heard.
+        if (this.pendingPitch !== null && BT.isAudioUnlocked) {
+            BT.soundPlay(this.blipClip, { pitch: this.pendingPitch });
+            this.lastKeyPitch = this.pendingPitch;
+            this.pendingPitch = null;
+        }
+
         // BT.BTN_POINTER_A is the primary click (left mouse button, or a touchscreen
         // tap). BT.isPressed fires only once, on the tick the press happens; BT.isDown
         // stays true for as long as the button is held.
@@ -323,7 +339,7 @@ class Demo {
             this.isPadStartPending = false;
             this.startPadSound(pos);
         } else if (this.padSound !== null) {
-            if (BT.isDown(BT.BTN_POINTER_A, 0)) {
+            if (held) {
                 // Still held: the sound follows the pointer, even outside the pad.
                 this.movePadSound(pos);
             } else {
@@ -350,17 +366,10 @@ class Demo {
         this.renderPad();
     }
 
-    // One centered line just under the overlay bars: the shared unlock reminder in warm
-    // orange until sound is unlocked, then a dim reminder of the controls.
+    // One centered line just under the overlay bars: the kit's shared unlock reminder in
+    // warm orange until sound is unlocked, then this dim reminder of the controls.
     renderStatusLine() {
-        const isLocked = !BT.isAudioUnlocked;
-        const text = isLocked
-            ? 'Click or press a key to enable sound'
-            : 'Tap a button for a blip. Click the pad for a pop.';
-
-        const x = centeredTextX(Math.floor(BT.displaySize.x / 2), text);
-
-        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
+        ui.statusLine(STATUS_Y, 'Tap a button for a blip. Click the pad for a pop.');
     }
 
     // Left-hand panel: one button per pitch preset, plus the pitch last played. Each
@@ -374,9 +383,9 @@ class Demo {
 
         for (const preset of KEY_PITCH_PRESETS) {
             if (ui.button(preset.label, { key: preset.code, width: PITCH_BUTTON_W })) {
-                // Play the blip at this preset's speed and remember it for the row below.
-                BT.soundPlay(this.blipClip, { pitch: preset.pitch });
-                this.lastKeyPitch = preset.pitch;
+                // Ask for the blip at this preset's speed. update() plays it on its
+                // next tick, once sound is unlocked.
+                this.pendingPitch = preset.pitch;
             }
         }
 
@@ -489,6 +498,12 @@ class Demo {
 
     // Starts the pop looping at the pressed spot. `pos` is the pointer in display pixels.
     startPadSound(pos) {
+        // A release and a new press can land in the same tick. Stop the old loop first,
+        // so its handle is never lost while it keeps playing.
+        if (this.padSound !== null) {
+            BT.soundStop(this.padSound, { fadeOutMs: RELEASE_FADE_MS });
+        }
+
         this.padSound = BT.soundPlay(this.popClip, { loop: true });
         this.movePadSound(pos);
     }
