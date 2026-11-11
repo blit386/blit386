@@ -10,12 +10,7 @@ description:
 # Show a loading screen
 
 `BT.loadingAssetsCount` is the combined count of in-flight image and audio loads. Poll it each frame and draw a spinner
-(or a "Loading…" label) until it returns to `0`.
-
-## When to use
-
-Use when the user wants a loading or splash screen, a progress bar while assets load, or asks how to wait for sprites
-and sounds before gameplay starts.
+(or a "Loading..." label) until it returns to `0`.
 
 ## The BLIT386 splash already covers init()
 
@@ -35,11 +30,21 @@ a spinner on. To show a loading screen, return from `init()` quickly and start t
 do not await from `init()`). Then poll the counter every frame:
 
 ```js
-import { AudioClip, BT, SpriteSheet, Vector2i } from 'blit386';
+import { AudioClip, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
+
+// The starter game already names its color slots 1 to 4 (COLOR_BACKGROUND up to COLOR_TEXT).
+// The sprite's colors go in the slots after them, so loading it never overwrites those.
+const FIRST_SPRITE_SLOT = COLOR_TEXT + 1;
 
 async init() {
+    // 64 slots instead of the starter's 16, so the sprite's colors fit too.
     this.palette = BT.paletteCreate(64);
+    // Set the loading screen's colors BEFORE the first frame: every slot after 0 starts out black,
+    // so 'Loading...' in an unset slot is black text on a black screen.
+    this.palette.set(COLOR_BACKGROUND, new Color32(18, 22, 40)); // dark blue
+    this.palette.set(COLOR_TEXT, new Color32(235, 240, 255)); // near white
     BT.paletteSet(this.palette);
+
     this.hero = null;
     // Start loads WITHOUT awaiting them here, so update/render can run a loading UI.
     void this.boot();
@@ -47,7 +52,7 @@ async init() {
 }
 
 async boot() {
-    const hero = await SpriteSheet.loadIndexed('/sprites/hero.png', this.palette, 1);
+    const hero = await SpriteSheet.loadIndexed('/sprites/hero.png', this.palette, FIRST_SPRITE_SLOT);
     this.hero = hero.sheet;
     this.heroRect = hero.srcRect;
     this.theme = await AudioClip.load('/audio/theme.wav');
@@ -62,9 +67,9 @@ update() {
 }
 
 render() {
-    BT.clear(0);
+    BT.clear(COLOR_BACKGROUND);
     if (BT.loadingAssetsCount > 0 || !this.hero) {
-        BT.systemPrint(new Vector2i(8, 8), 1, 'Loading...');
+        BT.systemPrint(new Vector2i(8, 8), COLOR_TEXT, 'Loading...');
         return;
     }
     BT.drawSprite(this.hero, this.heroRect, new Vector2i(120, 90));
@@ -90,7 +95,7 @@ A normally loaded sheet is `'ready'` with `progress` `1.0`. Use these for a per-
 
 - Arrived in blit386 1.4.0. If the getter is missing, run `npx blit upgrade`.
 - Small starters can still `await` everything in `init()` and skip a loading UI - that is fine. Use this skill when you
-  want the player to see progress (or when hot-reload replacements should show a brief "Loading…" state).
+  want the player to see progress (or when hot-reload replacements should show a brief "Loading..." state).
 - Do not invent a fine-grained byte percentage from `progress`; it is intentionally coarse.
 
 See `docs/basics.md` (including The splash) and `docs/hot-reload.md`.
