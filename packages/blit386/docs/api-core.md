@@ -234,14 +234,9 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 
 <Callout title="Capturing at displaySize instead of outputSize">
 
-`BT.captureFrame()` and `BT.downloadFrame()` match `BT.outputSize` by default, as described above. Pass
-`{ size: 'display' }` (engine 1.7.1+) to capture at logical `BT.displaySize` instead, resolved directly from the
-palette-indexed scene buffer. That keeps every logical pixel a single PNG pixel for tests, image diffs, and palette
-debugging, but it also means the capture excludes display-tier post-process effects (scanlines, vignette, bloom, and
-similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer this path bypasses.
-The dev-mode frame-capture shortcuts (`HardwareSettings.isFrameCaptureShortcutEnabled`) take the same logical-size path:
-F9 copies to the OS clipboard, Shift+F9 downloads a file (not while `BT.renderAt` holds the loop stopped). Details and
-the size comparison table: [Rendering](api-rendering.md#frame-capture).
+Pass `{ size: 'display' }` to `BT.captureFrame()` or `BT.downloadFrame()` for one PNG pixel per logical pixel, without
+display-tier effects; the F9 / Shift+F9 dev shortcuts use the same path (Shift+F9 waits for `BT.resume()` while
+`BT.renderAt` holds the loop). See [Which size?](api-rendering.md#which-size).
 
 </Callout>
 
