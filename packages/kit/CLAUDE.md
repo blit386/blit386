@@ -166,6 +166,12 @@ implementation detail. The walk also turns "bundled into another package" from a
 `test/kit-root.test.mjs` covers both, including a guard that fails if the hardcoded-depth idiom reappears anywhere in
 `dist/`.
 
+## Git scopes
+
+Conventional Commits and DCO sign-off are root-level policy (see root `CLAUDE.md`). This package's scopes, by frequency
+(`git log --format=%s -- packages/kit`): `kit` for nearly everything, then `api`, `repo`, `release`, `create-blit386`,
+`agents`, `hooks`. Prefer `kit`; `release` is for lockstep version bumps.
+
 ## Where to find information
 
 | Question | Where to look |
