@@ -17,7 +17,7 @@ import {
     mergeHardwareSettings,
     needsOverlayRendererDiagnostics,
     resolveOverlayTimingChartDiagnostics,
-} from './IBTDemo';
+} from './mergeHardwareSettings';
 
 describe('defaultConfig', () => {
     it('should return 320x240 display size', () => {

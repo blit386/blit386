@@ -189,7 +189,7 @@ the text itself.
 
 ## Engine API in demos
 
-Current signatures live in the engine: `packages/blit386/src/BLIT386.ts`, `packages/blit386/src/core/BTAPI.ts`,
+Current signatures live in the engine: `packages/blit386/src/BLIT386.ts`, `packages/blit386/src/bt/`,
 `packages/blit386/src/audio/`. Match the library's public names exactly - configure flags use grammatical `is*`, runtime
 input uses `BT.isDown` / `BT.isPressed` / `BT.isKeyDown`. Prefer the built-ins over re-deriving them:
 `Color32#luminance` over inline luma weights, `Color32#multiply` over a hand-rolled tint, `palette.applyHUD(startSlot?)`

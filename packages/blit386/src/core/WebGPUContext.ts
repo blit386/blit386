@@ -1,4 +1,4 @@
-import { WEBGPU_ADAPTER_MESSAGE, WEBGPU_DEVICE_MESSAGE } from '../utils/errorMessages';
+import { WEBGPU_ADAPTER_MESSAGE, WEBGPU_DEVICE_MESSAGE, webgpuDeviceLostError } from '../utils/errorMessages';
 import { RenderDimensionLimitError, validateWebGPUTextureDimension } from '../utils/RenderLimits';
 import type { Vector2i } from '../utils/Vector2i';
 
@@ -27,6 +27,8 @@ export interface Result {
  *
  * When `configuredDrawingBufferSize` is omitted, the drawing buffer matches
  * `displaySize` (no upscaling, no display-tier effects).
+ *
+ * A device lost later (anything but the engine's own `destroy()`) logs one console error; recovery is not attempted.
  *
  * @param canvas - HTML canvas element to configure for WebGPU rendering.
  * @param displaySize - Internal render resolution in pixels (`HardwareSettings.displaySize`).
@@ -92,6 +94,9 @@ export async function initWebGPU(
         throw new Error(WEBGPU_DEVICE_MESSAGE, { cause: err });
     }
 
+    // Attached before any early destroy below, so every device the engine creates is watched.
+    void device.lost.then(reportDeviceLoss);
+
     const deviceLimit = device.limits?.maxTextureDimension2D;
     const deviceLogicalError = validateWebGPUTextureDimension('displaySize', displaySize, deviceLimit);
     const deviceOutputError =
@@ -136,6 +141,17 @@ export async function initWebGPU(
     console.log('[BT] WebGPU initialized successfully');
 
     return { device, context, drawingBufferSize: drawingBufferSize.clone() };
+}
+
+/**
+ * Logs a lost device. Silent for `'destroyed'`, the engine's own teardown (a restart or a failed init).
+ *
+ * @param info - What the browser reported when the device's `lost` promise settled.
+ */
+function reportDeviceLoss(info: GPUDeviceLostInfo): void {
+    if (info.reason !== 'destroyed') {
+        console.error(`[BT] ${webgpuDeviceLostError(info.message)}`);
+    }
 }
 
 /**

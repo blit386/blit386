@@ -9,8 +9,9 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
+import { getBackendQueryOverride } from '../core/engine/RendererSetup';
 import type { HardwareSettings, IBTDemo } from '../core/IBTDemo';
-import { mergeHardwareSettings } from '../core/IBTDemo';
+import { mergeHardwareSettings } from '../core/mergeHardwareSettings';
 import type { DemoConstructor } from '../utils/Bootstrap';
 import type { Vector2i } from '../utils/Vector2i';
 import { announce, nextGeneration, requestHardReload } from './HotRuntime';
@@ -222,7 +223,7 @@ function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
     // sees that override, so without reapplying it here `backend` would mismatch on every single
     // check under an override - forcing a hard reload on every edit, not just a real configure()
     // change.
-    const backendOverride = BTAPI.getBackendQueryOverride();
+    const backendOverride = getBackendQueryOverride();
 
     if (backendOverride) {
         nextSettings.backend = backendOverride;

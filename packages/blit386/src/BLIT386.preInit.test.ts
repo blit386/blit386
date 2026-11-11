@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type * as Harness from './__test__/engineHarness';
 import type { AudioClip } from './assets/AudioClip';
 import { BT } from './BLIT386';
-import { defaultConfig } from './core/IBTDemo';
+import { defaultConfig } from './core/mergeHardwareSettings';
 import { Vector2i } from './utils/Vector2i';
 
 const ONE = new Vector2i(1, 1);

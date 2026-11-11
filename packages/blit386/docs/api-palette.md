@@ -228,7 +228,8 @@ the last GPU upload - effects set this flag; no polling needed.
 
 Ranges for `BT.paletteCycle` and `BT.paletteFadeRange`, and both indices for `BT.paletteSwap`, start at slot 1, because
 slot 0 is always transparent and can't be changed. A range that includes slot 0, or an `end` at or past the palette
-size, throws at the call, and `paletteCycle` needs a palette set first, like the fade effects.
+size, throws at the call, and `paletteCycle` needs a palette set first, like the fade effects. `BT.paletteFlash` throws
+at the call when its color is not a `Color32` (`null`, `undefined`, or a color name string).
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';

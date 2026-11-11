@@ -46,25 +46,24 @@ import { lifecycle } from './bt/lifecycle';
 import { palette } from './bt/palette';
 import { pointer } from './bt/pointer';
 import { BTAPI } from './core/BTAPI';
-import {
-    type AudioBus,
-    type Backend,
-    defaultConfig,
-    type HardwareSettings,
-    type HotReloadContext,
-    type IBTDemo,
-    type KeyboardLayout,
-    mergeHardwareSettings,
-    type OutputUpscaleFilter,
-    type OverlayAudioMeterStyle,
-    type OverlayRow,
-    type OverlayStyle,
-    type OverlayTimingChartStyle,
-    type PreferredOrientation,
-    type RenderAtFrom,
-    type RenderAtOptions,
-    type TestStateSnapshot,
+import type {
+    AudioBus,
+    Backend,
+    HardwareSettings,
+    HotReloadContext,
+    IBTDemo,
+    KeyboardLayout,
+    OutputUpscaleFilter,
+    OverlayAudioMeterStyle,
+    OverlayRow,
+    OverlayStyle,
+    OverlayTimingChartStyle,
+    PreferredOrientation,
+    RenderAtFrom,
+    RenderAtOptions,
+    TestStateSnapshot,
 } from './core/IBTDemo';
+import { defaultConfig, mergeHardwareSettings } from './core/mergeHardwareSettings';
 import type { HotContext } from './hot/HotRuntime';
 import { registerHotReload } from './hot/HotRuntime';
 import { BarrelDistortion } from './render/effects/display/BarrelDistortion';

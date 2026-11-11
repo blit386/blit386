@@ -163,7 +163,7 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
         throw error;
     }
 
-    BTAPI.instance.setPalette(new Palette(16));
+    BTAPI.instance.palettes.setPalette(new Palette(16));
 
     frame(0);
     frame(0);

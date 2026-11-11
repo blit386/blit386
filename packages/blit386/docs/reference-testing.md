@@ -325,8 +325,9 @@ lost today - that is BT-703, not something a refresh-rate test should paper over
 
 </Callout>
 
-To check that a new test can fail, break the code it guards: moving `this.pointer?.endUpdate()` out of the update
-callback in `src/core/BTAPI.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays green.
+To check that a new test can fail, break the code it guards: moving `this.engine.pointer?.endUpdate()` out of
+`FrameLoop#update` in `src/core/engine/FrameLoop.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays
+green.
 
 ## Coverage
 
@@ -392,7 +393,7 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
 | `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:deprecations:check`, `api:getters:check`, `system-font:check`, `splash-logo:check`, and the `scripts/` Node suites (`test:declarations`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:bmfont`, `test:system-font`, `test:splash-logo`) |
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
-| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (92 KB) |
+| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (94 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry`, `check:demo-comment-links`, `test` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |

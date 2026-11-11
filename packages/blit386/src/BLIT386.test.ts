@@ -811,7 +811,7 @@ describe('BT.paletteSet', () => {
     });
 
     it('delegates to BTAPI.instance.setPalette', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'setPalette').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'setPalette').mockReturnValue(undefined);
         const palette = new Palette(16);
 
         BT.paletteSet(palette);
@@ -846,13 +846,13 @@ describe('BT.palette', () => {
     it('returns palette when one is set', () => {
         const palette = new Palette(16);
 
-        vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(palette);
+        vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(palette);
 
         expect(BT.palette).toBe(palette);
     });
 
     it('throws when no palette is set', () => {
-        vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+        vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
 
         expect(() => BT.palette).toThrow('No palette set yet. Call BT.paletteSet');
     });
@@ -900,7 +900,7 @@ describe('BT.clear', () => {
     });
 
     it('delegates to BTAPI.instance.setClearColor', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'setClearColor').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'setClearColor').mockReturnValue(undefined);
 
         BT.clear(1);
 
@@ -915,7 +915,7 @@ describe('BT.clearRect', () => {
     });
 
     it('delegates to BTAPI.instance.clearRect', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'clearRect').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'clearRect').mockReturnValue(undefined);
         const rect = new Rect2i(0, 0, 100, 100);
 
         BT.clearRect(rect, 1);
@@ -931,7 +931,7 @@ describe('BT.drawPixel', () => {
     });
 
     it('delegates to BTAPI.instance.drawPixel', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawPixel').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawPixel').mockReturnValue(undefined);
         const pos = new Vector2i(5, 10);
 
         BT.drawPixel(pos, 2);
@@ -940,7 +940,7 @@ describe('BT.drawPixel', () => {
     });
 
     it('passes the same Vector2i through without copying it', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawPixel').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawPixel').mockReturnValue(undefined);
         const pos = new Vector2i(5, 10);
 
         BT.drawPixel(pos, 2);
@@ -949,7 +949,7 @@ describe('BT.drawPixel', () => {
     });
 
     it('supports (x, y, color) arguments, routed through the XY fast path', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawPixelXY').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawPixelXY').mockReturnValue(undefined);
 
         BT.drawPixel(5, 10, 3);
 
@@ -967,7 +967,7 @@ describe('BT.drawPixel', () => {
 
     it('shows the beginner runtime error when the underlying draw call throws', async () => {
         await withErrorContainer(async () => {
-            vi.spyOn(BTAPI.instance, 'drawPixel').mockImplementation(() => {
+            vi.spyOn(BTAPI.instance.draw, 'drawPixel').mockImplementation(() => {
                 throw new Error('boom');
             });
 
@@ -997,7 +997,7 @@ describe('BT.drawLine', () => {
     });
 
     it('delegates to BTAPI.instance.drawLine', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawLine').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawLine').mockReturnValue(undefined);
         const p0 = new Vector2i(0, 0);
         const p1 = new Vector2i(50, 50);
 
@@ -1014,7 +1014,7 @@ describe('BT.drawRect', () => {
     });
 
     it('delegates to BTAPI.instance.drawRect', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawRect').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawRect').mockReturnValue(undefined);
         const rect = new Rect2i(10, 10, 40, 30);
 
         BT.drawRect(rect, 4);
@@ -1030,7 +1030,7 @@ describe('BT.drawRectFill', () => {
     });
 
     it('delegates to BTAPI.instance.drawRectFill', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawRectFill').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawRectFill').mockReturnValue(undefined);
         const rect = new Rect2i(0, 0, 20, 20);
 
         BT.drawRectFill(rect, 8);
@@ -1908,7 +1908,7 @@ describe('BT.systemPrint', () => {
     });
 
     it('delegates to BTAPI.instance.drawSystemText', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawSystemText').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawSystemText').mockReturnValue(undefined);
         const pos = new Vector2i(10, 10);
 
         BT.systemPrint(pos, 8, 'Hello');
@@ -1958,7 +1958,7 @@ describe('BT.printFont', () => {
     });
 
     it('delegates to BTAPI.instance.drawBitmapText', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawBitmapText').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawBitmapText').mockReturnValue(undefined);
         const font = {} as BitmapFont;
         const pos = new Vector2i(0, 0);
         const paletteOffset = 4;
@@ -1969,7 +1969,7 @@ describe('BT.printFont', () => {
     });
 
     it('forwards an undefined paletteOffset when omitted', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawBitmapText').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawBitmapText').mockReturnValue(undefined);
         const font = {} as BitmapFont;
 
         BT.printFont(font, new Vector2i(0, 0), 'Hi');
@@ -1994,7 +1994,7 @@ describe('BT.captureFrame', () => {
 
     it('delegates to BTAPI.instance.captureFrame and returns its result', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const result = await BT.captureFrame();
 
@@ -2009,7 +2009,7 @@ describe('BT.renderAt', () => {
     });
 
     it('passes options.from through to BTAPI.instance.renderAt', async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.seek, 'renderAt').mockResolvedValue(undefined);
 
         await BT.renderAt(3, { from: 'current' });
 
@@ -2017,7 +2017,7 @@ describe('BT.renderAt', () => {
     });
 
     it.each([['current'], [null], [[]]])('rejects, never throws, when options is %j', async (options) => {
-        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.seek, 'renderAt').mockResolvedValue(undefined);
         let result: Promise<void> | undefined;
 
         expect(() => {
@@ -2115,7 +2115,7 @@ describe("BT.captureFrame({ size: 'display' })", () => {
 
     it("passes 'display' through to BTAPI.instance.captureFrame", async () => {
         const mockBlob = new Blob(['png'], { type: 'image/png' });
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const result = await BT.captureFrame({ size: 'display' });
 
@@ -2124,7 +2124,7 @@ describe("BT.captureFrame({ size: 'display' })", () => {
     });
 
     it('passes undefined (the outputSize default) when no options are given', async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(new Blob());
 
         await BT.captureFrame();
 
@@ -2144,7 +2144,7 @@ describe('BT.downloadFrame', () => {
     it('calls captureFrame, creates object URL, clicks anchor, and revokes URL', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
 
-        vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const mockUrl = 'blob:mock-url';
         const createObjectURL = vi.fn().mockReturnValue(mockUrl);
@@ -2166,7 +2166,7 @@ describe('BT.downloadFrame', () => {
     });
 
     it("forwards { size: 'display' } to BTAPI.instance.captureFrame", async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(new Blob());
 
         vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:x'), revokeObjectURL: vi.fn() });
         vi.spyOn(document, 'createElement').mockReturnValue({
@@ -2183,7 +2183,7 @@ describe('BT.downloadFrame', () => {
     it('uses the default filename when none is provided', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
 
-        vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
         vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:x'), revokeObjectURL: vi.fn() });
 
         const mockAnchor = { href: '', download: '', click: vi.fn() };
@@ -2205,7 +2205,7 @@ describe('BT.drawSprite', () => {
     });
 
     it('delegates to BTAPI.instance.drawSprite', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
         const sheet = new SpriteSheet(mockImage);
         const srcRect = new Rect2i(0, 0, 16, 16);
         const destPos = new Vector2i(10, 20);
@@ -2217,7 +2217,7 @@ describe('BT.drawSprite', () => {
     });
 
     it('forwards the paletteOffset argument', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
         const sheet = new SpriteSheet(mockImage);
         const paletteOffset = 16;
 
@@ -2227,7 +2227,7 @@ describe('BT.drawSprite', () => {
     });
 
     it('forwards undefined tint when omitted', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
         const sheet = new SpriteSheet(mockImage);
 
         BT.drawSprite(sheet, new Rect2i(0, 0, 8, 8), new Vector2i(0, 0));
@@ -2236,7 +2236,7 @@ describe('BT.drawSprite', () => {
     });
 
     it('does not throw when called multiple times', () => {
-        vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+        vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
 
         const sheet = new SpriteSheet(mockImage);
 
@@ -2256,8 +2256,8 @@ describe('BT.drawSprite', () => {
     });
 
     it('routes an object 4th argument to the params path and a number to the fast path', () => {
-        const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
-        const withParams = vi.spyOn(BTAPI.instance, 'drawSpriteWithParams').mockReturnValue(undefined);
+        const fast = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
+        const withParams = vi.spyOn(BTAPI.instance.draw, 'drawSpriteWithParams').mockReturnValue(undefined);
         const sheet = new SpriteSheet(mockImage);
         const src = new Rect2i(0, 0, 16, 16);
         const dest = new Vector2i(1, 2);
@@ -2272,8 +2272,8 @@ describe('BT.drawSprite', () => {
     });
 
     it('accepts a Rect2i destination and scale on the params form only', () => {
-        const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
-        const withParams = vi.spyOn(BTAPI.instance, 'drawSpriteWithParams').mockReturnValue(undefined);
+        const fast = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
+        const withParams = vi.spyOn(BTAPI.instance.draw, 'drawSpriteWithParams').mockReturnValue(undefined);
         const sheet = new SpriteSheet(mockImage);
         const src = new Rect2i(0, 0, 8, 8);
         const rect = new Rect2i(0, 0, 16, 16);
@@ -2298,7 +2298,7 @@ describe('BT.drawSprite', () => {
 
     it('sends null params to the params path, which rejects them', async () => {
         await withErrorContainer(async () => {
-            const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+            const fast = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
 
             BT.drawSprite(
                 new SpriteSheet(mockImage),
@@ -2317,7 +2317,7 @@ describe('BT.drawSprite', () => {
         ['raw source numbers', 0],
     ])('rejects a %s source until that overload ships', async (label, src) => {
         await withErrorContainer(async () => {
-            const fast = vi.spyOn(BTAPI.instance, 'drawSprite').mockReturnValue(undefined);
+            const fast = vi.spyOn(BTAPI.instance.draw, 'drawSprite').mockReturnValue(undefined);
 
             BT.drawSprite(new SpriteSheet(mockImage), src as unknown as Rect2i, new Vector2i(0, 0));
 
@@ -2345,7 +2345,7 @@ describe('BT.drawTile', () => {
 
     /** Source rects as they were at call time - drawTile reuses one scratch rect. */
     let captured: number[][];
-    let drawSpriteSpy: MockInstance<BTAPI['drawSprite']>;
+    let drawSpriteSpy: MockInstance<BTAPI['draw']['drawSprite']>;
 
     function gridSheet(): SpriteSheet {
         const sheet = new SpriteSheet(mockImage);
@@ -2359,7 +2359,7 @@ describe('BT.drawTile', () => {
         vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
         captured = [];
         drawSpriteSpy = vi
-            .spyOn(BTAPI.instance, 'drawSprite')
+            .spyOn(BTAPI.instance.draw, 'drawSprite')
             .mockImplementation((_sheet: SpriteSheet, srcRect: Rect2i) => {
                 captured.push([srcRect.x, srcRect.y, srcRect.width, srcRect.height]);
             });
@@ -2527,7 +2527,7 @@ describe('BT.drawTile', () => {
 });
 
 describe('BT.drawNineSlice', () => {
-    let drawNineSliceSpy: MockInstance<BTAPI['drawNineSlice']>;
+    let drawNineSliceSpy: MockInstance<BTAPI['draw']['drawNineSlice']>;
 
     function makeSlice(): NineSlice {
         const sheet = SpriteSheet.fromIndexedPixels(16, 16, new Uint8Array(256) as Uint8Array<ArrayBuffer>);
@@ -2538,7 +2538,7 @@ describe('BT.drawNineSlice', () => {
     beforeEach(() => {
         vi.restoreAllMocks();
         vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
-        drawNineSliceSpy = vi.spyOn(BTAPI.instance, 'drawNineSlice').mockImplementation(() => {});
+        drawNineSliceSpy = vi.spyOn(BTAPI.instance.draw, 'drawNineSlice').mockImplementation(() => {});
     });
 
     it('forwards the nine-slice, box, and paletteOffset', () => {
@@ -2855,7 +2855,7 @@ describe('BT.paletteFadeExposure', () => {
     });
 
     it('delegates to BTAPI.instance.paletteFadeExposure', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'paletteFadeExposure').mockReturnValue(undefined);
         const target = new Palette(16);
 
         BT.paletteFadeExposure(target, 500);
@@ -2864,7 +2864,7 @@ describe('BT.paletteFadeExposure', () => {
     });
 
     it('passes the options bag through unchanged', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.palettes, 'paletteFadeExposure').mockReturnValue(undefined);
         const target = new Palette(16);
         const options = { highlightLead: 0.8, easing: 'ease-in-out' } as const;
 

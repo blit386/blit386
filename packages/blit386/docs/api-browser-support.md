@@ -15,6 +15,14 @@ automatically; it also runs on browsers that do not expose WebGPU globals at all
 Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
 init).
 
+If the WebGPU device is lost while the game runs (a GPU process crash, a driver reset, a laptop switching graphics
+cards), the engine logs one console error saying the graphics card stopped responding. The game does not switch to the
+software renderer or recover on its own; reload the page to start it again.
+
+A canvas keeps the first kind of context it was given, so the software renderer cannot start on a canvas WebGPU already
+used. A `BT.init()` restart with `backend: 'software'` on the same canvas resolves `false` and logs a console error that
+says so; pick the backend before the first `BT.init()` (in `configure()` or with `?backend=software`) instead.
+
 | Browser | Version | Status |
 | --- | --- | --- |
 | Chrome/Edge | 113+ | Enabled by default |

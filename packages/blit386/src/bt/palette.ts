@@ -55,7 +55,7 @@ export const palette = {
             return;
         }
 
-        BTAPI.instance.setPalette(palette);
+        BTAPI.instance.palettes.setPalette(palette);
     },
 
     /**
@@ -68,7 +68,7 @@ export const palette = {
      * @throws Error if no palette has been set.
      */
     get palette(): Palette {
-        const palette = BTAPI.instance.getPalette();
+        const palette = BTAPI.instance.palettes.getPalette();
 
         if (!palette) {
             throw new Error(NO_ACTIVE_PALETTE_MESSAGE);
@@ -135,7 +135,7 @@ export const palette = {
      *   or not below `end`, or `end` is past the palette.
      */
     paletteCycle: (start: number, end: number, speed: number): void => {
-        BTAPI.instance.paletteCycle(start, end, speed);
+        BTAPI.instance.palettes.paletteCycle(start, end, speed);
     },
 
     /**
@@ -158,7 +158,7 @@ export const palette = {
      * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
      */
     paletteFade: (target: Palette, durationMs: number, easing?: EasingFunction): void => {
-        BTAPI.instance.paletteFade(target, durationMs, easing);
+        BTAPI.instance.palettes.paletteFade(target, durationMs, easing);
     },
 
     /**
@@ -199,7 +199,7 @@ export const palette = {
      * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
      */
     paletteFadeExposure: (target: Palette, durationMs: number, options?: ExposureFadeOptions): void => {
-        BTAPI.instance.paletteFadeExposure(target, durationMs, options);
+        BTAPI.instance.palettes.paletteFadeExposure(target, durationMs, options);
     },
 
     /**
@@ -226,7 +226,7 @@ export const palette = {
         durationMs: number,
         easing?: EasingFunction,
     ): void => {
-        BTAPI.instance.paletteFadeRange(start, end, target, durationMs, easing);
+        BTAPI.instance.palettes.paletteFadeRange(start, end, target, durationMs, easing);
     },
 
     /**
@@ -237,12 +237,13 @@ export const palette = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
+     * @changed 1.8.1 Throws at the call when `color` is not a `Color32`, instead of throwing from inside a later tick.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
-     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
+     * @throws Error if no palette is set, `color` is not a `Color32`, or `durationMs` is not a non-negative finite number.
      */
     paletteFlash: (color: Color32, durationMs: number): void => {
-        BTAPI.instance.paletteFlash(color, durationMs);
+        BTAPI.instance.palettes.paletteFlash(color, durationMs);
     },
 
     /**
@@ -259,7 +260,7 @@ export const palette = {
      *   is past the palette.
      */
     paletteSwap: (indexA: number, indexB: number): void => {
-        BTAPI.instance.paletteSwap(indexA, indexB);
+        BTAPI.instance.palettes.paletteSwap(indexA, indexB);
     },
 
     /**
@@ -270,7 +271,7 @@ export const palette = {
      * @since 1.0.3
      */
     paletteClearEffects: (): void => {
-        BTAPI.instance.paletteClearEffects();
+        BTAPI.instance.palettes.paletteClearEffects();
     },
 
     /**
@@ -305,6 +306,6 @@ export const palette = {
      * @throws If no active palette has been set.
      */
     spritesRefresh: (): void => {
-        BTAPI.instance.spritesRefresh();
+        BTAPI.instance.palettes.spritesRefresh();
     },
 };

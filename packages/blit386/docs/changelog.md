@@ -109,6 +109,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `1` (a fractional `22.5`, or `0`), or when a field of `overlayStyle`, `overlayTimingChartStyle` or
   `overlayAudioMeterStyle` is not a whole-number palette index from `0` to `255`. These values used to be accepted, so a
   fractional height drew the overlay bands at fractional positions. See [Valid values](api-overlay.md#valid-values).
+- Behavior change: a `BT.init()` restart starts with no palette and no palette effects. `BT.palette` throws until the
+  new `init()` calls `BT.paletteSet()`, as on a first boot. The previous run's palette, its cycles and fades, and a
+  `BT.cameraReset()` still waiting for its tick used to carry into the new game. See
+  [Engine readiness](api-core.md#engine-readiness).
 
 ### Fixed
 
@@ -367,6 +371,18 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   before the reset.
 - The overlay's Present FPS no longer dips each time the overlay body is shown again. It was sampled only while the body
   was visible, so the first frame after 10 s hidden read about 53 instead of 60 and took about 30 frames to recover.
+- A lost WebGPU device (a GPU process crash, a driver reset, a laptop switching graphics cards) now logs one clear
+  console error that says to reload the page. The game used to freeze on a black canvas with no message while the loop
+  kept running. See [Browser Support](api-browser-support.md).
+- Pressing F9 while `BT.renderAt` holds the loop stopped now copies the seeked frame to the clipboard. The copy used to
+  wait for a frame that never came until `BT.resume()`, and every later F9 press was ignored meanwhile. Shift+F9 still
+  waits for `BT.resume()`. See [Core](api-core.md#seeking-a-frame-with-renderat).
+- The software renderer now logs a clear console error when it cannot start because WebGPU already uses the canvas (a
+  `BT.init()` restart with `backend: 'software'`, or a fallback after WebGPU got as far as the canvas). `BT.init()` used
+  to resolve `false` with only "Failed to initialize renderer". See [Browser Support](api-browser-support.md).
+- `BT.paletteFlash()` throws at the call when its color is not a `Color32`. A `null` or `undefined` color from plain
+  JavaScript used to be accepted and then threw a `TypeError` from inside the engine on the next tick, away from the
+  line that caused it. See [Palette](api-palette.md#palette-effects).
 
 ## 1.8.0 - 2026-10-18
 

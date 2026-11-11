@@ -5,13 +5,8 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
-import {
-    type Backend,
-    defaultConfig,
-    type IBTDemo,
-    type RenderAtOptions,
-    type TestStateSnapshot,
-} from '../core/IBTDemo';
+import type { Backend, IBTDemo, RenderAtOptions, TestStateSnapshot } from '../core/IBTDemo';
+import { defaultConfig } from '../core/mergeHardwareSettings';
 import type { SplashState } from '../splash';
 import { renderAtOptionsError } from '../utils/errorMessages';
 import { downloadBlob, type FrameCaptureOptions } from '../utils/FrameCapture';
@@ -66,11 +61,12 @@ export const lifecycle = {
      * replays as a default-built copy, so keep per-run setup in `init()`.
      *
      * Calling `init()` again after an earlier call resolved restarts the engine: the old game loop
-     * stops and the old GPU device is destroyed before the new run starts.
+     * stops and the old GPU device is destroyed before the new run starts. The new run starts with
+     * no palette, no palette effects and no post-process effects, so its `init()` sets them again.
      *
      * @since 0.1.0
      * @changed 1.8.0 A call made while another `init()` is still running resolves to `false` and changes nothing.
-     * @changed 1.8.1 A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running.
+     * @changed 1.8.1 A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running. The restarted run starts with no palette (`BT.palette` throws until `init()` sets one) and no palette effects.
      * @param demo - Demo implementation that provides lifecycle hooks.
      * @param canvas - Canvas used as the engine render target.
      * @returns `true` when initialization succeeds; otherwise `false`.
@@ -435,7 +431,7 @@ export const lifecycle = {
      * const exact = await BT.captureFrame({ size: 'display' });
      */
     captureFrame: async (options: FrameCaptureOptions = {}): Promise<Blob> => {
-        return await BTAPI.instance.captureFrame(options.size);
+        return await BTAPI.instance.capture.captureFrame(options.size);
     },
 
     /**
@@ -486,7 +482,7 @@ export const lifecycle = {
             return Promise.reject(new Error(renderAtOptionsError(options)));
         }
 
-        return BTAPI.instance.renderAt(seconds, options.from);
+        return BTAPI.instance.seek.renderAt(seconds, options.from);
     },
 
     /**
@@ -501,7 +497,7 @@ export const lifecycle = {
      * @returns Resolves once the loop has restarted, or once the call turned out to be a no-op.
      */
     resume: (): Promise<void> => {
-        return BTAPI.instance.resume();
+        return BTAPI.instance.seek.resume();
     },
 
     /**
@@ -525,7 +521,7 @@ export const lifecycle = {
         filename: string = 'blit386-capture.png',
         options: FrameCaptureOptions = {},
     ): Promise<void> => {
-        const blob = await BTAPI.instance.captureFrame(options.size);
+        const blob = await BTAPI.instance.capture.captureFrame(options.size);
 
         downloadBlob(blob, filename);
     },

@@ -228,8 +228,8 @@ palette-indexed scene buffer. That keeps every logical pixel a single PNG pixel 
 debugging, but it also means the capture excludes display-tier post-process effects (scanlines, vignette, bloom, and
 similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer this path bypasses.
 The dev-mode frame-capture shortcuts (`HardwareSettings.isFrameCaptureShortcutEnabled`) take the same logical-size path:
-F9 copies to the OS clipboard, Shift+F9 downloads a file. Details and the size comparison table:
-[Rendering](api-rendering.md#frame-capture).
+F9 copies to the OS clipboard, Shift+F9 downloads a file (not while `BT.renderAt` holds the loop stopped). Details and
+the size comparison table: [Rendering](api-rendering.md#frame-capture).
 
 </Callout>
 
@@ -616,10 +616,11 @@ and `BT.isReady` stays `false` for the whole duration of any `init()`, including
 A `BT.init()` call made after an earlier one resolved restarts the engine cleanly (since 1.8.1). It stops the running
 game loop, detaches input and audio, and destroys the previous GPU device before creating a new one, so only one loop
 ever runs and a "back to title" restart does not leak GPU memory. Sprite sheets and fonts you kept from the earlier run
-rebuild their texture on the new device the next time they are drawn. Post-process effects do not carry over, so add
-them again in `init()`. The BLIT386 splash plays once per page load, so a restart runs your `init()` without it and
-`BT.splashState` stays `'done'`. A `BT.renderAt` seek already running finishes before the restart begins, and one called
-while the restart runs rejects, as it does before the first init.
+rebuild their texture on the new device the next time they are drawn. The palette, palette effects, and post-process
+effects do not carry over: `BT.palette` throws until the new `init()` calls `BT.paletteSet()`, so set them again there.
+The BLIT386 splash plays once per page load, so a restart runs your `init()` without it and `BT.splashState` stays
+`'done'`. A `BT.renderAt` seek already running finishes before the restart begins, and one called while the restart runs
+rejects, as it does before the first init.
 
 Poll it from an external driver that loads the page and needs to wait before seeking or reading state. Prefer it over
 matching the error text from a premature `renderAt`. In a dev build, `bootstrap()` sets `window.BT` when it finishes
@@ -695,6 +696,8 @@ BT.resume(); // keep playing from tick 192
   captures the frame at 5 seconds, and `BT.renderAt(1); BT.resume(); BT.renderAt(2)` ends stopped on second 2.
   `BT.resume()` returns a promise that settles once the loop has restarted; awaiting it is optional. If the game's
   `render()` throws while the seeked frame is re-rendered for a capture, `BT.captureFrame()` rejects with that error.
+- The F9 shortcut copies the seeked frame the same way. Shift+F9 does nothing while the loop is stopped (it is read on
+  the update tick, and none runs); call `BT.downloadFrame()` or press it after `BT.resume()`.
 - The audio context is suspended during the seek and until `BT.resume()`, and `BT.soundPlay` calls made by stepped
   updates are dropped (they return `INVALID_SOUND_REF`). Music started by `init()` during a `'start'` seek plays from
   its beginning after resume - realigning it needs music seeking, which has not shipped yet.

@@ -4,7 +4,8 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
-import { defaultConfig, type HardwareSettings } from '../core/IBTDemo';
+import type { HardwareSettings } from '../core/IBTDemo';
+import { defaultConfig } from '../core/mergeHardwareSettings';
 import type { PointerClock } from '../input/PointerInput';
 import { displayError, getErrorContainerID, logErrorOnce } from '../utils/BootstrapHelpers';
 

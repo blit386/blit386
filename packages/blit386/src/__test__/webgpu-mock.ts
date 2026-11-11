@@ -213,8 +213,8 @@ export function createMockGPUDevice(): GPUDevice {
         /** Supported limits. */
         limits: {} as GPUSupportedLimits,
 
-        /** Promise that resolves when the device is lost. */
-        lost: Promise.resolve({ reason: undefined, message: '' } as unknown as GPUDeviceLostInfo),
+        /** Promise that settles when the device is lost; a real device's never settles until then, so neither does this. */
+        lost: new Promise<GPUDeviceLostInfo>(() => undefined),
 
         /** Destroys the device. */
         destroy: () => {},

@@ -8,11 +8,12 @@ import { buildPathHint, extractExtension } from '../urlHints';
  * Returns the error message for an `audioVoices` hardware setting outside the supported range.
  *
  * @param value - Invalid `audioVoices` value.
+ * @param max - Largest allowed voice count.
  * @returns User-facing error string.
  */
-export function audioVoicesRangeError(value: number): string {
+export function audioVoicesRangeError(value: number, max: number): string {
     return (
-        `audioVoices must be a whole number from 1 to 64 (got ${value}). ` +
+        `audioVoices must be a whole number from 1 to ${max} (got ${value}). ` +
         'Update configure() to return a valid voice count'
     );
 }

@@ -8,8 +8,11 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
-import type { Backend, OverlayRow, OverlayTimingChartDiagnosticsMode } from '../core/IBTDemo';
-import { resolveOverlayTimingChartDiagnostics } from '../core/IBTDemo';
+import type { Backend, OverlayRow } from '../core/IBTDemo';
+import {
+    type OverlayTimingChartDiagnosticsMode,
+    resolveOverlayTimingChartDiagnostics,
+} from '../core/mergeHardwareSettings';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import { POINTER_SLOT_COUNT, type PointerInput } from '../input/PointerInput';
 import type { Rect2i } from '../utils/Rect2i';
