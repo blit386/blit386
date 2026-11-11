@@ -176,7 +176,7 @@ set by `src/basics.js`; see `packages/demos/CLAUDE.md` (Documentation Style and 
 
 ### 5. Verify it runs
 
-- `pnpm run check:demo-registry` (from `packages/demos`) - confirms disk, order, vintage, and nav-hidden sets agree.
+- `pnpm run check:demo-registry` (from `packages/demos`) - confirms disk, order, and vintage sets agree.
 - `pnpm run check:demo-comment-links` (from `packages/demos`) - catches a dead `vancura.dev` link, or a
   `Prerequisites:`/`Guides:`/`Reference:` link to a docs page, `#heading` anchor, or demo slug that does not actually
   exist.

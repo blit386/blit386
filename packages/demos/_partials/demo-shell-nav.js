@@ -23,8 +23,7 @@ export function readDemoList() {
 }
 
 /**
- * Index of the current page's demo within `demos`, or -1 if this demo is nav-hidden
- * (see `NAV_HIDDEN_SLUGS` in `plugins/demo-registry.js` -- excluded from the combobox/prev-next chain).
+ * Index of the current page's demo within `demos`, or -1 if its slug is not in the list.
  * @param {Array<{slug: string}>} demos
  * @returns {number}
  */
@@ -88,37 +87,6 @@ export function slugFromLocation() {
 }
 
 /**
- * Title-case a kebab-case slug, e.g. "sprite-effects" -> "Sprite Effects".
- * Mirrors plugins/demo-registry.js's titleCaseTopic for nav-hidden fallbacks.
- * @param {string} slug
- * @returns {string}
- */
-function titleCaseSlug(slug) {
-    return slug
-        .split('-')
-        .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1) : word))
-        .join(' ');
-}
-
-/**
- * Look up the document title for a slug from the nav list. Nav-hidden slugs
- * (absent from `demos`) get a stable slug-derived title so popstate does not
- * leave a stale document.title from the previous demo.
- * @param {Array<{slug: string, title: string}>} demos
- * @param {string} slug
- * @returns {string}
- */
-function titleFor(demos, slug) {
-    for (let i = 0; i < demos.length; i++) {
-        if (demos[i].slug === slug) {
-            return demos[i].title;
-        }
-    }
-
-    return `BLIT386 Demo - ${titleCaseSlug(slug)}`;
-}
-
-/**
  * Enable or disable the prev/next buttons for the given index into `demos`,
  * and refresh their neighbor-name tooltips (canonical order, never filtered).
  * Buttons stay clickable whenever a neighbor exists; keyboard Up/Down are never
@@ -178,7 +146,7 @@ export function syncNavUI(demos, slug) {
         if (currentIndex >= 0) {
             input.value = demos[currentIndex].navLabel;
         } else {
-            // Nav-hidden demos are not in the list; leave the field blank.
+            // A slug missing from the list; leave the field blank.
             input.value = '';
         }
     }
@@ -217,7 +185,7 @@ export function selectDemo(slug, options) {
     }
 
     document.body.dataset.slug = slug;
-    document.title = titleFor(demos, slug);
+    document.title = demos.find((demo) => demo.slug === slug)?.title ?? document.title;
 
     syncNavUI(demos, slug);
 

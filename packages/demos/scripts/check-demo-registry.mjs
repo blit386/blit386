@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Enforce mutual consistency between demo files on disk, DEMO_ORDER, VINTAGE_URLS,
- * and NAV_HIDDEN_SLUGS. Failures exit 1 with clear messages - soft console.warns from
- * buildRegistry are not enough for CI / preflight.
+ * Enforce mutual consistency between demo files on disk, DEMO_ORDER, and VINTAGE_URLS.
+ * Failures exit 1 with clear messages - soft console.warns from buildRegistry are not
+ * enough for CI / preflight.
  *
  * Rules:
  * - Every `src/*.js` matching the number-free kebab-case pattern has exactly one
@@ -10,7 +10,7 @@
  * - No duplicate current slugs; no current slug may equal a vintage URL key that maps
  *   elsewhere (would steal that demo's public path).
  * - Every VINTAGE_URLS target is either a live slug or listed in RETIRED_SLUGS.
- * - Every NAV_HIDDEN_SLUGS / RETIRED_SLUGS entry is still meaningful (no stale rows).
+ * - Every RETIRED_SLUGS entry is still meaningful (no stale rows).
  * - No demo may use a reserved page path (RESERVED_SLUGS: the /shots gallery, the site index).
  * - Every demo carries a one-line `@description` header tag of a length that survives every
  *   social-card consumer intact (see DESCRIPTION_MIN_CHARS / DESCRIPTION_MAX_CHARS).
@@ -22,13 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import {
-    buildRegistry,
-    FILENAME_PATTERN,
-    HEADER_SCAN_BYTES,
-    NAV_HIDDEN_SLUGS,
-    RESERVED_SLUGS,
-} from '../plugins/demo-registry.js';
+import { buildRegistry, FILENAME_PATTERN, HEADER_SCAN_BYTES, RESERVED_SLUGS } from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
 import { OG_IMAGE_DIR, OG_SCALE_MODES, ogImageFile } from '../plugins/social-meta.js';
 
@@ -390,9 +384,6 @@ function main() {
         ...findVintageKeyCollisions(diskSlugs, VINTAGE_URLS),
         ...findReservedSlugFailures(diskSlugs, RESERVED_SLUGS),
         ...findVintageUrlFailures(VINTAGE_URLS, diskSlugSet, RETIRED_SLUGS),
-        ...[...NAV_HIDDEN_SLUGS]
-            .filter((slug) => !diskSlugSet.has(slug))
-            .map((slug) => `NAV_HIDDEN_SLUGS lists "${slug}" but src/${slug}.js is missing (stale entry)`),
         ...findHeaderTagFailures(registry),
         ...findMissingOgCardFailures(registry),
     ];
@@ -405,15 +396,13 @@ function main() {
         }
 
         console.error(`\n${errors.length} error(s). Fix plugins/demo-order.js, plugins/demo-vintage-urls.js,`);
-        console.error('plugins/demo-registry.js (NAV_HIDDEN_SLUGS), README.md (the ## Demos list), or the matching');
+        console.error('README.md (the ## Demos list), or the matching');
         console.error('src/*.js file(s).');
         console.error(`@description must be one line, ${DESCRIPTION_MIN_CHARS}-${DESCRIPTION_MAX_CHARS} characters.`);
         process.exit(1);
     }
 
-    console.log(
-        `Demo registry OK: ${diskSlugs.length} demos, ${Object.keys(VINTAGE_URLS).length} vintage URLs, ${NAV_HIDDEN_SLUGS.size} nav-hidden.`,
-    );
+    console.log(`Demo registry OK: ${diskSlugs.length} demos, ${Object.keys(VINTAGE_URLS).length} vintage URLs.`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

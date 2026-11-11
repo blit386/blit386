@@ -96,7 +96,7 @@ function buildArrowButton(demos, options) {
     button.addEventListener('click', () => {
         const currentIndex = findCurrentIndex(demos);
 
-        // Nav-hidden demos are index -1; refuse to step from an unknown position.
+        // A slug missing from the list is index -1; refuse to step from an unknown position.
         if (currentIndex < 0) {
             return;
         }

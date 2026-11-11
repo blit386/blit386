@@ -234,9 +234,7 @@ export function virtualDemos() {
             reloadTemplate();
         }
 
-        const demoListJson = inlineJson(
-            registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
-        );
+        const demoListJson = inlineJson(registry.map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })));
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
 
@@ -271,8 +269,7 @@ export function virtualDemos() {
     }
 
     /**
-     * Render the /shots gallery page. Every registry entry is listed, nav-hidden ones included:
-     * the gallery exists to look at all of them.
+     * Render the /shots gallery page, listing every registry entry.
      * @returns {string}
      */
     function renderShots() {
@@ -301,12 +298,7 @@ export function virtualDemos() {
             throw new Error(`${SHOTS_MANIFEST_PATH.join('/')} has no entries array`);
         }
 
-        const entriesJson = inlineJson(
-            sheetEntries(
-                manifest.entries,
-                registry.filter((e) => !e.isNavHidden),
-            ),
-        );
+        const entriesJson = inlineJson(sheetEntries(manifest.entries, registry));
 
         return renderSheetHtml({
             template,

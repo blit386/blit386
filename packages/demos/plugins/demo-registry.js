@@ -27,11 +27,6 @@ const OG_SCALE_PATTERN = /@ogScale[ \t]+(.+?)(?:\s*\*\/|\r?\n|$)/;
 // can name the real number when a tag is buried too deep in a long header to be seen.
 export const HEADER_SCAN_BYTES = 2000;
 
-// Demos excluded from the banner's fuzzy combobox and prev/next chain. They remain fully
-// routable and embeddable at their own URL; only navigation surfacing is suppressed.
-// Exported so `scripts/check-demo-registry.mjs` can flag stale entries.
-export const NAV_HIDDEN_SLUGS = new Set();
-
 // The non-demo pages the site serves at slug-shaped paths, both from plugins/virtual-demos.js:
 // the /shots capture gallery and the public demo sheet at the site index (dist/index.html). A
 // demo file with either name would build to the same dist/<slug>.html, so
@@ -59,7 +54,6 @@ export const RESERVED_SLUGS = new Set([SHOTS_SLUG, INDEX_SLUG]);
  *   ogScale: string,
  *   urlPath: string,
  *   sourcePath: string,
- *   isNavHidden: boolean,
  * }>}
  */
 export function buildRegistry(rootDir) {
@@ -75,7 +69,6 @@ export function buildRegistry(rootDir) {
      *   ogScale: string,
      *   urlPath: string,
      *   sourcePath: string,
-     *   isNavHidden: boolean,
      * }>} */
     const bySlug = new Map();
 
@@ -110,7 +103,6 @@ export function buildRegistry(rootDir) {
             scriptFile: `/src/${slug}`,
             urlPath: `/demos/${slug}.html`,
             sourcePath,
-            isNavHidden: NAV_HIDDEN_SLUGS.has(slug),
         });
     }
 
