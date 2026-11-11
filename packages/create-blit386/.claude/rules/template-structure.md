@@ -7,7 +7,10 @@
 - `.gitattributes` forces LF checkouts because `biome.json` enforces `lineEnding: "lf"`; without it, Git for Windows
   (`core.autocrlf=true` by default) checks out CRLF and `format:check` fails. `.node-version` is the one Node pin a game
   has: version managers (fnm, mise, nodenv) read it locally, and the optional CI workflow reads it via
-  `node-version-file`.
+  `node-version-file`. It holds only the major (`{{nodeMajor}}`), so the newest release of that line is picked; the
+  generated `engines.node` holds the full floor (`>={{nodeFloor}}`). Both come from `NODE_FLOOR` (`src/env.ts`), which
+  reads this package's own `engines.node` via the kit's `nodeFloor()`; `test/node-floor.test.mjs` checks the engine,
+  kit, and scaffolder floors agree.
 - `templates/js/` - JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
 - `templates/ts/` - TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic,
   typed.

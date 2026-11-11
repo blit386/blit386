@@ -38,6 +38,8 @@ import {
     type TemplateVars,
 } from '@blit386/kit/adapters';
 
+import { NODE_FLOOR } from './env';
+
 /** blit386 version range written into the generated package.json. */
 const BLIT386_RANGE = '^1.8.0';
 
@@ -247,6 +249,11 @@ export function scaffold(options: ScaffoldOptions): void {
         entryFile,
 
         gameFile,
+
+        // The Node floor is this package's own `engines.node`; `.node-version` takes only its major, so version
+        // managers and the CI's setup-node pick the newest release of that line instead of pinning an old patch.
+        nodeFloor: NODE_FLOOR,
+        nodeMajor: NODE_FLOOR.split('.', 1)[0] ?? NODE_FLOOR,
     };
 
     // Collect every file path we write so we can build the ownership manifest.
