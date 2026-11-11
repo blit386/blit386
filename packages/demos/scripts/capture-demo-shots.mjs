@@ -29,10 +29,10 @@ import {
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { FILENAME_PATTERN } from '../plugins/demo-registry.js';
+import { parseCliArgs } from './cli-args.mjs';
 import { launchCaptureBrowser } from './playwright-session.mjs';
 
 // #region Configuration
@@ -54,49 +54,27 @@ export const DEFAULTS = {
     baseUrl: 'http://localhost:5173',
 };
 
-const STRING_OPTIONS = { '--out': 'out', '--base-url': 'baseUrl', '--demos': 'demos', '--variants': 'variantList' };
-const BOOLEAN_OPTIONS = { '--all': 'all', '--changed': 'changed', '--dry-run': 'dryRun' };
+const OPTIONS = {
+    out: { type: 'string', default: DEFAULTS.out },
+    'base-url': { type: 'string', default: DEFAULTS.baseUrl },
+    demos: { type: 'string', default: '' },
+    variants: { type: 'string', default: '' },
+    all: { type: 'boolean', default: false },
+    changed: { type: 'boolean', default: false },
+    'dry-run': { type: 'boolean', default: false },
+};
 
 // #endregion
 
 // #region Pure helpers
-
-/* eslint-disable complexity, security/detect-object-injection */
 
 /**
  * @param {string[]} argv
  * @returns {{ slugs: string[], variants: string[], out: string, baseUrl: string, all: boolean, changed: boolean, dryRun: boolean }}
  */
 export function parseArgs(argv) {
-    const options = { ...DEFAULTS, all: false, changed: false, dryRun: false, demos: '', variantList: '' };
-
-    for (let index = 0; index < argv.length; index += 1) {
-        const arg = argv[index];
-
-        // pnpm forwards the separator of `pnpm run capture:shots -- --all` to the script.
-        if (arg === PNPM_ARG_SEPARATOR) {
-            continue;
-        }
-
-        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
-            options[BOOLEAN_OPTIONS[arg]] = true;
-            continue;
-        }
-
-        if (Object.hasOwn(STRING_OPTIONS, arg)) {
-            const value = argv[index + 1];
-
-            if (value === undefined || value.startsWith('--')) {
-                throw new Error(`${arg} requires a value.`);
-            }
-
-            options[STRING_OPTIONS[arg]] = value;
-            index += 1;
-            continue;
-        }
-
-        throw new Error(`Unknown option: ${arg}`);
-    }
+    const { values } = parseCliArgs(argv, OPTIONS);
+    const options = { ...values, baseUrl: values['base-url'], variantList: values.variants, dryRun: values['dry-run'] };
 
     const selections = [options.all, options.changed, options.demos !== ''].filter(Boolean).length;
 
@@ -138,8 +116,6 @@ export function parseArgs(argv) {
         dryRun: options.dryRun,
     };
 }
-
-/* eslint-enable complexity, security/detect-object-injection */
 
 /**
  * Demos to re-capture for a set of changed files (repo-relative paths).

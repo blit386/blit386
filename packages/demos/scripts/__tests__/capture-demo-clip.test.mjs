@@ -111,7 +111,7 @@ describe('parseArgs', () => {
     });
 
     test('rejects a missing value for an option', () => {
-        assert.throws(() => parseArgs(['palette-cycling', '--duration', '20', '--out']), /Missing value for --out/u);
+        assert.throws(() => parseArgs(['palette-cycling', '--duration', '20', '--out']), /--out requires a value/u);
     });
 
     test('rejects a second positional argument', () => {

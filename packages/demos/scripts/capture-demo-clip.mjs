@@ -21,7 +21,6 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
 import {
@@ -32,6 +31,7 @@ import {
     launchCaptureBrowser,
     sleep,
 } from './playwright-session.mjs';
+import { parseCliArgs } from './cli-args.mjs';
 
 // #region Configuration
 
@@ -48,29 +48,43 @@ export const DEFAULTS = {
     dryRun: false,
 };
 
-const NUMERIC_OPTIONS = {
-    '--duration': 'duration',
-    '--upscale': 'upscale',
-    '--bitrate': 'bitrate',
+// node:util parseArgs has no number type, so the numeric options arrive as strings and
+// parseArgs below converts them.
+const OPTIONS = {
+    duration: { type: 'string' },
+    upscale: { type: 'string', default: String(DEFAULTS.upscale) },
+    bitrate: { type: 'string', default: String(DEFAULTS.bitrate) },
+    out: { type: 'string' },
+    name: { type: 'string' },
+    'base-url': { type: 'string', default: DEFAULTS.baseUrl },
+    'poster-at': { type: 'string', default: DEFAULTS.posterAt },
+    'keep-intermediate': { type: 'boolean', default: DEFAULTS.keepIntermediate },
+    'dry-run': { type: 'boolean', default: DEFAULTS.dryRun },
 };
 
-const STRING_OPTIONS = {
-    '--out': 'out',
-    '--name': 'name',
-    '--base-url': 'baseUrl',
-    '--poster-at': 'posterAt',
-};
+/**
+ * @param {string} option Option name, for the error message.
+ * @param {string | undefined} value Raw value, or undefined when the option was not passed.
+ * @returns {number | undefined}
+ * @throws {Error} When a passed value is not a finite number.
+ */
+function toNumber(option, value) {
+    if (value === undefined) {
+        return undefined;
+    }
 
-const BOOLEAN_OPTIONS = {
-    '--keep-intermediate': 'keepIntermediate',
-    '--dry-run': 'dryRun',
-};
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed)) {
+        throw new Error(`Expected a number for --${option}, got "${value}"`);
+    }
+
+    return parsed;
+}
 
 // #endregion
 
 // #region Argument parsing
-
-/* eslint-disable complexity, security/detect-object-injection */
 
 /**
  * Parse argv into a capture options object. Throws on anything malformed rather than
@@ -83,49 +97,22 @@ const BOOLEAN_OPTIONS = {
  *   is not positive, an option is unrecognized, or a second positional argument appears.
  */
 export function parseArgs(argv) {
-    const options = { ...DEFAULTS };
-    let slug;
+    const { values, positionals } = parseCliArgs(argv, OPTIONS, true);
+    const [slug, extra] = positionals;
+    const options = {
+        duration: toNumber('duration', values.duration),
+        upscale: toNumber('upscale', values.upscale),
+        bitrate: toNumber('bitrate', values.bitrate),
+        out: values.out,
+        name: values.name,
+        baseUrl: values['base-url'],
+        posterAt: values['poster-at'],
+        keepIntermediate: values['keep-intermediate'],
+        dryRun: values['dry-run'],
+    };
 
-    for (let index = 0; index < argv.length; index += 1) {
-        const arg = argv[index];
-
-        // pnpm forwards the separator of `pnpm run capture:demo -- <slug>` to the script.
-        if (arg === PNPM_ARG_SEPARATOR) {
-            continue;
-        }
-
-        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
-            options[BOOLEAN_OPTIONS[arg]] = true;
-            continue;
-        }
-
-        if (Object.hasOwn(STRING_OPTIONS, arg) || Object.hasOwn(NUMERIC_OPTIONS, arg)) {
-            const value = argv[index + 1];
-            if (value === undefined || value.startsWith('--')) {
-                throw new Error(`Missing value for ${arg}`);
-            }
-            index += 1;
-
-            if (Object.hasOwn(NUMERIC_OPTIONS, arg)) {
-                const parsed = Number(value);
-                if (!Number.isFinite(parsed)) {
-                    throw new Error(`Expected a number for ${arg}, got "${value}"`);
-                }
-                options[NUMERIC_OPTIONS[arg]] = parsed;
-            } else {
-                options[STRING_OPTIONS[arg]] = value;
-            }
-            continue;
-        }
-
-        if (arg.startsWith('--')) {
-            throw new Error(`Unknown option ${arg}`);
-        }
-
-        if (slug !== undefined) {
-            throw new Error(`Unexpected second positional argument "${arg}"`);
-        }
-        slug = arg;
+    if (extra !== undefined) {
+        throw new Error(`Unexpected second positional argument "${extra}"`);
     }
 
     if (slug === undefined) {
@@ -152,8 +139,6 @@ export function parseArgs(argv) {
 
     return { ...options, slug, name: options.name ?? slug };
 }
-
-/* eslint-enable complexity, security/detect-object-injection */
 
 // #endregion
 

@@ -37,7 +37,6 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { buildRegistry } from '../plugins/demo-registry.js';
 import { SITE_URL } from '../plugins/sitemap.js';
@@ -58,6 +57,7 @@ import {
     CANVAS_ID,
     launchCaptureBrowser,
 } from './playwright-session.mjs';
+import { parseCliArgs } from './cli-args.mjs';
 
 // #region Configuration
 
@@ -97,24 +97,20 @@ export const DEFAULTS = {
     dryRun: false,
 };
 
-const STRING_OPTIONS = {
-    '--out': 'out',
-    '--base-url': 'baseUrl',
-    '--scale-mode': 'scaleMode',
-};
-
-const BOOLEAN_OPTIONS = {
-    '--all': 'all',
-    '--force': 'force',
-    '--keep-intermediate': 'keepIntermediate',
-    '--dry-run': 'dryRun',
+// node:util parseArgs definitions; parseArgs below maps them onto DEFAULTS' camelCase keys.
+const OPTIONS = {
+    out: { type: 'string', default: DEFAULTS.out },
+    'base-url': { type: 'string', default: DEFAULTS.baseUrl },
+    'scale-mode': { type: 'string', default: DEFAULTS.scaleMode },
+    all: { type: 'boolean', default: false },
+    force: { type: 'boolean', default: DEFAULTS.force },
+    'keep-intermediate': { type: 'boolean', default: DEFAULTS.keepIntermediate },
+    'dry-run': { type: 'boolean', default: DEFAULTS.dryRun },
 };
 
 // #endregion
 
 // #region Argument parsing
-
-/* eslint-disable complexity, security/detect-object-injection */
 
 /**
  * Parse argv into a capture options object. Throws on anything malformed rather than falling
@@ -127,48 +123,20 @@ const BOOLEAN_OPTIONS = {
  *   second positional argument appears.
  */
 export function parseArgs(argv) {
-    const options = { ...DEFAULTS, all: false };
-    let slug;
+    const { values, positionals } = parseCliArgs(argv, OPTIONS, true);
+    const [slug, extra] = positionals;
+    const options = {
+        out: values.out,
+        baseUrl: values['base-url'],
+        scaleMode: values['scale-mode'],
+        all: values.all,
+        force: values.force,
+        keepIntermediate: values['keep-intermediate'],
+        dryRun: values['dry-run'],
+    };
 
-    for (let index = 0; index < argv.length; index += 1) {
-        const arg = argv[index];
-
-        // pnpm forwards the separator of `pnpm run capture:og -- <slug>` to the script.
-        if (arg === PNPM_ARG_SEPARATOR) {
-            continue;
-        }
-
-        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
-            options[BOOLEAN_OPTIONS[arg]] = true;
-            continue;
-        }
-
-        if (Object.hasOwn(STRING_OPTIONS, arg)) {
-            const value = argv[index + 1];
-
-            // A following long option is a forgotten value, not the value itself. Without this,
-            // `--out --force` silently sets the output directory to "--force" and drops the flag,
-            // writing 46 cards into a directory named after an option.
-            if (value === undefined || value.startsWith('--')) {
-                throw new Error(`${arg} requires a value.`);
-            }
-
-            index += 1;
-
-            options[STRING_OPTIONS[arg]] = value;
-
-            continue;
-        }
-
-        if (arg.startsWith('-')) {
-            throw new Error(`Unknown option: ${arg}`);
-        }
-
-        if (slug !== undefined) {
-            throw new Error(`Unexpected second positional argument: ${arg}`);
-        }
-
-        slug = arg;
+    if (extra !== undefined) {
+        throw new Error(`Unexpected second positional argument: ${extra}`);
     }
 
     if (options.scaleMode !== '' && !OG_SCALE_MODES.has(options.scaleMode)) {
@@ -189,12 +157,8 @@ export function parseArgs(argv) {
         }
     }
 
-    options.slugs = options.all ? [...DEMO_ORDER] : [slug];
-
-    return options;
+    return { ...options, slugs: options.all ? [...DEMO_ORDER] : [slug] };
 }
-
-/* eslint-enable complexity, security/detect-object-injection */
 
 // #endregion
 

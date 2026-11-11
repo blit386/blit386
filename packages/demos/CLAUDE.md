@@ -34,10 +34,10 @@ One demo per file under `src/`, and that file is the single source of truth - no
 `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets (including `favicon.svg` and the
 committed `social/` OG cards and the `shots/` captures), `_partials/` the shared HTML template and shell scripts,
 `plugins/` the Vite plugin plus the order and vintage-URL registries, the social/SEO head builder (`social-meta.js`) and
-its shared `html-escape.js`, `scripts/` the check, generate, and capture scripts plus the `playwright-session.mjs`
-helpers the capture scripts share, and `_shots/` the `/shots` capture gallery page: its template, styles, pose table,
-and the in-browser capture engine (`shots.js` is the entry, `capture.js` the engine, `capture-mode.js` the dev-only
-wiring, `review-mode.js` the diff and findings aids). `virtual-demos` serves it at `/shots`, the build emits
+its shared `html-escape.js`, `scripts/` the check, generate, and capture scripts plus the `playwright-session.mjs` and
+`cli-args.mjs` helpers the capture scripts share, and `_shots/` the `/shots` capture gallery page: its template, styles,
+pose table, and the in-browser capture engine (`shots.js` is the entry, `capture.js` the engine, `capture-mode.js` the
+dev-only wiring, `review-mode.js` the diff and findings aids). `virtual-demos` serves it at `/shots`, the build emits
 `dist/shots.html`, and it is never a demo. The same directory holds the public demo sheet at the site index
 (`sheet.html`, `sheet.js`, `sheet.css`, and the pure, tested `sheet-entries.js`): one committed `display` capture per
 nav-visible demo, each tile a link into the shell, under the demo pages' banner with a name filter on the right,
