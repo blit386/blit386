@@ -63,10 +63,11 @@ Animate from these, never from `performance.now()` or `Date.now()`. The engine's
 for motion that reads `BT.timeSeconds` or `BT.ticks`. Anything driven by the wall clock jumps around when you seek and
 never matches a screenshot. From outside the game (a screenshot tool or harness), wait for `BT.isReady` first - it flips
 `true` only once `init()` has finished and the loop exists. Inside `update()` / `render()` you are already past that.
-For the same reason, change game state and start palette effects in `init()` or `update()`, never in `render()`: a seek
-runs `update()` for every step but `render()` only once, at the end. A seek always draws exactly on a step, with
-`BT.renderAlpha` at 0 (see "Drawing between two steps" below), so it matches a live frame that also landed exactly on
-that step - not one the game drew partway between two steps.
+For the same reason, change game state in `init()` or `update()` and start palette effects in `update()`, never in
+`render()`: a seek runs `update()` for every step but `render()` only once, at the end. (Effects started in `init()`
+have a catch of their own - see "The splash" below.) A seek always draws exactly on a step, with `BT.renderAlpha` at 0
+(see "Drawing between two steps" below), so it matches a live frame that also landed exactly on that step - not one the
+game drew partway between two steps.
 
 ## Phones and screen orientation
 
@@ -113,17 +114,20 @@ To use it, remember where a thing was before you move it:
 import { BT, Rect2i, Vector2i } from 'blit386';
 
 update() {
-    this.prevPos = this.pos.clone(); // remember, BEFORE moving
-    this.pos = this.pos.add(this.vel);
+    this.prevPos.copyFrom(this.pos); // remember, BEFORE moving
+    this.pos.addInPlace(this.vel);
 }
 
 render() {
-    const drawPos = Vector2i.lerp(this.prevPos, this.pos, BT.renderAlpha);
-    BT.drawRectFill(new Rect2i(drawPos.x, drawPos.y, 8, 8), 2);
+    Vector2i.lerpTo(this.prevPos, this.pos, BT.renderAlpha, this.drawPos);
+    BT.drawRectFill(this.box.set(this.drawPos.x, this.drawPos.y, 8, 8), 2);
 }
 ```
 
-Do this for things that move. Do not do it for the HUD or the score - those should sit still.
+Make `this.prevPos` and `this.drawPos` (`new Vector2i()`) and `this.box` (`new Rect2i()`) once in `init()`, and these
+calls write into them instead of making new objects every frame. `this.pos` must be your own `new Vector2i(...)` too:
+the shared `Vector2i.zero` is frozen and cannot move. Do this for things that move. Do not do it for the HUD or the
+score - those should sit still.
 
 ## init returns a promise
 
@@ -132,7 +136,7 @@ a promise, so you must `await` it:
 
 ```js
 async init() {
-    this.font = await SomeLoader.load('...'); // await is required
+    this.sheet = await SpriteSheet.load('sprites/player.png'); // await is required
     return true;
 }
 ```
@@ -140,14 +144,12 @@ async init() {
 Forgetting `await` is the single most common beginner mistake. If something you loaded is `undefined`, check for a
 missing `await` first.
 
-Call `bootstrap(Game)` once. While `init()` is still running, `BT.isReady` stays `false` and a second start is refused
-(engine 1.8.0+: an overlapping `BT.init` resolves to `false`, a second `bootstrap()` logs an error), so a stray double
-call cannot start two games - but it is still a bug worth removing.
+Call `bootstrap(Game)` once.
 
 ## Waiting for assets (a loading screen)
 
 `BT.loadingAssetsCount` is how many image and audio loads are still in flight. It is a property (no parentheses). To
-draw a "Loading…" message, return from `init()` before every load finishes (start loads in a helper you do not await
+draw a "Loading..." message, return from `init()` before every load finishes (start loads in a helper you do not await
 from `init()`), then poll the counter in `update()` / `render()`:
 
 ```js
