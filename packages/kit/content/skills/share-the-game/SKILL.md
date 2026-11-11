@@ -12,11 +12,6 @@ description:
 build" - a folder of plain files - and upload that folder to a free hosting site. The game is just files, so there is no
 server or database to set up.
 
-## When to use
-
-Use when the user wants to publish, deploy, or host the game, send a playable link to a friend, or asks "how do I put my
-game online" or "make a real version".
-
 ## Step 1: build the game
 
 ```sh
@@ -34,9 +29,29 @@ It serves the `dist/` folder at a local web address so you can click around and 
 
 ## Step 3: put dist/ online
 
-Upload the whole `dist/` folder to any free static host - it accepts plain files, no server needed. Good options for a
-game are GitHub Pages, Netlify, Cloudflare Pages, or itch.io (drag-and-drop the folder). Each one gives you back a web
-address you can share.
+Upload the whole `dist/` folder to any free static host - it accepts plain files, no server needed. Each one gives you
+back a web address you can share.
+
+- Netlify and Cloudflare Pages put the game at the top of its own address (`my-game.netlify.app/`). The build works
+  there as it is.
+- GitHub Pages (`you.github.io/my-game/`) and itch.io put it in a folder inside a bigger site. A default build loads
+  nothing there - a blank page - until you make the two changes below and build again.
+
+### Before uploading to GitHub Pages or itch.io
+
+1. In `vite.config.js`, add `base: './'` so the built page loads its files from the folder it sits in, not from the top
+   of the website:
+
+   ```js
+   export default defineConfig({
+     base: './',
+     plugins: [blit386()],
+   });
+   ```
+
+2. Write the paths to your own files without a leading slash: `'sprites/hero.png'`, not `'/sprites/hero.png'`. A path
+   that starts with `/` always means the top of the website, and `base` does not change the paths you type in your code.
+   Paths without the slash work in `{{pmRunDev}}` too.
 
 ## Notes
 
@@ -51,4 +66,6 @@ address you can share.
   set `preferredOrientation: 'landscape'` (Android may lock; iOS will not) and read `BT.screenOrientation` or implement
   `onOrientationChange(type)` to show a "please rotate" prompt. See the blit-api-names rule for the exact names.
 - Made a change you want to share? Run `{{pmRunBuild}}` again and re-upload `dist/`. The build does not update itself.
+- Chose the GitHub CI workflow when you made the game? It builds the game and checks formatting on every push, but it
+  never uploads anything. Putting `dist/` online stays the step above.
 - Do not hand-edit files inside `dist/` - they are generated from your `src/` code. Change the source, then rebuild.

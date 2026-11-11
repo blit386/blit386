@@ -12,11 +12,6 @@ description:
 `BT.isDevMode` tells you whether the game is running as a development build or a release build, so you do not have to
 invent your own signal for it.
 
-## When to use
-
-Use when the user wants a debug HUD, cheat key, verbose console logging, or a test fixture (a level-select shortcut, a
-god-mode toggle) to work while developing but disappear from a shipped build.
-
 ## How to do it
 
 ```js
@@ -84,10 +79,7 @@ Read it twice about a second apart and `ticks` should have grown by about 60.
 - It keeps working after a hot reload rebuilds the game object - the engine asks the current one every time.
 - The engine never calls it on its own, so it costs nothing during play. See `test-the-game` for using it.
 
-To look at one exact moment instead of a live game, wait until `window.BT.isReady` is true (init finished, loop exists),
-then call `await window.BT.renderAt(2.5)` - the loop stops on that frame, so `window.BT.testState()` and
-`window.BT.captureFrame()` both describe tick 150 no matter how slow the agent's tool calls are. `window.BT.resume()`
-lets the game run again.
+To read one exact moment instead of a live game, freeze it with `BT.renderAt` first - see the `test-the-game` skill.
 
 ## Notes
 

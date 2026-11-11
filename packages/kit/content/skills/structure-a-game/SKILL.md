@@ -11,11 +11,6 @@ description:
 BLIT386 draws pixels, reads input, and plays sound. It does NOT include physics, collision, enemies, or a scene system -
 you write that game logic yourself. This skill shows the shape to put it in.
 
-## When to use
-
-Use when starting a new game, or when the user asks "how do I add a player / collision / enemies" and might expect
-built-in systems. Set the expectation early: the engine draws, reads input, and plays sound; you build the game logic.
-
 ## The shape of a game
 
 ```js

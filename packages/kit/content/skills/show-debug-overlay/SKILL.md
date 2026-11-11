@@ -10,10 +10,6 @@ description:
 The engine draws a built-in overlay (FPS, backend, resolution, and your own rows). Turn parts on in `configure()` and
 feed it rows from your game.
 
-## When to use
-
-Use to see FPS and timings, show live game values while developing, or add a palette or timing inspector.
-
 ## Turn it on in configure()
 
 ```js

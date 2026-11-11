@@ -11,11 +11,6 @@ description:
 
 Look up BLIT386 detail the project's own files do not cover, using the live documentation at blit386.dev.
 
-## When to use
-
-Use when `AGENTS.md` and the `docs/` folder do not answer the question - an API you cannot find, an option that is not
-listed, or something added to the engine after this game was created.
-
 ## Read the local docs first
 
 The guides in `docs/` are already on disk, cost nothing to open, and describe the BLIT386 version this game actually

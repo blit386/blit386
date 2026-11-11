@@ -2,18 +2,13 @@
 name: run
 description:
   Start the BLIT386 dev server and open the game in a browser. Use this whenever the user wants to run, start, launch,
-  or preview the game, see what it looks like, or test a change live, even if they just say 'run the game', 'start the
-  server', or 'show me'.
+  or preview the game, or see what it looks like, even if they just say 'run the game', 'start the server', or 'show
+  me'. To check that a change works by playing it, use test-the-game.
 ---
 
 # Run the game
 
 Start the BLIT386 dev server and open the game in a browser.
-
-## When to use
-
-Use this when you need to run the game to test a change, or when the user says "run the game", "start the server", or
-"show me what this looks like."
 
 ## Steps
 
@@ -27,8 +22,6 @@ Use this when you need to run the game to test a change, or when the user says "
 ## Notes
 
 - If the port is in use, read `docs/when-something-breaks.md` for the "port already in use" fix.
-- The dev server never opens a browser itself; use the address it printed in the terminal (`http://localhost:5173`
-  unless that port was taken).
 - If your editor has a built-in preview pane that reads `.claude/launch.json` (the Claude desktop app does), it can
   start the game and show it there, with no terminal step. That file is yours to edit, for example to change the port.
 - The game works without WebGPU (the engine falls back to Canvas 2D), so it runs in any modern browser.

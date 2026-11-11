@@ -10,22 +10,23 @@ description: "Draw UI panels, dialog boxes, buttons, window frames, and bars of 
 Draw a bordered box of any size from one small piece of panel art. A nine-slice cuts the art into 4 corners, 4 edges,
 and a center: corners stay 1:1, edges and center stretch or tile to fill the box.
 
-## When to use
-
-Use for dialog boxes, menus, buttons, speech bubbles, health bars, and window frames - anything with a pixel-art border
-that needs to come in more than one size. For a plain filled box, `BT.drawRectFill` is enough (draw-shapes skill).
+For a plain filled box with no art, `BT.drawRectFill` is enough (draw-shapes skill).
 
 ## How to do it
 
-Load the sheet the same way as any sprite (add-sprite skill), build the nine-slice once in `init()`, then draw it into
-any `Rect2i` in `render()`:
+Load the sheet the same way as any sprite (add-sprite skill: a bigger palette, colors after the starter's own), build
+the nine-slice once in `init()`, then draw it into any `Rect2i` in `render()`:
 
 ```js
 import { BT, NineSlice, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
+const FIRST_SPRITE_SLOT = COLOR_TEXT + 1; // the panel art's colors go after the starter's slots 1 to 4
+
 async init() {
-    this.palette = BT.paletteCreate(64);
-    const { sheet } = await SpriteSheet.loadIndexed('/sprites/ui.png', this.palette, 1);
+    // ...
+    const palette = BT.paletteCreate(64); // the starter's palette, made bigger
+    // ...the starter's palette.set(...) lines...
+    const { sheet } = await SpriteSheet.loadIndexed('/sprites/ui.png', palette, FIRST_SPRITE_SLOT);
     this.ui = sheet;
 
     // Both rectangles are in sheet pixels. `outer` is the whole 16x16 panel,
@@ -36,14 +37,15 @@ async init() {
     });
 
     this.dialogBox = new Rect2i(20, 160, 280, 64); // reuse the box instead of making one per frame
-    BT.paletteSet(this.palette);
+    BT.paletteSet(palette);
+    // ...the rest of the starter's init()...
     return true;
 }
 
 render() {
-    BT.clear(2);
+    BT.clear(COLOR_BACKGROUND);
     BT.drawNineSlice(this.panel, this.dialogBox);
-    BT.systemPrint(new Vector2i(28, 168), 4, 'Hello, traveler!');
+    BT.systemPrint(new Vector2i(28, 168), COLOR_TEXT, 'Hello, traveler!');
 }
 ```
 

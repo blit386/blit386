@@ -9,10 +9,6 @@ description:
 
 Draw rectangles, lines, and pixels, and clear the screen - all with palette slot numbers, all inside `render()`.
 
-## When to use
-
-Use to put boxes, outlines, lines, single pixels, or a background on screen, or when the user says "draw a ...".
-
 ## How to do it
 
 ```js
@@ -40,8 +36,7 @@ render() {
 
 - Positions are `Vector2i(x, y)`; boxes are `Rect2i(x, y, width, height)`. Top-left is `(0, 0)` and `y` grows downward.
   Whole numbers only.
-- The slot number is a palette index; set up colors first (see the use-palette skill). A `Color32` also works wherever a
-  slot number does.
+- The slot number is a palette index; set up colors first (see the use-palette skill).
 - `BT.displaySize` (a property, no parentheses) gives the screen size for centering and edges.
 
 See `docs/drawing.md`.

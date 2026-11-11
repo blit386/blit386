@@ -13,10 +13,6 @@ Read keys and face buttons in `update()`. For player 0, W, A, S, D already map t
 arrow keys belong to player 1 by default. A one-player game that wants the arrows too sets `keyboardLayout: 'single'`
 (see One-player game below).
 
-## When to use
-
-Use for keyboard movement, jumping, menus, typed text, or remapping keys.
-
 ## Face buttons (work on keyboard and gamepad)
 
 ```js

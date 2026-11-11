@@ -13,11 +13,6 @@ The engine can build a sound out of nothing - no files, no recording. The six pr
 way (see the `play-a-sound` skill). This skill is the slow way: describing a sound yourself, knob by knob, with
 `AudioClip.synth()`.
 
-## When to use
-
-Use when the presets are close but not right, when the user wants a sound of their own, when a sound is too long, too
-high, too harsh, or too plain, or when they ask how to make a sound effect without a sound file.
-
 ## The four things every sound needs
 
 ```js
@@ -62,7 +57,8 @@ envelope: {
 
 Those are also the defaults, so leaving `envelope` out gives you exactly that. For a percussive hit, use a tiny `attack`
 and a low `sustain`. For a soft pad, use a big `attack`. A clip too short for `attack` plus `release` (the defaults need
-0.11 seconds) has both squeezed to fit, so a 0.05 second blip still plays at full volume.
+0.11 seconds) has both squeezed to fit, so a 0.05 second blip still plays at full volume (engine 1.8.1+; older engines
+render it silent).
 
 **`pitchSweep`** - makes the pitch slide while the sound plays. Sliding **up** reads as a jump or a power-up. Sliding
 **down** reads as falling, or dying.

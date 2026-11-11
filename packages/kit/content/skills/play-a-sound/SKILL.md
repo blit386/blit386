@@ -11,11 +11,6 @@ description:
 The engine has sound built in: short sound effects, looping music, and a synth that makes retro beeps out of thin air.
 No sound files needed to start.
 
-## When to use
-
-Use when the user wants a jump, pickup, explosion, laser, hit, or blip sound, wants background music, wants to change or
-mute the volume, or asks "why is my game silent".
-
 ## The fastest win: a made-up sound
 
 `BT.synthPreset` has six ready-made retro sounds. You do not need any files - the engine builds the sound itself:

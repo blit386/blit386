@@ -12,11 +12,6 @@ description:
 Update a game after a BLIT386 upgrade renamed parts of the API: let `blit migrate` make the safe renames, then handle
 the rest by hand.
 
-## When to use
-
-Use when `blit upgrade` or `blit migrate` reports names that "need a closer look," when the game breaks after a BLIT386
-update, or when the user says "update my game to the new version" or "fix the renamed functions."
-
 ## Steps
 
 1. Preview first: run `npx blit migrate`. It lists the renames it can make automatically, the ones that need review, and

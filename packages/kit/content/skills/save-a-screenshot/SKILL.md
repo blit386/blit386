@@ -9,16 +9,12 @@ description:
 
 Capture the rendered frame as a PNG - download it, or get a Blob to use yourself.
 
-## When to use
-
-Use for a screenshot button, a "share my creation" feature, or exporting generated pixel art.
-
 ## Download a PNG
 
 ```js
-async update() {
+update() {
     if (BT.isKeyPressed('KeyP')) {
-        await BT.downloadFrame('my-art.png'); // async; prompts a browser download; filename optional
+        void BT.downloadFrame('my-art.png'); // prompts a browser download; filename optional
     }
 }
 ```
@@ -50,24 +46,9 @@ display-tier effects, since those only exist in the upscaled buffer.
 
 ## Capture the frame at a given time (engine 1.8.0+)
 
-To screenshot what the game shows at second 3.2 - for a thumbnail, a test, or to check an animation - wait until the
-engine is ready, seek there, then capture:
-
-```js
-while (!BT.isReady) {
-  await new Promise((r) => setTimeout(r, 16));
-}
-await BT.renderAt(3.2); // replays from the start and stops on tick 192
-const shot = await BT.captureFrame({ size: 'display' }); // the frame at 3.2 s
-BT.resume(); // optional: keep playing from there
-```
-
-`BT.isReady` is `false` until `init()` has finished and the game loop exists - poll it when you drive the page from
-outside (a screenshot tool, a play-testing harness). Inside `update()` / `render()` the engine is already ready.
-`renderAt` replays your game from the beginning on a fresh copy of your game class (a new `Game`, then `init()`), so the
-fields your class sets up start over by themselves. It only lands on the right frame if everything that moves is driven
-by `BT.timeSeconds`, `BT.ticks`, or `BT.random` - never `performance.now()` or `Date.now()` - and if variables outside
-the class (at the top of the file) are reset in `init()` too.
+To screenshot what the game shows at second 3.2 - for a thumbnail, a test, or to check an animation - stop the game on
+that frame with `BT.renderAt(3.2)`, then `captureFrame`. The `test-the-game` skill shows the whole sequence and what the
+game must do for the frame to come out the same every time.
 
 ## The built-in dev shortcut (engine 1.7.0+)
 
@@ -96,16 +77,13 @@ mode decides. Either way, this is for you while you work; a screenshot _button_ 
 - `BT.downloadFrame(filename?, options?)` (method, async) - capture and download.
 - `BT.captureFrame(options?)` (method, async) - resolve to a PNG `Blob`.
 - `{ size: 'display' }` (options, engine 1.7.1+) - capture at logical `BT.displaySize` instead of `BT.outputSize`.
-- `BT.isReady` (getter, engine 1.8.0+) - `true` once init finished and the loop exists; wait for it before seeking from
-  outside the game.
-- `BT.renderAt(seconds, { from }?)` (method, async, engine 1.8.0+) - jump to a time and render that exact frame; then
-  `captureFrame`. `from: 'start'` (default) replays from tick 0 on a fresh game instance; `from: 'current'` steps on
-  from where the game is and refuses a time in the past. Works in a hidden or headless page.
-- `BT.resume()` (method, async, engine 1.8.0+) - restart the loop from the seeked frame.
+- `BT.renderAt(seconds, { from }?)` / `BT.resume()` (methods, async, engine 1.8.0+) - stop on an exact frame, then play
+  on; see the `test-the-game` skill.
 - `isFrameCaptureShortcutEnabled` (configure flag, engine 1.7.0+) - force the F9 / Shift+F9 shortcuts on or off.
 
 ## Notes
 
-- Both are async - `await` them, or call from an async handler.
+- Both are async: `await` them in an async helper, or start them with `void` from `update()`. Keep `update()` itself
+  plain, not `async` - the engine never waits for it.
 - Capture happens after the next frame renders, so the latest draw is included.
 - Works on both the WebGPU and software backends.

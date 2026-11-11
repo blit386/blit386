@@ -12,11 +12,6 @@ Your game thinks at a fixed speed (60 times a second) but the screen may draw mu
 second on a modern monitor. So some drawn frames land in between two thinking steps, and the engine has to guess where
 things are. `BT.renderAlpha` is that guess, and using it is what turns stepped, jerky motion into smooth motion.
 
-## When to use
-
-Use when movement looks jerky, choppy, or stuttering, when the game feels rough on a fast monitor, or when the user asks
-for smooth scrolling or smooth movement.
-
 ## The idea
 
 Think of a flip-book. `update()` draws the pages, always the same distance apart. `render()` is your thumb, and it can
@@ -59,12 +54,26 @@ exactly the in-between position the screen wants.
 
 ## A smooth camera
 
-A camera scrolls the same way - remember where it was, then draw from the in-between position:
+A camera scrolls the same way - remember where it was, then draw from the in-between position. This is the camera from
+the `scroll-with-camera` skill (player in the middle of the screen, kept inside the world) with one extra line:
 
 ```js
+async init() {
+    // ...
+    this.worldSize = new Vector2i(1280, 960);
+    this.camera = new Vector2i(0, 0);
+    this.prevCamera = new Vector2i(0, 0);
+    return true;
+}
+
 update() {
-    this.prevCamera = this.camera.clone();
-    this.camera = BT.cameraClamp(this.player.pos, this.worldSize);
+    this.prevCamera = this.camera.clone(); // the extra line: where the camera WAS
+    // ...move the player...
+    const wanted = new Vector2i(
+        this.player.pos.x - Math.floor(BT.displaySize.x / 2),
+        this.player.pos.y - Math.floor(BT.displaySize.y / 2),
+    );
+    this.camera = BT.cameraClamp(wanted, this.worldSize);
 }
 
 render() {
@@ -90,7 +99,8 @@ render() {
   `BT.cameraReset()` - those should sit still.
 - Snapshot before you move, not after. If it still looks stepped, that line is in the wrong place:
   `this.prevPos = this.pos.clone()` must be the **first** line of `update()`, not the last.
-- `Vector2i` always holds whole numbers and rounds down for you, so you do not need `Math.floor` after a `lerp`.
+- `Vector2i` always holds whole numbers and drops the fraction for you (toward zero, so `-2.5` becomes `-2`), so you do
+  not need `Math.floor` after a `lerp`.
 - When something teleports (a respawn, a wrap-around at the screen edge), set `prevPos` to the new position too.
   Otherwise the engine smoothly slides it across the whole screen instead of jumping.
 - This only changes what you _see_. The game still thinks at a fixed speed, so collisions and scores are unaffected.
