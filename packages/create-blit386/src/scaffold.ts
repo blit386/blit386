@@ -15,7 +15,6 @@
  * can detect what the user has modified and handle conflicts without clobbering edits.
  */
 
-import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +26,8 @@ import {
     type BlitManifest,
     classifyFile,
     collectDocs,
+    GAME_FILE_JS,
+    GAME_FILE_TS,
     type GeneratedFile,
     generateAgentFiles,
     isKitManaged,
@@ -35,6 +36,7 @@ import {
     readKitVersion,
     render,
     resolveKitRoot,
+    sha256,
     type TemplateVars,
 } from '@blit386/kit/adapters';
 
@@ -52,9 +54,8 @@ const YARN_BERRY_PIN = /^yarn@(?:[2-9]|[1-9]\d+)\./;
 const YARNRC_FILE = '.yarnrc.yml';
 const YARNRC_CONTENT = 'nodeLinker: node-modules\n';
 
-/** Output directory names for optional wizard templates. */
+/** Output directory name for the optional CI template. */
 const GITHUB_DIR = '.github';
-const CURSOR_DIR = '.cursor';
 
 /** Which language layer to scaffold. */
 export type LanguageChoice = 'js' | 'ts';
@@ -97,30 +98,21 @@ function stripTmpl(name: string): string {
     return name.endsWith('.tmpl') ? name.slice(0, -'.tmpl'.length) : name;
 }
 
+/**
+ * Template names that become dotfiles in the generated project. `templates/` keeps them without the dot because npm
+ * drops or renames some dotfiles (`.gitignore`) when it packs this package.
+ */
+const DOTFILE_NAMES = new Map([
+    ['gitignore', '.gitignore'],
+    ['editorconfig', '.editorconfig'],
+    ['gitattributes', '.gitattributes'],
+    ['node-version', '.node-version'],
+    ['prettierignore', '.prettierignore'],
+]);
+
 /** Map template file/dir names to their output names in the generated project. */
 function mapOutputName(name: string): string {
-    if (name === 'gitignore') {
-        return '.gitignore';
-    }
-    if (name === 'editorconfig') {
-        return '.editorconfig';
-    }
-    if (name === 'gitattributes') {
-        return '.gitattributes';
-    }
-    if (name === 'node-version') {
-        return '.node-version';
-    }
-    if (name === 'prettierignore') {
-        return '.prettierignore';
-    }
-    if (name === 'dot-cursor') {
-        return CURSOR_DIR;
-    }
-    if (name === 'dot-github') {
-        return GITHUB_DIR;
-    }
-    return stripTmpl(name);
+    return DOTFILE_NAMES.get(name) ?? stripTmpl(name);
 }
 
 /** The npm names a language layer's `package.json.tmpl` depends on. */
@@ -149,7 +141,7 @@ function toPackageName(name: string, dependencies: ReadonlySet<string>): string 
 }
 
 /** Copy a template tree, renaming special files/dirs, stripping `.tmpl`, and rendering placeholders. */
-function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, written?: Set<string>): void {
+function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, written: Set<string>): void {
     mkdirSync(destDir, { recursive: true });
 
     for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
@@ -162,14 +154,9 @@ function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, w
         } else {
             const content = readFileSync(srcPath, 'utf8');
             writeFileSync(destPath, render(content, vars));
-            written?.add(destPath);
+            written.add(destPath);
         }
     }
-}
-
-/** Compute the SHA-256 hex digest of a UTF-8 file. */
-function sha256(filePath: string): string {
-    return createHash('sha256').update(readFileSync(filePath)).digest('hex');
 }
 
 /**
@@ -253,7 +240,7 @@ export function scaffold(options: ScaffoldOptions): void {
     const language: LanguageChoice = options.language ?? 'js';
 
     // gameFile is the user-readable path (README); entryFile is the HTML script src (leading slash).
-    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const gameFile = language === 'ts' ? GAME_FILE_TS : GAME_FILE_JS;
     const entryFile = `/${gameFile}`;
 
     const templates = templatesDir();

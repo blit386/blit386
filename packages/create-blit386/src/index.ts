@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
+import { GAME_FILE_JS, GAME_FILE_TS } from '@blit386/kit/adapters';
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
 import { isInteractive, meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from './env';
@@ -174,7 +175,7 @@ async function main(): Promise<void> {
     const steps = [`cd ${quoteIfSpaced(dirArg)}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
     note(steps.join('\n'), 'Next steps');
 
-    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const gameFile = language === 'ts' ? GAME_FILE_TS : GAME_FILE_JS;
     outro(`Have fun. Open ${gameFile} to change the game.`);
 }
 

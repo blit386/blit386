@@ -45,6 +45,10 @@ export { KIT_PACKAGE_NAME, kitRoot, nodeFloor, resolveKitRoot } from './kit-root
 // same way instead of keeping its own parser.
 export { compareVersions } from './env';
 
+// The file hash `.blit/manifest.json` records, re-exported so the scaffolder stamps it with the same function
+// `blit agents sync` checks it with.
+export { sha256 } from './fs-safety';
+
 // The `.blit/manifest.json` location and shape live in their own leaf module, re-exported for the
 // same reason: create-blit386 stamps the manifest that `blit agents sync` later reads back, so both
 // sides must see one declaration.
