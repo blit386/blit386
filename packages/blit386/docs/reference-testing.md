@@ -325,8 +325,9 @@ lost today - that is BT-703, not something a refresh-rate test should paper over
 
 </Callout>
 
-To check that a new test can fail, break the code it guards: moving `this.pointer?.endUpdate()` out of the update
-callback in `src/core/BTAPI.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays green.
+To check that a new test can fail, break the code it guards: moving `this.engine.pointer?.endUpdate()` out of
+`FrameLoop#update` in `src/core/engine/FrameLoop.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays
+green.
 
 ## Coverage
 
