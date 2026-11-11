@@ -102,6 +102,8 @@ import {
     applyTheme,
     FONT_W,
     litRimColor,
+    PANEL_CONTENT_SHRINK,
+    PANEL_CONTENT_TOP,
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
     ui,
@@ -131,33 +133,42 @@ const PROFILE_TO_B = { fadeMs: 1200, overlap: 1, easeIn: 'ease-in-out', easeOut:
 // Fading into the loop-point track: a plain, fairly quick overlapping crossfade.
 const PROFILE_TO_LOOP = { fadeMs: 600, overlap: 1, easeIn: 'linear', easeOut: 'linear' };
 
-// One entry per track button: which track it plays, the button text (it starts with the
-// number key the kit binds to it), the name shown once it plays, its crossfade profile,
-// and a short word for that profile's overlap.
+// One entry per track button: the button text (it starts with the number key the kit
+// binds to it), the name shown once it plays, the audio file it loads, how it repeats,
+// its crossfade profile, a short word for that profile's overlap, and what the "Loop" row
+// says about it.
 const TRACKS = [
     {
-        trackId: 'A',
         label: '1 - A: calm',
         name: 'A: calm',
         keyCode: 'Digit1',
+        url: '/audio/music-calm.wav',
+        repeat: { loop: true },
         profile: PROFILE_TO_A,
         overlapNote: 'gap',
+        loopNote: 'whole track',
     },
     {
-        trackId: 'B',
         label: '2 - B: upbeat',
         name: 'B: upbeat',
         keyCode: 'Digit2',
+        url: '/audio/music-upbeat.wav',
+        repeat: { loop: true },
         profile: PROFILE_TO_B,
         overlapNote: 'blend',
+        loopNote: 'whole track',
     },
     {
-        trackId: 'loop',
         label: '3 - Intro + loop',
         name: 'Intro + loop',
         keyCode: 'Digit3',
+        url: '/audio/music-intro-loop.wav',
+        // No `loop: true` here: giving loopStart and loopEnd is what makes the region
+        // repeat, and the engine ignores `loop` whenever both of them are set.
+        repeat: { loopStart: INTRO_LOOP_START_SECONDS, loopEnd: INTRO_LOOP_END_SECONDS },
         profile: PROFILE_TO_LOOP,
         overlapNote: 'blend',
+        loopNote: `${INTRO_LOOP_START_SECONDS}s - ${INTRO_LOOP_END_SECONDS}s`,
     },
 ];
 
@@ -171,12 +182,10 @@ const LEFT_PANEL_W = 140;
 const RIGHT_PANEL_X = 148;
 const RIGHT_PANEL_W = 168;
 
-// Panel metrics from the UI kit: content starts 22 pixels below a panel's top edge
-// (under its title) and 9 pixels in from its left edge, and is 20 pixels narrower than
-// the panel.
-const PANEL_CONTENT_TOP = 22;
+// A panel's content starts this many pixels in from its left edge. How far below the top
+// edge it starts (PANEL_CONTENT_TOP) and how much narrower than the panel a full-width
+// row is (PANEL_CONTENT_SHRINK) come from the UI kit.
 const PANEL_CONTENT_X = 9;
-const PANEL_CONTENT_SHRINK = 20;
 
 // The track buttons fill the panel's width. The one playing is lit in the same green the
 // Keyboard Diagnostic demo lights a held key with, rimmed with a lighter shade of it
@@ -227,12 +236,6 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
-// The x to print `text` at so its letters are centered on column `centerX`. The last
-// character's empty spacing column is left out, so the visible letters are what centers.
-function centeredTextX(centerX, text) {
-    return centerX - Math.floor((text.length * FONT_W - 1) / 2);
-}
-
 // How long a profile's whole crossfade takes, in milliseconds. The fade-in starts
 // fadeMs * (1 - overlap) after the fade-out does: right away for overlap 1, when the
 // fade-out ends for 0, and one fadeMs after that (a silent gap) for -1.
@@ -261,18 +264,12 @@ class Demo {
     // Palette slots of the shared UI theme colors, filled by applyTheme() in init().
     theme = null;
 
-    /** @type {AudioClip | null} */
-    calmClip = null;
+    // The loaded music, one clip per TRACKS entry, in the same order.
+    /** @type {AudioClip[]} */
+    clips = [];
 
-    /** @type {AudioClip | null} */
-    upbeatClip = null;
-
-    /** @type {AudioClip | null} */
-    introLoopClip = null;
-
-    // Which button's track is playing: 'A', 'B', 'loop', or null before the first play.
-    /** @type {string | null} */
-    activeTrackId = null;
+    // The TRACKS entry playing now, or null before the first play.
+    activeTrack = null;
 
     // The tick of the last track switch, so the chart can move a marker along the
     // crossfade while it plays. Null for the first track, which has nothing to fade from.
@@ -304,12 +301,9 @@ class Demo {
     // Loads all three music clips, sets up the shared UI theme, and starts Track A.
     async init() {
         // Load all three tracks at once - Promise.all waits for the slowest fetch, not
-        // the sum of three downloads one after another.
-        [this.calmClip, this.upbeatClip, this.introLoopClip] = await Promise.all([
-            AudioClip.load('/audio/music-calm.wav'),
-            AudioClip.load('/audio/music-upbeat.wav'),
-            AudioClip.load('/audio/music-intro-loop.wav'),
-        ]);
+        // the sum of three downloads one after another. map() turns each TRACKS entry
+        // into a load, so clips[i] belongs to TRACKS[i].
+        this.clips = await Promise.all(TRACKS.map((track) => AudioClip.load(track.url)));
 
         this.palette = BT.paletteCreate(256);
 
@@ -329,7 +323,7 @@ class Demo {
         // BT.musicPlay() called before the page is unlocked is remembered and starts for
         // real the instant you click or press a key - unlike BT.soundPlay(), which drops
         // sounds played too early.
-        this.playTrack('A');
+        this.playTrack(TRACKS[0]);
 
         return true;
     }
@@ -360,27 +354,14 @@ class Demo {
         // The track panel goes first: its buttons may switch tracks this very frame, and
         // everything drawn after them should already show the new one.
         this.renderTrackPanel();
-
-        const active = this.activeTrack();
-
-        this.renderFadePanel(active);
-        this.renderChart(active.profile);
+        this.renderFadePanel(this.activeTrack);
+        this.renderChart(this.activeTrack.profile);
     }
 
-    // The TRACKS entry of the track playing now. Array.find() walks the list and returns
-    // the first entry the test function says yes to.
-    activeTrack() {
-        return TRACKS.find((track) => track.trackId === this.activeTrackId);
-    }
-
-    // One centered line just under the overlay bars: the shared unlock reminder in warm
-    // orange until sound is unlocked, then a dim reminder of the controls.
+    // One centered line just under the overlay bars: the kit's shared unlock reminder in
+    // warm orange until sound is unlocked, then this dim reminder of the controls.
     renderStatusLine() {
-        const isLocked = !BT.isAudioUnlocked;
-        const text = isLocked ? 'Click or press a key to enable sound' : 'Press 1, 2, or 3 to switch tracks.';
-        const x = centeredTextX(Math.floor(DISPLAY_W / 2), text);
-
-        ui.caption(x, STATUS_Y, text, { color: isLocked ? 'warm' : 'dim' });
+        ui.statusLine(STATUS_Y, 'Press 1, 2, or 3 to switch tracks.');
     }
 
     // Left-hand panel: one button per track, the one playing lit green, and its name in
@@ -394,18 +375,16 @@ class Demo {
         // Each button fires on a click, a tap, or its number key - the kit binds the key
         // and treats all three the same.
         for (const track of TRACKS) {
-            const lit = track.trackId === this.activeTrackId ? LIT_BUTTON : undefined;
+            const lit = track === this.activeTrack ? LIT_BUTTON : undefined;
 
             if (ui.button(track.label, { key: track.keyCode, width: TRACK_BUTTON_W, lit })) {
-                this.playTrack(track.trackId);
+                this.playTrack(track);
             }
         }
 
-        // Looked up after the buttons, so a switch made just now already shows.
-        const active = this.activeTrack();
-
+        // Read after the buttons, so a switch made just now already shows.
         ui.spacer(LEFT_PANEL_FILLER);
-        ui.kv('Playing', active.name);
+        ui.kv('Playing', this.activeTrack.name);
         ui.end();
     }
 
@@ -414,8 +393,6 @@ class Demo {
     renderFadePanel(active) {
         const { profile } = active;
         const overlapSign = profile.overlap > 0 ? '+' : '';
-        const loopText =
-            active.trackId === 'loop' ? `${INTRO_LOOP_START_SECONDS}s - ${INTRO_LOOP_END_SECONDS}s` : 'whole track';
 
         ui.begin('topLeft', { x: RIGHT_PANEL_X, y: PANEL_Y, width: RIGHT_PANEL_W, kvCols: FADE_KV_COLS });
         ui.panel('Crossfade');
@@ -427,7 +404,7 @@ class Demo {
         ui.kv('Fade', `${profile.fadeMs}ms`);
         ui.kv('Overlap', `${overlapSign}${profile.overlap} (${active.overlapNote})`);
         ui.kv('Curve', profile.easeIn);
-        ui.kv('Loop', loopText);
+        ui.kv('Loop', active.loopNote);
         ui.end();
     }
 
@@ -520,31 +497,19 @@ class Demo {
         return ((col - PLOT_LEFT) / (PLOT_RIGHT - PLOT_LEFT)) * CHART_SPAN_MS;
     }
 
-    // Starts the given track ('A', 'B', or 'loop') with its matching crossfade profile,
+    // Starts a TRACKS entry with its own way of repeating and its crossfade profile,
     // unless it is already playing - pressing the same button twice does nothing new.
-    playTrack(trackId) {
-        if (trackId === this.activeTrackId) {
+    // The `...` copies every field of `repeat` and `profile` into one options object.
+    playTrack(track) {
+        if (track === this.activeTrack) {
             return;
         }
 
-        if (trackId === 'A') {
-            BT.musicPlay(this.calmClip, { volume: 1, loop: true, ...PROFILE_TO_A });
-        } else if (trackId === 'B') {
-            BT.musicPlay(this.upbeatClip, { volume: 1, loop: true, ...PROFILE_TO_B });
-        } else {
-            // No `loop: true` here: giving loopStart and loopEnd is what makes the region
-            // repeat, and the engine ignores `loop` whenever both of them are set.
-            BT.musicPlay(this.introLoopClip, {
-                volume: 1,
-                loopStart: INTRO_LOOP_START_SECONDS,
-                loopEnd: INTRO_LOOP_END_SECONDS,
-                ...PROFILE_TO_LOOP,
-            });
-        }
+        BT.musicPlay(this.clips[TRACKS.indexOf(track)], { volume: 1, ...track.repeat, ...track.profile });
 
         // The very first track has nothing to fade from, so its chart gets no marker.
-        this.switchTick = this.activeTrackId === null ? null : BT.ticks;
-        this.activeTrackId = trackId;
+        this.switchTick = this.activeTrack === null ? null : BT.ticks;
+        this.activeTrack = track;
     }
 }
 
