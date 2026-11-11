@@ -32,12 +32,10 @@
  * at /demos/<slug>.html instead and is not supported. Use `pnpm run build && pnpm run preview`
  * to capture a demo that is not deployed yet.
  */
-import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { buildRegistry } from '../plugins/demo-registry.js';
 import { SITE_URL } from '../plugins/sitemap.js';
@@ -48,15 +46,19 @@ import {
     OG_IMAGE_WIDTH,
     OG_SCALE_DEFAULT,
     OG_SCALE_MODES,
+    ogImageFile,
 } from '../plugins/social-meta.js';
-import { INPUT_TICKS, posesFor } from '../_shots/poses.js';
+import { CAPTURE_SEED, INPUT_TICKS, posesFor } from '../_shots/poses.js';
 import {
     buildCanvasReadyScript,
     buildEmbedUrl,
     buildWebGPUProbeScript,
     CANVAS_ID,
     launchCaptureBrowser,
+    requireFfmpeg,
+    runFfmpeg,
 } from './playwright-session.mjs';
+import { parseCliArgs } from './cli-args.mjs';
 
 // #region Configuration
 
@@ -96,24 +98,20 @@ export const DEFAULTS = {
     dryRun: false,
 };
 
-const STRING_OPTIONS = {
-    '--out': 'out',
-    '--base-url': 'baseUrl',
-    '--scale-mode': 'scaleMode',
-};
-
-const BOOLEAN_OPTIONS = {
-    '--all': 'all',
-    '--force': 'force',
-    '--keep-intermediate': 'keepIntermediate',
-    '--dry-run': 'dryRun',
+// node:util parseArgs definitions; parseArgs below maps them onto DEFAULTS' camelCase keys.
+const OPTIONS = {
+    out: { type: 'string', default: DEFAULTS.out },
+    'base-url': { type: 'string', default: DEFAULTS.baseUrl },
+    'scale-mode': { type: 'string', default: DEFAULTS.scaleMode },
+    all: { type: 'boolean', default: false },
+    force: { type: 'boolean', default: DEFAULTS.force },
+    'keep-intermediate': { type: 'boolean', default: DEFAULTS.keepIntermediate },
+    'dry-run': { type: 'boolean', default: DEFAULTS.dryRun },
 };
 
 // #endregion
 
 // #region Argument parsing
-
-/* eslint-disable complexity, security/detect-object-injection */
 
 /**
  * Parse argv into a capture options object. Throws on anything malformed rather than falling
@@ -126,48 +124,20 @@ const BOOLEAN_OPTIONS = {
  *   second positional argument appears.
  */
 export function parseArgs(argv) {
-    const options = { ...DEFAULTS, all: false };
-    let slug;
+    const { values, positionals } = parseCliArgs(argv, OPTIONS, true);
+    const [slug, extra] = positionals;
+    const options = {
+        out: values.out,
+        baseUrl: values['base-url'],
+        scaleMode: values['scale-mode'],
+        all: values.all,
+        force: values.force,
+        keepIntermediate: values['keep-intermediate'],
+        dryRun: values['dry-run'],
+    };
 
-    for (let index = 0; index < argv.length; index += 1) {
-        const arg = argv[index];
-
-        // pnpm forwards the separator of `pnpm run capture:og -- <slug>` to the script.
-        if (arg === PNPM_ARG_SEPARATOR) {
-            continue;
-        }
-
-        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
-            options[BOOLEAN_OPTIONS[arg]] = true;
-            continue;
-        }
-
-        if (Object.hasOwn(STRING_OPTIONS, arg)) {
-            const value = argv[index + 1];
-
-            // A following long option is a forgotten value, not the value itself. Without this,
-            // `--out --force` silently sets the output directory to "--force" and drops the flag,
-            // writing 46 cards into a directory named after an option.
-            if (value === undefined || value.startsWith('--')) {
-                throw new Error(`${arg} requires a value.`);
-            }
-
-            index += 1;
-
-            options[STRING_OPTIONS[arg]] = value;
-
-            continue;
-        }
-
-        if (arg.startsWith('-')) {
-            throw new Error(`Unknown option: ${arg}`);
-        }
-
-        if (slug !== undefined) {
-            throw new Error(`Unexpected second positional argument: ${arg}`);
-        }
-
-        slug = arg;
+    if (extra !== undefined) {
+        throw new Error(`Unexpected second positional argument: ${extra}`);
     }
 
     if (options.scaleMode !== '' && !OG_SCALE_MODES.has(options.scaleMode)) {
@@ -188,20 +158,14 @@ export function parseArgs(argv) {
         }
     }
 
-    options.slugs = options.all ? [...DEMO_ORDER] : [slug];
-
-    return options;
+    return { ...options, slugs: options.all ? [...DEMO_ORDER] : [slug] };
 }
-
-/* eslint-enable complexity, security/detect-object-injection */
 
 // #endregion
 
 // #region Path and dimension math
 
 /**
- * Output path for one demo's card.
- *
  * Resolve the output directory.
  *
  * The default resolves against the package, not the caller's cwd, so running the script from
@@ -230,7 +194,7 @@ export function resolveOutDir(out, cwd, packageRoot = PACKAGE_ROOT) {
  * @returns {string} `<outDir>/og-<slug>.png`.
  */
 export function buildOgImagePath(outDir, slug) {
-    return join(outDir, `og-${slug}.png`);
+    return join(outDir, ogImageFile(slug));
 }
 
 /**
@@ -241,7 +205,7 @@ export function buildOgImagePath(outDir, slug) {
  * @returns {string} `<outDir>/og-<slug>.native.png`.
  */
 export function buildNativeImagePath(outDir, slug) {
-    return join(outDir, `og-${slug}.native.png`);
+    return join(outDir, ogImageFile(slug).replace(/\.png$/u, '.native.png'));
 }
 
 /**
@@ -384,22 +348,18 @@ export function buildOgFfmpegArgs(input, output, target) {
 
 // #region Browser scripts
 
-// Pins `BT.random` so a demo that scatters things randomly (starfield, seeded worlds) draws the
-// same card on every run. `renderAt` replays from the boot seed, but without `?seed=` that seed
-// is fresh per page load.
-export const OG_CAPTURE_SEED = 1;
-
 /**
  * URL of the demo page with the engine exposed on `window.BT` and its random stream pinned.
  * Keep the `capture` flag in step with `captureUrl` in `_shots/capture.js`, which builds the
- * same page for the /shots gallery (that one runs in the browser, so they cannot share code).
+ * same page for the /shots gallery. Both pin `BT.random` with CAPTURE_SEED from `_shots/poses.js`:
+ * `renderAt` replays from the boot seed, and without `?seed=` that seed is fresh per page load.
  *
  * @param {string} baseUrl Site origin.
  * @param {string} slug Demo slug.
- * @returns {string} `${baseUrl}/${slug}?embed&capture&seed=${OG_CAPTURE_SEED}`.
+ * @returns {string} `${baseUrl}/${slug}?embed&capture&seed=${CAPTURE_SEED}`.
  */
 export function buildCaptureUrl(baseUrl, slug) {
-    return `${buildEmbedUrl(baseUrl, slug)}&capture&seed=${OG_CAPTURE_SEED}`;
+    return `${buildEmbedUrl(baseUrl, slug)}&capture&seed=${CAPTURE_SEED}`;
 }
 
 /**
@@ -528,21 +488,26 @@ Usage: pnpm run capture:og -- <slug> [options]
 `;
 
 /**
- * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
+ * Render the finished card from the native screenshot, then delete the screenshot unless
+ * `--keep-intermediate` asked to keep it. The delete runs on failure too: a leftover
+ * `og-<slug>.native.png` in public/social/ is not gitignored, so it would be committed and
+ * deployed.
  *
- * @param {string[]} args Arguments for `ffmpeg`, output path last.
+ * @param {string} nativePath Native-resolution screenshot path.
+ * @param {string} cardPath Finished card path.
+ * @param {{ drawWidth: number, drawHeight: number }} target Scale target from computeOgScale.
+ * @param {boolean} keepIntermediate Keep the screenshot.
+ * @param {(args: string[]) => void} [run] Runs ffmpeg; injectable for tests.
  * @returns {void}
- * @throws {Error} When ffmpeg is missing or exits non-zero.
+ * @throws {Error} Whatever `run` throws, after the cleanup.
  */
-function runFfmpeg(args) {
-    const result = spawnSync('ffmpeg', args, { stdio: 'inherit' });
-
-    if (result.error) {
-        throw new Error(`Failed to run ffmpeg: ${result.error.message}`);
-    }
-
-    if (result.status !== 0) {
-        throw new Error(`ffmpeg exited with status ${result.status}`);
+export function renderCard(nativePath, cardPath, target, keepIntermediate, run = runFfmpeg) {
+    try {
+        run(buildOgFfmpegArgs(nativePath, cardPath, target));
+    } finally {
+        if (!keepIntermediate) {
+            rmSync(nativePath, { force: true });
+        }
     }
 }
 
@@ -594,17 +559,14 @@ async function captureOne(page, slug, options) {
     console.log(`  canvas ${dimensions.width}x${dimensions.height}, seeking to ${at}s...`);
     await page.evaluate(buildSeekScript(at, CANVAS_READY_TIMEOUT_MS, keys));
 
+    const target = computeOgScale(dimensions.width, dimensions.height, scaleMode);
+
     await page.locator(`#${CANVAS_ID}`).screenshot({ path: nativePath });
 
-    const target = computeOgScale(dimensions.width, dimensions.height, scaleMode);
     console.log(
         `  ${scaleMode}: scaling ${target.scale}x to ${target.drawWidth}x${target.drawHeight}, padding to card`,
     );
-    runFfmpeg(buildOgFfmpegArgs(nativePath, cardPath, target));
-
-    if (!options.keepIntermediate) {
-        rmSync(nativePath, { force: true });
-    }
+    renderCard(nativePath, cardPath, target, options.keepIntermediate);
 }
 
 /**
@@ -628,8 +590,13 @@ async function main() {
     // missing @description is check:demo-registry's business, not a reason to noise up a capture.
     const originalWarn = console.warn;
     console.warn = () => {};
-    const registry = buildRegistry(PACKAGE_ROOT);
-    console.warn = originalWarn;
+    let registry;
+
+    try {
+        registry = buildRegistry(PACKAGE_ROOT);
+    } finally {
+        console.warn = originalWarn;
+    }
 
     const ogScaleBySlug = new Map(registry.map((entry) => [entry.slug, entry.ogScale]));
     const pending = options.force
@@ -660,11 +627,7 @@ async function main() {
     }
 
     // Fail before opening a browser, not after 46 screenshots.
-    const ffmpegProbe = spawnSync('ffmpeg', ['-hide_banner', '-version'], { stdio: 'ignore' });
-
-    if (ffmpegProbe.error || ffmpegProbe.status !== 0) {
-        throw new Error('ffmpeg is required for the card render but was not found on PATH.');
-    }
+    requireFfmpeg('the card render');
 
     mkdirSync(outDir, { recursive: true });
 

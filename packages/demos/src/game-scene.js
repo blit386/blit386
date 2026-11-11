@@ -36,7 +36,7 @@ Reference:
   - Audio: https://blit386.dev/docs/api/audio#loop-points
   - Rendering: https://blit386.dev/docs/api/rendering#frame-capture
   - Easing: https://blit386.dev/docs/api/easing#applyeasing
-  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows
+  - Overlay: https://blit386.dev/docs/api/overlay#custom-rows-optional
 
 ---
 

@@ -7,7 +7,7 @@ import { buildRegistry, INDEX_SLUG, SHOTS_SLUG } from './demo-registry.js';
 import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { escapeHtml } from './html-escape.js';
-import { buildSocialMeta, OG_IMAGE_DIR } from './social-meta.js';
+import { buildSocialMeta, OG_IMAGE_DIR, ogImageFile } from './social-meta.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
@@ -282,7 +282,7 @@ export function virtualDemos() {
         // public/ is copied into dist/ verbatim, so a PNG present here is exactly what
         // /social/og-<slug>.png resolves to in production. Demos without their own capture fall
         // back to the shared card rather than advertising an og:image that 404s.
-        const hasOgImage = existsSync(resolve(rootDir, 'public', OG_IMAGE_DIR, `og-${entry.slug}.png`));
+        const hasOgImage = existsSync(resolve(rootDir, 'public', OG_IMAGE_DIR, ogImageFile(entry.slug)));
         const socialMeta = buildSocialMeta({ entry, isNextChannel: IS_NEXT_CHANNEL, hasOgImage });
 
         return renderDemoHtml({

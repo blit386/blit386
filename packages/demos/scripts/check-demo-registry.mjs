@@ -22,16 +22,19 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import { buildRegistry, HEADER_SCAN_BYTES, NAV_HIDDEN_SLUGS, RESERVED_SLUGS } from '../plugins/demo-registry.js';
+import {
+    buildRegistry,
+    FILENAME_PATTERN,
+    HEADER_SCAN_BYTES,
+    NAV_HIDDEN_SLUGS,
+    RESERVED_SLUGS,
+} from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
-import { OG_IMAGE_DIR, OG_SCALE_MODES } from '../plugins/social-meta.js';
+import { OG_IMAGE_DIR, OG_SCALE_MODES, ogImageFile } from '../plugins/social-meta.js';
 
 export { RESERVED_SLUGS };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-// Mirrors plugins/demo-registry.js - kept local so this script can list files without
-// going through buildRegistry's soft-warn merge path.
-const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 
 // The ceiling is the column budget, not an SEO limit: the tag must be one line, and the
 // longest prefix (" * @description ") is 16 characters, so 104 is the most that fits this
@@ -350,10 +353,10 @@ function findHeaderTagFailures(registry) {
 function findMissingOgCardFailures(registry) {
     return registry
         .map((entry) => entry.slug)
-        .filter((slug) => !existsSync(join(ROOT, 'public', OG_IMAGE_DIR, `og-${slug}.png`)))
+        .filter((slug) => !existsSync(join(ROOT, 'public', OG_IMAGE_DIR, ogImageFile(slug))))
         .map(
             (slug) =>
-                `public/${OG_IMAGE_DIR}/og-${slug}.png is missing - capture it with \`pnpm run capture:og -- ${slug}\``,
+                `public/${OG_IMAGE_DIR}/${ogImageFile(slug)} is missing - capture it with \`pnpm run capture:og -- ${slug}\``,
         );
 }
 
@@ -370,22 +373,18 @@ function main() {
     // Mute buildRegistry's soft warns - this script reports the same issues as hard errors.
     const originalWarn = console.warn;
     console.warn = () => {};
-    const registry = buildRegistry(ROOT);
-    console.warn = originalWarn;
+    let registry;
 
-    const registrySlugSet = new Set(registry.map((entry) => entry.slug));
-    const registryDrifted =
-        registrySlugSet.size !== diskSlugSet.size || [...registrySlugSet].some((slug) => !diskSlugSet.has(slug));
+    try {
+        registry = buildRegistry(ROOT);
+    } finally {
+        console.warn = originalWarn;
+    }
 
     const readmeText = readFileSync(join(ROOT, 'README.md'), 'utf8');
     const readmeSlugs = extractReadmeDemoSlugs(readmeText);
 
     const errors = [
-        ...(registryDrifted
-            ? [
-                  'buildRegistry() slug set disagrees with src/ scan - FILENAME_PATTERN may have drifted between demo-registry.js and this script.',
-              ]
-            : []),
         ...findOrderBijectionFailures(diskSlugs, diskSlugSet),
         ...findReadmeListFailures(diskSlugs, readmeSlugs),
         ...findVintageKeyCollisions(diskSlugs, VINTAGE_URLS),

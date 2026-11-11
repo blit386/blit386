@@ -14,7 +14,8 @@
  * Checks, per `https://` URL found in that block:
  *   - Placeholder domain: host is `vancura.dev` or ends in `.vancura.dev` - always a failure.
  *   - `blit386.dev/docs/...`: the path (fragment stripped) must match a `path` value in
- *     `packages/blit386/docs/_sitemap.json`.
+ *     `packages/blit386/docs/_sitemap.json`, and a `#fragment` must be a heading id on that
+ *     page's `src` file, slugged by `scripts/lib/heading-anchors.mjs` the way the site does.
  *   - `demos.blit386.dev/<slug>`: the first path segment must be a `DEMO_ORDER` entry.
  *
  * Any other domain (e.g. a one-off GitHub credit) is ignored.
@@ -26,12 +27,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { headingAnchors } from '../../../scripts/lib/heading-anchors.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const DOCS_DIR = join(ROOT, '..', 'blit386', 'docs');
 
-/** Hostnames a header link must never point at - matched as an exact host or a `.`-suffix. */
-const PLACEHOLDER_DOMAIN_SUFFIXES = ['vancura.dev'];
+/** Hostname a header link must never point at - matched as the exact host or a `.`-suffix. */
+const PLACEHOLDER_DOMAIN = 'vancura.dev';
 
 const URL_PATTERN = /https:\/\/[^\s)'"]+/gu;
 
@@ -114,7 +117,7 @@ function isPlaceholderUrl(url) {
     }
 
     const host = parsed.hostname;
-    return PLACEHOLDER_DOMAIN_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+    return host === PLACEHOLDER_DOMAIN || host.endsWith(`.${PLACEHOLDER_DOMAIN}`);
 }
 
 /**
@@ -128,10 +131,13 @@ export function findPlaceholderLinkFailures(urls) {
 /**
  * @param {string[]} urls
  * @param {Set<string>} sitemapPaths `path` values from `packages/blit386/docs/_sitemap.json`.
+ * @param {Map<string, Set<string>>} [anchorsByPath] Heading ids per sitemap path. A fragment is
+ *   checked only when its page has an entry, so callers that pass none check paths alone.
  * @returns {string[]} Human-readable failure messages for `blit386.dev/docs/...` links whose
- *   page path (fragment stripped) is not in `sitemapPaths`.
+ *   page path (fragment stripped) is not in `sitemapPaths`, or whose fragment is not a heading
+ *   id on that page.
  */
-export function findDocsLinkFailures(urls, sitemapPaths) {
+export function findDocsLinkFailures(urls, sitemapPaths, anchorsByPath = new Map()) {
     const failures = [];
 
     for (const url of urls) {
@@ -145,6 +151,15 @@ export function findDocsLinkFailures(urls, sitemapPaths) {
 
         if (!sitemapPaths.has(path)) {
             failures.push(`${url} has no matching page in packages/blit386/docs/_sitemap.json (path "${path}")`);
+            continue;
+        }
+
+        // Raw, not decoded: every heading id is ASCII today, and decoding a stray `%` would throw.
+        const fragment = parsed.hash.slice(1);
+        const anchors = anchorsByPath.get(path);
+
+        if (fragment !== '' && anchors !== undefined && !anchors.has(fragment)) {
+            failures.push(`${url} has no heading "#${fragment}" on the page (path "${path}")`);
         }
     }
 
@@ -185,30 +200,35 @@ export function findDemoLinkFailures(urls, demoSlugs) {
  * Runs every link check against one file's header comment.
  *
  * @param {string} source Full file contents.
- * @param {{ sitemapPaths: Set<string>, demoSlugs: Set<string> }} registries
+ * @param {{ sitemapPaths: Set<string>, anchorsByPath?: Map<string, Set<string>>, demoSlugs: Set<string> }} registries
  * @returns {string[]} Human-readable failure messages (unprefixed - the caller adds the file name).
  */
-export function findCommentLinkFailures(source, { sitemapPaths, demoSlugs }) {
+export function findCommentLinkFailures(source, { sitemapPaths, anchorsByPath, demoSlugs }) {
     const urls = findLinksInHeader(extractHeaderComment(source));
 
     return [
         ...findMalformedLinkFailures(urls),
         ...findPlaceholderLinkFailures(urls),
-        ...findDocsLinkFailures(urls, sitemapPaths),
+        ...findDocsLinkFailures(urls, sitemapPaths, anchorsByPath),
         ...findDemoLinkFailures(urls, demoSlugs),
     ];
 }
 
-/** @returns {Set<string>} `path` values from `packages/blit386/docs/_sitemap.json`. */
-function readSitemapPaths() {
-    const sitemapPath = join(ROOT, '..', 'blit386', 'docs', '_sitemap.json');
-    const sitemap = JSON.parse(readFileSync(sitemapPath, 'utf8'));
-    return new Set(sitemap.pages.map((page) => page.path));
+/**
+ * @returns {{ sitemapPaths: Set<string>, anchorsByPath: Map<string, Set<string>> }} `path` values
+ *   from `packages/blit386/docs/_sitemap.json`, and the heading ids of each page's `src` file.
+ */
+function readSitemap() {
+    const sitemap = JSON.parse(readFileSync(join(DOCS_DIR, '_sitemap.json'), 'utf8'));
+    const anchorsByPath = new Map(
+        sitemap.pages.map((page) => [page.path, headingAnchors(readFileSync(join(DOCS_DIR, page.src), 'utf8'))]),
+    );
+    return { sitemapPaths: new Set(anchorsByPath.keys()), anchorsByPath };
 }
 
 /** @returns {string[]} All failure messages across every `src/*.js` header comment, each prefixed with its file name. */
 function runAllChecks() {
-    const sitemapPaths = readSitemapPaths();
+    const { sitemapPaths, anchorsByPath } = readSitemap();
     const demoSlugs = new Set(DEMO_ORDER);
     const srcDir = join(ROOT, 'src');
     const failures = [];
@@ -220,7 +240,7 @@ function runAllChecks() {
 
         const source = readFileSync(join(srcDir, file), 'utf8');
 
-        for (const message of findCommentLinkFailures(source, { sitemapPaths, demoSlugs })) {
+        for (const message of findCommentLinkFailures(source, { sitemapPaths, anchorsByPath, demoSlugs })) {
             failures.push(`src/${file}: ${message}`);
         }
     }
@@ -241,7 +261,7 @@ function main() {
         console.error(
             '\nFix the header comment in the listed file(s): repoint a vancura.dev link at the equivalent ' +
                 'blit386.dev/docs/... guide, and make sure every blit386.dev/docs/... or demos.blit386.dev/<slug> ' +
-                'link matches a real sitemap page or DEMO_ORDER entry.',
+                'link matches a real sitemap page (and heading, for a #fragment) or DEMO_ORDER entry.',
         );
         process.exit(1);
     }

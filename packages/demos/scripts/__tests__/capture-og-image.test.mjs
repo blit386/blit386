@@ -5,12 +5,15 @@
  * ffmpeg, or the filesystem.
  */
 import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEMO_ORDER } from '../../plugins/demo-order.js';
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, OG_SCALE_DEFAULT } from '../../plugins/social-meta.js';
-import { INPUT_TICKS } from '../../_shots/poses.js';
+import { captureUrl } from '../../_shots/capture.js';
+import { CAPTURE_SEED, INPUT_TICKS } from '../../_shots/poses.js';
 import { buildWebGPUProbeScript, CANVAS_ID } from '../playwright-session.mjs';
 import {
     buildCanvasPrepScript,
@@ -25,6 +28,7 @@ import {
     DEFAULT_OUT_DIR,
     DEFAULTS,
     parseArgs,
+    renderCard,
     resolveOutDir,
     resolveScaleMode,
     VIEWPORT_HEIGHT,
@@ -318,6 +322,13 @@ describe('buildCaptureUrl', () => {
             'https://demos.blit386.dev/basics?embed&capture&seed=1',
         );
     });
+
+    it('pins the same seed as the /shots capture, so the card and the tile draw the same frame', () => {
+        const seedOf = (url) => new URL(url, 'https://demos.blit386.dev/').searchParams.get('seed');
+
+        assert.equal(seedOf(captureUrl('/demos/', '.html', 'basics', 'display')), String(CAPTURE_SEED));
+        assert.equal(seedOf(buildCaptureUrl('https://demos.blit386.dev', 'basics')), String(CAPTURE_SEED));
+    });
 });
 
 describe('buildSeekScript', () => {
@@ -363,5 +374,41 @@ describe('buildSeekScript', () => {
 
         assert.ok(up < again && again < script.indexOf('requestAnimationFrame'));
         assert.doesNotMatch(buildSeekScript(1, 10_000), /captureFrame/);
+    });
+});
+
+describe('renderCard', () => {
+    const target = { scale: 2, drawWidth: 640, drawHeight: 480 };
+    const failingFfmpeg = () => {
+        throw new Error('ffmpeg exited with status 1');
+    };
+
+    it('removes the native screenshot when ffmpeg throws', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'og-card-'));
+        const nativePath = buildNativeImagePath(dir, 'basics');
+        writeFileSync(nativePath, 'png');
+
+        try {
+            assert.throws(
+                () => renderCard(nativePath, buildOgImagePath(dir, 'basics'), target, false, failingFfmpeg),
+                /status 1/,
+            );
+            assert.equal(existsSync(nativePath), false);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    it('keeps the native screenshot under --keep-intermediate', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'og-card-'));
+        const nativePath = buildNativeImagePath(dir, 'basics');
+        writeFileSync(nativePath, 'png');
+
+        try {
+            assert.throws(() => renderCard(nativePath, buildOgImagePath(dir, 'basics'), target, true, failingFfmpeg));
+            assert.equal(existsSync(nativePath), true);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     });
 });

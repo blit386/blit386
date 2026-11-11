@@ -5,7 +5,9 @@ import { DEMO_ORDER } from './demo-order.js';
 
 // Number-free kebab-case demo filenames (e.g. basics.js, sprite-effects.js).
 // First segment must start with a letter so legacy `001-topic.js` names are rejected.
-const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
+// Exported so scripts/check-demo-registry.mjs and scripts/capture-demo-shots.mjs build on it
+// instead of keeping copies that could drift.
+export const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 // Strip a branded `@pageTitle` prefix (with or without a legacy NNN / 00a id) so nav labels
 // stay short regardless of how each demo's override is written.

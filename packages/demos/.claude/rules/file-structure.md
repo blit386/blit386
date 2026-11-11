@@ -12,7 +12,7 @@ Canonical reference: [CLAUDE.md](../../CLAUDE.md) (Layout, Adding a New Demo, Fi
 | `plugins/` | `virtual-demos.js` (serves `src/*.js` as pages), `demo-order.js` (`DEMO_ORDER`), `demo-registry.js`, `demo-vintage-urls.js`, `social-meta.js`, `sitemap.js`, `channel-headers.js`, `highlight-demo-source.js`, `html-escape.js`, and `__tests__/` |
 | `_partials/` | `layout.html` (the one page template), `demo-shell*.js` (banner, combobox, nav, analytics), `source-panel*.js`, `capture-expose.js` |
 | `_shots/` | The `/shots` capture gallery and the `/` demo sheet: `poses.js`, `capture*.js`, `gallery.js`, `shots.{html,js,css}`, `sheet.{html,js,css}`, `sheet-entries.js`, review aids, and `__tests__/` |
-| `scripts/` | `check-demo-registry.mjs`, `check-demo-comment-links.mjs`, `capture-demo-shots.mjs`, `capture-og-image.mjs`, `capture-demo-clip.mjs`, `generate-audio-loops.mjs`, the shared `playwright-session.mjs`, and `__tests__/` |
+| `scripts/` | `check-demo-registry.mjs`, `check-demo-comment-links.mjs`, `capture-demo-shots.mjs`, `capture-og-image.mjs`, `capture-demo-clip.mjs`, `generate-audio-loops.mjs`, the shared `playwright-session.mjs` and `cli-args.mjs`, and `__tests__/` |
 | `styles/` | `layout.css`, `demo-source.css`, `twoslash-rich.css` |
 | `public/` | Static assets: `sprites/`, `fonts/`, `audio/`, `social/og-<slug>.png`, `shots/<slug>/*.png` plus `shots/manifest.json`, `_headers`, `404.html`, `favicon.svg` |
 
