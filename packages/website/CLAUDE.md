@@ -438,8 +438,8 @@ suffix, and rejects any other host before looking anything up.
 
 `public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
 into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the
-package boundary, so the values are duplicated in `packages/kit/src/adapters.ts`. Renaming the server or moving the
-endpoint means editing both; `packages/kit/test/mcp-config.test.mjs` compares them and fails when they disagree.
+package boundary, so the values are duplicated in `packages/kit/src/adapters/shared.ts`. Renaming the server or moving
+the endpoint means editing both; `packages/kit/test/mcp-config.test.mjs` compares them and fails when they disagree.
 
 ## Blog media
 

@@ -12,7 +12,7 @@ import { BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest } from './manifest';
 import { ui } from './messages';
 
 /** True for a plain JSON object (not an array or null). */
-function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -23,7 +23,8 @@ type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; ex
  * Read and validate `.blit/manifest.json`. Prints a Tier-1 line on failure.
  * A missing manifest is informational (exit 0); a damaged one is an error (exit 1).
  *
- * The shape is checked here, once: a plain object with a `files` array. Entries without a string `path` are dropped
+ * The shape is checked here, once: a plain object with a `files` array and, when present, `vars` of strings (`null`
+ * reads as absent). Entries without a string `path` are dropped
  * with one warning (a command that then saves the manifest removes them from the file). JSON can legally hold `null` or `{ "path": 5 }`, and every caller indexes into the result.
  *
  * @param missingTip - what scaffolding the project enables, for the "no manifest" hint
@@ -55,10 +56,14 @@ export function readManifest(
         return { ok: false, exitCode: 1 };
     }
 
-    if (!isObject(manifest) || !Array.isArray(manifest.files)) {
+    // `vars` feeds the generators, which call string methods on it; `null` counts as absent, so it gets backfilled.
+    const vars = isObject(manifest) ? (manifest.vars ?? undefined) : undefined;
+    const varsOk = vars === undefined || (isObject(vars) && Object.values(vars).every((v) => typeof v === 'string'));
+
+    if (!isObject(manifest) || !Array.isArray(manifest.files) || !varsOk) {
         out(
             ui.error(
-                '.blit/manifest.json has an unexpected shape (it needs a files array). The manifest may be damaged or from an older version.',
+                '.blit/manifest.json has an unexpected shape (it needs a files array, and vars must map names to text). The manifest may be damaged or from an older version.',
             ),
         );
         return { ok: false, exitCode: 1 };
@@ -76,5 +81,5 @@ export function readManifest(
         );
     }
 
-    return { ok: true, manifest: { ...manifest, files } as ReadBlitManifest };
+    return { ok: true, manifest: { ...manifest, vars, files } as ReadBlitManifest };
 }

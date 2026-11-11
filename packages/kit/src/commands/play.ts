@@ -56,7 +56,7 @@ Example:
 /**
  * The game reads the mouse button once per step (1/60 s). A click that is over sooner than that is never seen, so
  * `click` holds the button down for a few steps. Engine 1.8.1+ also catches a zero-delay click; the hold stays so
- * games pinned to 1.8.0 (the kit's `engineRange` is `^1.8.0`) still see it.
+ * games pinned to 1.8.0, which the kit's `engineRange` still allows, see it.
  */
 const CLICK_HOLD_MS = 100;
 
@@ -283,7 +283,7 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
             // Playwright runs a string argument as an expression in the page: the caller's own code, in their local game.
             return page.evaluate(args.join(':'));
         default:
-            throw new Error(`Unknown step "${step}". Run \`blit play --help\` to see the steps.`);
+            throw new Error(`Unknown step "${step}". Run \`npx blit play --help\` to see the steps.`);
     }
 }
 
@@ -317,7 +317,9 @@ async function playSteps(page: Page, root: string, url: URL, steps: string[]): P
             { timeout: START_TIMEOUT_MS },
         )
         .catch(() => {
-            throw new Error(`The game did not start within 20 seconds at ${url.href}. Is it a dev build?`);
+            throw new Error(
+                `The game did not start within ${START_TIMEOUT_MS / 1000} seconds at ${url.href}. Is it a dev build?`,
+            );
         });
 
     // Send keys to the game, not the page. Focus instead of a click, so the pointer stays out of the way.
@@ -411,7 +413,7 @@ export async function runPlay(argv: string[]): Promise<void> {
     if (!playwright) {
         const pm = detectPackageManager(root);
 
-        fail('`blit play` needs the playwright-core package to drive your browser.');
+        fail('`npx blit play` needs the playwright-core package to drive your browser.');
         process.stderr.write(
             `${ui.info(`Add it once with: ${pm} ${[...pmAddArgs(pm, 'playwright-core'), '-D'].join(' ')}`)}\n`,
         );

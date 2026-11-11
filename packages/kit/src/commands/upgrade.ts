@@ -39,7 +39,7 @@ export async function runUpgrade(): Promise<void> {
 
         const go = await confirm('Upgrade anyway?');
         if (!go) {
-            out(ui.info('No changes made. Save your work first, then run `blit upgrade` again.'));
+            out(ui.info('No changes made. Save your work first, then run `npx blit upgrade` again.'));
             return;
         }
     }
@@ -86,7 +86,7 @@ export async function runUpgrade(): Promise<void> {
             // upgrade already ran the no-git nag above, so do not repeat it here.
             await migrateProject(root, out, { write: true, skipGitNag: true });
         } else {
-            out(ui.info('No changes made. Run `blit migrate --write` when you are ready.'));
+            out(ui.info('No changes made. Run `npx blit migrate --write` when you are ready.'));
         }
     }
 }

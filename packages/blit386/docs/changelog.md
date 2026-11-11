@@ -412,6 +412,16 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   with `-c` or `--config-env`, now ask you first (Codex and Gemini CLI refuse them) where they used to run. The Claude
   Code and Gemini CLI hooks also block, instead of allowing, when the guard cannot load, and Claude Code's when `node`
   is missing.
+- `@blit386/kit`: `blit migrate --write` no longer breaks a `vite.config` whose last import spans several lines - it
+  used to insert the `blit386/vite` import inside that statement. It also ignores imports, `defineConfig` calls, and
+  `plugins` keys inside comments and strings, and adds `blit386()` only to the top-level `plugins` list, not a nested
+  one such as `build.rollupOptions.plugins`. Behavior change: a config it cannot edit safely (a quoted or shorthand
+  `plugins` key, a spread in the config object, an import attribute) is now reported as one to change by hand instead of
+  being rewritten. `blit agents sync`, `add`, and `doctor` report a damaged `vars` block in `.blit/manifest.json`
+  instead of crashing. `blit agents add zed` merges into a `.zed/settings.json` that has comments or trailing commas,
+  keeping the comments, and says which keys to copy by hand when it cannot. `blit doctor` prints install and update
+  hints for the package manager the game uses, and the commands the CLI tells you to run start with `npx blit`, so they
+  work from the game folder.
 
 ## 1.8.0 - 2026-10-18
 

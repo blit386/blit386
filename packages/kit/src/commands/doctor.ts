@@ -11,14 +11,15 @@ import {
     isGitRepo,
     kitDocsReviewedAt,
     kitEngineRange,
-    nodeVersionOk,
+    pmAddArgs,
     readProject,
     satisfiesCaretRange,
 } from '../env';
+import { kitRoot, nodeFloor } from '../kit-root';
 import { NO_GIT_NAG, ui } from '../messages';
 import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { readManifest } from '../read-manifest';
-import { checkSyncDrift } from './agents';
+import { checkSyncDrift } from './agents-sync';
 
 /** Drift never sees a file the manifest did not track. */
 function checkDocsMcp(root: string, out: (line: string) => void): void {
@@ -64,10 +65,11 @@ export function runDoctor(): void {
     out(ui.heading('BLIT386 checkup'));
     out('');
 
-    if (nodeVersionOk()) {
+    const floor = nodeFloor(kitRoot());
+    if (compareVersions(process.versions.node, floor) >= 0) {
         out(ui.success(`Node.js ${process.versions.node}`));
     } else {
-        out(ui.warn(`Node.js ${process.versions.node} is older than 22.18.0.`));
+        out(ui.warn(`Node.js ${process.versions.node} is older than ${floor}.`));
         out(ui.info('Update it from nodejs.org (download the LTS button), then restart your editor.'));
     }
 
@@ -102,7 +104,7 @@ export function runDoctor(): void {
     if (version) {
         out(ui.success(`blit386 ${version} installed`));
     } else {
-        out(ui.warn('blit386 is not installed yet. Run your install command (for example `npm install`).'));
+        out(ui.warn(`blit386 is not installed yet. Run \`${pm} install\`.`));
     }
 
     // Kit-engine compatibility (D14): compare the engine range this kit was written for against what is installed.
@@ -131,7 +133,11 @@ export function runDoctor(): void {
         } else {
             out('');
             out(ui.warn(`This kit needs blit386 ${engineRange}, but ${version} is installed.`));
-            out(ui.info('Update blit386 to match: run `npm update blit386` (or `npx blit upgrade`).'));
+            out(
+                ui.info(
+                    `Update blit386 to match: run \`${pm} ${pmAddArgs(pm, `blit386@${engineRange}`).join(' ')}\` (or \`npx blit upgrade\`).`,
+                ),
+            );
         }
     }
 

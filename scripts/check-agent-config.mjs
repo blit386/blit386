@@ -474,7 +474,7 @@ export const MAINTAINER_CONFIG_SPECS = [
     {
         // Cursor's own remote-server schema, which is not Claude's: a `type` field marks a *local stdio*
         // server there, so a remote HTTP entry must omit it (see `MCP_SERVER_ENTRY` in
-        // `packages/kit/src/adapters.ts`). That is why this file cannot be a symlink to the root
+        // `packages/kit/src/adapters/shared.ts`). That is why this file cannot be a symlink to the root
         // `.mcp.json`, which requires `"type": "http"` for Claude Code.
         path: '.cursor/mcp.json',
         mcp: {

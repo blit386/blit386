@@ -3,7 +3,7 @@
  * path recorded in `.blit/manifest.json`: symlink detection, project-root containment, and the SHA-256
  * hashing used to detect drift from a tracked file's last known content.
  *
- * A leaf module on purpose: no imports beyond node builtins, so both `commands/agents.ts` and
+ * A leaf module on purpose: no imports beyond node builtins, so both `commands/agents-sync.ts` and
  * `commands/clean.ts` can depend on it without a cycle. Kept as one implementation rather than two
  * copies because a symlink-safety bug fixed in one copy and not the other is exactly the kind of drift
  * these checks exist to prevent.
@@ -11,7 +11,7 @@
 
 import { createHash } from 'node:crypto';
 import { lstatSync, readFileSync } from 'node:fs';
-import { isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 /** SHA-256 hex digest of a string. */
 export function sha256Text(text: string): string {
@@ -59,12 +59,12 @@ export function hasSymlinkedSegment(absPath: string, root: string): boolean {
 }
 
 /**
- * Reject manifest paths that are absolute, escape the project root via `..` segments, or are reached
+ * Reject manifest paths that are absolute, resolve outside the project root (`..` segments included), or are reached
  * through a symlink (the file itself or a parent directory) - lexical safety alone would still let a
  * symlink swapped in after scaffolding redirect a read or write outside the project.
  */
 export function isSafeRelPath(relPath: string, root: string): boolean {
-    if (isAbsolute(relPath) || normalize(relPath).startsWith(`..${sep}`)) {
+    if (isAbsolute(relPath)) {
         return false;
     }
 

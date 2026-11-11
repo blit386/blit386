@@ -1,7 +1,7 @@
 /**
  * Which generated files the kit owns, and the project-relative paths each AI assistant occupies.
  *
- * Single source of truth for both packages. `src/adapters.ts` builds every path it emits from the
+ * Single source of truth for both packages. `src/adapters/` builds every path it emits from the
  * constants below, `blit agents sync` / `add` classify incoming files with `classifyFile`, and
  * `create-blit386` imports the same helpers through `@blit386/kit/adapters` when it stamps
  * `.blit/manifest.json` at scaffold time. One implementation, so a file the kit starts shipping
@@ -100,8 +100,9 @@ export const OPENCODE_HOOKS_DIR = `${OPENCODE_DIR}hooks/`;
 export const OPENCODE_KIT_GUARD = `${OPENCODE_DIR}plugins/kit-guard.ts`;
 
 /**
- * Zed's generated configuration. `settings.json` is user-extendable JSON (Zed also allows comments), so like the MCP
- * configs it is merged structurally by `blit agents add` and three-way merged by `sync`.
+ * Zed's generated configuration. `settings.json` is user-extendable JSONC (comments and trailing commas allowed), so like
+ * the MCP configs it is merged by `blit agents add` (`tryMergeZedSettings`, which never re-serializes a file that has
+ * comments) and three-way merged by `sync`.
  */
 export const ZED_DIR = '.zed/';
 export const ZED_SETTINGS_JSON = `${ZED_DIR}settings.json`;
@@ -132,6 +133,13 @@ export const COPILOT_SETUP_STEPS_YML = '.github/workflows/copilot-setup-steps.ym
 
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
+
+/**
+ * The game's source file, by language. The scaffolder writes it and records its hash in the manifest; `blit clean`
+ * looks it up by this path to tell an untouched starter from the user's own game.
+ */
+export const GAME_FILE_TS = 'src/game.ts';
+export const GAME_FILE_JS = 'src/game.js';
 
 /**
  * The skills folder several agents read natively (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, ...).

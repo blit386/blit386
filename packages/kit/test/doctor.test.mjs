@@ -261,3 +261,27 @@ test('blit doctor stays quiet about the docs server when the game tracks no assi
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+test('blit doctor builds its update hint from the package manager the game uses', () => {
+    const root = makeGame('1.2.0');
+    writeFileSync(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
+    try {
+        const { output } = runDoctor(root);
+        assert.ok(output.includes('`pnpm add blit386@^'), `expected a pnpm update hint, got:\n${output}`);
+        assert.ok(!output.includes('npm update'), `expected no npm hint in a pnpm game, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor names the game package manager when blit386 is not installed', () => {
+    const root = makeGame('1.8.0');
+    rmSync(join(root, 'node_modules'), { recursive: true, force: true });
+    writeFileSync(join(root, 'yarn.lock'), '');
+    try {
+        const { output } = runDoctor(root);
+        assert.ok(output.includes('`yarn install`'), `expected a yarn install hint, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});

@@ -1,6 +1,6 @@
 /**
  * Environment helpers shared by the `blit` commands: package-manager detection, project lookup, git presence,
- * Node version check, semver range check, and a thin wrapper for spawning the package manager.
+ * semver range check, and a thin wrapper for spawning the package manager.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -11,61 +11,26 @@ import { kitRoot } from './kit-root';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
-/** Minimum Node version the engine supports (matches blit386 `engines`). */
-const MIN_NODE: readonly [number, number, number] = [22, 18, 0];
-
-/** True when the running Node is at least the minimum supported version. */
-export function nodeVersionOk(): boolean {
-    const parts = process.versions.node.split('.').map((n) => Number.parseInt(n, 10));
-    const major = parts[0] ?? 0;
-    const minor = parts[1] ?? 0;
-    const patch = parts[2] ?? 0;
-    const [reqMajor, reqMinor, reqPatch] = MIN_NODE;
-
-    if (major !== reqMajor) {
-        return major > reqMajor;
+/** Walk up from `start` to the nearest folder holding `name`, or null if none does. */
+function findUp(start: string, name: string): string | null {
+    for (let dir = start; ; dir = dirname(dir)) {
+        if (existsSync(join(dir, name))) {
+            return dir;
+        }
+        if (dirname(dir) === dir) {
+            return null;
+        }
     }
-    if (minor !== reqMinor) {
-        return minor > reqMinor;
-    }
-
-    return patch >= reqPatch;
 }
 
 /** Walk up from `start` to the nearest folder containing a package.json, or null if none. */
 export function findProjectRoot(start: string): string | null {
-    let dir = start;
-
-    for (;;) {
-        if (existsSync(join(dir, 'package.json'))) {
-            return dir;
-        }
-
-        const parent = dirname(dir);
-        if (parent === dir) {
-            return null;
-        }
-
-        dir = parent;
-    }
+    return findUp(start, 'package.json');
 }
 
 /** True when `start` (or any parent) is inside a git working tree. Checks for `.git` so it works without the git binary. */
 export function isGitRepo(start: string): boolean {
-    let dir = start;
-
-    for (;;) {
-        if (existsSync(join(dir, '.git'))) {
-            return true;
-        }
-
-        const parent = dirname(dir);
-        if (parent === dir) {
-            return false;
-        }
-
-        dir = parent;
-    }
+    return findUp(start, '.git') !== null;
 }
 
 /** Detect the package manager from the project's lockfile, then the invoking agent, defaulting to npm. */
@@ -246,40 +211,35 @@ export function exceedsCaretRange(version: string, caretRange: string): boolean 
 }
 
 /**
- * Read the `blit386.engineRange` field from the kit's own package.json, or null if absent.
+ * Read one string field of the `blit386` block in the kit's own package.json, or null if absent.
  *
  * The kit's package.json ships alongside this file in the npm package, so we locate it with
  * `kitRoot()` - the kit containing this code - rather than looking in `node_modules`.
  */
-export function kitEngineRange(): string | null {
+function readKitBlit386Field(key: 'engineRange' | 'docsReviewedAt'): string | null {
     try {
-        const kitPkgPath = join(kitRoot(), 'package.json');
-        const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
-            blit386?: { engineRange?: unknown };
+        const pkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8')) as {
+            blit386?: Record<string, unknown>;
         };
-        const range = pkg.blit386?.engineRange;
-        return typeof range === 'string' ? range : null;
+        const value = pkg.blit386?.[key];
+        return typeof value === 'string' ? value : null;
     } catch {
         return null;
     }
 }
 
+/** The `blit386.engineRange` the kit's guides were written for, or null if absent. */
+export function kitEngineRange(): string | null {
+    return readKitBlit386Field('engineRange');
+}
+
 /**
- * Read the `blit386.docsReviewedAt` field from the kit's own package.json, or null if absent.
+ * The `blit386.docsReviewedAt` marker, or null if absent.
  *
  * Unlike `engineRange`, this marker is hand-set only - it records the last engine version a human
  * reviewed `content/docs/*.md` against, bumped after an actual review, never written by a script.
  * See `packages/kit/CLAUDE.md` critical rule 5.
  */
 export function kitDocsReviewedAt(): string | null {
-    try {
-        const kitPkgPath = join(kitRoot(), 'package.json');
-        const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
-            blit386?: { docsReviewedAt?: unknown };
-        };
-        const version = pkg.blit386?.docsReviewedAt;
-        return typeof version === 'string' ? version : null;
-    } catch {
-        return null;
-    }
+    return readKitBlit386Field('docsReviewedAt');
 }

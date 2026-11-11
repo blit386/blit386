@@ -26,6 +26,7 @@ import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { KIT_PACKAGE_NAME, kitRoot, resolveKitRoot } from '../dist/adapters.js';
+import { nodeFloor } from '../dist/adapters.js';
 import { kitDocsReviewedAt, kitEngineRange } from '../dist/env.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -126,4 +127,21 @@ test('the env.ts package.json readers go through kitRoot()', () => {
         pkg.blit386.docsReviewedAt,
         'kitDocsReviewedAt() must read this kit package.json',
     );
+});
+
+test('nodeFloor() reads engines.node from the kit package.json', () => {
+    const pkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8'));
+
+    assert.equal(nodeFloor(kitRoot()), pkg.engines.node.replace(/^>=/, ''));
+});
+
+test('nodeFloor() finds the floor in an installed copy of the kit, outside this workspace', async () => {
+    const { root, adapters } = stageKitCopy();
+    writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({ name: KIT_PACKAGE_NAME, version: '9.9.9', engines: { node: '>=24.1.2' } }),
+    );
+    const module = await import(pathToFileURL(adapters).href);
+
+    assert.equal(module.nodeFloor(module.kitRoot()), '24.1.2');
 });

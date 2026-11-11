@@ -8,6 +8,8 @@
  * use-hot-reload skill) can finish the job.
  */
 
+import { maskSource } from '../source-mask';
+
 /** Outcome of inspecting / rewriting one vite.config source string. */
 export type HotReloadViteStatus = 'already' | 'added' | 'missing-config' | 'unsupported' | 'skipped-engine';
 
@@ -35,135 +37,25 @@ const IMPORT_LINE = "import { blit386 } from 'blit386/vite';";
 const PLUGIN_CALL = /(?<![.\w$])blit386\s*\(/;
 
 /**
- * Whether the source already mentions the hot-reload plugin (import or factory call).
- *
- * Prefer {@link enableHotReloadInViteConfig} for migrate decisions - import alone is not "wired up".
- */
-export function hasBlit386VitePlugin(source: string): boolean {
-    if (/from\s+['"]blit386\/vite['"]/.test(source)) {
-        return true;
-    }
-
-    return PLUGIN_CALL.test(source);
-}
-
-/**
- * Locate the `{` … `}` of a single `defineConfig({ ... })` call.
+ * Locate the `{` … `}` of the single `defineConfig({ ... })` call in a masked source (see `maskSource`), so calls and
+ * braces inside comments and strings do not count.
  *
  * Returns null when there is not exactly one match, or when braces do not balance.
  */
-function findUniqueDefineConfigObject(source: string): { openBrace: number; closeBrace: number } | null {
-    const hits: number[] = [];
-    const re = /defineConfig\s*\(\s*\{/g;
-    let match = re.exec(source);
-    while (match !== null) {
-        hits.push(match.index + match[0].length - 1);
-        match = re.exec(source);
-    }
-
-    if (hits.length !== 1) {
+function findUniqueDefineConfigObject(masked: string): { openBrace: number; closeBrace: number } | null {
+    const hits = [...masked.matchAll(/defineConfig\s*\(\s*\{/g)];
+    const hit = hits.length === 1 ? hits[0] : undefined;
+    if (hit?.index === undefined) {
         return null;
     }
 
-    const openBrace = hits[0];
-    if (openBrace === undefined) {
-        return null;
-    }
-    const closeBrace = matchingBraceEnd(source, openBrace);
-    if (closeBrace === null) {
-        return null;
-    }
-
-    return { openBrace, closeBrace };
-}
-
-/** Walk from an opening `{` to its matching `}`, ignoring braces inside strings and comments. */
-function matchingBraceEnd(source: string, openIndex: number): number | null {
+    const openBrace = hit.index + hit[0].length - 1;
     let depth = 0;
-    let inSingle = false;
-    let inDouble = false;
-    let inTemplate = false;
-    let inLineComment = false;
-    let inBlockComment = false;
-
-    for (let i = openIndex; i < source.length; i++) {
-        const ch = source.charAt(i);
-        const next = source[i + 1];
-
-        if (inLineComment) {
-            if (ch === '\n') {
-                inLineComment = false;
-            }
-            continue;
-        }
-        if (inBlockComment) {
-            if (ch === '*' && next === '/') {
-                inBlockComment = false;
-                i++;
-            }
-            continue;
-        }
-        if (inSingle) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === "'") {
-                inSingle = false;
-            }
-            continue;
-        }
-        if (inDouble) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === '"') {
-                inDouble = false;
-            }
-            continue;
-        }
-        if (inTemplate) {
-            if (ch === '\\') {
-                i++;
-                continue;
-            }
-            if (ch === '`') {
-                inTemplate = false;
-            }
-            continue;
-        }
-
-        if (ch === '/' && next === '/') {
-            inLineComment = true;
-            i++;
-            continue;
-        }
-        if (ch === '/' && next === '*') {
-            inBlockComment = true;
-            i++;
-            continue;
-        }
-        if (ch === "'") {
-            inSingle = true;
-            continue;
-        }
-        if (ch === '"') {
-            inDouble = true;
-            continue;
-        }
-        if (ch === '`') {
-            inTemplate = true;
-            continue;
-        }
-
-        if (ch === '{') {
+    for (let i = openBrace; i < masked.length; i++) {
+        if (masked[i] === '{') {
             depth++;
-        } else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-                return i;
-            }
+        } else if (masked[i] === '}' && --depth === 0) {
+            return { openBrace, closeBrace: i };
         }
     }
 
@@ -171,58 +63,100 @@ function matchingBraceEnd(source: string, openIndex: number): number | null {
 }
 
 /**
- * Insert the `blit386/vite` import after the last existing import, or at the top of the file.
+ * Insert the `blit386/vite` import on the line after the last existing import statement, or at the top of the file.
+ *
+ * Searches a masked copy (comments and string contents blanked), so a statement spanning several lines is found whole
+ * and a commented-out import counts for nothing. Returns null when code follows the last import on its own line (an
+ * import attribute such as `with { type: 'json' }`, or a second statement), where no insertion point is safe.
  */
-function insertImport(source: string): string {
-    if (/from\s+['"]blit386\/vite['"]/.test(source)) {
+function insertImport(source: string): string | null {
+    if (/from\s+['"]blit386\/vite['"]/.test(maskSource(source, true))) {
         return source;
     }
 
-    const importMatches = [...source.matchAll(/^import\s.+;?\s*$/gm)];
-    const last = importMatches.at(-1);
+    // An import statement ends at its module string: `import x from 'm'`, `import { a,\n b } from 'm'`, `import 'm'`.
+    // A line comment after it is blank in the mask, so the match runs on to the end of that line.
+    const masked = maskSource(source);
+    const statements = [...masked.matchAll(/^import\s[^'"]*(['"])[^'"\n]*\1[ \t]*;?[ \t]*(?=\r?\n|$)/gm)];
+    const last = statements.at(-1);
     if (!last || last.index === undefined) {
         return `${IMPORT_LINE}\n${source}`;
     }
 
     const insertAt = last.index + last[0].length;
-    const before = source.slice(0, insertAt);
-    const after = source.slice(insertAt);
-    // Keep a single blank line between the import block and the rest when the file already had one.
-    const spacer = after.startsWith('\n\n') || after.startsWith('\r\n\r\n') ? '' : '\n';
-    return `${before}\n${IMPORT_LINE}${spacer}${after}`;
+    // A block comment opened on that line would swallow the new import.
+    if (source.slice(last.index, insertAt).includes('/*')) {
+        return null;
+    }
+
+    // The last import that does not end its own line is not this match: some import ends later in the file.
+    const lastStart = [...masked.matchAll(/^import\s/gm)].at(-1)?.index;
+    if (lastStart !== last.index) {
+        return null;
+    }
+
+    const eol = source.startsWith('\r\n', insertAt) ? '\r\n' : '\n';
+    return `${source.slice(0, insertAt)}${eol}${IMPORT_LINE}${source.slice(insertAt)}`;
 }
 
 /**
- * Ensure `plugins: [blit386(), ...]` appears inside the unique `defineConfig({ ... })` object.
+ * Ensure `plugins: [blit386(), ...]` appears at the top level of the unique `defineConfig({ ... })` object.
  *
- * Returns null when the config shape is too unusual to rewrite safely. Does not touch `plugins`
- * arrays that live outside that object.
+ * Returns null when the config shape is too unusual to rewrite safely: a `plugins` key that is not one plain
+ * `plugins: [` (quoted, shorthand, a variable, or two of them), or a spread, which could replace the key we add. A
+ * `plugins` list nested deeper (`build.rollupOptions.plugins`) or inside a comment is not the Vite list and is ignored.
  */
 function ensurePluginsInDefineConfig(source: string): { text: string; already: boolean } | null {
-    const block = findUniqueDefineConfigObject(source);
+    const masked = maskSource(source);
+    const block = findUniqueDefineConfigObject(masked);
     if (!block) {
         return null;
     }
 
-    const body = source.slice(block.openBrace + 1, block.closeBrace);
-    if (PLUGIN_CALL.test(body)) {
+    if (PLUGIN_CALL.test(masked.slice(block.openBrace + 1, block.closeBrace))) {
         return { text: source, already: true };
     }
 
-    let newBody: string;
-    const emptyPlugins = /plugins\s*:\s*\[\s*\]/;
-    const pluginsOpen = /plugins\s*:\s*\[/;
-
-    if (emptyPlugins.test(body)) {
-        newBody = body.replace(emptyPlugins, 'plugins: [blit386()]');
-    } else if (pluginsOpen.test(body)) {
-        newBody = body.replace(pluginsOpen, 'plugins: [blit386(), ');
-    } else {
-        newBody = `\n    plugins: [blit386()],${body}`;
+    // The object's top level, comments blanked and every nested bracket's contents blanked, at the source's offsets.
+    // Top-level strings stay, so a quoted `'plugins'` key is seen; a string value holding `plugins` or `...` only
+    // makes the answer unsupported, never a wrong edit.
+    const text = maskSource(source, true);
+    let depth = 0;
+    let top = '';
+    for (let i = block.openBrace + 1; i < block.closeBrace; i++) {
+        const ch = masked.charAt(i);
+        if ('{[('.includes(ch)) {
+            top += depth++ === 0 ? ch : ' ';
+        } else if ('}])'.includes(ch)) {
+            top += --depth === 0 ? ch : ' ';
+        } else {
+            top += depth === 0 ? text.charAt(i) : ' ';
+        }
     }
 
-    const text = `${source.slice(0, block.openBrace + 1)}${newBody}${source.slice(block.closeBrace)}`;
-    return { text, already: false };
+    const mentions = [...top.matchAll(/\bplugins\b/g)];
+    if (top.includes('...') || mentions.length > 1) {
+        return null;
+    }
+
+    const at = block.openBrace + 1;
+    if (mentions.length === 0) {
+        const indent = /\n([ \t]*)\S/.exec(source.slice(at, block.closeBrace))?.[1] ?? '    ';
+        const eol = source.includes('\r\n') ? '\r\n' : '\n';
+        return {
+            text: `${source.slice(0, at)}${eol}${indent}plugins: [blit386()],${source.slice(at)}`,
+            already: false,
+        };
+    }
+
+    const key = /(?<![\w$'"`])plugins\s*:\s*\[/.exec(top);
+    if (key === null || key.index !== mentions[0]?.index) {
+        return null;
+    }
+
+    const open = at + key.index + key[0].length;
+    const call = /^\s*\]/.test(masked.slice(open)) ? 'blit386()' : 'blit386(), ';
+    return { text: `${source.slice(0, open)}${call}${source.slice(open)}`, already: false };
 }
 
 /**
@@ -242,7 +176,7 @@ export function enableHotReloadInViteConfig(source: string): HotReloadViteResult
     }
 
     const text = insertImport(ensured.text);
-    if (text === source) {
+    if (text === null || text === source) {
         return { text: source, changed: false, status: 'unsupported' };
     }
 

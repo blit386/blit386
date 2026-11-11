@@ -41,7 +41,7 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 - `content/` - everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and
   the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor/Antigravity/Codex/Copilot/Gemini CLI/OpenCode/Zed file
-  generation lives in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so the scaffolder and
+  generation lives in `src/adapters/` and is exported as `@blit386/kit/adapters` so the scaffolder and
   `blit agents sync` / `blit agents add` share one implementation; the paths it emits and their sync ownership classes
   are defined once in `src/ownership.ts`. The same manifest drives Cursor's `.cursor/hooks.json` and Claude Code's
   `.claude/settings.json` (format-on-edit, which formats only the file that was edited, + block-dangerous-shell). Claude
