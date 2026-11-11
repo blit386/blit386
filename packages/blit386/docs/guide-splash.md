@@ -26,7 +26,7 @@ Three gating layers, resolved in order. The first match wins.
 2. The `?splash` and `?nosplash` URL flags. Both are valueless. (The engine's other URL parameters live elsewhere:
    `?backend=software` in [API: Core](api-core.md#requested-vs-active-backend), `?reducedmotion` / `?noreducedmotion`
    under [Reduced motion](#reduced-motion), and `?seed=N` in [Random](guide-random.md#seeding-from-the-url).)
-3. `BT.isDevMode` - on in release builds, off in development.
+3. `BT.isDevMode` - splash off in development, on in release.
 
 So with no configuration at all, a production build shows the splash and a dev server does not. A
 [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) replay from the start re-runs `init()` on a fresh game
