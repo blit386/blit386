@@ -1,6 +1,6 @@
 import type { OverlayStyle, OverlayTimingChartStyle } from '../../core/IBTDemo';
 import type { Rect2i } from '../../utils/Rect2i';
-import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from '../constants';
+import { resolveOverlayChromeIndices, scaleToBand } from '../bandStyle';
 import {
     TIMING_CHART_DEFAULT_ERROR_IDX,
     TIMING_CHART_DEFAULT_TAG_IDX,
@@ -20,18 +20,6 @@ export interface TimingChartDrawStyle {
     readonly overflowBarIndex: number;
 }
 
-const pickPaletteIndex = (preferred: number | undefined, fallback: number): number => preferred ?? fallback;
-
-const pickOverlayBarTextGap = (
-    overlayStyle: OverlayStyle | undefined,
-): { barIndex: number; textIndex: number; gapIndex: number } => {
-    const barIndex = overlayStyle?.barPaletteIndex ?? DEFAULT_IDX_BG;
-    const textIndex = overlayStyle?.textPaletteIndex ?? DEFAULT_IDX_TEXT;
-    const gapIndex = overlayStyle?.gapPaletteIndex ?? barIndex;
-
-    return { barIndex, textIndex, gapIndex };
-};
-
 /**
  * Resolves timing chart palette indices from overlay and chart-specific settings.
  *
@@ -43,60 +31,30 @@ export function resolveTimingChartStyle(
     overlayStyle: OverlayStyle | undefined,
     chartStyle: OverlayTimingChartStyle | undefined,
 ): TimingChartDrawStyle {
-    const { barIndex, textIndex, gapIndex } = pickOverlayBarTextGap(overlayStyle);
+    const { barIndex, textIndex, gapIndex } = resolveOverlayChromeIndices(overlayStyle);
+    const chart: OverlayTimingChartStyle = chartStyle ?? {};
+    const warningBarIndex = chart.warningPaletteIndex ?? TIMING_CHART_DEFAULT_WARNING_IDX;
 
     return {
-        updateBarIndex: pickPaletteIndex(chartStyle?.updateBarPaletteIndex, barIndex),
-        renderBarIndex: pickPaletteIndex(chartStyle?.renderBarPaletteIndex, textIndex),
-        warningBarIndex: pickPaletteIndex(chartStyle?.warningPaletteIndex, TIMING_CHART_DEFAULT_WARNING_IDX),
-        errorBarIndex: pickPaletteIndex(chartStyle?.errorPaletteIndex, TIMING_CHART_DEFAULT_ERROR_IDX),
-        tagBarIndex: pickPaletteIndex(chartStyle?.tagPaletteIndex, TIMING_CHART_DEFAULT_TAG_IDX),
-        gridBarIndex: pickPaletteIndex(chartStyle?.gridPaletteIndex, gapIndex),
-        overflowBarIndex: pickPaletteIndex(
-            chartStyle?.overflowPaletteIndex,
-            pickPaletteIndex(chartStyle?.warningPaletteIndex, TIMING_CHART_DEFAULT_WARNING_IDX),
-        ),
+        updateBarIndex: chart.updateBarPaletteIndex ?? barIndex,
+        renderBarIndex: chart.renderBarPaletteIndex ?? textIndex,
+        warningBarIndex,
+        errorBarIndex: chart.errorPaletteIndex ?? TIMING_CHART_DEFAULT_ERROR_IDX,
+        tagBarIndex: chart.tagPaletteIndex ?? TIMING_CHART_DEFAULT_TAG_IDX,
+        gridBarIndex: chart.gridPaletteIndex ?? gapIndex,
+        overflowBarIndex: chart.overflowPaletteIndex ?? warningBarIndex,
     };
 }
 
 /**
- * Maps a timing sample in milliseconds to a vertical dot offset in pixels above the baseline.
- *
- * Scales linearly so `fullScaleMs` fills the chart band. Any non-zero sample draws at
- * least one pixel so lightweight demos (sub-millisecond `update()` / `render()`) stay visible.
- *
- * @param ms - Sample value in milliseconds.
- * @param chartHeight - Chart band height in pixels.
- * @param fullScaleMs - Milliseconds that map to full band height.
- * @returns Clamped offset in pixels (0 when sample is zero).
+ * Maps a timing sample in milliseconds to a vertical dot offset above the baseline (see {@link scaleToBand}).
  */
-export function computeTimingChartBarHeight(ms: number, chartHeight: number, fullScaleMs: number): number {
-    if (chartHeight <= 0 || ms <= 0 || fullScaleMs <= 0) {
-        return 0;
-    }
-
-    const scaled = Math.floor((ms * chartHeight) / fullScaleMs);
-
-    return Math.min(chartHeight, Math.max(1, scaled));
-}
+export const computeTimingChartBarHeight = scaleToBand;
 
 /**
- * Maps submitted vertex count to a vertical offset within a pressure sub-band (rich diagnostics mode).
- *
- * @param vertices - Submitted vertices for one pipeline this frame.
- * @param regionHeight - Height of the pressure sub-band in pixels.
- * @param maxVertices - Pipeline capacity (typically 50k).
- * @returns Clamped offset in pixels (0 when vertices is zero).
+ * Maps submitted vertex count to an offset within a pressure sub-band (see {@link scaleToBand}).
  */
-export function computeTimingChartPressureHeight(vertices: number, regionHeight: number, maxVertices: number): number {
-    if (regionHeight <= 0 || vertices <= 0 || maxVertices <= 0) {
-        return 0;
-    }
-
-    const scaled = Math.floor((vertices * regionHeight) / maxVertices);
-
-    return Math.min(regionHeight, Math.max(1, scaled));
-}
+export const computeTimingChartPressureHeight = scaleToBand;
 
 /**
  * Maps a timing threshold in milliseconds to the screen Y row for a horizontal grid line.

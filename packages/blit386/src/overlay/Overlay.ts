@@ -23,6 +23,7 @@ import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
 import type { AudioMeterDrawStyle } from './audio-meter/style';
 import { resolveAudioMeterStyle } from './audio-meter/style';
+import { resolveOverlayChromeIndices } from './bandStyle';
 import { OverlayBars } from './bars/Bars';
 import {
     DEFAULT_IDX_BG,
@@ -49,19 +50,6 @@ import type { OverlayAudioSnapshot, OverlayTimingSnapshot } from './types';
 
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
-
-/**
- * Resolves overlay bar/text/gap palette indices from optional {@link OverlayStyle}.
- *
- * @param style - Optional configure-time overlay style.
- * @returns Resolved palette indices for overlay chrome.
- */
-function resolveStyleIndices(style?: OverlayStyle): { bg: number; gap: number; text: number } {
-    const bg = style?.barPaletteIndex ?? DEFAULT_IDX_BG;
-    const text = style?.textPaletteIndex ?? DEFAULT_IDX_TEXT;
-
-    return { bg, text, gap: style?.gapPaletteIndex ?? bg };
-}
 
 /**
  * Creates a timing chart instance and resets its ring buffer when enabled.
@@ -259,11 +247,11 @@ export class Overlay {
         this.#targetFps = targetFps;
         this.#fps = new FpsSampler(this.#targetFps);
 
-        const indices = resolveStyleIndices(style);
+        const indices = resolveOverlayChromeIndices(style);
 
-        this.#idxBg = indices.bg;
-        this.#idxText = indices.text;
-        this.#idxGap = indices.gap;
+        this.#idxBg = indices.barIndex;
+        this.#idxText = indices.textIndex;
+        this.#idxGap = indices.gapIndex;
         this.#topRightLabel = `${activeBackend}|${layout.displayWidth}x${layout.displayHeight}`;
         this.#timingChartStyle = resolveTimingChartStyle(style, timingChartStyle);
         this.#timingChartHeight = timingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
