@@ -162,6 +162,10 @@ describe('bump-lockstep', () => {
             assert.equal(next, '{\n  "version": "1.0.0",\n  "version": "1.3.0"\n}\n');
             assert.equal(JSON.parse(next).version, '1.3.0');
         });
+
+        it('refuses a one-line manifest instead of patching it', () => {
+            assert.throws(() => applyVersion('{"name":"x","version":"1.2.1"}', '1.3.0'), /missing a string "version"/);
+        });
     });
 
     describe('applyEngineRange', () => {
