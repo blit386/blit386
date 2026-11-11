@@ -181,3 +181,17 @@ export function createSplashIfEnabled(hwSettings: HardwareSettings): Splash | nu
 
     return new Splash({ colorDark: hwSettings.splashColorDark, colorLight: hwSettings.splashColorLight });
 }
+
+/**
+ * Whether a restart may skip the splash: gating turned it off, or it played to `done`.
+ *
+ * Only {@link Splash.advance} reaches `done`, so a splash frame that threw leaves the
+ * splash unfinished and the next init plays it again. Module-level for the same
+ * complexity reason as {@link createSplashIfEnabled}.
+ *
+ * @param splash - The splash the last init created, or `null` when gating turned it off.
+ * @returns `true` when there is no splash or it finished.
+ */
+export function isSplashFinished(splash: Splash | null): boolean {
+    return splash === null || splash.state === 'done';
+}
