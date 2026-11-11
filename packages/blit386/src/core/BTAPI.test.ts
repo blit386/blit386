@@ -6338,7 +6338,7 @@ describe('BTAPI', () => {
                 await BTAPI.instance.init(oldDemo, makeMockCanvas());
 
                 const clearSpy = vi.spyOn(
-                    BTAPI.instance as unknown as { clearInputSubsystems: () => void },
+                    BTAPI.instance.subsystems as unknown as { clearInputSubsystems: () => void },
                     'clearInputSubsystems',
                 );
 

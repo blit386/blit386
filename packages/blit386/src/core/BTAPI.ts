@@ -4,7 +4,7 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { PaletteEffectManager } from '../assets/PaletteEffect';
 import { createSystemFont } from '../assets/SystemFont';
-import { AudioManager, DEFAULT_BUS_VOLUME } from '../audio/AudioManager';
+import { type AudioManager, DEFAULT_BUS_VOLUME } from '../audio/AudioManager';
 import { type MusicPlayOptions, validateFinite } from '../audio/MusicPlayer';
 import {
     DEFAULT_PAN,
@@ -14,20 +14,18 @@ import {
     type SoundPlayOptions,
     type SoundRef,
 } from '../audio/VoicePool';
-import { GamepadInput } from '../input/GamepadInput';
+import type { GamepadInput } from '../input/GamepadInput';
 import { InputTrace } from '../input/InputTrace';
-import { KeyboardInput } from '../input/KeyboardInput';
-import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
-import { PointerInput } from '../input/PointerInput';
+import type { KeyboardInput } from '../input/KeyboardInput';
+import type { PointerInput } from '../input/PointerInput';
 import type { OverlayDrawTarget } from '../overlay';
-import { createOverlayLayout, Overlay, resolveOverlayTopLeftLabel } from '../overlay';
+import type { Overlay } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import type { SplashState } from '../splash';
 import type { Splash } from '../splash';
 import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
-import * as errorMessages from '../utils/errorMessages';
 import { Random } from '../utils/Random';
 import { Vector2i } from '../utils/Vector2i';
 import { DrawCommands } from './engine/DrawCommands';
@@ -38,10 +36,11 @@ import { PaletteController } from './engine/PaletteController';
 import { RendererSetup } from './engine/RendererSetup';
 import { Seek } from './engine/Seek';
 import { createSplashIfEnabled, SplashBoot } from './engine/SplashBoot';
+import { Subsystems } from './engine/Subsystems';
 import type { FrameDropCallback } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo } from './IBTDemo';
-import { DEFAULT_AUDIO_VOICES, needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
+import { needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { readSeedUrlParam } from './SeedUrlParam';
@@ -344,8 +343,22 @@ export class BTAPI {
      */
     public readonly diagnostics = new OverlayDiagnostics(this);
 
-    /** HTML canvas element used for rendering. */
-    private canvas: HTMLCanvasElement | null = null;
+    /**
+     * HTML canvas element used for rendering.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public canvas: HTMLCanvasElement | null = null;
+
+    /**
+     * Reduced-motion preference detection. Created and attached during {@link init}.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public reducedMotion: ReducedMotion | null = null;
+
+    /** Attaches and clears the input, audio, overlay and reduced-motion subsystems. */
+    public readonly subsystems = new Subsystems(this);
 
     /** True once an init has resolved splash gating; later inits never create a splash. */
     private isSplashResolved = false;
@@ -359,9 +372,6 @@ export class BTAPI {
 
     /** Screen orientation detection / lock subsystem. Created and attached during {@link init}. */
     private orientation: Orientation | null = null;
-
-    /** Reduced-motion preference detection. Created and attached during {@link init}. */
-    private reducedMotion: ReducedMotion | null = null;
 
     /** Hardware settings and renderer construction for init(). */
     private readonly rendererSetup = new RendererSetup(this);
@@ -470,7 +480,7 @@ export class BTAPI {
     public stop(): void {
         this.loop?.stop();
         this.isSeekParked = false;
-        this.clearInputSubsystems();
+        this.subsystems.clearInputSubsystems();
 
         this.wakeLock?.detach();
         this.wakeLock = null;
@@ -1142,7 +1152,7 @@ export class BTAPI {
             if (!ok) {
                 console.error('[BT] Demo initialization failed');
 
-                this.clearInputSubsystems();
+                this.subsystems.clearInputSubsystems();
 
                 return false;
             }
@@ -1151,7 +1161,7 @@ export class BTAPI {
         } catch (err) {
             console.error('[BT] Demo initialization threw', err);
 
-            this.clearInputSubsystems();
+            this.subsystems.clearInputSubsystems();
 
             return false;
         }
@@ -1243,9 +1253,9 @@ export class BTAPI {
 
         // Create the built-in system font (synchronous, no GPU needed yet).
         this.systemFont = createSystemFont();
-        this.setupOverlay();
-        this.attachInputSubsystems(canvas);
-        this.attachAudioSubsystem(canvas);
+        this.subsystems.setupOverlay();
+        this.subsystems.attachInputSubsystems(canvas);
+        this.subsystems.attachAudioSubsystem(canvas);
 
         // Splash gating resolves here, before the game's init() is invoked, so
         // init() observes 'disabled' or 'fadingIn' and never an undecided state.
@@ -1321,107 +1331,11 @@ export class BTAPI {
             this.demo?.onOrientationChange?.(type),
         );
 
-        this.attachReducedMotion();
+        this.subsystems.attachReducedMotion();
 
         console.log('[BT] Initialization complete');
 
         return true;
-    }
-
-    /**
-     * Creates the engine overlay when enabled in hardware settings.
-     */
-    private setupOverlay(): void {
-        this.overlay = null;
-
-        const hw = this.hwSettings;
-
-        if (!hw || hw.isOverlayEnabled === false || !this.systemFont) {
-            return;
-        }
-
-        const lineHeight = this.systemFont.measureTextSize('A').height;
-        const layout = createOverlayLayout(hw.displaySize.x, hw.displaySize.y, lineHeight);
-        const pageTitle = typeof globalThis.document === 'undefined' ? undefined : globalThis.document.title;
-
-        if (!this.activeBackend) {
-            throw new Error(errorMessages.OVERLAY_NO_BACKEND_MESSAGE);
-        }
-
-        this.overlay = new Overlay(layout, resolveOverlayTopLeftLabel(pageTitle), this.activeBackend, hw);
-    }
-
-    /**
-     * Attaches pointer, keyboard, and gamepad input to the canvas.
-     *
-     * @param canvas - Render target canvas.
-     */
-    private attachInputSubsystems(canvas: HTMLCanvasElement): void {
-        const hw = this.hwSettings;
-
-        if (!hw) {
-            return;
-        }
-
-        this.pointer?.detach();
-        this.pointer = new PointerInput();
-        this.pointer.attach(canvas, hw.displaySize);
-        this.pointer.setIsCapturingScroll(hw.isCapturingPointerScroll === true);
-
-        this.keyboard?.detach();
-        this.keyboard = new KeyboardInput();
-        this.keyboard.attach(canvas, {
-            getTicks: () => this.loop?.getTicks() ?? 0,
-        });
-        this.keyboard.setIsCapturingScroll(hw.isCapturingKeyboardScroll === true);
-        // Seed the keyboard maps before the game's init() runs, so BT.inputMap calls there win.
-        setKeyboardLayout(hw.keyboardLayout ?? 'versus');
-
-        // Own listener, separate from KeyboardInput - see handleClipboardShortcutKeydown's
-        // doc comment. Remove-before-add guards against a duplicate registration if this
-        // method ever runs twice against the same canvas.
-        canvas.removeEventListener('keydown', this.capture.handleClipboardShortcutKeydown);
-        canvas.addEventListener('keydown', this.capture.handleClipboardShortcutKeydown);
-
-        this.gamepad?.detach();
-        this.gamepad = new GamepadInput();
-        this.gamepad.attach();
-    }
-
-    /**
-     * Attaches the audio context, bus graph, and unlock listeners to the canvas.
-     *
-     * @param canvas - Render target canvas.
-     */
-    private attachAudioSubsystem(canvas: HTMLCanvasElement): void {
-        const hw = this.hwSettings;
-
-        if (!hw) {
-            return;
-        }
-
-        this.audio?.detach();
-        this.audio = new AudioManager();
-        this.audio.attach(canvas, hw.audioVoices ?? DEFAULT_AUDIO_VOICES);
-
-        if (this.diagnostics.isCollectAudioMetersEnabled) {
-            this.audio.enableBusMetering();
-        }
-    }
-
-    /**
-     * Attaches the reduced-motion preference listener, forwarding to the active demo's
-     * optional {@link IBTDemo.onReducedMotionChange} looked up at call time, so hot swaps of
-     * either tier reach the current handler.
-     *
-     * Extracted from {@link init} to keep that method's cyclomatic complexity within the
-     * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
-     * and {@link attachAudioSubsystem}.
-     */
-    private attachReducedMotion(): void {
-        this.reducedMotion?.detach();
-        this.reducedMotion = new ReducedMotion();
-        this.reducedMotion.attach((prefersReduced) => this.demo?.onReducedMotionChange?.(prefersReduced));
     }
 
     /**
@@ -1444,30 +1358,5 @@ export class BTAPI {
         this.context = null;
         this.renderer = null;
         this.activeBackend = null;
-    }
-
-    /**
-     * Removes pointer, keyboard, gamepad, and audio subsystems.
-     *
-     * Pointer/keyboard detach DOM listeners; gamepad detaches polling state; audio
-     * detaches unlock listeners and closes the audio context. All subsystem
-     * references are cleared so listeners/contexts do not leak across restarts. Also
-     * removes {@link handleClipboardShortcutKeydown}, the bare-F9 listener attached
-     * directly to the canvas outside `KeyboardInput`.
-     */
-    private clearInputSubsystems(): void {
-        this.pointer?.detach();
-        this.pointer = null;
-
-        this.keyboard?.detach();
-        this.keyboard = null;
-
-        this.canvas?.removeEventListener('keydown', this.capture.handleClipboardShortcutKeydown);
-
-        this.gamepad?.detach();
-        this.gamepad = null;
-
-        this.audio?.detach();
-        this.audio = null;
     }
 }
