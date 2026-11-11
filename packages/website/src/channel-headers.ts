@@ -9,11 +9,11 @@ const NOINDEX_ROBOTS_TXT = 'User-agent: *\nDisallow: /\n';
  * disallow-all `/robots.txt` there instead of the production `public/robots.txt` asset.
  *
  * Reads `c.env.BLIT386_CHANNEL` at request time, the same way `markdown-negotiation.ts` reads
- * `c.env.ASSETS` - NOT a build-time `process.env.BLIT386_CHANNEL` constant. This module's top
- * level re-runs inside the deployed Worker on every cold start (to reconstruct the Fumapress
- * plugin list), and the Worker has no access to the CI build step's shell env, only to whatever
- * `wrangler.json` declares as `vars` (injected by `scripts/patch-wrangler.mjs` when
- * `BLIT386_CHANNEL=next`), surfaced via `c.env`.
+ * `c.env.ASSETS`. This module's top level re-runs inside the deployed Worker on every cold start
+ * (to reconstruct the Fumapress plugin list), where the CI build step's shell env is gone; the
+ * channel arrives only as a `wrangler.json` var (injected by `scripts/patch-wrangler.mjs` when
+ * `BLIT386_CHANNEL=next`). Under `nodejs_compat` workerd copies vars into `process.env` too, but
+ * `c.env` is the binding itself, and `channel-headers.test.ts` pins that it wins over `process.env`.
  *
  * Must run before `markdownNegotiationPlugin` in the `.plugins()` chain: that plugin's
  * assets-first fallback serves the static `public/robots.txt` directly and returns without
