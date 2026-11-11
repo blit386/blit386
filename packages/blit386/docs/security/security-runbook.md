@@ -222,7 +222,7 @@ a finding.
 
 Every column is enforced automatically by `ACCEPTED_SHADOW_MCP_ENTRIES` in
 [`packages/blit386/scripts/security/mcp-preflight.mjs`](../../scripts/security/mcp-preflight.mjs), so the standalone
-governance audit fails on a different URL by itself. `PROJECT_MCP_SERVER_URL` in `scripts/check-agent-config.mjs`
+governance audit fails on a different URL by itself. `PROJECT_MCP_SERVER_URL` in `scripts/lib/agent-config/mcp.mjs`
 (`pnpm run agents:check`) pins the same URL in each config file. Both are hand-synced to this table - there is no shared
 import between them.
 
@@ -277,7 +277,7 @@ Report the three fields above and nothing else - no secrets, credentials, auth h
 config paths repo-relative: the preflight prints them absolute, so a pasted report would otherwise carry the local
 username. The accepted entry's URL is deliberately absent here; `pnpm run agents:check` is what verifies it, against a
 pinned literal rather than a copy, so aiming the server at a new URL takes a deliberate edit to
-`scripts/check-agent-config.mjs`.
+`scripts/lib/agent-config/mcp.mjs`.
 
 ## Related docs
 

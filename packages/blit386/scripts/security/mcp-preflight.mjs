@@ -47,7 +47,7 @@ export const SECURITY_MCP_REGISTRY = [
 /**
  * Shadow MCP entries accepted by governance policy. Matched on name + classification + exact URL
  * + a tracked repo-root config path. Manual-sync hazard: the URL also lives in
- * PROJECT_MCP_SERVER_URL in ../../../../scripts/check-agent-config.mjs and in the "Accepted MCP
+ * PROJECT_MCP_SERVER_URL in ../../../../scripts/lib/agent-config/mcp.mjs and in the "Accepted MCP
  * entries" table of docs/security/security-runbook.md - change all three together.
  * @type {{ name: string, classification: string, url: string }[]}
  */
@@ -267,7 +267,7 @@ function parseConfig(raw, format) {
     if (format === 'codex-toml') {
         return parseCodexMcpServers(raw);
     }
-    // JSONC: whole-line comments only, as check-agent-config.mjs reads Zed settings.
+    // JSONC: whole-line comments only, as scripts/lib/agent-config/skills.mjs reads Zed settings.
     const text =
         format === 'jsonc'
             ? raw
