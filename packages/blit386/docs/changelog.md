@@ -374,6 +374,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A lost WebGPU device (a GPU process crash, a driver reset, a laptop switching graphics cards) now logs one clear
   console error that says to reload the page. The game used to freeze on a black canvas with no message while the loop
   kept running. See [Browser Support](api-browser-support.md).
+- Pressing F9 while `BT.renderAt` holds the loop stopped now copies the seeked frame to the clipboard. The copy used to
+  wait for a frame that never came until `BT.resume()`, and every later F9 press was ignored meanwhile. Shift+F9 still
+  waits for `BT.resume()`. See [Core](api-core.md#seeking-a-frame-with-renderat).
 
 ## 1.8.0 - 2026-10-18
 

@@ -5571,6 +5571,48 @@ describe('BTAPI', () => {
             expect(mockClipboard.write.mock.calls[0]?.[0]).toEqual([expect.any(MockClipboardItem)]);
         });
 
+        it('copies the seeked frame while renderAt holds the loop stopped (BT-759)', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isFrameCaptureShortcutEnabled: true,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+            await BTAPI.instance.renderAt(1, 'current');
+
+            installMockClipboard();
+            const renderer = BTAPI.instance.getRenderer();
+            let settleCapture: (() => void) | null = null;
+
+            // The capture settles on the next render, as the real one does at the end of a frame.
+            vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrameForShortcut').mockImplementation(
+                () =>
+                    new Promise<Blob>((resolve) => {
+                        settleCapture = () => resolve(new Blob([String(BTAPI.instance.getTicks())]));
+                    }),
+            );
+            vi.mocked(demo.render).mockImplementation(() => {
+                settleCapture?.();
+                settleCapture = null;
+            });
+
+            findClipboardShortcutKeydownHandler(canvas)(f9Event());
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(settleCapture).toBeNull();
+            expect(isShortcutInFlight()).toBe(false);
+            expect(BTAPI.instance.getTicks()).toBe(60);
+        });
+
         it('does not copy when the keydown event has shiftKey set (Shift+F9 downloads instead)', async () => {
             const canvas = makeMockCanvas();
             const demo: IBTDemo = {

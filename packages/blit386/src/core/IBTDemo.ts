@@ -314,7 +314,9 @@ export interface HardwareSettings {
      * Whether the dev-mode frame-capture shortcuts are active: F9 copies the current frame to
      * the OS clipboard as a PNG, and Shift+F9 downloads it as a timestamped PNG file. Both
      * capture at logical `BT.displaySize`, not `BT.outputSize`, unlike `BT.captureFrame()` /
-     * `BT.downloadFrame()` - see the resolution model in `docs/api-core.md` for why.
+     * `BT.downloadFrame()` - see the resolution model in `docs/api-core.md` for why. While
+     * {@link BT.renderAt} holds the loop stopped, F9 copies the seeked frame and Shift+F9 does
+     * nothing until {@link BT.resume}.
      *
      * Leave unset for the default: enabled in development builds, disabled in release, per
      * {@link BT.isDevMode}. Setting it explicitly wins over dev-mode detection - set `true` to

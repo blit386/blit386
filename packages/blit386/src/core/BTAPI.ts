@@ -1745,16 +1745,8 @@ export class BTAPI {
         // supersede or reset rejection of it must not go unhandled.
         capture.catch(() => undefined);
 
-        // After every renderAt called so far: while a seek holds the loop stopped no endFrame is coming,
-        // so re-render the current tick (zero updates - no clock moves, the frame is the seeked one) to
-        // settle the capture. A throw from render() rejects the returned promise instead of hanging it.
-        return this.seekChain.then(() => {
-            if (this.isSeekParked) {
-                this.loop?.step(0);
-            }
-
-            return capture;
-        });
+        // A throw from the parked re-render rejects the returned promise instead of hanging it.
+        return this.renderParkedFrame().then(() => capture);
     }
 
     /**
@@ -2492,6 +2484,24 @@ export class BTAPI {
         // synchronously by this point; awaiting its result is handled separately so this
         // method itself never becomes `async` (see the class doc above).
         void this.settleFrameCopy(writeBlobToClipboard(this.renderer.captureFrameForShortcut()), generation);
+        this.renderParkedFrame().catch((error: unknown) => {
+            console.error('[BT] Frame copy (F9) failed:', error);
+        });
+    }
+
+    /**
+     * Settles a pending frame capture while {@link renderAt} holds the loop stopped. Runs after every
+     * `renderAt` called so far; when a seek has parked the loop no frame end is coming, so this re-renders the
+     * current tick with zero updates (no clock moves, the frame is the seeked one). Does nothing while the loop runs.
+     *
+     * @returns Promise that settles after the re-render; rejects when the game's `render()` throws.
+     */
+    private async renderParkedFrame(): Promise<void> {
+        await this.seekChain;
+
+        if (this.isSeekParked) {
+            this.loop?.step(0);
+        }
     }
 
     /**
