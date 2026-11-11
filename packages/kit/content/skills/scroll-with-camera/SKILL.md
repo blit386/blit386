@@ -9,28 +9,38 @@ description:
 
 Move a single global offset so a world larger than the screen scrolls, then keep it inside the world's edges.
 
-## When to use
-
-Use for side-scrollers, top-down maps, or any level bigger than the 320x240 screen that should follow the player.
-
 ## How to do it
 
-```js
-update() {
-    // Center the camera on the player, then clamp so it never shows past the world edge.
-    const worldSize = new Vector2i(1280, 960);
-    const half = new Vector2i(BT.displaySize.x / 2, BT.displaySize.y / 2);
-    const wanted = new Vector2i(this.player.x - half.x, this.player.y - half.y);
+Set the camera in `update()`, draw the world in `render()`, then reset the camera before the HUD:
 
-    BT.cameraSet(BT.cameraClamp(wanted, worldSize)); // clamp to world, then set
+```js
+async init() {
+    // ...
+    this.worldSize = new Vector2i(1280, 960);
+    return true;
+}
+
+update() {
+    // ...move the player...
+    // Center the camera on the player, then clamp so it never shows past the world edge.
+    const wanted = new Vector2i(
+        this.player.x - Math.floor(BT.displaySize.x / 2),
+        this.player.y - Math.floor(BT.displaySize.y / 2),
+    );
+    BT.cameraSet(BT.cameraClamp(wanted, this.worldSize));
 }
 
 render() {
-    BT.clear(2);
+    BT.clear(COLOR_BACKGROUND);
     // Draw in WORLD coordinates - the camera offset is applied for you.
-    BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 16, 16), 1);
+    BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 16, 16), COLOR_PLAYER);
+
+    BT.cameraReset(); // back to screen space: the HUD below does not scroll
+    BT.systemPrint(new Vector2i(6, 6), COLOR_TEXT, `Score ${this.score}`);
 }
 ```
+
+The reset only lasts until the next `update()` sets the camera again, so the world keeps scrolling on the next frame.
 
 ## Key calls
 
@@ -42,7 +52,8 @@ render() {
 ## Notes
 
 - Draw everything in world coordinates; the camera shifts the whole frame.
-- For a fixed HUD or mini-map, call `BT.cameraReset()` (or draw before setting the camera) so it does not scroll.
+- For a fixed HUD or mini-map, draw it after `BT.cameraReset()` so it does not scroll.
 - Offsets are whole numbers.
+- For a camera that glides instead of stepping on a fast screen, see the `smooth-the-motion` skill.
 
 See `docs/input.md` for moving the player.
