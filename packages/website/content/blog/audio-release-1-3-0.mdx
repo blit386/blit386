@@ -56,7 +56,7 @@ BT.soundPlay(coin, { volume: 0.8 });
 `jump`, `pickup`, `explosion`, `laser`, `hit`, `blip`. Each takes an optional seed, so the tenth coin in a row does not
 sound exactly like the first. It costs you zero kilobytes of assets, which for a game jam is not nothing.
 
-<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
+<DemoEmbed demo="synth-toy" title="BLIT386 synth toy demo" />
 
 ## Music, and the asymmetry nobody warns you about
 
@@ -107,9 +107,10 @@ the two new audio pages - [API: Audio](/docs/api/audio) and the [Audio Guide](/d
 
 Underneath that, every published page now carries per-symbol version history generated straight from `@since` /
 `@changed` / `@deprecated` tags in the source, so "when did this method actually ship" is a question the docs answer
-themselves rather than one you take to the git log. Every TypeScript block is Twoslash-checked, which means it compiles
-or the build fails - no more copy-pasting an example that stopped being true two releases ago. And the API pages now
-embed the live demos next to the prose, so you can read what `soundPlay` does and then hear it in the same scroll.
+themselves rather than one you take to the git log. Every TypeScript block is Twoslash-checked against the real engine
+types, so hovering a name shows its actual signature. A block that stops compiling does not fail the build, though: it
+falls back to plain highlighting without the hovers. And the API pages now embed the live demos next to the prose, so
+you can read what `soundPlay` does and then hear it in the same scroll.
 
 The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
 
