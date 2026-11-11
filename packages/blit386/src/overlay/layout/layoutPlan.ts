@@ -11,7 +11,7 @@ import { Vector2i } from '../../utils/Vector2i';
 import { DEFAULT_AUDIO_METER_HEIGHT } from '../audio-meter/constants';
 import { DEFAULT_TIMING_CHART_HEIGHT } from '../timing-chart/constants';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
-import { overlayRightAlignedDividerLabelX } from './layoutHelpers';
+import { customBarY, overlayRightAlignedDividerLabelX } from './layoutHelpers';
 import type { OverlayLayoutConfig, OverlayLayoutPlan } from './types';
 
 /** Mutable scratch object reused by {@link buildOverlayLayoutPlan}. */
@@ -311,10 +311,8 @@ export function buildOverlayLayoutPlan(
             continue;
         }
 
-        const barY = footerStackTopY - (rowIndex + 1) * (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX);
-
         bar.x = 0;
-        bar.y = barY;
+        bar.y = customBarY(footerStackTopY, rowIndex);
         bar.width = displayWidth;
         bar.height = OVERLAY_BAR_HEIGHT;
     }

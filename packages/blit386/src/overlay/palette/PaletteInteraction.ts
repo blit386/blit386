@@ -8,6 +8,7 @@ import { POINTER_SLOT_COUNT } from '../../input/PointerInput';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
+import { drawOutline } from '../drawOutline';
 import { POINTER_PRIMARY_BUTTON } from '../input/constants';
 import { OVERLAY_EDGE_MARGIN_PX } from '../layout/constants';
 import { overlayBitmapTextPaletteOffset } from '../layout/layoutHelpers';
@@ -350,20 +351,7 @@ export function drawTooltipChrome(
     textIndex: number,
 ): void {
     target.drawBarFillOnTop(layout.body, barIndex);
-
-    const edge = tooltipScratch.outlineEdge;
-    const x0 = layout.body.x;
-    const y0 = layout.body.y;
-    const x1 = layout.body.x + layout.body.width - 1;
-    const y1 = layout.body.y + layout.body.height - 1;
-
-    target.drawBarFillOnTop(edge.set(x0, y0, x1 - x0 + 1, 1), textIndex);
-    target.drawBarFillOnTop(edge.set(x0, y1, x1 - x0 + 1, 1), textIndex);
-
-    if (y1 - y0 > 1) {
-        target.drawBarFillOnTop(edge.set(x0, y0 + 1, 1, y1 - y0 - 1), textIndex);
-        target.drawBarFillOnTop(edge.set(x1, y0 + 1, 1, y1 - y0 - 1), textIndex);
-    }
+    drawOutline(target, layout.body, textIndex);
 }
 
 /**

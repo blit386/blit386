@@ -12,7 +12,7 @@ import type { Backend, OverlayRow, OverlayTimingChartDiagnosticsMode } from '../
 import { resolveOverlayTimingChartDiagnostics } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import { POINTER_SLOT_COUNT, type PointerInput } from '../input/PointerInput';
-import { Rect2i } from '../utils/Rect2i';
+import type { Rect2i } from '../utils/Rect2i';
 import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
 import type { AudioMeterDrawStyle } from './audio-meter/style';
@@ -26,11 +26,12 @@ import {
     OVERLAY_MS_FIELD_WIDTH,
     OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
 } from './constants';
+import { drawOutline } from './drawOutline';
 import { Toggle } from './input/Toggle';
 import { padOverlayField } from './labels';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
 import type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
-import type { OverlayDrawTarget, OverlayRenderer } from './OverlayDrawTarget';
+import type { OverlayRenderer } from './OverlayDrawTarget';
 import { toggleIcon } from './OverlayToggleIcon';
 import { PaletteInteraction } from './palette/PaletteInteraction';
 import { computeGrid, DEFAULT_PALETTE_GRID, PaletteView } from './palette/PaletteView';
@@ -70,16 +71,6 @@ function createTimingChart(
 }
 
 /**
- * Creates an audio meter instance with the given feature flag.
- *
- * @param isEnabled - Whether the audio meter band is active.
- * @returns Configured {@link AudioMeter} for the overlay.
- */
-function createAudioMeter(isEnabled: boolean): AudioMeter {
-    return new AudioMeter(isEnabled);
-}
-
-/**
  * Screen-space overlay HUD rendered after demo content each frame.
  *
  * Internal to the engine; demos do not instantiate this class. Use
@@ -103,9 +94,6 @@ export class Overlay {
     readonly #isToggleHintVisible: boolean;
 
     readonly #isToggleHitDebugVisible: boolean;
-
-    /** Scratch edge rect for the toggle hit-zone debug outline (one overlay draw at a time). */
-    readonly #toggleHitDebugEdge = new Rect2i();
 
     readonly #bars: OverlayBars = new OverlayBars();
 
@@ -225,7 +213,7 @@ export class Overlay {
         this.#isOverlayRendererDiagnosticsBarEnabled = settings.isOverlayRendererDiagnosticsBarEnabled === true;
         this.#audioMeterStyle = resolveAudioMeterStyle(style, settings.overlayAudioMeterStyle);
         this.#audioMeterHeight = settings.overlayAudioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
-        this.#audioMeter = createAudioMeter(settings.isOverlayAudioMetersEnabled === true);
+        this.#audioMeter = new AudioMeter(settings.isOverlayAudioMetersEnabled === true);
         this.#paletteView = new PaletteView(settings.isOverlayPaletteEnabled === true);
         this.#paletteInteraction = new PaletteInteraction(targetFps);
         this.#paletteColumns = settings.overlayPaletteColumns;
@@ -635,20 +623,14 @@ export class Overlay {
         this.#barStyle.barIndex = this.#idxBg;
         this.#barStyle.textIndex = this.#idxText;
 
-        let topMetricsLabel = '';
-        let topTimingLabel = '';
-        let rendererDiagnosticsLabel = '';
         const paletteGrid = layoutConfig.paletteGrid ?? DEFAULT_PALETTE_GRID;
 
         if (isBodyVisible) {
             this.#composeTopLabels();
 
-            topMetricsLabel = this.#cachedTopMetricsLabel;
-            topTimingLabel = this.#cachedTopTimingLabel;
-
-            if (this.#isOverlayRendererDiagnosticsBarEnabled) {
-                rendererDiagnosticsLabel = this.#timing.formatRendererDiagnosticsLabel();
-            }
+            const rendererDiagnosticsLabel = this.#isOverlayRendererDiagnosticsBarEnabled
+                ? this.#timing.formatRendererDiagnosticsLabel()
+                : '';
 
             this.#bars.drawTopBars(renderer, plan, this.#idxBg);
             this.#timingChart.draw(renderer, plan.timingChart, this.#timingChartStyle, font, currentTick);
@@ -679,14 +661,9 @@ export class Overlay {
             this.#paletteInteraction.updateHover(pointer, plan, paletteGrid, colorCount);
 
             this.#bars.drawRowGaps(renderer, plan, this.#idxGap);
-            this.#bars.drawClusterSeparators(renderer, plan, this.#idxGap, true, true);
-        }
-
-        if (isBodyVisible) {
+            this.#bars.drawClusterSeparators(renderer, plan, this.#idxGap);
             this.#bars.drawHintBarFill(renderer, plan, this.#idxBg);
-        }
 
-        if (isBodyVisible) {
             if (customRows !== undefined && customRows.length > 0) {
                 this.#bars.drawCustomRowLabels(renderer, font, plan, customRows, this.#barStyle);
             }
@@ -699,8 +676,8 @@ export class Overlay {
                 this.#idxGap,
                 this.#topLeftLabel,
                 this.#topRightLabel,
-                topMetricsLabel,
-                topTimingLabel,
+                this.#cachedTopMetricsLabel,
+                this.#cachedTopTimingLabel,
                 rendererDiagnosticsLabel,
             );
         }
@@ -743,30 +720,7 @@ export class Overlay {
         }
 
         if (this.#isToggleHitDebugVisible) {
-            this.#drawToggleHitDebug(renderer);
-        }
-    }
-
-    /**
-     * Draws a 1 px outline of the bottom-left toggle hit region for hit-zone tuning.
-     *
-     * @param target - Overlay draw target.
-     */
-    #drawToggleHitDebug(target: OverlayDrawTarget): void {
-        const rect = this.#layout.toggleRect;
-        const edge = this.#toggleHitDebugEdge;
-        const x0 = rect.x;
-        const y0 = rect.y;
-        const x1 = rect.x + rect.width - 1;
-        const y1 = rect.y + rect.height - 1;
-        const color = this.#idxText;
-
-        target.drawBarFillOnTop(edge.set(x0, y0, x1 - x0 + 1, 1), color);
-        target.drawBarFillOnTop(edge.set(x0, y1, x1 - x0 + 1, 1), color);
-
-        if (y1 - y0 > 1) {
-            target.drawBarFillOnTop(edge.set(x0, y0 + 1, 1, y1 - y0 - 1), color);
-            target.drawBarFillOnTop(edge.set(x1, y0 + 1, 1, y1 - y0 - 1), color);
+            drawOutline(renderer, this.#layout.toggleRect, this.#idxText);
         }
     }
 }
