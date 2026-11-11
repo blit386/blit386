@@ -40,6 +40,9 @@ WHAT YOU WILL SEE
 - Post-process needs WebGPU. Under the software renderer the logo is drawn without any
   CRT effect, and nothing on screen says so: this demo has no HUD and the engine overlay
   is disabled.
+- With reduced motion turned on (the system setting, or ?reducedmotion in the URL) the
+  grain, waver, roll band, and ghosting stay out of the stack and no faults or wobbles
+  fire. Scanlines, mask, vignette, glow, and fringe keep the still CRT look.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -55,6 +58,9 @@ WHAT YOU WILL LEARN
   BT.random.float(), and BT.random.pick(GLITCH_TYPES_VROLL), resting uniforms restored
   every tick before the active fault is layered on.
 - isOverlayEnabled: false for an immersive piece with no dev HUD.
+- Honoring BT.isReducedMotionPreferred: rebuilding the display chain without the moving
+  effects (isMotionEffect() from crt-glitch.js), and rebuilding it again from
+  onReducedMotionChange() when the preference changes while the demo runs.
 
 WHY UPSCALE FIRST AND THEN ADD CRT?
 -----------------------------------
@@ -84,22 +90,11 @@ import {
     Vignette,
 } from 'blit386';
 
-import { GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
+import { GLITCH_TYPE, GLITCH_TYPES_VROLL, isMotionEffect } from './shared/crt-glitch.js';
 import { isAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit386').Palette} Palette */
-/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
-/** @typedef {import('blit386').PixelGlitch} PixelGlitch */
-/** @typedef {import('blit386').ChromaticAberration} ChromaticAberration */
-/** @typedef {import('blit386').Interference} Interference */
-/** @typedef {import('blit386').RollLine} RollLine */
-/** @typedef {import('blit386').Scanlines} Scanlines */
-/** @typedef {import('blit386').RGBMask} RGBMask */
-/** @typedef {import('blit386').Vignette} Vignette */
-/** @typedef {import('blit386').Noise} Noise */
-/** @typedef {import('blit386').Flicker} Flicker */
-/** @typedef {import('blit386').Bloom} Bloom */
 
 // --- Screen dimensions ---
 
@@ -217,6 +212,10 @@ class Demo {
     /** @type {Bloom | null} */
     bloom = null;
 
+    // Every display-tier effect above, in chain order, so applyEffects() can rebuild the
+    // chain when the reduced-motion preference changes.
+    crtEffects = [];
+
     // True when WebGPU is active and the post-process effects are registered.
     effectsAvailable = false;
 
@@ -269,12 +268,11 @@ class Demo {
         // Color32(red, green, blue): each channel is 0 (none) to 255 (maximum).
         this.palette.set(C_BG, new Color32(160, 160, 160)); // light gray background
 
-        // Read every unique color in the logo PNG and store them starting at SPRITE_BASE.
-        // The engine must know these colors before it can draw palette-indexed sprites.
-        await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
-
         // Turn the PNG into a palette-indexed sprite ready for BT.drawSprite.
-        // loadIndexed() also returns srcRect, which covers the whole single-sprite sheet.
+        // loadIndexed() does the whole job in one call: it reads every unique color in
+        // the logo PNG into the palette starting at SPRITE_BASE (in the order it finds
+        // them, because of sort: 'none'), then links each pixel to its slot. It also
+        // returns srcRect, which covers the whole single-sprite sheet.
         const indexed = await SpriteSheet.loadIndexed(SPRITE_URL, this.palette, SPRITE_BASE, { sort: 'none' });
         this.spriteSheet = indexed.sheet;
         this.spriteRect = indexed.srcRect;
@@ -378,7 +376,8 @@ class Demo {
         this.bloom.glow = 0.09;
 
         // Register all display-tier effects with the engine in the order they run.
-        for (const fx of [
+        // applyEffects() leaves out the moving ones when reduced motion is preferred.
+        this.crtEffects = [
             this.aberration,
             this.interference,
             this.rollLine,
@@ -388,9 +387,8 @@ class Demo {
             this.noise,
             this.flicker,
             this.bloom,
-        ]) {
-            BT.effectAdd(fx);
-        }
+        ];
+        this.applyEffects();
 
         // Pick a random delay before the first TV fault and the first band wobble.
         // BT.random is the engine's shared random number generator; int(min, max) returns
@@ -422,6 +420,32 @@ class Demo {
         }
     }
 
+    // The engine calls this when the reduced-motion preference changes while the demo
+    // runs. Rebuild the display chain so the moving effects follow the new preference.
+    onReducedMotionChange() {
+        if (this.effectsAvailable) {
+            this.applyEffects();
+        }
+    }
+
+    // Takes every display-tier effect off the chain, then puts them back in order -
+    // skipping the grain, waver, roll band, and ghosting (isMotionEffect() from
+    // crt-glitch.js) when the player prefers reduced motion. Removing an effect that is
+    // not on the chain does nothing, so this also works for the first build in init().
+    applyEffects() {
+        for (const fx of this.crtEffects) {
+            BT.effectRemove(fx);
+        }
+
+        for (const fx of this.crtEffects) {
+            if (BT.isReducedMotionPreferred && isMotionEffect(fx)) {
+                continue;
+            }
+
+            BT.effectAdd(fx);
+        }
+    }
+
     // Advances the TV fault state machine and the subtle band-wobble system. Called every
     // tick from update() when WebGPU effects are active. Two layers: dramatic, infrequent
     // TV fault bursts of a random type, and a mild pixel-tier band wobble. The wobble
@@ -434,6 +458,15 @@ class Demo {
         this.noise.time = seconds;
         this.interference.time = seconds;
 
+        // Reduced motion: no fault bursts and no band wobble. Any burst or wobble already
+        // running is cut short, and the calm resting look holds every tick.
+        if (BT.isReducedMotionPreferred) {
+            this.glitchTicksLeft = 0;
+            this.bandWobbleActive = 0;
+            this.applyRestingCrtUniforms();
+            return;
+        }
+
         // --- TV fault burst ---
         if (this.glitchTicksLeft > 0) {
             // Inside a fault burst. Compute a smooth 0..1..0 envelope so the fault eases
@@ -443,9 +476,12 @@ class Demo {
             const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
 
+            // Start from the calm look every tick, then layer this burst's fault on top
+            // at the current envelope strength.
             this.applyRestingCrtUniforms();
             this.applyGlitchUniforms(envelope);
 
+            // One tick of the burst used up.
             this.glitchTicksLeft--;
 
             if (this.glitchTicksLeft <= 0) {
@@ -471,11 +507,13 @@ class Demo {
             this.pixelGlitch.seed = this.bandWobbleSeed;
             this.bandWobbleActive--;
 
+            // Wobble over: flatten the rows again and wait a fresh random while.
             if (this.bandWobbleActive <= 0) {
                 this.pixelGlitch.intensity = 0;
                 this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
+            // No wobble running: count down toward the next one.
             this.bandWobbleCooldown--;
 
             if (this.bandWobbleCooldown <= 0) {
