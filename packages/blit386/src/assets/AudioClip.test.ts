@@ -854,5 +854,59 @@ describe('AudioClip', () => {
             expect(clip.buffer).not.toBe(oldBuffer);
             expect(AudioClip.getClip('sfx/boom.wav')).toBe(clip);
         });
+
+        /**
+         * Stubs `fetch` so every call waits until the test releases it.
+         *
+         * @returns Release callbacks, one per fetch call, in call order.
+         */
+        function stubDeferredFetch(): Array<() => void> {
+            const responders: Array<() => void> = [];
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(
+                    () =>
+                        new Promise((resolve) => {
+                            responders.push(() => resolve(mockAudioFetchResponse()));
+                        }),
+                ),
+            );
+
+            return responders;
+        }
+
+        it('leaves a clip unloaded when unload() lands while its reload is in flight', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            const clip = await AudioClip.load('gone.mp3');
+            const musicHandler = vi.fn().mockReturnValue(true);
+            audioHooks.onHotReplace = musicHandler;
+            const responders = stubDeferredFetch();
+
+            const reload = AudioClip.hotReload('gone.mp3');
+            clip.unload();
+            responders[0]?.();
+
+            await expect(reload).resolves.toBe(false);
+            expect(clip.buffer).toBeNull();
+            expect(musicHandler).not.toHaveBeenCalled();
+        });
+
+        it('hands the second of two overlapping reloads the buffer the first one installed', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            const clip = await AudioClip.load('twice.mp3');
+            const musicHandler = vi.fn().mockReturnValue(true);
+            audioHooks.onHotReplace = musicHandler;
+            const responders = stubDeferredFetch();
+
+            const first = AudioClip.hotReload('twice.mp3');
+            const second = AudioClip.hotReload('twice.mp3');
+            responders[0]?.();
+            await first;
+            const firstBuffer = clip.buffer;
+            responders[1]?.();
+            await second;
+
+            expect(musicHandler).toHaveBeenLastCalledWith(firstBuffer, clip.buffer);
+        });
     });
 });

@@ -276,33 +276,37 @@ export class AudioClip {
      *
      * @param url - Fetch URL of the clip to hot-reload, matched against every cache key by normalized URL.
      * @returns `true` if a cached clip was found and reloaded; `false` if no clip is
-     *   cached under a matching URL (never loaded, or already unloaded).
+     *   cached under a matching URL (never loaded, or already unloaded), or every match
+     *   was unloaded while the new copy was downloading.
      * @throws Error if the cache-busted fetch or decode fails.
      */
     static async hotReload(url: string): Promise<boolean> {
         const target = normalizeAssetUrl(url);
-        const replaced: [AudioClip, AudioBuffer][] = [];
+        const matches = [...resolvedClips].filter(
+            ([key, clip]) => clip.decodedBuffer !== null && normalizeAssetUrl(key) === target,
+        );
 
-        for (const [key, clip] of resolvedClips) {
-            if (clip.decodedBuffer !== null && normalizeAssetUrl(key) === target) {
-                replaced.push([clip, clip.decodedBuffer]);
-            }
-        }
-
-        if (replaced.length === 0) {
+        if (matches.length === 0) {
             return false;
         }
 
         const newBuffer = await AudioClip.fetchAndDecode(appendCacheBustQuery(url));
+        let isReplaced = false;
 
-        for (const [clip, oldBuffer] of replaced) {
-            clip.decodedBuffer = newBuffer;
+        // Read each buffer after the await: an unload() or another reload may have changed it meanwhile.
+        for (const [, clip] of matches) {
+            const oldBuffer = clip.decodedBuffer;
 
-            audioHooks.onUnload(oldBuffer);
-            audioHooks.onHotReplace(oldBuffer, newBuffer);
+            if (oldBuffer !== null) {
+                clip.decodedBuffer = newBuffer;
+                isReplaced = true;
+
+                audioHooks.onUnload(oldBuffer);
+                audioHooks.onHotReplace(oldBuffer, newBuffer);
+            }
         }
 
-        return true;
+        return isReplaced;
     }
 
     /**

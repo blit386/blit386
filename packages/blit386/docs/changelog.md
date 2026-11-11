@@ -195,6 +195,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `AudioClip.clear()` now also stops loads already in flight from re-caching their clip when they finish. Such a load
   also used to remove a newer load of the same URL from the in-flight list, so a second request started a duplicate
   download and `BT.loadingAssetsCount` read too low.
+- A sound hot reload no longer brings back a clip that `unload()` released while the new file was downloading, and two
+  reloads of one clip started by hand no longer leave the music player on the first new buffer. The clip's buffer is now
+  read after the download, not before it.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:
