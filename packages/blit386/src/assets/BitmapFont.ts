@@ -419,8 +419,8 @@ export class BitmapFont {
      * Reads a `.btfont` response body, rejecting as soon as it passes the JSON size limit.
      *
      * Checks `Content-Length` before touching the body, then caps the running total while
-     * streaming. Responses without a readable body fall back to `response.text()`; the size
-     * check in {@link parseBtfontFile} still applies to that text.
+     * streaming. Responses without a readable body fall back to `response.text()`, whose
+     * UTF-8 length gets the same cap.
      *
      * @param response - Successful fetch response.
      * @returns Response body text.
@@ -435,7 +435,14 @@ export class BitmapFont {
         }
 
         if (response.body === null) {
-            return response.text();
+            const text = await response.text();
+            const textError = validateBtfontJsonByteSize(new TextEncoder().encode(text).length);
+
+            if (textError) {
+                throw new AssetLimitError(textError);
+            }
+
+            return text;
         }
 
         const bytes = await readStreamedBody(response.body, (total) => {
@@ -502,7 +509,7 @@ export class BitmapFont {
     }
 
     /**
-     * Parses and validates a `.btfont` JSON payload after byte-size checks.
+     * Parses and validates a `.btfont` JSON payload already capped by {@link readCappedText}.
      *
      * @param url - Path to the `.btfont` file (used in error messages).
      * @param jsonText - Raw JSON text from the font file.
@@ -512,13 +519,6 @@ export class BitmapFont {
         url: string,
         jsonText: string,
     ): { data: FileData; glyphEntries: Array<[string, GlyphData]> } {
-        const jsonByteLength = new TextEncoder().encode(jsonText).length;
-        const jsonSizeError = validateBtfontJsonByteSize(jsonByteLength);
-
-        if (jsonSizeError) {
-            throw new AssetLimitError(jsonSizeError);
-        }
-
         let parsed: unknown;
 
         try {
