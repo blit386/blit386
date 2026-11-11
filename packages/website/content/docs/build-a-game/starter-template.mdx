@@ -134,7 +134,7 @@ export default defineConfig({
 //
 // Move the paddle to catch the blocks falling from the top.
 // On a phone or tablet: drag or tap - the paddle centers under your finger.
-// On a computer: move the mouse, or use the left and right arrow keys (or A and D) as a fallback.
+// On a computer: move the mouse, or use the left and right arrow keys (or A and D).
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
 // Every BLIT386 game is one class with three required methods:
@@ -148,7 +148,7 @@ export default defineConfig({
 // commented examples below).
 //
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
-// Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
+// Want to learn more? Read AGENTS.md or the docs/ folder at the top of your game folder.
 //
 // Testing tip: add `?seed=42` to the page address to get the same falling blocks every run, and open the browser
 // console and type `BT.testState()` to see the score, lives, and positions as numbers.
@@ -161,6 +161,11 @@ const COLOR_BACKGROUND = 1;
 const COLOR_PADDLE = 2;
 const COLOR_ITEM = 3;
 const COLOR_TEXT = 4;
+
+// Pointer slots. The engine tracks four pointers at once, numbered 0 to 3 (more about them in update()).
+// NO_SLOT means "no pointer is steering the paddle this step".
+const POINTER_SLOTS = 4;
+const NO_SLOT = -1;
 
 // Sizes and speeds. These are the fun knobs to turn. Change a number, save, and watch what happens.
 const PADDLE_WIDTH = 48;
@@ -242,16 +247,32 @@ class Game {
 
     update() {
         // BLIT386 supports two ways to move the paddle: pointer input (mouse and touch) and the keyboard.
-        // We check the pointer first because it works on phones, tablets, and any computer with a mouse.
-        // The "0" you see in BT.isPointerActive(0) and BT.pointerPos(0) means "the first pointer slot."
-        // A phone can track several fingers at once; slot 0 is always the first (or only) one.
-        if (BT.isPointerActive(0)) {
-            // BT.pointerPos(0) returns a Vector2i: the exact pixel position of the pointer right now.
+        // The engine keeps four "pointer slots": slot 0 is the mouse, and slots 1, 2 and 3 are fingers (or a pen),
+        // filled in the order they touch the screen. So on a phone your first finger is slot 1, not slot 0.
+        // First we look for a slot that is pressing right now: a finger on the screen, or a held mouse button.
+        let followSlot = NO_SLOT;
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
+            // BT.isDown(BT.BTN_POINTER_A, slot) is true while that finger touches or that mouse button is held.
+            if (BT.isDown(BT.BTN_POINTER_A, slot)) {
+                followSlot = slot;
+                break; // the first one we find wins, so a second finger does not fight the first
+            }
+        }
+
+        // Nothing pressed? A mouse that just moved sideways over the game still steers. BT.pointerDelta(0) is how far
+        // the mouse moved since the last step. A mouse resting still does not steer, so it never blocks the keys.
+        if (followSlot === NO_SLOT && BT.isPointerActive(0) && BT.pointerDelta(0).x !== 0) {
+            followSlot = 0;
+        }
+
+        if (followSlot !== NO_SLOT) {
+            // BT.pointerPos(followSlot) returns a Vector2i: the exact pixel position of that pointer right now.
             // We want the CENTER of the paddle under the pointer, not its left edge.
             // Subtracting half the paddle width shifts it left so it is balanced around the cursor or finger.
-            this.paddlePos.x = BT.pointerPos(0).x - Math.floor(PADDLE_WIDTH / 2);
+            this.paddlePos.x = BT.pointerPos(followSlot).x - Math.floor(PADDLE_WIDTH / 2);
         } else {
-            // No pointer is active - fall back to the arrow keys, A and D (or a connected gamepad).
+            // No finger or button is down and the mouse is resting, so the arrow keys, A and D
+            // (or a connected gamepad) move the paddle.
             // BT.isDown() is true for every frame the button is held down, not just the frame it was pressed.
             if (BT.isDown(BT.BTN_LEFT, 0)) {
                 this.paddlePos.x -= PADDLE_SPEED;
@@ -263,7 +284,6 @@ class Game {
         }
 
         // Keep the paddle on the screen no matter how it moved.
-        // Math.floor makes sure we store a whole number, not a fraction of a pixel.
         const maxX = this.screen.x - PADDLE_WIDTH;
         if (this.paddlePos.x < 0) {
             this.paddlePos.x = 0;
