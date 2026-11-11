@@ -40,7 +40,6 @@
 
 @theme {
     --font-sans: 'DegularText', ui-sans-serif, system-ui, sans-serif;
-    --font-heading: 'DepartureMono', monospace;
     --font-mono: 'essential_pragmatapro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-departure: 'DepartureMono', monospace;
 }
@@ -100,7 +99,7 @@
 }
 
 :where(h1, h2, h3, h4, h5, h6) {
-    @apply font-heading font-normal;
+    @apply font-departure font-normal;
 }
 
 /* Native text selection: same accent-on/inverted-code treatment as an active row in the
@@ -150,7 +149,7 @@
         @apply py-1.5 rounded-none transition-none text-fd-foreground text-balance hover:bg-fd-primary hover:text-white dark:hover:text-black;
 
         &.font-medium {
-            @apply h-auto font-heading text-[22px] antialiased hover:bg-transparent hover:text-inherit;
+            @apply h-auto font-departure text-[22px] antialiased hover:bg-transparent hover:text-inherit;
         }
 
         &[data-active='true'] {
