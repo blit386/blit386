@@ -153,3 +153,40 @@ test('blit migrate --write does not rewrite a symlinked vite.config that points 
         rmSync(outside, { recursive: true, force: true });
     }
 });
+
+for (const [varsLabel, vars] of [
+    ['a number where text belongs', { pmRunDev: 5 }],
+    ['an array', ['npm install']],
+]) {
+    for (const [commandLabel, args] of [
+        ['agents sync', ['agents', 'sync']],
+        ['agents add claude', ['agents', 'add', 'claude']],
+        ['doctor', ['doctor']],
+    ]) {
+        test(`blit ${commandLabel} reports manifest vars holding ${varsLabel} instead of crashing`, () => {
+            const root = makeGame(JSON.stringify({ kitVersion: '0.0.0', vars, files: [] }));
+
+            try {
+                const { output } = runBlit(root, args);
+                assert.ok(!output.includes('TypeError'), `expected no TypeError, got:\n${output}`);
+                assert.ok(!output.includes('is not a function'), `expected no TypeError, got:\n${output}`);
+                assert.ok(output.includes('unexpected shape'), `expected the shape message, got:\n${output}`);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+    }
+}
+
+test('blit agents sync treats null manifest vars as missing and writes the detected ones back', () => {
+    const root = makeGame(JSON.stringify({ kitVersion: '0.0.0', vars: null, files: [] }));
+
+    try {
+        const { status, output } = runBlit(root, ['agents', 'sync']);
+        assert.equal(status, 0, `expected success, got ${status}:\n${output}`);
+        const { vars } = JSON.parse(readFileSync(join(root, '.blit', 'manifest.json'), 'utf8'));
+        assert.equal(typeof vars?.pmInstall, 'string', `expected backfilled vars, got ${JSON.stringify(vars)}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
