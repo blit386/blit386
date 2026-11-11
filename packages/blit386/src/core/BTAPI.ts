@@ -32,16 +32,9 @@ import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
 import type { OverlayAudioSnapshot, OverlayDrawTarget, OverlayTimingSnapshot } from '../overlay';
-import {
-    createOverlayLayout,
-    findOverlaySettingsError,
-    Overlay,
-    OVERLAY_TOGGLE_KEY_CODE,
-    resolveOverlayTopLeftLabel,
-} from '../overlay';
+import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
-import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import {
     mapSpritePoint,
     resolveSpriteOrientation,
@@ -50,10 +43,8 @@ import {
     type SpriteDrawParams,
     type SpriteOrientation,
 } from '../render/SpriteOrientation';
-import { WebGPURenderer } from '../render/WebGPURenderer';
 import type { SplashState } from '../splash';
 import { createBlackened, HANDOFF_FADE_MS, isSplashEnabled, Splash } from '../splash';
-import { applyCanvasLayoutStyles, DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
 import { Color32 } from '../utils/Color32';
 import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
@@ -72,24 +63,17 @@ import { downloadBlob, type FrameCaptureSize, writeBlobToClipboard } from '../ut
 import { defaultFrameCaptureFilename, isFrameCaptureShortcutEnabled } from '../utils/FrameCaptureShortcut';
 import { Random } from '../utils/Random';
 import { Rect2i } from '../utils/Rect2i';
-import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLimits';
 import { Vector2i } from '../utils/Vector2i';
+import { RendererSetup } from './engine/RendererSetup';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
-import {
-    DEFAULT_AUDIO_VOICES,
-    defaultConfig,
-    MAX_AUDIO_VOICES,
-    mergeHardwareSettings,
-    needsOverlayRendererDiagnostics,
-} from './mergeHardwareSettings';
+import { DEFAULT_AUDIO_VOICES, needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { readSeedUrlParam } from './SeedUrlParam';
 import { WakeLock } from './WakeLock';
-import { initWebGPU } from './WebGPUContext';
 
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
 type Writable<T> = { -readonly [K in keyof T]: T[K] };
@@ -161,6 +145,41 @@ export class BTAPI {
     public readonly inputTrace = new InputTrace();
 
     /**
+     * Hardware configuration settings from the demo.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public hwSettings: HardwareSettings | null = null;
+
+    /**
+     * WebGPU device for GPU operations.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public device: GPUDevice | null = null;
+
+    /**
+     * WebGPU canvas context for presenting frames.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public context: GPUCanvasContext | null = null;
+
+    /**
+     * Renderer subsystem for all drawing operations.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public renderer: (IRenderer & OverlayDrawTarget) | null = null;
+
+    /**
+     * Backend that was successfully initialized, or null before init.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public activeBackend: Backend | null = null;
+
+    /**
      * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
      * sprite pipeline consumes `srcRect` before returning and the software
      * renderer clones it into its command list.
@@ -194,23 +213,8 @@ export class BTAPI {
     /** Current demo instance implementing IBTDemo. */
     private demo: IBTDemo | null = null;
 
-    /** Hardware configuration settings from the demo. */
-    private hwSettings: HardwareSettings | null = null;
-
-    /** WebGPU device for GPU operations. */
-    private device: GPUDevice | null = null;
-
-    /** WebGPU canvas context for presenting frames. */
-    private context: GPUCanvasContext | null = null;
-
     /** HTML canvas element used for rendering. */
     private canvas: HTMLCanvasElement | null = null;
-
-    /** Renderer subsystem for all drawing operations. */
-    private renderer: (IRenderer & OverlayDrawTarget) | null = null;
-
-    /** Backend that was successfully initialized, or null before init. */
-    private activeBackend: Backend | null = null;
 
     /**
      * World camera offset last applied via {@link setCameraOffset}, persisted across frames.
@@ -424,6 +428,9 @@ export class BTAPI {
     /** Reduced-motion preference detection. Created and attached during {@link init}. */
     private reducedMotion: ReducedMotion | null = null;
 
+    /** Hardware settings and renderer construction for init(). */
+    private readonly rendererSetup = new RendererSetup(this);
+
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
      */
@@ -449,35 +456,6 @@ export class BTAPI {
      */
     public get isUpdating(): boolean {
         return this.updating;
-    }
-
-    /**
-     * Reads backend override from the current URL query string.
-     *
-     * Also called by the hot-swap runtime ({@link tryHardReload} in `src/hot/HotSwap.ts`) so a
-     * hot-swap candidate's resolved settings can be normalized the same way `init()` normalizes
-     * the running settings, before the two are diffed for a Tier 3 hard reload.
-     *
-     * @returns Supported backend override, or null when absent/invalid.
-     */
-    public static getBackendQueryOverride(): Backend | null {
-        const search = typeof globalThis.location?.search === 'string' ? globalThis.location.search : '';
-
-        if (!search) {
-            return null;
-        }
-
-        try {
-            const backend = new URLSearchParams(search).get('backend');
-
-            if (backend === 'software') {
-                return 'software';
-            }
-        } catch (error) {
-            console.warn('[BT] Failed to parse backend query override:', error);
-        }
-
-        return null;
     }
 
     /**
@@ -2030,7 +2008,7 @@ export class BTAPI {
         // Hardware settings: demo hook or defaults from defaultConfig() (320x240 logical, 640x480 buffer, 60 FPS).
         console.log('[BT] Reading hardware configuration');
 
-        if (!this.loadHardwareSettings(demo)) {
+        if (!this.rendererSetup.loadHardwareSettings(demo)) {
             return false;
         }
 
@@ -2051,7 +2029,7 @@ export class BTAPI {
             targetFPS: hwSettings.targetFPS,
         });
 
-        if (!(await this.initRenderer(canvas, hwSettings))) {
+        if (!(await this.rendererSetup.initRenderer(canvas, hwSettings))) {
             return false;
         }
 
@@ -2514,61 +2492,6 @@ export class BTAPI {
     private readonly getDemoOverlayRows = (): readonly OverlayRow[] | undefined => this.demo?.overlayRows?.();
 
     /**
-     * Reads and validates demo `configure()` output into resolved hardware settings.
-     *
-     * @param demo - Demo implementing {@link IBTDemo}.
-     * @returns `false` when hardware settings are invalid (bad dimensions, targetFPS, audioVoices, or overlay numbers).
-     */
-    private loadHardwareSettings(demo: IBTDemo): boolean {
-        try {
-            this.hwSettings = mergeHardwareSettings(demo.configure?.());
-        } catch (error) {
-            console.error('[BT] demo.configure() threw; falling back to defaultConfig()', error);
-
-            this.hwSettings = defaultConfig();
-        }
-
-        this.applyBackendQueryOverride();
-
-        const renderDimensionError = validateDimensions(this.hwSettings);
-
-        if (renderDimensionError) {
-            console.error(`[BT] ${renderDimensionError}`);
-
-            return false;
-        }
-
-        const { targetFPS } = this.hwSettings;
-
-        if (!Number.isFinite(targetFPS) || targetFPS <= 0) {
-            console.error(`[BT] Invalid targetFPS: ${targetFPS}. Must be a finite number > 0.`);
-
-            return false;
-        }
-
-        const { audioVoices } = this.hwSettings;
-
-        if (
-            audioVoices !== undefined &&
-            (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > MAX_AUDIO_VOICES)
-        ) {
-            console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices, MAX_AUDIO_VOICES)}`);
-
-            return false;
-        }
-
-        const overlaySettingsError = findOverlaySettingsError(this.hwSettings);
-
-        if (overlaySettingsError) {
-            console.error(`[BT] ${overlaySettingsError}`);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Creates the engine overlay when enabled in hardware settings.
      */
     private setupOverlay(): void {
@@ -2684,118 +2607,6 @@ export class BTAPI {
         this.context = null;
         this.renderer = null;
         this.activeBackend = null;
-    }
-
-    /**
-     * Constructs and initializes the renderer for the active hardware settings.
-     *
-     * Logs the selected backend name, constructs the matching {@link IRenderer},
-     * calls {@link IRenderer.init}, and reports success or failure.
-     *
-     * @param canvas - Render target canvas.
-     * @param hw - Active hardware settings.
-     * @returns `true` when the renderer is ready; `false` on failure.
-     */
-    private async initRenderer(canvas: HTMLCanvasElement, hw: HardwareSettings): Promise<boolean> {
-        applyCanvasLayoutStyles(canvas, {
-            displaySize: hw.displaySize,
-            maxCanvasSize: hw.maxCanvasSize ?? new Vector2i(DEFAULT_MAX_CANVAS_SIZE.x, DEFAULT_MAX_CANVAS_SIZE.y),
-            ...(hw.drawingBufferSize === undefined ? {} : { drawingBufferSize: hw.drawingBufferSize }),
-        });
-
-        const requestedBackend = hw.backend ?? 'webgpu';
-
-        if (requestedBackend !== 'software') {
-            // Try WebGPU. initWebGPU returns null when navigator.gpu is absent and
-            // throws when the adapter or device cannot be created. Both cases fall
-            // through to the software renderer below.
-            let webGPUResult: Awaited<ReturnType<typeof initWebGPU>> = null;
-
-            try {
-                webGPUResult = await initWebGPU(canvas, hw.displaySize, hw.drawingBufferSize);
-            } catch (error) {
-                if (error instanceof RenderDimensionLimitError) {
-                    return false;
-                }
-
-                // Adapter/device unavailable; fall through to software.
-            }
-
-            if (webGPUResult) {
-                this.device = webGPUResult.device;
-                this.context = webGPUResult.context;
-
-                console.log('[BT] Initializing renderer (backend: webgpu)');
-
-                this.renderer = new WebGPURenderer(
-                    webGPUResult.device,
-                    webGPUResult.context,
-                    hw.displaySize,
-
-                    // Only forward an explicit outputSize when drawingBufferSize was
-                    // provided; that is the signal that unlocks the display tier.
-                    hw.drawingBufferSize === undefined ? undefined : webGPUResult.drawingBufferSize,
-                    hw.outputUpscaleFilter ?? 'nearest',
-                    hw.isOverlayEnabled !== false,
-                );
-
-                if (!(await this.renderer.init())) {
-                    console.error('[BT] Failed to initialize renderer');
-
-                    return false;
-                }
-
-                this.activeBackend = 'webgpu';
-                console.log('[BT] Renderer initialized');
-
-                return true;
-            }
-
-            console.warn('[BT] WebGPU unavailable, falling back to software renderer');
-        }
-
-        // Software renderer path: explicit selection or automatic fallback.
-        this.device = null;
-        this.context = null;
-
-        console.log('[BT] Initializing renderer (backend: software)');
-
-        this.renderer = new SoftwareRenderer(canvas, hw.displaySize, hw.drawingBufferSize);
-
-        if (!(await this.renderer.init())) {
-            console.error('[BT] Failed to initialize renderer');
-
-            return false;
-        }
-
-        this.activeBackend = 'software';
-        console.log('[BT] Renderer initialized');
-
-        return true;
-    }
-
-    /**
-     * Applies URL backend override from `?backend=...` when present.
-     *
-     * Supported values:
-     * - `software`
-     *
-     * Unknown values are ignored so accidental query typos do not break startup.
-     */
-    private applyBackendQueryOverride(): void {
-        if (!this.hwSettings) {
-            return;
-        }
-
-        const override = BTAPI.getBackendQueryOverride();
-
-        if (!override) {
-            return;
-        }
-
-        this.hwSettings.backend = override;
-
-        console.info(`[BT] URL override selected backend: ${override}`);
     }
 
     /**
