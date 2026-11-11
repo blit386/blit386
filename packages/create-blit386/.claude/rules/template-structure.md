@@ -21,12 +21,12 @@
   `npm install --global bun` for Bun, which Corepack does not manage), then `{{pmCiInstall}}` (a lockfile-strict install
   from `PmHints.ciInstallCmd`), `{{pmRunFormat}}:check`, and `{{pmRunBuild}}` - never a second pnpm/npm version pin,
   which `pnpm/action-setup` rejects when it disagrees with `packageManager`. The kit's Copilot setup workflow is
-  generated in code per manager. Every AI assistant's config is generated from the kit IR
-  (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static templates. That includes the
-  documentation-MCP configs (`.mcp.json`, `.cursor/mcp.json`, ...) and Copilot's
-  `.github/workflows/copilot-setup-steps.yml` - do not add a static template for them. That workflow copies the action
-  pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` / `ACTIONS_SETUP_NODE` in the kit's
-  `src/adapters.ts`); bump both together - `test/agent-copilot.test.mjs` fails when they drift.
+  generated in code per manager. Every AI assistant's config is generated from the kit IR (`packages/kit/src/adapters/`)
+  at scaffold time, not copied from static templates. That includes the documentation-MCP configs (`.mcp.json`,
+  `.cursor/mcp.json`, ...) and Copilot's `.github/workflows/copilot-setup-steps.yml` - do not add a static template for
+  them. That workflow copies the action pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` /
+  `ACTIONS_SETUP_NODE` in the kit's `src/adapters/copilot.ts`); bump both together - `test/agent-copilot.test.mjs` fails
+  when they drift.
 - `biome.json` lists `!.blit` in `files.includes` and `.prettierignore` lists `.blit/`: the pristine kit copies under
   `.blit/base/` must never be reformatted, or `blit agents sync` reports edits the user did not make (root `CLAUDE.md`).
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.

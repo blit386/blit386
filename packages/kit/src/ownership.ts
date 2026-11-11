@@ -1,7 +1,7 @@
 /**
  * Which generated files the kit owns, and the project-relative paths each AI assistant occupies.
  *
- * Single source of truth for both packages. `src/adapters.ts` builds every path it emits from the
+ * Single source of truth for both packages. `src/adapters/` builds every path it emits from the
  * constants below, `blit agents sync` / `add` classify incoming files with `classifyFile`, and
  * `create-blit386` imports the same helpers through `@blit386/kit/adapters` when it stamps
  * `.blit/manifest.json` at scaffold time. One implementation, so a file the kit starts shipping
