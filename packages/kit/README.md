@@ -124,8 +124,9 @@ Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants
 
 "All four" is the manifest's set: format-on-edit, block-dangerous-shell, the lock-file / `.env` guard, and the
 session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset, a
-`checkout` onto paths, a forced `checkout` or `switch`, a `restore` onto the worktree, `clean`) and the ask list (force
-push, `branch -D`, `stash drop/clear`) are the same in every assistant that can enforce them.
+`checkout` onto paths, a forced `checkout` or `switch`, a `restore` onto the worktree, `clean`, `checkout-index -f`,
+`read-tree --reset`, an inline `-c alias`) and the ask list (force push, a push that deletes remote branches or mirrors,
+`branch -D`, `stash drop/clear`) are the same in every assistant that can enforce them.
 
 ## The game-author skills
 

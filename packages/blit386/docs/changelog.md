@@ -404,6 +404,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   rectangles, the console warns once per frame instead of once per vertex, and a long line stops at the first dropped
   pixel instead of logging about two million warnings for one off-screen diagonal. See
   [Primitives](api-rendering.md#primitives).
+- `@blit386/kit`: the agent shell guard in generated games no longer misses a destructive git command written inside a
+  subshell or `$(...)`, across a line continuation, as `GIT` or `git.exe`, after a quoted `-C "my dir"`, or behind an
+  inline `-c alias`, and a safe `git restore --staged` or `git clean -n` no longer excuses a destructive one later on
+  the same line. It also refuses `git checkout-index -f` and `git read-tree --reset`. Behavior change: `git push` with
+  `--delete`, `-d`, a `:branch` refspec or `--mirror`, and an inline `-c remote.<name>.push=+...`, now ask you first
+  (Codex and Gemini CLI refuse them) where they used to run. The Claude Code and Gemini CLI hooks also block, instead of
+  allowing, when the guard cannot load, and Claude Code's when `node` is missing.
 
 ## 1.8.0 - 2026-10-18
 
