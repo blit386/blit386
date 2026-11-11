@@ -12,9 +12,10 @@ import {
     validateGlyphCount,
 } from '../utils/AssetLimits';
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
-import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
+import { appendCacheBustQuery } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
+import { HotReloadRegistry } from './hotReloadRegistry';
 import type { Palette } from './Palette';
 import { readStreamedBody } from './readStreamedBody';
 import { SpriteSheet } from './SpriteSheet';
@@ -167,33 +168,12 @@ function populateAsciiGlyph(asciiGlyphs: (Glyph | null)[], char: string, glyph: 
 }
 
 /**
- * Dev-only registry of live bitmap fonts keyed by normalized `.btfont` source URL,
- * so `HotRuntime.handleAssetChanged` can find and hot-reload every font loaded from
- * a changed font file. Populated only while {@link isHotActive} (no production
- * memory cost). Entries are never pruned - unlike {@link SpriteSheet}, `BitmapFont`
- * has no destroy/dispose lifecycle to hook; acceptable since the registry only
- * exists in dev mode.
+ * Dev-only registry of live bitmap fonts keyed by normalized `.btfont` source URL, so
+ * `HotRuntime.handleAssetChanged` can find and hot-reload every font loaded from a changed
+ * font file. Entries are never pruned - unlike {@link SpriteSheet}, `BitmapFont` has no
+ * destroy/dispose lifecycle to hook; acceptable since the registry only fills in dev mode.
  */
-const hotReloadRegistry = new Map<string, Set<BitmapFont>>();
-
-/**
- * Registers `font` under its normalized source URL for hot-reload routing, when a
- * Vite HMR context is active. Called by {@link BitmapFont.load}.
- *
- * @param url - Source URL the font was loaded from.
- * @param font - Font to register.
- */
-function registerFontForHotReload(url: string, font: BitmapFont): void {
-    if (!isHotActive()) {
-        return;
-    }
-
-    const key = normalizeAssetUrl(url);
-    const bucket = hotReloadRegistry.get(key) ?? new Set<BitmapFont>();
-
-    bucket.add(font);
-    hotReloadRegistry.set(key, bucket);
-}
+const hotReloadFonts = new HotReloadRegistry<BitmapFont>();
 
 /**
  * Returns every registered font loaded from a URL matching `url` after normalization.
@@ -205,7 +185,7 @@ function registerFontForHotReload(url: string, font: BitmapFont): void {
  * @returns Matching fonts, or `undefined` when none are registered.
  */
 export function getHotReloadFonts(url: string): ReadonlySet<BitmapFont> | undefined {
-    return hotReloadRegistry.get(normalizeAssetUrl(url));
+    return hotReloadFonts.get(url);
 }
 
 /**
@@ -410,7 +390,9 @@ export class BitmapFont {
             baseline,
         );
 
-        registerFontForHotReload(url, font);
+        if (isHotActive()) {
+            hotReloadFonts.add(url, font);
+        }
 
         return font;
     }

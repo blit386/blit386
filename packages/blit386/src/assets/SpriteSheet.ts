@@ -13,11 +13,11 @@ import {
     spriteColorNotInPaletteError,
     spriteTileOutOfGridError,
 } from '../utils/errorMessages';
-import { normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { assertTileCoordinate, assertTileSize } from '../utils/TileGrid';
 import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
+import { HotReloadRegistry } from './hotReloadRegistry';
 import type { Palette } from './Palette';
 import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from './Palette';
 
@@ -51,11 +51,10 @@ export type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 
 /**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so
- * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded
- * from a changed image. Populated only while {@link isHotActive} (no production
- * memory cost); entries are removed in {@link SpriteSheet.destroy}.
+ * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded from a
+ * changed image. Entries are removed in {@link SpriteSheet.destroy}.
  */
-const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
+const hotReloadSheets = new HotReloadRegistry<SpriteSheet>();
 
 /**
  * Returns every registered sheet loaded from a URL matching `url` after normalization.
@@ -67,7 +66,7 @@ const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
  * @returns Matching sheets, or `undefined` when none are registered.
  */
 export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | undefined {
-    return hotReloadRegistry.get(normalizeAssetUrl(url));
+    return hotReloadSheets.get(url);
 }
 
 /**
@@ -549,7 +548,10 @@ export class SpriteSheet {
         sheet._tileSize = tileSize;
 
         sheet.sourceUrl = url;
-        sheet.registerForHotReload();
+
+        if (isHotActive()) {
+            hotReloadSheets.add(url, sheet);
+        }
 
         return sheet;
     }
@@ -1103,7 +1105,11 @@ export class SpriteSheet {
      */
     destroy(): void {
         this.invalidateTexture();
-        this.unregisterFromHotReload();
+
+        if (this.sourceUrl !== null) {
+            hotReloadSheets.delete(this.sourceUrl, this);
+        }
+
         unregisterIndexedSheet(this);
 
         this.rgbaPixels = null;
@@ -1149,45 +1155,6 @@ export class SpriteSheet {
         if (this.texture) {
             this.texture.destroy();
             this.texture = null;
-        }
-    }
-
-    /**
-     * Registers this sheet in the dev-only hot-reload registry under its normalized
-     * source URL, when a Vite HMR context is active. Called by {@link SpriteSheet.load}.
-     */
-    private registerForHotReload(): void {
-        if (this.sourceUrl === null || !isHotActive()) {
-            return;
-        }
-
-        const key = normalizeAssetUrl(this.sourceUrl);
-        const bucket = hotReloadRegistry.get(key) ?? new Set<SpriteSheet>();
-
-        bucket.add(this);
-        hotReloadRegistry.set(key, bucket);
-    }
-
-    /**
-     * Removes this sheet from the hot-reload registry, pruning an empty bucket.
-     * Called by {@link SpriteSheet.destroy}.
-     */
-    private unregisterFromHotReload(): void {
-        if (this.sourceUrl === null) {
-            return;
-        }
-
-        const key = normalizeAssetUrl(this.sourceUrl);
-        const bucket = hotReloadRegistry.get(key);
-
-        if (!bucket) {
-            return;
-        }
-
-        bucket.delete(this);
-
-        if (bucket.size === 0) {
-            hotReloadRegistry.delete(key);
         }
     }
 }
