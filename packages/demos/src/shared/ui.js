@@ -35,7 +35,17 @@
  * render() at 60 FPS.
  */
 
-import { FONT_W, UI_ANCHORS, UI_DIRECTIONS, UiContext } from './ui-core.js';
+import { Rect2i } from 'blit386';
+
+import {
+    FONT_W,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PANEL_TEXT_INSET,
+    UI_ANCHORS,
+    UI_DIRECTIONS,
+    UiContext,
+} from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
 import {
@@ -66,6 +76,9 @@ import {
 
 // The one shared context. Demos run one at a time, so a single instance serves them all.
 const ctx = new UiContext();
+
+// The box ui.fillRect() fills, reused on every call.
+const fillScratch = new Rect2i(0, 0, 0, 0);
 
 // The /shots capture page reaches into the running demo's kit through this handle to switch on
 // the debug overlay and read the layout snapshot. A bare reference: no listener, no work, and
@@ -163,6 +176,20 @@ const ui = {
      */
     drawRectFill(rect, slot) {
         ctx.drawRectFill(rect, slot);
+    },
+
+    /**
+     * ui.drawRectFill() for a box given as numbers, so a demo filling many blocks needs no
+     * Rect2i of its own. Reuses one scratch rectangle, so it allocates nothing.
+     *
+     * @param {number} x - Left edge in display pixels.
+     * @param {number} y - Top edge in display pixels.
+     * @param {number} width - Width in pixels.
+     * @param {number} height - Height in pixels.
+     * @param {number} slot - Palette slot, 1-255.
+     */
+    fillRect(x, y, width, height, slot) {
+        ctx.drawRectFill(fillScratch.set(x, y, width, height), slot);
     },
 
     /**
@@ -376,6 +403,9 @@ export {
     defaultThemeSlot,
     FONT_W,
     litRimColor,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PANEL_TEXT_INSET,
     PIP_SIZE,
     THEME_DEFAULT_START_SLOT,
     THEME_OVERLAY_AUDIO_METER_STYLE,

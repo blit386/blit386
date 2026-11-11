@@ -80,7 +80,7 @@ import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
 // palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
 // strip, the captions, and the Tips panel.
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -121,17 +121,17 @@ const SWATCH_H = 24;
 // centered in the space between the 22-pixel title strip and the bottom 13 pixels the
 // engine overlay keeps for its toggle hint.
 //
-//   - Named colors panel: 22 title + the swatch band (2 + 24 swatch + 3 + two 10-pixel
-//     caption lines + 6) + three 10-pixel status lines + 11 bottom.
+//   - Named colors panel: 22 title (the kit's PANEL_CONTENT_TOP) + the swatch band (2 +
+//     24 swatch + 3 + two 10-pixel caption lines + 6) + three 10-pixel status lines + 11
+//     bottom (the kit's PANEL_BOTTOM).
 //   - Tips panel: 22 title + three 10-pixel lines + 11 bottom.
 const EDGE = 4;
 const GAP = 4;
 const PANEL_W = 320 - 2 * EDGE;
 const PANEL_PAD = 9;
-const PANEL_CONTENT_TOP = 22;
 const SWATCH_BAND_H = 2 + SWATCH_H + 3 + 2 * 10 + 6;
-const COLORS_PANEL_H = PANEL_CONTENT_TOP + SWATCH_BAND_H + 3 * 10 + 11;
-const TIPS_PANEL_H = PANEL_CONTENT_TOP + 3 * 10 + 11;
+const COLORS_PANEL_H = PANEL_CONTENT_TOP + SWATCH_BAND_H + 3 * 10 + PANEL_BOTTOM;
+const TIPS_PANEL_H = PANEL_CONTENT_TOP + 3 * 10 + PANEL_BOTTOM;
 const FREE_TOP = 22;
 const FREE_BOTTOM = 240 - 13;
 const COLORS_PANEL_Y = FREE_TOP + Math.floor((FREE_BOTTOM - FREE_TOP - COLORS_PANEL_H - GAP - TIPS_PANEL_H) / 2);

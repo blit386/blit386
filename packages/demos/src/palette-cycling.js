@@ -93,9 +93,12 @@ TRY THIS
 
 */
 
-import { bootstrap, BT, Color32, Rect2i } from 'blit386';
+import { bootstrap, BT, Color32 } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+// PANEL_CONTENT_TOP, PANEL_BOTTOM, and PANEL_TEXT_INSET say where things land inside a
+// titled kit panel: content starts 22 pixels below its top edge, the panel ends 11 pixels
+// below the last row, and text starts 10 pixels in from its left edge.
+import { applyTheme, PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -122,13 +125,6 @@ const SWAP_INTERVAL = 180;
 const EDGE = 4;
 const PANEL_GAP = 8;
 const PANEL_W = 320 - 2 * EDGE;
-
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
-// in from the panel edge.
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
-const PANEL_TEXT_INSET = 10;
 
 // How tall the artwork band inside each panel is, and where each panel starts.
 const SKY_ART_H = 32;
@@ -200,9 +196,6 @@ class Demo {
 
     // Whether the swap caption is currently shown.
     showSwapLabel = false;
-
-    // Reused for every rectangle drawn in render(), so drawing allocates no new Rect2i.
-    tempRect = new Rect2i(0, 0, 0, 0);
 
     // Palette cycling runs in the engine every tick; the timing chart shows update vs
     // render time. The overlay style colors come from the dedicated low slots set in
@@ -321,21 +314,15 @@ class Demo {
     }
 
     // Opens and closes a titled kit panel with an empty body `artH` pixels tall. The
-    // artwork is drawn after it with ui.drawRectFill(), not BT.drawRectFill(): kit panels
-    // are sprites, and the engine draws every BT.drawRectFill() before any sprite - so a
-    // plain one would hide under the panel. ui.drawRectFill() takes the same rectangle
-    // and palette slot, but draws a sprite, which lands on top in call order.
+    // artwork is drawn after it with ui.fillRect(), not BT.drawRectFill(): kit panels are
+    // sprites, and the engine draws every BT.drawRectFill() before any sprite - so a plain
+    // one would hide under the panel. ui.fillRect() takes the box as x, y, width, height
+    // and a palette slot, but draws a sprite, which lands on top in call order.
     renderPanel(y, artH, title) {
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y, width: PANEL_W });
         ui.panel(title);
         ui.spacer(artH);
         ui.end();
-    }
-
-    // Fills one block of artwork on top of a panel.
-    fillBlock(x, y, width, height, slot) {
-        this.tempRect.set(x, y, width, height);
-        ui.drawRectFill(this.tempRect, slot);
     }
 
     // Sky: ten full-width stripes, one per sky slot, 3 pixels tall. The slow cycling
@@ -348,7 +335,7 @@ class Demo {
         const top = SKY_PANEL_Y + PANEL_CONTENT_TOP + 1;
 
         for (let i = 0; i < SKY_SLOTS; i++) {
-            this.fillBlock(x, top + i * 3, PANEL_W - 2 * PANEL_TEXT_INSET, 3, C_SKY_BASE + i);
+            ui.fillRect(x, top + i * 3, PANEL_W - 2 * PANEL_TEXT_INSET, 3, C_SKY_BASE + i);
         }
     }
 
@@ -371,7 +358,7 @@ class Demo {
             for (let row = 0; row < FIRE_ART_H / BLOCK_H; row++) {
                 const slot = C_FIRE_BASE + ((row + phase) % FIRE_SLOTS);
 
-                this.fillBlock(x0 + col * FIRE_COL_STEP, top + row * BLOCK_H, FIRE_COL_STEP - 1, BLOCK_H, slot);
+                ui.fillRect(x0 + col * FIRE_COL_STEP, top + row * BLOCK_H, FIRE_COL_STEP - 1, BLOCK_H, slot);
             }
         }
 
@@ -399,7 +386,7 @@ class Demo {
             for (let col = 0; col < WATER_COLS; col++) {
                 const slot = C_WATER_BASE + ((col + row) % WATER_SLOTS);
 
-                this.fillBlock(x0 + col * WATER_COL_STEP, top + row * BLOCK_H, WATER_COL_STEP - 1, BLOCK_H, slot);
+                ui.fillRect(x0 + col * WATER_COL_STEP, top + row * BLOCK_H, WATER_COL_STEP - 1, BLOCK_H, slot);
             }
         }
     }

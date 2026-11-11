@@ -95,7 +95,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -142,12 +142,8 @@ const PANEL_X = 8;
 const PANEL_W = 504;
 const PANEL_GAP = 8;
 
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
-// in from the panel edge, and a label row is 10 pixels tall.
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
-const PANEL_TEXT_INSET = 10;
+// A label row inside a kit panel is 10 pixels tall. (Where a titled panel's content
+// starts and ends comes from the kit: PANEL_CONTENT_TOP, PANEL_BOTTOM, PANEL_TEXT_INSET.)
 const LABEL_ROW_H = 10;
 
 // Empty bands that ui.spacer() reserves for the artwork drawn inside each panel. Artwork
@@ -483,15 +479,6 @@ class Demo {
         ui.panel(title);
     }
 
-    // Fills a rectangle on top of a kit panel. Kit panels are sprites, and the engine
-    // draws every BT.drawRectFill() before any sprite - so a plain one would hide under
-    // the panel. ui.drawRectFill() takes the same rectangle and palette slot but draws a
-    // sprite, which lands on top in the order we call it.
-    fillOnPanel(x, y, width, height, slot) {
-        this.tempRect.set(x, y, width, height);
-        ui.drawRectFill(this.tempRect, slot);
-    }
-
     // Panel 1: the scrolling gradient bar, across the full width. 32 rectangles sit
     // inside it, each using a different palette slot. Because update() rotates the hues
     // in those slots, the bar appears to scroll.
@@ -504,12 +491,15 @@ class Demo {
         ui.end();
 
         // The swatches are centered in the panel, ART_GAP pixels below the label row.
+        // ui.fillRect() fills a box with one palette slot, like BT.drawRectFill(), but as
+        // a sprite: kit panels are sprites, and the engine draws every BT.drawRectFill()
+        // before any sprite, so a plain one would hide under the panel.
         const stripW = GRAD_SLOTS * GRAD_SWATCH_W;
         const x0 = PANEL_X + (PANEL_W - stripW) / 2;
         const y = GRAD_PANEL_Y + PANEL_CONTENT_TOP + LABEL_ROW_H + ART_GAP;
 
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            this.fillOnPanel(x0 + i * GRAD_SWATCH_W, y, GRAD_SWATCH_W, GRAD_SWATCH_H, C_GRAD_BASE + i);
+            ui.fillRect(x0 + i * GRAD_SWATCH_W, y, GRAD_SWATCH_W, GRAD_SWATCH_H, C_GRAD_BASE + i);
         }
     }
 
@@ -528,7 +518,7 @@ class Demo {
 
         for (let i = 0; i < FIRE_SLOTS; i++) {
             const y = colBottom - (i + 1) * FIRE_BAND_H;
-            this.fillOnPanel(colX, y, FIRE_COL_W, FIRE_BAND_H, C_FIRE_BASE + i);
+            ui.fillRect(colX, y, FIRE_COL_W, FIRE_BAND_H, C_FIRE_BASE + i);
         }
 
         // Notes beside the column: the slot at the very top, the sin() flicker in the
@@ -568,13 +558,13 @@ class Demo {
 
         // Background trough (dark, always full width) with a theme-colored outline.
         // ui.drawRect() is the sprite version of BT.drawRect(), for the same reason as
-        // fillOnPanel(): it has to show on top of the kit panel.
-        this.fillOnPanel(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H, this.theme.bg);
+        // ui.fillRect(): it has to show on top of the kit panel.
+        ui.fillRect(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H, this.theme.bg);
         this.tempRect.set(barX, barY, HEALTH_BAR_W, HEALTH_BAR_H);
         ui.drawRect(this.tempRect, this.theme.border);
 
         // The filled part uses C_HEALTH_BAR, which update() flashes when health is low.
-        this.fillOnPanel(barX, barY, barW, HEALTH_BAR_H, C_HEALTH_BAR);
+        ui.fillRect(barX, barY, barW, HEALTH_BAR_H, C_HEALTH_BAR);
 
         // The health value as text right of the bar, in the theme's amber heading color.
         // labelY = barY + 3 puts the 7-pixel-tall digits on rows barY + 2 to barY + 8,
@@ -597,7 +587,7 @@ class Demo {
             // i % WATER_SLOTS maps the tile index to one of the three water slots.
             const slot = C_WATER_BASE + (i % WATER_SLOTS);
 
-            this.fillOnPanel(x0 + i * WATER_TILE_STEP, y, WATER_TILE_STEP - 1, WATER_TILE_H, slot);
+            ui.fillRect(x0 + i * WATER_TILE_STEP, y, WATER_TILE_STEP - 1, WATER_TILE_H, slot);
         }
     }
 }

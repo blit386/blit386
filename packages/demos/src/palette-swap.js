@@ -96,7 +96,10 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+// PANEL_CONTENT_TOP, PANEL_BOTTOM, and PANEL_TEXT_INSET say where things land inside a
+// titled kit panel: content starts 22 pixels below its top edge, the panel ends 11 pixels
+// below the last row, and text starts 10 pixels in from its left edge.
+import { applyTheme, PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET, ui, UI_ANCHORS } from './shared/ui.js';
 
 // How many ticks to hold each theme before switching. A tick is one fixed update; at 60
 // ticks per second, 120 ticks is 2 seconds.
@@ -123,13 +126,6 @@ const THEMES_PANEL_W = 88;
 const SPRITE_PANEL_X = EDGE + THEMES_PANEL_W + PANEL_GAP;
 const SPRITE_PANEL_W = 320 - EDGE - SPRITE_PANEL_X;
 const CODE_PANEL_W = 320 - 2 * EDGE;
-
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip). Text inside starts 10 pixels
-// in from the panel edge.
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
-const PANEL_TEXT_INSET = 10;
 
 // The sprite is drawn 3 times its size. Its visible pixels cover x = 4 to 38 and
 // y = 7 to 35 of the 44x44 frame, a 35x29 block that becomes 105x87 at 3x.
@@ -338,12 +334,11 @@ class Demo {
             const swatchY = rowY + 2;
             const isActive = i === this.currentTheme;
 
-            // The color square, drawn with ui.drawRectFill(): kit panels are sprites, and
-            // the engine draws every BT.drawRectFill() before any sprite - so a plain one
-            // would hide under the panel. The active theme also gets a 1-pixel green
-            // frame around its square, one pixel out.
-            this.tempRect.set(swatchX, swatchY, LEGEND_SWATCH, LEGEND_SWATCH);
-            ui.drawRectFill(this.tempRect, SWATCH_STONE + i);
+            // The color square, drawn with ui.fillRect(): kit panels are sprites, and the
+            // engine draws every BT.drawRectFill() before any sprite - so a plain one would
+            // hide under the panel. The active theme also gets a 1-pixel green frame
+            // around its square, one pixel out.
+            ui.fillRect(swatchX, swatchY, LEGEND_SWATCH, LEGEND_SWATCH, SWATCH_STONE + i);
 
             if (isActive) {
                 this.tempRect.set(swatchX - 2, swatchY - 2, LEGEND_SWATCH + 4, LEGEND_SWATCH + 4);

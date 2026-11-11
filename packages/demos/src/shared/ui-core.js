@@ -54,6 +54,16 @@ const PANEL_INSET = 4;
 // The bottom gets this much more, so the last row does not look pressed against the rim.
 const PANEL_INSET_BOTTOM_EXTRA = 1;
 
+// Where things land inside a default-pad ui.panel(title), for demos that draw artwork into
+// the band a ui.spacer() reserves: the first row starts PANEL_CONTENT_TOP below the panel's
+// top edge (panel() moves the cursor to 18 plus the inset), the panel ends PANEL_BOTTOM
+// below the last row (end() adds 6 plus the inset and its extra pixel), and the title
+// starts PANEL_TEXT_INSET in from the left edge (6 plus the inset). A test in
+// __tests__/ui-widgets.test.mjs holds these to the real layout.
+const PANEL_CONTENT_TOP = 18 + PANEL_INSET;
+const PANEL_BOTTOM = 6 + PANEL_INSET + PANEL_INSET_BOTTOM_EXTRA;
+const PANEL_TEXT_INSET = 6 + PANEL_INSET;
+
 // Height of a title-only ui.begin('topBar') strip after ui.panel(title). panel() leaves
 // cursorY at 18; end() pads out to this so the header line is not pressed to the rim.
 const TOP_BAR_MIN_H = 22;
@@ -646,6 +656,9 @@ export {
     FONT_W,
     FULL_WIDTH,
     hitContains,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PANEL_TEXT_INSET,
     ROW_H,
     UI_ANCHORS,
     UI_DIRECTIONS,

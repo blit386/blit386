@@ -97,7 +97,9 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+// PANEL_CONTENT_TOP and PANEL_BOTTOM say where a titled kit panel's content starts (22
+// pixels below its top edge) and where the panel ends (11 pixels below the last row).
+import { applyTheme, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -116,11 +118,6 @@ const PANEL_X = 6;
 const PANEL_W = 508;
 const PRESETS_PANEL_Y = 69;
 const PANEL_GAP = 6;
-
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row (the rim and the title strip).
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
 
 // Inside the presets panel each row is a name column, then the swatches. The text starts
 // 10 pixels in from the panel edge (the same inset as the panel title); the swatches all
