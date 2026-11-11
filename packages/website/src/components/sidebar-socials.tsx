@@ -1,23 +1,15 @@
 import type { ReactNode } from 'react';
+import { type CommunityPlatform, communityDestinations } from '../data/community';
 import styles from './sidebar-socials.module.css';
 
-type SidebarSocialPlatform = 'discord' | 'github' | 'bluesky' | 'mastodon';
-
-type SocialDestination = {
-    platform: SidebarSocialPlatform;
-    label: string;
-    url: string | null;
-    comingSoon?: boolean;
-};
-
-const SOCIALS: SocialDestination[] = [
-    { platform: 'discord', label: 'Discord', url: 'https://discord.gg/tC2wGt88Uj' },
-    { platform: 'bluesky', label: 'Bluesky', url: 'https://bsky.app/profile/blit386.bsky.social' },
-    { platform: 'mastodon', label: 'Mastodon', url: 'https://mastodon.gamedev.place/@blit386' },
+// The chat and social profiles from the community list, then the repository itself, which that list
+// has no entry for (it links Releases, Discussions and Issues instead).
+const SOCIALS = [
+    ...communityDestinations.filter((destination) => destination.platform !== 'github'),
     { platform: 'github', label: 'GitHub', url: 'https://github.com/blit386/blit386' },
-];
+] satisfies { platform: CommunityPlatform; label: string; url: string }[];
 
-const ICONS: Record<SidebarSocialPlatform, ReactNode> = {
+const ICONS: Record<CommunityPlatform, ReactNode> = {
     discord: (
         <path
             fill="currentColor"
@@ -50,23 +42,21 @@ const ICONS: Record<SidebarSocialPlatform, ReactNode> = {
 export function SidebarSocials() {
     return (
         <div className={styles.container}>
-            {SOCIALS.map((social) =>
-                social.url ? (
-                    <a
-                        key={social.platform}
-                        href={social.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.link}
-                    >
-                        <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true">
-                            {ICONS[social.platform]}
-                        </svg>
+            {SOCIALS.map((social) => (
+                <a
+                    key={social.platform}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.link}
+                >
+                    <svg viewBox="0 0 24 24" width={16} height={16} aria-hidden="true">
+                        {ICONS[social.platform]}
+                    </svg>
 
-                        <span className={styles.srOnly}>{social.label}</span>
-                    </a>
-                ) : null,
-            )}
+                    <span className={styles.srOnly}>{social.label}</span>
+                </a>
+            ))}
         </div>
     );
 }

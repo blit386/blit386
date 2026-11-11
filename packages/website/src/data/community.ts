@@ -5,7 +5,6 @@ export type CommunityDestination = {
     platform: CommunityPlatform;
     url: string;
     external?: boolean;
-    comingSoon?: boolean;
 };
 
 export const communityDestinations: CommunityDestination[] = [
