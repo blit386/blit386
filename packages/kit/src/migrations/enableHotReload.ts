@@ -37,19 +37,6 @@ const IMPORT_LINE = "import { blit386 } from 'blit386/vite';";
 const PLUGIN_CALL = /(?<![.\w$])blit386\s*\(/;
 
 /**
- * Whether the source already mentions the hot-reload plugin (import or factory call).
- *
- * Prefer {@link enableHotReloadInViteConfig} for migrate decisions - import alone is not "wired up".
- */
-export function hasBlit386VitePlugin(source: string): boolean {
-    if (/from\s+['"]blit386\/vite['"]/.test(source)) {
-        return true;
-    }
-
-    return PLUGIN_CALL.test(source);
-}
-
-/**
  * Locate the `{` … `}` of the single `defineConfig({ ... })` call in a masked source (see `maskSource`), so calls and
  * braces inside comments and strings do not count.
  *

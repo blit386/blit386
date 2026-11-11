@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { enableHotReloadInViteConfig, hasBlit386VitePlugin } from '../dist/migrations/enableHotReload.js';
+import { enableHotReloadInViteConfig } from '../dist/migrations/enableHotReload.js';
 
 const SCAFFOLD_BEFORE = `import { defineConfig } from 'vite';
 
@@ -128,12 +128,6 @@ export default defineConfig({ server: { open: false } });
     const result = enableHotReloadInViteConfig(ambiguous);
     assert.equal(result.status, 'unsupported');
     assert.equal(result.changed, false);
-});
-
-test('hasBlit386VitePlugin detects import and factory call', () => {
-    assert.equal(hasBlit386VitePlugin("import { blit386 } from 'blit386/vite';\n"), true);
-    assert.equal(hasBlit386VitePlugin('plugins: [blit386()],\n'), true);
-    assert.equal(hasBlit386VitePlugin('plugins: [],\n'), false);
 });
 
 /**
