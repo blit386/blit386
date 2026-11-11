@@ -81,7 +81,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Random, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui } from './shared/ui.js';
+import { applyTheme, FONT_W, PANEL_CONTENT_SHRINK, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -101,7 +101,7 @@ const SEED_CAPTION_Y = 10;
 const STATUS_Y = 132;
 
 // The two panels along the bottom, the same height. Widgets inside a panel start 9
-// pixels in from its left edge and are 20 pixels narrower than it.
+// pixels in from its left edge and are the kit's PANEL_CONTENT_SHRINK narrower than it.
 const PANEL_H = 87;
 const PANEL_Y = 240 - 4 - PANEL_H;
 const SEED_PANEL_X = 4;
@@ -109,7 +109,6 @@ const SEED_PANEL_W = 150;
 const STREAM_PANEL_X = 160;
 const STREAM_PANEL_W = 156;
 const PANEL_CONTENT_X = 9;
-const PANEL_CONTENT_SHRINK = 20;
 
 // The Seeds panel holds two short buttons side by side, then one full-width button.
 // The kit stacks a group's rows, so the panel reserves the space with empty rows and
@@ -464,7 +463,7 @@ class Demo {
     // The three buttons that reseed the worlds: the panel itself with empty rows where
     // the buttons go, then each button pinned on top of it (see SEED_GRID_X).
     renderSeedPanel() {
-        ui.begin('topLeft', { x: SEED_PANEL_X, y: PANEL_Y, width: SEED_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: SEED_PANEL_X, y: PANEL_Y, width: SEED_PANEL_W });
         ui.panel('New seed');
         ui.spacer(2 * BUTTON_ROW_H);
         ui.end();
@@ -495,7 +494,7 @@ class Demo {
     // One button in its own tiny group, with its row starting at (x, y). Returns true on
     // the frame it is clicked, tapped, or its key is pressed, like ui.button().
     pinnedButton(label, key, x, y, width) {
-        ui.begin('topLeft', { x, y: y + PINNED_ROW_SHIFT, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: y + PINNED_ROW_SHIFT, pad: 0 });
 
         const pressed = ui.button(label, { key, width });
 
@@ -506,7 +505,7 @@ class Demo {
 
     // The clone-versus-fork comparison, on a generator of its own.
     renderStreamPanel() {
-        ui.begin('topLeft', { x: STREAM_PANEL_X, y: PANEL_Y, width: STREAM_PANEL_W, kvCols: STREAM_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: STREAM_PANEL_X, y: PANEL_Y, width: STREAM_PANEL_W, kvCols: STREAM_KV_COLS });
         ui.panel(`new Random(${this.streams.seed})`);
         ui.kv('original', this.streams.base.join(' '));
         ui.kv('clone()', this.streams.cloned.join(' '));

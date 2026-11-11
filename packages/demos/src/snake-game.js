@@ -40,8 +40,10 @@ PipBoy CRT demo: a pixel-tier PixelGlitch on the index buffer, then palette reso
 upscale, then display-tier barrel distortion, chromatic aberration, interference, a
 rolling scan line, scanlines, an RGB mask, vignette, noise, flicker, and bloom. Every few
 seconds a random glitch burst (horizontal tear, chroma split, snow, brightness waver, or
-ghosting) sweeps the screen. In software fallback mode the game runs without the
-effects, and a short note at the bottom of the playfield says so.
+ghosting) sweeps the screen. When the player prefers reduced motion, the grain, the
+brightness flicker, the rolling band, the row jitter, and the glitch bursts are left out.
+In software fallback mode the game runs without the effects, and a short note at the
+bottom of the playfield says so.
 
 Eating and dying each play a synthesized sound effect, and an upbeat music loop plays in
 the background. Each food eaten nudges the loop's playback rate up by 3 percent, so the
@@ -51,26 +53,26 @@ corner after the first touch.
 WHAT YOU WILL LEARN
 -------------------
 
-- BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp') and friends fold WASD and the arrow keys
-  onto player 0, after BT.inputMapReset() clears any earlier remapping.
+- keyboardLayout: 'single' in configure() puts both WASD and the arrow keys on player 0,
+  the one-player layout (the default gives the arrows to player 1).
 - BT.isPressed(button, 0) as an edge (true once per key press), combined with the shared
   UI kit's ui.dpad.isPressed(dir) and ui.swipe() so one check covers all three inputs.
 - A tick-driven game: BT.ticks for the restart timer, a step cooldown that shrinks as the
   snake grows, and a pending direction that blocks 180-degree turns.
-- The same CRT effect chain as the PipBoy CRT demo (BT.effectAdd per effect), gated on
-  isAvailable() from src/shared/post-process-backend.js so the game still runs in
-  software mode.
-- A glitch state machine driven by BT.random.int(), BT.random.pick(), and
-  BT.random.float(), with the glitch types and tuning shared through
-  src/shared/crt-glitch.js.
+- The same CRT effect chain as the PipBoy CRT demo, built by createPipboyChain() from
+  src/shared/crt-glitch.js and gated on isAvailable() from
+  src/shared/post-process-backend.js so the game still runs in software mode.
+- The PipBoy demo's glitch state machine, shared as stepGlitchMachine(), and
+  BT.isReducedMotionPreferred: applyCrtChain() leaves the moving effects out, and
+  onReducedMotionChange() rebuilds the chain when the preference changes mid-game.
 - BT.synthPreset.pickup() and BT.synthPreset.explosion() rendered once with
   AudioClip.synth(), then played with BT.soundPlay().
 - Music through BT.soundPlay(clip, { loop, volume, pitch, priority }) instead of
   BT.musicPlay(), because only the SFX path exposes pitch, changed live with
   BT.soundPitchSet(ref, rate, { fadeMs }).
-- configure() flags: isCapturingKeyboardScroll so the arrows do not scroll the page,
-  isWakeLockEnabled so phones stay awake, isOverlayToggleHintVisible: false to hide the
-  overlay hint, and overlayStyle to color the overlay bars with scene slots.
+- configure() flags: isWakeLockEnabled so phones stay awake, isOverlayToggleHintVisible:
+  false to hide the overlay hint, and overlayStyle to color the overlay bars with scene
+  slots. keyboardLayout: 'single' also stops the arrows scrolling the page.
 
 TRY THIS
 --------
@@ -86,43 +88,18 @@ TRY THIS
 
 */
 
-import {
-    AudioClip,
-    BarrelDistortion,
-    Bloom,
-    bootstrap,
-    BT,
-    ChromaticAberration,
-    Color32,
-    Flicker,
-    Interference,
-    Noise,
-    PixelGlitch,
-    Rect2i,
-    RGBMask,
-    RollLine,
-    Scanlines,
-    Vector2i,
-    Vignette,
-} from 'blit386';
+import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import {
-    ABERRATION_BASE,
-    applyGlitchUniforms,
-    FLICKER_BASE,
-    GLITCH_ACTIVE_MAX,
-    GLITCH_ACTIVE_MIN,
+    applyCrtChain,
+    createPipboyChain,
     GLITCH_COOLDOWN_MAX,
     GLITCH_COOLDOWN_MIN,
-    GLITCH_INTENSITY_MAX,
-    GLITCH_INTENSITY_MIN,
     GLITCH_TYPE,
-    GLITCH_TYPES_CHROMA,
-    NOISE_BASE,
-    PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
+    stepGlitchMachine,
 } from './shared/crt-glitch.js';
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -190,6 +167,14 @@ const MUSIC_PITCH_FADE_MS = 120;
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
 
+// The software-mode note, in lines short enough for the 160-pixel playfield (the shared
+// SOFTWARE_FALLBACK_LINES are up to 168 pixels wide in the 6-pixel font).
+const SOFTWARE_NOTE_LINES = ['Software renderer:', 'no CRT effects.'];
+
+// How strongly the CRT glass bends: 0.2, a deeper curve than the PipBoy CRT demo's 0.05.
+// 0 would be a perfectly flat screen.
+const CRT_CURVATURE = 0.2;
+
 // Minimal snake with the PipBoy CRT post-processing stack from the PipBoy CRT demo.
 class Demo {
     /** @type {Palette | null} */
@@ -254,39 +239,10 @@ class Demo {
     // init()).
     effectsAvailable = false;
 
-    // CRT effects, created in setupCrtEffects(), which init() calls only under WebGPU.
-    /** @type {PixelGlitch} */
-    pixelGlitch;
-
-    /** @type {BarrelDistortion} */
-    barrel;
-
-    /** @type {ChromaticAberration} */
-    aberration;
-
-    /** @type {Interference} */
-    interference;
-
-    /** @type {RollLine} */
-    rollLine;
-
-    /** @type {Scanlines} */
-    scanlines;
-
-    /** @type {RGBMask} */
-    mask;
-
-    /** @type {Vignette} */
-    vignette;
-
-    /** @type {Noise} */
-    noise;
-
-    /** @type {Flicker} */
-    flicker;
-
-    /** @type {Bloom} */
-    bloom;
+    // CRT effects. createPipboyChain() in setupCrtEffects() (WebGPU only) stores each one
+    // on the demo by name (pixelGlitch, barrel, noise, ...), and crtEffects keeps the
+    // display-tier ones in chain order so applyCrtChain() can rebuild the chain.
+    crtEffects = [];
 
     // Ticks until the next glitch burst may start.
     glitchCooldown = 0;
@@ -320,10 +276,9 @@ class Demo {
             // this is safe everywhere.
             isWakeLockEnabled: true,
 
-            // Arrow keys normally scroll the page. This demo maps them to steer the
-            // snake, so opt in so the browser does not scroll the demo page while you
-            // play.
-            isCapturingKeyboardScroll: true,
+            // A one-player game: WASD and the arrow keys both steer player 0. Without
+            // this the arrows belong to player 1. It also stops them scrolling the page.
+            keyboardLayout: 'single',
 
             // Hide the small "~" toggle hint in the bottom-left corner so the game board
             // stays clean. Players who want the stats overlay can still press the
@@ -349,23 +304,8 @@ class Demo {
         };
     }
 
-    // Key maps, sounds, palette, the PipBoy CRT stack, the glitch machine, then the first
-    // round.
+    // Sounds, palette, the PipBoy CRT stack, the glitch machine, then the first round.
     async init() {
-        // Start from the default keyboard maps so this demo stays independent from the
-        // remapping demos.
-        BT.inputMapReset();
-
-        // Engine defaults put WASD on player 0 and arrows on player 1. This is a
-        // single-player game, so fold both layouts into player 0: either set of keys
-        // steers the same snake. BT.inputMap replaces the whole key list for that button;
-        // listing both codes means either key counts, the same pattern the Input Map
-        // Remapping demo shows with Q and E for LEFT.
-        BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp');
-        BT.inputMap(0, BT.BTN_DOWN, 'KeyS', 'ArrowDown');
-        BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft');
-        BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight');
-
         // BT.synthPreset bundles ready-tuned sound recipes (Synth Toy explores all six).
         // Rendering them once here means eating and dying play back with zero delay
         // later.
@@ -436,9 +376,13 @@ class Demo {
         // steering code below, next to the keyboard and D-pad checks.
         const swipe = ui.swipe();
 
+        // The glitch bursts stay off while the player prefers reduced motion.
         if (this.effectsAvailable) {
             this.tickCrtClock();
-            this.tickGlitchMachine();
+
+            if (!BT.isReducedMotionPreferred) {
+                stepGlitchMachine(this);
+            }
         }
 
         if (this.tickRestartAfterDeath()) {
@@ -485,8 +429,17 @@ class Demo {
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
         }
 
+        // In software mode, say why there is no CRT look: two short kit labels in the
+        // bottom-left corner of the playfield, one per line, since kit labels do not
+        // wrap. A margin of one wall width keeps them off the sand-colored wall.
         if (!this.effectsAvailable) {
-            BT.systemPrint(new Vector2i(INNER_X0, DISPLAY_H - 16), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
+            ui.begin(UI_ANCHORS.BOTTOM_LEFT, { margin: WALL });
+
+            for (const line of SOFTWARE_NOTE_LINES) {
+                ui.label(line, { color: 'dim' });
+            }
+
+            ui.end();
         }
 
         // Browsers keep all sound muted until the player clicks or presses a key. This
@@ -505,71 +458,16 @@ class Demo {
         ui.dpadWidget({ size: 22, gap: 3, margin: 4 });
     }
 
-    // Builds the WebGPU CRT effect chain (same stack and tuning as the PipBoy CRT demo)
-    // and seeds the glitch state machine. Called from init() only when WebGPU is active.
+    // Builds the WebGPU CRT effect chain (the PipBoy CRT demo's stack, every effect and
+    // number explained in createPipboyChain() in src/shared/crt-glitch.js) and seeds the
+    // glitch state machine. Called from init() only when WebGPU is active.
     setupCrtEffects() {
-        // Pixel-tier glitch: shifts horizontal bands of the index buffer before the
-        // palette is resolved. It starts at zero intensity; the glitch machine turns it
-        // up.
-        this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT;
-        this.pixelGlitch.intensity = 0;
+        // The pixel-tier glitch runs on the index buffer, so it is added on its own; the
+        // display-tier list goes through applyCrtChain(), which leaves out the moving
+        // effects while the player prefers reduced motion.
+        this.crtEffects = createPipboyChain(this, CRT_CURVATURE, DISPLAY_H);
         BT.effectAdd(this.pixelGlitch);
-
-        // Display-tier effects, each with its resting value. The glitch machine raises
-        // aberration, interference, noise, and flicker during a burst and resets them
-        // after.
-        this.barrel = new BarrelDistortion();
-        this.barrel.curvature = 0.2;
-
-        this.aberration = new ChromaticAberration();
-        this.aberration.aberration = ABERRATION_BASE;
-
-        this.interference = new Interference();
-        this.interference.amount = 0;
-
-        this.rollLine = new RollLine();
-        this.rollLine.amount = 0.1;
-        this.rollLine.speed = 1.0;
-
-        this.scanlines = new Scanlines();
-        this.scanlines.amount = 0.55;
-        this.scanlines.strength = -8;
-        this.scanlines.density = DISPLAY_H;
-
-        this.mask = new RGBMask();
-        this.mask.intensity = 0.18;
-        this.mask.size = 6;
-        this.mask.border = 0.5;
-
-        this.vignette = new Vignette();
-        this.vignette.amount = 0.35;
-
-        this.noise = new Noise();
-        this.noise.amount = NOISE_BASE;
-
-        this.flicker = new Flicker();
-        this.flicker.amount = FLICKER_BASE;
-
-        this.bloom = new Bloom();
-        this.bloom.spread = 3.0;
-        this.bloom.glow = 0.18;
-
-        // Register them in this order; the chain runs top to bottom.
-        for (const fx of [
-            this.barrel,
-            this.aberration,
-            this.interference,
-            this.rollLine,
-            this.scanlines,
-            this.mask,
-            this.vignette,
-            this.noise,
-            this.flicker,
-            this.bloom,
-        ]) {
-            BT.effectAdd(fx);
-        }
+        applyCrtChain(this.crtEffects);
 
         // BT.random is the engine's shared random number generator. Its int() method
         // returns a whole number from the first value up to (but not including) the
@@ -648,43 +546,21 @@ class Demo {
         this.interference.time = seconds;
     }
 
-    // Same state machine as the PipBoy CRT demo: cooldown, burst envelope, random glitch
-    // type.
-    tickGlitchMachine() {
-        // A burst is running while there are ticks left on its countdown.
-        if (this.glitchTicksLeft > 0) {
-            // `t` runs from 0 at the start of the burst to 1 at its end; sin(t * PI)
-            // turns that into a hump that rises, peaks in the middle, and falls back to
-            // zero.
-            const t = 1 - this.glitchTicksLeft / this.glitchDuration;
-            const envelope = Math.sin(t * Math.PI);
-
-            applyGlitchUniforms(this, envelope);
-
-            this.glitchTicksLeft--;
-
-            // Countdown just hit zero: the burst is over, so calm the effects down and
-            // roll a fresh cooldown until the next burst.
-            if (this.glitchTicksLeft === 0) {
-                resetGlitchUniforms(this);
-                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-            }
-
+    // The engine calls this when the reduced-motion preference changes while the game
+    // runs. A burst in flight is cut short so the screen settles at once, and the chain
+    // is rebuilt with or without the moving effects.
+    onReducedMotionChange() {
+        if (!this.effectsAvailable) {
             return;
         }
 
-        this.glitchCooldown--;
-
-        if (this.glitchCooldown <= 0) {
-            // pick() draws one item out of a list, like taking a card off the top of a
-            // shuffled deck. float() is the decimal cousin of int(), for values that are
-            // not whole numbers.
-            this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
-            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-            this.glitchTicksLeft = this.glitchDuration;
-            this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-            this.pixelGlitch.seed = BT.random.float(0, 1000);
+        if (this.glitchTicksLeft > 0) {
+            this.glitchTicksLeft = 0;
+            this.glitchType = GLITCH_TYPE.NONE;
+            resetGlitchUniforms(this);
         }
+
+        applyCrtChain(this.crtEffects);
     }
 
     // Pixel rectangle for one grid cell at (gx, gy), inside the inner playfield.

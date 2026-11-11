@@ -44,7 +44,8 @@ grid lines every 40 pixels and a red rectangle around the world's edge. Scattere
 are 50 trees (brown trunk, green canopy with a darker outline), 20 buildings in random
 blue-gray tints with pale-yellow windows, and one 16x16 red square - the "player" - that
 never moves from world position (400, 300). The camera drifts on its own along a looping
-wave path, so the whole world slides around under the screen.
+wave path, so the whole world slides around under the screen. The path swings past the
+world's edges, so the view stops and waits at each edge until the path turns back.
 
 A UI kit panel in the top-left corner shows the camera position and the world size. A
 mini-map in the bottom-right corner shows the whole world at once: a dot per building, a
@@ -159,10 +160,6 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Slot map for the shared UI kit theme, filled in init() by applyTheme(). It tells us
-    // which palette slots hold the kit's panel, border, and text colors.
-    theme = null;
-
     // Reused every frame for the engine overlay (camera position and world size). We keep
     // one array and update the text strings in place, so nothing new is allocated on each
     // screen refresh.
@@ -235,9 +232,9 @@ class Demo {
         this.palette.set(C_OVERLAY_GAP, new Color32(48, 48, 48));
 
         // Install the shared UI kit theme. applyTheme() writes twelve UI colors into high
-        // palette slots (240-251), far above this demo's scene slots (2-43), and returns
-        // a map of slot numbers we can draw with (panel, border, text...).
-        this.theme = applyTheme(this.palette);
+        // palette slots (240-251), far above this demo's scene slots (2-43), so the kit's
+        // panels and text never borrow a scene color.
+        applyTheme(this.palette);
 
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
@@ -263,15 +260,18 @@ class Demo {
         // by 0.02 keeps the movement nice and slow.
         const t = BT.ticks * 0.02;
 
-        // Math.sin and Math.cos produce values between -1 and +1. Multiplying by 150 and
-        // 100 turns those into pixel distances; adding 200 and 150 keeps the path
-        // centered in the world instead of hugging its top-left corner.
-        this.cameraPos.x = Math.floor(200 + Math.sin(t) * 150);
-        this.cameraPos.y = Math.floor(150 + Math.cos(t * 0.7) * 100);
+        // Math.sin and Math.cos produce values between -1 and +1. Multiplying by 300
+        // and 230 turns those into pixel distances; adding 240 and 180 centers the path
+        // on the middle of the camera's legal range (0-480 across, 0-360 down). The
+        // swing is wider than that range on purpose, so the path overshoots every edge.
+        this.cameraPos.x = Math.floor(240 + Math.sin(t) * 300);
+        this.cameraPos.y = Math.floor(180 + Math.cos(t * 0.7) * 230);
 
         // Make sure the camera does not scroll past the edges of the world. The largest
         // allowed X is worldWidth minus the screen width, so the screen never shows empty
-        // space beyond the world's right boundary.
+        // space beyond the world's right boundary. Because the path above overshoots,
+        // you can watch the clamp work: the view pauses at each edge of the world until
+        // the path swings back inside.
         this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
 
         // BT.cameraSet() happens in render(), using a position blended between
@@ -519,13 +519,18 @@ class Demo {
         const mapW = 90;
         const mapH = 70;
 
-        // Background and border for the mini-map frame. The kit has no mini-map widget,
-        // so we draw this frame by hand - but we borrow the shared theme's panel and
-        // border slots so it matches the kit's look.
-        this.tempRect.set(mapX, mapY, mapW, mapH);
+        // The frame is a kit panel. pad: 0 makes the panel exactly the box we ask for.
+        // With no padding the kit still adds one pixel below the last row, so the empty
+        // row that reserves the map's height is one pixel shorter than the map.
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: mapX, y: mapY, width: mapW, pad: 0 });
+        ui.panel();
+        ui.spacer(mapH - 1);
+        ui.end();
 
-        BT.drawRectFill(this.tempRect, this.theme.panel);
-        BT.drawRect(this.tempRect, this.theme.border);
+        // Everything inside the frame is drawn with the kit's ui.fillRect() and
+        // ui.drawRect(), not BT.drawPixel() or BT.drawRect(). The panel is a sprite, and
+        // the engine draws plain shapes before any sprite, so a plain dot would end up
+        // hidden underneath the panel.
 
         // Draw a dot for each building, scaled down to fit the mini-map. Dividing by the
         // world width/height gives a fraction from 0.0 to 1.0; multiplying by the map
@@ -534,9 +539,8 @@ class Demo {
             const miniX = mapX + Math.floor((building.pos.x / this.worldWidth) * mapW);
             const miniY = mapY + Math.floor((building.pos.y / this.worldHeight) * mapH);
 
-            this.tempVec1.set(miniX, miniY);
-
-            BT.drawPixel(this.tempVec1, C_BUILDING_DOT);
+            // A one-by-one fill is a single pixel.
+            ui.fillRect(miniX, miniY, 1, 1, C_BUILDING_DOT);
         }
 
         // Draw a yellow rectangle showing the visible area (the camera viewport).
@@ -547,14 +551,13 @@ class Demo {
         const viewH = Math.floor((displaySize.y / this.worldHeight) * mapH);
 
         this.tempRect.set(viewX, viewY, viewW, viewH);
-        BT.drawRect(this.tempRect, C_VIEWPORT);
+        ui.drawRect(this.tempRect, C_VIEWPORT);
 
         // Draw the player position as a small red square on the mini-map.
         const playerMiniX = mapX + Math.floor((this.playerPos.x / this.worldWidth) * mapW);
         const playerMiniY = mapY + Math.floor((this.playerPos.y / this.worldHeight) * mapH);
 
-        this.tempRect.set(playerMiniX - 1, playerMiniY - 1, 2, 2);
-        BT.drawRectFill(this.tempRect, C_PLAYER);
+        ui.fillRect(playerMiniX - 1, playerMiniY - 1, 2, 2, C_PLAYER);
     }
 }
 

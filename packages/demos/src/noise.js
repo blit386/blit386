@@ -38,12 +38,17 @@ It opens on Perlin noise at the finest setting, one block per pixel, drifting sl
 clouds. Switch between the three ways of making noise, stack extra layers of detail on
 top of each other, zoom in and out, and coarsen the blocks to see what each step costs.
 
+Perlin's stacked layers stay closer to the middle than the other two flavors, so its
+picture runs from open water to rock and never shows the deepest sea or the pale peaks and
+snow. Switch to Value or Simplex to see both ends of the ramp.
+
 WHAT YOU WILL LEARN
 -------------------
 
 - new ValueNoise(seed), new PerlinNoise(seed), and new SimplexNoise(seed): three flavors
   with the same methods and a different character.
-- noise2D(x, y) gives a smooth value from -1 to 1 for any spot you ask about.
+- noise2D(x, y) gives a smooth value of roughly -1 to 1 for any spot you ask about. How
+  close a flavor gets to the two ends depends on the flavor and the octaves.
 - "Octaves" means stacking the same noise again, smaller and fainter each time, which is
   what adds crags to smooth hills. That stack is called fbm: fbm2D(x, y, octaves).
 - noise3D(x, y, z) and fbm3D(x, y, z, octaves) use the third number as time, which makes
@@ -85,7 +90,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, PerlinNoise, Rect2i, SimplexNoise, SpriteSheet, ValueNoise, Vector2i } from 'blit386';
 
-import { applyTheme, litRimColor, ui } from './shared/ui.js';
+import { applyTheme, litRimColor, PANEL_CONTENT_SHRINK, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -142,9 +147,6 @@ const PANEL_Y = DISPLAY_H - MARGIN - PANEL_H;
 const PANEL_GAP = 6;
 const SHAPE_PANEL_W = 150;
 const COST_PANEL_W = DISPLAY_W - 2 * MARGIN - PANEL_GAP - SHAPE_PANEL_W;
-
-// Widgets inside a panel are 20 pixels narrower than the panel itself.
-const PANEL_CONTENT_SHRINK = 20;
 
 // The toolbar's buttons, left to right. The kit stacks a group's rows, so the toolbar
 // reserves one button row and each button is placed with its own tiny group on top. A
@@ -352,9 +354,11 @@ class Demo {
 
                 const value = this.sample(generator, nx, ny);
 
-                // The generators answer somewhere between -1 and 1. Adding 1 and halving
+                // The generators answer roughly between -1 and 1. Adding 1 and halving
                 // shifts that to between 0 and 1, which is what a ramp position needs to
-                // be.
+                // be. At the opening settings Value and Simplex span about -0.9 to 0.85,
+                // while four octaves of Perlin stay within about -0.63 to 0.55, so Perlin
+                // never reaches the deepest or highest ramp steps.
                 const slot = this.rampSlot((value + 1) / 2);
 
                 this.paintBlock(col * block, row * block, block, slot);
@@ -433,7 +437,7 @@ class Demo {
     // the block-size button. The panel goes first with one empty row, then each button is
     // placed on top of it in its own tiny group (see PINNED_ROW_SHIFT).
     renderToolbar() {
-        ui.begin('topLeft', { x: MARGIN, y: MARGIN, width: TOOLBAR_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: MARGIN, width: TOOLBAR_W });
         ui.panel('');
         ui.spacer(BUTTON_ROW_H - TOOLBAR_CONTENT_Y - 4);
         ui.end();
@@ -464,7 +468,7 @@ class Demo {
     // one is given. Returns true on the frame it is clicked, tapped, or its key is
     // pressed, like ui.button().
     toolButton(label, key, x, width, isOn) {
-        ui.begin('topLeft', { x, y: MARGIN + TOOLBAR_CONTENT_Y + PINNED_ROW_SHIFT, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: MARGIN + TOOLBAR_CONTENT_Y + PINNED_ROW_SHIFT, pad: 0 });
 
         const pressed = ui.button(label, { key, width, id: key, lit: isOn ? LIT_BUTTON : undefined });
 
@@ -478,7 +482,7 @@ class Demo {
     renderCostPanel() {
         const block = BLOCK_SIZES[this.blockIndex];
 
-        ui.begin('topLeft', { x: MARGIN, y: PANEL_Y, width: COST_PANEL_W, kvCols: COST_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN, y: PANEL_Y, width: COST_PANEL_W, kvCols: COST_KV_COLS });
         ui.panel('Cost');
         ui.kv('Blocks', `${block}x${block}px`);
 
@@ -495,7 +499,7 @@ class Demo {
     renderShapePanel() {
         const sliderW = SHAPE_PANEL_W - PANEL_CONTENT_SHRINK;
 
-        ui.begin('topLeft', { x: DISPLAY_W - MARGIN - SHAPE_PANEL_W, y: PANEL_Y, width: SHAPE_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: DISPLAY_W - MARGIN - SHAPE_PANEL_W, y: PANEL_Y, width: SHAPE_PANEL_W });
         ui.panel(`${KIND_NAMES[this.kind]} noise`);
 
         // Every control compares its new value against the old one, and only asks for a

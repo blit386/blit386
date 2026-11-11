@@ -72,16 +72,6 @@ Instead this version uses palette animation: every tick it rewrites the palette 
 young particles appear bright and large while old particles appear dim and small. The
 orbital motion and the rainbow color cycling are preserved.
 
-KEY PHYSICS CONCEPTS
---------------------
-
-- Inverse-square gravity: each particle is pulled toward every spark, and the closer the
-  particle, the stronger the pull. Same law as real planets.
-- Drag: a small friction factor applied each tick, slowing particles gradually.
-- Lissajous orbit: a path traced by two sine waves with different frequencies. The spark's
-  x position follows one wave and its y position another; when the frequencies differ
-  slightly the path never exactly repeats.
-
 TRY THIS
 --------
 
@@ -128,13 +118,11 @@ const GRAVITY_CONST = 1500000;
 const DRAG_FACTOR = 0.9965 ** (85 / 60);
 
 // How fast newly spawned particles shoot outward from their spark, in world units per
-// tick. Combined with the spark's own velocity (added at spawn), this gives each particle
-// a unique direction so they fan out rather than all traveling the same way.
+// tick. Added to the spark's own velocity, so the particles fan out in many directions.
 const STREAM_SPEED = 15;
 
-// How far from the exact spark position a new particle may appear, in world units. A
-// small scatter means particles start in a tight cluster very close to the spark. Without
-// scatter, every particle would start at the same point and overlap completely.
+// How far from the exact spark position a new particle may appear, in world units: a
+// tight cluster, so new particles do not all start on the very same point.
 const SPAWN_SCATTER = 30;
 
 // The fastest a particle is ever allowed to move, in world units per tick. Without this
@@ -153,6 +141,16 @@ const HUE_ADVANCE = 0.4;
 // the vivid full color, 100 is white. Going from 85 down to 20 makes particles fade from
 // near-white to nearly invisible as they age.
 const TIER_LIGHTNESS = [85, 68, 52, 36, 20];
+
+// How many age tiers there are (one per TIER_LIGHTNESS entry), how many hue bands the
+// particle colors are split into, and the palette slots that takes: 8 x 5 = 40.
+const TIER_COUNT = TIER_LIGHTNESS.length;
+const HUE_BANDS = 8;
+const PARTICLE_SLOT_COUNT = HUE_BANDS * TIER_COUNT;
+
+// The first tier counted as "old". Tiers 0-2 are young and drawn as 2x2 squares; tiers
+// 3 and 4 are old and drawn as single pixels underneath them.
+const OLD_TIER = 3;
 
 // Screen layout: the logical resolution of the display in pixels. This is the number of
 // dots in the picture, not the size of the window (the engine's default drawing buffer is
@@ -266,10 +264,8 @@ class Demo {
     // Array of SPARK_COUNT spark objects (the invisible gravity-well attractors), created
     // in initSparks(). Each spark has:
     //   x, y - current world position
-    //   prevX, prevY - world position as of the start of the most recent update() tick,
-    //     before that tick's orbit math moved it. render() blends between prevX/prevY and
-    //     x/y using BT.renderAlpha so sparks glide smoothly between physics ticks instead
-    //     of jumping - see the Game Loop guide linked in the header.
+    //   prevX, prevY - world position at the start of the last update() tick. render()
+    //     blends it toward x/y with BT.renderAlpha so sparks glide between ticks.
     //   vx, vy - instantaneous velocity (used as a hint when spawning particles)
     //   freqX, freqY - oscillation frequencies for the Lissajous orbit
     //   phaseX, phaseY - starting angles on the orbit path
@@ -315,11 +311,9 @@ class Demo {
     // Builds the palette and creates the sparks and particles. Runs once before the first
     // update() call.
     async init() {
-        console.log('[FlurryDemo] Initializing...');
-
-        // Build the palette. All static (never-changing) slots are filled now. The
-        // dynamic particle and spark color slots start as black and are overwritten every
-        // tick by updatePalette() inside update().
+        // Build the palette. The static (never-changing) slots are filled now; the
+        // particle and spark slots are filled by updatePalette() at the end of init()
+        // and rewritten every tick after that.
         this.palette = BT.paletteCreate(256);
 
         // Static colors that never change during the demo.
@@ -328,20 +322,6 @@ class Demo {
         this.palette.set(C_TITLE, new Color32(255, 210, 80)); // golden yellow
         this.palette.set(C_FPS, new Color32(55, 55, 75)); // very dim gray
         this.palette.set(C_SPARK_CORE, new Color32(255, 255, 255)); // white-hot center
-
-        // Fill all 40 particle color slots with black as a placeholder. 8 hues x 5 tiers
-        // = 40 total. They are overwritten on the very first updatePalette() call;
-        // setting them now means the palette has no uninitialized gaps.
-        for (let i = 0; i < 8 * 5; i++) {
-            this.palette.set(C_PARTICLE_BASE + i, new Color32(0, 0, 0));
-        }
-
-        // Fill all 24 spark color slots with black as a placeholder: 12 bright slots (one
-        // per spark) and 12 halo slots (one per spark).
-        for (let i = 0; i < SPARK_COUNT; i++) {
-            this.palette.set(C_SPARK_BRIGHT + i, new Color32(0, 0, 0));
-            this.palette.set(C_SPARK_HALO + i, new Color32(0, 0, 0));
-        }
 
         // Activate the palette. From this point on, all drawing uses these color slots.
         BT.paletteSet(this.palette);
@@ -357,8 +337,6 @@ class Demo {
         // sparks, particles). Calling update() here would move the simulation before the
         // engine's timing is available; updatePalette() only writes colors.
         this.updatePalette();
-
-        console.log('[FlurryDemo] Initialized');
 
         return true;
     }
@@ -415,19 +393,9 @@ class Demo {
             // Destructuring: pull the five values out of this row of SPARK_TABLE.
             const [freqX, freqY, phaseX, phaseY, hueOffset] = SPARK_TABLE[i];
 
-            this.sparks.push({
-                x: 0, // current world x position (set by updateSparks)
-                y: 0, // current world y position
-                prevX: 0, // world x position at the start of the last tick
-                prevY: 0, // world y position at the start of the last tick
-                vx: 0, // instantaneous velocity on x (used as a spawn direction hint)
-                vy: 0, // instantaneous velocity on y
-                freqX, // how fast the spark oscillates horizontally
-                freqY, // how fast the spark oscillates vertically
-                phaseX, // starting angle on the x sine wave
-                phaseY, // starting angle on the y cosine wave
-                hueOffset, // this spark's personal color angle on the rainbow wheel
-            });
+            // x, y and prevX, prevY start at 0 and vx, vy too; the updateSparks() call
+            // below sets them. The sparks field above lists what each property means.
+            this.sparks.push({ x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0, freqX, freqY, phaseX, phaseY, hueOffset });
         }
 
         // Run one updateSparks() so all sparks have correct positions before particles
@@ -451,30 +419,16 @@ class Demo {
     // particle a different head start.
     initParticles() {
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            // Pre-create each particle with placeholder values; spawnParticle()
-            // overwrites them. The object is pushed first so it exists in the array
-            // before spawnParticle() runs.
-            this.particles.push({
-                x: 0,
-                y: 0,
-                prevX: 0,
-                prevY: 0,
-                vx: 0,
-                vy: 0,
-                age: 0,
-                ageRate: 0.002,
-                hueIndex: 0,
-                alive: false,
-            });
-
-            // Set the real position, velocity, hue, and age rate using the full spawn
-            // logic.
-            this.spawnParticle(this.particles[i]);
+            // spawnParticle() sets every property (position, velocity, hue, age rate,
+            // age, alive), so each particle can start as an empty object.
+            const p = {};
+            this.spawnParticle(p);
 
             // Override the age with a random value so this particle starts mid-life.
             // BT.random is the engine's shared random number generator; next() returns a
             // value from 0.0 (just born) up to, but never reaching, 1.0 (almost dead).
-            this.particles[i].age = BT.random.next();
+            p.age = BT.random.next();
+            this.particles.push(p);
         }
     }
 
@@ -610,7 +564,7 @@ class Demo {
         // only 8 hue bands, so some bands are shared by two sparks. % is the remainder
         // operator: 10 % 8 = 2, 11 % 8 = 3. It wraps at 8, cycling from 0 through 7 no
         // matter how large sparkIndex gets.
-        p.hueIndex = sparkIndex % 8;
+        p.hueIndex = sparkIndex % HUE_BANDS;
 
         // Each particle ages at a slightly different rate so they do not all die
         // together. 0.0018 to 0.0025 per tick gives a lifetime of roughly 400..555 ticks,
@@ -643,9 +597,8 @@ class Demo {
             // Instantaneous velocity = the derivative of the position formula:
             //   d/dt [sin(t * f + p)] = cos(t * f + p) * f
             //   d/dt [cos(t * f + p)] = -sin(t * f + p) * f
-            // Dividing by TARGET_FPS converts from "per second" to "per tick" using the
-            // same constant that drives animTime in update(), so if TARGET_FPS ever
-            // changes, both the clock and this velocity scale stay in sync.
+            // Dividing by TARGET_FPS converts "per second" to "per tick", the same
+            // constant that drives animTime in update(), so the two stay in sync.
             spark.vx =
                 (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / TARGET_FPS;
             spark.vy =
@@ -662,20 +615,20 @@ class Demo {
     //      spark has its own hue offset, so all 12 display different rainbow colors.
     updatePalette() {
         // Particle color ramp.
-        for (let h = 0; h < 8; h++) {
+        for (let h = 0; h < HUE_BANDS; h++) {
             // The base angle for this hue band, evenly spread around the color wheel:
             // h = 0 is 0 degrees, h = 1 is 45, h = 2 is 90, ..., h = 7 is 315. Adding
             // huePhase rotates all hue bands together like a spinning color wheel; % 360
             // keeps the angle in the valid range.
-            const hue = ((h / 8) * 360 + this.huePhase) % 360;
+            const hue = ((h / HUE_BANDS) * 360 + this.huePhase) % 360;
 
-            for (let t = 0; t < 5; t++) {
+            for (let t = 0; t < TIER_COUNT; t++) {
                 // Color32.fromHSL(hue, saturation, lightness): hue 0..360 is the position
                 // on the color wheel (0 = red, 120 = green, 240 = blue), saturation
                 // 0..100 is how vivid the color is (90 = highly saturated), lightness
                 // 0..100 is brightness (0 = black, 50 = pure color, 100 = white).
                 // TIER_LIGHTNESS[t] gives the brightness for this age tier.
-                this.palette.set(C_PARTICLE_BASE + h * 5 + t, Color32.fromHSL(hue, 90, TIER_LIGHTNESS[t]));
+                this.palette.set(C_PARTICLE_BASE + h * TIER_COUNT + t, Color32.fromHSL(hue, 90, TIER_LIGHTNESS[t]));
             }
         }
 
@@ -694,20 +647,26 @@ class Demo {
         }
     }
 
-    // Draws all alive particles in two separate passes. Dim old particles should appear
-    // underneath bright young ones, so all old particles are drawn first (pass 1) and all
-    // young particles on top (pass 2). Any young particle overlapping an old one simply
-    // paints over it, which is the correct layering, and no sort of the particle array is
-    // needed. Pass 1 draws old particles (tiers 3 and 4) as 1x1 single pixels; pass 2
-    // draws young particles (tiers 0, 1, and 2) as 2x2 filled rectangles.
+    // Draws all alive particles in two passes. Dim old particles should appear underneath
+    // bright young ones, so all old particles are drawn first and all young particles on
+    // top. Any young particle overlapping an old one simply paints over it, which is the
+    // correct layering, and no sort of the particle array is needed.
     renderParticles() {
-        // How far we are, right now, between the last completed physics tick and the next
-        // one. Every particle blends its prevX/prevY toward its x/y by this same
-        // fraction, giving each one a true render-time position instead of only its
-        // last-tick position (same idea as renderSparks() below).
+        // How far we are between the last physics tick and the next (renderSparks()
+        // below explains the blend). Both passes use the same fraction.
         const alpha = BT.renderAlpha;
 
-        // Pass 1: old, dim particles as single 1x1 pixels.
+        // Pass 1: old, dim particles as single pixels. Pass 2: young, bright ones as 2x2
+        // squares on top.
+        this.renderParticlePass(alpha, false);
+        this.renderParticlePass(alpha, true);
+    }
+
+    // One particle pass. `young` picks which particles it draws: false draws the old
+    // tiers (OLD_TIER and up) as 1x1 pixels, true draws the young tiers as 2x2 squares.
+    renderParticlePass(alpha, young) {
+        const size = young ? 2 : 1;
+
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = this.particles[i];
 
@@ -716,15 +675,14 @@ class Demo {
                 continue;
             }
 
-            // Convert age (0..1) to a tier index (0..4). p.age * 5 maps the 0..1 range to
-            // 0..5, Math.floor() rounds down (0.7 * 5 = 3.5 becomes 3), and Math.min(4,
-            // ...) clamps the result so it never exceeds 4 (the last tier).
-            const tier = Math.min(4, Math.floor(p.age * 5));
+            // Convert age (0..1) to a tier index (0..4). p.age * TIER_COUNT maps the 0..1
+            // range to 0..5, Math.floor() rounds down (0.7 * 5 = 3.5 becomes 3), and
+            // Math.min() clamps the result so it never passes the last tier.
+            const tier = Math.min(TIER_COUNT - 1, Math.floor(p.age * TIER_COUNT));
 
-            // Pass 1 only draws particles in their last two tiers (3 or 4). Tier 3 is
-            // "aging" (lightness 36) and tier 4 is "near-dead" (lightness 20). Tiers 0,
-            // 1, and 2 are handled in pass 2.
-            if (tier < 3) {
+            // Each particle belongs to one pass only; skip it if its age says the other.
+            const isYoung = tier < OLD_TIER;
+            if (isYoung !== young) {
                 continue;
             }
 
@@ -733,58 +691,25 @@ class Demo {
             const sx = worldToScreen(p.prevX, p.x, alpha, HALF_W);
             const sy = worldToScreen(p.prevY, p.y, alpha, HALF_H);
 
-            // Skip any particle whose screen position is outside the visible area; there
-            // is nothing to see and no point in submitting the draw call.
-            if (sx < 0 || sx >= DISPLAY_W || sy < 0 || sy >= DISPLAY_H) {
+            // Skip any particle that would not fit fully on screen. A 2x2 square needs
+            // sx + 1 on screen too, so its right and bottom limits are one pixel tighter:
+            // with size 2, "sx > DISPLAY_W - 2" means "sx + 1 would be 320", off screen.
+            if (sx < 0 || sx > DISPLAY_W - size || sy < 0 || sy > DISPLAY_H - size) {
                 continue;
             }
 
             // Look up the palette slot for this particle's hue and brightness tier: base
-            // + (hue band index x 5 slots per band) + tier within the band. Example:
-            // hueIndex 3, tier 4 is slot 10 + 3 * 5 + 4 = 29.
-            const slot = C_PARTICLE_BASE + p.hueIndex * 5 + tier;
+            // + (hue band index x TIER_COUNT slots per band) + tier within the band.
+            // Example: hueIndex 3, tier 4 is slot 10 + 3 * 5 + 4 = 29.
+            const slot = C_PARTICLE_BASE + p.hueIndex * TIER_COUNT + tier;
 
-            // Draw a single pixel at the screen position using the computed color slot.
-            BT.drawPixel(new Vector2i(sx, sy), slot);
-        }
-
-        // Pass 2: young, bright particles as 2x2 filled rectangles.
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            const p = this.particles[i];
-
-            // Skip dead particles.
-            if (!p.alive) {
-                continue;
+            // Young particles are 2x2 squares so they stand out; old ones a single pixel.
+            // Rect2i arguments are (x, y, width, height).
+            if (young) {
+                BT.drawRectFill(new Rect2i(sx, sy, size, size), slot);
+            } else {
+                BT.drawPixel(new Vector2i(sx, sy), slot);
             }
-
-            // Recompute the tier for this pass. Each particle is only handled in one
-            // pass, so checking the tier again costs very little and keeps both passes
-            // independent - no shared state between the two loops.
-            const tier = Math.min(4, Math.floor(p.age * 5));
-
-            // This pass only draws young particles (tiers 0, 1, and 2). Old particles
-            // (tiers 3 and 4) were already drawn as pixels in pass 1.
-            if (tier >= 3) {
-                continue;
-            }
-
-            // Same world-to-screen conversion as pass 1 (see worldToScreen() above).
-            const sx = worldToScreen(p.prevX, p.x, alpha, HALF_W);
-            const sy = worldToScreen(p.prevY, p.y, alpha, HALF_H);
-
-            // A 2x2 rect occupies pixels (sx, sy), (sx + 1, sy), (sx, sy + 1), and
-            // (sx + 1, sy + 1), so both sx and sx + 1 must be inside the screen:
-            // sx <= DISPLAY_W - 2. DISPLAY_W - 1 = 319, so "sx >= 319" means "sx + 1
-            // would be 320", which is off screen.
-            if (sx < 0 || sx >= DISPLAY_W - 1 || sy < 0 || sy >= DISPLAY_H - 1) {
-                continue;
-            }
-
-            const slot = C_PARTICLE_BASE + p.hueIndex * 5 + tier;
-
-            // Draw a 2x2 filled rectangle, larger than 1 pixel so young particles stand
-            // out. Rect2i arguments are (x, y, width, height).
-            BT.drawRectFill(new Rect2i(sx, sy, 2, 2), slot);
         }
     }
 
@@ -848,25 +773,24 @@ class Demo {
             // Starting x position: each rectangle begins where the previous one ended.
             const x = i * sparkW;
 
-            // Width of this rectangle. The ternary operator "condition ? valueIfTrue :
-            // valueIfFalse" is a compact if/else. For the last spark
-            // (i === SPARK_COUNT - 1) the rectangle stretches to the right edge of the
-            // screen by using DISPLAY_W - x instead of sparkW. This fills the 8 leftover
-            // pixels (320 - 12 * 26 = 8) so the strip reaches all the way to the edge
-            // with no gap. Every other spark uses the standard sparkW.
+            // Width of this rectangle. "condition ? a : b" is a compact if/else: the last
+            // spark stretches to the right edge (DISPLAY_W - x), filling the 8 leftover
+            // pixels (320 - 12 * 26 = 8); every other spark uses the standard sparkW.
             const w = i === SPARK_COUNT - 1 ? DISPLAY_W - x : sparkW;
 
             BT.drawRectFill(new Rect2i(x, PALETTE_STRIP_SPARK_Y, w, PALETTE_STRIP_SPARK_H), C_SPARK_BRIGHT + i);
         }
 
-        // Bottom row: 40 particle color slots, each 8 px wide. 8 hues x 5 tiers = 40
-        // slots, and 40 x 8 px = 320 px, a perfect fit. The slots are arranged in the
-        // same order as the palette layout: index 0..4 is hue 0, tiers 0..4 (brightest to
-        // darkest), index 5..9 is hue 1, and so on up to index 35..39 for hue 7. Within
-        // each group of 5 rectangles one hue fades from bright to dim, and across all 8
-        // groups the full rainbow is visible at a glance.
-        for (let i = 0; i < 8 * 5; i++) {
-            BT.drawRectFill(new Rect2i(i * 8, PALETTE_STRIP_PART_Y, 8, PALETTE_STRIP_PART_H), C_PARTICLE_BASE + i);
+        // Bottom row: the 40 particle slots in palette order, 320 / 40 = 8 px each. Index
+        // 0..4 is hue 0 from bright to dim, 5..9 is hue 1, and so on, so the row shows
+        // every hue band fading out side by side.
+        const partW = DISPLAY_W / PARTICLE_SLOT_COUNT;
+
+        for (let i = 0; i < PARTICLE_SLOT_COUNT; i++) {
+            BT.drawRectFill(
+                new Rect2i(i * partW, PALETTE_STRIP_PART_Y, partW, PALETTE_STRIP_PART_H),
+                C_PARTICLE_BASE + i,
+            );
         }
     }
 }

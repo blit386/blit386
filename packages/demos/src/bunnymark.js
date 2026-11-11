@@ -43,8 +43,8 @@ WHAT YOU WILL LEARN
 -------------------
 
 - Structure-of-arrays storage: position, velocity, and variant live in flat typed arrays
-  (Float32Array, Uint8Array), one row of numbers per property. Spawning writes the next
-  free slot; the hop loop allocates nothing.
+  (Float32Array, Uint8Array), one row of numbers per property, allocated once in init().
+  Spawning writes the next free slot, and neither it nor the hop loop allocates.
 - BT.drawSprite(sheet, srcRect, pos, paletteOffset) with a reused Rect2i and Vector2i, and
   paletteOffset selecting one of six recolors written with palette.fillBlock().
 - Reading the overlay: Draw Calls counts every demo-issued draw call, so each
@@ -53,7 +53,7 @@ WHAT YOU WILL LEARN
 - Pointer slots: BT.isPointerActive(slot), BT.isDown(BT.BTN_POINTER_A, slot), and the
   allocation-free BT.pointerPosTo(vec, slot) across all four slots (0 mouse, 1-3 touch).
 - Held input as a spawn trigger: BT.isDown(BT.BTN_A, 0) (Space or KeyB on the keyboard, A
-  on a gamepad) and BT.isKeyDown('KeyN').
+  on a gamepad), beside a one-tap button with its own { key } binding.
 - BT.randomSeed() for a repeatable spawn stream, and a testState() hook that exposes the
   counters as JSON for scripted runs.
 
@@ -75,8 +75,7 @@ buffer. That reserve keeps the readout from being the thing that gets dropped; "
 
 The software renderer queues every sprite and has no vertex buffer of this size, so with
 ?backend=software this demo submits every bunny: Dropped stays 0 and the Cap row is
-hidden. The arrays start 16384 long. WebGPU stops there. Software doubles them when a
-batch does not fit, up to 262144.
+hidden.
 
 URL SWITCHES
 ------------
@@ -94,9 +93,8 @@ TRY THIS
 
 - Click or touch and hold on empty field (not on the panel) to pour bunnies in at the
   pointer, 100 per tick. All four pointer slots work, so several fingers pour at once.
-- Hold Space, KeyB, N, or gamepad button A to pour from the fountain point at the top
-  middle.
-- Tap "Add 100 (N)" for one batch at the fountain.
+- Hold Space, KeyB, or gamepad button A to pour from the fountain point at the top middle.
+- Tap "Add 100 (N)" or press N for one batch at the fountain.
 - Tick "Split sheets (S)" and watch Batches jump from 1 to the drawn count.
 - Keep adding until Dropped turns the status note warm ("Over cap: skipped") and "ov" on
   the overlay stays 0.
@@ -144,13 +142,11 @@ const BUNNY_H = BUNNY_ROWS.length;
 // the classic stress test dumps sprites in instead of one at a time.
 const SPAWN_BATCH = 100;
 
-// Hard stop on WebGPU, and the length the arrays start at. High enough to walk past the
-// sprite cap and show dropped quads. Software copies these arrays into a longer one when
-// a batch does not fit, up to MAX_SOFTWARE_BUNNIES.
+// Field limit on WebGPU. High enough to walk past the sprite cap and show dropped quads.
 const MAX_WEBGPU_BUNNIES = 16384;
 
-// Furthest the software field may grow. 16384 doubled four times. A held button still has
-// to stop somewhere.
+// Field limit on software, which has no sprite cap. 16384 doubled four times. A held
+// button still has to stop somewhere.
 const MAX_SOFTWARE_BUNNIES = 262144;
 
 // SpritePipeline keeps MAX_VERTICES vertices and spends 6 of them on each quad (two
@@ -181,8 +177,8 @@ const SHEET_COUNT = 4;
 // The engine has four pointer slots: 0 is the mouse, 1-3 are touches.
 const POINTER_SLOT_COUNT = 4;
 
-// Face button A is also Space / KeyB for player 0, so a keyboard can spawn too. KeyN is
-// the on-screen Add button's own key, separate from that face button.
+// The on-screen Add button's key. The kit fires the button once per tap, so N adds
+// exactly one batch; holding Space / KeyB (face button A) is the pouring input.
 const KEY_ADD = 'KeyN';
 
 // Same seed every load so the first hops repeat. BT.randomSeed in init() wins over a
@@ -266,33 +262,14 @@ function rgb(r, g, b) {
     return new Color32(r, g, b, 255);
 }
 
-// Which bunny color a grid character stands for. -1 means "skip this pixel" (the '.'
-// empty cells). A character missing from this table is a typo in BUNNY_ROWS: indexize()
-// would still succeed and ship a shifted picture, so the painter throws instead.
-const PIXEL_COLOR_INDEX = {
-    '.': -1,
-    1: 0,
-    2: 1,
-    3: 2,
-    4: 3,
-};
-
-// Checks that every row of the bunny grid is the same width. A short row would shift the
-// picture and indexize() would still succeed, so fail here instead.
-function assertBunnyGrid() {
-    for (let y = 1; y < BUNNY_ROWS.length; y++) {
-        if (BUNNY_ROWS[y].length !== BUNNY_W) {
-            throw new Error(`Bunny row ${y} is ${BUNNY_ROWS[y].length} pixels wide; expected ${BUNNY_W}.`);
-        }
-    }
-}
+// The grid characters in color order. A character's position here, minus one, is its
+// color: '.' becomes -1 ("skip this pixel"), '1' becomes color 0, '4' color 3.
+const PIXEL_CHARS = '.1234';
 
 // Paints the bunny into an offscreen canvas using only the first color row (`colors` is
 // the four base colors, outline through eye). Pixels are written one by one (no smooth
 // edges), so each color matches a palette slot exactly when the sheet is indexized.
 function buildBunnyCanvas(colors) {
-    assertBunnyGrid();
-
     const canvas = new OffscreenCanvas(BUNNY_W, BUNNY_H);
     const ctx = canvas.getContext('2d');
     const image = ctx.createImageData(BUNNY_W, BUNNY_H);
@@ -301,10 +278,16 @@ function buildBunnyCanvas(colors) {
     for (let y = 0; y < BUNNY_H; y++) {
         const row = BUNNY_ROWS[y];
 
-        for (let x = 0; x < BUNNY_W; x++) {
-            const colorIndex = PIXEL_COLOR_INDEX[row[x]];
+        // A short row or a stray character is a typo in BUNNY_ROWS. indexize() would
+        // still succeed and ship a shifted picture, so the painter throws instead.
+        if (row.length !== BUNNY_W) {
+            throw new Error(`Bunny row ${y} is ${row.length} pixels wide; expected ${BUNNY_W}.`);
+        }
 
-            if (colorIndex === undefined) {
+        for (let x = 0; x < BUNNY_W; x++) {
+            const colorIndex = PIXEL_CHARS.indexOf(row[x]) - 1;
+
+            if (colorIndex < -1) {
                 throw new Error(`Bunny pixel "${row[x]}" is not "." or "1"-"4".`);
             }
 
@@ -383,22 +366,11 @@ function bunnyCountFromParams(params, fieldMax) {
     return asked;
 }
 
-// Copies one column into a longer typed array of the same kind. A Float32Array cannot
-// grow in place, so the old numbers are copied across. `next` must be greater than
-// src.length.
-function copyField(src, next) {
-    const dest = new src.constructor(next);
-
-    dest.set(src);
-
-    return dest;
-}
-
 // Bouncing-sprite stress test.
 //
 // The lesson is the bunny loop: position and speed live in flat typed arrays (one long
-// row of numbers per property). The hop only writes into slots that already exist. On
-// software, a spawn that does not fit replaces those columns with a longer copy first.
+// row of numbers per property). init() sizes them once for the backend's field limit, so
+// spawning and the hop only write into slots that already exist.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
@@ -417,13 +389,14 @@ class Demo {
     drawPos = new Vector2i(0, 0);
     pointerScratch = new Vector2i(0, 0);
 
-    // One column per property, MAX_WEBGPU_BUNNIES long, allocated here at construction.
-    // Adding a bunny is "write the next free slot", not "make a new bunny".
-    xs = new Float32Array(MAX_WEBGPU_BUNNIES);
-    ys = new Float32Array(MAX_WEBGPU_BUNNIES);
-    vxs = new Float32Array(MAX_WEBGPU_BUNNIES);
-    vys = new Float32Array(MAX_WEBGPU_BUNNIES);
-    variants = new Uint8Array(MAX_WEBGPU_BUNNIES);
+    // One column per property. init() replaces these empty ones with arrays as long as
+    // the field limit, once the backend is known. Adding a bunny is "write the next free
+    // slot", not "make a new bunny".
+    xs = new Float32Array(0);
+    ys = new Float32Array(0);
+    vxs = new Float32Array(0);
+    vys = new Float32Array(0);
+    variants = new Uint8Array(0);
 
     // How many slots of those arrays hold a live bunny.
     count = 0;
@@ -485,6 +458,7 @@ class Demo {
 
     // Builds the bunny picture, the recolor rows, and the sheet copies.
     async init() {
+        // Bunny colors first, then the kit's theme colors, then hand the palette over.
         this.palette = BT.paletteCreate(256);
         installVariantColors(this.palette);
         this.theme = applyTheme(this.palette);
@@ -499,6 +473,15 @@ class Demo {
         this.arenaRight = screenW - BUNNY_W;
         this.arenaFloor = screenH - BUNNY_H;
         this.capsSprites = BT.activeBackend === 'webgpu';
+
+        // Every column at full length now, so no spawn ever has to grow them.
+        const limit = this.fieldLimit();
+
+        this.xs = new Float32Array(limit);
+        this.ys = new Float32Array(limit);
+        this.vxs = new Float32Array(limit);
+        this.vys = new Float32Array(limit);
+        this.variants = new Uint8Array(limit);
 
         BT.randomSeed(RANDOM_SEED);
 
@@ -515,12 +498,12 @@ class Demo {
         return true;
     }
 
+    // Fixed-rate tick: moves every bunny, then adds a batch if any input asks for one.
     update() {
         // Latches key presses and touches before they are read.
         ui.tick();
 
-        // The hop writes into slots that already exist. On software, a batch that does
-        // not fit copies the columns into a longer list first.
+        // The hop writes into slots that already exist.
         this.stepBunnies();
 
         if (this.wantsSpawn()) {
@@ -528,6 +511,7 @@ class Demo {
         }
     }
 
+    // Draws the field, then the panel on top, once per screen refresh.
     render() {
         BT.clear(this.theme.bg);
         this.drawBunnies();
@@ -624,17 +608,17 @@ class Demo {
         }
     }
 
-    // Returns true when the pointer, the Add button, gamepad A / Space, or KeyN wants
-    // another batch. Also chooses where that batch appears.
+    // Returns true when the pointer, the Add button (or its N key), or gamepad A / Space
+    // wants another batch. Also chooses where that batch appears.
     wantsSpawn() {
         const fromPointer = this.pointerWantsSpawn();
         const fromButton = this.addPressed;
 
         this.addPressed = false;
 
-        // Face button A is also Space. KeyN is the on-screen Add button's key. Both are
-        // held state, so they keep spawning while held.
-        const fromHeld = BT.isDown(BT.BTN_A, 0) || BT.isKeyDown(KEY_ADD);
+        // Face button A is also Space. It is held state, so it keeps spawning while held.
+        // N is not read here: the Add button's { key } binding fires once per tap.
+        const fromHeld = BT.isDown(BT.BTN_A, 0);
 
         if (!fromPointer && !fromButton && !fromHeld) {
             return false;
@@ -678,78 +662,33 @@ class Demo {
         return false;
     }
 
-    // Keeps the spawn point on the canvas, so a click in a corner still shows a bunny.
-    clampSpawn() {
-        // Math.max keeps the higher number, Math.min the lower, so a click past the
-        // canvas edge is pushed back inside. The left edge is 0. The top edge is the
-        // overlay, so a click on the chart spawns just under it.
-        this.spawnX = Math.min(this.arenaRight, Math.max(0, this.spawnX));
-        this.spawnY = Math.min(this.arenaFloor, Math.max(ARENA_TOP, this.spawnY));
-    }
-
-    // How many bunnies the arrays may hold. WebGPU stays at the starting length. Software
-    // may grow up to MAX_SOFTWARE_BUNNIES.
+    // How many bunnies the arrays may hold: MAX_WEBGPU_BUNNIES on WebGPU,
+    // MAX_SOFTWARE_BUNNIES on software.
     fieldLimit() {
         return this.capsSprites ? MAX_WEBGPU_BUNNIES : MAX_SOFTWARE_BUNNIES;
-    }
-
-    // Replaces each column with a longer copy. Doubles until `needed` fits, and never
-    // passes MAX_SOFTWARE_BUNNIES. Called from spawn, not from the hop loop.
-    growField(needed) {
-        let next = this.xs.length;
-
-        while (next < needed) {
-            next *= 2;
-        }
-
-        if (next > MAX_SOFTWARE_BUNNIES) {
-            next = MAX_SOFTWARE_BUNNIES;
-        }
-
-        if (next <= this.xs.length) {
-            return;
-        }
-
-        this.xs = copyField(this.xs, next);
-        this.ys = copyField(this.ys, next);
-        this.vxs = copyField(this.vxs, next);
-        this.vys = copyField(this.vys, next);
-        this.variants = copyField(this.variants, next);
     }
 
     // Writes the next `size` bunnies into the free slots at the end of the arrays,
     // stopping at the field limit. Random velocities come from the seeded BT.random
     // stream.
     spawnBatch(size) {
-        this.clampSpawn();
-
+        // Keep the spawn point on the canvas, so a click in a corner still shows a bunny.
+        // Math.max keeps the higher number, Math.min the lower, so a click past the edge
+        // is pushed back inside. The top edge is the overlay, so a click on the chart
+        // spawns just under it.
+        const x = Math.min(this.arenaRight, Math.max(0, this.spawnX));
+        const y = Math.min(this.arenaFloor, Math.max(ARENA_TOP, this.spawnY));
         const end = Math.min(this.fieldLimit(), this.count + size);
 
-        if (end > this.xs.length) {
-            this.growField(end);
+        for (let n = this.count; n < end; n++) {
+            this.xs[n] = x;
+            this.ys[n] = y;
+            this.vxs[n] = BT.random.float(SPAWN_VX_MIN, SPAWN_VX_MAX);
+            this.vys[n] = BT.random.float(SPAWN_VY_MIN, SPAWN_VY_MAX);
+            this.variants[n] = BT.random.int(VARIANT_COUNT);
         }
 
-        const random = BT.random;
-        const xs = this.xs;
-        const ys = this.ys;
-        const vxs = this.vxs;
-        const vys = this.vys;
-        const variants = this.variants;
-        const x = this.spawnX;
-        const y = this.spawnY;
-        let n = this.count;
-
-        while (n < end) {
-            xs[n] = x;
-            ys[n] = y;
-            vxs[n] = random.float(SPAWN_VX_MIN, SPAWN_VX_MAX);
-            vys[n] = random.float(SPAWN_VY_MIN, SPAWN_VY_MAX);
-            variants[n] = random.int(VARIANT_COUNT);
-
-            n += 1;
-        }
-
-        this.count = n;
+        this.count = end;
     }
 
     // On WebGPU, submits at most BUNNY_DRAW_CAP bunnies and counts the rest as dropped,
