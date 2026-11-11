@@ -80,8 +80,8 @@ WHAT YOU WILL LEARN
 - A jump arc from Math.sin(): progress from 0 to 1 becomes a smooth hill.
 - Palette animation for particles: each particle owns a palette slot, update() writes its
   current color there with palette.set(), and render() just passes the slot number.
-- applyEasing(t, 'ease-in') and Color32.fromHSL(hue, saturation, lightness) for the fade
-  and the hue.
+- applyEasing(t, 'ease-in') and Color32.fromHSL(hue, saturation, lightness, alpha) for
+  the fade and the hue.
 - Building a four-frame walk strip on an OffscreenCanvas and cutting frames out of it with
   sheet.tileRect().
 - Drawing one sprite at twice its size, mirrored to face the way it walks, with the
@@ -109,7 +109,7 @@ TRY THIS
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
@@ -171,13 +171,14 @@ const C_GROUND_EDGE = 3; // (72, 104, 60) lighter green line along the ground's 
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs before init(), so
-// the overlay styles below cannot read this.theme yet - these constants spell out where
-// each theme color will land once init() runs.
-const UI_BG = 240; // deep navy screen background
-const UI_HEADER = 246; // warm amber (render bars, chart tags)
-const UI_ACCENT = 247; // phosphor green (update bars)
-const UI_WARM = 248; // orange (chart warning and error frames)
-const UI_INFO = 249; // light blue (overlay row text)
+// the overlay styles below cannot read this.theme yet. defaultThemeSlot() asks the kit
+// where each theme color will land once init() runs, so these never go stale if the
+// theme's color order changes.
+const UI_BG = defaultThemeSlot('bg'); // deep navy screen background
+const UI_HEADER = defaultThemeSlot('header'); // warm amber (render bars, chart tags)
+const UI_ACCENT = defaultThemeSlot('accent'); // phosphor green (update bars)
+const UI_WARM = defaultThemeSlot('warm'); // orange (chart warning and error frames)
+const UI_INFO = defaultThemeSlot('info'); // light blue (overlay row text)
 
 // Draws one frame of the walker onto the canvas: a body square with one eye, plus two
 // legs whose positions change with `frameIndex` (0 idle, 1 left foot forward, 2 mid
@@ -257,6 +258,12 @@ class Demo {
     // canvas rows below the frame's top, so at 2x the frame's top sits 32 pixels above
     // the ground line.
     charPos = new Vector2i(80, GROUND_Y - 16 * WALKER_SCALE);
+
+    // Scratch objects render() reuses: a rectangle for the ground, shadow, and particle
+    // squares, and the walker's draw position. set() moves them before each draw, so
+    // render() builds no new ones every frame.
+    rect = new Rect2i();
+    drawPos = new Vector2i();
 
     // Counts down how many ticks the ability is still unavailable.
     abilityCooldownTicks = 0;
@@ -344,7 +351,7 @@ class Demo {
         this.palette.set(C_GROUND_EDGE, new Color32(72, 104, 60));
 
         // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
-        // high palette slots (240-251), far above this demo's sprite colors (slots 20-21)
+        // high palette slots (240-251), far above this demo's sprite colors (slots 20-22)
         // and particle slots (50-177), and returns a map of friendly names to those slots
         // (this.theme.bg, .text, ...). All on-screen text and the cooldown meter use
         // them.
@@ -439,8 +446,8 @@ class Demo {
             const alpha = Math.floor(255 * (1 - applyEasing(t, 'ease-in')));
 
             // Compute the color and write it into this particle's reserved palette slot.
-            const color = Color32.fromHSL(p.hue, 100, 60);
-            this.palette.set(p.paletteSlot, new Color32(color.r, color.g, color.b, alpha));
+            // fromHSL's fourth argument is the alpha, so one call builds the whole color.
+            this.palette.set(p.paletteSlot, Color32.fromHSL(p.hue, 100, 60, alpha));
         }
 
         // Move the walker sideways while in the Walking state.
@@ -455,8 +462,11 @@ class Demo {
 
         // Green ground strip the walker stands on, from GROUND_Y down to the bottom of
         // the screen, with a 2-pixel lighter line on top so the edge reads clearly.
-        BT.drawRectFill(new Rect2i(0, GROUND_Y, 320, 240 - GROUND_Y), C_GROUND);
-        BT.drawRectFill(new Rect2i(0, GROUND_Y, 320, 2), C_GROUND_EDGE);
+        // BT.displaySize is the screen size in pixels (320x240 here).
+        const screen = BT.displaySize;
+
+        BT.drawRectFill(this.rect.set(0, GROUND_Y, screen.x, screen.y - GROUND_Y), C_GROUND);
+        BT.drawRectFill(this.rect.set(0, GROUND_Y, screen.x, 2), C_GROUND_EDGE);
 
         // Draw the walker with a shadow below it.
         this.renderCharacter();
@@ -558,7 +568,7 @@ class Demo {
             yOffset = -Math.abs(Math.sin(jumpProgress * Math.PI) * 40);
         }
 
-        const drawPos = new Vector2i(this.charPos.x, this.charPos.y + Math.floor(yOffset));
+        const drawPos = this.drawPos.set(this.charPos.x, this.charPos.y + Math.floor(yOffset));
 
         // Face the way we are walking: the frames face right, so mirror them with
         // BT.FLIP_H while walkDir is -1. The walker keeps its last facing while it idles
@@ -574,7 +584,7 @@ class Demo {
         const shrink = 2 * Math.floor(-yOffset / 10);
         const shadowW = 24 - 2 * shrink;
 
-        BT.drawRectFill(new Rect2i(this.charPos.x + 6 + shrink, GROUND_Y, shadowW, 1), C_SHADOW);
+        BT.drawRectFill(this.rect.set(this.charPos.x + 6 + shrink, GROUND_Y, shadowW, 1), C_SHADOW);
     }
 
     // Draws the state machine as a kit panel in the top-right corner: all three states in
@@ -635,7 +645,7 @@ class Demo {
         for (const p of this.particles) {
             // Draw a 2x2 square. Math.floor turns the fractional position into a whole
             // pixel, and the color is whatever update() put in p.paletteSlot.
-            BT.drawRectFill(new Rect2i(Math.floor(p.x), Math.floor(p.y), 2, 2), p.paletteSlot);
+            BT.drawRectFill(this.rect.set(Math.floor(p.x), Math.floor(p.y), 2, 2), p.paletteSlot);
         }
     }
 

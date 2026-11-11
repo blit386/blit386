@@ -61,7 +61,7 @@ TRY THIS
 
 */
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
 import { applyTheme, ui } from './shared/ui.js';
 
@@ -124,6 +124,10 @@ class Demo {
     // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
     // init(). The UI kit draws the section captions with these slots.
     theme = null;
+
+    // One rectangle reused for every checkerboard square, moved with set() before each
+    // draw. Building a new one per square would make 64 objects every frame.
+    cellRect = new Rect2i();
 
     // Optional engine settings. We keep the default 320x240 screen, open the overlay from
     // the start, and show its palette grid at 16 swatches per row so our 32-slot palette
@@ -248,9 +252,11 @@ class Demo {
                 const baseY = originY + row * scale;
 
                 // Two tiny loops fill a scale-by-scale square, one drawPixel at a time.
+                // drawPixel(x, y, slot) takes plain numbers, so no position object is
+                // built for each of the hundreds of pixels drawn every frame.
                 for (let dy = 0; dy < scale; dy++) {
                     for (let dx = 0; dx < scale; dx++) {
-                        BT.drawPixel(new Vector2i(baseX + dx, baseY + dy), paletteIndex);
+                        BT.drawPixel(baseX + dx, baseY + dy, paletteIndex);
                     }
                 }
             }
@@ -299,11 +305,13 @@ class Demo {
                 // and C_CHECKER_B this tick.
                 const fill = (row + col) % 2 === 0 ? C_CHECKER_A : C_CHECKER_B;
 
-                // Rect2i(x, y, width, height) describes a solid rectangle in pixels.
+                // A Rect2i is (x, y, width, height): a solid rectangle in pixels. We reuse
+                // one rectangle and move it with set() instead of building 64 new ones
+                // every frame.
                 const x = startX + col * cellSize;
                 const y = startY + row * cellSize;
 
-                BT.drawRectFill(new Rect2i(x, y, cellSize, cellSize), fill);
+                BT.drawRectFill(this.cellRect.set(x, y, cellSize, cellSize), fill);
             }
         }
     }

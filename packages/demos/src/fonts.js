@@ -96,10 +96,6 @@ const RAINBOW_TEXT = `Rainbow Animation (#${C_RAINBOW_BASE} to #${C_RAINBOW_BASE
 // smooth wave. It always sits right after the last rainbow character slot.
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length;
 
-// Width of one system font character in pixels. Filled in init() from
-// BT.systemPrintMeasure(); the font is monospace, so every character is this wide.
-let systemCharWidth = 6;
-
 // Shared left edge for every showcase line drawn with BT.systemPrint().
 const TEXT_LEFT_X = 12;
 
@@ -117,6 +113,18 @@ class Demo {
 
     // A clock that counts up in seconds. It drives the speed of the color animations.
     animTime = 0;
+
+    // Height of one system font line in pixels, measured once in init() so render() does
+    // not ask the font again every frame.
+    lineHeight = 14;
+
+    // The x position of each rainbow character, worked out once in init(). update()
+    // picks each hue from it and renderRainbowText() draws there.
+    rainbowX = [];
+
+    // One position reused by every BT.systemPrint() call in render(), moved with set()
+    // before each use, so drawing builds no new Vector2i objects every frame.
+    textPos = new Vector2i();
 
     // Optional engine settings. We keep the default 320x240 screen, open the overlay from
     // the start, and show its palette grid with 32 swatches per row and two visible rows.
@@ -156,7 +164,13 @@ class Demo {
         // (width, height); the font is monospace, so one 'M' tells us the width of every
         // character (6 pixels; the height is 14).
         const glyphSize = BT.systemPrintMeasure('M');
-        systemCharWidth = glyphSize.x;
+        this.lineHeight = glyphSize.y;
+
+        // Every character is the same width, so rainbow character i starts i widths to
+        // the right of the left margin.
+        for (let i = 0; i < RAINBOW_TEXT.length; i++) {
+            this.rainbowX.push(TEXT_LEFT_X + i * glyphSize.x);
+        }
 
         // Pre-fill the rainbow slots with gray so they are not empty on the first frame.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -196,18 +210,15 @@ class Demo {
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // The rainbow: each character gets a hue based on its x position and the current
-        // time. We walk the same x positions renderRainbowText() uses, so the hue scroll
-        // lines up with the pixels on screen.
-        let charX = TEXT_LEFT_X;
-
+        // time. We read the same x positions renderRainbowText() draws at (worked out in
+        // init()), so the hue scroll lines up with the pixels on screen.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel: 0 is red, 120 green, 240 blue, and
             // 360 is back to red. `% 360` keeps the value on the wheel as it grows.
             // Adding animTime * 100 scrolls the rainbow to the left over time.
-            const hue = (charX * 3 + this.animTime * 100) % 360;
+            const hue = (this.rainbowX[i] * 3 + this.animTime * 100) % 360;
 
             this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
-            charX += systemCharWidth;
         }
     }
 
@@ -246,19 +257,19 @@ class Demo {
         // BT.systemPrint(position, paletteSlot, text): the slot number IS the color.
         // Compare with BT.printFont() in the Bitmap Font demo, which draws a loaded
         // BitmapFont instead.
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, currentY), C_RED_TEXT, `Red Text (#${C_RED_TEXT})`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, currentY), C_RED_TEXT, `Red Text (#${C_RED_TEXT})`);
 
         // Line spacing: the measured text height plus a 2-pixel gap.
-        const lineAdvance = BT.systemPrintMeasure('Red Text').y + 2;
+        const lineAdvance = this.lineHeight + 2;
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, currentY), C_GREEN_TEXT, `Green Text (#${C_GREEN_TEXT})`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, currentY), C_GREEN_TEXT, `Green Text (#${C_GREEN_TEXT})`);
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, currentY), C_BLUE_TEXT, `Blue Text (#${C_BLUE_TEXT})`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, currentY), C_BLUE_TEXT, `Blue Text (#${C_BLUE_TEXT})`);
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, currentY), C_YELLOW_TEXT, `Yellow Text (#${C_YELLOW_TEXT})`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, currentY), C_YELLOW_TEXT, `Yellow Text (#${C_YELLOW_TEXT})`);
 
         // Move down one line after the last word too, just like the rows above.
         currentY += lineAdvance;
@@ -267,27 +278,18 @@ class Demo {
     }
 
     // Draws text where every character has its own animated color. The system font is
-    // monospace, so we step systemCharWidth pixels per character. The colors were already
-    // computed in update(). Returns the y just below the text.
+    // monospace, so init() placed the characters one glyph width apart (6 pixels); the
+    // Bitmap Font demo uses each glyph's own width instead of a fixed step. The colors
+    // were already computed in update(). Returns the y just below the text.
     renderRainbowText(y) {
-        // Start from the shared left margin, with the first rainbow slot.
-        let x = TEXT_LEFT_X;
-        let slotIndex = 0;
-
         // Walk the string one character at a time and call BT.systemPrint() once per
-        // character, each with its own palette slot.
-        for (const char of RAINBOW_TEXT) {
-            // C_RAINBOW_BASE + slotIndex is this character's slot, freshly repainted by
-            // update() this tick.
-            BT.systemPrint(new Vector2i(x, y), C_RAINBOW_BASE + slotIndex, char);
-
-            // Step right by the measured glyph width (6 pixels for the system font). The
-            // Bitmap Font demo uses each glyph's own width instead of a fixed step.
-            x += systemCharWidth;
-            slotIndex++;
+        // character, each with its own palette slot. C_RAINBOW_BASE + i is this
+        // character's slot, freshly repainted by update() this tick.
+        for (let i = 0; i < RAINBOW_TEXT.length; i++) {
+            BT.systemPrint(this.textPos.set(this.rainbowX[i], y), C_RAINBOW_BASE + i, RAINBOW_TEXT[i]);
         }
 
-        return y + BT.systemPrintMeasure('M').y + 4;
+        return y + this.lineHeight + 4;
     }
 
     // Draws the pulsing line. Slot C_PULSE holds the alpha pulse computed in update():
@@ -295,15 +297,15 @@ class Demo {
     // out instead of changing hue. The slot's alpha is applied when the pixels are drawn,
     // which is what makes the fade look smooth. Returns the y just below the text.
     renderPulsingText(y) {
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, y), C_PULSE, `Pulsing Text (#${C_PULSE})`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, y), C_PULSE, `Pulsing Text (#${C_PULSE})`);
 
-        return y + BT.systemPrintMeasure('M').y + 4;
+        return y + this.lineHeight + 4;
     }
 
     // Shows that the system font also has digits and symbols. This is the last text
     // section, so the helper does not return a new y.
     renderSpecialCharacters(y) {
-        BT.systemPrint(new Vector2i(TEXT_LEFT_X, y), C_GRAY_TEXT, `Special (#${C_GRAY_TEXT}): 3 x 4 = 12`);
+        BT.systemPrint(this.textPos.set(TEXT_LEFT_X, y), C_GRAY_TEXT, `Special (#${C_GRAY_TEXT}): 3 x 4 = 12`);
     }
 }
 

@@ -31,7 +31,8 @@ copy to the clipboard" (the number is read from the font, so it follows whatever
 engine ships). Below it sits a grid of 16 columns of small button-shaped cells, each
 holding one white glyph of the built-in 6x14 system font, in the order the font lists
 them: printable ASCII first, then the extra characters (dashes, accented letters, arrows,
-Greek capitals, and so on). The last row is only partly filled.
+Greek capitals, and so on). Today's 160 glyphs fill exactly ten rows; if the font ever
+grows, the grid gains a row and the last one is only partly filled.
 
 Move the pointer over a cell and it lights up, with a tooltip above it showing the code
 point, like "U+00E9 (233) é". Click it and the tooltip switches to "Copied é" with a
@@ -72,8 +73,10 @@ TRY THIS
   somewhere: the character itself lands on the clipboard, not its number.
 - Click a cell in the top row: the tooltip has no room above, so it drops below the cell
   instead of covering the title bar.
-- Copying can fail when the page has not been focused or clipboard permission was denied -
-  the cell rim turns orange and the tooltip says "Copy failed".
+- Copying can fail when the page has not been focused or clipboard permission was denied,
+  and in a browser that only allows a copy inside the click handler itself, as Safari may
+  (this demo copies from update(), a moment after the click). The cell rim turns orange
+  and the tooltip says "Copy failed".
 
 */
 
@@ -195,6 +198,11 @@ class Demo {
     // numbers.
     tooltipAnchor = new Rect2i(0, 0, CELL_SIZE, CELL_SIZE);
 
+    // The same idea for drawing the grid: one cell rectangle and one glyph position,
+    // moved with set() for every cell instead of built new each frame.
+    cellRect = new Rect2i();
+    glyphPos = new Vector2i();
+
     // Picks a display big enough for the whole glyph grid. Runs before init().
     configure() {
         return {
@@ -224,8 +232,9 @@ class Demo {
         this.font = BT.systemFont;
         this.codePoints = this.font.codePoints;
 
-        // Math.ceil rounds up: 165 glyphs / 16 columns = 10.3125, which becomes 11 rows
-        // because the last, partly empty row still needs to exist.
+        // Math.ceil rounds up. Today 160 glyphs / 16 columns is exactly 10 rows, but a
+        // font with 165 glyphs would give 10.3125, which must become 11 rows because a
+        // last, partly empty row still needs to exist.
         this.gridRows = Math.ceil(this.codePoints.length / GRID_COLS);
 
         // Measure one glyph so it can be centered inside its cell, instead of hardcoding
@@ -385,7 +394,7 @@ class Demo {
             const row = Math.floor(index / GRID_COLS);
             const cellX = this.gridOriginX + col * CELL_PITCH;
             const cellY = GRID_ORIGIN_Y + row * CELL_PITCH;
-            const cellRect = new Rect2i(cellX, cellY, CELL_SIZE, CELL_SIZE);
+            const cellRect = this.cellRect.set(cellX, cellY, CELL_SIZE, CELL_SIZE);
 
             // Each cell wears the same rounded face as a kit button (ui.drawButtonFace),
             // picked by state. Right after a copy attempt the rim lights up - accent
@@ -411,7 +420,7 @@ class Demo {
             const glyphX = cellX + Math.floor((CELL_SIZE - this.glyphWidth) / 2);
             const glyphY = cellY + Math.floor((CELL_SIZE - this.glyphHeight) / 2);
 
-            BT.printFont(this.font, new Vector2i(glyphX, glyphY), char, 0);
+            BT.printFont(this.font, this.glyphPos.set(glyphX, glyphY), char, 0);
         }
     }
 

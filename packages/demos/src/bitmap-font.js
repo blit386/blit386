@@ -79,8 +79,8 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').BitmapFont} BitmapFont */
 
-// The x position where the rainbow text row starts. update() (hue calculation) and
-// renderRainbowText() (glyph drawing) both use it so the two stay in sync.
+// The x position where the rainbow text row starts. init() works out every character's
+// x from here once, and update() and renderRainbowText() both read that list.
 const RAINBOW_ORIGIN_X = 10;
 
 // Every color used for drawing lives in a numbered palette slot. Slot 0 is always
@@ -132,6 +132,15 @@ class Demo {
 
     // A timer that counts up in seconds. It drives the speed of the color animations.
     animTime = 0;
+
+    // The x position of each rainbow character, worked out once in init() from the font's
+    // advances. update() picks each hue from it and renderRainbowText() draws there.
+    rainbowX = [];
+
+    // Two positions reused by every text and line call in render(), moved with set()
+    // before each use, so drawing builds no new Vector2i objects every frame.
+    textPos = new Vector2i();
+    lineEnd = new Vector2i();
 
     // Size of one system-font glyph, measured in init() with BT.systemPrintMeasure('M').
     // The built-in font is 6x14, but measuring keeps the demo honest if that ever
@@ -207,6 +216,20 @@ class Demo {
         // shifting that index.
         this.font.getSpriteSheet().indexize(this.palette);
 
+        // Work out where each rainbow character starts. Each step moves right by that
+        // character's "advance" - how many pixels the font says to move before the next
+        // letter. PragmataPro is monospaced, so every step is 7 here; a proportional font
+        // would give each letter its own step, and this loop would still work. If a
+        // character has no glyph, we fall back to 7 pixels.
+        let charX = RAINBOW_ORIGIN_X;
+
+        for (const char of RAINBOW_TEXT) {
+            this.rainbowX.push(charX);
+
+            const glyph = this.font.getGlyph(char);
+            charX += glyph ? glyph.advance : 7;
+        }
+
         console.log('[BitmapFontDemo] Font loaded successfully!');
 
         return true;
@@ -231,24 +254,16 @@ class Demo {
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // The rainbow: compute a hue (a position on the color wheel) for each character
-        // from its x position and animTime. The font is always loaded here, because the
-        // demo loop only starts after init() returned true. HSL colors were introduced in
-        // the Colors demo: https://demos.blit386.dev/colors
-        let charX = RAINBOW_ORIGIN_X; // same x where render() draws the rainbow text
-
+        // from its x position (worked out in init()) and animTime. HSL colors were
+        // introduced in the Colors demo: https://demos.blit386.dev/colors
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel: 0 is red, 120 green, 240 blue, 360
             // back to red. Using the character's real x position gives the rainbow its
             // spacing; adding animTime * 100 scrolls it left over time. `%` is the
             // remainder after division, so `% 360` keeps hue in 0-359 and the wheel
             // cycles instead of growing forever.
-            const hue = (charX * 3 + this.animTime * 100) % 360;
+            const hue = (this.rainbowX[i] * 3 + this.animTime * 100) % 360;
             this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
-
-            // Step charX by this character's advance from the font. PragmataPro is
-            // monospaced, so this is always 7 here; a proportional font would vary.
-            const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
-            charX += glyph ? glyph.advance : 7;
         }
     }
 
@@ -278,13 +293,13 @@ class Demo {
         // Draw the title in both fonts, one below the other. "A:" marks the bitmap font
         // (7 pixels per character at 14 pt), "B:" the built-in system font (a fixed 6x14
         // block per character).
-        BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'A:');
-        BT.printFont(this.font, new Vector2i(textX, y), 'BLIT386 Bitmap Font Demo', 0);
+        BT.systemPrint(this.textPos.set(LABEL_X, y), C_WHITE, 'A:');
+        BT.printFont(this.font, this.textPos.set(textX, y), 'BLIT386 Bitmap Font Demo', 0);
         y += bitmapLineHeight;
 
         // The same title in the system font, so the difference is easy to see.
-        BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'B:');
-        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'BLIT386 Bitmap Font Demo');
+        BT.systemPrint(this.textPos.set(LABEL_X, y), C_WHITE, 'B:');
+        BT.systemPrint(this.textPos.set(textX, y), C_WHITE, 'BLIT386 Bitmap Font Demo');
 
         // Move down past both title lines, with a little extra gap before the next
         // section.
@@ -313,16 +328,16 @@ class Demo {
         // Each color is reached by offset: slot = 1 + offset, so offset = slot - 1. For
         // C_RED_TEXT (slot 3) that is offset 2. With BT.systemPrint() you would simply
         // pass C_RED_TEXT.
-        BT.printFont(this.font, new Vector2i(10, currentY), 'Red Text', C_RED_TEXT - 1);
+        BT.printFont(this.font, this.textPos.set(10, currentY), 'Red Text', C_RED_TEXT - 1);
         currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, currentY), 'Green Text', C_GREEN_TEXT - 1);
+        BT.printFont(this.font, this.textPos.set(10, currentY), 'Green Text', C_GREEN_TEXT - 1);
         currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, currentY), 'Blue Text', C_BLUE_TEXT - 1);
+        BT.printFont(this.font, this.textPos.set(10, currentY), 'Blue Text', C_BLUE_TEXT - 1);
         currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, currentY), 'Yellow Text', C_YELLOW_TEXT - 1);
+        BT.printFont(this.font, this.textPos.set(10, currentY), 'Yellow Text', C_YELLOW_TEXT - 1);
 
         // Extra space after this section.
         currentY += lineHeight + 4;
@@ -335,25 +350,12 @@ class Demo {
     // lets each glyph take a different palette offset. Returns the y position after the
     // text.
     renderRainbowText(y, lineHeight) {
-        // Start at the left margin (must match RAINBOW_ORIGIN_X used in update()).
-        let x = RAINBOW_ORIGIN_X;
-        let slotIndex = 0;
-
-        // Loop through the string one character at a time.
-        for (const char of RAINBOW_TEXT) {
+        // Loop through the string one character at a time, drawing each at the x that
+        // init() worked out from the font's advances.
+        for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // The offset for character i is C_RAINBOW_BASE + i - 1, because offset N
             // draws slot 1 + N and we want slot C_RAINBOW_BASE + i.
-            BT.printFont(this.font, new Vector2i(x, y), char, C_RAINBOW_BASE - 1 + slotIndex);
-
-            // Look up how wide this character is. "advance" is how many pixels to move
-            // right before drawing the next one - 7 for every glyph in this monospaced
-            // font, but a proportional font would give each letter its own value. The
-            // system font always advances systemCharWidth (6).
-            const glyph = this.font.getGlyph(char);
-
-            // If the glyph exists use its advance, otherwise fall back to 7 pixels.
-            x += glyph ? glyph.advance : 7;
-            slotIndex++;
+            BT.printFont(this.font, this.textPos.set(this.rainbowX[i], y), RAINBOW_TEXT[i], C_RAINBOW_BASE - 1 + i);
         }
 
         return y + lineHeight + 4;
@@ -364,7 +366,7 @@ class Demo {
     // BT.systemPrint(). Returns the y position after the text.
     renderPulsingText(y, lineHeight) {
         // C_PULSE - 1 = 37, so the glyphs draw slot 1 + 37 = 38, the animated color.
-        BT.printFont(this.font, new Vector2i(10, y), 'Pulsing Text', C_PULSE - 1);
+        BT.printFont(this.font, this.textPos.set(10, y), 'Pulsing Text', C_PULSE - 1);
 
         return y + lineHeight + 4;
     }
@@ -375,7 +377,7 @@ class Demo {
         // Offset 0 draws slot 1 (C_WHITE). '\u00D7' is the Unicode multiplication sign
         // (×), a non-ASCII character, so this line only shows the sign if the
         // .btfont includes a glyph for it.
-        BT.printFont(this.font, new Vector2i(10, y), 'Special: 3 \u00D7 4 = 12', 0);
+        BT.printFont(this.font, this.textPos.set(10, y), 'Special: 3 \u00D7 4 = 12', 0);
 
         return y + lineHeight;
     }
@@ -391,14 +393,14 @@ class Demo {
         const textWidth = this.font.measureText(measureText);
 
         // Draw the text in light gray: C_GRAY_TEXT - 1 = 6, so the glyphs draw slot 7.
-        BT.printFont(this.font, new Vector2i(10, y), measureText, C_GRAY_TEXT - 1);
+        BT.printFont(this.font, this.textPos.set(10, y), measureText, C_GRAY_TEXT - 1);
 
         // Draw an orange underline exactly as wide as the measured text, 2 pixels above
         // the bottom of the line. BT.drawLine() takes a start point, an end point, and a
         // palette slot number (not an offset).
         BT.drawLine(
-            new Vector2i(10, y + lineHeight - 2),
-            new Vector2i(10 + textWidth, y + lineHeight - 2),
+            this.textPos.set(10, y + lineHeight - 2),
+            this.lineEnd.set(10 + textWidth, y + lineHeight - 2),
             C_ORANGE_LINE,
         );
 
