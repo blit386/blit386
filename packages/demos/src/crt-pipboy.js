@@ -31,16 +31,18 @@ WHAT YOU WILL SEE
 
 A green-on-black terminal on a curved CRT. The boot sequence types itself out one
 character at a time (two ticks per character, a short pause after each line); a line
-switches from dim to full green the moment it completes. Once the last line is in, a "==
-STATUS ==" block appears in the right half of the screen - HP, AP, RAD, CAPS, and WEIGHT,
-with RAD dimmed and CAPS in amber - and a bright cursor blinks below the boot text, 0.5
-seconds on and 0.5 seconds off.
+switches from dim to full green the moment it completes. Once the last line is in (about
+10.7 seconds), a "== STATUS ==" block appears under the boot text - HP, AP, RAD, CAPS, and
+WEIGHT in three columns, with RAD dimmed and CAPS in amber - and a bright cursor blinks
+after the welcome line, 0.5 seconds on and 0.5 seconds off.
 
 The whole picture passes through a CRT stack: barrel curvature, scanlines aligned to the
 240 logical rows, an RGB shadow mask, a vignette, film grain, a bright band rolling down
 the screen, and bloom. Roughly every 2 to 6 seconds a glitch burst lasting 5 to 29 ticks
 fires. There are five kinds: a horizontal band shift, a red/blue channel split, heavier
-grain, a brightness dip, and per-row interference jitter.
+grain, a brightness dip, and per-row interference jitter. When the player prefers
+reduced motion, the grain, the brightness flicker, the rolling band, and the glitch bursts
+are all left out.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -64,6 +66,9 @@ WHAT YOU WILL LEARN
 - A tick-driven state machine that uses BT.random for timing, type, and strength.
 - Loading a .btfont with BitmapFont.load(), running indexize() on it, and recoloring
   glyphs through the BT.printFont() palette offset.
+- Honoring BT.isReducedMotionPreferred: rebuilding the effect chain without the moving
+  effects, and rebuilding it again from onReducedMotionChange() when the preference
+  changes while the demo runs.
 
 HOW POST-PROCESSING WORKS
 -------------------------
@@ -110,8 +115,8 @@ SOFTWARE FALLBACK
 If the browser uses the Canvas 2D software renderer (WebGPU missing or ?backend=software
 in the URL), post-process effects are unavailable. The terminal scene, boot animation, and
 status block still run; only the CRT stack is skipped, and the glitch machine never
-starts. A caption drawn with the shared UI kit in the bottom-left corner explains the
-reduced mode.
+starts. A two-line caption drawn with the shared UI kit in the bottom-left corner
+explains the reduced mode.
 
 HOW THE BITMAP FONT COLORS WORK
 -------------------------------
@@ -133,6 +138,8 @@ TRY THIS
   hshift", "Glitch: chromasplit", "Glitch: noise", "Glitch: flicker", or "Glitch:
   interference" at the start of each burst.
 - Add ?backend=software to the URL to see the fallback caption.
+- Add ?reducedmotion to the URL: the picture keeps its curve, scanlines, mask, and glow,
+  but the grain, flicker, rolling band, and glitch bursts stay off.
 
 */
 
@@ -169,6 +176,7 @@ import {
     GLITCH_INTENSITY_MIN,
     GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
+    isMotionEffect,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
@@ -203,10 +211,12 @@ const C_GREEN_BRIGHT = 5; // hot green: highlights and the cursor
 const C_AMBER = 6; // amber: warning numbers (a nod to the alternative PipBoy palette)
 
 // Layout for the terminal text, pre-computed in pixels so render() stays a list of draw
-// calls rather than a math exercise.
+// calls rather than a math exercise. CHAR_W is how far the font advances per character;
+// PragmataPro at 14 pixels is monospaced, so every character is 7 pixels wide.
 const TEXT_LEFT = 14;
 const TEXT_TOP = 18;
 const LINE_HEIGHT = 14;
+const CHAR_W = 7;
 
 // Boot typing speed. Each character is revealed every BOOT_TICKS_PER_CHAR ticks, and
 // every line (including an empty one) adds a BOOT_LINE_SPACER_TICKS pause - 6 ticks at 60
@@ -230,20 +240,40 @@ const BOOT_LINES = [
     '> WELCOME, RESIDENT 101',
 ];
 
-// Status block contents, drawn after the boot sequence finishes. These never animate;
-// they sit on the screen so the CRT effects have something to work on. The third column
-// is a color name resolved by colorSlot().
+// How many ticks the whole boot sequence takes: every line costs its characters times
+// BOOT_TICKS_PER_CHAR plus the spacer pause, and an empty line costs only the pause. With
+// the lines above that is 289 characters x 2 + 11 lines x 6 = 644 ticks, about 10.7
+// seconds. Worked out once here instead of every frame.
+const BOOT_TOTAL_TICKS = BOOT_LINES.reduce(
+    (total, line) => total + line.length * BOOT_TICKS_PER_CHAR + BOOT_LINE_SPACER_TICKS,
+    0,
+);
+
+// Status block contents, drawn under the boot text once it finishes. These never animate;
+// they sit on the screen so the CRT effects have something to work on. Each entry is a
+// label, a value, and a color name resolved by colorSlot(). The entries are laid out in
+// STATUS_COLUMNS columns, STATUS_COLUMN_W pixels apart, reading left to right.
 const STATUS_LINES = [
-    ['HP', '125 / 125', 'green'],
-    ['AP', ' 75 /  75', 'green'],
-    ['RAD', '  3 / 1000', 'dim'],
-    ['CAPS', '   1248', 'amber'],
-    ['WEIGHT', '  84 / 200', 'green'],
+    ['HP', '125/125', 'green'],
+    ['AP', '75/75', 'green'],
+    ['RAD', '3/1000', 'dim'],
+    ['CAPS', '1248', 'amber'],
+    ['WEIGHT', '84/200', 'green'],
 ];
+const STATUS_COLUMNS = 3;
+const STATUS_COLUMN_W = 14 * CHAR_W;
+
+// The status block's heading sits on the row right after the last boot line, and its
+// entries on the rows below that. Row n of the terminal is at TEXT_TOP + n * LINE_HEIGHT,
+// so the whole block fits between the boot text and the bottom of the 240-pixel screen.
+const STATUS_HEADING_ROW = BOOT_LINES.length;
 
 // The cursor blinks: on for half a second, off for half a second. 30 ticks at 60 ticks
-// per second is 0.5 seconds. The cursor is a bright rectangle.
+// per second is 0.5 seconds. The cursor is a bright 7x12 block that sits just after the
+// welcome line, where the next typed character would go.
 const CURSOR_BLINK_TICKS = 30;
+const CURSOR_W = 7;
+const CURSOR_H = 12;
 
 // Maps a status-line color name (kept as a string in STATUS_LINES so the table stays
 // readable) to the matching palette slot.
@@ -271,14 +301,36 @@ class Demo {
     // True once WebGPU post-process effects were installed in init().
     effectsAvailable = false;
 
+    // The PragmataPro bitmap font, loaded in init().
+    /** @type {BitmapFont | null} */
+    font = null;
+
     // Tick count captured when the boot sequence started.
     bootStartTick = 0;
 
     // Ticks elapsed since bootStartTick, refreshed every update().
     ticksSinceBoot = 0;
 
-    // True after the first frame where the boot sequence is fully visible.
+    // True once the "Boot done" tag went onto the overlay's timing chart.
     bootTagged = false;
+
+    // The pixel-tier glitch effect and the display-tier CRT effects, created in init()
+    // when WebGPU is available. The glitch state machine rewrites their uniforms.
+    pixelGlitch = null;
+    barrel = null;
+    aberration = null;
+    interference = null;
+    rollLine = null;
+    scanlines = null;
+    mask = null;
+    vignette = null;
+    noise = null;
+    flicker = null;
+    bloom = null;
+
+    // Every display-tier effect above, in chain order, so applyEffects() can rebuild the
+    // chain when the reduced-motion preference changes.
+    crtEffects = [];
 
     // Ticks remaining until the next glitch burst starts.
     glitchCooldown = 0;
@@ -294,6 +346,9 @@ class Demo {
 
     // Peak intensity of the current burst (0..1), scaled by the envelope each tick.
     glitchPeak = 0;
+
+    // Reused for the blinking cursor every frame, so drawing allocates no new Rect2i.
+    cursorRect = new Rect2i(0, 0, 0, 0);
 
     // Pixel-art logical size, a 4x drawing buffer for the display-tier CRT stack, and an
     // overlay tuned to the terminal look.
@@ -318,6 +373,7 @@ class Demo {
             // soften it like an old TV signal. Change this to 'linear' to compare.
             outputUpscaleFilter: 'nearest',
 
+            // The fixed update rate the glitch timings are measured in.
             targetFPS: TARGET_FPS,
 
             // Hide the small tilde toggle hint that normally sits in the bottom-left
@@ -347,6 +403,9 @@ class Demo {
         };
     }
 
+    // Builds the palette, loads the font, and - when WebGPU is available - creates the
+    // CRT effect stack and arms the glitch state machine. Returns false if the font fails
+    // to load, which stops the demo with the error in the console.
     async init() {
         // Step 1: build the palette. Six scene colors, all in the low slots. The palette
         // is 256 entries long so the shared UI theme can live in the high slots
@@ -368,8 +427,14 @@ class Demo {
         // Step 2: load the bitmap font. PragmataPro is a monospaced programming font - a
         // good fit for a fictional terminal. A .btfont is a BLIT386 bitmap font: a JSON
         // glyph table (bounds, offsets, and advance per character) plus a PNG glyph
-        // atlas.
-        this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
+        // atlas. A missing or broken file throws, so the load is wrapped in try/catch.
+        try {
+            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
+        } catch (error) {
+            console.error('[PipBoyDemo] Failed to load the PragmataPro font:', error);
+
+            return false;
+        }
 
         // Step 3: indexize the font. The font loads as a sprite sheet of white pixels.
         // indexize() walks every pixel, looks up its color in the palette, and replaces
@@ -378,18 +443,21 @@ class Demo {
         // the glyphs at draw time.
         this.font.getSpriteSheet().indexize(palette);
 
+        // Step 4: boot animation timer. Ticks instead of wall-clock time keep the boot
+        // animation deterministic even if the browser frame rate hiccups.
+        this.bootStartTick = BT.ticks;
+
         // Post-process (pixel and display tiers) needs WebGPU. Software mode skips the
-        // rest.
+        // rest and tags the timing chart so the reduced mode is visible there too.
         this.effectsAvailable = isAvailable();
 
         if (!this.effectsAvailable) {
-            this.bootStartTick = BT.ticks;
             BT.assignTag('Software renderer');
 
             return true;
         }
 
-        // Step 4: pixel-tier effect (chunky glitch). PixelGlitch reads and writes the
+        // Step 5: pixel-tier effect (chunky glitch). PixelGlitch reads and writes the
         // logical index buffer (320x240 r8uint), so band shifts stay palette-native. If
         // the same shift ran after resolve + upscale, each band would span multiple
         // output pixels and lose the chunky retro look. bandHeight is the height of each
@@ -399,7 +467,7 @@ class Demo {
         this.pixelGlitch.intensity = 0; // 0 = no glitch; the state machine spikes it
         BT.effectAdd(this.pixelGlitch); // the effect's tier 'pixel' routes it
 
-        // Step 5: display-tier stack. Order matters: barrel first (it warps the UVs the
+        // Step 6: display-tier stack. Order matters: barrel first (it warps the UVs the
         // rest of the chain inherits), then color and signal artifacts, then scanlines
         // and mask, then vignette, noise, and flicker, and finally bloom on top of the
         // modulated image.
@@ -413,13 +481,13 @@ class Demo {
 
         // Chromatic aberration: shifts the red and blue channels horizontally. Cheap CRT
         // optics produce a tiny version of this naturally. 0 at rest here; the
-        // 'chromasplit' burst spikes it.
+        // GLITCH_TYPE.CHROMASPLIT burst spikes it.
         this.aberration = new ChromaticAberration();
         this.aberration.aberration = ABERRATION_BASE;
 
         // Interference: per-row horizontal jitter that simulates analog signal noise. 0
-        // at rest so the screen is calm between bursts; the 'interference' burst spikes
-        // it.
+        // at rest so the screen is calm between bursts; the GLITCH_TYPE.INTERFERENCE
+        // burst spikes it.
         this.interference = new Interference();
         this.interference.amount = 0;
 
@@ -466,8 +534,9 @@ class Demo {
         this.bloom.spread = 3.0; // size of the bloom kernel
         this.bloom.glow = 0.18; // mix factor onto the original pixel
 
-        // Register all display-tier effects in order.
-        for (const fx of [
+        // Keep the display-tier effects in chain order, then register them.
+        // applyEffects() leaves out the moving ones when reduced motion is preferred.
+        this.crtEffects = [
             this.barrel,
             this.aberration,
             this.interference,
@@ -478,13 +547,8 @@ class Demo {
             this.noise,
             this.flicker,
             this.bloom,
-        ]) {
-            BT.effectAdd(fx);
-        }
-
-        // Step 6: boot animation timer. Ticks instead of wall-clock time keep the boot
-        // animation deterministic even if the browser frame rate hiccups.
-        this.bootStartTick = BT.ticks;
+        ];
+        this.applyEffects();
 
         // Step 7: glitch state machine state. See the file header for what each field
         // means. BT.random is the engine's shared random number generator; int(min, max)
@@ -499,17 +563,24 @@ class Demo {
         return true;
     }
 
+    // Runs 60 times per second: advances the boot clock, tags the moment the boot text
+    // completes, and - with WebGPU - feeds the animated effects and the glitch machine.
     update() {
-        if (!this.effectsAvailable) {
-            this.ticksSinceBoot = BT.ticks - this.bootStartTick;
-
-            return;
-        }
-
         // 1. Drive the boot animation timer. Nothing is drawn here - render() reads
         // ticksSinceBoot and computes how many characters to show. update() provides
         // time.
         this.ticksSinceBoot = BT.ticks - this.bootStartTick;
+
+        // Mark the end of the boot sequence on the overlay's timing chart, once.
+        if (!this.bootTagged && this.ticksSinceBoot >= BOOT_TOTAL_TICKS) {
+            this.bootTagged = true;
+            BT.assignTag('Boot done');
+        }
+
+        // Software mode has no effects to drive, so the rest of update() is WebGPU-only.
+        if (!this.effectsAvailable) {
+            return;
+        }
 
         // 2. Drive the time-based effects. RollLine, Noise, and Interference animate from
         // a seconds value. Converting ticks to seconds keeps the animation speed
@@ -519,10 +590,15 @@ class Demo {
         this.noise.time = seconds;
         this.interference.time = seconds;
 
-        // 3. Drive the glitch state machine.
-        this.stepGlitchMachine();
+        // 3. Drive the glitch state machine - unless the player prefers reduced motion,
+        // in which case the screen stays calm and no burst ever starts.
+        if (!BT.isReducedMotionPreferred) {
+            this.stepGlitchMachine();
+        }
     }
 
+    // Draws the terminal: the boot text as far as it has typed, then the status block
+    // and the blinking cursor once the boot is done, plus the software-mode note.
     render() {
         // Fill the background. Even with the CRT stack on top, this is the "phosphor off"
         // color of every empty cell.
@@ -531,13 +607,9 @@ class Demo {
         // Draw the boot sequence one character at a time, line by line.
         this.renderBootSequence();
 
-        // Once every boot line is visible, draw the status block on the right.
-        if (this.bootFullyDone()) {
-            if (!this.bootTagged) {
-                this.bootTagged = true;
-                BT.assignTag('Boot done');
-            }
-
+        // Once every boot line is visible, draw the status block under it and the
+        // blinking cursor after the welcome line.
+        if (this.ticksSinceBoot >= BOOT_TOTAL_TICKS) {
             this.renderStatusBlock();
             this.renderBlinkingCursor();
         }
@@ -556,6 +628,41 @@ class Demo {
         }
     }
 
+    // The engine calls this when the reduced-motion preference changes while the demo
+    // runs. A burst in flight is cut short so the screen settles at once, and the chain
+    // is rebuilt with or without the moving effects.
+    onReducedMotionChange() {
+        if (!this.effectsAvailable) {
+            return;
+        }
+
+        if (this.glitchTicksLeft > 0) {
+            this.glitchTicksLeft = 0;
+            this.glitchType = GLITCH_TYPE.NONE;
+            resetGlitchUniforms(this);
+        }
+
+        this.applyEffects();
+    }
+
+    // Takes every display-tier effect off, then puts back the ones that should run: all
+    // of them normally, and all but the grain, the brightness flicker, and the rolling
+    // band (isMotionEffect() from crt-glitch.js) when the player prefers reduced motion.
+    // Removing first keeps the chain in its original order.
+    applyEffects() {
+        for (const fx of this.crtEffects) {
+            BT.effectRemove(fx);
+        }
+
+        for (const fx of this.crtEffects) {
+            if (BT.isReducedMotionPreferred && isMotionEffect(fx)) {
+                continue;
+            }
+
+            BT.effectAdd(fx);
+        }
+    }
+
     // Advances the glitch state machine by one tick; called from update(). Either a burst
     // is running (count it down and drive the effect uniforms) or the screen is calm
     // (count down the cooldown and roll a fresh burst when it reaches zero).
@@ -567,8 +674,11 @@ class Demo {
             const t = 1 - this.glitchTicksLeft / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
 
+            // Scale the chosen burst's effect parameter by the envelope (see the file
+            // header for which uniform each burst type drives).
             applyGlitchUniforms(this, envelope);
 
+            // One tick of the burst is used up.
             this.glitchTicksLeft--;
 
             // When the burst ends, reset the uniforms so the screen calms down and roll
@@ -583,7 +693,8 @@ class Demo {
 
             if (this.glitchCooldown <= 0) {
                 // Roll a new burst: pick() returns one item of the list, int() a whole
-                // number in [min, max), float() a decimal in [min, max).
+                // number in [min, max), float() a decimal in [min, max). The tag marks
+                // the burst on the overlay's timing chart.
                 this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
                 BT.assignTag(`Glitch: ${this.glitchType}`);
                 this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
@@ -606,6 +717,8 @@ class Demo {
     // Reveals BOOT_LINES one character at a time, slicing each string by how many ticks
     // have passed.
     renderBootSequence() {
+        // A running budget of ticks: each line spends its share, and whatever is left
+        // decides how much of the next line shows.
         let ticksLeft = this.ticksSinceBoot;
 
         for (let i = 0; i < BOOT_LINES.length; i++) {
@@ -629,6 +742,7 @@ class Demo {
                 return;
             }
 
+            // The part of the line typed so far.
             const visible = fullLine.slice(0, charsToShow);
 
             // Finished lines get the brighter green; a line still typing stays dim until
@@ -639,53 +753,49 @@ class Demo {
             // Subtract this line's ticks from the running total before moving on.
             ticksLeft -= fullLine.length * BOOT_TICKS_PER_CHAR + BOOT_LINE_SPACER_TICKS;
 
+            // Out of ticks: this line was the last one with anything to show.
             if (ticksLeft <= 0) {
                 return;
             }
         }
     }
 
-    // Returns true once every boot line has been fully typed out.
-    bootFullyDone() {
-        // Every line costs length * BOOT_TICKS_PER_CHAR plus the spacer; empty lines cost
-        // only the spacer.
-        let totalTicks = 0;
-
-        for (const line of BOOT_LINES) {
-            totalTicks += (line.length === 0 ? 0 : line.length * BOOT_TICKS_PER_CHAR) + BOOT_LINE_SPACER_TICKS;
-        }
-
-        return this.ticksSinceBoot >= totalTicks;
-    }
-
-    // Draws the static status block on the right half of the screen.
+    // Draws the static status block under the boot text: a heading row, then the
+    // entries in STATUS_COLUMNS columns. Each entry is a dim label followed by its value
+    // in the value's own color.
     renderStatusBlock() {
-        const x = DISPLAY_W / 2 + 6;
-        const y0 = TEXT_TOP;
-
-        this.print(new Vector2i(x, y0), '== STATUS ==', C_GREEN_BRIGHT);
+        const headingY = TEXT_TOP + STATUS_HEADING_ROW * LINE_HEIGHT;
+        this.print(new Vector2i(TEXT_LEFT, headingY), '== STATUS ==', C_GREEN_BRIGHT);
 
         for (let i = 0; i < STATUS_LINES.length; i++) {
             const [label, value, colorName] = STATUS_LINES[i];
-            const y = y0 + (i + 2) * LINE_HEIGHT;
 
+            // Entry i goes in column i % STATUS_COLUMNS of row Math.floor(i /
+            // STATUS_COLUMNS) under the heading: `%` is the remainder after division, so
+            // the columns go 0, 1, 2, 0, 1 as i counts up.
+            const x = TEXT_LEFT + (i % STATUS_COLUMNS) * STATUS_COLUMN_W;
+            const y = TEXT_TOP + (STATUS_HEADING_ROW + 1 + Math.floor(i / STATUS_COLUMNS)) * LINE_HEIGHT;
+
+            // The value starts one character after the label.
             this.print(new Vector2i(x, y), label, C_GREEN_DIM);
-
-            // The value column starts 70 px right of the label column. Hand-tuned for
-            // this font size; fine because both label and value are short.
-            this.print(new Vector2i(x + 70, y), value, colorSlot(colorName));
+            this.print(new Vector2i(x + (label.length + 1) * CHAR_W, y), value, colorSlot(colorName));
         }
     }
 
-    // Draws a blinking cursor below the boot text: a bright rectangle visible for half a
-    // second, then off for half a second, the way old terminals did it.
+    // Draws a blinking cursor right after the welcome line: a bright block visible for
+    // half a second, then off for half a second, the way old terminals did it.
     renderBlinkingCursor() {
+        // Math.floor(ticks / 30) counts up once every half second, and % 2 turns that
+        // count into 0, 1, 0, 1 - so the cursor shows on the even half seconds.
         const phase = Math.floor(BT.ticks / CURSOR_BLINK_TICKS) % 2;
 
         if (phase === 0) {
-            // One line below the last boot line.
-            const lastLineY = TEXT_TOP + BOOT_LINES.length * LINE_HEIGHT;
-            BT.drawRectFill(new Rect2i(TEXT_LEFT, lastLineY + 4, 7, 12), C_GREEN_BRIGHT);
+            // One character past the end of the last boot line, on that line's row.
+            const lastLine = BOOT_LINES[BOOT_LINES.length - 1];
+            const x = TEXT_LEFT + (lastLine.length + 1) * CHAR_W;
+            const y = TEXT_TOP + (BOOT_LINES.length - 1) * LINE_HEIGHT;
+
+            BT.drawRectFill(this.cursorRect.set(x, y, CURSOR_W, CURSOR_H), C_GREEN_BRIGHT);
         }
     }
 }

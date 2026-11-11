@@ -41,8 +41,12 @@ const DEFAULT_POSES = [
 
 /** @type {Record<string, Pose[]>} */
 const POSES_BY_SLUG = {
-    // Types its terminal text out character by character; nothing to see before 9 s.
-    'crt-pipboy': [{ id: 'typed', at: 9 }],
+    // Types its terminal text out character by character; nothing to see before 9 s. The
+    // boot finishes at about 10.7 s, when the status block and the cursor appear under it.
+    'crt-pipboy': [
+        { id: 'typed', at: 9 },
+        { id: 'status', at: 11.5 },
+    ],
 
     // Cycles clean/CRT output every two seconds; land mid-CRT and mid-clean. The first pose is
     // the one the OG card and the site-index tile show.

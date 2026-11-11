@@ -18,7 +18,11 @@
  * (different tuning constants, logo-lowres's hshift also drives chroma aberration, its
  * flicker scales by peak instead of envelope) and keep their own bespoke apply methods -
  * they only import the type list and labels from here, not the shared functions.
+ *
+ * isMotionEffect() is shared by every CRT demo that honors BT.isReducedMotionPreferred.
  */
+
+import { Flicker, Noise, RollLine } from 'blit386';
 
 // Glitch state-machine tuning shared by crt-pipboy.js, snake-game.js, and
 // basics-enhanced.js. sprite-effects.js and logo-lowres.js use their own, different
@@ -127,6 +131,19 @@ function applyGlitchUniforms(instance, envelope) {
     }
 }
 
+/**
+ * Is this one of the CRT effects that moves or blinks on its own - grain that changes every
+ * frame, a brightness flicker, or a band rolling down the screen? CRT demos leave these out
+ * of the chain while the player prefers reduced motion (raycasting.js skips Noise and
+ * RollLine the same way).
+ *
+ * @param {object} fx - A post-process effect instance.
+ * @returns {boolean}
+ */
+function isMotionEffect(fx) {
+    return fx instanceof Flicker || fx instanceof Noise || fx instanceof RollLine;
+}
+
 export {
     ABERRATION_BASE,
     applyGlitchUniforms,
@@ -142,6 +159,7 @@ export {
     GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     GLITCH_TYPES_VROLL,
+    isMotionEffect,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,

@@ -5,7 +5,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { BarrelDistortion, Bloom, Flicker, Noise, RollLine, Scanlines } from 'blit386';
+
 import { GLITCH_LABELS, GLITCH_TYPE, GLITCH_TYPES_CHROMA, GLITCH_TYPES_VROLL } from '../crt-glitch.js';
+import { isMotionEffect } from '../crt-glitch.js';
 
 describe('GLITCH_TYPE', () => {
     it('builds both type lists with the wire values demos already compare against', () => {
@@ -22,5 +25,15 @@ describe('GLITCH_TYPE', () => {
     it('keeps the idle value out of both burst lists', () => {
         assert.equal(GLITCH_TYPES_CHROMA.includes(GLITCH_TYPE.NONE), false);
         assert.equal(GLITCH_TYPES_VROLL.includes(GLITCH_TYPE.NONE), false);
+    });
+});
+
+describe('isMotionEffect', () => {
+    it('picks out the effects that move or blink on their own, and nothing else', () => {
+        const moving = [new Flicker(), new Noise(), new RollLine()];
+        const still = [new BarrelDistortion(), new Bloom(), new Scanlines()];
+
+        assert.deepEqual(moving.map(isMotionEffect), [true, true, true]);
+        assert.deepEqual(still.map(isMotionEffect), [false, false, false]);
     });
 });
