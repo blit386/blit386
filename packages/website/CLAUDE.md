@@ -54,7 +54,7 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
 | Cloudflare size limits (25 MiB per asset, 64 MiB uncompressed Worker) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
-| Cloudflare security headers | `public/_headers` |
+| Cloudflare security headers | `public/_headers`, with the non-CSP values defined in `src/security-headers.ts` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 
@@ -75,6 +75,12 @@ takes three pieces:
 | `src/csp.ts` | The policy, defined once. `BASE_CSP` is the nonce-free form; `buildCsp(nonce)` adds the nonce to `script-src` |
 | `public/_headers` | Serves `BASE_CSP` on every response Cloudflare returns from the ASSETS binding. Fail-closed default |
 | `src/csp-nonce.ts` | Stamps a fresh nonce onto every `<script>` in a prerendered HTML response and replaces the header with `buildCsp(nonce)` |
+
+The other security headers (`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) live in
+`src/security-headers.ts`, and `public/_headers` repeats them under the same drift test. `public/_headers` only reaches
+`ASSETS` responses, so `cspNoncePlugin`'s wrapper adds any of the three a response lacks: the responses the Worker
+builds itself (markdown negotiation, `/feed.xml`, `/mcp`, the 405, Waku's on-demand 404) used to carry none of them
+(BT-772).
 
 A nonce rather than hashes because the site renders statically (`mode: 'static'`): Waku's React bootstrap script and the
 RSC flight payload `rsc-html-stream` injects are both per-page, so no fixed hash list covers them, and Waku's

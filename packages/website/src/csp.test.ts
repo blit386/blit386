@@ -10,6 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { BASE_CSP, buildCsp, generateNonce, isHtmlAssetPath } from './csp';
+import { SECURITY_HEADERS } from './security-headers';
 
 const HEADERS_FILE = new URL('../public/_headers', import.meta.url);
 const NONCE = 'AbCdEfGhIjKlMnOpQrStUw==';
@@ -71,6 +72,21 @@ describe('drift guard', () => {
         // Asserted against the file rather than the builder, so a hand edit cannot slip through
         // even if BASE_CSP were changed to match it.
         expect(scriptSrc(headersFileCsp())).not.toContain("'unsafe-inline'");
+    });
+});
+
+describe('security headers drift guard', () => {
+    it.each(Object.entries(SECURITY_HEADERS))('serves exactly the %s value from public/_headers', (name, value) => {
+        const line = readFileSync(HEADERS_FILE, 'utf8')
+            .split('\n')
+            .find((entry) => entry.trimStart().startsWith(`${name}:`));
+
+        expect(
+            line
+                ?.trim()
+                .slice(name.length + 1)
+                .trim(),
+        ).toBe(value);
     });
 });
 
