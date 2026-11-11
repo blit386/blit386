@@ -14,6 +14,7 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_CSP } from './csp';
 import { cspNoncePlugin, type CspNonceOptions, type HtmlRewriterLike } from './csp-nonce';
+import { SECURITY_HEADERS } from './security-headers';
 
 const REPORT_ONLY_ENV = { BLIT386_CSP_REPORT_ONLY: '1' };
 
@@ -243,6 +244,45 @@ describe('cspNoncePlugin', () => {
 
             expect(response.headers.get('content-security-policy')).toBe(BASE_CSP);
             expect(response.headers.get('etag')).toBe(ASSET_HEADERS.etag);
+        });
+    });
+
+    describe('security headers (BT-772)', () => {
+        it.each([
+            ['the /feed.xml', 'https://blit386.dev/feed.xml', 'application/rss+xml; charset=utf-8'],
+            ['a markdown-negotiated', 'https://blit386.dev/docs/getting-started', 'text/markdown; charset=utf-8'],
+            ['an /mcp', 'https://blit386.dev/mcp', 'application/json'],
+        ])('adds them to %s response the Worker builds itself', async (_label, url, contentType) => {
+            const downstream = new Response('body', { headers: { 'content-type': contentType } });
+            const response = await wrap(downstream, { createRewriter: createRewriterSpy().createRewriter })(
+                new Request(url),
+            );
+
+            for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+                expect(response.headers.get(name)).toBe(value);
+            }
+            expect(await response.text()).toBe('body');
+        });
+
+        it('keeps a value a response already carries and the status it was given', async () => {
+            const downstream = new Response(null, {
+                status: 405,
+                headers: { 'referrer-policy': 'no-referrer', allow: 'GET, HEAD' },
+            });
+            const response = await wrap(downstream)(new Request('https://blit386.dev/', { method: 'POST' }));
+
+            expect(response.status).toBe(405);
+            expect(response.headers.get('allow')).toBe('GET, HEAD');
+            expect(response.headers.get('referrer-policy')).toBe('no-referrer');
+            expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+        });
+
+        it('returns an asset response that already has all of them as is', async () => {
+            const downstream = new Response('{}', {
+                headers: { 'content-type': 'application/json', ...SECURITY_HEADERS },
+            });
+
+            expect(await wrap(downstream)(new Request('https://blit386.dev/llms.txt'))).toBe(downstream);
         });
     });
 

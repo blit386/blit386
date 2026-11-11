@@ -64,7 +64,7 @@ async function renderToc(ctx: AppContext, page: BlogPost): Promise<TOCItemType[]
 export async function BlogPage({ page }: BlogPageProps) {
     const ctx = getPressContext();
     const { indexPath } = getBlogContext();
-    const data = page.data as { title: string; description?: string; tags?: string[]; author?: string };
+    const data = page.data as { title: string; description?: string; author?: string };
     const [body, toc] = await Promise.all([renderBody(ctx, page), renderToc(ctx, page)]);
 
     return (
@@ -83,19 +83,6 @@ export async function BlogPage({ page }: BlogPageProps) {
                     <DocsDescription>{data.description}</DocsDescription>
 
                     {data.author && <AuthorByline author={data.author} />}
-
-                    {/*{(date || (tags && tags.length > 0)) && (
-                        <div className={styles.meta}>
-                            {date && <span className={styles.date}>{date.toDateString()}</span>}
-
-                            {tagsPath !== false &&
-                                tags?.map((tag) => (
-                                    <Link key={tag} href={`${tagsPath}/${tag}`} className={styles.tag}>
-                                        {tag}
-                                    </Link>
-                                ))}
-                        </div>
-                    )}*/}
                 </div>
 
                 <div className={styles.body}>

@@ -2,12 +2,7 @@ import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { isMarkdownPreferred } from 'fumadocs-core/negotiation';
 import { isHtmlAssetPath } from './csp';
 import { HTTP_HEAD, isGetOrHead } from './http-methods';
-
-// Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
-// Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
-interface AssetsBinding {
-    fetch: (request: Request) => Promise<Response>;
-}
+import { getAssets, getPageText } from './plugin-context';
 
 // Rough token estimate for the `x-markdown-tokens` header. The spec only asks for
 // this header "if available", so an approximation (about four characters per token)
@@ -69,32 +64,24 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                         const loader = await this.getLoader();
                         const page = loader.getPage(slugs);
 
-                        if (page) {
-                            let markdown: string | undefined;
-                            for (const adapter of this.adapters) {
-                                const text = await adapter['core:get-text']?.call(this, page);
-                                if (text !== undefined) {
-                                    markdown = `# ${page.data.title} (${page.url})\n\n${text}`;
-                                    break;
-                                }
-                            }
+                        const text = page ? await getPageText(this, page) : undefined;
 
-                            if (markdown !== undefined) {
-                                return new Response(method === HTTP_HEAD ? null : markdown, {
-                                    headers: {
-                                        'content-type': 'text/markdown; charset=utf-8',
-                                        'x-markdown-tokens': String(estimateTokens(markdown)),
-                                        // This URL serves HTML or markdown depending on Accept,
-                                        // so shared caches must key on that header.
-                                        vary: 'Accept',
-                                    },
-                                });
-                            }
+                        if (page && text !== undefined) {
+                            const markdown = `# ${page.data.title} (${page.url})\n\n${text}`;
+                            return new Response(method === HTTP_HEAD ? null : markdown, {
+                                headers: {
+                                    'content-type': 'text/markdown; charset=utf-8',
+                                    'x-markdown-tokens': String(estimateTokens(markdown)),
+                                    // This URL serves HTML or markdown depending on Accept,
+                                    // so shared caches must key on that header.
+                                    vary: 'Accept',
+                                },
+                            });
                         }
                     }
 
                     // Otherwise emulate assets-first: serve the pre-built static asset.
-                    const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
+                    const assets = getAssets(c.env);
                     if (assets) {
                         const response = await assets.fetch(assetRequest(c.req.raw, c.req.path));
                         if (response.status !== 404) {

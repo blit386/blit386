@@ -1,4 +1,5 @@
 import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
+import { getAssets, getPageText } from './plugin-context';
 
 const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
@@ -60,13 +61,6 @@ interface CorpusEntry {
     bodyLower: string;
 }
 
-// Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
-// Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
-// Mirrors the same shape used by `markdown-negotiation.ts`.
-interface AssetsBinding {
-    fetch: (request: Request) => Promise<Response>;
-}
-
 const MCP_TOOLS = [
     {
         name: 'search_docs',
@@ -100,14 +94,23 @@ const MCP_TOOLS = [
     },
 ] as const;
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+    return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+// A JSON-RPC 2.0 request: `jsonrpc: "2.0"`, a string method, and an id that is absent, a string, a number or null.
 function isRpcRequest(v: unknown): v is RpcRequest {
     return (
-        typeof v === 'object' && v !== null && 'method' in v && typeof (v as { method: unknown }).method === 'string'
+        isPlainObject(v) &&
+        v.jsonrpc === '2.0' &&
+        typeof v.method === 'string' &&
+        (v.id === undefined || v.id === null || typeof v.id === 'string' || typeof v.id === 'number')
     );
 }
 
+// `arguments` must be absent or a plain object; `null` would otherwise slip past the `= {}` default.
 function isToolCallParams(v: unknown): v is ToolCallParams {
-    return typeof v === 'object' && v !== null && 'name' in v && typeof (v as { name: unknown }).name === 'string';
+    return isPlainObject(v) && typeof v.name === 'string' && (v.arguments === undefined || isPlainObject(v.arguments));
 }
 
 // Distinct alphanumeric query terms worth matching: no stopwords.
@@ -257,14 +260,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             // Reuse the same runtime markdown extraction the markdown
                             // negotiation plugin relies on, so the body text matches the
                             // pages agents actually receive.
-                            let body = '';
-                            for (const adapter of this.adapters) {
-                                const text = await adapter['core:get-text']?.call(this, page);
-                                if (text !== undefined) {
-                                    body = text;
-                                    break;
-                                }
-                            }
+                            const body = (await getPageText(this, page)) ?? '';
 
                             const heading = `${title} ${description}`;
                             return {
@@ -464,7 +460,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         if (name === 'get_docs_summary') {
-                            const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
+                            const assets = getAssets(c.env);
                             if (!assets) {
                                 return rpcError(id, INTERNAL_ERROR, 'Internal error: summary unavailable');
                             }
@@ -487,7 +483,8 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             }
                         }
 
-                        return rpcError(id, METHOD_NOT_FOUND, `Unknown tool: ${name}`);
+                        // The MCP tools spec answers an unknown tool with -32602, not -32601.
+                        return rpcError(id, INVALID_PARAMS, `Unknown tool: ${name}`);
                     }
 
                     return rpcError(id, METHOD_NOT_FOUND, `Method not found: ${method}`);

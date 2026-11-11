@@ -54,8 +54,9 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
 | Cloudflare size limits (25 MiB per asset, 64 MiB uncompressed Worker) | `scripts/check-deploy-size.mjs` via `pnpm run check:deploy-size` (needs `pnpm run build` first) - see Deploy |
-| Cloudflare security headers | `public/_headers` |
+| Cloudflare security headers | `public/_headers`, with the non-CSP values defined in `src/security-headers.ts` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
+| The `ASSETS` binding type and a page's markdown (`core:get-text`), shared by the Worker plugins | `src/plugin-context.ts` |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 
 Six Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),
@@ -75,6 +76,12 @@ takes three pieces:
 | `src/csp.ts` | The policy, defined once. `BASE_CSP` is the nonce-free form; `buildCsp(nonce)` adds the nonce to `script-src` |
 | `public/_headers` | Serves `BASE_CSP` on every response Cloudflare returns from the ASSETS binding. Fail-closed default |
 | `src/csp-nonce.ts` | Stamps a fresh nonce onto every `<script>` in a prerendered HTML response and replaces the header with `buildCsp(nonce)` |
+
+The other security headers (`X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`) live in
+`src/security-headers.ts`, and `public/_headers` repeats them under the same drift test. `public/_headers` only reaches
+`ASSETS` responses, so `cspNoncePlugin`'s wrapper adds any of the three a response lacks: the responses the Worker
+builds itself (markdown negotiation, `/feed.xml`, `/mcp`, the 405, Waku's on-demand 404) used to carry none of them
+(BT-772).
 
 A nonce rather than hashes because the site renders statically (`mode: 'static'`): Waku's React bootstrap script and the
 RSC flight payload `rsc-html-stream` injects are both per-page, so no fixed hash list covers them, and Waku's
@@ -428,7 +435,10 @@ in static mode.
 Input is bounded (BT-614): a POST to `/mcp` with no `content-length` gets `411`, and one over 64 KiB (`MAX_BODY_BYTES`)
 gets `413`, both before parsing and with a `-32600` body. A `search_docs` query over 256 characters (`MAX_QUERY_LENGTH`)
 gets `-32602`. A message with no `id` is a notification and gets a bare `202` (BT-631); `GET /mcp` gets `405` with
-`Allow: POST`. Scoring cost is linear in query length, and the Waku adapter's own body limit is 100 MB.
+`Allow: POST`. Scoring cost is linear in query length, and the Waku adapter's own body limit is 100 MB. The envelope is
+checked too (BT-772): a message without `jsonrpc: "2.0"`, or with an `id` that is not a string, number or null, gets
+`-32600` with `id: null`; `tools/call` `arguments` must be absent or a plain object (`null` gets `-32602`, never a 500);
+an unknown tool gets `-32602`, as the MCP tools spec asks.
 
 The Build a Game pages (see Build a Game pages) are ordinary loader pages, so `search_docs` and `get_doc_page` serve
 them with no special case: that is how an agent with only this connector and no scaffolded project reaches the starter

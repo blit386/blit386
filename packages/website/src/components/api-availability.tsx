@@ -12,12 +12,12 @@ interface AvailabilityRow {
 }
 
 /**
- * Returns the highest version among a symbol's recorded changes, or an en dash when the
+ * Returns the highest version among a symbol's recorded changes, or a hyphen when the
  * symbol has never changed since its introduction.
  */
 function lastChangedVersion(entry: SymbolHistory): string {
     if (entry.changes.length === 0) {
-        return '–';
+        return '-';
     }
 
     return entry.changes

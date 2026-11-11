@@ -2,12 +2,13 @@ import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { REPORT_ONLY_ENABLED } from './channel-vars.mjs';
 import { buildCsp, generateNonce } from './csp';
 import { HTTP_GET } from './http-methods';
+import { SECURITY_HEADERS } from './security-headers';
 
 /**
  * The slice of Cloudflare's `HTMLRewriter` this plugin uses.
  *
  * Declared locally rather than pulled from `@cloudflare/workers-types`, the same way
- * `markdown-negotiation.ts` declares `AssetsBinding`: this package's `tsconfig.json` compiles with
+ * `plugin-context.ts` declares `AssetsBinding`: this package's `tsconfig.json` compiles with
  * `lib: ["dom", ...]`, and the Workers types collide with it wholesale.
  */
 interface RewriterElement {
@@ -117,10 +118,25 @@ function stampNonce(response: Response, createRewriter: () => HtmlRewriterLike, 
     });
 }
 
-/** Wraps one `fetch` so its HTML responses come back stamped. */
+/** Adds whichever `SECURITY_HEADERS` the response lacks, on a copy, since its headers may be immutable. */
+function withSecurityHeaders(response: Response): Response {
+    const missing = Object.entries(SECURITY_HEADERS).filter(([name]) => !response.headers.has(name));
+    if (missing.length === 0) {
+        return response;
+    }
+
+    const headers = new Headers(response.headers);
+    for (const [name, value] of missing) {
+        headers.set(name, value);
+    }
+
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+/** Wraps one `fetch` so every response carries the security headers and HTML comes back stamped. */
 function wrapFetch(inner: EntryFetch, options: CspNonceOptions): EntryFetch {
     return async (request, env, ctx) => {
-        const response = await inner(request, env, ctx);
+        const response = withSecurityHeaders(await inner(request, env, ctx));
         const createRewriter = resolveRewriterFactory(options.createRewriter);
 
         if (createRewriter === undefined || !isStampableHtml(response, request.method)) {
@@ -153,6 +169,9 @@ function wrapFetch(inner: EntryFetch, options: CspNonceOptions): EntryFetch {
  * The server entry is the outermost hook, and its `fetch` is called with `(request, env, ...)` -
  * which is also where the `BLIT386_CSP_REPORT_ONLY` var arrives, the same request-time binding read
  * `channelHeadersPlugin` documents for `BLIT386_CHANNEL`.
+ *
+ * Being the outermost hook is also why it adds the missing `SECURITY_HEADERS` to every response:
+ * nothing else sees the ones the Worker builds itself (BT-772).
  */
 export function cspNoncePlugin<C extends ConfigContext = ConfigContext>(
     options: CspNonceOptions = {},

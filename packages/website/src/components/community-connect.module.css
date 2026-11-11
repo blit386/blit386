@@ -3,7 +3,3 @@
 .heading {
     @apply mb-4 text-2xl font-normal text-fd-foreground;
 }
-
-.comingSoon {
-    @apply opacity-50 select-none;
-}

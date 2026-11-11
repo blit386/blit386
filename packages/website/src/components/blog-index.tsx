@@ -52,12 +52,6 @@ export async function BlogIndexPage({ lang }: BlogIndexPageProps) {
             <div className={`not-prose ${layoutStyles.main} ${styles.index}`}>
                 <div className={styles.header}>
                     <h1 className={styles.heading}>{BLOG_TITLE}</h1>
-
-                    {/*{tagsPath !== false && (
-                        <Link href={tagsPath} className={styles.tagsLink}>
-                            All Tags
-                        </Link>
-                    )}*/}
                 </div>
 
                 <div className={styles.grid}>

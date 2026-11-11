@@ -5,6 +5,9 @@
 # `BASE_CSP` in `src/csp.ts` - this file cannot import - and `src/csp.test.ts` fails if the two ever
 # drift apart. `script-src` has no `'unsafe-inline'`: prerendered HTML gets a per-request nonce
 # stamped onto every `<script>` by `src/csp-nonce.ts`, which replaces this header on those responses.
+# X-Content-Type-Options, Referrer-Policy and Permissions-Policy are hand-written copies of
+# `SECURITY_HEADERS` in `src/security-headers.ts`, which the Worker adds to the responses it builds
+# itself; `src/csp.test.ts` fails if they drift apart too.
 
 /*
   Link: </llms.txt>; rel="describedby", </sitemap.xml>; rel="sitemap", </docs>; rel="service-doc", </.well-known/api-catalog>; rel="api-catalog", </auth.md>; rel="auth-md", </feed.xml>; rel="alternate"; type="application/rss+xml"

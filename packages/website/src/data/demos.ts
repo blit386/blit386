@@ -13,7 +13,11 @@ export type DemoEntry = {
     href: string;
 };
 
-/** The list of flagship demos to showcase. */
+/**
+ * The list of flagship demos to showcase. Each title and description is a copy of that demo's `@pageTitle` /
+ * `@description` header in `packages/demos/src/<slug>.js`; `demos.test.ts` fails when they drift. Copied rather
+ * than imported because the registry reads the demo files with `node:fs`, which the Worker bundle cannot do.
+ */
 export const flagshipDemos: readonly DemoEntry[] = [
     {
         title: 'Hello World',
@@ -56,20 +60,22 @@ export const flagshipDemos: readonly DemoEntry[] = [
     },
     {
         title: 'Palette Cycling',
-        description: 'Animate entire scenes by rotating palette slots at runtime without touching a single pixel.',
+        description:
+            'Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.',
         thumbnail: '/demos/thumb-palette-cycling.webp',
         href: 'https://demos.blit386.dev/palette-cycling',
     },
     {
         title: 'Snake Game',
-        description: 'A complete playable game: input handling, game-state loop, collision, and score rendering.',
+        description:
+            'Grid snake with walls, food, keyboard, D-pad, and swipe steering, plus PipBoy CRT post-processing.',
         thumbnail: '/demos/thumb-snake-game.webp',
         href: 'https://demos.blit386.dev/snake-game',
     },
     {
         title: 'Hypercube',
         description:
-            'A Fez-style rotating tesseract: watch a four-dimensional cube turn on a 256x256 PICO-8 sized canvas.',
+            'A Fez-style rotating tesseract: a four-dimensional cube turning in PICO-8 colors on a 320x320 canvas.',
         thumbnail: '/demos/thumb-hypercube.webp',
         href: 'https://demos.blit386.dev/hypercube',
     },
