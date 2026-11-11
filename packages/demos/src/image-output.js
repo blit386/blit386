@@ -153,6 +153,10 @@ class Demo {
     // ticks is 3 seconds at 60 ticks per second.
     messageTimer = 0;
 
+    // One rectangle reused for the stripes and the border, moved with set() before each
+    // draw, so render() does not build new ones every frame.
+    rect = new Rect2i();
+
     // Hides the overlay toggle hint so saved screenshots stay clean, and sets a 320x240
     // display on a 640x480 drawing buffer so the two capture sizes differ.
     configure() {
@@ -267,6 +271,11 @@ class Demo {
         // Ask the engine how wide and tall our game screen is in pixels.
         const screen = BT.displaySize;
 
+        // Was a capture already running when this frame started? A capture records the
+        // frame in which its button was pressed, so the status row reads this copy:
+        // otherwise the "Capturing..." text would be drawn into the very PNG it saves.
+        const wasCapturing = this.capturing;
+
         // Fill the whole screen with the dark background before drawing anything else.
         // C_BG is just a number (2); the palette knows it means dark blue-gray.
         BT.clear(C_BG);
@@ -281,20 +290,21 @@ class Demo {
             const y = i * stripeHeight;
 
             // C_STRIPE_0 + i picks the palette slot for this stripe (10, 11, 12, ...).
-            BT.drawRectFill(new Rect2i(0, y, screen.x, stripeHeight), C_STRIPE_0 + i);
+            BT.drawRectFill(this.rect.set(0, y, screen.x, stripeHeight), C_STRIPE_0 + i);
         }
 
         // A grid of single white pixels every 20 pixels, so you can check alignment when
-        // you open the PNG.
+        // you open the PNG. drawPixel(x, y, slot) takes plain numbers, so the 192 dots
+        // need no position objects.
         for (let x = 0; x < screen.x; x += 20) {
             for (let y = 0; y < screen.y; y += 20) {
-                BT.drawPixel(new Vector2i(x, y), C_WHITE);
+                BT.drawPixel(x, y, C_WHITE);
             }
         }
 
         // Outline the entire display with a white rectangle so the edges are obvious in
         // the screenshot.
-        BT.drawRect(new Rect2i(0, 0, screen.x, screen.y), C_WHITE);
+        BT.drawRect(this.rect.set(0, 0, screen.x, screen.y), C_WHITE);
 
         // Crosshairs at the exact center: cx is half the width, cy is half the height,
         // floored to whole pixels.
@@ -341,7 +351,7 @@ class Demo {
 
         // One status row below the buttons. We always draw a row (even when idle) so the
         // panel does not jump in size when a message appears or disappears.
-        if (this.capturing) {
+        if (wasCapturing) {
             // A capture is in flight - the browser is busy reading the canvas.
             ui.label('Capturing...', { color: 'info' });
         } else if (this.messageTimer > 0) {
