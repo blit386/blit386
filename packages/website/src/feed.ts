@@ -34,26 +34,7 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
         createMiddlewares(this: AppContext<C>) {
             const feedCache = new WeakMap<object, Promise<string>>();
 
-            /**
-             * Generates an RSS feed in XML format.
-             *
-             * This asynchronous function constructs an RSS feed based on the blog pages
-             * retrieved from the loader. If a cached version exists for the loader, it is
-             * returned instead of generating a new feed. The RSS feed includes metadata about
-             * the channel and individual blog items formatted in the RSS 2.0 specification.
-             *
-             * The generated feed includes the following for each blog post:
-             * - Title
-             * - Description
-             * - Link to the post
-             * - Publication date formatted in RFC 822
-             *
-             * The generated feed is cached to optimize performance and avoid redundant computations.
-             * If any error occurs during the generation process, the cache is invalidated for the
-             * current loader.
-             *
-             * @returns {Promise<string>} A promise that resolves to the generated RSS feed as a string in XML format.
-             */
+            /** The RSS 2.0 document for the blog, cached per loader and evicted when building it fails. */
             const buildFeed = async (): Promise<string> => {
                 const loader = await this.getLoader();
                 const cached = feedCache.get(loader);
