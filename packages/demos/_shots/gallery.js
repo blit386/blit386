@@ -19,13 +19,14 @@ const FOCUS_MOVES = {
     'focus-end': 'end',
 };
 
+const NAV_ACTIONS = [...Object.keys(FOCUS_MOVES), 'page-up', 'page-down', 'demo-next', 'demo-prev'];
+
+// Link mode (the public sheet) keeps moving focus and opening a tile; everything else is review-only.
+const LINK_MODE_ACTIONS = new Set([...NAV_ACTIONS, 'open']);
+
 // Every action handleAction() answers; keys.test.mjs checks the key map against it.
 const GALLERY_ACTIONS = [
-    ...Object.keys(FOCUS_MOVES),
-    'page-up',
-    'page-down',
-    'demo-next',
-    'demo-prev',
+    ...NAV_ACTIONS,
     'extend-left',
     'extend-right',
     'extend-up',
@@ -105,9 +106,10 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
  *   tileLink?: (entry: object) => { href: string, label: string },
  *   focusInteractionEnabled?: () => boolean,
  * }} hooks - `tileLink` switches a tile to link mode for the public sheet: the tile becomes a
- *   plain link labeled `label`, with no focus or selection clicks. Link mode never
- *   reaches `onOpen` or `onCapture`, so the sheet omits them; the review page passes both and
- *   never passes `tileLink`.
+ *   plain link labeled `label`, with no focus or selection clicks, and `handleAction` answers
+ *   only the focus moves and `open` (which calls `onOpen`). Selection, view and capture actions
+ *   return false there, so `onCapture` is never reached and the sheet omits it; the review page
+ *   passes both hooks and never passes `tileLink`.
  */
 function createGallery(root, hooks) {
     /** @type {Array<object>} */
@@ -469,6 +471,10 @@ function createGallery(root, hooks) {
      * @returns {boolean} True when the action was handled.
      */
     function handleAction(action) {
+        if (hooks.tileLink && !LINK_MODE_ACTIONS.has(action)) {
+            return false;
+        }
+
         if (focusActions(action) || selectionActions(action) || viewActions(action)) {
             refresh();
 
