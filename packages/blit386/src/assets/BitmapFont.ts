@@ -251,10 +251,12 @@ export class BitmapFont {
      *
      * The font descriptor can reference either an embedded PNG data URI
      * (`data:image/png;base64,...`) or a texture file path relative to the font JSON file.
-     * A texture path that leads to a different origin than the font file is rejected.
+     * A texture path that, joined to the font's folder, leads to a different origin than the font
+     * file is rejected. Only a font loaded by a bare file name (`font.btfont`) can get there.
      *
-     * @changed 1.8.1 Rejects a `texture` path that leads to another origin than the `.btfont` file
-     *   (for example an absolute `https://` URL on another site) with an `AssetLimitError`.
+     * @changed 1.8.1 Rejects a joined `texture` path that leads to another origin than the `.btfont`
+     *   file with an `AssetLimitError` - in practice an absolute URL on another site in a font loaded
+     *   by a bare file name.
      * @param url - Path to the .btfont file.
      * @returns Loaded bitmap font instance.
      * @throws Error if the font descriptor or texture cannot be loaded.
@@ -503,8 +505,9 @@ export class BitmapFont {
      * rebuilds the glyph tables and measurement cache in place and
      * replaces the underlying sprite sheet's image via
      * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
-     * already indexized). `name`/`size`/`lineHeight`/`baseline` are not updated by a
-     * hot reload - only glyph data and the texture.
+     * already indexized). When the sheet skips that swap (indexized, no active palette),
+     * the glyphs are left as they were too. `name`/`size`/`lineHeight`/`baseline` are not
+     * updated by a hot reload - only glyph data and the texture.
      *
      * @param url - `.btfont` URL this font was originally loaded from.
      * @param palette - Active palette, forwarded to {@link SpriteSheet.hotReplaceImage}.
@@ -527,6 +530,11 @@ export class BitmapFont {
         const { glyphs, asciiGlyphs } = buildGlyphsFromEntries(glyphEntries, atlas.width, atlas.height);
 
         this.spriteSheet.hotReplaceImage(image, palette);
+
+        // A skipped swap (indexized sheet, no active palette) keeps the old atlas, so the new glyphs must not land.
+        if (this.spriteSheet.status !== 'ready') {
+            return;
+        }
 
         this.glyphs = glyphs;
         this.fallbackGlyph = resolveFallbackGlyph(glyphs);

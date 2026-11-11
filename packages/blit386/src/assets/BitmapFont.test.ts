@@ -1058,6 +1058,24 @@ describe('BitmapFont', () => {
                 expect(font.getGlyph('A')).toBe(glyphA);
             });
 
+            it('keeps the old glyphs when the sprite sheet skips the image swap', async () => {
+                const glyphA = font.getGlyph('A');
+                const updated = {
+                    ...MOCK_FONT_DATA,
+                    glyphs: { ...MOCK_FONT_DATA.glyphs, A: { x: 0, y: 0, w: 20, h: 12, ox: 0, oy: 0, adv: 21 } },
+                };
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(updated)));
+                vi.spyOn(console, 'warn').mockImplementation(() => {});
+                // An indexized sheet with no active palette takes hotReplaceImage's non-throwing skip path.
+                (font.getSpriteSheet() as unknown as { indexedPixels: Uint8Array | null }).indexedPixels =
+                    new Uint8Array(1);
+
+                await font.hotReload('test.btfont', null);
+
+                expect(font.getSpriteSheet().status).toBe('failed');
+                expect(font.getGlyph('A')).toBe(glyphA);
+            });
+
             it('cache-busts a relative texture path but not an embedded data URI', async () => {
                 const relativeData = { ...MOCK_FONT_DATA, texture: 'atlas.png' };
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(relativeData)));

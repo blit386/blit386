@@ -59,8 +59,8 @@ export function resolveReducedMotionPreferred(signals: ReducedMotionSignals): bo
 /**
  * Reads the valueless reduced-motion flags from the current URL.
  *
- * Uses the `globalThis.location` guard idiom established by `BTAPI.getBackendQueryOverride`
- * and splash's `gating.ts`, so this stays safe in Node and SSR.
+ * Uses the `globalThis.location` guard idiom established by `getBackendQueryOverride` in
+ * `core/engine/RendererSetup.ts` and splash's `gating.ts`, so this stays safe in Node and SSR.
  *
  * @returns Which flags are present; both `false` when there is no location.
  */

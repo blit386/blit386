@@ -7103,6 +7103,23 @@ describe('BTAPI splash lifecycle in init', () => {
         expect(startSpy).toHaveBeenCalledOnce();
     });
 
+    it('plays the splash again on the next init when a splash frame threw', async () => {
+        const startSpy = vi.spyOn(Splash.prototype, 'start');
+        vi.spyOn(Splash.prototype, 'advance').mockImplementationOnce(() => {
+            throw new Error('splash frame exploded');
+        });
+
+        await expect(BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas())).rejects.toThrow(
+            'splash frame exploded',
+        );
+        const ok = await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        expect(ok).toBe(true);
+        expect(startSpy).toHaveBeenCalledTimes(2);
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+        expect(BTAPI.instance.isSplashVisible()).toBe(false);
+    });
+
     it('does not start the game loop until the splash is done', async () => {
         let loopExistedDuringInit = true;
 

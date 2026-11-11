@@ -35,7 +35,7 @@ import { OverlayDiagnostics } from './engine/OverlayDiagnostics';
 import { PaletteController } from './engine/PaletteController';
 import { RendererSetup } from './engine/RendererSetup';
 import { Seek } from './engine/Seek';
-import { createSplashIfEnabled, SplashBoot } from './engine/SplashBoot';
+import { createSplashIfEnabled, isSplashFinished, SplashBoot } from './engine/SplashBoot';
 import { Subsystems } from './engine/Subsystems';
 import type { FrameDropCallback } from './GameLoop';
 import { GameLoop } from './GameLoop';
@@ -361,7 +361,7 @@ export class BTAPI {
     /** Attaches and clears the input, audio, overlay and reduced-motion subsystems. */
     public readonly subsystems = new Subsystems(this);
 
-    /** True once an init has resolved splash gating; later inits never create a splash. */
+    /** True once an init has resolved splash gating; later inits create a splash only if the last one never finished. */
     private isSplashResolved = false;
 
     /** True while an `init()` call is running; rejects overlapping inits and keeps {@link isInitialized} false. */
@@ -431,7 +431,7 @@ export class BTAPI {
      * {@link stop} on the previous run and destroys the previous `GPUDevice` before creating a new
      * one, so only one game loop ever runs and restarts do not leak GPU memory. Sprite sheets kept
      * across the restart rebuild their texture on the new device. The splash plays once per page load,
-     * so a restart runs the new `init()` without it. A {@link Seek.renderAt} seek already
+     * so a restart runs the new `init()` without it - unless a splash frame threw, which plays it again. A {@link Seek.renderAt} seek already
      * running finishes first; one called while the init runs rejects, as before init.
      *
      * @param demo - Demo implementing the IBTDemo interface.
@@ -1262,10 +1262,11 @@ export class BTAPI {
         // Splash gating resolves here, before the game's init() is invoked, so
         // init() observes 'disabled' or 'fadingIn' and never an undecided state.
         // One-shot per page load: a "back to title" restart keeps the finished boot
-        // splash (splashState stays 'done') and runs init() without it.
-        this.isRestartAfterSplash = this.isSplashResolved;
+        // splash (splashState stays 'done') and runs init() without it. A splash a thrown
+        // frame left unfinished plays again.
+        this.isRestartAfterSplash = this.isSplashResolved && isSplashFinished(this.splash);
 
-        if (!this.isSplashResolved) {
+        if (!this.isRestartAfterSplash) {
             this.splash = createSplashIfEnabled(hwSettings);
             this.isSplashResolved = true;
         }
