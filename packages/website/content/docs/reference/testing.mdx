@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Testing"
 description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
-lastModified: "2026-11-11T09:15:28+01:00"
+lastModified: "2026-11-11T10:22:57+01:00"
 ---
 
 BLIT386 uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
@@ -321,8 +321,9 @@ lost today - that is BT-703, not something a refresh-rate test should paper over
 
 </Callout>
 
-To check that a new test can fail, break the code it guards: moving `this.pointer?.endUpdate()` out of the update
-callback in `src/core/BTAPI.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays green.
+To check that a new test can fail, break the code it guards: moving `this.engine.pointer?.endUpdate()` out of
+`FrameLoop#update` in `src/core/engine/FrameLoop.ts` turns the 120 Hz and 144 Hz pointer tests red while 60 Hz stays
+green.
 
 ## Coverage
 
