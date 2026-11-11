@@ -170,9 +170,13 @@ const ASK_STASH = {
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
  */
 function isDangerousCommand(command) {
-    // Quotes and backslashes are dropped first, so `git "reset" --hard` and `git \reset --hard` cannot dodge
-    // the word checks. Each check asks "does any line match", so a multi-line command is caught on any line.
-    const lines = command.replace(/['"\\]/g, '').split('\n');
+    // A backslash-newline is a line continuation: `sh` joins the two lines into one command (BT-775). Then quotes and
+    // backslashes are dropped, so `git "reset" --hard` and `git \reset --hard` cannot dodge the word checks. Each
+    // check asks "does any line match", so a multi-line command is caught on any line.
+    const lines = command
+        .replace(/\\\r?\n/g, ' ')
+        .replace(/['"\\]/g, '')
+        .split('\n');
     const any = (pattern) => lines.some((line) => pattern.test(line));
 
     const destructiveClean = any(CLEAN) && (any(CLEAN_FORCE) || !any(CLEAN_DRY_RUN));

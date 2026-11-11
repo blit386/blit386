@@ -135,4 +135,7 @@ export const SHELL_CASES = [
     ['echo hi\ngit reset --hard', 'deny'],
     ['git clean -fd\ngit clean -n', 'deny'],
     ['git status\ngit push --force', 'ask'],
+    // BT-775: a backslash-newline joins two lines into one command, so the flag on the next line still counts.
+    ['git reset \\\n--hard', 'deny'],
+    ['git push \\\n--force', 'ask'],
 ];
