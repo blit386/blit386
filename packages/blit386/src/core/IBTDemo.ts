@@ -1097,15 +1097,23 @@ export function mergeHardwareSettings(partial?: Partial<HardwareSettings>): Hard
 /** Resolved timing-chart renderer diagnostic visualization mode. */
 export type OverlayTimingChartDiagnosticsMode = false | 'minimal' | 'rich';
 
+/** The two {@link HardwareSettings} fields {@link resolveOverlayTimingChartDiagnostics} reads. */
+type TimingChartDiagnosticsSettings = {
+    readonly overlayTimingChartDiagnostics?: OverlayTimingChartDiagnosticsMode | undefined;
+    readonly isOverlayTimingChartEnabled?: boolean | undefined;
+};
+
 /**
  * Resolves {@link HardwareSettings.overlayTimingChartDiagnostics} for runtime overlay/chart code.
  *
  * Defaults to `'minimal'` when the timing chart is enabled and the field is omitted; `false` otherwise.
  *
- * @param settings - Resolved hardware settings.
+ * @param settings - Resolved hardware settings, or the overlay's subset of them.
  * @returns Chart diagnostic visualization mode.
  */
-export function resolveOverlayTimingChartDiagnostics(settings: HardwareSettings): OverlayTimingChartDiagnosticsMode {
+export function resolveOverlayTimingChartDiagnostics(
+    settings: TimingChartDiagnosticsSettings,
+): OverlayTimingChartDiagnosticsMode {
     if (settings.overlayTimingChartDiagnostics !== undefined) {
         return settings.overlayTimingChartDiagnostics;
     }

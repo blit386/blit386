@@ -71,28 +71,25 @@ function createOverlay(
     label: string,
     options: OverlayTestOptions = {},
 ): Overlay {
-    return new Overlay(
-        layout,
-        label,
-        60,
-        options.backend ?? 'webgpu',
-        options.style,
-        options.isOverlayPaletteEnabled ?? PALETTE_GRID_OFF,
-        options.paletteColumns,
-        options.paletteRowsVisible,
-        options.isOverlayTimingChartEnabled ?? false,
-        options.overlayTimingChartStyle,
-        options.overlayTimingChartHeight,
-        options.overlayTimingChartDiagnostics ?? false,
-        options.isOverlayRendererDiagnosticsBarEnabled ?? false,
-        options.isOverlayVisibleAtStart ?? false,
-        options.isOverlayToggleHintVisible ?? true,
-        options.isOverlayToggleEnabled ?? true,
-        options.isOverlayToggleHitDebugVisible ?? false,
-        options.isOverlayAudioMetersEnabled ?? false,
-        options.audioMeterStyle,
-        options.audioMeterHeight,
-    );
+    return new Overlay(layout, label, options.backend ?? 'webgpu', {
+        targetFPS: 60,
+        overlayStyle: options.style,
+        isOverlayPaletteEnabled: options.isOverlayPaletteEnabled ?? PALETTE_GRID_OFF,
+        overlayPaletteColumns: options.paletteColumns,
+        overlayPaletteRowsVisible: options.paletteRowsVisible,
+        isOverlayTimingChartEnabled: options.isOverlayTimingChartEnabled ?? false,
+        overlayTimingChartStyle: options.overlayTimingChartStyle,
+        overlayTimingChartHeight: options.overlayTimingChartHeight,
+        overlayTimingChartDiagnostics: options.overlayTimingChartDiagnostics ?? false,
+        isOverlayRendererDiagnosticsBarEnabled: options.isOverlayRendererDiagnosticsBarEnabled ?? false,
+        isOverlayVisibleAtStart: options.isOverlayVisibleAtStart ?? false,
+        isOverlayToggleHintVisible: options.isOverlayToggleHintVisible ?? true,
+        isOverlayToggleEnabled: options.isOverlayToggleEnabled ?? true,
+        isOverlayToggleHitDebugVisible: options.isOverlayToggleHitDebugVisible ?? false,
+        isOverlayAudioMetersEnabled: options.isOverlayAudioMetersEnabled ?? false,
+        overlayAudioMeterStyle: options.audioMeterStyle,
+        overlayAudioMeterHeight: options.audioMeterHeight,
+    });
 }
 
 /** Builds a usage mask from palette slot indices for tests. */

@@ -1672,22 +1672,11 @@ describe('PointerInput', () => {
         });
 
         it('forces touchAction to "none" for a touch starting over the palette band, without configure opt-in', () => {
-            const overlay = new Overlay(
-                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
-                'Test Demo',
-                60,
-                'webgpu',
-                undefined,
-                true,
-                undefined,
-                undefined,
-                false,
-                undefined,
-                undefined,
-                false,
-                false,
-                true,
-            );
+            const overlay = new Overlay(createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14), 'Test Demo', 'webgpu', {
+                targetFPS: 60,
+                isOverlayPaletteEnabled: true,
+                isOverlayVisibleAtStart: true,
+            });
             const grid = computeGrid(DISPLAY_WIDTH);
             const paletteBandTop = paletteBandY(DISPLAY_HEIGHT, grid.totalHeight);
             const paletteBand = new Rect2i(0, paletteBandTop, DISPLAY_WIDTH, grid.totalHeight);
@@ -1707,22 +1696,11 @@ describe('PointerInput', () => {
         });
 
         it('leaves touchAction as "pan-y" for a touch starting outside the palette band', () => {
-            const overlay = new Overlay(
-                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
-                'Test Demo',
-                60,
-                'webgpu',
-                undefined,
-                true,
-                undefined,
-                undefined,
-                false,
-                undefined,
-                undefined,
-                false,
-                false,
-                true,
-            );
+            const overlay = new Overlay(createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14), 'Test Demo', 'webgpu', {
+                targetFPS: 60,
+                isOverlayPaletteEnabled: true,
+                isOverlayVisibleAtStart: true,
+            });
 
             canvas.dispatchEvent(
                 pointerEvent('pointerdown', {

@@ -8,14 +8,8 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { MAX_PALETTE_SIZE } from '../assets/Palette';
-import type {
-    Backend,
-    OverlayAudioMeterStyle,
-    OverlayRow,
-    OverlayStyle,
-    OverlayTimingChartDiagnosticsMode,
-    OverlayTimingChartStyle,
-} from '../core/IBTDemo';
+import type { Backend, OverlayRow, OverlayTimingChartDiagnosticsMode } from '../core/IBTDemo';
+import { resolveOverlayTimingChartDiagnostics } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import { POINTER_SLOT_COUNT, type PointerInput } from '../input/PointerInput';
 import { Rect2i } from '../utils/Rect2i';
@@ -46,7 +40,7 @@ import { DEFAULT_TIMING_CHART_HEIGHT } from './timing-chart/constants';
 import type { TimingChartDrawStyle } from './timing-chart/style';
 import { resolveTimingChartStyle } from './timing-chart/style';
 import { TimingChart } from './timing-chart/TimingChart';
-import type { OverlayAudioSnapshot, OverlayTimingSnapshot } from './types';
+import type { OverlayAudioSnapshot, OverlaySettings, OverlayTimingSnapshot } from './types';
 
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
@@ -201,51 +195,18 @@ export class Overlay {
      *
      * @param layout - Cached display layout from {@link createOverlayLayout}.
      * @param topLeftLabel - Short title shown on the top-left.
-     * @param targetFps - Configured fixed-update rate for the target FPS line.
      * @param activeBackend - Backend started by BTAPI (`webgpu` or `software`).
-     * @param style - Optional palette indices from {@link HardwareSettings.overlayStyle}.
-     * @param isOverlayPaletteEnabled - When true, draws the live palette swatch grid.
-     * @param paletteColumns - Optional max swatches per row from {@link HardwareSettings.overlayPaletteColumns}.
-     * @param paletteRowsVisible - Optional max visible palette grid rows from {@link HardwareSettings.overlayPaletteRowsVisible}.
-     * @param isOverlayTimingChartEnabled - When true, draws the update/render timing chart band.
-     * @param timingChartStyle - Optional timing chart palette overrides.
-     * @param timingChartHeight - Chart band height in pixels (default 22).
-     * @param timingChartDiagnostics - Chart renderer diagnostic mode (`minimal`, `rich`, or `false`).
-     * @param isOverlayRendererDiagnosticsBarEnabled - When true, draws the GPU diagnostics text row.
-     * @param isOverlayVisibleAtStart - Initial overlay body visibility (default false).
-     * @param isOverlayToggleHintVisible - Draw toggle hint while body hidden (default true).
-     * @param isOverlayToggleEnabled - Enable Backquote and corner toggle input (default true).
-     * @param isOverlayToggleHitDebugVisible - Draw a 1 px outline of the toggle hit region (default false).
-     * @param isOverlayAudioMetersEnabled - When true, draws the per-bus level and voice/steal/drop band.
-     * @param audioMeterStyle - Optional audio meter palette overrides.
-     * @param audioMeterHeight - Audio meter band height in pixels (default 13).
+     * @param settings - Overlay fields of {@link HardwareSettings} plus `targetFPS`; unset fields take
+     * the configure defaults.
      */
-    constructor(
-        layout: OverlayLayout,
-        topLeftLabel: string,
-        targetFps: number,
-        activeBackend: Backend,
-        style?: OverlayStyle,
-        isOverlayPaletteEnabled = false,
-        paletteColumns?: number,
-        paletteRowsVisible?: number,
-        isOverlayTimingChartEnabled = false,
-        timingChartStyle?: OverlayTimingChartStyle,
-        timingChartHeight?: number,
-        timingChartDiagnostics: OverlayTimingChartDiagnosticsMode = false,
-        isOverlayRendererDiagnosticsBarEnabled = false,
-        isOverlayVisibleAtStart = false,
-        isOverlayToggleHintVisible = true,
-        isOverlayToggleEnabled = true,
-        isOverlayToggleHitDebugVisible = false,
-        isOverlayAudioMetersEnabled = false,
-        audioMeterStyle?: OverlayAudioMeterStyle,
-        audioMeterHeight?: number,
-    ) {
+    constructor(layout: OverlayLayout, topLeftLabel: string, activeBackend: Backend, settings: OverlaySettings) {
+        const targetFps = settings.targetFPS;
+        const style = settings.overlayStyle;
+
         this.#layout = layout;
         this.#topLeftLabel = topLeftLabel;
         this.#targetFps = targetFps;
-        this.#fps = new FpsSampler(this.#targetFps);
+        this.#fps = new FpsSampler(targetFps);
 
         const indices = resolveOverlayChromeIndices(style);
 
@@ -253,20 +214,25 @@ export class Overlay {
         this.#idxText = indices.textIndex;
         this.#idxGap = indices.gapIndex;
         this.#topRightLabel = `${activeBackend}|${layout.displayWidth}x${layout.displayHeight}`;
-        this.#timingChartStyle = resolveTimingChartStyle(style, timingChartStyle);
-        this.#timingChartHeight = timingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
-        this.#timingChart = createTimingChart(layout, isOverlayTimingChartEnabled, targetFps, timingChartDiagnostics);
-        this.#isOverlayRendererDiagnosticsBarEnabled = isOverlayRendererDiagnosticsBarEnabled;
-        this.#audioMeterStyle = resolveAudioMeterStyle(style, audioMeterStyle);
-        this.#audioMeterHeight = audioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
-        this.#audioMeter = createAudioMeter(isOverlayAudioMetersEnabled);
-        this.#paletteView = new PaletteView(isOverlayPaletteEnabled);
+        this.#timingChartStyle = resolveTimingChartStyle(style, settings.overlayTimingChartStyle);
+        this.#timingChartHeight = settings.overlayTimingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
+        this.#timingChart = createTimingChart(
+            layout,
+            settings.isOverlayTimingChartEnabled === true,
+            targetFps,
+            resolveOverlayTimingChartDiagnostics(settings),
+        );
+        this.#isOverlayRendererDiagnosticsBarEnabled = settings.isOverlayRendererDiagnosticsBarEnabled === true;
+        this.#audioMeterStyle = resolveAudioMeterStyle(style, settings.overlayAudioMeterStyle);
+        this.#audioMeterHeight = settings.overlayAudioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
+        this.#audioMeter = createAudioMeter(settings.isOverlayAudioMetersEnabled === true);
+        this.#paletteView = new PaletteView(settings.isOverlayPaletteEnabled === true);
         this.#paletteInteraction = new PaletteInteraction(targetFps);
-        this.#paletteColumns = paletteColumns;
-        this.#paletteRowsVisible = paletteRowsVisible;
-        this.#toggle = new Toggle(isOverlayVisibleAtStart, isOverlayToggleEnabled);
-        this.#isToggleHintVisible = isOverlayToggleHintVisible;
-        this.#isToggleHitDebugVisible = isOverlayToggleHitDebugVisible;
+        this.#paletteColumns = settings.overlayPaletteColumns;
+        this.#paletteRowsVisible = settings.overlayPaletteRowsVisible;
+        this.#toggle = new Toggle(settings.isOverlayVisibleAtStart === true, settings.isOverlayToggleEnabled !== false);
+        this.#isToggleHintVisible = settings.isOverlayToggleHintVisible !== false;
+        this.#isToggleHitDebugVisible = settings.isOverlayToggleHitDebugVisible === true;
     }
 
     /**

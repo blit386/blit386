@@ -69,7 +69,7 @@ describe('Overlay hovered-frame allocation', () => {
         vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
 
         const layout = createOverlayLayout(320, 240, 14);
-        const overlay = new Overlay(layout, 'Demo', 60, 'webgpu', undefined, true);
+        const overlay = new Overlay(layout, 'Demo', 'webgpu', { targetFPS: 60, isOverlayPaletteEnabled: true });
         const grid = computeGrid(320);
         const paletteBand = new Rect2i(0, paletteBandY(240, grid.totalHeight), 320, grid.totalHeight);
         const swatch = new Rect2i();

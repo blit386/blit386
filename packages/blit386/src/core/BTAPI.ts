@@ -76,13 +76,7 @@ import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
 import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
-import {
-    DEFAULT_AUDIO_VOICES,
-    defaultConfig,
-    mergeHardwareSettings,
-    needsOverlayRendererDiagnostics,
-    resolveOverlayTimingChartDiagnostics,
-} from './IBTDemo';
+import { DEFAULT_AUDIO_VOICES, defaultConfig, mergeHardwareSettings, needsOverlayRendererDiagnostics } from './IBTDemo';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
@@ -2601,28 +2595,7 @@ export class BTAPI {
             throw new Error(errorMessages.OVERLAY_NO_BACKEND_MESSAGE);
         }
 
-        this.overlay = new Overlay(
-            layout,
-            resolveOverlayTopLeftLabel(pageTitle),
-            hw.targetFPS,
-            this.activeBackend,
-            hw.overlayStyle,
-            hw.isOverlayPaletteEnabled === true,
-            hw.overlayPaletteColumns,
-            hw.overlayPaletteRowsVisible,
-            hw.isOverlayTimingChartEnabled === true,
-            hw.overlayTimingChartStyle,
-            hw.overlayTimingChartHeight,
-            resolveOverlayTimingChartDiagnostics(hw),
-            hw.isOverlayRendererDiagnosticsBarEnabled === true,
-            hw.isOverlayVisibleAtStart === true,
-            hw.isOverlayToggleHintVisible !== false,
-            hw.isOverlayToggleEnabled !== false,
-            hw.isOverlayToggleHitDebugVisible === true,
-            hw.isOverlayAudioMetersEnabled === true,
-            hw.overlayAudioMeterStyle,
-            hw.overlayAudioMeterHeight,
-        );
+        this.overlay = new Overlay(layout, resolveOverlayTopLeftLabel(pageTitle), this.activeBackend, hw);
     }
 
     /**
