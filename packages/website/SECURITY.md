@@ -39,6 +39,8 @@ Defenses a report here can test against. Details live in [`CLAUDE.md`](CLAUDE.md
 - **`/mcp` is read-only and unauthenticated by design.** It exposes `search_docs`, `get_doc_page`, and
   `get_docs_summary` over public documentation. `get_doc_page` treats its argument as a lookup key into the in-memory
   corpus and never fetches it, and it rejects URLs on any host other than the request's own origin or `blit386.dev`.
+- **`/mcp` bounds every request.** A POST without `Content-Length` gets `411`, one over 64 KiB gets `413`, and a
+  `search_docs` query over 256 characters gets JSON-RPC error `-32602` before any search runs (`src/mcp-server.ts`).
 - **Preview deployments are not indexed.** The `next` channel sets `noindex` and serves a disallow-all `robots.txt`.
 
 For engine/runtime security issues in the BLIT386 library itself, or the reporting timeline and supported-version
