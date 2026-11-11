@@ -130,10 +130,15 @@ const BRANCH_FORCED_DELETE = new RegExp(
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
 // Config set for one run (`-c key=value`, `--config-env=key=VAR`) that `key` starts. An inline alias can stand for any
 // subcommand (`git -c alias.n=reset n --hard`), so it is denied outright; an agent never needs one. An inline push
-// refspec with `+`, or mirror mode, turns a plain `git push` into a forced one (BT-775).
+// refspec or mirror mode changes what a plain `git push` does - `+main` forces, `:main` deletes, and a `--config-env`
+// value is not visible at all - so any of them asks, whatever the value (BT-775). git reads section and key names in
+// any case (`ALIAS.n` is `alias.n`), so those match in any case; the remote name between them is case-sensitive.
+const anyCase = (word) => word.replace(/[a-z]/g, (letter) => `[${letter}${letter.toUpperCase()}]`);
 const inlineConfig = (key) => new RegExp(`${GIT}${ARGS}(-c|--config-env)(=|${SPACE}+)${key}`);
-const INLINE_ALIAS = inlineConfig('alias\\.');
-const INLINE_FORCE_PUSH = inlineConfig(`remote\\.${ARG_CHAR}*\\.(push=\\+|mirror)`);
+const INLINE_ALIAS = inlineConfig(`${anyCase('alias')}\\.`);
+const INLINE_PUSH_CONFIG = inlineConfig(
+    `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})(=|${ARG_END})`,
+);
 // Plumbing with the same effect as `git checkout -- .` and `git reset --hard` (BT-775): `checkout-index -f` overwrites
 // worktree files from the index, `read-tree --reset` (from `--res`, its shortest unique prefix) throws the index away.
 const CHECKOUT_INDEX_FORCE = new RegExp(
@@ -164,6 +169,12 @@ const ASK_FORCE_PUSH = {
     userMessage: 'Force push detected. Confirm before continuing.',
     agentMessage: 'Force push rewrites history. Ask the user for explicit confirmation first.',
 };
+const ASK_PUSH_CONFIG = {
+    decision: 'ask',
+    userMessage: 'Push settings given inline (-c remote.<name>.push or .mirror) detected. Confirm before continuing.',
+    agentMessage:
+        'An inline remote.<name>.push or .mirror setting changes what git push sends: it can force-push, delete, or mirror remote branches. Ask the user for explicit confirmation first.',
+};
 const ASK_PUSH_DELETE = {
     decision: 'ask',
     userMessage: 'Remote branch delete or mirror push detected. Confirm before continuing.',
@@ -190,17 +201,17 @@ const ASK_STASH = {
  * - Deny (no override): `git reset --hard`, `git checkout` onto paths (`--` anywhere, `.`, or a file-like argument),
  *   `git checkout` / `git switch` with `-f`, `--force` or `--discard-changes`, `git restore` in any form that touches
  *   the worktree, `git clean` unless it is a dry run with no force flag, the plumbing forms `git checkout-index -f`
- *   and `git read-tree --reset`, and an alias given with `-c` (it can stand for any of these). Each overwrites or
- *   discards, in place, content no git object was ever created for (uncommitted changes, untracked files), so no
- *   approval after the fact can bring it back. `git restore --staged` without `--worktree` only resets the index and
- *   leaves the files alone, so it is the one safe restore. `git clean` is denied by default rather than by force flag,
- *   because `git -c clean.requireForce=false clean -d` deletes without naming one. Deleting files or a whole worktree
- *   (`git rm -f`, `git worktree remove --force`) is not covered: it is the same judgment as `rm -rf`, which the guard
- *   never polices, and agents remove their own scratch worktrees routinely.
- * - Ask (an explicit approval lets it through): `git push --force*`, a `+refspec`, or a `-c` push refspec with `+` or
- *   mirror mode; `git push --delete`, a `:branch` refspec, or `--mirror`; `git branch -D` (or `-d` with `-f`); and
- *   `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits reachable for a
- *   while, so approving one is not approving something irreversible.
+ *   and `git read-tree --reset`, and an alias given with `-c` in any case (it can stand for any of these). Each
+ *   overwrites or discards, in place, content no git object was ever created for (uncommitted changes, untracked
+ *   files), so no approval after the fact can bring it back. `git restore --staged` without `--worktree` only resets
+ *   the index and leaves the files alone, so it is the one safe restore. `git clean` is denied by default rather than
+ *   by force flag, because `git -c clean.requireForce=false clean -d` deletes without naming one. Deleting files or a
+ *   whole worktree (`git rm -f`, `git worktree remove --force`) is not covered: it is the same judgment as `rm -rf`,
+ *   which the guard never polices, and agents remove their own scratch worktrees routinely.
+ * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`; a push refspec or mirror mode
+ *   given with `-c` / `--config-env`, in any case; `git push --delete`, a `:branch` refspec, or `--mirror`;
+ *   `git branch -D` (or `-d` with `-f`); and `git stash drop/clear`. These can discard work too, but reflog (or the
+ *   remote's) keeps the commits reachable for a while, so approving one is not approving something irreversible.
  *
  * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
  *
@@ -250,8 +261,12 @@ function isDangerousCommand(command) {
         return DENY_DESTRUCTIVE;
     }
 
-    if (any(FORCE_PUSH) || any(INLINE_FORCE_PUSH)) {
+    if (any(FORCE_PUSH)) {
         return ASK_FORCE_PUSH;
+    }
+
+    if (any(INLINE_PUSH_CONFIG)) {
+        return ASK_PUSH_CONFIG;
     }
 
     if (any(PUSH_DELETE)) {

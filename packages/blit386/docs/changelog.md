@@ -406,11 +406,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   [Primitives](api-rendering.md#primitives).
 - `@blit386/kit`: the agent shell guard in generated games no longer misses a destructive git command written inside a
   subshell or `$(...)`, across a line continuation, as `GIT` or `git.exe`, after a quoted `-C "my dir"`, or behind an
-  inline `-c alias`, and a safe `git restore --staged` or `git clean -n` no longer excuses a destructive one later on
-  the same line. It also refuses `git checkout-index -f` and `git read-tree --reset`. Behavior change: `git push` with
-  `--delete`, `-d`, a `:branch` refspec or `--mirror`, and an inline `-c remote.<name>.push=+...`, now ask you first
-  (Codex and Gemini CLI refuse them) where they used to run. The Claude Code and Gemini CLI hooks also block, instead of
-  allowing, when the guard cannot load, and Claude Code's when `node` is missing.
+  inline `-c alias` in any case, and a safe `git restore --staged` or `git clean -n` no longer excuses a destructive one
+  later on the same line. It also refuses `git checkout-index -f` and `git read-tree --reset`. Behavior change:
+  `git push` with `--delete`, `-d`, a `:branch` refspec or `--mirror`, and any push refspec or mirror mode set inline
+  with `-c` or `--config-env`, now ask you first (Codex and Gemini CLI refuse them) where they used to run. The Claude
+  Code and Gemini CLI hooks also block, instead of allowing, when the guard cannot load, and Claude Code's when `node`
+  is missing.
 
 ## 1.8.0 - 2026-10-18
 

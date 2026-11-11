@@ -154,9 +154,9 @@ it:
   It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
   destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or `git switch`,
   `git restore`, `git clean`, `git checkout-index -f`, `git read-tree --reset`, force push, a push that deletes remote
-  branches or mirrors, `git branch -D`, `git stash drop` or `clear`, and a git alias or force-push setting given with
-  `-c` for one command). It does not stop the agent from changing those files through a terminal command, so keep
-  terminal approval on if you need that boundary:
+  branches or mirrors, `git branch -D`, `git stash drop` or `clear`, and a git alias or push setting given with `-c` for
+  one command). It does not stop the agent from changing those files through a terminal command, so keep terminal
+  approval on if you need that boundary:
 
 ```json
 {
@@ -212,7 +212,7 @@ it:
               "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+(checkout-index(\\s+[^\\s;&|<>]+)*\\s+(-[a-zA-Z0-9]*f[a-zA-Z0-9]*|--f(o(r(ce?)?)?)?)|read-tree(\\s+[^\\s;&|<>]+)*\\s+--res(et?)?)(\\s|[;&|<>)`]|$)"
             },
             {
-              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+(-c|--config-env)(\\s+|=)(alias\\.|remote\\.\\S*\\.(push=\\+|mirror))"
+              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+(-c|--config-env)(\\s+|=)(alias\\.|remote\\.\\S*\\.(push|mirror)(=|\\s|$))"
             }
           ]
         }

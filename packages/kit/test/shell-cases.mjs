@@ -180,7 +180,17 @@ export const SHELL_CASES = [
     ['git -c remote.origin.push=+refs/heads/main push', 'ask'],
     ['git -c remote.origin.mirror=true push', 'ask'],
     ['git -c user.name=x commit -m y', 'allow'],
-    ['git -c remote.origin.push=refs/heads/main push', 'allow'],
+    // Any inline push refspec asks, whatever its value: `:main` deletes, and a `--config-env` value is not visible.
+    ['git -c remote.origin.push=refs/heads/main push', 'ask'],
+    ['git -c remote.origin.push=:main push', 'ask'],
+    ['git --config-env=remote.origin.push=REFSPEC push', 'ask'],
+    ['git --config-env remote.origin.push=REFSPEC push', 'ask'],
+    ['git -c remote.origin.pushurl=url push', 'allow'],
+    // git reads config section and key names in any case, so `ALIAS.n` is `alias.n`.
+    ['git -c ALIAS.n=reset n --hard', 'deny'],
+    ['git --config-env=Alias.n=X n', 'deny'],
+    ['git -c Remote.origin.Mirror=true push', 'ask'],
+    ['git -c REMOTE.origin.PUSH=+main push', 'ask'],
     // BT-775: plumbing that discards like `checkout --` / `reset --hard`, and pushes that delete or overwrite remote
     // branches. Deleting files or a whole worktree (`git rm -f`, `git worktree remove --force`) is left alone, as `rm` is.
     ['git checkout-index -a -f', 'deny'],

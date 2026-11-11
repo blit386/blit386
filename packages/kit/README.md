@@ -126,7 +126,8 @@ Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants
 session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset, a
 `checkout` onto paths, a forced `checkout` or `switch`, a `restore` onto the worktree, `clean`, `checkout-index -f`,
 `read-tree --reset`, an inline `-c alias`) and the ask list (force push, a push that deletes remote branches or mirrors,
-`branch -D`, `stash drop/clear`) are the same in every assistant that can enforce them.
+a push refspec or mirror mode set inline, `branch -D`, `stash drop/clear`) are the same in every assistant that can
+enforce them.
 
 ## The game-author skills
 

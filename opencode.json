@@ -133,14 +133,15 @@
       "git stash clear*": "ask",
       "git *-c alias.*": "deny",
       "git *--config-env*alias.*": "deny",
-      "git *-c remote.*.push=+*": "ask",
-      "git *-c remote.*.mirror*": "ask",
+      "git *-c * push*": "ask",
+      "git *--config-env* push*": "ask",
       "git checkout-index *": "deny",
       "git read-tree *--res*": "deny",
       "git push -d*": "ask",
       "git push * -d*": "ask",
       "git push *--de*": "ask",
       "git push * :*": "ask",
+      "git push :*": "ask",
       "git push *--mi*": "ask"
     }
   },

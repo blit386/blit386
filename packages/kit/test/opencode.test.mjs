@@ -181,6 +181,11 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git push origin --delete main',
         'git push -d origin main',
         'git push origin :main',
+        'git push :main',
+        'git -c remote.origin.push=:main push',
+        'git --config-env=remote.origin.push=REFSPEC push',
+        'git -c Remote.origin.Mirror=true push',
+        'git -c REMOTE.origin.PUSH=+main push',
     ];
     const ALLOWED = [
         'git status',
