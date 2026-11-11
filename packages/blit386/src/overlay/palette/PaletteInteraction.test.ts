@@ -15,18 +15,13 @@ import { mockFont } from '../testFixtures';
 import { ICON_HEIGHT, ICON_WIDTH } from '../toggleIconData';
 import {
     clampScrollRowOffset,
-    drawTooltipChrome,
-    drawTooltipLabel,
     hitTestSwatch,
     isPointerInScrollbarTrack,
-    layoutTooltip,
     maxScrollRowOffset,
-    PALETTE_COPY_STATUS_SECONDS,
     PALETTE_SCROLLBAR_TRACK_WIDTH_PX,
-    PaletteInteraction,
     resolveScrollRowOffsetFromTrackPointerY,
-    writeIndexToClipboard,
-} from './PaletteInteraction';
+} from './hitTest';
+import { PALETTE_COPY_STATUS_SECONDS, PaletteInteraction } from './PaletteInteraction';
 import {
     computeGrid,
     computeScrollbarThumbHeight,
@@ -37,6 +32,7 @@ import {
     writeScrollbarRects,
     writeSwatchTopLeft,
 } from './PaletteView';
+import { drawTooltipChrome, drawTooltipLabel, layoutTooltip, writeIndexToClipboard } from './tooltip';
 
 /** Minimal layout plan with only the palette band populated. */
 function paletteOnlyPlan(paletteBand: Rect2i): OverlayLayoutPlan {
