@@ -20,7 +20,7 @@ import { KeyboardInput } from '../input/KeyboardInput';
 import { setKeyboardLayout } from '../input/keyboardRuntimeMaps';
 import { PointerInput } from '../input/PointerInput';
 import type { OverlayDrawTarget } from '../overlay';
-import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
+import { createOverlayLayout, Overlay, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import type { SplashState } from '../splash';
@@ -32,6 +32,7 @@ import { Random } from '../utils/Random';
 import { Vector2i } from '../utils/Vector2i';
 import { DrawCommands } from './engine/DrawCommands';
 import { FrameCaptureCommands } from './engine/FrameCaptureCommands';
+import { FrameLoop } from './engine/FrameLoop';
 import { OverlayDiagnostics } from './engine/OverlayDiagnostics';
 import { PaletteController } from './engine/PaletteController';
 import { RendererSetup } from './engine/RendererSetup';
@@ -39,11 +40,10 @@ import { Seek } from './engine/Seek';
 import { createSplashIfEnabled, SplashBoot } from './engine/SplashBoot';
 import type { FrameDropCallback } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo } from './IBTDemo';
 import { DEFAULT_AUDIO_VOICES, needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
-import { resetUsage } from './RenderPaletteUsage';
 import { readSeedUrlParam } from './SeedUrlParam';
 import { WakeLock } from './WakeLock';
 
@@ -252,13 +252,16 @@ export class BTAPI {
      */
     public isSeeking = false;
 
+    /** The game loop's update and render callbacks and the tick clock. */
+    private readonly frameLoop = new FrameLoop(this);
+
     /**
      * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
      * `BT.renderAt` can seek it and it never reads `performance.now()`.
      *
      * Shared with the parts in `core/engine/`; not part of the BT API.
      */
-    public readonly paletteEffects = new PaletteEffectManager(() => this.getTickClockMs());
+    public readonly paletteEffects = new PaletteEffectManager(() => this.frameLoop.getTickClockMs());
 
     /**
      * Default engine PRNG; time-seeded when the singleton is created.
@@ -306,6 +309,41 @@ export class BTAPI {
     /** Draw calls and the per-frame palette-usage marks they leave for the overlay. */
     public readonly draw = new DrawCommands(this);
 
+    /**
+     * Milliseconds per fixed update (`1000 / targetFPS`); set by {@link init}, `0` before.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public updateIntervalMs = 0;
+
+    /**
+     * True only while the demo's `update()` runs; lets `BT.isPressed` hand carried pointer presses to update alone.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public updating = false;
+
+    /**
+     * Pointer / mouse / touch input subsystem. Created during {@link init}.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public pointer: PointerInput | null = null;
+
+    /**
+     * Gamepad input. Created during {@link init}.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public gamepad: GamepadInput | null = null;
+
+    /**
+     * Timing, renderer and audio snapshots for the overlay.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public readonly diagnostics = new OverlayDiagnostics(this);
+
     /** HTML canvas element used for rendering. */
     private canvas: HTMLCanvasElement | null = null;
 
@@ -314,26 +352,6 @@ export class BTAPI {
 
     /** True while an `init()` call is running; rejects overlapping inits and keeps {@link isInitialized} false. */
     private isInitInProgress = false;
-
-    /** Milliseconds per fixed update (`1000 / targetFPS`); set by {@link init}, `0` before. */
-    private updateIntervalMs = 0;
-
-    /** True only while the demo's `update()` runs; lets `BT.isPressed` hand carried pointer presses to update alone. */
-    private updating = false;
-
-    /**
-     * Overlay Backquote toggle press captured during a fixed-update tick, before
-     * {@link KeyboardInput.endUpdate} clears that tick's press edge. Read and reset by
-     * {@link beginRenderFrame} so the overlay (checked during the render phase, after every
-     * update tick for the frame has already run) still observes a press that landed inside a tick.
-     */
-    private pendingOverlayTogglePress = false;
-
-    /** Pointer / mouse / touch input subsystem. Created during {@link init}. */
-    private pointer: PointerInput | null = null;
-
-    /** Gamepad input. Created during {@link init}. */
-    private gamepad: GamepadInput | null = null;
 
     /** Screen wake lock subsystem. Created and attached during {@link init} only when
      *  {@link HardwareSettings.isWakeLockEnabled} is true. */
@@ -347,9 +365,6 @@ export class BTAPI {
 
     /** Hardware settings and renderer construction for init(). */
     private readonly rendererSetup = new RendererSetup(this);
-
-    /** Timing, renderer and audio snapshots for the overlay. */
-    private readonly diagnostics = new OverlayDiagnostics(this);
 
     /** Boot splash around the game's init(). */
     private readonly splashBoot = new SplashBoot(this);
@@ -1284,126 +1299,8 @@ export class BTAPI {
 
         this.loop = new GameLoop(
             updateInterval,
-            () => {
-                const updateStartMs = performance.now();
-                this.commitPendingCameraReset();
-                this.updating = true;
-
-                try {
-                    this.demo?.update();
-                } finally {
-                    this.updating = false;
-                }
-
-                this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
-                this.pendingUpdateSteps++;
-
-                // Palette effects advance once per fixed update, after the game's update(), on the
-                // tick clock. Per update rather than per render is what makes BT.renderAt exact: a
-                // seek runs the same palette updates as live play instead of one catch-up update at
-                // the end (a flash would only take its snapshot then), and the look no longer depends
-                // on the display's refresh rate.
-                if (this.palette && this.paletteEffects.activeCount > 0) {
-                    this.paletteEffects.update(this.palette);
-                }
-
-                const tick = this.loop?.getTicks() ?? 0;
-
-                // Sample the overlay toggle key's press edge before endUpdate clears it below.
-                // The overlay itself is only checked later, during the render phase (beginRenderFrame),
-                // by which point this tick's edge would otherwise already be gone.
-                if (this.keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, tick)) {
-                    this.pendingOverlayTogglePress = true;
-                }
-
-                // Dev-mode default: Shift+F9 saves a screenshot in every demo, no demo
-                // code needed. Unlike the overlay toggle above, this doesn't need to wait
-                // for the render phase - it just kicks off an async capture-and-download.
-                // Bare F9 (no Shift) instead copies to the OS clipboard, but that path is
-                // NOT handled here - see handleClipboardShortcutKeydown's doc comment for
-                // why it runs from a dedicated keydown listener instead of this tick.
-                if (!this.capture.isFrameCaptureShortcutInFlight && this.capture.isShiftF9ShortcutPressed(tick)) {
-                    void this.capture.captureFrameViaShortcut();
-                }
-
-                if (this.inputTrace.isRecording) {
-                    this.inputTrace.record('update', tick, this.pointer, this.keyboard, this.gamepad);
-                }
-
-                // Keyboard, gamepad and pointer edges (plus the keyboard text buffer, pointer delta and
-                // wheel scroll) align with fixed update rate, not display refresh rate (render may run 2x
-                // update on 120 Hz / 60 FPS setups), so each edge reaches exactly one update.
-                this.keyboard?.endUpdate();
-                this.gamepad?.endUpdate(tick);
-                this.pointer?.endUpdate();
-            },
-            () => {
-                const frameStartMs = performance.now();
-                let renderMs = 0;
-
-                if (this.renderer) {
-                    this.beginRenderFrame();
-
-                    this.renderer.beginFrame();
-
-                    // Re-prime the world camera before the demo draws, in case this render
-                    // frame has zero fixed-update steps (see lastCameraOffset doc comment).
-                    this.renderer.setCameraOffset(this.lastCameraOffset);
-
-                    const renderStartMs = performance.now();
-
-                    this.demo?.render();
-
-                    renderMs = Math.max(0, performance.now() - renderStartMs);
-
-                    // Before the overlay, which can consume this frame's wheel scroll.
-                    if (this.inputTrace.isRecording) {
-                        this.inputTrace.record(
-                            'render',
-                            this.loop?.getTicks() ?? 0,
-                            this.pointer,
-                            this.keyboard,
-                            this.gamepad,
-                        );
-                    }
-
-                    // Overlay: screen-space HUD after demo content (top/bottom bars).
-                    if (this.overlay && this.systemFont) {
-                        this.overlay.updateAndRender(
-                            this.renderer,
-                            this.systemFont,
-                            this.pointer,
-                            this.keyboard,
-                            this.loop?.getTicks() ?? 0,
-                            this.getDemoOverlayRows,
-                            this.diagnostics.overlayTiming,
-                            this.palette,
-                            this.draw.framePaletteUsageMask,
-                            this.diagnostics.audioSnapshot,
-                        );
-                    }
-
-                    this.diagnostics.captureRendererDiagnostics();
-                    this.diagnostics.captureAudioDiagnostics();
-
-                    this.renderer.endFrame(this.consumeFrameDeltaMs());
-                }
-
-                // Roll the pointer's render-side ('frame') clock for the overlay and render() readers.
-                // update() reads the 'update' clock, rolled in the update callback above, so a frame
-                // that runs no update loses nothing for it.
-                this.pointer?.endFrame();
-
-                // One Gamepad API poll per rendered frame. It does not roll edges over (the update
-                // callback does), so a press polled here survives a frame that runs no update.
-                this.gamepad?.endFrame();
-
-                this.diagnostics.commitFrame(frameStartMs, renderMs);
-
-                this.pendingUpdateMs = 0;
-                this.pendingUpdateSteps = 0;
-                this.pendingDrawCalls = 0;
-            },
+            () => this.frameLoop.update(),
+            () => this.frameLoop.render(),
             onFrameDrop,
         );
 
@@ -1430,54 +1327,6 @@ export class BTAPI {
 
         return true;
     }
-
-    /**
-     * Engine tick clock in milliseconds: `ticks * 1000 / targetFPS`. Palette effects and post-process
-     * effects read this instead of `performance.now()`, which is what makes `BT.renderAt` exact.
-     *
-     * @returns Milliseconds of fixed-step time since init or the last tick reset.
-     */
-    private getTickClockMs(): number {
-        return this.getTicks() * this.updateIntervalMs;
-    }
-
-    /**
-     * Tick-clock milliseconds since the previous loop render, for post-process effects. Clamped at
-     * 0 so a clock reset (`BT.ticksReset()`) never runs effect time backwards.
-     *
-     * @returns Non-negative effect time for this frame.
-     */
-    private consumeFrameDeltaMs(): number {
-        const nowMs = this.getTickClockMs();
-        const deltaMs = Math.max(0, nowMs - this.lastRenderClockMs);
-
-        this.lastRenderClockMs = nowMs;
-
-        return deltaMs;
-    }
-
-    /**
-     * Applies a deferred {@link resetCamera} to {@link lastCameraOffset}, if one is pending.
-     * Called at the start of the fixed-update tick, before the demo's own `update()` runs, so a
-     * `setCameraOffset()` call inside that `update()` overrides it normally - see
-     * {@link pendingCameraReset}.
-     */
-    private commitPendingCameraReset(): void {
-        if (this.pendingCameraReset) {
-            this.pendingCameraReset = false;
-            this.lastCameraOffset = Vector2i.zero();
-        }
-    }
-
-    /**
-     * Bound supplier for {@link IBTDemo.overlayRows}, passed to `Overlay.handleFrameInput` and
-     * `Overlay.updateAndRender`. A field instead of an inline closure at each call site so the
-     * two call sites (input handling, then draw) do not each allocate a fresh arrow function
-     * every frame.
-     *
-     * @returns Current demo's overlay rows, if any.
-     */
-    private readonly getDemoOverlayRows = (): readonly OverlayRow[] | undefined => this.demo?.overlayRows?.();
 
     /**
      * Creates the engine overlay when enabled in hardware settings.
@@ -1620,34 +1469,5 @@ export class BTAPI {
 
         this.audio?.detach();
         this.audio = null;
-    }
-
-    /**
-     * Applies overlay input (palette swatch copy, then body toggle) and clears per-frame palette usage.
-     *
-     * Input runs here (not in {@link Overlay.updateAndRender}) so visibility is current
-     * when deciding whether to track palette usage during `demo.render()`. The usage mask is
-     * only cleared when tracking is actually active this frame (it toggles with overlay/palette
-     * visibility above) - nothing reads or repopulates it otherwise, so clearing it would be
-     * wasted work on every frame the overlay palette grid is not visible.
-     */
-    private beginRenderFrame(): void {
-        this.isDevGuardActive = isDevMode();
-
-        if (this.overlay) {
-            this.overlay.handleFrameInput(
-                this.pointer,
-                this.pendingOverlayTogglePress,
-                this.loop?.getTicks() ?? 0,
-                this.getDemoOverlayRows,
-                this.palette,
-            );
-        }
-
-        this.pendingOverlayTogglePress = false;
-
-        if (this.draw.isTrackingFramePaletteUsage()) {
-            resetUsage(this.draw.framePaletteUsageMask);
-        }
     }
 }

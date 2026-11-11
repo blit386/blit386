@@ -811,7 +811,9 @@ describe('BTAPI', () => {
             BTAPI.instance.setCameraOffset(new Vector2i(500, 0));
             BTAPI.instance.resetCamera();
 
-            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+            (
+                BTAPI.instance as unknown as { frameLoop: { commitPendingCameraReset(): void } }
+            ).frameLoop.commitPendingCameraReset();
 
             expect(lastCameraOffset()).toEqual(new Vector2i(0, 0));
         });
@@ -821,7 +823,9 @@ describe('BTAPI', () => {
             BTAPI.instance.resetCamera();
             BTAPI.instance.setCameraOffset(new Vector2i(10, 20));
 
-            (BTAPI.instance as unknown as { commitPendingCameraReset(): void }).commitPendingCameraReset();
+            (
+                BTAPI.instance as unknown as { frameLoop: { commitPendingCameraReset(): void } }
+            ).frameLoop.commitPendingCameraReset();
 
             expect(lastCameraOffset()).toEqual(new Vector2i(10, 20));
         });
