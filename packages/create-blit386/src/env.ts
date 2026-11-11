@@ -6,32 +6,20 @@
  * CLI. The CLI wiring lives in index.ts.
  */
 
-/** Minimum Node.js version the engine (and therefore a scaffolded game) supports. */
-export const NODE_FLOOR = '22.18.0';
+import { fileURLToPath } from 'node:url';
 
-type Triple = [number, number, number];
+import { compareVersions, nodeFloor } from '@blit386/kit/adapters';
 
-/** Parse a `major.minor.patch` string into numbers; missing or non-numeric parts become 0. */
-function parse(version: string): Triple {
-    const core = version.split('-', 1)[0] ?? '';
-    const [major = 0, minor = 0, patch = 0] = core.split('.').map((part) => Number.parseInt(part, 10) || 0);
+/**
+ * Minimum Node.js version the engine (and therefore a scaffolded game) supports: this package's own `engines.node`
+ * floor, read at runtime so the friendly check cannot drift from the floor npm enforces. `dist/` sits one level below
+ * the package root, both in the repo and once published. Generated games get it as their `engines.node` too.
+ */
+export const NODE_FLOOR = nodeFloor(fileURLToPath(new URL('..', import.meta.url)));
 
-    return [major, minor, patch];
-}
-
-/** True when `current` is greater than or equal to `floor`, compared part by part. */
+/** True when `current` is greater than or equal to `floor`, compared part by part (pre-release tags ignored). */
 export function meetsNodeFloor(current: string, floor: string = NODE_FLOOR): boolean {
-    const [aMajor, aMinor, aPatch] = parse(current);
-    const [bMajor, bMinor, bPatch] = parse(floor);
-
-    if (aMajor !== bMajor) {
-        return aMajor > bMajor;
-    }
-    if (aMinor !== bMinor) {
-        return aMinor > bMinor;
-    }
-
-    return aPatch >= bPatch;
+    return compareVersions(current, floor) >= 0;
 }
 
 /** True only when both stdin and stdout are TTYs, i.e. a human can answer prompts. */

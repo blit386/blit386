@@ -213,6 +213,11 @@ const starterPage = (release) => {
         kitVersion: `^${release.published}`,
         packageManager: '',
         entryFile: '/src/game.js',
+        // Same as scaffold.ts: the scaffolder's own `engines.node` floor, without the `>=`.
+        nodeFloor: JSON.parse(readFileSync(join(TEMPLATES, '..', 'package.json'), 'utf8')).engines.node.replace(
+            /^>=/u,
+            '',
+        ),
     };
     const files = [
         ['package.json', join(TEMPLATES, 'js', 'package.json.tmpl'), 'json'],

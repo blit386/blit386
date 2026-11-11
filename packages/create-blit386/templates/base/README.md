@@ -14,15 +14,15 @@ You need [Node.js](https://nodejs.org) installed once (download the big LTS butt
 A web address like `http://localhost:5173` appears. Open it in your browser to play.
 
 - Phone or tablet: tap or drag - the paddle follows your finger.
-- Computer: move the mouse to steer the paddle, or use the left and right arrow keys (or A and D) as a fallback.
+- Computer: move the mouse to steer the paddle, or use the left and right arrow keys (or A and D).
 
 Catch the falling blocks before they reach the bottom.
 
 ## Change the game
 
-Open `{{gameFile}}`. Every line has a comment explaining what it does. Change a number or a color, save the file, and
-your browser updates by itself - most edits keep the game running (hot reload) instead of wiping your score. Edit a PNG
-or sound under `public/` and that asset updates in place too. A few things to try:
+Open `{{gameFile}}`. Almost every line has a comment explaining what it does. Change a number or a color, save the file,
+and your browser updates by itself - most edits keep the game running (hot reload) instead of wiping your score. Edit a
+PNG or sound under `public/` and that asset updates in place too. A few things to try:
 
 - Make the blocks fall faster: find `ITEM_FALL_SPEED`.
 - Make the paddle wider or narrower: `PADDLE_WIDTH`.

@@ -532,7 +532,8 @@ As built in v0.1 (slightly richer than the original three-question sketch):
    `AGENT_ADAPTERS` registry, so a new adapter appears here without a scaffolder change. Leave all unchecked for none.
    "None" still emits `AGENTS.md` + local `docs/` (see 4.9).
 4. "Add GitHub Actions CI (build + format check)?" - optional, default no.
-5. Scaffold, `git init` + first commit (skippable), install, print the next steps.
+5. Scaffold, install, `git init` on `main` + first commit (skippable; after the install so it carries the lockfile),
+   print the next steps.
 
 Flags for pros and CI (built): `--yes`/`-y` (skip prompts, defaults), `--ts` (TypeScript layer), `--no-install`,
 `--no-git`. Still unimplemented: `--agent=<name>` (the assistant can only be chosen in the wizard, or added afterwards

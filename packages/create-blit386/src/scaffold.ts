@@ -15,7 +15,6 @@
  * can detect what the user has modified and handle conflicts without clobbering edits.
  */
 
-import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +26,8 @@ import {
     type BlitManifest,
     classifyFile,
     collectDocs,
+    GAME_FILE_JS,
+    GAME_FILE_TS,
     type GeneratedFile,
     generateAgentFiles,
     isKitManaged,
@@ -35,15 +36,26 @@ import {
     readKitVersion,
     render,
     resolveKitRoot,
+    sha256,
     type TemplateVars,
 } from '@blit386/kit/adapters';
+
+import { NODE_FLOOR } from './env';
 
 /** blit386 version range written into the generated package.json. */
 const BLIT386_RANGE = '^1.8.0';
 
-/** Output directory names for optional wizard templates. */
+/**
+ * Yarn 2+ (a `yarn@2.x` or later `packageManager` pin) installs with Plug'n'Play by default, which makes no
+ * `node_modules`: `npx blit`, the `biome.json` `$schema` path, and the agent hooks would all miss the local packages.
+ * Such a game gets this `.yarnrc.yml` so Yarn installs a classic `node_modules` instead.
+ */
+const YARN_BERRY_PIN = /^yarn@(?:[2-9]|[1-9]\d+)\./;
+const YARNRC_FILE = '.yarnrc.yml';
+const YARNRC_CONTENT = 'nodeLinker: node-modules\n';
+
+/** Output directory name for the optional CI template. */
 const GITHUB_DIR = '.github';
-const CURSOR_DIR = '.cursor';
 
 /** Which language layer to scaffold. */
 export type LanguageChoice = 'js' | 'ts';
@@ -86,43 +98,50 @@ function stripTmpl(name: string): string {
     return name.endsWith('.tmpl') ? name.slice(0, -'.tmpl'.length) : name;
 }
 
+/**
+ * Template names that become dotfiles in the generated project. `templates/` keeps them without the dot because npm
+ * drops or renames some dotfiles (`.gitignore`) when it packs this package.
+ */
+const DOTFILE_NAMES = new Map([
+    ['gitignore', '.gitignore'],
+    ['editorconfig', '.editorconfig'],
+    ['gitattributes', '.gitattributes'],
+    ['node-version', '.node-version'],
+    ['prettierignore', '.prettierignore'],
+]);
+
 /** Map template file/dir names to their output names in the generated project. */
 function mapOutputName(name: string): string {
-    if (name === 'gitignore') {
-        return '.gitignore';
-    }
-    if (name === 'editorconfig') {
-        return '.editorconfig';
-    }
-    if (name === 'gitattributes') {
-        return '.gitattributes';
-    }
-    if (name === 'node-version') {
-        return '.node-version';
-    }
-    if (name === 'prettierignore') {
-        return '.prettierignore';
-    }
-    if (name === 'dot-cursor') {
-        return CURSOR_DIR;
-    }
-    if (name === 'dot-github') {
-        return GITHUB_DIR;
-    }
-    return stripTmpl(name);
+    return DOTFILE_NAMES.get(name) ?? stripTmpl(name);
 }
 
-/** Turn a folder name into a valid npm package name (lowercase, dashes, no surprises). */
-function toPackageName(name: string): string {
+/** The npm names a language layer's `package.json.tmpl` depends on. */
+function templateDependencies(languageDir: string): Set<string> {
+    const pkg = JSON.parse(readFileSync(join(languageDir, 'package.json.tmpl'), 'utf8')) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+    };
+
+    return new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})]);
+}
+
+/**
+ * Turn a folder name into a valid npm package name (lowercase, dashes, no surprises). A name that matches one of the
+ * game's own dependencies (a folder called `vite` or `blit386`) gets a `-game` suffix: npm refuses to install a
+ * package that depends on itself.
+ */
+function toPackageName(name: string, dependencies: ReadonlySet<string>): string {
     const cleaned = name
         .toLowerCase()
         .replace(/[^a-z0-9-]+/g, '-')
         .replace(/^-+|-+$/g, '');
-    return cleaned.length > 0 ? cleaned : 'my-blit-game';
+    const packageName = cleaned.length > 0 ? cleaned : 'my-blit-game';
+
+    return dependencies.has(packageName) ? `${packageName}-game` : packageName;
 }
 
 /** Copy a template tree, renaming special files/dirs, stripping `.tmpl`, and rendering placeholders. */
-function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, written?: Set<string>): void {
+function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, written: Set<string>): void {
     mkdirSync(destDir, { recursive: true });
 
     for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
@@ -135,14 +154,9 @@ function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars, w
         } else {
             const content = readFileSync(srcPath, 'utf8');
             writeFileSync(destPath, render(content, vars));
-            written?.add(destPath);
+            written.add(destPath);
         }
     }
-}
-
-/** Compute the SHA-256 hex digest of a UTF-8 file. */
-function sha256(filePath: string): string {
-    return createHash('sha256').update(readFileSync(filePath)).digest('hex');
 }
 
 /**
@@ -226,12 +240,13 @@ export function scaffold(options: ScaffoldOptions): void {
     const language: LanguageChoice = options.language ?? 'js';
 
     // gameFile is the user-readable path (README); entryFile is the HTML script src (leading slash).
-    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const gameFile = language === 'ts' ? GAME_FILE_TS : GAME_FILE_JS;
     const entryFile = `/${gameFile}`;
 
+    const templates = templatesDir();
     const vars: TemplateVars = {
         projectName: options.projectName,
-        packageName: toPackageName(options.projectName),
+        packageName: toPackageName(options.projectName, templateDependencies(join(templates, language))),
         blit386Version: BLIT386_RANGE,
         kitVersion: `^${kitVer}`,
         pmInstall: options.pmInstall,
@@ -247,17 +262,27 @@ export function scaffold(options: ScaffoldOptions): void {
         entryFile,
 
         gameFile,
+
+        // The Node floor is this package's own `engines.node`; `.node-version` takes only its major, so version
+        // managers and the CI's setup-node pick the newest release of that line instead of pinning an old patch.
+        nodeFloor: NODE_FLOOR,
+        nodeMajor: NODE_FLOOR.split('.', 1)[0] ?? NODE_FLOOR,
     };
 
     // Collect every file path we write so we can build the ownership manifest.
     const writtenPaths = new Set<string>();
 
-    const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
     copyTemplateTree(join(templates, language), options.targetDir, vars, writtenPaths);
     if (options.packageManager === undefined) {
         const pkgPath = join(options.targetDir, 'package.json');
         writeFileSync(pkgPath, readFileSync(pkgPath, 'utf8').replace(/^[ \t]*"packageManager": "",\r?\n/m, ''));
+    }
+
+    if (YARN_BERRY_PIN.test(options.packageManager ?? '')) {
+        const yarnrc = join(options.targetDir, YARNRC_FILE);
+        writeFileSync(yarnrc, YARNRC_CONTENT);
+        writtenPaths.add(yarnrc);
     }
 
     if (options.includeCi) {

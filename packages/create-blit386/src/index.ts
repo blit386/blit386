@@ -1,7 +1,7 @@
 /**
  * `create-blit386` entry point.
  *
- * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> git init -> install -> print next steps.
+ * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> install -> git init -> print next steps.
  * Flags: --yes/-y (skip prompts), --ts (TypeScript template), --no-install, --no-git.
  *
  * Two guards run before the wizard: the Node version must meet the engine floor (a friendly message beats an
@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 
+import { GAME_FILE_JS, GAME_FILE_TS } from '@blit386/kit/adapters';
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
 import { isInteractive, meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from './env';
@@ -20,18 +21,32 @@ import { detectPackageManager, packageManagerField, pmHints } from './pkgManager
 import { scaffold } from './scaffold';
 import { defaultWizardOptions, runWizard } from './wizard';
 
-function tryGitInit(dir: string): boolean {
+/** The branch the first commit lands on. The optional CI workflow runs on pushes and pull requests to it. */
+const DEFAULT_BRANCH = 'main';
+
+/** What `tryGitInit` managed: nothing (git missing), a repository with no commit, or a saved first version. */
+type GitInitResult = 'no-git' | 'no-commit' | 'committed';
+
+function tryGitInit(dir: string): GitInitResult {
     try {
         execFileSync('git', ['init', '-q'], { cwd: dir, stdio: 'ignore' });
+    } catch {
+        // git missing. Not fatal; the no-git nag will guide them later.
+        return 'no-git';
+    }
+
+    try {
+        // Name the branch before the first commit. `git init -b` would do the same but needs git 2.28+.
+        execFileSync('git', ['symbolic-ref', 'HEAD', `refs/heads/${DEFAULT_BRANCH}`], { cwd: dir, stdio: 'ignore' });
         execFileSync('git', ['add', '-A'], { cwd: dir, stdio: 'ignore' });
         execFileSync('git', ['commit', '-q', '-m', 'Initial commit from create-blit386'], {
             cwd: dir,
             stdio: 'ignore',
         });
-        return true;
+        return 'committed';
     } catch {
-        // git missing, or no identity configured. Not fatal; the no-git nag will guide them later.
-        return false;
+        // Usually no git identity configured: the repository exists, but nothing is saved in it yet.
+        return 'no-commit';
     }
 }
 
@@ -134,10 +149,7 @@ async function main(): Promise<void> {
     });
     log.success(`Created ${projectName} (${languageLabel})`);
 
-    if (!noGit && tryGitInit(targetDir)) {
-        log.step('Started a git repository and saved the first version');
-    }
-
+    // Install before the first commit, so the commit carries the lockfile the CI workflow's frozen install needs.
     let installed = false;
     if (!noInstall) {
         log.step(`Installing the engine with ${pm.name} (this can take a minute)`);
@@ -149,10 +161,21 @@ async function main(): Promise<void> {
         }
     }
 
+    const git = noGit ? 'no-git' : tryGitInit(targetDir);
+    if (git === 'committed') {
+        log.step('Started a git repository and saved the first version');
+    } else if (git === 'no-commit') {
+        log.warn(
+            'Started a git repository, but git could not save the first version. Tell git who you are with ' +
+                'git config --global user.name "Your Name" and git config --global user.email "you@example.com", ' +
+                'then run git add -A and git commit -m "First version".',
+        );
+    }
+
     const steps = [`cd ${quoteIfSpaced(dirArg)}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
     note(steps.join('\n'), 'Next steps');
 
-    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const gameFile = language === 'ts' ? GAME_FILE_TS : GAME_FILE_JS;
     outro(`Have fun. Open ${gameFile} to change the game.`);
 }
 

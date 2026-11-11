@@ -7,7 +7,10 @@
 - `.gitattributes` forces LF checkouts because `biome.json` enforces `lineEnding: "lf"`; without it, Git for Windows
   (`core.autocrlf=true` by default) checks out CRLF and `format:check` fails. `.node-version` is the one Node pin a game
   has: version managers (fnm, mise, nodenv) read it locally, and the optional CI workflow reads it via
-  `node-version-file`.
+  `node-version-file`. It holds only the major (`{{nodeMajor}}`), so the newest release of that line is picked; the
+  generated `engines.node` holds the full floor (`>={{nodeFloor}}`). Both come from `NODE_FLOOR` (`src/env.ts`), which
+  reads this package's own `engines.node` via the kit's `nodeFloor()`; `test/node-floor.test.mjs` checks the engine,
+  kit, and scaffolder floors agree.
 - `templates/js/` - JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
 - `templates/ts/` - TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic,
   typed.
@@ -26,7 +29,12 @@
   `.cursor/mcp.json`, ...) and Copilot's `.github/workflows/copilot-setup-steps.yml` - do not add a static template for
   them. That workflow copies the action pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` /
   `ACTIONS_SETUP_NODE` in the kit's `src/adapters/copilot.ts`); bump both together - `test/agent-copilot.test.mjs` fails
-  when they drift.
+  when they drift. Renovate does not scan `templates/`, so `test/ci-pins.test.mjs` holds the template to the SHAs the
+  repo's own `.github/workflows/` use.
+- A game whose `packageManager` pin is Yarn 2 or later also gets a `.yarnrc.yml` with `nodeLinker: node-modules`
+  (written in code by `scaffold()`, not a template): Yarn's default Plug'n'Play makes no `node_modules`, and `npx blit`,
+  the `biome.json` `$schema` path, and the agent hooks all rely on one. Teaching `yarn blit` instead would leave the
+  schema path and every hook broken.
 - `biome.json` lists `!.blit` in `files.includes` and `.prettierignore` lists `.blit/`: the pristine kit copies under
   `.blit/base/` must never be reformatted, or `blit agents sync` reports edits the user did not make (root `CLAUDE.md`).
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
