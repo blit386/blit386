@@ -454,7 +454,8 @@ on the backend-parity subset.
 - AssetLoader - tests stub `Image` with `vi`; do not rely on happy-dom data-URI `onload` behavior.
 - `Vector2i -0` vs. `0` - use `result.x + 0` in assertions when sign is meaningless.
 - `docs:links` scope - `scripts/check-markdown-links.mjs` enumerates git-tracked `*.md` / `*.mdx` via `git ls-files`
-  (honors `.gitignore`), not only `docs/` and README.
+  (honors `.gitignore`), not only `docs/` and README. It also checks every relative `#anchor` and `page.md#anchor`
+  against the target page's headings, slugged the way blit386.dev and GitHub slug them.
 
 ## See also
 
