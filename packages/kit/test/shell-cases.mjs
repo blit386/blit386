@@ -181,4 +181,20 @@ export const SHELL_CASES = [
     ['git -c remote.origin.mirror=true push', 'ask'],
     ['git -c user.name=x commit -m y', 'allow'],
     ['git -c remote.origin.push=refs/heads/main push', 'allow'],
+    // BT-775: plumbing that discards like `checkout --` / `reset --hard`, and pushes that delete or overwrite remote
+    // branches. Deleting files or a whole worktree (`git rm -f`, `git worktree remove --force`) is left alone, as `rm` is.
+    ['git checkout-index -a -f', 'deny'],
+    ['git checkout-index --force -a', 'deny'],
+    ['git read-tree -u --reset HEAD', 'deny'],
+    ['git checkout-index -a', 'allow'],
+    ['git read-tree HEAD', 'allow'],
+    ['git push --mirror', 'ask'],
+    ['git push origin --delete main', 'ask'],
+    ['git push -d origin main', 'ask'],
+    ['git push origin :main', 'ask'],
+    ['git push origin HEAD:main', 'allow'],
+    ['git push --dry-run origin main', 'allow'],
+    ['git push -o ci.skip origin main', 'allow'],
+    ['git rm -rf build', 'allow'],
+    ['git worktree remove --force ../wt', 'allow'],
 ];

@@ -134,6 +134,17 @@ const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${AR
 const inlineConfig = (key) => new RegExp(`${GIT}${ARGS}(-c|--config-env)(=|${SPACE}+)${key}`);
 const INLINE_ALIAS = inlineConfig('alias\\.');
 const INLINE_FORCE_PUSH = inlineConfig(`remote\\.${ARG_CHAR}*\\.(push=\\+|mirror)`);
+// Plumbing with the same effect as `git checkout -- .` and `git reset --hard` (BT-775): `checkout-index -f` overwrites
+// worktree files from the index, `read-tree --reset` (from `--res`, its shortest unique prefix) throws the index away.
+const CHECKOUT_INDEX_FORCE = new RegExp(
+    `${GIT_PREFIX}checkout-index${ARGS}(${shortCluster('f')}|${FORCE_OPTION})${ARG_END}`,
+);
+const READ_TREE_RESET = new RegExp(`${GIT_PREFIX}read-tree${ARGS}--res(et?)?${ARG_END}`);
+// A push that deletes or overwrites remote branches without a force flag (BT-775): `--delete` (from `--de`; `--d` is
+// also `--dry-run`) or `-d`, a `:branch` refspec, and `--mirror` (from `--mi`).
+const PUSH_DELETE = new RegExp(
+    `${GIT_PREFIX}push${ARGS}(${shortCluster('d')}|--de(l(e(te?)?)?)?|--mi(r(r(or?)?)?)?|:${ARG_CHAR}+)${ARG_END}`,
+);
 // What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`), plus
 // the parentheses and backticks around a subshell or a command substitution (`(git ...)`, `$(git ...)`, `` `git ...` ``),
 // so every rule sees the command inside them on its own (BT-775). A command that merely quotes a destructive git command
@@ -152,6 +163,12 @@ const ASK_FORCE_PUSH = {
     decision: 'ask',
     userMessage: 'Force push detected. Confirm before continuing.',
     agentMessage: 'Force push rewrites history. Ask the user for explicit confirmation first.',
+};
+const ASK_PUSH_DELETE = {
+    decision: 'ask',
+    userMessage: 'Remote branch delete or mirror push detected. Confirm before continuing.',
+    agentMessage:
+        'git push --delete, a :branch refspec, or --mirror deletes or overwrites branches on the remote. Ask the user for explicit confirmation first.',
 };
 const ASK_BRANCH_DELETE = {
     decision: 'ask',
@@ -172,16 +189,24 @@ const ASK_STASH = {
  *
  * - Deny (no override): `git reset --hard`, `git checkout` onto paths (`--` anywhere, `.`, or a file-like argument),
  *   `git checkout` / `git switch` with `-f`, `--force` or `--discard-changes`, `git restore` in any form that touches
- *   the worktree, and `git clean` unless it is a dry run with no force flag. Each destroys content no git object was
- *   ever created for (uncommitted changes, untracked files), so no approval after the fact can bring it back.
- *   `git restore --staged` without `--worktree` only resets the index and leaves the files alone, so it is the
- *   one safe restore. `git clean` is denied by default rather than by force flag, because
- *   `git -c clean.requireForce=false clean -d` deletes without naming one.
- * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`, `git branch -D` (or `-d` with
- *   `-f`), and `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits
- *   reachable for a while, so approving one is not approving something irreversible.
+ *   the worktree, `git clean` unless it is a dry run with no force flag, the plumbing forms `git checkout-index -f`
+ *   and `git read-tree --reset`, and an alias given with `-c` (it can stand for any of these). Each overwrites or
+ *   discards, in place, content no git object was ever created for (uncommitted changes, untracked files), so no
+ *   approval after the fact can bring it back. `git restore --staged` without `--worktree` only resets the index and
+ *   leaves the files alone, so it is the one safe restore. `git clean` is denied by default rather than by force flag,
+ *   because `git -c clean.requireForce=false clean -d` deletes without naming one. Deleting files or a whole worktree
+ *   (`git rm -f`, `git worktree remove --force`) is not covered: it is the same judgment as `rm -rf`, which the guard
+ *   never polices, and agents remove their own scratch worktrees routinely.
+ * - Ask (an explicit approval lets it through): `git push --force*`, a `+refspec`, or a `-c` push refspec with `+` or
+ *   mirror mode; `git push --delete`, a `:branch` refspec, or `--mirror`; `git branch -D` (or `-d` with `-f`); and
+ *   `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits reachable for a
+ *   while, so approving one is not approving something irreversible.
  *
  * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
+ *
+ * This is a tripwire for honest mistakes, not a sandbox: it reads the command text, so anything that builds the
+ * command at run time - `$IFS`, a variable (`g=git; $g ...`), `eval`, `GIT_CONFIG_*` environment config, or an alias
+ * set earlier with `git config` - gets past it.
  *
  * @param {string} command - The raw command text.
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
@@ -212,12 +237,25 @@ function isDangerousCommand(command) {
     const destructiveCheckout =
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
-    if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore || any(INLINE_ALIAS)) {
+    const destructivePlumbing = any(CHECKOUT_INDEX_FORCE) || any(READ_TREE_RESET);
+
+    if (
+        any(RESET_HARD) ||
+        destructiveCheckout ||
+        destructiveClean ||
+        destructiveRestore ||
+        destructivePlumbing ||
+        any(INLINE_ALIAS)
+    ) {
         return DENY_DESTRUCTIVE;
     }
 
     if (any(FORCE_PUSH) || any(INLINE_FORCE_PUSH)) {
         return ASK_FORCE_PUSH;
+    }
+
+    if (any(PUSH_DELETE)) {
+        return ASK_PUSH_DELETE;
     }
 
     if (any(BRANCH_FORCED_DELETE)) {

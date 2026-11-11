@@ -1203,6 +1203,16 @@ const OPENCODE_PERMISSION = {
         'git *--config-env*alias.*': 'deny',
         'git *-c remote.*.push=+*': 'ask',
         'git *-c remote.*.mirror*': 'ask',
+        // Plumbing that discards like `checkout --` and `reset --hard`; every `checkout-index` is denied, which is
+        // coarser than the guard core (it denies only `-f`), since a `-f` can sit anywhere in a short-flag cluster.
+        'git checkout-index *': 'deny',
+        'git read-tree *--res*': 'deny',
+        // A push that deletes or overwrites remote branches: `--delete` / `-d`, a `:branch` refspec, `--mirror`.
+        'git push -d*': 'ask',
+        'git push * -d*': 'ask',
+        'git push *--de*': 'ask',
+        'git push * :*': 'ask',
+        'git push *--mi*': 'ask',
     },
 } as const;
 
