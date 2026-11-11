@@ -2021,6 +2021,10 @@ export class BTAPI {
         this.stop();
         this.loop = null;
         this.releaseRenderer();
+        // The new game starts from nothing, like a first boot: no palette until its init() sets one.
+        this.palette = null;
+        this.paletteEffects.clear();
+        this.pendingCameraReset = false;
 
         this.demo = demo;
         this.canvas = canvas;

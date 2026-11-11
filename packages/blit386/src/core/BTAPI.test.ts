@@ -55,7 +55,11 @@ import type { SpriteDrawParams } from '../render/SpriteOrientation';
 import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
-import { PALETTE_EFFECT_SLOT_ZERO_MESSAGE, paletteEffectEndOutOfRangeError } from '../utils/errorMessages';
+import {
+    NO_ACTIVE_PALETTE_MESSAGE,
+    PALETTE_EFFECT_SLOT_ZERO_MESSAGE,
+    paletteEffectEndOutOfRangeError,
+} from '../utils/errorMessages';
 import type * as FrameCaptureModule from '../utils/FrameCapture';
 import { downloadBlob } from '../utils/FrameCapture';
 import { Rect2i } from '../utils/Rect2i';
@@ -2030,6 +2034,26 @@ describe('BTAPI', () => {
             expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
 
             expect(clearEffects).toHaveBeenCalledTimes(1);
+        });
+
+        it('should start a restart with no palette, palette effects or pending camera reset (BT-759)', async () => {
+            const first = makeMockDemo();
+
+            vi.mocked(first.init).mockImplementation(async () => {
+                BTAPI.instance.setPalette(Palette.pico8());
+                BTAPI.instance.paletteCycle(1, 4, 1);
+                BTAPI.instance.resetCamera();
+
+                return true;
+            });
+            expect(await BTAPI.instance.init(first, makeMockCanvas())).toBe(true);
+            expect(activeEffectCount()).toBe(1);
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            expect(() => BT.palette).toThrow(NO_ACTIVE_PALETTE_MESSAGE);
+            expect(activeEffectCount()).toBe(0);
+            expect((BTAPI.instance as unknown as { pendingCameraReset: boolean }).pendingCameraReset).toBe(false);
         });
 
         it('should reject a captureFrame still pending when init restarts (BT-756)', async () => {
