@@ -11,7 +11,7 @@
  * the suite can validate setup logic deterministically.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import {
     createMockGPUCanvasContext,
@@ -19,7 +19,7 @@ import {
     installMockNavigatorGPU,
     uninstallMockNavigatorGPU,
 } from '../__test__/webgpu-mock';
-import { WEBGPU_ADAPTER_MESSAGE, WEBGPU_DEVICE_MESSAGE } from '../utils/errorMessages';
+import { WEBGPU_ADAPTER_MESSAGE, WEBGPU_DEVICE_MESSAGE, webgpuDeviceLostError } from '../utils/errorMessages';
 import { RenderDimensionLimitError } from '../utils/RenderLimits';
 import { Vector2i } from '../utils/Vector2i';
 import { initWebGPU } from './WebGPUContext';
@@ -300,6 +300,49 @@ describe('initWebGPU', () => {
 
             await expect(initWebGPU(createMockCanvas(gpuContext), displaySize)).rejects.toBe(failure);
             expect(destroy).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('device loss (BT-759)', () => {
+        async function initWithLostInfo(info: Partial<GPUDeviceLostInfo>): Promise<MockInstance> {
+            const device = { ...createMockGPUDevice(), lost: Promise.resolve(info) } as GPUDevice;
+
+            Object.defineProperty(globalThis, 'navigator', {
+                value: {
+                    gpu: {
+                        requestAdapter: async () => ({ requestDevice: async () => device, features: new Set() }),
+                        getPreferredCanvasFormat: () => 'bgra8unorm' as GPUTextureFormat,
+                    },
+                    userAgent: 'test',
+                },
+                writable: true,
+                configurable: true,
+            });
+
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            await initWebGPU(createMockCanvas(), displaySize);
+            await device.lost;
+            await Promise.resolve();
+
+            return errorSpy;
+        }
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('logs one clear error when the device is lost', async () => {
+            const errorSpy = await initWithLostInfo({ reason: 'unknown', message: 'GPU process exited' });
+
+            expect(errorSpy).toHaveBeenCalledTimes(1);
+            expect(errorSpy).toHaveBeenCalledWith(`[BT] ${webgpuDeviceLostError('GPU process exited')}`);
+        });
+
+        it("stays silent when the engine destroyed the device itself (reason 'destroyed')", async () => {
+            const errorSpy = await initWithLostInfo({ reason: 'destroyed', message: '' });
+
+            expect(errorSpy).not.toHaveBeenCalled();
         });
     });
 });

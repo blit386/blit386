@@ -21,6 +21,21 @@ export const WEBGPU_DEVICE_MESSAGE =
     "Couldn't connect to the graphics card. Try closing other tabs or restarting the browser.";
 
 /**
+ * Returns the message logged when a running WebGPU device is lost.
+ *
+ * Shown when `GPUDevice.lost` settles for any reason but the engine's own `destroy()` (a GPU process
+ * crash, a driver reset, a laptop switching graphics cards); every later frame is dropped.
+ *
+ * @param detail - The browser's `GPUDeviceLostInfo.message`, which may be empty.
+ * @returns User-facing error string.
+ */
+export function webgpuDeviceLostError(detail: string): string {
+    const reason = detail === '' ? '' : ` (${detail})`;
+
+    return `The graphics card stopped responding, so the game can't draw anymore${reason}. Reload the page to start it again`;
+}
+
+/**
  * Friendly message for the overlay setup path when the rendering backend is unavailable.
  *
  * Shown when overlay initialization runs before a backend has been selected.
