@@ -39,8 +39,10 @@ const NOISE_BASE = 0.025;
 const PIXEL_GLITCH_BAND_HEIGHT = 6;
 
 // Every glitch key, once. Demos compare `this.glitchType` against these instead of
-// re-typing the strings, and both type lists below are built from them.
+// re-typing the strings, and both type lists below are built from them. NONE is the idle
+// value between bursts; it is in neither list, so a burst never picks it.
 const GLITCH_TYPE = Object.freeze({
+    NONE: 'none',
     HSHIFT: 'hshift',
     CHROMASPLIT: 'chromasplit',
     NOISE: 'noise',
@@ -73,7 +75,7 @@ const GLITCH_TYPES_VROLL = [
 // Canonical on-screen label for every glitch key across both groups. Any demo with a
 // HUD looks a key up here instead of hand-typing its own label map.
 const GLITCH_LABELS = {
-    none: 'NONE',
+    [GLITCH_TYPE.NONE]: 'NONE',
     [GLITCH_TYPE.HSHIFT]: 'H-HOLD',
     [GLITCH_TYPE.CHROMASPLIT]: 'CHROMA',
     [GLITCH_TYPE.NOISE]: 'SNOW',

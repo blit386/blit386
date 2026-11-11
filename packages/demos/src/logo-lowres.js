@@ -224,12 +224,12 @@ class Demo {
     // glitchCooldown counts down ticks until the next fault fires. glitchTicksLeft counts
     // down ticks while a fault runs. glitchDuration remembers how long the current fault
     // was scheduled to last, for the 0..1 envelope that eases faults in and out.
-    // glitchType is one of GLITCH_TYPES_VROLL or 'none'. glitchPeak is how strong this
-    // particular burst is (0..1).
+    // glitchType is one of GLITCH_TYPES_VROLL or GLITCH_TYPE.NONE. glitchPeak is how
+    // strong this particular burst is (0..1).
     glitchCooldown = 0;
     glitchTicksLeft = 0;
     glitchDuration = 0;
-    glitchType = 'none';
+    glitchType = GLITCH_TYPE.NONE;
     glitchPeak = 0;
 
     // --- Band-wobble state (mild pixel-tier jitter, separate from TV faults) ---

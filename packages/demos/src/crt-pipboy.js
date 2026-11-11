@@ -167,6 +167,7 @@ import {
     GLITCH_COOLDOWN_MIN,
     GLITCH_INTENSITY_MAX,
     GLITCH_INTENSITY_MIN,
+    GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
@@ -288,8 +289,8 @@ class Demo {
     // Full duration of the current burst, used to build the envelope.
     glitchDuration = 0;
 
-    // Active glitch type key, or 'none' when idle.
-    glitchType = 'none';
+    // Active glitch type key, or GLITCH_TYPE.NONE when idle.
+    glitchType = GLITCH_TYPE.NONE;
 
     // Peak intensity of the current burst (0..1), scaled by the envelope each tick.
     glitchPeak = 0;
@@ -492,7 +493,7 @@ class Demo {
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0; // ticks remaining in the current burst; 0 means idle
         this.glitchDuration = 0;
-        this.glitchType = 'none';
+        this.glitchType = GLITCH_TYPE.NONE;
         this.glitchPeak = 0;
 
         return true;

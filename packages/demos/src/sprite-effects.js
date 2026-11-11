@@ -401,8 +401,8 @@ class Demo {
     // Total length of the current burst in ticks, for the sine envelope.
     glitchDuration = 0;
 
-    // Which fault is running: a GLITCH_TYPES_VROLL key, or 'none'.
-    glitchType = 'none';
+    // Which fault is running: a GLITCH_TYPES_VROLL key, or GLITCH_TYPE.NONE.
+    glitchType = GLITCH_TYPE.NONE;
 
     // Peak strength of the current burst, 0 to 1.
     glitchPeak = 0;
@@ -521,7 +521,7 @@ class Demo {
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
-        this.glitchType = 'none';
+        this.glitchType = GLITCH_TYPE.NONE;
         this.glitchPeak = 0;
 
         this.effectsAvailable = isAvailable();

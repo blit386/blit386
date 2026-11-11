@@ -111,6 +111,7 @@ import {
     GLITCH_INTENSITY_MAX,
     GLITCH_INTENSITY_MIN,
     GLITCH_LABELS,
+    GLITCH_TYPE,
     GLITCH_TYPES_CHROMA,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
@@ -236,8 +237,8 @@ class Demo {
     // How long this burst was scheduled to last, used for the fade envelope.
     glitchDuration = 0;
 
-    // Which glitch type is active: 'none' or one of GLITCH_TYPES_CHROMA.
-    glitchType = 'none';
+    // Which glitch type is active: GLITCH_TYPE.NONE or one of GLITCH_TYPES_CHROMA.
+    glitchType = GLITCH_TYPE.NONE;
 
     // Peak strength rolled for this burst, 0..1 before the envelope is applied.
     glitchPeak = 0;
@@ -399,7 +400,7 @@ class Demo {
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
-        this.glitchType = 'none';
+        this.glitchType = GLITCH_TYPE.NONE;
         this.glitchPeak = 0;
 
         return true;

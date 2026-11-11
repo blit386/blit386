@@ -18,4 +18,9 @@ describe('GLITCH_TYPE', () => {
 
         assert.deepEqual(missing, []);
     });
+
+    it('keeps the idle value out of both burst lists', () => {
+        assert.equal(GLITCH_TYPES_CHROMA.includes(GLITCH_TYPE.NONE), false);
+        assert.equal(GLITCH_TYPES_VROLL.includes(GLITCH_TYPE.NONE), false);
+    });
 });
