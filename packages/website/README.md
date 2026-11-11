@@ -106,8 +106,10 @@ Cloudflare Worker named `blit386` (custom domain `blit386.dev`); a plain push to
   `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` and `observability.enabled: true` into
   it, plus `vars.BLIT386_CHANNEL` on the `next` channel, and drops the prerendered page copies Waku embeds in the Worker
   so it stays under Cloudflare's size limit.
-- The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386"` value never reaches
-  Cloudflare either: both `pnpm run deploy` and CI pass `--name blit386` explicitly, which overrides it.
+- The root `wrangler.jsonc` feeds the build: Waku copies its `name`, `compatibility_date`, and `compatibility_flags`
+  into `dist/server/wrangler.json`, and writes a default copy if the file is missing. Its other keys match the patched
+  deployed config (`scripts/__tests__/root-wrangler-parity.test.mjs`), so a bare `wrangler dev` after a build works. The
+  `"name": "blit386"` value still never reaches Cloudflare: both `pnpm run deploy` and CI pass `--name` explicitly.
 
 ## Content
 
