@@ -68,7 +68,11 @@ const ARGS = `(${SPACE}+[^ \\t\\v\\f\\r;&|<>]+)*${SPACE}+`;
 // stands alone, so `git --no-pager grep -n restore` reads `grep` as the subcommand (BT-749). Same shape as the
 // Zed snippet in `content/AGENTS.md`, except that a value may not start with `-`: otherwise `-C -C -C ...` parses
 // two ways per option and a backtracking engine goes exponential (a value-like `-x` is read as an option instead).
-const GIT_PREFIX = `git(${SPACE}+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*|${SPACE}+-${NON_SPACE}+)*${SPACE}+`;
+// The name itself in any case and with an optional `.exe` (BT-775): on a case-insensitive file system `GIT` runs git,
+// and on Windows so does `git.exe` - the same reason `isProtectedPath` compares lowercase. Only the name: every option
+// after it stays case-sensitive (`-D` is not `-d`).
+const GIT = '[Gg][Ii][Tt](\\.[Ee][Xx][Ee])?';
+const GIT_PREFIX = `${GIT}(${SPACE}+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))${SPACE}+[^- \\t\\v\\f\\r]${NON_SPACE}*|${SPACE}+-${NON_SPACE}+)*${SPACE}+`;
 // A short-flag cluster holding `letter`, as git accepts bundled short flags (`-uf` is `-u -f`).
 const shortCluster = (letter) => `-${ALPHANUMERIC}*${letter}${ALPHANUMERIC}*`;
 

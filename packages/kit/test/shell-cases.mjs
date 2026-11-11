@@ -159,4 +159,11 @@ export const SHELL_CASES = [
     ['(git push -f)', 'ask'],
     ['(git branch -D old)', 'ask'],
     ['echo $(git rev-parse HEAD)', 'allow'],
+    // BT-775: a case-insensitive file system runs `GIT`, and Windows runs `git.exe`.
+    ['GIT reset --hard', 'deny'],
+    ['git.exe reset --hard', 'deny'],
+    ['Git.EXE checkout .', 'deny'],
+    ['git.exe push --force', 'ask'],
+    ['GIT branch -D old', 'ask'],
+    ['GIT branch -d old', 'allow'],
 ];
