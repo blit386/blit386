@@ -11,6 +11,7 @@ import { TWOSLASH_COMPILER_OPTIONS } from '../twoslash-config.mjs';
 // `transformerTwoslash`'s `lazyInstance().get()`), so this sweep exercises the exact
 // language service the production build uses instead of a copy that could drift.
 const twoslasher = createTwoslasher({
+    // @ts-expect-error - upstream passes `baseUrl: undefined`, which exactOptionalPropertyTypes rejects.
     compilerOptions: { moduleResolution: 100, baseUrl: undefined, ...TWOSLASH_COMPILER_OPTIONS },
 });
 

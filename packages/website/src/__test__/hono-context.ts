@@ -35,14 +35,14 @@ interface MockContext {
     };
     env: Record<string, unknown> | undefined;
     res: Response;
-    json: (value: unknown, status?: number) => Response;
+    json: (value: unknown, status?: number | undefined) => Response;
 }
 
 export interface MockContextOptions {
     /** Full request URL; `c.req.url`, `c.req.path`, and `c.req.raw` all derive from it. */
     url?: string;
     method?: string;
-    headers?: Record<string, string>;
+    headers?: Record<string, string> | undefined;
     /** Raw request body. Pass malformed JSON to exercise a real parse failure. */
     body?: string;
     /** Worker bindings surfaced as `c.env`. Omit to model a request with no env at all. */
@@ -65,7 +65,11 @@ export interface MockContextHarness {
 /** Builds a fake Hono context plus the `next()` that records delegation. */
 export function createMockContext(options: MockContextOptions = {}): MockContextHarness {
     const { url = 'https://blit386.dev/', method = 'GET', headers, body, env, downstream } = options;
-    const request = new Request(url, { method, headers, body });
+    const request = new Request(url, {
+        method,
+        ...(headers !== undefined && { headers }),
+        ...(body !== undefined && { body }),
+    });
     const downstreamResponse =
         downstream ?? new Response('<!doctype html>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
 
@@ -84,7 +88,10 @@ export function createMockContext(options: MockContextOptions = {}): MockContext
         // mutates `c.res.headers` only ever sees the response `next()` installs.
         res: new Response(null, { status: 404 }),
         json: (value, status) =>
-            new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } }),
+            new Response(JSON.stringify(value), {
+                status: status ?? 200,
+                headers: { 'content-type': 'application/json' },
+            }),
     };
 
     const next = async (): Promise<void> => {

@@ -104,7 +104,7 @@ interface DocsPageData extends PageData {
      * `Date` instance. This field's static type does not match its runtime value; read it via
      * `rawLastModified(page)` below rather than trusting `page.data.lastModified` directly.
      */
-    lastModified?: Date;
+    lastModified?: Date | undefined;
 }
 
 /**
@@ -443,7 +443,7 @@ export default defineConfig({
                         return {
                             id: page.url,
                             title: page.data.title ?? page.path,
-                            description: page.data.description,
+                            ...(page.data.description !== undefined && { description: page.data.description }),
                             url: page.url,
                             structuredData: page.url.startsWith(KIT_PAGES_PREFIX)
                                 ? { headings: [], contents: [] }
@@ -580,7 +580,7 @@ export default defineConfig({
                 children
             );
 
-            return rootLayout({ lang, children: content });
+            return rootLayout({ ...(lang !== undefined && { lang }), children: content });
         },
 
         defaultProps() {
@@ -591,6 +591,6 @@ export default defineConfig({
         },
 
         page: async ({ lang, slugs, page }) => {
-            return docsPageLayout({ lang, slugs, page });
+            return docsPageLayout({ ...(lang !== undefined && { lang }), slugs, page });
         },
     });
