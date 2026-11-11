@@ -34,7 +34,8 @@ phases:
   1. Day - hold for 3 seconds.
   2. Fade to night - 2 seconds, ease-in-out.
   3. Night - hold for 3 seconds.
-  4. Lightning flash - every color turns white for 200 ms, then snaps back.
+  4. Lightning flash - every color turns white for 200 ms, then snaps back. With reduced
+     motion turned on the flash is skipped and the label says so.
   5. Night again - hold for 2 seconds.
   6. Dawn - 2 seconds fading back to day, ease-out.
 
@@ -54,6 +55,8 @@ WHAT YOU WILL LEARN
 - Building a scene from a fixed set of palette slots, with separate day and night Palette
   objects as fade targets.
 - A tick-driven state machine: BT.ticks, a phase table, and a once-per-phase trigger flag.
+- Honoring BT.isReducedMotionPreferred: a full-screen white flash is exactly what that
+  setting asks a game to leave out.
 - A custom overlay row via overlayRows() and timing-chart tags via BT.assignTag().
 
 WHAT IS A PALETTE FADE?
@@ -101,6 +104,8 @@ TRY THIS
   starts.
 - Watch the lightning flash closely: the whole screen, panel included, goes white for
   200 ms, because the flash covers every slot except 0.
+- Add ?reducedmotion to the URL: the fades still play, but the lightning phase passes
+  without a flash and the panel reads "Lightning (flash skipped)".
 
 */
 
@@ -120,6 +125,13 @@ const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
 // Short on-screen label for each phase (the panel title and the overlay row).
+// The lightning phase's name, compared in two places (the label and the effect trigger).
+const FLASH_PHASE = 'flash';
+
+// Shown during the lightning phase instead of PHASE_LABELS.flash when the player prefers
+// reduced motion and the flash is skipped.
+const FLASH_SKIPPED_LABEL = 'Lightning (flash skipped)';
+
 const PHASE_LABELS = {
     day: 'Day',
     'fade-to-night': 'Fading to night... (ease-in-out)',
@@ -163,10 +175,12 @@ const C_MOUNTAIN_LIGHT = 23;
 
 // Fills a palette with the "day" colors: bright, saturated outdoor tones.
 function fillDay(p) {
+    // Label text, dim text, and the see-through overlay bar.
     p.set(C_LABEL, new Color32(255, 210, 80));
     p.set(C_DIM, new Color32(120, 130, 160));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
+    // The scene: one color per slot the landscape draws with, sky to flowers.
     p.set(C_SKY, new Color32(100, 170, 255));
     p.set(C_SKY_LIGHT, new Color32(150, 200, 255));
     p.set(C_SUN, new Color32(255, 240, 100));
@@ -186,10 +200,12 @@ function fillDay(p) {
 // Fills a palette with the "night" colors: dark, washed-out blues and purples. The sun
 // slot becomes a pale moon.
 function fillNight(p) {
+    // Label text, dim text, and the see-through overlay bar - dimmer than by day.
     p.set(C_LABEL, new Color32(180, 160, 100));
     p.set(C_DIM, new Color32(80, 80, 110));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
+    // The scene: one color per slot the landscape draws with, sky to flowers.
     p.set(C_SKY, new Color32(15, 20, 50));
     p.set(C_SKY_LIGHT, new Color32(25, 35, 70));
     p.set(C_SUN, new Color32(200, 200, 160));
@@ -287,6 +303,8 @@ class Demo {
         applyTheme(this.night);
         applyTheme(this.palette);
 
+        // Make the day palette the active one. The fades and the flash change its
+        // colors in place from here on.
         BT.paletteSet(this.palette);
 
         console.log('[PaletteFadeDemo] Initialized');
@@ -333,8 +351,13 @@ class Demo {
     }
 
     // Short label for the current phase. Falls back to the raw phase name if the table
-    // has no entry for it.
+    // has no entry for it. Under reduced motion the lightning phase says the flash was
+    // left out, so the quiet screen does not look like a bug.
     getPhaseLabel() {
+        if (this.phase === FLASH_PHASE && BT.isReducedMotionPreferred) {
+            return FLASH_SKIPPED_LABEL;
+        }
+
         return PHASE_LABELS[this.phase] ?? this.phase;
     }
 
@@ -358,10 +381,17 @@ class Demo {
             BT.paletteFade(this.night, 2000, 'ease-in-out');
             BT.assignTag('Fade to night');
             this.effectTriggered = true;
-        } else if (this.phase === 'flash') {
-            // Lightning: every slot except 0 goes white for 200 ms.
-            BT.paletteFlash(new Color32(255, 255, 255), 200);
-            BT.assignTag('Lightning flash');
+        } else if (this.phase === FLASH_PHASE) {
+            // Lightning: every slot except 0 goes white for 200 ms - unless the player
+            // prefers reduced motion. A full-screen flash is the kind of effect that
+            // setting asks to leave out, so the phase still runs but stays dark.
+            if (BT.isReducedMotionPreferred) {
+                BT.assignTag('Lightning skipped');
+            } else {
+                BT.paletteFlash(new Color32(255, 255, 255), 200);
+                BT.assignTag('Lightning flash');
+            }
+
             this.effectTriggered = true;
         } else if (this.phase === 'fade-to-day') {
             // Dawn: a 2-second fade back to day, with ease-out for a quick start.
@@ -388,12 +418,13 @@ class Demo {
         BT.drawRectFill(new Rect2i(0, 0, 320, 80), C_SKY);
         BT.drawRectFill(new Rect2i(0, 80, 320, 40), C_SKY_LIGHT);
 
-        // Clouds.
+        // Three clouds at different heights, so the sky does not look tiled.
         this.drawCloud(30, 20);
         this.drawCloud(180, 35);
         this.drawCloud(260, 15);
 
-        // Mountains.
+        // Three mountains of different sizes, their bases just above the ground line at
+        // y = 120. The middle one is the widest and tallest.
         this.drawMountain(60, 105, 80, 35);
         this.drawMountain(160, 100, 100, 40);
         this.drawMountain(250, 108, 70, 32);
@@ -406,13 +437,14 @@ class Demo {
         BT.drawRectFill(new Rect2i(0, 120, 320, 120), C_GROUND);
         BT.drawRectFill(new Rect2i(0, 180, 320, 60), C_GROUND_DARK);
 
-        // Trees.
+        // Four trees spread across the ground, each standing a few pixels lower or higher
+        // so the row looks hand-placed.
         this.drawTree(40, 110);
         this.drawTree(100, 115);
         this.drawTree(200, 108);
         this.drawTree(270, 118);
 
-        // Flowers.
+        // Small two-color flowers dotted over the grass, drawn last so they sit on top.
         this.drawFlowers();
     }
 
@@ -444,7 +476,7 @@ class Demo {
     // Draws a simple tree: a trunk plus a leaf canopy. `x` is the trunk center, `groundY`
     // the row the trunk stands on.
     drawTree(x, groundY) {
-        // Trunk.
+        // Trunk: a 4-pixel-wide brown post, 20 pixels tall, ending on the ground row.
         BT.drawRectFill(new Rect2i(x - 2, groundY - 20, 4, 20), C_TRUNK);
 
         // Leaf canopy: three stacked rectangles, the top one in the lighter slot.
@@ -489,4 +521,5 @@ class Demo {
     }
 }
 
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);
