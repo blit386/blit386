@@ -12,7 +12,7 @@
 // splash, onHotReload() to keep state across init() edits while the Vite plugin hot-reloads.
 //
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
-// Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
+// Want to learn more? Read AGENTS.md or the docs/ folder at the top of your game folder.
 
 import { bootstrap } from 'blit386';
 
@@ -35,5 +35,6 @@ class Game {
     }
 }
 
-// Hand the Game class to BLIT386. It builds one game, runs init() once, then update() and render() about 60 times a second.
+// Hand the Game class to BLIT386. It builds one game, runs init() once, then update() and render()
+// about 60 times a second.
 bootstrap(Game);
