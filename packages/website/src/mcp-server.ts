@@ -100,14 +100,23 @@ const MCP_TOOLS = [
     },
 ] as const;
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+    return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+// A JSON-RPC 2.0 request: `jsonrpc: "2.0"`, a string method, and an id that is absent, a string, a number or null.
 function isRpcRequest(v: unknown): v is RpcRequest {
     return (
-        typeof v === 'object' && v !== null && 'method' in v && typeof (v as { method: unknown }).method === 'string'
+        isPlainObject(v) &&
+        v.jsonrpc === '2.0' &&
+        typeof v.method === 'string' &&
+        (v.id === undefined || v.id === null || typeof v.id === 'string' || typeof v.id === 'number')
     );
 }
 
+// `arguments` must be absent or a plain object; `null` would otherwise slip past the `= {}` default.
 function isToolCallParams(v: unknown): v is ToolCallParams {
-    return typeof v === 'object' && v !== null && 'name' in v && typeof (v as { name: unknown }).name === 'string';
+    return isPlainObject(v) && typeof v.name === 'string' && (v.arguments === undefined || isPlainObject(v.arguments));
 }
 
 // Distinct alphanumeric query terms worth matching: no stopwords.
@@ -487,7 +496,8 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             }
                         }
 
-                        return rpcError(id, METHOD_NOT_FOUND, `Unknown tool: ${name}`);
+                        // The MCP tools spec answers an unknown tool with -32602, not -32601.
+                        return rpcError(id, INVALID_PARAMS, `Unknown tool: ${name}`);
                     }
 
                     return rpcError(id, METHOD_NOT_FOUND, `Method not found: ${method}`);

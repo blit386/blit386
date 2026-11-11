@@ -168,6 +168,22 @@ describe('mcpServerPlugin', () => {
             });
         });
 
+        it.each([
+            ['a missing jsonrpc field', { id: 1, method: 'tools/list' }],
+            ['a jsonrpc field other than "2.0"', { jsonrpc: '1.0', id: 1, method: 'tools/list' }],
+            ['an object id', { jsonrpc: '2.0', id: { x: [1, 2] }, method: 'tools/list' }],
+            ['a boolean id', { jsonrpc: '2.0', id: true, method: 'tools/list' }],
+        ])('answers %s with -32600 and HTTP 200, echoing no id', async (_label, body) => {
+            const { response, json } = await rpc(middleware, body);
+
+            expect(response.status).toBe(200);
+            expect(json).toEqual({
+                jsonrpc: '2.0',
+                id: null,
+                error: { code: -32600, message: 'Invalid Request' },
+            });
+        });
+
         it('answers an unknown method with -32601 naming it', async () => {
             const { json } = await rpc(middleware, { jsonrpc: '2.0', id: 7, method: 'foo/bar' });
 
@@ -327,6 +343,9 @@ describe('mcpServerPlugin', () => {
             ['missing params', undefined],
             ['params that are not an object', 'search_docs'],
             ['params with a non-string name', { name: 42 }],
+            ['null arguments', { name: 'search_docs', arguments: null }],
+            ['array arguments', { name: 'search_docs', arguments: ['palette'] }],
+            ['string arguments', { name: 'get_doc_page', arguments: '/docs/palette' }],
         ])('answers %s with -32602', async (_label, params) => {
             const { json } = await rpc(middleware, { jsonrpc: '2.0', id: 3, method: 'tools/call', params });
 
@@ -337,7 +356,7 @@ describe('mcpServerPlugin', () => {
             });
         });
 
-        it('answers an unknown tool with -32601 naming it', async () => {
+        it('answers an unknown tool with -32602 naming it', async () => {
             const { json } = await rpc(middleware, {
                 jsonrpc: '2.0',
                 id: 4,
@@ -348,7 +367,7 @@ describe('mcpServerPlugin', () => {
             expect(json).toEqual({
                 jsonrpc: '2.0',
                 id: 4,
-                error: { code: -32601, message: 'Unknown tool: nope' },
+                error: { code: -32602, message: 'Unknown tool: nope' },
             });
         });
     });
