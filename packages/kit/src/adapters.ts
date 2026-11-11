@@ -1087,7 +1087,8 @@ export function generateCopilotAdapter(root: string, vars: TemplateVars): Genera
  * longer push prefixes are covered, since `*--force*` matches them. `test/opencode.test.mjs` runs one case table
  * through both, so an edit on either side that is not mirrored fails the kit tests. The `kit-guard.ts` plugin enforces
  * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`); it can only
- * block, so an ask-tier form these globs miss (`git push -uvf`, `git branch -d old -f`) runs without a prompt.
+ * block, so an ask-tier form these globs miss (`git push -uvf`, `git branch -d old -f`, and any ask-tier command
+ * written inside a subshell, with an uppercase or `.exe` git, or with a quoted option value) runs without a prompt.
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -1196,6 +1197,12 @@ const OPENCODE_PERMISSION = {
         ),
         'git stash drop*': 'ask',
         'git stash clear*': 'ask',
+        // Config given for one command: an alias can stand for any subcommand, a `+` push refspec or mirror mode
+        // forces a plain push (BT-775).
+        'git *-c alias.*': 'deny',
+        'git *--config-env*alias.*': 'deny',
+        'git *-c remote.*.push=+*': 'ask',
+        'git *-c remote.*.mirror*': 'ask',
     },
 } as const;
 

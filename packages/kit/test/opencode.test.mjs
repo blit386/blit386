@@ -156,6 +156,8 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git restore .',
         'git clean -fd',
         'git clean',
+        'git -c alias.n=reset n --hard',
+        'git --config-env=alias.n=X n --hard',
     ];
     const ASKED = [
         'git push --force',
@@ -171,6 +173,8 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git branch --delete --force old',
         'git stash drop',
         'git stash clear',
+        'git -c remote.origin.push=+refs/heads/main push',
+        'git -c remote.origin.mirror=true push',
     ];
     const ALLOWED = [
         'git status',
@@ -196,6 +200,7 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git branch -f main origin/main',
         'git --no-pager grep -n restore',
         'git stash pop',
+        'git -c user.name=x commit -m y',
     ];
 
     it('bash: maps each guard-core verdict to the same permission', () => {

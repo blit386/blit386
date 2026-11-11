@@ -174,4 +174,11 @@ export const SHELL_CASES = [
     ['git -C "my dir" status', 'allow'],
     ['git restore --staged "a b.js"', 'allow'],
     ['git commit -m "fix; restore later"', 'allow'],
+    // BT-775: config set on the command line can hide the subcommand (an alias) or a force push (a `+` push refspec).
+    ['git -c alias.n=reset n --hard', 'deny'],
+    ['git --config-env=alias.n=X n --hard', 'deny'],
+    ['git -c remote.origin.push=+refs/heads/main push', 'ask'],
+    ['git -c remote.origin.mirror=true push', 'ask'],
+    ['git -c user.name=x commit -m y', 'allow'],
+    ['git -c remote.origin.push=refs/heads/main push', 'allow'],
 ];

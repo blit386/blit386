@@ -146,8 +146,9 @@ it:
   instructions. To have Zed enforce them, paste this into your own settings (`zed: open settings`), not the project's.
   It denies Zed's direct edit and write tool calls on lock files and `.env` files (but not `.env.example`), plus the
   destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or `git switch`,
-  `git restore`, `git clean`, force push, `git branch -D`, and `git stash drop` or `clear`). It does not stop the agent
-  from changing those files through a terminal command, so keep terminal approval on if you need that boundary:
+  `git restore`, `git clean`, force push, `git branch -D`, `git stash drop` or `clear`, and a git alias or force-push
+  setting given with `-c` for one command). It does not stop the agent from changing those files through a terminal
+  command, so keep terminal approval on if you need that boundary:
 
 ```json
 {
@@ -198,6 +199,9 @@ it:
             },
             {
               "pattern": "git(\\.exe)?(\\s+-\\S+)*(\\s+(-[Cc]|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source))(\\s+\\S+)*)?\\s+stash\\s+(drop|clear)(\\s|[;&|<>)`]|$)"
+            },
+            {
+              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+(-c|--config-env)(\\s+|=)(alias\\.|remote\\.\\S*\\.(push=\\+|mirror))"
             }
           ]
         }

@@ -128,6 +128,12 @@ const BRANCH_FORCED_DELETE = new RegExp(
     `${GIT_PREFIX}branch${ARGS}(${shortCluster('D')}|-${ALPHANUMERIC}*(d${ALPHANUMERIC}*f|f${ALPHANUMERIC}*d)${ALPHANUMERIC}*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})${ARG_END}`,
 );
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
+// Config set for one run (`-c key=value`, `--config-env=key=VAR`) that `key` starts. An inline alias can stand for any
+// subcommand (`git -c alias.n=reset n --hard`), so it is denied outright; an agent never needs one. An inline push
+// refspec with `+`, or mirror mode, turns a plain `git push` into a forced one (BT-775).
+const inlineConfig = (key) => new RegExp(`${GIT}${ARGS}(-c|--config-env)(=|${SPACE}+)${key}`);
+const INLINE_ALIAS = inlineConfig('alias\\.');
+const INLINE_FORCE_PUSH = inlineConfig(`remote\\.${ARG_CHAR}*\\.(push=\\+|mirror)`);
 // What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`), plus
 // the parentheses and backticks around a subshell or a command substitution (`(git ...)`, `$(git ...)`, `` `git ...` ``),
 // so every rule sees the command inside them on its own (BT-775). A command that merely quotes a destructive git command
@@ -206,11 +212,11 @@ function isDangerousCommand(command) {
     const destructiveCheckout =
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
-    if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore) {
+    if (any(RESET_HARD) || destructiveCheckout || destructiveClean || destructiveRestore || any(INLINE_ALIAS)) {
         return DENY_DESTRUCTIVE;
     }
 
-    if (any(FORCE_PUSH)) {
+    if (any(FORCE_PUSH) || any(INLINE_FORCE_PUSH)) {
         return ASK_FORCE_PUSH;
     }
 
