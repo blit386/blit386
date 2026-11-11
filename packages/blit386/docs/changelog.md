@@ -377,6 +377,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - Pressing F9 while `BT.renderAt` holds the loop stopped now copies the seeked frame to the clipboard. The copy used to
   wait for a frame that never came until `BT.resume()`, and every later F9 press was ignored meanwhile. Shift+F9 still
   waits for `BT.resume()`. See [Core](api-core.md#seeking-a-frame-with-renderat).
+- The software renderer now logs a clear console error when it cannot start because WebGPU already uses the canvas (a
+  `BT.init()` restart with `backend: 'software'`, or a fallback after WebGPU got as far as the canvas). `BT.init()` used
+  to resolve `false` with only "Failed to initialize renderer". See [Browser Support](api-browser-support.md).
 
 ## 1.8.0 - 2026-10-18
 

@@ -59,6 +59,7 @@ import {
     NO_ACTIVE_PALETTE_MESSAGE,
     PALETTE_EFFECT_SLOT_ZERO_MESSAGE,
     paletteEffectEndOutOfRangeError,
+    SOFTWARE_CANVAS_TAKEN_MESSAGE,
 } from '../utils/errorMessages';
 import type * as FrameCaptureModule from '../utils/FrameCapture';
 import { downloadBlob } from '../utils/FrameCapture';
@@ -2413,6 +2414,22 @@ describe('BTAPI', () => {
             const result = await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
 
             expect(result).toBe(false);
+        });
+
+        it('explains a software restart on a canvas WebGPU already uses (BT-759)', async () => {
+            const canvas = makeMockCanvas();
+
+            expect(await BTAPI.instance.init(makeMockDemo(), canvas)).toBe(true);
+
+            const software: IBTDemo = {
+                ...makeMockDemo(),
+                configure: () => ({ isSplashEnabled: false, targetFPS: 60, backend: 'software' }),
+            };
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            // A canvas that already has a 'webgpu' context returns null for getContext('2d').
+            expect(await BTAPI.instance.init(software, canvas)).toBe(false);
+            expect(errorSpy).toHaveBeenCalledWith(`[BT] ${SOFTWARE_CANVAS_TAKEN_MESSAGE}`);
         });
 
         it('initializes successfully in software mode when WebGPU is unavailable', async () => {

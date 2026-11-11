@@ -36,6 +36,16 @@ export function webgpuDeviceLostError(detail: string): string {
 }
 
 /**
+ * The software renderer could not get a 2D context because WebGPU already holds the canvas.
+ *
+ * Shown when the software backend starts on a canvas a WebGPU run already used (a `BT.init()` restart with
+ * `backend: 'software'`, or the fallback after WebGPU failed past creating its context); a canvas keeps the first
+ * context type it was given.
+ */
+export const SOFTWARE_CANVAS_TAKEN_MESSAGE =
+    "Couldn't start the software renderer because WebGPU is already using this canvas. Start with backend: 'software' in configure(), or add ?backend=software to the URL, on a fresh page load";
+
+/**
  * Friendly message for the overlay setup path when the rendering backend is unavailable.
  *
  * Shown when overlay initialization runs before a backend has been selected.

@@ -3,7 +3,11 @@ import type { Palette } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { Color32 } from '../utils/Color32';
-import { NO_ACTIVE_PALETTE_MESSAGE, RENDERER_RESET_MESSAGE } from '../utils/errorMessages';
+import {
+    NO_ACTIVE_PALETTE_MESSAGE,
+    RENDERER_RESET_MESSAGE,
+    SOFTWARE_CANVAS_TAKEN_MESSAGE,
+} from '../utils/errorMessages';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { ClippedLine } from './clipLine';
@@ -115,6 +119,9 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.outputCtx = this.canvas.getContext('2d') as Canvas2D | null;
 
         if (!this.outputCtx) {
+            // A browser canvas refuses a 2D context only once it holds another kind (here, WebGPU's).
+            console.error(`[BT] ${SOFTWARE_CANVAS_TAKEN_MESSAGE}`);
+
             return false;
         }
 
