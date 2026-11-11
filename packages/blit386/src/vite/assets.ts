@@ -70,11 +70,13 @@ export function resolveAssetUrl(file: string, assetDirs: readonly string[]): str
 /**
  * Maps an absolute file path to the pathname Vite serves it at: `base` plus the path relative to
  * `publicDir` when the file is inside it, otherwise `base` plus the path relative to `root`. This is
- * the pathname the engine caches the asset under (`normalizeAssetUrl`).
+ * the pathname the engine caches the asset under (`normalizeAssetUrl`), encoded the same way: the standard URL parser
+ * builds both, so a name like `hero@2x.png` stays `/hero@2x.png` on each side instead of `%40` on one.
  *
  * @param file - Absolute file path.
  * @param serve - Vite's `base`, `publicDir` and `root`.
- * @returns A percent-encoded pathname, or `null` when `file` is outside both `publicDir` and `root`.
+ * @returns The pathname the browser's URL parser produces for the file, or `null` when `file` is outside both
+ *   `publicDir` and `root`.
  */
 export function resolveServedUrl(file: string, serve: AssetServeContext): string | null {
     const inside = (dir: string): string | null => {
@@ -90,8 +92,10 @@ export function resolveServedUrl(file: string, serve: AssetServeContext): string
     }
 
     const basePath = new URL(serve.base, 'http://localhost').pathname.replace(/\/?$/, '/');
+    // Escape only what the URL parser would read as syntax; it encodes the rest exactly as the engine's key does.
+    const segments = relative.split(path.sep).map((segment) => segment.replace(/[%#?\\]/g, encodeURIComponent));
 
-    return basePath + relative.split(path.sep).map(encodeURIComponent).join('/');
+    return new URL(basePath + segments.join('/'), 'http://localhost').pathname;
 }
 
 /**

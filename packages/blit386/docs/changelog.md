@@ -218,6 +218,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   the `assetDirs` entry alone, so the engine never found the asset it had loaded; it now builds the URL the way Vite
   serves the file (`base` plus the path under `publicDir`, or under the project root outside it). `assetDirs` only
   chooses which files are watched.
+- Saving an asset whose name contains `@`, `+`, `,`, `;`, `=`, `&`, `$` or `:` (`hero@2x.png`) now hot reloads it. The
+  plugin percent-encoded those characters while the engine keys the asset by the browser's own URL form, so the save
+  replaced nothing and logged nothing. The plugin now builds the URL the way the browser does.
 - The `blit386/vite` plugin now watches Vite's own `publicDir` by default. Before, the default `assetDirs` was a fixed
   `public`, so a game with `publicDir: 'static'` got no asset hot reload and no message. With `publicDir: false` nothing
   is watched by default. An explicit `assetDirs` behaves as before.
