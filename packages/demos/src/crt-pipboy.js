@@ -90,6 +90,7 @@ that RGBA output. BarrelDistortion therefore computes its curve at 1280x960, not
 HOW THE GLITCH STATE MACHINE WORKS
 ----------------------------------
 
+The machine is stepGlitchMachine() in src/shared/crt-glitch.js, shared with Snake Game.
 Two counters drive it:
 
 - glitchCooldown: ticks remaining until the next burst starts.
@@ -166,20 +167,15 @@ import {
 
 import {
     ABERRATION_BASE,
-    applyGlitchUniforms,
+    applyCrtChain,
     FLICKER_BASE,
-    GLITCH_ACTIVE_MAX,
-    GLITCH_ACTIVE_MIN,
     GLITCH_COOLDOWN_MAX,
     GLITCH_COOLDOWN_MIN,
-    GLITCH_INTENSITY_MAX,
-    GLITCH_INTENSITY_MIN,
     GLITCH_TYPE,
-    GLITCH_TYPES_CHROMA,
-    isMotionEffect,
     NOISE_BASE,
     PIXEL_GLITCH_BAND_HEIGHT,
     resetGlitchUniforms,
+    stepGlitchMachine,
 } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
@@ -328,7 +324,7 @@ class Demo {
     flicker = null;
     bloom = null;
 
-    // Every display-tier effect above, in chain order, so applyEffects() can rebuild the
+    // Every display-tier effect above, in chain order, so applyCrtChain() can rebuild the
     // chain when the reduced-motion preference changes.
     crtEffects = [];
 
@@ -470,7 +466,8 @@ class Demo {
         // Step 6: display-tier stack. Order matters: barrel first (it warps the UVs the
         // rest of the chain inherits), then color and signal artifacts, then scanlines
         // and mask, then vignette, noise, and flicker, and finally bloom on top of the
-        // modulated image.
+        // modulated image. createPipboyChain() in src/shared/crt-glitch.js builds this
+        // same stack for other demos, so change the tuning in both places.
 
         // Barrel distortion: simulates the curved glass of a CRT tube. Because this runs
         // after palette resolve + upscale, the curve is computed at 1280x960 and lines
@@ -535,7 +532,7 @@ class Demo {
         this.bloom.glow = 0.18; // mix factor onto the original pixel
 
         // Keep the display-tier effects in chain order, then register them.
-        // applyEffects() leaves out the moving ones when reduced motion is preferred.
+        // applyCrtChain() leaves out the moving ones when reduced motion is preferred.
         this.crtEffects = [
             this.barrel,
             this.aberration,
@@ -548,7 +545,7 @@ class Demo {
             this.flicker,
             this.bloom,
         ];
-        this.applyEffects();
+        applyCrtChain(this.crtEffects);
 
         // Step 7: glitch state machine state. See the file header for what each field
         // means. BT.random is the engine's shared random number generator; int(min, max)
@@ -592,8 +589,10 @@ class Demo {
 
         // 3. Drive the glitch state machine - unless the player prefers reduced motion,
         // in which case the screen stays calm and no burst ever starts.
-        if (!BT.isReducedMotionPreferred) {
-            this.stepGlitchMachine();
+        // stepGlitchMachine() lives in src/shared/crt-glitch.js. It returns true on the
+        // tick a burst starts, and the tag marks that burst on the timing chart.
+        if (!BT.isReducedMotionPreferred && stepGlitchMachine(this)) {
+            BT.assignTag(`Glitch: ${this.glitchType}`);
         }
     }
 
@@ -642,70 +641,7 @@ class Demo {
             resetGlitchUniforms(this);
         }
 
-        this.applyEffects();
-    }
-
-    // Takes every display-tier effect off, then puts back the ones that should run: all
-    // of them normally, and all but the grain, the brightness flicker, the rolling band,
-    // and the row jitter (isMotionEffect() from crt-glitch.js) when the player prefers
-    // reduced motion.
-    // Removing first keeps the chain in its original order.
-    applyEffects() {
-        for (const fx of this.crtEffects) {
-            BT.effectRemove(fx);
-        }
-
-        for (const fx of this.crtEffects) {
-            if (BT.isReducedMotionPreferred && isMotionEffect(fx)) {
-                continue;
-            }
-
-            BT.effectAdd(fx);
-        }
-    }
-
-    // Advances the glitch state machine by one tick; called from update(). Either a burst
-    // is running (count it down and drive the effect uniforms) or the screen is calm
-    // (count down the cooldown and roll a fresh burst when it reaches zero).
-    stepGlitchMachine() {
-        if (this.glitchTicksLeft > 0) {
-            // Inside a burst. Build an envelope that ramps up to glitchPeak and back
-            // down: sin over 0..PI is a 0 -> 1 -> 0 hump across the lifetime of the
-            // burst. t is 0 at the start and 1 at the end.
-            const t = 1 - this.glitchTicksLeft / this.glitchDuration;
-            const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
-
-            // Scale the chosen burst's effect parameter by the envelope (see the file
-            // header for which uniform each burst type drives).
-            applyGlitchUniforms(this, envelope);
-
-            // One tick of the burst is used up.
-            this.glitchTicksLeft--;
-
-            // When the burst ends, reset the uniforms so the screen calms down and roll
-            // the next cooldown.
-            if (this.glitchTicksLeft === 0) {
-                resetGlitchUniforms(this);
-                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-            }
-        } else {
-            // No active glitch - count down to the next one.
-            this.glitchCooldown--;
-
-            if (this.glitchCooldown <= 0) {
-                // Roll a new burst: pick() returns one item of the list, int() a whole
-                // number in [min, max), float() a decimal in [min, max). The tag marks
-                // the burst on the overlay's timing chart.
-                this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
-                BT.assignTag(`Glitch: ${this.glitchType}`);
-                this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-                this.glitchTicksLeft = this.glitchDuration;
-                this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-
-                // Reseed so the shader uses a new band-noise pattern this burst.
-                this.pixelGlitch.seed = BT.random.float(0, 1000);
-            }
-        }
+        applyCrtChain(this.crtEffects);
     }
 
     // Wraps BT.printFont so callers pass a target palette slot rather than the raw offset

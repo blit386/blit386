@@ -223,8 +223,8 @@ widget list and options. Never hand-roll panels, buttons, or HUD text colors in 
 the intentional exceptions are `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill` (a bare-bones starter
 plus four immersive/showcase pieces, none with a demo HUD). Beside the kit, `src/shared/` holds `key-names.js`
 (`keyLabel(code)` for on-screen key names), `canvas-sprites.js` (offscreen-canvas sprite art), `crt-glitch.js` (the
-shared TV-fault constants, plus `isMotionEffect()` for CRT demos that honor reduced motion), and
-`post-process-backend.js`.
+shared TV-fault constants and glitch state machine, the PipBoy CRT stack, and `isMotionEffect()` / `applyCrtChain()` for
+CRT demos that honor reduced motion), and `post-process-backend.js`.
 
 The invariants below are covered by `node:test` unit tests in `src/shared/__tests__/` (slot allocation and collisions,
 the draw-command pool's allocates-nothing-per-frame claim, layout anchor math, widget value mapping, gesture and D-pad

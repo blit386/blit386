@@ -59,7 +59,7 @@ WHAT YOU WILL LEARN
   every tick before the active fault is layered on.
 - isOverlayEnabled: false for an immersive piece with no dev HUD.
 - Honoring BT.isReducedMotionPreferred: rebuilding the display chain without the moving
-  effects (isMotionEffect() from crt-glitch.js), and rebuilding it again from
+  effects (applyCrtChain() from crt-glitch.js), and rebuilding it again from
   onReducedMotionChange() when the preference changes while the demo runs.
 
 WHY UPSCALE FIRST AND THEN ADD CRT?
@@ -90,7 +90,7 @@ import {
     Vignette,
 } from 'blit386';
 
-import { GLITCH_TYPE, GLITCH_TYPES_VROLL, isMotionEffect } from './shared/crt-glitch.js';
+import { applyCrtChain, GLITCH_TYPE, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -212,7 +212,7 @@ class Demo {
     /** @type {Bloom | null} */
     bloom = null;
 
-    // Every display-tier effect above, in chain order, so applyEffects() can rebuild the
+    // Every display-tier effect above, in chain order, so applyCrtChain() can rebuild the
     // chain when the reduced-motion preference changes.
     crtEffects = [];
 
@@ -376,7 +376,7 @@ class Demo {
         this.bloom.glow = 0.09;
 
         // Register all display-tier effects with the engine in the order they run.
-        // applyEffects() leaves out the moving ones when reduced motion is preferred.
+        // applyCrtChain() leaves out the moving ones when reduced motion is preferred.
         this.crtEffects = [
             this.aberration,
             this.interference,
@@ -388,7 +388,7 @@ class Demo {
             this.flicker,
             this.bloom,
         ];
-        this.applyEffects();
+        applyCrtChain(this.crtEffects);
 
         // Pick a random delay before the first TV fault and the first band wobble.
         // BT.random is the engine's shared random number generator; int(min, max) returns
@@ -424,25 +424,7 @@ class Demo {
     // runs. Rebuild the display chain so the moving effects follow the new preference.
     onReducedMotionChange() {
         if (this.effectsAvailable) {
-            this.applyEffects();
-        }
-    }
-
-    // Takes every display-tier effect off the chain, then puts them back in order -
-    // skipping the grain, waver, roll band, and ghosting (isMotionEffect() from
-    // crt-glitch.js) when the player prefers reduced motion. Removing an effect that is
-    // not on the chain does nothing, so this also works for the first build in init().
-    applyEffects() {
-        for (const fx of this.crtEffects) {
-            BT.effectRemove(fx);
-        }
-
-        for (const fx of this.crtEffects) {
-            if (BT.isReducedMotionPreferred && isMotionEffect(fx)) {
-                continue;
-            }
-
-            BT.effectAdd(fx);
+            applyCrtChain(this.crtEffects);
         }
     }
 
