@@ -163,7 +163,7 @@ c.lerp(other, t); // same semantics as static helper
 // Conversion
 c.toFloat32Array(); // [r/255, g/255, b/255, a/255]
 c.luminance; // perceived brightness: 0.299r + 0.587g + 0.114b
-c.toHex(); // '#rrggbb' string
+c.toHex(); // '#rrggbbaa' string, alpha last
 c.isEqual(other); // boolean - all RGBA channels match
 
 // Linear light (real sRGB piecewise transfer, not a 2.2 power)
