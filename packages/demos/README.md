@@ -103,9 +103,10 @@ to these URLs via `VINTAGE_URLS`.
 
 ### Randomness
 
-- [random-basics](https://demos.blit386.dev/random-basics) - Five switchable scenes for the `BT.random` generators the
+- [random-basics](https://demos.blit386.dev/random-basics) - Four switchable scenes for the `BT.random` generators the
   other demos do not reach for: `shuffle` versus `shuffleInPlace`, `weighted` loot drops with a live tally, `gaussian`
-  scatter against flat `float` scatter, `sign` coin flips, and `direction4` versus `direction8` walkers
+  scatter against flat `float` scatter, and `direction4` versus `direction8` walkers, with `sign` as their one-axis
+  cousin
 - [seeded-worlds](https://demos.blit386.dev/seeded-worlds) - Two worlds side by side, each labeled with the seed read
   back from `BT.random.seedValue`. Copy one seed onto the other and the halves become identical, plus a `clone()` versus
   `fork()` stream comparison
