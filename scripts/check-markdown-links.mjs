@@ -27,8 +27,7 @@
  * GitHub both use, so there is one slug rule rather than the tool's own as well.
  */
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -39,7 +38,6 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
-const HOSTED_DEMOS_PATTERN = '^https://demos\\.blit386\\.dev(/|$)';
 const CONCURRENCY = 8;
 
 // Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
@@ -186,44 +184,18 @@ function listTrackedMarkdownFiles() {
 }
 
 /**
- * Cloudflare returns 403 to GitHub Actions datacenter IPs for the hosted demos site.
- * Keep local link checks; skip those URLs only in CI.
- *
- * @returns {string} Path to the markdown-link-check config file.
- */
-function resolveConfigPath() {
-    if (process.env.GITHUB_ACTIONS !== 'true') {
-        return CONFIG;
-    }
-
-    const config = JSON.parse(readFileSync(CONFIG, 'utf8'));
-
-    config.ignorePatterns.push({ pattern: HOSTED_DEMOS_PATTERN });
-
-    const tempDir = mkdtempSync(join(tmpdir(), 'mlc-config-'));
-    const tempConfig = join(tempDir, 'markdown-link-check.json');
-
-    writeFileSync(tempConfig, JSON.stringify(config, null, 2));
-
-    console.log('Note: skipping demos.blit386.dev link probes in GitHub Actions (Cloudflare blocks CI IPs).');
-
-    return tempConfig;
-}
-
-/**
  * Runs markdown-link-check on one file and resolves whether it passed. Never rejects
  * (spawn errors and timeouts resolve `false`), and buffers stdout/stderr to print as a
  * single block on completion so concurrent workers don't interleave output.
  *
  * @param {string} filePath File path to check.
- * @param {string} configPath Path to the markdown-link-check config file.
  * @returns {Promise<boolean>} Whether the file passed the link check.
  */
-function checkFile(filePath, configPath) {
+function checkFile(filePath) {
     const rel = relative(ROOT, filePath);
 
     return new Promise((settle) => {
-        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', configPath], {
+        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], {
             cwd: ROOT,
             signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
         });
@@ -272,10 +244,9 @@ function checkFile(filePath, configPath) {
  * `files` order.
  *
  * @param {string[]} files
- * @param {string} configPath
  * @returns {Promise<number>} the number of files that failed
  */
-async function checkAll(files, configPath) {
+async function checkAll(files) {
     let nextIndex = 0;
     let failed = 0;
 
@@ -285,7 +256,7 @@ async function checkAll(files, configPath) {
 
             nextIndex += 1;
 
-            const ok = await checkFile(filePath, configPath);
+            const ok = await checkFile(filePath);
 
             if (!ok) {
                 failed += 1;
@@ -303,8 +274,7 @@ async function main() {
 
     files.sort((a, b) => a.localeCompare(b));
 
-    const configPath = resolveConfigPath();
-    const failed = (await checkAll(files, configPath)) + checkAnchors(files);
+    const failed = (await checkAll(files)) + checkAnchors(files);
 
     if (failed > 0) {
         console.error(`\nERROR: ${failed} check(s) found dead links or anchors!`);
