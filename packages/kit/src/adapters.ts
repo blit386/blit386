@@ -54,6 +54,8 @@ export {
     type AgentSpec,
     type FileClass,
     classifyFile,
+    GAME_FILE_JS,
+    GAME_FILE_TS,
     hasAgentFiles,
     isKitManaged,
     SHARED_SKILLS_DIR,

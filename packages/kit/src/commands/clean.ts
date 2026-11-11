@@ -17,21 +17,16 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import { findProjectRoot } from '../env';
 import { hasSymlinkedSegment, isSafeRelPath, sha256, sha256Text } from '../fs-safety';
 import { kitRoot } from '../kit-root';
 import { BLIT_DIR, MANIFEST_FILE } from '../manifest';
 import { ui } from '../messages';
+import { GAME_FILE_JS, GAME_FILE_TS } from '../ownership';
 import { confirm } from '../prompt';
 import { readManifest } from '../read-manifest';
-
-/** Project-relative path of the game source file in a TypeScript scaffold. */
-const GAME_FILE_TS = 'src/game.ts';
-
-/** Project-relative path of the game source file in a JavaScript scaffold. */
-const GAME_FILE_JS = 'src/game.js';
 
 export async function runClean(args: string[]): Promise<void> {
     const out = (line: string): void => {
@@ -105,8 +100,8 @@ export async function runClean(args: string[]): Promise<void> {
         }
     }
 
-    const templateName = isTs ? 'game.ts' : 'game.js';
-    const skeleton = readFileSync(join(kitRoot(), 'content', 'templates', templateName), 'utf8');
+    // The skeletons in `content/templates/` share the game file's name.
+    const skeleton = readFileSync(join(kitRoot(), 'content', 'templates', basename(relPath)), 'utf8');
 
     writeFileSync(absPath, skeleton);
     out(ui.success(`Replaced ${relPath} with an empty skeleton.`));

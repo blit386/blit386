@@ -135,6 +135,13 @@ export const COPILOT_SETUP_STEPS_YML = '.github/workflows/copilot-setup-steps.ym
 export const DOCS_DIR = 'docs/';
 
 /**
+ * The game's source file, by language. The scaffolder writes it and records its hash in the manifest; `blit clean`
+ * looks it up by this path to tell an untouched starter from the user's own game.
+ */
+export const GAME_FILE_TS = 'src/game.ts';
+export const GAME_FILE_JS = 'src/game.js';
+
+/**
  * The skills folder several agents read natively (Zed, Gemini CLI, Codex, Antigravity, GitHub Copilot, OpenCode, ...).
  *
  * Shared, not private: a path under it belongs to every agent whose `AgentSpec.readsSharedSkills` is set, so the kit
