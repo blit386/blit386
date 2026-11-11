@@ -76,7 +76,7 @@ const WHEEL_SETTLE_MS = 50;
 /** Tried in this order; the command uses whichever browser the computer already has. */
 const BROWSER_CHANNELS = ['chrome', 'msedge'] as const;
 
-/** The only value `?backend=` accepts (`BTAPI.getBackendQueryOverride` in the engine). */
+/** The only value `?backend=` accepts (`getBackendQueryOverride` in the engine's `core/engine/RendererSetup.ts`). */
 const SOFTWARE_BACKEND = 'software';
 
 /** How long the game gets to run its first tick before the run gives up. */
