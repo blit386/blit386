@@ -26,7 +26,8 @@
   `.cursor/mcp.json`, ...) and Copilot's `.github/workflows/copilot-setup-steps.yml` - do not add a static template for
   them. That workflow copies the action pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` /
   `ACTIONS_SETUP_NODE` in the kit's `src/adapters/copilot.ts`); bump both together - `test/agent-copilot.test.mjs` fails
-  when they drift.
+  when they drift. Renovate does not scan `templates/`, so `test/ci-pins.test.mjs` holds the template to the SHAs the
+  repo's own `.github/workflows/` use.
 - `biome.json` lists `!.blit` in `files.includes` and `.prettierignore` lists `.blit/`: the pristine kit copies under
   `.blit/base/` must never be reformatted, or `blit agents sync` reports edits the user did not make (root `CLAUDE.md`).
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
