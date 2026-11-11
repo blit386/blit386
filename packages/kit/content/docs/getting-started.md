@@ -19,26 +19,26 @@ A terminal is a place to type commands. Most editors have one built in:
 
 Make sure the terminal is sitting in your game's folder (the one with `package.json` in it).
 
-## 3. Install the game's parts
+## 3. The game's parts are already installed
 
-Type this and press Enter. It downloads the BLIT386 engine. Wait for it to finish.
-
-```bash
-npm install
-```
+Creating the game already downloaded the BLIT386 engine, with the package manager you picked (npm, pnpm, Yarn, or Bun).
+Install again only if you created the game with `--no-install`, or the installer said it could not finish. Then use that
+same package manager - `npm install`, `pnpm install`, `yarn install`, or `bun install` - so you do not end up with a
+second lock file.
 
 ## 4. Run the game
 
 ```bash
-npm run dev
+npx blit run
 ```
 
 It prints a web address like `http://localhost:5173`. Hold Cmd (or Ctrl on Windows) and click it, or paste it into your
 browser. Your game is running. Leave the terminal open while you play.
 
-You can also type `npx blit run`, which does the same thing in a friendlier way. The `npx` part means "run the helper
+`npx blit run` starts the game with whichever package manager the project uses. The `npx` part means "run the helper
 that is installed inside this project" - typing plain `blit` would not work, because the helper lives in your game's
-folder, not on your whole computer.
+folder, not on your whole computer. Your package manager's own `run dev` (for example `npm run dev` or `pnpm run dev`)
+does the same thing.
 
 ## 5. Change something
 
