@@ -475,7 +475,8 @@ export class PaletteInteraction {
 
     #copyStatusIndex = -1;
 
-    #copyStatusExpiryTick = -1;
+    /** Fixed-update ticks left before the copy status clears; counts down so a tick reset cannot strand it. */
+    #copyStatusTicksLeft = 0;
 
     #tooltipLabel = '';
 
@@ -498,7 +499,7 @@ export class PaletteInteraction {
 
     #scrollDragStartOffset = 0;
 
-    /** Latest fixed-update tick observed from {@link tickCopyStatus} or {@link handlePress}. */
+    /** Latest fixed-update tick observed from {@link tickCopyStatus}. */
     #lastKnownTick = 0;
 
     /**
@@ -607,17 +608,27 @@ export class PaletteInteraction {
     }
 
     /**
-     * Clears transient copy status when the expiry tick is reached.
+     * Counts the copy status down by the ticks elapsed since the last call and clears it at zero.
+     *
+     * A tick counter that went backwards (`BT.ticksReset`, a `BT.renderAt` replay) restarted at `0`,
+     * so the elapsed count is then `currentTick` itself.
      *
      * @param currentTick - Current fixed-update tick.
      */
     tickCopyStatus(currentTick: number): void {
+        const elapsed = currentTick >= this.#lastKnownTick ? currentTick - this.#lastKnownTick : currentTick;
+
         this.#lastKnownTick = currentTick;
 
-        if (this.#copyStatusExpiryTick >= 0 && currentTick >= this.#copyStatusExpiryTick) {
+        if (this.#copyStatus === 'idle') {
+            return;
+        }
+
+        this.#copyStatusTicksLeft -= elapsed;
+
+        if (this.#copyStatusTicksLeft <= 0) {
             this.#copyStatus = 'idle';
             this.#copyStatusIndex = -1;
-            this.#copyStatusExpiryTick = -1;
         }
     }
 
@@ -707,7 +718,7 @@ export class PaletteInteraction {
             return false;
         }
 
-        this.#lastKnownTick = currentTick;
+        this.tickCopyStatus(currentTick);
 
         const hintExclusion = resolveHintExclusionRect(hintBarTopY, displayWidth);
 
@@ -736,9 +747,9 @@ export class PaletteInteraction {
             void (async () => {
                 try {
                     await writeIndexToClipboard(index);
-                    this.#setCopyStatus('copied', index, this.#lastKnownTick);
+                    this.#setCopyStatus('copied', index);
                 } catch {
-                    this.#setCopyStatus('failed', index, this.#lastKnownTick);
+                    this.#setCopyStatus('failed', index);
                 }
             })();
 
@@ -969,12 +980,11 @@ export class PaletteInteraction {
      *
      * @param status - New copy status.
      * @param index - Palette index that was copied.
-     * @param completionTick - Fixed-update tick when the clipboard write finished.
      */
-    #setCopyStatus(status: Exclude<CopyStatus, 'idle'>, index: number, completionTick: number): void {
+    #setCopyStatus(status: Exclude<CopyStatus, 'idle'>, index: number): void {
         this.#copyStatus = status;
         this.#copyStatusIndex = index;
-        this.#copyStatusExpiryTick = completionTick + Math.ceil(PALETTE_COPY_STATUS_SECONDS * this.#targetFps);
+        this.#copyStatusTicksLeft = Math.ceil(PALETTE_COPY_STATUS_SECONDS * this.#targetFps);
     }
 
     /**

@@ -760,4 +760,61 @@ describe('PaletteInteraction clipboard', () => {
             expect.any(Number),
         );
     });
+
+    it('clears copy status on time after the tick counter resets (BT.ticksReset)', async () => {
+        const interaction = new PaletteInteraction(60);
+        const layout = createOverlayLayout(320, 240, 14);
+        const grid = computeGrid(320, DEFAULT_PALETTE_SWATCH_SIZE, 256, PALETTE_SWATCH_GAP_PX);
+        const plan = paletteOnlyPlan(new Rect2i(0, paletteBandY(240, grid.totalHeight), 320, grid.totalHeight));
+        const swatch = new Rect2i();
+        const durationTicks = Math.ceil(PALETTE_COPY_STATUS_SECONDS * 60);
+
+        writeSwatchTopLeft(swatch, 9, plan.paletteBand, grid);
+
+        interaction.handlePress(
+            {
+                isButtonPressed: () => true,
+                getPos: () => new Vector2i(swatch.x + 1, swatch.y + 1),
+            } as never,
+            1000,
+            plan,
+            grid,
+            256,
+            hintBarY(layout.displayHeight),
+            layout.displayWidth,
+        );
+
+        await vi.waitFor(async () => {
+            await Promise.resolve();
+        });
+
+        const drawnLabel = (): unknown => {
+            const target = { drawLabelOnTop: vi.fn() };
+
+            interaction.drawTooltipLabel(
+                target as never,
+                mockFont,
+                plan,
+                grid,
+                layout.displayWidth,
+                layout.displayHeight,
+                DEFAULT_IDX_TEXT,
+            );
+
+            return target.drawLabelOnTop.mock.calls[0]?.[2];
+        };
+
+        // BT.ticksReset() zeroes the loop's tick counter (GameLoop.resetTicks), which is what the overlay reads.
+        interaction.tickCopyStatus(0);
+
+        expect(drawnLabel()).toBe('Copied 9');
+
+        interaction.tickCopyStatus(durationTicks - 1);
+
+        expect(drawnLabel()).toBe('Copied 9');
+
+        interaction.tickCopyStatus(durationTicks);
+
+        expect(drawnLabel()).toBeUndefined();
+    });
 });

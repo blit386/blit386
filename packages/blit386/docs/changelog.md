@@ -362,6 +362,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   being dropped for good.
 - With `overlayPaletteRowsVisible` set, the padding below the last visible swatch row in the overlay palette band no
   longer shows a tooltip for a row that is not drawn, and a click there no longer copies that hidden index.
+- The overlay's `Copied N` / `Copy failed` swatch tooltip clears after its usual 0.75 s when `BT.ticksReset()` or a
+  `BT.renderAt` replay restarts the tick counter while it shows. It used to stay up for as many ticks as had passed
+  before the reset.
 
 ## 1.8.0 - 2026-10-18
 
