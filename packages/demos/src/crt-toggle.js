@@ -58,6 +58,8 @@ WHAT YOU WILL LEARN
 - BT.renderAlpha and Vector2i.lerp() for drawing the squares between two physics ticks.
 - Checking BT.activeBackend (through the shared isAvailable() helper) before touching the
   effect API, because the software renderer has no post-processing.
+- Honoring BT.isReducedMotionPreferred: the moving effects stay out of the stack, and
+  onReducedMotionChange() rebuilds it when the preference changes mid-run.
 
 HOW THE TOGGLE WORKS
 --------------------
@@ -87,11 +89,15 @@ TRY THIS
   while the effects are live. The overlay draws its bar and text with this demo's own
   palette slots.
 - Add ?backend=software to the URL to see the fallback panel.
+- Add ?reducedmotion to the URL: the ON state keeps the curve, scanlines, mask, color
+  fringe, and glow, but leaves out the grain, the brightness flicker, the rolling band,
+  and the row jitter.
 
 */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
+import { isMotionEffect } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
@@ -105,12 +111,14 @@ const DISPLAY_H = 240;
 const OUTPUT_W = 1280;
 const OUTPUT_H = 960;
 
+// Fixed update rate: 60 ticks per second. The toggle period and the `time` fed to the
+// animated effects are both measured against it.
 const TARGET_FPS = 60;
 
 // Palette indices. Index 0 is always transparent.
 const C_BG = 1; // dark navy: the background fill
 const C_LABEL = 2; // white: the engine overlay's text
-const C_RED = 3;
+const C_RED = 3; // the bright primaries the bars and squares are painted in
 const C_GREEN = 4;
 const C_BLUE = 5;
 const C_YELLOW = 6;
@@ -157,6 +165,25 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 // toggle; that way the GPU pipelines stay alive instead of being torn down and rebuilt
 // every two seconds.
 class Demo {
+    // True when the WebGPU post-process effects can be used (false in software mode).
+    effectsAvailable = false;
+
+    // The CRT preset's effects, kept so the same instances are re-added on each toggle.
+    stack = [];
+
+    // The effects in `stack` that animate from a `time` field (RollLine, Noise,
+    // Interference), so update() can feed them without walking the whole stack.
+    timedEffects = [];
+
+    // Whether the CRT stack is in the chain right now.
+    enabled = false;
+
+    // Tick of the last ON/OFF flip, so update() knows when the next one is due.
+    lastToggleTick = 0;
+
+    // The five bouncing squares: position, previous position, velocity, and color each.
+    squares = [];
+
     // Same 320x240 logical / 1280x960 output setup as the PipBoy CRT demo, which the
     // display-tier CRT preset needs.
     configure() {
@@ -180,6 +207,7 @@ class Demo {
             // them into bilinear-blended squares - a different look, also valid.
             outputUpscaleFilter: 'nearest',
 
+            // The fixed update rate the toggle period is counted in.
             targetFPS: TARGET_FPS,
 
             // The engine overlay draws with this demo's own palette slots, and its timing
@@ -200,13 +228,15 @@ class Demo {
         };
     }
 
+    // Builds the palette, prepares the CRT preset (WebGPU only), and places the squares.
+    // The CRT stack is not added here - the first toggle adds it two seconds in.
     async init() {
         // Step 1: build the palette. A small, colorful set of scene colors in the low
         // slots. Bright primaries make the CRT effect obvious - soft pastels would look
         // the same with or without it. The palette is 256 entries long so the shared UI
         // theme can live in the high slots (240-251), far away from the scene colors.
         const palette = BT.paletteCreate(256);
-        palette.set(C_BG, new Color32(20, 30, 50, 255));
+        palette.set(C_BG, new Color32(20, 30, 50, 255)); // dark navy
         palette.set(C_LABEL, Color32.white);
         palette.set(C_RED, Color32.red);
         palette.set(C_GREEN, Color32.green);
@@ -214,13 +244,15 @@ class Demo {
         palette.set(C_YELLOW, Color32.yellow);
         palette.set(C_CYAN, Color32.cyan);
         palette.set(C_MAGENTA, Color32.magenta);
-        palette.set(C_OVERLAY_BAR, new Color32(10, 15, 25, 220));
+        palette.set(C_OVERLAY_BAR, new Color32(10, 15, 25, 220)); // dim, see-through
 
         // Install the shared UI kit colors into slots 240-251. The kit draws the small
         // CRT status panel; the scene keeps its own bright primaries above.
         applyTheme(palette);
         BT.paletteSet(palette);
 
+        // Post-processing needs WebGPU. isAvailable() checks which renderer actually
+        // started; in software mode the effect API is off limits.
         this.effectsAvailable = isAvailable();
 
         if (this.effectsAvailable) {
@@ -238,9 +270,6 @@ class Demo {
             // the array once and keep the references instead of walking the whole stack
             // every tick.
             this.timedEffects = this.stack.filter((fx) => 'time' in fx);
-        } else {
-            this.stack = [];
-            this.timedEffects = [];
         }
 
         // Step 4: start in the OFF state. The PipBoy CRT demo shows the CRT look straight
@@ -272,6 +301,8 @@ class Demo {
         return true;
     }
 
+    // Runs 60 times per second: flips the CRT stack on or off every two seconds, feeds
+    // the animated effects their clock, and moves the squares.
     update() {
         // 1. Time-based toggle (WebGPU only - effectAdd throws in software mode). Every
         // TOGGLE_PERIOD_TICKS flip the boolean and either add or remove the entire preset
@@ -281,13 +312,11 @@ class Demo {
             this.enabled = !this.enabled;
 
             if (this.enabled) {
-                // Add every effect from the preset to the chain. Each one declares its
-                // own tier ('display' for the CRT effects), so the engine routes it
-                // automatically.
-                for (const fx of this.stack) {
-                    BT.effectAdd(fx);
-                }
+                // Add the preset's effects to the chain. Each one declares its own tier
+                // ('display' for the CRT effects), so the engine routes it automatically.
+                this.addStack();
 
+                // Mark the moment on the overlay's timing chart.
                 BT.assignTag('CRT: ON');
             } else {
                 // Remove them all. When the last effect goes, the engine drops the
@@ -297,6 +326,7 @@ class Demo {
                     BT.effectRemove(fx);
                 }
 
+                // Mark the moment on the overlay's timing chart.
                 BT.assignTag('CRT: OFF');
             }
         }
@@ -308,6 +338,7 @@ class Demo {
             // reads it.
             const seconds = BT.ticks / TARGET_FPS;
 
+            // Hand the same clock to every time-driven effect.
             for (const fx of this.timedEffects) {
                 fx.time = seconds;
             }
@@ -321,11 +352,13 @@ class Demo {
             // smooth in-between position instead of a pop.
             sq.prevPos = sq.pos;
 
+            // Step the square by its velocity: x and y each move by their own speed.
             sq.pos = new Vector2i(sq.pos.x + sq.vel.x, sq.pos.y + sq.vel.y);
 
             // Bounce against the left and right walls. The valid range is [0, DISPLAY_W -
             // SQUARE_SIZE] because the square's anchor is its top-left corner.
             if (sq.pos.x <= 0 || sq.pos.x >= DISPLAY_W - SQUARE_SIZE) {
+                // Flip the horizontal speed so the square heads back the other way.
                 sq.vel = new Vector2i(-sq.vel.x, sq.vel.y);
 
                 // Nudge the position back inside the playfield so it does not bounce
@@ -335,18 +368,23 @@ class Demo {
 
             // Same for the top and bottom walls. The squares roam the full screen.
             if (sq.pos.y <= 0 || sq.pos.y >= DISPLAY_H - SQUARE_SIZE) {
+                // Flip the vertical speed, then nudge the square back inside.
                 sq.vel = new Vector2i(sq.vel.x, -sq.vel.y);
                 sq.pos = new Vector2i(sq.pos.x, Math.max(0, Math.min(sq.pos.y, DISPLAY_H - SQUARE_SIZE)));
             }
         }
     }
 
+    // Draws the bars, the squares, and the status panel. The CRT look, when it is on, is
+    // applied by the engine after render() - nothing here knows about it.
     render() {
+        // Start every frame from the dark navy background.
         BT.clear(C_BG);
 
         // The high-contrast horizontal bars across the middle. They are static - the CRT
         // scanlines and shadow mask interact strongly with bright horizontals.
         for (let i = 0; i < BAR_COLORS.length; i++) {
+            // Each bar sits one bar height plus one gap below the previous one.
             const y = BAR_TOP + i * (BAR_HEIGHT + BAR_GAP);
             BT.drawRectFill(new Rect2i(20, y, DISPLAY_W - 40, BAR_HEIGHT), BAR_COLORS[i]);
         }
@@ -383,6 +421,35 @@ class Demo {
         }
 
         ui.end();
+    }
+
+    // The engine calls this when the reduced-motion preference changes while the demo
+    // runs. If the stack is live, take it off and put it back so the moving effects
+    // follow the new preference.
+    onReducedMotionChange() {
+        if (!this.enabled) {
+            return;
+        }
+
+        for (const fx of this.stack) {
+            BT.effectRemove(fx);
+        }
+
+        this.addStack();
+    }
+
+    // Adds the CRT preset's effects to the chain in their original order. When the player
+    // prefers reduced motion, the grain, the brightness flicker, the rolling band, and
+    // the row jitter (isMotionEffect() from crt-glitch.js) stay out; the curve,
+    // scanlines, mask, color fringe, and glow still show the CRT look.
+    addStack() {
+        for (const fx of this.stack) {
+            if (BT.isReducedMotionPreferred && isMotionEffect(fx)) {
+                continue;
+            }
+
+            BT.effectAdd(fx);
+        }
     }
 }
 

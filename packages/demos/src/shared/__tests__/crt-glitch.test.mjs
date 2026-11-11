@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { BarrelDistortion, Bloom, Flicker, Noise, RollLine, Scanlines } from 'blit386';
+import { BarrelDistortion, Bloom, Flicker, Interference, Noise, RollLine, Scanlines } from 'blit386';
 
 import { GLITCH_LABELS, GLITCH_TYPE, GLITCH_TYPES_CHROMA, GLITCH_TYPES_VROLL } from '../crt-glitch.js';
 import { isMotionEffect } from '../crt-glitch.js';
@@ -30,10 +30,10 @@ describe('GLITCH_TYPE', () => {
 
 describe('isMotionEffect', () => {
     it('picks out the effects that move or blink on their own, and nothing else', () => {
-        const moving = [new Flicker(), new Noise(), new RollLine()];
+        const moving = [new Flicker(), new Interference(), new Noise(), new RollLine()];
         const still = [new BarrelDistortion(), new Bloom(), new Scanlines()];
 
-        assert.deepEqual(moving.map(isMotionEffect), [true, true, true]);
+        assert.deepEqual(moving.map(isMotionEffect), [true, true, true, true]);
         assert.deepEqual(still.map(isMotionEffect), [false, false, false]);
     });
 });

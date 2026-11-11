@@ -41,8 +41,8 @@ The whole picture passes through a CRT stack: barrel curvature, scanlines aligne
 the screen, and bloom. Roughly every 2 to 6 seconds a glitch burst lasting 5 to 29 ticks
 fires. There are five kinds: a horizontal band shift, a red/blue channel split, heavier
 grain, a brightness dip, and per-row interference jitter. When the player prefers
-reduced motion, the grain, the brightness flicker, the rolling band, and the glitch bursts
-are all left out.
+reduced motion, the grain, the brightness flicker, the rolling band, the row jitter, and
+the glitch bursts are all left out.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -139,7 +139,7 @@ TRY THIS
   interference" at the start of each burst.
 - Add ?backend=software to the URL to see the fallback caption.
 - Add ?reducedmotion to the URL: the picture keeps its curve, scanlines, mask, and glow,
-  but the grain, flicker, rolling band, and glitch bursts stay off.
+  but the grain, flicker, rolling band, row jitter, and glitch bursts stay off.
 
 */
 
@@ -646,8 +646,9 @@ class Demo {
     }
 
     // Takes every display-tier effect off, then puts back the ones that should run: all
-    // of them normally, and all but the grain, the brightness flicker, and the rolling
-    // band (isMotionEffect() from crt-glitch.js) when the player prefers reduced motion.
+    // of them normally, and all but the grain, the brightness flicker, the rolling band,
+    // and the row jitter (isMotionEffect() from crt-glitch.js) when the player prefers
+    // reduced motion.
     // Removing first keeps the chain in its original order.
     applyEffects() {
         for (const fx of this.crtEffects) {

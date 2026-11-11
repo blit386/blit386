@@ -22,7 +22,7 @@
  * isMotionEffect() is shared by every CRT demo that honors BT.isReducedMotionPreferred.
  */
 
-import { Flicker, Noise, RollLine } from 'blit386';
+import { Flicker, Interference, Noise, RollLine } from 'blit386';
 
 // Glitch state-machine tuning shared by crt-pipboy.js, snake-game.js, and
 // basics-enhanced.js. sprite-effects.js and logo-lowres.js use their own, different
@@ -132,16 +132,16 @@ function applyGlitchUniforms(instance, envelope) {
 }
 
 /**
- * Is this one of the CRT effects that moves or blinks on its own - grain that changes every
- * frame, a brightness flicker, or a band rolling down the screen? CRT demos leave these out
- * of the chain while the player prefers reduced motion (raycasting.js skips Noise and
- * RollLine the same way).
+ * Is this one of the CRT effects that moves or blinks on its own - grain that changes
+ * every frame, a brightness flicker, a band rolling down the screen, or rows jittering
+ * sideways? CRT demos leave these out of the chain while the player prefers reduced
+ * motion (raycasting.js skips Noise and RollLine the same way).
  *
  * @param {object} fx - A post-process effect instance.
  * @returns {boolean}
  */
 function isMotionEffect(fx) {
-    return fx instanceof Flicker || fx instanceof Noise || fx instanceof RollLine;
+    return fx instanceof Flicker || fx instanceof Interference || fx instanceof Noise || fx instanceof RollLine;
 }
 
 export {
