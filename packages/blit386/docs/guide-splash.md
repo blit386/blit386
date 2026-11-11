@@ -155,8 +155,6 @@ Swallowing consumes the press _edge_, not the key. A key still physically down a
 
 ## Reduced motion
 
-<Since symbol="BT.isReducedMotionPreferred" />
-
 When `BT.isReducedMotionPreferred` is `true` at splash start, the splash shows a static hold instead of animating:
 
 - No fade-in - the ramp and logo appear at full brightness immediately.
