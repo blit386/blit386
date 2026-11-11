@@ -68,7 +68,17 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
-import { applyTheme, FONT_W, PIP_SIZE, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
+import {
+    applyTheme,
+    centeredTextX,
+    defaultThemeSlot,
+    PANEL_BOTTOM,
+    PANEL_CONTENT_TOP,
+    PIP_SIZE,
+    POINTER_SLOTS,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -98,19 +108,17 @@ const BRUSH_SIZES = [0, 2, 4];
 const BRUSH_NAMES = ['Thin', 'Medium', 'Thick'];
 
 // The Paint panel sits in the bottom-right corner, 4 pixels from the edges. Its height
-// comes from the rows it stacks: the 22-pixel title strip, four 10-pixel pip rows, a
-// 5-pixel gap, two 27-pixel button rows, and the 11-pixel bottom rim. Placing it
-// from these numbers (instead of letting the kit anchor it) lets the slot color swatches
-// line up exactly with the pip rows.
+// comes from the rows it stacks: the kit's title band (PANEL_CONTENT_TOP), four 10-pixel
+// pip rows, a 5-pixel gap, two 27-pixel button rows, and the kit's bottom rim
+// (PANEL_BOTTOM). Placing it from these numbers (instead of letting the kit anchor it)
+// lets the slot color swatches line up exactly with the pip rows.
 const PANEL_W = 112;
-const PANEL_H = 22 + 4 * 10 + 5 + 2 * 27 + 11;
+const PANEL_H = PANEL_CONTENT_TOP + 4 * 10 + 5 + 2 * 27 + PANEL_BOTTOM;
 const PANEL_X = DISPLAY_W - 4 - PANEL_W;
 const PANEL_Y = DISPLAY_H - 4 - PANEL_H;
 
-// Kit panel content starts 9 pixels in from the panel edge, and the first row starts 22
-// pixels below its top.
+// Kit panel content starts 9 pixels in from the panel edge.
 const PANEL_PAD = 9;
-const PANEL_CONTENT_TOP = 22;
 
 // Half the length of each cursor crosshair arm, in pixels.
 const CURSOR_ARM = 5;
@@ -140,7 +148,7 @@ class Demo {
     // frame.
     runRect = new Rect2i(0, 0, 1, 1);
 
-    // Another reusable rectangle for the cursors and the panel's color swatches.
+    // Another reusable rectangle for the panel's color swatches.
     uiRect = new Rect2i(0, 0, 1, 1);
 
     // True once anything has been painted, so the "how to paint" hint can step aside.
@@ -173,13 +181,13 @@ class Demo {
             isOverlayRendererDiagnosticsBarEnabled: true,
 
             // The engine overlay bars reuse the shared UI theme colors so everything on
-            // screen matches. applyTheme() writes panel at THEME_DEFAULT_START_SLOT + 2
-            // and text at + 4; configure() runs before init(), so we derive those slot
-            // numbers here.
+            // screen matches. configure() runs before init(), where applyTheme() installs
+            // those colors, so defaultThemeSlot() looks up the slot each named color will
+            // land in.
             overlayStyle: {
-                barPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
-                textPaletteIndex: THEME_DEFAULT_START_SLOT + 4,
-                gapPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
+                barPaletteIndex: defaultThemeSlot('panel'),
+                textPaletteIndex: defaultThemeSlot('text'),
+                gapPaletteIndex: defaultThemeSlot('panel'),
             },
 
             overlayTimingChartStyle: {
@@ -187,7 +195,7 @@ class Demo {
                 renderBarPaletteIndex: SLOT_PAINT[1],
                 warningPaletteIndex: SLOT_PAINT[2],
                 errorPaletteIndex: SLOT_PAINT[3],
-                tagPaletteIndex: THEME_DEFAULT_START_SLOT + 4,
+                tagPaletteIndex: defaultThemeSlot('text'),
             },
         };
     }
@@ -243,7 +251,7 @@ class Demo {
 
         // Walk the four slots. Slot 0 paints while BTN_POINTER_A is held; slots 1-3 paint
         // while their touch is in contact (slot is active).
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             const valid = BT.isPointerActive(slot);
 
             // For slot 0 (mouse) painting is gated on the left button. For touch slots
@@ -395,23 +403,19 @@ class Demo {
     // Draws a small crosshair at each active pointer so the user can see where each
     // finger or the mouse is, even when not currently painting.
     renderCursors() {
-        const span = CURSOR_ARM * 2 + 1;
-
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             if (!BT.isPointerActive(slot)) {
                 continue;
             }
 
             const pos = BT.pointerPos(slot);
-            const color = SLOT_PAINT[slot];
 
             // Two 1-pixel-thick arms through the pointer position, in the slot's paint
-            // color. They are drawn with ui.drawRectFill(), the sprite version of
-            // BT.drawRectFill(): the engine draws every BT.drawLine() and
-            // BT.drawRectFill() before any sprite, and the kit panel is a sprite, so a
-            // plain line would vanish whenever the pointer moved over the panel.
-            ui.drawRectFill(this.uiRect.set(pos.x - CURSOR_ARM, pos.y, span, 1), color);
-            ui.drawRectFill(this.uiRect.set(pos.x, pos.y - CURSOR_ARM, 1, span), color);
+            // color. ui.crosshair() draws them as sprites: the engine draws every
+            // BT.drawLine() and BT.drawRectFill() before any sprite, and the kit panel is
+            // a sprite, so a plain line would vanish whenever the pointer moved over the
+            // panel.
+            ui.crosshair(pos.x, pos.y, CURSOR_ARM, SLOT_PAINT[slot]);
         }
     }
 
@@ -422,15 +426,14 @@ class Demo {
             return;
         }
 
-        // The open canvas is everything left of the panel. Every character of the system
-        // font is FONT_W (6) pixels wide, so starting a line half its width left of the
-        // middle centers it.
+        // The open canvas is everything left of the panel. centeredTextX() works out
+        // where each line must start so it sits centered on centerX.
         const centerX = Math.floor(PANEL_X / 2);
         const centerY = Math.floor(DISPLAY_H / 2);
         const lines = ['Hold the left mouse button', 'or touch the screen to paint'];
 
         for (let i = 0; i < lines.length; i++) {
-            ui.caption(centerX - (lines[i].length * FONT_W) / 2, centerY - 8 + i * 12, lines[i], { color: 'dim' });
+            ui.caption(centeredTextX(centerX, lines[i]), centerY - 8 + i * 12, lines[i], { color: 'dim' });
         }
     }
 
@@ -445,7 +448,7 @@ class Demo {
         ui.panel('Paint');
 
         // One pip per pointer slot: lit while that mouse or finger is active.
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             ui.pip(SLOT_LABELS[slot], BT.isPointerActive(slot));
         }
 
@@ -480,7 +483,7 @@ class Demo {
         // with the kit's sprite drawing so it lands on top of the panel.
         const swatchX = PANEL_X + PANEL_W - PANEL_PAD - PIP_SIZE;
 
-        for (let slot = 0; slot < 4; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             const boxY = PANEL_Y + PANEL_CONTENT_TOP + slot * 10 + 3;
 
             ui.drawRect(this.uiRect.set(swatchX, boxY, PIP_SIZE, PIP_SIZE), this.theme.border);
