@@ -365,6 +365,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The overlay's `Copied N` / `Copy failed` swatch tooltip clears after its usual 0.75 s when `BT.ticksReset()` or a
   `BT.renderAt` replay restarts the tick counter while it shows. It used to stay up for as many ticks as had passed
   before the reset.
+- The overlay's Present FPS no longer dips each time the overlay body is shown again. It was sampled only while the body
+  was visible, so the first frame after 10 s hidden read about 53 instead of 60 and took about 30 frames to recover.
 
 ## 1.8.0 - 2026-10-18
 

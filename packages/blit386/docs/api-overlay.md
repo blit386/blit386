@@ -227,8 +227,8 @@ Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` 
 
 The overlay label `Present: N FPS` is not the same as `BT.targetFPS`:
 
-- Present FPS reflects how often `render()` runs (browser refresh rate). It is sampled only while the overlay body is
-  visible.
+- Present FPS reflects how often `render()` runs (browser refresh rate). It keeps sampling while the overlay body is
+  hidden, so it reads right as soon as the body is shown again.
 - Target is the fixed `update()` rate (`BT.targetFPS`).
 
 How the timing numbers are sourced:

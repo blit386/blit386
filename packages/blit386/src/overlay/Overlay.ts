@@ -415,18 +415,15 @@ export class Overlay {
         usedPaletteMask: Uint8Array = EMPTY_PALETTE_USAGE_MASK,
         audioSnapshot?: OverlayAudioSnapshot,
     ): void {
-        // Chart history keeps advancing while hidden so re-show reflects demo-only timing.
+        // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
         this.#sampleTiming(timing);
         this.#sampleAudio(audioSnapshot);
+        this.#fps.sample();
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 
         if (!isBodyVisible && !this.#isToggleHintVisible && !this.#isToggleHitDebugVisible) {
             return;
-        }
-
-        if (isBodyVisible) {
-            this.#fps.sample();
         }
 
         const customRows = isBodyVisible ? getCustomRows?.() : undefined;

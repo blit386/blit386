@@ -1209,3 +1209,37 @@ describe('Overlay', () => {
         });
     });
 });
+
+describe('Overlay present FPS', () => {
+    it('does not dip when the body is shown again after 10 s hidden', () => {
+        const frameMs = 1000 / 60;
+        let nowMs = 0;
+        const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', { isOverlayVisibleAtStart: true });
+        const renderFrame = (renderer = createMockRenderer()): ReturnType<typeof createMockRenderer> => {
+            nowMs += frameMs;
+            overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+            return renderer;
+        };
+
+        for (let frame = 0; frame < 120; frame++) {
+            renderFrame();
+        }
+
+        overlay.handleFrameInput(null, true, 1);
+
+        for (let frame = 0; frame < 600; frame++) {
+            renderFrame();
+        }
+
+        overlay.handleFrameInput(null, true, 2);
+
+        const presentLabel = getBitmapTextCalls(renderFrame()).find((call) => call.text.startsWith('Present'));
+
+        nowSpy.mockRestore();
+
+        expect(presentLabel?.text).toBe('Present  60 FPS');
+    });
+});

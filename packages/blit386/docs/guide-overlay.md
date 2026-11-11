@@ -114,7 +114,8 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 ## Present FPS vs. target FPS
 
 - `Target` in the overlay = `BT.targetFPS` (fixed `update()` rate).
-- `Present: N FPS` = measured browser refresh cadence while the overlay body is visible - not the same as target FPS.
+- `Present: N FPS` = measured browser refresh cadence (sampled every frame, also while the overlay body is hidden) - not
+  the same as target FPS.
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
 
