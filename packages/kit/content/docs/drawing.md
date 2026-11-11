@@ -1,7 +1,6 @@
 # Drawing
 
-All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`); a `Color32` also
-works anywhere a slot number does.
+All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`).
 
 Positions are `Vector2i(x, y)` and boxes are `Rect2i(x, y, width, height)`. The top-left corner is `(0, 0)` and `y`
 grows downward.
