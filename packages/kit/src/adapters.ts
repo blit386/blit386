@@ -889,8 +889,8 @@ function buildCodexHooks(manifest: HooksManifest, vars: TemplateVars): { hooks: 
 
 /**
  * `.codex/config.toml`: the docs server, as one table and nothing else, so a user extending the file has a single
- * block of the kit's to merge around (see `tryMergeCodexConfig` in `src/commands/agents.ts`). `url` is Codex's key for
- * a streamable HTTP server. Written by hand - the kit has no TOML dependency, and one table needs none.
+ * block of the kit's to merge around (see `tryMergeCodexConfig` in `src/commands/agents-merge.ts`). `url` is Codex's
+ * key for a streamable HTTP server. Written by hand - the kit has no TOML dependency, and one table needs none.
  */
 function codexConfigFile(): GeneratedFile {
     const content = [

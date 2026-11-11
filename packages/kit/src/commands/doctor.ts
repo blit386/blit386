@@ -19,7 +19,7 @@ import { kitRoot, nodeFloor } from '../kit-root';
 import { NO_GIT_NAG, ui } from '../messages';
 import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { readManifest } from '../read-manifest';
-import { checkSyncDrift } from './agents';
+import { checkSyncDrift } from './agents-sync';
 
 /** Drift never sees a file the manifest did not track. */
 function checkDocsMcp(root: string, out: (line: string) => void): void {

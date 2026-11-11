@@ -3,7 +3,7 @@
  * path recorded in `.blit/manifest.json`: symlink detection, project-root containment, and the SHA-256
  * hashing used to detect drift from a tracked file's last known content.
  *
- * A leaf module on purpose: no imports beyond node builtins, so both `commands/agents.ts` and
+ * A leaf module on purpose: no imports beyond node builtins, so both `commands/agents-sync.ts` and
  * `commands/clean.ts` can depend on it without a cycle. Kept as one implementation rather than two
  * copies because a symlink-safety bug fixed in one copy and not the other is exactly the kind of drift
  * these checks exist to prevent.
