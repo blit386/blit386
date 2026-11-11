@@ -1994,7 +1994,7 @@ describe('BT.captureFrame', () => {
 
     it('delegates to BTAPI.instance.captureFrame and returns its result', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const result = await BT.captureFrame();
 
@@ -2115,7 +2115,7 @@ describe("BT.captureFrame({ size: 'display' })", () => {
 
     it("passes 'display' through to BTAPI.instance.captureFrame", async () => {
         const mockBlob = new Blob(['png'], { type: 'image/png' });
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const result = await BT.captureFrame({ size: 'display' });
 
@@ -2124,7 +2124,7 @@ describe("BT.captureFrame({ size: 'display' })", () => {
     });
 
     it('passes undefined (the outputSize default) when no options are given', async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(new Blob());
 
         await BT.captureFrame();
 
@@ -2144,7 +2144,7 @@ describe('BT.downloadFrame', () => {
     it('calls captureFrame, creates object URL, clicks anchor, and revokes URL', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
 
-        vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
 
         const mockUrl = 'blob:mock-url';
         const createObjectURL = vi.fn().mockReturnValue(mockUrl);
@@ -2166,7 +2166,7 @@ describe('BT.downloadFrame', () => {
     });
 
     it("forwards { size: 'display' } to BTAPI.instance.captureFrame", async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(new Blob());
+        const spy = vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(new Blob());
 
         vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:x'), revokeObjectURL: vi.fn() });
         vi.spyOn(document, 'createElement').mockReturnValue({
@@ -2183,7 +2183,7 @@ describe('BT.downloadFrame', () => {
     it('uses the default filename when none is provided', async () => {
         const mockBlob = new Blob(['test'], { type: 'image/png' });
 
-        vi.spyOn(BTAPI.instance, 'captureFrame').mockResolvedValue(mockBlob);
+        vi.spyOn(BTAPI.instance.capture, 'captureFrame').mockResolvedValue(mockBlob);
         vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:x'), revokeObjectURL: vi.fn() });
 
         const mockAnchor = { href: '', download: '', click: vi.fn() };

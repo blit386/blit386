@@ -431,7 +431,7 @@ export const lifecycle = {
      * const exact = await BT.captureFrame({ size: 'display' });
      */
     captureFrame: async (options: FrameCaptureOptions = {}): Promise<Blob> => {
-        return await BTAPI.instance.captureFrame(options.size);
+        return await BTAPI.instance.capture.captureFrame(options.size);
     },
 
     /**
@@ -521,7 +521,7 @@ export const lifecycle = {
         filename: string = 'blit386-capture.png',
         options: FrameCaptureOptions = {},
     ): Promise<void> => {
-        const blob = await BTAPI.instance.captureFrame(options.size);
+        const blob = await BTAPI.instance.capture.captureFrame(options.size);
 
         downloadBlob(blob, filename);
     },

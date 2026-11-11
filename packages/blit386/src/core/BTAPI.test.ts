@@ -1630,7 +1630,7 @@ describe('BTAPI', () => {
             await BTAPI.instance.renderAt(0, 'current'); // park the loop first
 
             void BTAPI.instance.renderAt(1, 'current');
-            const blob = await BTAPI.instance.captureFrame('display');
+            const blob = await BTAPI.instance.capture.captureFrame('display');
 
             expect(await blob.text()).toBe('60');
         });
@@ -1662,7 +1662,7 @@ describe('BTAPI', () => {
             seen.length = 0;
 
             listener('pointerup')({ ...mouse, buttons: 0 });
-            await BTAPI.instance.captureFrame('display'); // re-renders the parked tick with zero updates
+            await BTAPI.instance.capture.captureFrame('display'); // re-renders the parked tick with zero updates
             await BTAPI.instance.renderAt(2 / 60, 'current');
 
             expect(seen).toEqual([true]);
@@ -1728,7 +1728,7 @@ describe('BTAPI', () => {
                 throw new Error('render broke');
             });
 
-            await expect(BTAPI.instance.captureFrame('display')).rejects.toThrow('render broke');
+            await expect(BTAPI.instance.capture.captureFrame('display')).rejects.toThrow('render broke');
 
             // The renderer later rejects the abandoned request (a newer capture supersedes it); that
             // rejection must not surface as unhandled.
@@ -1777,7 +1777,7 @@ describe('BTAPI', () => {
             await BTAPI.instance.renderAt(1, 'current');
             vi.mocked(demo.render).mockClear();
 
-            await expect(BTAPI.instance.captureFrame('display')).resolves.toBeInstanceOf(Blob);
+            await expect(BTAPI.instance.capture.captureFrame('display')).resolves.toBeInstanceOf(Blob);
             expect(demo.render).toHaveBeenCalledTimes(1);
             expect(BTAPI.instance.getTicks()).toBe(60);
         });
@@ -2916,7 +2916,7 @@ describe('BTAPI', () => {
 
             vi.spyOn(renderer as NonNullable<typeof renderer>, 'captureFrame').mockResolvedValue(mockBlob);
 
-            const result = await BTAPI.instance.captureFrame();
+            const result = await BTAPI.instance.capture.captureFrame();
 
             expect(result).toBe(mockBlob);
         });
@@ -2934,7 +2934,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const capturePromise = BTAPI.instance.captureFrame();
+            const capturePromise = BTAPI.instance.capture.captureFrame();
 
             renderer?.beginFrame();
             renderer?.endFrame(0);
@@ -2963,7 +2963,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const capturePromise = BTAPI.instance.captureFrame('display');
+            const capturePromise = BTAPI.instance.capture.captureFrame('display');
 
             renderer?.beginFrame();
             renderer?.endFrame(0);
@@ -2990,7 +2990,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const publicCapture = BTAPI.instance.captureFrame('display');
+            const publicCapture = BTAPI.instance.capture.captureFrame('display');
             const shortcutCapture = (renderer as NonNullable<typeof renderer>).captureFrameForShortcut();
 
             renderer?.beginFrame();
@@ -3040,7 +3040,7 @@ describe('BTAPI', () => {
             await BTAPI.instance.init(demo, canvas);
             BTAPI.instance.setPalette(new Palette(16));
 
-            const capturePromise = BTAPI.instance.captureFrame();
+            const capturePromise = BTAPI.instance.capture.captureFrame();
             const renderer = BTAPI.instance.getRenderer();
             expect(renderer).not.toBeNull();
 
@@ -3132,7 +3132,7 @@ describe('BTAPI', () => {
 
             expect(renderer).not.toBeNull();
 
-            const capturePromise = BTAPI.instance.captureFrame('display');
+            const capturePromise = BTAPI.instance.capture.captureFrame('display');
 
             renderer?.beginFrame();
             renderer?.endFrame(0);
@@ -5520,7 +5520,7 @@ describe('BTAPI', () => {
 
         /** Reads the private shared in-flight guard for the generation-guard regression test. */
         function isShortcutInFlight(): boolean {
-            return (BTAPI.instance as unknown as { isFrameCaptureShortcutInFlight: boolean })
+            return (BTAPI.instance as unknown as { capture: { isFrameCaptureShortcutInFlight: boolean } }).capture
                 .isFrameCaptureShortcutInFlight;
         }
 
