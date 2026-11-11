@@ -143,6 +143,13 @@ const CODE_PANEL_Y = TOP_PANELS_Y + TOP_PANELS_H + PANEL_GAP;
 
 // Legend rows inside the Themes panel: a 10x10 swatch and the name, 14 pixels apart.
 const LEGEND_ROW_H = 14;
+
+// The countdown under the legend: a gap, the "Next swap" label row, then the meter row.
+// The two row heights mirror the kit's own (ROW_H in src/shared/ui-core.js, and
+// ui.meter()'s 2 + 9 + 2 row in src/shared/ui-widgets.js) - keep them in step by hand.
+const COUNTDOWN_GAP = 9;
+const COUNTDOWN_LABEL_H = 10;
+const COUNTDOWN_METER_H = 13;
 const LEGEND_SWATCH = 10;
 
 // Engine overlay color slots (the same in every theme palette). The overlay style is
@@ -231,8 +238,17 @@ class Demo {
         // SpriteSheet.loadColorsIntoPalette() writes the colors into a palette AND
         // returns them as an array. We only need the array, so we hand it a throwaway
         // "scratch" palette and keep the returned colors for buildTheme().
+        // A missing or broken PNG is logged and stops the demo cleanly, like the sprite
+        // load in step 5.
         const scratchPalette = BT.paletteCreate(256);
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', scratchPalette, COLOR_BASE);
+
+        try {
+            this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', scratchPalette, COLOR_BASE);
+        } catch (error) {
+            console.error('[PaletteSwapDemo] Failed to read the sprite colors:', error);
+            return false;
+        }
+
         this.colorCount = this.baseColors.length;
         console.log(`[PaletteSwapDemo] Found ${this.colorCount} unique sprite colors`);
 
@@ -322,10 +338,12 @@ class Demo {
         ui.begin(UI_ANCHORS.TOP_LEFT, { x: EDGE, y: TOP_PANELS_Y, width: THEMES_PANEL_W });
         ui.panel('Themes');
         ui.spacer(rowsH);
-        ui.spacer(9);
+        ui.spacer(COUNTDOWN_GAP);
         ui.label('Next swap', { color: 'dim' });
         ui.meter(null, progress, { width: THEMES_PANEL_W - 2 * PANEL_TEXT_INSET });
-        ui.spacer(TOP_CONTENT_H - rowsH - 9 - 10 - 13);
+
+        // Whatever height is left pads the panel down to TOP_CONTENT_H.
+        ui.spacer(TOP_CONTENT_H - rowsH - COUNTDOWN_GAP - COUNTDOWN_LABEL_H - COUNTDOWN_METER_H);
         ui.end();
 
         for (let i = 0; i < this.themes.length; i++) {
@@ -335,9 +353,9 @@ class Demo {
             const isActive = i === this.currentTheme;
 
             // The color square, drawn with ui.fillRect(): kit panels are sprites, and the
-            // engine draws every BT.drawRectFill() before any sprite - so a plain one would
-            // hide under the panel. The active theme also gets a 1-pixel green frame
-            // around its square, one pixel out.
+            // engine draws every BT.drawRectFill() before any sprite - so a plain one
+            // would hide under the panel. The active theme also gets a 1-pixel green
+            // frame around its square, one pixel out.
             ui.fillRect(swatchX, swatchY, LEGEND_SWATCH, LEGEND_SWATCH, SWATCH_STONE + i);
 
             if (isActive) {
