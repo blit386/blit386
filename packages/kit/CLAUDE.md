@@ -151,7 +151,7 @@ is worth a moment:
 
 | Question | Function | Who asks it |
 | --- | --- | --- |
-| Which kit contains this running code? | `kitRoot()` | The `blit` CLI, which ships inside a game's `node_modules` and must read its own `content/`; `src/env.ts`'s `package.json` readers |
+| Which kit contains this running code? | `kitRoot()` | The `blit` CLI, which ships inside a game's `node_modules` and must read its own `content/`; `src/env.ts`'s `package.json` readers; `blit doctor`'s Node floor (`nodeFloor(kitRoot())`, read from `engines.node`) |
 | Which kit does the caller's package depend on? | `resolveKitRoot(import.meta.url)` | `create-blit386`, which copies that kit's `content/` into a new game and pins its version in the generated `package.json` |
 
 Both are re-exported from `src/adapters.ts`, this package's only published subpath. They point at the same directory in

@@ -15,7 +15,8 @@
  *     wrong here, because if `@blit386/kit` were ever inlined into the caller's bundle it would
  *     quietly return the caller's own root.
  *
- * Both are re-exported through `./adapters`, the kit's only published subpath.
+ * Both are re-exported through `./adapters`, the kit's only published subpath, with `nodeFloor`, which reads the Node
+ * floor from whichever of the two roots the caller has.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -102,4 +103,25 @@ export function kitRoot(): string {
  */
 export function resolveKitRoot(fromUrl: string | URL): string {
     return dirname(createRequire(fromUrl).resolve(`${KIT_PACKAGE_NAME}/package.json`));
+}
+
+/**
+ * The oldest Node version a package supports: its `engines.node` range (`>=22.18.0`) without the `>=`.
+ *
+ * Read from the package.json rather than typed as a constant, so the floor `blit doctor` checks cannot drift from the
+ * one npm enforces. Pass `kitRoot()` from inside the kit, or `resolveKitRoot(import.meta.url)` from the scaffolder.
+ *
+ * @param packageRoot - Absolute path of a package root.
+ * @returns The floor as `major.minor.patch`.
+ * @throws If that package.json has no `engines.node` of the form `>=major.minor.patch`.
+ */
+export function nodeFloor(packageRoot: string): string {
+    const pkg = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')) as { engines?: { node?: unknown } };
+    const floor = /^>=\s*(\d+\.\d+\.\d+)$/.exec(String(pkg.engines?.node))?.[1];
+
+    if (floor === undefined) {
+        throw new Error(`nodeFloor(): ${join(packageRoot, 'package.json')} has no ">=major.minor.patch" engines.node.`);
+    }
+
+    return floor;
 }

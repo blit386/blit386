@@ -1,6 +1,6 @@
 /**
  * Environment helpers shared by the `blit` commands: package-manager detection, project lookup, git presence,
- * Node version check, semver range check, and a thin wrapper for spawning the package manager.
+ * semver range check, and a thin wrapper for spawning the package manager.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -10,27 +10,6 @@ import { dirname, join } from 'node:path';
 import { kitRoot } from './kit-root';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
-
-/** Minimum Node version the engine supports (matches blit386 `engines`). */
-const MIN_NODE: readonly [number, number, number] = [22, 18, 0];
-
-/** True when the running Node is at least the minimum supported version. */
-export function nodeVersionOk(): boolean {
-    const parts = process.versions.node.split('.').map((n) => Number.parseInt(n, 10));
-    const major = parts[0] ?? 0;
-    const minor = parts[1] ?? 0;
-    const patch = parts[2] ?? 0;
-    const [reqMajor, reqMinor, reqPatch] = MIN_NODE;
-
-    if (major !== reqMajor) {
-        return major > reqMajor;
-    }
-    if (minor !== reqMinor) {
-        return minor > reqMinor;
-    }
-
-    return patch >= reqPatch;
-}
 
 /** Walk up from `start` to the nearest folder containing a package.json, or null if none. */
 export function findProjectRoot(start: string): string | null {

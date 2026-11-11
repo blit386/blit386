@@ -65,7 +65,7 @@ export {
 // without pulling in the generators, re-exported here because `./adapters` is the kit's only published
 // subpath - create-blit386 imports `resolveKitRoot` from '@blit386/kit/adapters'. The two answers are
 // not interchangeable; `./kit-root` documents which question each one asks.
-export { KIT_PACKAGE_NAME, kitRoot, resolveKitRoot } from './kit-root';
+export { KIT_PACKAGE_NAME, kitRoot, nodeFloor, resolveKitRoot } from './kit-root';
 
 // The `.blit/manifest.json` location and shape live in their own leaf module, re-exported for the
 // same reason: create-blit386 stamps the manifest that `blit agents sync` later reads back, so both

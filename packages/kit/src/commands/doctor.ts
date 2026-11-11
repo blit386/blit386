@@ -11,10 +11,10 @@ import {
     isGitRepo,
     kitDocsReviewedAt,
     kitEngineRange,
-    nodeVersionOk,
     readProject,
     satisfiesCaretRange,
 } from '../env';
+import { kitRoot, nodeFloor } from '../kit-root';
 import { NO_GIT_NAG, ui } from '../messages';
 import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { readManifest } from '../read-manifest';
@@ -64,10 +64,11 @@ export function runDoctor(): void {
     out(ui.heading('BLIT386 checkup'));
     out('');
 
-    if (nodeVersionOk()) {
+    const floor = nodeFloor(kitRoot());
+    if (compareVersions(process.versions.node, floor) >= 0) {
         out(ui.success(`Node.js ${process.versions.node}`));
     } else {
-        out(ui.warn(`Node.js ${process.versions.node} is older than 22.18.0.`));
+        out(ui.warn(`Node.js ${process.versions.node} is older than ${floor}.`));
         out(ui.info('Update it from nodejs.org (download the LTS button), then restart your editor.'));
     }
 
