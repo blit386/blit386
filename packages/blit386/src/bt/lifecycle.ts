@@ -482,7 +482,7 @@ export const lifecycle = {
             return Promise.reject(new Error(renderAtOptionsError(options)));
         }
 
-        return BTAPI.instance.renderAt(seconds, options.from);
+        return BTAPI.instance.seek.renderAt(seconds, options.from);
     },
 
     /**
@@ -497,7 +497,7 @@ export const lifecycle = {
      * @returns Resolves once the loop has restarted, or once the call turned out to be a no-op.
      */
     resume: (): Promise<void> => {
-        return BTAPI.instance.resume();
+        return BTAPI.instance.seek.resume();
     },
 
     /**

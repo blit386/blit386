@@ -65,10 +65,11 @@ import { Vector2i } from '../utils/Vector2i';
 import { FrameCaptureCommands } from './engine/FrameCaptureCommands';
 import { OverlayDiagnostics } from './engine/OverlayDiagnostics';
 import { RendererSetup } from './engine/RendererSetup';
+import { Seek } from './engine/Seek';
 import { createSplashIfEnabled, SplashBoot } from './engine/SplashBoot';
 import type { FrameDropCallback } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow, RenderAtFrom } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
 import { DEFAULT_AUDIO_VOICES, needsOverlayRendererDiagnostics } from './mergeHardwareSettings';
 import { Orientation } from './Orientation';
 import { ReducedMotion } from './ReducedMotion';
@@ -215,6 +216,91 @@ export class BTAPI {
     public readonly capture = new FrameCaptureCommands(this);
 
     /**
+     * Current demo instance implementing IBTDemo.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public demo: IBTDemo | null = null;
+
+    /**
+     * World camera offset last applied via {@link setCameraOffset}, persisted across frames.
+     *
+     * Re-applied at the start of every render pass, before the demo's `render()` runs (see
+     * the `onRender` callback built in {@link init}). Without this, a render frame with zero
+     * fixed-update steps (common once the render rate approaches or exceeds the fixed update
+     * rate, for example at 120 Hz) would draw the world with whatever the *previous* frame's
+     * `render()` left the live offset at after its own {@link resetCamera} call for
+     * screen-space UI - which is always `(0, 0)` - producing a visible snap-to-origin flash
+     * instead of holding the last correct scroll position.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public lastCameraOffset: Vector2i = Vector2i.zero();
+
+    /**
+     * True when {@link resetCamera} ran and its effect on {@link lastCameraOffset} is still
+     * deferred to the next fixed-update tick (see {@link commitPendingCameraReset}).
+     *
+     * `resetCamera()` is also the documented way to flip to screen space for UI at the end of
+     * `render()`, with the demo's next `update()` restoring the world offset via
+     * {@link setCameraOffset}. Committing the reset to `lastCameraOffset` immediately would make
+     * it durable right away, which would incorrectly override the world offset during a render
+     * frame with zero fixed-update steps that falls between that reset and the restoring
+     * `setCameraOffset()` call - the exact snap-to-origin flash `lastCameraOffset` exists to
+     * prevent. Deferring the commit lets a following `setCameraOffset()` supersede it normally,
+     * while still making the reset durable once nothing calls `setCameraOffset()` again.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public pendingCameraReset = false;
+
+    /**
+     * Tick-clock time of the previous loop render, for the post-process delta.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public lastRenderClockMs = 0;
+
+    /**
+     * `BT.random` state captured just before the boot `init()`, restored by a `'start'` seek.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public bootRandomState = 0;
+
+    /**
+     * `BT.random.seedValue` at the same moment, so a restored seeded stream still reports its seed.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public bootRandomSeed: number | undefined = undefined;
+
+    /**
+     * True while a seek runs the game's code (the `init()` re-run and the stepped updates); drops SFX.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public isSeeking = false;
+
+    /**
+     * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
+     * `BT.renderAt` can seek it and it never reads `performance.now()`.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public readonly paletteEffects = new PaletteEffectManager(() => this.getTickClockMs());
+
+    /**
+     * Default engine PRNG; time-seeded when the singleton is created.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public readonly random = new Random();
+
+    /** `BT.renderAt` and `BT.resume`. */
+    public readonly seek = new Seek(this);
+
+    /**
      * Source rect reused by every `drawTile*` call. Safe to share: the WebGPU
      * sprite pipeline consumes `srcRect` before returning and the software
      * renderer clones it into its command list.
@@ -245,39 +331,8 @@ export class BTAPI {
     /** Screen y of each `drawNineSlice` row box. */
     private readonly nineSliceBoxY = new Int32Array(3);
 
-    /** Current demo instance implementing IBTDemo. */
-    private demo: IBTDemo | null = null;
-
     /** HTML canvas element used for rendering. */
     private canvas: HTMLCanvasElement | null = null;
-
-    /**
-     * World camera offset last applied via {@link setCameraOffset}, persisted across frames.
-     *
-     * Re-applied at the start of every render pass, before the demo's `render()` runs (see
-     * the `onRender` callback built in {@link init}). Without this, a render frame with zero
-     * fixed-update steps (common once the render rate approaches or exceeds the fixed update
-     * rate, for example at 120 Hz) would draw the world with whatever the *previous* frame's
-     * `render()` left the live offset at after its own {@link resetCamera} call for
-     * screen-space UI - which is always `(0, 0)` - producing a visible snap-to-origin flash
-     * instead of holding the last correct scroll position.
-     */
-    private lastCameraOffset: Vector2i = Vector2i.zero();
-
-    /**
-     * True when {@link resetCamera} ran and its effect on {@link lastCameraOffset} is still
-     * deferred to the next fixed-update tick (see {@link commitPendingCameraReset}).
-     *
-     * `resetCamera()` is also the documented way to flip to screen space for UI at the end of
-     * `render()`, with the demo's next `update()` restoring the world offset via
-     * {@link setCameraOffset}. Committing the reset to `lastCameraOffset` immediately would make
-     * it durable right away, which would incorrectly override the world offset during a render
-     * frame with zero fixed-update steps that falls between that reset and the restoring
-     * `setCameraOffset()` call - the exact snap-to-origin flash `lastCameraOffset` exists to
-     * prevent. Deferring the commit lets a following `setCameraOffset()` supersede it normally,
-     * while still making the reset durable once nothing calls `setCameraOffset()` again.
-     */
-    private pendingCameraReset = false;
 
     /**
      * Engine overlay; non-null when {@link HardwareSettings.isOverlayEnabled}
@@ -308,27 +363,6 @@ export class BTAPI {
 
     /** Milliseconds per fixed update (`1000 / targetFPS`); set by {@link init}, `0` before. */
     private updateIntervalMs = 0;
-
-    /** Tick-clock time of the previous loop render, for the post-process delta. */
-    private lastRenderClockMs = 0;
-
-    /** `BT.random` state captured just before the boot `init()`, restored by a `'start'` seek. */
-    private bootRandomState = 0;
-
-    /** `BT.random.seedValue` at the same moment, so a restored seeded stream still reports its seed. */
-    private bootRandomSeed: number | undefined = undefined;
-
-    /** True while a seek runs the game's code (the `init()` re-run and the stepped updates); drops SFX. */
-    private isSeeking = false;
-
-    /**
-     * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
-     * `BT.renderAt` can seek it and it never reads `performance.now()`.
-     */
-    private readonly paletteEffects = new PaletteEffectManager(() => this.getTickClockMs());
-
-    /** Default engine PRNG; time-seeded when the singleton is created. */
-    private readonly random = new Random();
 
     /** Built-in 6x14 system font for BT.systemPrint(). */
     private systemFont: BitmapFont | null = null;
@@ -564,35 +598,6 @@ export class BTAPI {
      */
     public resetTicks(): void {
         this.loop?.resetTicks();
-    }
-
-    /**
-     * Seeks the fixed-step clock and renders exactly the frame at `seconds`. See `BT.renderAt`.
-     *
-     * Calls are serialized: a second call waits for the first to finish.
-     *
-     * @param seconds - Target time; rounded to the nearest tick (`Math.round(seconds * targetFPS)`).
-     * @param from - `'start'` (default) replays from tick 0; `'current'` steps forward only.
-     * @returns Resolves after the target frame's `endFrame`; rejects on bad input, before init, or a failed `init()`.
-     */
-    public renderAt(seconds: number, from: RenderAtFrom = 'start'): Promise<void> {
-        const run = this.seekChain.then(() => this.seek(seconds, from));
-
-        this.seekChain = run.catch(() => undefined);
-
-        return run;
-    }
-
-    /**
-     * Restarts the game loop after {@link renderAt} left it stopped, from the seeked tick.
-     *
-     * Runs after every `renderAt` called before it has settled, and before any called after it, so it always
-     * resumes from the seeked frame the caller asked for. A no-op when, by then, no seek holds the loop.
-     *
-     * @returns Resolves once the loop has restarted, or once the call turned out to be a no-op.
-     */
-    public resume(): Promise<void> {
-        return this.seekChain.then(() => this.restartParkedLoop());
     }
 
     /**
@@ -1966,6 +1971,18 @@ export class BTAPI {
     }
 
     /**
+     * Makes `demo` the active game: the loop's update/render callbacks and the orientation and
+     * reduced-motion hooks all route to it from now on.
+     *
+     * @param demo - Game instance to activate.
+     *
+     * Shared with the parts in `core/engine/`; not part of the BT API.
+     */
+    public installDemo(demo: IBTDemo): void {
+        this.demo = demo;
+    }
+
+    /**
      * Rejects an effect range that includes the frozen transparent slot 0 or runs past the palette.
      *
      * @param start - First index of the range.
@@ -2736,209 +2753,6 @@ export class BTAPI {
         if (palette && index >= palette.size) {
             throw new Error(paletteIndexOutOfRangeError(index, palette.size));
         }
-    }
-
-    /**
-     * The body of {@link resume}, run once every earlier seek has settled: restarts the loop and resumes
-     * parked audio when a seek still holds the loop stopped, otherwise does nothing.
-     */
-    private restartParkedLoop(): void {
-        if (!this.loop || !this.isSeekParked) {
-            return;
-        }
-
-        this.isSeekParked = false;
-        this.audio?.unpark();
-        // TODO(BT-513): realign music with BT.musicSeek(BT.timeSeconds) once music transport lands.
-        // Until then a track started by a 'start' seek's init() re-run plays from 0 after resume.
-        this.loop.start();
-    }
-
-    /**
-     * One serialized seek: validate, stop and park, optionally replay from tick 0, then step.
-     *
-     * @param seconds - Target time in seconds.
-     * @param from - Seek origin.
-     */
-    private async seek(seconds: number, from: RenderAtFrom): Promise<void> {
-        const loop = this.loop;
-        const demo = this.demo;
-        const hwSettings = this.hwSettings;
-
-        if (!loop || !demo || !hwSettings) {
-            throw new Error(errorMessages.RENDER_AT_NOT_READY_MESSAGE);
-        }
-
-        // Rounded, not floored: 3.2 * 60 is 192.00000000000003 and 0.1 * 3 * 60 can land just under.
-        const targetTicks = Math.round(seconds * hwSettings.targetFPS);
-
-        // Number.isFinite also rejects non-numbers; the safe-integer check catches a finite time too large
-        // to count in ticks (1e300), before anything is stopped or parked.
-        if (!Number.isFinite(seconds) || seconds < 0 || !Number.isSafeInteger(targetTicks)) {
-            throw new Error(errorMessages.renderAtSecondsError(seconds));
-        }
-
-        if (from !== 'start' && from !== 'current') {
-            throw new Error(errorMessages.renderAtFromError(from));
-        }
-
-        if (from === 'current' && targetTicks < loop.getTicks()) {
-            throw new Error(errorMessages.renderAtPastError(targetTicks, loop.getTicks()));
-        }
-
-        loop.stop();
-        this.isSeekParked = true;
-        // Wait for silence: the suspend resolves once the audio output has drained, so nothing from
-        // before the seek is still playing while it replays.
-        await this.audio?.park();
-        this.isSeeking = true;
-
-        try {
-            if (from === 'start') {
-                await this.resetForSeek(demo, loop);
-            }
-
-            loop.step(targetTicks - loop.getTicks());
-        } finally {
-            this.isSeeking = false;
-        }
-    }
-
-    /**
-     * Resets engine-owned state to how the boot run found it, then runs `init()` on a fresh game
-     * instance.
-     *
-     * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, and the post-process clock. The game's own fields reset because the replay
-     * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
-     * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
-     * game has no class to build from, so its `init()` re-runs on the same object and resetting its
-     * fields stays `init()`'s job. The splash and its handoff fade are not replayed, but what the
-     * handoff did to palette effects is (see the end).
-     *
-     * Failure: the instance is built before anything is reset, so a throwing constructor changes
-     * nothing. If `init()` fails, the previous instance is reinstalled and the ticks, the
-     * `BT.random` stream position, the camera offset and the post-process clock are
-     * restored, so `BT.resume()` continues the old game where it was (`BT.random.seedValue` reads
-     * `undefined` afterwards unless nothing had drawn since the seed). Not restored: palette effects
-     * and post-process effects (clearing disposes them), and pending input edges, all gone. An object-literal
-     * game runs `init()` on the live object, so fields it wrote before failing stay changed.
-     *
-     * @param demo - Running game instance.
-     * @param loop - Stopped game loop.
-     * @throws {Error} When the constructor or `init()` fails.
-     */
-    private async resetForSeek(demo: IBTDemo, loop: GameLoop): Promise<void> {
-        // Before any reset: a constructor throw leaves the engine untouched.
-        const replay = this.buildReplayDemo(demo);
-
-        const ticks = loop.getTicks();
-        const randomState = this.random.getState();
-        const randomSeed = this.random.seedValue;
-        const cameraOffset = this.getCameraOffset();
-        const lastCameraOffset = this.lastCameraOffset;
-        const isCameraResetPending = this.pendingCameraReset;
-        const renderClockMs = this.lastRenderClockMs;
-
-        this.restoreRandom(this.bootRandomState, this.bootRandomSeed);
-        this.paletteEffects.clear();
-
-        // Gate on activeBackend, like the splash dissolve: the software renderer throws on
-        // post-process, and it has no effects to clear.
-        if (this.activeBackend === 'webgpu') {
-            this.renderer?.clearEffects();
-        }
-
-        this.resetCamera();
-        this.lastCameraOffset = Vector2i.zero();
-        this.drainInputEdges(0);
-        loop.resetTicks();
-        this.lastRenderClockMs = 0;
-
-        // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the
-        // loop's update/render callbacks all reach the instance being replayed.
-        this.installDemo(replay);
-
-        let ok = false;
-
-        try {
-            ok = await replay.init();
-        } catch (error) {
-            console.error('[BT] renderAt: init() threw while replaying from the start:', error);
-        }
-
-        if (!ok) {
-            this.installDemo(demo);
-            // The failed init() may have started effects; the restored game never asked for them.
-            this.paletteEffects.clear();
-            loop.setTicks(ticks);
-            this.restoreRandom(randomState, randomSeed);
-            this.setCameraOffset(cameraOffset);
-            // setCameraOffset() commits the renderer's offset; put back the deferred-reset state it overwrites.
-            this.lastCameraOffset = lastCameraOffset;
-            this.pendingCameraReset = isCameraResetPending;
-            this.lastRenderClockMs = renderClockMs;
-
-            throw new Error(errorMessages.RENDER_AT_INIT_FAILED_MESSAGE);
-        }
-
-        // Live, the splash handoff (endPaletteCapture) dropped every palette effect init() started
-        // behind the splash. Replaying init() without the splash must drop them too, or the seek
-        // shows a cycle the live run never ran. `splash` is set once at boot and never cleared, so
-        // a restart, whose live init() ran without it and kept its effects, is excluded.
-        if (this.splash && !this.isRestartAfterSplash) {
-            this.paletteEffects.clear();
-        }
-    }
-
-    /**
-     * Puts the `BT.random` stream back to a captured position. Uses `seed()` only when it reproduces
-     * the state exactly (nothing drew between the seed and the capture), so `BT.random.seedValue`
-     * keeps reporting the seed; `setState()` clears it.
-     *
-     * @param state - Value from `Random#getState`.
-     * @param seed - `Random#seedValue` read at the same moment.
-     */
-    private restoreRandom(state: number, seed: number | undefined): void {
-        if (seed !== undefined && seed === state) {
-            this.random.seed(seed);
-        } else {
-            this.random.setState(state);
-        }
-    }
-
-    /**
-     * Builds the instance a `'start'` seek replays into: a new one from the game's class, or the same
-     * object for an object-literal game, which has no class to build from.
-     *
-     * @param demo - Running game instance.
-     * @returns The instance to run `init()` on.
-     * @throws {Error} When the game's constructor throws (the error is logged first).
-     */
-    private buildReplayDemo(demo: IBTDemo): IBTDemo {
-        const GameClass: unknown = demo.constructor;
-
-        if (typeof GameClass !== 'function' || GameClass === Object) {
-            return demo;
-        }
-
-        try {
-            return new (GameClass as new () => IBTDemo)();
-        } catch (error) {
-            console.error('[BT] renderAt: the game constructor threw while replaying from the start:', error);
-
-            throw new Error(errorMessages.RENDER_AT_CONSTRUCT_FAILED_MESSAGE, { cause: error });
-        }
-    }
-
-    /**
-     * Makes `demo` the active game: the loop's update/render callbacks and the orientation and
-     * reduced-motion hooks all route to it from now on.
-     *
-     * @param demo - Game instance to activate.
-     */
-    private installDemo(demo: IBTDemo): void {
-        this.demo = demo;
     }
 }
 

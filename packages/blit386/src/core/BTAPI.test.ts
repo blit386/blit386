@@ -1049,13 +1049,13 @@ describe('BTAPI', () => {
         }
 
         it('rejects before init', async () => {
-            await expect(BTAPI.instance.renderAt(1)).rejects.toThrow("hasn't started");
+            await expect(BTAPI.instance.seek.renderAt(1)).rejects.toThrow("hasn't started");
         });
 
         it.each([Number.NaN, -1, Number.POSITIVE_INFINITY, 1e300])('rejects a time of %s', async (seconds) => {
             const { loop } = await boot();
 
-            await expect(BTAPI.instance.renderAt(seconds)).rejects.toThrow('zero or more');
+            await expect(BTAPI.instance.seek.renderAt(seconds)).rejects.toThrow('zero or more');
             // Rejected before any side effect: the live loop is still running.
             expect((loop as unknown as { isRunning: boolean }).isRunning).toBe(true);
         });
@@ -1063,7 +1063,9 @@ describe('BTAPI', () => {
         it('rejects an unknown from', async () => {
             await boot();
 
-            await expect(BTAPI.instance.renderAt(1, 'middle' as RenderAtFrom)).rejects.toThrow("'start' or 'current'");
+            await expect(BTAPI.instance.seek.renderAt(1, 'middle' as RenderAtFrom)).rejects.toThrow(
+                "'start' or 'current'",
+            );
         });
 
         it("from 'start' re-runs init once, steps to the rounded tick, renders once", async () => {
@@ -1072,7 +1074,7 @@ describe('BTAPI', () => {
             vi.mocked(demo.update).mockClear();
             vi.mocked(demo.render).mockClear();
 
-            await BTAPI.instance.renderAt(3.2);
+            await BTAPI.instance.seek.renderAt(3.2);
 
             expect(demo.init).toHaveBeenCalledTimes(2);
             expect(demo.update).toHaveBeenCalledTimes(192);
@@ -1094,7 +1096,7 @@ describe('BTAPI', () => {
             BTAPI.instance.getRandom().next();
             BTAPI.instance.getRandom().next();
 
-            await BTAPI.instance.renderAt(0);
+            await BTAPI.instance.seek.renderAt(0);
 
             expect(statesSeenByInit).toHaveLength(2);
             expect(statesSeenByInit[1]).toBe(statesSeenByInit[0]);
@@ -1107,7 +1109,7 @@ describe('BTAPI', () => {
             const clearSpy = vi.spyOn(renderer, 'clearEffects');
 
             BTAPI.instance.paletteCycle(1, 4, 1);
-            await BTAPI.instance.renderAt(0.5);
+            await BTAPI.instance.seek.renderAt(0.5);
 
             expect(clearSpy).toHaveBeenCalled();
             expect(activeEffectCount()).toBe(0);
@@ -1142,7 +1144,7 @@ describe('BTAPI', () => {
             await boot(demo);
 
             isAHeld.value = true;
-            await BTAPI.instance.renderAt(1 / 60);
+            await BTAPI.instance.seek.renderAt(1 / 60);
 
             expect(pressedByUpdate).toEqual([false]);
             expect(BT.isDown(BT.BTN_A)).toBe(true);
@@ -1204,8 +1206,8 @@ describe('BTAPI', () => {
                 const first = new CountingDemo();
 
                 await boot(first);
-                await BTAPI.instance.renderAt(1);
-                await BTAPI.instance.renderAt(1);
+                await BTAPI.instance.seek.renderAt(1);
+                await BTAPI.instance.seek.renderAt(1);
 
                 const active = BTAPI.instance.getDemo() as CountingDemo;
 
@@ -1229,7 +1231,7 @@ describe('BTAPI', () => {
                     return false;
                 });
 
-                await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
+                await expect(BTAPI.instance.seek.renderAt(1)).rejects.toThrow('init()');
                 expect(BTAPI.instance.getDemo()).toBe(first);
                 // Effects the failed init() started must not run on the restored game.
                 expect(activeEffectCount()).toBe(0);
@@ -1250,7 +1252,7 @@ describe('BTAPI', () => {
 
                 await boot(first);
 
-                await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('constructor');
+                await expect(BTAPI.instance.seek.renderAt(1)).rejects.toThrow('constructor');
                 expect(BTAPI.instance.getDemo()).toBe(first);
             });
         });
@@ -1258,7 +1260,7 @@ describe('BTAPI', () => {
         it("from 'start' re-runs init on the same object for an object-literal demo", async () => {
             const { demo } = await boot();
 
-            await BTAPI.instance.renderAt(1);
+            await BTAPI.instance.seek.renderAt(1);
 
             expect(BTAPI.instance.getDemo()).toBe(demo);
             expect(demo.init).toHaveBeenCalledTimes(2);
@@ -1270,7 +1272,7 @@ describe('BTAPI', () => {
             await boot(demo);
             vi.mocked(demo.init).mockResolvedValueOnce(false);
 
-            await expect(BTAPI.instance.renderAt(1)).rejects.toThrow('init()');
+            await expect(BTAPI.instance.seek.renderAt(1)).rejects.toThrow('init()');
         });
 
         describe("a failed 'start' seek (BT-727)", () => {
@@ -1279,7 +1281,7 @@ describe('BTAPI', () => {
                 const demo = makeMockDemo();
 
                 await boot(demo);
-                await BTAPI.instance.renderAt(10);
+                await BTAPI.instance.seek.renderAt(10);
                 BTAPI.instance.setCameraOffset(new Vector2i(7, 9));
                 BTAPI.instance.getRandom().next();
                 BTAPI.instance.getRandom().next();
@@ -1296,7 +1298,7 @@ describe('BTAPI', () => {
                 expect(ticksBefore).toBe(600);
                 vi.mocked(demo.init).mockResolvedValueOnce(false);
 
-                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+                await expect(BTAPI.instance.seek.renderAt(5)).rejects.toThrow('init()');
 
                 expect(BTAPI.instance.getTicks()).toBe(ticksBefore);
                 expect(random.getState()).toBe(stateBefore);
@@ -1311,7 +1313,7 @@ describe('BTAPI', () => {
                 random.seed(123);
                 vi.mocked(demo.init).mockResolvedValueOnce(false);
 
-                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+                await expect(BTAPI.instance.seek.renderAt(5)).rejects.toThrow('init()');
 
                 expect(random.seedValue).toBe(123);
                 expect(random.getState()).toBe(123);
@@ -1332,7 +1334,7 @@ describe('BTAPI', () => {
                 internals.lastRenderClockMs = 12345;
                 vi.mocked(demo.init).mockResolvedValueOnce(false);
 
-                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+                await expect(BTAPI.instance.seek.renderAt(5)).rejects.toThrow('init()');
 
                 expect(internals.pendingCameraReset).toBe(true);
                 expect(internals.lastCameraOffset.x).toBe(7);
@@ -1347,7 +1349,7 @@ describe('BTAPI', () => {
                 vi.mocked(demo.init).mockRejectedValueOnce(new Error('asset fetch failed'));
                 vi.spyOn(console, 'error').mockImplementation(() => {});
 
-                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('init()');
+                await expect(BTAPI.instance.seek.renderAt(5)).rejects.toThrow('init()');
 
                 expect(BTAPI.instance.getTicks()).toBe(600);
                 expect(BTAPI.instance.getRandom().getState()).toBe(stateBefore);
@@ -1381,7 +1383,7 @@ describe('BTAPI', () => {
                 }
 
                 await boot(new ThrowsOnThirdBuild());
-                await BTAPI.instance.renderAt(10);
+                await BTAPI.instance.seek.renderAt(10);
                 BTAPI.instance.setCameraOffset(new Vector2i(7, 9));
                 BTAPI.instance.getRandom().next();
 
@@ -1389,7 +1391,7 @@ describe('BTAPI', () => {
 
                 vi.spyOn(console, 'error').mockImplementation(() => {});
 
-                await expect(BTAPI.instance.renderAt(5)).rejects.toThrow('constructor');
+                await expect(BTAPI.instance.seek.renderAt(5)).rejects.toThrow('constructor');
 
                 expect(BTAPI.instance.getTicks()).toBe(600);
                 expect(BTAPI.instance.getRandom().getState()).toBe(stateBefore);
@@ -1426,7 +1428,7 @@ describe('BTAPI', () => {
             await BTAPI.instance.init(demo, makeMock2DCanvas());
             BTAPI.instance.setPalette(new Palette(16));
 
-            await expect(BTAPI.instance.renderAt(1)).resolves.toBeUndefined();
+            await expect(BTAPI.instance.seek.renderAt(1)).resolves.toBeUndefined();
             expect(demo.init).toHaveBeenCalledTimes(2);
             expect(BTAPI.instance.getTicks()).toBe(60);
         });
@@ -1441,7 +1443,7 @@ describe('BTAPI', () => {
                 return true;
             });
             await boot(demo);
-            await BTAPI.instance.renderAt(0.5);
+            await BTAPI.instance.seek.renderAt(0.5);
 
             expect(activeEffectCount()).toBe(1);
         });
@@ -1460,7 +1462,7 @@ describe('BTAPI', () => {
             // every palette effect init() started, and resetForSeek only checks that a splash existed.
             (BTAPI.instance as unknown as { splash: object | null }).splash = {};
 
-            await BTAPI.instance.renderAt(0.5);
+            await BTAPI.instance.seek.renderAt(0.5);
 
             expect(activeEffectCount()).toBe(0);
         });
@@ -1479,7 +1481,7 @@ describe('BTAPI', () => {
             (BTAPI.instance as unknown as { splash: object | null }).splash = {};
             await boot(demo);
 
-            await BTAPI.instance.renderAt(0.5);
+            await BTAPI.instance.seek.renderAt(0.5);
 
             expect(activeEffectCount()).toBe(1);
         });
@@ -1487,12 +1489,12 @@ describe('BTAPI', () => {
         it("from 'current' steps forward only and rejects a past target", async () => {
             const { demo } = await boot();
 
-            await BTAPI.instance.renderAt(1, 'current');
+            await BTAPI.instance.seek.renderAt(1, 'current');
 
             expect(demo.init).toHaveBeenCalledTimes(1);
             expect(BTAPI.instance.getTicks()).toBe(60);
 
-            await expect(BTAPI.instance.renderAt(0.5, 'current')).rejects.toThrow('backwards');
+            await expect(BTAPI.instance.seek.renderAt(0.5, 'current')).rejects.toThrow('backwards');
         });
 
         /** Makes the next init() call wait until the returned function is called with its result. */
@@ -1516,7 +1518,7 @@ describe('BTAPI', () => {
             const { demo } = await boot();
             const releaseReplayInit = deferNextInit(demo);
 
-            const seek = BTAPI.instance.renderAt(1);
+            const seek = BTAPI.instance.seek.renderAt(1);
 
             await settle();
 
@@ -1538,8 +1540,8 @@ describe('BTAPI', () => {
             const { demo } = await boot();
             const releaseFirstInit = deferNextInit(demo);
 
-            const first = BTAPI.instance.renderAt(1);
-            const second = BTAPI.instance.renderAt(2);
+            const first = BTAPI.instance.seek.renderAt(1);
+            const second = BTAPI.instance.seek.renderAt(2);
 
             await settle();
 
@@ -1558,8 +1560,8 @@ describe('BTAPI', () => {
 
             vi.mocked(demo.init).mockResolvedValueOnce(false);
 
-            const failed = BTAPI.instance.renderAt(1);
-            const next = BTAPI.instance.renderAt(2);
+            const failed = BTAPI.instance.seek.renderAt(1);
+            const next = BTAPI.instance.seek.renderAt(2);
 
             await expect(failed).rejects.toThrow('init()');
             await expect(next).resolves.toBeUndefined();
@@ -1567,7 +1569,7 @@ describe('BTAPI', () => {
 
             // Every earlier seek has settled, so the resume() promise settles with the loop restarted.
             vi.mocked(requestAnimationFrame).mockClear();
-            await BTAPI.instance.resume();
+            await BTAPI.instance.seek.resume();
 
             expect(requestAnimationFrame).toHaveBeenCalled();
         });
@@ -1581,11 +1583,11 @@ describe('BTAPI', () => {
                 ticksSeenByUpdate.push(BTAPI.instance.getTicks());
             });
 
-            const seek = BTAPI.instance.renderAt(1);
+            const seek = BTAPI.instance.seek.renderAt(1);
 
             await settle();
             vi.mocked(requestAnimationFrame).mockClear();
-            BTAPI.instance.resume();
+            BTAPI.instance.seek.resume();
             await settle();
 
             // init() is still running: restarting the loop now would update a half-built game.
@@ -1627,9 +1629,9 @@ describe('BTAPI', () => {
                 settleCapture = null;
             });
 
-            await BTAPI.instance.renderAt(0, 'current'); // park the loop first
+            await BTAPI.instance.seek.renderAt(0, 'current'); // park the loop first
 
-            void BTAPI.instance.renderAt(1, 'current');
+            void BTAPI.instance.seek.renderAt(1, 'current');
             const blob = await BTAPI.instance.capture.captureFrame('display');
 
             expect(await blob.text()).toBe('60');
@@ -1656,14 +1658,14 @@ describe('BTAPI', () => {
                 ) => void;
             const mouse = { pointerId: 1, pointerType: 'mouse', button: 0, clientX: 5, clientY: 5 };
 
-            await BTAPI.instance.renderAt(0, 'current'); // park the loop
+            await BTAPI.instance.seek.renderAt(0, 'current'); // park the loop
             listener('pointerdown')({ ...mouse, buttons: 1 });
-            await BTAPI.instance.renderAt(1 / 60, 'current'); // one update sees the button down
+            await BTAPI.instance.seek.renderAt(1 / 60, 'current'); // one update sees the button down
             seen.length = 0;
 
             listener('pointerup')({ ...mouse, buttons: 0 });
             await BTAPI.instance.capture.captureFrame('display'); // re-renders the parked tick with zero updates
-            await BTAPI.instance.renderAt(2 / 60, 'current');
+            await BTAPI.instance.seek.renderAt(2 / 60, 'current');
 
             expect(seen).toEqual([true]);
         });
@@ -1681,7 +1683,7 @@ describe('BTAPI', () => {
             (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
             vi.mocked(demo.update).mockClear();
 
-            const seek = BTAPI.instance.renderAt(1, 'current');
+            const seek = BTAPI.instance.seek.renderAt(1, 'current');
 
             await settle();
 
@@ -1697,9 +1699,9 @@ describe('BTAPI', () => {
             const { demo } = await boot();
             const releaseInit = deferNextInit(demo);
 
-            const first = BTAPI.instance.renderAt(1);
-            const resumed = BTAPI.instance.resume();
-            const second = BTAPI.instance.renderAt(2, 'current');
+            const first = BTAPI.instance.seek.renderAt(1);
+            const resumed = BTAPI.instance.seek.resume();
+            const second = BTAPI.instance.seek.renderAt(2, 'current');
 
             await settle();
             releaseInit(true);
@@ -1723,7 +1725,7 @@ describe('BTAPI', () => {
             // exactly the missing handler this test is about.
             (renderer as unknown as { captureFrameAtDisplaySize: () => Promise<Blob> }).captureFrameAtDisplaySize =
                 () => pendingCapture;
-            await BTAPI.instance.renderAt(1, 'current');
+            await BTAPI.instance.seek.renderAt(1, 'current');
             vi.mocked(demo.render).mockImplementation(() => {
                 throw new Error('render broke');
             });
@@ -1745,7 +1747,7 @@ describe('BTAPI', () => {
         it('leaves the loop stopped until resume()', async () => {
             const { demo, loop } = await boot();
 
-            await BTAPI.instance.renderAt(1, 'current');
+            await BTAPI.instance.seek.renderAt(1, 'current');
             vi.mocked(demo.update).mockClear();
 
             const tick = (loop as unknown as { tick: (now: number) => void }).tick.bind(loop);
@@ -1755,7 +1757,7 @@ describe('BTAPI', () => {
             expect(demo.update).not.toHaveBeenCalled();
 
             vi.mocked(requestAnimationFrame).mockClear();
-            await BTAPI.instance.resume();
+            await BTAPI.instance.seek.resume();
 
             expect(requestAnimationFrame).toHaveBeenCalled();
         });
@@ -1764,7 +1766,7 @@ describe('BTAPI', () => {
             await boot();
             vi.mocked(requestAnimationFrame).mockClear();
 
-            await BTAPI.instance.resume();
+            await BTAPI.instance.seek.resume();
 
             expect(requestAnimationFrame).not.toHaveBeenCalled();
         });
@@ -1774,7 +1776,7 @@ describe('BTAPI', () => {
             const renderer = (BTAPI.instance as unknown as { renderer: IRenderer }).renderer;
 
             vi.spyOn(renderer, 'captureFrameAtDisplaySize').mockResolvedValue(new Blob());
-            await BTAPI.instance.renderAt(1, 'current');
+            await BTAPI.instance.seek.renderAt(1, 'current');
             vi.mocked(demo.render).mockClear();
 
             await expect(BTAPI.instance.capture.captureFrame('display')).resolves.toBeInstanceOf(Blob);
@@ -1799,14 +1801,14 @@ describe('BTAPI', () => {
             await boot(demo);
             (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
 
-            await BTAPI.instance.renderAt(0.1, 'current');
+            await BTAPI.instance.seek.renderAt(0.1, 'current');
 
             expect(audio.park).toHaveBeenCalledTimes(1);
             expect(audio.playSound).not.toHaveBeenCalled();
             expect(refs.length).toBeGreaterThan(0);
             expect(refs.every((ref) => ref === INVALID_SOUND_REF)).toBe(true);
 
-            await BTAPI.instance.resume();
+            await BTAPI.instance.seek.resume();
 
             expect(audio.unpark).toHaveBeenCalledTimes(1);
         });
@@ -1821,7 +1823,7 @@ describe('BTAPI', () => {
             });
             await BTAPI.instance.init(demo, canvas);
             BTAPI.instance.setPalette(new Palette(16));
-            await BTAPI.instance.renderAt(0, 'current');
+            await BTAPI.instance.seek.renderAt(0, 'current');
 
             const keydownCall = (canvas.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
                 ([type]) => type === 'keydown',
@@ -1829,7 +1831,7 @@ describe('BTAPI', () => {
             const keydownHandler = keydownCall?.[1] as ((event: { code: string }) => void) | undefined;
 
             keydownHandler?.({ code: 'KeyZ' });
-            await BTAPI.instance.renderAt(2 / 60, 'current');
+            await BTAPI.instance.seek.renderAt(2 / 60, 'current');
 
             expect(pressed).toEqual([true, false]);
         });
@@ -5605,7 +5607,7 @@ describe('BTAPI', () => {
 
             await BTAPI.instance.init(demo, canvas);
             BTAPI.instance.setPalette(new Palette(16));
-            await BTAPI.instance.renderAt(1, 'current');
+            await BTAPI.instance.seek.renderAt(1, 'current');
 
             installMockClipboard();
             const renderer = BTAPI.instance.getRenderer();

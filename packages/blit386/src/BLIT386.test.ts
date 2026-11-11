@@ -2009,7 +2009,7 @@ describe('BT.renderAt', () => {
     });
 
     it('passes options.from through to BTAPI.instance.renderAt', async () => {
-        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.seek, 'renderAt').mockResolvedValue(undefined);
 
         await BT.renderAt(3, { from: 'current' });
 
@@ -2017,7 +2017,7 @@ describe('BT.renderAt', () => {
     });
 
     it.each([['current'], [null], [[]]])('rejects, never throws, when options is %j', async (options) => {
-        const spy = vi.spyOn(BTAPI.instance, 'renderAt').mockResolvedValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.seek, 'renderAt').mockResolvedValue(undefined);
         let result: Promise<void> | undefined;
 
         expect(() => {
