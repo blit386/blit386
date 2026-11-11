@@ -36,10 +36,10 @@ v.height; // aliases for x / y (useful when treating the vector as a size)
 // Static factories
 Vector2i.zero(); // (0, 0) - cached frozen singleton
 Vector2i.one(); // (1, 1) - cached frozen singleton
-Vector2i.up(); // (0, -1)
-Vector2i.down(); // (0, 1)
-Vector2i.left(); // (-1, 0)
-Vector2i.right(); // (1, 0)
+Vector2i.up(); // (0, -1) - cached frozen singleton
+Vector2i.down(); // (0, 1) - cached frozen singleton
+Vector2i.left(); // (-1, 0) - cached frozen singleton
+Vector2i.right(); // (1, 0) - cached frozen singleton
 Vector2i.fromFloat(x, y); // truncate floats → integer vector
 
 // Math utilities
@@ -163,7 +163,7 @@ c.lerp(other, t); // same semantics as static helper
 // Conversion
 c.toFloat32Array(); // [r/255, g/255, b/255, a/255]
 c.luminance; // perceived brightness: 0.299r + 0.587g + 0.114b
-c.toHex(); // '#rrggbb' string
+c.toHex(); // '#rrggbbaa' string, alpha last
 c.isEqual(other); // boolean - all RGBA channels match
 
 // Linear light (real sRGB piecewise transfer, not a 2.2 power)

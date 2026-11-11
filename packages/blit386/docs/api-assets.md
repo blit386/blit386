@@ -248,18 +248,8 @@ const uv = sheet.getUVs(new Rect2i(0, 0, 16, 16)); // { u0, v0, u1, v1 }, in [0,
 
 ## Palette offset
 
-Pass a `paletteOffset` (per-draw shift, not an absolute slot) to `BT.drawSprite()` and `BT.printFont()` to remap stored
-texel indices before palette lookup. Useful for team-color variations and damage flashes. Terminology and examples:
-[Palette addressing](api-palette.md#palette-addressing). Draw semantics: [API: Rendering](api-rendering.md).
-
-```ts twoslash
-import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
-declare const sheet: SpriteSheet;
-const srcRect = new Rect2i(0, 0, 32, 32);
-const pos = new Vector2i(0, 0);
-// ---cut---
-BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
-```
+`BT.drawSprite()` and `BT.printFont()` take a per-draw `paletteOffset` that shifts stored texel indices before palette
+lookup - see [Per-draw offset](api-palette.md#per-draw-offset).
 
 ## Bitmap fonts
 
@@ -333,24 +323,8 @@ fallback-to-full-reload behavior for unrecognized file types.
 
 ## System font
 
-A built-in 6×14 monospace font covering printable ASCII (characters 32-126) plus a set of extra glyphs (dashes, accented
-Latin punctuation, media icons, arrows, Greek capitals, and more) - see `scripts/system-font-extra-chars.mjs` for the
-full list. No load step needed.
-
-```ts twoslash
-import { BT, Vector2i } from 'blit386';
-declare const paletteIndex: number;
-// ---cut---
-BT.systemPrint(new Vector2i(10, 10), paletteIndex, 'Score: 100');
-BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
-```
-
-- Use `BT.systemPrint()` for demo-specific HUD panels and labels. Call `palette.applyHUD()` at init so overlay and demo
-  HUD share the same label/header/dim slot conventions - see [API: Palette](api-palette.md) and
-  [Palette Presets - HUD](guide-palette-presets.md#hud-preset).
-- The engine draws its own overlay (present FPS, target FPS, draw calls, frame/update()/render() timings, backend,
-  resolution, demo title) after each `render()` when `isOverlayEnabled` is true; see [Overlay Guide](guide-overlay.md).
-- For styled variable-width text, use a bitmap font instead.
+The built-in 6×14 font needs no load step: draw it with `BT.systemPrint()` - see
+[System font](api-rendering.md#system-font).
 
 ## API history
 

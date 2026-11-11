@@ -2500,7 +2500,6 @@
       "green"
     ],
     "guides/bitmap-fonts": [
-      "BitmapFont",
       "TextSize"
     ],
     "guides/input": [
@@ -2586,9 +2585,6 @@
       "RollLine",
       "Scanlines",
       "Vignette"
-    ],
-    "guides/splash": [
-      "BT.isReducedMotionPreferred"
     ]
   }
 }

@@ -45,8 +45,7 @@ BT.systemPrint(pos, 3, 'Score'); // glyphs use absolute slot 3
 ### Per-draw offset
 
 Indexed sprites and bitmap fonts store small indices in the texture (starting at `1`; stored `0` is transparent). At
-draw time the WebGPU sprite shader computes `combined = storedIndex + paletteOffset`, then `index = min(combined, 255u)`
-before palette lookup.
+draw time each pixel looks up `palette[storedIndex + paletteOffset]` on both backends.
 
 ```ts twoslash
 import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
@@ -58,8 +57,8 @@ BT.drawSprite(sheet, src, pos, 0); // stored 1 → palette[1], stored 2 → pale
 BT.drawSprite(sheet, src, pos, 16); // stored 1 → palette[17], stored 2 → palette[18]
 ```
 
-Use offsets for team colors, tints, and variants without duplicating art. When `combined` exceeds `255`, lookup uses
-palette slot `255` from the clamp, not an inherent error color.
+Use offsets for team colors, tints, and variants without duplicating art. Past the end of the palette the pixel is
+skipped (transparent) on both backends, so keep each shifted range inside `palette.size`.
 
 ### Active palette
 
@@ -72,8 +71,8 @@ palette slot `255` from the clamp, not an inherent error color.
 `BT.palette` returns the same object the engine draws with. Mutating slots updates colors on the next frame. Call
 `BT.paletteSet()` again only when replacing the whole palette object (for example a prebuilt day vs. night palette), or
 after a layout swap when colors moved to different slot numbers (then also call `BT.spritesRefresh()`, which re-maps
-every indexized sheet, drawn yet or not, until `sheet.destroy()` removes it). See [Palette Guide](guide-palette.md)
-section 6.
+every indexized sheet, drawn yet or not, until `sheet.destroy()` removes it). See
+[Layout swap vs. value swap](guide-palette.md#layout-swap-vs-value-swap).
 
 ## Palette setup
 

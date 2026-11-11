@@ -313,8 +313,6 @@ Point it at the PNG filename, or embed it as base64.
 
 ### BitmapFont
 
-<Since symbol="BitmapFont" />
-
 <Since symbol="TextSize" />
 
 ```ts twoslash

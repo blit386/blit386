@@ -730,5 +730,5 @@ canvas?.addEventListener('drop', (event) => {
   <Card title="API: Core" href="/docs/api/core">BT.isDown / isPressed / isKeyDown and configure.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Backquote and bottom-left corner toggle.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed input aliases (buttonDown to isDown).</Card>
-  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming (hold vs. edge).</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/packages/blit386/docs/developer-experience-guide.md">Boolean naming (hold vs. edge).</Card>
 </Cards>

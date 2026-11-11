@@ -97,9 +97,8 @@ Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, te
 readout), so those separators match the row gaps between bands; each divider keeps `7px` of space to the text on both
 sides, matching the `7px` text inset from the screen edges. For demos that draw their own HUD text with
 `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white, background,
-label, header, dim, FPS) and register `hud_*` name aliases. See
-[API: Palette - applyHUD](api-palette.md#built-in-presets) and
-[Palette Presets - HUD](guide-palette-presets.md#hud-preset).
+label, header, dim, code) and register `hud_*` name aliases. See [API: Palette - applyHUD](api-palette.md#hud-preset)
+and [Palette Presets - HUD](guide-palette-presets.md#hud-preset).
 
 ```ts twoslash
 import { BT, Palette, Vector2i } from 'blit386';

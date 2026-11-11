@@ -26,7 +26,7 @@ Three gating layers, resolved in order. The first match wins.
 2. The `?splash` and `?nosplash` URL flags. Both are valueless. (The engine's other URL parameters live elsewhere:
    `?backend=software` in [API: Core](api-core.md#requested-vs-active-backend), `?reducedmotion` / `?noreducedmotion`
    under [Reduced motion](#reduced-motion), and `?seed=N` in [Random](guide-random.md#seeding-from-the-url).)
-3. `BT.isDevMode` - on in release builds, off in development.
+3. `BT.isDevMode` - splash off in development, on in release.
 
 So with no configuration at all, a production build shows the splash and a dev server does not. A
 [`BT.renderAt`](api-core.md#seeking-a-frame-with-renderat) replay from the start re-runs `init()` on a fresh game
@@ -135,8 +135,8 @@ screen is black rather than showing stale splash grays.
 Any key, click, or tap skips.
 
 Browser shortcuts keep working during the splash. A key press with Ctrl, Cmd, or Alt held, and the function keys F1
-through F12, still skip but are not cancelled, so reload, find, fullscreen, and DevTools behave normally while `init()`
-loads. Plain keys such as Space and the arrows are cancelled, so the skip press does not scroll the page.
+through F12, still skip but are not canceled, so reload, find, fullscreen, and DevTools behave normally while `init()`
+loads. Plain keys such as Space and the arrows are canceled, so the skip press does not scroll the page.
 
 Skip collapses the fade-in and the minimum hold, but it still waits on `init()`. When the splash is also the loading
 screen, "skip" cannot mean "start now" if the assets are not ready. The fade-out then runs at its full duration, because
@@ -154,8 +154,6 @@ Swallowing consumes the press _edge_, not the key. A key still physically down a
 </Callout>
 
 ## Reduced motion
-
-<Since symbol="BT.isReducedMotionPreferred" />
 
 When `BT.isReducedMotionPreferred` is `true` at splash start, the splash shows a static hold instead of animating:
 

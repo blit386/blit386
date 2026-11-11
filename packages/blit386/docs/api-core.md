@@ -37,7 +37,19 @@ The `bootstrap()` function is the recommended entry point. It handles DOM ready,
 cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
 
 Your game is a class implementing `IBTDemo` (`init`, `update`, `render`, and the optional hooks). `bootstrap()` takes
-the class itself, typed `DemoConstructor`, and constructs it once the engine is up.
+the class itself, typed `DemoConstructor`, and constructs it once the engine is up. Every hook in one place:
+
+<TypeTable type={{
+    configure: { type: '() => Partial<HardwareSettings>', description: 'Optional. Display size, backend, target FPS, overlay, and the other hardware settings; omitted fields keep the engine defaults' },
+    init: { type: '() => Promise<boolean>', required: true, description: 'Called once after the backend is up. Load assets and set the palette; resolve false to abort' },
+    update: { type: '() => void', required: true, description: 'Fixed-timestep simulation at targetFPS: zero or more calls per rendered frame. Read input edges here' },
+    render: { type: '() => void', required: true, description: 'Once per animation frame. Issue every draw call here' },
+    overlayRows: { type: '() => readonly OverlayRow[] | undefined', description: 'Optional. Extra overlay bars, read after render() while the overlay body is visible' },
+    testState: { type: '() => unknown', description: 'Optional. Plain-JSON game state for automated play-testing, read on demand through BT.testState(); never called by the loop' },
+    onOrientationChange: { type: '(type: string) => void', description: 'Optional. Called when screen.orientation changes, after a successful init()' },
+    onReducedMotionChange: { type: '(prefersReduced: boolean) => void', description: 'Optional. Called when prefers-reduced-motion changes, after a successful init()' },
+    onHotReload: { type: '(context: HotReloadContext) => void', description: 'Optional, dev server only. Called after a hot reload swaps in new code; see below' },
+  }} />
 
 ```ts twoslash
 import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
@@ -222,14 +234,9 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 
 <Callout title="Capturing at displaySize instead of outputSize">
 
-`BT.captureFrame()` and `BT.downloadFrame()` match `BT.outputSize` by default, as described above. Pass
-`{ size: 'display' }` (engine 1.7.1+) to capture at logical `BT.displaySize` instead, resolved directly from the
-palette-indexed scene buffer. That keeps every logical pixel a single PNG pixel for tests, image diffs, and palette
-debugging, but it also means the capture excludes display-tier post-process effects (scanlines, vignette, bloom, and
-similar) even when `drawingBufferSize` is set - those effects only exist in the post-upscale buffer this path bypasses.
-The dev-mode frame-capture shortcuts (`HardwareSettings.isFrameCaptureShortcutEnabled`) take the same logical-size path:
-F9 copies to the OS clipboard, Shift+F9 downloads a file (not while `BT.renderAt` holds the loop stopped). Details and
-the size comparison table: [Rendering](api-rendering.md#frame-capture).
+Pass `{ size: 'display' }` to `BT.captureFrame()` or `BT.downloadFrame()` for one PNG pixel per logical pixel, without
+display-tier effects; the F9 / Shift+F9 dev shortcuts use the same path (Shift+F9 waits for `BT.resume()` while
+`BT.renderAt` holds the loop). See [Which size?](api-rendering.md#which-size).
 
 </Callout>
 

@@ -98,8 +98,8 @@ This drives palette-swap effects such as team colors or damage flashes - point t
 the palette without re-uploading texels.
 
 - Validation: `paletteOffset` must be a non-negative integer below the active palette size, or the draw throws.
-- Clamping: the WebGPU sprite shader computes `combined = storedIndex + paletteOffset` and clamps with
-  `index = min(combined, 255u)`, so any sum past `255` maps to palette slot `255`.
+- Past the end: a pixel whose `storedIndex + paletteOffset` lands past the end of the palette is skipped (drawn
+  transparent) on both backends, never clamped onto slot `255`.
 
 ```ts twoslash
 import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
@@ -228,26 +228,11 @@ BT.ROT_180_CW; // rotate 180°
 BT.ROT_270_CW; // rotate 270° clockwise
 ```
 
-```ts twoslash
-import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
-// ---cut---
-// 1. Fast path. Unchanged since 0.1.0.
-declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
-
-// 2. Params object (1.8.0). `params` is required here: without it, a call is overload 1.
-declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
-
-interface SpriteDrawParams {
-  flags?: number; // any combination of BT.FLIP_* / BT.ROT_* bits (default 0)
-  pivot?: Vector2i | undefined; // source pixels, before flags (default undefined: top-left placement)
-  scale?: number | Vector2i; // positive integers, screen axes, after flags (default 1)
-  paletteOffset?: number; // same meaning as the fast-path 4th argument (default 0)
-}
-```
-
-- The params object is read, never mutated or retained. The engine copies the numbers it needs before returning, so a
-  hot loop can allocate `params` once and write fields between draws. Create it with every field present so its shape
-  never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a `Vector2i`.
+- Every field is optional: `flags` defaults to `0`, `pivot` to `undefined` (top-left placement), `scale` to `1`, and
+  `paletteOffset` to `0`. The params object is read, never mutated or retained. The engine copies the numbers it needs
+  before returning, so a hot loop can allocate `params` once and write fields between draws. Create it with every field
+  present so its shape never changes. In TypeScript, annotate it as `SpriteDrawParams` so `scale` can later hold a
+  `Vector2i`.
 - With a `Vector2i` dest and no `pivot`, `dest` is the top-left of the post-flags, post-scale footprint. A 16×32 sprite
   with `ROT_90_CW` covers 32×16, growing down and right from `dest`; with `scale: 2` it covers 64×32.
 - `pivot` is a point in source pixels relative to the source rect's top-left, in `[0, sw] x [0, sh]` (corner
@@ -277,8 +262,7 @@ Runtime dispatch reads argument 2, then argument 4:
 
 1. A `Rect2i` source: if argument 4 is an object, it is `SpriteDrawParams`; `null` and arrays show an error. Otherwise
    (`number` or `undefined`, defaulting to `0`) it is `paletteOffset` and the fast path.
-2. A string source (a named frame) or raw source numbers show an error for now - see
-   [Planned: sprite draw params](#planned-sprite-draw-params).
+2. A string source or raw source numbers show an error. Named sprite frames are planned and not shipped yet.
 
 With params, `dest instanceof Rect2i` is the stretch box and `dest instanceof Vector2i` is a point; anything else shows
 an error. A `Rect2i` dest needs the params form: `drawSprite(sheet, src, destRect)` and
@@ -388,115 +372,6 @@ BT.drawNineSlice(panel, new Rect2i(20, 100, 120, 64), 16); // palette offset, as
   buffer; stretch flat fills and tile only patterned art.
 
 <DemoEmbed demo="nine-slice-panels" title="BLIT386 nine-slice panels demo" />
-
-### Planned: sprite draw params
-
-<Callout title="Planned - not shipped">
-
-This section locks the rest of the unified `BT.drawSprite` v2 shape decided in BT-236 (revised 2026-10-04). Overload 2
-with `flags`, `pivot`, `paletteOffset`, `scale`, and a `Vector2i` or `Rect2i` dest shipped in 1.8.0 - see
-[Flipping, rotating, and scaling sprites](#flipping-rotating-and-scaling-sprites). Only overloads 3 and 4 and the
-`SpritePack` / `SpriteFrame` types have not shipped yet.
-
-</Callout>
-
-All transform features hang off one reusable params object. Separate methods stay separate:
-[`BT.drawTile`](#drawing-tiles) and [`BT.drawNineSlice`](#nine-slice-panels) are not further `drawSprite` overloads.
-There is no `drawSpriteScaled`, no `tint`, and no arbitrary-angle `rotation` field in v1.
-
-```ts twoslash
-import type { Rect2i, SpriteSheet, Vector2i } from 'blit386';
-declare class SpritePack {
-  frame(name: string): SpriteFrame;
-}
-// ---cut---
-// 1. Shipped. Unchanged.
-declare function drawSprite(sheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
-
-// 2. Shipped (1.8.0).
-declare function drawSprite(sheet: SpriteSheet, src: Rect2i, dest: Vector2i | Rect2i, params: SpriteDrawParams): void;
-
-// 3. Planned named frame (BT-271). Always takes the params path, so `params` may be omitted.
-declare function drawSprite(
-  pack: SpritePack,
-  frameName: string,
-  dest: Vector2i | Rect2i,
-  params?: SpriteDrawParams,
-): void;
-
-// 4. Reserved for BT-262 (milestone 2.0.0). Not added to the 1.8.0 types.
-declare function drawSprite(
-  sheet: SpriteSheet,
-  srcX: number,
-  srcY: number,
-  srcW: number,
-  srcH: number,
-  destX: number,
-  destY: number,
-  paletteOffsetOrParams?: number | SpriteDrawParams,
-): void;
-
-interface SpriteDrawParams {
-  flags?: number; // shipped
-  pivot?: Vector2i | undefined; // shipped: source pixels, before flags; assign undefined to reset
-  scale?: number | Vector2i; // shipped
-  paletteOffset?: number; // shipped
-}
-
-// Planned (BT-271). Returned by SpritePack.frame(name).
-interface SpriteFrame {
-  readonly sheet: SpriteSheet; // the page this frame lives on
-  readonly rect: Rect2i; // frozen
-  readonly pivot?: Vector2i; // frozen; filled from Aseprite slice data by BT-364, never applied implicitly
-}
-```
-
-`| undefined` on `pivot` is deliberate: a reused params object returns to the default pivot with
-`params.pivot = undefined`, and that assignment must type-check under `exactOptionalPropertyTypes`.
-
-#### Planned dispatch
-
-The shipped [dispatch](#dispatch) extends as follows:
-
-- `typeof src === 'string'`: overload 3. `typeof src === 'number'`: overload 4. Both throw until their tickets ship.
-- Create a reused params object with every field present, so its shape never changes, annotated as `SpriteDrawParams`:
-  `const params: SpriteDrawParams = { flags: 0, pivot: undefined, scale: 1, paletteOffset: 0 }`.
-- Overload 3 is `SpritePack.frame(name)` followed by overload 2 with `frame.sheet` and `frame.rect`. A missing name
-  throws. `frame(name)` returns the same frozen `SpriteFrame` on every call, so a hot loop resolves it once and calls
-  `BT.drawSprite(frame.sheet, frame.rect, dest)` (overload 1) or adds `params` (overload 2) - no per-draw string lookup.
-  Carrying the sheet on the frame keeps multi-page packs correct and makes a rect from the wrong sheet impossible.
-  `frame.pivot` is data only: pass `params.pivot = frame.pivot` to use it. There is no raw-number form for names.
-- Overload 4, when it exists, cannot express a destination rectangle, so stretched draws (a `Rect2i` dest) use
-  overload 2. Raw numbers occupy arguments 2-7; argument 8 is `paletteOffset` or `SpriteDrawParams`, same split as the
-  fast path, so `flags`, integer `scale`, and `pivot` work as on overload 2 with a point dest.
-- Planned transform order: flags, then integer scale, then placement. `scale` multiplies the post-flags footprint in
-  screen axes, so `scale.x` is on-screen width even after a 90-degree turn. If a later ticket adds an arbitrary angle,
-  the unit is degrees, and the software renderer throws until it can match pixel-for-pixel.
-
-#### Color
-
-The only recolor control is `paletteOffset`, on the fast path or inside params, never both and never stacked. There is
-no `tint` field. Older sketches that used `Color32` / `ColorArg` as a 4th argument are stale.
-
-#### Software-renderer parity
-
-No accepted field degrades. The software blit is the pixel spec; WebGPU must match it (the general rules are in
-[Draw order and backend parity](#draw-order-and-backend-parity)). The 1:1 path stays today's `blitIndexedRect` / UV quad
-emission.
-
-| Field | Parity |
-| --- | --- |
-| `paletteOffset` | Already matched. Same validation as today. |
-| `flags` | Pixel-exact source-index remap via the orientation table, then the same transparency and palette rules. Not a shader-only effect. |
-| `pivot` | Pixel-exact integer move of the footprint origin. Components copied into the queued command. |
-| `scale` / `dest: Rect2i` | Pixel-exact nearest-neighbor using the stretch sampling formula above, on both backends. |
-| `rotation` | Not accepted. A future software path throws rather than skipping the rotation. |
-| Frame name | Resolved to a `SpriteFrame`, then the same path. No separate software behavior. |
-| Nine-slice | Not a sprite-params field. Shipped as [BT.drawNineSlice](#nine-slice-panels): stretched parts inherit the stretch sampling formula, tiled parts are 1:1 blits. |
-
-GPU note for implementers: the vertex shader already passes UVs through. Flags and scale are CPU-side corner and UV
-writes into the existing 5-value vertex, with the orientation table choosing which source corner goes to which quad
-corner. Do not add a flags uniform on the 1:1 path.
 
 ### Refreshing after a palette-layout swap
 
@@ -622,8 +497,10 @@ Both chains add zero cost when empty.
 
 <Callout type="warn" title="WebGPU only">
 
-Post-process is unsupported by the Canvas 2D software backend - calling `effectAdd` in software mode throws a clear
-error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
+Post-process is unsupported by the Canvas 2D software backend. In software mode `effectAdd`, `effectRemove`, and
+`effectClear` all fail: each reports the error once (a panel in dev builds, the console in release, see
+[Bootstrap](api-core.md#bootstrap)) and changes nothing. Gate every effect call, scene-change clears included, on
+`BT.activeBackend === 'webgpu'`.
 
 </Callout>
 
@@ -646,7 +523,7 @@ BT.effectAdd(new Bloom());
 BT.effectAdd(new PixelGlitch()); // pixel-tier effect
 
 // Remove or clear
-BT.effectRemove(effect); // remove one; no-op if not found
+BT.effectRemove(effect); // remove one; no-op on WebGPU if not found
 BT.effectClear(); // remove all from both chains
 
 // One-line presets (return arrays of Effect)

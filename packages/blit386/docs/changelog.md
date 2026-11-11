@@ -113,6 +113,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   new `init()` calls `BT.paletteSet()`, as on a first boot. The previous run's palette, its cycles and fades, and a
   `BT.cameraReset()` still waiting for its tick used to carry into the new game. See
   [Engine readiness](api-core.md#engine-readiness).
+- Behavior change: `BT.paletteCycle`, `BT.paletteFadeRange`, and `BT.paletteSwap` throw at the call when a range or
+  index touches slot 0 or an `end` reaches past the palette. Slot 0 holds the frozen transparent color, so these used to
+  throw a `TypeError` on the next fixed update and stop the game loop, and `BT.paletteSwap(n, 0)` wiped slot `n` before
+  throwing. `BT.paletteCycle` now also needs a palette set first, like the fade effects. See
+  [Palette effects](api-palette.md#palette-effects).
 
 ### Fixed
 
@@ -383,6 +388,22 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `BT.paletteFlash()` throws at the call when its color is not a `Color32`. A `null` or `undefined` color from plain
   JavaScript used to be accepted and then threw a `TypeError` from inside the engine on the next tick, away from the
   line that caused it. See [Palette](api-palette.md#palette-effects).
+- A `BT.renderAt` seek from `'start'` whose replay `init()` fails now puts back the tick count, the `BT.random` stream,
+  the camera, and the post-process clock. The old game used to resume on a clock reset to tick 0. Cleared palette and
+  post-process effects and pending input edges are still not restored. See
+  [Core](api-core.md#seeking-a-frame-with-renderat).
+- The splash keeps its fade-out when `init()` takes a while. After a load of more than about 1.3 s the lit logo cut
+  straight to black, and a late frame could end the fade before it reached black. See
+  [It doubles as a loading screen](guide-splash.md#it-doubles-as-a-loading-screen).
+- Audio downloads time out after 15 s of silence instead of 15 s in total, so a long music track on a slow connection no
+  longer fails while its bytes are still arriving. See [API: Audio](api-audio.md#loading).
+- The first `update()` after the game loop starts measures its frame time from the same clock as every later frame. It
+  used to start from `performance.now()`, which runs ahead of the `requestAnimationFrame` timestamp, so the first delta
+  came out too short.
+- When a frame draws more primitives than the buffer holds, whole rectangles and pixels are dropped instead of half
+  rectangles, the console warns once per frame instead of once per vertex, and a long line stops at the first dropped
+  pixel instead of logging about two million warnings for one off-screen diagonal. See
+  [Primitives](api-rendering.md#primitives).
 
 ## 1.8.0 - 2026-10-18
 
