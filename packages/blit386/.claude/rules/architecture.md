@@ -102,7 +102,13 @@ src/
     AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists, synth() factory
     synth/                 # Deterministic synthesis engine backing AudioClip.synth (SynthParams, envelope/pitch/waveform math, validation, synthPresets sound library)
     Palette.ts             # 256-entry indexed color palette
-    PaletteEffect.ts       # Palette effect system (cycle, fade, exposure fade, flash, swap)
+    PaletteEffect.ts       # PaletteEffect interface, PaletteEffectManager, paletteSwap; re-exports the effect classes below
+    CycleEffect.ts         # BT.paletteCycle: range rotation, at most one turn of work per tick
+    FadeEffect.ts          # BT.paletteFade: whole-palette eased fade
+    FadeRangeEffect.ts     # BT.paletteFadeRange: eased fade over a slot range
+    ExposureFadeEffect.ts  # BT.paletteFadeExposure: linear-light fade with luminance lead (+ ExposureFadeOptions)
+    FlashEffect.ts         # BT.paletteFlash: snapshot, flood, restore
+    paletteFade.ts         # Fade helpers shared by the effects (range snapshot, eased progress, per-entry lerp)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
   input/
     PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots); two previous-state clocks - endUpdate for update() readers, endFrame for render-side readers and the overlay
