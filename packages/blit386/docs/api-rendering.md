@@ -98,8 +98,8 @@ This drives palette-swap effects such as team colors or damage flashes - point t
 the palette without re-uploading texels.
 
 - Validation: `paletteOffset` must be a non-negative integer below the active palette size, or the draw throws.
-- Clamping: the WebGPU sprite shader computes `combined = storedIndex + paletteOffset` and clamps with
-  `index = min(combined, 255u)`, so any sum past `255` maps to palette slot `255`.
+- Past the end: a pixel whose `storedIndex + paletteOffset` lands past the end of the palette is skipped (drawn
+  transparent) on both backends, never clamped onto slot `255`.
 
 ```ts twoslash
 import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
