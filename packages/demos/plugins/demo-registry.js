@@ -8,7 +8,7 @@ import { DEMO_ORDER } from './demo-order.js';
 // Exported so scripts/check-demo-registry.mjs and scripts/capture-demo-shots.mjs build on it
 // instead of keeping copies that could drift.
 export const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
-const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
+const PAGE_TITLE_PATTERN = /@pageTitle[ \t]+(.+?)(?:\s*\*\/|\r?\n|$)/;
 // Strip a branded `@pageTitle` prefix (with or without a legacy NNN / 00a id) so nav labels
 // stay short regardless of how each demo's override is written.
 const PAGE_TITLE_PREFIX_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?[-–]\s*/;

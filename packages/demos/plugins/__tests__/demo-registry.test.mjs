@@ -120,4 +120,9 @@ describe('deriveShortTitle', () => {
         const header = '// A demo with no page title override.\n';
         assert.equal(deriveShortTitle('sprite-effects', header), 'Sprite Effects');
     });
+
+    it('ignores a bare @pageTitle instead of capturing the next comment line', () => {
+        const header = '// @pageTitle\n// Foo Bar\n';
+        assert.equal(deriveShortTitle('sprite-effects', header), 'Sprite Effects');
+    });
 });
