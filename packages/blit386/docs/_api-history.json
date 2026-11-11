@@ -701,7 +701,7 @@
         },
         {
           "version": "1.8.1",
-          "note": "A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running."
+          "note": "A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running. The restarted run starts with no palette (`BT.palette` throws until `init()` sets one) and no palette effects."
         }
       ],
       "deprecated": null,
@@ -1137,6 +1137,10 @@
         {
           "version": "1.8.0",
           "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        },
+        {
+          "version": "1.8.1",
+          "note": "Throws at the call when `color` is not a `Color32`, instead of throwing from inside a later tick."
         }
       ],
       "deprecated": null,
