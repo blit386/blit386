@@ -114,13 +114,29 @@ function mapOutputName(name: string): string {
     return stripTmpl(name);
 }
 
-/** Turn a folder name into a valid npm package name (lowercase, dashes, no surprises). */
-function toPackageName(name: string): string {
+/** The npm names a language layer's `package.json.tmpl` depends on. */
+function templateDependencies(languageDir: string): Set<string> {
+    const pkg = JSON.parse(readFileSync(join(languageDir, 'package.json.tmpl'), 'utf8')) as {
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+    };
+
+    return new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})]);
+}
+
+/**
+ * Turn a folder name into a valid npm package name (lowercase, dashes, no surprises). A name that matches one of the
+ * game's own dependencies (a folder called `vite` or `blit386`) gets a `-game` suffix: npm refuses to install a
+ * package that depends on itself.
+ */
+function toPackageName(name: string, dependencies: ReadonlySet<string>): string {
     const cleaned = name
         .toLowerCase()
         .replace(/[^a-z0-9-]+/g, '-')
         .replace(/^-+|-+$/g, '');
-    return cleaned.length > 0 ? cleaned : 'my-blit-game';
+    const packageName = cleaned.length > 0 ? cleaned : 'my-blit-game';
+
+    return dependencies.has(packageName) ? `${packageName}-game` : packageName;
 }
 
 /** Copy a template tree, renaming special files/dirs, stripping `.tmpl`, and rendering placeholders. */
@@ -231,9 +247,10 @@ export function scaffold(options: ScaffoldOptions): void {
     const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
     const entryFile = `/${gameFile}`;
 
+    const templates = templatesDir();
     const vars: TemplateVars = {
         projectName: options.projectName,
-        packageName: toPackageName(options.projectName),
+        packageName: toPackageName(options.projectName, templateDependencies(join(templates, language))),
         blit386Version: BLIT386_RANGE,
         kitVersion: `^${kitVer}`,
         pmInstall: options.pmInstall,
@@ -259,7 +276,6 @@ export function scaffold(options: ScaffoldOptions): void {
     // Collect every file path we write so we can build the ownership manifest.
     const writtenPaths = new Set<string>();
 
-    const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
     copyTemplateTree(join(templates, language), options.targetDir, vars, writtenPaths);
     if (options.packageManager === undefined) {
