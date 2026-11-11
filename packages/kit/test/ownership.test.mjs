@@ -36,6 +36,9 @@ import {
 } from '../dist/ownership.js';
 import { SHELL_CASES } from './shell-cases.mjs';
 
+/** The shipped Zed guide, which carries the paste-in tool_permissions snippet (moved out of AGENTS.md, BT-777). */
+const zedDoc = () => collectDocs(kitRoot()).find((file) => file.path === 'docs/zed.md')?.content ?? '';
+
 /** A path in the shared skills folder, which several agents may read at once. */
 const SHARED_SKILL = `${SHARED_SKILLS_DIR}run/SKILL.md`;
 
@@ -348,7 +351,7 @@ test('every file the kit emits classifies as kit-owned or shared, except the use
 });
 
 test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lock files and .env but not .env.example', () => {
-    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { edit_file, write_file } = JSON.parse(body).agent.tool_permissions.tools;
@@ -366,7 +369,7 @@ test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lo
 });
 
 test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch forms that discard work (BT-617)', () => {
-    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
@@ -402,7 +405,7 @@ test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch f
 });
 
 test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form the guard core denies (BT-641)', () => {
-    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
@@ -433,7 +436,7 @@ test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form
  * and case ignored unless a rule sets `case_sensitive`.
  */
 function zedTerminalDenies() {
-    const body = agentsFile(kitRoot()).content.match(/```json\n([\s\S]*?)\n```/)?.[1];
+    const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
     assert.ok(body, 'AGENTS.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;

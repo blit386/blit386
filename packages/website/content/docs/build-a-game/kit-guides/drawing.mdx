@@ -2,13 +2,12 @@
 # Generated from packages/kit/content/docs/drawing.md by scripts/sync-kit-pages.mjs.
 # Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
 title: "Drawing"
-description: "All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`); a `Color32` also works anywhere a slot number does."
+description: "All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`)."
 ---
 
 > Written for blit386 1.8.1, which is not on npm yet. The newest release is 1.8.0, so an API on this page may be missing from the version npm installs until 1.8.1 ships.
 
-All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`); a `Color32` also
-works anywhere a slot number does.
+All drawing happens inside `render()`. You draw with palette slot numbers (see `docs/palette.md`).
 
 Positions are `Vector2i(x, y)` and boxes are `Rect2i(x, y, width, height)`. The top-left corner is `(0, 0)` and `y`
 grows downward.

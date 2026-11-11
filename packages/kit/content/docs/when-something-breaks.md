@@ -120,8 +120,9 @@ options object before stretching. See the `add-sprite` skill.
 Palette effects (`paletteCycle`, the fades, `paletteFlash`) move once per `update()` step, right after yours, on the
 engine's step clock (blit386 1.8.0+; older engines moved them once per drawn frame, so a fade written for one of those
 may now look different on a high-refresh display). That means a `palette.set()` made inside `render()` lands _after_ the
-effects for that step and gets overwritten on the next one. Change slots and start effects in `update()` or `init()`,
-never in `render()`. `BT.ticksReset()` holds the effects still for one step rather than rewinding them.
+effects for that step and gets overwritten on the next one. Change slots in `update()` or `init()`, never in `render()`.
+Start effects from `update()` only: a real build plays the splash over `init()` and drops every effect started there.
+`BT.ticksReset()` holds the effects still for one step rather than rewinding them.
 
 ## The mouse acts as if it were pressed all the time
 
@@ -193,70 +194,32 @@ pressing Ctrl+C in it, or just use the new address Vite prints (it picks the nex
 The page at `localhost:5173` only exists while the dev server runs. If you closed the terminal or pressed Ctrl+C, the
 game's address goes dead. Start the server again with `npm run dev` and reload the page.
 
-## I changed the code and nothing happened
+## I saved and the game did not do what I expected
 
-1. Did you save the file? The browser only updates after a save. Look for a dot or asterisk on the file's tab in your
-   editor - that means unsaved changes.
-2. Did the change have a typo? Check the terminal and the browser console for red text.
-3. Still nothing? Reload the page yourself (Ctrl+R, or Cmd+R on a Mac).
+Hot reload (the starter's `blit386` Vite plugin) handles most saves without a page reload. `docs/hot-reload.md` explains
+which edits keep the game's state, which run `init()` again, and which reload the page. Work down this list:
 
-## My change didn't show up
-
-Same checklist as above. Also remember: a full page reload (so everything looks like a cold start) is expected when you
-edit `configure()` hardware settings (screen size, backend, FPS, audio voices, overlay flags), when you upgrade the
-`blit386` package itself, or when you change an unrecognized file under `public/` (hidden files such as `.DS_Store` are
-ignored). Method and most asset edits should update without wiping the page - if they do not, confirm `vite.config.js`
-still has `plugins: [blit386()]` and restart the dev server once.
-
-## I changed the code and the game acted weird
-
-With hot reload (the starter's `blit386` Vite plugin), most saves keep the game running:
-
-- Edited `update()` or `render()`? State stays. If something looks wrong, you may be looking at old values mixed with
-  new logic - reload the page once for a clean start.
-- Edited `init()`? The engine re-runs setup. Without an `onHotReload` hook, scores and positions reset. That is normal.
-  See `docs/hot-reload.md`.
-- Edited `configure()` (screen size, FPS, overlay flags)? A full page reload is expected.
-- Broke `init()` so it throws or returns `false`? The previous game should keep running. Fix the typo and save again.
-- Game froze right after a save? `update()` or `render()` probably crashed - the browser console shows the error once.
-  Fix it and save again, and the game carries on (engine 1.8.1+) - from where it froze if the fix stayed inside
-  `update()` or `render()`. Older engines need a page reload.
-
-If the page reloads on every tiny edit, check that `vite.config.js` still has `plugins: [blit386()]` and that you are on
-blit386 1.4.0 or newer (`npx blit doctor`). Older games can pick the plugin up with `npx blit migrate --write` (or
-`npx blit upgrade`), then restart the dev server once.
-
-## I edited another file and the game still runs the old code
-
-Hot reload decides what to do by looking at your game class (the file with `bootstrap(...)` in it). When you edit a
-different file that the game imports, the game class itself did not change, so the engine keeps the running game and
-does not run `init()` again. That has one surprising effect:
-
-- A plain function the game calls every frame picks up your edit right away.
-- An object the game made in `init()` and kept on `this` (say `this.player = new Player()`) was built from the old code
-  and keeps running it.
-
-Reload the page to rebuild everything from the new code.
-
-## The game restarted and lost my score
-
-That usually means you edited `init()`, the constructor, or a class field initializer - hot reload builds a fresh
-instance and runs `init()` again, so fields reset unless you restore them in `onHotReload`. Editing `configure()`
-hardware settings reloads the whole page (score is gone either way). Method-only edits to `update()` / `render()` keep
-state. Details and a restore example: `docs/hot-reload.md`.
-
-## Hot reload seems stuck
-
-Stop the dev server (Ctrl+C) and start it again with `npm run dev` (or `npx blit run`). An engine package upgrade also
-forces a full reload - that is expected. If saves still do nothing after a restart, check the terminal for errors and
-confirm the `blit386()` plugin is still in `vite.config.js`.
+1. Did you save? The browser only updates after a save. A dot or asterisk on the file's tab in your editor means unsaved
+   changes.
+2. Any red text? Check the terminal and the browser console. A crash in `update()` or `render()` pauses the game: fix it
+   and save again, and it carries on (engine 1.8.1+; older engines need a page reload). A broken `init()` leaves the
+   previous game running.
+3. Score and positions reset? You edited `init()`, the constructor, or a class field initializer, so the engine built a
+   fresh game and ran `init()` again. `onHotReload` can copy values across (see `docs/hot-reload.md`). Editing
+   `configure()` reloads the whole page on purpose.
+4. Edited a file other than the game class, and something the game made in `init()` (say `this.player = new Player()`)
+   still runs the old code? It was built before your edit. Reload the page.
+5. Old values mixed with new logic look wrong? Reload the page (Ctrl+R, or Cmd+R on a Mac) for a clean start.
+6. The page reloads on every save, or saves do nothing at all? Check that `vite.config.js` still has
+   `plugins: [blit386()]` and that you are on blit386 1.4.0 or newer (`npx blit doctor`). Older games pick the plugin up
+   with `npx blit migrate --write`. Then stop the dev server (Ctrl+C) and start it again.
 
 ## My change made everything weird and I want to go back
 
 - Just now? Press Ctrl+Z (Cmd+Z on a Mac) in your editor to undo, one step at a time.
 - A while ago, and your project uses git? Git keeps snapshots of your work. `git status` shows what changed;
-  `git restore src/game.js` puts that one file back to the last saved snapshot. (This throws away your edits to that
-  file, so be sure.)
+  `git restore src/game.js` puts that one file back to the last saved snapshot. It throws away your edits to that file,
+  so type it yourself in a terminal: the safety rules in this project stop an AI assistant from running it for you.
 - This is exactly why `npx blit doctor` nudges you about git. Snapshots turn "I ruined everything" into "I went back two
   minutes."
 
@@ -268,8 +231,8 @@ When the problem feels like it is about your computer rather than your code, run
 npx blit doctor
 ```
 
-It checks your Node version, whether your work is saved with git, and which BLIT386 version you have, then tells you
-what to do in plain language.
+It checks your Node version, whether your work is saved with git, which BLIT386 version you have, and whether your
+assistant can look up the docs, then tells you what to do in plain language.
 
 ## Still stuck?
 

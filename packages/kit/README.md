@@ -120,7 +120,7 @@ Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants
 | GitHub Copilot | `AGENTS.md` | `.agents/skills/` (shared) | `.github/hooks/blit.json` + `.github/hooks/`: all four through `copilot-hook.cjs`; `.github/workflows/copilot-setup-steps.yml` | `.mcp.json` (shared with Claude Code) |
 | Gemini CLI | `AGENTS.md` (`context.fileName`) | `.agents/skills/` (shared) | `.gemini/settings.json` + `.gemini/hooks/`: all four; confirm-tier git commands are refused outright | `.gemini/settings.json` |
 | OpenCode | `AGENTS.md` | `.agents/skills/` (shared) | `.opencode/plugins/kit-guard.ts` + `.opencode/hooks/`: shell guard, file guard, session-start bootstrap; `opencode.json` restates the guards as permissions and turns the formatters on | `opencode.json` |
-| Zed | `AGENTS.md` (hard rules as a paste-in snippet for your own settings) | `.agents/skills/` (shared) | none - format on save in `.zed/settings.json` | `.zed/settings.json` |
+| Zed | `AGENTS.md` (hard rules as instructions; `docs/zed.md` has a paste-in snippet for your own settings) | `.agents/skills/` (shared) | none - format on save in `.zed/settings.json` | `.zed/settings.json` |
 
 "All four" is the manifest's set: format-on-edit, block-dangerous-shell, the lock-file / `.env` guard, and the
 session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset, a
@@ -141,8 +141,9 @@ which the kit writes once whenever such an assistant is set up.
 
 Zed gets `.zed/settings.json` (format on save, Biome as the JavaScript, TypeScript, and JSON formatter, and the
 `blit386-docs` MCP server), merged with any settings you already have. Zed's agent cannot take guardrails from project
-files, so the hard rules live in `AGENTS.md` as instructions, with a snippet to paste into your own Zed settings for
-real enforcement. Zed ignores `.zed/` until you trust the project, and the Biome formatter needs the Biome extension.
+files, so the hard rules live in `AGENTS.md` as instructions, and `docs/zed.md` carries a snippet to paste into your own
+Zed settings for real enforcement. Zed ignores `.zed/` until you trust the project, and the Biome formatter needs the
+Biome extension.
 
 | Skill | What it is for |
 | --- | --- |

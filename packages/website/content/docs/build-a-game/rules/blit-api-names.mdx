@@ -58,7 +58,7 @@ BT.paletteFadeExposure(palette, 1500); // camera-style fade; options bag is 3rd 
 BT.isDown(BT.BTN_LEFT, 0); // check held button (player 0)
 BT.isPressed(BT.BTN_A, 0); // check just-pressed edge
 BT.isKeyDown('ArrowLeft'); // keyboard hold
-BT.isPointerActive(0); // mouse or touch slot 0 is active
+BT.isPointerActive(0); // slot 0 is the mouse; slots 1-3 are fingers and pens
 BT.pointerPos(0); // pointer position (Vector2i)
 BT.pointerPosTo(out, 0); // same, written into an existing Vector2i (engine 1.7.0+)
 BT.pointerDeltaTo(out, 0); // same for the movement delta (engine 1.7.0+)
@@ -113,33 +113,19 @@ configure() {
 }
 ```
 
-Wheel capture defaults to off so the host page can scroll over the canvas. Set `isCapturingPointerScroll: true` when
-your game reads `BT.pointerScrollDelta`. The same flag gates touch scrolling past the canvas: `pan-y` when off (phones
-can tap-hold-scroll the page), `none` when on (the game owns the gesture).
-
-Keyboard scroll capture defaults to off so arrow keys and Space still scroll the host page while the canvas is focused.
-Set `isCapturingKeyboardScroll: true` when your game maps those keys (for example ArrowUp/Down or Space as a face
-button).
-
-`keyboardLayout` is a string, not an `is*` flag: `'versus'` (default) gives player 0 W, A, S, D and player 1 the arrow
-keys; `'single'` gives player 0 both sets and moves player 1 to I, J, K, L. `'single'` also turns keyboard scroll
-capture on unless `isCapturingKeyboardScroll` is set explicitly.
-
-Screen wake lock defaults to off. Set `isWakeLockEnabled: true` so phones and tablets do not dim or lock the screen
-during active play; the engine requests it after a successful start and silently does nothing on browsers that do not
-support it.
-
-Screen orientation: `BT.screenOrientation` is the current browser type string (for example `'landscape-primary'`), or
-`null` when unavailable. Set `preferredOrientation` to `'landscape'` or `'portrait'` to ask for a lock after start
-(`'any'` is the default and skips the lock). Optional `onOrientationChange(type)` on your game class runs when the
-player rotates the device. Locking works on Android Chrome; iOS Safari silently ignores it. A "please rotate" prompt is
-your job - the engine only reports the orientation.
+The two scroll captures and the wake lock default to off. `BT.pointerScrollDelta` stays `0` without
+`isCapturingPointerScroll`, which also sets touch scrolling past the canvas (`pan-y` off, `none` on). `keyboardLayout`
+defaults to `'versus'` (WASD for player 0, arrows for player 1); `'single'` also turns keyboard scroll capture on unless
+the flag is set. Orientation: `BT.screenOrientation` reports it (or `null`); the lock works on Android Chrome only, and
+a "please rotate" prompt is your job. See `docs/input.md` and `docs/basics.md`.
 
 ## Demo class hooks (optional methods)
 
 Optional methods on your game class (the one you pass to `bootstrap()`):
 
 - `onOrientationChange(type)` - device orientation changed (see above).
+- `overlayRows()` - extra rows for the debug overlay (`{ leftText, rightText? }`), read each frame while it shows. Reuse
+  the same array when nothing changed, so it does not allocate every frame.
 - `onHotReload(context)` - after a hot-reload swap (engine 1.4.0+). `context.reason` is `'methods'` or `'reinit'`;
   `'reinit'` also provides `context.snapshot` (previous instance fields) so you can restore score and similar. Never
   fires for a `configure()` hardware change (that reloads the page). See `docs/hot-reload.md`.

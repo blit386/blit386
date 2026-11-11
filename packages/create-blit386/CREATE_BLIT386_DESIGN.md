@@ -437,7 +437,8 @@ Canonical intent (`kit/hooks.manifest.json`):
   itself and allows the rest. A deny is exit 2 plus the decision in both dialects; Copilot denies on exit 2 and on any
   crash, and fails open only on a timeout.
 - Zed: nothing enforceable from the project - `tool_permissions.{edit_file,write_file}.always_deny` is honored only in
-  the user's own settings, so the generated game documents a paste-in snippet in `AGENTS.md` (Zed adapter, BT-297).
+  the user's own settings, so the generated game documents a paste-in snippet in `docs/zed.md` (Zed adapter, BT-297;
+  moved out of `AGENTS.md` in BT-777).
 
 Same intent; seven formats; differing enforcement power (AGENTS.md and Zed only instruct; Cursor blocks shell commands
 but not edits; Claude Code, Antigravity, GitHub Copilot, and OpenCode block both). Rules and skills follow the same
