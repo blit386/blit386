@@ -95,9 +95,11 @@ start at slot 1.
 The palette is live. Change a slot during the game and everything drawn with that slot changes on the next frame:
 
 ```js
+const WHITE = new Color32(255, 255, 255); // made once at the top of the file, not every frame
+
 update() {
     if (this.hurt) {
-        this.palette.set(1, new Color32(255, 255, 255)); // flash the player white
+        this.palette.set(1, WHITE); // flash the player white
     }
 }
 ```
@@ -118,8 +120,11 @@ BT.paletteFadeExposure(this.gamePalette, 2000);
 Use the first for a cross-dissolve between themes, the second for a title card or a fade up into the game. The
 `animate-the-palette` skill covers cycling, flashing, and swapping too.
 
-Start a fade (or any palette effect) from `init()` or `update()`, not `render()`. Effects move once per `update()` step,
-right after yours runs (blit386 1.8.0+), so they keep the same pace on every display and `BT.renderAt` can replay them
-for a screenshot. A palette write made in `render()` lands after that step's effects instead of before them.
+Start a fade (or any palette effect) from `update()`, once - on a `BT.isPressed` edge or behind a flag you set, since
+`update()` runs every step and a fade restarted every step never moves. Not from `init()`: a real build plays the splash
+over `init()` and drops every effect started there, so a fade that works in a dev build vanishes from the shipped game
+(a `palette.set()` in `init()` is fine). Not from `render()` either. Effects move once per `update()` step, right after
+yours runs (blit386 1.8.0+), so they keep the same pace on every display and `BT.renderAt` can replay them for a
+screenshot. A palette write made in `render()` lands after that step's effects instead of before them.
 
 Next: `docs/drawing.md` for the full list of things you can draw.
