@@ -2,7 +2,7 @@
 # Generated from packages/demos/src/random-basics.js by scripts/sync-kit-pages.mjs.
 # Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
 title: "Example: Random Basics"
-description: "Five scenes for the BT.random generators: shuffling, weighted drops, scatter, flips, and walkers."
+description: "Four scenes for the BT.random generators: shuffling, weighted drops, scatter, and walkers."
 ---
 
 > Written for blit386 1.8.1, which is not on npm yet. The newest release is 1.8.0, so an API on this page may be missing from the version npm installs until 1.8.1 ships.
@@ -13,7 +13,7 @@ Live version: https://demos.blit386.dev/random-basics. This is the demo-site sou
 /*
 
 Random Basics: the shuffling, weighting, and scattering tools built into the engine.
-@description Five scenes for the BT.random generators: shuffling, weighted drops, scatter, flips, and walkers.
+@description Four scenes for the BT.random generators: shuffling, weighted drops, scatter, and walkers.
 
 Part of the BLIT386 demo series.
 
@@ -35,10 +35,10 @@ Reference:
 WHAT YOU WILL SEE
 -----------------
 
-Five small scenes, one at a time, with the engine overlay turned off so they get the whole
-screen. Every scene has the same bottom row: the "Scene 1/5" picker on the left, with Prev
-and Next buttons marked with arrows (press 1-5 to jump straight to a scene), and that
-scene's own panel on the right. Each scene shows one way of asking the engine for a
+Four small scenes, one at a time, with the engine overlay turned off so they get the whole
+screen. Every scene has the same bottom row: the "Scene 1/4" picker on the left, with Prev
+and Next buttons marked with arrows (the left and right arrow keys press them too), and
+that scene's own panel on the right. Each scene shows one way of asking the engine for a
 random answer:
 
   1. Shuffle - two rows of eight colored cards: the list itself, and a shuffled copy.
@@ -46,9 +46,7 @@ random answer:
      drop so far, with a white line on each bar at the share the code asked for.
   3. Gaussian - small squares landing near a target of four nested rings, not anywhere.
      The panel spells out the exact call each one makes.
-  4. Sign - a dot walking along a line, stepping left or right on a coin flip, with the
-     spots it stood on before trailing down underneath.
-  5. Directions - two bugs wandering their own squares, one allowed 4 ways, the other 8.
+  4. Directions - two bugs wandering their own squares, one allowed 4 ways, the other 8.
 
 WHAT YOU WILL LEARN
 -------------------
@@ -59,9 +57,8 @@ WHAT YOU WILL LEARN
   often as that one".
 - BT.random.gaussian(mean, spread) clumps results near a middle value instead of spreading
   them evenly; BT.random.float(min, max) is the flat version, shown next to it to compare.
-- BT.random.sign() answers -1 or 1, which is perfect for "which way?" questions.
 - BT.random.direction4() and BT.random.direction8() hand back a ready-made step as a
-  Vector2i.
+  Vector2i. BT.random.sign() is the same idea on a line: it answers -1 or 1.
 - Counting update ticks and using the % remainder to act every few ticks instead of every
   single one.
 
@@ -75,7 +72,7 @@ pointInRange() to scatter buildings: https://demos.blit386.dev/camera
 TRY THIS
 --------
 
-- Press 1-5, or tap the Prev and Next buttons, to change scene.
+- Press the left and right arrow keys, or tap the Prev and Next buttons, to change scene.
 - Scene 1: press C ("shuffle() a copy") and only the bottom row changes. Press P
   ("shuffleInPlace()") and the top row changes too - the old order is gone for good.
 - Scene 2: wait a while, then compare each bar with its white line, and the "Got" row
@@ -83,30 +80,18 @@ TRY THIS
 - Scene 3: press G or tap "Use gaussian()" to switch to float(). The green clump becomes
   an evenly filled red square. Drag the "Spread" slider (4 to 40) to tighten or widen it,
   and watch the call under it change.
-- Scene 4: watch the "Coin flips" tally stay close to even, but never exactly even, and
-  the trail under the line wander off to one side and back.
-- Scene 5: compare the blocky blue trail (4 ways) with the rounder orange one (8 ways).
+- Scene 4: compare the blocky blue trail (4 ways) with the rounder orange one (8 ways).
 
 */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, FONT_W, ui } from './shared/ui.js';
+import { applyTheme, centeredTextX, PANEL_CONTENT_SHRINK, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
 // This demo runs at the engine's default screen size of 320x240 "game pixels", which is
 // what every position and size below is measured in.
-
-// The five scenes, in the order the number keys select them.
-const MODE_SHUFFLE = 0;
-const MODE_WEIGHTED = 1;
-const MODE_GAUSSIAN = 2;
-const MODE_SIGN = 3;
-const MODE_DIRECTIONS = 4;
-
-// Names shown in the mode panel. The array position matches the MODE_* numbers above.
-const MODE_NAMES = ['Shuffle', 'Weighted', 'Gaussian', 'Sign', 'Directions'];
 
 // Color slots. The shared UI kit owns slots 240-251, so scene colors stay well below
 // that.
@@ -171,15 +156,7 @@ const SHOT_EVERY_TICKS = 3;
 const TARGET_CENTER = new Vector2i(160, 62);
 const TARGET_RINGS = [44, 33, 22, 11];
 
-// The Sign scene walks a dot along this line, and draws where it stood on each of its
-// last WALK_HISTORY steps underneath, newest on top, WALK_HISTORY_GAP pixels apart.
-const WALK_Y = 30;
-const WALK_LEFT = 40;
-const WALK_RIGHT = 280;
-const WALK_HISTORY = 36;
-const WALK_HISTORY_GAP = 2;
-
-// How many update ticks pass between walker steps and bug steps.
+// How many update ticks pass between bug steps.
 const STEP_EVERY_TICKS = 6;
 
 // The Directions scene gives each bug its own square to wander, and remembers this many
@@ -204,8 +181,7 @@ const NAV_PANEL_W = 100;
 const SCENE_PANEL_X = 110;
 const SCENE_PANEL_W = 206;
 
-// Widgets inside a panel are 20 pixels narrower than the panel itself.
-const PANEL_CONTENT_SHRINK = 20;
+// Widgets inside a panel are PANEL_CONTENT_SHRINK pixels narrower than the panel itself.
 const NAV_BUTTON_W = NAV_PANEL_W - PANEL_CONTENT_SHRINK;
 const SCENE_CONTENT_W = SCENE_PANEL_W - PANEL_CONTENT_SHRINK;
 
@@ -213,34 +189,50 @@ const SCENE_CONTENT_W = SCENE_PANEL_W - PANEL_CONTENT_SHRINK;
 // "Right (+1)", keeps a space after it.
 const SCENE_KV_COLS = 11;
 
-// Each scene panel's rows fall short of PANEL_H by a different amount. This much empty
-// space (index = MODE_* number) goes in just before each panel's closing note, so every
-// panel is the same height and the note always sits at its bottom.
-const NOTE_GAP = [4, 28, 18, 18, 24];
-
 // The system font's arrows, for the Prev and Next buttons.
 const ARROW_LEFT = '\u2190';
 const ARROW_RIGHT = '\u2192';
 
-// The x to print `text` at so its letters are centered on column `centerX`. The last
-// character's empty spacing column is left out, so the visible letters are what centers.
-function centeredTextX(centerX, text) {
-    return centerX - Math.floor((text.length * FONT_W - 1) / 2);
-}
+// The four scenes, in picker order. Each one names the methods that advance it (update,
+// or null when nothing moves on its own), fill its panel, and draw its picture. A line
+// like `(demo) => demo.renderShuffle()` is a short function: hand it the running Demo
+// and it calls that method on it. noteGap is the empty space before the closing note:
+// each panel's rows fall short of PANEL_H by a different amount, so this keeps every
+// panel the same height with the note at its bottom.
+const SCENES = [
+    {
+        name: 'Shuffle',
+        update: null,
+        renderPanel: (demo) => demo.renderShufflePanel(),
+        render: (demo) => demo.renderShuffle(),
+        noteGap: 4,
+    },
+    {
+        name: 'Weighted',
+        update: (demo) => demo.updateWeighted(),
+        renderPanel: (demo) => demo.renderWeightedPanel(),
+        render: (demo) => demo.renderWeighted(),
+        noteGap: 28,
+    },
+    {
+        name: 'Gaussian',
+        update: (demo) => demo.updateGaussian(),
+        renderPanel: (demo) => demo.renderGaussianPanel(),
+        render: (demo) => demo.renderGaussian(),
+        noteGap: 18,
+    },
+    {
+        name: 'Directions',
+        update: (demo) => demo.updateDirections(),
+        renderPanel: (demo) => demo.renderDirectionsPanel(),
+        render: (demo) => demo.renderDirections(),
+        noteGap: 10,
+    },
+];
 
-// Clamps a whole number so it never leaves the range min..max. "Clamp" means "keep it
-// inside the fence": if the value wandered past either end, this pushes it back to the
-// nearest edge.
-function clampInt(value, min, max) {
-    if (value < min) {
-        return min;
-    }
-
-    if (value > max) {
-        return max;
-    }
-
-    return value;
+// Keeps `value` from going below `min` or above `max`: "keep it inside the fence".
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
 }
 
 // Five small scenes covering the parts of BT.random the other demos do not use.
@@ -248,11 +240,9 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Slot map for the shared UI kit theme, filled in by applyTheme() during init().
-    theme = null;
-
-    // Which scene is on screen right now. Starts on the shuffle cards.
-    mode = MODE_SHUFFLE;
+    // Which scene is on screen right now, as a position in SCENES. Starts on the shuffle
+    // cards.
+    mode = 0;
 
     // Counts update ticks so the scenes can act every few ticks instead of every single
     // one.
@@ -285,18 +275,6 @@ class Demo {
     // Whether arrows use gaussian() (clumped) or float() (flat).
     useGaussian = true;
 
-    // Sign scene: where the walker stands.
-    walkX = (WALK_LEFT + WALK_RIGHT) / 2;
-
-    // How many times sign() has answered -1.
-    leftCount = 0;
-
-    // How many times sign() has answered 1.
-    rightCount = 0;
-
-    // Where the walker stood after each of its recent steps, newest first.
-    walkHistory = [];
-
     // Directions scene: the 4-way bug remembers where it is and where it has been.
     bugA = { pos: new Vector2i(0, 0), trail: [] };
 
@@ -304,10 +282,12 @@ class Demo {
     bugB = { pos: new Vector2i(0, 0), trail: [] };
 
     // Turns the engine overlay off: this demo needs the whole screen for its scenes and
-    // panels, and has no timing or audio to watch.
+    // panels, and has no timing or audio to watch. The arrow keys change scene, so the
+    // engine also keeps them from scrolling the browser page.
     configure() {
         return {
             isOverlayEnabled: false,
+            isCapturingKeyboardScroll: true,
         };
     }
 
@@ -344,7 +324,7 @@ class Demo {
 
         // Install the shared UI colors, then hand the finished palette to the engine.
         // applyTheme() must come before paletteSet() so the kit's colors are included.
-        this.theme = applyTheme(this.palette);
+        applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
@@ -383,38 +363,13 @@ class Demo {
 
         this.ticks++;
 
-        // Number keys jump straight to a scene. Reading key presses here in update() -
-        // never in render() - is what keeps a quick tap from being missed.
-        if (BT.isKeyPressed('Digit1')) {
-            this.mode = MODE_SHUFFLE;
-        }
-
-        if (BT.isKeyPressed('Digit2')) {
-            this.mode = MODE_WEIGHTED;
-        }
-
-        if (BT.isKeyPressed('Digit3')) {
-            this.mode = MODE_GAUSSIAN;
-        }
-
-        if (BT.isKeyPressed('Digit4')) {
-            this.mode = MODE_SIGN;
-        }
-
-        if (BT.isKeyPressed('Digit5')) {
-            this.mode = MODE_DIRECTIONS;
-        }
-
         // Only the scene being looked at needs to do any work. The shuffle scene has
-        // nothing to advance - its cards only move when a button is pressed.
-        if (this.mode === MODE_WEIGHTED) {
-            this.updateWeighted();
-        } else if (this.mode === MODE_GAUSSIAN) {
-            this.updateGaussian();
-        } else if (this.mode === MODE_SIGN) {
-            this.updateSign();
-        } else if (this.mode === MODE_DIRECTIONS) {
-            this.updateDirections();
+        // nothing to advance (its update is null) - its cards only move when a button is
+        // pressed.
+        const scene = SCENES[this.mode];
+
+        if (scene.update !== null) {
+            scene.update(this);
         }
     }
 
@@ -430,54 +385,36 @@ class Demo {
         this.renderNavPanel();
 
         // Each scene adds its own controls and readouts in the panel beside the picker.
+        // The picker's buttons may have just changed this.mode, so the scene is looked up
+        // after them.
+        const scene = SCENES[this.mode];
+
         ui.begin('topLeft', { x: SCENE_PANEL_X, y: PANEL_Y, width: SCENE_PANEL_W, kvCols: SCENE_KV_COLS });
-
-        if (this.mode === MODE_SHUFFLE) {
-            this.renderShufflePanel();
-        } else if (this.mode === MODE_WEIGHTED) {
-            this.renderWeightedPanel();
-        } else if (this.mode === MODE_GAUSSIAN) {
-            this.renderGaussianPanel();
-        } else if (this.mode === MODE_SIGN) {
-            this.renderSignPanel();
-        } else {
-            this.renderDirectionsPanel();
-        }
-
+        scene.renderPanel(this);
         ui.end();
 
-        if (this.mode === MODE_SHUFFLE) {
-            this.renderShuffle();
-        } else if (this.mode === MODE_WEIGHTED) {
-            this.renderWeighted();
-        } else if (this.mode === MODE_GAUSSIAN) {
-            this.renderGaussian();
-        } else if (this.mode === MODE_SIGN) {
-            this.renderSign();
-        } else {
-            this.renderDirections();
-        }
+        scene.render(this);
     }
 
     // The scene picker, in the same spot in every scene. Two arrow buttons rather than
-    // five named ones: five rows would not fit, and the number keys still jump straight
-    // to a scene. The buttons are tappable, so someone on a phone can reach every scene
-    // without a keyboard.
+    // one per scene: four rows would not fit. Each button answers a click, a tap, or its
+    // arrow key - the { key } option binds the key, and ui.tick() in update() catches
+    // the press safely - so the picker works with or without a keyboard.
     renderNavPanel() {
         ui.begin('topLeft', { x: NAV_PANEL_X, y: PANEL_Y, width: NAV_PANEL_W });
-        ui.panel(`Scene ${this.mode + 1}/${MODE_NAMES.length}`);
-        ui.label(MODE_NAMES[this.mode], { color: 'accent' });
-        ui.label('or keys 1-5', { color: 'dim' });
+        ui.panel(`Scene ${this.mode + 1}/${SCENES.length}`);
+        ui.label(SCENES[this.mode].name, { color: 'accent' });
+        ui.label('or arrow keys', { color: 'dim' });
         ui.spacer(4);
 
-        // Adding MODE_NAMES.length before taking the remainder keeps the answer positive
+        // Adding SCENES.length before taking the remainder keeps the answer positive
         // when stepping back from scene 1.
-        if (ui.button(`${ARROW_LEFT} Prev`, { width: NAV_BUTTON_W })) {
-            this.mode = (this.mode + MODE_NAMES.length - 1) % MODE_NAMES.length;
+        if (ui.button(`${ARROW_LEFT} Prev`, { key: 'ArrowLeft', width: NAV_BUTTON_W })) {
+            this.mode = (this.mode + SCENES.length - 1) % SCENES.length;
         }
 
-        if (ui.button(`Next ${ARROW_RIGHT}`, { width: NAV_BUTTON_W })) {
-            this.mode = (this.mode + 1) % MODE_NAMES.length;
+        if (ui.button(`Next ${ARROW_RIGHT}`, { key: 'ArrowRight', width: NAV_BUTTON_W })) {
+            this.mode = (this.mode + 1) % SCENES.length;
         }
 
         ui.end();
@@ -556,35 +493,6 @@ class Demo {
         this.shotNext = (this.shotNext + 1) % SHOT_COUNT;
     }
 
-    // Steps the walker left or right.
-    updateSign() {
-        if (this.ticks % STEP_EVERY_TICKS !== 0) {
-            return;
-        }
-
-        // sign() answers -1 or 1, nothing else. Multiplying a distance by it turns "how
-        // far" into "how far, and which way" in a single step.
-        const direction = BT.random.sign();
-
-        if (direction < 0) {
-            this.leftCount++;
-        } else {
-            this.rightCount++;
-        }
-
-        // Each step is 6 pixels; clampInt keeps the dot on the line.
-        this.walkX = clampInt(this.walkX + direction * 6, WALK_LEFT, WALK_RIGHT);
-
-        // Remember the new spot at the front of the history, and let the oldest one fall
-        // off the end. unshift() adds to the front of a list, pop() removes the last
-        // item.
-        this.walkHistory.unshift(this.walkX);
-
-        if (this.walkHistory.length > WALK_HISTORY) {
-            this.walkHistory.pop();
-        }
-    }
-
     // Steps both bugs and records where they have been.
     updateDirections() {
         if (this.ticks % STEP_EVERY_TICKS !== 0) {
@@ -614,7 +522,7 @@ class Demo {
             bug.trail.shift();
         }
 
-        // Steps are 3 pixels so the trail is easy to see. clampInt keeps the bug from
+        // Steps are 3 pixels so the trail is easy to see. clamp() keeps the bug from
         // walking out of its own square.
         //
         // The limits are pulled in twice over. The last pixel inside a square is one
@@ -623,8 +531,8 @@ class Demo {
         // of the marker rather than its corner - without that the square would straddle
         // the frame.
         bug.pos = new Vector2i(
-            clampInt(bug.pos.x + step.x * 3, area.x + BUG_REACH, area.x + area.width - 1 - BUG_REACH),
-            clampInt(bug.pos.y + step.y * 3, area.y + BUG_REACH, area.y + area.height - 1 - BUG_REACH),
+            clamp(bug.pos.x + step.x * 3, area.x + BUG_REACH, area.x + area.width - 1 - BUG_REACH),
+            clamp(bug.pos.y + step.y * 3, area.y + BUG_REACH, area.y + area.height - 1 - BUG_REACH),
         );
     }
 
@@ -730,31 +638,6 @@ class Demo {
         }
     }
 
-    // Draws the walking line with the dot standing on it, and under it a column of the
-    // spots the dot stood on before - newest on top, so the walk reads downward in time.
-    renderSign() {
-        const start = (WALK_LEFT + WALK_RIGHT) / 2;
-        const label = 'Left or right, nothing else';
-
-        ui.caption(centeredTextX(start, label), WALK_Y - 22, label);
-
-        BT.drawLine(new Vector2i(WALK_LEFT, WALK_Y), new Vector2i(WALK_RIGHT, WALK_Y), C_DIM);
-
-        // A tick mark at the starting point, so it is obvious how far the walker has
-        // drifted, and the two ends labeled with what sign() answers to get there.
-        BT.drawLine(new Vector2i(start, WALK_Y - 6), new Vector2i(start, WALK_Y + 6), C_DIM);
-        ui.caption(WALK_LEFT - 2 * FONT_W - 6, WALK_Y - 2, '-1', { color: 'dim' });
-        ui.caption(WALK_RIGHT + 7, WALK_Y - 2, '+1', { color: 'dim' });
-
-        // The history: one pixel per past step, under the line.
-        for (let i = 0; i < this.walkHistory.length; i++) {
-            BT.drawPixel(new Vector2i(this.walkHistory[i], WALK_Y + 10 + i * WALK_HISTORY_GAP), C_DIM);
-        }
-
-        // The walker: a 7x7 square centered on the line.
-        BT.drawRectFill(new Rect2i(this.walkX - 3, WALK_Y - 3, 7, 7), C_INK);
-    }
-
     // Draws both bugs and their trails.
     renderDirections() {
         ui.caption(BUG_AREA_A.x, BUG_AREA_A.y - 10, '4 ways', { color: 'info' });
@@ -798,7 +681,7 @@ class Demo {
             BT.random.shuffleInPlace(this.deck);
         }
 
-        ui.spacer(NOTE_GAP[MODE_SHUFFLE]);
+        ui.spacer(SCENES[this.mode].noteGap);
         ui.label('Copy: the top row stays put.', { color: 'dim' });
         ui.label('In place: the top row moves.', { color: 'dim' });
     }
@@ -815,7 +698,7 @@ class Demo {
         ui.kv('Asked', TIER_WEIGHTS.join(' / '));
         ui.kv('Got', got);
         ui.kv('Drops', total);
-        ui.spacer(NOTE_GAP[MODE_WEIGHTED]);
+        ui.spacer(SCENES[this.mode].noteGap);
         ui.label('The white lines mark what the', { color: 'dim' });
         ui.label('weights asked for. Rare is rare.', { color: 'dim' });
     }
@@ -837,26 +720,10 @@ class Demo {
         const call = this.useGaussian ? `gaussian(0, ${this.shotSpread})` : `float(-${reach}, ${reach})`;
 
         ui.label(`Each arrow: ${call}`, { color: 'info' });
-        ui.spacer(NOTE_GAP[MODE_GAUSSIAN]);
+        ui.spacer(SCENES[this.mode].noteGap);
         ui.label(this.useGaussian ? 'Green: clumped near the middle.' : 'Red: even, edge to edge.', {
             color: 'dim',
         });
-    }
-
-    // How many times sign() answered each way.
-    renderSignPanel() {
-        ui.panel('Coin flips');
-        ui.kv('Left (-1)', this.leftCount);
-        ui.kv('Right (+1)', this.rightCount);
-        ui.kv('Total', this.leftCount + this.rightCount);
-
-        // How far the walker has drifted from the tick mark, in 6-pixel steps.
-        const drift = (this.walkX - (WALK_LEFT + WALK_RIGHT) / 2) / 6;
-
-        ui.kv('Drift', `${drift > 0 ? '+' : ''}${drift} steps`);
-        ui.spacer(NOTE_GAP[MODE_SIGN]);
-        ui.label('Close to even over time,', { color: 'dim' });
-        ui.label('but never exactly even.', { color: 'dim' });
     }
 
     // A reminder of what separates the two bugs.
@@ -867,8 +734,12 @@ class Demo {
         ui.spacer(4);
         ui.label('Orange: direction8()', { color: 'warm' });
         ui.label('those four, plus diagonals', { color: 'dim' });
-        ui.spacer(NOTE_GAP[MODE_DIRECTIONS]);
-        ui.label('Both hand back a Vector2i.', { color: 'dim' });
+        ui.spacer(4);
+
+        // sign() is the same idea on a line instead of a grid.
+        ui.label('sign(): -1 or 1, a coin flip');
+        ui.spacer(SCENES[this.mode].noteGap);
+        ui.label('The bugs step by a Vector2i.', { color: 'dim' });
     }
 }
 

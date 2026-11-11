@@ -119,10 +119,6 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Palette slot map for the shared UI kit theme, filled in init() by applyTheme(): a
-    // map like { bg, text, dim, header, ... } of slot numbers.
-    theme = null;
-
     // Optional engine settings. We keep the default 320x240 screen, open the overlay from
     // the start, and show its palette grid with 24 chips per row and 3 visible rows.
     configure() {
@@ -171,7 +167,7 @@ class Demo {
         // and the animated rainbow slots (20-69). The section captions draw with
         // these colors. This must happen BEFORE BT.paletteSet() below so the colors
         // go live with the palette.
-        this.theme = applyTheme(this.palette);
+        applyTheme(this.palette);
 
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
