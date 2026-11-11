@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { gitEnv } from '../packages/website/scripts/git-env.mjs';
+import { gitEnv } from './lib/git-env.mjs';
 import {
     MAINTAINER_CONFIG_SPECS,
     checkClaudeProtectFilesHook,
@@ -17,6 +18,7 @@ import {
     findAgentsPointerFailures,
     findCopilotPointerFailures,
     findMaintainerConfigFailures,
+    findHookScriptPathFailures,
     findMaintainerHookSymlinkFailures,
     findProjectMcpFailures,
     findRulesParityFailures,
@@ -758,7 +760,7 @@ describe('check-agent-config under a symlinked temp root', () => {
     it('reports good, dangling and plain-file hook entries correctly', () => {
         const root = mkdtempSync(join(tmpdir(), 'agent-config-hooks-'));
         const kitHooks = join(root, 'packages', 'kit', 'content', 'hooks');
-        const codexHooks = join(root, '.codex', 'hooks');
+        const codexHooks = join(root, '.cursor', 'hooks');
         mkdirSync(kitHooks, { recursive: true });
         mkdirSync(codexHooks, { recursive: true });
         writeFileSync(join(kitHooks, 'good.cjs'), '');
@@ -770,8 +772,8 @@ describe('check-agent-config under a symlinked temp root', () => {
             const failures = checkMaintainerAgentConfigs(root).filter((message) => message.includes('.cjs'));
 
             assert.deepEqual(failures, [
-                '.codex/hooks/gone.cjs is a broken symlink or does not resolve under packages/kit/content/hooks/',
-                '.codex/hooks/plain.cjs is not a symlink',
+                '.cursor/hooks/gone.cjs is a broken symlink or does not resolve under packages/kit/content/hooks/',
+                '.cursor/hooks/plain.cjs is not a symlink',
             ]);
         } finally {
             rmSync(root, { recursive: true, force: true });
@@ -875,5 +877,44 @@ describe('check-agent-config under a symlinked temp root', () => {
                 rmSync(root, { recursive: true, force: true });
             }
         });
+    });
+});
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+describe('hand-maintained hook wiring (BT-780)', () => {
+    it('fails .cursor/hooks.json when shell-safety.cjs is not wired', () => {
+        const content = JSON.stringify({
+            hooks: { beforeShellExecution: [{ command: 'node .cursor/hooks/other.cjs' }] },
+        });
+        assert.deepEqual(findMaintainerConfigFailures(maintainerSpec('.cursor/hooks.json'), content), [
+            '.cursor/hooks.json does not wire shell-safety.cjs',
+        ]);
+    });
+
+    it('reports a hook command that points at a missing script, in a copy of each real config', () => {
+        for (const configPath of ['.claude/settings.json', '.cursor/hooks.json']) {
+            const content = readFileSync(join(REPO_ROOT, configPath), 'utf8').replace(
+                'shell-safety.cjs',
+                'shell-safety-renamed.cjs',
+            );
+            const failures = findHookScriptPathFailures(configPath, content, (relPath) =>
+                existsSync(join(REPO_ROOT, relPath)),
+            );
+
+            assert.equal(failures.length, 1, failures.join('\n'));
+            assert.match(failures[0], /shell-safety-renamed\.cjs, which does not exist$/u);
+        }
+    });
+
+    it('passes the real configs', () => {
+        for (const configPath of ['.claude/settings.json', '.cursor/hooks.json']) {
+            const content = readFileSync(join(REPO_ROOT, configPath), 'utf8');
+
+            assert.deepEqual(
+                findHookScriptPathFailures(configPath, content, (relPath) => existsSync(join(REPO_ROOT, relPath))),
+                [],
+            );
+        }
     });
 });

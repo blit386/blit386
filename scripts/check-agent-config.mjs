@@ -25,37 +25,58 @@
  *   - Maintainer dogfood configs for Antigravity, Codex, Gemini CLI, Copilot, and
  *     OpenCode (installed by `scripts/sync-maintainer-agents.mjs`): each config
  *     file exists and parses, the docs server uses that agent's URL key, guards
- *     are wired, on-disk hook scripts under the agent `hooks/` dirs symlink into
- *     `packages/kit/content/hooks/`, and git does not ignore `.codex/hooks.json`.
- *     Missing scripts and byte drift are `sync:maintainer-agents:check`.
+ *     are wired, and git does not ignore `.codex/hooks.json`. Missing scripts,
+ *     hook symlinks and byte drift are `sync:maintainer-agents:check`.
+ *   - Cursor's hand-maintained hooks: `.cursor/hooks.json` wires
+ *     `shell-safety.cjs`, and every `.cursor/hooks/*.cjs` is a working symlink
+ *     into `packages/kit/content/hooks/`.
+ *   - Every script a hook command in `.claude/settings.json` or
+ *     `.cursor/hooks.json` runs exists.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
  *
  * This is read-only - unlike `sync-doc-banners.mjs` it never writes fixes,
- * it only reports drift for a human (or `pnpm run rules:sync`-style script)
- * to resolve.
+ * it only reports drift for a human to resolve. The checks live by surface in
+ * `scripts/lib/agent-config/` (`skills`, `mcp`, `maintainer`); this file runs them.
  *
  * Usage:
  *   node scripts/check-agent-config.mjs
  */
-import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { gitEnv } from '../packages/website/scripts/git-env.mjs';
+import { readFileIfExists } from './lib/agent-config/fs.mjs';
+import {
+    checkClaudeProtectFilesHook,
+    checkClaudeShellSafetyHook,
+    checkMaintainerAgentConfigs,
+    findHookScriptPathFailures,
+    HOOK_COMMAND_CONFIGS,
+} from './lib/agent-config/maintainer.mjs';
+import { findProjectMcpFailures, isRootMcpIgnoredByGit } from './lib/agent-config/mcp.mjs';
+import { checkRootSkillsLayout } from './lib/agent-config/skills.mjs';
+
+// The checks live by surface under scripts/lib/agent-config/; re-exported so this stays the one entry point.
+export {
+    checkClaudeProtectFilesHook,
+    checkClaudeShellSafetyHook,
+    checkMaintainerAgentConfigs,
+    findHookScriptPathFailures,
+    findMaintainerConfigFailures,
+    findMaintainerHookSymlinkFailures,
+    MAINTAINER_CONFIG_SPECS,
+} from './lib/agent-config/maintainer.mjs';
+export { findProjectMcpFailures, isPathIgnoredByGit, isRootMcpIgnoredByGit } from './lib/agent-config/mcp.mjs';
+export {
+    checkRootSkillsLayout,
+    findSkillsSymlinkFailures,
+    findZedSettingsFailures,
+    resolveSkillSymlinkTarget,
+} from './lib/agent-config/skills.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-/** @param {string} path @returns {string | null} File contents, or `null` when the file does not exist. */
-function realpathSyncIfExists(path) {
-    return existsSync(path) ? realpathSync(path) : path;
-}
-
-function readFileIfExists(path) {
-    return existsSync(path) ? readFileSync(path, 'utf8') : null;
-}
 
 /**
  * Pushes each failure onto `failures`, tagged with `[prefix]`.
@@ -68,51 +89,6 @@ function collect(failures, prefix, newFailures) {
     for (const failure of newFailures) {
         failures.push(`[${prefix}] ${failure}`);
     }
-}
-
-/**
- * Verifies every `.agents/skills/*` entry is a working symlink that resolves
- * to a same-named `.claude/skills/*` directory, and that every
- * `.claude/skills/*` directory has a matching symlink (catches a new skill
- * added without its Zed symlink).
- *
- * @param {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>} agentsSkillEntries
- *   `resolvedName` is the basename the symlink resolves to under `.claude/skills/`, or `null` when broken.
- * @param {string[]} claudeSkillDirNames Directory names under `.claude/skills/`.
- * @returns {string[]} Human-readable failure messages (empty when in sync).
- */
-export function findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames) {
-    const failures = [];
-    const resolvedNames = new Set();
-
-    for (const entry of agentsSkillEntries) {
-        if (!entry.isSymlink) {
-            failures.push(`.agents/skills/${entry.name} is not a symlink`);
-            continue;
-        }
-
-        if (entry.resolvedName === null) {
-            failures.push(`.agents/skills/${entry.name} is a broken symlink`);
-            continue;
-        }
-
-        if (entry.resolvedName !== entry.name) {
-            failures.push(
-                `.agents/skills/${entry.name} resolves to .claude/skills/${entry.resolvedName}, expected ${entry.name}`,
-            );
-            continue;
-        }
-
-        resolvedNames.add(entry.name);
-    }
-
-    for (const name of claudeSkillDirNames) {
-        if (!resolvedNames.has(name)) {
-            failures.push(`.claude/skills/${name} has no matching .agents/skills/${name} symlink`);
-        }
-    }
-
-    return failures.sort();
 }
 
 /**
@@ -177,79 +153,6 @@ export function findCopilotPointerFailures(copilotContent, agentsMdExists, claud
     return failures;
 }
 
-/**
- * Verifies `.zed/settings.json` exists, parses as JSON, declares the project MCP server at the
- * pinned `PROJECT_MCP_SERVER_URL` (Zed does not read `.mcp.json`), and that the `.agents/skills`
- * layout is present when the settings file exists. JSON parsing runs on the passed-in
- * string so the function stays unit-testable without touching disk; parse errors become
- * failure messages rather than throws. Full-line `//` comments are stripped first so
- * Zed's JSONC settings still validate.
- *
- * @param {string | null} zedSettingsContent Contents of `.zed/settings.json`, or `null` when missing.
- * @param {boolean} agentsSkillsLayoutExists Whether the `.agents/skills` directory exists.
- * @returns {string[]} Human-readable failure messages (empty when settings are consistent).
- */
-export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists) {
-    if (zedSettingsContent === null) {
-        return ['.zed/settings.json is missing'];
-    }
-
-    const failures = [];
-
-    try {
-        const withoutLineComments = zedSettingsContent
-            .split('\n')
-            .filter((line) => !/^\s*\/\//u.test(line))
-            .join('\n');
-        const settings = JSON.parse(withoutLineComments);
-        const zedUrl = settings?.context_servers?.[PROJECT_MCP_SERVER_NAME]?.url;
-
-        if (zedUrl !== PROJECT_MCP_SERVER_URL) {
-            failures.push(
-                `.zed/settings.json context_servers.${PROJECT_MCP_SERVER_NAME}.url is ${JSON.stringify(zedUrl)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
-            );
-        }
-    } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        failures.push(`.zed/settings.json is not parseable as JSON: ${detail}`);
-    }
-
-    if (!agentsSkillsLayoutExists) {
-        failures.push('.agents/skills layout is missing while .zed/settings.json exists');
-    }
-
-    return failures;
-}
-
-/**
- * The one MCP server the repo declares for contributors. `packages/website` both serves
- * this endpoint and publishes the discovery card, so the URL exists as two JSON copies
- * neither of which can import a constant - this file is what keeps them honest.
- *
- * The name and classification also live in `ACCEPTED_SHADOW_MCP_ENTRIES` in
- * `packages/blit386/scripts/security/mcp-preflight.mjs` (the monthly governance audit's
- * allowlist) - two files independently comparing against the same literal with no clean
- * import path between them, so keep both in sync by hand.
- */
-const PROJECT_MCP_SERVER_NAME = 'blit386-docs';
-
-/** Claude Code's transport discriminant for a remote streamable-HTTP MCP server. */
-const PROJECT_MCP_SERVER_TYPE = 'http';
-
-/**
- * The pinned endpoint, asserted literally rather than by comparing the two JSON copies to
- * each other. Parity alone would accept a coordinated edit that aims both files at some
- * other host, and every contributor's agent queries whatever this names - with the responses
- * landing in agent context. Changing it therefore has to touch this file too, where the
- * diff reads as what it is.
- *
- * Changing the endpoint is a deliberate five-file edit: here, the root `.mcp.json`,
- * `packages/website/public/.well-known/mcp/server-card.json`, `.zed/settings.json`
- * (`context_servers`, since Zed does not read `.mcp.json`), and `ACCEPTED_SHADOW_MCP_ENTRIES` in
- * `packages/blit386/scripts/security/mcp-preflight.mjs` (the governance gate's own copy).
- */
-const PROJECT_MCP_SERVER_URL = 'https://blit386.dev/mcp';
-
 const CLAUDE_RULES_DIR = join(REPO_ROOT, '.claude', 'rules');
 const CURSOR_RULES_DIR = join(REPO_ROOT, '.cursor', 'rules');
 
@@ -305,554 +208,6 @@ export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
 }
 
 /**
- * Whether git would ignore `relPath` if it were removed and re-added.
- *
- * Asking git is the only honest way to answer this. Matching `.gitignore` text for a `!` negation
- * looks equivalent but is not: gitignore resolves last-match-wins, so a later `*.json` or a second
- * bare rule re-ignores the file while the negation is still sitting there in the text.
- *
- * `--no-index` is what makes the question meaningful for a file that is already tracked -
- * without it git short-circuits on the index and always answers "not ignored".
- *
- * @param {string} repoRoot Absolute path to the repository root.
- * @param {string} relPath Project-relative path (forward slashes).
- * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
- */
-export function isPathIgnoredByGit(repoRoot, relPath) {
-    // gitEnv(): under `.husky/pre-push`, GIT_DIR outranks cwd and would check the pushing
-    // worktree instead of the throwaway fixture (or the real root when called from main()).
-    const result = spawnSync('git', ['check-ignore', '--no-index', '--quiet', '--', relPath], {
-        cwd: repoRoot,
-        env: gitEnv(),
-    });
-
-    // 0 = ignored, 1 = not ignored, anything else (or a spawn failure) = git could not answer.
-    if (result.error || (result.status !== 0 && result.status !== 1)) {
-        return null;
-    }
-
-    return result.status === 0;
-}
-
-/** @param {string} repoRoot Absolute path to the repository root. */
-export function isRootMcpIgnoredByGit(repoRoot) {
-    return isPathIgnoredByGit(repoRoot, '.mcp.json');
-}
-
-/**
- * Verifies the tracked root `.mcp.json` still declares the blit386.dev docs server, that its
- * URL has not drifted from the website's `.well-known` discovery card, and that git does not
- * ignore the file. The ignore check is the important one: without it the file can silently
- * fall back out of git and every contributor quietly loses the server.
- *
- * The file contents are passed in as strings, and the ignore state as an already-resolved
- * boolean, so the function stays pure and unit-testable without touching disk or shelling
- * out; parse errors become failure messages rather than throws.
- *
- * @param {string | null} mcpConfigContent Contents of the root `.mcp.json`, or `null` when missing.
- * @param {string | null} serverCardContent Contents of the website's MCP discovery card, or `null` when missing.
- * @param {boolean | null} rootMcpIsIgnored Git's verdict from {@link isRootMcpIgnoredByGit}; `null` when unknown.
- * @returns {string[]} Human-readable failure messages (empty when the config is consistent).
- */
-export function findProjectMcpFailures(mcpConfigContent, serverCardContent, rootMcpIsIgnored) {
-    if (mcpConfigContent === null) {
-        return ['.mcp.json is missing'];
-    }
-
-    const failures = [];
-
-    if (rootMcpIsIgnored === true) {
-        failures.push(
-            '.mcp.json is ignored by git - check .gitignore for a rule matching it after the `!/.mcp.json` negation',
-        );
-    }
-
-    /** @type {Record<string, unknown>} */
-    let server;
-
-    try {
-        const parsed = JSON.parse(mcpConfigContent);
-        const servers = parsed?.mcpServers;
-
-        if (servers === null || typeof servers !== 'object') {
-            failures.push('.mcp.json has no mcpServers object');
-            return failures;
-        }
-
-        if (!Object.hasOwn(servers, PROJECT_MCP_SERVER_NAME)) {
-            failures.push(`.mcp.json does not declare the \`${PROJECT_MCP_SERVER_NAME}\` server`);
-            return failures;
-        }
-
-        server = servers[PROJECT_MCP_SERVER_NAME] ?? {};
-    } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        failures.push(`.mcp.json is not parseable as JSON: ${detail}`);
-        return failures;
-    }
-
-    if (server.type !== PROJECT_MCP_SERVER_TYPE) {
-        failures.push(
-            `.mcp.json entry \`${PROJECT_MCP_SERVER_NAME}\` has type ${JSON.stringify(server.type)}, expected "${PROJECT_MCP_SERVER_TYPE}"`,
-        );
-    }
-
-    if (serverCardContent === null) {
-        failures.push('packages/website/public/.well-known/mcp/server-card.json is missing');
-        return failures;
-    }
-
-    try {
-        const card = JSON.parse(serverCardContent);
-
-        // Pinning both copies to the literal subsumes a parity check: if each equals the
-        // pinned URL they equal each other, and a coordinated change fails on both counts.
-        if (server.url !== PROJECT_MCP_SERVER_URL) {
-            failures.push(
-                `.mcp.json declares URL ${JSON.stringify(server.url)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
-            );
-        }
-
-        if (card.url !== PROJECT_MCP_SERVER_URL) {
-            failures.push(
-                `discovery card declares URL ${JSON.stringify(card.url)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
-            );
-        }
-
-        if (card.serverInfo?.name !== PROJECT_MCP_SERVER_NAME) {
-            failures.push(
-                `discovery card names ${JSON.stringify(card.serverInfo?.name)}, but .mcp.json declares \`${PROJECT_MCP_SERVER_NAME}\``,
-            );
-        }
-    } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        failures.push(`server-card.json is not parseable as JSON: ${detail}`);
-    }
-
-    return failures;
-}
-
-/**
- * Agent hook directories the monorepo dogfoods. Presence of individual scripts is
- * `sync:maintainer-agents:check`; this check only asserts each on-disk `*.cjs` /
- * `*.sh` under these dirs is a symlink into `packages/kit/content/hooks/`.
- * MANUAL-SYNC HAZARD: prefixes match `packages/kit/src/ownership.ts`.
- */
-export const MAINTAINER_HOOK_DIRS = [
-    '.agents/hooks',
-    '.codex/hooks',
-    '.gemini/hooks',
-    '.github/hooks',
-    '.opencode/hooks',
-];
-
-/**
- * One dogfood config file's structural contract. Byte drift is
- * `sync-maintainer-agents.mjs --check`; this only asserts shape.
- * `format` defaults to `'json'`.
- *
- * `wholeLines` matches `text` as complete lines, so a commented-out copy cannot satisfy it; CRLF is normalized first.
- *
- * @typedef {{ text: string, missing: string, wholeLines?: boolean }} MaintainerNeedle
- * @typedef {{
- *   path: string,
- *   format?: 'json' | 'raw',
- *   mcp?: { container: 'mcpServers' | 'mcp', urlKey: 'url' | 'httpUrl' | 'serverUrl', type?: string, forbidKeys?: string[], forbidReason?: string },
- *   needles?: MaintainerNeedle[],
- *   requireAll?: { texts: string[], missing: string },
- *   bashDeny?: string,
- *   forbidSymlink?: boolean,
- * }} MaintainerConfigSpec
- */
-
-/** @type {readonly MaintainerConfigSpec[]} */
-export const MAINTAINER_CONFIG_SPECS = [
-    {
-        path: '.agents/mcp_config.json',
-        mcp: { container: 'mcpServers', urlKey: 'serverUrl', forbidKeys: ['url', 'httpUrl'] },
-    },
-    {
-        // Cursor's own remote-server schema, which is not Claude's: a `type` field marks a *local stdio*
-        // server there, so a remote HTTP entry must omit it (see `MCP_SERVER_ENTRY` in
-        // `packages/kit/src/adapters/shared.ts`). That is why this file cannot be a symlink to the root
-        // `.mcp.json`, which requires `"type": "http"` for Claude Code.
-        path: '.cursor/mcp.json',
-        mcp: {
-            container: 'mcpServers',
-            urlKey: 'url',
-            forbidKeys: ['type'],
-            forbidReason: 'Cursor reserves it for local stdio servers',
-        },
-    },
-    {
-        path: '.agents/hooks.json',
-        needles: [
-            {
-                text: 'antigravity-guard.cjs',
-                missing: '.agents/hooks.json does not wire antigravity-guard.cjs',
-            },
-        ],
-    },
-    {
-        path: '.codex/config.toml',
-        format: 'raw',
-        needles: [
-            {
-                // One needle so a different url under the header plus the pinned line in a comment cannot pass.
-                wholeLines: true,
-                text: `[mcp_servers.${PROJECT_MCP_SERVER_NAME}]\nurl = "${PROJECT_MCP_SERVER_URL}"`,
-                missing: `.codex/config.toml does not pin url = ${JSON.stringify(PROJECT_MCP_SERVER_URL)} directly under [mcp_servers.${PROJECT_MCP_SERVER_NAME}]`,
-            },
-        ],
-    },
-    {
-        path: '.codex/hooks.json',
-        needles: [{ text: 'codex-guard.cjs', missing: '.codex/hooks.json does not wire codex-guard.cjs' }],
-    },
-    {
-        path: '.gemini/settings.json',
-        mcp: { container: 'mcpServers', urlKey: 'httpUrl', forbidKeys: ['url'] },
-        needles: [{ text: 'shell-guard.cjs', missing: '.gemini/settings.json does not wire shell-guard.cjs' }],
-    },
-    {
-        path: '.github/hooks/blit.json',
-        needles: [{ text: 'copilot-hook.cjs', missing: '.github/hooks/blit.json does not wire copilot-hook.cjs' }],
-        requireAll: {
-            texts: ['"bash"', '"powershell"'],
-            missing: '.github/hooks/blit.json must declare both bash and powershell commands',
-        },
-    },
-    {
-        path: 'opencode.json',
-        mcp: { container: 'mcp', urlKey: 'url', type: 'remote' },
-        bashDeny: 'git reset *--hard*',
-    },
-    {
-        path: '.opencode/plugins/kit-guard.ts',
-        format: 'raw',
-        forbidSymlink: true,
-        needles: [
-            {
-                text: 'pnpm install',
-                missing: '.opencode/plugins/kit-guard.ts does not contain the rendered `pnpm install` command',
-            },
-        ],
-    },
-];
-
-/**
- * Structural failures for one maintainer config file against its {@link MaintainerConfigSpec}.
- *
- * @param {MaintainerConfigSpec} spec
- * @param {string | null} content File contents, or `null` when missing.
- * @param {{ isSymlink?: boolean | null }} [disk] Optional on-disk facts (symlink bit for kit-guard).
- * @returns {string[]}
- */
-export function findMaintainerConfigFailures(spec, content, disk = {}) {
-    if (content === null) {
-        return [`${spec.path} is missing`];
-    }
-
-    /** @type {string[]} */
-    const failures = [];
-
-    if (spec.forbidSymlink === true && disk.isSymlink === true) {
-        failures.push(`${spec.path} must be a regular file (the adapter renders {{pmInstall}} into it)`);
-    }
-
-    if (spec.format !== 'raw') {
-        /** @type {Record<string, unknown>} */
-        let parsed;
-
-        try {
-            parsed = JSON.parse(content);
-        } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error);
-
-            return [`${spec.path} is not parseable as JSON: ${detail}`];
-        }
-
-        if (spec.mcp) {
-            const container = parsed?.[spec.mcp.container];
-
-            if (container === null || typeof container !== 'object') {
-                failures.push(`${spec.path} has no ${spec.mcp.container} object`);
-
-                return failures;
-            }
-
-            if (!Object.hasOwn(container, PROJECT_MCP_SERVER_NAME)) {
-                failures.push(`${spec.path} does not declare the \`${PROJECT_MCP_SERVER_NAME}\` server`);
-
-                return failures;
-            }
-
-            const server = /** @type {Record<string, unknown>} */ (container[PROJECT_MCP_SERVER_NAME] ?? {});
-            const urlValue = server[spec.mcp.urlKey];
-
-            if (urlValue !== PROJECT_MCP_SERVER_URL) {
-                failures.push(
-                    `${spec.path} declares ${spec.mcp.urlKey} ${JSON.stringify(urlValue)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
-                );
-            }
-
-            if (spec.mcp.type !== undefined && server.type !== spec.mcp.type) {
-                failures.push(
-                    `${spec.path} entry \`${PROJECT_MCP_SERVER_NAME}\` has type ${JSON.stringify(server.type)}, expected ${JSON.stringify(spec.mcp.type)}`,
-                );
-            }
-
-            for (const key of spec.mcp.forbidKeys ?? []) {
-                if (Object.hasOwn(server, key)) {
-                    failures.push(
-                        `${spec.path} must use \`${spec.mcp.urlKey}\` for a remote server (forbids \`${key}\`${spec.mcp.forbidReason ? `: ${spec.mcp.forbidReason}` : ''})`,
-                    );
-                }
-            }
-        }
-
-        if (spec.bashDeny !== undefined) {
-            const bash = /** @type {Record<string, unknown> | undefined} */ (parsed?.permission?.bash);
-
-            if (bash?.[spec.bashDeny] !== 'deny') {
-                failures.push(`${spec.path} permission.bash does not deny \`${spec.bashDeny}\``);
-            }
-        }
-    }
-
-    for (const needle of spec.needles ?? []) {
-        const found = needle.wholeLines
-            ? `\n${content.replaceAll('\r\n', '\n')}\n`.includes(`\n${needle.text}\n`)
-            : content.includes(needle.text);
-
-        if (!found) {
-            failures.push(needle.missing);
-        }
-    }
-
-    if (spec.requireAll?.texts.some((text) => !content.includes(text))) {
-        failures.push(spec.requireAll.missing);
-    }
-
-    return failures;
-}
-
-/**
- * Verifies each maintainer hook script is a working symlink into `packages/kit/content/hooks/<same-name>`.
- *
- * @param {Array<{ path: string, isSymlink: boolean, resolvedBasename: string | null }>} entries
- * @returns {string[]}
- */
-export function findMaintainerHookSymlinkFailures(entries) {
-    const failures = [];
-
-    for (const entry of entries) {
-        if (!entry.isSymlink) {
-            failures.push(`${entry.path} is not a symlink`);
-            continue;
-        }
-
-        if (entry.resolvedBasename === null) {
-            failures.push(`${entry.path} is a broken symlink or does not resolve under packages/kit/content/hooks/`);
-            continue;
-        }
-
-        const expectedBasename = basename(entry.path);
-
-        if (entry.resolvedBasename !== expectedBasename) {
-            failures.push(
-                `${entry.path} resolves to ${entry.resolvedBasename}, expected packages/kit/content/hooks/${expectedBasename}`,
-            );
-        }
-    }
-
-    return failures.sort();
-}
-
-/**
- * @param {string} root Absolute repo root.
- * @param {string} kitHooksDir Absolute path to `packages/kit/content/hooks`.
- * @param {string} relPath Project-relative hook script path.
- * @returns {{ path: string, isSymlink: boolean, resolvedBasename: string | null }}
- */
-function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
-    const abs = join(root, relPath);
-
-    if (!lstatSync(abs).isSymbolicLink()) {
-        return { path: relPath, isSymlink: false, resolvedBasename: null };
-    }
-
-    try {
-        const target = realpathSync(abs);
-
-        if (dirname(target) !== kitHooksDir) {
-            return { path: relPath, isSymlink: true, resolvedBasename: null };
-        }
-
-        return { path: relPath, isSymlink: true, resolvedBasename: basename(target) };
-    } catch {
-        // lstat succeeded above, so a realpath failure means a dangling link.
-        return { path: relPath, isSymlink: true, resolvedBasename: null };
-    }
-}
-
-/**
- * Structural checks for the maintainer dogfood configs. Byte drift against the kit
- * adapters is `scripts/sync-maintainer-agents.mjs --check`. Returns unprefixed
- * messages; the caller tags them with {@link collect}.
- *
- * @param {string} root Absolute repo root.
- * @returns {string[]}
- */
-export function checkMaintainerAgentConfigs(root) {
-    // Resolved once: link targets come from realpathSync, so a symlinked root (macOS /tmp) must not skew the compare.
-    const kitHooksDir = realpathSyncIfExists(join(root, 'packages', 'kit', 'content', 'hooks'));
-    /** @type {string[]} */
-    const failures = [];
-
-    if (isPathIgnoredByGit(root, '.codex/hooks.json') === true) {
-        failures.push(
-            '.codex/hooks.json is ignored by git - check .gitignore for a rule matching it after the `!.codex/hooks.json` negation',
-        );
-    }
-
-    for (const spec of MAINTAINER_CONFIG_SPECS) {
-        const abs = join(root, spec.path);
-        const content = readFileIfExists(abs);
-        /** @type {{ isSymlink?: boolean | null }} */
-        const disk = {};
-
-        if (spec.forbidSymlink === true && existsSync(abs)) {
-            disk.isSymlink = lstatSync(abs).isSymbolicLink();
-        }
-
-        failures.push(...findMaintainerConfigFailures(spec, content, disk));
-    }
-
-    const hookEntries = listMaintainerHookScriptPaths(root).map((relPath) =>
-        readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath),
-    );
-
-    failures.push(...findMaintainerHookSymlinkFailures(hookEntries));
-
-    return failures;
-}
-
-/**
- * Project-relative `*.cjs` / `*.sh` paths currently under {@link MAINTAINER_HOOK_DIRS}.
- *
- * @param {string} root Absolute repo root.
- * @returns {string[]}
- */
-function listMaintainerHookScriptPaths(root) {
-    /** @type {string[]} */
-    const paths = [];
-
-    for (const dir of MAINTAINER_HOOK_DIRS) {
-        const absDir = join(root, dir);
-
-        if (!existsSync(absDir)) {
-            continue;
-        }
-
-        for (const name of readdirSync(absDir)) {
-            if (/\.(?:cjs|sh)$/u.test(name)) {
-                paths.push(`${dir}/${name}`);
-            }
-        }
-    }
-
-    return paths.sort();
-}
-
-/**
- * Computes the skill name a resolved symlink target represents. The target must be a directory that is a
- * *direct* child of `.claude/skills/` - a nested path or a file that merely shares a basename with a skill
- * directory does not count as a valid link, even though its basename would otherwise match.
- *
- * @param {string} resolvedTargetPath Absolute, symlink-resolved path (`fs.realpathSync` output).
- * @param {boolean} targetIsDirectory Whether `resolvedTargetPath` is a directory.
- * @param {string} claudeSkillsDir Absolute path to `.claude/skills/`.
- * @returns {string | null} The skill directory name, or `null` when the target is not a direct child directory.
- */
-export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory, claudeSkillsDir) {
-    if (!targetIsDirectory) {
-        return null;
-    }
-
-    if (dirname(resolvedTargetPath) !== claudeSkillsDir) {
-        return null;
-    }
-
-    return basename(resolvedTargetPath);
-}
-
-/**
- * @param {string} agentsSkillsDir
- * @param {string} claudeSkillsDir
- * @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>}
- */
-function readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) {
-    return readdirSync(agentsSkillsDir, { withFileTypes: true })
-        .filter((entry) => !entry.name.startsWith('.'))
-        .map((entry) => {
-            if (!entry.isSymbolicLink()) {
-                return { name: entry.name, isSymlink: false, resolvedName: null };
-            }
-
-            const linkPath = join(agentsSkillsDir, entry.name);
-
-            try {
-                const target = realpathSync(linkPath);
-                const targetIsDirectory = statSync(target).isDirectory();
-
-                return {
-                    name: entry.name,
-                    isSymlink: true,
-                    resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
-                };
-            } catch {
-                return { name: entry.name, isSymlink: true, resolvedName: null };
-            }
-        });
-}
-
-/** @param {string} claudeSkillsDir @returns {string[]} Directory names under `.claude/skills/` (dotfiles excluded). */
-function readClaudeSkillDirNames(claudeSkillsDir) {
-    return readdirSync(claudeSkillsDir, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
-        .map((entry) => entry.name)
-        .sort();
-}
-
-/**
- * Runs the symlink and Zed-settings checks against the repo root - the only place
- * `.claude/skills`, `.agents/skills`, and `.zed/settings.json` live in this monorepo.
- *
- * @param {string} root Absolute path to the repo root.
- * @returns {string[]} Human-readable failure messages.
- */
-export function checkRootSkillsLayout(root) {
-    const agentsSkillsDir = join(root, '.agents', 'skills');
-    const claudeSkillsDir = realpathSyncIfExists(join(root, '.claude', 'skills'));
-    const zedSettingsPath = join(root, '.zed', 'settings.json');
-    const claudeSkillsDirExists = existsSync(claudeSkillsDir);
-
-    const agentsSkillsLayoutExists = existsSync(agentsSkillsDir);
-    const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) : [];
-    const claudeSkillDirNames = claudeSkillsDirExists ? readClaudeSkillDirNames(claudeSkillsDir) : [];
-    const zedSettingsContent = readFileIfExists(zedSettingsPath);
-
-    return [
-        ...(claudeSkillsDirExists ? [] : ['.claude/skills directory is missing']),
-        ...(agentsSkillsLayoutExists
-            ? findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames)
-            : ['.agents/skills directory is missing']),
-        ...findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists),
-    ];
-}
-
-/**
  * Runs the AGENTS.md -> CLAUDE.md pointer check against one root (the repo root or a
  * package that carries its own AGENTS.md / CLAUDE.md).
  *
@@ -894,111 +249,6 @@ export function discoverPackageAgentRoots(packagesDir) {
         .sort();
 }
 
-/**
- * Runs the command `.claude/settings.json` wires for `Edit|MultiEdit|Write` against a real-shaped
- * `.env` payload (`tool_input.file_path`) and expects the block exit code 2, so a payload-shape
- * regression in that hook fails CI.
- *
- * @param {string} root Repo root.
- * @returns {string[]} Failure messages.
- */
-export function checkClaudeProtectFilesHook(root) {
-    const content = readFileIfExists(join(root, '.claude', 'settings.json'));
-
-    if (content === null) {
-        return ['.claude/settings.json is missing'];
-    }
-
-    let commands;
-
-    try {
-        commands = (JSON.parse(content).hooks?.PreToolUse ?? [])
-            .filter((entry) => entry.matcher === 'Edit|MultiEdit|Write')
-            .flatMap((entry) => entry.hooks ?? [])
-            .map((hook) => hook.command)
-            .filter((command) => typeof command === 'string');
-    } catch (error) {
-        return [`.claude/settings.json is not parseable as JSON: ${error instanceof Error ? error.message : error}`];
-    }
-
-    if (commands.length === 0) {
-        return ['.claude/settings.json has no PreToolUse command for Edit|MultiEdit|Write'];
-    }
-
-    const payload = JSON.stringify({ tool_name: 'Write', tool_input: { file_path: join(root, '.env'), content: 'x' } });
-    const statuses = commands.map(
-        (command) =>
-            spawnSync('sh', ['-c', command], {
-                input: payload,
-                encoding: 'utf8',
-                env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-                timeout: 10_000,
-            }).status,
-    );
-
-    // Claude Code blocks the edit when any wired hook exits 2, so one blocker is enough.
-    return statuses.includes(2)
-        ? []
-        : [
-              `.claude/settings.json Edit|MultiEdit|Write hooks exited ${statuses.join(', ')} for a .env payload, expected one to exit 2`,
-          ];
-}
-
-/**
- * Runs the commands `.claude/settings.json` wires for `Bash` against a real-shaped hard-reset
- * payload and expects the block exit code 2. The guard is the kit's `shell-safety.cjs`, run in
- * place (BT-646), so a kit refactor that moves it - or breaks its payload handling - fails CI
- * instead of silently turning the repo's shell guard off.
- *
- * @param {string} root Repo root.
- * @returns {string[]} Failure messages.
- */
-export function checkClaudeShellSafetyHook(root) {
-    const content = readFileIfExists(join(root, '.claude', 'settings.json'));
-
-    if (content === null) {
-        return ['.claude/settings.json is missing'];
-    }
-
-    let commands;
-
-    try {
-        commands = (JSON.parse(content).hooks?.PreToolUse ?? [])
-            .filter((entry) => entry.matcher === 'Bash')
-            .flatMap((entry) => entry.hooks ?? [])
-            .map((hook) => hook.command)
-            .filter((command) => typeof command === 'string');
-    } catch (error) {
-        return [`.claude/settings.json is not parseable as JSON: ${error instanceof Error ? error.message : error}`];
-    }
-
-    if (commands.length === 0) {
-        return ['.claude/settings.json has no PreToolUse command for Bash'];
-    }
-
-    const payload = JSON.stringify({
-        hook_event_name: 'PreToolUse',
-        tool_name: 'Bash',
-        tool_input: { command: 'git reset --hard' },
-    });
-    const statuses = commands.map(
-        (command) =>
-            spawnSync('sh', ['-c', command], {
-                input: payload,
-                encoding: 'utf8',
-                env: { ...process.env, CLAUDE_PROJECT_DIR: root },
-                timeout: 10_000,
-            }).status,
-    );
-
-    // Claude Code blocks the call when any wired hook exits 2; the rtk rewrite hook beside the guard never does.
-    return statuses.includes(2)
-        ? []
-        : [
-              `.claude/settings.json Bash hooks exited ${statuses.join(', ')} for a hard-reset payload, expected one to exit 2`,
-          ];
-}
-
 /** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
 function runAllChecks() {
     const failures = [];
@@ -1036,6 +286,16 @@ function runAllChecks() {
     collect(failures, '.', checkClaudeProtectFilesHook(REPO_ROOT));
     collect(failures, '.', checkClaudeShellSafetyHook(REPO_ROOT));
 
+    for (const configPath of HOOK_COMMAND_CONFIGS) {
+        collect(
+            failures,
+            '.',
+            findHookScriptPathFailures(configPath, readFileIfExists(join(REPO_ROOT, configPath)), (relPath) =>
+                existsSync(join(REPO_ROOT, relPath)),
+            ),
+        );
+    }
+
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
         collect(failures, `packages/${packageName}`, checkAgentsPointer(root));
@@ -1058,7 +318,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json, cursor rules parity, maintainer agent dogfood, cursor hooks, hook script paths).',
     );
 }
 

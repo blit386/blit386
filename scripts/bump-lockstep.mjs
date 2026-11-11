@@ -79,160 +79,34 @@ export function deriveCaretRange(version) {
     return `^${major}.${minor}.0`;
 }
 
-/**
- * Index just past the closing quote of the JSON string literal starting at `start`.
- *
- * @param {string} raw JSON text.
- * @param {number} start Index of the opening quote.
- * @returns {number} Index one past the closing quote.
- * @throws {Error} When the literal is unterminated.
- */
-function endOfStringLiteral(raw, start) {
-    let index = start + 1;
-
-    while (index < raw.length) {
-        const char = raw[index];
-
-        if (char === '\\') {
-            index += 2;
-            continue;
-        }
-
-        if (char === '"') {
-            return index + 1;
-        }
-
-        index += 1;
-    }
-
-    throw new Error('Invalid JSON: unterminated string literal');
-}
+// A JSON string literal, escapes included, captured whole.
+const STRING_LITERAL = String.raw`("(?:[^"\\]|\\.)*")`;
+const ENGINE_RANGE_RE = new RegExp(String.raw`^[ \t]*"engineRange"[ \t]*:[ \t]*${STRING_LITERAL}`, 'gmu');
+// The indent of the first key: top-level keys sit at exactly this indent, nested ones deeper.
+const TOP_LEVEL_INDENT_RE = /^\{\r?\n([ \t]*)"/u;
 
 /**
- * From the end of an object key's string literal, skip whitespace, expect `:`, skip whitespace again.
+ * Locate the string value of a `"<key>": "<value>"` line. The last match wins, as in `JSON.parse`.
+ *
+ * shortcut: line-based, so it assumes a formatted manifest, one key per line (Biome writes every
+ * manifest this script touches that way); a one-line JSON object is refused, never mis-patched.
  *
  * @param {string} raw JSON text.
- * @param {number} keyEnd Index just past the key's closing quote.
- * @returns {number} Index of the first character of the value, or -1 when no `:` follows the literal
- *   (so the literal was a string value, not a key).
- */
-function valueStartAfterKey(raw, keyEnd) {
-    let cursor = keyEnd;
-
-    while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-        cursor += 1;
-    }
-
-    if (raw[cursor] !== ':') {
-        return -1;
-    }
-
-    cursor += 1;
-
-    while (cursor < raw.length && /\s/u.test(raw[cursor])) {
-        cursor += 1;
-    }
-
-    return cursor;
-}
-
-/**
- * Locate the top-level `"version"` string value inside already-valid JSON text.
- *
- * Scans with a depth counter so a nested `"version"` key (inside `dependencies`,
- * `publishConfig`, a script body, ...) is never mistaken for the real one. When a
- * manifest repeats the key at the top level, the last one wins, matching what
- * `JSON.parse` resolved.
- *
- * @param {string} raw JSON text.
+ * @param {RegExp} pattern A global, multiline pattern whose group 1 is the value literal.
+ * @param {string} key Field name, for the error message.
  * @returns {{ start: number, end: number }} Half-open span of the value literal, quotes included.
- * @throws {Error} When no top-level `"version"` string literal is present.
+ * @throws {Error} When no such line is present.
  */
-function findTopLevelVersionSpan(raw) {
-    /** @type {{ start: number, end: number } | undefined} */
-    let span;
-    let depth = 0;
-    let index = 0;
+function findStringFieldSpan(raw, pattern, key) {
+    const match = [...raw.matchAll(pattern)].at(-1);
 
-    while (index < raw.length) {
-        const char = raw[index];
-
-        if (char === '"') {
-            const literalEnd = endOfStringLiteral(raw, index);
-
-            if (depth !== 1) {
-                index = literalEnd;
-                continue;
-            }
-
-            const cursor = valueStartAfterKey(raw, literalEnd);
-
-            if (cursor === -1) {
-                index = literalEnd;
-                continue;
-            }
-
-            if (raw.slice(index, literalEnd) === '"version"' && raw[cursor] === '"') {
-                span = { start: cursor, end: endOfStringLiteral(raw, cursor) };
-            }
-
-            // Resume at the value so it is never re-read as a key.
-            index = cursor;
-            continue;
-        }
-
-        if (char === '{' || char === '[') {
-            depth += 1;
-        } else if (char === '}' || char === ']') {
-            depth -= 1;
-        }
-
-        index += 1;
+    if (match === undefined) {
+        throw new Error(`package.json is missing a string "${key}" field on a line of its own`);
     }
 
-    if (span === undefined) {
-        throw new Error('package.json is missing a string "version" field');
-    }
+    const end = match.index + match[0].length;
 
-    return span;
-}
-
-/**
- * Locate a `"<key>": "<value>"` string field anywhere in already-valid JSON text. Unlike
- * {@link findTopLevelVersionSpan}, this is not depth- or top-level-restricted: it is only ever
- * used for keys (`engineRange`) that appear exactly once in the manifests this script touches.
- *
- * @param {string} raw JSON text.
- * @param {string} key Field name to find.
- * @returns {{ start: number, end: number }} Half-open span of the value literal, quotes included.
- * @throws {Error} When no such string field is present.
- */
-function findStringFieldSpan(raw, key) {
-    const keyLiteral = JSON.stringify(key);
-    let index = 0;
-
-    while (index < raw.length) {
-        const char = raw[index];
-
-        if (char !== '"') {
-            index += 1;
-            continue;
-        }
-
-        const literalEnd = endOfStringLiteral(raw, index);
-
-        if (raw.slice(index, literalEnd) === keyLiteral) {
-            const cursor = valueStartAfterKey(raw, literalEnd);
-
-            if (cursor !== -1 && raw[cursor] === '"') {
-                return { start: cursor, end: endOfStringLiteral(raw, cursor) };
-            }
-        }
-
-        index = literalEnd;
-    }
-
-    throw new Error(`package.json is missing a string "${key}" field`);
+    return { start: end - match[1].length, end };
 }
 
 /**
@@ -268,7 +142,16 @@ export function applyVersion(raw, version) {
         throw new Error('package.json is missing a string "version" field');
     }
 
-    const { start, end } = findTopLevelVersionSpan(raw);
+    const indent = TOP_LEVEL_INDENT_RE.exec(raw)?.[1] ?? '';
+    const { start, end } = findStringFieldSpan(
+        raw,
+        new RegExp(String.raw`^${indent}"version"[ \t]*:[ \t]*${STRING_LITERAL}`, 'gmu'),
+        'version',
+    );
+
+    if (JSON.parse(raw.slice(start, end)) !== record.version) {
+        throw new Error('package.json "version" line does not hold the parsed version; is the manifest formatted?');
+    }
 
     return {
         next: `${raw.slice(0, start)}${JSON.stringify(version)}${raw.slice(end)}`,
@@ -285,7 +168,7 @@ export function applyVersion(raw, version) {
  * @returns {{ next: string, previous: string }} Updated JSON text and the prior range.
  */
 export function applyEngineRange(raw, range) {
-    const { start, end } = findStringFieldSpan(raw, 'engineRange');
+    const { start, end } = findStringFieldSpan(raw, ENGINE_RANGE_RE, 'engineRange');
     const previous = JSON.parse(raw.slice(start, end));
 
     return {

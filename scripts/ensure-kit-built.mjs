@@ -17,11 +17,10 @@
  * only cost on every normal run.
  * */
 import { spawnSync } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { getNewestMtimeMs } from './build-lock.mjs';
+import { buildCommand, getNewestMtimeMs, isBuilt } from './build-lock.mjs';
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -29,19 +28,10 @@ const resolveKitRegistryEntry = () => resolve(scriptDir, '..', 'packages', 'kit'
 
 const resolveKitSourceDir = () => resolve(scriptDir, '..', 'packages', 'kit', 'src');
 
-const isKitBuilt = (
-    kitRegistryEntry = resolveKitRegistryEntry(),
-    kitSourceDir = resolveKitSourceDir(),
-    exists = existsSync,
-    getBuiltMtimeMs = (entry) => statSync(entry).mtimeMs,
-    getSourceMtimeMs = getNewestMtimeMs,
-) => exists(kitRegistryEntry) && getBuiltMtimeMs(kitRegistryEntry) >= getSourceMtimeMs(kitSourceDir);
+const isKitBuilt = (entry = resolveKitRegistryEntry(), sourceDir = resolveKitSourceDir(), ...seams) =>
+    isBuilt(entry, sourceDir, ...seams);
 
-const buildKitBuildCommand = () => ({
-    command: 'pnpm',
-    args: ['--filter', '@blit386/kit', 'run', 'build'],
-    cwd: resolve(scriptDir, '..'),
-});
+const buildKitBuildCommand = () => buildCommand('@blit386/kit');
 
 /**
  * Builds the kit when `packages/kit/dist` is missing or stale, then re-verifies it. Exits with the

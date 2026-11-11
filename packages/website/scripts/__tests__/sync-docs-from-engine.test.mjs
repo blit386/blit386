@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gitEnv } from '../git-env.mjs';
+import { gitEnv } from '../../../../scripts/lib/git-env.mjs';
 
 // Set ENGINE_DOCS_DIR before the dynamic import so the module-level loadSitemap()
 // reads from the fixture instead of the real engine repo.

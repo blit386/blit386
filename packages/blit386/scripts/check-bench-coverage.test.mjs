@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { checkBenchCoverage, HOT_PATH_DIRS } from './check-bench-coverage.mjs';
-import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 
 describe('checkBenchCoverage', () => {
     it('does not remind when no hot-path files changed', () => {
@@ -102,7 +102,7 @@ describe('changedFilesSince (real git output)', () => {
 
         const dir = mkdtempSync(join(tmpdir(), 'check-bench-coverage-'));
         const pkg = join(dir, 'packages', 'blit386');
-        const env = gitEnvWithoutRepoLocation({
+        const env = gitEnv({
             GIT_AUTHOR_NAME: 'Test',
             GIT_AUTHOR_EMAIL: 'test@example.com',
             GIT_COMMITTER_NAME: 'Test',

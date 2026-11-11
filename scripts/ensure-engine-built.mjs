@@ -30,11 +30,10 @@
  *   node ../../scripts/ensure-engine-built.mjs
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { acquireLockOrConfirmBuilt, getNewestMtimeMs, releaseBuildLock } from './build-lock.mjs';
+import { acquireLockOrConfirmBuilt, buildCommand, getNewestMtimeMs, isBuilt, releaseBuildLock } from './build-lock.mjs';
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
@@ -44,19 +43,10 @@ const resolveEngineSourceDir = () => resolve(scriptDir, '..', 'packages', 'blit3
 
 const resolveEngineBuildLockDir = () => resolve(scriptDir, '..', '.ensure-engine-built.lock');
 
-const isEngineBuilt = (
-    engineViteEntry = resolveEngineViteEntry(),
-    engineSourceDir = resolveEngineSourceDir(),
-    exists = existsSync,
-    getBuiltMtimeMs = (entry) => statSync(entry).mtimeMs,
-    getSourceMtimeMs = getNewestMtimeMs,
-) => exists(engineViteEntry) && getBuiltMtimeMs(engineViteEntry) >= getSourceMtimeMs(engineSourceDir);
+const isEngineBuilt = (entry = resolveEngineViteEntry(), sourceDir = resolveEngineSourceDir(), ...seams) =>
+    isBuilt(entry, sourceDir, ...seams);
 
-const buildEngineBuildCommand = () => ({
-    command: 'pnpm',
-    args: ['--filter', 'blit386', 'run', 'build'],
-    cwd: resolve(scriptDir, '..'),
-});
+const buildEngineBuildCommand = () => buildCommand('blit386');
 
 const main = () => {
     if (!acquireLockOrConfirmBuilt(resolveEngineBuildLockDir(), isEngineBuilt)) {

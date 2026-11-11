@@ -17,8 +17,7 @@
  * - `git log` against a fixture repo silently reads the real repo's history instead, so
  *   `lastModified` frontmatter comes back wrong rather than failing loudly.
  *
- * `packages/blit386/scripts/gen-api-history.test.mjs` scrubs the same variables inline for the
- * same reason.
+ * One copy for the whole monorepo: root, engine, website and demos scripts all import it from here.
  */
 
 /**

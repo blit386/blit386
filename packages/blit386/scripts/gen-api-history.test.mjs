@@ -24,7 +24,7 @@ import {
     parseDeprecatedTag,
     resolveTagDate,
 } from './gen-api-history.mjs';
-import { gitEnvWithoutRepoLocation } from './git-env.mjs';
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = join(HERE, '__fixtures__', 'gen-api-history');
@@ -421,7 +421,7 @@ describe('assertReleaseTagsPresent (BT-763)', () => {
     it('names the tag-less checkout case when the repo has no tags', () => {
         const repo = mkdtempSync(join(tmpdir(), 'api-history-no-tags-'));
         try {
-            execFileSync('git', ['init', '-q'], { cwd: repo, env: gitEnvWithoutRepoLocation() });
+            execFileSync('git', ['init', '-q'], { cwd: repo, env: gitEnv() });
             assert.throws(() => assertReleaseTagsPresent({ cwd: repo }), /tag-less checkout/);
         } finally {
             rmSync(repo, { recursive: true, force: true });

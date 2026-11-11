@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { gitEnv } from '../git-env.mjs';
+import { gitEnv } from '../../../../scripts/lib/git-env.mjs';
 
 const { classifyDocsDiff, findUntrackedGeneratedPages, listUntrackedDocsFiles } = await import(
     '../check-docs-sync.mjs'

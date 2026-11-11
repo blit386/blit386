@@ -1,7 +1,8 @@
 /**
  * Prettier plugin: compact Markdown tables.
  *
- * You do not need to read or edit this file - it is tooling, not part of your game.
+ * You do not need to read or edit this file - it is tooling, not part of your game. It is a copy of
+ * `scripts/prettier-plugin-compact-tables.mjs` in the BLIT386 monorepo, where a test keeps both formatting the same.
  *
  * Prettier normally pads every table cell out to the width of the widest cell in its column, so changing one word
  * rewrites every row of the table. This plugin keeps Prettier's whole Markdown printer and replaces only the `table`

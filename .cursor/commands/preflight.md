@@ -107,10 +107,9 @@ No MCP security preflight here (unlike `blit386` - see `/security-run`).
 Preflight runs under `.husky/pre-push`, which git invokes with `GIT_DIR` exported. It outranks both `cwd` and `-C`, so
 any git subprocess a preflight step spawns for some other directory silently acts on the repo being pushed from instead
 \- `git init` in a fixture repo then writes `bare = true` into the shared `.git/config` and breaks git in every
-checkout. The hook clears git's `--local-env-vars` before dispatching, and every git call in `packages/website/scripts/`
-must pass `env: gitEnv()` ([`packages/website/scripts/git-env.mjs`](../../packages/website/scripts/git-env.mjs)); the
-same scrub is inline in `packages/blit386/scripts/gen-api-history.test.mjs`. Guarded by
-`packages/website/scripts/__tests__/git-env.test.mjs`.
+checkout. The hook clears git's `--local-env-vars` before dispatching, and every git call a script spawns, in any
+package, must pass `env: gitEnv()` ([`scripts/lib/git-env.mjs`](../../scripts/lib/git-env.mjs)). Guarded by
+`scripts/lib/git-env.test.mjs`.
 
 ## packages/kit and packages/create-blit386
 
