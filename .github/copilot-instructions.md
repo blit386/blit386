@@ -20,18 +20,10 @@ conventions, and documentation rules.
 - Formatting/lint ownership is per package, not repo-wide: `packages/website`, `packages/kit`, and
   `packages/create-blit386` are Biome-only (no ESLint); `packages/blit386` and `packages/demos` pair Biome with ESLint.
   Prettier always owns Markdown/MDX/YAML. Check the package's own `CLAUDE.md` before assuming a tool applies.
-- In `packages/website`, everything under `content/docs/{api,guides,performance,reference}/` and
-  `src/data/api-history.generated.json` is generated - never hand-edit it. Edit the canonical copy in
-  `packages/blit386/docs/` and run `pnpm run sync:docs` instead.
+- In `packages/website`, everything under `content/docs/{api,guides,performance,reference}/`,
+  `content/docs/build-a-game/`, and `src/data/api-history.generated.json` is generated - never hand-edit it. Edit the
+  canonical copy (engine docs in `packages/blit386/docs/`; Build a Game pages from `packages/kit/content/`, the
+  scaffolder templates, and the demos) and run `pnpm run sync:docs` in `packages/website` instead.
+  [`packages/website/CLAUDE.md`](../packages/website/CLAUDE.md) maps generated against hand-authored files.
 - Integer coordinates always in the engine - use `Vector2i` / `Rect2i` for rendering, never raw floats.
 - Use the `BT` namespace in the engine - never access the internal `BTAPI` singleton directly from demo code.
-
-## Where to go next
-
-Root [`AGENTS.md`](../AGENTS.md) has the workspace's package table and points into each package's own docs. Root
-[`CLAUDE.md`](../CLAUDE.md) has the shared conventions (commit format, DCO, dash typography, American English).
-[`packages/blit386/CLAUDE.md`](../packages/blit386/CLAUDE.md) has the engine's "Where to Find Information" routing
-table, BT API conventions, TypeScript file structure, and the engine's command list - the annotated `src/` architecture
-tree lives in `packages/blit386/.claude/rules/architecture.md`.
-[`packages/website/CLAUDE.md`](../packages/website/CLAUDE.md) has the docs site's generated-vs-hand-authored map and the
-`sync:docs` workflow.
