@@ -503,8 +503,9 @@ export class BitmapFont {
      * rebuilds the glyph tables and measurement cache in place and
      * replaces the underlying sprite sheet's image via
      * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
-     * already indexized). `name`/`size`/`lineHeight`/`baseline` are not updated by a
-     * hot reload - only glyph data and the texture.
+     * already indexized). When the sheet skips that swap (indexized, no active palette),
+     * the glyphs are left as they were too. `name`/`size`/`lineHeight`/`baseline` are not
+     * updated by a hot reload - only glyph data and the texture.
      *
      * @param url - `.btfont` URL this font was originally loaded from.
      * @param palette - Active palette, forwarded to {@link SpriteSheet.hotReplaceImage}.
@@ -527,6 +528,11 @@ export class BitmapFont {
         const { glyphs, asciiGlyphs } = buildGlyphsFromEntries(glyphEntries, atlas.width, atlas.height);
 
         this.spriteSheet.hotReplaceImage(image, palette);
+
+        // A skipped swap (indexized sheet, no active palette) keeps the old atlas, so the new glyphs must not land.
+        if (this.spriteSheet.status !== 'ready') {
+            return;
+        }
 
         this.glyphs = glyphs;
         this.fallbackGlyph = resolveFallbackGlyph(glyphs);
