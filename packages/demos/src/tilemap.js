@@ -106,6 +106,10 @@ const TILE_SIZE = 16;
 const WORLD_WIDTH_PX = MAP_WIDTH_TILES * TILE_SIZE;
 const WORLD_HEIGHT_PX = MAP_HEIGHT_TILES * TILE_SIZE;
 
+// The same world size as one Vector2i, built once so update() does not make a new one
+// every tick when it asks BT.cameraClamp() to keep the camera inside the world.
+const WORLD_SIZE = new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX);
+
 // Each color in this demo has a reserved palette slot (a number from 1 upward). Slot 0 is
 // always transparent. Giving each slot a name makes the drawing code easier to read -
 // "draw in C_GRASS" is clearer than "draw in slot 5". The caption panel and the mini-map
@@ -123,6 +127,13 @@ const C_CHART_WARNING = 11; // near-white: overlay timing chart warning color
 const C_VIEWPORT = 12; // yellow: rectangle showing the camera view on the mini-map
 const C_CHART_TAG = 13; // dim gray: overlay timing chart tag labels
 const C_WATER = 14; // animated water tile color, rewritten every tick in update()
+
+// Which palette slot each tile ID draws with, like a key on a map legend: TILE_SLOT[id]
+// is the slot for tile `id`. The tile IDs are 0-5, so the list has six entries in that
+// order. Sky (0) is null because sky tiles are never drawn - the clear color already
+// shows there. The Pixel Art demo uses the same lookup-table idea for its heart:
+// https://demos.blit386.dev/pixel-art
+const TILE_SLOT = [null, C_GRASS, C_DIRT, C_STONE, C_WATER, C_TREE_TOP];
 
 // A scrolling tile-based landscape with a mini-map and animated water.
 class Demo {
@@ -251,7 +262,7 @@ class Demo {
 
         // Clamping keeps the camera inside the world so you never see empty void past the
         // edge.
-        this.cameraPos = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX), viewSize);
+        this.cameraPos = BT.cameraClamp(this.cameraPos, WORLD_SIZE, viewSize);
 
         // BT.cameraSet() happens in render(), using a position blended between
         // cameraPrevPos and cameraPos.
@@ -431,22 +442,10 @@ class Demo {
                 // Reuse the same Rect2i: set(x, y, width, height).
                 this.tileRect.set(worldX, worldY, TILE_SIZE, TILE_SIZE);
 
-                // Pick the palette slot for this tile ID. if / else if is like a menu:
-                // the first match wins. We pass just a number (C_GRASS, C_DIRT, and so
-                // on) - the palette knows the actual color.
-                if (id === TILE_GRASS) {
-                    BT.drawRectFill(this.tileRect, C_GRASS);
-                } else if (id === TILE_DIRT) {
-                    BT.drawRectFill(this.tileRect, C_DIRT);
-                } else if (id === TILE_STONE) {
-                    BT.drawRectFill(this.tileRect, C_STONE);
-                } else if (id === TILE_WATER) {
-                    // C_WATER is the animated water slot - update() already set its
-                    // color.
-                    BT.drawRectFill(this.tileRect, C_WATER);
-                } else if (id === TILE_TREE_TOP) {
-                    BT.drawRectFill(this.tileRect, C_TREE_TOP);
-                }
+                // Look up the palette slot for this tile ID in TILE_SLOT. We pass just a
+                // number (C_GRASS, C_DIRT, and so on) - the palette knows the actual
+                // color. Water gets C_WATER, the slot update() repaints every tick.
+                BT.drawRectFill(this.tileRect, TILE_SLOT[id]);
             }
         }
     }
@@ -502,23 +501,12 @@ class Demo {
                 const px = mapX + col * scale;
                 const py = mapY + row * scale;
 
-                // Pick a palette slot for each tile type. Sky tiles use C_SKY, so the map
-                // background is the sky color. Water uses C_MINIMAP_WATER - a still
-                // shade, not the animated C_WATER - so the mini-map stays calm while the
-                // pond shimmers.
-                let c = C_SKY;
-
-                if (id === TILE_GRASS) {
-                    c = C_GRASS;
-                } else if (id === TILE_DIRT) {
-                    c = C_DIRT;
-                } else if (id === TILE_STONE) {
-                    c = C_STONE;
-                } else if (id === TILE_WATER) {
-                    c = C_MINIMAP_WATER;
-                } else if (id === TILE_TREE_TOP) {
-                    c = C_TREE_TOP;
-                }
+                // Pick a palette slot for each tile type from the same TILE_SLOT legend
+                // as the main map, with two changes. Sky tiles use C_SKY (`??` means "if
+                // the left side is null, use the right side"), so the map background is
+                // the sky color. Water uses C_MINIMAP_WATER - a still shade, not the
+                // animated C_WATER - so the mini-map stays calm while the pond shimmers.
+                const c = id === TILE_WATER ? C_MINIMAP_WATER : (TILE_SLOT[id] ?? C_SKY);
 
                 this.tileRect.set(px, py, scale, scale);
                 ui.drawRectFill(this.tileRect, c);
@@ -526,9 +514,10 @@ class Demo {
         }
 
         // Viewport indicator: where is the 320x240 window inside the 480x320 world? Use
-        // this.cameraPos, not BT.camera: render() already called BT.cameraReset(), which
-        // zeroes BT.camera - our own field still remembers the real position.
-        const cam = this.cameraPos;
+        // this.cameraRenderPos, not BT.camera: render() already called BT.cameraReset(),
+        // which zeroes BT.camera - our own field still remembers the blended position
+        // the main map was drawn with, so the two always agree.
+        const cam = this.cameraRenderPos;
         const disp = BT.displaySize;
         const vx = mapX + Math.floor((cam.x / WORLD_WIDTH_PX) * mapPixelW);
         const vy = mapY + Math.floor((cam.y / WORLD_HEIGHT_PX) * mapPixelH);
