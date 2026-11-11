@@ -52,8 +52,9 @@ WHAT YOU WILL LEARN
   Changing the map does not rename keys - it changes which keys feed face buttons.
 - UI kit buttons with a { key } binding, so one click, tap, or key press all do the same
   thing, and BT.isKeyPressed('KeyR') as an extra alias read in update().
-- overlayStyle and overlayTimingChartStyle in configure() take literal palette slot
-  numbers, because configure() runs before applyTheme() in init().
+- overlayStyle and overlayTimingChartStyle in configure() take palette slot numbers
+  before applyTheme() runs in init(), so defaultThemeSlot() from the UI kit looks up
+  where each theme color will land.
 
 TRY THIS
 --------
@@ -75,7 +76,7 @@ TRY THIS
 import { bootstrap, BT, Vector2i } from 'blit386';
 
 import { keyLabel } from './shared/key-names.js';
-import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -101,10 +102,9 @@ const PANEL_W = (DISPLAY_W - 2 * EDGE - GAP) / 2;
 const LEFT_X = EDGE;
 const RIGHT_X = EDGE + PANEL_W + GAP;
 
-// A kit panel with a title starts its content 22 pixels below its top edge and ends 11
-// pixels below the last row; text inside starts 9 pixels in from the panel edge.
-const PANEL_CONTENT_TOP = 22;
-const PANEL_BOTTOM = 11;
+// A kit panel with a title starts its content PANEL_CONTENT_TOP below its top edge and
+// ends PANEL_BOTTOM below the last row (both from the UI kit); text inside starts 9
+// pixels in from the panel edge.
 const PANEL_PAD = 9;
 
 // Player panels: eight 10-pixel pip rows, 4 pixels apart.
@@ -130,14 +130,13 @@ const PANEL_TOP_Y = INTRO_Y + INTRO_H + GAP;
 const BOTTOM_ROW_Y = PANEL_TOP_Y + PLAYER_PANEL_H + GAP;
 
 // The engine overlay (configured below) needs palette slot numbers, but configure() runs
-// BEFORE init(), where applyTheme() installs the shared UI colors. applyTheme() always
-// writes its twelve colors into slots 240-251 (its default start slot), so we can write
-// the slot numbers out here as named constants instead of magic numbers.
-const THEME_SLOT_PANEL = 242; // panel fill (dark blue)
-const THEME_SLOT_TEXT = 244; // primary text (off-white)
-const THEME_SLOT_HEADER = 246; // panel titles (warm amber)
-const THEME_SLOT_ACCENT = 247; // lit / active (phosphor green)
-const THEME_SLOT_WARM = 248; // warnings (warm orange)
+// BEFORE init(), where applyTheme() installs the shared UI colors. defaultThemeSlot()
+// from the UI kit says which slot each named theme color will land in.
+const THEME_SLOT_PANEL = defaultThemeSlot('panel'); // panel fill (dark blue)
+const THEME_SLOT_TEXT = defaultThemeSlot('text'); // primary text (off-white)
+const THEME_SLOT_HEADER = defaultThemeSlot('header'); // panel titles (warm amber)
+const THEME_SLOT_ACCENT = defaultThemeSlot('accent'); // lit / active (phosphor green)
+const THEME_SLOT_WARM = defaultThemeSlot('warm'); // warnings (warm orange)
 
 // The eight face buttons in the order the panels list them, each pairing an on-screen
 // label with the engine's button constant and that constant's name (for the Calls made
