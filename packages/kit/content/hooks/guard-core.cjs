@@ -124,6 +124,8 @@ const BRANCH_FORCED_DELETE = new RegExp(
     `${GIT_PREFIX}branch${ARGS}(${shortCluster('D')}|-${ALPHANUMERIC}*(d${ALPHANUMERIC}*f|f${ALPHANUMERIC}*d)${ALPHANUMERIC}*|${BRANCH_DELETE_FLAG}${ARGS}${BRANCH_FORCE_FLAG}|${BRANCH_FORCE_FLAG}${ARGS}${BRANCH_DELETE_FLAG})${ARG_END}`,
 );
 const STASH_DROP_CLEAR = new RegExp(`${GIT_PREFIX}stash${SPACE}+(drop|clear)${ARG_END}`);
+// What ends one shell command and starts the next: a newline, `;`, and `&` / `|` alone or doubled (`&&`, `||`).
+const COMMAND_SEPARATOR = /[\n;&|]/;
 
 const DENY_DESTRUCTIVE = {
     decision: 'deny',
@@ -171,16 +173,21 @@ const ASK_STASH = {
  */
 function isDangerousCommand(command) {
     // A backslash-newline is a line continuation: `sh` joins the two lines into one command (BT-775). Then quotes and
-    // backslashes are dropped, so `git "reset" --hard` and `git \reset --hard` cannot dodge the word checks. Each
-    // check asks "does any line match", so a multi-line command is caught on any line.
-    const lines = command
+    // backslashes are dropped, so `git "reset" --hard` and `git \reset --hard` cannot dodge the word checks. The text
+    // is cut into single commands and each check asks "does any command match", so every command on every line is
+    // judged on its own: a `git restore --staged` earlier on the line excuses no later `git restore` (BT-775).
+    const commands = command
         .replace(/\\\r?\n/g, ' ')
         .replace(/['"\\]/g, '')
-        .split('\n');
-    const any = (pattern) => lines.some((line) => pattern.test(line));
+        .split(COMMAND_SEPARATOR);
+    const any = (pattern) => commands.some((one) => pattern.test(one));
 
-    const destructiveClean = any(CLEAN) && (any(CLEAN_FORCE) || !any(CLEAN_DRY_RUN));
-    const destructiveRestore = any(RESTORE) && (!any(RESTORE_STAGED) || any(RESTORE_WORKTREE));
+    const destructiveClean = commands.some(
+        (one) => CLEAN.test(one) && (CLEAN_FORCE.test(one) || !CLEAN_DRY_RUN.test(one)),
+    );
+    const destructiveRestore = commands.some(
+        (one) => RESTORE.test(one) && (!RESTORE_STAGED.test(one) || RESTORE_WORKTREE.test(one)),
+    );
 
     const destructiveCheckout =
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);

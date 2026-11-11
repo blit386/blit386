@@ -138,4 +138,13 @@ export const SHELL_CASES = [
     // BT-775: a backslash-newline joins two lines into one command, so the flag on the next line still counts.
     ['git reset \\\n--hard', 'deny'],
     ['git push \\\n--force', 'ask'],
+    // BT-775: the restore and clean exemptions hold per command, so a safe form earlier on the line excuses nothing.
+    ['git restore --staged a.js && git restore b.js', 'deny'],
+    ['git restore --staged a.js; git restore .', 'deny'],
+    ['git restore --staged a.js || git restore b.js', 'deny'],
+    ['git restore --staged a.js | git restore b.js', 'deny'],
+    ['git restore --staged a.js & git restore b.js', 'deny'],
+    ['git clean -n && git -c clean.requireForce=false clean -d', 'deny'],
+    ['git restore --staged a.js && git status', 'allow'],
+    ['git push origin main && echo -f', 'allow'],
 ];
