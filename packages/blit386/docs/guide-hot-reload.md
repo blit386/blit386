@@ -347,6 +347,10 @@ runtime cost or behavior change to ship):
     },
   }} />
 
+A value of the wrong shape stops Vite from loading the config, with an error naming the option: an asset kind that is
+not one of the four, an `assetTypes` key without its leading dot or in uppercase (`png` or `.PNG` would never match a
+file), `fullReloadOnUnknownAssets` as a string, or `assetDirs` as one string instead of a list.
+
 A game that keeps level data or animation descriptors under `public/levels/` is already covered by the default `public`
 watch, so only the extension needs registering. You can register `.json` as its own asset kind (it is routed through the
 `'other'` fallback today, so this only changes what the console log attributes the reload to until a dedicated handler
