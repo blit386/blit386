@@ -32,6 +32,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 import { COMMITTED_VARIANTS, VARIANTS } from '../_shots/poses.js';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
+import { FILENAME_PATTERN } from '../plugins/demo-registry.js';
 import { launchCaptureBrowser } from './playwright-session.mjs';
 
 // #region Configuration
@@ -45,7 +46,8 @@ const RESULT_TIMEOUT_MS = 20 * 60 * 1000;
 const SHARED_PREFIX = 'packages/demos/src/shared/';
 // The pose table decides what every demo captures, so an edit to it re-captures every demo.
 const POSES_PATH = 'packages/demos/_shots/poses.js';
-const DEMO_SOURCE_PATTERN = /^packages\/demos\/src\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
+// A demo source file as a repo-relative path: the registry's file-name rule under src/.
+const DEMO_SOURCE_PATTERN = new RegExp(`^packages/demos/src/${FILENAME_PATTERN.source.slice(1)}`, 'u');
 
 export const DEFAULTS = {
     out: '',
