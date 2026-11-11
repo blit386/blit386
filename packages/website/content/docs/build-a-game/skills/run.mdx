@@ -2,17 +2,12 @@
 # Generated from packages/kit/content/skills/run/SKILL.md by scripts/sync-kit-pages.mjs.
 # Do not edit by hand: edit the source, then run `pnpm run sync:docs`.
 title: "Skill: Run the game"
-description: "Start the BLIT386 dev server and open the game in a browser. Use this whenever the user wants to run, start, launch, or preview the game, see what it looks..."
+description: "Start the BLIT386 dev server and open the game in a browser. Use this whenever the user wants to run, start, launch, or preview the game, or see what it..."
 ---
 
 > Written for blit386 1.8.1, which is not on npm yet. The newest release is 1.8.0, so an API on this page may be missing from the version npm installs until 1.8.1 ships.
 
 Start the BLIT386 dev server and open the game in a browser.
-
-## When to use
-
-Use this when you need to run the game to test a change, or when the user says "run the game", "start the server", or
-"show me what this looks like."
 
 ## Steps
 
@@ -26,8 +21,6 @@ Use this when you need to run the game to test a change, or when the user says "
 ## Notes
 
 - If the port is in use, read `docs/when-something-breaks.md` for the "port already in use" fix.
-- The dev server never opens a browser itself; use the address it printed in the terminal (`http://localhost:5173`
-  unless that port was taken).
 - If your editor has a built-in preview pane that reads `.claude/launch.json` (the Claude desktop app does), it can
   start the game and show it there, with no terminal step. That file is yours to edit, for example to change the port.
 - The game works without WebGPU (the engine falls back to Canvas 2D), so it runs in any modern browser.
