@@ -138,6 +138,35 @@ describe('AudioClip', () => {
 
             expect(AudioClip.isLoaded('test.mp3')).toBe(false);
         });
+
+        it('does not re-cache a load that settles after clear(), or drop the newer load', async () => {
+            const responders: Array<() => void> = [];
+            vi.stubGlobal(
+                'fetch',
+                vi.fn(
+                    () =>
+                        new Promise((resolve) => {
+                            responders.push(() => resolve(mockAudioFetchResponse()));
+                        }),
+                ),
+            );
+
+            const stale = AudioClip.load('late.mp3');
+            AudioClip.clear();
+            const fresh = AudioClip.load('late.mp3');
+
+            responders[0]?.();
+            await stale;
+
+            expect(AudioClip.isLoaded('late.mp3')).toBe(false);
+            expect(AudioClip.loadingCount).toBe(1);
+
+            responders[1]?.();
+            const clip = await fresh;
+
+            expect(AudioClip.getClip('late.mp3')).toBe(clip);
+            expect(AudioClip.loadingCount).toBe(0);
+        });
     });
 
     describe('loadingCount', () => {

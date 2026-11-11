@@ -192,6 +192,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A `.btfont` hot reload whose glyphs do not fit the new texture no longer breaks the font. It used to swap the texture
   first and then throw, so the old glyph rectangles pointed into the new image. The glyphs are now checked against the
   new texture before anything changes, and a bad file leaves the font as it was.
+- `AudioClip.clear()` now also stops loads already in flight from re-caching their clip when they finish. Such a load
+  also used to remove a newer load of the same URL from the in-flight list, so a second request started a duplicate
+  download and `BT.loadingAssetsCount` read too low.
 - Two saves in quick succession can no longer leave the older version of your game running. A hot reload that changed
   `init()` or the constructor waits for the new `init()` to finish, and a second save landing in that window used to
   start its own swap against the old instance, so whichever `init()` finished last won. Hot swaps now run one at a time:

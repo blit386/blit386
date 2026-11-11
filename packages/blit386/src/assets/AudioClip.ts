@@ -87,6 +87,13 @@ const resolvedClips = new Map<string, AudioClip>();
 const inFlightLoads = new Map<string, Promise<AudioClip>>();
 
 /**
+ * Bumped by {@link AudioClip.clear}, so a load that started before the clear can tell it
+ * must not re-cache its clip. `AssetLoader` keeps one generation per key because it also
+ * evicts single keys; clips are only ever cleared all at once, so one counter is enough.
+ */
+let cacheEpoch = 0;
+
+/**
  * Decoded audio asset with its winning source URL and buffer-derived metadata.
  *
  * Construct instances with {@link AudioClip.load}, {@link AudioClip.loadAll}, or
@@ -234,14 +241,20 @@ export class AudioClip {
     }
 
     /**
-     * Clears the resolved-clip cache. In-flight requests aren't aborted and
-     * may repopulate the cache once complete.
+     * Clears the resolved-clip cache. In-flight requests aren't aborted, but they no
+     * longer repopulate the cache or count toward {@link AudioClip.loadingCount} once
+     * cleared.
      *
      * Primarily intended for tests or explicit asset-lifecycle resets. Does
      * not call {@link unload} on cached clips - their buffers stay decoded
      * until each clip is unloaded explicitly.
+     *
+     * @changed 1.8.1 A load still in flight during `clear()` no longer re-caches its clip
+     *   when it finishes, and no longer drops a newer load of the same URL from the
+     *   in-flight count.
      */
     static clear(): void {
+        cacheEpoch++;
         resolvedClips.clear();
         inFlightLoads.clear();
     }
@@ -312,10 +325,13 @@ export class AudioClip {
             return inFlight;
         }
 
+        const epoch = cacheEpoch;
         const promise = AudioClip.fetchAndDecode(url, options?.onProgress).then((buffer) => {
             const clip = new AudioClip(url, buffer);
 
-            resolvedClips.set(url, clip);
+            if (epoch === cacheEpoch) {
+                resolvedClips.set(url, clip);
+            }
 
             return clip;
         });
@@ -325,7 +341,10 @@ export class AudioClip {
         try {
             return await promise;
         } finally {
-            inFlightLoads.delete(url);
+            // A clear() may have let a newer load of this URL take the slot; leave that one alone.
+            if (inFlightLoads.get(url) === promise) {
+                inFlightLoads.delete(url);
+            }
         }
     }
 
