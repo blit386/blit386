@@ -10,20 +10,16 @@ description:
 Stack fullscreen effects (CRT curvature, scanlines, bloom, glitch) on top of the finished frame. These run on WebGPU
 only.
 
-## When to use
+## Step 1 (optional): a bigger output buffer
 
-Use for a retro CRT look, screen glitches, bloom or glow, or any whole-screen filter.
-
-## Step 1: a bigger output buffer
-
-Display-tier effects (curvature, scanlines, mask, bloom) need an output buffer larger than the logical screen, set in
-`configure()`:
+Display-tier effects (curvature, scanlines, mask, bloom) draw into the output buffer, not the logical screen. A game
+with no `configure()` already gets `640x480`; a bigger one makes the CRT look sharper:
 
 ```js
 configure() {
     return {
         displaySize: new Vector2i(320, 240), // you draw here
-        drawingBufferSize: new Vector2i(1280, 960), // effects render here (required)
+        drawingBufferSize: new Vector2i(1280, 960), // effects render here
     };
 }
 ```
@@ -53,7 +49,35 @@ if (this.crt) {
 BT.effectClear();
 ```
 
-## Step 3: respect reduced motion (engine 1.7.0+)
+## Step 3: make the moving parts move
+
+The CRT preset holds four effects that animate, but none of them moves on its own: each one reads a field that your game
+sets every frame. `Noise`, `Interference`, and `RollLine` read `time`; `Flicker` reads `amount`, its brightness. Without
+this step the screen looks frozen.
+
+```js
+import { BT, Flicker, Interference, Noise, RollLine } from 'blit386';
+
+render() {
+    // ...draw the game...
+    this.driveCrt();
+}
+
+driveCrt() {
+    if (!this.crt) return; // the software fallback has no effects
+
+    const t = BT.timeSeconds; // the game's own clock, so BT.renderAt can replay it
+    for (const fx of this.crt) {
+        if (fx instanceof Noise || fx instanceof Interference || fx instanceof RollLine) {
+            fx.time = t;
+        } else if (fx instanceof Flicker) {
+            fx.amount = 0.97 + Math.sin(t * 40) * 0.03; // brightness wobbles between 0.94 and 1
+        }
+    }
+}
+```
+
+## Step 4: respect reduced motion (engine 1.7.0+)
 
 Some players ask their system for less motion because heavy movement makes them dizzy or unwell. The moving effects are
 the first thing to tone down: `Flicker`, `Interference`, `RollLine`, `Noise`, and `PixelGlitch` all animate, and a
@@ -61,8 +85,6 @@ flickering, rolling CRT is exactly what that setting exists to suppress. Static 
 fine to leave on.
 
 ```js
-import { BT, Flicker, Interference, Noise, RollLine } from 'blit386';
-
 async init() {
     if (BT.activeBackend === 'webgpu') {
         this.crt = BT.preset.crtPipBoy();
@@ -74,9 +96,7 @@ async init() {
 applyMotionPreference() {
     if (!this.crt) return;
 
-    // Keep the still parts of the look, drop the ones that move.
-    // crtPipBoy() ships four animating effects; the rest (curvature, aberration, scanlines,
-    // mask, bloom) hold still and are fine to leave on.
+    // Keep the still parts of the look, drop the four that move (Step 3).
     const moving = [Flicker, RollLine, Interference, Noise];
 
     for (const fx of this.crt) BT.effectRemove(fx);
@@ -90,6 +110,12 @@ applyMotionPreference() {
 onReducedMotionChange() {
     this.applyMotionPreference();
 }
+```
+
+Then stop driving them too, so nothing moves even if one is added back later. The first line of `driveCrt()` becomes:
+
+```js
+if (!this.crt || BT.isReducedMotionPreferred) return;
 ```
 
 `BT.isReducedMotionPreferred` is a getter (no parentheses). Screen shake you wrote yourself deserves the same
@@ -120,6 +146,6 @@ BT.effectAdd(lines);
 - Gate on `BT.activeBackend`, **never** on `BT.requestedBackend`. `requestedBackend` is the backend you asked for, and
   it still says `'webgpu'` even after the engine has quietly fallen back to Canvas 2D - so a guard built on it passes on
   exactly the machines it was meant to protect, and `BT.effectAdd` throws there.
-- Some effects animate from a `time` field - set `fx.time = BT.timeSeconds` each frame.
 - Hold onto effect instances and reuse them; rebuilding every toggle re-allocates GPU pipelines.
-- Full effect reference lives in the engine repo (linked from `AGENTS.md`); the local docs do not cover every effect.
+- Full effect reference lives at blit386.dev (the ask-the-docs skill shows how to reach it); the local docs do not cover
+  every effect.
