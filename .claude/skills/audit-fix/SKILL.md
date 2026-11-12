@@ -155,7 +155,8 @@ PR.
 
 ## Step 5 - end of run
 
-1. Confirm every child is Done (`list_issues` with `parentId`).
+1. Confirm every dispatched child is Done (`list_issues` with `parentId`). List Canceled children and the Backlog
+   children the user left out separately, not as failures.
 2. Give the user the manual checks owed, grouped by PR, short.
 3. List the out-of-scope findings and ask before filing. File with the `linear-issue` skill: one umbrella plus
    sub-issues under the right area hub, assignee `me`.
