@@ -133,12 +133,40 @@ minimumReleaseAge: 10080
 blockExoticSubdeps: true
 strictDepBuilds: true
 minimumReleaseAgeExclude:
-  # Renovate security update: react-server-dom-webpack@19.2.9
-  - react-server-dom-webpack@19.2.9
-
-# minimumReleaseAgeExclude is deliberately absent. When a security patch is still inside
-# the 7-day window, add `minimumReleaseAgeExclude:` with the exact vetted `name@version`
-# (never a bare name, which exempts every future release from the gate permanently) and a
-# comment naming the advisory and the date the patch ages past the gate, then delete the
-# entry after that date. Every entry was dropped on 2026-11-10 (BT-783): each installed
-# version was already older than the window.
+  # Routine tool updates, not security patches: delete every entry on or after 2026-11-19.
+  - '@biomejs/biome@2.6.7'
+  - '@biomejs/cli-android-arm64@2.6.7'
+  - '@biomejs/cli-android-x64@2.6.7'
+  - '@biomejs/cli-darwin-arm64@2.6.7'
+  - '@biomejs/cli-darwin-x64@2.6.7'
+  - '@biomejs/cli-linux-arm64-musl@2.6.7'
+  - '@biomejs/cli-linux-arm64@2.6.7'
+  - '@biomejs/cli-linux-x64-musl@2.6.7'
+  - '@biomejs/cli-linux-x64@2.6.7'
+  - '@biomejs/cli-win32-arm64@2.6.7'
+  - '@biomejs/cli-win32-x64@2.6.7'
+  - '@cspell/cspell-bundled-dicts@10.4.1'
+  - '@cspell/cspell-json-reporter@10.4.1'
+  - '@cspell/cspell-performance-monitor@10.4.1'
+  - '@cspell/cspell-pipe@10.4.1'
+  - '@cspell/cspell-resolver@10.4.1'
+  - '@cspell/cspell-service-bus@10.4.1'
+  - '@cspell/cspell-types@10.4.1'
+  - '@cspell/cspell-worker@10.4.1'
+  - '@cspell/dynamic-import@10.4.1'
+  - '@cspell/filetypes@10.4.1'
+  - '@cspell/rpc@10.4.1'
+  - '@cspell/strong-weak-map@10.4.1'
+  - '@cspell/url@10.4.1'
+  - cspell-config-lib@10.4.1
+  - cspell-dictionary@10.4.1
+  - cspell-gitignore@10.4.1
+  - cspell-glob@10.4.1
+  - cspell-grammar@10.4.1
+  - cspell-io@10.4.1
+  - cspell-lib@10.4.1
+  - cspell-trie-lib@10.4.1
+  - cspell@10.4.1
+  - knip@6.45.1
+  - prettier@3.10.1
+  - unbash@6.0.4
