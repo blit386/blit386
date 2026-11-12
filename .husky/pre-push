@@ -138,7 +138,11 @@ if [ -n "$BASE_REF" ] && [ "$PUSH_COUNT" -gt 1 ]; then
     timed "package preflight" pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
 elif [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."
-    CHANGED_PACKAGE_DIRS=$(git diff --name-only "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | awk -F/ '{print $1 "/" $2}' | sort -u)
+    # --no-renames: a plain delete+add pair for a cross-package move, so both the
+    # source and destination package directories are detected as changed - rename
+    # detection would report only the destination path and silently skip the source
+    # package's preflight.
+    CHANGED_PACKAGE_DIRS=$(git diff --no-renames --name-only "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | awk -F/ '{print $1 "/" $2}' | sort -u)
     FILTER_ARGS=""
     for dir in $CHANGED_PACKAGE_DIRS; do
         FILTER_ARGS="$FILTER_ARGS --filter ...{$dir}"
