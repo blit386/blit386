@@ -158,7 +158,7 @@
     "eslint-plugin-simple-import-sort": "^13.0.0",
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
-    "knip": "^6.45.1",
+    "knip": "^6.32.0",
     "magic-string": "^0.30.21",
     "nyc": "^18.0.0",
     "pngjs": "^7.0.0",
