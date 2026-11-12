@@ -28,7 +28,7 @@ Beyond rendering MDX, the site ships a few things worth knowing about:
 ## Prerequisites
 
 - Node.js >= 22.18.0
-- pnpm 11.20.0 (`corepack enable` recommended)
+- pnpm at the `packageManager` version in `package.json` (`corepack enable` recommended)
 - This is a package within the `blit386` monorepo; `pnpm install` at the repo root sets up the whole workspace,
   including `packages/blit386` needed to run `sync:docs` - see [Content](#content)
 

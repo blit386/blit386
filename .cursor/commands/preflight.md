@@ -13,7 +13,7 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 ## Prerequisites
 
 - Node.js >= 22.18.0 (`engines` in the root `package.json`)
-- pnpm 11.20.0 (`packageManager` in the root `package.json`)
+- pnpm 12.18.0 (`packageManager` in the root `package.json`)
 
 ## format:check, docs:links, agents:check, sync:cursor-commands:check, and sync:maintainer-agents:check are root-only
 
@@ -145,12 +145,16 @@ No combined `preflight` script exists at root; run what does:
 - `pnpm run test:root` - every root `scripts/**/*.test.mjs` suite (the checkers above, the sync scripts, the build
   locks, `bump-lockstep`, spellcheck coverage). `quality-root` in CI runs the same script
 
-`.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref...HEAD]" --if-present run preflight` - committed changes only, so uncommitted files never widen
-the scope), then - only if that succeeds - runs these root-level checks unconditionally on every push, since pnpm's
-per-package `--filter` dispatch only looks at files under `packages/*` and would otherwise miss a root-only change
-entirely. `bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails
-both the push and CI, on top of the existing per-commit gates below.
+`.husky/pre-push` dispatches each changed package's own `preflight` script: it diffs the base ref against the pushed
+tip, maps each changed path under `packages/*` to its package directory, and runs
+`pnpm --filter "...{dir}" --if-present run preflight` once per directory (that package plus its dependents) - committed
+changes only, so uncommitted files never widen the scope. Pushing more than one ref at once (`git push origin a b`) has
+no single diff range to scope by, so that case - and a push whose base ref cannot be resolved at all - falls back to
+running every package's preflight instead of only the changed ones, which can block the push on an unrelated package.
+Only if the dispatch succeeds does the hook then run these root-level checks unconditionally on every push, since the
+per-package dispatch only looks at files under `packages/*` and would otherwise miss a root-only change entirely.
+`bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails both the push
+and CI, on top of the existing per-commit gates below.
 
 Before any of that, `.husky/pre-push` scans the commits being pushed and rejects a placeholder identity (see
 `.husky/check-author.sh`) on either the author or the committer, so a rebase or cherry-pick under a sandbox `user.*`

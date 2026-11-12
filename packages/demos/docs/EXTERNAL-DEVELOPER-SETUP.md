@@ -43,9 +43,9 @@ WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safar
 ## One-Time Setup
 
 Prerequisites: Node.js `>=22.18.0` (`engines` in the root `package.json`; `.node-version` pins `22.23.1` for `fnm` /
-`nvm`-style managers) and pnpm `11.20.0` (the root `packageManager` field - `corepack enable` or pnpm's own version
-manager picks it up). `pnpm run capture:og` and `capture:demo` additionally need Google Chrome installed and `ffmpeg` on
-`PATH`; nothing else does.
+`nvm`-style managers) and pnpm at the version in the root `packageManager` field (`corepack enable` or pnpm's own
+version manager picks it up). `pnpm run capture:og` and `capture:demo` additionally need Google Chrome installed and
+`ffmpeg` on `PATH`; nothing else does.
 
 ### 1. Clone the Repository
 

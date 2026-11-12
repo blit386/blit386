@@ -14,10 +14,10 @@ import type { Vector2i } from './Vector2i';
  */
 export abstract class Vector2iOps {
     /** X component (integer). Defined by the `Vector2i` constructor. */
-    public declare x: number;
+    declare public x: number;
 
     /** Y component (integer). Defined by the `Vector2i` constructor. */
-    public declare y: number;
+    declare public y: number;
 
     /**
      * Adds another vector and writes the result to an existing vector.

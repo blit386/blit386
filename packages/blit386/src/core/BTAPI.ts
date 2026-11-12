@@ -252,9 +252,6 @@ export class BTAPI {
      */
     public isSeeking = false;
 
-    /** The game loop's update and render callbacks and the tick clock. */
-    private readonly frameLoop = new FrameLoop(this);
-
     /**
      * Manages animated palette effects (cycling, fading, flashing). Runs on the tick clock, so
      * `BT.renderAt` can seek it and it never reads `performance.now()`.
@@ -360,6 +357,9 @@ export class BTAPI {
 
     /** Attaches and clears the input, audio, overlay and reduced-motion subsystems. */
     public readonly subsystems = new Subsystems(this);
+
+    /** The game loop's update and render callbacks and the tick clock. */
+    private readonly frameLoop = new FrameLoop(this);
 
     /** True once an init has resolved splash gating; later inits create a splash only if the last one never finished. */
     private isSplashResolved = false;
