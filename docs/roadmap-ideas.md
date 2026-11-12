@@ -28,6 +28,11 @@ nine-slice (BT-270), `BT.drawTile` (BT-265), `isAnyKey*` / `isAnyButton*` (BT-12
 folded into BT-369; BT-235 (spec only), BT-263, BT-276 Done; dead `#NNN` refs replaced with their Linear issues where
 known; demoscene hooks (BT-70 children) sit on milestone 1.9.0, palette superpowers (BT-359) on 1.10.0.
 
+Status pass 2026-11-12: the demoscene hooks (BT-70 and children), tilemaps (BT-275), and SpritePack (BT-271) moved to
+1.10.0, along with every other open feature ticket linked here. Marked shipped: `Palette.toJSON` / `fromJSON` (3.7),
+unused-slot marking in the overlay palette grid (3.9), and `llms.txt` / `llms-full.txt` plus a docs MCP server on
+blit386.dev (18.5).
+
 ## 1. Architecture position
 
 The renderer stays free of scene graph, physics, and GUI. PICO-8 proves a fantasy console needs none of them; HaxeFlixel
@@ -115,7 +120,7 @@ palette by nearest color, with optional ordered dithering.
 
 - `Palette.fromLospec('slso8')` - fetch + cache Lospec's palette JSON API; instant access to thousands of curated
   community palettes. Credit Lospec prominently.
-- `Palette.toJSON()` / `Palette.fromJSON()` round-trip (also feeds save states and editors).
+- `Palette.toJSON()` / `Palette.fromJSON()` round-trip - shipped.
 - Possibly `Palette.fromImage(url)` - extract the unique colors of a palette strip PNG (the standard interchange format
   pixel artists actually use).
 
@@ -129,7 +134,8 @@ and a docs page that markets itself.
 
 - Palette-weighted bloom: let `Bloom` weight by palette-slot luminance or an explicit per-slot glow mask ("slots 240-255
   are neon") - phosphor glow that only affects chosen colors. Display tier, but driven by palette metadata.
-- Palette analysis in the overlay: usage tracking already exists; add "unused slots" and "duplicate colors" hints.
+- Palette analysis in the overlay: usage tracking and unused-slot marking have shipped; a "duplicate colors" hint is
+  still open.
 - `palette.remap(mapping: Uint8Array)` as a public one-shot index remap utility (the primitive under 3.3, useful alone).
 
 ## 4. Sprite animation v2 and the art pipeline
@@ -315,7 +321,7 @@ dialogue portraits.
 
 Shipped 1.8.0: grid tile drawing via `BT.drawTile` and `SpriteSheet.tileSize`
 ([BT-265](https://linear.app/vancura/issue/BT-265) **Done**) - the single-tile primitive the umbrella builds on. The
-umbrella ([BT-275](https://linear.app/vancura/issue/BT-275), 1.9.0) still needs its API reconciliation first (section
+umbrella ([BT-275](https://linear.app/vancura/issue/BT-275), 1.10.0) still needs its API reconciliation first (section
 2). These belong in the rewrite:
 
 - Autotiling: Wang/blob (47-tile) and 16-tile bitmask autotilers - `mapAutotile(layer, region, ruleset)`. The feature
@@ -486,7 +492,7 @@ Suggested sequencing waves (each wave shippable independently):
   ([BT-368](https://linear.app/vancura/issue/BT-368)); BT.watch still §12; hot reload
   ([BT-303](https://linear.app/vancura/issue/BT-303) **Done**).
 - Wave 5 (structure): replay ([BT-367](https://linear.app/vancura/issue/BT-367)); bulk draws / transitions still §5.
-- Demoscene engine hooks (parallel, milestone 1.9.0): [BT-70](https://linear.app/vancura/issue/BT-70) -
+- Demoscene engine hooks (parallel, milestone 1.10.0): [BT-70](https://linear.app/vancura/issue/BT-70) -
   [BT-67](https://linear.app/vancura/issue/BT-67) / [BT-115](https://linear.app/vancura/issue/BT-115) /
   [BT-289](https://linear.app/vancura/issue/BT-289) / [BT-369](https://linear.app/vancura/issue/BT-369) /
   [BT-370](https://linear.app/vancura/issue/BT-370) **Done** (shipped 1.8.0).
@@ -517,7 +523,7 @@ copilots in the loop. The demoscene audience wants almost the opposite of the ga
 more. A game dev wants `drawSprite`; a scener wants the framebuffer, the palette registers, and a way to sync everything
 to row 32 of pattern 4.
 
-Engine hooks umbrella (extended, not duplicated): [BT-70](https://linear.app/vancura/issue/BT-70), milestone 1.9.0.
+Engine hooks umbrella (extended, not duplicated): [BT-70](https://linear.app/vancura/issue/BT-70), milestone 1.10.0.
 
 ### 18.0 Where these features live (decided)
 
@@ -583,8 +589,8 @@ Shipped: [BT-370](https://linear.app/vancura/issue/BT-370) **Done** (`BT.renderA
 
 ### 18.5 Vibe-coding infrastructure (site + kit)
 
-- `llms.txt` + `llms-full.txt` on blit386.dev, plus a single-page condensed API reference designed for pasting into a
-  context window. The docs site already generates everything; this is an output format, not new content.
+- `llms.txt` + `llms-full.txt` on blit386.dev - shipped, along with a docs MCP server (`search_docs`, `get_doc_page`).
+  Still open: a single-page condensed API reference designed for pasting into a context window.
 - A "demo dojo" docs section: classic effects as annotated recipes - fire, plasma, rotozoom, starfield, twister, sine
   scroller, metaballs - each roughly 30 lines against the framebuffer/copper APIs, math explained. Simultaneously
   documentation, marketing, and few-shot prompt material: someone (or their agent) copies the plasma recipe and mutates
@@ -625,7 +631,7 @@ Full bodies live in Linear; drop local `issue-drafts/` paths.
 
 - A.1 Unified `drawSprite` v2 signature - [BT-236](https://linear.app/vancura/issue/BT-236) **Done** (1.8.0 shipped
   `SpriteDrawParams` flags, scale, pivot and `BT.drawNineSlice`; named frames
-  [BT-271](https://linear.app/vancura/issue/BT-271) stay on 1.9.0, raw numbers
+  [BT-271](https://linear.app/vancura/issue/BT-271) on 1.10.0, raw numbers
   [BT-262](https://linear.app/vancura/issue/BT-262) on 2.0.0)
 - A.2 `ColorArg` string color type - [BT-235](https://linear.app/vancura/issue/BT-235) **Done** (spec)
 - A.3 Orientation naming collision - [BT-234](https://linear.app/vancura/issue/BT-234) **Done** (`screenOrientation`
