@@ -141,8 +141,12 @@ elif [ -n "$BASE_REF" ]; then
     # --no-renames: a plain delete+add pair for a cross-package move, so both the
     # source and destination package directories are detected as changed - rename
     # detection would report only the destination path and silently skip the source
-    # package's preflight.
-    CHANGED_PACKAGE_DIRS=$(git diff --no-renames --name-only "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | awk -F/ '{print $1 "/" $2}' | sort -u)
+    # package's preflight. -z: NUL-delimited, unquoted paths, so a non-ASCII filename
+    # (which git would otherwise wrap in quotes with escaped bytes) parses correctly.
+    # `tr` turns the NUL terminators into newlines for awk - a git path can never
+    # contain a real newline, so this is safe, and unlike awk's own RS it behaves the
+    # same under BSD awk (macOS, a contributor's local push) and gawk (CI).
+    CHANGED_PACKAGE_DIRS=$(git diff --no-renames --name-only -z "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | tr '\0' '\n' | awk -F/ 'NF>=2{print $1 "/" $2}' | sort -u)
     FILTER_ARGS=""
     for dir in $CHANGED_PACKAGE_DIRS; do
         FILTER_ARGS="$FILTER_ARGS --filter ...{$dir}"
