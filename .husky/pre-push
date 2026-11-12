@@ -71,12 +71,13 @@ if [ "$PUSH_COUNT" -eq 0 ]; then
 fi
 
 # Monorepo: dispatch preflight per changed package rather than running everything.
-# pnpm's "...[ref...tip]" filter selects a package plus anything downstream of it that
-# changed in the committed range ref..tip - the explicit "...tip" end matters: a bare
-# "[ref]" also counts uncommitted working-tree changes, so unrelated dirty files widened
-# a push of a few committed files into the full preflight of every package. Only
-# committed work is being pushed, so only committed work is checked; every package has a
-# "preflight" script today, and --if-present keeps a future one without it from failing. --if-present
+# pnpm 12 dropped the two-ref "[ref...tip]" changed-since selector (its "[since]" filter
+# now takes one ref and diffs against the working tree, uncommitted changes included) -
+# so the committed range is computed by hand with `git diff --name-only ref tip` and fed
+# to pnpm's static "...{dir}" selector (that package plus anything downstream of it) per
+# changed package directory. Only committed work is being pushed, so only committed work
+# is checked; every package has a "preflight" script today, and --if-present keeps a
+# future one without it from failing. --if-present
 # must come BEFORE "run": placed after the script name, pnpm forwards it as an
 # argument to the script's own command chain instead of consuming it itself - for
 # a package whose preflight ends in "&& pnpm run build", that appends a stray
@@ -137,14 +138,26 @@ if [ -n "$BASE_REF" ] && [ "$PUSH_COUNT" -gt 1 ]; then
     timed "package preflight" pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
 elif [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."
-    timed "package preflight" pnpm --filter "...[$BASE_REF...$PUSH_TIP]" --if-present run preflight || PREFLIGHT_STATUS=$?
+    CHANGED_PACKAGE_DIRS=$(git diff --name-only "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | awk -F/ '{print $1 "/" $2}' | sort -u)
+    FILTER_ARGS=""
+    for dir in $CHANGED_PACKAGE_DIRS; do
+        FILTER_ARGS="$FILTER_ARGS --filter ...{$dir}"
+    done
+    if [ -n "$FILTER_ARGS" ]; then
+        # $FILTER_ARGS is deliberately unquoted: each token is one of our own
+        # "--filter ...{packages/x}" pairs, never user input.
+        # shellcheck disable=SC2086
+        timed "package preflight" pnpm $FILTER_ARGS --if-present run preflight || PREFLIGHT_STATUS=$?
+    else
+        echo "No package changes since $BASE_REF; skipping package preflight."
+    fi
 else
     echo "No valid base ref (neither upstream/origin/main nor HEAD~1); running preflight for every package..."
     timed "package preflight" pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
 fi
 
-# pnpm's "...[ref...HEAD]" filter only selects files under packages/*, so a push that
-# changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
+# The package-preflight dispatch above only looks at files under packages/*, so a push
+# that changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
 # configs) would otherwise run zero checks. Always run the root-level gate too.
 if [ "$PREFLIGHT_STATUS" -eq 0 ]; then
     echo "Running root-level checks (format:check, docs:links, agents:check, sync:cursor-commands:check, sync:maintainer-agents:check, audit:modules:check, bump:check, spellcheck:kit, test:root)..."
