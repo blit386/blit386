@@ -18,8 +18,9 @@ tests or typecheck is fine. Other reviewers work in the same checkout at the sam
 3. Call the Skill tool with skill `ponytail:ponytail-review` (args: `PR #<n> merge <sha>`) and apply it to the same
    diff, reading the connected code as it asks.
 4. Verify every finding against CURRENT main (later PRs of the same umbrella may have moved code): give the current
-   file:line, and drop anything already fixed on main or outside the PR's own changes (pre-existing code the PR did not
-   touch is out of scope - list it separately, one line each).
+   file:line, and drop anything already fixed on main. Drop defects that existed before the PR (list them separately,
+   one line each); a regression the PR causes in an unchanged caller or consumer stays in, reported at the changed line
+   that causes it.
 5. Drop nitpicks a reasonable reviewer would not ask to change. Keep: must-fix, warnings, and suggestions that are
    clearly right.
 

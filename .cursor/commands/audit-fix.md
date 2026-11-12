@@ -24,7 +24,7 @@ The first run was the 2026-11-08 umbrella BT-751: 22 tickets, 22 ticket PRs plus
 ## Step 0 - set up the run
 
 1. Read the umbrella and its comments (`get_issue`, `list_comments`), then list its children (`list_issues` with
-   `parentId`). Include Backlog children only if the user says so.
+   `parentId`). Dispatch only children that are not Done or Canceled; include Backlog children only if the user says so.
 2. Spawn ONE read-only research subagent (Opus, medium) to sweep every child: model/effort/plan line, open blockers,
    "coordinate with / ride along / fold into" notes, files touched, and shared-file hotspots between tickets. This is
    what makes an order possible without reading every ticket in the main thread.
@@ -47,11 +47,12 @@ The first run was the 2026-11-08 umbrella BT-751: 22 tickets, 22 ticket PRs plus
 Manager, before dispatch (one Bash call):
 
 ```bash
-git switch -q main && git pull -q --ff-only && git branch -d <previous-branch>; git switch -c <gitBranchName>
+git switch -q main && git pull -q --ff-only && git branch -d <previous-branch> && git switch -c <gitBranchName>
 ```
 
-`-q` on pull keeps a big merge's diffstat out of the manager's context. `branch -d` (not `-D`) fails loudly if the
-previous branch did not merge.
+On the first ticket there is no previous branch: drop the `git branch -d` step. `&&` all the way means a failed switch,
+pull or delete stops the chain instead of cutting the new branch from the wrong place. `-q` on pull keeps a big merge's
+diffstat out of the manager's context. `branch -d` (not `-D`) fails loudly if the previous branch did not merge.
 
 Dispatch with `Agent` (`subagent_type: "general-purpose"`, `run_in_background: true`, the ticket's model and effort).
 The prompt is short; the brief carries the rules:
