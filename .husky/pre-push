@@ -143,10 +143,19 @@ elif [ -n "$BASE_REF" ]; then
     # detection would report only the destination path and silently skip the source
     # package's preflight. -z: NUL-delimited, unquoted paths, so a non-ASCII filename
     # (which git would otherwise wrap in quotes with escaped bytes) parses correctly.
-    # `tr` turns the NUL terminators into newlines for awk - a git path can never
-    # contain a real newline, so this is safe, and unlike awk's own RS it behaves the
-    # same under BSD awk (macOS, a contributor's local push) and gawk (CI).
-    CHANGED_PACKAGE_DIRS=$(git diff --no-renames --name-only -z "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null | tr '\0' '\n' | awk -F/ 'NF>=2{print $1 "/" $2}' | sort -u)
+    # A git path can legally contain a real newline (only NUL and "/" are forbidden),
+    # so each NUL-delimited path is extracted with `xargs -0 -n1` - one real argv
+    # value per path, never passed through a newline-splitting tool - before the
+    # "packages/<dir>" prefix it prints is handed to sort, which is newline-safe
+    # because that short prefix is one of this repo's own directory names.
+    CHANGED_PACKAGE_DIRS=$(
+        git diff --no-renames --name-only -z "$BASE_REF" "$PUSH_TIP" -- packages 2>/dev/null |
+            xargs -0 -n1 sh -c '
+                rest="${1#*/}"
+                printf "packages/%s\n" "${rest%%/*}"
+            ' sh |
+            sort -u
+    )
     FILTER_ARGS=""
     for dir in $CHANGED_PACKAGE_DIRS; do
         FILTER_ARGS="$FILTER_ARGS --filter ...{$dir}"

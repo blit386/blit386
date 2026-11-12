@@ -148,10 +148,13 @@ No combined `preflight` script exists at root; run what does:
 `.husky/pre-push` dispatches each changed package's own `preflight` script: it diffs the base ref against the pushed
 tip, maps each changed path under `packages/*` to its package directory, and runs
 `pnpm --filter "...{dir}" --if-present run preflight` once per directory (that package plus its dependents) - committed
-changes only, so uncommitted files never widen the scope. Only if that succeeds does it then run these root-level checks
-unconditionally on every push, since the per-package dispatch only looks at files under `packages/*` and would otherwise
-miss a root-only change entirely. `bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a
-lockstep drift fails both the push and CI, on top of the existing per-commit gates below.
+changes only, so uncommitted files never widen the scope. Pushing more than one ref at once (`git push origin a b`) has
+no single diff range to scope by, so that case - and a push whose base ref cannot be resolved at all - falls back to
+running every package's preflight instead of only the changed ones, which can block the push on an unrelated package.
+Only if the dispatch succeeds does the hook then run these root-level checks unconditionally on every push, since the
+per-package dispatch only looks at files under `packages/*` and would otherwise miss a root-only change entirely.
+`bump:check` (BT-317) also runs in `quality-root` in `.github/workflows/ci.yml`, so a lockstep drift fails both the push
+and CI, on top of the existing per-commit gates below.
 
 Before any of that, `.husky/pre-push` scans the commits being pushed and rejects a placeholder identity (see
 `.husky/check-author.sh`) on either the author or the committer, so a rebase or cherry-pick under a sandbox `user.*`
