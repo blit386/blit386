@@ -163,27 +163,12 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  vite-node: ^5.2.0
   esbuild: ^0.28.2
-  js-yaml@>=3.0.0 <3.15.1: ^3.15.2
-  js-yaml@>=4.0.0 <4.3.1: ^4.3.2
   undici@>=7.0.0 <7.30.1: ^7.30.1
-  nanoid@<3.3.17: ^3.3.20
-  fast-uri@<3.1.9: ^3.1.9
   zod@<4.6.6: ^4.6.6
-  hono@<4.13.5: ^4.13.14
-  '@hono/node-server@<2.1.3': ^2.1.5
   minimatch@<11.0.1: 11.0.1
   glob@>=9.0.0 <14.0.2: 14.0.2
-  sharp@<0.35.5: ^0.35.5
-  shell-quote@>=1.8.4 <1.11.0: ^1.11.0
-  brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
-  brace-expansion@>=4.0.0 <5.0.12: ^5.0.12
-  ip-address@<=10.7.0: ^10.7.5
   basic-ftp@<=6.2.0: ^6.2.5
-  smol-toml@<1.8.1: ^1.9.1
-  postcss-selector-parser@<7.1.6: ^7.1.7
-  source-map-js@<1.2.2: ^1.2.2
   '@opencode-ai/plugin>effect': '-'
 
 importers:
@@ -443,7 +428,7 @@ importers:
         version: 16.18.0(@types/mdx@2.0.14)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(fumadocs-core@16.18.0(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(flexsearch@0.8.212)(lucide-react@1.28.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(waku@1.0.0-beta.6(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.109.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(react@19.3.1)(terser@5.49.0)(yaml@2.9.1))(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(tailwindcss@4.3.4)(takumi-js@2.19.0(csstype@3.2.3)(react@19.3.1))
       fumapress:
         specifier: 0.7.3
-        version: 0.7.3(848d4b0042733411aceb2a24ea6185e4)
+        version: 0.7.3(5c77bc6283b9fc825260380b7c2986a7)
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -1082,13 +1067,13 @@ packages:
     resolution: {integrity: sha512-JpjNBJFA+4OnAHKRK4AMp8xrYyLhI9XapOeBlP2PhRU/IylSw+1ep3BFNTksBJnrTS3KT6kqKNVfpzLLwZUW5Q==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
-      postcss-selector-parser: ^7.1.7
+      postcss-selector-parser: ^7.1.1
 
   '@csstools/selector-specificity@6.0.1':
     resolution: {integrity: sha512-MBuqFIIvqk4S593MGAskTkPpEUUzZNvGzh8mMxEwl3oHwjQlXmqHEDxNbN3Y0Tsh+xjmem4GZjeg7I0qkwBivg==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
-      postcss-selector-parser: ^7.1.7
+      postcss-selector-parser: ^7.1.1
 
   '@emnapi/core@1.11.2':
     resolution: {integrity: sha512-TC8MkTuZUtcTSiFeuC0ksCh9QIJ5+F21MvZ4Wn4ORfYaFJ/0dsiudv5tVkejgwZlwQ39jL9WWDe2lz8x0WglOA==}
@@ -1349,7 +1334,7 @@ packages:
     resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
     engines: {node: '>=20'}
     peerDependencies:
-      hono: ^4.13.14
+      hono: ^4 || ^5.0.0-0
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -3639,10 +3624,6 @@ packages:
   encoding-sniffer@0.2.1:
     resolution: {integrity: sha512-5gvq20T6vfpekVtqrYQsSCFZ1wEg5+wW0/QaZMWkFr6BqD3NfKs0rLCx4rrVlSWJeZb5NBJgVLswK/w2MWU+Gw==}
 
-  enhanced-resolve@5.24.3:
-    resolution: {integrity: sha512-PwKooW9JUzh5chmYfHM3IQl5OkK2u2Nm011MgeZrss3JmFraUx/fqrf78kk8GUMYoibx/14MdwTl/1WKkG7TpQ==}
-    engines: {node: '>=10.13.0'}
-
   enhanced-resolve@5.26.1:
     resolution: {integrity: sha512-PPnnSJq3azKOIewXR/uppBV/6h98dprBJ/WaQ9Qgj10xX1lJLNfg+XShpbsrSqcDSy2yYYyhfXM1wWhftqgyzw==}
     engines: {node: '>=10.13.0'}
@@ -4117,10 +4098,10 @@ packages:
       fumadocs-mdx: ^15.0.0
       fumadocs-openapi: ^11.0.0
       fumadocs-ui: ^16.10.0
-      hono: ^4.13.14
+      hono: '*'
       react: ^19.2.0
       react-dom: ^19.2.0
-      sharp: ^0.35.5
+      sharp: ^0.34.0
       waku: 1.0.0-beta.6
     peerDependenciesMeta:
       '@fumadocs/asyncapi':
@@ -8958,11 +8939,6 @@ snapshots:
       iconv-lite: 0.6.3
       whatwg-encoding: 3.1.1
 
-  enhanced-resolve@5.24.3:
-    dependencies:
-      graceful-fs: 4.2.11
-      tapable: 2.3.3
-
   enhanced-resolve@5.26.1:
     dependencies:
       graceful-fs: 4.2.11
@@ -9471,7 +9447,7 @@ snapshots:
       - remix
       - tailwindcss
 
-  fumapress@0.7.3(848d4b0042733411aceb2a24ea6185e4):
+  fumapress@0.7.3(5c77bc6283b9fc825260380b7c2986a7):
     dependencies:
       '@fuma-translate/react': 1.0.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@orama/orama': 3.1.18
@@ -9493,7 +9469,6 @@ snapshots:
       '@types/react': 19.3.0
       fumadocs-mdx: 15.5.0(@types/mdast@4.0.4)(@types/mdx@2.0.14)(@types/react@19.3.0)(fumadocs-core@16.18.0(@mdx-js/mdx@3.1.1(supports-color@10.2.2))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(flexsearch@0.8.212)(lucide-react@1.28.0(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)(waku@1.0.0-beta.6(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.1(react@19.3.1))(react-server-dom-webpack@19.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(webpack@5.109.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(react@19.3.1)(terser@5.49.0)(yaml@2.9.1))(zod@4.6.7))(react@19.3.1)(rolldown@1.2.16)(supports-color@10.2.2)(vite@8.3.6(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       hono: 4.13.16
-      sharp: 0.35.5(@types/node@25.9.5)
     transitivePeerDependencies:
       - '@types/node'
       - '@vitejs/devtools'
@@ -11797,7 +11772,7 @@ snapshots:
       acorn: 8.19.0
       browserslist: 4.28.9
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.24.3
+      enhanced-resolve: 5.26.1
       es-module-lexer: 2.3.1
       eslint-scope: 5.1.1
       events: 3.3.0
