@@ -10,7 +10,6 @@
     "verbatimModuleSyntax": true,
 
     "noEmit": true,
-    "sourceMap": true,
 
     "isolatedModules": true,
     "esModuleInterop": true,
