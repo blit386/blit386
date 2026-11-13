@@ -264,7 +264,7 @@ WebGPU support (for the full experience) is typical in:
 | Browser | Version | Notes |
 | --- | --- | --- |
 | Chrome/Edge | 113+ | Enabled by default |
-| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux; Android Nightly needs a WebGPU blocklist override, or it falls back to software |
 | Safari | 26+ | Enabled by default; Safari 18-25 available via Feature Flags |
 
 ## Engine documentation
