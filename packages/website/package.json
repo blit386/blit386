@@ -68,7 +68,7 @@
     "fumapress": "0.7.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-server-dom-webpack": "^19.2.9",
+    "react-server-dom-webpack": "19.2.8",
     "takumi-js": "2.5.4",
     "waku": "1.0.0-beta.6",
     "zod": "^4.6.6"
