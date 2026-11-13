@@ -114,7 +114,7 @@
     "clean": "rm -rf dist node_modules/.vite",
     "release": "pnpm run build && pnpm publish",
     "knip": "cd ../.. && knip --workspace packages/blit386 --exclude exports,types",
-    "knip:fix": "knip --fix",
+    "knip:fix": "cd ../.. && knip --workspace packages/blit386 --exclude exports,types --fix",
     "convert-font": "node scripts/convert-bmfont.mjs",
     "system-font:export": "node scripts/export-system-font.mjs",
     "system-font:convert": "node scripts/convert-system-font.mjs",
