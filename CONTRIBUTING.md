@@ -180,7 +180,8 @@ package's `preflight`. Each is a root-only script that walks (or generates again
 full-repo check two to four times. Run them once from the repo root (`pnpm run docs:links`, `pnpm run agents:check`,
 `pnpm run sync:cursor-commands:check`, `pnpm run sync:maintainer-agents:check`); `.husky/pre-push` runs them there,
 alongside the rest of the root gate, after every changed package's `preflight` passes. The root `package.json` lists
-every other root-only script (`bump`, `bump:check`, `spellcheck:kit`, `test:root`, and the sync generators).
+every other root-only script (`audit:modules:check`, `bump`, `bump:check`, `spellcheck:kit`, `test:root`, and the sync
+generators).
 
 ## Pull Request Process
 

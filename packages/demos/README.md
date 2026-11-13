@@ -210,13 +210,17 @@ full-canvas tesseract with no shared UI kit), `logo-lowres` (a full-canvas showc
 | File | What it provides |
 | --- | --- |
 | `ui.js` | The single entry point demos import: `applyTheme()` and the `ui` object |
-| `ui-core.js` | Immediate-mode context: layout anchors, pooled draw commands, hit testing |
+| `ui-core.js` | Immediate-mode context: layout anchors, pooled draw commands, the debug overlay and `/shots` snapshot |
+| `ui-input.js` | Pointer and hit-test state that `ui-core.js` builds on |
 | `ui-widgets.js` | Panels, labels, captions, tooltips, key-value rows, checkboxes, pips, buttons, sliders, meters |
 | `ui-theme.js` | `applyTheme(palette)` - installs the 12 shared UI colors (slots 240-251 by default) and builds the panel, button, meter, and tooltip nine-slices from them; also `THEME_OVERLAY_STYLE` and `THEME_OVERLAY_AUDIO_METER_STYLE` for `configure()` |
 | `ui-dpad.js` | The virtual touch D-pad (`ui.dpadWidget()`, `ui.dpad.isDown` / `ui.dpad.isPressed`) |
 | `key-names.js` | `keyLabel(code)` - short on-screen names for `KeyboardEvent.code` strings |
 | `ui-gestures.js` | Swipe recognition (`ui.swipe()`) and invisible tap zones (`ui.tapIn()`) |
-| `post-process-backend.js` | `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` for effect demos that need WebGPU |
+| `ui-lint.js` | The `/shots` layout lint rules (`overlap`, `out-of-display`, `margin`) |
+| `canvas-sprites.js` | `registerCanvasColors()` and `canvasToImage()` - turn art drawn on an offscreen canvas into a palette-indexed sprite sheet |
+| `crt-glitch.js` | Shared TV-fault constants and glitch state machine, the PipBoy CRT stack, and the reduced-motion-aware CRT chain helpers |
+| `post-process-backend.js` | `isAvailable()`, plus `SOFTWARE_FALLBACK_LINES` (one label per line) and the one-line `SOFTWARE_FALLBACK_NOTE`, for effect demos that need WebGPU |
 
 The kit is immediate mode: a demo declares its widgets every frame inside `render()`, and each widget answers a click, a
 tap, or its bound key on the spot. Because every action is reachable by tap as well as by key, the demos are usable on a
@@ -260,7 +264,7 @@ WebGPU support (for the full experience) is typical in:
 | Browser | Version | Notes |
 | --- | --- | --- |
 | Chrome/Edge | 113+ | Enabled by default |
-| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux |
+| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
 | Safari | 26+ | Enabled by default; Safari 18-25 available via Feature Flags |
 
 ## Engine documentation
