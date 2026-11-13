@@ -68,7 +68,7 @@ section under it will run out of memory. `pnpm run build && pnpm run start` is t
 ## Quality checks
 
 ```bash
-pnpm run preflight   # format:check, typecheck, test, spellcheck, knip, check:well-known-schemas, sync:docs:check
+pnpm run preflight   # typecheck, test, spellcheck, knip, check:well-known-schemas, sync:docs:check
 RTK_DISABLED=1 pnpm run lint   # biome check; plain `pnpm run lint` is mis-rewritten to eslint by the RTK hook
 ```
 
@@ -76,9 +76,9 @@ RTK_DISABLED=1 pnpm run lint   # biome check; plain `pnpm run lint` is mis-rewri
 MiB per-asset and 64 MiB uncompressed Worker limits) and `check:well-known-urls` (boots the built Worker and checks that
 every URL the site advertises to agents resolves).
 
-`test` runs two suites: `test:scripts` (`node --test` over `scripts/**`) and `test:unit` (Vitest over `src/**`, the
-Worker plugins), the second with coverage thresholds. Run either alone, or `pnpm run test:unit:watch` while working on
-`src/`.
+`test` runs two suites: `test:scripts` (`node --test` over `scripts/__tests__/*.test.mjs`) and `test:unit:coverage`
+(Vitest over `src/**`, the Worker plugins, with coverage thresholds). Run `test:scripts` or `test:unit` alone, or
+`pnpm run test:unit:watch` while working on `src/`.
 
 `sync:docs:check` runs last because it regenerates `content/docs` in the working tree - see [Content](#content). After
 re-syncing, stage or commit the result before re-running: the check diffs the working tree against the index. Markdown

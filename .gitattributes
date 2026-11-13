@@ -4,6 +4,7 @@
 # Generated / lockfile - suppress noisy diffs in GitHub linguist
 pnpm-lock.yaml linguist-generated
 packages/blit386/docs/_api-history.json linguist-generated
+
 # Docs mirror generated from packages/blit386/docs (packages/website/scripts/sync-docs-from-engine.mjs)
 packages/website/content/docs/*/** linguist-generated
 packages/website/src/data/api-history.generated.json linguist-generated

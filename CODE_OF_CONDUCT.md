@@ -25,8 +25,10 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported to the project maintainers. All complaints will be reviewed and
-investigated and will result in a response that is deemed necessary and appropriate to the circumstances.
+Instances of unacceptable behavior may be reported to the project maintainers at
+[conduct@blit386.dev](mailto:conduct@blit386.dev). All complaints will be reviewed and investigated promptly and fairly,
+and will result in a response that is deemed necessary and appropriate to the circumstances. The privacy and security of
+the reporter will be respected.
 
 ## Attribution
 

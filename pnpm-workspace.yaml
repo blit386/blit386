@@ -49,7 +49,7 @@ allowBuilds:
   sharp: true
   workerd: true
 
-# Supply-chain hardening for pnpm 11. pnpm 11 only reads auth/registry settings from
+# Supply-chain hardening for pnpm 11+. pnpm 11+ only reads auth/registry settings from
 # .npmrc; everything else (this block, overrides, allowBuilds, and `audit.ignore` if one is ever needed) must live
 # here instead.
 minimumReleaseAge: 10080

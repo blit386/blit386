@@ -50,7 +50,17 @@
     },
     {
       "description": "Linting and formatting tools",
-      "matchPackageNames": ["eslint", "prettier", "@biomejs/biome", "cspell", "knip"],
+      "matchPackageNames": [
+        "eslint",
+        "prettier",
+        "@biomejs/biome",
+        "cspell",
+        "knip",
+        "@eslint/*",
+        "eslint-config-*",
+        "eslint-plugin-*",
+        "@typescript-eslint/*"
+      ],
       "groupName": "linting and formatting"
     },
     {
@@ -69,26 +79,18 @@
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
       "automerge": true,
-      "automergeType": "pr",
-      "minimumReleaseAge": "7 days"
+      "automergeType": "pr"
     },
     {
-      "description": "wrangler moves as one PR across npm (packages/website devDependency) and github-actions (wranglerVersion in deploy.yml), or the local and deployed wrangler drift. Must stay after the GitHub Actions rule so this groupName wins",
+      "description": "wrangler moves as one PR across npm (packages/website devDependency) and the wranglerVersion regex manager (deploy.yml), or the local and deployed wrangler drift",
       "matchPackageNames": ["wrangler"],
       "groupName": "wrangler"
     },
     {
       "description": "All patches - automerge",
       "matchUpdateTypes": ["patch"],
-      "matchPackageNames": ["*"],
       "automerge": true,
-      "automergeType": "pr",
-      "minimumReleaseAge": "7 days"
-    },
-    {
-      "description": "Minor updates - manual review",
-      "matchUpdateTypes": ["minor"],
-      "automerge": false
+      "automergeType": "pr"
     },
     {
       "description": "Major updates - manual review with high priority",
@@ -100,6 +102,27 @@
       "description": "Pin pnpm version",
       "matchPackageNames": ["pnpm"],
       "rangeStrategy": "pin"
+    },
+    {
+      "description": "Held back by 4dfefde3: knip 6.45.1 loads packages/demos/vite.config.js, which imports the engine dist that CI's engine-only job never builds. Remove once that job builds the engine or knip stops evaluating the demos config",
+      "matchFileNames": ["packages/blit386/package.json"],
+      "matchPackageNames": ["knip"],
+      "enabled": false
+    },
+    {
+      "description": "Held back by 4dfefde3: newer fumadocs, react, takumi-js and tailwind crashed the production Cloudflare Worker on boot (takumi wasm loader, \"Invalid URL string\"), which CI does not catch. Remove once that is root-caused",
+      "matchFileNames": ["packages/website/package.json"],
+      "matchPackageNames": [
+        "fumadocs-core",
+        "fumadocs-mdx",
+        "fumadocs-ui",
+        "react",
+        "react-dom",
+        "takumi-js",
+        "tailwindcss",
+        "@tailwindcss/vite"
+      ],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
@@ -113,6 +136,15 @@
     "commitMessageTopic": "",
     "commitMessageExtra": ""
   },
-  "ignoreDeps": [],
-  "postUpdateOptions": ["pnpmDedupe"]
+  "postUpdateOptions": ["pnpmDedupe"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "wrangler-action wranglerVersion pins in deploy.yml, which the github-actions manager does not read",
+      "managerFilePatterns": ["/^\\.github/workflows/deploy\\.yml$/"],
+      "matchStrings": ["wranglerVersion: '(?<currentValue>[^']+)'"],
+      "depNameTemplate": "wrangler",
+      "datasourceTemplate": "npm"
+    }
+  ]
 }

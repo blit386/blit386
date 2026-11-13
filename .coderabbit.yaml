@@ -77,9 +77,9 @@ reviews:
       instructions: >-
         Root-level shared config, one copy for the whole monorepo (`packages/*` no longer carry their own except where a
         package genuinely needs to override the shared rules via `extends`). American English spelling; no emoji
-        anywhere. A change here affects every package - verify with `pnpm run format:check` / `pnpm run knip` at the
-        repo root before suggesting a tightened or loosened rule. Plain hyphen-minus (-) for parenthetical breaks and
-        ranges in prose and comments - never the en dash or em dash.
+        anywhere. A change here affects every package - verify with `pnpm run format:check` at the repo root and `pnpm
+        --filter <package> run knip` before suggesting a tightened or loosened rule. Plain hyphen-minus (-) for
+        parenthetical breaks and ranges in prose and comments - never the en dash or em dash.
     - path: '{prettier.config.js,.prettierignore,.lintstagedrc.json,.npmrc,tsconfig.base.json,pnpm-workspace.yaml}'
       instructions: >-
         Root-level shared config, one copy for the whole monorepo. American English spelling; no emoji anywhere. Keep
@@ -87,8 +87,8 @@ reviews:
         (-) for parenthetical breaks and ranges in prose and comments - never the en dash or em dash.
     - path: 'package.json'
       instructions: >-
-        Root-level manifest: centralizes shared scripts for the whole monorepo. Under pnpm 11 `overrides`,
-        `allowBuilds`, `audit.ignore`, and the supply-chain settings live in `pnpm-workspace.yaml`, not here - pnpm 11
+        Root-level manifest: centralizes shared scripts for the whole monorepo. Under pnpm 11+ `overrides`,
+        `allowBuilds`, `audit.ignore`, and the supply-chain settings live in `pnpm-workspace.yaml`, not here - pnpm 11+
         does not read the `pnpm` field at all. American English spelling; no emoji anywhere. A change here affects every
         package - verify with `pnpm run format:check` and the relevant `pnpm -r run build` / `pnpm -r run typecheck` at
         the repo root before suggesting a modification. Plain hyphen-minus (-) for parenthetical breaks and ranges in

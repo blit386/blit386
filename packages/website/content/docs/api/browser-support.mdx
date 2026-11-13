@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Browser Support"
 description: "WebGPU support matrix, automatic software fallback, and build toolchain."
-lastModified: "2026-11-11T09:51:47+01:00"
+lastModified: "2026-11-13T16:47:34+01:00"
 ---
 
 The WebGPU renderer is the default. When WebGPU is unavailable the engine falls back to the Canvas 2D software renderer
@@ -22,7 +22,7 @@ says so; pick the backend before the first `BT.init()` (in `configure()` or with
 | Browser | Version | Status |
 | --- | --- | --- |
 | Chrome/Edge | 113+ | Enabled by default |
-| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux; Android Nightly needs a WebGPU blocklist override, or it falls back to software |
 | Safari | 26+ | Enabled by default; Safari 18-25 available via Feature Flags |
 
 <Callout title="Point-in-time snapshot">

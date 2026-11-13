@@ -113,7 +113,7 @@ function entityNameToText(node) {
 
 /** Matches both `@deprecated` forms: date-only (legacy) and `since <version> (date)`. */
 const DEPRECATED_PATTERN =
-    /^Deprecated since (?:(?<version>\d+\.\d+\.\d+) \((?<vdate>\d{4}-\d{2}-\d{2})\)|(?<date>\d{4}-\d{2}-\d{2}))\.?\s*(?<note>[\s\S]*)$/u;
+    /^Deprecated since (?:(?<version>\d+\.\d+\.\d+) \((?<versionDate>\d{4}-\d{2}-\d{2})\)|(?<date>\d{4}-\d{2}-\d{2}))\.?\s*(?<note>[\s\S]*)$/u;
 
 /**
  * Parses an `@deprecated` tag's comment text into a structured record. Backward compatible
@@ -129,11 +129,11 @@ export function parseDeprecatedTag(text) {
         return { version: null, date: null, note: text.trim() };
     }
 
-    const { version, vdate, date, note } = match.groups;
+    const { version, versionDate, date, note } = match.groups;
 
     return {
         version: version ?? null,
-        date: vdate ?? date ?? null,
+        date: versionDate ?? date ?? null,
         note: note.trim(),
     };
 }
