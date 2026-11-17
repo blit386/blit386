@@ -141,6 +141,7 @@ export function deadAnchors(filePath, source) {
  * @property {Map<string, Set<string>>} docsAnchors Heading ids per docs route.
  * @property {Set<string>} sitePages Site routes outside `/docs` (`''`, `community`, `blog/<slug>`).
  * @property {Set<string>} demoSlugs Pages on demos.blit386.dev.
+ * @property {string} root Absolute path the tracked paths are relative to.
  * @property {Set<string>} trackedPaths Tracked files and every directory above one, repo-relative.
  * @property {string} siteContentDir Absolute path of `packages/website/content/`, the only place a
  *   root-relative `/route` link resolves (on GitHub it points at the repository root instead).
@@ -176,13 +177,13 @@ function deadLinkReason(filePath, target, registries) {
     }
 
     if (!NON_FILE_TARGET_PATTERN.test(target)) {
+        // Tracked, not merely on disk: a fresh CI checkout has no build output or generated mirror
+        // pages, and its Linux file system is case-sensitive where macOS is not.
         const path = resolve(dirname(filePath), decodeOrRaw(target.split(/[?#]/u)[0]));
 
-        if (isIgnoredFile(path)) {
-            return 'generated mirror page, not in a fresh checkout - link its source under packages/blit386/docs/';
-        }
-
-        return existsSync(path) ? null : 'no such file';
+        return registries.trackedPaths.has(normalizeRelSep(relative(registries.root, path)))
+            ? null
+            : 'no such tracked file';
     }
 
     const site = siteRouteOf(target);
@@ -291,6 +292,7 @@ function buildRegistries(trackedPaths) {
     }
 
     return {
+        root: ROOT,
         docsPaths,
         docsAnchors,
         sitePages,

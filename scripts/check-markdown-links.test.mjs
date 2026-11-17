@@ -126,7 +126,7 @@ describe('deadLinks', () => {
         docsAnchors: new Map([['api/core', new Set(['bootstrap'])]]),
         sitePages: new Set(['', 'community', 'blog/hello-world']),
         demoSlugs: new Set(['basics', 'shots']),
-        trackedPaths: new Set(['packages', 'packages/demos', 'packages/demos/README.md']),
+        trackedPaths: new Set(['other.md', 'packages', 'packages/demos', 'packages/demos/README.md']),
     };
 
     /**
@@ -144,7 +144,7 @@ describe('deadLinks', () => {
             writeFileSync(join(dir, 'other.md'), '# Other\n');
             writeFileSync(page, source);
 
-            return deadLinks(page, source, { ...registries, siteContentDir }).map(({ target }) => target);
+            return deadLinks(page, source, { ...registries, root: dir, siteContentDir }).map(({ target }) => target);
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }
@@ -152,6 +152,11 @@ describe('deadLinks', () => {
 
     test('reports a missing relative file and passes an existing one', () => {
         assert.deepEqual(deadTargetsIn('[ok](./other.md) [ok](other.md#x) [bad](missing.md)\n'), ['missing.md']);
+    });
+
+    test('reports a file that is on disk but not tracked, or tracked under another case', () => {
+        // page.md is written next to other.md but is not in trackedPaths.
+        assert.deepEqual(deadTargetsIn('[untracked](page.md) [case](OTHER.md)\n'), ['page.md', 'OTHER.md']);
     });
 
     test('reports a docs path missing from the sitemap and passes a real one', () => {
@@ -219,7 +224,7 @@ describe('deadLinks', () => {
 
             writeFileSync(page, source);
 
-            assert.equal(deadLinks(page, source, { ...registries, siteContentDir: dir }).length, 1);
+            assert.equal(deadLinks(page, source, { ...registries, root: ROOT, siteContentDir: dir }).length, 1);
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }
