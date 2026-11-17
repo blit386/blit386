@@ -209,7 +209,6 @@ script, two call sites. Neither blocks or fails the session on a bootstrap error
 
 Preflight behaves differently in ephemeral or CI-style checkouts, and the failures look like code bugs but are not - do
 not "fix" them by editing the checks. `_api-history.json` regeneration needs git tags (dates regenerate as `null`
-without them, wiping the committed ones; restore the `versions` block afterward), and `docs:links` needs outbound
-network (external URLs 403 through a sandbox proxy while internal links still resolve). Full list, including hook
-interaction and when `--no-verify` is legitimate: the root `.claude/rules/environment-gotchas.md`, which loads at
-session start.
+without them, wiping the committed ones; restore the `versions` block afterward). `docs:links` is fully offline, so its
+failures are always real. Full list, including hook interaction and when `--no-verify` is legitimate: the root
+`.claude/rules/environment-gotchas.md`, which loads at session start.

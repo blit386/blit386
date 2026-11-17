@@ -6,7 +6,7 @@
  *
  * Shared on purpose: `packages/demos/scripts/check-demo-comment-links.mjs` checks the `#fragment`
  * of every docs link in a demo header against it, and the root `docs:links` check
- * (`scripts/check-markdown-links.mjs`) does the same for every relative link in repo Markdown.
+ * (`scripts/check-markdown-links.mjs`) does the same for every relative and docs link in repo Markdown.
  *
  * shortcut: a line-based ATX scan, not a Markdown parser. Setext headings, headings inside lists
  * or block quotes, inline HTML or JSX in a heading, and fumadocs' `[#custom-id]` suffix are not

@@ -177,11 +177,8 @@ pnpm run spellcheck       # cspell
 pnpm run preflight        # everything, including api:since:check / api:history:check
 ```
 
-One known caveat: a brand-new published page's own `blit386.dev-banner` link points at a URL that does not exist until
-the site is deployed with your branch, so `docs:links` will report that one link as dead until then. This only applies
-to a page's first-ever publication, not to adding tags to an already-published page. If you hit it, confirm every
-_other_ page's banner link still resolves (curl a couple, or trust that they were already passing before your change)
-before concluding it is this expected, deploy-order artifact rather than a real regression.
+`docs:links` runs offline and resolves `blit386.dev/docs/...` links against `_sitemap.json`, so a brand-new page needs
+no deploy before the check passes.
 
 In `packages/website`:
 
