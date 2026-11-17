@@ -108,7 +108,9 @@ order, and prints one JSON line per step.
 
    Wait for `isReady` first (step 4). It works in a hidden or headless page too, and the same seed gives the same frame
    every time - as long as the game moves from `BT.ticks` / `BT.timeSeconds` / `BT.random`, never `Date.now()` or
-   `performance.now()`, and resets top-of-file variables in `init()`. Key presses do not replay.
+   `performance.now()`, and resets top-of-file variables in `init()`. Key presses do not replay. From engine 1.8.1 that
+   includes the engine overlay: while a seek holds the game, its FPS reads the target rate and its timings read `0.0ms`,
+   so two captures of the same moment match byte for byte.
 
 8. Check that a click or key reached `update()` exactly once (engine 1.8.1+). Do not wrap `BT.isPressed` to count calls:
    `render()` sees the same press on a different clock. Record the input trace instead:
