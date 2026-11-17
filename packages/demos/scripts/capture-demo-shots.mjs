@@ -195,30 +195,48 @@ export function summarizeEntries(entries, slugs) {
 
 /**
  * Image paths whose bytes differ between two runs of the same capture, or that only one run produced.
- * Both runs capture the same jobs in the same order, so images are compared position by position: a
- * path listed twice (`--demos a,a`) is checked at each position, not only at its last one.
+ * Images are matched by path and occurrence: a path listed twice (`--demos a,a`) is checked at each
+ * copy, and a capture that failed in one run does not shift the comparison of the images after it.
  *
  * @param {{ path: string, base64: string }[]} first
  * @param {{ path: string, base64: string }[]} second
  * @returns {string[]}
  */
 export function unstableImages(first, second) {
+    const firstByKey = byOccurrence(first);
+    const secondByKey = byOccurrence(second);
     const unstable = new Set();
 
-    for (let index = 0; index < Math.max(first.length, second.length); index++) {
-        const a = first.at(index);
-        const b = second.at(index);
+    for (const key of new Set([...firstByKey.keys(), ...secondByKey.keys()])) {
+        const a = firstByKey.get(key);
+        const b = secondByKey.get(key);
 
-        if (a?.path !== b?.path || a?.base64 !== b?.base64) {
-            for (const image of [a, b]) {
-                if (image) {
-                    unstable.add(image.path);
-                }
-            }
+        if (a?.base64 !== b?.base64) {
+            unstable.add((a ?? b).path);
         }
     }
 
     return [...unstable];
+}
+
+/**
+ * Keys each image by its path and how many times that path came before it in the run.
+ *
+ * @param {{ path: string, base64: string }[]} images
+ * @returns {Map<string, { path: string, base64: string }>}
+ */
+function byOccurrence(images) {
+    const seen = new Map();
+
+    return new Map(
+        images.map((image) => {
+            const occurrence = seen.get(image.path) ?? 0;
+
+            seen.set(image.path, occurrence + 1);
+
+            return [`${image.path}#${occurrence}`, image];
+        }),
+    );
 }
 
 /**

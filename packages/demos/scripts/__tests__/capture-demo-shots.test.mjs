@@ -219,4 +219,18 @@ describe('--check-stable', () => {
 
         assert.deepEqual(unstableImages(first, second), ['basics/start.display.png']);
     });
+
+    it('reports only the missing image when an earlier capture failed in one run', () => {
+        const first = [
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+            { path: 'colors/start.display.png', base64: 'BBBB' },
+            { path: 'fonts/start.display.png', base64: 'CCCC' },
+        ];
+        const second = [
+            { path: 'colors/start.display.png', base64: 'BBBB' },
+            { path: 'fonts/start.display.png', base64: 'CCCC' },
+        ];
+
+        assert.deepEqual(unstableImages(first, second), ['basics/start.display.png']);
+    });
 });
