@@ -60,10 +60,10 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
   every formatter. It is already excluded in `.prettierignore`; a generated project's own `.blit/` mirrors that
   exclusion.
 - `packages/website/content/docs/{api,guides,performance,reference,build-a-game}/` is gitignored build output: the
-  website's `build`, `typecheck`, `test`, and `dev` regenerate it from `packages/blit386/docs/` and
-  `packages/kit/content/` (`pnpm run sync:docs`), so a doc change reaches blit386.dev on the next deploy with nothing to
-  commit in `packages/website`. The sync needs full git history (each page's `lastModified`) and fails in a shallow
-  clone.
+  website's `build`, `typecheck`, `test`, and `dev` regenerate it (`pnpm run sync:docs`) from `packages/blit386/docs/`,
+  plus `packages/kit/content/`, the scaffolder templates, and the demos for Build a Game, so a doc change reaches
+  blit386.dev on the next deploy with nothing to commit in `packages/website`. The sync needs full git history (each
+  page's `lastModified`) and fails in a shallow clone.
 - Every `git` subprocess a script spawns, in any package, passes `env: gitEnv()` from `scripts/lib/git-env.mjs`. Scripts
   run under `.husky/pre-push`, which exports `GIT_DIR` into every child; it outranks `cwd` and `-C`, so an unguarded
   `git init` in a fixture repo re-initializes the real one and writes `bare = true` into the shared `.git/config`.
