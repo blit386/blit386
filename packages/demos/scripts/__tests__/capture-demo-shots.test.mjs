@@ -206,4 +206,17 @@ describe('--check-stable', () => {
 
         assert.deepEqual(unstableImages(run, [...run]), []);
     });
+
+    it('catches a difference in an earlier copy of a path captured twice', () => {
+        const first = [
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+        ];
+        const second = [
+            { path: 'basics/start.display.png', base64: 'CCCC' },
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+        ];
+
+        assert.deepEqual(unstableImages(first, second), ['basics/start.display.png']);
+    });
 });

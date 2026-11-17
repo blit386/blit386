@@ -195,19 +195,30 @@ export function summarizeEntries(entries, slugs) {
 
 /**
  * Image paths whose bytes differ between two runs of the same capture, or that only one run produced.
+ * Both runs capture the same jobs in the same order, so images are compared position by position: a
+ * path listed twice (`--demos a,a`) is checked at each position, not only at its last one.
  *
  * @param {{ path: string, base64: string }[]} first
  * @param {{ path: string, base64: string }[]} second
  * @returns {string[]}
  */
 export function unstableImages(first, second) {
-    const secondByPath = new Map(second.map((image) => [image.path, image.base64]));
-    const firstPaths = new Set(first.map((image) => image.path));
+    const unstable = new Set();
 
-    return [
-        ...first.filter((image) => secondByPath.get(image.path) !== image.base64).map((image) => image.path),
-        ...second.filter((image) => !firstPaths.has(image.path)).map((image) => image.path),
-    ];
+    for (let index = 0; index < Math.max(first.length, second.length); index++) {
+        const a = first.at(index);
+        const b = second.at(index);
+
+        if (a?.path !== b?.path || a?.base64 !== b?.base64) {
+            for (const image of [a, b]) {
+                if (image) {
+                    unstable.add(image.path);
+                }
+            }
+        }
+    }
+
+    return [...unstable];
 }
 
 /**
