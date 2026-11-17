@@ -1104,7 +1104,7 @@ describe('BTAPI', () => {
         });
 
         it('hands the overlay the voice-pool size on the first parked draw of a fresh engine (BT-797)', async () => {
-            await boot({
+            const { loop } = await boot({
                 ...makeMockDemo(),
                 configure: () => ({
                     isSplashEnabled: false,
@@ -1125,9 +1125,13 @@ describe('BTAPI', () => {
                 totalVoicesPerDraw.push(args[9]?.totalVoices ?? -1);
             });
 
-            await BTAPI.instance.seek.renderAt(1);
+            // A seek that is the engine's first render, then the step(0) re-render a capture of it runs.
+            await BTAPI.instance.seek.renderAt(0, 'current');
+            loop.step(0);
 
+            expect(totalVoicesPerDraw).toHaveLength(2);
             expect(totalVoicesPerDraw[0]).toBeGreaterThan(0);
+            expect(totalVoicesPerDraw[1]).toBe(totalVoicesPerDraw[0]);
         });
 
         it("from 'start' restores the RNG to its pre-init state", async () => {
