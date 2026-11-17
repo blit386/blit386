@@ -90,6 +90,12 @@ export function findLinksInHeader(headerText) {
 }
 
 /**
+ * The regex in `findLinksInHeader` is permissive by design (it has to catch a placeholder
+ * domain regardless of what path or syntax follows it), so it can capture text that isn't a
+ * valid URL - e.g. an illustrative `https://[id]` in prose. Every check parses through
+ * `tryParseUrl`, which returns `null` instead of throwing, and this reports those cleanly per
+ * file rather than letting one bad match crash the run.
+ *
  * @param {string[]} urls
  * @returns {string[]} Human-readable failure messages, one per URL that `findLinksInHeader`
  *   matched but that does not parse as a valid URL.
