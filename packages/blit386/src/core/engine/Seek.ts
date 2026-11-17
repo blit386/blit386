@@ -119,7 +119,7 @@ export class Seek {
      * instance.
      *
      * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, and the post-process clock. The game's own fields reset because the replay
+     * input edges, ticks, the post-process clock, and the overlay's measured timings and timing chart. The game's own fields reset because the replay
      * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
      * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
      * game has no class to build from, so its `init()` re-runs on the same object and resetting its
@@ -131,7 +131,8 @@ export class Seek {
      * `BT.random` stream position, the camera offset and the post-process clock are
      * restored, so `BT.resume()` continues the old game where it was (`BT.random.seedValue` reads
      * `undefined` afterwards unless nothing had drawn since the seed). Not restored: palette effects
-     * and post-process effects (clearing disposes them), and pending input edges, all gone. An object-literal
+     * and post-process effects (clearing disposes them), pending input edges, and the overlay's timing
+     * history, all gone. An object-literal
      * game runs `init()` on the live object, so fields it wrote before failing stay changed.
      *
      * @param demo - Running game instance.
@@ -164,6 +165,11 @@ export class Seek {
         this.engine.drainInputEdges(0);
         loop.resetTicks();
         this.engine.lastRenderClockMs = 0;
+
+        // The overlay's measured numbers and timing chart came from the live run's wall clock; start
+        // them clean like the boot run did, so the seeked frame shows the same overlay on every run.
+        this.engine.diagnostics.reset();
+        this.engine.overlay?.resetSamples(0);
 
         // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the
         // loop's update/render callbacks all reach the instance being replayed.

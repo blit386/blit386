@@ -138,6 +138,7 @@ export class FrameLoop {
                     this.engine.palette,
                     this.engine.draw.framePaletteUsageMask,
                     this.engine.diagnostics.audioSnapshot,
+                    this.engine.isSeekParked,
                 );
             }
 

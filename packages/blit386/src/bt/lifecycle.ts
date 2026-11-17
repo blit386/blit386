@@ -466,6 +466,8 @@ export const lifecycle = {
      *
      * @since 1.8.0
      * @changed 1.9.0 A failed `init()` on a `from: 'start'` seek restores ticks, the random stream and the camera.
+     * @changed 1.8.1 While a seek holds the loop, the overlay shows the target FPS and zero frame times, and a
+     *   `from: 'start'` seek clears its timing chart, so a seeked frame captures the same on every run.
      * @param seconds - Target time in seconds; rounded to the nearest tick.
      * @param options - `{ from: 'start' | 'current' }`; defaults to `'start'`. Must be an object - a
      *   bare `'current'` rejects.

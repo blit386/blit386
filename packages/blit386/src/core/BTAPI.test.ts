@@ -1086,6 +1086,35 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getTicks()).toBe(192);
         });
 
+        it("from 'start' gives the overlay the same numbers however long the frames took (BT-797)", async () => {
+            await boot();
+
+            const overlay = BTAPI.instance.overlay;
+
+            expect(overlay).not.toBeNull();
+
+            const resetSpy = vi.spyOn(overlay as Overlay, 'resetSamples');
+            const drawSpy = vi.spyOn(overlay as Overlay, 'updateAndRender');
+            let nowMs = 0;
+            // Every wall-clock read is 7 ms after the last: a slow machine in the middle of a capture.
+            const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => (nowMs += 7));
+
+            await BTAPI.instance.seek.renderAt(1);
+            nowSpy.mockRestore();
+
+            const { frameMs, updateMs, renderMs, updateSteps } = BTAPI.instance.diagnostics.overlayTiming;
+
+            expect(resetSpy).toHaveBeenCalledWith(0);
+            expect({ frameMs, updateMs, renderMs, updateSteps }).toEqual({
+                frameMs: 0,
+                updateMs: 0,
+                renderMs: 0,
+                updateSteps: 60,
+            });
+            // The parked flag is the last argument: the present FPS is not sampled from the wall clock.
+            expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
+        });
+
         it("from 'start' restores the RNG to its pre-init state", async () => {
             const statesSeenByInit: number[] = [];
             const demo = makeMockDemo();

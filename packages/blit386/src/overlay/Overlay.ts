@@ -264,6 +264,18 @@ export class Overlay {
     }
 
     /**
+     * Forgets the measured FPS, the smoothed timings and the timing chart history, so a replay from
+     * tick 0 (`BT.renderAt` from `'start'`) starts the overlay as clean as the boot run did.
+     *
+     * @param currentTick - Fixed-update tick the timing chart timeline restarts from.
+     */
+    resetSamples(currentTick: number): void {
+        this.#fps.reset();
+        this.#timing.reset();
+        this.#timingChart.clear(currentTick);
+    }
+
+    /**
      * Handles overlay frame input: palette swatch copy first, then body toggle.
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
@@ -327,6 +339,8 @@ export class Overlay {
      * @param palette - Active demo palette for optional palette grid.
      * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
      * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
+     * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped: the present FPS is not
+     *   sampled, because frames stepped or re-rendered back to back have no real cadence to measure.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -339,11 +353,15 @@ export class Overlay {
         palette?: Palette | null,
         usedPaletteMask: Uint8Array = EMPTY_PALETTE_USAGE_MASK,
         audioSnapshot?: OverlayAudioSnapshot,
+        isClockParked = false,
     ): void {
         // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
         this.#sampleTiming(timing);
         this.#sampleAudio(audioSnapshot);
-        this.#fps.sample();
+
+        if (!isClockParked) {
+            this.#fps.sample();
+        }
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 

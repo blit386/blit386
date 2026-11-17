@@ -72,6 +72,14 @@ export class TimingSampler {
         return this.#drawCalls;
     }
 
+    /** Forgets every sample, so the next one is taken as-is instead of smoothed into older wall-clock values. */
+    reset(): void {
+        this.#hasSample = false;
+        this.#smoothedFrameMs = 0;
+        this.#smoothedUpdateMs = 0;
+        this.#smoothedRenderMs = 0;
+    }
+
     /**
      * Ingests one frame-timing snapshot.
      *

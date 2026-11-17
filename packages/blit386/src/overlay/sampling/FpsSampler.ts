@@ -29,6 +29,12 @@ export class FpsSampler {
         return Math.round(this.#smoothedFps ?? this.#targetFps);
     }
 
+    /** Forgets every sample, so {@link measuredFps} reads the target rate until the next two samples. */
+    reset(): void {
+        this.#lastSampleMs = null;
+        this.#smoothedFps = null;
+    }
+
     /** Ingests one render-frame timing sample. */
     sample(): void {
         const now = performance.now();
