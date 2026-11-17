@@ -123,9 +123,9 @@ The repo's shell-safety hook scans the WHOLE Bash command text, so destructive-g
 ## 7. Push, PR, CI, merge
 
 - Push (foreground, timeout 600000; the pre-push hook runs preflight for changed packages plus root checks, often 1-3
-  minutes): `NODE_EXTRA_CA_CERTS=/etc/ssl/cert.pem RTK_DISABLED=1 git push -u origin <branch>:<branch>` Known
-  environment artifacts, not real failures: external-URL 403s in `docs:links` (e.g. opensource.org). If the hook fails
-  ONLY on such an artifact, stop and report to the manager - never `--no-verify` unasked.
+  minutes): `RTK_DISABLED=1 git push -u origin <branch>:<branch>` If the hook fails on something that looks like an
+  environment artifact (see the root `.claude/rules/environment-gotchas.md`), stop and report to the manager - never
+  `--no-verify` unasked.
 - PR body: write it with the Write tool to the scratchpad, then
   `gh pr create --base main --head <branch> --title "<conventional title> (BT-xxx)" --body-file <file>`. Do NOT pass
   `--label` (it spawns a second, all-skipped CI run that masks the real one). Body shape (match the umbrella's earlier

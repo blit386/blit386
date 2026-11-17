@@ -18,6 +18,9 @@
  *     page's `src` file, slugged by `scripts/lib/heading-anchors.mjs` the way the site does.
  *   - `demos.blit386.dev/<slug>`: the first path segment must be a `DEMO_ORDER` entry.
  *
+ * The docs and demo rules live in `scripts/lib/blit386-links.mjs`, shared with the root
+ * `docs:links` check.
+ *
  * Any other domain (e.g. a one-off GitHub credit) is ignored.
  *
  * Usage:
@@ -27,8 +30,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { headingAnchors } from '../../../scripts/lib/heading-anchors.mjs';
+import {
+    findDemoLinkFailures,
+    findDocsLinkFailures,
+    readSitemap,
+    tryParseUrl,
+} from '../../../scripts/lib/blit386-links.mjs';
 import { DEMO_ORDER } from '../plugins/demo-order.js';
+
+// Re-exported so this gate's tests keep importing them from here.
+export { findDemoLinkFailures, findDocsLinkFailures };
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, '..', 'blit386', 'docs');
@@ -81,22 +92,10 @@ export function findLinksInHeader(headerText) {
 /**
  * The regex in `findLinksInHeader` is permissive by design (it has to catch a placeholder
  * domain regardless of what path or syntax follows it), so it can capture text that isn't a
- * valid URL - e.g. an illustrative `https://[id]` in prose. Parsing that with `new URL()`
- * throws, which would otherwise crash the whole script on one bad match instead of reporting a
- * clean per-file failure.
+ * valid URL - e.g. an illustrative `https://[id]` in prose. Every check parses through
+ * `tryParseUrl`, which returns `null` instead of throwing, and this reports those cleanly per
+ * file rather than letting one bad match crash the run.
  *
- * @param {string} url
- * @returns {URL | null} The parsed URL, or `null` when `url` is not a valid absolute URL.
- */
-function tryParseUrl(url) {
-    try {
-        return new URL(url);
-    } catch {
-        return null;
-    }
-}
-
-/**
  * @param {string[]} urls
  * @returns {string[]} Human-readable failure messages, one per URL that `findLinksInHeader`
  *   matched but that does not parse as a valid URL.
@@ -129,74 +128,6 @@ export function findPlaceholderLinkFailures(urls) {
 }
 
 /**
- * @param {string[]} urls
- * @param {Set<string>} sitemapPaths `path` values from `packages/blit386/docs/_sitemap.json`.
- * @param {Map<string, Set<string>>} [anchorsByPath] Heading ids per sitemap path. A fragment is
- *   checked only when its page has an entry, so callers that pass none check paths alone.
- * @returns {string[]} Human-readable failure messages for `blit386.dev/docs/...` links whose
- *   page path (fragment stripped) is not in `sitemapPaths`, or whose fragment is not a heading
- *   id on that page.
- */
-export function findDocsLinkFailures(urls, sitemapPaths, anchorsByPath = new Map()) {
-    const failures = [];
-
-    for (const url of urls) {
-        const parsed = tryParseUrl(url);
-
-        if (parsed === null || parsed.hostname !== 'blit386.dev' || !parsed.pathname.startsWith('/docs/')) {
-            continue;
-        }
-
-        const path = parsed.pathname.slice('/docs/'.length).replace(/\/$/u, '');
-
-        if (!sitemapPaths.has(path)) {
-            failures.push(`${url} has no matching page in packages/blit386/docs/_sitemap.json (path "${path}")`);
-            continue;
-        }
-
-        // Raw, not decoded: every heading id is ASCII today, and decoding a stray `%` would throw.
-        const fragment = parsed.hash.slice(1);
-        const anchors = anchorsByPath.get(path);
-
-        if (fragment !== '' && anchors !== undefined && !anchors.has(fragment)) {
-            failures.push(`${url} has no heading "#${fragment}" on the page (path "${path}")`);
-        }
-    }
-
-    return failures;
-}
-
-/**
- * @param {string[]} urls
- * @param {Set<string>} demoSlugs `DEMO_ORDER` entries.
- * @returns {string[]} Human-readable failure messages for `demos.blit386.dev/<slug>` links whose
- *   slug is not in `demoSlugs`. A bare `https://demos.blit386.dev` (no slug) is not checked.
- */
-export function findDemoLinkFailures(urls, demoSlugs) {
-    const failures = [];
-
-    for (const url of urls) {
-        const parsed = tryParseUrl(url);
-
-        if (parsed === null || parsed.hostname !== 'demos.blit386.dev') {
-            continue;
-        }
-
-        const slug = parsed.pathname.split('/').filter(Boolean)[0];
-
-        if (slug === undefined) {
-            continue;
-        }
-
-        if (!demoSlugs.has(slug)) {
-            failures.push(`${url} references demo "${slug}", which is not in DEMO_ORDER`);
-        }
-    }
-
-    return failures;
-}
-
-/**
  * Runs every link check against one file's header comment.
  *
  * @param {string} source Full file contents.
@@ -214,21 +145,9 @@ export function findCommentLinkFailures(source, { sitemapPaths, anchorsByPath, d
     ];
 }
 
-/**
- * @returns {{ sitemapPaths: Set<string>, anchorsByPath: Map<string, Set<string>> }} `path` values
- *   from `packages/blit386/docs/_sitemap.json`, and the heading ids of each page's `src` file.
- */
-function readSitemap() {
-    const sitemap = JSON.parse(readFileSync(join(DOCS_DIR, '_sitemap.json'), 'utf8'));
-    const anchorsByPath = new Map(
-        sitemap.pages.map((page) => [page.path, headingAnchors(readFileSync(join(DOCS_DIR, page.src), 'utf8'))]),
-    );
-    return { sitemapPaths: new Set(anchorsByPath.keys()), anchorsByPath };
-}
-
 /** @returns {string[]} All failure messages across every `src/*.js` header comment, each prefixed with its file name. */
 function runAllChecks() {
-    const { sitemapPaths, anchorsByPath } = readSitemap();
+    const { sitemapPaths, anchorsByPath } = readSitemap(DOCS_DIR);
     const demoSlugs = new Set(DEMO_ORDER);
     const srcDir = join(ROOT, 'src');
     const failures = [];

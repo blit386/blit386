@@ -2,9 +2,9 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deadAnchors, isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
+import { contentRouteOf, deadAnchors, deadLinks, isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
 
 // ROOT as computed by check-markdown-links.mjs: resolve(dirname(scriptUrl), '..')
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -117,5 +117,156 @@ describe('deadAnchors', () => {
 
             assert.deepEqual(deadAnchors(page, source), []);
         });
+    });
+});
+
+describe('deadLinks', () => {
+    const registries = {
+        docsPaths: new Set(['api/core', 'faq']),
+        docsAnchors: new Map([['api/core', new Set(['bootstrap', 'usage-1'])]]),
+        sitePages: new Set(['', 'community', 'blog/hello-world']),
+        demoSlugs: new Set(['basics', 'shots']),
+        trackedPaths: new Set(['other.md', 'guide(v2).md', 'packages', 'packages/demos', 'packages/demos/README.md']),
+    };
+
+    /**
+     * @param {string} source
+     * @param {{ inSiteContent?: boolean }} [options] Whether the page sits under the website's content dir.
+     * @returns {string[]} The dead targets `deadLinks` reports for `source`.
+     */
+    const deadTargetsIn = (source, { inSiteContent = true } = {}) => {
+        const dir = mkdtempSync(join(tmpdir(), 'docs-links-targets-'));
+
+        try {
+            const page = join(dir, 'page.md');
+            const siteContentDir = inSiteContent ? dir : join(dir, 'elsewhere');
+
+            writeFileSync(join(dir, 'other.md'), '# Other\n');
+            writeFileSync(page, source);
+
+            return deadLinks(page, source, { ...registries, root: dir, siteContentDir }).map(({ target }) => target);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    };
+
+    test('reports a missing relative file and passes an existing one', () => {
+        assert.deepEqual(deadTargetsIn('[ok](./other.md) [ok](other.md#x) [bad](missing.md)\n'), ['missing.md']);
+    });
+
+    test('keeps balanced parentheses in a link target', () => {
+        assert.deepEqual(deadTargetsIn('[ok](./guide(v2).md) [bad](./gone(v2).md)\n'), ['./gone(v2).md']);
+    });
+
+    test('decodes a percent-encoded docs fragment before the heading lookup', () => {
+        assert.deepEqual(deadTargetsIn('[ok](/docs/api/core#usage%2D1) [bad](/docs/api/core#usage%2D2)\n'), [
+            '/docs/api/core#usage%2D2',
+        ]);
+    });
+
+    test('reports a file that is on disk but not tracked, or tracked under another case', () => {
+        // page.md is written next to other.md but is not in trackedPaths.
+        assert.deepEqual(deadTargetsIn('[untracked](page.md) [case](OTHER.md)\n'), ['page.md', 'OTHER.md']);
+    });
+
+    test('reports a docs path missing from the sitemap and passes a real one', () => {
+        const source = [
+            '[ok](/docs/api/core#bootstrap)',
+            '[ok](https://blit386.dev/docs/faq)',
+            '[bad](/docs/api/nope)',
+            '[bad](https://blit386.dev/docs/guides/gone)',
+            '[bad anchor](/docs/api/core#nope)',
+        ].join('\n');
+
+        assert.deepEqual(deadTargetsIn(source), [
+            '/docs/api/nope',
+            'https://blit386.dev/docs/guides/gone',
+            '/docs/api/core#nope',
+        ]);
+    });
+
+    test('reports a site route with no content page and passes a real one', () => {
+        assert.deepEqual(deadTargetsIn('[ok](/community) [ok](https://blit386.dev/) [bad](/gone)\n'), ['/gone']);
+    });
+
+    test('reports a dead demo slug and passes a demo or an allowlisted page', () => {
+        const source =
+            '[ok](https://demos.blit386.dev/basics) [ok](https://demos.blit386.dev/shots) [bad](https://demos.blit386.dev/retired)\n';
+
+        assert.deepEqual(deadTargetsIn(source), ['https://demos.blit386.dev/retired']);
+    });
+
+    test('reports a dead GitHub blob or tree path and passes a tracked one', () => {
+        const base = 'https://github.com/blit386/blit386';
+        const source = [
+            `[ok](${base}/blob/main/packages/demos/README.md#L3)`,
+            `[ok](${base}/tree/main/packages/demos)`,
+            `[bad](${base}/blob/main/packages/demos/GONE.md)`,
+        ].join('\n');
+
+        assert.deepEqual(deadTargetsIn(source), [`${base}/blob/main/packages/demos/GONE.md`]);
+    });
+
+    test('never checks a third-party URL, an issue link or mailto', () => {
+        const source = [
+            '[x](https://example.invalid/never-fetched)',
+            '[x](https://github.com/blit386/blit386/issues/999999)',
+            '[x](https://github.com/someone/else/blob/main/gone.md)',
+            '[x](mailto:nobody@example.invalid)',
+        ].join('\n');
+
+        assert.deepEqual(deadTargetsIn(source), []);
+    });
+
+    test('reports a root-relative route outside the website content and passes an absolute URL', () => {
+        const source = '[bad](/community) [ok](https://blit386.dev/community)\n';
+
+        assert.deepEqual(deadTargetsIn(source, { inSiteContent: false }), ['/community']);
+    });
+
+    test('reports a relative link into the generated docs mirror', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'docs-links-mirror-'));
+
+        try {
+            const page = join(dir, 'page.md');
+            const mirror = join(ROOT, 'packages', 'website', 'content', 'docs', 'api', 'core.mdx');
+            const source = `[mirror](${relative(dir, mirror)})\n`;
+
+            writeFileSync(page, source);
+
+            assert.equal(deadLinks(page, source, { ...registries, root: ROOT, siteContentDir: dir }).length, 1);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+
+    test('checks href attributes, allowing a root-relative Card href outside the website content', () => {
+        const source = '<Card title="ok" href="/docs/api/core" />\n<Card title="bad" href="/docs/api/gone" />\n';
+
+        assert.deepEqual(deadTargetsIn(source, { inSiteContent: false }), ['/docs/api/gone']);
+    });
+});
+
+describe('contentRouteOf', () => {
+    test('maps hand-authored website pages to the routes the site serves', () => {
+        const routes = [
+            'packages/website/content/index.mdx',
+            'packages/website/content/community.mdx',
+            'packages/website/content/docs/index.mdx',
+            'packages/website/content/docs/faq.mdx',
+            'packages/website/content/blog/hello-world.mdx',
+        ].map(contentRouteOf);
+
+        assert.deepEqual(routes, ['', 'community', 'docs', 'docs/faq', 'blog/hello-world']);
+    });
+
+    test('skips generated mirror pages, non-mdx files and paths outside the website content', () => {
+        const routes = [
+            'packages/website/content/docs/api/core.mdx',
+            'packages/website/content/meta.json',
+            'packages/blit386/docs/api-core.md',
+        ].map(contentRouteOf);
+
+        assert.deepEqual(routes, [null, null, null]);
     });
 });

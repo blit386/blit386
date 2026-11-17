@@ -138,7 +138,8 @@ Files outside every package (root `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.husky/
 No combined `preflight` script exists at root; run what does:
 
 - `pnpm run format:check` - Biome + Prettier across the whole tree
-- `pnpm run docs:links` - Markdown link checker
+- `pnpm run docs:links` - offline Markdown link checker (relative files, anchors, BLIT386's own URLs; never fetches
+  third-party URLs)
 - `pnpm run agents:check` - skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, root
   `.mcp.json` (declared server, URL parity with the website discovery card, `.gitignore` negation), cursor rules parity,
   cursor `.mcp.json`, and the maintainer dogfood configs for Antigravity/Codex/Gemini/Copilot/OpenCode
