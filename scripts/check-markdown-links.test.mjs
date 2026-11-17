@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deadAnchors, deadLinks, isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
+import { contentRouteOf, deadAnchors, deadLinks, isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
 
 // ROOT as computed by check-markdown-links.mjs: resolve(dirname(scriptUrl), '..')
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -234,5 +234,29 @@ describe('deadLinks', () => {
         const source = '<Card title="ok" href="/docs/api/core" />\n<Card title="bad" href="/docs/api/gone" />\n';
 
         assert.deepEqual(deadTargetsIn(source, { inSiteContent: false }), ['/docs/api/gone']);
+    });
+});
+
+describe('contentRouteOf', () => {
+    test('maps hand-authored website pages to the routes the site serves', () => {
+        const routes = [
+            'packages/website/content/index.mdx',
+            'packages/website/content/community.mdx',
+            'packages/website/content/docs/index.mdx',
+            'packages/website/content/docs/faq.mdx',
+            'packages/website/content/blog/hello-world.mdx',
+        ].map(contentRouteOf);
+
+        assert.deepEqual(routes, ['', 'community', 'docs', 'docs/faq', 'blog/hello-world']);
+    });
+
+    test('skips generated mirror pages, non-mdx files and paths outside the website content', () => {
+        const routes = [
+            'packages/website/content/docs/api/core.mdx',
+            'packages/website/content/meta.json',
+            'packages/blit386/docs/api-core.md',
+        ].map(contentRouteOf);
+
+        assert.deepEqual(routes, [null, null, null]);
     });
 });

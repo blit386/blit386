@@ -255,6 +255,30 @@ export function deadLinks(filePath, source, registries) {
     return dead;
 }
 
+/** @param {Set<string>} set @param {string} path Adds `path` and every folder above it (`a`, `a/b`, `a/b/c`). */
+function addWithAncestors(set, path) {
+    const parts = path.split('/');
+
+    for (let i = 1; i <= parts.length; i += 1) {
+        set.add(parts.slice(0, i).join('/'));
+    }
+}
+
+/**
+ * The site route a tracked `packages/website/content/` page is served at: `''` for the home page,
+ * `docs` for the docs hub, `docs/faq`, `blog/<slug>`.
+ *
+ * @param {string} path Repo-relative tracked path.
+ * @returns {string | null} The route, or `null` for anything that is not a hand-authored `.mdx` page.
+ */
+export function contentRouteOf(path) {
+    if (!path.startsWith(SITE_CONTENT_PREFIX) || !path.endsWith('.mdx') || isIgnoredFile(join(ROOT, path))) {
+        return null;
+    }
+
+    return path.slice(SITE_CONTENT_PREFIX.length, -'.mdx'.length).replace(/(?:^|\/)index$/u, '');
+}
+
 /**
  * Builds the registries `deadLinks` checks against, from the working tree alone.
  *
@@ -269,30 +293,22 @@ function buildRegistries(trackedPaths) {
     const trackedWithDirs = new Set();
 
     for (const path of trackedPaths) {
-        const parts = path.split('/');
+        addWithAncestors(trackedWithDirs, path);
 
-        for (let i = 1; i <= parts.length; i += 1) {
-            trackedWithDirs.add(parts.slice(0, i).join('/'));
-        }
+        const route = contentRouteOf(path);
 
-        if (!path.startsWith(SITE_CONTENT_PREFIX) || !path.endsWith('.mdx') || isIgnoredFile(join(ROOT, path))) {
+        if (route === null || route === DOCS_ROUTE) {
             continue;
         }
-
-        const route = path.slice(SITE_CONTENT_PREFIX.length, -'.mdx'.length).replace(/(?:^|\/)index$/u, '');
 
         if (route.startsWith(`${DOCS_ROUTE}/`)) {
             const docsRoute = route.slice(DOCS_ROUTE.length + 1);
 
             docsPaths.add(docsRoute);
             docsAnchors.set(docsRoute, anchorsOf(join(ROOT, path)));
-        } else if (route !== DOCS_ROUTE) {
+        } else {
             // Each folder above a page is a section index the site renders (`/blog` for `blog/<slug>`).
-            const segments = route.split('/');
-
-            for (let i = 1; i <= segments.length; i += 1) {
-                sitePages.add(segments.slice(0, i).join('/'));
-            }
+            addWithAncestors(sitePages, route);
         }
     }
 
