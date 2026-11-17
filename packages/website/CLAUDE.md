@@ -8,21 +8,21 @@ Shared monorepo conventions (no emoji, dash typography, American English, commit
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together with this file.
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-website run <script>` from the
-repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it ends with the docs-mirror check -
-see Documentation mirror). `preflight` is `typecheck`, `test`, `spellcheck`, `knip`, `check:well-known-schemas`, then
-`sync:docs:check`; it runs no build, so the build, `check:deploy-size`, and `check:well-known-urls` run only in CI's
-`build-website` job. Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets; `WORKERS_CI` works
-too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff shell commands are rewritten by
-`rtk hook claude`; search and read tools are not - use the native Read/Grep for exploration. **Run lint as
-`RTK_DISABLED=1 pnpm run lint`:** the hook rewrites `pnpm run lint` here into an `eslint` call, which fails with
-`eslint: command not found` and is not a real lint result (the script is `biome check .`;
+repo root); `package.json` is the list and `pnpm run preflight` is the gating set. `preflight` is `typecheck`, `test`,
+`spellcheck`, `knip`, then `check:well-known-schemas`; it runs no build, so the build, `check:deploy-size`, and
+`check:well-known-urls` run only in CI's `build-website` job. Production builds require `CLOUDFLARE=1`, which
+`pnpm run build` already sets; `WORKERS_CI` works too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and
+git-diff shell commands are rewritten by `rtk hook claude`; search and read tools are not - use the native Read/Grep for
+exploration. **Run lint as `RTK_DISABLED=1 pnpm run lint`:** the hook rewrites `pnpm run lint` here into an `eslint`
+call, which fails with `eslint: command not found` and is not a real lint result (the script is `biome check .`;
 `pnpm exec biome check <files>` also works).
 
 ## Critical Rules
 
-1. Public engine docs are generated, not authored here. Edit the canonical copy in `packages/blit386/docs/`, then run
-   `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/`,
-   `content/docs/build-a-game/`, or `src/data/api-history.generated.json`
+1. Public engine docs are generated, not authored here. Edit the canonical copy in `packages/blit386/docs/`. Everything
+   under `content/docs/{api,guides,performance,reference}/`, `content/docs/build-a-game/`, and
+   `src/data/api-history.generated.json` is gitignored build output that `build`, `typecheck`, `test`, and `dev`
+   regenerate - never hand-edit it
 2. Documentation ships with the change - update `content/` and run `pnpm run docs:links` from the repo root when adding
    links. `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx` file via `git ls-files`
    regardless of cwd); this package no longer carries its own copy
@@ -45,7 +45,6 @@ too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Test and git-diff s
 | Engine API truth | `packages/blit386/docs/` in this monorepo - never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
 | How the Build a Game pages are built | `scripts/sync-kit-pages.mjs`, the second half of `pnpm run sync:docs` - see Build a Game pages |
-| How mirror drift is checked | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` (in `preflight` and in CI) |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test:scripts`) |
 | Worker plugin test coverage | `src/**/*.test.ts` (Vitest, via `pnpm run test:unit`) - see Test runners |
 | Why every git subprocess passes `gitEnv()` | root `scripts/lib/git-env.mjs` |
@@ -184,10 +183,11 @@ the static `.well-known/` JSON.
 Hand-authored: `content/index.mdx`, `showcase.mdx`, `community.mdx`, `mcp-server.mdx`, the root `content/meta.json`,
 `content/blog/**`, and under `content/docs/`: `index.mdx`, `getting-started.mdx`, `faq.mdx`, and the root `meta.json`.
 
-Generated, never hand-edit: every `content/docs/<section>/<topic>.mdx` (flat files, not folder `index.mdx`), the section
-`meta.json` files, and `src/data/api-history.generated.json`. The MDX pages carry a "generated" banner in frontmatter;
-the section `meta.json` files carry no banner but are generated all the same. All of `content/docs/build-a-game/` is
-generated too (see Build a Game pages).
+Generated, gitignored, never hand-edit: every `content/docs/<section>/<topic>.mdx` (flat files, not folder `index.mdx`),
+the section `meta.json` files, and `src/data/api-history.generated.json`. All of `content/docs/build-a-game/` is
+generated too (see Build a Game pages). They are not in git: `pnpm run sync:docs` writes them, and `build`, `typecheck`,
+`test`, `dev`, and `dev:twoslash` all run it first, so a fresh checkout needs no extra step. Anything that reads them
+outside those scripts (`knip`, `test:scripts` alone) needs one `sync:docs` run first.
 
 Doc frontmatter: `title` required; `description`, `icon`, `full` optional. Sidebar order comes from an optional
 `meta.json` / `meta.yaml` per folder. When hand-authored content links to API reference, use site-absolute paths
@@ -200,38 +200,26 @@ in the engine package's `docs/_sitemap.json` and writes matching MDX into `conte
 script, owns which docs publish, their URL, sidebar order, and subtitle** - the script carries no per-page knowledge, so
 adding a page means editing the manifest in `packages/blit386` and re-running the sync, with no change here.
 
-`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift and **is enforced both locally
-and in CI**: it is the last gate of `pnpm run preflight`, and the last step of the `quality-website` job in
-`.github/workflows/ci.yml`, gated on the `website` path filter, which includes `packages/blit386/docs/**`. So editing an
-engine doc without re-syncing fails the push and turns the pull request red. It runs last in both places because it
-regenerates `content/docs` in the working tree - any gate after it would be reading regenerated rather than committed
-content, which is also why CI puts it after the parallel join rather than inside it. The check diffs the working tree
-against the index, so after re-syncing you must stage or commit the regenerated mirror before `preflight` goes green -
-an unstaged `sync:docs` result still reads as drift. That costs nothing on a push, where everything is committed
-already. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`, which already resolves correctly to the
-sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
+The mirror is a build artifact (BT-752): gitignored, regenerated by `build`, `typecheck`, `test`, `dev`, and
+`dev:twoslash`, and never committed, so an engine doc edit is a one-file change with nothing to keep in step. Every
+deploy builds from a checkout, which is what makes this safe. The source resolves from `ENGINE_DOCS_DIR` (default
+`../blit386/docs`, the sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on every change
+alongside `pnpm run dev`.
 
-That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
-see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.
-
-**`lastModified` comes from `git log` on the engine source doc, so commit order within a PR matters.** A sync run before
-that doc's edit is committed embeds the _previous_ commit's date. Root CLAUDE.md's merge policy is what makes getting
-this right actually pay off: squash merging is disabled on the repository, so a PR lands as a merge commit, and the
-branch's own commits keep their original SHA and author date on `main` - they are not rewritten the way a squash would
-rewrite them. So: edit `packages/blit386/docs/…`, commit that edit, _then_ run `pnpm run sync:docs` and commit the
-regenerated mirror. Done in that order, the embedded `lastModified` already matches what `git log` reports once the PR
-merges - no lag to chase, nothing to self-correct later. `pnpm run sync:docs:check`
-([`scripts/check-docs-sync.mjs`](scripts/check-docs-sync.mjs)) regenerates the mirror and inspects the diff: a clean
-diff passes; any diff at all - including one confined to `lastModified` lines - fails the build, since that shape now
-means the commit order above wasn't followed rather than an unavoidable artifact of the merge strategy. The fix is to
-re-run `pnpm run sync:docs` after the doc edit is committed and commit the result, not to ignore the failure.
+**`lastModified` comes from `git log --follow` on the engine source doc, so the sync needs full git history.**
+`--follow` sees past the commit that moved the engine into `packages/blit386/`. A shallow clone does not make that
+lookup come back empty: its grafted boundary commit makes every file look added there, so every page would silently
+carry the HEAD commit's date. The generator therefore fails before writing anything when the repo is shallow
+(`assertFullHistory`), and fails on any page whose source has no commit - a brand-new doc has to be committed before
+`sync:docs` (and so `dev`, `typecheck`, or `build`) will run. Every CI and deploy job that builds the site checks out
+with `fetch-depth: 0` for this reason; locally, `git fetch --unshallow` fixes a shallow clone.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs resolved
 against the monorepo root (`blob/main/packages/blit386/docs/...`), adds frontmatter (`title`, `description`, and
 `lastModified` from git, consumed by `docsPageLayout`; `lastModified` is always a UTC `+00:00` timestamp, because newer
-git prints `Z` for the same instant and the generator normalizes it, so the committed mirror does not flip between
-machines), and copies `packages/blit386/docs/_api-history.json` across. There is no `editUrl`: the site renders no edit
+git prints `Z` for the same instant and the generator normalizes it, so the output does not depend on the local git
+version), and copies `packages/blit386/docs/_api-history.json` across. There is no `editUrl`: the site renders no edit
 link (see `docsPageLayout` in `press.config.tsx`).
 
 MDX components: the generator passes PascalCase tags through verbatim and is MDX-aware, escaping stray braces in prose
@@ -249,15 +237,15 @@ the generated JSON. Never add a symbol to that JSON here; fix `packages/blit386`
 
 ## Build a Game pages
 
-`scripts/sync-kit-pages.mjs` (run by `pnpm run sync:docs` after the engine mirror, so `sync:docs:check` covers it) owns
+`scripts/sync-kit-pages.mjs` (run by `pnpm run sync:docs` after the engine mirror, so every build regenerates it) owns
 `content/docs/build-a-game/` outright: it deletes the folder and writes the start page, the JavaScript starter project
 (the scaffolder's `templates/` with placeholders filled), `AGENTS.md`, and every kit guide, skill, and rule from
 `packages/kit/content/`, plus the demos listed in `FIRST_GAME_EXAMPLES` as example pages. They exist so an agent with
 only the docs MCP connector and no scaffolded project can build a game (BT-557). Every page opens with the version it
 was written for: the engine changelog's `## X.Y.Z - Unreleased` version when there is one (kit content on main already
 teaches it), otherwise the published lockstep version. The starter project always pins the published version, since an
-unreleased one is not on npm. Adding or dating that changelog heading, and every release bump, makes the folder stale
-until `sync:docs` runs again. CI's `quality-website` job runs on changes to those sources as well as this package.
+unreleased one is not on npm. Adding or dating that changelog heading, and every release bump, reaches these pages on
+the next build. CI's `quality-website` job runs on changes to those sources as well as this package.
 
 Two size limits shaped it, both measured with `wrangler deploy --dry-run`:
 

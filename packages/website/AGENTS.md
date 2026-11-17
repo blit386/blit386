@@ -14,7 +14,7 @@ wrong before opening `CLAUDE.md`.
 ```bash
 pnpm install                                   # from the repo root
 pnpm --filter blit386-website run dev          # or: cd packages/website && pnpm run dev
-pnpm --filter blit386-website run preflight    # format:check, typecheck, test, spellcheck, knip, check:well-known-schemas, sync:docs:check
+pnpm --filter blit386-website run preflight    # format:check, typecheck, test, spellcheck, knip, check:well-known-schemas
 ```
 
 Use `pnpm run <script>` (not bare `pnpm <script>`) so the RTK hook can rewrite shell commands, with one exception: run
@@ -24,9 +24,10 @@ Biome).
 ## Rules that matter most
 
 - Never hand-edit the generated mirror under `content/docs/{api,guides,performance,reference}/`,
-  `content/docs/build-a-game/`, or `src/data/api-history.generated.json`. Edit the canonical source in
-  `packages/blit386/docs/` (or `packages/kit/content/` for Build a Game) and run `pnpm run sync:docs`, after committing
-  the source edit - the mirror's `lastModified` comes from git.
+  `content/docs/build-a-game/`, or `src/data/api-history.generated.json`. It is gitignored build output that `build`,
+  `typecheck`, `test`, and `dev` regenerate; edit the canonical source in `packages/blit386/docs/` (or
+  `packages/kit/content/` for Build a Game) instead. Each page's `lastModified` comes from git, so the sync fails in a
+  shallow clone and on a source doc that has never been committed.
 - No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* ... */}` as emphasis and
   rewrites it to `{/_ ... _/}`, which renders as visible italic text on the page.
 - Documentation ships with the change - update `content/` and run `pnpm run docs:links` from the repo root when adding

@@ -134,12 +134,6 @@
     "cwd": "$ZED_WORKTREE_ROOT/packages/website"
   },
   {
-    "label": "website: sync:docs:check",
-    "command": "pnpm",
-    "args": ["run", "sync:docs:check"],
-    "cwd": "$ZED_WORKTREE_ROOT/packages/website"
-  },
-  {
     "label": "kit: test",
     "command": "pnpm",
     "args": ["run", "test"],

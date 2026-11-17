@@ -37,7 +37,7 @@ docs/_api-history.json          committed, deterministic, generated - never hand
       v
       | pnpm run sync:docs  (packages/website)
       v
-content/docs/**/*.mdx           generated mirror - never hand-edit
+content/docs/**/*.mdx           generated mirror (gitignored, rebuilt by build/typecheck/test/dev)
       |
 Fumapress components read docs/_api-history.json (copied as api-history.generated.json) -> rendered HTML
 ```
@@ -187,8 +187,7 @@ In `packages/website`:
 
 ```bash
 pnpm run sync:docs         # mirrors docs/*.md into content/docs; copies docs/_api-history.json to
-                            # src/data/api-history.generated.json separately
-pnpm run sync:docs:check   # fails if the mirror drifted from source
+                            # src/data/api-history.generated.json separately (build/typecheck/test run it too)
 pnpm run build             # CLOUDFLARE=1 production build - the most conclusive check
 pnpm run test              # script test suite
 ```

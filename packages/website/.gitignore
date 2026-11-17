@@ -9,3 +9,12 @@ captures/
 # Wrangler local state
 .wrangler/
 .dev.vars
+
+# Generated docs mirror (scripts/sync-docs-from-engine.mjs, scripts/sync-kit-pages.mjs), rebuilt by
+# build, typecheck, test, and dev. The hand-authored pages directly under content/docs/ stay tracked.
+content/docs/api/
+content/docs/guides/
+content/docs/performance/
+content/docs/reference/
+content/docs/build-a-game/
+src/data/api-history.generated.json

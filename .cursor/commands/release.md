@@ -37,9 +37,9 @@ Check the answer against the contents before going further: any `feat(api)` comm
 in `packages/blit386/src`, means new public engine API, which is a `minor` at least, never a patch. If the user asked
 for a patch and the tags say otherwise, stop and raise it. Fixing it late means rewriting the version in every `@since`
 / `@changed` tag, the kit content that says "engine X.Y.Z+", `UNRELEASED_VERSION`, the changelog heading, and the
-regenerated `_api-history.json` and website `api-history.generated.json` - `grep -rl` the old version across `packages/`
-(excluding the two generated files, which `pnpm --filter blit386 run api:history` rewrites), `sed` it, then regenerate
-and run `sync:docs`.
+regenerated `_api-history.json` - `grep -rl` the old version across `packages/` (excluding that generated file, which
+`pnpm --filter blit386 run api:history` rewrites), `sed` it, then regenerate. The website copy
+(`api-history.generated.json`) is gitignored build output and follows on its own.
 
 ### 2. Find the last tag and its UTC timestamp
 
@@ -283,16 +283,11 @@ Then check the two downstream packages:
 - `packages/kit` and `packages/create-blit386`: grep `packages/kit/content/{docs,rules,skills}/` for anything describing
   the changed API. A default-value flip is the dangerous case - it can make existing skill/doc prose actively wrong, not
   just stale, and won't show up as a missing mention.
-- `packages/website`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
-  sibling `../blit386/docs` path directly off disk - it does not need those changes pushed to GitHub first. Follow with
-  `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles. `sync:docs:check` runs
-  `git diff -- content/docs` after regenerating, so it fails when the regenerated mirror differs from the index; staged
-  mirror changes that match the generated output can pass before commit. The mirror's `lastModified` comes from
-  `git log`, so keep the regenerated value as-is (never hand-edit the timezone format). Order: commit the engine doc
-  change first, then `sync:docs`, then commit the mirror (a trailing `lastModified`-only commit is normal), then run the
-  check. The version bump and the dated changelog heading also make `content/docs/build-a-game/` stale - every page
-  there names the version it was written for and the starter pins the published one - so run `sync:docs` after the bump
-  even when no other engine doc changed.
+- `packages/website`: the docs mirror is gitignored build output, so there is nothing to sync or commit there. Run
+  `pnpm run build` in `packages/website` to confirm the site still compiles against the changed engine docs; it
+  regenerates the mirror (including `content/docs/build-a-game/`, whose pages name the version they were written for)
+  from the sibling packages on disk, so nothing needs pushing first. Commit new engine docs before building - each
+  page's `lastModified` comes from `git log`, and the sync fails on a doc with no commit.
 
 #### Regenerate `docs/_api-history.json` - only after the tag exists
 

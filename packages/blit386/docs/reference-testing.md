@@ -384,8 +384,8 @@ job is gated on its own filter or on `shared`. A root `scripts/` file that a pac
 `ensure-kit-built`, `build-lock`) sits in that package's filter, and the engine filter also covers the kit migration
 registry that `api:deprecations:check` reads. So an engine-only pull request does not rebuild the demos, and a
 website-only one touches neither. Two filters deliberately span packages: `demos` includes `packages/blit386/**` because
-demos consumes the engine as `workspace:*`, and `website` includes `packages/blit386/docs/**` because that is what
-`sync:docs:check` mirrors.
+demos consumes the engine as `workspace:*`, and `website` includes `packages/blit386/docs/**` because the site build
+regenerates its docs from there.
 
 | Job | Gated on | What it runs |
 | --- | --- | --- |
@@ -399,21 +399,18 @@ demos consumes the engine as `workspace:*`, and `website` includes `packages/bli
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry`, `check:demo-comment-links`, `test` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
-| `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, `check:well-known-schemas`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
+| `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, `check:well-known-schemas` (typecheck and test first, in the foreground, since both regenerate the docs mirror; no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
 | `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs), then `check:deploy-size` and `check:well-known-urls` |
 | `quality-kit` / `build-test-kit` | kit | `typecheck`, `knip`; then build and `node --test` |
 | `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests |
 
 Jobs needing full git history ask the shared setup action for it: `quality-engine` and `test-engine` take
 `fetch-depth: 0` plus `fetch-tags: true` (the API-history generator resolves each release date with `git log -1 <tag>`,
-which needs the tags and the commits they point at), and `quality-website` takes `fetch-depth: 0` for the same
-`--follow` reason in the docs mirror.
+which needs the tags and the commits they point at), and `quality-website` and `build-website` take `fetch-depth: 0`
+because the docs mirror dates each page with `git log --follow` and refuses to run in a shallow clone.
 
-`sync:docs:check` runs here and, since BT-438, as the final gate of `packages/website`'s own `preflight`, so a local run
-is no longer laxer than CI. It runs last in both places for the same reason: it regenerates `content/docs` in the
-working tree, so anything reading that tree afterwards would be reading regenerated rather than committed content. It
-could not run at all before the monorepo merge, because the docs-site repository had no engine checkout to sync against
-\- so a stale published mirror was only ever caught by hand.
+The website's docs mirror is not committed (BT-752): `typecheck`, `test`, and `build` regenerate it from
+`packages/blit386/docs/` and `packages/kit/content/`, so there is no drift check - a stale mirror cannot exist.
 
 The six workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, `deploy.yml`, `mcp-governance-audit.yml` (the monthly
 MCP governance scan from the [security runbook](security/security-runbook.md)), and `kit-docs-drift.yml` (advisory drift

@@ -34,10 +34,10 @@ test-results/
 # packages/website: Waku/fumadocs-mdx codegen output
 .source/
 
-# packages/website: generated docs mirror (produced by
-# packages/website/scripts/sync-docs-from-engine.mjs from packages/blit386/docs).
-# Artifacts: not subject to this repo's format gate. The hand-authored hub
-# (content/docs/index.mdx) and root meta stay formatted.
+# packages/website: generated docs mirror (sync-docs-from-engine.mjs, sync-kit-pages.mjs).
+# Gitignored build output, but listed here too: the website's format scripts pass an
+# explicit --ignore-path, which turns off Prettier's .gitignore lookup. The hand-authored
+# hub (content/docs/index.mdx) and root meta stay formatted.
 packages/website/content/docs/*/**
 
 # Cursor slash-command mirror (produced verbatim, minus frontmatter, from

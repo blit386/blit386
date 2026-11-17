@@ -20,7 +20,7 @@ Run the package's spellcheck, then fix all reported errors.
 - `website`: `pnpm run spellcheck` checks `content/**/*.{md,mdx}`, `src/**/*.{ts,tsx}`, the package's root `*.{md,mdx}`,
   and `CLAUDE.md`
 - `website` also checks its three hand-authored `content/docs/*.mdx` pages; the generated mirror under
-  `content/docs/*/**` is excluded in `cspell.json`
+  `content/docs/*/**` is gitignored, which cspell honors (`useGitignore`)
 - `kit` / `create-blit386`: no package-local script; run `pnpm run spellcheck:kit` from the repo root. It checks every
   code and Markdown file in `packages/kit` and `packages/create-blit386` (templates excluded) plus `.claude/skills/**`,
   and runs in CI's `quality-root` and the pre-push root pass

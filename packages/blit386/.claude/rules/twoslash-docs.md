@@ -72,7 +72,7 @@ Preamble rules:
 After adding or editing blocks, verify from `packages/website`:
 
 ```bash
-pnpm run sync:docs && pnpm run sync:docs:check && pnpm run build
+pnpm run build   # regenerates the docs mirror first
 ```
 
 A Twoslash compilation error fails the build. Fix the preamble rather than adding `// @noErrors`.

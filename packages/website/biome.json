@@ -3,15 +3,7 @@
   "root": false,
   "extends": ["../../biome.json"],
   "files": {
-    "includes": [
-      "src/**/*.{ts,tsx,css}",
-      "*.{ts,tsx}",
-      "content/**/meta.json",
-      "scripts/**/*.mjs",
-      "*.json",
-      "*.jsonc",
-      "!content/docs/*"
-    ]
+    "includes": ["src/**/*.{ts,tsx,css}", "*.{ts,tsx}", "content/**/meta.json", "scripts/**/*.mjs", "*.json", "*.jsonc"]
   },
   "css": {
     "parser": {
@@ -20,15 +12,5 @@
     "formatter": {
       "quoteStyle": "single"
     }
-  },
-  "overrides": [
-    {
-      "includes": ["src/data/api-history.generated.json"],
-      "json": {
-        "formatter": {
-          "expand": "always"
-        }
-      }
-    }
-  ]
+  }
 }

@@ -15,9 +15,9 @@
  * content on main already teaches the next release's API, so the label names that unreleased
  * release (from the engine changelog) while the starter project still pins the published one.
  *
- * The output is a committed, generated artifact, like the engine mirror: `pnpm run sync:docs`
- * runs this after `sync-docs-from-engine.mjs`, and `pnpm run sync:docs:check` fails when it
- * drifts. This script owns `content/docs/build-a-game/` outright and deletes it before writing.
+ * The output is gitignored build output, like the engine mirror: `pnpm run sync:docs` runs this
+ * after `sync-docs-from-engine.mjs`, and `build`, `typecheck`, `test`, and `dev` run that first.
+ * This script owns `content/docs/build-a-game/` outright and deletes it before writing.
  */
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';

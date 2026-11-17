@@ -50,8 +50,8 @@ Authoring rules:
 - JSX expression props (`TypeTable type={{ ... }}`) work; the mirror leaves braces verbatim inside component blocks.
 - `Card href` is a JSX prop the mirror does not rewrite - use site-absolute `/docs/<section>/<topic>` paths, not
   relative `*.md` links. Unpublished docs link to the full GitHub URL instead.
-- Validate: in `packages/website`, run `pnpm run sync:docs`, then `pnpm run sync:docs:check` and `pnpm run build`
-  (`pnpm run typecheck` alone is not a substitute for `build`).
+- Validate: in `packages/website`, run `pnpm run build`, which regenerates the mirror first (`pnpm run typecheck` alone
+  is not a substitute for `build`).
 
 ## Documentation authoring style (prose)
 
@@ -78,6 +78,6 @@ Renaming or splitting a published doc:
 5. Run `pnpm run sync:doc-banners`, then `pnpm run docs:links`, then `pnpm run format` (longer filenames shift Markdown
    table padding).
 
-After any doc change: add new proper nouns / coined words to the root `cspell.json`; re-sync the mirror
-(`pnpm run sync:docs` in `packages/website`) - required after every edit to a published doc's content, not just when a
-sitemap entry changes.
+After any doc change: add new proper nouns / coined words to the root `cspell.json`. The website mirror is gitignored
+build output, so there is nothing to re-sync or commit in `packages/website`; its `build`, `dev`, `typecheck`, and
+`test` regenerate it. A brand-new doc must be committed before those run - the mirror dates each page from git.

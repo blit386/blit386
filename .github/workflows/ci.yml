@@ -81,8 +81,8 @@ jobs:
               # build and test run ensure-engine-built.mjs, which imports build-lock.mjs.
               - 'scripts/ensure-engine-built.mjs'
               - 'scripts/build-lock.mjs'
-              # Sources of the generated Build a Game pages (scripts/sync-kit-pages.mjs), so
-              # sync:docs:check catches a stale mirror in the PR that changed them.
+              # Sources of the generated Build a Game pages (scripts/sync-kit-pages.mjs), which
+              # typecheck, test, and build regenerate - a change to them can break the site.
               - 'packages/kit/content/**'
               - 'packages/kit/package.json'
               - 'packages/create-blit386/templates/**'
@@ -575,8 +575,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          # sync:docs:check regenerates the mirror, and the generator reads each doc's
-          # last-modified date with `git log --follow`, which needs full history.
+          # typecheck and test regenerate the docs mirror, which dates each page from
+          # `git log --follow` and refuses a shallow clone.
           fetch-depth: 0
           persist-credentials: false
 
@@ -598,16 +598,19 @@ jobs:
       # packages/website/public/webmcp.js. Unlike quality-engine and quality-demos, whose
       # `lint` is ESLint and adds coverage nothing else provides, a step here would be a
       # second pass over the same files with the same tool.
+      #
+      # Type check and tests run in the foreground, one after the other, before the
+      # parallel block: both start with `sync:docs`, which deletes and rewrites
+      # content/docs and src/data/api-history.generated.json. Two syncs at once would
+      # race each other, and knip reads those files.
       - name: Type check
         run: pnpm --filter blit386-website run typecheck
-        background: true
-
-      - name: Spell check
-        run: pnpm --filter blit386-website run spellcheck
-        background: true
 
       - name: Run tests
         run: pnpm --filter blit386-website run test
+
+      - name: Spell check
+        run: pnpm --filter blit386-website run spellcheck
         background: true
 
       - name: Check unused exports and dependencies
@@ -622,16 +625,6 @@ jobs:
 
       - wait-all:
 
-      # Deliberately after the join rather than alongside the checks above: this one
-      # regenerates content/docs in the working tree and asserts the result matches what
-      # is committed, so running it concurrently with steps reading the same tree would
-      # make a failure ambiguous.
-      #
-      # This is the guard BT-400 was written around. It could never run in the old
-      # docs-site repo, whose CI had no engine checkout to sync from.
-      - name: Check docs mirror is in sync with the engine
-        run: pnpm --filter blit386-website run sync:docs:check
-
   build-website:
     name: Build Website
     runs-on: ubuntu-latest
@@ -643,6 +636,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          # The website build regenerates the docs mirror, which dates each page from
+          # `git log --follow` and refuses a shallow clone.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up workspace
