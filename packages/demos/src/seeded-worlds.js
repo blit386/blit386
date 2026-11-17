@@ -74,8 +74,9 @@ TRY THIS
   ?embed&seed=4821 added and the left world always starts from 4821. The line under
   the worlds says the left seed came from ?seed=4821, because BT.init() applies
   ?seed= to BT.random right before init() runs. Without that parameter the same line
-  says the left seed came from the clock. The shell page around the demo does not
-  pass the parameter down to its frame.
+  says the left seed came from the clock. With the parameter, the right world and
+  the bottom-right panel repeat as well, because the seed picker starts from it too.
+  The shell page around the demo does not pass the parameter down to its frame.
 
 */
 
@@ -339,10 +340,6 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
-        // Set up the seed picker before anything asks it for a number. Left to itself, a
-        // new Random seeds from the clock, so this stream is unrelated to the shared one.
-        this.seedPicker = new Random();
-
         // Nobody has chosen a seed yet. The engine seeded itself from the clock when it
         // started up, or from ?seed= in the URL when that parameter is a whole number.
         // seedValue hands that number back, so we can build a world from it and still
@@ -354,6 +351,13 @@ class Demo {
         const fromUrl = urlSeed();
 
         this.leftSeedFromUrl = fromUrl !== null && fromUrl === BT.random.seedValue;
+
+        // Set up the seed picker before anything asks it for a number. Left to itself, a
+        // new Random seeds from the clock, so this stream is unrelated to the shared one.
+        // When the address pinned a seed, the picker starts from that same number
+        // instead, so the right world and the stream panel repeat too: the whole page
+        // comes back the same every time you open that address.
+        this.seedPicker = this.leftSeedFromUrl ? new Random(fromUrl) : new Random();
         this.left = generateWorld(BT.random.seedValue ?? SEED_MIN);
         this.right = generateWorld(this.rollSeed());
 

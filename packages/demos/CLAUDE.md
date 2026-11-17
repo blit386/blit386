@@ -119,10 +119,9 @@ capture sends too) and seeks it with `BT.renderAt(at)`, where `at` is the first 
 When that pose has `keys`, the OG script presses them after the seek, steps `INPUT_TICKS`, and releases them, exactly
 like the `/shots` capture, so the card and the tile agree (keyboard-diagnostic's first pose lights B-L-I-T-3-8-6 this
 way). To change which moment a card shows, reorder that demo's poses or give the first pose keys, not the OG script
-(there is no settle time or override table). The one known exception is `seeded-worlds`. Its first pose copies the left
-seed to the right, so the pair of worlds is repeatable, but the visible stream panel (`new Random(seed)`) draws its seed
-from a clock-seeded generator on purpose, so the complete card still differs on every run. `buildSocialMeta` falls back
-to `og-default.png` for any slug without one, so `og:image` is never a 404.
+(there is no settle time or override table). Every card repeats exactly: `seeded-worlds` seeds its own seed picker from
+`?seed=` when the address carries one, so its right world and stream panel follow the capture seed too.
+`buildSocialMeta` falls back to `og-default.png` for any slug without one, so `og:image` is never a 404.
 
 ## Documentation Style
 
