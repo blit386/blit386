@@ -14,8 +14,10 @@ tests or typecheck is fine. Other reviewers work in the same checkout at the sam
    MCP `get_issue`, loaded via ToolSearch if deferred).
 2. Call the Skill tool with skill `review` (args: every package the PR touches, usually just `blit386`; add `root` when
    it changes root-owned files). The skill's step 1 diffs the checked-out branch against a base, which does not yield a
-   merged PR's diff; substitute your PR's diff for that step and apply the rest of the skill (checklist, rules, severity
-   levels) to it.
+   merged PR's diff. Substitute your PR's diff for that step: run step 1's `git diff` commands with the same pathspecs
+   (`packages/<package>/`, the root and policy allowlists) but with `<merge>^1 <merge>` in place of `"$MB"` - drop the
+   `--cached` and `ls-files` passes, which only apply to a working tree - and head the output with
+   `Change set: <merge>^1...<merge>`. Then apply the rest of the skill (checklist, rules, severity levels) per package.
 3. Call the Skill tool with skill `ponytail:ponytail-review` (args: `PR #<n> merge <sha>`) and apply it to the same
    diff, reading the connected code as it asks.
 4. Verify every finding against CURRENT main (later PRs of the same umbrella may have moved code): give the current
