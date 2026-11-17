@@ -48,8 +48,8 @@ commits in your transcript before accepting your report. So:
 
 Keep a short tally per commit (findings found / fixed / skipped) for your final report.
 
-Exception: a commit that only contains generated output (the `sync:docs` website mirror, a regenerated
-`_api-history.json`, `sync:cursor-commands` output) needs no review round - run its drift check instead.
+Exception: a commit that only contains generated output (a regenerated `_api-history.json`, `sync:cursor-commands`
+output) needs no review round - run its drift check instead.
 
 Notes: lint-staged reflows Markdown (for example the changelog) at commit time, so re-read a file before the next Edit
 on it. The built-in browser pane pauses `requestAnimationFrame` while hidden; take a screenshot to let ticks advance, or
@@ -89,13 +89,9 @@ The repo's shell-safety hook scans the WHOLE Bash command text, so destructive-g
   mis-rewrites it).
 - Named constants over repeated literals (`.claude/rules/named-constants.md`).
 - Docs are part of every change (`.claude/rules/docs-sync-required.md`). User-visible engine fixes get an Unreleased
-  entry in `packages/blit386/docs/changelog.md`. If you change `packages/blit386/docs/`, run `pnpm run sync:docs` in
-  `packages/website` and commit the mirror in its own commit AFTER the engine doc commit (the pre-push check rejects a
-  mirror committed together with its source); `sync:docs:check` fails on an untracked new mirror file until it is
-  `git add`ed.
-- Demo changes can stale the website mirror too (the docs embed demo source/descriptions): after changing
-  `packages/demos/src/**`, run `pnpm run sync:docs` in `packages/website` and commit any mirror change in its own
-  commit, then run `sync:docs:check` (it diffs against git, so it only passes after the commit).
+  entry in `packages/blit386/docs/changelog.md`. The website docs mirror is gitignored build output - there is nothing
+  to sync or commit in `packages/website` after an engine doc or demo change; its `build` regenerates it. Commit a new
+  engine doc before building the site: the mirror dates each page from git and fails on a doc with no commit.
 - New API surface: check `@since` tags against the version rules (new API means a minor bump target; ask the manager if
   the ticket implies a new public symbol and the target version is unclear).
 - `packages/blit386/docs/_api-history.json` regenerates with `null` dates in a tag-less checkout - this checkout has

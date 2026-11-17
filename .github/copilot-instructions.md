@@ -21,9 +21,9 @@ conventions, and documentation rules.
   `packages/create-blit386` are Biome-only (no ESLint); `packages/blit386` and `packages/demos` pair Biome with ESLint.
   Prettier always owns Markdown/MDX/YAML. Check the package's own `CLAUDE.md` before assuming a tool applies.
 - In `packages/website`, everything under `content/docs/{api,guides,performance,reference}/`,
-  `content/docs/build-a-game/`, and `src/data/api-history.generated.json` is generated - never hand-edit it. Edit the
-  canonical copy (engine docs in `packages/blit386/docs/`; Build a Game pages from `packages/kit/content/`, the
-  scaffolder templates, and the demos) and run `pnpm run sync:docs` in `packages/website` instead.
-  [`packages/website/CLAUDE.md`](../packages/website/CLAUDE.md) maps generated against hand-authored files.
+  `content/docs/build-a-game/`, and `src/data/api-history.generated.json` is gitignored build output that the website's
+  `build`, `typecheck`, `test`, and `dev` regenerate - never hand-edit it. Edit the canonical copy instead (engine docs
+  in `packages/blit386/docs/`; Build a Game pages from `packages/kit/content/`, the scaffolder templates, and the
+  demos). [`packages/website/CLAUDE.md`](../packages/website/CLAUDE.md) maps generated against hand-authored files.
 - Integer coordinates always in the engine - use `Vector2i` / `Rect2i` for rendering, never raw floats.
 - Use the `BT` namespace in the engine - never access the internal `BTAPI` singleton directly from demo code.

@@ -106,8 +106,8 @@ Shared across every package:
 - MDX pages have `title` frontmatter; descriptions where helpful
 - Links point to stable URLs; engine API links go to site paths (`/docs/api/...`, `/docs/guides/...`) for anything in
   the engine's `docs/_sitemap.json` manifest. Only unmirrored contributor docs link to GitHub
-- No hand-edits to generated files: `content/docs/{api,guides,performance,reference}/**` and
-  `src/data/api-history.generated.json` come from `pnpm run sync:docs`
+- Generated files never appear in a diff: `content/docs/{api,guides,performance,reference,build-a-game}/**` and
+  `src/data/api-history.generated.json` are gitignored output of `pnpm run sync:docs`
 - Config changes (`press.config.tsx`, `source.config.ts`) reflected in `CLAUDE.md` if behavior changed
 
 `kit` / `create-blit386`:

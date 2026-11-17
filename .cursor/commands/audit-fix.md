@@ -16,7 +16,7 @@ The first run was the 2026-11-08 umbrella BT-751: 22 tickets, 22 ticket PRs plus
   Subagents run on `model: "opus"` unless the ticket names another model (project memory: Fable subagents drain the
   budget).
 - `review <package>` and `ponytail:ponytail-review` run before EVERY commit, docs and one-liners included. Only a
-  generated-output commit (sync:docs mirror, `_api-history.json`, `sync:cursor-commands`, /shots captures) is exempt.
+  generated-output commit (`_api-history.json`, `sync:cursor-commands`, /shots captures) is exempt.
 - The implementer pushes, opens the PR, gets CI green and merges with `gh pr merge --merge` without asking.
 - Stop and tell the user only when something is off: an owner decision, a gate the implementer may not move (bundle
   size), a broken rule.
@@ -131,8 +131,6 @@ Never tell the user a ticket is done from the report alone.
 - **One recapture per visual area.** Demo tickets each change pixels. Have each report the slugs whose pixels change and
   any stale /shots pose, and give the single /shots recapture to the last demo ticket together with the full list, so it
   can diff expected vs actual changed tiles and explain every surprise.
-- **Mirrors**: engine docs and demo source feed the website mirror. `sync:docs`, commit the mirror in its own commit
-  after the source commits, then `sync:docs:check` (it diffs against git, so it only passes after the commit).
 
 ## Step 4 - post-hoc review (remedy, and worth doing per group)
 

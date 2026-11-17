@@ -68,7 +68,7 @@ section under it will run out of memory. `pnpm run build && pnpm run start` is t
 ## Quality checks
 
 ```bash
-pnpm run preflight   # typecheck, test, spellcheck, knip, check:well-known-schemas, sync:docs:check
+pnpm run preflight   # typecheck, test, spellcheck, knip, check:well-known-schemas
 RTK_DISABLED=1 pnpm run lint   # biome check; plain `pnpm run lint` is mis-rewritten to eslint by the RTK hook
 ```
 
@@ -80,11 +80,10 @@ every URL the site advertises to agents resolves).
 (Vitest over `src/**`, the Worker plugins, with coverage thresholds). Run `test:scripts` or `test:unit` alone, or
 `pnpm run test:unit:watch` while working on `src/`.
 
-`sync:docs:check` runs last because it regenerates `content/docs` in the working tree - see [Content](#content). After
-re-syncing, stage or commit the result before re-running: the check diffs the working tree against the index. Markdown
-link checking is not part of this gate: `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx`
-via `git ls-files` regardless of the directory it runs in), so run `pnpm run docs:links` from the repo root. CI runs it
-once in the `quality-root` job.
+`typecheck` and `test` regenerate the docs mirror first - see [Content](#content). Markdown link checking is not part of
+this gate: `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx` via `git ls-files`
+regardless of the directory it runs in), so run `pnpm run docs:links` from the repo root. CI runs it once in the
+`quality-root` job.
 
 ## Production build and deploy
 
@@ -115,22 +114,21 @@ Cloudflare Worker named `blit386` (custom domain `blit386.dev`); a plain push to
 
 Documentation lives in `content/` as MDX files. The public API, guide, performance, and reference pages under
 `content/docs/` are generated from the canonical engine docs in [`packages/blit386/docs/`](../blit386/docs), which
-remains the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mirror:
+remains the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mirror, which is gitignored build
+output - `build`, `typecheck`, `test`, and `dev` regenerate it, so a fresh checkout needs no extra step:
 
 ```bash
 pnpm run sync:docs         # regenerate content/docs from ../blit386/docs, then the Build a Game pages from ../kit/content
-pnpm run sync:docs:check   # regenerate and fail if the mirror drifted
 pnpm run sync:docs:watch   # watch packages/blit386/docs and re-sync on every change (run alongside pnpm run dev)
 ```
 
 The engine docs directory resolves from `ENGINE_DOCS_DIR` and defaults to the sibling package path `../blit386/docs`.
-`sync:docs:check` is enforced in two places, both as the last step: `pnpm run preflight` here, and the `quality-website`
-job in `.github/workflows/ci.yml`. It goes last because it regenerates `content/docs` in the working tree, so any check
-that ran after it would be reading regenerated rather than committed content.
+Each page's `lastModified` comes from `git log`, so the sync needs full git history: it fails in a shallow clone (run
+`git fetch --unshallow`) and on a source doc that has never been committed.
 
-Never hand-edit a generated page - edit the engine source and re-run `sync:docs`. The same applies to
-`src/data/api-history.generated.json`, which the script copies from `packages/blit386`. See `CLAUDE.md` (Documentation
-mirror) for the conventions. For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
+Never hand-edit a generated page - edit the engine source. The same applies to `src/data/api-history.generated.json`,
+which the script copies from `packages/blit386`. See `CLAUDE.md` (Documentation mirror) for the conventions. For
+interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 
 Coverage: which docs publish, and their sidebar order, are defined by `packages/blit386/docs/_sitemap.json` - not by
 this package's script. Links to engine docs not in the manifest resolve to their GitHub source instead of a site path,

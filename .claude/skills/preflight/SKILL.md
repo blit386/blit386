@@ -95,17 +95,16 @@ No unit tests for demo _content_ (`src/*.js`) by design - see `/test demos`.
 - `knip` - unused exports/deps
 - `check:well-known-schemas` - every agent-facing `.well-known` file (agent-skills index, MCP server card, api-catalog
   linkset, OAuth discovery documents) has the shape its spec requires
-- `sync:docs:check` - regenerates `content/docs` from `packages/blit386/docs/` and fails when the mirror drifted
 
 Not in `preflight` (CI's `build-website` job runs them, in this order): `build` (`CLOUDFLARE=1 waku build`),
 `check:deploy-size` (fails when any `dist/public` file exceeds Cloudflare's 25 MiB per-asset limit or the Worker upload
 exceeds its 51 MiB budget), and `check:well-known-urls`. Run them by hand for a change that touches the build output.
 
-`sync:docs:check` is deliberately last: it rewrites `content/docs` in the working tree, so any gate after it would be
-reading regenerated rather than committed content. The `quality-website` CI job places it last for the same reason
-(after its `wait-all:` join). If it fails, run `pnpm run sync:docs`, then **stage or commit** the result - the check
-diffs the working tree against the index, so an unstaged regeneration still reads as drift. On a push, where everything
-is committed, this never comes up.
+`typecheck` and `test` each start with `pnpm run sync:docs`, which regenerates the gitignored docs mirror
+(`content/docs/<section>/`, `src/data/api-history.generated.json`) - so a fresh checkout needs no setup step, and the
+`quality-website` CI job runs those two in the foreground before its parallel block, because two syncs at once race. The
+sync needs full git history: in a shallow clone it fails with a `fetch-depth: 0` / `git fetch --unshallow` hint, and it
+fails on an engine doc that has never been committed.
 
 That job does not lint this package - its `lint` is `biome check .`, which the repo-wide `pnpm run format:check` in
 `quality-root` and the pre-push root pass already cover.

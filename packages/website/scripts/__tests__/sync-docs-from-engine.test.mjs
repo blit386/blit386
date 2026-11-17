@@ -576,3 +576,47 @@ describe('renderPage twoslash fragment blocks (BT-427)', () => {
         assert.ok(contents.includes("BT.paletteFade(nightPalette, 2000, 'ease-in-out');"));
     });
 });
+
+// BT-752: the mirror is generated at build time, so a shallow checkout must fail the sync. A
+// depth-1 clone does not leave `git log --follow` empty - the grafted boundary commit makes every
+// file look added there, so every page would silently carry the HEAD commit's date.
+const { assertFullHistory } = await import('../sync-docs-from-engine.mjs');
+
+describe('assertFullHistory', () => {
+    const sourceRepo = mkdtempSync(join(tmpdir(), 'sync-docs-history-'));
+    const shallowParent = mkdtempSync(join(tmpdir(), 'sync-docs-shallow-'));
+    const shallowRepo = join(shallowParent, 'clone');
+    const nonRepoDir = mkdtempSync(join(tmpdir(), 'sync-docs-history-non-git-'));
+    /** @param {string[]} args @param {string} cwd */
+    const git = (args, cwd) => execFileSync('git', args, { cwd, env: gitEnv(), stdio: 'ignore' });
+
+    git(['init', '--quiet'], sourceRepo);
+    git(['config', 'user.email', 'test@example.com'], sourceRepo);
+    git(['config', 'user.name', 'Test'], sourceRepo);
+
+    for (const body of ['# One\n', '# Two\n']) {
+        writeFileSync(join(sourceRepo, 'doc.md'), body);
+        git(['add', '-A'], sourceRepo);
+        git(['commit', '--quiet', '-m', body], sourceRepo);
+    }
+
+    git(['clone', '--quiet', '--depth', '1', `file://${sourceRepo}`, shallowRepo], shallowParent);
+
+    test('accepts a repository with full history', () => {
+        assert.doesNotThrow(() => assertFullHistory(sourceRepo));
+    });
+
+    test('rejects a shallow clone, naming the fix', () => {
+        assert.throws(() => assertFullHistory(shallowRepo), /shallow.*fetch-depth: 0/su);
+    });
+
+    test('rejects a directory that is not a git repository', () => {
+        assert.throws(() => assertFullHistory(nonRepoDir), /git history/u);
+    });
+
+    after(() => {
+        for (const dir of [sourceRepo, shallowParent, nonRepoDir]) {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    });
+});

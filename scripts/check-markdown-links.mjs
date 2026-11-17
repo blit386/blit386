@@ -8,9 +8,10 @@
  * as symlink blobs and lists the underlying `.claude/skills/*` markdown directly,
  * so those files are checked exactly once and never double-processed.
  *
- * Generated doc pages under `packages/website/content/docs/<section>/**` are also
- * skipped: they are mirrored from `packages/blit386/docs/` via
- * `pnpm run sync:docs`, where the source is already link-checked. The hand-authored
+ * Generated doc pages under `packages/website/content/docs/<section>/**` are
+ * gitignored build output (`pnpm run sync:docs`), so `git ls-files` never lists
+ * them; their source in `packages/blit386/docs/` is checked instead. The path
+ * pattern below still skips them should one ever be force-added. The hand-authored
  * hub (`content/docs/index.mdx`) and root `content/docs/meta.json` stay in scope.
  *
  * Test fixtures (any `__fixtures__/` directory) are skipped too: they are test input,
