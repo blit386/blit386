@@ -125,7 +125,7 @@ same way, or returns `null` when there is no valid position.
 Clicks and taps use the same three questions: `BT.isPressed(BT.BTN_POINTER_A, slot)` is the frame the button or finger
 went down, `BT.isDown` while it is held, `BT.isReleased` the frame it came up. Read them in `update()`: a click, a
 release, or a drag that lands between two steps on a fast display waits for the next `update()`, and
-`BT.pointerDelta(slot)` there is the movement since the previous `update()` (engine 1.8.1+), so nothing is lost and a
+`BT.pointerDelta(slot)` there is the movement since the previous `update()` (engine 1.9.0+), so nothing is lost and a
 click counts once. A click that goes down and up within one step still shows as both pressed and released on that
 `update()`.
 

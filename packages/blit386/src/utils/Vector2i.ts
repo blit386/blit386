@@ -9,7 +9,7 @@ import { Vector2iOps } from './Vector2iOps';
  * convenience methods that return new vectors.
  *
  * @since 0.1.0
- * @changed 1.8.1 `normalized()` of a zero vector returns a new mutable vector instead of the frozen `Vector2i.zero()`.
+ * @changed 1.9.0 `normalized()` of a zero vector returns a new mutable vector instead of the frozen `Vector2i.zero()`.
  */
 export class Vector2i extends Vector2iOps {
     /** The cached singleton for zero vector. */

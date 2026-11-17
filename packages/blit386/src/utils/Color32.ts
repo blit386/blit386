@@ -27,7 +27,7 @@ export { clampByte, clampUnit, INV_255, linearToSrgb, srgbToLinear };
  * Mutable 32-bit RGBA color value with 8-bit channels.
  *
  * @since 0.1.0
- * @changed 1.8.1 `toUint32()` returns an unsigned value; colors with alpha 128 or more used to come back negative.
+ * @changed 1.9.0 `toUint32()` returns an unsigned value; colors with alpha 128 or more used to come back negative.
  */
 export class Color32 {
     /** The cached singleton for white color. */

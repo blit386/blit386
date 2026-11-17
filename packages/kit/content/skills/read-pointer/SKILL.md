@@ -55,10 +55,10 @@ update() {
 - Slots: 0 = mouse or first touch; 1-3 = extra touches or pens (multi-touch).
 - Read in `update()`. Positions are already in your screen's pixel coordinates. A click, release, drag, or wheel turn
   that lands on a fast display between two `update()` steps waits for the next one, and a click counts once even when
-  one frame runs several updates (engine 1.8.1+) - there is nothing to work around.
+  one frame runs several updates (engine 1.9.0+) - there is nothing to work around.
 - A click or tap that goes down and up between two `update()` steps (Playwright `page.mouse.click()` with no `delay`, a
-  fast trackpad tap) is not lost (engine 1.8.1+): that one `update()` sees `BT.isPressed` and `BT.isReleased` both true,
-  and `BT.isDown` already false. On 1.8.1+ a play-test click needs no `delay`; on engine 1.8.0 hold the button for about
+  fast trackpad tap) is not lost (engine 1.9.0+): that one `update()` sees `BT.isPressed` and `BT.isReleased` both true,
+  and `BT.isDown` already false. On 1.9.0+ a play-test click needs no `delay`; on engine 1.8.0 hold the button for about
   100 ms or the click is lost. Two clicks inside one `update()` step count as one, so wait a step between them.
 - A touch tap lives in slots 1-3 and frees its slot on release, so `isPointerActive(slot)` is already false on the
   `update()` that sees a quick tap. Read its edges without that guard; `pointerPos(slot)` still holds the last position:

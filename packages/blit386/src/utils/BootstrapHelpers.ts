@@ -27,7 +27,7 @@ let errorContainerID = DEFAULT_CONTAINER_ID;
  * Content that can be displayed in an error message.
  * Use string for plain text or object for text with code formatting.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type ErrorContent =
     | string
@@ -134,7 +134,7 @@ export function clearErrorPanel(): void {
  * All text (including code) is treated as plain text, not interpreted as markup.
  *
  * @since 1.0.3
- * @changed 1.8.1 Keeps the container's other children (the canvas) instead of emptying it, shows each distinct message
+ * @changed 1.9.0 Keeps the container's other children (the canvas) instead of emptying it, shows each distinct message
  *   once per container, and logs it once with `console.error`.
  * @param title - Error heading text displayed prominently.
  * @param content - Error message content (string or object with optional code formatting).

@@ -5,7 +5,7 @@ import type { Vector2i } from '../utils/Vector2i';
  * Magnification filter used by the upscale pass between the pixel chain
  * (logical resolution) and the display chain (output resolution).
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type OutputUpscaleFilter = 'nearest' | 'linear';
 
@@ -420,7 +420,7 @@ export interface HardwareSettings {
      * Maximum palette swatches per row in the overlay grid. When unset, the engine
      * picks the widest column count that fits {@link HardwareSettings.displaySize}.
      *
-     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayPaletteColumns?: number;
 
@@ -438,7 +438,7 @@ export interface HardwareSettings {
      *
      * When omitted, the overlay uses palette index `1` for bars and gaps and `2` for text.
      *
-     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayStyle?: OverlayStyle;
 
@@ -459,7 +459,7 @@ export interface HardwareSettings {
      * Height in pixels of the timing chart band when {@link isOverlayTimingChartEnabled} is `true`.
      * Defaults to 22 pixels when omitted.
      *
-     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayTimingChartHeight?: number;
 
@@ -468,7 +468,7 @@ export interface HardwareSettings {
      * {@link OverlayStyle} bar/text indices; warning/error/event slots control semantic
      * chart tints and future tag markers.
      *
-     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayTimingChartStyle?: OverlayTimingChartStyle;
 
@@ -508,7 +508,7 @@ export interface HardwareSettings {
      * Defaults to 13 pixels when omitted.
      *
      * @since 1.3.0
-     * @changed 1.8.1 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
     overlayAudioMeterHeight?: number;
 
@@ -517,7 +517,7 @@ export interface HardwareSettings {
      * {@link OverlayStyle} text/gap indices; warning/clip slots control semantic level tints.
      *
      * @since 1.3.0
-     * @changed 1.8.1 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
+     * @changed 1.9.0 `BT.init()` resolves `false` unless every field is a whole-number palette index from `0` to `255`.
      */
     overlayAudioMeterStyle?: OverlayAudioMeterStyle;
 }

@@ -149,7 +149,7 @@ describe('hash3i / hash3', () => {
 });
 
 describe('seed scattering', () => {
-    // The pre-1.8.1 hashes folded the seed in as `seed ^ x`, so a seed was just an x shift.
+    // The pre-1.9.0 hashes folded the seed in as `seed ^ x`, so a seed was just an x shift.
     // 0x80000000: a top-bit-only seed passes unchanged through every odd multiply, so it needs its own case.
     const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 0x80000000];
     const SCATTER = 0x9e3779b1;

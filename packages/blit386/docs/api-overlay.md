@@ -347,7 +347,7 @@ field when one is out of range:
   index from `0` to `255`.
 - `overlayPaletteRowsVisible` is not rejected: it is truncated and clamped to the palette's row count.
 
-Behavior change in 1.8.1: before, these values were accepted as-is, so a fractional height drew bands at fractional
+Behavior change in 1.9.0: before, these values were accepted as-is, so a fractional height drew bands at fractional
 positions.
 
 ## API history

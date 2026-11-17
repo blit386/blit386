@@ -34,7 +34,7 @@ Diagnose and fix a BLIT386 game error using the local docs.
 - If you see `{{` or `}}` in a file, a template placeholder was not substituted - this is a scaffolding bug, not a game
   bug.
 - A game frozen on one picture usually means `update()` or `render()` threw - read the console error, fix it, and save:
-  hot reload starts the paused game again (engine 1.8.1+, no page reload).
+  hot reload starts the paused game again (engine 1.9.0+, no page reload).
 - After a save that breaks `init()`, hot reload should leave the previous game running - fix the typo and save again
   (see `docs/hot-reload.md`). If every tiny edit full-reloads the page, confirm `vite.config.js` has
   `plugins: [blit386()]` and blit386 is 1.4.0+.

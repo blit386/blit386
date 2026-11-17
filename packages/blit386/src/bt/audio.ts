@@ -48,7 +48,7 @@ export const audio = {
      * Unaffected by {@link BT.audioMuteSet} - muting never overwrites the configured level.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Returns `1` (the default bus volume) before initialization instead of `0`.
+     * @changed 1.9.0 Returns `1` (the default bus volume) before initialization instead of `0`.
      * @param bus - Audio bus to query.
      * @returns Volume in `[0, 1]`, or `1` (every bus's default) before initialization.
      */
@@ -201,7 +201,7 @@ export const audio = {
      * dropped - it starts automatically the instant the context unlocks, unlike {@link BT.soundPlay}.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Validates `fadeMs`, `volume`, `overlap`, and the loop region before remembering or changing music.
+     * @changed 1.9.0 Validates `fadeMs`, `volume`, `overlap`, and the loop region before remembering or changing music.
      * @param clip - Loaded audio clip to play.
      * @param options - Crossfade, volume, and loop options; see {@link MusicPlayOptions}.
      * @throws Error when `options.fadeMs`, `options.volume`, or `options.overlap` is not a finite number, or
@@ -216,8 +216,8 @@ export const audio = {
      * Stops the music player, optionally fading out first.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Also cancels a music request remembered while the audio context was still locked.
-     * @changed 1.8.1 Validates `fadeMs` before canceling or stopping music.
+     * @changed 1.9.0 Also cancels a music request remembered while the audio context was still locked.
+     * @changed 1.9.0 Validates `fadeMs` before canceling or stopping music.
      * @param options - Optional fade behavior.
      * @param options.fadeMs - Fade-out duration in milliseconds. Omit to stop immediately.
      * @throws Error when `options.fadeMs` is not a finite number; the current track keeps playing.
@@ -270,7 +270,7 @@ export const audio = {
      * the same seed always renders the exact same variant.
      *
      * @since 1.3.0
-     * @changed 1.8.1 Each preset throws a `RangeError` naming itself for a seed that is not a finite number (`NaN`,
+     * @changed 1.9.0 Each preset throws a `RangeError` naming itself for a seed that is not a finite number (`NaN`,
      *   `Infinity`) instead of silently using seed 0.
      * @example
      * const jumpClip = await AudioClip.synth(BT.synthPreset.jump());

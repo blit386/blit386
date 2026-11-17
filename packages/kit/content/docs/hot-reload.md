@@ -13,7 +13,7 @@ With the `blit386` Vite plugin in place (it ships in the starter `vite.config.js
 - A broken save that makes `init()` fail leaves the previous game running, so you can fix the typo without losing the
   session.
 - A save that makes `update()` or `render()` crash pauses the game and prints the error once in the browser console. Fix
-  the typo and save again - the game picks up where it paused (engine 1.8.1+). No page reload needed. If the fix also
+  the typo and save again - the game picks up where it paused (engine 1.9.0+). No page reload needed. If the fix also
   edits `init()`, the save is a re-init instead, so fields reset unless `onHotReload` copies them across.
 
 Hot reload only works while `npm run dev` (or `npx blit run`) is running. A production build (`npm run build`) never
@@ -30,7 +30,7 @@ Not every edit is the same:
    important values across (see below).
 3. Full page reload - you changed a setting `configure()` returns (`displaySize`, `backend`, `targetFPS`, `audioVoices`,
    overlay flags, `isCapturingKeyboardScroll`, and the rest). The page reloads because the engine reads those settings
-   once at startup and cannot swap them live (engine 1.8.1+ reloads for every one of them). The splash settings
+   once at startup and cannot swap them live (engine 1.9.0+ reloads for every one of them). The splash settings
    (`isSplashEnabled`, `splashColorDark`, `splashColorLight`) are the exception: the splash only plays at startup, so
    editing them reloads nothing.
 

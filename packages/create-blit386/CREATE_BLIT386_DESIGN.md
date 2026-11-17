@@ -3,7 +3,7 @@
 > Status (2026-11-11): latest **published** release is `1.8.0` (2026-10-18), the same `x.y.z` for `blit386`,
 > `@blit386/kit`, and `create-blit386` - the three have released in lockstep since BT-410, bumped together by
 > `scripts/bump-lockstep.mjs` (`pnpm run bump -- x.y.z` from the repo root, which also derives `BLIT386_RANGE` and the
-> kit's `blit386.engineRange`). `1.8.1` is in preparation. The scaffolder lives in the `blit386/blit386` monorepo at
+> kit's `blit386.engineRange`). `1.9.0` is in preparation. The scaffolder lives in the `blit386/blit386` monorepo at
 > `packages/create-blit386/` (the standalone `blit386/create-blit386` repo named below is history; its releases page
 > moved to <https://github.com/blit386/blit386/releases>). The wizard offers eight assistants - Claude Code, Cursor,
 > Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenCode, Zed - all generated through the kit's agent registry
