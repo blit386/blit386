@@ -57,7 +57,7 @@ envelope: {
 
 Those are also the defaults, so leaving `envelope` out gives you exactly that. For a percussive hit, use a tiny `attack`
 and a low `sustain`. For a soft pad, use a big `attack`. A clip too short for `attack` plus `release` (the defaults need
-0.11 seconds) has both squeezed to fit, so a 0.05 second blip still plays at full volume (engine 1.8.1+; older engines
+0.11 seconds) has both squeezed to fit, so a 0.05 second blip still plays at full volume (engine 1.9.0+; older engines
 render it silent).
 
 **`pitchSweep`** - makes the pitch slide while the sound plays. Sliding **up** reads as a jump or a power-up. Sliding

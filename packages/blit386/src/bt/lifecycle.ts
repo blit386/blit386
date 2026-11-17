@@ -66,7 +66,7 @@ export const lifecycle = {
      *
      * @since 0.1.0
      * @changed 1.8.0 A call made while another `init()` is still running resolves to `false` and changes nothing.
-     * @changed 1.8.1 A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running. The restarted run starts with no palette (`BT.palette` throws until `init()` sets one) and no palette effects.
+     * @changed 1.9.0 A call after an earlier `init()` resolved now stops the running game and destroys the previous GPU device instead of leaving the old loop running. The restarted run starts with no palette (`BT.palette` throws until `init()` sets one) and no palette effects.
      * @param demo - Demo implementation that provides lifecycle hooks.
      * @param canvas - Canvas used as the engine render target.
      * @returns `true` when initialization succeeds; otherwise `false`.
@@ -82,7 +82,7 @@ export const lifecycle = {
      * the canvas element's CSS size. Each read returns a clone.
      *
      * @since 1.0.4
-     * @changed 1.8.1 Before initialization, returns the configure default (`320×240`) instead of the frozen
+     * @changed 1.9.0 Before initialization, returns the configure default (`320×240`) instead of the frozen
      *   `Vector2i.zero()`.
      * @returns Configured logical size, or the default `320×240` before initialization.
      */
@@ -97,7 +97,7 @@ export const lifecycle = {
      * display-tier post-process). Each read returns a clone when non-null.
      *
      * @since 1.1.0
-     * @changed 1.8.1 Before initialization, returns the configure default (`640×480`) instead of `null`.
+     * @changed 1.9.0 Before initialization, returns the configure default (`640×480`) instead of `null`.
      * @returns Configured drawing-buffer size, `null` when not set, or the default `640×480` before initialization.
      */
     get drawingBufferSize(): Vector2i | null {
@@ -112,7 +112,7 @@ export const lifecycle = {
      * Each read returns a clone.
      *
      * @since 1.0.4
-     * @changed 1.8.1 Before initialization, returns the configure default (`640×480`) instead of the frozen
+     * @changed 1.9.0 Before initialization, returns the configure default (`640×480`) instead of the frozen
      *   `Vector2i.zero()`.
      * @returns Effective output buffer size, or the default `640×480` before initialization.
      */

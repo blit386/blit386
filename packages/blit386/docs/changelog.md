@@ -19,7 +19,7 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.8.1 - Unreleased
+## 1.9.0 - Unreleased
 
 ### Added
 
@@ -94,7 +94,7 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `sampler` field is removed, and `fragmentShaderRgba` is no longer read, so a subclass can drop it. `PixelGlitch` and
   `PixelMosaic` are unchanged on screen. See
   [Writing a custom effect](guide-post-process-effects.md#writing-a-custom-effect).
-- `@blit386/kit` and `create-blit386` ship in lockstep as 1.8.1 with no engine API change of their own. The scaffolder's
+- `@blit386/kit` and `create-blit386` ship in lockstep as 1.9.0 with no engine API change of their own. The scaffolder's
   automatic install now works on Windows (npm, pnpm, and yarn are started through a shell there) and quotes a folder
   name with spaces in the printed `cd` line; `blit agents sync` keeps one managed region even when your notes mention
   its markers, instead of adding another copy on every sync; the agent shell guard also blocks the `git checkout` and

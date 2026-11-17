@@ -23,7 +23,7 @@ import { SpriteSheet } from './SpriteSheet';
 /**
  * Runtime glyph metadata used by the renderer.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export interface Glyph {
     /** Source rectangle in the font texture atlas. */
@@ -254,7 +254,7 @@ export class BitmapFont {
      * A texture path that, joined to the font's folder, leads to a different origin than the font
      * file is rejected. Only a font loaded by a bare file name (`font.btfont`) can get there.
      *
-     * @changed 1.8.1 Rejects a joined `texture` path that leads to another origin than the `.btfont`
+     * @changed 1.9.0 Rejects a joined `texture` path that leads to another origin than the `.btfont`
      *   file with an `AssetLimitError` - in practice an absolute URL on another site in a font loaded
      *   by a bare file name.
      * @param url - Path to the .btfont file.

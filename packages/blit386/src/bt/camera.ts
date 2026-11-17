@@ -25,7 +25,7 @@ export const camera = {
      * Current global camera offset (clone; safe to mutate without affecting the engine).
      *
      * @since 1.0.4
-     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
+     * @changed 1.9.0 Before initialization, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
      * @returns Camera translation in display pixels; `(0, 0)` before initialization.
      */
     get camera(): Vector2i {

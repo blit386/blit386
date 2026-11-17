@@ -49,7 +49,7 @@ const RGB_BYTES_PER_COLOR = 3;
  * `colors` stores `#RRGGBBAA` values and `names` maps friendly aliases to
  * palette indices.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type PaletteJSON = {
     colors: string[];
@@ -345,7 +345,7 @@ export class Palette {
      *
      * Source entry 0 (gray `#7c7c7c`, NES `$00`) falls on the transparent slot 0, so that gray is unavailable.
      *
-     * @changed 1.8.1 Slots 56-63 hold the last NES row (pale yellow to pale pink, then black) instead of staying black.
+     * @changed 1.9.0 Slots 56-63 hold the last NES row (pale yellow to pale pink, then black) instead of staying black.
      * @returns New NES preset palette.
      */
     public static nes(): Palette {

@@ -75,7 +75,7 @@ The engine calls `update()` and `render()` over and over. If your code throws an
 engine prints that error once and pauses the game. There is no error screen; the last picture just stays there.
 
 Read the first red line and fix that spot. With `npm run dev` running, saving the fix starts the game again (engine
-1.8.1+) - from where it paused when you only changed `update()` or `render()`, fresh when you also changed `init()`; on
+1.9.0+) - from where it paused when you only changed `update()` or `render()`, fresh when you also changed `init()`; on
 an older engine, or without the dev server, reload the page. Be extra careful with browser features that can fail on
 some devices, like saving with `localStorage` (it throws in some private windows) or `navigator.vibrate`. Wrap those in
 `try` / `catch` so a failure skips the feature instead of stopping the game:
@@ -202,7 +202,7 @@ which edits keep the game's state, which run `init()` again, and which reload th
 1. Did you save? The browser only updates after a save. A dot or asterisk on the file's tab in your editor means unsaved
    changes.
 2. Any red text? Check the terminal and the browser console. A crash in `update()` or `render()` pauses the game: fix it
-   and save again, and it carries on (engine 1.8.1+; older engines need a page reload). A broken `init()` leaves the
+   and save again, and it carries on (engine 1.9.0+; older engines need a page reload). A broken `init()` leaves the
    previous game running.
 3. Score and positions reset? You edited `init()`, the constructor, or a class field initializer, so the engine built a
    fresh game and ran `init()` again. `onHotReload` can copy values across (see `docs/hot-reload.md`). Editing

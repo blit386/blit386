@@ -31,7 +31,7 @@ order, and prints one JSON line per step.
   or `wheel:<dx>:<dy>` (at the pointer; `move` there first), `state`, `shot[:<file.png>]` (saved under `screenshots/`,
   ignored by git), `eval:<expression>`.
 - To test a drag or a scroll: `npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state`.
-  `BT.pointerDelta(0)` and `BT.pointerScrollDelta` cover only the time since the previous `update()` (engine 1.8.1+), so
+  `BT.pointerDelta(0)` and `BT.pointerScrollDelta` cover only the time since the previous `update()` (engine 1.9.0+), so
   they are zero again by the next `state` step: add them up in `update()` and return the total from `testState()`. The
   wheel needs `isCapturingPointerScroll: true` in `configure()`, and only its vertical part reaches the game.
 - Options: `--seed <n>`, `--backend software`, `--url <url>` (use a dev server that is already running), `--headed`
@@ -112,7 +112,7 @@ order, and prints one JSON line per step.
    includes the engine overlay: while a seek holds the game, its FPS reads the target rate and its times and counts read
    0, so two captures of the same moment match byte for byte.
 
-8. Check that a click or key reached `update()` exactly once (engine 1.8.1+). Do not wrap `BT.isPressed` to count calls:
+8. Check that a click or key reached `update()` exactly once (engine 1.9.0+). Do not wrap `BT.isPressed` to count calls:
    `render()` sees the same press on a different clock. Record the input trace instead:
 
    ```js

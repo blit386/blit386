@@ -51,8 +51,8 @@ const DIRECTIONS8: readonly (readonly [number, number])[] = [
  * Seeded PRNG with integer-first generators and stream control (`seed` / `clone` / `fork`).
  *
  * @since 1.5.0
- * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
- * @changed 1.8.1 `int()` / `intInclusive()` throw a clear `RangeError` for a bound outside the 32-bit range instead of
+ * @changed 1.9.0 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
+ * @changed 1.9.0 `int()` / `intInclusive()` throw a clear `RangeError` for a bound outside the 32-bit range instead of
  *   wrapping it, and `weighted()` throws for a weight that is not a finite number instead of always picking the last item.
  */
 export class Random {

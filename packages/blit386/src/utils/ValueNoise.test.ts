@@ -31,7 +31,7 @@ describe('ValueNoise', () => {
     });
 
     it('should not make seed 1 seed 0 with neighbor columns swapped', () => {
-        // At whole-number coordinates value noise returns the lattice value, so the pre-1.8.1 bug was exact here.
+        // At whole-number coordinates value noise returns the lattice value, so the pre-1.9.0 bug was exact here.
         const a = new ValueNoise(1);
         const b = new ValueNoise(0);
 

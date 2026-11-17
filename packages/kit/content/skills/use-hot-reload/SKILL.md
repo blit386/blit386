@@ -36,7 +36,7 @@ skip the plugin (`apply: 'serve'`), so shipped games are unchanged.
 | --- | --- |
 | `update()` / `render()` / module constants they use | Method swap - instance fields kept; `init()` does not re-run |
 | `init()`, constructor, or class field initializers | Fresh instance + `init()`; optional `onHotReload` can restore fields |
-| `configure()` hardware settings | Full page reload when a returned setting changes (display size, FPS, scroll capture, overlay flags). On engine 1.8.1+ that is every setting except `isSplashEnabled`, `splashColorDark` and `splashColorLight` |
+| `configure()` hardware settings | Full page reload when a returned setting changes (display size, FPS, scroll capture, overlay flags). On engine 1.9.0+ that is every setting except `isSplashEnabled`, `splashColorDark` and `splashColorLight` |
 
 ### 3. Optional: restore state after a re-init
 
@@ -55,7 +55,7 @@ Without this hook, a re-init still works - fields just reset to whatever the new
 the previous instance running.
 
 A throw from `update()` or `render()` pauses the loop and logs the error once. The next save whose swap succeeds starts
-the loop again (engine 1.8.1+), so tell the user to fix and save, not to reload the page. A fix inside `update()` or
+the loop again (engine 1.9.0+), so tell the user to fix and save, not to reload the page. A fix inside `update()` or
 `render()` is a method-only swap and keeps every field. A fix that also touches `init()`, the constructor, or a field
 initializer is a re-init: fields reset unless `onHotReload` copies them across. One exception: a `BT.renderAt` call made
 after the crash parks the loop, and a fixed save then installs the new code without restarting it. Call `BT.resume()` to

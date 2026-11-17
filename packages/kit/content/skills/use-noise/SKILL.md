@@ -131,6 +131,6 @@ adds detail and costs more; the other two are worth leaving alone until the shap
 - Chunked worlds need no bookkeeping: because the answer depends only on coordinates and seed, a chunk regenerates
   identically when the player returns. Only store what the player _changed_.
 - Needs blit386 `^1.5.0`.
-- Engine 1.8.1 changed seeded output: a non-zero seed now builds a different world than it did on 1.5.0-1.8.0, and
+- Engine 1.9.0 changed seeded output: a non-zero seed now builds a different world than it did on 1.5.0-1.8.0, and
   `PerlinNoise` `noise1D` / `noise2D` now reach the full `-1` to `1` (taller hills from the same code). If a world must
   stay identical across an engine update, save the generated map, not just the seed.

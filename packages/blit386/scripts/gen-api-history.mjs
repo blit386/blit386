@@ -38,14 +38,13 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * (it is not yet tagged), so it is a maintained constant: bump it by hand in the same commit
  * that bumps `package.json` `version` after a release ships.
  */
-const UNRELEASED_VERSION = '1.8.1';
+const UNRELEASED_VERSION = '1.9.0';
 
 /**
  * Versions past `UNRELEASED_VERSION` a tag may name on purpose. Each entry is a release already
  * planned on a milestone; drop it once `UNRELEASED_VERSION` catches up.
- * 1.9.0: `@changed 1.9.0` on `BT.renderAt` (BT-727, on the 1.9.0 milestone).
  */
-const ALLOWED_FUTURE_VERSIONS = ['1.9.0'];
+const ALLOWED_FUTURE_VERSIONS = [];
 
 /** A tag version is a plain `major.minor.patch` - no `v` prefix, no pre-release suffix. */
 const PLAIN_SEMVER = /^\d+\.\d+\.\d+$/u;

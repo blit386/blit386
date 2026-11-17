@@ -354,7 +354,7 @@ value with a configure default returns that default as a fresh, mutable copy; a 
 | `musicPlay()`, `musicStop()` | validate their options, then do nothing | A bad `volume` or `fadeMs` fails the same way before and after init |
 | Draw calls (`drawRect`, `systemPrint`, ...) | report "engine not ready" once, draw nothing | Drawing belongs in `update()` / `render()` |
 
-Since 1.8.1, `displaySize`, `drawingBufferSize`, and `outputSize` return the configure default (they returned `(0, 0)`
+Since 1.9.0, `displaySize`, `drawingBufferSize`, and `outputSize` return the configure default (they returned `(0, 0)`
 or `null` before), `camera` and `pointerPos()` / `pointerDelta()` return a new vector instead of a frozen one, and an
 early `inputMap()` call is no longer discarded.
 
@@ -620,7 +620,7 @@ does not flip it back to `false`: the loop object is still there.
 A second `BT.init()` call made while one is still in flight is rejected (it resolves to `false` and changes nothing),
 and `BT.isReady` stays `false` for the whole duration of any `init()`, including a re-init after an earlier success.
 
-A `BT.init()` call made after an earlier one resolved restarts the engine cleanly (since 1.8.1). It stops the running
+A `BT.init()` call made after an earlier one resolved restarts the engine cleanly (since 1.9.0). It stops the running
 game loop, detaches input and audio, and destroys the previous GPU device before creating a new one, so only one loop
 ever runs and a "back to title" restart does not leak GPU memory. Sprite sheets and fonts you kept from the earlier run
 rebuild their texture on the new device the next time they are drawn. The palette, palette effects, and post-process
