@@ -19,13 +19,15 @@
  *
  * Two passes, neither touching the network (BT-846):
  *
- *   - `deadLinks`: relative targets must exist on disk; BLIT386's own URLs must name a
+ *   - `deadLinks` (Markdown links, reference definitions, and `href="..."` attributes):
+ *     relative targets must be tracked paths; BLIT386's own URLs must name a
  *     real page - `/docs/...` and `blit386.dev/docs/...` against the docs sitemap and the
  *     hand-authored docs pages, other site routes against `packages/website/content/`,
  *     `demos.blit386.dev/<slug>` against `DEMO_ORDER`, and
  *     `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. A
- *     root-relative `/route` is only accepted under `packages/website/content/`, and a
- *     relative link into the gitignored docs mirror fails, since neither resolves on GitHub. Every
+ *     root-relative `/route` Markdown link is only accepted under `packages/website/content/`,
+ *     since on GitHub it points at the repository root (a `<Card href>` renders only on the
+ *     site, so it is exempt). Every
  *     other URL (third-party sites, issues, PRs, `mailto:`) is deliberately not checked:
  *     a gate that fails on someone else's uptime blocks unrelated PRs.
  *   - `deadAnchors`: every relative `#frag` / `file.md#frag` must name a heading on the
@@ -66,8 +68,9 @@ const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u, /(
 
 const FENCED_BLOCK_PATTERN = /^ {0,3}(`{3,}|~{3,})[\s\S]*?^ {0,3}\1/gmu;
 const CODE_SPAN_PATTERN = /`[^`\n]*`/gu;
-// An inline link target, or a reference definition at the start of a line.
-const LINK_TARGET_PATTERN = /\]\(\s*<?([^)\s>]+)|^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)/gmu;
+// An inline link target, a reference definition at the start of a line, or an HTML / JSX
+// `href="..."` attribute (the docs' `<Card href="/docs/...">` See also links).
+const LINK_TARGET_PATTERN = /\]\(\s*<?([^)\s>]+)|^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)|\bhref="([^"\s]+)"/gmu;
 // A scheme (`https:`, `mailto:`) or a site route (`/docs/...`): not a file in this repo.
 const NON_FILE_TARGET_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/)/iu;
 const MARKDOWN_FILE_PATTERN = /\.mdx?$/u;
@@ -113,7 +116,7 @@ export function deadAnchors(filePath, source) {
     const dead = [];
 
     for (const match of proseOf(source).matchAll(LINK_TARGET_PATTERN)) {
-        const target = match[1] ?? match[2];
+        const target = match[1] ?? match[2] ?? match[3];
         const hashAt = target.indexOf('#');
 
         if (hashAt < 0 || NON_FILE_TARGET_PATTERN.test(target)) {
@@ -169,9 +172,10 @@ function siteRouteOf(target) {
  * @param {string} filePath
  * @param {string} target
  * @param {LinkRegistries} registries
+ * @param {boolean} isHref Whether `target` came from an `href="..."` attribute.
  * @returns {string | null} Why `target` is dead, or `null` when it resolves or is not checked.
  */
-function deadLinkReason(filePath, target, registries) {
+function deadLinkReason(filePath, target, registries, isHref) {
     if (target.startsWith('#')) {
         return null;
     }
@@ -189,7 +193,8 @@ function deadLinkReason(filePath, target, registries) {
     const site = siteRouteOf(target);
 
     if (site !== null) {
-        if (target.startsWith('/') && !filePath.startsWith(registries.siteContentDir)) {
+        // A `<Card href>` renders only on the site, so it may use a root-relative route anywhere.
+        if (!isHref && target.startsWith('/') && !filePath.startsWith(registries.siteContentDir)) {
             return `root-relative route only resolves on ${SITE_HOST} - use ${SITE_ORIGIN}${target}`;
         }
 
@@ -239,8 +244,8 @@ export function deadLinks(filePath, source, registries) {
     const dead = [];
 
     for (const match of proseOf(source).matchAll(LINK_TARGET_PATTERN)) {
-        const target = match[1] ?? match[2];
-        const reason = deadLinkReason(filePath, target, registries);
+        const target = match[1] ?? match[2] ?? match[3];
+        const reason = deadLinkReason(filePath, target, registries, match[3] !== undefined);
 
         if (reason !== null) {
             dead.push({ target, reason });

@@ -451,13 +451,15 @@ on the backend-parity subset.
 - AssetLoader - tests stub `Image` with `vi`; do not rely on happy-dom data-URI `onload` behavior.
 - `Vector2i -0` vs. `0` - use `result.x + 0` in assertions when sign is meaningless.
 - `docs:links` scope - `scripts/check-markdown-links.mjs` enumerates git-tracked `*.md` / `*.mdx` via `git ls-files`
-  (honors `.gitignore`), not only `docs/` and README. It runs fully offline: relative targets must exist, every relative
-  `#anchor` and `page.md#anchor` must name a heading on the target page (slugged the way blit386.dev and GitHub slug
-  them), and BLIT386's own URLs must resolve locally - `blit386.dev/docs/...` and `/docs/...` against `_sitemap.json`
-  and the hand-authored docs pages, other site routes against `packages/website/content/`, `demos.blit386.dev/<slug>`
-  against `DEMO_ORDER`, and `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. A root-relative
-  `/route` is only allowed under `packages/website/content/` (on GitHub it points at the repository root), and a
-  relative link into the gitignored docs mirror fails. Third-party URLs are never fetched.
+  (honors `.gitignore`), not only `docs/` and README. It runs fully offline over Markdown links, reference definitions,
+  and `href="..."` attributes (the `<Card>` See also links): a relative target must be a tracked path with the same
+  letter case (so build output and the gitignored docs mirror fail), every relative `#anchor` and `page.md#anchor` must
+  name a heading on the target page (slugged the way blit386.dev and GitHub slug them), and BLIT386's own URLs must
+  resolve locally - `blit386.dev/docs/...` and `/docs/...` against `_sitemap.json` and the hand-authored docs pages,
+  other site routes against `packages/website/content/`, `demos.blit386.dev/<slug>` against `DEMO_ORDER`, and
+  `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. A root-relative `/route` Markdown link is
+  only allowed under `packages/website/content/` (on GitHub it points at the repository root); a `<Card href>` may use
+  one anywhere, since Cards render only on the site. Third-party URLs are never fetched.
 
 ## See also
 

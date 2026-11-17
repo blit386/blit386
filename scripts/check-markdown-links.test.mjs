@@ -229,4 +229,10 @@ describe('deadLinks', () => {
             rmSync(dir, { recursive: true, force: true });
         }
     });
+
+    test('checks href attributes, allowing a root-relative Card href outside the website content', () => {
+        const source = '<Card title="ok" href="/docs/api/core" />\n<Card title="bad" href="/docs/api/gone" />\n';
+
+        assert.deepEqual(deadTargetsIn(source, { inSiteContent: false }), ['/docs/api/gone']);
+    });
 });
