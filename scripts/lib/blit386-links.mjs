@@ -21,6 +21,15 @@ export const DOCS_ROUTE = 'docs';
 const DOCS_PATH_PREFIX = `/${DOCS_ROUTE}/`;
 const DEMOS_HOST = 'demos.blit386.dev';
 
+/** @param {string} value A link fragment or path. @returns {string} `value` percent-decoded, or as written if it is malformed. */
+export function decodeOrRaw(value) {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value; // a stray `%` names no heading or file either way; report it, do not crash the run
+    }
+}
+
 /**
  * @param {string} url
  * @returns {URL | null} The parsed URL, or `null` when `url` is not a valid absolute URL.
@@ -59,8 +68,8 @@ export function findDocsLinkFailures(urls, sitemapPaths, anchorsByPath = new Map
             continue;
         }
 
-        // Raw, not decoded: every heading id is ASCII today, and decoding a stray `%` would throw.
-        const fragment = parsed.hash.slice(1);
+        // `URL.hash` keeps percent-encoding, so `#usage%2D1` must be decoded to match `usage-1`.
+        const fragment = decodeOrRaw(parsed.hash.slice(1));
         const anchors = anchorsByPath.get(path);
 
         if (fragment !== '' && anchors !== undefined && !anchors.has(fragment)) {

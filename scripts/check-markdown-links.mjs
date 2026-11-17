@@ -41,6 +41,7 @@ import { DEMO_ORDER } from '../packages/demos/plugins/demo-order.js';
 import { RESERVED_SLUGS } from '../packages/demos/plugins/demo-registry.js';
 import {
     DOCS_ROUTE,
+    decodeOrRaw,
     findDemoLinkFailures,
     findDocsLinkFailures,
     readSitemap,
@@ -70,7 +71,9 @@ const FENCED_BLOCK_PATTERN = /^ {0,3}(`{3,}|~{3,})[\s\S]*?^ {0,3}\1/gmu;
 const CODE_SPAN_PATTERN = /`[^`\n]*`/gu;
 // An inline link target, a reference definition at the start of a line, or an HTML / JSX
 // `href="..."` attribute (the docs' `<Card href="/docs/...">` See also links).
-const LINK_TARGET_PATTERN = /\]\(\s*<?([^)\s>]+)|^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)|\bhref="([^"\s]+)"/gmu;
+// An inline target keeps one level of balanced parentheses, as CommonMark allows (`guide(v2).md`).
+const LINK_TARGET_PATTERN =
+    /\]\(\s*<?((?:[^()\s>]|\([^()\s>]*\))+)|^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)|\bhref="([^"\s]+)"/gmu;
 // A scheme (`https:`, `mailto:`) or a site route (`/docs/...`): not a file in this repo.
 const NON_FILE_TARGET_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/)/iu;
 const MARKDOWN_FILE_PATTERN = /\.mdx?$/u;
@@ -88,15 +91,6 @@ function anchorsOf(path) {
     }
 
     return anchors;
-}
-
-/** @param {string} value A link fragment or path. @returns {string} `value` percent-decoded, or as written if it is malformed. */
-function decodeOrRaw(value) {
-    try {
-        return decodeURIComponent(value);
-    } catch {
-        return value; // a stray `%` names no heading or file either way; report it, do not crash the run
-    }
 }
 
 /** @param {string} source @returns {string} `source` without fenced blocks and code spans. */
@@ -290,7 +284,7 @@ function buildRegistries(trackedPaths) {
     const docsPaths = new Set([...sitemapPaths, ...sections]);
     const docsAnchors = new Map(anchorsByPath);
     const sitePages = new Set(SITE_ROUTE_ALLOWLIST);
-    const trackedWithDirs = new Set();
+    const trackedWithDirs = new Set(['']); // '' is the repository root itself
 
     for (const path of trackedPaths) {
         addWithAncestors(trackedWithDirs, path);

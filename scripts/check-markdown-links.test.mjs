@@ -123,10 +123,10 @@ describe('deadAnchors', () => {
 describe('deadLinks', () => {
     const registries = {
         docsPaths: new Set(['api/core', 'faq']),
-        docsAnchors: new Map([['api/core', new Set(['bootstrap'])]]),
+        docsAnchors: new Map([['api/core', new Set(['bootstrap', 'usage-1'])]]),
         sitePages: new Set(['', 'community', 'blog/hello-world']),
         demoSlugs: new Set(['basics', 'shots']),
-        trackedPaths: new Set(['other.md', 'packages', 'packages/demos', 'packages/demos/README.md']),
+        trackedPaths: new Set(['other.md', 'guide(v2).md', 'packages', 'packages/demos', 'packages/demos/README.md']),
     };
 
     /**
@@ -152,6 +152,16 @@ describe('deadLinks', () => {
 
     test('reports a missing relative file and passes an existing one', () => {
         assert.deepEqual(deadTargetsIn('[ok](./other.md) [ok](other.md#x) [bad](missing.md)\n'), ['missing.md']);
+    });
+
+    test('keeps balanced parentheses in a link target', () => {
+        assert.deepEqual(deadTargetsIn('[ok](./guide(v2).md) [bad](./gone(v2).md)\n'), ['./gone(v2).md']);
+    });
+
+    test('decodes a percent-encoded docs fragment before the heading lookup', () => {
+        assert.deepEqual(deadTargetsIn('[ok](/docs/api/core#usage%2D1) [bad](/docs/api/core#usage%2D2)\n'), [
+            '/docs/api/core#usage%2D2',
+        ]);
     });
 
     test('reports a file that is on disk but not tracked, or tracked under another case', () => {
