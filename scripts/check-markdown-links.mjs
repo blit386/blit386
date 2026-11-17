@@ -362,7 +362,8 @@ function listTrackedPaths() {
     let output;
 
     try {
-        output = execFileSync('git', ['ls-files'], {
+        // `-z`: NUL-separated and unquoted, so a non-ASCII or oddly named path is kept as written.
+        output = execFileSync('git', ['ls-files', '-z'], {
             cwd: ROOT,
             encoding: 'utf8',
             env: gitEnv(),
@@ -372,10 +373,7 @@ function listTrackedPaths() {
         process.exit(1);
     }
 
-    return output
-        .split('\n')
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0);
+    return output.split('\0').filter((entry) => entry.length > 0);
 }
 
 /**
