@@ -12,9 +12,10 @@ tests or typecheck is fine. Other reviewers work in the same checkout at the sam
 1. Get the diff of your PR: `git diff <merge>^1 <merge>` (merge SHA given in your dispatch). Also
    `gh pr view <n> --json title,body` for intent, and the Linear ticket named there if you need the requirements (Linear
    MCP `get_issue`, loaded via ToolSearch if deferred).
-2. Call the Skill tool with skill `review` (args: the package, usually `blit386`). The skill's step 1 diffs the
-   checked-out branch against a base, which does not yield a merged PR's diff; substitute your PR's diff for that step
-   and apply the rest of the skill (checklist, rules, severity levels) to it.
+2. Call the Skill tool with skill `review` (args: every package the PR touches, usually just `blit386`; add `root` when
+   it changes root-owned files). The skill's step 1 diffs the checked-out branch against a base, which does not yield a
+   merged PR's diff; substitute your PR's diff for that step and apply the rest of the skill (checklist, rules, severity
+   levels) to it.
 3. Call the Skill tool with skill `ponytail:ponytail-review` (args: `PR #<n> merge <sha>`) and apply it to the same
    diff, reading the connected code as it asks.
 4. Verify every finding against CURRENT main (later PRs of the same umbrella may have moved code): give the current

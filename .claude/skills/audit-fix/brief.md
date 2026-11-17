@@ -38,9 +38,9 @@ commits in your transcript before accepting your report. So:
   fixed/skipped; ponytail-review findings: n, fixed/skipped).
 - "Prose only" or "trivial" is not an exception. The only exception is a generated-output commit (below).
 
-1. Run the `review` skill (Skill tool, skill "review", args = the package - blit386, demos, website, kit,
-   create-blit386, or root - followed by `--base HEAD`) on the uncommitted change; `--base HEAD` keeps the branch's
-   earlier, already-reviewed commits out of it.
+1. Run the `review` skill (Skill tool, skill "review", args = every package the change touches - blit386, demos,
+   website, kit, create-blit386, plus root when it touches root-owned files - followed by `--base HEAD`) on the
+   uncommitted change; `--base HEAD` keeps the branch's earlier, already-reviewed commits out of it.
 2. Run the `ponytail:ponytail-review` skill (Skill tool) on the same uncommitted change.
 3. Fix every must-fix and warning. Apply suggestions where they are right; skip with a one-line reason where not.
    Suggestions apply only to lines this branch adds - existing tests and untouched code are read-only (global rule; a

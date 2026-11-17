@@ -18,7 +18,7 @@ uncommitted changes.
 
 1. Gather changes
 
-The change set has one rule: everything between the merge-base of `<base>` and `HEAD`, and the working tree - the
+The change set has one rule: everything between the merge-base of `<base>` and both the working tree and the index - the
 branch's commits, staged and unstaged edits, plus untracked files. It is the same whether the work is committed, pushed,
 or not yet staged. Compute the merge-base once:
 
@@ -35,11 +35,12 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
 
 For each package named, gather its slice:
 
-- A package: run `git diff "$MB" -- packages/<package>/` and
+- A package: run `git diff "$MB" -- packages/<package>/`, `git diff --cached "$MB" -- packages/<package>/`, and
   `git ls-files --others --exclude-standard -- packages/<package>/` to see this package's changes plus newly created
-  files a diff alone misses.
-- `root`: run the same two commands against the full root-owned allowlist - everything a root-level change could touch,
-  and nothing else:
+  files a diff alone misses. The `--cached` diff catches a staged edit that was later reverted in the working tree - the
+  commit would still include it.
+- `root`: run the same three commands against the full root-owned allowlist - everything a root-level change could
+  touch, and nothing else:
 
   ```bash
   ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json .husky/ \
@@ -49,6 +50,7 @@ For each package named, gather its slice:
     pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json .agents/ .codex/ .cursor/ .gemini/ \
     .opencode/ opencode.json .mcp.json .node-version README.md docs/)
   git diff "$MB" -- "${ROOT_ALLOWLIST[@]}"
+  git diff --cached "$MB" -- "${ROOT_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${ROOT_ALLOWLIST[@]}"
   ```
 
@@ -58,6 +60,7 @@ For each package named, gather its slice:
   ```bash
   POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json)
   git diff "$MB" -- "${POLICY_ALLOWLIST[@]}"
+  git diff --cached "$MB" -- "${POLICY_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
   ```
 
