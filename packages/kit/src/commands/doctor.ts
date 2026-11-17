@@ -7,10 +7,12 @@ import {
     detectPackageManager,
     exceedsCaretRange,
     findProjectRoot,
+    installedPeerRange,
     installedVersion,
     isGitRepo,
     kitDocsReviewedAt,
     kitEngineRange,
+    MIN_VERSION_RANGE,
     pmAddArgs,
     readProject,
     satisfiesCaretRange,
@@ -139,6 +141,25 @@ export function runDoctor(): void {
                 ),
             );
         }
+    }
+
+    // The blit386/vite plugin needs Vite's hotUpdate hook; the lower bound is the engine's own optional peer range.
+    const viteVersion = installedVersion(root, 'vite');
+    const viteRange = installedPeerRange(root, 'blit386', 'vite');
+
+    // Only a plain `>=N` range is understood (MIN_VERSION_RANGE); a test pins the engine's real range to it.
+    const viteFloor = viteRange?.match(MIN_VERSION_RANGE)?.[1];
+
+    if (viteVersion && viteFloor && compareVersions(viteVersion, viteFloor) < 0) {
+        out('');
+
+        out(
+            ui.warn(
+                `Vite ${viteVersion} is installed, but blit386 needs Vite ${viteFloor} or newer for image, sound and font hot reload.`,
+            ),
+        );
+
+        out(ui.info(`Update Vite: run \`${pm} ${pmAddArgs(pm, `vite@^${viteFloor}`).join(' ')}\`.`));
     }
 
     // Sync drift check (D13): warn when kit-managed files have been modified since they were generated.
