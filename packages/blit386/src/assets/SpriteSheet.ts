@@ -35,14 +35,14 @@ export { writeGridTileRect, writeTileRect } from './spriteTileGrid';
  * image beforehand, so a sheet starts (and, once reloaded, settles back to)
  * `'ready'`.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
 
 /**
  * Normalized UV coordinates (0.0-1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1).
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 
@@ -95,8 +95,8 @@ export type IndexedSpriteLoadResult = {
  * never indexed has no GPU texture.
  *
  * @since 0.1.0
- * @changed 1.8.1 Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size.
- * @changed 1.8.1 `size` is a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
+ * @changed 1.9.0 Image-backed sheets use the decoded image size (`naturalWidth`/`naturalHeight`), not the display size.
+ * @changed 1.9.0 `size` is a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
  */
 export class SpriteSheet {
     /** Source HTML image element (null for sheets created from raw indexed data). */
@@ -158,7 +158,7 @@ export class SpriteSheet {
      * @returns Frozen sheet dimensions. Changes after a hot-replace image swap with
      *   different dimensions - any `srcRect` a demo holds onto is the demo's own
      *   responsibility to reconcile.
-     * @changed 1.8.1 Returns a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
+     * @changed 1.9.0 Returns a frozen copy, so the vector passed to the constructor no longer aliases the sheet's size.
      */
     get size(): Vector2i {
         return this._size;
@@ -702,7 +702,7 @@ export class SpriteSheet {
      * cached until `destroy()` is called or a different device is passed (the
      * engine was re-initialized).
      *
-     * @changed 1.8.1 Throws for a sheet that was never indexized; the unused `rgba8unorm` texture path is gone.
+     * @changed 1.9.0 Throws for a sheet that was never indexized; the unused `rgba8unorm` texture path is gone.
      * @param device - WebGPU device for texture creation.
      * @returns GPU texture ready for rendering.
      * @throws Error if the sheet has not been indexized.

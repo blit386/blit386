@@ -82,7 +82,7 @@ for (let x = 0; x < 320; x++) {
 ```
 
 The `0.02` controls the size of the features - smaller means broader, smoother hills. `ValueNoise` and `SimplexNoise`
-are alternatives with slightly different looks. Engine 1.8.1 changed what a non-zero seed builds and made Perlin
+are alternatives with slightly different looks. Engine 1.9.0 changed what a non-zero seed builds and made Perlin
 `noise1D` / `noise2D` reach the full `-1` to `1`, so a world saved as a seed on an older engine comes out different -
 save the generated map if it must stay identical.
 

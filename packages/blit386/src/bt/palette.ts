@@ -105,7 +105,7 @@ export const palette = {
      *
      * @since 1.5.0
      * @changed 1.7.1 Documented precedence over the `?seed=N` URL parameter.
-     * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
+     * @changed 1.9.0 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
      * @param seed - Any finite number; only its lower 32 bits are used.
      * @throws RangeError if `seed` is not a finite number.
      * @example
@@ -127,7 +127,7 @@ export const palette = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
-     * @changed 1.8.1 Requires an active palette and rejects slot 0 or an `end` past the palette at the call.
+     * @changed 1.9.0 Requires an active palette and rejects slot 0 or an `end` past the palette at the call.
      * @param start - First palette index in the cycling range (inclusive).
      * @param end - Last palette index in the cycling range (inclusive).
      * @param speed - Steps per second. Positive = forward, negative = backward.
@@ -210,7 +210,7 @@ export const palette = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
-     * @changed 1.8.1 Rejects slot 0 or an `end` past the palette at the call.
+     * @changed 1.9.0 Rejects slot 0 or an `end` past the palette at the call.
      * @param start - First palette index to fade (inclusive).
      * @param end - Last palette index to fade (inclusive).
      * @param target - Target palette to fade toward.
@@ -237,7 +237,7 @@ export const palette = {
      *
      * @since 1.0.3
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
-     * @changed 1.8.1 Throws at the call when `color` is not a `Color32`, instead of throwing from inside a later tick.
+     * @changed 1.9.0 Throws at the call when `color` is not a `Color32`, instead of throwing from inside a later tick.
      * @param color - Flash color applied to all non-zero entries.
      * @param durationMs - How long the flash lasts in milliseconds.
      * @throws Error if no palette is set, `color` is not a `Color32`, or `durationMs` is not a non-negative finite number.
@@ -253,7 +253,7 @@ export const palette = {
      * takes effect on the next frame.
      *
      * @since 1.0.3
-     * @changed 1.8.1 Rejects slot 0 before writing anything.
+     * @changed 1.9.0 Rejects slot 0 before writing anything.
      * @param indexA - First palette index.
      * @param indexB - Second palette index.
      * @throws Error if no palette is set, either index is 0 (slot 0 is always transparent), or either index
@@ -302,7 +302,7 @@ export const palette = {
      * ```
      *
      * @since 1.0.3
-     * @changed 1.8.1 Covers every indexized sheet, not only sheets already drawn; `sheet.destroy()` removes a sheet. A sheet that fails to re-map keeps its old indices and is retried by the next call, instead of being dropped.
+     * @changed 1.9.0 Covers every indexized sheet, not only sheets already drawn; `sheet.destroy()` removes a sheet. A sheet that fails to re-map keeps its old indices and is retried by the next call, instead of being dropped.
      * @throws If no active palette has been set.
      */
     spritesRefresh: (): void => {

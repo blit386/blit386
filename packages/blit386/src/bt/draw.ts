@@ -149,7 +149,7 @@ export const draw = {
      * Fractional coordinates are truncated toward zero, the same rule `Vector2i` applies.
      *
      * @since 0.1.0
-     * @changed 1.8.1 Numeric coordinates now truncate toward zero before rendering, so the software backend no longer corrupts neighboring pixels.
+     * @changed 1.9.0 Numeric coordinates now truncate toward zero before rendering, so the software backend no longer corrupts neighboring pixels.
      * @param posOrX - Pixel position as `Vector2i`, or x coordinate when using numeric overload.
      * @param yOrColor - Palette index for vector overload, or y coordinate for numeric overload.
      * @param maybeColor - Palette index when using numeric overload.
@@ -254,7 +254,7 @@ export const draw = {
      * exact glyphs and metrics {@link BT.systemPrint} uses internally.
      *
      * @since 1.7.0
-     * @changed 1.8.1 The 14 blank reserved glyphs at U+E006-U+E013 are gone: `hasGlyph` is false for them and `codePoints` and `glyphCount` shrink by 14.
+     * @changed 1.9.0 The 14 blank reserved glyphs at U+E006-U+E013 are gone: `hasGlyph` is false for them and `codePoints` and `glyphCount` shrink by 14.
      * @throws Error if read before {@link BT.init} finishes creating the system font.
      * @returns The engine's built-in system font.
      */
@@ -276,8 +276,8 @@ export const draw = {
      * bitmap fonts with proportional glyphs, use {@link BT.printFont} instead.
      *
      * @since 1.0.3
-     * @changed 1.8.1 U+E006-U+E013 now draw the fallback glyph instead of nothing (the blank reserved glyphs were removed).
-     * @changed 1.8.1 On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`.
+     * @changed 1.9.0 U+E006-U+E013 now draw the fallback glyph instead of nothing (the blank reserved glyphs were removed).
+     * @changed 1.9.0 On WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one fallback glyph, not two, matching software and `BT.systemPrintMeasure`.
      * @param pos - Text origin in display coordinates.
      * @param paletteIndex - Palette color index for the text.
      * @param text - String to render.
@@ -299,7 +299,7 @@ export const draw = {
      * system font.
      *
      * @since 1.0.3
-     * @changed 1.8.1 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
+     * @changed 1.9.0 Before initialization, returns a new `(0, 0)` vector instead of the frozen `Vector2i.zero()`.
      * @param text - Text string to measure.
      * @returns Width and height in pixels, or a new `(0, 0)` vector before engine initialization.
      */
@@ -326,7 +326,7 @@ export const draw = {
      * {@link BT.drawSprite}.
      *
      * @since 0.1.0
-     * @changed 1.8.1 Glyph pixels on an alpha-0 palette entry or past the palette are skipped on both backends, and on WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one glyph, not two, matching `BitmapFont.measureText`.
+     * @changed 1.9.0 Glyph pixels on an alpha-0 palette entry or past the palette are skipped on both backends, and on WebGPU a character outside the Basic Multilingual Plane (an emoji) draws one glyph, not two, matching `BitmapFont.measureText`.
      * @param font - Font asset used for rendering.
      * @param pos - Text origin in display coordinates.
      * @param text - String to render.
@@ -394,7 +394,7 @@ export const draw = {
      *
      * @since 0.1.0
      * @changed 1.8.0 Added the `SpriteDrawParams` 4th-argument form for flips, quarter turns, integer scale, pivot placement, and Rect2i stretch destinations.
-     * @changed 1.8.1 Pixels on an alpha-0 palette entry or past the palette are skipped on both backends (software drew them opaque or black, WebGPU could show a stale color).
+     * @changed 1.9.0 Pixels on an alpha-0 palette entry or past the palette are skipped on both backends (software drew them opaque or black, WebGPU could show a stale color).
      * @param spriteSheet - Indexed sprite sheet.
      * @param srcRect - Source rectangle within the sprite sheet, in pixels.
      * @param destPos - Destination top-left in display coordinates (or where `params.pivot` lands), or (params

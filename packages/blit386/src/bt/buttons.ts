@@ -136,8 +136,8 @@ export const buttons = {
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
-     * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
-     * @changed 1.8.1 Pointer presses are tracked per fixed update, so a frame that runs several `update()` steps reports a click to the first one only.
+     * @changed 1.9.0 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
+     * @changed 1.9.0 Pointer presses are tracked per fixed update, so a frame that runs several `update()` steps reports a click to the first one only.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -239,9 +239,9 @@ export const buttons = {
      *
      * @since 1.1.1
      * @changed 1.8.0 Also accepts BTN_L2 / BTN_R2 / BTN_TRIGGER (gamepad only).
-     * @changed 1.8.1 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
-     * @changed 1.8.1 Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one.
-     * @changed 1.8.1 A keyboard-mapped button held when the canvas or window loses focus reports a release.
+     * @changed 1.9.0 Gamepad edges clear once per fixed update, not once per rendered frame, so each reaches exactly one `update()`.
+     * @changed 1.9.0 Pointer releases are tracked per fixed update, so a release on a frame that runs no `update()` reaches the next one.
+     * @changed 1.9.0 A keyboard-mapped button held when the canvas or window loses focus reports a release.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -327,7 +327,7 @@ export const buttons = {
      * reapplies it.
      *
      * @since 1.0.3
-     * @changed 1.8.1 A call made before `BT.init()` survives the layout seed instead of being discarded.
+     * @changed 1.9.0 A call made before `BT.init()` survives the layout seed instead of being discarded.
      * @param player - Zero-based player index (`0` or `1`).
      * @param button - Face button constant.
      * @param keys - DOM key codes (for example `'Space'`, `'KeyW'`).
@@ -477,7 +477,7 @@ export const buttons = {
      * window loses focus is released then, and reports this edge on the next update.
      *
      * @since 1.1.1
-     * @changed 1.8.1 A key held when the canvas or window loses focus reports a release.
+     * @changed 1.9.0 A key held when the canvas or window loses focus reports a release.
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.
      */
@@ -505,7 +505,7 @@ export const buttons = {
      * Read during `update()`; the buffer clears at the end of each fixed update step.
      *
      * @since 1.0.4
-     * @changed 1.8.1 Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives.
+     * @changed 1.9.0 Built from `keydown`, so typed characters arrive; it used to rely on `beforeinput`, which a canvas never receives.
      * @returns Characters typed since the last fixed-update flush.
      */
     get inputString(): string {
@@ -548,7 +548,7 @@ export const buttons = {
      * Call from `update()`, not `render()`.
      *
      * @since 1.8.0
-     * @changed 1.8.1 Fires when the canvas or window loses focus while keys are held.
+     * @changed 1.9.0 Fires when the canvas or window loses focus while keys are held.
      * @returns `true` on the tick the last held key comes up.
      */
     isAnyKeyReleased: (): boolean => {
@@ -576,7 +576,7 @@ export const buttons = {
      * like {@link isPressed}, the edge clears once per fixed update, so each press reaches exactly one `update()`.
      *
      * @since 1.8.0
-     * @changed 1.8.1 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
+     * @changed 1.9.0 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
      * @param player - Zero-based gamepad index (0-3).
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
      * @returns `true` on a press edge (and on repeat ticks when configured).
@@ -595,7 +595,7 @@ export const buttons = {
      * also counts. Call from `update()`: like {@link isReleased}, the edge clears once per fixed update.
      *
      * @since 1.8.0
-     * @changed 1.8.1 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
+     * @changed 1.9.0 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
      * @param player - Zero-based gamepad index (0-3).
      * @returns `true` on the first update after the last held button comes up.
      */

@@ -62,7 +62,7 @@ export class Rect2i {
     /**
      * Gets the horizontal center coordinate, rounded down (toward negative infinity).
      *
-     * @changed 1.8.1 Rounds down instead of toward zero, so the center of a rectangle left of zero moves with it.
+     * @changed 1.9.0 Rounds down instead of toward zero, so the center of a rectangle left of zero moves with it.
      * @returns Center X coordinate.
      */
     get centerX(): number {
@@ -72,7 +72,7 @@ export class Rect2i {
     /**
      * Gets the vertical center coordinate, rounded down (toward negative infinity).
      *
-     * @changed 1.8.1 Rounds down instead of toward zero, so the center of a rectangle above zero moves with it.
+     * @changed 1.9.0 Rounds down instead of toward zero, so the center of a rectangle above zero moves with it.
      * @returns Center Y coordinate.
      */
     get centerY(): number {
@@ -98,7 +98,7 @@ export class Rect2i {
     /**
      * Gets the center point as a new vector, each axis rounded down (toward negative infinity).
      *
-     * @changed 1.8.1 Rounds down instead of toward zero for negative coordinates.
+     * @changed 1.9.0 Rounds down instead of toward zero for negative coordinates.
      * @returns Vector2i at the rectangle center.
      */
     get center(): Vector2i {

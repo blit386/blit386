@@ -33,7 +33,7 @@ export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
  * factor so the attack still reaches full gain before the release starts.
  *
  * @since 1.3.0
- * @changed 1.8.1 A clip shorter than `attack + release` no longer renders as silence.
+ * @changed 1.9.0 A clip shorter than `attack + release` no longer renders as silence.
  */
 export interface SynthEnvelope {
     /**

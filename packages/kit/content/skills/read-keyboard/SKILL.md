@@ -78,7 +78,7 @@ for (const ch of BT.inputString) {
 }
 ```
 
-It needs a physical keyboard (engine 1.8.1+; older engines never fill it). Touch-screen keyboards, IME input (Chinese,
+It needs a physical keyboard (engine 1.9.0+; older engines never fill it). Touch-screen keyboards, IME input (Chinese,
 Japanese, Korean) and paste do not reach it, and only plain ASCII characters arrive.
 
 ## Remap a face button

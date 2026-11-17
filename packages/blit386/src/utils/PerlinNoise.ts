@@ -38,12 +38,12 @@ const SCALE_3D = 0.982;
  * Deterministic Perlin noise. Same seed and coordinates always produce the same sample.
  *
  * @since 1.5.0
- * @changed 1.8.1 Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).
+ * @changed 1.9.0 Non-zero seeds no longer give an x-shifted copy of seed 0, except seed 2126943072 (see `hash2i`).
  *   Seed 0 is unchanged; every non-zero seed draws a different field than 1.5.0-1.8.0.
- * @changed 1.8.1 `noise1D` and `fbm1D` samples are twice as large and `noise2D` / `fbm2D` about 1.5 times as large,
+ * @changed 1.9.0 `noise1D` and `fbm1D` samples are twice as large and `noise2D` / `fbm2D` about 1.5 times as large,
  *   so 1D and 2D noise reach about `-1` and `1` as documented. Seeded Perlin worlds keep their shape but change
  *   amplitude. 3D is unchanged.
- * @changed 1.8.1 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
+ * @changed 1.9.0 Throws a `RangeError` for a seed that is not a finite number (`NaN`, `undefined`, `Infinity`) instead of silently using seed 0.
  */
 export class PerlinNoise extends SeededNoise1D {
     /**

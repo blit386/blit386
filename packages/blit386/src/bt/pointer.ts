@@ -20,7 +20,7 @@ export const pointer = {
      * pointer.
      *
      * @since 1.0.3
-     * @changed 1.8.1 Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen
+     * @changed 1.9.0 Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen
      *   `Vector2i.zero()`.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns Pointer position in display coordinates.
@@ -89,7 +89,7 @@ export const pointer = {
      * `pointerIndex` is out of range.
      *
      * @since 1.0.3
-     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame. Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
+     * @changed 1.9.0 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame. Before initialization or for an out-of-range slot, returns a new `(0, 0)` instead of the frozen `Vector2i.zero()`.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns Movement in display coordinates.
      */
@@ -105,7 +105,7 @@ export const pointer = {
      * engine is not initialized or `pointerIndex` is out of range.
      *
      * @since 1.7.0
-     * @changed 1.8.1 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame.
+     * @changed 1.9.0 Read from `update()`, the delta covers all movement since the previous `update()`, not only the last rendered frame.
      * @param out - Vector2i to write the movement into.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns The `out` vector, for chaining.
@@ -161,7 +161,7 @@ export const pointer = {
      *
      * @since 1.0.4
      * @changed 1.3.1 Requires `HardwareSettings.isCapturingPointerScroll` (or overlay force); opt-in now, not default.
-     * @changed 1.8.1 Read from `update()`, the delta covers every wheel event since the previous `update()`, not only the last rendered frame.
+     * @changed 1.9.0 Read from `update()`, the delta covers every wheel event since the previous `update()`, not only the last rendered frame.
      * @returns Vertical scroll delta in pixels, or `0` when not initialized.
      */
     get pointerScrollDelta(): number {

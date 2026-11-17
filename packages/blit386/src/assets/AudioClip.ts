@@ -35,14 +35,14 @@ import { validateSynthParams } from './synth/synthValidation';
 /**
  * Phase reported by {@link AudioClipProgressCallback} during a load.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type AudioClipLoadPhase = 'download' | 'decoding';
 
 /**
  * Progress snapshot reported to an {@link AudioClipLoadOptions.onProgress} callback.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export interface AudioClipProgress {
     /** Which stage of the load this snapshot reports. */
@@ -58,14 +58,14 @@ export interface AudioClipProgress {
 /**
  * Callback invoked with {@link AudioClipProgress} snapshots during a load.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export type AudioClipProgressCallback = (progress: AudioClipProgress) => void;
 
 /**
  * Options accepted by {@link AudioClip.load} and {@link AudioClip.loadAll}.
  *
- * @since 1.8.1
+ * @since 1.9.0
  */
 export interface AudioClipLoadOptions {
     /**
@@ -198,7 +198,7 @@ export class AudioClip {
      * fresh, independent `AudioBuffer` on every call. See {@link SynthParams} for the full
      * parameter set.
      *
-     * @changed 1.8.1 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound. Also throws when `duration` rounds to 0 samples at the context's sample rate, instead of surfacing the browser's `NotSupportedError` from `createBuffer`.
+     * @changed 1.9.0 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound. Also throws when `duration` rounds to 0 samples at the context's sample rate, instead of surfacing the browser's `NotSupportedError` from `createBuffer`.
      * @param params - Deterministic synthesis parameters.
      * @returns A new clip wrapping the synthesized buffer.
      * @throws Error if `params` fails validation, or the engine has not registered a decode
@@ -250,7 +250,7 @@ export class AudioClip {
      * not call {@link unload} on cached clips - their buffers stay decoded
      * until each clip is unloaded explicitly.
      *
-     * @changed 1.8.1 A load still in flight during `clear()` no longer re-caches its clip
+     * @changed 1.9.0 A load still in flight during `clear()` no longer re-caches its clip
      *   when it finishes, and no longer drops a newer load of the same URL from the
      *   in-flight count.
      */

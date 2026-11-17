@@ -43,7 +43,7 @@ These come free with a dev build, without any code:
 - **F9 / Shift+F9 frame capture** - F9 copies the current frame to the clipboard, Shift+F9 saves it as a PNG. Turn both
   off with `isFrameCaptureShortcutEnabled: false` in `configure()` when your game wants F9 for itself. See the
   `save-a-screenshot` skill.
-- **`window.__btInputTrace`** (engine 1.8.1+) - records which clicks, keys, and pad buttons each `update()` and each
+- **`window.__btInputTrace`** (engine 1.9.0+) - records which clicks, keys, and pad buttons each `update()` and each
   frame saw, so you can check that one click counted once. It sits next to `window.BT` and follows the same
   `exposeGlobal` switch. See the `test-the-game` skill.
 

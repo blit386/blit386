@@ -7,7 +7,7 @@ import { VS_WGSL } from './fullscreenVS';
  * Base class for pixel-tier fullscreen effects on the logical `r8uint` chain.
  *
  * @since 1.0.3
- * @changed 1.8.1 `r8uint` only: the unused RGBA path is gone, so `fragmentShaderRgba` is no longer read, the protected `sampler` field is removed, and `init` throws for any other chain format.
+ * @changed 1.9.0 `r8uint` only: the unused RGBA path is gone, so `fragmentShaderRgba` is no longer read, the protected `sampler` field is removed, and `init` throws for any other chain format.
  */
 export abstract class FullscreenPixelEffect implements Effect {
     readonly tier = 'pixel' as const;
