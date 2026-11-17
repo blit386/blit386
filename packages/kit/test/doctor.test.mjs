@@ -8,12 +8,13 @@
 
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { MIN_VERSION_RANGE } from '../dist/env.js';
 import { AGENT_KINDS, AGENT_SPECS } from '../dist/ownership.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -284,4 +285,81 @@ test('blit doctor names the game package manager when blit386 is not installed',
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
+});
+
+// The one place the test pins the bound; doctor itself reads it from the installed engine's peer range.
+const VITE_PEER_RANGE = '>=6';
+
+/**
+ * Fake `node_modules/vite` and give the fake engine the optional `vite` peer range the real one declares.
+ * @param {string} root
+ * @param {string | null} viteVersion null installs no Vite
+ */
+function setVite(root, viteVersion) {
+    const enginePkg = join(root, 'node_modules', 'blit386', 'package.json');
+
+    writeFileSync(
+        enginePkg,
+        JSON.stringify({ name: 'blit386', version: '1.8.0', peerDependencies: { vite: VITE_PEER_RANGE } }, null, 4),
+    );
+
+    if (viteVersion) {
+        mkdirSync(join(root, 'node_modules', 'vite'), { recursive: true });
+        writeFileSync(
+            join(root, 'node_modules', 'vite', 'package.json'),
+            JSON.stringify({ name: 'vite', version: viteVersion }),
+        );
+    }
+}
+
+test('blit doctor warns when the installed Vite is older than the engine peer range', () => {
+    const root = makeGame('1.8.0');
+
+    setVite(root, '5.4.0');
+
+    try {
+        const { exitCode, output } = runDoctor(root);
+
+        assert.equal(exitCode, 0);
+        assert.ok(output.includes('Vite 5.4.0 is installed'), `expected a Vite warning, got:\n${output}`);
+        assert.ok(output.includes('vite@^6'), `expected an update hint, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+for (const version of ['6.0.0', '8.1.6']) {
+    test(`blit doctor stays quiet about Vite ${version}`, () => {
+        const root = makeGame('1.8.0');
+
+        setVite(root, version);
+
+        try {
+            const { output } = runDoctor(root);
+
+            assert.ok(!output.includes('needs Vite'), `did not expect a Vite warning, got:\n${output}`);
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
+}
+
+test('blit doctor says nothing about Vite when it is not installed', () => {
+    const root = makeGame('1.8.0');
+
+    setVite(root, null);
+
+    try {
+        const { output } = runDoctor(root);
+
+        assert.ok(!output.includes('needs Vite'), `did not expect a Vite warning, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test("the engine's real vite peer range is one blit doctor can read", () => {
+    const enginePkg = JSON.parse(readFileSync(join(here, '..', '..', 'blit386', 'package.json'), 'utf8'));
+
+    assert.match(enginePkg.peerDependencies.vite, MIN_VERSION_RANGE);
 });

@@ -140,15 +140,33 @@ export function readProject(root: string): ProjectInfo {
     }
 }
 
-/** The installed version of a dependency (read from node_modules), or null if it is not installed. */
-export function installedVersion(root: string, dep: string): string | null {
+/** The parsed `package.json` of an installed dependency (read from node_modules), or null if missing or unreadable. */
+function readInstalledPackage(root: string, dep: string): Record<string, unknown> | null {
     try {
         const pkgPath = join(root, 'node_modules', ...dep.split('/'), 'package.json');
-        const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: unknown };
-        return typeof pkg.version === 'string' ? pkg.version : null;
+
+        return JSON.parse(readFileSync(pkgPath, 'utf8')) as Record<string, unknown>;
     } catch {
         return null;
     }
+}
+
+/** The installed version of a dependency (read from node_modules), or null if it is not installed. */
+export function installedVersion(root: string, dep: string): string | null {
+    const version = readInstalledPackage(root, dep)?.version;
+
+    return typeof version === 'string' ? version : null;
+}
+
+/** Matches a plain `>=N[.N[.N]]` range and captures its floor; the only peer-range shape doctor understands. */
+export const MIN_VERSION_RANGE = /^>=\s*(\d+(?:\.\d+){0,2})$/;
+
+/** The `peerDependencies` range an installed dependency declares for `peer`, or null if absent or unreadable. */
+export function installedPeerRange(root: string, dep: string, peer: string): string | null {
+    const peers = readInstalledPackage(root, dep)?.peerDependencies as Record<string, unknown> | undefined;
+    const range = peers?.[peer];
+
+    return typeof range === 'string' ? range : null;
 }
 
 type Triple = readonly [number, number, number];
