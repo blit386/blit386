@@ -177,8 +177,9 @@ pnpm run spellcheck       # cspell
 pnpm run preflight        # everything, including api:since:check / api:history:check
 ```
 
-`docs:links` runs offline and resolves `blit386.dev/docs/...` links against `_sitemap.json`, so a brand-new page needs
-no deploy before the check passes.
+`docs:links` runs offline and resolves Markdown links to `blit386.dev/docs/...` against `_sitemap.json`, so a brand-new
+page needs no deploy before the check passes. The generated banner's URL is plain text, not a link, and is not checked;
+`sync:doc-banners:check` keeps it in step with the sitemap instead.
 
 In `packages/website`:
 
