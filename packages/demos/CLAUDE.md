@@ -329,7 +329,7 @@ commands are rewritten by `rtk hook claude`; search and read tools are not - use
 | `test` | `node --test` over the `__tests__/` directories of `scripts/`, `plugins/`, `src/shared/`, and `_shots/` |
 | `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, reserved slugs, header tags, the README `## Demos` list, and OG cards |
 | `check:demo-comment-links` | Dead `Prerequisites:` / `Guides:` / `Reference:` links in demo headers |
-| `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
+| `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--check-stable` (capture twice, fail on any differing tile), `--dry-run`, `--base-url` |
 | `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
 | `capture:demo` | A native-resolution video clip of one demo's canvas for the blog (Chrome and `ffmpeg`) |
 | `preflight` | `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |

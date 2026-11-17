@@ -17,6 +17,7 @@ import {
     selectChanged,
     staleImages,
     summarizeEntries,
+    unstableImages,
 } from '../capture-demo-shots.mjs';
 
 describe('parseArgs', () => {
@@ -171,5 +172,38 @@ describe('staleImages', () => {
         const entries = [{ variants: { display: 'basics/start.display.png' } }];
 
         assert.deepEqual(staleImages(['basics/start.display.png'], entries), []);
+    });
+});
+
+describe('--check-stable', () => {
+    it('is off unless asked for', () => {
+        assert.equal(parseArgs(['--all']).checkStable, false);
+        assert.equal(parseArgs(['--all', '--check-stable']).checkStable, true);
+    });
+
+    it('lists the images whose bytes differ between two runs', () => {
+        const first = [
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+            { path: 'fonts/start.display.png', base64: 'BBBB' },
+        ];
+        const second = [
+            { path: 'basics/start.display.png', base64: 'AAAA' },
+            { path: 'fonts/start.display.png', base64: 'CCCC' },
+        ];
+
+        assert.deepEqual(unstableImages(first, second), ['fonts/start.display.png']);
+    });
+
+    it('lists an image only one run produced', () => {
+        const first = [{ path: 'basics/start.display.png', base64: 'AAAA' }];
+        const second = [{ path: 'basics/moving.display.png', base64: 'AAAA' }];
+
+        assert.deepEqual(unstableImages(first, second), ['basics/start.display.png', 'basics/moving.display.png']);
+    });
+
+    it('passes two identical runs', () => {
+        const run = [{ path: 'basics/start.display.png', base64: 'AAAA' }];
+
+        assert.deepEqual(unstableImages(run, [...run]), []);
     });
 });
