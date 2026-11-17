@@ -37,6 +37,15 @@ overrides:
   # never imports effect. Drop that one edge instead of installing either pin.
   '@opencode-ai/plugin>effect': '-'
 
+# GHSA-fc5q-39xc-vjpf (high): picomatch ReDoS through single-branch repeated extglobs. Every
+# published picomatch (<= 4.0.7, the latest) is affected and there is no patched release, so no
+# override can fix it. It enters only through dev and docs-build tooling (knip, tinyglobby, fdir,
+# fumadocs) that matches this repo's own glob patterns, never untrusted input, and no runtime
+# bundle ships it. Delete this entry once a patched picomatch is published.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf
+
 allowBuilds:
   esbuild: true
   sharp: true
