@@ -1216,61 +1216,6 @@ describe('Overlay present FPS', () => {
 
         expect(presentLabel?.text).toBe('Present  60 FPS');
     });
-
-    it('shows the target rate and zero timings while the clock is parked after resetSamples (BT-797)', () => {
-        let nowMs = 0;
-        const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
-        const layout = createOverlayLayout(320, 240, 14);
-        const overlay = createOverlay(layout, 'Test Demo', { isOverlayVisibleAtStart: true });
-        const ZERO_TIMING = {
-            frameMs: 0,
-            updateMs: 0,
-            renderMs: 0,
-            updateSteps: 0,
-            drawCalls: 0,
-            droppedFrames: 0,
-            primitiveOverflowCount: 0,
-            spriteOverflowCount: 0,
-            primitiveSubmittedVertices: 0,
-            spriteSubmittedVertices: 0,
-        };
-        const liveTiming = { ...ZERO_TIMING, frameMs: 9, updateMs: 4, renderMs: 3 };
-
-        // Live frames 3 ms apart: about 333 FPS and non-zero timings, as a fast machine measures them.
-        for (let frame = 0; frame < 60; frame++) {
-            nowMs += 3;
-            overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, undefined, liveTiming);
-        }
-
-        overlay.resetSamples(0);
-
-        // Parked frames with a long wall-clock gap between them, fed the zeroed timing a parked frame commits.
-        nowMs += 500;
-        overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 60, undefined, ZERO_TIMING);
-        nowMs += 500;
-
-        const renderer = createMockRenderer();
-
-        overlay.updateAndRender(
-            renderer,
-            mockFont,
-            null,
-            null,
-            60,
-            undefined,
-            ZERO_TIMING,
-            null,
-            undefined,
-            undefined,
-            true,
-        );
-        nowSpy.mockRestore();
-
-        const texts = getBitmapTextCalls(renderer).map((call) => call.text);
-
-        expect(texts.find((text) => text.startsWith('Present'))).toBe('Present  60 FPS');
-        expect(texts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
-    });
 });
 
 describe('Overlay while the clock is parked', () => {

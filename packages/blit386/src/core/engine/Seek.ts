@@ -98,6 +98,11 @@ export class Seek {
 
         loop.stop();
         this.engine.isSeekParked = true;
+
+        // The overlay draws the timings the previous frame committed. Zero them, so the seeked
+        // frame does not show the last live frame's wall-clock numbers.
+        this.engine.diagnostics.reset();
+
         // Wait for silence: the suspend resolves once the audio output has drained, so nothing from
         // before the seek is still playing while it replays.
         await this.engine.audio?.park();
@@ -119,7 +124,7 @@ export class Seek {
      * instance.
      *
      * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, the post-process clock, and the overlay's measured timings and timing chart.
+     * input edges, ticks, the post-process clock, and the overlay's timing chart.
      * The game's own fields reset because the replay
      * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
      * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
@@ -167,9 +172,8 @@ export class Seek {
         loop.resetTicks();
         this.engine.lastRenderClockMs = 0;
 
-        // The overlay's measured numbers and timing chart came from the live run's wall clock; start
-        // them clean like the boot run did, so the seeked frame shows the same overlay on every run.
-        this.engine.diagnostics.reset();
+        // The timing chart holds the live run's wall-clock history; start it clean like the boot
+        // run did, so the seeked frame shows the same overlay on every run.
         this.engine.overlay?.resetSamples(0);
 
         // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the

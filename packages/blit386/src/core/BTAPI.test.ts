@@ -1115,6 +1115,30 @@ describe('BTAPI', () => {
             expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
         });
 
+        it("from 'current' draws the seeked frame with zero timings, not the last live frame's (BT-797)", async () => {
+            await boot();
+
+            const overlay = BTAPI.instance.overlay;
+
+            expect(overlay).not.toBeNull();
+
+            const drawn: { frameMs: number; updateMs: number; renderMs: number }[] = [];
+
+            // What the last live frame committed before the seek; the overlay draws the previous frame's numbers.
+            Object.assign(BTAPI.instance.diagnostics.overlayTiming, { frameMs: 9, updateMs: 4, renderMs: 3 });
+            vi.spyOn(overlay as Overlay, 'updateAndRender').mockImplementation(
+                (_renderer, _font, _pointer, _keyboard, _tick, _rows, timing) => {
+                    if (timing) {
+                        drawn.push({ frameMs: timing.frameMs, updateMs: timing.updateMs, renderMs: timing.renderMs });
+                    }
+                },
+            );
+
+            await BTAPI.instance.seek.renderAt(1, 'current');
+
+            expect(drawn).toEqual([{ frameMs: 0, updateMs: 0, renderMs: 0 }]);
+        });
+
         it("from 'start' restores the RNG to its pre-init state", async () => {
             const statesSeenByInit: number[] = [];
             const demo = makeMockDemo();

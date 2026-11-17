@@ -264,14 +264,13 @@ export class Overlay {
     }
 
     /**
-     * Forgets the measured FPS, the smoothed timings and the timing chart history, so a replay from
-     * tick 0 (`BT.renderAt` from `'start'`) starts the overlay as clean as the boot run did.
+     * Forgets the timing chart history, so a replay from tick 0 (`BT.renderAt` from `'start'`) starts
+     * the chart as clean as the boot run did. The FPS and timing readouts need no reset here: every
+     * parked frame resets them (see {@link updateAndRender}).
      *
      * @param currentTick - Fixed-update tick the timing chart timeline restarts from.
      */
     resetSamples(currentTick: number): void {
-        this.#fps.reset();
-        this.#timing.reset();
         this.#timingChart.clear(currentTick);
     }
 
