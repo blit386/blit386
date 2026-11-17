@@ -64,6 +64,19 @@ const PARKED_TIMING: OverlayTimingSnapshot = Object.freeze({
 });
 
 /**
+ * Sampled by a parked frame instead of the captured audio snapshot, for the same reason as {@link PARKED_TIMING};
+ * only `totalVoices` is taken from the real snapshot.
+ */
+const PARKED_AUDIO: OverlayAudioSnapshot = Object.freeze({
+    levels: Object.freeze({ main: 0, music: 0, sfx: 0 }),
+    activeVoices: 0,
+    totalVoices: 0,
+    voiceStealCount: 0,
+    voiceDropCount: 0,
+    preUnlockDropCount: 0,
+});
+
+/**
  * Creates a timing chart instance and resets its ring buffer when enabled.
  *
  * @param layout - Cached display layout.
@@ -342,9 +355,10 @@ export class Overlay {
      * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
      * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
      * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped. Frames stepped or
-     *   re-rendered back to back have no cadence to measure, so `timing` is ignored: the present FPS reads
-     *   the target rate, every time and count reads 0 and the timing chart is empty. The seeked frame and
-     *   every capture of it then draw the same overlay.
+     *   re-rendered back to back have no cadence to measure, so `timing` and `audioSnapshot` are ignored: the
+     *   present FPS reads the target rate, every time, count and audio level reads 0 (the voice-pool size
+     *   still shows) and the timing chart is empty. The seeked frame and every capture of it then draw the
+     *   same overlay.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -372,7 +386,13 @@ export class Overlay {
             this.#fps.sample();
         }
 
-        this.#sampleAudio(audioSnapshot);
+        // The audio snapshot is captured after the previous frame too, so a parked frame keeps only the
+        // voice-pool size from it: that is configuration, not a measurement.
+        this.#sampleAudio(
+            isClockParked && audioSnapshot
+                ? { ...PARKED_AUDIO, totalVoices: audioSnapshot.totalVoices }
+                : audioSnapshot,
+        );
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 

@@ -1288,4 +1288,48 @@ describe('Overlay while the clock is parked', () => {
         expect(firstCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
         expect(secondCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
     });
+
+    it('draws the same audio meters on every parked frame, whatever audio snapshot it is fed (BT-797)', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayAudioMetersEnabled: true,
+        });
+        const audio = {
+            levels: { main: 0.8, music: 0.5, sfx: 0.3 },
+            activeVoices: 3,
+            totalVoices: 16,
+            voiceStealCount: 1,
+            voiceDropCount: 2,
+            preUnlockDropCount: 0,
+        };
+        const drawParked = (audioSnapshot: typeof audio): ReturnType<typeof createMockRenderer> => {
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                60,
+                undefined,
+                undefined,
+                null,
+                undefined,
+                audioSnapshot,
+                true,
+            );
+
+            return renderer;
+        };
+
+        // The seeked frame and a capture of it get the audio captured after different frames.
+        const seeked = drawParked(audio);
+        const capture = drawParked({ ...audio, levels: { main: 0.1, music: 0, sfx: 0.9 }, activeVoices: 7 });
+
+        expect(getBitmapTextCalls(capture).map((call) => call.text)).toEqual(
+            getBitmapTextCalls(seeked).map((call) => call.text),
+        );
+        expect(capture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
+    });
 });
