@@ -680,4 +680,36 @@ describe('TimingChart', () => {
 
         expect(pressureDots.length).toBeGreaterThanOrEqual(2);
     });
+
+    it('clear() leaves the chart drawing like a fresh one at the same width (BT-797)', () => {
+        const sample = {
+            frameMs: 0,
+            updateMs: 12,
+            renderMs: 6,
+            updateSteps: 1,
+            drawCalls: 0,
+            droppedFrames: 2,
+            primitiveOverflowCount: 0,
+            spriteOverflowCount: 0,
+            primitiveSubmittedVertices: 0,
+            spriteSubmittedVertices: 0,
+        };
+        const chartRect = new Rect2i(0, 14, 4, 22);
+        const used = new TimingChart(true);
+        const fresh = new TimingChart(true);
+        const usedRenderer = createMockRenderer();
+        const freshRenderer = createMockRenderer();
+
+        used.reset(4, 0);
+        used.sample(sample);
+        used.sample(sample);
+        used.assignTag('hit', 30);
+        used.clear(5);
+        fresh.reset(4, 5);
+        drawChart(used, usedRenderer, chartRect, 5);
+        drawChart(fresh, freshRenderer, chartRect, 5);
+
+        expect(usedRenderer.drawBarFill.mock.calls).toEqual(freshRenderer.drawBarFill.mock.calls);
+        expect(usedRenderer.drawLabelOnTop.mock.calls).toEqual(freshRenderer.drawLabelOnTop.mock.calls);
+    });
 });

@@ -339,8 +339,9 @@ export class Overlay {
      * @param palette - Active demo palette for optional palette grid.
      * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
      * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
-     * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped: the present FPS is not
-     *   sampled, because frames stepped or re-rendered back to back have no real cadence to measure.
+     * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped: the present FPS reads the
+     *   target rate and the smoothed timings restart from `timing`, because frames stepped or re-rendered
+     *   back to back have no real cadence to measure.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -355,6 +356,13 @@ export class Overlay {
         audioSnapshot?: OverlayAudioSnapshot,
         isClockParked = false,
     ): void {
+        // A parked frame shows the target rate and the zeroed timing it was fed, not live values
+        // smoothed over from before a 'current' seek.
+        if (isClockParked) {
+            this.#fps.reset();
+            this.#timing.reset();
+        }
+
         // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
         this.#sampleTiming(timing);
         this.#sampleAudio(audioSnapshot);

@@ -119,7 +119,8 @@ export class Seek {
      * instance.
      *
      * Engine-owned: the `BT.random` stream, palette effects, post-process effects, camera, pending
-     * input edges, ticks, the post-process clock, and the overlay's measured timings and timing chart. The game's own fields reset because the replay
+     * input edges, ticks, the post-process clock, and the overlay's measured timings and timing chart.
+     * The game's own fields reset because the replay
      * runs on a new instance built from the game's class, exactly as the boot run did - so a counter,
      * a clock, or an array init() fills cannot carry over from the run being replaced. An object-literal
      * game has no class to build from, so its `init()` re-runs on the same object and resetting its
@@ -132,8 +133,8 @@ export class Seek {
      * restored, so `BT.resume()` continues the old game where it was (`BT.random.seedValue` reads
      * `undefined` afterwards unless nothing had drawn since the seed). Not restored: palette effects
      * and post-process effects (clearing disposes them), pending input edges, and the overlay's timing
-     * history, all gone. An object-literal
-     * game runs `init()` on the live object, so fields it wrote before failing stay changed.
+     * history, all gone. An object-literal game runs `init()` on the live object, so fields it wrote
+     * before failing stay changed.
      *
      * @param demo - Running game instance.
      * @param loop - Stopped game loop.

@@ -1272,3 +1272,53 @@ describe('Overlay present FPS', () => {
         expect(texts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
     });
 });
+
+describe('Overlay while the clock is parked', () => {
+    it("shows the target rate and zero timings without resetSamples, as a 'current' seek leaves it (BT-797)", () => {
+        let nowMs = 0;
+        const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', { isOverlayVisibleAtStart: true });
+        const zeroTiming = {
+            frameMs: 0,
+            updateMs: 0,
+            renderMs: 0,
+            updateSteps: 0,
+            drawCalls: 0,
+            droppedFrames: 0,
+            primitiveOverflowCount: 0,
+            spriteOverflowCount: 0,
+            primitiveSubmittedVertices: 0,
+            spriteSubmittedVertices: 0,
+        };
+        const liveTiming = { ...zeroTiming, frameMs: 9, updateMs: 4, renderMs: 3 };
+
+        // Live frames 3 ms apart, then straight into a parked frame with no reset in between.
+        for (let frame = 0; frame < 60; frame++) {
+            nowMs += 3;
+            overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, undefined, liveTiming);
+        }
+
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(
+            renderer,
+            mockFont,
+            null,
+            null,
+            60,
+            undefined,
+            zeroTiming,
+            null,
+            undefined,
+            undefined,
+            true,
+        );
+        nowSpy.mockRestore();
+
+        const texts = getBitmapTextCalls(renderer).map((call) => call.text);
+
+        expect(texts.find((text) => text.startsWith('Present'))).toBe('Present  60 FPS');
+        expect(texts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
+    });
+});
