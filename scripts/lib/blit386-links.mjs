@@ -15,6 +15,12 @@ import { join } from 'node:path';
 
 import { headingAnchors } from './heading-anchors.mjs';
 
+/** The docs site's host, and the route segment its docs live under (`/docs/<path>`). */
+export const SITE_HOST = 'blit386.dev';
+export const DOCS_ROUTE = 'docs';
+const DOCS_PATH_PREFIX = `/${DOCS_ROUTE}/`;
+const DEMOS_HOST = 'demos.blit386.dev';
+
 /**
  * @param {string} url
  * @returns {URL | null} The parsed URL, or `null` when `url` is not a valid absolute URL.
@@ -42,11 +48,11 @@ export function findDocsLinkFailures(urls, sitemapPaths, anchorsByPath = new Map
     for (const url of urls) {
         const parsed = tryParseUrl(url);
 
-        if (parsed === null || parsed.hostname !== 'blit386.dev' || !parsed.pathname.startsWith('/docs/')) {
+        if (parsed === null || parsed.hostname !== SITE_HOST || !parsed.pathname.startsWith(DOCS_PATH_PREFIX)) {
             continue;
         }
 
-        const path = parsed.pathname.slice('/docs/'.length).replace(/\/$/u, '');
+        const path = parsed.pathname.slice(DOCS_PATH_PREFIX.length).replace(/\/$/u, '');
 
         if (!sitemapPaths.has(path)) {
             failures.push(`${url} has no matching page in packages/blit386/docs/_sitemap.json (path "${path}")`);
@@ -77,7 +83,7 @@ export function findDemoLinkFailures(urls, demoSlugs) {
     for (const url of urls) {
         const parsed = tryParseUrl(url);
 
-        if (parsed === null || parsed.hostname !== 'demos.blit386.dev') {
+        if (parsed === null || parsed.hostname !== DEMOS_HOST) {
             continue;
         }
 
