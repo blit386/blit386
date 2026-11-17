@@ -455,8 +455,9 @@ on the backend-parity subset.
   `#anchor` and `page.md#anchor` must name a heading on the target page (slugged the way blit386.dev and GitHub slug
   them), and BLIT386's own URLs must resolve locally - `blit386.dev/docs/...` and `/docs/...` against `_sitemap.json`
   and the hand-authored docs pages, other site routes against `packages/website/content/`, `demos.blit386.dev/<slug>`
-  against `DEMO_ORDER`, and `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. Third-party URLs
-  are never fetched.
+  against `DEMO_ORDER`, and `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. A root-relative
+  `/route` is only allowed under `packages/website/content/` (on GitHub it points at the repository root), and a
+  relative link into the gitignored docs mirror fails. Third-party URLs are never fetched.
 
 ## See also
 

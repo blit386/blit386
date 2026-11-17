@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deadAnchors, deadLinks, isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
 
@@ -129,17 +129,22 @@ describe('deadLinks', () => {
         trackedPaths: new Set(['packages', 'packages/demos', 'packages/demos/README.md']),
     };
 
-    /** @param {string} source @returns {string[]} The dead targets `deadLinks` reports for `source`. */
-    const deadTargetsIn = (source) => {
+    /**
+     * @param {string} source
+     * @param {{ inSiteContent?: boolean }} [options] Whether the page sits under the website's content dir.
+     * @returns {string[]} The dead targets `deadLinks` reports for `source`.
+     */
+    const deadTargetsIn = (source, { inSiteContent = true } = {}) => {
         const dir = mkdtempSync(join(tmpdir(), 'docs-links-targets-'));
 
         try {
             const page = join(dir, 'page.md');
+            const siteContentDir = inSiteContent ? dir : join(dir, 'elsewhere');
 
             writeFileSync(join(dir, 'other.md'), '# Other\n');
             writeFileSync(page, source);
 
-            return deadLinks(page, source, registries).map(({ target }) => target);
+            return deadLinks(page, source, { ...registries, siteContentDir }).map(({ target }) => target);
         } finally {
             rmSync(dir, { recursive: true, force: true });
         }
@@ -196,5 +201,27 @@ describe('deadLinks', () => {
         ].join('\n');
 
         assert.deepEqual(deadTargetsIn(source), []);
+    });
+
+    test('reports a root-relative route outside the website content and passes an absolute URL', () => {
+        const source = '[bad](/community) [ok](https://blit386.dev/community)\n';
+
+        assert.deepEqual(deadTargetsIn(source, { inSiteContent: false }), ['/community']);
+    });
+
+    test('reports a relative link into the generated docs mirror', () => {
+        const dir = mkdtempSync(join(tmpdir(), 'docs-links-mirror-'));
+
+        try {
+            const page = join(dir, 'page.md');
+            const mirror = join(ROOT, 'packages', 'website', 'content', 'docs', 'api', 'core.mdx');
+            const source = `[mirror](${relative(dir, mirror)})\n`;
+
+            writeFileSync(page, source);
+
+            assert.equal(deadLinks(page, source, { ...registries, siteContentDir: dir }).length, 1);
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     });
 });

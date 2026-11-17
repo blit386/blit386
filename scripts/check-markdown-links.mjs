@@ -23,7 +23,9 @@
  *     real page - `/docs/...` and `blit386.dev/docs/...` against the docs sitemap and the
  *     hand-authored docs pages, other site routes against `packages/website/content/`,
  *     `demos.blit386.dev/<slug>` against `DEMO_ORDER`, and
- *     `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. Every
+ *     `github.com/blit386/blit386/(blob|tree)/main/<path>` against tracked paths. A
+ *     root-relative `/route` is only accepted under `packages/website/content/`, and a
+ *     relative link into the gitignored docs mirror fails, since neither resolves on GitHub. Every
  *     other URL (third-party sites, issues, PRs, `mailto:`) is deliberately not checked:
  *     a gate that fails on someone else's uptime blocks unrelated PRs.
  *   - `deadAnchors`: every relative `#frag` / `file.md#frag` must name a heading on the
@@ -35,16 +37,21 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEMO_ORDER } from '../packages/demos/plugins/demo-order.js';
 import { RESERVED_SLUGS } from '../packages/demos/plugins/demo-registry.js';
-import { findDemoLinkFailures, findDocsLinkFailures, readSitemap, tryParseUrl } from './lib/blit386-links.mjs';
+import {
+    DOCS_ROUTE,
+    findDemoLinkFailures,
+    findDocsLinkFailures,
+    readSitemap,
+    SITE_HOST,
+    tryParseUrl,
+} from './lib/blit386-links.mjs';
 import { gitEnv } from './lib/git-env.mjs';
 import { headingAnchors } from './lib/heading-anchors.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS_DIR = join(ROOT, 'packages/blit386/docs');
 const SITE_CONTENT_PREFIX = 'packages/website/content/';
-const SITE_HOST = 'blit386.dev';
 const SITE_ORIGIN = `https://${SITE_HOST}`;
-const DOCS_ROUTE = 'docs';
 const GITHUB_MAIN_PATTERN = /^https:\/\/github\.com\/blit386\/blit386\/(?:blob|tree)\/main\/([^?#]*)/u;
 
 /** Site routes the website serves without a `content/` page behind them. */
@@ -80,12 +87,12 @@ function anchorsOf(path) {
     return anchors;
 }
 
-/** @param {string} fragment @returns {string} The fragment percent-decoded, or as written if it is malformed. */
-function decodeFragment(fragment) {
+/** @param {string} value A link fragment or path. @returns {string} `value` percent-decoded, or as written if it is malformed. */
+function decodeOrRaw(value) {
     try {
-        return decodeURIComponent(fragment);
+        return decodeURIComponent(value);
     } catch {
-        return fragment; // a stray `%` names no heading either way; report it, do not crash the run
+        return value; // a stray `%` names no heading or file either way; report it, do not crash the run
     }
 }
 
@@ -120,7 +127,7 @@ export function deadAnchors(filePath, source) {
             continue;
         }
 
-        if (!anchorsOf(page).has(decodeFragment(target.slice(hashAt + 1)))) {
+        if (!anchorsOf(page).has(decodeOrRaw(target.slice(hashAt + 1)))) {
             dead.push(target);
         }
     }
@@ -135,6 +142,8 @@ export function deadAnchors(filePath, source) {
  * @property {Set<string>} sitePages Site routes outside `/docs` (`''`, `community`, `blog/<slug>`).
  * @property {Set<string>} demoSlugs Pages on demos.blit386.dev.
  * @property {Set<string>} trackedPaths Tracked files and every directory above one, repo-relative.
+ * @property {string} siteContentDir Absolute path of `packages/website/content/`, the only place a
+ *   root-relative `/route` link resolves (on GitHub it points at the repository root instead).
  */
 
 /**
@@ -167,14 +176,22 @@ function deadLinkReason(filePath, target, registries) {
     }
 
     if (!NON_FILE_TARGET_PATTERN.test(target)) {
-        const path = decodeFragment(target.split(/[?#]/u)[0]);
+        const path = resolve(dirname(filePath), decodeOrRaw(target.split(/[?#]/u)[0]));
 
-        return existsSync(resolve(dirname(filePath), path)) ? null : 'no such file';
+        if (isIgnoredFile(path)) {
+            return 'generated mirror page, not in a fresh checkout - link its source under packages/blit386/docs/';
+        }
+
+        return existsSync(path) ? null : 'no such file';
     }
 
     const site = siteRouteOf(target);
 
     if (site !== null) {
+        if (target.startsWith('/') && !filePath.startsWith(registries.siteContentDir)) {
+            return `root-relative route only resolves on ${SITE_HOST} - use ${SITE_ORIGIN}${target}`;
+        }
+
         if (site.route === DOCS_ROUTE) {
             return null;
         }
@@ -199,7 +216,7 @@ function deadLinkReason(filePath, target, registries) {
     const github = GITHUB_MAIN_PATTERN.exec(target);
 
     if (github !== null) {
-        const path = decodeFragment(github[1]).replace(/\/$/u, '');
+        const path = decodeOrRaw(github[1]).replace(/\/$/u, '');
 
         return path === '' || registries.trackedPaths.has(path) ? null : 'no such tracked path';
     }
@@ -264,7 +281,12 @@ function buildRegistries(trackedPaths) {
             docsPaths.add(docsRoute);
             docsAnchors.set(docsRoute, anchorsOf(join(ROOT, path)));
         } else if (route !== DOCS_ROUTE) {
-            sitePages.add(route);
+            // Each folder above a page is a section index the site renders (`/blog` for `blog/<slug>`).
+            const segments = route.split('/');
+
+            for (let i = 1; i <= segments.length; i += 1) {
+                sitePages.add(segments.slice(0, i).join('/'));
+            }
         }
     }
 
@@ -274,6 +296,7 @@ function buildRegistries(trackedPaths) {
         sitePages,
         demoSlugs: new Set([...DEMO_ORDER, ...RESERVED_SLUGS]),
         trackedPaths: trackedWithDirs,
+        siteContentDir: join(ROOT, SITE_CONTENT_PREFIX),
     };
 }
 
