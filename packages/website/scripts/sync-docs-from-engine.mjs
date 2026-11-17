@@ -45,9 +45,7 @@ const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
 const API_HISTORY_SRC = join(ENGINE_DOCS, '_api-history.json');
-/** The API history copy, package-relative. */
-const API_HISTORY_MIRROR = 'src/data/api-history.generated.json';
-const API_HISTORY_DEST = join(ROOT, API_HISTORY_MIRROR);
+const API_HISTORY_DEST = join(ROOT, 'src', 'data', 'api-history.generated.json');
 
 /**
  * Load and validate the sitemap manifest from `packages/blit386`. Presence in
@@ -525,7 +523,7 @@ const assertFullHistory = (repoRoot = ENGINE_REPO_ROOT) => {
         }).trim();
     } catch {
         throw new Error(
-            `sync:docs needs the git history of ${repoRoot} to date each page (lastModified), but it is not a git checkout.`,
+            `sync:docs needs the git history of ${repoRoot} to date each page (lastModified), but it is not a git checkout or git is not installed.`,
         );
     }
 
@@ -631,7 +629,7 @@ const requireLastModified = (src) => {
     const date = getLastModified(src);
 
     if (date === undefined) {
-        throw new Error(`No git history for docs/${src}; commit it before running sync:docs.`);
+        throw new Error(`No git history for ${ENGINE_DOCS_REPO_DIR}/${src}; commit it before running sync:docs.`);
     }
 
     return date;
@@ -701,8 +699,6 @@ export {
     getLastModified,
     assertFullHistory,
     renderPage,
-    PAGES,
-    API_HISTORY_MIRROR,
     MDX_COMPONENTS,
 };
 
