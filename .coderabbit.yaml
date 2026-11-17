@@ -14,12 +14,20 @@
 # - `.cursor/commands/**` are generated verbatim from `.claude/skills/*/SKILL.md`
 #   (frontmatter stripped) by `scripts/sync-cursor-commands.mjs` - reviewing them
 #   would just duplicate review of the source skill file.
+# - The other agents' maintainer hooks and MCP config (`.agents/hooks/**`, `.codex/**`,
+#   `.gemini/**`, `.github/hooks/**`, `.opencode/**`, `opencode.json`, and
+#   `.agents/{hooks,mcp_config}.json`) are generated from the kit adapters by
+#   `scripts/sync-maintainer-agents.mjs` - review the kit source instead.
 # - `pnpm-lock.yaml` is the single generated workspace lock file (listed
 #   explicitly even though it may already match CodeRabbit defaults).
+# - `packages/website/content/docs/*/**` and
+#   `packages/website/src/data/api-history.generated.json` are the docs mirror,
+#   gitignored build output since BT-752. Kept here so the PR that deleted the
+#   committed copy, or a copy force-added by mistake, is not reviewed.
 # - Binary assets carry no text diff worth reviewing, and several are large
 #   enough to burn review budget for zero signal: `packages/demos/public/shots/**` (capture
 #   PNGs from the `/shots` gallery) and `packages/demos/public/social/**` (OG cards) are generated
-#   images; `packages/website/public/media/**`
+#   images, as are the `packages/website/public/demos/**` thumbnails; `packages/website/public/media/**`
 #   is self-hosted blog video (~24 MB of `.av1.mp4`/`.h264.mp4`/`.webp`, produced by
 #   `pnpm run encode:video`); fonts, sprites, audio clips, favicons, and the engine's
 #   own bundled logo/system-font PNGs are likewise opaque binaries.
@@ -37,7 +45,18 @@ reviews:
     - '!packages/blit386/tests/visual/__snapshots__/**'
     - '!.agents/skills/**'
     - '!.cursor/commands/**'
+    - '!.agents/hooks/**'
+    - '!.agents/hooks.json'
+    - '!.agents/mcp_config.json'
+    - '!.codex/**'
+    - '!.gemini/**'
+    - '!.github/hooks/**'
+    - '!.opencode/**'
+    - '!opencode.json'
     - '!pnpm-lock.yaml'
+    - '!packages/website/content/docs/*/**'
+    - '!packages/website/src/data/api-history.generated.json'
+    - '!packages/website/public/demos/**'
     - '!packages/website/public/media/**'
     - '!packages/website/public/fonts/**'
     - '!packages/website/public/logo/**'
