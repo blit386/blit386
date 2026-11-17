@@ -1,26 +1,40 @@
 ---
 name: review
 description:
-  Review the current changes against project rules, conventions, and quality standards. Use when the user asks to review
-  changes, check the diff before committing, or look over recent edits. Takes a package argument (blit386, demos,
-  website, kit, create-blit386, or root).
+  Review the current branch's changes - commits since main plus uncommitted edits - against project rules, conventions,
+  and quality standards. Use when the user asks to review changes, check the diff before committing or opening a PR, or
+  look over recent edits. Takes one or more package arguments (blit386, demos, website, kit, create-blit386, or root)
+  and an optional --base <ref>.
 ---
 
 # Review Changes
 
-Review current changes against project rules and quality standards.
+Review the branch's changes against project rules and quality standards.
 
 ## Usage
 
 ```text
-/review <package>
+/review <package>... [--base <ref>]
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit386`, or `root`.
+Each `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit386`, or `root`. Name several to review a
+change that spans them (`/review website root`); each package is reviewed and reported on its own.
+
+`--base <ref>` sets the base the change set is measured from; it defaults to `origin/main`. `--base HEAD` reviews only
+uncommitted changes.
 
 ## Steps
 
 1. Gather changes
+
+The change set has one rule: everything between the merge-base of `<base>` and `HEAD`, and the working tree - the
+branch's commits, staged and unstaged edits, plus untracked files. It is the same whether the work is committed, pushed,
+or not yet staged. Compute the merge-base once:
+
+```bash
+BASE=origin/main # or the --base ref
+MB=$(git merge-base "$BASE" HEAD)
+```
 
 Never collect `.claude/settings.local.json`, `.claude/launch.json`, or `.claude/scheduled_tasks.*` - gitignored,
 machine-local, never in scope for a review. Use an explicit allowlist rather than a broad exclusion pattern, so a new
@@ -28,20 +42,13 @@ root file that isn't yet gitignored can't slip into the review context either. T
 not space-separated strings - zsh (macOS's default shell) does not word-split an unquoted `"$VAR"` scalar the way bash
 does, so a plain string variable silently collapses into one no-op pathspec argument there.
 
-- A package: run `git diff`, `git diff --cached`, and `git ls-files --others --exclude-standard` (each with
-  `-- packages/<package>/`) to see this package's changes, staged and unstaged, plus newly created files a diff alone
-  misses. Also run the same three commands against this root-policy allowlist, for root policy changes that apply to
-  every package:
+For each package named, gather its slice:
 
-  ```bash
-  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json)
-  git diff -- "${POLICY_ALLOWLIST[@]}"
-  git diff --cached -- "${POLICY_ALLOWLIST[@]}"
-  git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
-  ```
-
-- `root`: run the same three commands against the full root-owned allowlist - everything a root-level change could
-  touch, and nothing else:
+- A package: run `git diff "$MB" -- packages/<package>/` and
+  `git ls-files --others --exclude-standard -- packages/<package>/` to see this package's changes plus newly created
+  files a diff alone misses.
+- `root`: run the same two commands against the full root-owned allowlist - everything a root-level change could touch,
+  and nothing else:
 
   ```bash
   ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json .husky/ \
@@ -50,14 +57,23 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
     LICENSE SECURITY.md biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml \
     pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json .agents/ .codex/ .cursor/ .gemini/ \
     .opencode/ opencode.json .mcp.json .node-version README.md docs/)
-  git diff -- "${ROOT_ALLOWLIST[@]}"
-  git diff --cached -- "${ROOT_ALLOWLIST[@]}"
+  git diff "$MB" -- "${ROOT_ALLOWLIST[@]}"
   git ls-files --others --exclude-standard -- "${ROOT_ALLOWLIST[@]}"
   ```
 
-- List which files changed and what changed
+- Root policy changes apply to every package, so when `root` is not among the packages named, also gather this
+  root-policy allowlist once, under the first package named:
 
-2. Run automated checks
+  ```bash
+  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json)
+  git diff "$MB" -- "${POLICY_ALLOWLIST[@]}"
+  git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
+  ```
+
+- List which files changed and what changed, per package. A package whose slice is empty is reported as "no changes in
+  scope against `<base>`" - never as a clean review
+
+2. Run automated checks, for each package named
 
 - `blit386`: `pnpm run lint`, `pnpm run typecheck`, `pnpm run spellcheck` (all inside `packages/blit386`)
 - `demos`: `pnpm run lint`, `pnpm run spellcheck`, `pnpm run build` (production build is the deployment gate for
@@ -65,7 +81,7 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
 - `website`: covered by `/preflight website` - run it before merge
 - `kit` / `create-blit386`: `pnpm run typecheck` (per package); root `pnpm run format:check` covers lint via Biome
 
-3. Check against project rules
+3. Check each package's slice against project rules
 
 Full detail lives in the root `CLAUDE.md` and the package's own `CLAUDE.md`, plus the rule files under `.claude/rules/`
 \- read those for the exact getter list, naming exceptions, and edge cases rather than relying on a paraphrase here.
@@ -129,8 +145,9 @@ Shared across every package:
 - Generated game code uses public `BT` names from `blit386`
 - Docs and kit content updated when workflow or architecture changes
 
-4. Summarize findings
+4. Summarize findings, one section per package
 
+- State the change set first: base ref, merge-base, and the file count per package
 - List critical issues that must be fixed
 - List warnings and suggestions for improvement
 - Highlight any security concerns
@@ -138,17 +155,25 @@ Shared across every package:
 ## Output Format
 
 ```md
-## Critical Issues
+Change set: origin/main (merge-base abc1234)...working tree - website: 3 files, root: 2 files
+
+## website
+
+### Critical Issues
 
 - [File:Line] Description of issue
 
-## Warnings
+### Warnings
 
 - [File:Line] Description of warning
 
-## Suggestions
+### Suggestions
 
 - Consider doing X for better Y
+
+## root
+
+(same three subsections)
 
 ## Summary
 
