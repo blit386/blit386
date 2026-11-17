@@ -143,7 +143,8 @@ export class OverlayDiagnostics {
     /**
      * Reads audio bus levels and voice counters when overlay audio metering is enabled.
      *
-     * Must run after demo and overlay draws, mirroring {@link captureRendererDiagnostics}.
+     * Must run after demo and overlay draws, mirroring {@link captureRendererDiagnostics}. While a seek
+     * holds the loop it also runs before the overlay draw, which then keeps only the voice-pool size.
      */
     public captureAudioDiagnostics(): void {
         if (!this.isCollectAudioMetersEnabled || !this.engine.audio) {

@@ -1103,6 +1103,33 @@ describe('BTAPI', () => {
             expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
         });
 
+        it('hands the overlay the voice-pool size on the first parked draw of a fresh engine (BT-797)', async () => {
+            await boot({
+                ...makeMockDemo(),
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayAudioMetersEnabled: true,
+                }),
+            });
+
+            const overlay = BTAPI.instance.overlay;
+
+            expect(overlay).not.toBeNull();
+
+            // The snapshot object is reused, so read the pool size at the moment of each draw.
+            const totalVoicesPerDraw: number[] = [];
+
+            vi.spyOn(overlay as Overlay, 'updateAndRender').mockImplementation((...args) => {
+                totalVoicesPerDraw.push(args[9]?.totalVoices ?? -1);
+            });
+
+            await BTAPI.instance.seek.renderAt(1);
+
+            expect(totalVoicesPerDraw[0]).toBeGreaterThan(0);
+        });
+
         it("from 'start' restores the RNG to its pre-init state", async () => {
             const statesSeenByInit: number[] = [];
             const demo = makeMockDemo();

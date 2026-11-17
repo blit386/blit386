@@ -125,6 +125,12 @@ export class FrameLoop {
                 );
             }
 
+            // A parked overlay keeps only the voice-pool size from the audio snapshot, which is otherwise
+            // filled after the draw: read it first so a seek that is the engine's first render shows it too.
+            if (this.engine.isSeekParked) {
+                this.engine.diagnostics.captureAudioDiagnostics();
+            }
+
             // Overlay: screen-space HUD after demo content (top/bottom bars).
             if (this.engine.overlay && this.engine.systemFont) {
                 this.engine.overlay.updateAndRender(
