@@ -210,9 +210,9 @@ alongside `pnpm run dev`.
 `--follow` sees past the commit that moved the engine into `packages/blit386/`. A shallow clone does not make that
 lookup come back empty: its grafted boundary commit makes every file look added there, so every page would silently
 carry the HEAD commit's date. The generator therefore fails before writing anything when the repo is shallow
-(`assertFullHistory`), and fails on any page whose source has no commit - a brand-new doc has to be committed before
-`sync:docs` (and so `dev`, `typecheck`, or `build`) will run. Every CI and deploy job that builds the site checks out
-with `fetch-depth: 0` for this reason; locally, `git fetch --unshallow` fixes a shallow clone.
+(`assertFullHistory`), and fails on any page whose source has no commit - a new or renamed doc has to be committed
+before `sync:docs` (and so `dev`, `typecheck`, or `build`) will run. Every CI and deploy job that builds the site checks
+out with `fetch-depth: 0` for this reason; locally, `git fetch --unshallow` fixes a shallow clone.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs resolved

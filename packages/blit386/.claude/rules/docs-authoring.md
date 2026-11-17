@@ -80,4 +80,5 @@ Renaming or splitting a published doc:
 
 After any doc change: add new proper nouns / coined words to the root `cspell.json`. The website mirror is gitignored
 build output, so there is nothing to re-sync or commit in `packages/website`; its `build`, `dev`, `typecheck`, and
-`test` regenerate it. A brand-new doc must be committed before those run - the mirror dates each page from git.
+`test` regenerate it. A brand-new or renamed doc must be committed at its new path before those run - the mirror dates
+each page from git, and an uncommitted `git mv` has no history there yet.
