@@ -15,12 +15,11 @@
  * in `packages/blit386` (`docs/_sitemap.json`), never here. See that file's
  * schema (`docs/_sitemap.schema.json`) for the contract.
  *
- * The generated files are committed artifacts: never hand-edit them. Edit the
- * canonical source in `packages/blit386/docs/` and re-run `pnpm run sync:docs`.
- * `pnpm run sync:docs:check` fails when the mirror drifts from the source and is
- * enforced in two places, last in both: `pnpm run preflight` here, and the
- * `quality-website` job of `.github/workflows/ci.yml`. Last, because it
- * regenerates `content/docs` in the working tree.
+ * The generated files are gitignored build output: `build`, `typecheck`, `test`,
+ * and `dev` all run `pnpm run sync:docs` first. Never hand-edit them; edit the
+ * canonical source in `packages/blit386/docs/`. Each page's `lastModified` comes
+ * from git history, so the sync refuses to run in a shallow clone (see
+ * `assertFullHistory`).
  *
  * Source location defaults to the sibling package path `../blit386/docs`;
  * `ENGINE_DOCS_DIR` overrides it (the tests point it at a fixture). It must stay
@@ -46,7 +45,7 @@ const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
 const API_HISTORY_SRC = join(ENGINE_DOCS, '_api-history.json');
-/** The API history copy, package-relative; `check-docs-sync.mjs` diffs it alongside `content/docs`. */
+/** The API history copy, package-relative. */
 const API_HISTORY_MIRROR = 'src/data/api-history.generated.json';
 const API_HISTORY_DEST = join(ROOT, API_HISTORY_MIRROR);
 
@@ -471,10 +470,10 @@ const stripGeneratedNote = stripRegion(GENERATED_NOTE_REGION);
 
 /**
  * Look up the last commit date (ISO 8601, author date) that touched a source doc in
- * the engine repo. Returns `undefined` when git is unavailable, the repo has no
- * history for the path (e.g. a shallow clone), or the call otherwise fails, so a CI
- * environment without full git history still produces a valid page: the field is
- * omitted rather than written as an empty or error value.
+ * the engine repo. Returns `undefined` when git is unavailable, the path has no
+ * history, or the call otherwise fails. `main` turns that into an error (see
+ * `requireLastModified`) and first rejects a shallow clone (`assertFullHistory`),
+ * where this lookup returns a wrong date rather than none.
  *
  * `--follow` walks back through renames, so a doc's real edit history survives the
  * move that put the engine under `packages/blit386/`. `--diff-filter=AM` is what makes
@@ -483,9 +482,9 @@ const stripGeneratedNote = stripRegion(GENERATED_NOTE_REGION);
  * Selecting additions and modifications skips the rename (`R`) the move recorded.
  *
  * `AM`, not `M`. A doc added and never edited since (`docs/reference-authors.md`) has
- * no `M` commit at all, so `M` alone returns an empty string and `renderPage` silently
- * drops the frontmatter field rather than failing loudly. `A` is the fallback that
- * gives those pages their creation date.
+ * no `M` commit at all, so `M` alone returns an empty string and the sync would fail on
+ * a doc that does have history. `A` is the fallback that gives those pages their
+ * creation date.
  *
  * `packages/blit386/scripts/gen-api-history.mjs` uses `--follow` for the same reason.
  */
@@ -501,12 +500,40 @@ const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
             },
         ).trim();
 
-        // Newer git (2.54+) prints a UTC %aI date with a `Z` suffix, older git with `+00:00`. The
-        // committed mirror would otherwise flip between the two with whoever last ran the sync, and
-        // `sync:docs:check` would fail on the other machine, so settle on the `+00:00` form.
+        // Newer git (2.54+) prints a UTC %aI date with a `Z` suffix, older git with `+00:00`. Settle
+        // on the `+00:00` form so the generated page does not depend on the local git version.
         return output === '' ? undefined : output.replace(/Z$/u, '+00:00');
     } catch {
         return undefined;
+    }
+};
+
+/**
+ * Fail unless `repoRoot` is a git checkout with full history. A shallow clone does not make
+ * `getLastModified` return nothing: its grafted boundary commit makes every file look added
+ * there, so every page would silently carry the HEAD commit's date. Checked once, up front,
+ * because no per-page answer can tell a real date from that one.
+ */
+const assertFullHistory = (repoRoot = ENGINE_REPO_ROOT) => {
+    let shallow;
+
+    try {
+        shallow = execFileSync('git', ['-C', repoRoot, 'rev-parse', '--is-shallow-repository'], {
+            encoding: 'utf8',
+            env: gitEnv(),
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+    } catch {
+        throw new Error(
+            `sync:docs needs the git history of ${repoRoot} to date each page (lastModified), but it is not a git checkout.`,
+        );
+    }
+
+    if (shallow !== 'false') {
+        throw new Error(
+            `sync:docs needs full git history to date each page (lastModified), but ${repoRoot} is a shallow clone. ` +
+                'In GitHub Actions set `fetch-depth: 0` on actions/checkout; locally run `git fetch --unshallow`.',
+        );
     }
 };
 
@@ -599,7 +626,20 @@ const warnStrippedComments = (strippedComments) => {
     console.warn('If any held real content, move it into the page body; otherwise ignore this notice.');
 };
 
+/** The real date lookup, minus the "omit when unknown" leniency `renderPage` keeps for tests. */
+const requireLastModified = (src) => {
+    const date = getLastModified(src);
+
+    if (date === undefined) {
+        throw new Error(`No git history for docs/${src}; commit it before running sync:docs.`);
+    }
+
+    return date;
+};
+
 const main = () => {
+    assertFullHistory();
+
     const sections = groupBySection();
     const written = [];
     const strippedComments = [];
@@ -628,7 +668,7 @@ const main = () => {
 
         for (const { topic, page } of entries) {
             const pagePath = join(sectionDir, `${topic}.mdx`);
-            const { contents, comments } = renderPage(page);
+            const { contents, comments } = renderPage(page, { lastModifiedFor: requireLastModified });
             writeFileSync(pagePath, contents);
             written.push(pagePath);
 
@@ -659,6 +699,7 @@ export {
     isToolingDirective,
     summarizeComment,
     getLastModified,
+    assertFullHistory,
     renderPage,
     PAGES,
     API_HISTORY_MIRROR,
