@@ -33,7 +33,7 @@ overrides:
   # bundle - but `security:audit` covers dev + prod, so it fails CI. 6.2.1 is the only
   # patch (no 5.x backport), so this crosses the major get-uri declares (`^5.0.2`); the
   # link checker never fetches ftp: URLs, so that code path is not exercised.
-  basic-ftp@<=6.2.0: ^6.2.5
+  basic-ftp@<=6.2.0: ^6.2.6
   # GHSA-qv5m-9pm6-hqp3 and GHSA-jpvv-r467-5p4w (moderate): path-separator parsing bypass and an
   # unhandled ECONNRESET during WebSocket upgrade in @hono/node-server. Reached only through waku
   # (packages/website, fumadocs), which the docs site build uses, but `security:audit` covers
