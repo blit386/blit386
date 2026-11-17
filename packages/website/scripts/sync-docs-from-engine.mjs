@@ -638,6 +638,9 @@ const requireLastModified = (src) => {
 const main = () => {
     assertFullHistory();
 
+    // Every date before anything is deleted: a doc with no commit yet (a new page under
+    // sync:docs:watch) must not leave the sections below half wiped.
+    const dates = new Map(PAGES.map(({ src }) => [src, requireLastModified(src)]));
     const sections = groupBySection();
     const written = [];
     const strippedComments = [];
@@ -666,7 +669,7 @@ const main = () => {
 
         for (const { topic, page } of entries) {
             const pagePath = join(sectionDir, `${topic}.mdx`);
-            const { contents, comments } = renderPage(page, { lastModifiedFor: requireLastModified });
+            const { contents, comments } = renderPage(page, { lastModifiedFor: (src) => dates.get(src) });
             writeFileSync(pagePath, contents);
             written.push(pagePath);
 
