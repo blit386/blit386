@@ -1086,57 +1086,21 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getTicks()).toBe(192);
         });
 
-        it("from 'start' gives the overlay the same numbers however long the frames took (BT-797)", async () => {
+        it('tells the overlay the clock is parked on the seeked frame, from either origin (BT-797)', async () => {
             await boot();
 
             const overlay = BTAPI.instance.overlay;
 
             expect(overlay).not.toBeNull();
 
-            const resetSpy = vi.spyOn(overlay as Overlay, 'resetSamples');
             const drawSpy = vi.spyOn(overlay as Overlay, 'updateAndRender');
-            let nowMs = 0;
-            // Every wall-clock read is 7 ms after the last: a slow machine in the middle of a capture.
-            const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => (nowMs += 7));
 
+            // The parked flag is the last argument: the overlay then ignores the wall-clock snapshot.
             await BTAPI.instance.seek.renderAt(1);
-            nowSpy.mockRestore();
-
-            const { frameMs, updateMs, renderMs, updateSteps } = BTAPI.instance.diagnostics.overlayTiming;
-
-            expect(resetSpy).toHaveBeenCalledWith(0);
-            expect({ frameMs, updateMs, renderMs, updateSteps }).toEqual({
-                frameMs: 0,
-                updateMs: 0,
-                renderMs: 0,
-                updateSteps: 60,
-            });
-            // The parked flag is the last argument: the present FPS is not sampled from the wall clock.
             expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
-        });
 
-        it("from 'current' draws the seeked frame with zero timings, not the last live frame's (BT-797)", async () => {
-            await boot();
-
-            const overlay = BTAPI.instance.overlay;
-
-            expect(overlay).not.toBeNull();
-
-            const drawn: { frameMs: number; updateMs: number; renderMs: number }[] = [];
-
-            // What the last live frame committed before the seek; the overlay draws the previous frame's numbers.
-            Object.assign(BTAPI.instance.diagnostics.overlayTiming, { frameMs: 9, updateMs: 4, renderMs: 3 });
-            vi.spyOn(overlay as Overlay, 'updateAndRender').mockImplementation(
-                (_renderer, _font, _pointer, _keyboard, _tick, _rows, timing) => {
-                    if (timing) {
-                        drawn.push({ frameMs: timing.frameMs, updateMs: timing.updateMs, renderMs: timing.renderMs });
-                    }
-                },
-            );
-
-            await BTAPI.instance.seek.renderAt(1, 'current');
-
-            expect(drawn).toEqual([{ frameMs: 0, updateMs: 0, renderMs: 0 }]);
+            await BTAPI.instance.seek.renderAt(2, 'current');
+            expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
         });
 
         it("from 'start' restores the RNG to its pre-init state", async () => {

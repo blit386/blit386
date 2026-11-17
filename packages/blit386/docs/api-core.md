@@ -703,9 +703,9 @@ BT.resume(); // keep playing from tick 192
   captures the frame at 5 seconds, and `BT.renderAt(1); BT.resume(); BT.renderAt(2)` ends stopped on second 2.
   `BT.resume()` returns a promise that settles once the loop has restarted; awaiting it is optional. If the game's
   `render()` throws while the seeked frame is re-rendered for a capture, `BT.captureFrame()` rejects with that error.
-- The engine overlay's measured numbers do not depend on the wall clock while a seek holds the loop: present FPS reads
-  `BT.targetFPS`, the frame, `update()` and `render()` times read `0.0ms`, and a `'start'` seek clears the timing chart.
-  Two captures of the same seeked frame are byte-identical, overlay included. Live play measures as usual again after
+- The engine overlay measures nothing while a seek holds the loop: present FPS reads `BT.targetFPS`, the frame,
+  `update()` and `render()` times read `0.0ms`, the draw-call and renderer counts read 0, and the timing chart is empty.
+  The seeked frame and every capture of it show the same overlay on every run. Live play measures as usual again after
   `BT.resume()`.
 - The F9 shortcut copies the seeked frame the same way. Shift+F9 does nothing while the loop is stopped (it is read on
   the update tick, and none runs); call `BT.downloadFrame()` or press it after `BT.resume()`.

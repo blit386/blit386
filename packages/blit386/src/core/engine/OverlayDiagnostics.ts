@@ -84,19 +84,13 @@ export class OverlayDiagnostics {
      * Copies the finished frame's timing and the renderer counters captured after the overlay drew into
      * {@link overlayTiming}, then clears the pending counters. Called once at the end of every rendered frame.
      *
-     * While `BT.renderAt` holds the loop stopped, the three wall-clock times are recorded as 0, so the
-     * seeked frame and its `BT.captureFrame` re-render show the same numbers on every run. The counts are
-     * deterministic already and are kept.
-     *
      * @param frameStartMs - `performance.now()` when the frame callback started.
      * @param renderMs - Wall time of the game's `render()` this frame.
      */
     public commitFrame(frameStartMs: number, renderMs: number): void {
-        const isParked = this.engine.isSeekParked;
-
-        this.overlayTiming.frameMs = isParked ? 0 : Math.max(0, performance.now() - frameStartMs);
-        this.overlayTiming.updateMs = isParked ? 0 : this.engine.pendingUpdateMs;
-        this.overlayTiming.renderMs = isParked ? 0 : renderMs;
+        this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);
+        this.overlayTiming.updateMs = this.engine.pendingUpdateMs;
+        this.overlayTiming.renderMs = renderMs;
         this.overlayTiming.updateSteps = this.engine.pendingUpdateSteps;
         this.overlayTiming.drawCalls = this.engine.pendingDrawCalls;
         this.overlayTiming.droppedFrames = 0;

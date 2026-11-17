@@ -1299,7 +1299,7 @@
         },
         {
           "version": "1.9.0",
-          "note": "While a seek holds the loop, the overlay shows the target FPS and zero frame times, and a\n`from: 'start'` seek clears its timing chart, so a seeked frame captures the same on every run."
+          "note": "While a seek holds the loop, the overlay shows the target FPS, zero times and counts, and an\nempty timing chart, so a seeked frame and every capture of it look the same on every run."
         }
       ],
       "deprecated": null,

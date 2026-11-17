@@ -1219,51 +1219,73 @@ describe('Overlay present FPS', () => {
 });
 
 describe('Overlay while the clock is parked', () => {
-    it("shows the target rate and zero timings without resetSamples, as a 'current' seek leaves it (BT-797)", () => {
+    it('draws the same overlay on every parked frame, whatever snapshot it is fed (BT-797)', () => {
         let nowMs = 0;
         const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
         const layout = createOverlayLayout(320, 240, 14);
-        const overlay = createOverlay(layout, 'Test Demo', { isOverlayVisibleAtStart: true });
-        const zeroTiming = {
-            frameMs: 0,
-            updateMs: 0,
-            renderMs: 0,
-            updateSteps: 0,
-            drawCalls: 0,
+        const overlay = createOverlay(layout, 'Test Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayTimingChartEnabled: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
+        });
+        const liveTiming = {
+            frameMs: 9,
+            updateMs: 4,
+            renderMs: 3,
+            updateSteps: 1,
+            drawCalls: 12,
             droppedFrames: 0,
             primitiveOverflowCount: 0,
             spriteOverflowCount: 0,
-            primitiveSubmittedVertices: 0,
-            spriteSubmittedVertices: 0,
+            primitiveSubmittedVertices: 240,
+            spriteSubmittedVertices: 96,
         };
-        const liveTiming = { ...zeroTiming, frameMs: 9, updateMs: 4, renderMs: 3 };
+        const drawParked = (timing: typeof liveTiming): ReturnType<typeof createMockRenderer> => {
+            const renderer = createMockRenderer();
 
-        // Live frames 3 ms apart, then straight into a parked frame with no reset in between.
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                60,
+                undefined,
+                timing,
+                null,
+                undefined,
+                undefined,
+                true,
+            );
+
+            return renderer;
+        };
+
+        // Live frames 3 ms apart fill the chart and the samplers with wall-clock numbers.
         for (let frame = 0; frame < 60; frame++) {
             nowMs += 3;
-            overlay.updateAndRender(createMockRenderer(), mockFont, null, null, 0, undefined, liveTiming);
+            overlay.updateAndRender(createMockRenderer(), mockFont, null, null, frame, undefined, liveTiming);
         }
 
-        const renderer = createMockRenderer();
+        // The seeked frame is fed the last live frame's snapshot; a capture re-render is fed the
+        // seeked frame's, with its 60 update steps; a second capture gets no steps at all.
+        nowMs += 500;
+        const seeked = drawParked(liveTiming);
+        nowMs += 500;
+        const firstCapture = drawParked({ ...liveTiming, frameMs: 2, updateSteps: 60 });
+        nowMs += 500;
+        const secondCapture = drawParked({ ...liveTiming, frameMs: 1, updateSteps: 0 });
 
-        overlay.updateAndRender(
-            renderer,
-            mockFont,
-            null,
-            null,
-            60,
-            undefined,
-            zeroTiming,
-            null,
-            undefined,
-            undefined,
-            true,
-        );
         nowSpy.mockRestore();
 
-        const texts = getBitmapTextCalls(renderer).map((call) => call.text);
+        const textsOf = (renderer: ReturnType<typeof createMockRenderer>): string[] =>
+            getBitmapTextCalls(renderer).map((call) => call.text);
+        const seekedTexts = textsOf(seeked);
 
-        expect(texts.find((text) => text.startsWith('Present'))).toBe('Present  60 FPS');
-        expect(texts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
+        expect(seekedTexts.find((text) => text.startsWith('Present'))).toBe('Present  60 FPS');
+        expect(seekedTexts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
+        expect(textsOf(firstCapture)).toEqual(seekedTexts);
+        expect(textsOf(secondCapture)).toEqual(seekedTexts);
+        expect(firstCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
+        expect(secondCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
     });
 });

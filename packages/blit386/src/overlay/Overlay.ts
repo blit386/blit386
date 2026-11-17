@@ -49,6 +49,20 @@ import type { OverlayAudioSnapshot, OverlaySettings, OverlayTimingSnapshot } fro
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
 
+/** Sampled by a parked frame instead of the measured snapshot: nothing is measured while a seek holds the loop. */
+const PARKED_TIMING: OverlayTimingSnapshot = Object.freeze({
+    frameMs: 0,
+    updateMs: 0,
+    renderMs: 0,
+    updateSteps: 0,
+    drawCalls: 0,
+    droppedFrames: 0,
+    primitiveOverflowCount: 0,
+    spriteOverflowCount: 0,
+    primitiveSubmittedVertices: 0,
+    spriteSubmittedVertices: 0,
+});
+
 /**
  * Creates a timing chart instance and resets its ring buffer when enabled.
  *
@@ -264,17 +278,6 @@ export class Overlay {
     }
 
     /**
-     * Forgets the timing chart history, so a replay from tick 0 (`BT.renderAt` from `'start'`) starts
-     * the chart as clean as the boot run did. The FPS and timing readouts need no reset here: every
-     * parked frame resets them (see {@link updateAndRender}).
-     *
-     * @param currentTick - Fixed-update tick the timing chart timeline restarts from.
-     */
-    resetSamples(currentTick: number): void {
-        this.#timingChart.clear(currentTick);
-    }
-
-    /**
      * Handles overlay frame input: palette swatch copy first, then body toggle.
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
@@ -338,9 +341,10 @@ export class Overlay {
      * @param palette - Active demo palette for optional palette grid.
      * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
      * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
-     * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped: the present FPS reads the
-     *   target rate and the smoothed timings restart from `timing`, because frames stepped or re-rendered
-     *   back to back have no real cadence to measure.
+     * @param isClockParked - `true` while `BT.renderAt` holds the loop stopped. Frames stepped or
+     *   re-rendered back to back have no cadence to measure, so `timing` is ignored: the present FPS reads
+     *   the target rate, every time and count reads 0 and the timing chart is empty. The seeked frame and
+     *   every capture of it then draw the same overlay.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -355,20 +359,20 @@ export class Overlay {
         audioSnapshot?: OverlayAudioSnapshot,
         isClockParked = false,
     ): void {
-        // A parked frame shows the target rate and the zeroed timing it was fed, not live values
-        // smoothed over from before a 'current' seek.
         if (isClockParked) {
+            // A fixed snapshot, not the measured one: `timing` holds the previous frame's wall-clock
+            // numbers and step count, which differ between the seeked frame and each re-render.
             this.#fps.reset();
             this.#timing.reset();
-        }
-
-        // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
-        this.#sampleTiming(timing);
-        this.#sampleAudio(audioSnapshot);
-
-        if (!isClockParked) {
+            this.#timing.sample(PARKED_TIMING);
+            this.#timingChart.clear(currentTick);
+        } else {
+            // Chart history and present FPS keep advancing while hidden so re-show reflects demo-only timing.
+            this.#sampleTiming(timing);
             this.#fps.sample();
         }
+
+        this.#sampleAudio(audioSnapshot);
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 

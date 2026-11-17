@@ -118,9 +118,9 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
 
-While `BT.renderAt` holds the loop stopped, there is no frame cadence to measure: present FPS reads the target rate and
-the frame, `update()` and `render()` times read `0.0ms`, so a seeked frame captures the same on every run. See
-[Seeking a frame with renderAt](api-core.md#seeking-a-frame-with-renderat).
+While `BT.renderAt` holds the loop stopped, there is no frame cadence to measure: present FPS reads the target rate, the
+frame, `update()` and `render()` times read `0.0ms`, the counts read 0 and the timing chart is empty, so a seeked frame
+captures the same on every run. See [Seeking a frame with renderAt](api-core.md#seeking-a-frame-with-renderat).
 
 ## Stable column widths
 
