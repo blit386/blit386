@@ -97,7 +97,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { isMotionEffect } from './shared/crt-glitch.js';
+import { applyCrtChain, isMotionEffect } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_LINES } from './shared/post-process-backend.js';
 import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
@@ -425,17 +425,15 @@ class Demo {
 
     // The engine calls this when the reduced-motion preference changes while the demo
     // runs. If the stack is live, take it off and put it back so the moving effects
-    // follow the new preference.
+    // follow the new preference. This is only a rebuild, so the shared applyCrtChain()
+    // does it; the on/off toggle above keeps its own addStack() because calling
+    // BT.effectAdd() and BT.effectRemove() yourself is what this demo teaches.
     onReducedMotionChange() {
         if (!this.enabled) {
             return;
         }
 
-        for (const fx of this.stack) {
-            BT.effectRemove(fx);
-        }
-
-        this.addStack();
+        applyCrtChain(this.stack);
     }
 
     // Adds the CRT preset's effects to the chain in their original order. When the player

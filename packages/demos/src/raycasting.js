@@ -353,12 +353,9 @@ class Demo {
             drawingBufferSize: new Vector2i(SCREEN_W * 4, SCREEN_H * 4),
 
             // 'single' maps both WASD and the arrow keys to player 0, so either hand
-            // works.
-            keyboardLayout: 'single',
-
-            // Arrow keys normally scroll the page. This stops the page moving while you
+            // works. It also stops the arrow keys from scrolling the page while you
             // walk.
-            isCapturingKeyboardScroll: true,
+            keyboardLayout: 'single',
         };
     }
 

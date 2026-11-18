@@ -305,9 +305,9 @@ class Demo {
                 // and C_CHECKER_B this tick.
                 const fill = (row + col) % 2 === 0 ? C_CHECKER_A : C_CHECKER_B;
 
-                // A Rect2i is (x, y, width, height): a solid rectangle in pixels. We reuse
-                // one rectangle and move it with set() instead of building 64 new ones
-                // every frame.
+                // A Rect2i is (x, y, width, height): a solid rectangle in pixels. We
+                // reuse one rectangle and move it with set() instead of building 64 new
+                // ones every frame.
                 const x = startX + col * cellSize;
                 const y = startY + row * cellSize;
 
