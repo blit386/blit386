@@ -14,13 +14,6 @@ import { hooksDir } from './hook-harness.mjs';
 
 const HARD_RESET = ['git', 'reset', '--hard'].join(' ');
 
-/**
- * Gemini's verdict for a plain-text hook result (hookRunner.ts `convertPlainTextToHookOutput`): exit 0 and 1 allow, any
- * other exit code blocks, and a run that prints nothing gives no decision, so the call goes through.
- */
-const geminiBlocks = (result) =>
-    result.status !== 0 && result.status !== 1 && `${result.stdout}${result.stderr}`.trim() !== '';
-
 // POSIX only: Gemini runs these through `bash -c` there; its PowerShell path on Windows is BT-847.
 describe("the manifest's Gemini CLI guard commands", { skip: process.platform === 'win32' }, () => {
     const manifest = JSON.parse(readFileSync(join(hooksDir, '..', 'hooks.manifest.json'), 'utf8'));
@@ -47,9 +40,12 @@ describe("the manifest's Gemini CLI guard commands", { skip: process.platform ==
 
     after(() => rmSync(tmp, { recursive: true, force: true }));
 
-    /** Run one settings.json command as Gemini does on POSIX: `bash -c` from the project dir. */
+    // Gemini replaces the variable in the command text with the shell-quoted dir (hookRunner.ts `expandCommand`).
+    const expand = (command, dir) => command.replaceAll('$GEMINI_PROJECT_DIR', `'${dir}'`);
+
+    /** Run one settings.json command as Gemini does on POSIX: expanded, then `bash -c` from the project dir. */
     const run = (command, input, { cwd = root, path = process.env.PATH } = {}) =>
-        spawnSync('bash', ['-c', command], {
+        spawnSync('bash', ['-c', expand(command, cwd)], {
             cwd,
             env: { ...process.env, PATH: path, GEMINI_PROJECT_DIR: cwd },
             input: JSON.stringify(input),
@@ -75,14 +71,17 @@ describe("the manifest's Gemini CLI guard commands", { skip: process.platform ==
 
     it('block when node cannot be found', () => {
         for (const command of [shellCommand, filesCommand]) {
-            const result = spawnSync(join(bashOnlyBin, 'bash'), ['-c', command], {
+            const result = spawnSync(join(bashOnlyBin, 'bash'), ['-c', expand(command, root)], {
                 cwd: root,
                 env: { PATH: bashOnlyBin, GEMINI_PROJECT_DIR: root },
                 input: JSON.stringify(shell('ls')),
                 encoding: 'utf8',
             });
 
-            assert.ok(geminiBlocks(result), `${command}: exit ${result.status}`);
+            // Gemini blocks on any exit other than 0 or 1 that prints text (hookRunner.ts `convertPlainTextToHookOutput`).
+            assert.equal(result.error, undefined, command);
+            assert.equal(result.status, 127, command);
+            assert.match(result.stderr, /node: command not found/, command);
         }
     });
 
