@@ -30,12 +30,14 @@ function evaluate(rules, subject) {
     let verdict = 'allow';
 
     for (const [pattern, action] of Object.entries(rules)) {
+        // OpenCode's own matcher (`Wildcard.match`): `?` is one character, and a trailing ` *` may match nothing.
         const source = pattern
             .split('*')
-            .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
-            .join('.*');
+            .map((part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&').replaceAll('?', '.'))
+            .join('.*')
+            .replace(/ \.\*$/, '( .*)?');
 
-        if (new RegExp(`^${source}$`).test(subject)) {
+        if (new RegExp(`^${source}$`, 's').test(subject)) {
             verdict = action;
         }
     }
@@ -167,6 +169,7 @@ describe('opencode.json permissions agree with the guard core', () => {
         'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset',
         'git config alias.n reset --get',
         'git reset --hard && git config remote.origin.push +main',
+        'git config set --comment --get alias.n reset',
     ];
     const ASKED = [
         'git push --force',
@@ -196,6 +199,8 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git config remote.origin.push +refs/heads/main:refs/heads/main',
         'git config remote.origin.mirror true',
         'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',
+        'git config Remote.origin.PUSH +main',
+        'git config REMOTE.origin.Mirror true',
     ];
     const ALLOWED = [
         'git status',

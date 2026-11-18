@@ -70,8 +70,16 @@ const OPENCODE_PERMISSION = {
         // config for git asks whatever its key, coarser than the guard core, which only minds alias and push keys.
         '*GIT_CONFIG_KEY_*': 'ask',
         '*GIT_CONFIG_PARAMETERS*': 'ask',
-        '*git *config *remote.*.push *': 'ask',
-        '*git *config *remote.*.mirror *': 'ask',
+        // A key, then a value (` ?*`: OpenCode lets a trailing ` *` match nothing, which would catch a bare read). git
+        // reads the key in any case and a glob cannot, so the usual spellings are listed; a mixed one (`rEmote`) slips.
+        ...Object.fromEntries(
+            ['remote', 'Remote', 'REMOTE'].flatMap((remote) =>
+                ['push', 'Push', 'PUSH', 'mirror', 'Mirror', 'MIRROR'].map((key) => [
+                    `*git *config *${remote}.*.${key} ?*`,
+                    'ask',
+                ]),
+            ),
+        ),
         // `--hard` anywhere after `reset`, followed by anything (`;`, `&&`, a redirect), and each shorter prefix git
         // accepts (`--h` to `--har`) as a whole argument, so `--help` still passes.
         'git reset *--hard*': 'deny',
@@ -158,10 +166,10 @@ const OPENCODE_PERMISSION = {
         'git *--config-env*alias.*': 'deny',
         'git *-c * push*': 'ask',
         'git *--config-env* push*': 'ask',
-        // The same settings made to last (BT-800): a `git config` write (a key, then a value) of an alias denies, and so
-        // does `GIT_CONFIG_KEY_*` / `GIT_CONFIG_PARAMETERS` naming one. Their asks sit first in this list. The plugin
-        // denies an alias in any case.
-        '*git *config *alias.* *': 'deny',
+        // The same settings made to last (BT-800): a `git config` write (a key, then a value) of an alias denies, and
+        // so does `GIT_CONFIG_KEY_*` / `GIT_CONFIG_PARAMETERS` naming one. Their asks sit first in this list. The
+        // plugin denies an alias in any case.
+        '*git *config *alias.* ?*': 'deny',
         '*GIT_CONFIG_KEY_*=alias.*': 'deny',
         '*GIT_CONFIG_PARAMETERS=*alias.*': 'deny',
         // Plumbing that discards like `checkout --` and `reset --hard`; every `checkout-index` is denied, which is

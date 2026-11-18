@@ -232,7 +232,7 @@ export const SHELL_CASES = [
     ['git config --get alias.x', 'allow'],
     ['git config get alias.x', 'allow'],
     ['git config --unset alias.x', 'allow'],
-    ['git config --unset-all alias.x reset', 'allow'],
+    ['git config --unset-all alias.x reset', 'deny'],
     ['git config --list', 'allow'],
     ['git config user.name x', 'allow'],
     ['git config remote.origin.pushurl url', 'allow'],
@@ -240,8 +240,11 @@ export const SHELL_CASES = [
     ['git config --get remote.origin.push', 'allow'],
     ['GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git commit -m y', 'allow'],
     ['GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset', 'deny'],
-    // After the key, git reads a read option as a value pattern and still writes: only one before the key is a read.
+    // A word after the key makes a write, whatever options sit around it: after the key git reads `--get` as a value
+    // pattern, and before it a value-taking option (`--comment`, `--file`) eats it, so both still write.
     ['git config alias.n reset --get', 'deny'],
+    ['git config set --comment --get alias.n reset', 'deny'],
+    ['git config --file --get alias.n reset', 'deny'],
     ['git config alias.n reset -l', 'deny'],
     ['git config remote.origin.push +main --unset', 'ask'],
     ['git reset --hard && git config remote.origin.push +main', 'deny'],

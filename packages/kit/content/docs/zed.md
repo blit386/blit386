@@ -90,10 +90,9 @@ agent from changing those files through a terminal command, so keep terminal app
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
 others. For the same reason the git patterns are blunter than the hooks other assistants get: every `git restore` is
 denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. Every `GIT_CONFIG_*`
-setting of an alias or of any `remote.*` key is denied, and so is every `git config` with an alias key and a word after
-it, `git config --get alias.x pattern` included. The snippet only denies, so a force push (`-f`, `--force-with-lease`,
-or a `+` refspec), a remote branch delete or mirror push, a forced branch delete, and a stash drop or clear are refused
-outright where the other hooks ask you first. Zed removes quotes before it matches, so after `-C`, `-c`, or `--git-dir`
-the snippet cannot tell where the value ends and reads every later word as a possible command:
+setting of an alias or of any `remote.*` key is denied. The snippet only denies, so a force push (`-f`,
+`--force-with-lease`, or a `+` refspec), a remote branch delete or mirror push, a forced branch delete, and a stash drop
+or clear are refused outright where the other hooks ask you first. Zed removes quotes before it matches, so after `-C`,
+`-c`, or `--git-dir` the snippet cannot tell where the value ends and reads every later word as a possible command:
 `git -C game commit -m "clean up"` is refused too. Run `cd game && git commit -m "clean up"` instead. Zed's "Test Your
 Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.

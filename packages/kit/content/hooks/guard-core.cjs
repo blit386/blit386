@@ -143,15 +143,13 @@ const INLINE_PUSH_CONFIG = inlineConfig(
 // `GIT_CONFIG_KEY_<n>` / `GIT_CONFIG_PARAMETERS` environment variables set one for every git run they reach, so they
 // match anywhere in a command (`export`, `env`, a `VAR=... git` prefix). Same tiers as the inline forms, and every
 // alias write is denied, `alias.st status` included: `alias.n reset` names no destructive flag, yet `git n --hard`
-// wipes work. A key with no value after it is a read, and so is one after a read or remove option (`--get*`,
-// `--unset*`, `-l`, `--list`, `get`, `list`, `unset`). Only before the key: after it, git reads `--get` as a value
-// pattern and still writes (`git config alias.n reset --get`), so the key's position (the `d` flag) bounds the check.
+// wipes work. A key with no word after it is a read (`git config --get alias.x`, `--unset alias.x`); any word after
+// it counts as a write, whatever options sit around it. A read option is no safe exemption: after the key git reads
+// `--get` as a value pattern, and before it a value-taking option (`--comment`, `--file`) eats it; both still write.
+// So a read with a value pattern (`--get alias.x pattern`) is refused too, which costs little.
 const ALIAS_KEY = `${anyCase('alias')}\\.`;
 const PUSH_KEY = `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})`;
-const configWrite = (key) => new RegExp(`${GIT_PREFIX}config${ARGS}(?<key>${key})${SPACE}+${ARG_CHAR}`, 'd');
-const CONFIG_READ = new RegExp(
-    `${GIT_PREFIX}config(${ARGS}(--get${ARG_CHAR}*|--unset${ARG_CHAR}*|-l|--list)|${SPACE}+(get|list|unset))${ARG_END}`,
-);
+const configWrite = (key) => new RegExp(`${GIT_PREFIX}config${ARGS}${key}${SPACE}+${ARG_CHAR}`);
 // The one-word reading keeps a quoted `GIT_CONFIG_PARAMETERS` value as one word, so a key anywhere in it is found.
 const envConfig = (key) => new RegExp(`GIT_CONFIG_(KEY_[0-9]+=|PARAMETERS=(${ARG_CHAR}*[^A-Za-z0-9.])?)${key}`);
 const CONFIG_ALIAS = configWrite(`${ALIAS_KEY}${ARG_CHAR}*`);
@@ -272,12 +270,6 @@ function isDangerousCommand(command) {
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
     const destructivePlumbing = any(CHECKOUT_INDEX_FORCE) || any(READ_TREE_RESET);
-    const configWrites = (pattern) =>
-        commands.some((one) => {
-            const write = pattern.exec(one);
-            return write !== null && !CONFIG_READ.test(one.slice(0, write.indices.groups.key[0]));
-        });
-
     if (
         any(RESET_HARD) ||
         destructiveCheckout ||
@@ -285,7 +277,7 @@ function isDangerousCommand(command) {
         destructiveRestore ||
         destructivePlumbing ||
         any(INLINE_ALIAS) ||
-        configWrites(CONFIG_ALIAS) ||
+        any(CONFIG_ALIAS) ||
         any(ENV_ALIAS)
     ) {
         return DENY_DESTRUCTIVE;
@@ -295,7 +287,7 @@ function isDangerousCommand(command) {
         return ASK_FORCE_PUSH;
     }
 
-    if (any(INLINE_PUSH_CONFIG) || configWrites(CONFIG_PUSH) || any(ENV_PUSH)) {
+    if (any(INLINE_PUSH_CONFIG) || any(CONFIG_PUSH) || any(ENV_PUSH)) {
         return ASK_PUSH_CONFIG;
     }
 
