@@ -619,7 +619,7 @@ class Demo {
         if (this.effectsAvailable) {
             this.overlayRowData[0].leftText = 'Tesla Orava: ON';
 
-            const faultLabel = GLITCH_LABELS[this.glitchType] ?? GLITCH_LABELS[GLITCH_TYPE.NONE];
+            const faultLabel = GLITCH_LABELS[this.glitchType];
             const faultValue = this.glitchTicksLeft > 0 ? Math.round(this.glitchPeak * 100) : 0;
 
             this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;

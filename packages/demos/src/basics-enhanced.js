@@ -409,7 +409,7 @@ class Demo {
 
         if (this.effectsAvailable) {
             this.overlayRowData[2].leftText = 'CRT stack ON';
-            const glitchLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
+            const glitchLabel = GLITCH_LABELS[this.glitchType];
             const glitchValue = this.glitchTicksLeft > 0 ? Math.round(this.glitchPeak * 100) : 0;
             this.overlayRowData[3].leftText = `Glitch ${glitchLabel} ${String(glitchValue).padStart(2, '0')}%`;
         } else {
