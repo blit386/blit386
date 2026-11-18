@@ -1,6 +1,6 @@
 /**
  * Cross-process exclusive lock for a "check freshness, build if stale" self-heal script, used by
- * `ensure-engine-built.mjs`, which shells out from `packages/demos` and `packages/website`; pnpm's
+ * `ensure-engine-built.mjs`, which shells out from `packages/demos`, `packages/website` and the engine's `knip`; pnpm's
  * default workspace concurrency runs those in parallel (`.husky/pre-push`'s
  * `pnpm --filter "...[ref]" run preflight`, or a plain `pnpm -r build`). `ensure-kit-built.mjs` runs
  * in-process from sequential callers and takes no lock; it shares only the freshness helpers at the
