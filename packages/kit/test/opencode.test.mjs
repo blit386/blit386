@@ -160,6 +160,11 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git --config-env=alias.n=X n --hard',
         'git checkout-index -a -f',
         'git read-tree -u --reset HEAD',
+        'git config alias.wipe "reset --hard"',
+        'git config --global alias.st status',
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.n GIT_CONFIG_VALUE_0=reset git n --hard',
+        `GIT_CONFIG_PARAMETERS="'alias.n=reset'" git n --hard`,
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset',
     ];
     const ASKED = [
         'git push --force',
@@ -186,6 +191,9 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git --config-env=remote.origin.push=REFSPEC push',
         'git -c Remote.origin.Mirror=true push',
         'git -c REMOTE.origin.PUSH=+main push',
+        'git config remote.origin.push +refs/heads/main:refs/heads/main',
+        'git config remote.origin.mirror true',
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',
     ];
     const ALLOWED = [
         'git status',
@@ -217,6 +225,10 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git push --dry-run origin main',
         'git rm -rf build',
         'git worktree remove --force ../wt',
+        'git config --get alias.x',
+        'git config alias.x',
+        'git config user.name x',
+        'git config remote.origin.pushurl url',
     ];
 
     it('bash: maps each guard-core verdict to the same permission', () => {

@@ -139,6 +139,24 @@ const INLINE_ALIAS = inlineConfig(`${anyCase('alias')}\\.`);
 const INLINE_PUSH_CONFIG = inlineConfig(
     `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})(=|${ARG_END})`,
 );
+// The same keys set to last (BT-800): `git config [--global|--file f|set|--add ...] key value` writes one, and the
+// `GIT_CONFIG_KEY_<n>` / `GIT_CONFIG_PARAMETERS` environment variables set one for every git run they reach, so they
+// match anywhere in a command (`export`, `env`, a `VAR=... git` prefix). Same tiers as the inline forms, and every
+// alias write is denied, `alias.st status` included: `alias.n reset` names no destructive flag, yet `git n --hard`
+// wipes work. A `git config` that only reads or removes (`--get*`, `--unset*`, `-l`, `--list`, `get`, `list`,
+// `unset`) passes, and so does a key with no value after it, which is a read.
+const ALIAS_KEY = `${anyCase('alias')}\\.`;
+const PUSH_KEY = `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})`;
+const configWrite = (key) => new RegExp(`${GIT_PREFIX}config${ARGS}${key}${SPACE}+${ARG_CHAR}`);
+const CONFIG_READ = new RegExp(
+    `${GIT_PREFIX}config(${ARGS}(--get${ARG_CHAR}*|--unset${ARG_CHAR}*|-l|--list)|${SPACE}+(get|list|unset))${ARG_END}`,
+);
+// The one-word reading keeps a quoted `GIT_CONFIG_PARAMETERS` value as one word, so a key anywhere in it is found.
+const envConfig = (key) => new RegExp(`GIT_CONFIG_(KEY_[0-9]+=|PARAMETERS=(${ARG_CHAR}*[^A-Za-z0-9.])?)${key}`);
+const CONFIG_ALIAS = configWrite(`${ALIAS_KEY}${ARG_CHAR}*`);
+const CONFIG_PUSH = configWrite(PUSH_KEY);
+const ENV_ALIAS = envConfig(ALIAS_KEY);
+const ENV_PUSH = envConfig(`${PUSH_KEY}(=|${ARG_END})`);
 // Plumbing with the same effect as `git checkout -- .` and `git reset --hard` (BT-775): `checkout-index -f` overwrites
 // worktree files from the index, `read-tree --reset` (from `--res`, its shortest unique prefix) throws the index away.
 const CHECKOUT_INDEX_FORCE = new RegExp(
@@ -171,9 +189,10 @@ const ASK_FORCE_PUSH = {
 };
 const ASK_PUSH_CONFIG = {
     decision: 'ask',
-    userMessage: 'Push settings given inline (-c remote.<name>.push or .mirror) detected. Confirm before continuing.',
+    userMessage:
+        'A remote.<name>.push or .mirror setting (git -c, git config, or GIT_CONFIG_*) detected. Confirm before continuing.',
     agentMessage:
-        'An inline remote.<name>.push or .mirror setting changes what git push sends: it can force-push, delete, or mirror remote branches. Ask the user for explicit confirmation first.',
+        'A remote.<name>.push or .mirror setting changes what git push sends: it can force-push, delete, or mirror remote branches. Ask the user for explicit confirmation first.',
 };
 const ASK_PUSH_DELETE = {
     decision: 'ask',
@@ -201,7 +220,8 @@ const ASK_STASH = {
  * - Deny (no override): `git reset --hard`, `git checkout` onto paths (`--` anywhere, `.`, or a file-like argument),
  *   `git checkout` / `git switch` with `-f`, `--force` or `--discard-changes`, `git restore` in any form that touches
  *   the worktree, `git clean` unless it is a dry run with no force flag, the plumbing forms `git checkout-index -f`
- *   and `git read-tree --reset`, and an alias given with `-c` in any case (it can stand for any of these). Each
+ *   and `git read-tree --reset`, and an alias given with `-c`, written with `git config`, or set through
+ *   `GIT_CONFIG_*`, in any case and whatever its value (it can stand for any of these). Each
  *   overwrites or discards, in place, content no git object was ever created for (uncommitted changes, untracked
  *   files), so no approval after the fact can bring it back. `git restore --staged` without `--worktree` only resets
  *   the index and leaves the files alone, so it is the one safe restore. `git clean` is denied by default rather than
@@ -209,15 +229,16 @@ const ASK_STASH = {
  *   whole worktree (`git rm -f`, `git worktree remove --force`) is not covered: it is the same judgment as `rm -rf`,
  *   which the guard never polices, and agents remove their own scratch worktrees routinely.
  * - Ask (an explicit approval lets it through): `git push --force*` or a `+refspec`; a push refspec or mirror mode
- *   given with `-c` / `--config-env`, in any case; `git push --delete`, a `:branch` refspec, or `--mirror`;
- *   `git branch -D` (or `-d` with `-f`); and `git stash drop/clear`. These can discard work too, but reflog (or the
- *   remote's) keeps the commits reachable for a while, so approving one is not approving something irreversible.
+ *   given with `-c` / `--config-env`, written with `git config`, or set through `GIT_CONFIG_*`, in any case;
+ *   `git push --delete`, a `:branch` refspec, or `--mirror`; `git branch -D` (or `-d` with `-f`); and
+ *   `git stash drop/clear`. These can discard work too, but reflog (or the remote's) keeps the commits reachable for a
+ *   while, so approving one is not approving something irreversible.
  *
  * `git checkout --` and `git restore` are two spellings of one operation and must stay in the same tier (BT-413).
  *
  * This is a tripwire for honest mistakes, not a sandbox: it reads the command text, so anything that builds the
- * command at run time - `$IFS`, a variable (`g=git; $g ...`), `eval`, `GIT_CONFIG_*` environment config, or an alias
- * set earlier with `git config` - gets past it.
+ * command at run time - `$IFS`, a variable (`g=git; $g ...`), `eval` - gets past it, and so does an alias that existed
+ * before the guard saw it written (`git wipe` reads as harmless).
  *
  * @param {string} command - The raw command text.
  * @returns {{ decision: 'deny' | 'ask', userMessage: string, agentMessage: string } | null} The verdict, or null to allow.
@@ -249,6 +270,7 @@ function isDangerousCommand(command) {
         any(CHECKOUT_PATHS) || any(CHECKOUT_PATH_LIKE) || any(CHECKOUT_PATH_OPTIONS) || any(CHECKOUT_OR_SWITCH_FORCE);
 
     const destructivePlumbing = any(CHECKOUT_INDEX_FORCE) || any(READ_TREE_RESET);
+    const configWrites = (pattern) => commands.some((one) => pattern.test(one) && !CONFIG_READ.test(one));
 
     if (
         any(RESET_HARD) ||
@@ -256,7 +278,9 @@ function isDangerousCommand(command) {
         destructiveClean ||
         destructiveRestore ||
         destructivePlumbing ||
-        any(INLINE_ALIAS)
+        any(INLINE_ALIAS) ||
+        configWrites(CONFIG_ALIAS) ||
+        any(ENV_ALIAS)
     ) {
         return DENY_DESTRUCTIVE;
     }
@@ -265,7 +289,7 @@ function isDangerousCommand(command) {
         return ASK_FORCE_PUSH;
     }
 
-    if (any(INLINE_PUSH_CONFIG)) {
+    if (any(INLINE_PUSH_CONFIG) || configWrites(CONFIG_PUSH) || any(ENV_PUSH)) {
         return ASK_PUSH_CONFIG;
     }
 

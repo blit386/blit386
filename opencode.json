@@ -46,6 +46,8 @@
       "*/.env.example": "allow"
     },
     "bash": {
+      "*GIT_CONFIG_KEY_*": "ask",
+      "*GIT_CONFIG_PARAMETERS*": "ask",
       "git reset *--hard*": "deny",
       "git reset *--h": "deny",
       "git reset *--h *": "deny",
@@ -135,6 +137,11 @@
       "git *--config-env*alias.*": "deny",
       "git *-c * push*": "ask",
       "git *--config-env* push*": "ask",
+      "*git *config *remote.*.push *": "ask",
+      "*git *config *remote.*.mirror *": "ask",
+      "*git *config *alias.* *": "deny",
+      "*GIT_CONFIG_KEY_*=alias.*": "deny",
+      "*GIT_CONFIG_PARAMETERS=*alias.*": "deny",
       "git checkout-index *": "deny",
       "git read-tree *--res*": "deny",
       "git push -d*": "ask",
