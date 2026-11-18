@@ -74,6 +74,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
+import { sampleInside } from './shared/sample-inside.js';
 import { applyTheme, centeredTextX, PANEL_CONTENT_SHRINK, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -168,6 +169,13 @@ const NAV_PANEL_X = 4;
 const NAV_PANEL_W = 100;
 const SCENE_PANEL_X = 110;
 const SCENE_PANEL_W = 206;
+
+// Arrows stay between the top of the target and just above the panels. Each arrow is
+// 2x2 pixels, so the bottom limit leaves a 1 pixel gap above the panels. Without these
+// limits a high Spread would put arrows under the panels or off the top of the screen,
+// where nobody can see them.
+const SHOT_MIN_Y = TARGET_CENTER.y - TARGET_RINGS[0];
+const SHOT_MAX_Y = PANEL_Y - 3;
 
 // Widgets inside a panel are PANEL_CONTENT_SHRINK pixels narrower than the panel itself.
 const NAV_BUTTON_W = NAV_PANEL_W - PANEL_CONTENT_SHRINK;
@@ -458,22 +466,42 @@ class Demo {
 
         const shot = this.shots[this.shotNext];
 
-        if (this.useGaussian) {
-            // gaussian(middle, spread) clumps its answers around the middle value. Most
-            // land close to it, a few land further out, and the really wild ones are rare
-            // - the same way most people are close to average height and giants are
-            // unusual.
-            shot.x = TARGET_CENTER.x + Math.round(BT.random.gaussian(0, this.shotSpread));
-            shot.y = TARGET_CENTER.y + Math.round(BT.random.gaussian(0, this.shotSpread));
-        } else {
-            // float(a, b) is the flat version: every distance from the middle is equally
-            // likely, so the arrows spread out into an even square with no clump at all.
-            const reach = this.shotSpread * 2;
+        // The arrow is 2 pixels wide, so the last x that still fits on screen is 2 short.
+        const maxX = BT.displaySize.x - 2;
 
-            shot.x = TARGET_CENTER.x + Math.round(BT.random.float(-reach, reach));
-            shot.y = TARGET_CENTER.y + Math.round(BT.random.float(-reach, reach));
-        }
+        // Any arrow that would land outside the limits is thrown away and shot again.
+        // The ones we keep still follow the real shape, with no pile-up on the edges.
+        const point = sampleInside(
+            () => {
+                if (this.useGaussian) {
+                    // gaussian(middle, spread) clumps its answers around the middle value.
+                    // Most land close to it, a few land further out, and the really wild
+                    // ones are rare - the same way most people are close to average
+                    // height and giants are unusual.
+                    return {
+                        x: TARGET_CENTER.x + Math.round(BT.random.gaussian(0, this.shotSpread)),
+                        y: TARGET_CENTER.y + Math.round(BT.random.gaussian(0, this.shotSpread)),
+                    };
+                }
 
+                // float(a, b) is the flat version: every distance from the middle is
+                // equally likely, so the arrows spread out into an even square with no
+                // clump at all.
+                const reach = this.shotSpread * 2;
+
+                return {
+                    x: TARGET_CENTER.x + Math.round(BT.random.float(-reach, reach)),
+                    y: TARGET_CENTER.y + Math.round(BT.random.float(-reach, reach)),
+                };
+            },
+            0,
+            maxX,
+            SHOT_MIN_Y,
+            SHOT_MAX_Y,
+        );
+
+        shot.x = point.x;
+        shot.y = point.y;
         shot.wasGaussian = this.useGaussian;
 
         // Move to the next slot, wrapping back to 0 at the end. This is why the oldest
