@@ -253,5 +253,8 @@ export const SHELL_CASES = [
     ['git config rename-section staging Alias', 'deny'],
     ['git config --rename-section staging remote.origin', 'ask'],
     ['git config --rename-section old new', 'allow'],
+    // git runs a unique prefix of a long option as the option: `--ren` is `--rename-section`.
+    ['git config --ren staging alias', 'deny'],
+    ['git config --rename-sec staging Remote.origin', 'ask'],
     ["git config 'remote.origin.push' +main", 'ask'],
 ];

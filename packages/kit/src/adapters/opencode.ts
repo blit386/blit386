@@ -72,17 +72,18 @@ const OPENCODE_PERMISSION = {
         '*GIT_CONFIG_KEY_*': 'ask',
         '*GIT_CONFIG_PARAMETERS*': 'ask',
         // A key, then a value (` ?*`: OpenCode lets a trailing ` *` match nothing, which would catch a bare read). git
-        // reads the key in any case and a glob cannot, so the usual spellings are listed; a mixed one (`rEmote`) slips.
-        // OpenCode matches the raw text, so a key in quotes (`'remote.origin.push' +main`) gets its own entries.
+        // reads the key in any case and a glob cannot, so one `?` per letter stands for `remote` and `push` / `mirror`
+        // in any case: coarser, so a same-shaped key (`branch.main.remote`, `remote.x.tagOpt`) asks too. OpenCode
+        // matches the raw text, so a key in quotes (`'remote.origin.push' +main`) gets its own entries.
         ...Object.fromEntries(
-            ['remote', 'Remote', 'REMOTE'].flatMap((remote) =>
-                ['push', 'Push', 'PUSH', 'mirror', 'Mirror', 'MIRROR'].flatMap((key) =>
-                    ['', "'", '"'].map((quote) => [`*git *config *${remote}.*.${key}${quote} ?*`, 'ask']),
-                ),
+            ['????', '??????'].flatMap((key) =>
+                ['', "'", '"'].map((quote) => [`*git *config *??????.*.${key}${quote} ?*`, 'ask']),
             ),
         ),
-        // Renaming a section into `remote.<name>` can bring a push refspec or mirror mode with it.
-        '*git *config *rename-section *remote*': 'ask',
+        // Any section rename asks, from `--ren` (its shortest unique prefix) up: one into `remote.<name>` can bring a
+        // push refspec or mirror mode with it, and a glob cannot spell `remote` in every case.
+        '*git *config *--ren*': 'ask',
+        '*git *config *rename-section*': 'ask',
         // `--hard` anywhere after `reset`, followed by anything (`;`, `&&`, a redirect), and each shorter prefix git
         // accepts (`--h` to `--har`) as a whole argument, so `--help` still passes.
         'git reset *--hard*': 'deny',
@@ -174,6 +175,7 @@ const OPENCODE_PERMISSION = {
         // plugin denies an alias in any case.
         '*git *config *alias.* ?*': 'deny',
         '*git *config *rename-section *alias*': 'deny',
+        '*git *config *--ren* *alias*': 'deny',
         '*GIT_CONFIG_KEY_*=alias.*': 'deny',
         '*GIT_CONFIG_PARAMETERS=*alias.*': 'deny',
         // Plumbing that discards like `checkout --` and `reset --hard`; every `checkout-index` is denied, which is

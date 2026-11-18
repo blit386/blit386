@@ -152,9 +152,11 @@ const PUSH_KEY = `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${an
 const configWrite = (key) => new RegExp(`${GIT_PREFIX}config${ARGS}${key}${SPACE}+${ARG_CHAR}`);
 // Renaming a section into `alias` or `remote.<name>` turns keys written under a harmless name into an alias or a push
 // setting (`git config staging.n reset`, then `--rename-section staging alias`). Either name counts, which also refuses
-// renaming one away - rare, and cheaper than telling the two apart.
+// renaming one away - rare, and cheaper than telling the two apart. The option matches from `--ren`, its shortest
+// unique prefix (`--re` is ambiguous), as well as the `rename-section` subcommand.
+const RENAME_SECTION = '(--ren(a(m(e(-(s(e(c(t(i(on?)?)?)?)?)?)?)?)?)?)?|rename-section)';
 const configRename = (section) =>
-    new RegExp(`${GIT_PREFIX}config${ARGS}(--)?rename-section${ARGS}${anyCase(section)}(\\.|${ARG_END})`);
+    new RegExp(`${GIT_PREFIX}config${ARGS}${RENAME_SECTION}${ARGS}${anyCase(section)}(\\.|${ARG_END})`);
 // The one-word reading keeps a quoted `GIT_CONFIG_PARAMETERS` value as one word, so a key anywhere in it is found.
 const envConfig = (key) => new RegExp(`GIT_CONFIG_(KEY_[0-9]+=|PARAMETERS=(${ARG_CHAR}*[^A-Za-z0-9.])?)${key}`);
 const CONFIG_ALIAS = configWrite(`${ALIAS_KEY}${ARG_CHAR}*`);
