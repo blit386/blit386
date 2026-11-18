@@ -143,7 +143,7 @@ class Demo {
     lineEnd = new Vector2i();
 
     // Height of one system-font line, measured in init() with BT.systemPrintMeasure('M').
-    // The built-in font is 14 tall, but measuring keeps the demo honest if that ever
+    // The built-in font is about 14 tall, but measuring keeps the demo honest if that ever
     // changes.
     systemLineHeight = 14;
 

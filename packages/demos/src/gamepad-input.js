@@ -193,12 +193,15 @@ class Demo {
     // Small cursor moved by the right stick so both sticks have visible jobs.
     aimPos = new Vector2i(Math.floor(DISPLAY_W / 2) + 28, Math.floor(DISPLAY_H / 2));
 
-    // One rectangle and two line ends, reused by every draw call in renderArena().
+    // One rectangle, two line ends, and the blended pod and aim positions, reused by
+    // every draw call in renderArena().
     // Building new ones each frame would hand the garbage collector throwaway objects
     // 60 times a second; set() rewrites them in place instead.
     drawRect = new Rect2i(0, 0, 0, 0);
     lineFrom = new Vector2i(0, 0);
     lineTo = new Vector2i(0, 0);
+    podDraw = new Vector2i(0, 0);
+    aimDraw = new Vector2i(0, 0);
 
     // Pod and aim position at the START of the most recent update() tick, before this
     // tick's stick input moved them. render() blends between these and podPos/aimPos
@@ -493,8 +496,8 @@ class Demo {
         // Blend each entity's previous and current tick position by BT.renderAlpha so the
         // pod and aim cursor glide smoothly across render frames instead of snapping to a
         // new spot only once per tick (see the prevPodPos/prevAimPos comment above).
-        const pod = Vector2i.lerp(this.prevPodPos, this.podPos, BT.renderAlpha);
-        const aim = Vector2i.lerp(this.prevAimPos, this.aimPos, BT.renderAlpha);
+        const pod = Vector2i.lerpTo(this.prevPodPos, this.podPos, BT.renderAlpha, this.podDraw);
+        const aim = Vector2i.lerpTo(this.prevAimPos, this.aimPos, BT.renderAlpha, this.aimDraw);
 
         // Draw the pod as a square centered on its position; the white outline makes it
         // pop against the arena.
