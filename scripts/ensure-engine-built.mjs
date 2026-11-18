@@ -5,7 +5,8 @@
  * produces it. Shared by `packages/demos` and `packages/website`, which hit this in different
  * ways: `packages/demos/vite.config.js` imports `blit386/vite` at the top of the file,
  * unconditionally, so `dev`, `build`, `preview`, and `knip` (which loads `vite.config.js` via its
- * own Vite plugin) all crash before that import is even reached; `packages/website`'s Twoslash
+ * own Vite plugin) all crash before that import is even reached - so does the engine's own `knip`,
+ * which loads that config too; `packages/website`'s Twoslash
  * pipeline compiles docs samples against the workspace engine (BT-414), so its `test` and `build`
  * fail inside that compilation with TS2307 instead. Run before any of those so the failure
  * self-heals instead of surfacing as a confusing "Cannot find module" error partway through

@@ -69,6 +69,8 @@ jobs:
               # gen-deprecations.mjs (api:deprecations:check) imports ensure-kit-built.mjs, which imports build-lock.mjs.
               - 'scripts/ensure-kit-built.mjs'
               - 'scripts/build-lock.mjs'
+              # knip runs ensure-engine-built.mjs: it loads packages/demos/vite.config.js, which imports the built engine.
+              - 'scripts/ensure-engine-built.mjs'
             demos:
               - 'packages/demos/**'
               - 'packages/blit386/**'
