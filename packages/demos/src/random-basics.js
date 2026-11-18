@@ -164,6 +164,14 @@ const BUG_SIZE = BUG_REACH * 2 + 1;
 // you switch. The scene's picture fills the space above.
 const PANEL_H = 111;
 const PANEL_Y = 240 - 4 - PANEL_H;
+
+// Arrows stay between the top of the target and just above the panels. Each arrow is
+// 2x2 pixels, so the bottom and right limits stop 2 pixels short of the edge. Without
+// these limits a high Spread would put arrows under the panels or off the top of the
+// screen, where nobody can see them.
+const SHOT_MIN_Y = TARGET_CENTER.y - TARGET_RINGS[0];
+const SHOT_MAX_Y = PANEL_Y - 3;
+const SHOT_MAX_X = 320 - 2;
 const NAV_PANEL_X = 4;
 const NAV_PANEL_W = 100;
 const SCENE_PANEL_X = 110;
@@ -474,6 +482,9 @@ class Demo {
             shot.y = TARGET_CENTER.y + Math.round(BT.random.float(-reach, reach));
         }
 
+        // clamp() pulls any arrow that flew past the limits back onto the nearest edge.
+        shot.x = clamp(shot.x, 0, SHOT_MAX_X);
+        shot.y = clamp(shot.y, SHOT_MIN_Y, SHOT_MAX_Y);
         shot.wasGaussian = this.useGaussian;
 
         // Move to the next slot, wrapping back to 0 at the end. This is why the oldest
