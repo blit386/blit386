@@ -41,7 +41,8 @@ describe("the manifest's Gemini CLI guard commands", { skip: process.platform ==
     after(() => rmSync(tmp, { recursive: true, force: true }));
 
     // Gemini replaces the variable in the command text with the shell-quoted dir (hookRunner.ts `expandCommand`).
-    const expand = (command, dir) => command.replaceAll('$GEMINI_PROJECT_DIR', `'${dir}'`);
+    const expand = (command, dir) =>
+        command.replaceAll('$GEMINI_PROJECT_DIR', () => `'${dir.replaceAll("'", "'\\''")}'`);
 
     /** Run one settings.json command as Gemini does on POSIX: expanded, then `bash -c` from the project dir. */
     const run = (command, input, { cwd = root, path = process.env.PATH } = {}) =>
