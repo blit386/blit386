@@ -29,6 +29,7 @@ import {
     FONT_W,
     FULL_WIDTH,
     ROW_H,
+    UI_ANCHORS,
 } from './ui-core.js';
 import {
     BUTTON_LOOK,
@@ -179,7 +180,7 @@ function caption(ctx, x, y, text, opts = {}) {
     // of snapping it to a screen corner), and pad: 0 removes the group's built-in
     // inner padding so the text lands right at the requested position. With no
     // panel() call the group has no box around it - just floating text.
-    ctx.begin('topLeft', { x, y, pad: 0 });
+    ctx.begin(UI_ANCHORS.TOP_LEFT, { x, y, pad: 0 });
     label(ctx, text, { color: opts.color ?? 'header' });
     ctx.end();
 }

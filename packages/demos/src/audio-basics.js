@@ -114,6 +114,7 @@ import {
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
     ui,
+    UI_ANCHORS,
 } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -376,7 +377,7 @@ class Demo {
     // button fires on click, tap, or its number key - ui.button() treats all three the
     // same, which is what makes this demo playable on a touchscreen.
     renderKeyboardPanel() {
-        ui.begin('topLeft', { x: LEFT_PANEL_X, y: PANEL_Y, width: LEFT_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LEFT_PANEL_X, y: PANEL_Y, width: LEFT_PANEL_W });
         ui.panel('Keyboard SFX (pitch)');
         ui.label('Keys 1, 2, 3 or tap', { color: 'dim' });
         ui.spacer(4);
@@ -404,7 +405,7 @@ class Demo {
         const hasClicked = this.lastClickVolume !== null && this.lastClickPan !== null;
         const flashing = this.pointerFlashTimer > 0;
 
-        ui.begin('topLeft', { x: RIGHT_PANEL_X, y: PANEL_Y, width: RIGHT_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_PANEL_X, y: PANEL_Y, width: RIGHT_PANEL_W });
         ui.panel('Pointer SFX (volume/pan)');
 
         // An empty row as tall as the pad: renderPad() paints the pad into this gap after

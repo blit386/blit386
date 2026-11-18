@@ -12,6 +12,7 @@ import { BT, Rect2i } from 'blit386';
 
 import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '../ui-core.js';
 import { PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET } from '../ui-core.js';
+import { PANEL_CONTENT_INSET } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
 import { button, checkbox, label, meter, panel, pip, slider, spacer, tooltip } from '../ui-widgets.js';
 import { centeredTextX, statusLine } from '../ui-widgets.js';
@@ -774,5 +775,23 @@ describe('centeredTextX', () => {
     it('centers the visible letters, leaving out the trailing spacing column', () => {
         // Two 6-wide glyphs span 11 visible pixels, so the left edge is 5 left of center.
         assert.equal(centeredTextX(100, 'ab'), 95);
+    });
+});
+
+describe('panel content inset', () => {
+    it('puts the first label PANEL_CONTENT_INSET in from the panel edge', (t) => {
+        stubBt(t);
+
+        const ctx = createReadyContext();
+
+        ctx.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: 0, width: 100 });
+        panel(ctx, 'Title');
+        label(ctx, 'Row');
+
+        const rowText = ctx.commands[ctx.commandCount - 1];
+
+        ctx.end();
+
+        assert.equal(rowText.x, PANEL_CONTENT_INSET);
     });
 });

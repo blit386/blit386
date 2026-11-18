@@ -104,6 +104,7 @@ import {
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
     ui,
+    UI_ANCHORS,
 } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -302,7 +303,7 @@ class Demo {
     // a new value when the widget reports a change. That way the UI can never drift out
     // of sync with what the engine is actually doing (for example during the alert duck).
     renderBusPanel(row, x) {
-        ui.begin('topLeft', { x, y: BUS_ROW_Y, width: BUS_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: BUS_ROW_Y, width: BUS_PANEL_W });
         ui.panel(row.label);
         ui.label(row.carries, { color: 'dim' });
         ui.spacer(4);
@@ -341,7 +342,7 @@ class Demo {
     // the music. It reports a click, a tap, or its Space shortcut - all three the same
     // way.
     renderAlertPanel() {
-        ui.begin('topLeft', { x: MARGIN_X, y: DUCK_ROW_Y, width: BUS_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN_X, y: DUCK_ROW_Y, width: BUS_PANEL_W });
         ui.panel('Alert');
         ui.label('Space or tap', { color: 'dim' });
         ui.spacer(4);
@@ -369,7 +370,7 @@ class Demo {
             state = `ducked to ${Math.round(DUCK_VOLUME_FACTOR * 100)}%`;
         }
 
-        ui.begin('topLeft', { x: DUCK_PANEL_X, y: DUCK_ROW_Y, width: DUCK_PANEL_W, kvCols: DUCK_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: DUCK_PANEL_X, y: DUCK_ROW_Y, width: DUCK_PANEL_W, kvCols: DUCK_KV_COLS });
         ui.panel('Ducking');
         ui.kv('Music', state);
         ui.kv('Restore', this.preDuckMusicVolume.toFixed(2));

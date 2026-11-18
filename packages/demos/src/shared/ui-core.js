@@ -64,6 +64,10 @@ const PANEL_CONTENT_TOP = 18 + PANEL_INSET;
 const PANEL_BOTTOM = 6 + PANEL_INSET + PANEL_INSET_BOTTOM_EXTRA;
 const PANEL_TEXT_INSET = 6 + PANEL_INSET;
 
+// How far in from a default-pad panel's left edge its content starts: the group pad plus the
+// panel inset. Demos that right-align text keep the same gap from the right edge.
+const PANEL_CONTENT_INSET = PAD + PANEL_INSET;
+
 // How much narrower than its panel the demos draw a full-width widget: the title inset's
 // worth of room on both sides. Demos that size a widget from a fixed panel width
 // subtract this instead of re-typing 20.
@@ -662,6 +666,7 @@ export {
     FULL_WIDTH,
     hitContains,
     PANEL_BOTTOM,
+    PANEL_CONTENT_INSET,
     PANEL_CONTENT_SHRINK,
     PANEL_CONTENT_TOP,
     PANEL_TEXT_INSET,
