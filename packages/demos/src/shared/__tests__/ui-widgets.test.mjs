@@ -12,7 +12,7 @@ import { BT, Rect2i } from 'blit386';
 
 import { BUTTON_H, CMD_NINE_SLICE, CMD_RECT_FILL, CMD_TEXT, UI_ANCHORS } from '../ui-core.js';
 import { PANEL_BOTTOM, PANEL_CONTENT_TOP, PANEL_TEXT_INSET } from '../ui-core.js';
-import { PANEL_CONTENT_INSET } from '../ui-core.js';
+import { FULL_WIDTH, PANEL_CONTENT_INSET } from '../ui-core.js';
 import { BUTTON_LOOK, buttonFillSlice, T } from '../ui-theme.js';
 import { button, checkbox, label, meter, panel, pip, slider, spacer, tooltip } from '../ui-widgets.js';
 import { centeredTextX, statusLine } from '../ui-widgets.js';
@@ -793,5 +793,25 @@ describe('panel content inset', () => {
         ctx.end();
 
         assert.equal(rowText.x, PANEL_CONTENT_INSET);
+    });
+
+    it('leaves the same gap at the right edge, where a full-width widget ends', (t) => {
+        const slices = [];
+
+        stubBt(t, { drawNineSlice: (_slice, rect) => slices.push({ x: rect.x, width: rect.width }) });
+
+        const ctx = createReadyContext();
+        const panelW = 100;
+
+        ctx.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: 0, width: panelW });
+        panel(ctx, 'Title');
+        meter(ctx, 'Level', 0.5, { width: FULL_WIDTH });
+        ctx.end();
+
+        // The panel's own nine-slice is first, then the meter's trough.
+        const trough = slices[1];
+
+        assert.equal(trough.x, PANEL_CONTENT_INSET);
+        assert.equal(trough.x + trough.width, panelW - PANEL_CONTENT_INSET);
     });
 });

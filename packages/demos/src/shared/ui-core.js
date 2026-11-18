@@ -64,8 +64,8 @@ const PANEL_CONTENT_TOP = 18 + PANEL_INSET;
 const PANEL_BOTTOM = 6 + PANEL_INSET + PANEL_INSET_BOTTOM_EXTRA;
 const PANEL_TEXT_INSET = 6 + PANEL_INSET;
 
-// How far in from a default-pad panel's left edge its content starts: the group pad plus the
-// panel inset. A demo that right-aligns text against the panel edge can leave this same gap.
+// How far in from a default-pad panel's left and right edges its content sits: the group pad
+// plus the panel inset. A test in __tests__/ui-widgets.test.mjs holds both sides to the real layout.
 const PANEL_CONTENT_INSET = PAD + PANEL_INSET;
 
 // How much narrower than its panel the demos draw a full-width widget: the title inset's
