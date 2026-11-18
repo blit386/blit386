@@ -71,7 +71,7 @@
       },
       "gemini": {
         "event": "BeforeTool",
-        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
+        "command": "node -e \"try{require('./.gemini/hooks/shell-guard.cjs')}catch(e){console.error('[BLOCKED] The blit386 guard could not run, so the request was blocked: '+e.message);process.exit(2)}\"",
         "matcher": "run_shell_command",
         "timeout": 10000
       },
@@ -109,7 +109,7 @@
       },
       "gemini": {
         "event": "BeforeTool",
-        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
+        "command": "node -e \"try{require('./.gemini/hooks/protect-files.cjs')}catch(e){console.error('[BLOCKED] The blit386 guard could not run, so the request was blocked: '+e.message);process.exit(2)}\"",
         "matcher": "write_file|replace",
         "timeout": 10000
       },

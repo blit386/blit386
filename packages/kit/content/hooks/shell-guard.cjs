@@ -2,8 +2,8 @@
 // The classification lives in guard-core.cjs, shared with every other agent's entry; this file only
 // knows Gemini's payload (`tool_input.command`) and protocol (exit code 2 blocks the call and sends
 // stderr to the assistant). Gemini has no "ask" answer, so the confirm tier blocks too - its message
-// tells the assistant to ask the user first. Fails closed: Gemini lets the call through on any exit
-// code other than 2, so an unreadable payload or a missing command must exit 2 itself.
+// tells the assistant to ask the user first. Fails closed: Gemini lets the call through on exit 0
+// or 1, so an unreadable payload or a missing command must exit 2 itself.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { readFileSync } = require('node:fs');
