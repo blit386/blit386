@@ -371,3 +371,44 @@ describe('the kit-guard.ts plugin', () => {
         assert.deepEqual([...events].sort(), ['session.created', 'tool.execute.before']);
     });
 });
+
+describe('the kit-guard.ts plugin without a working guard core', () => {
+    // OpenCode drops a plugin whose import throws, so the plugin must load anyway and block what it guards (BT-795).
+    for (const [label, guardCore] of [
+        ['missing', null],
+        ['crashing as it loads', "throw new Error('broken guard core');\n"],
+    ]) {
+        it(`blocks shell, edit, and patch calls when guard-core.cjs is ${label}`, async () => {
+            const root = mkdtempSync(join(tmpdir(), 'blit-opencode-no-core-'));
+
+            try {
+                const plugin = join(root, '.opencode', 'plugins', 'kit-guard.ts');
+
+                mkdirSync(join(root, '.opencode', 'plugins'), { recursive: true });
+                mkdirSync(join(root, '.opencode', 'hooks'), { recursive: true });
+                writeFileSync(plugin, byPath.get('.opencode/plugins/kit-guard.ts'));
+
+                if (guardCore !== null) {
+                    writeFileSync(join(root, '.opencode', 'hooks', 'guard-core.cjs'), guardCore);
+                }
+
+                const { KitGuard } = await import(pathToFileURL(plugin).href);
+                const hooks = await KitGuard({ $: null, directory: root });
+                const call = (name, args) => hooks['tool.execute.before']({ tool: name }, { args });
+
+                await assert.rejects(
+                    call('bash', { command: 'git status' }),
+                    /^Error: \[BLOCKED\] The guard could not run/,
+                );
+                await assert.rejects(
+                    call('edit', { filePath: 'src/game.js' }),
+                    /^Error: \[BLOCKED\] The guard could not run/,
+                );
+                await assert.rejects(call('apply_patch', { patchText: '' }), /\[BLOCKED\]/);
+                await call('read', { filePath: 'src/game.js' });
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+    }
+});
