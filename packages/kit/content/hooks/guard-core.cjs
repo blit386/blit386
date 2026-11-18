@@ -150,10 +150,17 @@ const INLINE_PUSH_CONFIG = inlineConfig(
 const ALIAS_KEY = `${anyCase('alias')}\\.`;
 const PUSH_KEY = `${anyCase('remote')}\\.${ARG_CHAR}*\\.(${anyCase('push')}|${anyCase('mirror')})`;
 const configWrite = (key) => new RegExp(`${GIT_PREFIX}config${ARGS}${key}${SPACE}+${ARG_CHAR}`);
+// Renaming a section into `alias` or `remote.<name>` turns keys written under a harmless name into an alias or a push
+// setting (`git config staging.n reset`, then `--rename-section staging alias`). Either name counts, which also refuses
+// renaming one away - rare, and cheaper than telling the two apart.
+const configRename = (section) =>
+    new RegExp(`${GIT_PREFIX}config${ARGS}(--)?rename-section${ARGS}${anyCase(section)}(\\.|${ARG_END})`);
 // The one-word reading keeps a quoted `GIT_CONFIG_PARAMETERS` value as one word, so a key anywhere in it is found.
 const envConfig = (key) => new RegExp(`GIT_CONFIG_(KEY_[0-9]+=|PARAMETERS=(${ARG_CHAR}*[^A-Za-z0-9.])?)${key}`);
 const CONFIG_ALIAS = configWrite(`${ALIAS_KEY}${ARG_CHAR}*`);
 const CONFIG_PUSH = configWrite(PUSH_KEY);
+const RENAME_ALIAS = configRename('alias');
+const RENAME_REMOTE = configRename('remote');
 const ENV_ALIAS = envConfig(ALIAS_KEY);
 const ENV_PUSH = envConfig(`${PUSH_KEY}(=|${ARG_END})`);
 // Plumbing with the same effect as `git checkout -- .` and `git reset --hard` (BT-775): `checkout-index -f` overwrites
@@ -278,6 +285,7 @@ function isDangerousCommand(command) {
         destructivePlumbing ||
         any(INLINE_ALIAS) ||
         any(CONFIG_ALIAS) ||
+        any(RENAME_ALIAS) ||
         any(ENV_ALIAS)
     ) {
         return DENY_DESTRUCTIVE;
@@ -287,7 +295,7 @@ function isDangerousCommand(command) {
         return ASK_FORCE_PUSH;
     }
 
-    if (any(INLINE_PUSH_CONFIG) || any(CONFIG_PUSH) || any(ENV_PUSH)) {
+    if (any(INLINE_PUSH_CONFIG) || any(CONFIG_PUSH) || any(RENAME_REMOTE) || any(ENV_PUSH)) {
         return ASK_PUSH_CONFIG;
     }
 

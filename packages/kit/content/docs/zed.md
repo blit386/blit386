@@ -78,6 +78,9 @@ agent from changing those files through a terminal command, so keep terminal app
             },
             {
               "pattern": "GIT_CONFIG_(KEY_\\d+=|PARAMETERS=[^;&|<>]*)(alias|remote)\\."
+            },
+            {
+              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+config(\\s+\\S+)*\\s+(--)?rename-section(\\s+\\S+)*\\s+(alias|remote)(\\.|\\s|$)"
             }
           ]
         }

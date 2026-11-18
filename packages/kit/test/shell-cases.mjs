@@ -248,4 +248,10 @@ export const SHELL_CASES = [
     ['git config alias.n reset -l', 'deny'],
     ['git config remote.origin.push +main --unset', 'ask'],
     ['git reset --hard && git config remote.origin.push +main', 'deny'],
+    // Renaming a section into `alias` or `remote.<name>` turns harmless keys into an alias or a push setting.
+    ['git config --rename-section staging alias', 'deny'],
+    ['git config rename-section staging Alias', 'deny'],
+    ['git config --rename-section staging remote.origin', 'ask'],
+    ['git config --rename-section old new', 'allow'],
+    ["git config 'remote.origin.push' +main", 'ask'],
 ];

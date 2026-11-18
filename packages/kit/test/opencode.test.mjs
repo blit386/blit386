@@ -170,6 +170,7 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git config alias.n reset --get',
         'git reset --hard && git config remote.origin.push +main',
         'git config set --comment --get alias.n reset',
+        'git config --rename-section staging alias',
     ];
     const ASKED = [
         'git push --force',
@@ -201,6 +202,9 @@ describe('opencode.json permissions agree with the guard core', () => {
         'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',
         'git config Remote.origin.PUSH +main',
         'git config REMOTE.origin.Mirror true',
+        'git config --rename-section staging remote.origin',
+        "git config 'remote.origin.push' +main",
+        'git config "remote.origin.mirror" true',
     ];
     const ALLOWED = [
         'git status',
@@ -236,6 +240,8 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git config alias.x',
         'git config user.name x',
         'git config remote.origin.pushurl url',
+        "git config 'remote.origin.pushurl' url",
+        'git config --rename-section old new',
     ];
 
     it('bash: maps each guard-core verdict to the same permission', () => {
