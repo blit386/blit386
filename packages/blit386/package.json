@@ -146,7 +146,7 @@
     "@typescript-eslint/parser": "^8.72.1",
     "@vitest/coverage-v8": "^4.1.12",
     "@webgpu/types": "^0.1.74",
-    "acorn": "^8.17.0",
+    "acorn": "^8.19.0",
     "cspell": "^10.4.1",
     "esbuild": "^0.28.2",
     "eslint": "^10.14.0",
