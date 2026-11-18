@@ -219,7 +219,8 @@ class Demo {
         // Load all six preset palettes. These are static factory methods that return a
         // ready-made Palette object - think of them as pre-sorted boxes of paint.
         this.presets = [
-            Palette.gameboy(), // 4 slots: 3 drawable shades of green (slot 0 is transparent)
+            // 4 slots: 3 drawable shades of green (slot 0 is transparent)
+            Palette.gameboy(),
             Palette.cga(), // 16 loud IBM PC colors, no drawable black
             Palette.c64(), // 16 Commodore 64 colors, no drawable black
             Palette.pico8(), // 16 soft fantasy console colors, no drawable black
@@ -325,8 +326,8 @@ class Demo {
     }
 
     // Copies the current preset's first LIVE_SWATCH_COUNT (16) slots into the live-view
-    // slots (200-215). Any slot past the preset's size turns black. render() shows the new
-    // colors on the next frame without changing a single draw call.
+    // slots (200-215). Any slot past the preset's size turns black. render() shows the
+    // new colors on the next frame without changing a single draw call.
     updateLiveSwatches() {
         const preset = this.presets[this.currentPresetIndex];
         const maxColors = Math.min(preset.size, LIVE_SWATCH_COUNT);
