@@ -36,6 +36,12 @@ manifest no longer lists (a renamed or removed pose leaves none behind); only th
 the deletions in `git status`. It refuses to write outside `public/shots/` unless `--out` points somewhere else. Exit
 code 1 means at least one tile failed; the failure list names the step (`load`, `seek`, `step`, `capture`).
 
+Add `--check-stable` to capture everything twice: it exits 1 with an `unstable: <slug>/<pose>.<variant>.png` line for
+every tile whose two captures differ in a single byte. A pose has to give the same pixels on every run for a gallery
+diff to mean anything, so run it after adding a pose or a demo, and before trusting a diff that shows a change you did
+not make. The engine overlay is not a reason to drop a demo from it: under `BT.renderAt` it shows the target FPS and 0.0
+ms timings.
+
 ### 2. Inspect
 
 Order of operations for an agent:
@@ -73,4 +79,5 @@ appears.
 ### 6. Before a PR
 
 Any change under `src/shared/` is followed by `pnpm run capture:shots -- --changed`, and the resulting PNG diff is part
-of the PR. `check:demo-registry` refuses a demo named `shots`.
+of the PR. A new pose or demo is captured once with `--check-stable` too. `check:demo-registry` refuses a demo named
+`shots`.

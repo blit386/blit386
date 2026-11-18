@@ -171,6 +171,19 @@ export class TimingChart {
     }
 
     /**
+     * Empties the chart at its current width and restarts its timeline at `currentTick`.
+     *
+     * @param currentTick - Fixed-update tick the restarted timeline starts from.
+     */
+    clear(currentTick: number): void {
+        const width = this.#bufferWidth;
+
+        // reset() skips a same-width call, so drop to zero first to force the fresh buffers and start tag.
+        this.reset(0);
+        this.reset(width, currentTick);
+    }
+
+    /**
      * Records one frame timing sample into the ring buffer.
      *
      * @param timing - Per-frame snapshot from BTAPI.

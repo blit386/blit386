@@ -1217,3 +1217,119 @@ describe('Overlay present FPS', () => {
         expect(presentLabel?.text).toBe('Present  60 FPS');
     });
 });
+
+describe('Overlay while the clock is parked', () => {
+    it('draws the same overlay on every parked frame, whatever snapshot it is fed (BT-797)', () => {
+        let nowMs = 0;
+        const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayTimingChartEnabled: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
+        });
+        const liveTiming = {
+            frameMs: 9,
+            updateMs: 4,
+            renderMs: 3,
+            updateSteps: 1,
+            drawCalls: 12,
+            droppedFrames: 0,
+            primitiveOverflowCount: 0,
+            spriteOverflowCount: 0,
+            primitiveSubmittedVertices: 240,
+            spriteSubmittedVertices: 96,
+        };
+        const drawParked = (timing: typeof liveTiming): ReturnType<typeof createMockRenderer> => {
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                60,
+                undefined,
+                timing,
+                null,
+                undefined,
+                undefined,
+                true,
+            );
+
+            return renderer;
+        };
+
+        // Live frames 3 ms apart fill the chart and the samplers with wall-clock numbers.
+        for (let frame = 0; frame < 60; frame++) {
+            nowMs += 3;
+            overlay.updateAndRender(createMockRenderer(), mockFont, null, null, frame, undefined, liveTiming);
+        }
+
+        // The seeked frame is fed the last live frame's snapshot; a capture re-render is fed the
+        // seeked frame's, with its 60 update steps; a second capture gets no steps at all.
+        nowMs += 500;
+        const seeked = drawParked(liveTiming);
+        nowMs += 500;
+        const firstCapture = drawParked({ ...liveTiming, frameMs: 2, updateSteps: 60 });
+        nowMs += 500;
+        const secondCapture = drawParked({ ...liveTiming, frameMs: 1, updateSteps: 0 });
+
+        nowSpy.mockRestore();
+
+        const textsOf = (renderer: ReturnType<typeof createMockRenderer>): string[] =>
+            getBitmapTextCalls(renderer).map((call) => call.text);
+        const seekedTexts = textsOf(seeked);
+
+        expect(seekedTexts.find((text) => text.startsWith('Present'))).toBe('Present  60 FPS');
+        expect(seekedTexts.find((text) => text.startsWith('Frame'))).toMatch(/^Frame +0\.0ms/);
+        expect(textsOf(firstCapture)).toEqual(seekedTexts);
+        expect(textsOf(secondCapture)).toEqual(seekedTexts);
+        expect(firstCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
+        expect(secondCapture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
+    });
+
+    it('draws the same audio meters on every parked frame, whatever audio snapshot it is fed (BT-797)', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Test Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayAudioMetersEnabled: true,
+        });
+        const audio = {
+            levels: { main: 0.8, music: 0.5, sfx: 0.3 },
+            activeVoices: 3,
+            totalVoices: 16,
+            voiceStealCount: 1,
+            voiceDropCount: 2,
+            preUnlockDropCount: 0,
+        };
+        const drawParked = (audioSnapshot: typeof audio): ReturnType<typeof createMockRenderer> => {
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                60,
+                undefined,
+                undefined,
+                null,
+                undefined,
+                audioSnapshot,
+                true,
+            );
+
+            return renderer;
+        };
+
+        // The seeked frame and a capture of it get the audio captured after different frames.
+        const seeked = drawParked(audio);
+        const capture = drawParked({ ...audio, levels: { main: 0.1, music: 0, sfx: 0.9 }, activeVoices: 7 });
+
+        expect(getBitmapTextCalls(capture).map((call) => call.text)).toEqual(
+            getBitmapTextCalls(seeked).map((call) => call.text),
+        );
+        expect(capture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
+    });
+});

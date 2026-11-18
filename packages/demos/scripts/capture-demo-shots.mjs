@@ -12,8 +12,11 @@
  * only landed on main do not count) and includes untracked files. A change under src/shared/ or to
  * _shots/poses.js selects every demo; otherwise only the demos whose src/<slug>.js changed.
  *
+ * --check-stable runs the page twice and fails, naming each tile, when the two runs differ in a
+ * single byte. The first run is written as usual; stale images are not removed after a failed check.
+ *
  * Usage: pnpm run capture:shots -- --all | --demos a,b | --changed [--variants display,uidebug]
- *        [--out <dir>] [--base-url http://localhost:5173] [--dry-run]
+ *        [--out <dir>] [--base-url http://localhost:5173] [--check-stable] [--dry-run]
  */
 import { execFileSync } from 'node:child_process';
 import {
@@ -63,6 +66,7 @@ const OPTIONS = {
     all: { type: 'boolean', default: false },
     changed: { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false },
+    'check-stable': { type: 'boolean', default: false },
 };
 
 // #endregion
@@ -71,7 +75,7 @@ const OPTIONS = {
 
 /**
  * @param {string[]} argv
- * @returns {{ slugs: string[], variants: string[], out: string, baseUrl: string, all: boolean, changed: boolean, dryRun: boolean }}
+ * @returns {{ slugs: string[], variants: string[], out: string, baseUrl: string, all: boolean, changed: boolean, dryRun: boolean, checkStable: boolean }}
  */
 export function parseArgs(argv) {
     const { values } = parseCliArgs(argv, OPTIONS);
@@ -115,6 +119,7 @@ export function parseArgs(argv) {
         all: options.all,
         changed: options.changed,
         dryRun: options.dryRun,
+        checkStable: options['check-stable'],
     };
 }
 
@@ -186,6 +191,52 @@ export function summarizeEntries(entries, slugs) {
     lines.push(`lint findings in total: ${total}`);
 
     return lines;
+}
+
+/**
+ * Image paths whose bytes differ between two runs of the same capture, or that only one run produced.
+ * Images are matched by path and occurrence: a path listed twice (`--demos a,a`) is checked at each
+ * copy, and a capture that failed in one run does not shift the comparison of the images after it.
+ *
+ * @param {{ path: string, base64: string }[]} first
+ * @param {{ path: string, base64: string }[]} second
+ * @returns {string[]}
+ */
+export function unstableImages(first, second) {
+    const firstByKey = byOccurrence(first);
+    const secondByKey = byOccurrence(second);
+    const unstable = new Set();
+
+    for (const key of new Set([...firstByKey.keys(), ...secondByKey.keys()])) {
+        const a = firstByKey.get(key);
+        const b = secondByKey.get(key);
+
+        if (a?.base64 !== b?.base64) {
+            unstable.add((a ?? b).path);
+        }
+    }
+
+    return [...unstable];
+}
+
+/**
+ * Keys each image by its path and how many times that path came before it in the run.
+ *
+ * @param {{ path: string, base64: string }[]} images
+ * @returns {Map<string, { path: string, base64: string }>}
+ */
+function byOccurrence(images) {
+    const seen = new Map();
+
+    return new Map(
+        images.map((image) => {
+            const occurrence = seen.get(image.path) ?? 0;
+
+            seen.set(image.path, occurrence + 1);
+
+            return [`${image.path}#${occurrence}`, image];
+        }),
+    );
 }
 
 /**
@@ -341,6 +392,35 @@ function removeStaleImages(outDir, entries, slugs) {
     }
 }
 
+/**
+ * For --check-stable, run the page a second time and report every image that differs from the
+ * first run. Nothing to report when the check was not asked for.
+ *
+ * @param {boolean} isRequested
+ * @param {string} url
+ * @param {{ path: string, base64: string }[]} firstImages
+ * @returns {Promise<string[]>} One failure line per unstable image, or one for a second run that failed.
+ */
+async function stabilityFailures(isRequested, url, firstImages) {
+    if (!isRequested) {
+        return [];
+    }
+
+    let second;
+
+    try {
+        second = await runPage(url);
+    } catch (error) {
+        return [`--check-stable: the second run failed: ${error.message}`];
+    }
+
+    if (!Array.isArray(second?.images)) {
+        return ['--check-stable: the second run produced no images'];
+    }
+
+    return unstableImages(firstImages, second.images).map((path) => `unstable: ${path}`);
+}
+
 async function main() {
     let options;
 
@@ -388,6 +468,8 @@ async function main() {
         );
         process.exit(1);
     }
+
+    failures.push(...(await stabilityFailures(options.checkStable, url, result.images)));
 
     mkdirSync(outDir, { recursive: true });
 

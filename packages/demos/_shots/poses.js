@@ -106,8 +106,8 @@ const POSES_BY_SLUG = {
     ],
 
     // Pressing E copies the left seed over, so the two worlds match and the status line
-    // turns green. It comes first so it also drives the OG card. The right seed is picked
-    // from a clock-seeded generator, so only a copied pose is the same on every capture.
+    // turns green. It comes first so it also drives the OG card. Under the capture's ?seed=
+    // the demo's seed picker starts from that seed too, so both poses repeat exactly.
     'seeded-worlds': [
         { id: 'copied', at: 1, keys: ['KeyE'] },
         { id: 'start', at: 0 },

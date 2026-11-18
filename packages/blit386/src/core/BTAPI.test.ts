@@ -1086,6 +1086,54 @@ describe('BTAPI', () => {
             expect(BTAPI.instance.getTicks()).toBe(192);
         });
 
+        it('tells the overlay the clock is parked on the seeked frame, from either origin (BT-797)', async () => {
+            await boot();
+
+            const overlay = BTAPI.instance.overlay;
+
+            expect(overlay).not.toBeNull();
+
+            const drawSpy = vi.spyOn(overlay as Overlay, 'updateAndRender');
+
+            // The parked flag is the last argument: the overlay then ignores the wall-clock snapshot.
+            await BTAPI.instance.seek.renderAt(1);
+            expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
+
+            await BTAPI.instance.seek.renderAt(2, 'current');
+            expect(drawSpy.mock.lastCall?.at(-1)).toBe(true);
+        });
+
+        it('hands the overlay the voice-pool size on the first parked draw of a fresh engine (BT-797)', async () => {
+            const { loop } = await boot({
+                ...makeMockDemo(),
+                configure: () => ({
+                    isSplashEnabled: false,
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayAudioMetersEnabled: true,
+                }),
+            });
+
+            const overlay = BTAPI.instance.overlay;
+
+            expect(overlay).not.toBeNull();
+
+            // The snapshot object is reused, so read the pool size at the moment of each draw.
+            const totalVoicesPerDraw: number[] = [];
+
+            vi.spyOn(overlay as Overlay, 'updateAndRender').mockImplementation((...args) => {
+                totalVoicesPerDraw.push(args[9]?.totalVoices ?? -1);
+            });
+
+            // A seek that is the engine's first render, then the step(0) re-render a capture of it runs.
+            await BTAPI.instance.seek.renderAt(0, 'current');
+            loop.step(0);
+
+            expect(totalVoicesPerDraw).toHaveLength(2);
+            expect(totalVoicesPerDraw[0]).toBeGreaterThan(0);
+            expect(totalVoicesPerDraw[1]).toBe(totalVoicesPerDraw[0]);
+        });
+
         it("from 'start' restores the RNG to its pre-init state", async () => {
             const statesSeenByInit: number[] = [];
             const demo = makeMockDemo();

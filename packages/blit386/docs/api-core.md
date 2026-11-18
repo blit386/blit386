@@ -703,6 +703,10 @@ BT.resume(); // keep playing from tick 192
   captures the frame at 5 seconds, and `BT.renderAt(1); BT.resume(); BT.renderAt(2)` ends stopped on second 2.
   `BT.resume()` returns a promise that settles once the loop has restarted; awaiting it is optional. If the game's
   `render()` throws while the seeked frame is re-rendered for a capture, `BT.captureFrame()` rejects with that error.
+- The engine overlay measures nothing while a seek holds the loop: present FPS reads `BT.targetFPS`, the frame,
+  `update()` and `render()` times read `0.0ms`, the draw-call and renderer counts, the audio levels and the active,
+  stolen and dropped voice counts read 0, and the timing chart is empty. The seeked frame and every capture of it show
+  the same overlay on every run. Live play measures as usual again after `BT.resume()`.
 - The F9 shortcut copies the seeked frame the same way. Shift+F9 does nothing while the loop is stopped (it is read on
   the update tick, and none runs); call `BT.downloadFrame()` or press it after `BT.resume()`.
 - The audio context is suspended during the seek and until `BT.resume()`, and `BT.soundPlay` calls made by stepped
@@ -718,13 +722,15 @@ BT.resume(); // keep playing from tick 192
   with `BT.renderAlpha` at `0`; a live frame drawn between two ticks can have a larger `renderAlpha`, so a game that
   interpolates motion in `render()` draws those in-between frames differently. Palette effects advance once per fixed
   update on the tick clock (`BT.ticks * 1000 / BT.targetFPS`), never `performance.now()`, so a seek runs exactly the
-  palette updates live play ran. Three things are outside the guarantee:
+  palette updates live play ran. Four things are outside the guarantee:
   - anything your own code reads from `performance.now()` or `Date.now()`
   - state `render()` changes, because a seek calls `render()` once, at the end (start effects and change state in
     `init()` or `update()`)
   - a custom post-process effect that adds up the `deltaMs` it receives - it gets one delta per rendered frame live and
     one combined delta in a seek, equal only up to float rounding. Drive its time-based uniforms from `BT.timeSeconds`,
     as the built-in effects' `time` fields expect.
+  - the engine overlay, which measures a live frame but shows the held readouts above in a seeked one - turn it off to
+    compare a live frame with a seeked one
 
 ### Splash state
 

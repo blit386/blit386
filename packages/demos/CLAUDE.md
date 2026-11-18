@@ -119,10 +119,9 @@ capture sends too) and seeks it with `BT.renderAt(at)`, where `at` is the first 
 When that pose has `keys`, the OG script presses them after the seek, steps `INPUT_TICKS`, and releases them, exactly
 like the `/shots` capture, so the card and the tile agree (keyboard-diagnostic's first pose lights B-L-I-T-3-8-6 this
 way). To change which moment a card shows, reorder that demo's poses or give the first pose keys, not the OG script
-(there is no settle time or override table). The one known exception is `seeded-worlds`. Its first pose copies the left
-seed to the right, so the pair of worlds is repeatable, but the visible stream panel (`new Random(seed)`) draws its seed
-from a clock-seeded generator on purpose, so the complete card still differs on every run. `buildSocialMeta` falls back
-to `og-default.png` for any slug without one, so `og:image` is never a 404.
+(there is no settle time or override table). Every card repeats exactly: `seeded-worlds` seeds its own seed picker from
+`?seed=` when the address carries one, so its right world and stream panel follow the capture seed too.
+`buildSocialMeta` falls back to `og-default.png` for any slug without one, so `og:image` is never a 404.
 
 ## Documentation Style
 
@@ -330,7 +329,7 @@ commands are rewritten by `rtk hook claude`; search and read tools are not - use
 | `test` | `node --test` over the `__tests__/` directories of `scripts/`, `plugins/`, `src/shared/`, and `_shots/` |
 | `check:demo-registry` | Disk vs `DEMO_ORDER`, vintage map, reserved slugs, header tags, the README `## Demos` list, and OG cards |
 | `check:demo-comment-links` | Dead `Prerequisites:` / `Guides:` / `Reference:` links in demo headers |
-| `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--dry-run`, `--base-url` |
+| `capture:shots` | The committed `/shots` PNGs and `public/shots/manifest.json`, driven through the running dev server: `--all`, `--changed`, `--demos a,b`, `--variants`, `--check-stable` (capture twice, fail on any differing tile), `--dry-run`, `--base-url` |
 | `capture:og` | `public/social/og-<slug>.png` from a `preview` build: `<slug>` or `--all`, `--force`, `--base-url`, `--scale-mode`. Needs Google Chrome and `ffmpeg` |
 | `capture:demo` | A native-resolution video clip of one demo's canvas for the blog (Chrome and `ffmpeg`) |
 | `preflight` | `lint`, `test`, `spellcheck`, `knip`, then both `check:*` - the pre-push gate |

@@ -392,6 +392,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   the camera, and the post-process clock. The old game used to resume on a clock reset to tick 0. Cleared palette and
   post-process effects and pending input edges are still not restored. See
   [Core](api-core.md#seeking-a-frame-with-renderat).
+- A frame seeked with `BT.renderAt` now shows the same engine overlay on every run and in every capture. While the seek
+  holds the loop, the present FPS reads the target rate, the frame, `update()` and `render()` times read `0.0ms`, the
+  counts read 0 and the timing chart is empty. These numbers came from the wall clock, so two captures of the same frame
+  differed in a few overlay digits. Live play is unchanged. See [Core](api-core.md#seeking-a-frame-with-renderat).
 - The splash keeps its fade-out when `init()` takes a while. After a load of more than about 1.3 s the lit logo cut
   straight to black, and a late frame could end the fade before it reached black. See
   [It doubles as a loading screen](guide-splash.md#it-doubles-as-a-loading-screen).
