@@ -193,6 +193,13 @@ class Demo {
     // Small cursor moved by the right stick so both sticks have visible jobs.
     aimPos = new Vector2i(Math.floor(DISPLAY_W / 2) + 28, Math.floor(DISPLAY_H / 2));
 
+    // One rectangle and two line ends, reused by every draw call in renderArena().
+    // Building new ones each frame would hand the garbage collector throwaway objects
+    // 60 times a second; set() rewrites them in place instead.
+    drawRect = new Rect2i(0, 0, 0, 0);
+    lineFrom = new Vector2i(0, 0);
+    lineTo = new Vector2i(0, 0);
+
     // Pod and aim position at the START of the most recent update() tick, before this
     // tick's stick input moved them. render() blends between these and podPos/aimPos
     // using BT.renderAlpha so the pod and aim cursor glide smoothly between ticks instead
@@ -460,8 +467,9 @@ class Demo {
     // Draws the arena border, the optional trail, the pod, and the aim cursor.
     renderArena() {
         // Play area: a filled rectangle with a border so the pod has visible walls.
-        BT.drawRectFill(new Rect2i(ARENA_X, ARENA_Y, ARENA_W, ARENA_H), C_ARENA);
-        BT.drawRect(new Rect2i(ARENA_X, ARENA_Y, ARENA_W, ARENA_H), C_ARENA_BORDER);
+        this.drawRect.set(ARENA_X, ARENA_Y, ARENA_W, ARENA_H);
+        BT.drawRectFill(this.drawRect, C_ARENA);
+        BT.drawRect(this.drawRect, C_ARENA_BORDER);
 
         // Optional breadcrumb trail: one pixel per past pod position when B toggled it
         // on.
@@ -490,12 +498,13 @@ class Demo {
 
         // Draw the pod as a square centered on its position; the white outline makes it
         // pop against the arena.
-        BT.drawRectFill(new Rect2i(pod.x - half, pod.y - half, size, size), this.currentPodColor());
-        BT.drawRect(new Rect2i(pod.x - half, pod.y - half, size, size), C_POD_OUTLINE);
+        this.drawRect.set(pod.x - half, pod.y - half, size, size);
+        BT.drawRectFill(this.drawRect, this.currentPodColor());
+        BT.drawRect(this.drawRect, C_POD_OUTLINE);
 
         // Right-stick aim cursor: a small crosshair so both sticks have visible jobs.
-        BT.drawLine(new Vector2i(aim.x - 4, aim.y), new Vector2i(aim.x + 4, aim.y), C_AIM);
-        BT.drawLine(new Vector2i(aim.x, aim.y - 4), new Vector2i(aim.x, aim.y + 4), C_AIM);
+        BT.drawLine(this.lineFrom.set(aim.x - 4, aim.y), this.lineTo.set(aim.x + 4, aim.y), C_AIM);
+        BT.drawLine(this.lineFrom.set(aim.x, aim.y - 4), this.lineTo.set(aim.x, aim.y + 4), C_AIM);
     }
 
     // The right-hand status panel: connection info, live button pips, raw stick axis
