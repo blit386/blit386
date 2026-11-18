@@ -75,7 +75,7 @@ describe("the manifest's Gemini CLI guard commands", { skip: process.platform ==
             const result = spawnSync(join(bashOnlyBin, 'bash'), ['-c', expand(command, root)], {
                 cwd: root,
                 env: { PATH: bashOnlyBin, GEMINI_PROJECT_DIR: root },
-                input: JSON.stringify(shell('ls')),
+                // No payload: bash exits before reading stdin, so writing one races into EPIPE.
                 encoding: 'utf8',
             });
 
@@ -88,7 +88,8 @@ describe("the manifest's Gemini CLI guard commands", { skip: process.platform ==
 
     it('block, with a message, when the guard script is missing', () => {
         for (const command of [shellCommand, filesCommand]) {
-            const result = run(command, shell('ls'), { cwd: bare });
+            // No payload, for the same EPIPE race: the loader fails before anything reads stdin.
+            const result = run(command, undefined, { cwd: bare });
 
             assert.equal(result.status, 2, command);
             assert.match(result.stderr, /\[BLOCKED\] The blit386 guard could not run/, command);
