@@ -98,7 +98,7 @@ test('blit agents add copilot sets up a no-agent game, and a second add is a no-
 
 test('the Copilot setup workflow pins the same action versions as the optional CI template', () => {
     // The kit cannot read this package's templates, so `ACTIONS_CHECKOUT` / `ACTIONS_SETUP_NODE` in the kit's
-    // src/adapters.ts copy these pins. Renovate bumps only the template; this keeps a bump from leaving the copy behind.
+    // src/adapters.ts copy these pins. Renovate bumps both in one PR (renovate.json); this catches a bump that leaves the copy behind.
     const work = mkdtempSync(join(tmpdir(), 'cbt-copilot-pins-'));
 
     try {

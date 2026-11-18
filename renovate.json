@@ -75,8 +75,16 @@
       "enabled": false
     },
     {
-      "description": "GitHub Actions",
+      "description": "GitHub Actions. Includes the scaffolder CI template and the kit's copilot.ts pins, which ci-pins.test.mjs and agent-copilot.test.mjs hold to the repo workflows, so all copies must move in one PR",
       "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Group the kit's copilot.ts action pins (regex manager) with the github-actions manager so one PR updates every copy",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": ["packages/kit/src/adapters/copilot.ts"],
       "groupName": "github actions",
       "automerge": true,
       "automergeType": "pr"
@@ -137,6 +145,13 @@
     "commitMessageExtra": ""
   },
   "postUpdateOptions": ["pnpmDedupe"],
+  "github-actions": {
+    "managerFilePatterns": [
+      "/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/",
+      "/(^|/)action\\.ya?ml$/",
+      "/^packages/create-blit386/templates/optional/ci/github/workflows/ci\\.yml$/"
+    ]
+  },
   "customManagers": [
     {
       "customType": "regex",
@@ -145,6 +160,13 @@
       "matchStrings": ["wranglerVersion: '(?<currentValue>[^']+)'"],
       "depNameTemplate": "wrangler",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "actions/checkout and actions/setup-node SHA pins (with the # vN comment) in the kit's Copilot adapter, a copy of the scaffolder CI template pins",
+      "managerFilePatterns": ["/^packages/kit/src/adapters/copilot\\.ts$/"],
+      "matchStrings": ["'(?<depName>actions/[a-z-]+)@(?<currentDigest>[a-f0-9]{40}) # (?<currentValue>v\\d+)'"],
+      "datasourceTemplate": "github-tags"
     }
   ]
 }

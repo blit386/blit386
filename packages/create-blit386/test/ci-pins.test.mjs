@@ -1,7 +1,7 @@
 /**
  * The optional CI template pins `actions/checkout` and `actions/setup-node` by commit SHA. Renovate keeps this repo's
- * own workflows current but does not scan `templates/`, so this test holds the template to the SHAs those workflows
- * use. (`agent-copilot.test.mjs` already holds the kit's Copilot setup workflow to the template.)
+ * own workflows current and, through `renovate.json`, this template in the same PR, so this test holds the template to
+ * the SHAs those workflows use. (`agent-copilot.test.mjs` already holds the kit's Copilot setup workflow to the template.)
  */
 
 import { strict as assert } from 'node:assert';
@@ -40,4 +40,15 @@ test('the optional CI template pins the same action SHAs as the repo workflows',
         assert.equal(shas.length, 1, `the repo workflows should agree on one ${action} SHA, found: ${shas.join(', ')}`);
         assert.equal(sha, shas[0], `${action} in the template should match the repo workflows`);
     }
+});
+
+test("renovate.json's copilot.ts regex manager still matches both action pins", () => {
+    const root = join(here, '..', '..', '..');
+    const config = JSON.parse(readFileSync(join(root, 'renovate.json'), 'utf8'));
+    const manager = config.customManagers.find((m) => m.managerFilePatterns.some((p) => p.includes('copilot')));
+    assert.ok(manager, 'renovate.json has a custom manager for copilot.ts');
+
+    const source = readFileSync(join(root, 'packages', 'kit', 'src', 'adapters', 'copilot.ts'), 'utf8');
+    const names = [...source.matchAll(new RegExp(manager.matchStrings[0], 'g'))].map((m) => m.groups.depName);
+    assert.deepEqual(names.sort(), ['actions/checkout', 'actions/setup-node']);
 });

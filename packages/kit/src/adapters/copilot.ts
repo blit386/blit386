@@ -65,9 +65,11 @@ function buildCopilotHooks(
 
 /**
  * GitHub Actions pins shared with create-blit386's optional CI template (`templates/optional/ci/github/workflows/ci.yml`).
- * MANUAL-SYNC HAZARD: the kit cannot read that template, so bump both together, to the SHAs the repo's own
- * `.github/workflows/` use (Renovate does not scan `templates/`). create-blit386's `test/agent-copilot.test.mjs` fails
- * when these drift from the template, and its `test/ci-pins.test.mjs` when the template drifts from the repo workflows.
+ * The kit cannot read that template, so these are a copy. Renovate bumps them with the template and the repo's own
+ * `.github/workflows/` in one "github actions" PR (`renovate.json`: the template path in the github-actions manager, a
+ * regex custom manager on this file). Keep the `'owner/name@sha # vN'` string shape - the regex reads it.
+ * create-blit386's `test/agent-copilot.test.mjs` fails when these drift from the template, and its
+ * `test/ci-pins.test.mjs` when the template drifts from the repo workflows.
  */
 const ACTIONS_CHECKOUT = 'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6';
 const ACTIONS_SETUP_NODE = 'actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6';
