@@ -142,10 +142,9 @@ class Demo {
     textPos = new Vector2i();
     lineEnd = new Vector2i();
 
-    // Size of one system-font glyph, measured in init() with BT.systemPrintMeasure('M').
-    // The built-in font is 6x14, but measuring keeps the demo honest if that ever
+    // Height of one system-font line, measured in init() with BT.systemPrintMeasure('M').
+    // The built-in font is 14 tall, but measuring keeps the demo honest if that ever
     // changes.
-    systemCharWidth = 6;
     systemLineHeight = 14;
 
     // Pixel width of the "A: " prefix, so the title text lines up after the label.
@@ -190,7 +189,6 @@ class Demo {
 
         // Measure the built-in system font once, the same way the Fonts demo does.
         const glyphSize = BT.systemPrintMeasure('M');
-        this.systemCharWidth = glyphSize.x;
         this.systemLineHeight = glyphSize.y;
         this.labelPrefixWidth = BT.systemPrintMeasure('A: ').x;
 
