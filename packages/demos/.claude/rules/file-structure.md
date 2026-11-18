@@ -34,6 +34,9 @@ feeds the meta description and social card), optional `@pageTitle` / `@ogScale`,
 Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
 methods. No JSDoc beyond `/** @type */` and `/** @typedef */`; comments are `//` lines wrapped at 90 columns.
 
+Keep a demo at 800 lines or fewer. `game-scene.js` and `sprite-effects.js` are recorded exceptions (reason in CLAUDE.md,
+File Organization) - do not flag them, split them, or cut them to reach the number.
+
 Cross-cutting: beginner-friendly comments on nearly every block; integer coordinates only; library public API names;
 `applyTheme()` + `ui.*` from `src/shared/ui.js` for every panel, button, tooltip, and HUD label (the only exceptions are
 `flurry`, `hello-world`, `hypercube`, `logo-lowres`, `pattern-fill`).

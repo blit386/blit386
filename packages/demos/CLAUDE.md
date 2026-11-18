@@ -316,6 +316,12 @@ state → helper functions → the `Demo` class → `bootstrap(Demo);` last. Cla
 (`src/*.js`) - `scripts/*.mjs` may use them, matching `encode-video.mjs`'s convention. Full detail:
 `.claude/rules/file-structure.md`.
 
+File length: the 800-line cap applies to demos, with two recorded exceptions - `game-scene.js` (the capstone) and
+`sprite-effects.js` (palette offsets plus the Tesla Orava CRT stack). The live source panel and the blit386.dev mirror
+page both show only `src/<slug>.js`, and the code a split would move out (the day/night palette lighting, the CRT stack
+and its fault state machine) is what their headers promise to teach, so a helper module would hide the lesson. Do not
+cut sections to reach 800 either (BT-807, PR #983). Any other demo over 800 lines is still a finding.
+
 ## Commands, formatting, git
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-demos run <script>` from the
