@@ -165,6 +165,8 @@ describe('opencode.json permissions agree with the guard core', () => {
         'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.n GIT_CONFIG_VALUE_0=reset git n --hard',
         `GIT_CONFIG_PARAMETERS="'alias.n=reset'" git n --hard`,
         'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset',
+        'git config alias.n reset --get',
+        'git reset --hard && git config remote.origin.push +main',
     ];
     const ASKED = [
         'git push --force',

@@ -65,10 +65,13 @@ const OPENCODE_PERMISSION = {
         '*/.env.example': 'allow',
     },
     bash: {
-        // Environment config for git (BT-800) asks, coarser than the guard core, which only minds alias and push keys.
-        // First, because last match wins: placed later, it would turn every deny below into an ask.
+        // BT-800 asks that can match anywhere in a command line come first, because last match wins: placed later, they
+        // would turn a deny below into an ask (`git reset --hard && git config remote.origin.push x`). Environment
+        // config for git asks whatever its key, coarser than the guard core, which only minds alias and push keys.
         '*GIT_CONFIG_KEY_*': 'ask',
         '*GIT_CONFIG_PARAMETERS*': 'ask',
+        '*git *config *remote.*.push *': 'ask',
+        '*git *config *remote.*.mirror *': 'ask',
         // `--hard` anywhere after `reset`, followed by anything (`;`, `&&`, a redirect), and each shorter prefix git
         // accepts (`--h` to `--har`) as a whole argument, so `--help` still passes.
         'git reset *--hard*': 'deny',
@@ -155,11 +158,9 @@ const OPENCODE_PERMISSION = {
         'git *--config-env*alias.*': 'deny',
         'git *-c * push*': 'ask',
         'git *--config-env* push*': 'ask',
-        // The same settings made to last (BT-800): a `git config` write (a key, then a value) of an alias denies and of
-        // a push refspec or mirror mode asks; any `GIT_CONFIG_KEY_*` / `GIT_CONFIG_PARAMETERS` config asks (first
-        // in this list), and one naming an alias denies. The plugin denies an alias in any case.
-        '*git *config *remote.*.push *': 'ask',
-        '*git *config *remote.*.mirror *': 'ask',
+        // The same settings made to last (BT-800): a `git config` write (a key, then a value) of an alias denies, and so
+        // does `GIT_CONFIG_KEY_*` / `GIT_CONFIG_PARAMETERS` naming one. Their asks sit first in this list. The plugin
+        // denies an alias in any case.
         '*git *config *alias.* *': 'deny',
         '*GIT_CONFIG_KEY_*=alias.*': 'deny',
         '*GIT_CONFIG_PARAMETERS=*alias.*': 'deny',

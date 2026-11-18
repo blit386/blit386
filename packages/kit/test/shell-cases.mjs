@@ -240,4 +240,9 @@ export const SHELL_CASES = [
     ['git config --get remote.origin.push', 'allow'],
     ['GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git commit -m y', 'allow'],
     ['GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset', 'deny'],
+    // After the key, git reads a read option as a value pattern and still writes: only one before the key is a read.
+    ['git config alias.n reset --get', 'deny'],
+    ['git config alias.n reset -l', 'deny'],
+    ['git config remote.origin.push +main --unset', 'ask'],
+    ['git reset --hard && git config remote.origin.push +main', 'deny'],
 ];
