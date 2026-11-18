@@ -7,8 +7,9 @@
 //   1. Before each tool call it asks the guard core (.opencode/hooks/guard-core.cjs) two questions and blocks the
 //      call by throwing when the answer is no: is this shell command a destructive git command (reset --hard,
 //      checkout --, restore, clean), and is this edit aimed at a lock file or a .env file? If it cannot read the
-//      request, it blocks. opencode.json holds the same rules as a permission list; this adds what a list of
-//      patterns cannot catch, like `bash -c "git reset --hard"` or an edit made through a patch.
+//      request, it blocks, and if the guard core itself will not load (missing, or crashing as it loads), it blocks
+//      every shell, edit, and patch call. opencode.json holds the same rules as a permission list; this adds what a
+//      list of patterns cannot catch, like `bash -c "git reset --hard"` or an edit made through a patch.
 //   2. When you open a session (not a subagent's) it runs .opencode/hooks/session-start.sh, which installs
 //      dependencies if they are missing and runs `blit doctor`. Output is discarded and a failure never stops the
 //      session.
@@ -18,9 +19,7 @@
 
 import type { Plugin } from '@opencode-ai/plugin';
 
-import guardCore from '../hooks/guard-core.cjs';
-
-const { failClosed, isDangerousCommand, isProtectedPath, patchPaths } = guardCore;
+type GuardCore = typeof import('../hooks/guard-core.cjs');
 
 /** Tools that write files. `apply_patch` and `patch` name their files inside the patch text instead of `filePath`. */
 const EDIT_TOOLS = new Set(['edit', 'write', 'multiedit']);
@@ -34,7 +33,7 @@ interface ToolCallArgs {
 }
 
 /** Every file a tool call would write, or throws when there is none to find (so the guard fails closed). */
-function editedFiles(tool: string, args: ToolCallArgs): string[] {
+function editedFiles({ patchPaths }: GuardCore, tool: string, args: ToolCallArgs): string[] {
     if (PATCH_TOOLS.has(tool)) {
         // The guard core reads the `*** Add File:` / `Update File:` / `Delete File:` / `Move to:` headers the way
         // OpenCode's own parser does (space after the colon optional, edges trimmed), and tolerates an indented header
@@ -57,21 +56,21 @@ function editedFiles(tool: string, args: ToolCallArgs): string[] {
 }
 
 /** The verdict for one tool call: null to allow it, otherwise something with a message. */
-function classifyCall(tool: string, args: ToolCallArgs): { message: string } | null {
+function classifyCall(core: GuardCore, tool: string, args: ToolCallArgs): { message: string } | null {
     if (tool === 'bash') {
         if (typeof args.command !== 'string') {
             throw new Error('the shell command is not text');
         }
 
-        const verdict = isDangerousCommand(args.command);
+        const verdict = core.isDangerousCommand(args.command);
 
         // `ask` verdicts are the permission list's job: a plugin can only block.
         return verdict?.decision === 'deny' ? { message: `${verdict.userMessage} ${verdict.agentMessage}` } : null;
     }
 
     if (EDIT_TOOLS.has(tool) || PATCH_TOOLS.has(tool)) {
-        for (const file of editedFiles(tool, args)) {
-            const verdict = isProtectedPath(file);
+        for (const file of editedFiles(core, tool, args)) {
+            const verdict = core.isProtectedPath(file);
 
             if (verdict !== null) {
                 return verdict;
@@ -82,30 +81,47 @@ function classifyCall(tool: string, args: ToolCallArgs): { message: string } | n
     return null;
 }
 
-export const KitGuard: Plugin = async ({ $, directory }) => ({
-    'tool.execute.before': async (input, output) => {
-        const verdict = failClosed(() => classifyCall(input.tool, output.args));
+export const KitGuard: Plugin = async ({ $, directory }) => {
+    // Loaded here, not by a top-level import: OpenCode skips a plugin whose import throws and runs every call
+    // unguarded. A string here is the reason it would not load.
+    const core = await import('../hooks/guard-core.cjs').then(
+        (module): GuardCore => module.default,
+        (error: unknown) => (error instanceof Error ? error.message : String(error)),
+    );
 
-        if (verdict !== null) {
-            throw new Error(verdict.message);
-        }
-    },
-
-    event: async ({ event }) => {
-        // A subagent's session has a parent; only the session the person opened needs the bootstrap.
-        if (event.type === 'session.created' && event.properties.info.parentID === undefined) {
-            // Bun's shell types every variable as a string. An unset variable is not an own property of
-            // `process.env`, so copying only strings keeps the script's environment. The install command
-            // is set first so a variable of the same name already in the environment does not replace it.
-            const env: Record<string, string> = { BLIT_PM_INSTALL: '{{pmInstall}}' };
-
-            for (const [key, value] of Object.entries(process.env)) {
-                if (value !== undefined && key !== 'BLIT_PM_INSTALL') {
-                    env[key] = value;
+    return {
+        'tool.execute.before': async (input, output) => {
+            if (typeof core === 'string') {
+                if (input.tool === 'bash' || EDIT_TOOLS.has(input.tool) || PATCH_TOOLS.has(input.tool)) {
+                    throw new Error(`[BLOCKED] The guard could not run, so the request was blocked: ${core}`);
                 }
+
+                return;
             }
 
-            await $`sh .opencode/hooks/session-start.sh`.cwd(directory).env(env).quiet().throws(false);
-        }
-    },
-});
+            const verdict = core.failClosed(() => classifyCall(core, input.tool, output.args));
+
+            if (verdict !== null) {
+                throw new Error(verdict.message);
+            }
+        },
+
+        event: async ({ event }) => {
+            // A subagent's session has a parent; only the session the person opened needs the bootstrap.
+            if (event.type === 'session.created' && event.properties.info.parentID === undefined) {
+                // Bun's shell types every variable as a string. An unset variable is not an own property of
+                // `process.env`, so copying only strings keeps the script's environment. The install command
+                // is set first so a variable of the same name already in the environment does not replace it.
+                const env: Record<string, string> = { BLIT_PM_INSTALL: '{{pmInstall}}' };
+
+                for (const [key, value] of Object.entries(process.env)) {
+                    if (value !== undefined && key !== 'BLIT_PM_INSTALL') {
+                        env[key] = value;
+                    }
+                }
+
+                await $`sh .opencode/hooks/session-start.sh`.cwd(directory).env(env).quiet().throws(false);
+            }
+        },
+    };
+};
