@@ -106,7 +106,7 @@ TRY THIS
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage } from './shared/canvas-sprites.js';
-import { applyTheme, defaultThemeSlot, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, defaultThemeSlot, POINTER_SLOTS, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
@@ -173,9 +173,6 @@ const COLOR_COUNT = 4;
 // Separate copies of the same picture. Alternating them forces a new GPU batch on every
 // bunny, because the sprite pipeline flushes when the texture changes.
 const SHEET_COUNT = 4;
-
-// The engine has four pointer slots: 0 is the mouse, 1-3 are touches.
-const POINTER_SLOT_COUNT = 4;
 
 // The on-screen Add button's key. The kit fires the button once per tap, so N adds
 // exactly one batch; holding Space / KeyB (face button A) is the pouring input.
@@ -640,7 +637,7 @@ class Demo {
     // Returns true while a mouse button or a finger is held on empty screen (not on a
     // widget), and stores where.
     pointerWantsSpawn() {
-        for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
+        for (let slot = 0; slot < POINTER_SLOTS; slot++) {
             if (!BT.isPointerActive(slot) || !BT.isDown(BT.BTN_POINTER_A, slot)) {
                 continue;
             }

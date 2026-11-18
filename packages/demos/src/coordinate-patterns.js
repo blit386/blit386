@@ -88,7 +88,7 @@ TRY THIS
 
 import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, PANEL_CONTENT_SHRINK, PANEL_CONTENT_TOP, ui, UI_DIRECTIONS } from './shared/ui.js';
+import { applyTheme, PANEL_CONTENT_SHRINK, PANEL_CONTENT_TOP, ui, UI_ANCHORS, UI_DIRECTIONS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -432,7 +432,7 @@ class Demo {
     renderTravelPanel() {
         const x = MARGIN;
 
-        ui.begin('topLeft', { x, y: PANEL_Y, width: PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: PANEL_Y, width: PANEL_W });
         ui.panel('Travel');
         ui.spacer(BUTTON_ROW_H + TRAVEL_NOTE_GAP);
         ui.label('Arrows, D-pad, or swipe', { color: 'dim' });
@@ -440,7 +440,7 @@ class Demo {
 
         const buttonY = PANEL_Y + PANEL_CONTENT_TOP + PINNED_ROW_SHIFT;
 
-        ui.begin('topLeft', { x: x + PANEL_CONTENT_X, y: buttonY, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: x + PANEL_CONTENT_X, y: buttonY, pad: 0 });
 
         if (ui.button('J Jump far', { key: 'KeyJ', width: TRAVEL_BUTTON_W })) {
             // Thousands of tiles in one step. A world held in memory could not do this -
@@ -452,7 +452,7 @@ class Demo {
         ui.end();
 
         // Home gets its own tiny group too, one button width plus a gap to the right.
-        ui.begin('topLeft', { x: x + PANEL_CONTENT_X + TRAVEL_BUTTON_W + GAP, y: buttonY, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: x + PANEL_CONTENT_X + TRAVEL_BUTTON_W + GAP, y: buttonY, pad: 0 });
 
         if (ui.button('H Home', { key: 'KeyH', width: TRAVEL_BUTTON_W })) {
             // Coming home proves the point: the tiles are exactly as they were, because
@@ -466,7 +466,7 @@ class Demo {
 
     // Where we are, and the number that matters most.
     renderWorldPanel() {
-        ui.begin('topLeft', { x: MID_PANEL_X, y: PANEL_Y, width: MID_PANEL_W, kvCols: WORLD_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MID_PANEL_X, y: PANEL_Y, width: MID_PANEL_W, kvCols: WORLD_KV_COLS });
         ui.panel('This world');
         ui.kv('tile x', Math.floor(this.camX / TILE));
         ui.kv('tile y', Math.floor(this.camY / TILE));
@@ -480,7 +480,7 @@ class Demo {
 
     // The layer slider and what it does.
     renderLayerPanel() {
-        ui.begin('topLeft', { x: RIGHT_PANEL_X, y: PANEL_Y, width: PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_PANEL_X, y: PANEL_Y, width: PANEL_W });
         ui.panel('Third number');
 
         // The slider answers a number anywhere in its range; rounding snaps it to whole

@@ -107,6 +107,7 @@ import {
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
     ui,
+    UI_ANCHORS,
 } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -367,7 +368,7 @@ class Demo {
     // Left-hand panel: one button per track, the one playing lit green, and its name in
     // the last row.
     renderTrackPanel() {
-        ui.begin('topLeft', { x: LEFT_PANEL_X, y: PANEL_Y, width: LEFT_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LEFT_PANEL_X, y: PANEL_Y, width: LEFT_PANEL_W });
         ui.panel('Tracks');
         ui.label('Keys 1, 2, 3 or tap', { color: 'dim' });
         ui.spacer(4);
@@ -394,7 +395,7 @@ class Demo {
         const { profile } = active;
         const overlapSign = profile.overlap > 0 ? '+' : '';
 
-        ui.begin('topLeft', { x: RIGHT_PANEL_X, y: PANEL_Y, width: RIGHT_PANEL_W, kvCols: FADE_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RIGHT_PANEL_X, y: PANEL_Y, width: RIGHT_PANEL_W, kvCols: FADE_KV_COLS });
         ui.panel('Crossfade');
 
         // An empty row as tall as the chart: renderChart() paints the chart into this gap

@@ -75,7 +75,7 @@ TRY THIS
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { sampleInside } from './shared/sample-inside.js';
-import { applyTheme, centeredTextX, PANEL_CONTENT_SHRINK, ui } from './shared/ui.js';
+import { applyTheme, centeredTextX, PANEL_CONTENT_SHRINK, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -385,7 +385,7 @@ class Demo {
         // after them.
         const scene = SCENES[this.mode];
 
-        ui.begin('topLeft', { x: SCENE_PANEL_X, y: PANEL_Y, width: SCENE_PANEL_W, kvCols: SCENE_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: SCENE_PANEL_X, y: PANEL_Y, width: SCENE_PANEL_W, kvCols: SCENE_KV_COLS });
         scene.renderPanel(this);
         ui.end();
 
@@ -397,7 +397,7 @@ class Demo {
     // arrow key - the { key } option binds the key, and ui.tick() in update() catches
     // the press safely - so the picker works with or without a keyboard.
     renderNavPanel() {
-        ui.begin('topLeft', { x: NAV_PANEL_X, y: PANEL_Y, width: NAV_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: NAV_PANEL_X, y: PANEL_Y, width: NAV_PANEL_W });
         ui.panel(`Scene ${this.mode + 1}/${SCENES.length}`);
         ui.label(SCENES[this.mode].name, { color: 'accent' });
         ui.label('or arrow keys', { color: 'dim' });

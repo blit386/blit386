@@ -88,7 +88,7 @@ TRY THIS
 import { bootstrap, BT } from 'blit386';
 
 import { keyLabel } from './shared/key-names.js';
-import { applyTheme, FONT_W, ui, UI_ANCHORS } from './shared/ui.js';
+import { applyTheme, FONT_W, PANEL_CONTENT_INSET, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -138,10 +138,6 @@ const TYPED_PANEL_W = 320 - 2 * EDGE;
 const PAD_ROW_GAP = 5;
 const PAD_ROW_PITCH = 10 + PAD_ROW_GAP;
 const PAD_END_SPACER = COLUMN_H - 22 - 11 - (8 * 10 + 7 * PAD_ROW_GAP);
-
-// Kit panel content starts 9 pixels in from the panel edge and 22 pixels below its top.
-const PANEL_PAD = 9;
-const PANEL_CONTENT_TOP = 22;
 
 // Shows keyboard face-button maps, raw key queries, and BT.inputString side by side.
 class Demo {
@@ -365,7 +361,7 @@ class Demo {
         // wide. The kit prints a pip's label 1 pixel below the top of its row, and a
         // caption 4 pixels above the y it is given, so y = rowTop + 5 puts both texts on
         // the same line.
-        const rightEdge = x + PAD_PANEL_W - PANEL_PAD;
+        const rightEdge = x + PAD_PANEL_W - PANEL_CONTENT_INSET;
 
         for (let i = 0; i < buttons.length; i++) {
             const { key } = buttons[i];

@@ -105,6 +105,7 @@ import {
     THEME_OVERLAY_AUDIO_METER_STYLE,
     THEME_OVERLAY_STYLE,
     ui,
+    UI_ANCHORS,
 } from './shared/ui.js';
 
 /** @typedef {import('blit386').Palette} Palette */
@@ -364,7 +365,7 @@ class Demo {
     // it afterwards. A press shows up in the "Last" row on the next tick, once update()
     // has played it.
     renderPresetPanel() {
-        ui.begin('topLeft', { x: PRESET_PANEL_X, y: PANEL_Y, width: PRESET_PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: PRESET_PANEL_X, y: PANEL_Y, width: PRESET_PANEL_W });
         ui.panel('Presets');
         ui.label('Keys J P E L H B or tap', { color: 'dim' });
         ui.spacer(HINT_GAP + PRESET_GRID_H + PRESET_PANEL_FILLER + ROW_H + PANEL_TRAILING_SPACE);
@@ -375,7 +376,7 @@ class Demo {
             const x = PRESET_GRID_X + (i % PRESET_COLUMNS) * (PRESET_BUTTON_W + PRESET_GAP_X);
             const y = PRESET_GRID_Y + Math.floor(i / PRESET_COLUMNS) * PRESET_ROW_H + PINNED_ROW_SHIFT;
 
-            ui.begin('topLeft', { x, y, pad: 0 });
+            ui.begin(UI_ANCHORS.TOP_LEFT, { x, y, pad: 0 });
 
             if (ui.button(def.label, { key: def.code, width: PRESET_BUTTON_W })) {
                 // Ask for this preset's pre-rendered clip. update() plays it on its next
@@ -390,7 +391,7 @@ class Demo {
         // the first), in its own group pinned under the keypad.
         const lastLabel = this.lastPresetIndex === null ? '-' : PRESET_DEFINITIONS[this.lastPresetIndex].name;
 
-        ui.begin('topLeft', { x: PRESET_GRID_X, y: LAST_ROW_Y + PINNED_ROW_SHIFT, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: PRESET_GRID_X, y: LAST_ROW_Y + PINNED_ROW_SHIFT, pad: 0 });
         ui.kv('Last', lastLabel);
         ui.end();
     }
@@ -398,7 +399,7 @@ class Demo {
     // Right-hand panel: the Randomize button and the most recently rolled recipe, one
     // field per row.
     renderRandomPanel() {
-        ui.begin('topLeft', { x: RANDOM_PANEL_X, y: PANEL_Y, width: RANDOM_PANEL_W, kvCols: RANDOM_KV_COLS });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: RANDOM_PANEL_X, y: PANEL_Y, width: RANDOM_PANEL_W, kvCols: RANDOM_KV_COLS });
         ui.panel('Randomizer');
 
         if (ui.button('R - Randomize', { key: 'KeyR', width: RANDOM_PANEL_W - PANEL_CONTENT_SHRINK })) {
