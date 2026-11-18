@@ -164,18 +164,19 @@ const BUG_SIZE = BUG_REACH * 2 + 1;
 // you switch. The scene's picture fills the space above.
 const PANEL_H = 111;
 const PANEL_Y = 240 - 4 - PANEL_H;
+const NAV_PANEL_X = 4;
+const NAV_PANEL_W = 100;
+const SCENE_PANEL_X = 110;
+const SCENE_PANEL_W = 206;
 
-// Arrows stay between the top of the target and just above the panels. Each arrow is
-// 2x2 pixels, so the bottom and right limits stop 2 pixels short of the edge. Without
+// Arrows stay between the top of the target and just above the panels, and inside the
+// 320-pixel-wide screen. Each arrow is 2x2 pixels, so the right limit stops 2 pixels
+// short of the edge and the bottom limit leaves a 1 pixel gap above the panels. Without
 // these limits a high Spread would put arrows under the panels or off the top of the
 // screen, where nobody can see them.
 const SHOT_MIN_Y = TARGET_CENTER.y - TARGET_RINGS[0];
 const SHOT_MAX_Y = PANEL_Y - 3;
 const SHOT_MAX_X = 320 - 2;
-const NAV_PANEL_X = 4;
-const NAV_PANEL_W = 100;
-const SCENE_PANEL_X = 110;
-const SCENE_PANEL_W = 206;
 
 // Widgets inside a panel are PANEL_CONTENT_SHRINK pixels narrower than the panel itself.
 const NAV_BUTTON_W = NAV_PANEL_W - PANEL_CONTENT_SHRINK;
