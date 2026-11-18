@@ -121,6 +121,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- `@blit386/kit`: the Gemini CLI shell and file guards in generated games now run on Windows and from a project folder
+  whose path has a space in it - they could not find their own script there, so Gemini let every call through. A missing
+  or broken guard script now blocks the call too, instead of letting it through. On Windows a missing `node` still lets
+  the call through. Run `npx blit agents sync` in an existing game to pick up the fix.
 - Types that public signatures already used can now be imported by name: `AudioClipLoadOptions`, `AudioClipLoadPhase`,
   `AudioClipProgress`, `AudioClipProgressCallback`, `DemoConstructor`, `ErrorContent`, `Glyph`, `OutputUpscaleFilter`,
   `PaletteJSON` (what `Palette.toJSON()` returns), `SpriteSheetStatus`, and `SpriteUV` (the `out` argument of

@@ -8,8 +8,8 @@
 
 const { readFileSync } = require('node:fs');
 
-// A guard core that will not load (missing, or crashing as it loads) blocks too: both agents let the edit through on
-// any exit code other than 2 (BT-775).
+// A guard core that will not load (missing, or crashing as it loads) blocks too: Claude Code lets the edit through on
+// any exit code other than 2, and Gemini CLI on exit 0 or 1 (BT-775).
 let guardCore;
 try {
     guardCore = require('./guard-core.cjs');

@@ -30,7 +30,7 @@
           {
             "name": "block-dangerous-shell",
             "type": "command",
-            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/shell-guard.cjs\"",
+            "command": "node -e \"try{require('./.gemini/hooks/shell-guard.cjs')}catch(e){console.error('[BLOCKED] The blit386 guard could not run, so the request was blocked: '+e.message);process.exit(2)}\"",
             "timeout": 10000
           }
         ],
@@ -41,7 +41,7 @@
           {
             "name": "protect-generated-and-secret-files",
             "type": "command",
-            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/protect-files.cjs\"",
+            "command": "node -e \"try{require('./.gemini/hooks/protect-files.cjs')}catch(e){console.error('[BLOCKED] The blit386 guard could not run, so the request was blocked: '+e.message);process.exit(2)}\"",
             "timeout": 10000
           }
         ],
