@@ -142,7 +142,8 @@ const pool = async (items, limit, fn) => {
 };
 
 describe(`shell guard vs ${gitVersion ?? 'git (not found)'}`, {
-    skip: gitVersion ? false : 'git is not installed',
+    // Each probe runs through `sh -c`, which native Windows does not guarantee.
+    skip: process.platform === 'win32' ? 'needs a POSIX sh' : gitVersion ? false : 'git is not installed',
 }, () => {
     it('refuses every git config command that writes an alias, push refspec, or mirror key', async (t) => {
         const tableRows = SHELL_CASES.map(([command]) => command).filter((command) => /\bgit config\b/.test(command));
