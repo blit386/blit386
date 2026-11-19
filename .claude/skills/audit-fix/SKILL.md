@@ -101,12 +101,13 @@ There is no plan-mode switch for subagents. Emulate it in two phases with the sa
 
 Never tell the user a ticket is done from the report alone.
 
-1. **The review rule is gated, not audited.** The commit review gate (`.claude/rules/commit-review-gate.md`) refuses any
-   `git commit` whose content `review` and `ponytail:ponytail-review` did not both see, so every non-generated commit in
-   the merge is itself proof of both reviews; the old transcript count of Skill calls against `rev-list` is no longer
-   needed. If a report says the gate blocked a commit, check the implementer re-ran both reviews rather than working
-   around it (a commit command shaped to dodge the gate's `git ... commit` match, or one run outside Claude Code); a
-   workaround is a broken rule: tell the user, and offer the post-hoc remedy (Step 4).
+1. **The review rule is gated, not counted.** The commit review gate (`.claude/rules/commit-review-gate.md`) refuses a
+   `git commit` whose content `review` and `ponytail:ponytail-review` did not both see, so the old transcript count of
+   Skill calls against `rev-list` is no longer needed. The gate covers only the commit forms it recognizes, run through
+   Claude Code: a commit inside a shell string (`bash -c "git commit ..."`), behind a wrapper with its own options, or
+   from outside Claude Code passes unchecked. So if a report says the gate blocked a commit, check the implementer
+   re-ran both reviews rather than working around it, and grep the transcript for `bash -c` or `sh -c` around a commit.
+   A workaround is a broken rule: tell the user, and offer the post-hoc remedy (Step 4).
 
 2. **Verify Linear**: `get_issue` with `fields: ["status"]` must say Done (the GitHub integration closes the issue when
    a PR whose branch carries the ID merges).

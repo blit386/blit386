@@ -36,11 +36,15 @@ const ALLOW = 0;
 const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 
 /**
- * `git` where a command starts (line start, or after `;`, `&`, `|`, `(`, `$(`, past `VAR=x` and `rtk`) - not the phrase
- * quoted inside another command's argument (a grep pattern, a PR body). The options after it are walked in
- * {@link findCommit}, not matched here: a regex over them backtracks exponentially (CodeQL js/redos).
+ * `git` where a command starts (line start, or after `;`, `&`, `|`, `(`, `$(`), past any mix of `VAR=x` assignments and
+ * the option-less wrappers `rtk env command exec nohup time xargs sudo` - not the phrase quoted inside another command's
+ * argument (a grep pattern, a PR body). The options after it are walked in {@link findCommit}, not matched here: a regex
+ * over them backtracks exponentially (CodeQL js/redos). Each prefix ends at whitespace, so the repetition is linear.
+ * shortcut: a wrapper given its own options (`sudo -u x git`) or a shell string (`bash -c "git commit"`) is not seen;
+ * documented in `.claude/rules/commit-review-gate.md`.
  */
-const GIT_AT_COMMAND_START = /(?:^|[\n;&|(]|\$\()\s*(?:[A-Za-z_]\w*=\S*\s+)*(?:rtk\s+)?git(?=\s)/gu;
+const GIT_AT_COMMAND_START =
+    /(?:^|[\n;&|(]|\$\()\s*(?:(?:[A-Za-z_]\w*=\S*|rtk|env|command|exec|nohup|time|xargs|sudo)\s+)*git(?=\s)/gu;
 const COMMAND_END = /[\n;&|)]/u;
 const DIR_OPTION = '-C';
 // Each alternative starts with a different character, so the repetition cannot backtrack.

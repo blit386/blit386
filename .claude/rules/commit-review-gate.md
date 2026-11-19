@@ -8,10 +8,16 @@ are not affected.
   tool call, or the slash command typed as a prompt), it snapshots the working tree (tracked and untracked, `.gitignore`
   honored) as a git tree object and stores its SHA in `<git dir>/review-gate/<review>` - per worktree, never committed.
   The latest run of each review wins.
-- **Reviews count for the session's own checkout** (its working directory), never another worktree, so a parallel
-  session's review cannot vouch for your changes. A `cd <other worktree> && git commit` is always blocked: review and
-  commit from a session whose working directory is the committing checkout. A subagent cannot change its working
-  directory, so give it an isolated worktree (`isolation: "worktree"`) or keep it in the main checkout.
+- **Reviews count for the checkout they ran in.** A review writes markers for the session's working directory; the gate
+  reads them from the committing checkout (after any `cd X &&` or `git -C X`). So a review run in your checkout never
+  vouches for another one: a `cd <other worktree> && git commit` passes only if a review run from that worktree saw the
+  content, and is otherwise blocked with a note naming both checkouts. Review and commit from a session whose working
+  directory is the committing checkout. A subagent cannot change its working directory, so give it an isolated worktree
+  (`isolation: "worktree"`) or keep it in the main checkout.
+- **What it sees as a commit.** `git` (with any global options) where a command starts - at the start, or after `;`,
+  `&&`, `||`, `|`, `(`, `$(` - optionally behind `VAR=x` assignments and the wrappers `rtk`, `env`, `command`, `exec`,
+  `nohup`, `time`, `xargs`, `sudo`. Not seen: a wrapper given its own options (`sudo -u x git commit`) or a commit
+  inside a shell string (`bash -c "git commit"`). The gate stops an agent that forgot to review; it is not a sandbox.
 - **What passes.** Every tracked path that differs from `HEAD`, in the index or in the working tree, must match both
   snapshots byte for byte. That covers `commit -a` and pathspec commits without parsing them. Staging after a review is
   fine; one review can cover several commits that split the change.
