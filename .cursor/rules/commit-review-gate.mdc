@@ -1,0 +1,14 @@
+---
+description: Every commit needs review and ponytail-review on the exact content; Claude Code enforces it with a hook
+globs: scripts/hooks/**, .claude/settings.json, .claude/skills/audit-fix/**
+alwaysApply: false
+---
+
+# Commit review gate
+
+In Claude Code, `scripts/hooks/review-gate.mjs` refuses any `git commit` whose content `/review` and
+`/ponytail:ponytail-review` did not both see byte for byte; an edit after a review needs a fresh review. Generated paths
+(`sync:maintainer-agents` output, `.cursor/commands/`, `packages/blit386/docs/_api-history.json`) are exempt. Cursor has
+no such hook, but the rule is the same: review after your last edit, then commit.
+
+Claude: `.claude/rules/commit-review-gate.md` (full content).
