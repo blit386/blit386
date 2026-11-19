@@ -14,8 +14,8 @@ project's. It denies Zed's direct edit and write tool calls on lock files and `.
 plus the destructive git commands (`git reset --hard`, a `git checkout` onto files, a forced `git checkout` or
 `git switch`, `git restore`, `git clean`, `git checkout-index -f`, `git read-tree --reset`, force push, a push that
 deletes remote branches or mirrors, `git branch -D`, `git stash drop` or `clear`, and a git alias or push setting given
-with `-c` for one command). It does not stop the agent from changing those files through a terminal command, so keep
-terminal approval on if you need that boundary:
+with `-c` for one command, written with `git config`, or set through a `GIT_CONFIG_*` variable). It does not stop the
+agent from changing those files through a terminal command, so keep terminal approval on if you need that boundary:
 
 ```json
 {
@@ -72,6 +72,15 @@ terminal approval on if you need that boundary:
             },
             {
               "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+(-c|--config-env)(\\s+|=)(alias\\.|remote\\.\\S*\\.(push|mirror)(=|\\s|$))"
+            },
+            {
+              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+config(\\s+\\S+)*\\s+(alias\\.\\S*|remote\\.\\S*\\.(push|mirror))\\s+[^\\s;&|<>]"
+            },
+            {
+              "pattern": "GIT_CONFIG_(KEY_\\d+=|PARAMETERS=[^;&|<>]*)(alias|remote)\\."
+            },
+            {
+              "pattern": "git(\\.exe)?(\\s+\\S+)*\\s+config(\\s+\\S+)*\\s+(--ren\\S*|rename-section)(\\s+\\S+)*\\s+(alias|remote)(\\.|\\s|$)"
             }
           ]
         }
@@ -83,10 +92,10 @@ terminal approval on if you need that boundary:
 
 Zed's regex has no lookahead, so the `.env` pattern lists the usual names; add yours (say `.env.staging`) if you have
 others. For the same reason the git patterns are blunter than the hooks other assistants get: every `git restore` is
-denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. The snippet only
-denies, so a force push (`-f`, `--force-with-lease`, or a `+` refspec), a remote branch delete or mirror push, a forced
-branch delete, and a stash drop or clear are refused outright where the other hooks ask you first. Zed removes quotes
-before it matches, so after `-C`, `-c`, or `--git-dir` the snippet cannot tell where the value ends and reads every
-later word as a possible command: `git -C game commit -m "clean up"` is refused too. Run
-`cd game && git commit -m "clean up"` instead. Zed's "Test Your Rules" checker (agent settings, Tool Permissions) shows
-what a pattern matches.
+denied, including `git restore --staged`, and so is every `git clean`, including the `-n` dry run. Every `GIT_CONFIG_*`
+setting of an alias or of any `remote.*` key is denied. The snippet only denies, so a force push (`-f`,
+`--force-with-lease`, or a `+` refspec), a remote branch delete or mirror push, a forced branch delete, and a stash drop
+or clear are refused outright where the other hooks ask you first. Zed removes quotes before it matches, so after `-C`,
+`-c`, or `--git-dir` the snippet cannot tell where the value ends and reads every later word as a possible command:
+`git -C game commit -m "clean up"` is refused too. Run `cd game && git commit -m "clean up"` instead. Zed's "Test Your
+Rules" checker (agent settings, Tool Permissions) shows what a pattern matches.

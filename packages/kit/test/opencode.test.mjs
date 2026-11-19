@@ -30,12 +30,14 @@ function evaluate(rules, subject) {
     let verdict = 'allow';
 
     for (const [pattern, action] of Object.entries(rules)) {
+        // OpenCode's own matcher (`Wildcard.match`): `?` is one character, and a trailing ` *` may match nothing.
         const source = pattern
             .split('*')
-            .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
-            .join('.*');
+            .map((part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&').replaceAll('?', '.'))
+            .join('.*')
+            .replace(/ \.\*$/, '( .*)?');
 
-        if (new RegExp(`^${source}$`).test(subject)) {
+        if (new RegExp(`^${source}$`, 's').test(subject)) {
             verdict = action;
         }
     }
@@ -160,6 +162,16 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git --config-env=alias.n=X n --hard',
         'git checkout-index -a -f',
         'git read-tree -u --reset HEAD',
+        'git config alias.wipe "reset --hard"',
+        'git config --global alias.st status',
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.n GIT_CONFIG_VALUE_0=reset git n --hard',
+        `GIT_CONFIG_PARAMETERS="'alias.n=reset'" git n --hard`,
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=x git config alias.n reset',
+        'git config alias.n reset --get',
+        'git reset --hard && git config remote.origin.push +main',
+        'git config set --comment --get alias.n reset',
+        'git config --rename-section staging alias',
+        'git config --ren staging alias',
     ];
     const ASKED = [
         'git push --force',
@@ -186,6 +198,18 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git --config-env=remote.origin.push=REFSPEC push',
         'git -c Remote.origin.Mirror=true push',
         'git -c REMOTE.origin.PUSH=+main push',
+        'git config remote.origin.push +refs/heads/main:refs/heads/main',
+        'git config remote.origin.mirror true',
+        'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',
+        'git config Remote.origin.PUSH +main',
+        'git config REMOTE.origin.Mirror true',
+        'git config --rename-section staging remote.origin',
+        "git config 'remote.origin.push' +main",
+        'git config "remote.origin.mirror" true',
+        'git config rEmote.origin.pUsH +main',
+        "git config 'reMOTE.origin.MiRrOr' true",
+        'git config --rename-section staging Remote.origin',
+        'git config --ren staging remote.origin',
     ];
     const ALLOWED = [
         'git status',
@@ -217,6 +241,16 @@ describe('opencode.json permissions agree with the guard core', () => {
         'git push --dry-run origin main',
         'git rm -rf build',
         'git worktree remove --force ../wt',
+        'git config --get alias.x',
+        'git config alias.x',
+        'git config user.name x',
+        'git config remote.origin.pushurl url',
+        "git config 'remote.origin.pushurl' url",
+        'git config user.email a@b.com',
+        'git config branch.main.merge refs/heads/main',
+        'git config core.editor vim',
+        'git config remote.origin.url https://example.com/x.git',
+        'git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*',
     ];
 
     it('bash: maps each guard-core verdict to the same permission', () => {

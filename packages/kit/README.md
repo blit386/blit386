@@ -64,9 +64,10 @@ Every game gets `AGENTS.md` and `docs/` from the scaffolder, whatever assistants
 "All four" is the manifest's set: format-on-edit, block-dangerous-shell, the lock-file / `.env` guard, and the
 session-start bootstrap. Every guard is a thin entry over one shared `guard-core.cjs`, so the deny list (a hard reset, a
 `checkout` onto paths, a forced `checkout` or `switch`, a `restore` onto the worktree, `clean`, `checkout-index -f`,
-`read-tree --reset`, an inline `-c alias`) and the ask list (force push, a push that deletes remote branches or mirrors,
-a push refspec or mirror mode set inline, `branch -D`, `stash drop/clear`) are the same in every assistant that can
-enforce them.
+`read-tree --reset`, a git alias set inline with `-c`, with `git config`, or through `GIT_CONFIG_*`) and the ask list
+(force push, a push that deletes remote branches or mirrors, a push refspec or mirror mode set the same three ways,
+`branch -D`, `stash drop/clear`) are the same in every assistant that can enforce them. Every alias write is refused,
+harmless ones included; set your own aliases by hand.
 
 Every assistant also gets a documentation-MCP config registering the `blit386-docs` server at `https://blit386.dev/mcp`,
 so it can search the live docs. A few things the table cannot show:

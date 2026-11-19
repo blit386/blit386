@@ -34,7 +34,8 @@ import {
  * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`) or spell in every
  * case (`-c ALIAS.n=...`); it can only block, so an ask-tier form these globs miss (`git push -uvf`,
  * `git branch -d old -f`, and any ask-tier command written inside a subshell, with an uppercase or `.exe` git, or with
- * a quoted option value) runs without a prompt.
+ * a quoted option value) runs without a prompt. So does git config set by an `export` (`export GIT_CONFIG_KEY_0=...`):
+ * OpenCode only checks commands, and it parses `export` as a declaration.
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -65,6 +66,24 @@ const OPENCODE_PERMISSION = {
         '*/.env.example': 'allow',
     },
     bash: {
+        // BT-800 asks that can match anywhere in a command line come first, because last match wins: placed later, they
+        // would turn a deny below into an ask (`git reset --hard && git config remote.origin.push x`). Environment
+        // config for git asks whatever its key, coarser than the guard core, which only minds alias and push keys.
+        '*GIT_CONFIG_KEY_*': 'ask',
+        '*GIT_CONFIG_PARAMETERS*': 'ask',
+        // A key, then a value (` ?*`: OpenCode lets a trailing ` *` match nothing, which would catch a bare read). git
+        // reads the key in any case and a glob cannot, so one `?` per letter stands for `remote` and `push` / `mirror`
+        // in any case: coarser, so a same-shaped key (`branch.main.remote`, `remote.x.tagOpt`) asks too. OpenCode
+        // matches the raw text, so a key in quotes (`'remote.origin.push' +main`) gets its own entries.
+        ...Object.fromEntries(
+            ['????', '??????'].flatMap((key) =>
+                ['', "'", '"'].map((quote) => [`*git *config *??????.*.${key}${quote} ?*`, 'ask']),
+            ),
+        ),
+        // Any section rename asks, from `--ren` (its shortest unique prefix) up: one into `remote.<name>` can bring a
+        // push refspec or mirror mode with it, and a glob cannot spell `remote` in every case.
+        '*git *config *--ren*': 'ask',
+        '*git *config *rename-section*': 'ask',
         // `--hard` anywhere after `reset`, followed by anything (`;`, `&&`, a redirect), and each shorter prefix git
         // accepts (`--h` to `--har`) as a whole argument, so `--help` still passes.
         'git reset *--hard*': 'deny',
@@ -151,6 +170,14 @@ const OPENCODE_PERMISSION = {
         'git *--config-env*alias.*': 'deny',
         'git *-c * push*': 'ask',
         'git *--config-env* push*': 'ask',
+        // The same settings made to last (BT-800): a `git config` write (a key, then a value) of an alias denies, and
+        // so does `GIT_CONFIG_KEY_*` / `GIT_CONFIG_PARAMETERS` naming one. Their asks sit first in this list. The
+        // plugin denies an alias in any case.
+        '*git *config *alias.* ?*': 'deny',
+        '*git *config *rename-section *alias*': 'deny',
+        '*git *config *--ren* *alias*': 'deny',
+        '*GIT_CONFIG_KEY_*=alias.*': 'deny',
+        '*GIT_CONFIG_PARAMETERS=*alias.*': 'deny',
         // Plumbing that discards like `checkout --` and `reset --hard`; every `checkout-index` is denied, which is
         // coarser than the guard core (it denies only `-f`), since a `-f` can sit anywhere in a short-flag cluster.
         'git checkout-index *': 'deny',

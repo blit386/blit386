@@ -125,6 +125,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   whose path has a space in it - they could not find their own script there, so Gemini let every call through. A missing
   or broken guard script now blocks the call too, instead of letting it through. On Windows a missing `node` still lets
   the call through. Run `npx blit agents sync` in an existing game to pick up the fix.
+- `@blit386/kit`: the shell guard in generated games now also catches a git alias or push setting that outlasts one
+  command. Writing an alias with `git config` (any scope, `set`, `--add`, `--file`, or a section rename) or through a
+  `GIT_CONFIG_KEY_<n>` / `GIT_CONFIG_PARAMETERS` variable is blocked, like the inline `git -c alias...` already was,
+  because a later harmless-looking `git wipe` could run `reset --hard`. Every alias write is blocked, harmless ones
+  included; set your own by hand. Writing `remote.<name>.push` or `.mirror` the same ways now asks first. Reading an
+  alias (`git config --get alias.x`) still works. To pick up the fix in an existing game, update `@blit386/kit` to this
+  release first, then run `npx blit agents sync`: sync copies the guard from the kit you have installed.
 - Types that public signatures already used can now be imported by name: `AudioClipLoadOptions`, `AudioClipLoadPhase`,
   `AudioClipProgress`, `AudioClipProgressCallback`, `DemoConstructor`, `ErrorContent`, `Glyph`, `OutputUpscaleFilter`,
   `PaletteJSON` (what `Palette.toJSON()` returns), `SpriteSheetStatus`, and `SpriteUV` (the `out` argument of
