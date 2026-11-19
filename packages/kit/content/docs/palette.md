@@ -7,6 +7,8 @@ whole screen by changing one slot.
 ## Make a palette in init()
 
 ```js
+import { BT, Color32, Rect2i, Vector2i } from 'blit386';
+
 async init() {
     // A palette with room for 16 colors. Slot 0 is always transparent, so use 1 and up.
     this.palette = BT.paletteCreate(16);

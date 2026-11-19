@@ -10,6 +10,8 @@ grows downward.
 Start every frame by painting over the last one:
 
 ```js
+import { BT, Rect2i, Vector2i } from 'blit386';
+
 render() {
     BT.clear(2); // fill the whole screen with palette slot 2
     // ...draw everything else on top...
