@@ -13,7 +13,7 @@
  * commit. Policy: `.claude/rules/commit-review-gate.md`.
  */
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -89,7 +89,8 @@ function snapshotTree(repo) {
 
     try {
         if (existsSync(repo.index)) {
-            copyFileSync(repo.index, tempIndex);
+            // A fresh mtime on the copy would turn off git's racy-entry check and hide a same-second, same-size edit.
+            cpSync(repo.index, tempIndex, { preserveTimestamps: true });
         }
 
         const env = gitEnv({ GIT_INDEX_FILE: tempIndex });

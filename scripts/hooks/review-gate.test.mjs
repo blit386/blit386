@@ -1,7 +1,7 @@
 import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -89,6 +89,24 @@ describe('review-gate commit gate', () => {
     test('passes when both reviews saw the change, even if it was staged after the review', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');
+        reviewBoth(repo);
+        git(repo, 'add', '-A');
+
+        assert.equal(commit(repo).status, 0);
+    });
+
+    test('sees an edit that only git racy-entry check reveals', () => {
+        const repo = makeRepo();
+        const file = join(repo, SOURCE);
+        const index = join(repo, '.git', 'index');
+        const past = new Date('2020-01-01T00:00:00Z');
+
+        // Index entry and index file share one timestamp, so git must re-hash the entry rather than trust its stat.
+        utimesSync(file, past, past);
+        git(repo, 'update-index', '--refresh');
+        utimesSync(index, past, past);
+        write(repo, SOURCE, 'two\n');
+        utimesSync(file, past, past);
         reviewBoth(repo);
         git(repo, 'add', '-A');
 
