@@ -86,6 +86,17 @@ export function buildCsp(nonce?: string): string {
  */
 export const BASE_CSP = buildCsp();
 
+/**
+ * The policy for responses the Worker builds itself that are not HTML (`/feed.xml`, markdown
+ * negotiation, `/mcp`): nothing loads, nothing embeds, nothing submits (BT-819).
+ *
+ * Applied only to a non-`text/html` response with no policy of its own. Never a default for HTML:
+ * under `waku dev` there is no `HTMLRewriter`, HTML comes back unstamped on purpose, and a nonce-free
+ * policy would block its inline scripts. Enforced even under `BLIT386_CSP_REPORT_ONLY`, since a
+ * script-free body has no rollout risk to measure.
+ */
+export const NON_HTML_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
 /** Generates a fresh per-request nonce. */
 export function generateNonce(): string {
     const bytes = crypto.getRandomValues(new Uint8Array(NONCE_BYTES));

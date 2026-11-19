@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { BASE_CSP } from './csp';
+import { BASE_CSP, NON_HTML_CSP } from './csp';
 import { cspNoncePlugin, type CspNonceOptions, type HtmlRewriterLike } from './csp-nonce';
 import { SECURITY_HEADERS } from './security-headers';
 
@@ -206,8 +206,8 @@ describe('cspNoncePlugin', () => {
                 new Request('https://blit386.dev/llms.txt'),
             );
 
-            // The base policy from public/_headers is the right one for these.
-            expect(response.headers.get('content-security-policy')).toBeNull();
+            // No asset policy came with these, so the strict non-HTML one is added (BT-819).
+            expect(response.headers.get('content-security-policy')).toBe(NON_HTML_CSP);
             expect(response.headers.get('etag')).toBe('"x"');
             expect(spy.stamped).toEqual([]);
         });
@@ -279,7 +279,11 @@ describe('cspNoncePlugin', () => {
 
         it('returns an asset response that already has all of them as is', async () => {
             const downstream = new Response('{}', {
-                headers: { 'content-type': 'application/json', ...SECURITY_HEADERS },
+                headers: {
+                    'content-type': 'application/json',
+                    'content-security-policy': BASE_CSP,
+                    ...SECURITY_HEADERS,
+                },
             });
 
             expect(await wrap(downstream)(new Request('https://blit386.dev/llms.txt'))).toBe(downstream);
@@ -316,6 +320,47 @@ describe('cspNoncePlugin', () => {
 
             expect(response.headers.get('content-security-policy-report-only')).toBeNull();
         });
+    });
+});
+
+describe('non-HTML policy (BT-819)', () => {
+    const get = (downstream: Response, options: CspNonceOptions = {}) =>
+        wrap(downstream, options)(new Request('https://blit386.dev/x'));
+
+    it.each([
+        ['JSON', 'application/json'],
+        ['RSS', 'application/rss+xml; charset=utf-8'],
+        ['markdown', 'text/markdown; charset=utf-8'],
+    ])('gives a %s response the strict policy', async (_label, contentType) => {
+        const response = await get(new Response('x', { headers: { 'content-type': contentType } }));
+
+        expect(response.headers.get('content-security-policy')).toBe(NON_HTML_CSP);
+    });
+
+    it('gives a response with no content-type the strict policy', async () => {
+        const response = await get(new Response(null, { status: 405 }));
+
+        expect(response.headers.get('content-security-policy')).toBe(NON_HTML_CSP);
+    });
+
+    it('leaves HTML without a rewriter (dev) with no policy', async () => {
+        const response = await get(new Response('<p>', { headers: { 'content-type': 'text/html' } }));
+
+        expect(response.headers.get('content-security-policy')).toBeNull();
+    });
+
+    it('still gives HTML with a rewriter the nonce policy', async () => {
+        const response = await get(htmlResponse(), { createRewriter: createRewriterSpy().createRewriter });
+
+        expect(response.headers.get('content-security-policy')).toContain("'nonce-");
+    });
+
+    it('keeps a policy the response already has', async () => {
+        const response = await get(
+            new Response('x', { headers: { 'content-type': 'application/json', 'content-security-policy': BASE_CSP } }),
+        );
+
+        expect(response.headers.get('content-security-policy')).toBe(BASE_CSP);
     });
 });
 

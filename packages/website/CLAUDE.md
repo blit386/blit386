@@ -81,6 +81,13 @@ The other security headers (`X-Content-Type-Options`, `Referrer-Policy`, `Permis
 builds itself (markdown negotiation, `/feed.xml`, `/mcp`, the 405, Waku's on-demand 404) used to carry none of them
 (BT-772).
 
+The same wrapper gives a response that is not `text/html` and has no CSP of its own the script-free `NON_HTML_CSP`
+(`src/csp.ts`: `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`), so `/feed.xml`,
+markdown negotiation, and `/mcp` are covered (BT-819). It is keyed on content type and is never a default for HTML:
+under `waku dev` there is no `HTMLRewriter`, HTML comes back unstamped on purpose, and a nonce-free policy would block
+its inline scripts. It is enforced even under `BLIT386_CSP_REPORT_ONLY`, which only concerns the HTML policy.
+`public/_headers` does not repeat it - it only reaches `ASSETS` responses, which already carry `BASE_CSP`.
+
 A nonce rather than hashes because the site renders statically (`mode: 'static'`): Waku's React bootstrap script and the
 RSC flight payload `rsc-html-stream` injects are both per-page, so no fixed hash list covers them, and Waku's
 `unstable_setNonce` only applies to request-time SSR. That leaves the Worker as the only place a nonce can be applied,
