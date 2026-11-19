@@ -19,6 +19,15 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.10.0 - Unreleased
+
+### Fixed
+
+- `@blit386/kit`: Gemini CLI now formats the file it just edited, and runs the session-start dependency install and
+  `blit doctor`, in a generated game whose folder path has a space in it, and the formatter also runs on Windows. Both
+  hooks named their script through an already-quoted project path, so they never found it. Run `npx blit agents sync` in
+  an existing game to pick up the fix.
+
 ## 1.9.0 - Unreleased
 
 ### Added

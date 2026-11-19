@@ -17,7 +17,7 @@
           {
             "name": "format-on-edit",
             "type": "command",
-            "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
+            "command": "node .gemini/hooks/format-file.cjs",
             "timeout": 30000
           }
         ],
@@ -54,7 +54,7 @@
           {
             "name": "session-start-bootstrap",
             "type": "command",
-            "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='pnpm install' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
+            "command": "BLIT_PM_INSTALL='pnpm install' sh .gemini/hooks/session-start.sh",
             "timeout": 300000
           }
         ],
