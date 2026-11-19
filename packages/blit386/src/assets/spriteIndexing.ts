@@ -278,6 +278,12 @@ export function markUniqueIndicesInRect(
     const startY = Math.max(0, srcRect.y);
     const endX = Math.min(sheetWidth, srcRect.x + srcRect.width);
     const endY = Math.min(sheetHeight, srcRect.y + srcRect.height);
+
+    // A rect fully outside the sheet clamps to negative extents whose product is positive; bail out first.
+    if (endX <= startX || endY <= startY) {
+        return;
+    }
+
     const seenSheetIndices = MARK_INDICES_IN_RECT_SCRATCH;
 
     seenSheetIndices.fill(0);
