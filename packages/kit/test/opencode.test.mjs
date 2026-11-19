@@ -353,6 +353,10 @@ describe('the kit-guard.ts plugin', () => {
                 // A command substitution inside double quotes runs too, and OpenCode checks it on its own.
                 'git stash drop "$(GIT push -f)"',
                 'git stash drop "`GIT push -f`"',
+                // Quoting the plugin does not model: an ANSI-C string can hold a quote, and a quote in a comment opens
+                // nothing, so either one would hide the separator before `GIT push -f`.
+                "git stash drop $'\\'' ; GIT push -f #'",
+                "git stash drop #'\nGIT push -f\n'",
                 // OpenCode never checks a part that only sets variables, so its match must not count.
                 'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0; GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main; git push',
             ]) {

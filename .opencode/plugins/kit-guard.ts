@@ -82,10 +82,15 @@ const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g;
  */
 function asksFirst(core: GuardCore, command: string): boolean {
     // A command substitution inside double quotes (`"$(...)"`) still runs, and OpenCode checks it on its own, but the
-    // cutting below would hide it in its outer command; a heredoc body is not a command to OpenCode at all.
+    // cutting below would hide it in its outer command; a heredoc body is not a command to OpenCode at all. An ANSI-C
+    // string (`$'\''`) and a comment (`# it's`) quote differently from QUOTED_SPAN, so they could hide a separator.
     const quoted = command.match(QUOTED_SPAN) ?? [];
 
-    if (command.includes('<<') || quoted.some((span) => span.startsWith('"') && /\$\(|`/.test(span))) {
+    if (
+        command.includes('<<') ||
+        /\$'|(^|\s)#/.test(command) ||
+        quoted.some((span) => span.startsWith('"') && /\$\(|`/.test(span))
+    ) {
         return false;
     }
 
