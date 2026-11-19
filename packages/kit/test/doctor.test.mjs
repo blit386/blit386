@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 import { MIN_VERSION_RANGE } from '../dist/env.js';
 import { AGENT_KINDS, AGENT_SPECS } from '../dist/ownership.js';
 
@@ -362,4 +363,19 @@ test("the engine's real vite peer range is one blit doctor can read", () => {
     const enginePkg = JSON.parse(readFileSync(join(here, '..', '..', 'blit386', 'package.json'), 'utf8'));
 
     assert.match(enginePkg.peerDependencies.vite, MIN_VERSION_RANGE);
+});
+
+test('blit doctor does not say Saved with git for a repository with no commit', () => {
+    const root = makeGame('1.8.0');
+
+    try {
+        execFileSync('git', ['init'], { cwd: root, env: gitEnv(), stdio: 'pipe' });
+
+        const { output } = runDoctor(root);
+
+        assert.ok(!output.includes('Saved with git'), `did not expect Saved with git, got:\n${output}`);
+        assert.ok(output.includes('nothing is saved yet'), `expected the no-commit hint, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
 });

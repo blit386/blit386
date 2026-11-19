@@ -165,6 +165,7 @@ async function main(): Promise<void> {
     if (git === 'committed') {
         log.step('Started a git repository and saved the first version');
     } else if (git === 'no-commit') {
+        // Manual-sync copy: the kit's NO_COMMIT_NAG (packages/kit/src/messages.ts) repeats this hint. Change both.
         log.warn(
             'Started a git repository, but git could not save the first version. Tell git who you are with ' +
                 'git config --global user.name "Your Name" and git config --global user.email "you@example.com", ' +

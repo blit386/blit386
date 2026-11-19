@@ -3,13 +3,13 @@
 import {
     detectPackageManager,
     findProjectRoot,
+    gitState,
     installedVersion,
-    isGitRepo,
     pmAddArgs,
     pmRemoveArgs,
     runPm,
 } from '../env';
-import { DEPRECATIONS_URL, NO_GIT_NAG, ui } from '../messages';
+import { DEPRECATIONS_URL, gitNag, ui } from '../messages';
 import { confirm } from '../prompt';
 import { migrateProject } from './migrate';
 
@@ -31,10 +31,11 @@ export async function runUpgrade(): Promise<void> {
         return;
     }
 
-    if (!isGitRepo(root)) {
+    const saved = gitState(root);
+    if (saved !== 'committed') {
         out(ui.warn('Heads up before upgrading:'));
         out('');
-        out(NO_GIT_NAG);
+        out(gitNag(saved));
         out('');
 
         const go = await confirm('Upgrade anyway?');

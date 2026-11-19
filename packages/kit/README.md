@@ -11,11 +11,13 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit play` - play-test the game from the terminal: open it in the Chrome or Edge already installed, run steps (hold
     keys, wait, read the game's `testState()` or `window.__game.state()`, save frames), and print one JSON line per
     step. Needs `playwright-core` in the game (an optional peer dependency; the command prints the line that adds it).
-  - `blit doctor` - check Node, git, `.gitattributes`, the installed `blit386` version against the range this kit was
-    written for, kit-managed files that drifted (the same check as `blit agents sync --check`), and whether every set-up
-    assistant has its docs-server config (it names the missing file and the assistants that need it).
-  - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
-    a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
+  - `blit doctor` - check Node, that git has a saved version, `.gitattributes`, the installed `blit386` version against
+    the range this kit was written for, kit-managed files that drifted (the same check as `blit agents sync --check`),
+    and whether every set-up assistant has its docs-server config (it names the missing file and the assistants that
+    need it).
+  - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not saved with git
+    yet (no repository, or no commit). After a version change it checks your game for old API names and offers to update
+    them for you (see `blit migrate`).
   - `blit migrate` - update old BLIT386 names in your game to the current ones, and (on blit386 1.4.0+) enable hot
     reload in `vite.config` when it is missing. It previews the changes by default and only writes them when you add
     `--write`. Safe, unambiguous renames are applied; names that are too common to change automatically (like `equals`)

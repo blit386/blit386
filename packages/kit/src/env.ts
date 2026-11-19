@@ -5,7 +5,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { kitRoot } from './kit-root';
 
@@ -28,9 +28,53 @@ export function findProjectRoot(start: string): string | null {
     return findUp(start, 'package.json');
 }
 
-/** True when `start` (or any parent) is inside a git working tree. Checks for `.git` so it works without the git binary. */
-export function isGitRepo(start: string): boolean {
-    return findUp(start, '.git') !== null;
+export type GitState = 'none' | 'no-commit' | 'committed';
+
+/** Read a text file, or null when it is missing or unreadable. */
+function readText(path: string): string | null {
+    try {
+        return readFileSync(path, 'utf8').trim();
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Whether `start` (or a parent) is in a git repository, and whether that repository has at least one commit.
+ * Reads `.git` files directly so it works without the git binary: follows a `.git` file's `gitdir:` line
+ * (linked worktrees, submodules) and `commondir`, then resolves HEAD to a loose ref or a `packed-refs` entry.
+ * A `.git` with no HEAD file at all is not a repository git recognizes, so it reads as `committed` (nothing to say).
+ */
+export function gitState(start: string): GitState {
+    const top = findUp(start, '.git');
+    if (top === null) {
+        return 'none';
+    }
+
+    let gitDir = join(top, '.git');
+    const pointer = readText(gitDir)?.match(/^gitdir:\s*(.+)$/m)?.[1];
+    if (pointer) {
+        gitDir = isAbsolute(pointer) ? pointer : resolve(top, pointer);
+    }
+
+    const head = readText(join(gitDir, 'HEAD'));
+    if (head === null) {
+        return 'committed';
+    }
+    const ref = head.match(/^ref:\s*(.+)$/)?.[1];
+    if (!ref) {
+        return 'committed'; // detached HEAD holds a commit id
+    }
+
+    // A linked worktree keeps its own HEAD but shares refs with the main repository.
+    const common = readText(join(gitDir, 'commondir'));
+    const refsDir = common === null ? gitDir : resolve(gitDir, common);
+
+    if (existsSync(join(refsDir, ref))) {
+        return 'committed';
+    }
+    const packed = readText(join(refsDir, 'packed-refs'));
+    return packed?.split('\n').some((line) => line.endsWith(` ${ref}`)) ? 'committed' : 'no-commit';
 }
 
 /** Detect the package manager from the project's lockfile, then the invoking agent, defaulting to npm. */

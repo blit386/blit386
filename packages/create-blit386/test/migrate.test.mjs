@@ -10,8 +10,21 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
 import { scaffold } from '../dist/scaffold.js';
 import { blitCli, runBlit, hasGit } from './helpers.mjs';
+
+/** A repo with one commit: `blit migrate --write` treats a repo with no commit as not saved. */
+function initCommittedRepo(cwd) {
+    const run = (...args) =>
+        spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], {
+            cwd,
+            env: gitEnv(),
+            stdio: 'ignore',
+        });
+    run('init');
+    run('commit', '--allow-empty', '-m', 'first');
+}
 
 const GAME_WITH_OLD_NAMES = [
     "import { bootstrap, BT } from 'blit386';",
@@ -81,8 +94,8 @@ test('blit migrate --write rewrites safe names and reports ambiguous ones', { sk
             agents: [],
         });
 
-        // A git repo means --write skips the no-git confirmation prompt and applies directly.
-        spawnSync('git', ['init'], { cwd: project, stdio: 'ignore' });
+        // A git repo with a commit means --write skips the no-git confirmation prompt and applies directly.
+        initCommittedRepo(project);
 
         const gamePath = join(project, 'src', 'game.js');
         writeFileSync(gamePath, GAME_WITH_OLD_NAMES);
@@ -130,7 +143,7 @@ test('blit migrate --write enables hot reload in an older vite.config', { skip: 
             agents: [],
         });
 
-        spawnSync('git', ['init'], { cwd: project, stdio: 'ignore' });
+        initCommittedRepo(project);
 
         // Simulate a pre-1.4.0 scaffold: vite.config without the blit386 plugin.
         const vitePath = join(project, 'vite.config.js');
