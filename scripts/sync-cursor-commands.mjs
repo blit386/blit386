@@ -38,7 +38,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILLS_DIR_REL = '.claude/skills';
 
 /** Repo-relative directory a `.cursor/commands/<name>.md` file lives in (used for link re-relativizing). */
-const COMMANDS_DIR_REL = '.cursor/commands';
+export const COMMANDS_DIR_REL = '.cursor/commands';
 
 /** @param {string} root Absolute repo root. */
 const skillsDir = (root) => join(root, SKILLS_DIR_REL);

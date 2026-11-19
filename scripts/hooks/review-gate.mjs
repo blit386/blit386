@@ -1,0 +1,374 @@
+#!/usr/bin/env node
+/**
+ * Commit review gate (BT-815). One script, wired in `.claude/settings.json` for three Claude Code events:
+ *
+ * - `PostToolUse` (Skill) and `UserPromptSubmit` (a typed slash command): when `/review` or
+ *   `/ponytail:ponytail-review` runs, snapshot the whole working tree as a git tree object and record its SHA as that
+ *   review's marker in `<git dir>/review-gate/` (per worktree, never committed).
+ * - `PreToolUse` (Bash): refuse `git commit` (exit 2) unless every changed tracked path - in the index and in the
+ *   working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical to what both
+ *   reviews last saw. An edit after a review therefore needs a fresh review. Generated paths are exempt.
+ *
+ * A missing or stale marker blocks; any internal error fails open with a stderr note, so a gate bug cannot block every
+ * commit. Policy: `.claude/rules/commit-review-gate.md`.
+ */
+import { spawnSync } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
+
+import { gitEnv } from '../lib/git-env.mjs';
+
+/** The two reviews a commit needs: marker file name, how to ask for it, and the skill names that count as a run. */
+const REVIEWS = [
+    { marker: 'review', label: '/review', skills: ['review'] },
+    {
+        marker: 'ponytail-review',
+        label: '/ponytail:ponytail-review',
+        skills: ['ponytail:ponytail-review', 'ponytail-review'],
+    },
+];
+const MARKER_DIR = 'review-gate';
+const BLOCK = 2;
+const ALLOW = 0;
+
+/** Written by `pnpm run api:history`, not by hand. Other generated paths come from the scripts that own them. */
+const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
+
+/** Command boundaries in {@link shellTokens} output: `;`, `&`, `|`, newline; a subshell's `(` or `$(`, and its `)`. */
+const BOUNDARY = Symbol('boundary');
+const SUBSHELL_OPEN = Symbol('subshell open');
+const SUBSHELL_CLOSE = Symbol('subshell close');
+const BOUNDARY_TOKENS = new Map([
+    [';', BOUNDARY],
+    ['&', BOUNDARY],
+    ['|', BOUNDARY],
+    ['\n', BOUNDARY],
+    ['(', SUBSHELL_OPEN],
+    [')', SUBSHELL_CLOSE],
+]);
+const SINGLE_QUOTE = "'";
+const DOUBLE_QUOTE = '"';
+/** Words skipped in front of a command: option-less wrappers. `VAR=x` assignments are skipped too. */
+const COMMAND_WRAPPERS = new Set(['rtk', 'env', 'command', 'exec', 'nohup', 'time', 'xargs', 'sudo']);
+const ASSIGNMENT = /^[A-Za-z_]\w*=/u;
+/** Git global options whose value is the next word (`git.c`); `-C` also moves the directory. */
+const DIR_OPTION = '-C';
+const OPERAND_OPTIONS = new Set([
+    DIR_OPTION,
+    '-c',
+    '--config-env',
+    '--git-dir',
+    '--work-tree',
+    '--namespace',
+    '--super-prefix',
+    '--attr-source',
+]);
+const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
+const PATH_LIST_LIMIT = 10;
+
+/** Runs git on `cwd` with git's repo-location variables scrubbed; throws when git cannot start at all. */
+function git(cwd, args, env = gitEnv()) {
+    const result = spawnSync('git', ['--literal-pathspecs', '-C', cwd, ...args], {
+        encoding: 'utf8',
+        env,
+        maxBuffer: 64 * 1024 * 1024,
+    });
+
+    if (result.error) {
+        throw result.error;
+    }
+
+    return result;
+}
+
+/** Like {@link git}, but throws on a non-zero exit and returns trimmed stdout. */
+function gitOut(cwd, args, env) {
+    const result = git(cwd, args, env);
+
+    if (result.status !== 0) {
+        throw new Error(`git ${args.join(' ')} exited ${result.status}: ${result.stderr.trim()}`);
+    }
+
+    return result.stdout.trim();
+}
+
+const expandHome = (path) => path.replace(/^~(?=\/|$)/u, homedir());
+
+/** Repo top level and git dir for `cwd`. */
+function repoOf(cwd) {
+    const [top, gitDir] = gitOut(cwd, ['rev-parse', '--show-toplevel', '--absolute-git-dir']).split('\n');
+
+    return { top, markers: join(gitDir, MARKER_DIR), index: join(gitDir, 'index') };
+}
+
+/** The working tree (tracked + untracked, `.gitignore` honored) as a tree SHA, built in a throwaway index. */
+function snapshotTree(repo) {
+    mkdirSync(repo.markers, { recursive: true });
+    const tempIndex = join(repo.markers, `index-${process.pid}`);
+
+    try {
+        if (existsSync(repo.index)) {
+            // A fresh mtime on the copy would turn off git's racy-entry check and hide a same-second, same-size edit.
+            cpSync(repo.index, tempIndex, { preserveTimestamps: true });
+        }
+
+        const env = gitEnv({ GIT_INDEX_FILE: tempIndex });
+        gitOut(repo.top, ['add', '-A'], env);
+
+        return gitOut(repo.top, ['write-tree'], env);
+    } finally {
+        rmSync(tempIndex, { force: true });
+    }
+}
+
+/** PostToolUse (Skill) / UserPromptSubmit: record what a review run is about to see. */
+function recordReview(payload) {
+    const skill =
+        payload.hook_event_name === 'UserPromptSubmit'
+            ? SLASH_COMMAND.exec(payload.prompt ?? '')?.[1]
+            : payload.tool_name === 'Skill' && payload.tool_input?.skill;
+    const review = REVIEWS.find(({ skills }) => skills.includes(skill));
+
+    if (review) {
+        const repo = repoOf(payload.cwd ?? process.cwd());
+        writeFileSync(join(repo.markers, review.marker), `${snapshotTree(repo)}\n`);
+    }
+
+    return ALLOW;
+}
+
+/**
+ * Splits a shell command into words (quotes removed, backslash escapes applied) and boundary markers, one pass
+ * per character so it cannot backtrack (CodeQL js/redos). Separators inside quotes stay part of the word; `$(` opens a
+ * command context even inside double quotes, and the quote resumes at its `)`.
+ * shortcut: no `$VAR` or glob expansion, and `bash -c "..."` stays one opaque word; documented in the rule file.
+ */
+function shellTokens(command) {
+    const tokens = [];
+    const resume = [];
+    let word = null;
+    let quote = '';
+    const flush = () => {
+        if (word !== null) {
+            tokens.push(word);
+            word = null;
+        }
+    };
+
+    for (let i = 0; i < command.length; i++) {
+        const char = command[i];
+
+        if (char === '\\' && quote !== SINGLE_QUOTE) {
+            word = (word ?? '') + (command[++i] ?? '');
+        } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
+            flush();
+            tokens.push(SUBSHELL_OPEN);
+            resume.push(quote);
+            quote = '';
+            i++;
+        } else if (quote) {
+            if (char === quote) {
+                quote = '';
+            } else {
+                word += char;
+            }
+        } else if (char === DOUBLE_QUOTE || char === SINGLE_QUOTE) {
+            quote = char;
+            word ??= '';
+        } else if (BOUNDARY_TOKENS.has(char)) {
+            const token = BOUNDARY_TOKENS.get(char);
+            flush();
+            tokens.push(token);
+
+            if (token === SUBSHELL_OPEN) {
+                resume.push('');
+            } else if (token === SUBSHELL_CLOSE) {
+                quote = resume.pop() ?? '';
+            }
+        } else if (/\s/u.test(char)) {
+            flush();
+        } else {
+            word = (word ?? '') + char;
+        }
+    }
+
+    flush();
+
+    return tokens;
+}
+
+/** The directory `git <global options> commit` acts on, or `null` when `args` run another subcommand. */
+function gitCommitDir(args, startDir) {
+    let dir = startDir;
+
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === 'commit') {
+            return dir;
+        }
+
+        if (!args[i].startsWith('-')) {
+            return null;
+        }
+
+        if (OPERAND_OPTIONS.has(args[i])) {
+            // shortcut: --git-dir and --work-tree are skipped, not followed; the commit is checked in `dir`.
+            if (args[i] === DIR_OPTION) {
+                dir = resolve(dir, expandHome(args[i + 1] ?? ''));
+            }
+
+            i++;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * The directory of every `git commit` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
+ * commit moves it, and a subshell's `)` restores the directory it started in.
+ */
+function commitDirs(command, cwd) {
+    const dirs = [];
+    const outer = [];
+    let dir = cwd;
+    let words = [];
+
+    for (const token of [...shellTokens(command), BOUNDARY]) {
+        if (typeof token === 'string') {
+            words.push(token);
+            continue;
+        }
+
+        const start = words.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
+        const [name, ...args] = start < 0 ? [] : words.slice(start);
+
+        if (name === 'cd' && args[0]) {
+            dir = resolve(dir, expandHome(args[0]));
+        } else if (name === 'git') {
+            const commitDir = gitCommitDir(args, dir);
+
+            if (commitDir) {
+                dirs.push(commitDir);
+            }
+        }
+
+        words = [];
+
+        if (token === SUBSHELL_OPEN) {
+            outer.push(dir);
+        } else if (token === SUBSHELL_CLOSE) {
+            dir = outer.pop() ?? dir;
+        }
+    }
+
+    return [...new Set(dirs)];
+}
+
+/**
+ * Changed tracked paths, minus generated ones: `staged` differ from HEAD in the index (intent-to-add placeholders are
+ * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree.
+ */
+async function changedSourcePaths(top) {
+    const { OWNED_DIRS, OWNED_EXACT_FILES } = await import('../sync-maintainer-agents.mjs');
+    const { COMMANDS_DIR_REL } = await import('../sync-cursor-commands.mjs');
+    const generatedDirs = [...OWNED_DIRS, `${COMMANDS_DIR_REL}/`];
+    const generatedFiles = new Set([...OWNED_EXACT_FILES, API_HISTORY_JSON]);
+    const list = (...args) =>
+        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...args, 'HEAD'])
+            .split('\0')
+            .filter((path) => path && !generatedFiles.has(path) && !generatedDirs.some((dir) => path.startsWith(dir)));
+    const staged = list('--cached');
+
+    return { staged, all: [...new Set([...staged, ...list()])] };
+}
+
+/** Changed paths whose index or working-tree content differs from the review's recorded tree (all, if none). */
+function unreviewedPaths(repo, marker, { staged, all }) {
+    const markerFile = join(repo.markers, marker);
+
+    if (!existsSync(markerFile)) {
+        return all;
+    }
+
+    const tree = readFileSync(markerFile, 'utf8').trim();
+    // The index is compared only where it holds staged content; an empty pathspec would mean the whole tree.
+    const checks = [
+        ['--cached', staged],
+        [null, all],
+    ].filter(([, paths]) => paths.length > 0);
+    const differing = checks.flatMap(([cached, paths]) => {
+        const result = git(repo.top, ['diff', '--name-only', '-z', ...(cached ? [cached] : []), tree, '--', ...paths]);
+
+        // A tree git no longer has (pruned) cannot vouch for anything.
+        return result.status === 0 ? result.stdout.split('\0') : paths;
+    });
+
+    return [...new Set(differing)].filter(Boolean);
+}
+
+/** Block-message lines for a commit in `dir` whose content both reviews did not see; empty when it may commit. */
+async function staleReport(dir, sessionDir) {
+    const repo = repoOf(dir);
+    const paths = await changedSourcePaths(repo.top);
+    const stale =
+        paths.all.length === 0
+            ? []
+            : REVIEWS.map((review) => ({ review, paths: unreviewedPaths(repo, review.marker, paths) })).filter(
+                  (entry) => entry.paths.length > 0,
+              );
+    const lines = [];
+
+    for (const { review, paths: unreviewed } of stale) {
+        lines.push(`  ${review.label} did not see: ${unreviewed.slice(0, PATH_LIST_LIMIT).join(', ')}`);
+
+        if (unreviewed.length > PATH_LIST_LIMIT) {
+            lines.push(`    ... and ${unreviewed.length - PATH_LIST_LIMIT} more`);
+        }
+    }
+
+    // Reviews are recorded for the session's own checkout, so a `cd X && git commit` into another one never matches.
+    const sessionTop = stale.length > 0 && git(sessionDir, ['rev-parse', '--show-toplevel']);
+
+    if (sessionTop && (sessionTop.status !== 0 || sessionTop.stdout.trim() !== repo.top)) {
+        lines.push(
+            `This commit targets ${repo.top}, but reviews count only for the checkout they run in (the session's`,
+            `working directory, here ${sessionDir}). Review and commit from a session whose working directory is the`,
+            'committing checkout (for a subagent: work in its own isolated worktree, or in the main checkout).',
+        );
+    }
+
+    return lines;
+}
+
+/** PreToolUse (Bash): block a command whose commits contain content both reviews did not see. */
+async function gateCommit(payload) {
+    const sessionDir = payload.cwd ?? process.cwd();
+    const lines = [];
+
+    for (const dir of commitDirs(payload.tool_input?.command ?? '', sessionDir)) {
+        lines.push(...(await staleReport(dir, sessionDir)));
+    }
+
+    if (lines.length === 0) {
+        return ALLOW;
+    }
+
+    lines.unshift('review-gate: this commit contains changes that were not reviewed in their current state.');
+    lines.push(
+        'Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then commit again.',
+        'An edit made after a review needs a fresh review. See .claude/rules/commit-review-gate.md.',
+    );
+    process.stderr.write(`${lines.join('\n')}\n`);
+
+    return BLOCK;
+}
+
+try {
+    const payload = JSON.parse(readFileSync(0, 'utf8'));
+    process.exitCode = payload.hook_event_name === 'PreToolUse' ? await gateCommit(payload) : recordReview(payload);
+} catch (error) {
+    // Fail open: a broken gate must not block every commit. A missing marker is not an error and still blocks.
+    process.stderr.write(`review-gate: internal error, allowing: ${error instanceof Error ? error.message : error}\n`);
+    process.exitCode = ALLOW;
+}
