@@ -337,6 +337,8 @@ describe('AssetLoader', () => {
         });
 
         it('requests the image with a cache-busting query parameter', async () => {
+            await AssetLoader.loadImage('bust.png');
+            requestedUrls.length = 0;
             await AssetLoader.hotReloadImage('bust.png');
 
             expect(requestedUrls).toHaveLength(1);
@@ -366,6 +368,8 @@ describe('AssetLoader', () => {
                 },
             );
 
+            AssetLoader.loadImage('missing.png').catch(() => {});
+
             await expect(AssetLoader.hotReloadImage('missing.png')).rejects.toThrow(
                 "Can't find the image 'missing.png'",
             );
@@ -378,6 +382,21 @@ describe('AssetLoader', () => {
 
             expect(AssetLoader.getImage('sprites/hero.png')).toBe(reloaded);
             expect(AssetLoader.isLoaded('/sprites/hero.png')).toBe(false);
+        });
+
+        it('reports a miss without fetching or caching when no cached or in-flight key matches', async () => {
+            const result = await AssetLoader.hotReloadImage('/never-loaded.png');
+
+            expect(result).toBeNull();
+            expect(requestedUrls).toHaveLength(0);
+            expect(AssetLoader.isLoaded('/never-loaded.png')).toBe(false);
+        });
+
+        it('fetches and caches under the given URL on a miss when forced', async () => {
+            const result = await AssetLoader.hotReloadImage('forced.png', { isForced: true });
+
+            expect(result).not.toBeNull();
+            expect(AssetLoader.getImage('forced.png')).toBe(result);
         });
 
         it('evicts a second spelling of the same file so its next load fetches the new image', async () => {
@@ -479,21 +498,25 @@ describe('AssetLoader', () => {
         });
 
         it('keeps the newer hot-reloaded image when a superseded load resolves after it', async () => {
+            // Held in flight so the reloads below have a key to re-cache under.
+            const gameLoad = AssetLoader.loadImage('race.png');
             const firstPromise = AssetLoader.hotReloadImage('race.png');
             const secondPromise = AssetLoader.hotReloadImage('race.png');
 
-            expect(instances).toHaveLength(2);
+            expect(instances).toHaveLength(3);
 
             // The newer (second) request resolves first; the stale (first) one resolves after.
-            instances[1]?.onload?.();
+            instances[2]?.onload?.();
             const second = await secondPromise;
 
-            instances[0]?.onload?.();
+            instances[1]?.onload?.();
             const first = await firstPromise;
+            instances[0]?.onload?.();
+            await gameLoad;
 
             // The superseded request still resolves its own caller with its own image - only
             // the shared cache skips it.
-            expect(first).toBe(instances[0]);
+            expect(first).toBe(instances[1]);
             expect(AssetLoader.getImage('race.png')).toBe(second);
         });
 

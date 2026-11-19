@@ -213,6 +213,53 @@ describe('HotRuntime', () => {
             await vi.waitFor(() => expect(spy).toHaveBeenCalledExactlyOnceWith('hero.png'));
         });
 
+        it('starts no load and logs the miss for an image no sheet or cache entry holds', async () => {
+            const imageSpy = vi.fn();
+            vi.stubGlobal('Image', imageSpy);
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(undefined);
+            const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: '/unused-hot.png', type: 'image', timestamp: 1 });
+
+            await vi.waitFor(() => expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('nothing to replace')));
+            expect(imageSpy).not.toHaveBeenCalled();
+            expect(AssetLoader.isLoaded('/unused-hot.png')).toBe(false);
+        });
+
+        it('says the cache was refreshed when only AssetLoader holds the image', async () => {
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({} as HTMLImageElement);
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(undefined);
+            const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: '/cached-hot.png', type: 'image', timestamp: 1 });
+
+            await vi.waitFor(() =>
+                expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('Refreshed the cached')),
+            );
+            expect(infoSpy).not.toHaveBeenCalledWith(expect.stringContaining('nothing to replace'));
+        });
+
+        it('forces the fetch when a sheet is registered, so an evicted cache entry still reloads', async () => {
+            const spy = vi
+                .spyOn(AssetLoader, 'hotReloadImage')
+                .mockResolvedValue({ width: 8, height: 8 } as HTMLImageElement);
+            const fakeSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
+            vi.spyOn(BTAPI.instance.palettes, 'getPalette').mockReturnValue(null);
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+
+            await vi.waitFor(() => expect(fakeSheet.hotReplaceImage).toHaveBeenCalledOnce());
+            expect(spy).toHaveBeenCalledExactlyOnceWith('hero.png', { isForced: true });
+        });
+
         it('replaces every registered sheet for a matching image URL', async () => {
             vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({ width: 8, height: 8 } as HTMLImageElement);
             const fakeSheet = {
