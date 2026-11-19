@@ -567,7 +567,7 @@ describe('BitmapFont', () => {
             const loaded = await BitmapFont.load('fonts/test.btfont');
 
             expect(loaded).toBeDefined();
-            expect(capturedSrc).toBe('fonts/font-atlas.png');
+            expect(capturedSrc).toBe('http://localhost/fonts/font-atlas.png');
         });
     });
 
@@ -586,6 +586,35 @@ describe('BitmapFont', () => {
                 expect(imageSources).toEqual([]);
             },
         );
+
+        it('requests a rooted texture path from the site root, not under the font folder', async () => {
+            const imageSources: string[] = [];
+            vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(mockFontFetchResponse({ ...MOCK_FONT_DATA, texture: '/fonts/a.png' })),
+            );
+
+            await BitmapFont.load('fonts/font.btfont');
+
+            expect(imageSources.map((src) => new URL(src, 'http://localhost/').pathname)).toEqual(['/fonts/a.png']);
+        });
+
+        it('rejects an absolute other-site texture in a font loaded from a folder', async () => {
+            const imageSources: string[] = [];
+            vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+            vi.stubGlobal(
+                'fetch',
+                vi
+                    .fn()
+                    .mockResolvedValue(
+                        mockFontFetchResponse({ ...MOCK_FONT_DATA, texture: 'https://other.example/atlas.png' }),
+                    ),
+            );
+
+            await expect(BitmapFont.load('fonts/font.btfont')).rejects.toBeInstanceOf(AssetLimitError);
+            expect(imageSources).toEqual([]);
+        });
 
         it('loads an absolute texture URL on the same origin as the font', async () => {
             const texture = 'http://localhost/fonts/atlas.png';
@@ -1089,7 +1118,23 @@ describe('BitmapFont', () => {
                 vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(relativeData)));
                 await relFont.hotReload('fonts/rel.btfont', null);
 
-                expect(imageSources[0]).toMatch(/^fonts\/atlas\.png\?blit386-hmr=\d+$/);
+                expect(imageSources[0]).toMatch(/^http:\/\/localhost\/fonts\/atlas\.png\?blit386-hmr=\d+$/);
+            });
+
+            it('cache-busts a rooted texture path from the site root', async () => {
+                const rootedData = { ...MOCK_FONT_DATA, texture: '/fonts/a.png' };
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(rootedData)));
+
+                const imageSources: string[] = [];
+                vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+
+                const rootedFont = await BitmapFont.load('fonts/rooted.btfont');
+                imageSources.length = 0;
+
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(rootedData)));
+                await rootedFont.hotReload('fonts/rooted.btfont', null);
+
+                expect(imageSources[0]).toMatch(/^http:\/\/localhost\/fonts\/a\.png\?blit386-hmr=\d+$/);
             });
 
             it('does not cache-bust an embedded data URI texture', async () => {

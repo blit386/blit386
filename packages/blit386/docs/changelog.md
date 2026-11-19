@@ -35,6 +35,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Changed
 
+- Behavior change: a `.btfont` `texture` path is resolved like `Image.src` instead of joined to the font's folder, so a
+  rooted path such as `/fonts/atlas.png` loads from the site root rather than requesting `fonts//fonts/atlas.png`. An
+  absolute texture URL on another site now throws an `AssetLimitError` for a font loaded from a folder too (it used to
+  fail as a missing file). A rooted path points at the site root, not your Vite `base`. See
+  [Bitmap fonts](api-assets.md).
 - Behavior change: reading `BT.displaySize`, `BT.drawingBufferSize`, or `BT.outputSize` before `BT.init()` returns the
   configure default (`320×240`, `640×480`, `640×480`) instead of `(0, 0)` or `null`. `BT.camera`, `BT.pointerPos()`, and
   `BT.pointerDelta()` return a new vector before init (and for an out-of-range slot), so writing to it no longer throws.
