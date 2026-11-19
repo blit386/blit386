@@ -26,10 +26,10 @@ npx blit play --seed 42 wait:1000 state hold:ArrowLeft:500 state shot
 That starts the dev server, opens the game in the Chrome or Edge on this computer, focuses the canvas, runs the steps in
 order, and prints one JSON line per step.
 
-- Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>`, `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button
-  100 ms), `drag:<x1>:<y1>:<x2>:<y2>:<ms>` (press, move over `<ms>`, release; a small `<ms>` is a flick), `wheel:<dy>`
-  or `wheel:<dx>:<dy>` (at the pointer; `move` there first), `state`, `shot[:<file.png>]` (saved under `screenshots/`,
-  ignored by git), `eval:<expression>`.
+- Steps: `wait:<ms>`, `press:<key>`, `hold:<key>:<ms>` (every `wait`, `hold` and `drag` time is 0 to 60000 ms),
+  `move:<x>:<y>`, `click:<x>:<y>` (game pixels; holds the button 100 ms), `drag:<x1>:<y1>:<x2>:<y2>:<ms>` (press, move
+  over `<ms>`, release; a small `<ms>` is a flick), `wheel:<dy>` or `wheel:<dx>:<dy>` (at the pointer; `move` there
+  first), `state`, `shot[:<file.png>]` (saved under `screenshots/`, ignored by git), `eval:<expression>`.
 - To test a drag or a scroll: `npx blit play move:160:120 wheel:120 state drag:40:120:280:120:150 state`.
   `BT.pointerDelta(0)` and `BT.pointerScrollDelta` cover only the time since the previous `update()` (engine 1.9.0+), so
   they are zero again by the next `state` step: add them up in `update()` and return the total from `testState()`. The

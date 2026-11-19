@@ -31,13 +31,13 @@ Options:
   --help              Show this text.
 
 Steps (keys use KeyboardEvent.code names: ArrowLeft, KeyA, Space, Enter, ...):
-  wait:<ms>           Let the game run for <ms> milliseconds.
+  wait:<ms>           Let the game run for <ms> milliseconds (0 to 60000).
   press:<key>         Tap a key.
-  hold:<key>:<ms>     Hold a key down for <ms> milliseconds.
+  hold:<key>:<ms>     Hold a key down for <ms> milliseconds (0 to 60000).
   move:<x>:<y>        Move the mouse to game pixel (x, y).
   click:<x>:<y>       Click at game pixel (x, y), holding the button for 100 ms so the game sees it.
   drag:<x1>:<y1>:<x2>:<y2>:<ms>
-                      Press at (x1, y1), move to (x2, y2) over <ms> milliseconds, release. The button is held 100 ms
+                      Press at (x1, y1), move to (x2, y2) over <ms> milliseconds (0 to 60000), release. The button is held 100 ms
                       before the first move so the game sees the press; the release lands right after the last move.
                       A small <ms> (about 100) makes a flick.
   wheel:<dy>          Scroll the wheel by <dy> pixels (negative scrolls up) at the current pointer position.
@@ -63,12 +63,14 @@ const CLICK_HOLD_MS = 100;
 /** Gap between the pointer moves of a `drag`, about one 60 FPS frame, so the game sees a path and not a jump. */
 const DRAG_STEP_MS = 16;
 
-/** Longest `drag` accepted, so a typo (an extra zero) fails at once instead of sleeping for hours. */
-const MAX_DRAG_MS = 60_000;
+/** Longest `drag`, `wait` or `hold` time accepted, so a typo (an extra zero) fails at once instead of sleeping for hours. */
+const MAX_STEP_MS = 60_000;
 
 /** Step names that carry several numbers; checked up front in `runPlay` and run in `runStep`. */
 const STEP_DRAG = 'drag';
 const STEP_WHEEL = 'wheel';
+const STEP_WAIT = 'wait';
+const STEP_HOLD = 'hold';
 
 /** Time the game gets to read a wheel event before the next step looks at its state. */
 const WHEEL_SETTLE_MS = 50;
@@ -121,6 +123,17 @@ function toNumber(text: string | undefined, what: string): number {
     return value;
 }
 
+/** A `drag`, `wait` or `hold` time in milliseconds, between 0 and `MAX_STEP_MS`. */
+function parseStepMs(text: string | undefined, what: string): number {
+    const ms = toNumber(text, what);
+
+    if (ms < 0 || ms > MAX_STEP_MS) {
+        throw new Error(`${what} must be between 0 and ${MAX_STEP_MS} milliseconds, got "${text}".`);
+    }
+
+    return ms;
+}
+
 /** `drag:<x1>:<y1>:<x2>:<y2>:<ms>` arguments, checked before any browser opens. */
 function parseDragArgs(args: string[]): { x1: number; y1: number; x2: number; y2: number; ms: number } {
     if (args.length !== 5) {
@@ -131,11 +144,7 @@ function parseDragArgs(args: string[]): { x1: number; y1: number; x2: number; y2
     const y1 = toNumber(args[1], 'y1');
     const x2 = toNumber(args[2], 'x2');
     const y2 = toNumber(args[3], 'y2');
-    const ms = toNumber(args[4], 'drag time');
-
-    if (ms < 0 || ms > MAX_DRAG_MS) {
-        throw new Error(`drag time must be between 0 and ${MAX_DRAG_MS} milliseconds, got "${args[4]}".`);
-    }
+    const ms = parseStepMs(args[4], 'drag time');
 
     return { x1, y1, x2, y2, ms };
 }
@@ -208,13 +217,13 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
     const [name, ...args] = step.split(':');
 
     switch (name) {
-        case 'wait':
+        case STEP_WAIT:
             await page.waitForTimeout(toNumber(args[0], 'wait time'));
             return undefined;
         case 'press':
             await page.keyboard.press(args[0] ?? '');
             return undefined;
-        case 'hold':
+        case STEP_HOLD:
             await page.keyboard.down(args[0] ?? '');
             await page.waitForTimeout(toNumber(args[1], 'hold time'));
             await page.keyboard.up(args[0] ?? '');
@@ -394,6 +403,10 @@ export async function runPlay(argv: string[]): Promise<void> {
                 parseDragArgs(args);
             } else if (name === STEP_WHEEL) {
                 parseWheelArgs(args);
+            } else if (name === STEP_WAIT) {
+                parseStepMs(args[0], 'wait time');
+            } else if (name === STEP_HOLD) {
+                parseStepMs(args[1], 'hold time');
             }
         }
     } catch (error) {

@@ -102,6 +102,38 @@ test('blit play accepts well-formed drag and wheel steps past argument checks', 
     }
 });
 
+for (const [step, message] of [
+    ['wait:-1', 'wait time must be between 0 and 60000'],
+    ['wait:60001', 'wait time must be between 0 and 60000'],
+    ['hold:ArrowLeft:60001', 'hold time must be between 0 and 60000'],
+    ['hold:ArrowLeft:-1', 'hold time must be between 0 and 60000'],
+]) {
+    test(`blit play rejects "${step}" before opening a browser`, () => {
+        const { exitCode, output } = runPlay(blitCli, tmpdir(), [step]);
+        assert.equal(exitCode, 1);
+        assert.ok(output.includes(message), output);
+    });
+}
+
+test('blit play accepts wait and hold times within the limit past argument checks', () => {
+    const isolated = mkdtempSync(join(tmpdir(), 'blit-play-kit-'));
+    const game = makeGame();
+    try {
+        cpSync(join(kitRoot, 'dist'), join(isolated, 'dist'), { recursive: true });
+        cpSync(join(kitRoot, 'package.json'), join(isolated, 'package.json'));
+
+        const { output } = runPlay(join(isolated, 'dist', 'cli.js'), game, [
+            'wait:0',
+            'wait:60000',
+            'hold:ArrowLeft:500',
+        ]);
+        assert.ok(output.includes('needs the playwright-core package'), output);
+    } finally {
+        rmSync(isolated, { recursive: true, force: true });
+        rmSync(game, { recursive: true, force: true });
+    }
+});
+
 test('blit play rejects a seed that is not a whole number', () => {
     const { exitCode, output } = runPlay(blitCli, tmpdir(), ['--seed', '4.5', 'state']);
     assert.equal(exitCode, 1);
