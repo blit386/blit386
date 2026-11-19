@@ -90,9 +90,31 @@ describe('review-gate commit gate', () => {
             `sudo ${COMMIT}`,
             `(${COMMIT})`,
             `echo "$(${COMMIT})"`,
+            'git -c user.name="A; B" commit -m change',
+            'git --git-dir .git commit -m change',
+            `echo "a $(true) b"; ${COMMIT}`,
         ]) {
             assert.equal(commit(repo, command).status, 2, command);
         }
+    });
+
+    test('checks every commit in a compound command, in the directory each one runs in', () => {
+        const reviewed = makeRepo();
+        const unreviewed = makeRepo();
+        write(reviewed, SOURCE, 'two\n');
+        git(reviewed, 'add', '-A');
+        reviewBoth(reviewed);
+        write(unreviewed, SOURCE, 'two\n');
+        git(unreviewed, 'add', '-A');
+
+        const both = commit(reviewed, `git -C "${reviewed}" commit -m a && git -C "${unreviewed}" commit -m b`);
+        assert.equal(both.status, 2);
+        assert.match(both.stderr, /src\/a\.ts/u);
+        assert.equal(commit(reviewed, `git status && cd "${unreviewed}" && ${COMMIT}`).status, 2);
+        assert.equal(commit(reviewed, `git status && ${COMMIT}`).status, 0);
+        // A cd inside a subshell does not move the commit that follows it.
+        assert.equal(commit(unreviewed, `(cd "${reviewed}") && ${COMMIT}`).status, 2);
+        assert.equal(commit(unreviewed, `echo "$(cd "${reviewed}")" && ${COMMIT}`).status, 2);
     });
 
     test('passes when both reviews saw the change, even if it was staged after the review', () => {
@@ -244,6 +266,7 @@ describe('review-gate commit gate', () => {
             'git status',
             'git commit-tree HEAD^{tree}',
             'git log --grep commit',
+            'git --git-dir .git status',
             `grep -n "${COMMIT}" notes.md`,
             `gh pr view --json body | grep '${COMMIT}'`,
         ]) {

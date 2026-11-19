@@ -9,15 +9,18 @@ are not affected.
   honored) as a git tree object and stores its SHA in `<git dir>/review-gate/<review>` - per worktree, never committed.
   The latest run of each review wins.
 - **Reviews count for the checkout they ran in.** A review writes markers for the session's working directory; the gate
-  reads them from the committing checkout (after any `cd X &&` or `git -C X`). So a review run in your checkout never
-  vouches for another one: a `cd <other worktree> && git commit` passes only if a review run from that worktree saw the
-  content, and is otherwise blocked with a note naming both checkouts. Review and commit from a session whose working
-  directory is the committing checkout. A subagent cannot change its working directory, so give it an isolated worktree
-  (`isolation: "worktree"`) or keep it in the main checkout.
-- **What it sees as a commit.** `git` (with any global options) where a command starts - at the start, or after `;`,
-  `&&`, `||`, `|`, `(`, `$(` - optionally behind `VAR=x` assignments and the wrappers `rtk`, `env`, `command`, `exec`,
-  `nohup`, `time`, `xargs`, `sudo`. Not seen: a wrapper given its own options (`sudo -u x git commit`) or a commit
-  inside a shell string (`bash -c "git commit"`). The gate stops an agent that forgot to review; it is not a sandbox.
+  reads them from the committing checkout (after any `cd X` or `git -C X` before the commit). So a review run in your
+  checkout never vouches for another one: a `cd <other worktree> && git commit` passes only if a review run from that
+  worktree saw the content, and is otherwise blocked with a note naming both checkouts. Review and commit from a session
+  whose working directory is the committing checkout. A subagent cannot change its working directory, so give it an
+  isolated worktree (`isolation: "worktree"`) or keep it in the main checkout.
+- **What it sees as a commit.** The Bash command is split into simple commands, quotes respected, and walked in order:
+  each `cd X` moves the directory, and every `git <global options> commit` is checked in the directory it runs in, so
+  `git -C A commit && git -C B commit` checks both. `VAR=x` assignments and the wrappers `rtk`, `env`, `command`,
+  `exec`, `nohup`, `time`, `xargs`, `sudo` in front are skipped. Not seen: a wrapper given its own options
+  (`sudo -u x git commit`), a commit inside a shell string (`bash -c "git commit"`), or one built from `$VAR`. With
+  `--git-dir` or `--work-tree` the commit is checked in the current directory. The gate stops an agent that forgot to
+  review; it is not a sandbox.
 - **What passes.** Every tracked path that differs from `HEAD`, in the index or in the working tree, must match both
   snapshots byte for byte. That covers `commit -a` and pathspec commits without parsing them. Staging after a review is
   fine; one review can cover several commits that split the change.
