@@ -1,6 +1,6 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { REPORT_ONLY_ENABLED } from './channel-vars.mjs';
-import { buildCsp, generateNonce } from './csp';
+import { buildCsp, generateNonce, NON_HTML_CSP } from './csp';
 import { HTTP_GET } from './http-methods';
 import { SECURITY_HEADERS } from './security-headers';
 
@@ -54,6 +54,11 @@ function resolveRewriterFactory(override?: () => HtmlRewriterLike): (() => HtmlR
     return typeof HTMLRewriter === 'undefined' ? undefined : () => new HTMLRewriter();
 }
 
+/** Whether the response declares itself HTML. */
+function isHtml(response: Response): boolean {
+    return response.headers.get('content-type')?.toLowerCase().startsWith('text/html') === true;
+}
+
 /**
  * Decides whether a response is prerendered HTML that needs a nonce.
  *
@@ -67,7 +72,7 @@ function isStampableHtml(response: Response, method: string): boolean {
         return false;
     }
 
-    return response.headers.get('content-type')?.toLowerCase().startsWith('text/html') === true;
+    return isHtml(response);
 }
 
 /**
@@ -118,9 +123,21 @@ function stampNonce(response: Response, createRewriter: () => HtmlRewriterLike, 
     });
 }
 
-/** Adds whichever `SECURITY_HEADERS` the response lacks, on a copy, since its headers may be immutable. */
+/**
+ * Adds whichever `SECURITY_HEADERS` the response lacks, plus `NON_HTML_CSP` when it is not HTML and
+ * carries no policy (BT-819). Works on a copy, since the response's headers may be immutable.
+ */
 function withSecurityHeaders(response: Response): Response {
-    const missing = Object.entries(SECURITY_HEADERS).filter(([name]) => !response.headers.has(name));
+    const missing: [string, string][] = Object.entries(SECURITY_HEADERS).filter(
+        ([name]) => !response.headers.has(name),
+    );
+
+    const isHtml = response.headers.get('content-type')?.toLowerCase().startsWith('text/html') === true;
+
+    if (!isHtml && !response.headers.has('content-security-policy')) {
+        missing.push(['content-security-policy', NON_HTML_CSP]);
+    }
+
     if (missing.length === 0) {
         return response;
     }
