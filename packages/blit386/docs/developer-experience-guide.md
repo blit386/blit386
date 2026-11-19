@@ -300,6 +300,8 @@ before 6 AM:
 - Major updates: manual review with `major-update` label
 - Vulnerability alerts are enabled
 - GitHub Actions stay digest-pinned (SHA plus trailing `# vN` comment) via `helpers:pinGitHubActionDigests`
+- The scaffolder templates move with the workspace: the CI template's action pins, the kit's `copilot.ts` copy, and the
+  `package.json.tmpl` devDependencies land in the same group PRs as the repo's own copies
 - Renovate commits use a lowercase subject (`commitMessageAction: "update"`) and the `:gitSignOff` preset so they pass
   commitlint and the DCO check
 

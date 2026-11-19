@@ -52,3 +52,23 @@ test("renovate.json's copilot.ts regex manager still matches both action pins", 
     const names = [...source.matchAll(new RegExp(manager.matchStrings[0], 'g'))].map((m) => m.groups.depName);
     assert.deepEqual(names.sort(), ['actions/checkout', 'actions/setup-node']);
 });
+
+test("renovate.json's package.json.tmpl regex manager matches every literal dependency of both templates", () => {
+    const root = join(here, '..', '..', '..');
+    const config = JSON.parse(readFileSync(join(root, 'renovate.json'), 'utf8'));
+    const manager = config.customManagers.find((m) =>
+        m.managerFilePatterns.some((p) => p.includes('package\\.json\\.tmpl')),
+    );
+    assert.ok(manager, 'renovate.json has a custom manager for the package.json templates');
+
+    for (const language of ['js', 'ts']) {
+        const text = readFileSync(join(here, '..', 'templates', language, 'package.json.tmpl'), 'utf8');
+        const matched = [...text.matchAll(new RegExp(manager.matchStrings[0], 'g'))].map((m) => m.groups.depName);
+        // The regex reads the whole file, so a literal entry in either dependency map must be one it sees.
+        const { dependencies, devDependencies } = JSON.parse(text);
+        const literal = Object.entries({ ...dependencies, ...devDependencies })
+            .filter(([, range]) => !range.includes('{{'))
+            .map(([name]) => name);
+        assert.deepEqual(matched.sort(), literal.sort(), `${language}/package.json.tmpl dependencies Renovate can see`);
+    }
+});

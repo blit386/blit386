@@ -119,10 +119,10 @@ test('scaffolds a runnable game project', () => {
             'generated games must pin the kit the scaffolder actually resolved',
         );
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
-        assert.equal(
+        assert.match(
             manifest.devDependencies['@biomejs/biome'],
-            '^2.5.7',
-            'generated games should pin @biomejs/biome ^2.5.7',
+            /^\^2\.\d+\.\d+$/,
+            'generated games should pin a caret @biomejs/biome 2.x range',
         );
         assert.ok(manifest.devDependencies?.prettier, 'prettier devDependency is missing');
         assert.ok(manifest.scripts?.format, 'format script is missing');
@@ -628,7 +628,11 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
         assert.ok(pkg.dependencies?.blit386, 'blit386 should be a dependency');
         assert.ok(!pkg.dependencies.blit386.includes('workspace:*'), 'no workspace:* in blit386 dependency');
-        assert.equal(pkg.devDependencies?.['@biomejs/biome'], '^2.5.7', 'TS scaffold should pin @biomejs/biome ^2.5.7');
+        assert.match(
+            pkg.devDependencies?.['@biomejs/biome'] ?? '',
+            /^\^2\.\d+\.\d+$/,
+            'TS scaffold should pin @biomejs/biome ^2.x',
+        );
 
         const biomeConfig = JSON.parse(readFileSync(join(project, 'biome.json'), 'utf8'));
         assert.ok(Array.isArray(biomeConfig.files?.includes), 'biome.json files.includes should be an array');

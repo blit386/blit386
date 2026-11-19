@@ -47,8 +47,26 @@ or GitHub Actions PRs). Renovate owns version bumps, grouping, automerge, and Gi
 keeps the two systems from opening competing PRs for the same dependency.
 
 Renovate commits are shaped for this repo's gates: lowercase subjects (`commitMessageAction: "update"`) for commitlint,
-and the `:gitSignOff` preset for the DCO workflow. Workflow `node` / `pnpm` version pins are left to the
-`packageManager` / `engines` managers so Actions PRs do not drift away from `package.json`.
+and the `:gitSignOff` preset for the DCO workflow. What Renovate leaves alone or limits:
+
+- pnpm: only the root `packageManager` pin is bumped; workflow `pnpm` pins never are, so Actions PRs do not drift from
+  `package.json`.
+- Node moves by hand everywhere: workflow `node` pins, `.node-version`, and `engines.node`. `create-blit386`'s
+  `engines.node` is the Node floor of every generated game, so it is never a dependency update.
+- `pnpm-workspace.yaml` overrides get patch and minor bumps (in-major security fixes) but never majors: Renovate updates
+  the target of a selector such as `undici@>=7.0.0 <7.30.1` without knowing the selector bounds it.
+
+Renovate also covers the copies outside the workspace: the scaffolder's CI template and the kit's `copilot.ts` action
+pins (grouped with the repo workflows), and the caret-ranged dependencies of the scaffolder's `package.json.tmpl` files
+(a regex manager, grouped by package name with the workspace's own copies).
+
+Renovate passes no release age to pnpm, and pnpm applies its own `minimumReleaseAge` to every package it resolves. A
+bare name in `minimumReleaseAgeExclude` lets pnpm pick a days-old release whose exactly pinned sub-packages are not
+exempt, and the lockfile update fails with `ERR_PNPM_NO_MATURE_MATCHING_VERSION` - every failed "linting and formatting"
+PR before BT-783 was that (`cspell`, `knip`).
+
+BT-809 compared Renovate with Dependabot and a scheduled script and kept Renovate: Dependabot cannot read `*.tmpl` files
+or a TypeScript constant, and has no lock file maintenance.
 
 ## Supply-chain settings
 
