@@ -108,6 +108,8 @@ const probe = async (command) => {
         });
         const repo = join(root, 'repo');
         await run('git', ['init', '-q', '--template=', repo], { env });
+        // The table's `git -C game config ...` row needs the directory to exist to write anything.
+        mkdirSync(join(repo, 'game'));
         let succeeded = true;
         try {
             await run('sh', ['-c', command], { cwd: repo, env, timeout: 10_000 });
@@ -146,17 +148,22 @@ describe(`shell guard vs ${gitVersion ?? 'git (not found)'}`, {
     skip: process.platform === 'win32' ? 'needs a POSIX sh' : gitVersion ? false : 'git is not installed',
 }, () => {
     it('refuses every git config command that writes an alias, push refspec, or mirror key', async (t) => {
-        const tableRows = SHELL_CASES.map(([command]) => command).filter((command) => /\bgit config\b/.test(command));
+        const tableRows = SHELL_CASES.map(([command]) => command).filter((command) =>
+            /\bgit\b.*\bconfig\b/.test(command),
+        );
         const commands = [...new Set([...tableRows, ...permutations()])];
         const results = await pool(commands, availableParallelism(), probe);
 
         // The readback must see a plain write, or every assertion below passes vacuously.
-        const plain = results.filter(
-            (r) => r.command === 'git config alias.n reset' || r.command === 'git config remote.origin.push +main',
-        );
+        const plainWrites = [
+            'git -C game config alias.n reset',
+            'git config alias.n reset',
+            'git config remote.origin.push +main',
+        ];
+        const plain = results.filter((r) => plainWrites.includes(r.command));
         assert.deepEqual(
             plain.map((r) => r.alias || r.push),
-            [true, true],
+            [true, true, true],
             'the readback should find the keys a plain git config write sets',
         );
 
