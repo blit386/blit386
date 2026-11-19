@@ -91,6 +91,11 @@ Shared across every package:
 - Markdown tables stay compact (one space of padding, never aligned to the widest cell)
 - Docs sync: behavior, API, script, or workflow changes update their docs in the same change
   (`.claude/rules/docs-sync-required.md`)
+- Claims are true, not just in sync: every behavior claim a changed doc, rule, skill, or comment makes ("always
+  blocked", "every X proves Y", "never", "only") names the code line that makes it true, or is flagged
+- Guards and parsers get adversarial inputs: for a changed hook, guard, validator, or parser of untrusted text, list a
+  few realistic inputs that would slip past or wrongly trip it (quoting, wrapper commands, chained commands, option
+  operands) and check each; contrived ones go in a documented limits note instead
 
 `blit386`:
 
