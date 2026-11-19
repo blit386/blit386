@@ -350,6 +350,9 @@ describe('the kit-guard.ts plugin', () => {
                 'bash <<EOF\ngit push -f\nEOF',
                 // A seen part must not carry an unseen one: an earlier "always" for `git stash drop` would run both.
                 'git stash drop; GIT push --force',
+                // A command substitution inside double quotes runs too, and OpenCode checks it on its own.
+                'git stash drop "$(GIT push -f)"',
+                'git stash drop "`GIT push -f`"',
                 // OpenCode never checks a part that only sets variables, so its match must not count.
                 'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0; GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main; git push',
             ]) {
@@ -366,6 +369,7 @@ describe('the kit-guard.ts plugin', () => {
                 '(git push -f)',
                 'echo $(git stash clear)',
                 'echo `git stash drop`',
+                'echo "a" $(git stash clear)',
                 'git commit -m "a; b" && git push -f',
                 "git config 'remote.origin.push' +main",
                 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',

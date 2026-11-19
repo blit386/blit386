@@ -69,6 +69,9 @@ function globMatches(text: string, pattern: string): boolean {
     return new RegExp(`^${source}$`, 's').test(text);
 }
 
+/** A quoted span or an escaped character: text that never ends a command. */
+const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g;
+
 /**
  * Whether OpenCode's permission list asks about (or denies) every part of this command the guard core objects to, as
  * written. Every part, not any: a part the user once approved "always" would otherwise carry an unseen one through.
@@ -78,7 +81,11 @@ function globMatches(text: string, pattern: string): boolean {
  * backslash, so it can only find fewer commands than OpenCode does, never more.
  */
 function asksFirst(core: GuardCore, command: string): boolean {
-    if (command.includes('<<')) {
+    // A command substitution inside double quotes (`"$(...)"`) still runs, and OpenCode checks it on its own, but the
+    // cutting below would hide it in its outer command; a heredoc body is not a command to OpenCode at all.
+    const quoted = command.match(QUOTED_SPAN) ?? [];
+
+    if (command.includes('<<') || quoted.some((span) => span.startsWith('"') && /\$\(|`/.test(span))) {
         return false;
     }
 
@@ -89,7 +96,7 @@ function asksFirst(core: GuardCore, command: string): boolean {
     const rules: Record<string, string> = JSON.parse('{"*GIT_CONFIG_KEY_*":"ask","*GIT_CONFIG_PARAMETERS*":"ask","*git *config *??????.*.???? ?*":"ask","*git *config *??????.*.????\' ?*":"ask","*git *config *??????.*.????\\" ?*":"ask","*git *config *??????.*.?????? ?*":"ask","*git *config *??????.*.??????\' ?*":"ask","*git *config *??????.*.??????\\" ?*":"ask","*git *config *--ren*":"ask","*git *config *rename-section*":"ask","git reset *--hard*":"deny","git reset *--h":"deny","git reset *--h *":"deny","git reset *--ha":"deny","git reset *--ha *":"deny","git reset *--har":"deny","git reset *--har *":"deny","git checkout -- *":"deny","git checkout * -- *":"deny","git checkout .":"deny","git checkout * .":"deny","git checkout -f*":"deny","git checkout * -f*":"deny","git checkout *--f*":"deny","git checkout -p*":"deny","git checkout * -p*":"deny","git checkout -2*":"deny","git checkout * -2*":"deny","git checkout -3*":"deny","git checkout * -3*":"deny","git checkout *--pat*":"deny","git checkout *--ou*":"deny","git checkout *--th*":"deny","git checkout *--no-over*":"deny","git switch -f*":"deny","git switch * -f*":"deny","git switch *--f":"deny","git switch *--f *":"deny","git switch *--fo":"deny","git switch *--fo *":"deny","git switch *--for":"deny","git switch *--for *":"deny","git switch *--forc":"deny","git switch *--forc *":"deny","git switch *--force":"deny","git switch *--force *":"deny","git switch *--di*":"deny","git restore *":"deny","git restore --staged *":"allow","git clean":"deny","git clean *":"deny","git clean -n*":"allow","git clean --dry-run*":"allow","git push -f*":"ask","git push * -f*":"ask","git push *--force*":"ask","git push * +*":"ask","git push -uf*":"ask","git push * -uf*":"ask","git push -vf*":"ask","git push * -vf*":"ask","git push -qf*":"ask","git push * -qf*":"ask","git push -nf*":"ask","git push * -nf*":"ask","git push -df*":"ask","git push * -df*":"ask","git push -4f*":"ask","git push * -4f*":"ask","git push -6f*":"ask","git push * -6f*":"ask","git branch -D *":"ask","git branch * -D*":"ask","git branch -df*":"ask","git branch * -df*":"ask","git branch -fd*":"ask","git branch * -fd*":"ask","git branch -d -f*":"ask","git branch * -d -f*":"ask","git branch -f -d*":"ask","git branch * -f -d*":"ask","git branch -d --force*":"ask","git branch * -d --force*":"ask","git branch --force -d*":"ask","git branch * --force -d*":"ask","git branch --delete -f*":"ask","git branch * --delete -f*":"ask","git branch -f --delete*":"ask","git branch * -f --delete*":"ask","git branch --delete --force*":"ask","git branch * --delete --force*":"ask","git branch --force --delete*":"ask","git branch * --force --delete*":"ask","git stash drop*":"ask","git stash clear*":"ask","git *-c alias.*":"deny","git *--config-env*alias.*":"deny","git *-c * push*":"ask","git *--config-env* push*":"ask","*git *config *alias.* ?*":"deny","*git *config *rename-section *alias*":"deny","*git *config *--ren* *alias*":"deny","*GIT_CONFIG_KEY_*=alias.*":"deny","*GIT_CONFIG_PARAMETERS=*alias.*":"deny","git checkout-index *":"deny","git read-tree *--res*":"deny","git push -d*":"ask","git push * -d*":"ask","git push *--de*":"ask","git push * :*":"ask","git push :*":"ask","git push *--mi*":"ask"}');
 
     // Same length as the command, with quoted spans and escaped characters blanked out.
-    const masked = command.replace(/'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g, (span) => ' '.repeat(span.length));
+    const masked = command.replace(QUOTED_SPAN, (span) => ' '.repeat(span.length));
     const pieces: string[] = [];
     let start = 0;
 

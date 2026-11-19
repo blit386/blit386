@@ -69,6 +69,9 @@ function globMatches(text: string, pattern: string): boolean {
     return new RegExp(`^${source}$`, 's').test(text);
 }
 
+/** A quoted span or an escaped character: text that never ends a command. */
+const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g;
+
 /**
  * Whether OpenCode's permission list asks about (or denies) every part of this command the guard core objects to, as
  * written. Every part, not any: a part the user once approved "always" would otherwise carry an unseen one through.
@@ -78,7 +81,11 @@ function globMatches(text: string, pattern: string): boolean {
  * backslash, so it can only find fewer commands than OpenCode does, never more.
  */
 function asksFirst(core: GuardCore, command: string): boolean {
-    if (command.includes('<<')) {
+    // A command substitution inside double quotes (`"$(...)"`) still runs, and OpenCode checks it on its own, but the
+    // cutting below would hide it in its outer command; a heredoc body is not a command to OpenCode at all.
+    const quoted = command.match(QUOTED_SPAN) ?? [];
+
+    if (command.includes('<<') || quoted.some((span) => span.startsWith('"') && /\$\(|`/.test(span))) {
         return false;
     }
 
@@ -89,7 +96,7 @@ function asksFirst(core: GuardCore, command: string): boolean {
     const rules: Record<string, string> = JSON.parse('{{openCodeBashRules}}');
 
     // Same length as the command, with quoted spans and escaped characters blanked out.
-    const masked = command.replace(/'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g, (span) => ' '.repeat(span.length));
+    const masked = command.replace(QUOTED_SPAN, (span) => ' '.repeat(span.length));
     const pieces: string[] = [];
     let start = 0;
 
