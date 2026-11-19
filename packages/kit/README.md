@@ -26,8 +26,9 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     a file at a path where you already keep your own (say, a skill with the same name), sync leaves yours alone and
     saves the kit version as `<file>.new` - `--force` does not override this; rename or remove your file and sync again
     to take the kit version. Use `--check` to report drift without writing (CI-safe; `blit doctor` runs it too), or
-    `--force [path...]` to take the kit version back. Once sync has merged your edits into a kit file, `--check` treats
-    that file as settled - it will not keep reporting it as drifted.
+    `--force [path...]` to take the kit version back (paths are read from the game folder; `./` and absolute paths
+    inside it work, a path that is not a kit file or is outside the game is reported and exits non-zero). Once sync has
+    merged your edits into a kit file, `--check` treats that file as settled - it will not keep reporting it as drifted.
   - `blit agents add <claude|cursor|antigravity|codex|copilot|gemini|opencode|zed>` - set up the files for one AI
     assistant in a game that did not pick it at the start. It writes the new files and records them so
     `blit agents sync` keeps them fresh. It never overwrites a file you already have; if one is in the way it saves the

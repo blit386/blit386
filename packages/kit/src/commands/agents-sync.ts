@@ -5,9 +5,9 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import { agentsFile, collectDocs, generateAgentFiles, readKitVersion, replaceManagedRegion } from '../adapters';
 import { detectPackageManager, type PackageManager } from '../env';
@@ -243,8 +243,32 @@ interface SyncTally {
 }
 
 /**
+ * Turn a path given to `--force` into a manifest key: project-relative, forward slashes, no leading `./`.
+ * The project folder itself is `.`. Returns null when the path points outside the project. A relative path is
+ * read from the project root, not the current folder, because that is where manifest keys start.
+ */
+function toForcedKey(root: string, given: string): string | null {
+    const abs = resolve(root, given);
+    // Either side may be spelled through a symlink (macOS /var -> /private/var), so try each spelling of both.
+    const paths = existsSync(abs) ? [abs, realpathSync(abs)] : [abs];
+    const roots = [root, realpathSync(root)];
+
+    for (const base of roots) {
+        for (const path of paths) {
+            const rel = relative(base, path).replace(/\\/g, '/');
+
+            if (rel !== '..' && !rel.startsWith('../') && !isAbsolute(rel)) {
+                return rel === '' ? '.' : rel;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
  * Run a full sync against `root`. Returns the number of files that need the user's attention
- * (conflict `.new` copies); 0 means everything resolved cleanly.
+ * (conflict `.new` copies, or `--force` paths that matched nothing); 0 means everything resolved cleanly.
  */
 export function runFullSync(
     root: string,
@@ -258,6 +282,21 @@ export function runFullSync(
     }
 
     const manifest = result.manifest;
+
+    // Forced paths become manifest keys. One outside the game is refused before anything is written.
+    const forcedSet = new Set<string>();
+
+    // Without --force the names are never read, so a stray argument is not an error.
+    for (const given of options.force ? options.forcePaths : []) {
+        const key = toForcedKey(root, given);
+
+        if (key === null) {
+            out(ui.warn(`${given} is outside your game, so I left everything as it was.`));
+            return 1;
+        }
+
+        forcedSet.add(key);
+    }
 
     const regenerated = regenerate(manifest, root);
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
@@ -274,8 +313,6 @@ export function runFullSync(
         unchanged: 0,
     };
 
-    // Forced paths normalize to forward slashes to match manifest/regeneration keys.
-    const forcedSet = new Set(options.forcePaths.map((p) => p.replace(/\\/g, '/')));
     const isForced = (relPath: string): boolean => options.force && (forcedSet.size === 0 || forcedSet.has(relPath));
 
     // Pass 1: every file the new kit wants to emit.
@@ -476,7 +513,23 @@ export function runFullSync(
 
     printSummary(out, tally);
 
-    return tally.review.length + tally.collided.length;
+    let ignored = 0;
+
+    for (const key of forcedSet) {
+        if (!regenerated.has(key)) {
+            out(ui.warn(`${key} is not a file the kit manages, so --force did nothing for it. Check the spelling.`));
+            ignored++;
+        } else if (classifyFile(key) === 'user-owned') {
+            out(
+                ui.warn(
+                    `${key} is yours, so --force leaves it alone. Delete it and sync again to get the kit version.`,
+                ),
+            );
+            ignored++;
+        }
+    }
+
+    return tally.review.length + tally.collided.length + ignored;
 }
 
 /** Print the Tier-1 voice summary of a sync run. */

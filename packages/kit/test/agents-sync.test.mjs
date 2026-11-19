@@ -6,6 +6,7 @@
 
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -337,6 +338,149 @@ test('sync keeps one managed region, however many syncs, when the notes above it
         const after = readFileSync(join(root, 'CLAUDE.md'), 'utf8');
         assert.equal(after.split('<!-- blit-kit:managed:end -->').length - 1, 2, 'one mention plus one real region');
         assert.equal(after, `${notes}${claudeMd.content}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+/**
+ * Game that tracks `skill.path` at the kit version (no base copy) but holds a hand-edited file there, so a plain sync
+ * saves the kit version as `.new` and only `--force` puts it back.
+ *
+ * @returns {string}
+ */
+function makeEditedSkillGame() {
+    const root = makeGame('---\nname: mine\n---\n\nEdited by hand.\n');
+    writeFileSync(
+        join(root, '.blit', 'manifest.json'),
+        JSON.stringify({
+            kitVersion: '0.0.0',
+            vars,
+            files: [
+                { path: 'CLAUDE.md', class: 'shared', sha256: '' },
+                {
+                    path: skill.path,
+                    class: 'kit-owned',
+                    sha256: createHash('sha256').update(skill.content).digest('hex'),
+                },
+            ],
+        }),
+    );
+    return root;
+}
+
+/**
+ * @param {string} root
+ * @param {string[]} args
+ */
+function runForce(root, args) {
+    const result = spawnSync(process.execPath, [blitCli, 'agents', 'sync', '--force', ...args], {
+        cwd: root,
+        encoding: 'utf8',
+    });
+    return { status: result.status, output: `${result.stdout}${result.stderr}` };
+}
+
+test('sync --force with a path that matches no kit file says so and exits non-zero', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const { status, output } = runForce(root, ['CLADE.md']);
+
+        assert.ok(output.includes('CLADE.md'), `expected the ignored path to be named, got:\n${output}`);
+        assert.equal(status, 1);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync --force accepts a path written with a leading ./', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const { status, output } = runForce(root, [`./${skill.path}`]);
+
+        assert.equal(
+            readFileSync(join(root, skill.path), 'utf8'),
+            skill.content,
+            `kit version expected, got:\n${output}`,
+        );
+        assert.equal(status, 0, output);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync --force accepts an absolute path inside the project', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const { status, output } = runForce(root, [join(root, skill.path)]);
+
+        assert.equal(
+            readFileSync(join(root, skill.path), 'utf8'),
+            skill.content,
+            `kit version expected, got:\n${output}`,
+        );
+        assert.equal(status, 0, output);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync --force with a path outside the project fails before changing anything', () => {
+    const root = makeEditedSkillGame();
+    const edited = readFileSync(join(root, skill.path), 'utf8');
+
+    try {
+        const { status, output } = runForce(root, [join(tmpdir(), 'elsewhere', 'CLAUDE.md')]);
+
+        assert.ok(output.includes('outside'), `expected an outside-the-game message, got:\n${output}`);
+        assert.equal(status, 1);
+        assert.equal(readFileSync(join(root, skill.path), 'utf8'), edited, 'a refused run must not touch files');
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync --force on a user-owned file says it is left alone and exits non-zero', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const { status, output } = runForce(root, [LAUNCH_JSON]);
+
+        assert.ok(output.includes(`${LAUNCH_JSON} is yours`), `expected a left-alone message, got:\n${output}`);
+        assert.equal(status, 1);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync --force with the game folder itself reports it as not a kit file, not as outside the game', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const { status, output } = runForce(root, ['.']);
+
+        assert.ok(!output.includes('outside'), `the folder is inside the game, got:\n${output}`);
+        assert.ok(output.includes('not a file the kit manages'), output);
+        assert.equal(status, 1);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('sync without --force ignores a stray path argument', () => {
+    const root = makeEditedSkillGame();
+
+    try {
+        const result = spawnSync(process.execPath, [blitCli, 'agents', 'sync', join(tmpdir(), 'elsewhere')], {
+            cwd: root,
+            encoding: 'utf8',
+        });
+
+        assert.ok(!`${result.stdout}${result.stderr}`.includes('outside'));
+        assert.ok(`${result.stdout}${result.stderr}`.includes('updated'), 'sync should have run to its summary');
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
