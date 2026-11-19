@@ -75,6 +75,18 @@
       "enabled": false
     },
     {
+      "description": "Do not bump engines.node: create-blit386's engines.node is the Node floor written into every generated game (NODE_FLOOR), so it moves by hand, never as a dependency update",
+      "matchDepTypes": ["engines"],
+      "matchPackageNames": ["node"],
+      "enabled": false
+    },
+    {
+      "description": "pnpm-workspace.yaml overrides: Renovate updates the target of a selector like 'undici@>=7.0.0 <7.30.1' without knowing the selector bounds it, so it proposes majors no consumer asked for. Keep patch/minor (in-major security fixes), drop majors",
+      "matchDepTypes": ["pnpm-workspace.overrides"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "GitHub Actions. Includes the scaffolder CI template and the kit's copilot.ts pins, which ci-pins.test.mjs and agent-copilot.test.mjs hold to the repo workflows, so all copies must move in one PR",
       "matchManagers": ["github-actions"],
       "groupName": "github actions",
@@ -163,10 +175,19 @@
     },
     {
       "customType": "regex",
-      "description": "actions/checkout and actions/setup-node SHA pins (with the # vN comment) in the kit's Copilot adapter, a copy of the scaffolder CI template pins",
+      "description": "actions/checkout and actions/setup-node SHA pins (with the # vN comment) in the kit's Copilot adapter, a copy of the scaffolder CI template pins. Docker versioning matches the github-actions manager; the regex default (semver-coerced) would rewrite '# v6' to '# v6.1.0' while the workflows keep '# v6'",
       "managerFilePatterns": ["/^packages/kit/src/adapters/copilot\\.ts$/"],
       "matchStrings": ["'(?<depName>actions/[a-z-]+)@(?<currentDigest>[a-f0-9]{40}) # (?<currentValue>v\\d+)'"],
-      "datasourceTemplate": "github-tags"
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Caret-ranged devDependencies of the scaffolder's package.json templates. The npm manager only parses files ending in json, so it cannot read *.json.tmpl. The caret stays outside currentValue so the version itself is bumped; {{placeholder}} values (blit386, @blit386/kit) never match",
+      "managerFilePatterns": ["/^packages/create-blit386/templates/(js|ts)/package\\.json\\.tmpl$/"],
+      "matchStrings": ["\"(?<depName>[^\"]+)\": \"\\^(?<currentValue>\\d[^\"]*)\""],
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
     }
   ]
 }

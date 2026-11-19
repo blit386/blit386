@@ -52,3 +52,25 @@ test("renovate.json's copilot.ts regex manager still matches both action pins", 
     const names = [...source.matchAll(new RegExp(manager.matchStrings[0], 'g'))].map((m) => m.groups.depName);
     assert.deepEqual(names.sort(), ['actions/checkout', 'actions/setup-node']);
 });
+
+test("renovate.json's package.json.tmpl regex manager matches every literal devDependency of both templates", () => {
+    const root = join(here, '..', '..', '..');
+    const config = JSON.parse(readFileSync(join(root, 'renovate.json'), 'utf8'));
+    const manager = config.customManagers.find((m) =>
+        m.managerFilePatterns.some((p) => p.includes('package\\.json\\.tmpl')),
+    );
+    assert.ok(manager, 'renovate.json has a custom manager for the package.json templates');
+
+    for (const language of ['js', 'ts']) {
+        const text = readFileSync(join(here, '..', 'templates', language, 'package.json.tmpl'), 'utf8');
+        const matched = [...text.matchAll(new RegExp(manager.matchStrings[0], 'g'))].map((m) => m.groups.depName);
+        const literal = Object.entries(JSON.parse(text).devDependencies)
+            .filter(([, range]) => !range.includes('{{'))
+            .map(([name]) => name);
+        assert.deepEqual(
+            matched.sort(),
+            literal.sort(),
+            `${language}/package.json.tmpl devDependencies Renovate can see`,
+        );
+    }
+});

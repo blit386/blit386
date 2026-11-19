@@ -29,8 +29,12 @@
   `.cursor/mcp.json`, ...) and Copilot's `.github/workflows/copilot-setup-steps.yml` - do not add a static template for
   them. That workflow copies the action pins of `templates/optional/ci/github/workflows/ci.yml` (`ACTIONS_CHECKOUT` /
   `ACTIONS_SETUP_NODE` in the kit's `src/adapters/copilot.ts`); bump both together - `test/agent-copilot.test.mjs` fails
-  when they drift. Renovate does not scan `templates/`, so `test/ci-pins.test.mjs` holds the template to the SHAs the
-  repo's own `.github/workflows/` use.
+  when they drift. Renovate bumps the template, `copilot.ts`, and the repo's own `.github/workflows/` in one "github
+  actions" PR (`renovate.json`), and `test/ci-pins.test.mjs` holds the template to the SHAs those workflows use.
+- The literal caret-ranged devDependencies of `templates/{js,ts}/package.json.tmpl` (Biome, Prettier, Vite, TypeScript)
+  are bumped by a Renovate regex manager, in the same group PR as the workspace's own copies; Renovate's npm manager
+  cannot read `*.json.tmpl`. Keep them as `"name": "^x.y.z"` - `test/ci-pins.test.mjs` fails when the regex stops seeing
+  one. `{{placeholder}}` values (`blit386`, `@blit386/kit`) are never matched.
 - A game whose `packageManager` pin is Yarn 2 or later also gets a `.yarnrc.yml` with `nodeLinker: node-modules`
   (written in code by `scaffold()`, not a template): Yarn's default Plug'n'Play makes no `node_modules`, and `npx blit`,
   the `biome.json` `$schema` path, and the agent hooks all rely on one. Teaching `yarn blit` instead would leave the
