@@ -31,7 +31,7 @@
       },
       "gemini": {
         "event": "AfterTool",
-        "command": "node \"$GEMINI_PROJECT_DIR/.gemini/hooks/format-file.cjs\"",
+        "command": "node .gemini/hooks/format-file.cjs",
         "matcher": "write_file|replace",
         "timeout": 30000
       },
@@ -146,7 +146,7 @@
       },
       "gemini": {
         "event": "SessionStart",
-        "command": "cd \"$GEMINI_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$GEMINI_PROJECT_DIR/.gemini/hooks/session-start.sh\"",
+        "command": "BLIT_PM_INSTALL='{{pmInstall}}' sh .gemini/hooks/session-start.sh",
         "matcher": "startup",
         "timeout": 300000
       },
