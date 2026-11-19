@@ -598,6 +598,38 @@ test('bun CI installs bun instead of relying on Corepack', () => {
     }
 });
 
+for (const [pin, expected] of [
+    ['yarn@1.22.22', 'yarn install --frozen-lockfile'],
+    ['yarn@4.9.2', 'yarn install --immutable'],
+]) {
+    test(`yarn CI install flag follows the ${pin} pin`, () => {
+        const work = mkdtempSync(join(tmpdir(), 'cbt-yarn-ci-'));
+
+        try {
+            const project = join(work, 'yarn-ci-game');
+            scaffold({
+                targetDir: project,
+                projectName: 'yarn-ci-game',
+                pmInstall: 'yarn',
+                pmRunDev: 'yarn dev',
+                pmRunBuild: 'yarn build',
+                pmRunFormat: 'yarn format',
+                pmRunLint: 'yarn lint',
+                pmCiInstall: 'yarn install --frozen-lockfile',
+                pmCiPrepare: 'corepack enable',
+                includeCi: true,
+                agents: [],
+                packageManager: pin,
+            });
+
+            const ci = readFileSync(join(project, '.github', 'workflows', 'ci.yml'), 'utf8');
+            assert.ok(ci.includes(`run: '${expected}'`), `ci.yml should install with "${expected}"`);
+        } finally {
+            rmSync(work, { recursive: true, force: true });
+        }
+    });
+}
+
 test('scaffolds a TypeScript project when language is ts', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
 

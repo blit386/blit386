@@ -254,8 +254,13 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
-        pmCiInstall: options.pmCiInstall ?? '',
+
+        // Yarn 2+ deprecates `--frozen-lockfile` (warns YN0050); Yarn 1 ignores `--immutable` and rewrites the lockfile.
+        pmCiInstall: YARN_BERRY_PIN.test(options.packageManager ?? '')
+            ? (options.pmCiInstall ?? '').replace('--frozen-lockfile', '--immutable')
+            : (options.pmCiInstall ?? ''),
         pmCiPrepare: options.pmCiPrepare ?? '',
+
         packageManager: options.packageManager ?? '',
 
         // Resolved per language so base templates stay language-agnostic.

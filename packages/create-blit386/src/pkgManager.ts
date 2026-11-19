@@ -105,6 +105,7 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'yarn build',
                 runFormatCmd: 'yarn format',
                 runLintCmd: 'yarn lint',
+                // Yarn 1 spelling; scaffold() swaps in --immutable for a yarn@2+ pin.
                 ciInstallCmd: 'yarn install --frozen-lockfile',
                 ciPrepareCmd: 'corepack enable',
                 installArgs: [],
