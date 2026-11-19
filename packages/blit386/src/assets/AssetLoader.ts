@@ -275,15 +275,28 @@ export class AssetLoader {
      * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed image file.
      *
-     * @param url - Fetch URL of the image to hot-reload; also the cache key when nothing cached matches it.
-     * @returns The freshly loaded image element, cached under the matching key.
+     * Nothing is fetched when no cached or in-flight key matches: an image the game never loaded
+     * has nothing to replace, so the call reports a miss instead of caching it. A caller that
+     * knows something else holds the image (a registered sprite sheet whose cache entry was
+     * evicted) passes `isForced` to fetch and cache it under `url` anyway.
+     *
+     * @param url - Fetch URL of the image to hot-reload.
+     * @param options - Optional settings.
+     * @param options.isForced - Fetch and cache under `url` even when no key matches.
+     * @returns The freshly loaded image element, cached under the matching key, or `null` when no cached or in-flight key matches `url`.
      * @throws Error if the cache-busted image fails to load.
      */
-    static async hotReloadImage(url: string): Promise<HTMLImageElement> {
+    static async hotReloadImage(url: string, options?: { isForced?: boolean }): Promise<HTMLImageElement | null> {
         const target = normalizeAssetUrl(url);
         // In-flight keys count too: an image still loading when its save arrives must re-cache under the game's key.
         const keys = new Set([...loadedImages.keys(), ...loadingPromises.keys()]);
-        const [cacheKey = url, ...duplicates] = [...keys].filter((key) => normalizeAssetUrl(key) === target);
+        const [matchedKey, ...duplicates] = [...keys].filter((key) => normalizeAssetUrl(key) === target);
+
+        if (matchedKey === undefined && !options?.isForced) {
+            return null;
+        }
+
+        const cacheKey = matchedKey ?? url;
 
         for (const key of duplicates) {
             AssetLoader.evict(key);

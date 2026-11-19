@@ -81,9 +81,10 @@ function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload
  * resolved), so `SpriteSheet.status`/`progress` track the replacement in flight.
  *
  * @param url - Changed image URL, matching whatever the engine cached it under.
- * @returns `true` when at least one sheet was loaded from `url`.
+ * @returns `'sheet'` when at least one sheet was loaded from `url`, `'cache'` when only the `AssetLoader`
+ *   cache held it (refreshed, no sheet to replace), `'none'` when nothing held it (nothing fetched).
  */
-async function hotReloadImageAsset(url: string): Promise<boolean> {
+async function hotReloadImageAsset(url: string): Promise<'sheet' | 'cache' | 'none'> {
     const sheets = getHotReloadSheets(url);
 
     if (sheets) {
@@ -92,10 +93,13 @@ async function hotReloadImageAsset(url: string): Promise<boolean> {
         }
     }
 
-    let image: HTMLImageElement;
+    let image: HTMLImageElement | null;
 
     try {
-        image = await AssetLoader.hotReloadImage(url);
+        // A registered sheet needs the new image even if its cache entry was evicted.
+        image = await (sheets && sheets.size > 0
+            ? AssetLoader.hotReloadImage(url, { isForced: true })
+            : AssetLoader.hotReloadImage(url));
     } catch (error) {
         if (sheets) {
             for (const sheet of sheets) {
@@ -106,8 +110,12 @@ async function hotReloadImageAsset(url: string): Promise<boolean> {
         throw error;
     }
 
+    if (!image) {
+        return 'none';
+    }
+
     if (!sheets || sheets.size === 0) {
-        return false;
+        return 'cache';
     }
 
     const palette = BTAPI.instance.palettes.getPalette();
@@ -121,7 +129,7 @@ async function hotReloadImageAsset(url: string): Promise<boolean> {
         }
     }
 
-    return true;
+    return 'sheet';
 }
 
 /**
@@ -165,7 +173,18 @@ async function routeAssetChanged(payload: AssetChangedPayload): Promise<void> {
 
         switch (payload.type) {
             case 'image':
-                isMatched = await hotReloadImageAsset(payload.url);
+                {
+                    const outcome = await hotReloadImageAsset(payload.url);
+
+                    if (outcome === 'cache') {
+                        console.info(
+                            `[BT] Refreshed the cached image '${payload.url}'; no sprite sheet uses it, so nothing else to replace`,
+                        );
+                    }
+
+                    isMatched = outcome !== 'none';
+                }
+
                 break;
 
             case 'audio':

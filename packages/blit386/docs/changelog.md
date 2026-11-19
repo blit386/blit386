@@ -126,6 +126,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Dev hot reload: saving an image that no sprite sheet and no `AssetLoader` call uses no longer fetches and caches it.
+  An image only `AssetLoader.loadImage` loaded is refreshed in the cache, and the console says so instead of reporting
+  that nothing was replaced.
 - A sprite drawn from a source rect that lies fully outside its sheet no longer marks wrong colors as used in the
   overlay's palette band, and no longer stalls the frame scanning millions of pixels when the rect is far away. The draw
   itself is unchanged.
