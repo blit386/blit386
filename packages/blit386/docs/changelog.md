@@ -19,15 +19,6 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.10.0 - Unreleased
-
-### Fixed
-
-- `@blit386/kit`: Gemini CLI now formats the file it just edited, and runs the session-start dependency install and
-  `blit doctor`, in a generated game whose folder path has a space in it, and the formatter also runs on Windows. Both
-  hooks named their script through an already-quoted project path, so they never found it. Run `npx blit agents sync` in
-  an existing game to pick up the fix.
-
 ## 1.9.0 - Unreleased
 
 ### Added
@@ -139,6 +130,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   whose path has a space in it - they could not find their own script there, so Gemini let every call through. A missing
   or broken guard script now blocks the call too, instead of letting it through. On Windows a missing `node` still lets
   the call through. Run `npx blit agents sync` in an existing game to pick up the fix.
+- `@blit386/kit`: Gemini CLI now formats the file it just edited, and runs the session-start dependency install and
+  `blit doctor`, in a generated game whose folder path has a space in it, and the formatter also runs on Windows. Both
+  hooks named their script through an already-quoted project path, so they never found it. Run `npx blit agents sync` in
+  an existing game to pick up the fix.
 - `@blit386/kit`: the shell guard in generated games now also catches a git alias or push setting that outlasts one
   command. Writing an alias with `git config` (any scope, `set`, `--add`, `--file`, or a section rename) or through a
   `GIT_CONFIG_KEY_<n>` / `GIT_CONFIG_PARAMETERS` variable is blocked, like the inline `git -c alias...` already was,
