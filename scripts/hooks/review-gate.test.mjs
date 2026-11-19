@@ -79,6 +79,7 @@ describe('review-gate commit gate', () => {
             `true; ${COMMIT}`,
             `GIT_AUTHOR_NAME=x ${COMMIT}`,
             `rtk ${COMMIT}`,
+            'git -c user.name="A B" commit -m change',
             `(${COMMIT})`,
             `echo "$(${COMMIT})"`,
         ]) {
@@ -209,6 +210,21 @@ describe('review-gate commit gate', () => {
 
         assert.equal(commit(other, `cd "${repo}" && ${COMMIT}`).status, 2);
         assert.doesNotMatch(commit(repo).stderr, /reviews count only/u);
+    });
+
+    test('stays fast on option-heavy commands that never reach commit (CodeQL ReDoS shapes)', () => {
+        const repo = makeRepo();
+
+        for (const command of [
+            `\ngit ${'-C -- '.repeat(5000)}`,
+            `\ngit -C ${'"!" -C '.repeat(5000)}`,
+            `\ngit -${'-- -'.repeat(5000)}`,
+        ]) {
+            const started = Date.now();
+            const result = commit(repo, command);
+            assert.equal(result.status, 0);
+            assert.ok(Date.now() - started < 3000, `took ${Date.now() - started} ms`);
+        }
     });
 
     test('ignores commands that are not a commit', () => {

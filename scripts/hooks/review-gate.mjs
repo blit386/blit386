@@ -36,13 +36,15 @@ const ALLOW = 0;
 const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 
 /**
- * `git` where a command starts (line start, or after `;`, `&`, `|`, `(`, `$(`, past `VAR=x` and `rtk`), then only global
- * options (`-C dir`, `-c key=value`, `--flag`), then `commit` - not `commit-tree`, and not the phrase quoted inside
- * another command's argument (a grep pattern, a PR body).
+ * `git` where a command starts (line start, or after `;`, `&`, `|`, `(`, `$(`, past `VAR=x` and `rtk`) - not the phrase
+ * quoted inside another command's argument (a grep pattern, a PR body). The options after it are walked in
+ * {@link findCommit}, not matched here: a regex over them backtracks exponentially (CodeQL js/redos).
  */
-const GIT_COMMIT =
-    /(?:^|[\n;&|(]|\$\()\s*(?:[A-Za-z_]\w*=\S*\s+)*(?:rtk\s+)?git((?:\s+(?:-C\s+(?:"[^"]+"|'[^']+'|\S+)|-c\s+\S+|--?[\w-]+(?:=\S+)?))*)\s+commit(?![\w-])/u;
-const GIT_C_OPTION = /-C\s+("[^"]+"|'[^']+'|\S+)/u;
+const GIT_AT_COMMAND_START = /(?:^|[\n;&|(]|\$\()\s*(?:[A-Za-z_]\w*=\S*\s+)*(?:rtk\s+)?git(?=\s)/gu;
+const COMMAND_END = /[\n;&|)]/u;
+const DIR_OPTION = '-C';
+// Each alternative starts with a different character, so the repetition cannot backtrack.
+const SHELL_WORD = /(?:"[^"]*"|'[^']*'|[^\s"'])+/gu;
 const CD_PREFIX = /^\s*cd\s+("[^"]+"|'[^']+'|[^\s;&]+)\s*(?:&&|;)/u;
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
@@ -118,13 +120,42 @@ function recordReview(payload) {
     return ALLOW;
 }
 
-/** The directory a commit command acts on: the hook cwd, then a leading `cd X &&`, then `git -C X`. */
-function commitDir(cwd, command, globalOptions) {
-    const cd = CD_PREFIX.exec(command);
-    const dir = cd ? resolve(cwd, unquote(cd[1])) : cwd;
-    const dashC = GIT_C_OPTION.exec(globalOptions);
+/**
+ * The `-C` directories of the first `git <global options> commit` in `command`, or `null` when it runs no commit.
+ * `commit-tree` and other subcommands do not count.
+ */
+function findCommit(command) {
+    for (const start of command.matchAll(GIT_AT_COMMAND_START)) {
+        const words =
+            command
+                .slice(start.index + start[0].length)
+                .split(COMMAND_END, 1)[0]
+                .match(SHELL_WORD) ?? [];
+        const dirs = [];
 
-    return dashC ? resolve(dir, unquote(dashC[1])) : dir;
+        for (let i = 0; i < words.length; i++) {
+            if (words[i] === DIR_OPTION || words[i] === '-c') {
+                if (words[i] === DIR_OPTION && words[i + 1]) {
+                    dirs.push(words[i + 1]);
+                }
+
+                i++;
+            } else if (words[i] === 'commit') {
+                return dirs;
+            } else if (!words[i].startsWith('-')) {
+                break;
+            }
+        }
+    }
+
+    return null;
+}
+
+/** The directory a commit command acts on: the hook cwd, then a leading `cd X &&`, then each `git -C X` in turn. */
+function commitDir(cwd, command, dashCDirs) {
+    const cd = CD_PREFIX.exec(command);
+
+    return resolve(cd ? resolve(cwd, unquote(cd[1])) : cwd, ...dashCDirs.map(unquote));
 }
 
 /**
@@ -172,14 +203,14 @@ function unreviewedPaths(repo, marker, { staged, all }) {
 /** PreToolUse (Bash): block a commit whose content both reviews did not see. */
 async function gateCommit(payload) {
     const command = payload.tool_input?.command ?? '';
-    const match = GIT_COMMIT.exec(command);
+    const dashCDirs = findCommit(command);
 
-    if (!match) {
+    if (!dashCDirs) {
         return ALLOW;
     }
 
     const sessionDir = payload.cwd ?? process.cwd();
-    const repo = repoOf(commitDir(sessionDir, command, match[1]));
+    const repo = repoOf(commitDir(sessionDir, command, dashCDirs));
     const paths = await changedSourcePaths(repo.top);
 
     if (paths.all.length === 0) {
