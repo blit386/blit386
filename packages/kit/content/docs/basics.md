@@ -135,6 +135,8 @@ score - those should sit still.
 a promise, so you must `await` it:
 
 ```js
+import { SpriteSheet } from 'blit386';
+
 async init() {
     this.sheet = await SpriteSheet.load('sprites/player.png'); // await is required
     return true;

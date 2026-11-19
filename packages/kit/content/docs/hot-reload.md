@@ -24,7 +24,7 @@ includes it.
 Not every edit is the same:
 
 1. Method-only change - you edited `update()`, `render()`, or a top-level constant those methods use. The running game
-   keeps every field (`this.score`, `this.pos`, …). This is the common case.
+   keeps every field (`this.score`, `this.pos`, ...). This is the common case.
 2. Re-init - you edited `init()`, the constructor, or a class field initializer. The engine builds a fresh instance and
    runs `init()` again. Without extra code, fields reset to whatever `init()` sets. Optional `onHotReload` lets you copy
    important values across (see below).
@@ -93,6 +93,8 @@ Installing the plugin above also gets you `BT.isDevMode` (blit386 1.5.0+) - `tru
 game, `false` once you `npm run build` it. Use it to gate things you only want while developing:
 
 ```js
+import { BT } from 'blit386';
+
 update() {
     if (BT.isDevMode) {
         console.log('dev build - extra logging on');

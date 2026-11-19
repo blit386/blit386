@@ -21,6 +21,8 @@ For one-player games, the player number is `0`.
 There are three questions you can ask, and the difference matters:
 
 ```js
+import { BT } from 'blit386';
+
 update() {
     // isDown: true every frame the button is held. Use for movement.
     if (BT.isDown(BT.BTN_RIGHT, 0)) {

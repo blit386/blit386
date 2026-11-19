@@ -9,7 +9,7 @@ sounds out of nothing, so you can have a jump sound before you have found a sing
 `hit`, `blip`. Each one is a recipe; `AudioClip.synth()` cooks the recipe into a clip you can play.
 
 ```js
-import { AudioClip, BT } from 'blit386';
+import { AudioClip, BT, Vector2i } from 'blit386';
 
 async init() {
     // Both of these load things, so both need await (see docs/basics.md).
@@ -45,6 +45,8 @@ this.boom = await AudioClip.load('/sounds/boom.wav');
 keep the ticket if you plan to stop the sound or ask about it later.
 
 ```js
+this.humSound = await AudioClip.load('/sounds/hum.wav');
+
 // A looping engine hum, at half volume.
 this.hum = BT.soundPlay(this.humSound, { loop: true, volume: 0.5 });
 

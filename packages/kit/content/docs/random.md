@@ -13,6 +13,8 @@ for that, and picking the right one saves a lot of trouble.
 `BT.random` is a property, not a call - no parentheses on `BT.random` itself, only on the method after it.
 
 ```js
+import { BT } from 'blit386';
+
 update() {
     const lane = BT.random.int(3); // 0, 1, or 2 - the top number is excluded
     const damage = BT.random.intInclusive(1, 6); // 1 to 6, like a die - both ends included
@@ -75,6 +77,7 @@ import { PerlinNoise } from 'blit386';
 
 // in init():
 this.terrain = new PerlinNoise(9001);
+this.groundY = [];
 for (let x = 0; x < 320; x++) {
   const n = this.terrain.noise1D(x * 0.02); // -1 to 1
   this.groundY.push(Math.floor(120 + n * 40)); // round: screen coordinates are whole numbers
