@@ -250,13 +250,14 @@ export class BitmapFont {
      * Loads a bitmap font from a `.btfont` JSON file.
      *
      * The font descriptor can reference either an embedded PNG data URI
-     * (`data:image/png;base64,...`) or a texture file path relative to the font JSON file.
-     * A texture path that, joined to the font's folder, leads to a different origin than the font
-     * file is rejected. Only a font loaded by a bare file name (`font.btfont`) can get there.
+     * (`data:image/png;base64,...`) or a texture path. A relative path resolves against the font file's
+     * folder and a rooted path (`/fonts/atlas.png`) from the site root, the same as `Image.src`. A
+     * texture that resolves to a different origin than the font file is rejected.
      *
-     * @changed 1.9.0 Rejects a joined `texture` path that leads to another origin than the `.btfont`
-     *   file with an `AssetLimitError` - in practice an absolute URL on another site in a font loaded
-     *   by a bare file name.
+     * @changed 1.9.0 Resolves a `texture` path with URL semantics instead of joining it to the font's
+     *   folder, so a rooted path (`/fonts/atlas.png`) now loads instead of requesting
+     *   `fonts//fonts/atlas.png`. An absolute URL on another site is now rejected with an
+     *   `AssetLimitError` for every font, not only one loaded by a bare file name.
      * @param url - Path to the .btfont file.
      * @returns Loaded bitmap font instance.
      * @throws Error if the font descriptor or texture cannot be loaded.

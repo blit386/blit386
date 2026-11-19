@@ -16,7 +16,7 @@ import {
     validateGlyphCount,
 } from '../utils/AssetLimits';
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
-import { appendCacheBustQuery } from '../utils/HotReloadUrl';
+import { appendCacheBustQuery, resolveAgainstDocument } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
 import type { Glyph } from './BitmapFont';
@@ -331,10 +331,10 @@ export function buildGlyphsFromEntries(
 }
 
 /**
- * Loads a texture from either a base64 data URI or a relative path.
+ * Loads a texture from either a base64 data URI or a URL resolved against the font file.
  *
- * @param texture - Data URI (starts with "data:") or relative path.
- * @param url - URL of the .btfont file (used to resolve relative paths).
+ * @param texture - Data URI (starts with "data:"), or a path or URL resolved against the .btfont file.
+ * @param url - URL of the .btfont file (the base for relative paths).
  * @returns Loaded texture image for the font atlas.
  * @throws AssetLimitError (as a rejection) if the texture path leads to another origin than the font file.
  */
@@ -344,8 +344,9 @@ export function loadTexture(texture: string, url: string): Promise<HTMLImageElem
         return loadImage(texture);
     }
 
-    // Relative paths are joined to the .btfont file's directory; the result must stay on its origin.
-    const textureUrl = url.substring(0, url.lastIndexOf('/') + 1) + texture;
+    // Resolved like Image.src and every other loader: relative to the .btfont file, a rooted path from the site root.
+    // The result must stay on the font file's origin.
+    const textureUrl = new URL(texture, resolveAgainstDocument(url)).href;
     const originError = validateBtfontTextureOrigin(textureUrl, url);
 
     return originError ? Promise.reject(new AssetLimitError(originError)) : loadImage(textureUrl);
