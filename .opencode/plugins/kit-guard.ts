@@ -15,7 +15,10 @@
 //      session.
 //
 // The "ask first" commands (force push, branch -D, stash drop) are left to the permission list in opencode.json,
-// because a plugin can only block, not ask.
+// because a plugin can only block, not ask. When one is written in a way that list cannot see (an uppercase GIT, a
+// quoted value, a tab, `bash -c "..."`), this blocks it instead and tells the assistant to ask you and then run it as
+// a plain git command, which OpenCode does ask about. It checks this against a copy of the list written into this
+// file, the same patterns as opencode.json.
 
 import type { Plugin } from '@opencode-ai/plugin';
 
@@ -55,6 +58,83 @@ function editedFiles({ patchPaths }: GuardCore, tool: string, args: ToolCallArgs
     return [args.filePath];
 }
 
+/** OpenCode's own glob match (`Wildcard.match`): `*` is anything, `?` one character, a trailing ` *` may match nothing. */
+function globMatches(text: string, pattern: string): boolean {
+    const source = pattern
+        .split('*')
+        .map((part) => part.replace(/[.+^${}()|[\]\\]/g, '\\$&').replaceAll('?', '.'))
+        .join('.*')
+        .replace(/ \.\*$/, '( .*)?');
+
+    return new RegExp(`^${source}$`, 's').test(text);
+}
+
+/** A quoted span or an escaped character: text that never ends a command. */
+const QUOTED_SPAN = /'[^']*'|"(?:[^"\\]|\\.)*"|\\[\s\S]/g;
+
+/**
+ * Whether OpenCode's permission list asks about (or denies) every part of this command the guard core objects to, as
+ * written. Every part, not any: a part the user once approved "always" would otherwise carry an unseen one through.
+ * OpenCode checks the text of each command its parser finds, including inside `(...)`, `$(...)` and backticks, but not
+ * a declaration (`export X=...`), a bare assignment, a heredoc body, or a command spelled out in a string for another
+ * program to run (`bash -c "..."`). This cuts the text at the same separators, never inside quotes or after a
+ * backslash, so it can only find fewer commands than OpenCode does, never more.
+ */
+function asksFirst(core: GuardCore, command: string): boolean {
+    // A command substitution inside double quotes (`"$(...)"`) still runs, and OpenCode checks it on its own, but the
+    // cutting below would hide it in its outer command; a heredoc body is not a command to OpenCode at all. An ANSI-C
+    // string (`$'\''`) and a comment (`# it's`) quote differently from QUOTED_SPAN, so they could hide a separator.
+    const quoted = command.match(QUOTED_SPAN) ?? [];
+
+    if (
+        command.includes('<<') ||
+        /\$'|(^|\s)#/.test(command) ||
+        quoted.some((span) => span.startsWith('"') && /\$\(|`/.test(span))
+    ) {
+        return false;
+    }
+
+    // opencode.json's bash permission rules, written in when the kit generates this file. Parsed here, not at the top
+    // of the file, so a broken copy blocks the call instead of stopping the plugin from loading. The rules spell option
+    // prefixes git accepts (`--force` cut short), so a spellchecker skips the line.
+    // cspell:disable-next-line
+    const rules: Record<string, string> = JSON.parse('{"*GIT_CONFIG_KEY_*":"ask","*GIT_CONFIG_PARAMETERS*":"ask","*git *config *??????.*.???? ?*":"ask","*git *config *??????.*.????\' ?*":"ask","*git *config *??????.*.????\\" ?*":"ask","*git *config *??????.*.?????? ?*":"ask","*git *config *??????.*.??????\' ?*":"ask","*git *config *??????.*.??????\\" ?*":"ask","*git *config *--ren*":"ask","*git *config *rename-section*":"ask","git reset *--hard*":"deny","git reset *--h":"deny","git reset *--h *":"deny","git reset *--ha":"deny","git reset *--ha *":"deny","git reset *--har":"deny","git reset *--har *":"deny","git checkout -- *":"deny","git checkout * -- *":"deny","git checkout .":"deny","git checkout * .":"deny","git checkout -f*":"deny","git checkout * -f*":"deny","git checkout *--f*":"deny","git checkout -p*":"deny","git checkout * -p*":"deny","git checkout -2*":"deny","git checkout * -2*":"deny","git checkout -3*":"deny","git checkout * -3*":"deny","git checkout *--pat*":"deny","git checkout *--ou*":"deny","git checkout *--th*":"deny","git checkout *--no-over*":"deny","git switch -f*":"deny","git switch * -f*":"deny","git switch *--f":"deny","git switch *--f *":"deny","git switch *--fo":"deny","git switch *--fo *":"deny","git switch *--for":"deny","git switch *--for *":"deny","git switch *--forc":"deny","git switch *--forc *":"deny","git switch *--force":"deny","git switch *--force *":"deny","git switch *--di*":"deny","git restore *":"deny","git restore --staged *":"allow","git clean":"deny","git clean *":"deny","git clean -n*":"allow","git clean --dry-run*":"allow","git push -f*":"ask","git push * -f*":"ask","git push *--force*":"ask","git push * +*":"ask","git push -uf*":"ask","git push * -uf*":"ask","git push -vf*":"ask","git push * -vf*":"ask","git push -qf*":"ask","git push * -qf*":"ask","git push -nf*":"ask","git push * -nf*":"ask","git push -df*":"ask","git push * -df*":"ask","git push -4f*":"ask","git push * -4f*":"ask","git push -6f*":"ask","git push * -6f*":"ask","git branch -D *":"ask","git branch * -D*":"ask","git branch -df*":"ask","git branch * -df*":"ask","git branch -fd*":"ask","git branch * -fd*":"ask","git branch -d -f*":"ask","git branch * -d -f*":"ask","git branch -f -d*":"ask","git branch * -f -d*":"ask","git branch -d --force*":"ask","git branch * -d --force*":"ask","git branch --force -d*":"ask","git branch * --force -d*":"ask","git branch --delete -f*":"ask","git branch * --delete -f*":"ask","git branch -f --delete*":"ask","git branch * -f --delete*":"ask","git branch --delete --force*":"ask","git branch * --delete --force*":"ask","git branch --force --delete*":"ask","git branch * --force --delete*":"ask","git stash drop*":"ask","git stash clear*":"ask","git *-c alias.*":"deny","git *--config-env*alias.*":"deny","git *-c * push*":"ask","git *--config-env* push*":"ask","*git *config *alias.* ?*":"deny","*git *config *rename-section *alias*":"deny","*git *config *--ren* *alias*":"deny","*GIT_CONFIG_KEY_*=alias.*":"deny","*GIT_CONFIG_PARAMETERS=*alias.*":"deny","git checkout-index *":"deny","git read-tree *--res*":"deny","git push -d*":"ask","git push * -d*":"ask","git push *--de*":"ask","git push * :*":"ask","git push :*":"ask","git push *--mi*":"ask"}');
+
+    // Same length as the command, with quoted spans and escaped characters blanked out.
+    const masked = command.replace(QUOTED_SPAN, (span) => ' '.repeat(span.length));
+    const pieces: string[] = [];
+    let start = 0;
+
+    for (const { index } of masked.matchAll(/[\n;&|()`]/g)) {
+        pieces.push(command.slice(start, index).trim());
+        start = index + 1;
+    }
+
+    pieces.push(command.slice(start).trim());
+
+    const flagged = pieces.filter((piece) => core.isDangerousCommand(piece) !== null);
+
+    return (
+        flagged.length > 0 &&
+        flagged.every((piece) => {
+            if (/^(export|declare|typeset|local|readonly)(\s|$)|^(\w+=\S*(\s+|$))*$/.test(piece)) {
+                return false;
+            }
+
+            // Last match wins, as in OpenCode; no match is allow.
+            let verdict = 'allow';
+
+            for (const [pattern, action] of Object.entries(rules)) {
+                if (globMatches(piece, pattern)) {
+                    verdict = action;
+                }
+            }
+
+            return verdict !== 'allow';
+        })
+    );
+}
+
 /** The verdict for one tool call: null to allow it, otherwise something with a message. */
 function classifyCall(core: GuardCore, tool: string, args: ToolCallArgs): { message: string } | null {
     if (tool === 'bash') {
@@ -64,8 +144,18 @@ function classifyCall(core: GuardCore, tool: string, args: ToolCallArgs): { mess
 
         const verdict = core.isDangerousCommand(args.command);
 
-        // `ask` verdicts are the permission list's job: a plugin can only block.
-        return verdict?.decision === 'deny' ? { message: `${verdict.userMessage} ${verdict.agentMessage}` } : null;
+        if (verdict?.decision === 'deny') {
+            return { message: `${verdict.userMessage} ${verdict.agentMessage}` };
+        }
+
+        // An `ask` is the permission list's job, since a plugin can only block. Block only a form the list cannot see.
+        if (verdict?.decision === 'ask' && !asksFirst(core, args.command)) {
+            return {
+                message: `${verdict.userMessage} ${verdict.agentMessage} OpenCode cannot ask about it written this way: once the user agrees, run it as a plain git command (lowercase git, no quotes or tabs, flags written separately) so OpenCode asks.`,
+            };
+        }
+
+        return null;
     }
 
     if (EDIT_TOOLS.has(tool) || PATCH_TOOLS.has(tool)) {
