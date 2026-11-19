@@ -10,7 +10,7 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-import { compareVersions, findProjectRoot, installedVersion, isGitRepo } from '../env';
+import { compareVersions, findProjectRoot, gitState, installedVersion } from '../env';
 import { hasSymlinkedSegment } from '../fs-safety';
 import { applyRenames, type RenameHit, renamesFromMigrations } from '../migrations/codemod';
 import {
@@ -20,7 +20,7 @@ import {
     VITE_CONFIG_NAMES,
 } from '../migrations/enableHotReload';
 import { MIGRATIONS, migrationsThrough } from '../migrations/registry';
-import { color, NO_GIT_NAG, ui } from '../messages';
+import { color, gitNag, ui } from '../messages';
 import { confirm } from '../prompt';
 
 /** Source file extensions we rewrite. */
@@ -288,10 +288,11 @@ export async function migrateProject(
 
     if (pendingWrites) {
         if (options.write) {
-            if (!options.skipGitNag && !isGitRepo(root)) {
+            const saved = gitState(root);
+            if (!options.skipGitNag && saved !== 'committed') {
                 out('');
                 out(ui.warn('Before changing files:'));
-                out(NO_GIT_NAG);
+                out(gitNag(saved));
                 out('');
 
                 if (!(await confirm('Change these files anyway?'))) {

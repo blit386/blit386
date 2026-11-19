@@ -5,6 +5,8 @@
  * no emoji. The audience may be a complete beginner.
  */
 
+import type { GitState } from './env';
+
 // Color is opt-out (NO_COLOR) and only used on a real terminal, so piped/redirected output stays clean.
 const useColor = process.env.NO_COLOR === undefined && process.stdout.isTTY === true;
 
@@ -35,6 +37,21 @@ export const NO_GIT_NAG = [
     'If a BLIT386 update ever changes something, you could lose your work.',
     'Run `git init` to start saving snapshots, or keep a copy of your folder somewhere safe before upgrading.',
 ].join('\n');
+
+/**
+ * Shown instead of NO_GIT_NAG when git is set up but holds no commit. The git-identity hint is a manual-sync copy
+ * of the scaffolder's no-commit warning in packages/create-blit386/src/index.ts - change both together.
+ */
+export const NO_COMMIT_NAG = [
+    'Git is set up, but nothing is saved yet, so there is nothing to go back to.',
+    'Tell git who you are with git config --global user.name "Your Name" and git config --global user.email "you@example.com",',
+    'then run git add -A and git commit -m "First version".',
+].join('\n');
+
+/** The nag matching a non-committed git state. */
+export function gitNag(state: Exclude<GitState, 'committed'>): string {
+    return state === 'none' ? NO_GIT_NAG : NO_COMMIT_NAG;
+}
 
 /** Pointer used after a major version bump, where commands may have been renamed. */
 export const DEPRECATIONS_URL = 'https://blit386.dev/docs/reference/deprecations';

@@ -13,6 +13,8 @@ import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { gitEnv } from '../../../scripts/lib/git-env.mjs';
+
 const here = dirname(fileURLToPath(import.meta.url));
 const blitCli = join(here, '..', 'dist', 'cli.js');
 
@@ -162,5 +164,19 @@ test('blit upgrade bumps blit386 offline then offers migrate when renames are pe
     } finally {
         rmSync(root, { recursive: true, force: true });
         rmSync(stubBin, { recursive: true, force: true });
+    }
+});
+
+test('blit upgrade nags and aborts when git is set up but has no commit', () => {
+    const root = makeGame({ withGit: false });
+    try {
+        execFileSync('git', ['init'], { cwd: root, env: gitEnv(), stdio: 'pipe' });
+
+        const { exitCode, output } = runUpgrade(root);
+        assert.equal(exitCode, 0);
+        assert.ok(output.includes('nothing is saved yet'), `expected no-commit nag, got:\n${output}`);
+        assert.ok(!output.includes('Updating blit386'), `should abort before PM update, got:\n${output}`);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
     }
 });

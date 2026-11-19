@@ -7,9 +7,9 @@ import {
     detectPackageManager,
     exceedsCaretRange,
     findProjectRoot,
+    gitState,
     installedPeerRange,
     installedVersion,
-    isGitRepo,
     kitDocsReviewedAt,
     kitEngineRange,
     MIN_VERSION_RANGE,
@@ -18,7 +18,7 @@ import {
     satisfiesCaretRange,
 } from '../env';
 import { kitRoot, nodeFloor } from '../kit-root';
-import { NO_GIT_NAG, ui } from '../messages';
+import { gitNag, ui } from '../messages';
 import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { readManifest } from '../read-manifest';
 import { checkSyncDrift } from './agents-sync';
@@ -86,12 +86,13 @@ export function runDoctor(): void {
     const pm = detectPackageManager(root);
     out(ui.success(`Game "${project.name}" (using ${pm})`));
 
-    if (isGitRepo(root)) {
+    const saved = gitState(root);
+    if (saved === 'committed') {
         out(ui.success('Saved with git'));
     } else {
         out(ui.warn('Not saved with git'));
         out('');
-        out(NO_GIT_NAG);
+        out(gitNag(saved));
         out('');
     }
 
