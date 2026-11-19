@@ -32,10 +32,12 @@ import {
  * longer push prefixes are covered, since `*--force*` matches them. `test/opencode.test.mjs` runs one case table
  * through both, so an edit on either side that is not mirrored fails the kit tests. The `kit-guard.ts` plugin enforces
  * the exact deny policy on top of this, including what a pattern cannot see at all (`bash -c "..."`) or spell in every
- * case (`-c ALIAS.n=...`); it can only block, so an ask-tier form these globs miss (`git push -uvf`,
- * `git branch -d old -f`, and any ask-tier command written inside a subshell, with an uppercase or `.exe` git, or with
- * a quoted option value) runs without a prompt. So does git config set by an `export` (`export GIT_CONFIG_KEY_0=...`):
- * OpenCode only checks commands, and it parses `export` as a declaration.
+ * case (`-c ALIAS.n=...`). It can only block, so it also blocks an ask-tier command these globs miss as written
+ * (`git push -uvf`, `git branch -d old -f`, an uppercase or `.exe` git, a quoted option value, a tab between words,
+ * `bash -c "..."`, an `export GIT_CONFIG_KEY_0=...`, which OpenCode parses as a declaration and never checks): it
+ * evaluates this `bash` list, rendered into it, against each command the way OpenCode does (BT-803). Those spellings
+ * cannot be approved, only their plain form, which the globs ask about. On Windows OpenCode matches globs in any case
+ * and the plugin does not, so there it may block a form OpenCode would have asked about.
  */
 const OPENCODE_PERMISSION = {
     // Matched against the project-relative path, so each base name is listed bare (a top-level file) and with a `*/`
@@ -231,7 +233,14 @@ function openCodeConfigFile(): GeneratedFile {
 export function generateOpenCodeAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
     const contentRoot = join(root, 'content');
     const manifest = readHooksManifest(contentRoot);
-    const plugin = render(readFileSync(join(contentRoot, 'hooks', 'opencode-kit-guard.ts'), 'utf8'), vars);
+
+    // The plugin evaluates the same bash rules OpenCode does, inside a single-quoted string literal.
+    const openCodeBashRules = JSON.stringify(OPENCODE_PERMISSION.bash).replace(/[\\']/g, '\\$&');
+
+    const plugin = render(readFileSync(join(contentRoot, 'hooks', 'opencode-kit-guard.ts'), 'utf8'), {
+        ...vars,
+        openCodeBashRules,
+    });
 
     return [
         openCodeConfigFile(),

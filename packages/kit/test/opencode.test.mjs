@@ -330,6 +330,54 @@ describe('the kit-guard.ts plugin', () => {
         }
     });
 
+    it('blocks an ask-tier command opencode.json cannot see as written, and leaves the rest to its prompt (BT-803)', async () => {
+        const { hooks, dispose } = await loadPlugin();
+
+        try {
+            // OpenCode checks each tree-sitter `command` node's text against the case-sensitive globs, so these run
+            // with no prompt unless the plugin blocks them.
+            for (const command of [
+                'GIT push --force',
+                'git.exe branch -D old',
+                'git -C "my dir" push -f',
+                'git push -uvf',
+                'git branch -d old -f',
+                'git\tpush -f',
+                'git config remote.origin.push\t+main',
+                'export GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main GIT_CONFIG_COUNT=1',
+                'bash -c "git stash drop"',
+                'eval x \\; git push -f',
+                'bash <<EOF\ngit push -f\nEOF',
+                // A seen part must not carry an unseen one: an earlier "always" for `git stash drop` would run both.
+                'git stash drop; GIT push --force',
+                // OpenCode never checks a part that only sets variables, so its match must not count.
+                'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0; GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main; git push',
+            ]) {
+                assert.equal(isDangerousCommand(command)?.decision, 'ask', `guard core: ${command}`);
+                await assert.rejects(tool(hooks, 'bash', { command }), /plain git command/, command);
+            }
+
+            // OpenCode asks about these itself, subshells and command substitutions included (it checks every
+            // command node inside them), so the user can still approve them.
+            for (const command of [
+                'git push --force',
+                'git branch -D old',
+                'git stash clear',
+                '(git push -f)',
+                'echo $(git stash clear)',
+                'echo `git stash drop`',
+                'git commit -m "a; b" && git push -f',
+                "git config 'remote.origin.push' +main",
+                'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main git push',
+            ]) {
+                assert.equal(isDangerousCommand(command)?.decision, 'ask', `guard core: ${command}`);
+                await tool(hooks, 'bash', { command });
+            }
+        } finally {
+            dispose();
+        }
+    });
+
     it('blocks edits to lock files and .env files through every edit tool, and allows .env.example', async () => {
         const { hooks, dispose } = await loadPlugin();
 
@@ -445,4 +493,34 @@ describe('the kit-guard.ts plugin without a working guard core', () => {
             }
         });
     }
+});
+
+describe('the kit-guard.ts plugin with a broken copy of the bash rules', () => {
+    // The rules are parsed inside the call, not as the plugin loads, so a broken copy blocks an ask-tier command
+    // instead of making OpenCode drop the plugin (BT-803).
+    it('still loads, blocks an ask-tier command, and allows an ordinary one', async () => {
+        const root = mkdtempSync(join(tmpdir(), 'blit-opencode-bad-rules-'));
+
+        try {
+            for (const file of files) {
+                const content =
+                    file.path === '.opencode/plugins/kit-guard.ts'
+                        ? file.content.replace(/JSON\.parse\('[^\n]*'\)/, "JSON.parse('{{openCodeBashRules}}')")
+                        : file.content;
+
+                assert.ok(file.path !== '.opencode/plugins/kit-guard.ts' || content !== file.content, 'rules replaced');
+                mkdirSync(dirname(join(root, file.path)), { recursive: true });
+                writeFileSync(join(root, file.path), content);
+            }
+
+            const { KitGuard } = await import(pathToFileURL(join(root, '.opencode', 'plugins', 'kit-guard.ts')).href);
+            const hooks = await KitGuard({ $: null, directory: root });
+            const call = (command) => hooks['tool.execute.before']({ tool: 'bash' }, { args: { command } });
+
+            await assert.rejects(call('git push --force'));
+            await call('git status');
+        } finally {
+            rmSync(root, { recursive: true, force: true });
+        }
+    });
 });
