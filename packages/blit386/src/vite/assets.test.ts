@@ -208,3 +208,21 @@ describe('handleAssetHotUpdate watched-dir check', () => {
         );
     });
 });
+
+describe('handleAssetHotUpdate dot-dot folder names', () => {
+    it('broadcasts a file under a folder literally named ..assets', () => {
+        const send = vi.fn();
+        const result = handleAssetHotUpdate({
+            file: '/project/public/..assets/hero.png',
+            environmentName: 'client',
+            send,
+            assetDirs: ['/project/public'],
+            serve: { base: '/', publicDir: '/project/public', root: '/project' },
+            assetTypes: new Map<string, AssetKind>([['.png', 'image']]),
+            fullReloadOnUnknownAssets: true,
+        });
+
+        expect(result).toEqual([]);
+        expect(send).toHaveBeenCalledOnce();
+    });
+});
