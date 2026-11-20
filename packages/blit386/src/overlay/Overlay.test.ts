@@ -1333,3 +1333,92 @@ describe('Overlay while the clock is parked', () => {
         expect(capture.drawBarFill.rectSnapshots).toEqual(seeked.drawBarFill.rectSnapshots);
     });
 });
+
+describe('Overlay drawnCustomRows', () => {
+    it('reports each row label with the display position it was drawn at', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const customRows = [{ leftText: 'Position (10, 20)' }, { leftText: 'Bounces 3', rightText: 'ok' }];
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+
+        const row0BarY = customRowBarY(240, 0);
+        const row1BarY = customRowBarY(240, 1);
+
+        expect(overlay.drawnCustomRows()).toEqual([
+            { side: 'left', text: 'Position (10, 20)', x: OVERLAY_EDGE_MARGIN_PX, y: row0BarY + OVERLAY_TOP_TEXT_Y },
+            { side: 'left', text: 'Bounces 3', x: OVERLAY_EDGE_MARGIN_PX, y: row1BarY + OVERLAY_TOP_TEXT_Y },
+            { side: 'right', text: 'ok', x: overlayRightAlignedTextX('ok', 320), y: row1BarY + OVERLAY_TOP_TEXT_Y },
+        ]);
+    });
+
+    it('reads the strings as drawn, not as the reused row objects hold them afterwards', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const customRows = [{ leftText: 'Current Game Boy - 4 slots' }];
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+
+        customRows[0] = { leftText: 'changed after the draw' };
+
+        expect(overlay.drawnCustomRows().map((row) => row.text)).toEqual(['Current Game Boy - 4 slots']);
+    });
+
+    it('drops a right label the row stops supplying on a later frame', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+        const row: { leftText: string; rightText?: string } = { leftText: 'Left', rightText: 'Right' };
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => [row]);
+        expect(overlay.drawnCustomRows().map((entry) => entry.text)).toEqual(['Left', 'Right']);
+
+        delete row.rightText;
+        overlay.updateAndRender(renderer, mockFont, null, null, 1, () => [row]);
+        expect(overlay.drawnCustomRows().map((entry) => entry.text)).toEqual(['Left']);
+    });
+
+    it('is empty when a later frame supplies no rows', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => [{ leftText: 'Row' }]);
+        overlay.updateAndRender(renderer, mockFont, null, null, 1, () => []);
+
+        expect(overlay.drawnCustomRows()).toEqual([]);
+    });
+
+    it.each([
+        ['with the toggle hint still drawn', true],
+        ['with the toggle hint off, so the frame returns early', false],
+    ])('is empty on the frame after the body is hidden, %s', (_label, isHintVisible) => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayToggleHintVisible: isHintVisible,
+        });
+        const renderer = createMockRenderer();
+        const customRows = [{ leftText: 'Row' }];
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+        expect(overlay.drawnCustomRows().map((row) => row.text)).toEqual(['Row']);
+
+        overlay.handleFrameInput(null, true, 1);
+        overlay.updateAndRender(renderer, mockFont, null, null, 1, () => customRows);
+
+        expect(overlay.drawnCustomRows()).toEqual([]);
+    });
+
+    it('is empty when the overlay body is hidden, even if rows were drawn before', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: false });
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => [{ leftText: 'Row' }]);
+
+        expect(overlay.drawnCustomRows()).toEqual([]);
+    });
+});

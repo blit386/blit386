@@ -18,6 +18,7 @@
 
 import { BT, Rect2i, Vector2i } from 'blit386';
 
+import { setTextSource, TEXT_SOURCE_KIT, TEXT_SOURCE_SYSTEM } from './drawn-text.js';
 import {
     BUTTON_H,
     BUTTON_TEXT_PAD_Y,
@@ -257,7 +258,9 @@ function tooltip(ctx, anchor, label, opts = {}) {
     BT.drawNineSlice(T.tooltipSlice, tooltipRect);
 
     tooltipTextPos.set(x + TOOLTIP_TEXT_X, y + TOOLTIP_TEXT_Y);
+    setTextSource(TEXT_SOURCE_KIT);
     BT.systemPrint(tooltipTextPos, T.shadow, label);
+    setTextSource(TEXT_SOURCE_SYSTEM);
 }
 
 /**

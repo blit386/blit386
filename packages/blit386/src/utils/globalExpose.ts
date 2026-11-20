@@ -12,6 +12,7 @@
  */
 
 import type { InputTrace, InputTraceOptions, InputTraceResult } from '../input/InputTrace';
+import type { OverlayRowText } from '../overlay/types';
 import { isDevMode } from './devMode';
 
 declare global {
@@ -22,6 +23,9 @@ declare global {
 
         /** The dev-only input-edge trace, assigned by {@link exposeInputTrace} under the same gate as `BT`. */
         __btInputTrace?: InputTraceGlobal;
+
+        /** The dev-only readout of the overlay rows the last frame drew, assigned by {@link exposeOverlayRows}. */
+        __btOverlayRows?: OverlayRowsGlobal;
     }
 }
 
@@ -35,6 +39,15 @@ export interface InputTraceGlobal {
 
     /** See {@link InputTrace.isRecording}. */
     readonly isRecording: boolean;
+}
+
+/** What `window.__btOverlayRows` offers: one read of the demo-row labels the last frame drew. */
+export interface OverlayRowsGlobal {
+    /**
+     * The labels of the demo's `overlayRows()` as the last frame drew them, with display positions. Empty when the
+     * overlay is off or hidden, or the demo supplies no rows.
+     */
+    read: () => OverlayRowText[];
 }
 
 /** Inputs to {@link resolveExposeGlobal}, gathered by {@link exposeGlobal}. */
@@ -99,10 +112,25 @@ export function exposeInputTrace(trace: InputTrace, override?: boolean): void {
 }
 
 /**
+ * Assigns a readout of the last frame's demo overlay rows to `window.__btOverlayRows` when the `window.BT` gate allows
+ * it.
+ *
+ * @param read - Reads the rows the overlay drew on its last frame; `[]` when there is no overlay.
+ * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
+ */
+export function exposeOverlayRows(read: () => OverlayRowText[], override?: boolean): void {
+    if (!canExpose(override)) {
+        return;
+    }
+
+    globalThis.window.__btOverlayRows = { read };
+}
+
+/**
  * Returns whether gating allows a `window` assignment and a `window` is actually present.
  *
  * @param override - Explicit `BootstrapOptions.exposeGlobal`, if the caller set one.
- * @returns `true` when `exposeGlobal` / `exposeInputTrace` should assign.
+ * @returns `true` when `exposeGlobal` / `exposeInputTrace` / `exposeOverlayRows` should assign.
  */
 function canExpose(override?: boolean): boolean {
     return resolveExposeGlobal({ override, devMode: isDevMode() }) && typeof globalThis.window !== 'undefined';

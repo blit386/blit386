@@ -26,6 +26,7 @@
 
 import { BT, Rect2i, Vector2i } from 'blit386';
 
+import { setTextSource, TEXT_SOURCE_KIT, TEXT_SOURCE_SYSTEM } from './drawn-text.js';
 import { hitContains, UiInput } from './ui-input.js';
 import { buttonFillSlice, solidSlice, T } from './ui-theme.js';
 
@@ -391,7 +392,10 @@ class UiContext extends UiInput {
             BT.drawNineSlice(T.panelSlice, this.flushRect);
         }
 
-        // Replay the queued commands, now that the group origin is known.
+        // Replay the queued commands, now that the group origin is known. The text they print is
+        // tagged as the kit's own for the last-frame text readout (drawn-text.js).
+        setTextSource(TEXT_SOURCE_KIT);
+
         for (let i = 0; i < this.commandCount; i++) {
             const cmd = this.commands[i];
 
@@ -416,6 +420,8 @@ class UiContext extends UiInput {
                 }
             }
         }
+
+        setTextSource(TEXT_SOURCE_SYSTEM);
 
         // Store this frame's absolute widget rectangles for next frame's interaction, and
         // remember the id so a future prune knows this widget is still alive.

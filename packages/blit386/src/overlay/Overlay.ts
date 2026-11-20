@@ -44,7 +44,7 @@ import { DEFAULT_TIMING_CHART_HEIGHT } from './timing-chart/constants';
 import type { TimingChartDrawStyle } from './timing-chart/style';
 import { resolveTimingChartStyle } from './timing-chart/style';
 import { TimingChart } from './timing-chart/TimingChart';
-import type { OverlayAudioSnapshot, OverlaySettings, OverlayTimingSnapshot } from './types';
+import type { OverlayAudioSnapshot, OverlayRowText, OverlaySettings, OverlayTimingSnapshot } from './types';
 
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
@@ -373,6 +373,9 @@ export class Overlay {
         audioSnapshot?: OverlayAudioSnapshot,
         isClockParked = false,
     ): void {
+        // A frame that draws no rows (body hidden, no rows) must not leave the last frame's rows readable.
+        this.#bars.resetDrawnRows();
+
         if (isClockParked) {
             // A fixed snapshot, not the measured one: `timing` holds the previous frame's wall-clock
             // numbers and step count, which differ between the seeked frame and each re-render.
@@ -417,6 +420,16 @@ export class Overlay {
                 currentTick,
             );
         });
+    }
+
+    /**
+     * The demo-row labels the last frame drew, with their display positions; empty when that frame drew none. Builds a
+     * fresh array, so it is for the dev-build readout behind `window.__btOverlayRows`, not for per-frame use.
+     *
+     * @returns One entry per non-empty label.
+     */
+    drawnCustomRows(): OverlayRowText[] {
+        return this.#bars.drawnRows();
     }
 
     /**

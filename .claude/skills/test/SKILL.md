@@ -44,7 +44,8 @@ Playwright, or a `tests/` directory for those - automated unit or E2E coverage w
 (not broadly available) and would largely duplicate what `packages/blit386`'s own suite already covers. Correctness is
 verified by:
 
-1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
+1. Running the dev server (`pnpm run dev`) and opening the demo in a browser - to drive and read one from a script or an
+   agent, see "Driving a live demo" below
 2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
 3. Preflight checks (`/preflight demos`) - lint, test, spellcheck, knip, check:demo-registry, check:demo-comment-links
    (the production build is not part of preflight)
@@ -67,6 +68,39 @@ the inventory; this skill keeps no per-file list.
 The live capture-to-file pipelines (driving installed Chrome through Playwright, encoding with ffmpeg) are not covered -
 verify those by hand, running the script against a real demo. `_partials/demo-shell.js` (shell chrome, needs a DOM
 harness) and the individual demo files under `src/<topic>.js` remain uncovered, per the "no automated tests" note above.
+
+### Driving a live demo
+
+A demo is one canvas, so the accessibility tree is empty and a six-pixel font is a poor thing to read from a screenshot.
+Drive it from the page instead, from `packages/demos` with `pnpm run dev` running:
+
+1. Open `http://localhost:5173/demos/<slug>.html?embed&capture&seed=1`. `?capture` puts the engine on `window.BT`;
+   `seed=1` makes `BT.random` repeat. Poll `BT.isReady` before touching anything; `BT.renderAt(seconds)` then seeks to
+   an exact frame and `BT.renderAt(seconds, { from: 'current' })` steps on from it.
+2. Read what the last frame drew with `window.__blitDrawnText.read()`: an array of `{ source, text, x, y }`, where
+   `source` is `kit` (the shared UI kit), `system` (a direct `BT.systemPrint`) or `overlay` (a row from the demo's
+   `overlayRows()`, with a `side`), and `x`, `y` are display pixels. Compare the string, not a screenshot. It is not
+   `BT.testState()`, which returns whatever the game's own hook remembers (only `test-state` and `bunnymark` have one),
+   so a wrong label beside a right internal value passes there. Overlay rows exist only while the engine overlay body is
+   visible, in a dev build; `BT.printFont` text is not recorded. Two limits to keep in mind: a frame that makes no
+   `BT.systemPrint` call leaves the previous frame's list in place, so a label that disappeared can still read back
+   (overlay rows are read fresh each time and do not); and `x`, `y` are the position on the display, the position the
+   demo passed minus the camera. `src/shared/drawn-text.js` explains the frame boundary and the rest.
+3. Input is synthetic `PointerEvent`s on `#blit386-canvas`, and `_shots/capture.js` (`seekWhenReady`,
+   `pointerClientPoint`, `injectInput`) is the working recipe:
+   - Map display pixels to client coordinates with `getBoundingClientRect()` and `BT.displaySize`, never `canvas.width`:
+     a 320x240 demo often has a 640x480 backing store.
+   - Set `pointerType: 'mouse'` ([BT-594](https://linear.app/vancura/issue/BT-594)). An empty type is treated as the
+     mouse, but a touch or pen move with no `pointerdown` is dropped.
+   - Step a frame after an event the demo must see on its own, with
+     `BT.renderAt(BT.timeSeconds + 0.1, { from: 'current' })`. A click or drag dispatched with no frame in between still
+     registers on current engines (BT-703 keeps the edges), but a slider or hold-to-charge reads "button down on a
+     rendered frame": leave the button down across at least one frame before you assert on in-progress state, and
+     release it after.
+   - A synthetic event is not a trusted gesture, so `BT.isAudioUnlocked` may stay `false` in a seeked, parked page. It
+     does not stop a slider from moving; `BT.audioVolumeGet('music')` reads the bus either way.
+4. Do not copy the engine contract into a script: `BT.isReady`, `BT.renderAt` and `BT.testState` are documented in
+   `packages/blit386/docs/api-core.md` ("Test state for agent play-testing", "Engine readiness").
 
 Manual hot-reload check (nothing automated covers this - run by hand after touching hot-reload wiring):
 

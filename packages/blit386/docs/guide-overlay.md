@@ -76,6 +76,22 @@ class Demo {
 Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-row `barPaletteIndex` /
 `textPaletteIndex`. Rows stack upward from the footer with 1 px gaps.
 
+### Reading the drawn rows in a dev build
+
+The rows are pixels on a canvas, so a script or an agent cannot read them from the page. Dev builds have
+`window.__btOverlayRows` next to `window.BT`, under the same rule: present while the dev server runs the game, absent in
+a built game unless `BootstrapOptions.exposeGlobal` turns it on. It is a debugging aid, not part of the `BT` API.
+
+```js
+window.__btOverlayRows.read();
+// -> [{ side: 'left', text: 'Score: 0', x: 4, y: 211 }]
+```
+
+`read()` returns one entry per non-empty label the last frame drew, in the order `overlayRows()` returned the rows (the
+first row sits lowest, just above the footer) and the left label before the right, with the position of its top-left
+corner in display pixels. It is empty while the overlay body is hidden or when the overlay is off, and the text is what
+was drawn, not what your `overlayRows()` array holds afterwards.
+
 <DemoEmbed demo="basics-enhanced" title="BLIT386 basics enhanced demo" />
 
 ## Optional bands

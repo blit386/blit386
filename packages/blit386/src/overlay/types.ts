@@ -135,3 +135,22 @@ export interface PaletteGridLayout {
     /** Total palette band height including padding (based on {@link visibleRows}). */
     readonly totalHeight: number;
 }
+
+/**
+ * One label a demo-supplied overlay row drew on the last frame, in display pixels.
+ *
+ * Read through `window.__btOverlayRows.read()` in dev builds; not part of the `BT` API.
+ */
+export interface OverlayRowText {
+    /** Which label of the row this is. */
+    readonly side: 'left' | 'right';
+
+    /** The string as it was drawn. */
+    readonly text: string;
+
+    /** Left edge of the text, in display pixels. */
+    readonly x: number;
+
+    /** Top edge of the text, in display pixels. */
+    readonly y: number;
+}

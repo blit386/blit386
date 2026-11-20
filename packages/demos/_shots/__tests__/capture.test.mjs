@@ -72,6 +72,7 @@ function fakeFrame(overrides = {}) {
         engine: () => engine,
         ui: () => ui,
         canvas: () => canvas,
+        drawnText: () => [],
         ...overrides,
     };
 }
@@ -159,6 +160,24 @@ describe('runPose', () => {
 
         assert.equal(result.snapshot.groups.length, 1);
         assert.deepEqual(result.lint, []);
+    });
+
+    it('reads the text the frame drew into the snapshot, with the layout intact', async () => {
+        const drawn = [{ source: 'kit', text: 'Music 25%', x: 124, y: 40, color: 3 }];
+        const frame = fakeFrame({ drawnText: () => drawn });
+        const result = await runPose(frame, { id: 'start', at: 0 }, 'display', { url: 'u' });
+
+        assert.deepEqual(result.snapshot.text, drawn);
+        assert.deepEqual(result.snapshot.groups, []);
+        assert.deepEqual(result.lint, []);
+    });
+
+    it('reads the text for a demo without the kit too', async () => {
+        const drawn = [{ source: 'system', text: 'paletteFadeRange:', x: 7, y: 9, color: 1 }];
+        const frame = fakeFrame({ ui: () => null, drawnText: () => drawn });
+        const result = await runPose(frame, { id: 'start', at: 0 }, 'display', { url: 'u' });
+
+        assert.deepEqual(result.snapshot, { display: { w: 320, h: 200 }, groups: [], text: drawn });
     });
 
     it('names the failing step', async () => {
