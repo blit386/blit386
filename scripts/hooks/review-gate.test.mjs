@@ -447,6 +447,47 @@ describe('review-gate pull request gate', () => {
         }
     });
 
+    test('reads --base the way gh does: operands, last one wins, -B=x', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        // From main's own tip nothing differs (passes); against release the branch work differs (blocks).
+        assert.equal(commit(repo, `${PR_CREATE} --title --base=release`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --base nope --base release`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base release --base main`).status, 0);
+
+        for (const flags of ['-B=release', ['-B', 'release'].join(''), '--base=release']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+    });
+
+    test('a branch switch in the same command cannot be checked, so it is refused', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of ['git switch feature', 'git checkout feature', 'git -C . switch -c x']) {
+            const result = commit(repo, `${command} && ${PR_CREATE}`);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /separate call/u);
+        }
+
+        // Other git commands leave the normal checks in place.
+        assert.equal(commit(repo, `git log --grep switch && ${PR_CREATE}`).status, 0);
+    });
+
+    test('keeps a commit block when a pull request entry in the same command cannot be resolved', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'five\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [`${COMMIT} && ${PR_CREATE} --base nope`, `${PR_CREATE} --base nope && ${COMMIT}`]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /this commit contains changes/u);
+        }
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');

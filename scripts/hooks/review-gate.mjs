@@ -75,6 +75,14 @@ const OPERAND_OPTIONS = new Set([
 /** `gh` options whose value is the next word and that may precede a subcommand. */
 const REPO_OPTIONS = new Set(['-R', '--repo']);
 const PR_CREATE_NAMES = new Set(['create', 'new']);
+/** `gh pr create` options that take a value (`gh pr create --help`), long and short. */
+const CREATE_VALUE_FLAGS = new Set([
+    ...['--assignee', '--base', '--body', '--body-file', '--head', '--label', '--milestone', '--project'],
+    ...['--recover', '--reviewer', '--template', '--title', '--repo'],
+    ...['-a', '-B', '-b', '-F', '-H', '-l', '-m', '-p', '-r', '-T', '-t', '-R'],
+]);
+/** Git subcommands that change the checked-out branch, so a later `gh pr create` in the same command sees another one. */
+const BRANCH_SWITCHERS = new Set(['switch', 'checkout']);
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
 
@@ -209,23 +217,34 @@ function shellTokens(command) {
     return tokens;
 }
 
-/** Value of an option in its long (`--base v`, `--base=v`) or short (`-B v`, `-Bv`) form, or `undefined`. */
-function optionValue(words, long, short) {
-    for (const [i, word] of words.entries()) {
-        if (word === long || word === short) {
-            return words[i + 1];
+/**
+ * `--base` and `--head` of a `gh pr create`, read the way its flag parser does: every string option consumes the next
+ * word even when it starts with `-` (`--title --base=x` is a title), `-B=x` and `-Bx` both work, and the last one wins.
+ * shortcut: a boolean short flag bundled in front of a value flag is not unpacked; the PR is then checked from main.
+ */
+function createTargets(words) {
+    const targets = {};
+
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const [flag, ...inline] = word.startsWith('--') ? word.split('=') : [word.slice(0, 2)];
+        const attached = word.startsWith('--') ? inline.join('=') : word.slice(2).replace(/^=/u, '');
+        const hasValue = word.startsWith('--') ? inline.length > 0 : attached !== '';
+
+        if (!CREATE_VALUE_FLAGS.has(flag)) {
+            continue;
         }
 
-        if (word.startsWith(`${long}=`)) {
-            return word.slice(long.length + 1);
-        }
+        const value = hasValue ? attached : words[++i];
 
-        if (word.startsWith(short) && !word.startsWith('--')) {
-            return word.slice(short.length);
+        if (flag === '--base' || flag === '-B') {
+            targets.base = value;
+        } else if (flag === '--head' || flag === '-H') {
+            targets.head = value;
         }
     }
 
-    return undefined;
+    return targets;
 }
 
 /**
@@ -249,20 +268,16 @@ function ghPrCreate(args, dir) {
         return null;
     }
 
-    return { dir, base: optionValue(args, '--base', '-B'), head: optionValue(args, '--head', '-H') };
+    return { dir, ...createTargets(args) };
 }
 
-/** The directory `git <global options> commit` acts on, or `null` when `args` run another subcommand. */
-function gitCommitDir(args, startDir) {
+/** `{ name, dir }`: the subcommand of `git <global options> ...` and the directory it acts on, or `null` for none. */
+function gitSubcommand(args, startDir) {
     let dir = startDir;
 
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === 'commit') {
-            return dir;
-        }
-
         if (!args[i].startsWith('-')) {
-            return null;
+            return { name: args[i], dir };
         }
 
         if (OPERAND_OPTIONS.has(args[i])) {
@@ -284,6 +299,7 @@ function gitCommitDir(args, startDir) {
  */
 function gatedCommands(command, cwd) {
     const found = new Map();
+    const switched = new Set();
     const outer = [];
     let dir = cwd;
     let words = [];
@@ -300,16 +316,19 @@ function gatedCommands(command, cwd) {
         if (name === 'cd' && args[0]) {
             dir = resolve(dir, expandHome(args[0]));
         } else if (name === 'git') {
-            const commitDir = gitCommitDir(args, dir);
+            const sub = gitSubcommand(args, dir);
 
-            if (commitDir) {
-                found.set(`${COMMIT}\0${commitDir}`, { kind: COMMIT, dir: commitDir });
+            if (sub?.name === 'commit') {
+                found.set(`${COMMIT}\0${sub.dir}`, { kind: COMMIT, dir: sub.dir });
+            } else if (BRANCH_SWITCHERS.has(sub?.name)) {
+                switched.add(sub.dir);
             }
         } else if (name === 'gh') {
             const pr = ghPrCreate(args, dir);
 
             if (pr) {
-                found.set(`${PULL_REQUEST}\0${dir}\0${pr.base}\0${pr.head}`, { kind: PULL_REQUEST, ...pr });
+                const key = `${PULL_REQUEST}\0${dir}\0${pr.base}\0${pr.head}`;
+                found.set(key, { kind: PULL_REQUEST, ...pr, switched: switched.has(dir) });
             }
         }
 
@@ -371,9 +390,14 @@ function unreviewedPaths(repo, marker, { staged, committed, all }) {
 }
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
-async function staleReport({ kind, dir, base: prBase, head }, sessionDir) {
+async function staleReport({ kind, dir, base: prBase, head, switched }, sessionDir) {
     const repo = repoOf(dir);
     const isPullRequest = kind === PULL_REQUEST;
+
+    if (switched) {
+        // shortcut: the branch a pending switch lands on is not predicted; the switch has to be its own tool call.
+        return ['  git switch/checkout in the same command as gh pr create: switch branches in a separate call first.'];
+    }
 
     if (head) {
         // shortcut: a head other than the checked-out branch is not followed; refused, not guessed at.
@@ -426,7 +450,17 @@ async function gateCommit(payload) {
     const kinds = new Set();
 
     for (const gated of gatedCommands(payload.tool_input?.command ?? '', sessionDir)) {
-        const report = await staleReport(gated, sessionDir);
+        let report;
+
+        try {
+            report = await staleReport(gated, sessionDir);
+        } catch (error) {
+            // Fail open per entry: a lookup that fails (no origin/<base>) must not drop a block another entry earned.
+            process.stderr.write(
+                `review-gate: internal error, allowing: ${error instanceof Error ? error.message : error}\n`,
+            );
+            continue;
+        }
 
         if (report.length > 0) {
             kinds.add(gated.kind);
