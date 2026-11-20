@@ -220,28 +220,37 @@ function shellTokens(command) {
 
 /**
  * `--base` and `--head` of a `gh pr create`, read the way its flag parser does: every string option consumes the next
- * word even when it starts with `-` (`--title --base=x` is a title), `-B=x` and `-Bx` both work, and the last one wins.
- * shortcut: a boolean short flag bundled in front of a value flag is not unpacked; the PR is then checked from main.
+ * word even when it starts with `-` (`--title --base=x` is a title), `-B=x`, `-Bx` and a cluster such as `-dB x` all
+ * work, the last occurrence wins, and an empty value means "not given".
  */
 function createTargets(words) {
     const targets = {};
+    const record = (flag, value) => {
+        if (flag === '--base' || flag === '-B') {
+            targets.base = value || undefined;
+        } else if (flag === '--head' || flag === '-H') {
+            targets.head = value || undefined;
+        }
+    };
 
     for (let i = 0; i < words.length; i++) {
         const word = words[i];
-        const [flag, ...inline] = word.startsWith('--') ? word.split('=') : [word.slice(0, 2)];
-        const attached = word.startsWith('--') ? inline.join('=') : word.slice(2).replace(/^=/u, '');
-        const hasValue = word.startsWith('--') ? inline.length > 0 : attached !== '';
 
-        if (!CREATE_VALUE_FLAGS.has(flag)) {
-            continue;
-        }
+        if (word.startsWith('--')) {
+            const [flag, ...inline] = word.split('=');
 
-        const value = hasValue ? attached : words[++i];
-
-        if (flag === '--base' || flag === '-B') {
-            targets.base = value;
-        } else if (flag === '--head' || flag === '-H') {
-            targets.head = value;
+            if (CREATE_VALUE_FLAGS.has(flag)) {
+                record(flag, inline.length > 0 ? inline.join('=') : words[++i]);
+            }
+        } else if (word.startsWith('-')) {
+            // Short cluster: boolean letters pass, the first value letter takes the rest of the word or the next word.
+            for (let j = 1; j < word.length; j++) {
+                if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
+                    const rest = word.slice(j + 1);
+                    record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
+                    break;
+                }
+            }
         }
     }
 

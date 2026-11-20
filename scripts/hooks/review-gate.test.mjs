@@ -504,6 +504,21 @@ describe('review-gate pull request gate', () => {
         assert.equal(commit(repo, PR_CREATE).status, 0);
     });
 
+    test('reads short clusters and treats an empty base as omitted', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        for (const flags of ['-dB release', '-dB=release', '-d -B release', ['-fdB', 'release'].join('')]) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+
+        // An empty --base falls back to the default base (main here, equal to HEAD), and a later empty one resets.
+        for (const flags of ['--base=', '-B=', '--base release --base=']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 0, flags);
+        }
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');
