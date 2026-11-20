@@ -241,6 +241,7 @@
     "dist",
     "node_modules",
     "pnpm-lock.yaml",
+    "**/tsup.config.bundled_*",
     "packages/create-blit386/templates/**",
     "cspell.json",
     "docs/roadmap-ideas.md",
