@@ -809,7 +809,7 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `${PR_CREATE} --title '>' --base release`).status, 2);
     });
 
-    test('only a plain digit run before > is a file descriptor, and > in arithmetic is not a redirection', () => {
+    test('only a plain digit run before > is a file descriptor, and scopes do not leak', () => {
         const repo = makePrRepo();
         git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
         git(repo, 'update-ref', 'refs/remotes/origin/2', 'HEAD~1');
@@ -819,8 +819,30 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `${PR_CREATE} --base \\2>/dev/null --title t`).status, 2);
         assert.equal(commit(repo, `${PR_CREATE} --base main 2>/dev/null`).status, 0);
 
-        // `>` inside arithmetic is a comparison; the line after it is still judged.
+        // A `>` in arithmetic only costs the word after it; the line below is still judged.
         assert.equal(commit(repo, `echo $((1>2))\n${PR_CREATE} --base 2`).status, 2);
+
+        // A word built before a substitution does not decide whether digits after it are an fd.
+        assert.equal(commit(repo, `echo "a"$(echo 2>/dev/null) && ${PR_CREATE} --base 2`).status, 2);
+
+        // `$((` that is really a subshell: a redirection operand there is still not an argument.
+        assert.equal(commit(repo, `$((${PR_CREATE} --base 2 > --base=main))`).status, 2);
+    });
+
+    test('a substitution as a redirection operand does not turn its output into the command name', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        for (const command of [
+            `<<< "$(printf body)" ${PR_CREATE} --base release --body-file -`,
+            `< "$(printf f)" ${PR_CREATE} --base release`,
+            `${PR_CREATE} --base release > "$(printf f)" --title t`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        assert.equal(commit(repo, `<<< "$(printf body)" ${PR_CREATE} --base main`).status, 0);
     });
 
     test('a directory taken from a substitution leaves the directory unchanged', () => {

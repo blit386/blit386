@@ -314,11 +314,13 @@ function shellTokens(command) {
             resume.push({
                 quote,
                 word,
+                plainWord,
                 heredoc,
                 pending: pendingHeredocs.splice(0),
                 substitution: true,
                 arithmetic: false,
             });
+            plainWord = true;
             word = null;
             quote = '';
             heredoc = null;
@@ -341,7 +343,7 @@ function shellTokens(command) {
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
             i = doc.next - 1;
-        } else if ((char === '<' || char === '>') && !resume.at(-1)?.arithmetic) {
+        } else if (char === '<' || char === '>') {
             // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
             // argument of the command, so the walker drops the word after the marker.
             word = plainWord && word !== null && FD_NUMBER.test(word) ? null : word;
@@ -369,13 +371,16 @@ function shellTokens(command) {
                 resume.push({
                     quote: '',
                     word: null,
+                    plainWord,
                     pending: pendingHeredocs.splice(0),
                     substitution: false,
                     arithmetic,
                 });
+                plainWord = true;
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';
+                plainWord = saved?.plainWord ?? true;
                 heredoc = saved?.heredoc ?? null;
                 pendingHeredocs.splice(0, pendingHeredocs.length, ...(saved?.pending ?? []));
                 word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
@@ -498,6 +503,7 @@ function gatedCommands(command, cwd) {
     const outer = [];
     let dirUnknown = false;
     let skipOperand = false;
+    const outerSkip = [];
     const outerWords = [];
     let dir = cwd;
     let words = [];
@@ -548,6 +554,7 @@ function gatedCommands(command, cwd) {
             continue;
         }
 
+        const wasSkipping = skipOperand;
         skipOperand = token === REDIRECT;
 
         if (token === REDIRECT) {
@@ -562,6 +569,7 @@ function gatedCommands(command, cwd) {
         if (token === SUBSHELL_OPEN) {
             // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
             outerWords.push(words);
+            outerSkip.push(wasSkipping);
             outer.push([dir, dirUnknown]);
             words = [];
             continue;
@@ -574,6 +582,8 @@ function gatedCommands(command, cwd) {
             [dir, dirUnknown] = outer.pop() ?? [dir, dirUnknown];
             // The substitution's output sits in the word the tokenizer carries on, so the outer words just resume.
             words = outerWords.pop() ?? [];
+            // A redirection whose operand is the substitution still owes that operand's word, which comes next.
+            skipOperand = outerSkip.pop() ?? false;
         }
     }
 
