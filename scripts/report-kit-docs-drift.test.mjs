@@ -207,6 +207,34 @@ describe('reportDrift', () => {
     });
 });
 
+describe('reportDrift missing labels', () => {
+    it('logs a warning naming a label that does not exist and still files the issue', async () => {
+        const calls = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (_url, init) => {
+            const body = JSON.parse(init.body);
+            calls.push(body);
+            const data = body.query.includes('FindTrackingIssue')
+                ? { issues: { nodes: [] } }
+                : body.query.includes('ResolveLabelIds')
+                  ? { issueLabels: { nodes: [{ id: 'lbl-doc', name: 'doc' }] } }
+                  : { issueCreate: { success: true, issue: { id: 'iss-new', identifier: 'BT-999' } } };
+            return { ok: true, status: 200, statusText: 'OK', json: async () => ({ data }) };
+        };
+        const messages = [];
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: (message) => messages.push(message) });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        assert.ok(messages.some((message) => /create-blit386/u.test(message) && /Warning/u.test(message)));
+        assert.ok(messages.some((message) => message.endsWith('create-blit386.')));
+        const createCall = calls.find((call) => call.query.includes('CreateIssue'));
+        assert.deepEqual(createCall.variables.input.labelIds, ['lbl-doc']);
+    });
+});
+
 describe('reportDrift markdown normalization', () => {
     it('treats `* ` bullets from Linear as equal to the `- ` bullets it was sent', async () => {
         const stored = formatDriftBody(REPORT).replace(/^- /gmu, '* ');

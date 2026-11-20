@@ -93,6 +93,13 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
     }
 
     const labelIds = await resolveLabelIds(apiKey, { teamId: LINEAR_TEAM_ID, names: TRACKING_ISSUE_LABEL_NAMES });
+    const missing = TRACKING_ISSUE_LABEL_NAMES.filter((name) => !(name in labelIds));
+
+    // Warn rather than fail: a renamed label must not stop the drift report itself from reaching Linear.
+    if (missing.length > 0) {
+        log(`Warning: Linear label(s) not found on the team, filing without them: ${missing.join(', ')}.`);
+    }
+
     const created = await createIssue(apiKey, {
         teamId: LINEAR_TEAM_ID,
         projectId: LINEAR_PROJECT_ID,
