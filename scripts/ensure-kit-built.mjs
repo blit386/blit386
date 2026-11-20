@@ -9,9 +9,10 @@
  * runs them in sequence, so there is no concurrent kit builder.
  *
  * Also rebuilds when `dist/` exists but is stale - newer than the checked-in build, but older than
- * `packages/kit/src`. tsup bundles `migrations/registry.js` from `registry.ts` plus whatever it
- * imports, so the whole `src/` tree (not just `registry.ts`) is the honest staleness signal; the
- * kit is small enough (a handful of files) that walking it on every run stays cheap.
+ * `packages/kit/src` or its build config (`tsup.config.ts`, `package.json`, `tsconfig.json`). tsup
+ * bundles `migrations/registry.js` from `registry.ts` plus whatever it imports, so the whole `src/`
+ * tree (not just `registry.ts`) is the honest staleness signal; the kit is small enough (a handful
+ * of files) that walking it on every run stays cheap.
  *
  * A no-op once the kit is built and fresh - one existsSync plus one small directory walk is the
  * only cost on every normal run.
@@ -28,8 +29,16 @@ const resolveKitRegistryEntry = () => resolve(scriptDir, '..', 'packages', 'kit'
 
 const resolveKitSourceDir = () => resolve(scriptDir, '..', 'packages', 'kit', 'src');
 
-const isKitBuilt = (entry = resolveKitRegistryEntry(), sourceDir = resolveKitSourceDir(), ...seams) =>
-    isBuilt(entry, sourceDir, ...seams);
+/** Every input of the kit's `build` step (`tsup`): its source tree, `tsup.config.ts`, and package metadata. */
+const resolveKitBuildInputs = () => [
+    resolveKitSourceDir(),
+    ...['tsup.config.ts', 'package.json', 'tsconfig.json'].map((file) =>
+        resolve(scriptDir, '..', 'packages', 'kit', file),
+    ),
+];
+
+const isKitBuilt = (entry = resolveKitRegistryEntry(), sources = resolveKitBuildInputs(), ...seams) =>
+    isBuilt(entry, sources, ...seams);
 
 const buildKitBuildCommand = () => buildCommand('@blit386/kit');
 
@@ -65,6 +74,7 @@ export {
     ensureKitBuilt,
     getNewestMtimeMs,
     isKitBuilt,
+    resolveKitBuildInputs,
     resolveKitRegistryEntry,
     resolveKitSourceDir,
 };
