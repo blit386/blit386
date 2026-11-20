@@ -787,6 +787,28 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `cat <<'EOF'\nbody\nEOF\necho done`).status, 0);
     });
 
+    test('a redirection operand is not a command argument', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // Without the operand the base is release, so the unreviewed change is seen; main alone would be empty.
+        for (const redirect of [
+            `<<< '--base=main'`,
+            `< --base=main`,
+            `> --base=main`,
+            `>> --base=main`,
+            `2> --base=main`,
+        ]) {
+            assert.equal(commit(repo, `${PR_CREATE} --base release --body-file - ${redirect}`).status, 2, redirect);
+        }
+
+        // Ordinary redirections leave the arguments alone, and a quoted > is a plain character.
+        assert.equal(commit(repo, `${PR_CREATE} --base main 2>&1 | cat`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --base main > /dev/null`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --title '>' --base release`).status, 2);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

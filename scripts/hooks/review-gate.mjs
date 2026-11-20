@@ -49,6 +49,9 @@ const SUBSHELL_CLOSE = Symbol('subshell close');
 /** Pushed last by {@link shellTokens} when a `$(` opened inside a heredoc body never closes: the rest cannot be trusted. */
 const UNREADABLE = Symbol('unreadable');
 const UNREADABLE_KIND = 'command';
+/** An unquoted redirection operator; the word after it is its operand, not a command argument. */
+const REDIRECT = Symbol('redirect');
+const FD_NUMBER = /^\d+$/u;
 const BOUNDARY_TOKENS = new Map([
     [';', BOUNDARY],
     ['&', BOUNDARY],
@@ -327,15 +330,22 @@ function shellTokens(command) {
         } else if (char === '#' && word === null) {
             // A `#` that starts a word begins a comment; inside a word it is just a character.
             comment = true;
-        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] === '<') {
-            // `<<<` is a here-string: it takes one word, not the lines after it.
-            flush();
-            i += 2;
-        } else if (char === '<' && command[i + 1] === '<' && !resume.at(-1)?.arithmetic) {
+        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<' && !resume.at(-1)?.arithmetic) {
             flush();
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
             i = doc.next - 1;
+        } else if (char === '<' || char === '>') {
+            // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
+            // argument of the command, so the walker drops the word after the marker.
+            word = word !== null && FD_NUMBER.test(word) ? null : word;
+            flush();
+
+            while ('<>&|'.includes(command[i + 1] ?? ' ')) {
+                i++;
+            }
+
+            tokens.push(REDIRECT);
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
             flush();
@@ -481,6 +491,7 @@ function gatedCommands(command, cwd) {
     let switched = false;
     const outer = [];
     let dirUnknown = false;
+    let skipOperand = false;
     const outerWords = [];
     let dir = cwd;
     let words = [];
@@ -523,7 +534,17 @@ function gatedCommands(command, cwd) {
 
     for (const token of [...shellTokens(command), BOUNDARY]) {
         if (typeof token === 'string') {
-            words.push(token);
+            if (!skipOperand) {
+                words.push(token);
+            }
+
+            skipOperand = false;
+            continue;
+        }
+
+        skipOperand = token === REDIRECT;
+
+        if (token === REDIRECT) {
             continue;
         }
 
