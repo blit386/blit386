@@ -7,7 +7,7 @@
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { assertDimensions } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { spriteColorNotInPaletteError } from '../utils/errorMessages';
+import { SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE, spriteColorNotInPaletteError } from '../utils/errorMessages';
 import type { Rect2i } from '../utils/Rect2i';
 import type { Palette } from './Palette';
 import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from './Palette';
@@ -320,10 +320,15 @@ export function markUniqueIndicesInRect(
  * @param w - Image width in pixels.
  * @param h - Image height in pixels.
  * @returns Flat RGBA byte array (`w * h * RGBA_BYTES_PER_PIXEL` bytes).
+ * @throws Error if the browser returns no 2D canvas context.
  */
 export function readRgbaPixels(image: HTMLImageElement, w: number, h: number): Uint8Array<ArrayBuffer> {
     const canvas = new OffscreenCanvas(w, h);
-    const ctx = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx === null) {
+        throw new Error(SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE);
+    }
 
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(image, 0, 0);
