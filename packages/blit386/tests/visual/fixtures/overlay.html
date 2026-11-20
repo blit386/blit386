@@ -25,14 +25,17 @@
             import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
             window.BT = BT;
-            window.__RENDER_COMPLETE__ = false;
+            window.__BOOTED__ = false;
             window.__INIT_FAILED__ = false;
-            window.__ACTIVE_BACKEND__ = null;
 
             const width = 320;
             const height = 240;
             const slotCount = 64;
             const stripeWidth = width / slotCount;
+
+            // The spec's manual clock installs window.__spendMs; each call moves that clock forward, so update() and
+            // render() take a fixed, repeatable time and the timing chart gets real dots. A no-op without the spec.
+            const spendMs = (ms) => window.__spendMs?.(ms);
 
             class OverlayTest {
                 // One reused custom row, as the overlay guide recommends.
@@ -48,6 +51,9 @@
                         isOverlayTimingChartEnabled: true,
                         isOverlayAudioMetersEnabled: true,
                         isOverlayPaletteEnabled: true,
+                        isOverlayRendererDiagnosticsBarEnabled: true,
+                        overlayTimingChartDiagnostics: 'rich',
+                        isOverlayToggleHitDebugVisible: true,
                         // 64 slots / 16 columns = 4 rows, 2 visible: the band scrolls.
                         overlayPaletteColumns: 16,
                         overlayPaletteRowsVisible: 2,
@@ -60,8 +66,11 @@
                     // Slots 1 and 2 are the overlay's default bar and text colors.
                     palette.set(1, new Color32(24, 24, 40));
                     palette.set(2, Color32.white);
+                    // Slots 3 and 4 are the audio meter's default warning and clip tints.
+                    palette.set(3, Color32.yellow);
+                    palette.set(4, Color32.red);
 
-                    for (let slot = 3; slot < slotCount; slot++) {
+                    for (let slot = 5; slot < slotCount; slot++) {
                         palette.set(slot, new Color32((slot * 37) % 256, (slot * 91) % 256, (slot * 53) % 256));
                     }
 
@@ -70,7 +79,15 @@
                     return true;
                 }
 
-                update() {}
+                update() {
+                    // Two chart tags, far enough apart that their labels do not overlap.
+                    if (BT.ticks === 45 || BT.ticks === 95) {
+                        BT.assignTag('tag');
+                    }
+
+                    // Every 20th tick runs long, so the chart shows a spike over the frame budget.
+                    spendMs(BT.ticks % 20 === 0 ? 14 : 2);
+                }
 
                 render() {
                     BT.clear(1);
@@ -80,8 +97,7 @@
                         BT.drawRectFill(new Rect2i(slot * stripeWidth, 0, stripeWidth, height), slot);
                     }
 
-                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
-                    window.__RENDER_COMPLETE__ = true;
+                    spendMs(3);
                 }
 
                 overlayRows() {
@@ -89,10 +105,15 @@
                 }
             }
 
+            // bootstrap resolves after BT.init() has created and started the loop - the earliest point the spec may
+            // drive frames.
             bootstrap(OverlayTest, {
                 onError: () => {
                     window.__INIT_FAILED__ = true;
                 },
+            }).then((ok) => {
+                window.__BOOTED__ = ok;
+                window.__INIT_FAILED__ = window.__INIT_FAILED__ || !ok;
             });
         </script>
     </body>
