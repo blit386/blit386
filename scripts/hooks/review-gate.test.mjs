@@ -607,6 +607,17 @@ describe('review-gate pull request gate', () => {
 });
 
 describe('review-gate command substitutions', () => {
+    test('refuses a base that comes from a command substitution', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const flags of ['--base "$(printf release)"', '--base=$(printf release)', '-B "$(printf release)"']) {
+            const result = commit(repo, `${PR_CREATE} ${flags}`);
+            assert.equal(result.status, 2, flags);
+            assert.match(result.stderr, /pass the base name literally/u, flags);
+        }
+    });
+
     test('a substitution that never closes still leaves its outer commit or PR judged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

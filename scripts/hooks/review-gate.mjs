@@ -224,7 +224,8 @@ function shellTokens(command) {
 /**
  * `--base` and `--head` of a `gh pr create`, read the way its flag parser does: every string option consumes the next
  * word even when it starts with `-` (`--title --base=x` is a title), `-B=x`, `-Bx` and a cluster such as `-dB x` all
- * work, the last occurrence wins, and an empty value means "not given".
+ * work, the last occurrence wins, and an empty value means "not given" (but `--base=$(...)`, tokenized as `--base=` then
+ * the placeholder word, is that placeholder).
  */
 function createTargets(words) {
     const targets = {};
@@ -245,14 +246,18 @@ function createTargets(words) {
             const [flag, ...inline] = word.split('=');
 
             if (CREATE_VALUE_FLAGS.has(flag)) {
-                record(flag, inline.length > 0 ? inline.join('=') : words[++i]);
+                let value = inline.length > 0 ? inline.join('=') : words[++i];
+                value = value === '' && words[i + 1] === SUBSTITUTION_WORD ? words[++i] : value;
+                record(flag, value);
             }
         } else if (word.startsWith('-')) {
             // Short cluster: boolean letters pass, the first value letter takes the rest of the word or the next word.
             for (let j = 1; j < word.length && word[j] !== '='; j++) {
                 if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
                     const rest = word.slice(j + 1);
-                    record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
+                    let value = rest === '' ? words[++i] : rest.replace(/^=/u, '');
+                    value = value === '' && words[i + 1] === SUBSTITUTION_WORD ? words[++i] : value;
+                    record(`-${word[j]}`, value);
                     break;
                 }
             }
@@ -451,6 +456,11 @@ async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, sw
     if (switched) {
         // shortcut: the branch a pending switch lands on is not predicted; the switch has to be its own tool call.
         return ['  git switch/checkout in the same command as gh pr create: switch branches in a separate call first.'];
+    }
+
+    if (prBase?.includes(SUBSTITUTION_WORD)) {
+        // shortcut: what a `$(...)` prints is unknown here; the base has to be written out, not computed.
+        return ['  gh pr create --base comes from a command substitution: pass the base name literally.'];
     }
 
     if (targetRepo) {
