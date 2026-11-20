@@ -4,9 +4,11 @@
  *
  * The load-bearing tests are the two in "reads the channel at request time". The header must come
  * from `c.env.BLIT386_CHANNEL`, which the Worker receives through `wrangler.json` `vars`, never
- * from `process.env`, which inside the deployed Worker holds nothing the CI build step set. Both
- * tests point `process.env` at the opposite value from `c.env`, so neither can pass against a
- * `process.env` implementation - whether that read happens at module scope or per request.
+ * from `process.env`: under `nodejs_compat` workerd copies `vars` into `process.env` too, but `c.env`
+ * is the binding itself, and a module-scope `process.env` read would capture the CI build step's
+ * value instead. Both tests point `process.env` at the opposite value from `c.env`, so neither can
+ * pass against a `process.env` implementation - whether that read happens at module scope or per
+ * request.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

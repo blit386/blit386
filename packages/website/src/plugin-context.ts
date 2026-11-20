@@ -17,19 +17,34 @@ export function getAssets(env: unknown): AssetsBinding | undefined {
 type GetText<C extends ConfigContext> = NonNullable<AppContext<C>['adapters'][number]['core:get-text']>;
 
 /**
- * A page's markdown from the first adapter that implements `core:get-text` - the same extraction the
- * llms.txt `.md` variants use, so markdown negotiation and the MCP server serve what agents get there.
+ * Calls each adapter's hook in order and returns the first defined result (mirrors fumapress's own
+ * `renderBody`/`renderToc`, which are not part of the public API - `ctx.adapters` is).
  */
-export async function getPageText<C extends ConfigContext>(
+export async function callFirstAdapter<C extends ConfigContext, P, T>(
     ctx: AppContext<C>,
-    page: Parameters<GetText<C>>[0],
-): Promise<string | undefined> {
+    page: P,
+    hook: (
+        adapter: AppContext<C>['adapters'][number],
+    ) => ((this: AppContext<C>, page: P) => T | Promise<T>) | undefined,
+): Promise<Awaited<T> | undefined> {
     for (const adapter of ctx.adapters) {
-        const text = await adapter['core:get-text']?.call(ctx, page);
-        if (text !== undefined) {
-            return text;
+        const result = await hook(adapter)?.call(ctx, page);
+
+        if (result !== undefined) {
+            return result;
         }
     }
 
     return undefined;
+}
+
+/**
+ * A page's markdown from the first adapter that implements `core:get-text` - the same extraction the
+ * llms.txt `.md` variants use, so markdown negotiation and the MCP server serve what agents get there.
+ */
+export function getPageText<C extends ConfigContext>(
+    ctx: AppContext<C>,
+    page: Parameters<GetText<C>>[0],
+): Promise<string | undefined> {
+    return callFirstAdapter(ctx, page, (adapter) => adapter['core:get-text']);
 }
