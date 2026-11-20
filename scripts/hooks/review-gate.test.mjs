@@ -865,6 +865,18 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `cat <(${PR_CREATE} --base release)`).status, 2);
     });
 
+    test('inside arithmetic, <( is a comparison and a paren, so << there is still a shift', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        const command = `$(( 1<(1<<"E"\n+ $(${PR_CREATE} --base release) ) ))\nE`;
+
+        assert.equal(commit(repo, command).status, 2);
+        // Outside arithmetic the same text is a process substitution and a real heredoc, and is read as such.
+        assert.equal(commit(repo, `cat <(cat <<'E'\n${PR_CREATE} --base release\nE\n)`).status, 0);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

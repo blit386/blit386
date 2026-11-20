@@ -310,7 +310,8 @@ function shellTokens(command) {
             word = (word ?? '') + (command[++i] ?? '');
         } else if (
             command[i + 1] === '(' &&
-            ((char === '$' && quote !== SINGLE_QUOTE) || ((char === '<' || char === '>') && quote === ''))
+            ((char === '$' && quote !== SINGLE_QUOTE) ||
+                ((char === '<' || char === '>') && quote === '' && !resume.at(-1)?.arithmetic))
         ) {
             // `$(...)`, and the process substitutions `<(...)` / `>(...)`: each runs a command and is one word of the outer one.
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
