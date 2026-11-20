@@ -767,6 +767,26 @@ describe('review-gate command substitutions', () => {
         }
     });
 
+    test('reads here-strings, heredocs queued around substitutions, and joined delimiter lines like bash', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            // `<<<` takes one word; the lines after it are commands.
+            `cat <<< ""\n${PR_CREATE}\n\necho done`,
+            // The outer heredoc waits for its own newline; the substitution's newline must not consume it.
+            `printf '%s\\n' <<'EOF' "$(\n${PR_CREATE}\n)"\nignored\nEOF`,
+            // An unquoted body joins EO\\ + F into the delimiter, so the PR command after it runs.
+            `cat <<EOF\nEO\\\nF\n${PR_CREATE}\n: <<'EOF'\nEOF`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A quoted body keeps backslash-newline literal, so the same text is still just body.
+        assert.equal(commit(repo, `cat <<'EOF'\nEO\\\nF\n${PR_CREATE}\nEOF`).status, 0);
+        // And an ordinary heredoc after an ordinary command still passes.
+        assert.equal(commit(repo, `cat <<'EOF'\nbody\nEOF\necho done`).status, 0);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

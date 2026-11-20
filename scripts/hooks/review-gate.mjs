@@ -199,24 +199,47 @@ function readHeredocDelimiter(command, from) {
     return { delim, strip, live, next: j };
 }
 
-/** Where a heredoc body starting at `from` ends: the line that equals `delim`, or `null` when no line does. */
-function heredocBody(command, from, delim, strip) {
+/** True when `text` ends in an odd run of backslashes, i.e. its newline is escaped. */
+function endsEscaped(text) {
+    let run = 0;
+
+    while (run < text.length && text[text.length - 1 - run] === '\\') {
+        run++;
+    }
+
+    return run % 2 === 1;
+}
+
+/**
+ * Where a heredoc body starting at `from` ends: the line that equals `delim`, or `null` when no line does. An unquoted
+ * (`live`) body joins a line ending in an escaped newline with the next before comparing, as bash does.
+ */
+function heredocBody(command, from, delim, strip, live) {
     let pos = from;
 
     while (pos <= command.length) {
-        const newline = command.indexOf('\n', pos);
-        const lineEnd = newline < 0 ? command.length : newline;
-        const line = command.slice(pos, lineEnd);
+        const lineEndOf = (start) => {
+            const newline = command.indexOf('\n', start);
+            return newline < 0 ? command.length : newline;
+        };
+        let lineEnd = lineEndOf(pos);
+        let line = command.slice(pos, lineEnd);
+
+        while (live && endsEscaped(line) && lineEnd < command.length) {
+            const nextEnd = lineEndOf(lineEnd + 1);
+            line = line.slice(0, -1) + command.slice(lineEnd + 1, nextEnd);
+            lineEnd = nextEnd;
+        }
 
         if ((strip ? line.replace(/^\t+/u, '') : line) === delim) {
             return { end: pos, resumeAt: lineEnd };
         }
 
-        if (newline < 0) {
+        if (lineEnd >= command.length) {
             return null;
         }
 
-        pos = newline + 1;
+        pos = lineEnd + 1;
     }
 
     return null;
@@ -280,7 +303,14 @@ function shellTokens(command) {
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push({ quote, word, heredoc, substitution: true, arithmetic: false });
+            resume.push({
+                quote,
+                word,
+                heredoc,
+                pending: pendingHeredocs.splice(0),
+                substitution: true,
+                arithmetic: false,
+            });
             word = null;
             quote = '';
             heredoc = null;
@@ -297,7 +327,11 @@ function shellTokens(command) {
         } else if (char === '#' && word === null) {
             // A `#` that starts a word begins a comment; inside a word it is just a character.
             comment = true;
-        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<' && !resume.at(-1)?.arithmetic) {
+        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] === '<') {
+            // `<<<` is a here-string: it takes one word, not the lines after it.
+            flush();
+            i += 2;
+        } else if (char === '<' && command[i + 1] === '<' && !resume.at(-1)?.arithmetic) {
             flush();
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
@@ -309,18 +343,25 @@ function shellTokens(command) {
 
             if (char === '\n' && pendingHeredocs.length > 0) {
                 const doc = pendingHeredocs.shift();
-                const body = heredocBody(command, i + 1, doc.delim, doc.strip);
+                const body = heredocBody(command, i + 1, doc.delim, doc.strip, doc.live);
                 heredoc = body && { ...body, live: doc.live };
             }
 
             if (token === SUBSHELL_OPEN) {
                 // `((` (as in `$((1<<3))`) opens arithmetic, and so does any paren inside one: there `<<` is a shift, not a heredoc.
                 const arithmetic = command[i - 1] === '(' || (resume.at(-1)?.arithmetic ?? false);
-                resume.push({ quote: '', word: null, substitution: false, arithmetic });
+                resume.push({
+                    quote: '',
+                    word: null,
+                    pending: pendingHeredocs.splice(0),
+                    substitution: false,
+                    arithmetic,
+                });
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';
                 heredoc = saved?.heredoc ?? null;
+                pendingHeredocs.splice(0, pendingHeredocs.length, ...(saved?.pending ?? []));
                 word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
         } else if (/\s/u.test(char)) {
