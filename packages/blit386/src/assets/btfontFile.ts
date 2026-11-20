@@ -21,6 +21,7 @@ import { Rect2i } from '../utils/Rect2i';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
 import type { Glyph } from './BitmapFont';
 import { readStreamedBody } from './readStreamedBody';
+import { DOWNLOAD_TIMEOUT_MS } from './stallTimeout';
 
 /** Size of the direct lookup table used for ASCII glyphs (`0-127`). */
 export const ASCII_CACHE_SIZE = 128;
@@ -124,10 +125,11 @@ export function populateAsciiGlyph(asciiGlyphs: (Glyph | null)[], char: string, 
  * UTF-8 length gets the same cap.
  *
  * @param response - Successful fetch response.
+ * @param onChunk - Called as each chunk arrives, so a caller can re-arm an idle timeout.
  * @returns Response body text.
  * @throws AssetLimitError if the body exceeds the `.btfont` JSON size limit.
  */
-export async function readCappedText(response: Response): Promise<string> {
+export async function readCappedText(response: Response, onChunk?: () => void): Promise<string> {
     const declared = Number(response.headers.get('content-length'));
     const declaredError = Number.isFinite(declared) && declared > 0 ? validateBtfontJsonByteSize(declared) : null;
 
@@ -147,6 +149,8 @@ export async function readCappedText(response: Response): Promise<string> {
     }
 
     const bytes = await readStreamedBody(response.body, (total) => {
+        onChunk?.();
+
         const sizeError = validateBtfontJsonByteSize(total);
 
         if (sizeError) {
@@ -375,6 +379,16 @@ export function loadTexture(texture: string, url: string): Promise<HTMLImageElem
  */
 export function bustTextureUrl(texture: string): string {
     return texture.toLowerCase().startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX) ? texture : appendCacheBustQuery(texture);
+}
+
+/**
+ * Returns a user-friendly error for a font request that stalled.
+ *
+ * @param url - Font file path that stopped loading.
+ * @returns Beginner-friendly message.
+ */
+export function buildLoadTimeoutMessage(url: string): string {
+    return `The font file '${url}' stopped loading - no data arrived for ${DOWNLOAD_TIMEOUT_MS / 1000} seconds. Check your connection and try refreshing the page.`;
 }
 
 /**

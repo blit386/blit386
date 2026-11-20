@@ -1,16 +1,17 @@
 ---
 name: show-a-loading-screen
 description:
-  Show a loading spinner or progress UI while sprites and audio finish loading, using BT.loadingAssetsCount and optional
-  SpriteSheet.status / progress. Use when the user wants a loading screen, progress bar, or asks how to wait for assets
-  before starting play. For the built-in BLIT386 splash (which already covers init() in release builds), see
+  Show a loading spinner or progress UI while sprites, audio and fonts finish loading, using BT.loadingAssetsCount and
+  optional SpriteSheet.status / progress. Use when the user wants a loading screen, progress bar, or asks how to wait
+  for assets before starting play. For the built-in BLIT386 splash (which already covers init() in release builds), see
   docs/basics.md.
 ---
 
 # Show a loading screen
 
-`BT.loadingAssetsCount` is the combined count of in-flight image and audio loads. Poll it each frame and draw a spinner
-(or a "Loading..." label) until it returns to `0`.
+`BT.loadingAssetsCount` is the combined count of in-flight image, audio and font loads. Poll it each frame and draw a
+spinner (or a "Loading..." label) until it returns to `0`. Font loads count from engine 1.9.0; on an older engine the
+count covers only images and audio, so upgrade `blit386` if a font must be part of the wait.
 
 ## The BLIT386 splash already covers init()
 
@@ -88,7 +89,7 @@ A normally loaded sheet is `'ready'` with `progress` `1.0`. Use these for a per-
 
 ## Key calls
 
-- `BT.loadingAssetsCount` (getter) - in-flight image + audio count; `0` means settled.
+- `BT.loadingAssetsCount` (getter) - in-flight image + audio + font count; `0` means settled.
 - `SpriteSheet.status` / `SpriteSheet.progress` (getters) - per-sheet hot-replace state.
 
 ## Notes

@@ -81,9 +81,9 @@ automatic asset watcher - see [Hot Reload](guide-hot-reload.md#asset-hot-replace
 
 <Since symbol="BT.loadingAssetsCount" />
 
-For a loading-screen indicator that covers both images and audio clips, use `BT.loadingAssetsCount` - it sums
-`AssetLoader.loadingCount` and `AudioClip.loadingCount` (see [API: Audio](api-audio.md#loading)) and drops back to `0`
-once every in-flight load has settled:
+For a loading-screen indicator that covers images, audio clips and bitmap fonts, use `BT.loadingAssetsCount` - it sums
+`AssetLoader.loadingCount`, `AudioClip.loadingCount` (see [API: Audio](api-audio.md#loading)) and
+`BitmapFont.loadingCount`, and drops back to `0` once every in-flight load has settled:
 
 ```ts twoslash
 import { BT } from 'blit386';

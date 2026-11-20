@@ -28,6 +28,7 @@ import {
 } from '../utils/errorMessages';
 import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { readStreamedBody } from './readStreamedBody';
+import { StallTimeoutError, withStallTimeout } from './stallTimeout';
 import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
@@ -77,9 +78,6 @@ export interface AudioClipLoadOptions {
      */
     onProgress?: AudioClipProgressCallback;
 }
-
-/** Maximum silence on a `fetch` (waiting for headers, or between body chunks) before aborting it as a network error. */
-const DOWNLOAD_TIMEOUT_MS = 15_000;
 
 /** Resolved clips keyed by their winning source URL. */
 const resolvedClips = new Map<string, AudioClip>();
@@ -415,7 +413,7 @@ export class AudioClip {
      * Downloads `url`, distinguishing a rejected fetch (network/CORS) from an
      * HTTP error status.
      *
-     * Aborts the request after {@link DOWNLOAD_TIMEOUT_MS} of silence so a stalled
+     * Aborts the request after `DOWNLOAD_TIMEOUT_MS` (see `stallTimeout.ts`) of silence so a stalled
      * connection can never hang {@link AudioClip.load} indefinitely; the timer
      * covers the wait for headers and is re-armed on every received body chunk,
      * so a slow download that keeps making progress is never cut off. A timeout
@@ -428,39 +426,31 @@ export class AudioClip {
      * @throws Error if the fetch rejects or times out, the stream fails, or the response status is not ok.
      */
     private static async download(url: string, onProgress?: AudioClipProgressCallback): Promise<ArrayBuffer> {
-        const controller = new AbortController();
-        let timeoutId: ReturnType<typeof setTimeout> | undefined;
-
-        const arm = (): void => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
-        };
-
-        arm();
-
         try {
-            let response: Response;
+            return await withStallTimeout(async (signal, rearm) => {
+                let response: Response;
 
-            try {
-                response = await fetch(url, { signal: controller.signal });
-            } catch {
-                throw new Error(audioClipNetworkError(url));
-            }
+                try {
+                    response = await fetch(url, { signal });
+                } catch {
+                    throw new Error(audioClipNetworkError(url));
+                }
 
-            if (!response.ok) {
-                throw new Error(audioClipHttpError(url, response.status));
-            }
+                if (!response.ok) {
+                    throw new Error(audioClipHttpError(url, response.status));
+                }
 
-            // Restart the idle window so a slow header wait does not eat into the first chunk's wait.
-            arm();
+                // Restart the idle window so a slow header wait does not eat into the first chunk's wait.
+                rearm();
 
-            try {
-                return await AudioClip.readResponseBody(response, arm, onProgress);
-            } catch {
-                throw new Error(audioClipNetworkError(url));
-            }
-        } finally {
-            clearTimeout(timeoutId);
+                try {
+                    return await AudioClip.readResponseBody(response, rearm, onProgress);
+                } catch {
+                    throw new Error(audioClipNetworkError(url));
+                }
+            });
+        } catch (error) {
+            throw error instanceof StallTimeoutError ? new Error(audioClipNetworkError(url)) : error;
         }
     }
 

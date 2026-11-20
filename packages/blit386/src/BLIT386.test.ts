@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, type MockIns
 
 import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
+import { BitmapFont as BitmapFontClass } from './assets/BitmapFont';
 import { NineSlice } from './assets/NineSlice';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { BitmapFont, HardwareSettings, IBTDemo, SpriteDrawParams } from './BLIT386';
@@ -2910,5 +2911,28 @@ describe('BT.randomSeed validation', () => {
 
         expect(() => BT.randomSeed(Number.NaN)).toThrow(RangeError);
         expect(BT.random.next()).toBe(expected);
+    });
+});
+
+describe('BT.loadingAssetsCount with bitmap fonts', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('counts a pending BitmapFont.load and drops to 0 after it fails', async () => {
+        let release: (response: unknown) => void = () => undefined;
+
+        vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise((resolve) => (release = resolve))));
+
+        expect(BT.loadingAssetsCount).toBe(0);
+
+        const pending = expect(BitmapFontClass.load('pending-bt-font.btfont')).rejects.toThrow();
+
+        expect(BT.loadingAssetsCount).toBe(1);
+
+        release({ ok: false, status: 404, statusText: 'Not Found' });
+        await pending;
+
+        expect(BT.loadingAssetsCount).toBe(0);
     });
 });

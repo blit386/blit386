@@ -179,7 +179,7 @@ BT.targetFPS; // number - fixed update() rate (simulation), not measured present
 BT.requestedBackend; // 'webgpu' | 'software' | null - resolved request (see below)
 BT.activeBackend; // 'webgpu' | 'software' | null - backend that actually started
 BT.screenOrientation; // 'landscape-primary' | … | null - Screen Orientation API type
-BT.loadingAssetsCount; // number - in-flight image + audio loads (see API: Assets)
+BT.loadingAssetsCount; // number - in-flight image + audio + font loads (see API: Assets)
 ```
 
 - `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.

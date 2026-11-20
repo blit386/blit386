@@ -115,7 +115,7 @@ which the kit writes once whenever such an assistant is set up.
 | `draw-shapes` | Rectangles, lines, pixels, and clearing the screen |
 | `add-sprite` | Load a PNG sprite sheet and draw it, whole or frame by frame |
 | `draw-a-panel` | Panels, dialog boxes, buttons, and bars of any size from one small piece of art, with a nine-slice |
-| `show-a-loading-screen` | Wait for sprites and audio with `BT.loadingAssetsCount` |
+| `show-a-loading-screen` | Wait for sprites, audio and fonts with `BT.loadingAssetsCount` |
 | `add-text` | Scores, labels, and titles with the built-in or a bitmap font |
 | `use-palette` | Set up colors as numbered palette slots |
 | `animate-the-palette` | Cycle, fade, flash, and swap colors for motion and mood |

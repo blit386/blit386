@@ -1,6 +1,6 @@
 import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
-import type { BitmapFont } from '../assets/BitmapFont';
+import { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import { PaletteEffectManager } from '../assets/PaletteEffect';
 import { createSystemFont } from '../assets/SystemFont';
@@ -697,13 +697,15 @@ export class BTAPI {
     /**
      * Gets the total number of asset loads currently in flight across all loaders.
      *
-     * Computed fresh on each read by summing {@link AssetLoader.loadingCount} and
-     * {@link AudioClip.loadingCount} - stateless, no subscription or extra bookkeeping.
+     * Computed fresh on each read by summing {@link AssetLoader.loadingCount},
+     * {@link AudioClip.loadingCount} and {@link BitmapFont.loadingCount} - stateless, no subscription or
+     * extra bookkeeping.
      *
-     * @returns Combined count of in-flight image and audio clip loads.
+     * @changed 1.9.0 Includes in-flight bitmap font loads.
+     * @returns Combined count of in-flight image, audio clip and bitmap font loads.
      */
     public getLoadingAssetsCount(): number {
-        return AssetLoader.loadingCount + AudioClip.loadingCount;
+        return AssetLoader.loadingCount + AudioClip.loadingCount + BitmapFont.loadingCount;
     }
 
     /**
