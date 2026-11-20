@@ -24,7 +24,7 @@
  * retired skill cannot leave a stale command behind.
  *
  * Usage:
- *   node scripts/sync-cursor-commands.mjs            # write commands (local + pre-commit)
+ *   node scripts/sync-cursor-commands.mjs            # write commands (run by hand; pre-push and a staged SKILL.md at pre-commit run --check)
  *   node scripts/sync-cursor-commands.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

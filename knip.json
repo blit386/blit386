@@ -3,6 +3,9 @@
   "ignoreExportsUsedInFile": true,
   "tags": ["-deprecated"],
   "workspaces": {
+    ".": {
+      "ignore": [".opencode/plugins/**"]
+    },
     "packages/blit386": {
       "entry": ["src/**/*.test.ts", "src/**/*.bench.ts"],
       "project": ["src/**/*.ts"],

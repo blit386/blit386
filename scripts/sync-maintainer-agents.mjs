@@ -24,7 +24,7 @@
  * generated-game sandbox workflow; this repo has its own Actions).
  *
  * Usage:
- *   node scripts/sync-maintainer-agents.mjs            # write files (local + pre-commit)
+ *   node scripts/sync-maintainer-agents.mjs            # write files (run by hand; pre-push runs --check)
  *   node scripts/sync-maintainer-agents.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
 import {
