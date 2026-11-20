@@ -877,6 +877,21 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `cat <(cat <<'E'\n${PR_CREATE} --base release\nE\n)`).status, 0);
     });
 
+    test('&> and &>> are redirections, not a command separator', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        for (const operator of ['&>', '&>>']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${operator}/dev/null --base release`).status, 2, operator);
+            assert.equal(commit(repo, `${PR_CREATE} ${operator} /dev/null --base release`).status, 2, operator);
+        }
+
+        // A real `&` still ends the command, and what follows it is judged on its own.
+        assert.equal(commit(repo, `${PR_CREATE} --base main & echo done`).status, 0);
+        assert.equal(commit(repo, `echo hi & ${PR_CREATE} --base release`).status, 2);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

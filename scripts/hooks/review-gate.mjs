@@ -348,6 +348,16 @@ function shellTokens(command) {
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
             i = doc.next - 1;
+        } else if (char === '&' && command[i + 1] === '>') {
+            // `&>` and `&>>` redirect both streams; they are not a command separator followed by `>`.
+            flush();
+            i++;
+
+            while (command[i + 1] === '>') {
+                i++;
+            }
+
+            tokens.push(REDIRECT);
         } else if (char === '<' || char === '>') {
             // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
             // argument of the command, so the walker drops the word after the marker.

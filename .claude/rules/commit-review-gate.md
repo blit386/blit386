@@ -46,12 +46,12 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
   lines before comparing its delimiter, a `$(...)` or `(...)` keeps its own heredocs apart from the outer command's, and
   `<<<` is a here-string, not a heredoc. A process substitution (`<(...)`, `>(...)`) is a word of the command, like
   `$(...)`, not a redirection (inside arithmetic, `<(` is a comparison and a paren). The operand of an unquoted
-  redirection (`>`, `>>`, `2>&1`, `<`, `<<<`) is dropped from the command's arguments, since it is a file or stdin text.
-  Only a plain, unquoted digit run before the operator is a file descriptor (`2>`); a quoted `"2">` is an argument.
-  Inside arithmetic (`$((...))`, `((...))`), `<<` is a shift, not a heredoc. Not seen: a wrapper given its own options
-  (`sudo -u x git commit`), a commit inside a shell string (`bash -c "git commit"`), or one built from `$VAR`. With
-  `--git-dir` or `--work-tree` the commit is checked in the current directory. The gate stops an agent that forgot to
-  review; it is not a sandbox.
+  redirection (`>`, `>>`, `2>&1`, `&>`, `<`, `<<<`) is dropped from the command's arguments, since it is a file or stdin
+  text. Only a plain, unquoted digit run before the operator is a file descriptor (`2>`); a quoted `"2">` is an
+  argument. Inside arithmetic (`$((...))`, `((...))`), `<<` is a shift, not a heredoc. Not seen: a wrapper given its own
+  options (`sudo -u x git commit`), a commit inside a shell string (`bash -c "git commit"`), or one built from `$VAR`.
+  With `--git-dir` or `--work-tree` the commit is checked in the current directory. The gate stops an agent that forgot
+  to review; it is not a sandbox.
 - **What passes.** Every tracked path that differs from `HEAD`, in the index or in the working tree, must match both
   snapshots byte for byte. That covers `commit -a` and pathspec commits without parsing them. Staging after a review is
   fine; one review can cover several commits that split the change.
