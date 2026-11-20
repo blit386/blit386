@@ -66,7 +66,18 @@ describe('linearRequest timeout', () => {
                 init.signal.addEventListener('abort', () => reject(init.signal.reason));
             });
 
-        await assert.rejects(() => linearRequest('key-123', 'query { ok }', {}, fetchImpl, 20), /timed out|abort/iu);
+        // AbortSignal.timeout's timer is unref'd and a fake fetch holds no socket, so without this the event
+        // loop can drain mid-await and the runner cancels the test.
+        const keepAlive = setInterval(() => {}, 1000);
+
+        try {
+            await assert.rejects(
+                () => linearRequest('key-123', 'query { ok }', {}, fetchImpl, 20),
+                /timed out|abort/iu,
+            );
+        } finally {
+            clearInterval(keepAlive);
+        }
     });
 
     it('passes an abort signal to fetch by default', async () => {
