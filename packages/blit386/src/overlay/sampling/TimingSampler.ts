@@ -1,7 +1,7 @@
 import { OVERLAY_DIAGNOSTICS_OVERFLOW_FIELD_WIDTH, OVERLAY_DIAGNOSTICS_VERTEX_FIELD_WIDTH } from '../constants';
 import { padOverlayField } from '../labels';
 import type { OverlayTimingSnapshot } from '../types';
-import { FPS_SMOOTHING } from './constants';
+import { OVERLAY_EMA_SMOOTHING } from './constants';
 
 /**
  * Exponentially smoothed overlay timings sourced from {@link OverlayTimingSnapshot}.
@@ -103,9 +103,9 @@ export class TimingSampler {
         const renderMs = Math.max(0, sample.renderMs);
 
         if (this.#hasSample) {
-            this.#smoothedFrameMs += (frameMs - this.#smoothedFrameMs) * FPS_SMOOTHING;
-            this.#smoothedUpdateMs += (updateMs - this.#smoothedUpdateMs) * FPS_SMOOTHING;
-            this.#smoothedRenderMs += (renderMs - this.#smoothedRenderMs) * FPS_SMOOTHING;
+            this.#smoothedFrameMs += (frameMs - this.#smoothedFrameMs) * OVERLAY_EMA_SMOOTHING;
+            this.#smoothedUpdateMs += (updateMs - this.#smoothedUpdateMs) * OVERLAY_EMA_SMOOTHING;
+            this.#smoothedRenderMs += (renderMs - this.#smoothedRenderMs) * OVERLAY_EMA_SMOOTHING;
         } else {
             this.#smoothedFrameMs = frameMs;
             this.#smoothedUpdateMs = updateMs;

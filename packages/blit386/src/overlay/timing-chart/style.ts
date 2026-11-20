@@ -1,6 +1,7 @@
 import type { OverlayStyle, OverlayTimingChartStyle } from '../../core/IBTDemo';
 import type { Rect2i } from '../../utils/Rect2i';
 import { resolveOverlayChromeIndices, scaleToBand } from '../bandStyle';
+import { MS_PER_SECOND } from '../sampling/constants';
 import {
     TIMING_CHART_DEFAULT_ERROR_IDX,
     TIMING_CHART_DEFAULT_TAG_IDX,
@@ -145,10 +146,10 @@ export function isTimingChartGridLineAtY(y: number, chartRect: Rect2i): boolean 
  * Frame-budget grid marker in milliseconds from configured fixed-step rate.
  *
  * @param targetFps - Configured `targetFPS` (clamped to at least 1).
- * @returns `1000 / targetFps`.
+ * @returns `MS_PER_SECOND / targetFps`.
  */
 export function timingChartFrameBudgetMs(targetFps: number): number {
-    return 1000 / Math.max(1, targetFps);
+    return MS_PER_SECOND / Math.max(1, targetFps);
 }
 
 /**

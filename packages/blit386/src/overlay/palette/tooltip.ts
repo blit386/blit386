@@ -7,11 +7,18 @@ import type { Rect2i } from '../../utils/Rect2i';
 import type { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
 import { drawOutline } from '../drawOutline';
+import { OVERLAY_BAR_HEIGHT } from '../layout/constants';
 import { overlayBitmapTextPaletteOffset } from '../layout/layoutHelpers';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
 
 /** Gap between the tooltip body bottom edge and the swatch top edge. */
 const TOOLTIP_GAP_ABOVE_SWATCH_PX = 1;
+
+/** Horizontal padding added to the label width to get the tooltip body width. */
+const TOOLTIP_BODY_PADDING_PX = 7;
+
+/** Horizontal inset of the label text inside the tooltip body. */
+const TOOLTIP_TEXT_INSET_PX = 4;
 
 /** Layout output for a docked palette swatch tooltip. */
 export interface PaletteTooltipLayout {
@@ -40,8 +47,8 @@ export function layoutTooltip(
     displayHeight: number,
 ): PaletteTooltipLayout {
     const textWidth = label.length * SYSTEM_CHAR_ADVANCE;
-    const bodyWidth = textWidth + 7;
-    const bodyHeight = 13;
+    const bodyWidth = textWidth + TOOLTIP_BODY_PADDING_PX;
+    const bodyHeight = OVERLAY_BAR_HEIGHT;
     const swatchCenterX = swatchRect.x + Math.floor(swatchRect.width / 2);
 
     let bodyX = swatchCenterX - Math.floor(bodyWidth / 2);
@@ -64,7 +71,7 @@ export function layoutTooltip(
     }
 
     target.body.set(bodyX, bodyY, bodyWidth, bodyHeight);
-    target.textPos.set(bodyX + 4, bodyY);
+    target.textPos.set(bodyX + TOOLTIP_TEXT_INSET_PX, bodyY);
 
     return target;
 }

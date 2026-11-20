@@ -2,6 +2,8 @@
  * Timing chart severity classification.
  */
 
+import { MS_PER_SECOND } from '../sampling/constants';
+
 /** No semantic tint for this chart column. */
 export const TIMING_CHART_SEVERITY_NONE = 0;
 
@@ -47,7 +49,7 @@ export function severityFromFrameBudget(frameMs: number, targetFps: number): num
         return TIMING_CHART_SEVERITY_NONE;
     }
 
-    const budgetMs = 1000 / targetFps;
+    const budgetMs = MS_PER_SECOND / targetFps;
 
     if (budgetMs <= 0) {
         return TIMING_CHART_SEVERITY_NONE;

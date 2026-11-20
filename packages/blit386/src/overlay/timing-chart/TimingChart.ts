@@ -6,6 +6,7 @@ import type { BitmapFont } from '../../assets/BitmapFont';
 import type { OverlayTimingChartDiagnosticsMode } from '../../core/mergeHardwareSettings';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
+import { overlayBitmapTextPaletteOffset } from '../layout/layoutHelpers';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
 import type { OverlayTimingSnapshot } from '../types';
 import {
@@ -373,7 +374,7 @@ export class TimingChart {
         font: BitmapFont,
         tagGroupScratch: TimingChartTagGroupScratch,
     ): void {
-        const paletteOffset = style.tagBarIndex - 1;
+        const paletteOffset = overlayBitmapTextPaletteOffset(style.tagBarIndex);
 
         for (let index = 0; index < tagGroupScratch.groupCount; index++) {
             // eslint-disable-next-line security/detect-object-injection -- index bounded by groupCount

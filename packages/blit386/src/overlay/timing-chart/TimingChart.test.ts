@@ -484,6 +484,20 @@ describe('TimingChart', () => {
         ).toBe(1);
     });
 
+    it('draws tag text with a zero palette offset when the tag index is 0', () => {
+        const chart = new TimingChart(true);
+        const renderer = createMockRenderer();
+        const chartRect = new Rect2i(0, 30, 80, 22);
+
+        chart.reset(chartRect.width, 0);
+        chart.assignTag('Zero', 0);
+        chart.draw(renderer, chartRect, { ...defaultStyle, tagBarIndex: 0 }, mockFont, 0);
+
+        const labelCall = getLabelOnTopCalls(renderer).find((call) => call.text === 'Zero');
+
+        expect(labelCall?.paletteOffset).toBe(0);
+    });
+
     it('places Start on the left edge before the chart buffer fills', () => {
         const chart = new TimingChart(true);
         const renderer = createMockRenderer();

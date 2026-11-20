@@ -13,7 +13,7 @@ export interface OverlayLayout {
     /** System font line height in pixels. */
     readonly lineHeight: number;
 
-    /** Bottom-left 17×13 px region that toggles overlay body visibility on primary press. */
+    /** Bottom-left 17x13 px region that toggles overlay body visibility on primary press. */
     readonly toggleRect: Rect2i;
 }
 

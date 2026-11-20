@@ -1,5 +1,5 @@
 import { BACKGROUND_THRESHOLD_MS } from '../../core/frameTiming';
-import { FPS_SMOOTHING, MS_PER_SECOND } from './constants';
+import { MS_PER_SECOND, OVERLAY_EMA_SMOOTHING } from './constants';
 
 /**
  * Smoothed render-frame FPS from `performance.now()` deltas between overlay draws.
@@ -63,6 +63,6 @@ export class FpsSampler {
 
         const instantFps = 1 / deltaSeconds;
 
-        this.#smoothedFps += (instantFps - this.#smoothedFps) * FPS_SMOOTHING;
+        this.#smoothedFps += (instantFps - this.#smoothedFps) * OVERLAY_EMA_SMOOTHING;
     }
 }
