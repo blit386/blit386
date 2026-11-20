@@ -52,7 +52,7 @@ game must do for the frame to come out the same every time.
 
 ## The built-in dev shortcut (engine 1.7.0+)
 
-While `npm run dev` is running, you do not need any code to grab a frame:
+While `{{pmRunDev}}` is running, you do not need any code to grab a frame:
 
 - **F9** - copy the current frame to the clipboard, ready to paste into a chat or an issue.
 - **Shift+F9** - save it as a PNG, named with the date and time so repeated presses never overwrite each other.

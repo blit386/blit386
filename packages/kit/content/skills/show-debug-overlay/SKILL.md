@@ -1,8 +1,9 @@
 ---
 name: show-debug-overlay
 description:
-  Turn on and feed the engine's built-in debug overlay (FPS, backend, resolution, your own rows, palette grid, timing
-  chart). Use to see FPS and timings, show live game values while developing, or add a palette or timing inspector.
+  Show live values on screen (FPS, score, your own rows, palette grid, timing chart) with the engine's built-in debug
+  overlay - do not hand-roll a HUD. Use when the user wants to see numbers while developing. To run code only in dev
+  builds, use `use-dev-mode` instead.
 ---
 
 # Show the debug overlay
