@@ -181,6 +181,20 @@ export function resolvePositiveMetric(value: unknown, fallback: number): number 
 }
 
 /**
+ * Coerces a `.btfont` pen metric (`lineHeight`, `baseline`) to a whole number of pixels.
+ *
+ * Fractional values are truncated so the pen never lands on a fractional pixel; a value that truncates
+ * below 1 becomes 1.
+ *
+ * @param value - Raw JSON value for `lineHeight` or `baseline`.
+ * @param fallback - Value used when `value` is missing or invalid.
+ * @returns Whole-pixel metric of at least 1.
+ */
+export function resolveWholePixelMetric(value: unknown, fallback: number): number {
+    return Math.max(1, Math.trunc(resolvePositiveMetric(value, fallback)));
+}
+
+/**
  * Coerces a raw `.btfont` metric field to a number.
  *
  * @param value - Raw JSON value for `size`, `lineHeight`, or `baseline`.

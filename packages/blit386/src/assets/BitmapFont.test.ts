@@ -703,6 +703,27 @@ describe('BitmapFont', () => {
             expect(f.lineHeight).toBe(16); // Falls back to size
             expect(f.baseline).toBe(16); // Falls back to size
         });
+
+        it('should truncate fractional lineHeight and baseline to whole pixels', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(
+                    mockFontFetchResponse({
+                        name: 'FractionalFont',
+                        size: 12,
+                        lineHeight: 9.5,
+                        baseline: 7.25,
+                        texture: 'data:image/png;base64,aGVsbG8=',
+                        glyphs: { A: { x: 0, y: 0, w: 8, h: 12, ox: 0, oy: 0, adv: 9 } },
+                    }),
+                ),
+            );
+
+            const f = await BitmapFont.load('fractional.btfont');
+
+            expect(f.lineHeight).toBe(9);
+            expect(f.baseline).toBe(7);
+        });
     });
 
     describe('edge cases', () => {

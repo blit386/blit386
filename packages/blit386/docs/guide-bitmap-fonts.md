@@ -102,8 +102,8 @@ The `.btfont` format is a JSON file with the following structure:
 <TypeTable type={{
     name: { type: 'string', description: 'Font display name' },
     size: { type: 'number', description: 'Original font size in points' },
-    lineHeight: { type: 'number', description: 'Pixels between baselines for multi-line text' },
-    baseline: { type: 'number', description: 'Pixels from top of line to baseline (for vertical alignment)' },
+    lineHeight: { type: 'number', description: 'Pixels between baselines for multi-line text. Fractional values are truncated to whole pixels' },
+    baseline: { type: 'number', description: 'Pixels from top of line to baseline (for vertical alignment). Fractional values are truncated to whole pixels' },
     texture: { type: 'string', description: 'Texture source (relative path or embedded base64 data URI)' },
     glyphs: { type: 'object', description: 'Map of character to glyph data' },
   }} />
