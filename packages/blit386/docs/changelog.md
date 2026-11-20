@@ -126,6 +126,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- The overlay's Present FPS no longer dips for about 30 frames after a tab returns from the background. A gap of a
+  second or more between frames is now skipped, the same threshold the game loop uses for tab-switch pauses.
 - The overlay palette band now keeps scrolling under a finger drag while a second finger rests in the band. The two
   touches used to take the drag from each other every frame, so the band did not move.
 - Dev hot reload: saving an image that no sprite sheet and no `AssetLoader` call uses no longer fetches and caches it.
