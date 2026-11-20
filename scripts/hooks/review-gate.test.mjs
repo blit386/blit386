@@ -653,6 +653,33 @@ describe('review-gate command substitutions', () => {
         assert.match(result.stderr, /never closes/u);
     });
 
+    test('ignores a shell comment, so its apostrophe does not swallow the PR command', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `# Don't forget the description.\n${PR_CREATE}`,
+            `echo hi # it's fine\n${PR_CREATE}`,
+            `${COMMIT.replace('commit', 'status')} # don't\n${PR_CREATE}`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A hash inside a word or a quoted string is not a comment.
+        assert.equal(commit(repo, `echo a#b "# c"; ${PR_CREATE}`).status, 2);
+        assert.equal(commit(repo, 'echo a#b "x # y" && echo done').status, 0);
+    });
+
+    test('refuses an unterminated PR command even from a directory that is not a repository', () => {
+        const repo = makePrRepo();
+        const elsewhere = mkdtempSync(join(tmpdir(), 'review-gate-cwd-'));
+        fixtures.push(elsewhere);
+
+        const result = commit(repo, `cd ${elsewhere} && gh pr create --title "$(cat`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /never closes/u);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

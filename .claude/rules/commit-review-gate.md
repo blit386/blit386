@@ -35,7 +35,8 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
 - **What it sees as a commit.** The Bash command is split into simple commands, quotes respected, and walked in order:
   each `cd X` moves the directory, and every `git <global options> commit` is checked in the directory it runs in, so
   `git -C A commit && git -C B commit` checks both. `VAR=x` assignments and the wrappers `rtk`, `env`, `command`,
-  `exec`, `nohup`, `time`, `xargs`, `sudo` in front are skipped. A directory taken from a `$(...)` (`cd "$(...)"`,
+  `exec`, `nohup`, `time`, `xargs`, `sudo` in front are skipped. A `#` that starts an unquoted word comments out the
+  rest of the line, so an apostrophe in a comment opens no quote. A directory taken from a `$(...)` (`cd "$(...)"`,
   `git -C "$(...)"`) leaves the directory unchanged, and a `$(` that never closes (the tokenizer does not know heredocs,
   so an apostrophe in one can do it) still leaves its outer command judged; for `gh pr create` the cut-off arguments
   cannot be trusted, so it is refused (use `--body-file`). Not seen: a wrapper given its own options

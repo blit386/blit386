@@ -199,6 +199,11 @@ function shellTokens(command) {
         } else if (char === DOUBLE_QUOTE || char === SINGLE_QUOTE) {
             quote = char;
             word ??= '';
+        } else if (char === '#' && word === null) {
+            // A comment runs to the end of the line; its quotes and `$(` mean nothing. A `#` inside a word is just a char.
+            while (i + 1 < command.length && command[i + 1] !== '\n') {
+                i++;
+            }
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
             flush();
@@ -449,9 +454,7 @@ function defaultPrBase(top) {
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
 async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated }, sessionDir) {
-    const repo = repoOf(dir);
-    const isPullRequest = kind === PULL_REQUEST;
-
+    // Refusals first: none of them needs the repository, so a directory that is not one cannot turn them into a pass.
     if (unterminated) {
         // shortcut: the tokenizer does not know heredocs; an apostrophe in one leaves a `$(` open and hides what follows it.
         return [
@@ -480,6 +483,9 @@ async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, sw
             `  gh pr create --head ${head}: only the checked-out branch can be checked; drop --head and switch to it.`,
         ];
     }
+
+    const repo = repoOf(dir);
+    const isPullRequest = kind === PULL_REQUEST;
 
     // The PR base is the one named by --base, as the remote knows it; with no such ref git throws and the gate fails open.
     const prBaseName = isPullRequest ? (prBase ?? defaultPrBase(repo.top)) : '';
