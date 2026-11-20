@@ -288,3 +288,622 @@ describe('review-gate commit gate', () => {
         assert.match(result.stderr, /review-gate: internal error, allowing/u);
     });
 });
+
+const PR_CREATE = 'gh pr create --title t --body b';
+
+/** A repo with origin/main at the initial commit and one committed, unreviewed source change on the branch. */
+function makePrRepo(path = SOURCE, content = 'two\n') {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+    write(repo, path, content);
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '--quiet', '-m', 'branch work');
+
+    return repo;
+}
+
+describe('review-gate pull request gate', () => {
+    test('blocks gh pr create when the committed branch content was not reviewed', () => {
+        const repo = makePrRepo();
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /this pull request contains changes/u);
+        assert.match(result.stderr, /\/review did not see: src\/a\.ts/u);
+        assert.match(result.stderr, /\/ponytail:ponytail-review did not see: src\/a\.ts/u);
+        assert.match(result.stderr, /Run \/review and \/ponytail:ponytail-review/u);
+    });
+
+    test('passes when both reviews saw the committed branch content', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
+    test('blocks again after an uncommitted tracked edit made after the reviews', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+        write(repo, SOURCE, 'three\n');
+
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+    });
+
+    test('blocks when only one review ran', () => {
+        const repo = makePrRepo();
+        review(repo, 'review');
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /ponytail-review did not see/u);
+        assert.doesNotMatch(result.stderr, /\n {2}\/review did not see/u);
+    });
+
+    test('passes a PR whose changes are all generated paths', () => {
+        const repo = makePrRepo(GENERATED, 'generated\n');
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
+    test('finds gh pr create in a chain, a subshell and behind wrappers', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `git push -u origin HEAD && ${PR_CREATE}`,
+            `(${PR_CREATE})`,
+            `echo $(${PR_CREATE})`,
+            `GH_DEBUG=1 ${PR_CREATE}`,
+            `rtk ${PR_CREATE}`,
+            'gh pr -R owner/name create --fill',
+            'gh pr --repo owner/name create --fill',
+            'gh --repo owner/name pr create --fill',
+            'gh -R owner/name pr new --fill',
+            'gh pr new --title t',
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('ignores other gh commands and quoted mentions of gh pr create', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            'gh pr view 1',
+            'gh pr list',
+            'gh pr edit 1 --body x',
+            `echo "${PR_CREATE}"`,
+            `grep -n 'gh pr create' notes.md`,
+            `git log --grep "${PR_CREATE}"`,
+            'gh issue create --title t',
+        ]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 0, command);
+            assert.equal(result.stderr, '', command);
+        }
+    });
+
+    test('checks the checkout a cd prefix names, and a review elsewhere does not count', () => {
+        const repo = makePrRepo();
+        const other = makeRepo();
+        reviewBoth(other);
+
+        const result = commit(other, `cd "${repo}" && ${PR_CREATE}`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /This pull request targets/u);
+    });
+
+    test('names both a commit and a pull request in one command', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'four\n');
+        git(repo, 'add', '-A');
+
+        const result = commit(repo, `${COMMIT} && ${PR_CREATE}`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /this commit and pull request contains changes/u);
+    });
+
+    test('blocks committed branch content that the index and working tree no longer hold', () => {
+        const repo = makePrRepo();
+        git(repo, 'restore', '--source=origin/main', '--staged', '--worktree', SOURCE);
+        reviewBoth(repo);
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /src\/a\.ts/u);
+    });
+
+    test('blocks when a reviewed working-tree correction sits over unreviewed committed content', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'corrected\n');
+        reviewBoth(repo);
+
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+    });
+
+    test('measures from the base named by --base, not always main', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+        for (const flags of ['--base release', '--base=release', '-B release']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+    });
+
+    test('refuses a --head override it cannot check', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const flags of ['--head feature', '--head=feature', '-H feature']) {
+            const result = commit(repo, `${PR_CREATE} ${flags}`);
+            assert.equal(result.status, 2, flags);
+            assert.match(result.stderr, /only the checked-out branch/u);
+        }
+    });
+
+    test('reads --base the way gh does: operands, last one wins, -B=x', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        // From main's own tip nothing differs (passes); against release the branch work differs (blocks).
+        assert.equal(commit(repo, `${PR_CREATE} --title --base=release`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --base nope --base release`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base release --base main`).status, 0);
+
+        for (const flags of ['-B=release', ['-B', 'release'].join(''), '--base=release']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+    });
+
+    test('a branch switch in the same command cannot be checked, so it is refused', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of ['git switch feature', 'git checkout feature', 'git -C . switch -c x']) {
+            const result = commit(repo, `${command} && ${PR_CREATE}`);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /separate call/u);
+        }
+
+        // Other git commands leave the normal checks in place.
+        assert.equal(commit(repo, `git log --grep switch && ${PR_CREATE}`).status, 0);
+    });
+
+    test('keeps a commit block when a pull request entry in the same command cannot be resolved', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'five\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [`${COMMIT} && ${PR_CREATE} --base nope`, `${PR_CREATE} --base nope && ${COMMIT}`]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /this commit contains changes/u);
+        }
+    });
+
+    test('without --base, uses the branch gh-merge-base, then the remote default branch', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/trunk', 'HEAD~1');
+
+        // origin/main equals HEAD, so a main base has nothing to review.
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+
+        git(repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/trunk');
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+
+        git(repo, 'config', `branch.${git(repo, 'branch', '--show-current').trim()}.gh-merge-base`, 'main');
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
+    test('reads short clusters and treats an empty base as omitted', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        for (const flags of ['-dB release', '-dB=release', '-d -B release', ['-fdB', 'release'].join('')]) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+
+        // An empty --base falls back to the default base (main here, equal to HEAD), and a later empty one resets.
+        for (const flags of ['--base=', '-B=', '--base release --base=']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 0, flags);
+        }
+    });
+
+    test('refuses when the PR base cannot be determined, instead of guessing main', () => {
+        const repo = makePrRepo();
+        git(repo, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+        reviewBoth(repo);
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /base cannot be determined/u);
+        assert.equal(commit(repo, `${PR_CREATE} --base main`).status, 0);
+    });
+
+    test('stops short-flag scanning at a boolean assignment', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // -d=t is draft mode; its "t" must not read as -t (title) and swallow -B.
+        assert.equal(commit(repo, `${PR_CREATE} -d=t -B release`).status, 2);
+    });
+
+    test('refuses a --repo override it cannot check', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of ['gh pr -R owner/upstream create --base main', 'gh --repo=owner/upstream pr create']) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /only this checkout's own PRs/u);
+        }
+    });
+
+    test('a switch from a subdirectory, or before a cd, is still refused', () => {
+        const repo = makePrRepo();
+        write(repo, 'scripts/x.txt', 'x\n');
+        reviewBoth(repo);
+
+        for (const command of [
+            `git -C scripts switch feature && ${PR_CREATE}`,
+            `git switch feature && cd scripts && ${PR_CREATE}`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('one pull request command cannot hide another in the same command line', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of [
+            `gh pr -R owner/upstream create --base main && ${PR_CREATE} --base main`,
+            `${PR_CREATE} --base main && gh pr create --head feature`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('keeps the outer command across a command substitution in its arguments', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        // The arguments after the substitution (--base release) must still reach the PR's target.
+        for (const command of [
+            `${PR_CREATE} --title "$(printf t)" --base release`,
+            `gh pr create --title $(printf t) --base=release --body "$(date)"`,
+            `gh pr create --title "$(echo "$(printf t)")" -B release`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        assert.equal(commit(repo, `${PR_CREATE} --title "$(printf t)"`).status, 0);
+    });
+
+    test('fails open when origin/main does not exist', () => {
+        const repo = makeRepo();
+        write(repo, SOURCE, 'two\n');
+        git(repo, 'add', '-A');
+
+        const result = commit(repo, `${PR_CREATE} --base main`);
+
+        assert.equal(result.status, 0);
+        assert.match(result.stderr, /review-gate: internal error, allowing/u);
+    });
+});
+
+describe('review-gate command substitutions', () => {
+    test('refuses a base that comes from a command substitution', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const flags of [
+            '--base "$(printf release)"',
+            '--base=$(printf release)',
+            '-B "$(printf release)"',
+            '--base "rel$(printf ease)"',
+            '--base rel$(printf ease)',
+            '--base "$(printf rel)ease"',
+            '-B=re$(printf lease)',
+        ]) {
+            const result = commit(repo, `${PR_CREATE} ${flags}`);
+            assert.equal(result.status, 2, flags);
+            assert.match(result.stderr, /pass the base name literally/u, flags);
+        }
+    });
+
+    test('a substitution that never closes still leaves its outer commit or PR judged', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'six\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [
+            `git commit -m "$(cat <<'EOF'\nit's (not closed\nEOF`,
+            'git commit -m "$(cat',
+            `${PR_CREATE} --title "$(printf`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('reads a heredoc: a quoted body is inert, an unquoted body still runs $(, apostrophes are literal', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // A quoted body with an apostrophe closes cleanly, so --base release after it is read and checked.
+        const quoted = `gh pr create --body "$(cat <<'EOF'\nIt's ready.\nEOF\n)" --base release`;
+        const blocked = commit(repo, quoted);
+        assert.equal(blocked.status, 2);
+        assert.match(blocked.stderr, /did not see/u);
+        reviewBoth(repo);
+        assert.equal(commit(repo, quoted).status, 0);
+
+        // Unquoted: the substitution runs, whatever the apostrophe before it.
+        for (const body of ["It's # PR $(@@)", '# PR $(@@)', "x 'y $(@@)"]) {
+            const command = `cat <<EOF\n${body.replace('@@', PR_CREATE)}\nEOF`;
+            assert.equal(commit(makePrRepo(), command).status, 2, command);
+        }
+
+        // The same text in a quoted heredoc never runs, and the delimiter line ends the body.
+        assert.equal(commit(makePrRepo(), `cat <<'EOF'\n$(${PR_CREATE})\nEOF`).status, 0);
+        assert.equal(commit(makePrRepo(), `cat <<-EOF\n\t$(echo hi)\n\tEOF\n${PR_CREATE}`).status, 2);
+    });
+
+    test('ignores a shell comment, so its apostrophe does not swallow the PR command', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `# Don't forget the description.\n${PR_CREATE}`,
+            `echo hi # it's fine\n${PR_CREATE}`,
+            `${COMMIT.replace('commit', 'status')} # don't\n${PR_CREATE}`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A hash inside a word or a quoted string is not a comment.
+        assert.equal(commit(repo, `echo a#b "# c"; ${PR_CREATE}`).status, 2);
+        assert.equal(commit(repo, 'echo a#b "x # y" && echo done').status, 0);
+    });
+
+    test('refuses an unterminated PR command even from a directory that is not a repository', () => {
+        const repo = makePrRepo();
+        const elsewhere = mkdtempSync(join(tmpdir(), 'review-gate-cwd-'));
+        fixtures.push(elsewhere);
+
+        const result = commit(repo, `cd ${elsewhere} && gh pr create --title "$(cat`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /never closes/u);
+    });
+
+    test('ignores a substitution in an ordinary comment, which bash never runs', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `echo ready # $(${PR_CREATE})`,
+            `# note $(${PR_CREATE}) it's\necho done`,
+            `echo x # it's $(${PR_CREATE})\necho y`,
+        ]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 0, command);
+            assert.equal(result.stderr, '', command);
+        }
+
+        // The command after the comment line is a real command and is still judged.
+        assert.equal(commit(repo, `# it's\n${PR_CREATE}`).status, 2);
+    });
+
+    test('refuses gh pr create after a cd whose target comes from a substitution', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of [`cd "$(mktemp -d)" && ${PR_CREATE}`, `cd x$(pwd) && ${PR_CREATE} --base main`]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /directory from a command substitution/u, command);
+        }
+
+        // A subshell restores the directory, and a reviewed branch passes.
+        assert.equal(commit(repo, `(cd "$(mktemp -d)"); ${PR_CREATE}`).status, 0);
+        assert.equal(commit(repo, `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`).status, 0);
+    });
+
+    test('fails closed when a substitution opened in a heredoc body never closes', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        // The unquoted body runs $(, which never closes; the apostrophe after it could hide the real command below.
+        const result = commit(repo, `cat <<EOF\n$(it's\nEOF\n${PR_CREATE} --base main`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /unclosed \$\( inside a heredoc body/u);
+
+        // A closed substitution, and a comment that merely looks like one, are not refused.
+        assert.equal(commit(repo, "cat <<EOF\n$(date) it's\nEOF\necho y").status, 0);
+        assert.equal(commit(repo, "echo x # $(it's\necho y").status, 0);
+    });
+
+    test('does not read an arithmetic shift as a heredoc', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `echo $((1<<3))\n${PR_CREATE}\n3`,
+            `(( x = 1<<3 ))\n${PR_CREATE}\n3`,
+            `echo $(( (1<<3) + 1 ))\n${PR_CREATE}\n3`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A real heredoc inside a substitution that sits in arithmetic text is still a heredoc.
+        assert.equal(commit(repo, `echo $(( $(cat <<EOF\n1\nEOF\n) ))\n${PR_CREATE}`).status, 2);
+    });
+
+    test('an escaped $( in an unquoted heredoc body is literal; an even run of backslashes is not an escape', () => {
+        const repo = makePrRepo();
+        const body = (slashes) => `cat <<EOF\n${slashes}$(${PR_CREATE})\nEOF`;
+
+        // Odd run: the last backslash escapes the $, so nothing runs. Even run: the $( runs.
+        for (const slashes of ['\\', '\\\\\\']) {
+            assert.equal(commit(repo, body(slashes)).status, 0, slashes);
+        }
+
+        for (const slashes of ['', '\\\\', '\\\\\\\\']) {
+            assert.equal(commit(repo, body(slashes)).status, 2, slashes);
+        }
+    });
+
+    test('reads here-strings, heredocs queued around substitutions, and joined delimiter lines like bash', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            // `<<<` takes one word; the lines after it are commands.
+            `cat <<< ""\n${PR_CREATE}\n\necho done`,
+            // The outer heredoc waits for its own newline; the substitution's newline must not consume it.
+            `printf '%s\\n' <<'EOF' "$(\n${PR_CREATE}\n)"\nignored\nEOF`,
+            // An unquoted body joins EO\\ + F into the delimiter, so the PR command after it runs.
+            `cat <<EOF\nEO\\\nF\n${PR_CREATE}\n: <<'EOF'\nEOF`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A quoted body keeps backslash-newline literal, so the same text is still just body.
+        assert.equal(commit(repo, `cat <<'EOF'\nEO\\\nF\n${PR_CREATE}\nEOF`).status, 0);
+        // And an ordinary heredoc after an ordinary command still passes.
+        assert.equal(commit(repo, `cat <<'EOF'\nbody\nEOF\necho done`).status, 0);
+    });
+
+    test('a redirection operand is not a command argument', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // Without the operand the base is release, so the unreviewed change is seen; main alone would be empty.
+        for (const redirect of [
+            `<<< '--base=main'`,
+            `< --base=main`,
+            `> --base=main`,
+            `>> --base=main`,
+            `2> --base=main`,
+        ]) {
+            assert.equal(commit(repo, `${PR_CREATE} --base release --body-file - ${redirect}`).status, 2, redirect);
+        }
+
+        // Ordinary redirections leave the arguments alone, and a quoted > is a plain character.
+        assert.equal(commit(repo, `${PR_CREATE} --base main 2>&1 | cat`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --base main > /dev/null`).status, 0);
+        assert.equal(commit(repo, `${PR_CREATE} --title '>' --base release`).status, 2);
+    });
+
+    test('only a plain digit run before > is a file descriptor, and scopes do not leak', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/2', 'HEAD~1');
+
+        // A quoted or escaped digit is the base `2`, not an fd; unquoted `2>` is an fd and leaves the base alone.
+        assert.equal(commit(repo, `${PR_CREATE} --base "2">/dev/null --title t`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base \\2>/dev/null --title t`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base main 2>/dev/null`).status, 0);
+
+        // A `>` in arithmetic only costs the word after it; the line below is still judged.
+        assert.equal(commit(repo, `echo $((1>2))\n${PR_CREATE} --base 2`).status, 2);
+
+        // A word built before a substitution does not decide whether digits after it are an fd.
+        assert.equal(commit(repo, `echo "a"$(echo 2>/dev/null) && ${PR_CREATE} --base 2`).status, 2);
+
+        // `$((` that is really a subshell: a redirection operand there is still not an argument.
+        assert.equal(commit(repo, `$((${PR_CREATE} --base 2 > --base=main))`).status, 2);
+    });
+
+    test('a substitution as a redirection operand does not turn its output into the command name', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        for (const command of [
+            `<<< "$(printf body)" ${PR_CREATE} --base release --body-file -`,
+            `< "$(printf f)" ${PR_CREATE} --base release`,
+            `${PR_CREATE} --base release > "$(printf f)" --title t`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        assert.equal(commit(repo, `<<< "$(printf body)" ${PR_CREATE} --base main`).status, 0);
+    });
+
+    test('a process substitution is a word of the command, not a redirection', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // <(true) is an argument; it must not swallow the --base that follows. Release shows the unreviewed change.
+        for (const command of [
+            `${PR_CREATE} --base main <(true) --base release`,
+            `${PR_CREATE} --base main >(cat) --base release`,
+            `${PR_CREATE} --base main < <(true) --base release`,
+            `${PR_CREATE} --base release <(true) --base main --title t`,
+        ]) {
+            assert.equal(commit(repo, command).status, command.includes('release <(') ? 0 : 2, command);
+        }
+
+        // Inside quotes it is just text, and the commands inside a process substitution are judged.
+        assert.equal(commit(repo, `${PR_CREATE} --base main --title "<(x)"`).status, 0);
+        assert.equal(commit(repo, `cat <(${PR_CREATE} --base release)`).status, 2);
+    });
+
+    test('inside arithmetic, <( is a comparison and a paren, so << there is still a shift', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        const command = `$(( 1<(1<<"E"\n+ $(${PR_CREATE} --base release) ) ))\nE`;
+
+        assert.equal(commit(repo, command).status, 2);
+        // Outside arithmetic the same text is a process substitution and a real heredoc, and is read as such.
+        assert.equal(commit(repo, `cat <(cat <<'E'\n${PR_CREATE} --base release\nE\n)`).status, 0);
+    });
+
+    test('&> and &>> are redirections, not a command separator', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        for (const operator of ['&>', '&>>']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${operator}/dev/null --base release`).status, 2, operator);
+            assert.equal(commit(repo, `${PR_CREATE} ${operator} /dev/null --base release`).status, 2, operator);
+        }
+
+        // A real `&` still ends the command, and what follows it is judged on its own.
+        assert.equal(commit(repo, `${PR_CREATE} --base main & echo done`).status, 0);
+        assert.equal(commit(repo, `echo hi & ${PR_CREATE} --base release`).status, 2);
+    });
+
+    test('a directory taken from a substitution leaves the directory unchanged', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'six\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [
+            `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`,
+            `git -C "$(pwd)" commit -m change`,
+        ]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.doesNotMatch(result.stderr, /internal error/u, command);
+        }
+    });
+});

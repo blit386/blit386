@@ -5,9 +5,11 @@
  * - `PostToolUse` (Skill) and `UserPromptSubmit` (a typed slash command): when `/review` or
  *   `/ponytail:ponytail-review` runs, snapshot the whole working tree as a git tree object and record its SHA as that
  *   review's marker in `<git dir>/review-gate/` (per worktree, never committed).
- * - `PreToolUse` (Bash): refuse `git commit` (exit 2) unless every changed tracked path - in the index and in the
- *   working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical to what both
- *   reviews last saw. An edit after a review therefore needs a fresh review. Generated paths are exempt.
+ * - `PreToolUse` (Bash): refuse `git commit` and `gh pr create` (exit 2) unless every changed tracked path - in the
+ *   index and in the working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical
+ *   to what both reviews last saw. A commit is measured against HEAD; a PR against the merge base with `origin/<base>`
+ *   (`--base`, else main), where what HEAD changes counts too. An edit after a review therefore needs a fresh review. Generated
+ *   paths are exempt.
  *
  * A missing or stale marker blocks; any internal error fails open with a stderr note, so a gate bug cannot block every
  * commit. Policy: `.claude/rules/commit-review-gate.md`.
@@ -32,6 +34,11 @@ const MARKER_DIR = 'review-gate';
 const BLOCK = 2;
 const ALLOW = 0;
 
+/** What a gated command proposes, and the ref its changed paths are counted from. */
+const COMMIT = 'commit';
+const PULL_REQUEST = 'pull request';
+const REMOTE = 'origin';
+
 /** Written by `pnpm run api:history`, not by hand. Other generated paths come from the scripts that own them. */
 const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 
@@ -39,6 +46,12 @@ const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 const BOUNDARY = Symbol('boundary');
 const SUBSHELL_OPEN = Symbol('subshell open');
 const SUBSHELL_CLOSE = Symbol('subshell close');
+/** Pushed last by {@link shellTokens} when a `$(` opened inside a heredoc body never closes: the rest cannot be trusted. */
+const UNREADABLE = Symbol('unreadable');
+const UNREADABLE_KIND = 'command';
+/** An unquoted redirection operator; the word after it is its operand, not a command argument. */
+const REDIRECT = Symbol('redirect');
+const FD_NUMBER = /^\d+$/u;
 const BOUNDARY_TOKENS = new Map([
     [';', BOUNDARY],
     ['&', BOUNDARY],
@@ -47,6 +60,8 @@ const BOUNDARY_TOKENS = new Map([
     ['(', SUBSHELL_OPEN],
     [')', SUBSHELL_CLOSE],
 ]);
+/** Stands in for the unknown output of a `$(...)` among its outer command's words. */
+const SUBSTITUTION_WORD = '$(...)';
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
 /** Words skipped in front of a command: option-less wrappers. `VAR=x` assignments are skipped too. */
@@ -64,6 +79,20 @@ const OPERAND_OPTIONS = new Set([
     '--super-prefix',
     '--attr-source',
 ]);
+/** `gh` options whose value is the next word and that may precede a subcommand. */
+const REPO_OPTIONS = new Set(['-R', '--repo']);
+const PR_CREATE_NAMES = new Set(['create', 'new']);
+/** `gh pr create` options that take a value (`gh pr create --help`), long and short. */
+const CREATE_VALUE_FLAGS = new Set([
+    ...['--assignee', '--base', '--body', '--body-file', '--head', '--label', '--milestone', '--project'],
+    ...['--recover', '--reviewer', '--template', '--title'],
+    ...REPO_OPTIONS,
+    ...['-a', '-B', '-b', '-F', '-H', '-l', '-m', '-p', '-r', '-T', '-t'],
+]);
+/** Git subcommands that change the checked-out branch, so a later `gh pr create` in the same command sees another one. */
+const BRANCH_SWITCHERS = new Set(['switch', 'checkout']);
+/** Ends a heredoc delimiter word: whitespace and the shell's operators. */
+const HEREDOC_DELIMITER_END = /[\s;&|()<>]/u;
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
 
@@ -138,10 +167,92 @@ function recordReview(payload) {
     return ALLOW;
 }
 
+/** `<<[-]DELIM` after the `<<` at `from`: the delimiter, whether the body expands (`live`: unquoted delimiter), and where it ends. */
+function readHeredocDelimiter(command, from) {
+    let j = from;
+    const strip = command[j] === '-';
+    j += strip ? 1 : 0;
+
+    while (command[j] === ' ' || command[j] === '\t') {
+        j++;
+    }
+
+    let delim = '';
+    let live = true;
+
+    while (j < command.length && !HEREDOC_DELIMITER_END.test(command[j])) {
+        const char = command[j];
+
+        if (char === SINGLE_QUOTE || char === DOUBLE_QUOTE) {
+            const close = command.indexOf(char, j + 1);
+            const end = close < 0 ? command.length : close;
+            live = false;
+            delim += command.slice(j + 1, end);
+            j = end + 1;
+        } else if (char === '\\') {
+            live = false;
+            delim += command[j + 1] ?? '';
+            j += 2;
+        } else {
+            delim += char;
+            j++;
+        }
+    }
+
+    return { delim, strip, live, next: j };
+}
+
+/** True when `text` ends in an odd run of backslashes, i.e. its newline is escaped. */
+function endsEscaped(text) {
+    let run = 0;
+
+    while (run < text.length && text[text.length - 1 - run] === '\\') {
+        run++;
+    }
+
+    return run % 2 === 1;
+}
+
+/**
+ * Where a heredoc body starting at `from` ends: the line that equals `delim`, or `null` when no line does. An unquoted
+ * (`live`) body joins a line ending in an escaped newline with the next before comparing, as bash does.
+ */
+function heredocBody(command, from, delim, strip, live) {
+    let pos = from;
+
+    while (pos <= command.length) {
+        const lineEndOf = (start) => {
+            const newline = command.indexOf('\n', start);
+            return newline < 0 ? command.length : newline;
+        };
+        let lineEnd = lineEndOf(pos);
+        let line = command.slice(pos, lineEnd);
+
+        while (live && endsEscaped(line) && lineEnd < command.length) {
+            const nextEnd = lineEndOf(lineEnd + 1);
+            line = line.slice(0, -1) + command.slice(lineEnd + 1, nextEnd);
+            lineEnd = nextEnd;
+        }
+
+        if ((strip ? line.replace(/^\t+/u, '') : line) === delim) {
+            return { end: pos, resumeAt: lineEnd };
+        }
+
+        if (lineEnd >= command.length) {
+            return null;
+        }
+
+        pos = lineEnd + 1;
+    }
+
+    return null;
+}
+
 /**
  * Splits a shell command into words (quotes removed, backslash escapes applied) and boundary markers, one pass
  * per character so it cannot backtrack (CodeQL js/redos). Separators inside quotes stay part of the word; `$(` opens a
- * command context even inside double quotes, and the quote resumes at its `)`.
+ * command context even inside double quotes, the quote resumes at its `)`, and the substitution's output becomes
+ * `SUBSTITUTION_WORD` inside the word it sits in (`rel$(x)` is the one word `rel$(...)`).
  * shortcut: no `$VAR` or glob expansion, and `bash -c "..."` stays one opaque word; documented in the rule file.
  */
 function shellTokens(command) {
@@ -149,23 +260,75 @@ function shellTokens(command) {
     const resume = [];
     let word = null;
     let quote = '';
+    let comment = false;
+    // `<<DELIM` seen, body not yet started (starts after the next newline) / body being skipped.
+    const pendingHeredocs = [];
+    let heredoc = null;
+    // False once a quote or backslash contributed to the word: only a plain digit run before `>` is a file descriptor.
+    let plainWord = true;
     const flush = () => {
         if (word !== null) {
             tokens.push(word);
             word = null;
         }
+
+        plainWord = true;
     };
 
     for (let i = 0; i < command.length; i++) {
         const char = command[i];
 
+        if (heredoc) {
+            // A heredoc body is skipped to its delimiter line. Quotes in it are literal, but an unquoted one runs `$(`.
+            if (i >= heredoc.end) {
+                i = heredoc.resumeAt - 1;
+                heredoc = null;
+                continue;
+            }
+
+            if (char === '\\') {
+                i++; // `\$(` is literal text in a heredoc body; a backslash pair is just a backslash.
+                continue;
+            }
+
+            if (!(heredoc.live && char === '$' && command[i + 1] === '(')) {
+                continue;
+            }
+        }
+
+        if (comment) {
+            // A comment runs to the end of the line; bash runs nothing in it, so neither do we.
+            if (char === '\n') {
+                comment = false;
+            } else {
+                continue;
+            }
+        }
+
         if (char === '\\' && quote !== SINGLE_QUOTE) {
+            plainWord = false;
             word = (word ?? '') + (command[++i] ?? '');
-        } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
-            flush();
+        } else if (
+            command[i + 1] === '(' &&
+            ((char === '$' && quote !== SINGLE_QUOTE) ||
+                ((char === '<' || char === '>') && quote === '' && !resume.at(-1)?.arithmetic))
+        ) {
+            // `$(...)`, and the process substitutions `<(...)` / `>(...)`: each runs a command and is one word of the outer one.
+            // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push(quote);
+            resume.push({
+                quote,
+                word,
+                plainWord,
+                heredoc,
+                pending: pendingHeredocs.splice(0),
+                substitution: true,
+                arithmetic: false,
+            });
+            plainWord = true;
+            word = null;
             quote = '';
+            heredoc = null;
             i++;
         } else if (quote) {
             if (char === quote) {
@@ -175,16 +338,67 @@ function shellTokens(command) {
             }
         } else if (char === DOUBLE_QUOTE || char === SINGLE_QUOTE) {
             quote = char;
+            plainWord = false;
             word ??= '';
+        } else if (char === '#' && word === null) {
+            // A `#` that starts a word begins a comment; inside a word it is just a character.
+            comment = true;
+        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<' && !resume.at(-1)?.arithmetic) {
+            flush();
+            const doc = readHeredocDelimiter(command, i + 2);
+            pendingHeredocs.push(doc);
+            i = doc.next - 1;
+        } else if (char === '&' && command[i + 1] === '>') {
+            // `&>` and `&>>` redirect both streams; they are not a command separator followed by `>`.
+            flush();
+            i++;
+
+            while (command[i + 1] === '>') {
+                i++;
+            }
+
+            tokens.push(REDIRECT);
+        } else if (char === '<' || char === '>') {
+            // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
+            // argument of the command, so the walker drops the word after the marker.
+            word = plainWord && word !== null && FD_NUMBER.test(word) ? null : word;
+            flush();
+
+            while ('<>&|'.includes(command[i + 1] ?? ' ')) {
+                i++;
+            }
+
+            tokens.push(REDIRECT);
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
             flush();
             tokens.push(token);
 
+            if (char === '\n' && pendingHeredocs.length > 0) {
+                const doc = pendingHeredocs.shift();
+                const body = heredocBody(command, i + 1, doc.delim, doc.strip, doc.live);
+                heredoc = body && { ...body, live: doc.live };
+            }
+
             if (token === SUBSHELL_OPEN) {
-                resume.push('');
+                // `((` (as in `$((1<<3))`) opens arithmetic, and so does any paren inside one: there `<<` is a shift, not a heredoc.
+                const arithmetic = command[i - 1] === '(' || (resume.at(-1)?.arithmetic ?? false);
+                resume.push({
+                    quote: '',
+                    word: null,
+                    plainWord,
+                    pending: pendingHeredocs.splice(0),
+                    substitution: false,
+                    arithmetic,
+                });
+                plainWord = true;
             } else if (token === SUBSHELL_CLOSE) {
-                quote = resume.pop() ?? '';
+                const saved = resume.pop();
+                quote = saved?.quote ?? '';
+                plainWord = saved?.plainWord ?? true;
+                heredoc = saved?.heredoc ?? null;
+                pendingHeredocs.splice(0, pendingHeredocs.length, ...(saved?.pending ?? []));
+                word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
         } else if (/\s/u.test(char)) {
             flush();
@@ -195,26 +409,96 @@ function shellTokens(command) {
 
     flush();
 
+    if (resume.some((saved) => saved.heredoc)) {
+        tokens.push(UNREADABLE);
+    }
+
     return tokens;
 }
 
-/** The directory `git <global options> commit` acts on, or `null` when `args` run another subcommand. */
-function gitCommitDir(args, startDir) {
+/**
+ * `--base` and `--head` of a `gh pr create`, read the way its flag parser does: every string option consumes the next
+ * word even when it starts with `-` (`--title --base=x` is a title), `-B=x`, `-Bx` and a cluster such as `-dB x` all
+ * work, the last occurrence wins, and an empty value means "not given".
+ */
+function createTargets(words) {
+    const targets = {};
+    const record = (flag, value) => {
+        if (flag === '--base' || flag === '-B') {
+            targets.base = value || undefined;
+        } else if (flag === '--head' || flag === '-H') {
+            targets.head = value || undefined;
+        } else if (REPO_OPTIONS.has(flag)) {
+            targets.repo = value || undefined;
+        }
+    };
+
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+
+        if (word.startsWith('--')) {
+            const [flag, ...inline] = word.split('=');
+
+            if (CREATE_VALUE_FLAGS.has(flag)) {
+                record(flag, inline.length > 0 ? inline.join('=') : words[++i]);
+            }
+        } else if (word.startsWith('-')) {
+            // Short cluster: boolean letters pass, the first value letter takes the rest of the word or the next word.
+            for (let j = 1; j < word.length && word[j] !== '='; j++) {
+                if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
+                    const rest = word.slice(j + 1);
+                    record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
+                    break;
+                }
+            }
+        }
+    }
+
+    return targets;
+}
+
+/**
+ * `{ dir, base, head }` for a `gh pr create` (or its alias `gh pr new`), else `null` for any other `gh` command.
+ * `-R/--repo` is persistent, so cobra accepts it before `pr` and before the subcommand; its operand is skipped.
+ */
+function ghPrCreate(args, dir) {
+    const positional = [];
+
+    for (let i = 0; i < args.length && positional.length < 3; i++) {
+        if (REPO_OPTIONS.has(args[i])) {
+            i++;
+        } else if (!args[i].startsWith('-')) {
+            positional.push(args[i]);
+        }
+    }
+
+    const [group, subcommand] = positional;
+
+    if (group !== 'pr' || !PR_CREATE_NAMES.has(subcommand)) {
+        return null;
+    }
+
+    return { dir, ...createTargets(args) };
+}
+
+/** `dir` moved by `target`; unchanged when the target is missing or comes from a `$(...)` we cannot evaluate. */
+function resolveDir(dir, target) {
+    return !target || target.includes(SUBSTITUTION_WORD) ? dir : resolve(dir, expandHome(target));
+}
+
+/** `{ name, dir }`: the subcommand of `git <global options> ...` and the directory it acts on, or `null` for none. */
+function gitSubcommand(args, startDir) {
     let dir = startDir;
 
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === 'commit') {
-            return dir;
-        }
-
         if (!args[i].startsWith('-')) {
-            return null;
+            return { name: args[i], dir };
         }
 
         if (OPERAND_OPTIONS.has(args[i])) {
             // shortcut: --git-dir and --work-tree are skipped, not followed; the commit is checked in `dir`.
             if (args[i] === DIR_OPTION) {
-                dir = resolve(dir, expandHome(args[i + 1] ?? ''));
+                dir = resolveDir(dir, args[i + 1]);
             }
 
             i++;
@@ -225,66 +509,129 @@ function gitCommitDir(args, startDir) {
 }
 
 /**
- * The directory of every `git commit` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
+ * The directory and kind of every `git commit` and `gh pr create` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
  * commit moves it, and a subshell's `)` restores the directory it started in.
  */
-function commitDirs(command, cwd) {
-    const dirs = [];
+function gatedCommands(command, cwd) {
+    const found = new Map();
+    let switched = false;
     const outer = [];
+    let dirUnknown = false;
+    let skipOperand = false;
+    const outerSkip = [];
+    const outerWords = [];
     let dir = cwd;
     let words = [];
 
+    /** Looks at one finished simple command: a `cd` moves `dir`, a gated command is recorded. */
+    const judge = (pending, unterminated = false) => {
+        const start = pending.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
+        const [name, ...args] = start < 0 ? [] : pending.slice(start);
+
+        if (name === 'cd' && args[0]) {
+            dir = resolveDir(dir, args[0]);
+            dirUnknown ||= args[0].includes(SUBSTITUTION_WORD);
+        } else if (name === 'git') {
+            const sub = gitSubcommand(args, dir);
+
+            if (sub?.name === 'commit') {
+                found.set(`${COMMIT}\0${sub.dir}`, { kind: COMMIT, dir: sub.dir });
+            } else if (BRANCH_SWITCHERS.has(sub?.name)) {
+                switched = true;
+            }
+        } else if (name === 'gh') {
+            const pr = ghPrCreate(args, dir);
+
+            if (pr) {
+                // Every target is part of the key: one command must not hide another's --repo, --head or --base.
+                const key = JSON.stringify([
+                    PULL_REQUEST,
+                    dir,
+                    pr.base,
+                    pr.head,
+                    pr.repo,
+                    switched,
+                    unterminated,
+                    dirUnknown,
+                ]);
+                found.set(key, { kind: PULL_REQUEST, ...pr, switched, unterminated, dirUnknown });
+            }
+        }
+    };
+
     for (const token of [...shellTokens(command), BOUNDARY]) {
         if (typeof token === 'string') {
-            words.push(token);
+            if (!skipOperand) {
+                words.push(token);
+            }
+
+            skipOperand = false;
             continue;
         }
 
-        const start = words.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
-        const [name, ...args] = start < 0 ? [] : words.slice(start);
+        const wasSkipping = skipOperand;
+        skipOperand = token === REDIRECT;
 
-        if (name === 'cd' && args[0]) {
-            dir = resolve(dir, expandHome(args[0]));
-        } else if (name === 'git') {
-            const commitDir = gitCommitDir(args, dir);
-
-            if (commitDir) {
-                dirs.push(commitDir);
-            }
+        if (token === REDIRECT) {
+            continue;
         }
 
-        words = [];
+        if (token === UNREADABLE) {
+            found.set(UNREADABLE_KIND, { kind: UNREADABLE_KIND, dir, unreadable: true });
+            continue;
+        }
 
         if (token === SUBSHELL_OPEN) {
-            outer.push(dir);
-        } else if (token === SUBSHELL_CLOSE) {
-            dir = outer.pop() ?? dir;
+            // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
+            outerWords.push(words);
+            outerSkip.push(wasSkipping);
+            outer.push([dir, dirUnknown]);
+            words = [];
+            continue;
+        }
+
+        judge(words);
+        words = [];
+
+        if (token === SUBSHELL_CLOSE) {
+            [dir, dirUnknown] = outer.pop() ?? [dir, dirUnknown];
+            // The substitution's output sits in the word the tokenizer carries on, so the outer words just resume.
+            words = outerWords.pop() ?? [];
+            // A redirection whose operand is the substitution still owes that operand's word, which comes next.
+            skipOperand = outerSkip.pop() ?? false;
         }
     }
 
-    return [...new Set(dirs)];
+    // A `$(` that never closes (a stray quote, a heredoc) still leaves its outer command to be judged.
+    for (const pending of outerWords.reverse()) {
+        judge(pending, true);
+    }
+
+    return [...found.values()];
 }
 
 /**
- * Changed tracked paths, minus generated ones: `staged` differ from HEAD in the index (intent-to-add placeholders are
- * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree.
+ * Changed tracked paths, minus generated ones: `staged` differ from `base` in the index (intent-to-add placeholders are
+ * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree, and
+ * `committed` (a PR only) are those `HEAD` itself changes: what the PR carries, whatever the index and tree hold now.
  */
-async function changedSourcePaths(top) {
+async function changedSourcePaths(top, base, forPullRequest) {
     const { OWNED_DIRS, OWNED_EXACT_FILES } = await import('../sync-maintainer-agents.mjs');
     const { COMMANDS_DIR_REL } = await import('../sync-cursor-commands.mjs');
     const generatedDirs = [...OWNED_DIRS, `${COMMANDS_DIR_REL}/`];
     const generatedFiles = new Set([...OWNED_EXACT_FILES, API_HISTORY_JSON]);
-    const list = (...args) =>
-        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...args, 'HEAD'])
+    const list = (...refs) =>
+        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...refs])
             .split('\0')
             .filter((path) => path && !generatedFiles.has(path) && !generatedDirs.some((dir) => path.startsWith(dir)));
-    const staged = list('--cached');
+    const staged = list('--cached', base);
+    const committed = forPullRequest ? list(base, 'HEAD') : [];
 
-    return { staged, all: [...new Set([...staged, ...list()])] };
+    return { staged, committed, all: [...new Set([...committed, ...staged, ...list(base)])] };
 }
 
 /** Changed paths whose index or working-tree content differs from the review's recorded tree (all, if none). */
-function unreviewedPaths(repo, marker, { staged, all }) {
+function unreviewedPaths(repo, marker, { staged, committed, all }) {
     const markerFile = join(repo.markers, marker);
 
     if (!existsSync(markerFile)) {
@@ -294,11 +641,12 @@ function unreviewedPaths(repo, marker, { staged, all }) {
     const tree = readFileSync(markerFile, 'utf8').trim();
     // The index is compared only where it holds staged content; an empty pathspec would mean the whole tree.
     const checks = [
+        ['HEAD', committed],
         ['--cached', staged],
         [null, all],
     ].filter(([, paths]) => paths.length > 0);
-    const differing = checks.flatMap(([cached, paths]) => {
-        const result = git(repo.top, ['diff', '--name-only', '-z', ...(cached ? [cached] : []), tree, '--', ...paths]);
+    const differing = checks.flatMap(([ref, paths]) => {
+        const result = git(repo.top, ['diff', '--name-only', '-z', ...(ref ? [ref] : []), tree, '--', ...paths]);
 
         // A tree git no longer has (pruned) cannot vouch for anything.
         return result.status === 0 ? result.stdout.split('\0') : paths;
@@ -307,10 +655,80 @@ function unreviewedPaths(repo, marker, { staged, all }) {
     return [...new Set(differing)].filter(Boolean);
 }
 
-/** Block-message lines for a commit in `dir` whose content both reviews did not see; empty when it may commit. */
-async function staleReport(dir, sessionDir) {
+/**
+ * The base `gh pr create` falls back to without `--base`: the branch's `gh-merge-base`, else the remote's default as
+ * the local `origin/HEAD` records it (`git remote set-head origin -a` refreshes it), else `''`: not determinable.
+ */
+function defaultPrBase(top) {
+    const read = (args) => {
+        const result = git(top, args);
+
+        return result.status === 0 ? result.stdout.trim() : '';
+    };
+    const branch = read(['symbolic-ref', '--short', 'HEAD']);
+    const configured = branch && read(['config', '--get', `branch.${branch}.gh-merge-base`]);
+    const remoteHead = read(['symbolic-ref', '--short', `refs/remotes/${REMOTE}/HEAD`]).replace(`${REMOTE}/`, '');
+
+    return configured || remoteHead;
+}
+
+/** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
+async function staleReport(
+    { kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated, dirUnknown, unreadable },
+    sessionDir,
+) {
+    // Refusals first: none of them needs the repository, so a directory that is not one cannot turn them into a pass.
+    if (unreadable) {
+        // shortcut: a `$(` opened in a heredoc body that never closes may hide a real command after a stray quote.
+        return [
+            '  an unclosed $( inside a heredoc body may hide a command from the gate: close it or quote the delimiter.',
+        ];
+    }
+
+    if (unterminated) {
+        // shortcut: a `$(` with no matching `)` hides whatever follows it, so the arguments of this PR are unknown.
+        return ['  gh pr create sits in a command substitution that never closes: close it, or use --body-file.'];
+    }
+
+    if (dirUnknown) {
+        // shortcut: where a `cd "$(...)"` lands is unknown here; a PR from there is refused (a commit just stays put).
+        return ['  gh pr create after a cd into a directory from a command substitution: cd in a separate call first.'];
+    }
+
+    if (switched) {
+        // shortcut: the branch a pending switch lands on is not predicted; the switch has to be its own tool call.
+        return ['  git switch/checkout in the same command as gh pr create: switch branches in a separate call first.'];
+    }
+
+    if (prBase?.includes(SUBSTITUTION_WORD)) {
+        // shortcut: what a `$(...)` prints is unknown here; the base has to be written out, not computed.
+        return ['  gh pr create --base comes from a command substitution: pass the base name literally.'];
+    }
+
+    if (targetRepo) {
+        // shortcut: a repository other than this checkout's origin is not followed; refused, not guessed at.
+        return [`  gh pr create --repo ${targetRepo}: only this checkout's own PRs can be checked; drop --repo.`];
+    }
+
+    if (head) {
+        // shortcut: a head other than the checked-out branch is not followed; refused, not guessed at.
+        return [
+            `  gh pr create --head ${head}: only the checked-out branch can be checked; drop --head and switch to it.`,
+        ];
+    }
+
     const repo = repoOf(dir);
-    const paths = await changedSourcePaths(repo.top);
+    const isPullRequest = kind === PULL_REQUEST;
+
+    // The PR base is the one named by --base, as the remote knows it; with no such ref git throws and the gate fails open.
+    const prBaseName = isPullRequest ? (prBase ?? defaultPrBase(repo.top)) : '';
+
+    if (isPullRequest && !prBaseName) {
+        return ['  gh pr create: the PR base cannot be determined (no origin/HEAD); pass --base.'];
+    }
+
+    const base = isPullRequest ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBaseName}`]) : 'HEAD';
+    const paths = await changedSourcePaths(repo.top, base, isPullRequest);
     const stale =
         paths.all.length === 0
             ? []
@@ -332,9 +750,9 @@ async function staleReport(dir, sessionDir) {
 
     if (sessionTop && (sessionTop.status !== 0 || sessionTop.stdout.trim() !== repo.top)) {
         lines.push(
-            `This commit targets ${repo.top}, but reviews count only for the checkout they run in (the session's`,
-            `working directory, here ${sessionDir}). Review and commit from a session whose working directory is the`,
-            'committing checkout (for a subagent: work in its own isolated worktree, or in the main checkout).',
+            `This ${kind} targets ${repo.top}, but reviews count only for the checkout they run in (the session's`,
+            `working directory, here ${sessionDir}). Review and proceed from a session whose working directory is the`,
+            'target checkout (for a subagent: work in its own isolated worktree, or in the main checkout).',
         );
     }
 
@@ -346,17 +764,35 @@ async function gateCommit(payload) {
     const sessionDir = payload.cwd ?? process.cwd();
     const lines = [];
 
-    for (const dir of commitDirs(payload.tool_input?.command ?? '', sessionDir)) {
-        lines.push(...(await staleReport(dir, sessionDir)));
+    const kinds = new Set();
+
+    for (const gated of gatedCommands(payload.tool_input?.command ?? '', sessionDir)) {
+        let report;
+
+        try {
+            report = await staleReport(gated, sessionDir);
+        } catch (error) {
+            // Fail open per entry: a lookup that fails (no origin/<base>) must not drop a block another entry earned.
+            process.stderr.write(
+                `review-gate: internal error, allowing: ${error instanceof Error ? error.message : error}\n`,
+            );
+            continue;
+        }
+
+        if (report.length > 0) {
+            kinds.add(gated.kind);
+            lines.push(...report);
+        }
     }
 
     if (lines.length === 0) {
         return ALLOW;
     }
 
-    lines.unshift('review-gate: this commit contains changes that were not reviewed in their current state.');
+    const what = [...kinds].join(' and ');
+    lines.unshift(`review-gate: this ${what} contains changes that were not reviewed in their current state.`);
     lines.push(
-        'Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then commit again.',
+        `Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then retry the ${what}.`,
         'An edit made after a review needs a fresh review. See .claude/rules/commit-review-gate.md.',
     );
     process.stderr.write(`${lines.join('\n')}\n`);
