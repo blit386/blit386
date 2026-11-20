@@ -735,6 +735,21 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, "echo x # it's\necho y").status, 0);
     });
 
+    test('does not read an arithmetic shift as a heredoc', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `echo $((1<<3))\n${PR_CREATE}\n3`,
+            `(( x = 1<<3 ))\n${PR_CREATE}\n3`,
+            `echo $(( (1<<3) + 1 ))\n${PR_CREATE}\n3`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        // A real heredoc inside a substitution that sits in arithmetic text is still a heredoc.
+        assert.equal(commit(repo, `echo $(( $(cat <<EOF\n1\nEOF\n) ))\n${PR_CREATE}`).status, 2);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

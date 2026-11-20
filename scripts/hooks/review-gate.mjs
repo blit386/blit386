@@ -275,7 +275,7 @@ function shellTokens(command) {
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push({ quote, word, comment, heredoc, substitution: true });
+            resume.push({ quote, word, comment, heredoc, substitution: true, arithmetic: false });
             word = null;
             quote = '';
             comment = false;
@@ -293,7 +293,7 @@ function shellTokens(command) {
         } else if (char === '#' && word === null) {
             // A `#` that starts a word begins a comment; inside a word it is just a character.
             comment = true;
-        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<') {
+        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<' && !resume.at(-1)?.arithmetic) {
             flush();
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
@@ -310,7 +310,9 @@ function shellTokens(command) {
             }
 
             if (token === SUBSHELL_OPEN) {
-                resume.push({ quote: '', word: null, substitution: false });
+                // `((` (as in `$((1<<3))`) opens arithmetic, and so does any paren inside one: there `<<` is a shift, not a heredoc.
+                const arithmetic = command[i - 1] === '(' || (resume.at(-1)?.arithmetic ?? false);
+                resume.push({ quote: '', word: null, substitution: false, arithmetic });
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';

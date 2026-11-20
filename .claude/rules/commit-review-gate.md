@@ -43,10 +43,11 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
   (`cd` in a separate call), and a `$(` that never closes (a missing `)`) still leaves its outer command judged; for
   `gh pr create` the cut-off arguments cannot be trusted, so it is refused (use `--body-file`). A heredoc body
   (`<<DELIM`, `<<-DELIM`) is skipped to its delimiter line: a quoted delimiter makes it inert, an unquoted one still
-  runs its `$(`, and quotes inside it are literal; a heredoc whose delimiter line never appears is not skipped. Not
-  seen: a wrapper given its own options (`sudo -u x git commit`), a commit inside a shell string
-  (`bash -c "git commit"`), or one built from `$VAR`. With `--git-dir` or `--work-tree` the commit is checked in the
-  current directory. The gate stops an agent that forgot to review; it is not a sandbox.
+  runs its `$(`, and quotes inside it are literal; a heredoc whose delimiter line never appears is not skipped. Inside
+  arithmetic (`$((...))`, `((...))`), `<<` is a shift, not a heredoc. Not seen: a wrapper given its own options
+  (`sudo -u x git commit`), a commit inside a shell string (`bash -c "git commit"`), or one built from `$VAR`. With
+  `--git-dir` or `--work-tree` the commit is checked in the current directory. The gate stops an agent that forgot to
+  review; it is not a sandbox.
 - **What passes.** Every tracked path that differs from `HEAD`, in the index or in the working tree, must match both
   snapshots byte for byte. That covers `commit -a` and pathspec commits without parsing them. Staging after a review is
   fine; one review can cover several commits that split the change.
