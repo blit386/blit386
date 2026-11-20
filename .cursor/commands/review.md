@@ -96,6 +96,12 @@ Shared across every package:
 - Guards and parsers get adversarial inputs: for a changed hook, guard, validator, or parser of untrusted text, list a
   few realistic inputs that would slip past or wrongly trip it (quoting, wrapper commands, chained commands, option
   operands) and check each; contrived ones go in a documented limits note instead
+- Taps, wrappers, and mirrors check their callee: for new code that records, wraps, or re-implements another module's
+  behavior (a `BT.*` tap, a readout of what was drawn, a test double), open the callee and list every early return and
+  transform it applies (a transparent slot, a camera or clamp offset, a thrown error, a phase it ignores). Check the
+  mirror agrees with each, and that its tests and manual checks use a case where each one fires, not only the default
+  (camera at zero, slot above 0). A claim like "display position" or "what was drawn" names the callee line that makes
+  it true
 
 `blit386`:
 
