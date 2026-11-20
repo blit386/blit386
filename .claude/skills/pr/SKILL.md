@@ -37,7 +37,8 @@ The description after the package argument becomes the commit subject.
 - Run `git log origin/main..HEAD` to see commits
 - Verify changes align with the description
 - Run `/review <package>` and `/ponytail:ponytail-review` after the last edit: the commit review gate refuses a Claude
-  Code commit whose content both did not see (`.claude/rules/commit-review-gate.md`)
+  Code commit whose content both did not see, and the same gate refuses `gh pr create` unless both saw the branch's
+  final content (`.claude/rules/commit-review-gate.md`). Present them as two full reports, not one merged summary
 
 4. Create commit
 

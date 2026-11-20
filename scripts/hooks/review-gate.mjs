@@ -5,9 +5,11 @@
  * - `PostToolUse` (Skill) and `UserPromptSubmit` (a typed slash command): when `/review` or
  *   `/ponytail:ponytail-review` runs, snapshot the whole working tree as a git tree object and record its SHA as that
  *   review's marker in `<git dir>/review-gate/` (per worktree, never committed).
- * - `PreToolUse` (Bash): refuse `git commit` (exit 2) unless every changed tracked path - in the index and in the
- *   working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical to what both
- *   reviews last saw. An edit after a review therefore needs a fresh review. Generated paths are exempt.
+ * - `PreToolUse` (Bash): refuse `git commit` and `gh pr create` (exit 2) unless every changed tracked path - in the
+ *   index and in the working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical
+ *   to what both reviews last saw. A commit is measured against HEAD; a PR against the merge base with `origin/main`,
+ *   so already-committed branch content counts too. An edit after a review therefore needs a fresh review. Generated
+ *   paths are exempt.
  *
  * A missing or stale marker blocks; any internal error fails open with a stderr note, so a gate bug cannot block every
  * commit. Policy: `.claude/rules/commit-review-gate.md`.
@@ -31,6 +33,11 @@ const REVIEWS = [
 const MARKER_DIR = 'review-gate';
 const BLOCK = 2;
 const ALLOW = 0;
+
+/** What a gated command proposes, and the ref its changed paths are counted from. */
+const COMMIT = 'commit';
+const PULL_REQUEST = 'pull request';
+const PR_BASE_REF = 'origin/main';
 
 /** Written by `pnpm run api:history`, not by hand. Other generated paths come from the scripts that own them. */
 const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
@@ -64,6 +71,8 @@ const OPERAND_OPTIONS = new Set([
     '--super-prefix',
     '--attr-source',
 ]);
+/** `gh` options whose value is the next word and that may precede a subcommand. */
+const REPO_OPTIONS = new Set(['-R', '--repo']);
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
 
@@ -198,6 +207,15 @@ function shellTokens(command) {
     return tokens;
 }
 
+/** The directory `gh pr create` acts on, or `null` for any other `gh` command (`gh pr view`, `gh pr list`, ...). */
+function ghPrCreateDir(args, dir) {
+    // `-R/--repo` is persistent on `pr`, so cobra accepts `gh pr -R owner/name create`; skip its operand.
+    const rest = args[0] === 'pr' ? args.slice(1) : [];
+    const subcommand = rest.findIndex((word, i) => !(word.startsWith('-') || REPO_OPTIONS.has(rest[i - 1])));
+
+    return rest[subcommand] === 'create' ? dir : null;
+}
+
 /** The directory `git <global options> commit` acts on, or `null` when `args` run another subcommand. */
 function gitCommitDir(args, startDir) {
     let dir = startDir;
@@ -225,11 +243,11 @@ function gitCommitDir(args, startDir) {
 }
 
 /**
- * The directory of every `git commit` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
+ * The directory and kind of every `git commit` and `gh pr create` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
  * commit moves it, and a subshell's `)` restores the directory it started in.
  */
-function commitDirs(command, cwd) {
-    const dirs = [];
+function gatedCommands(command, cwd) {
+    const found = new Map();
     const outer = [];
     let dir = cwd;
     let words = [];
@@ -249,7 +267,13 @@ function commitDirs(command, cwd) {
             const commitDir = gitCommitDir(args, dir);
 
             if (commitDir) {
-                dirs.push(commitDir);
+                found.set(`${COMMIT}\0${commitDir}`, { kind: COMMIT, dir: commitDir });
+            }
+        } else if (name === 'gh') {
+            const prDir = ghPrCreateDir(args, dir);
+
+            if (prDir) {
+                found.set(`${PULL_REQUEST}\0${prDir}`, { kind: PULL_REQUEST, dir: prDir });
             }
         }
 
@@ -262,20 +286,20 @@ function commitDirs(command, cwd) {
         }
     }
 
-    return [...new Set(dirs)];
+    return [...found.values()];
 }
 
 /**
- * Changed tracked paths, minus generated ones: `staged` differ from HEAD in the index (intent-to-add placeholders are
+ * Changed tracked paths, minus generated ones: `staged` differ from `base` in the index (intent-to-add placeholders are
  * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree.
  */
-async function changedSourcePaths(top) {
+async function changedSourcePaths(top, base) {
     const { OWNED_DIRS, OWNED_EXACT_FILES } = await import('../sync-maintainer-agents.mjs');
     const { COMMANDS_DIR_REL } = await import('../sync-cursor-commands.mjs');
     const generatedDirs = [...OWNED_DIRS, `${COMMANDS_DIR_REL}/`];
     const generatedFiles = new Set([...OWNED_EXACT_FILES, API_HISTORY_JSON]);
     const list = (...args) =>
-        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...args, 'HEAD'])
+        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...args, base])
             .split('\0')
             .filter((path) => path && !generatedFiles.has(path) && !generatedDirs.some((dir) => path.startsWith(dir)));
     const staged = list('--cached');
@@ -307,10 +331,13 @@ function unreviewedPaths(repo, marker, { staged, all }) {
     return [...new Set(differing)].filter(Boolean);
 }
 
-/** Block-message lines for a commit in `dir` whose content both reviews did not see; empty when it may commit. */
-async function staleReport(dir, sessionDir) {
+/** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
+async function staleReport({ kind, dir }, sessionDir) {
     const repo = repoOf(dir);
-    const paths = await changedSourcePaths(repo.top);
+    // shortcut: a PR is measured from the merge base with origin/main even if it targets another base (stricter, never
+    // looser); with no origin/main, git throws and the gate fails open.
+    const base = kind === PULL_REQUEST ? gitOut(repo.top, ['merge-base', 'HEAD', PR_BASE_REF]) : 'HEAD';
+    const paths = await changedSourcePaths(repo.top, base);
     const stale =
         paths.all.length === 0
             ? []
@@ -332,9 +359,9 @@ async function staleReport(dir, sessionDir) {
 
     if (sessionTop && (sessionTop.status !== 0 || sessionTop.stdout.trim() !== repo.top)) {
         lines.push(
-            `This commit targets ${repo.top}, but reviews count only for the checkout they run in (the session's`,
-            `working directory, here ${sessionDir}). Review and commit from a session whose working directory is the`,
-            'committing checkout (for a subagent: work in its own isolated worktree, or in the main checkout).',
+            `This ${kind} targets ${repo.top}, but reviews count only for the checkout they run in (the session's`,
+            `working directory, here ${sessionDir}). Review and proceed from a session whose working directory is the`,
+            'target checkout (for a subagent: work in its own isolated worktree, or in the main checkout).',
         );
     }
 
@@ -346,17 +373,25 @@ async function gateCommit(payload) {
     const sessionDir = payload.cwd ?? process.cwd();
     const lines = [];
 
-    for (const dir of commitDirs(payload.tool_input?.command ?? '', sessionDir)) {
-        lines.push(...(await staleReport(dir, sessionDir)));
+    const kinds = new Set();
+
+    for (const gated of gatedCommands(payload.tool_input?.command ?? '', sessionDir)) {
+        const report = await staleReport(gated, sessionDir);
+
+        if (report.length > 0) {
+            kinds.add(gated.kind);
+            lines.push(...report);
+        }
     }
 
     if (lines.length === 0) {
         return ALLOW;
     }
 
-    lines.unshift('review-gate: this commit contains changes that were not reviewed in their current state.');
+    const what = [...kinds].join(' and ');
+    lines.unshift(`review-gate: this ${what} contains changes that were not reviewed in their current state.`);
     lines.push(
-        'Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then commit again.',
+        `Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then retry the ${what}.`,
         'An edit made after a review needs a fresh review. See .claude/rules/commit-review-gate.md.',
     );
     process.stderr.write(`${lines.join('\n')}\n`);

@@ -288,3 +288,129 @@ describe('review-gate commit gate', () => {
         assert.match(result.stderr, /review-gate: internal error, allowing/u);
     });
 });
+
+const PR_CREATE = 'gh pr create --title t --body b';
+
+/** A repo with origin/main at the initial commit and one committed, unreviewed source change on the branch. */
+function makePrRepo(path = SOURCE, content = 'two\n') {
+    const repo = makeRepo();
+    git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    write(repo, path, content);
+    git(repo, 'add', '-A');
+    git(repo, 'commit', '--quiet', '-m', 'branch work');
+
+    return repo;
+}
+
+describe('review-gate pull request gate', () => {
+    test('blocks gh pr create when the committed branch content was not reviewed', () => {
+        const repo = makePrRepo();
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /this pull request contains changes/u);
+        assert.match(result.stderr, /\/review did not see: src\/a\.ts/u);
+        assert.match(result.stderr, /\/ponytail:ponytail-review did not see: src\/a\.ts/u);
+        assert.match(result.stderr, /Run \/review and \/ponytail:ponytail-review/u);
+    });
+
+    test('passes when both reviews saw the committed branch content', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
+    test('blocks again after an uncommitted tracked edit made after the reviews', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+        write(repo, SOURCE, 'three\n');
+
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+    });
+
+    test('blocks when only one review ran', () => {
+        const repo = makePrRepo();
+        review(repo, 'review');
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /ponytail-review did not see/u);
+        assert.doesNotMatch(result.stderr, /\n {2}\/review did not see/u);
+    });
+
+    test('passes a PR whose changes are all generated paths', () => {
+        const repo = makePrRepo(GENERATED, 'generated\n');
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
+    test('finds gh pr create in a chain, a subshell and behind wrappers', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `git push -u origin HEAD && ${PR_CREATE}`,
+            `(${PR_CREATE})`,
+            `echo $(${PR_CREATE})`,
+            `GH_DEBUG=1 ${PR_CREATE}`,
+            `rtk ${PR_CREATE}`,
+            'gh pr -R owner/name create --fill',
+            'gh pr --repo owner/name create --fill',
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('ignores other gh commands and quoted mentions of gh pr create', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            'gh pr view 1',
+            'gh pr list',
+            'gh pr edit 1 --body x',
+            `echo "${PR_CREATE}"`,
+            `grep -n 'gh pr create' notes.md`,
+            `git log --grep "${PR_CREATE}"`,
+            'gh issue create --title t',
+        ]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 0, command);
+            assert.equal(result.stderr, '', command);
+        }
+    });
+
+    test('checks the checkout a cd prefix names, and a review elsewhere does not count', () => {
+        const repo = makePrRepo();
+        const other = makeRepo();
+        reviewBoth(other);
+
+        const result = commit(other, `cd "${repo}" && ${PR_CREATE}`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /This pull request targets/u);
+    });
+
+    test('names both a commit and a pull request in one command', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'four\n');
+        git(repo, 'add', '-A');
+
+        const result = commit(repo, `${COMMIT} && ${PR_CREATE}`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /this commit and pull request contains changes/u);
+    });
+
+    test('fails open when origin/main does not exist', () => {
+        const repo = makeRepo();
+        write(repo, SOURCE, 'two\n');
+        git(repo, 'add', '-A');
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 0);
+        assert.match(result.stderr, /review-gate: internal error, allowing/u);
+    });
+});

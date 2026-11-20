@@ -1,8 +1,17 @@
 # Commit review gate
 
-Every `git commit` a Claude Code session runs in this repo - main session or subagent - is refused unless `/review` and
-`/ponytail:ponytail-review` both saw exactly the content being committed (BT-815). Commits you type in your own terminal
-are not affected.
+Every `git commit` and every `gh pr create` a Claude Code session runs in this repo - main session or subagent - is
+refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the content being committed or proposed
+(BT-815). Commands you type in your own terminal are not affected.
+
+- **Pull requests.** `gh pr create` is found with the same tokenizer, wrapper and `cd` handling as `git commit`; other
+  `gh` commands (`gh pr view`, `gh pr edit`, `gh issue create`) and quoted mentions are ignored. A PR is usually clean
+  and already committed, so its changed paths are counted from the merge base with `origin/main` (not from `HEAD`):
+  every tracked path that differs from that base, committed or not, must match both review snapshots byte for byte. A PR
+  against another base is still measured from `origin/main` - stricter, never looser. Without an `origin/main` ref the
+  gate fails open with the internal-error note. A PR whose changes are all generated paths passes. The block message
+  names both skills. Running the reviews only to open the commit gate is not enough: `/pr` still wants each as its own
+  full report.
 
 - **How it knows.** `scripts/hooks/review-gate.mjs`, wired in `.claude/settings.json`. When either review runs (a Skill
   tool call, or the slash command typed as a prompt), it snapshots the working tree (tracked and untracked, `.gitignore`
