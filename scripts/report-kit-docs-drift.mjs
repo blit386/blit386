@@ -36,6 +36,13 @@ export const TRACKING_ISSUE_LABEL_NAMES = ['doc', 'create-blit386'];
 export const TRACKING_ISSUE_TITLE = 'docs(kit): kit docs need review against a newer blit386 release';
 
 /**
+ * Last line of every report body. The API key is a personal key, so a reporter comment and a human reply
+ * share one Linear author; the line is the only thing that tells them apart. Plain text, not an HTML
+ * comment, so Linear's markdown round trip keeps it.
+ */
+export const REPORT_MARKER = '_Posted by the Kit Docs Drift workflow._';
+
+/**
  * @param {import('./check-kit-docs-drift.mjs').DriftReport} report
  * @returns {string} Markdown body listing which docs to review and why.
  */
@@ -53,6 +60,8 @@ export function formatDriftBody(report) {
     for (const { docFile, pages } of report.dueDocs) {
         lines.push(`- \`packages/kit/${docFile}\` - changed: ${pages.join(', ')}`);
     }
+
+    lines.push('', REPORT_MARKER);
 
     return lines.join('\n');
 }
@@ -76,8 +85,15 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
 
     if (existing) {
         // Newest by createdAt, not by position: the connection's order is not something to rely on.
-        // Trimmed: Linear may add or strip trailing whitespace on a stored comment.
-        const latest = existing.comments?.nodes.reduce((a, b) => (!a || b.createdAt > a.createdAt ? b : a), undefined);
+        // Only the reporter's own comments count, so a human reply never makes the next run repost.
+        // Legacy shortcut: with no marked comment (reports from before the marker), any comment counts, so
+        // the first run after the marker lands may repost once; drop it when that issue is long closed.
+        const comments = existing.comments?.nodes ?? [];
+        const own = comments.filter((comment) => comment.body.includes(REPORT_MARKER));
+        const latest = (own.length > 0 ? own : comments).reduce(
+            (a, b) => (!a || b.createdAt > a.createdAt ? b : a),
+            undefined,
+        );
 
         // A fresh issue holds the report in its description and has no comments yet.
         const previous = latest?.body ?? existing.description;

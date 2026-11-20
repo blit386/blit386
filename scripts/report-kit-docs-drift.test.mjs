@@ -137,7 +137,10 @@ describe('reportDrift', () => {
 
     it('compares against the newest comment whatever order Linear returns them in', async () => {
         const stale = { body: formatDriftBody(REPORT), createdAt: '2026-10-01T00:00:00Z' };
-        const newest = { body: 'a newer, different report', createdAt: '2026-10-20T00:00:00Z' };
+        const newest = {
+            body: formatDriftBody({ ...REPORT, docsReviewedAt: '1.4.0' }),
+            createdAt: '2026-10-20T00:00:00Z',
+        };
 
         for (const nodes of [
             [stale, newest],
@@ -204,6 +207,53 @@ describe('reportDrift', () => {
         }
 
         assert.ok(!calls.some((call) => call.query.includes('AddComment')));
+    });
+});
+
+describe('reportDrift after a human reply', () => {
+    /** Runs reportDrift against an existing issue and returns whether it commented. */
+    async function commented(comments) {
+        const calls = [];
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (_url, init) => {
+            const body = JSON.parse(init.body);
+            calls.push(body);
+            const data = body.query.includes('FindTrackingIssue')
+                ? {
+                      issues: {
+                          nodes: [{ id: 'iss-1', identifier: 'BT-500', title: 't', comments: { nodes: comments } }],
+                      },
+                  }
+                : { commentCreate: { success: true, comment: { id: 'c-1' } } };
+            return { ok: true, status: 200, statusText: 'OK', json: async () => ({ data }) };
+        };
+        try {
+            await reportDrift({ apiKey: 'key-123', report: REPORT, log: () => {} });
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+        return calls.some((call) => call.query.includes('AddComment'));
+    }
+
+    it('does not repost when a human comment is newest and the reporter comment before it is identical', async () => {
+        assert.equal(
+            await commented([
+                { body: formatDriftBody(REPORT), createdAt: '2026-10-01T00:00:00Z' },
+                { body: 'looking at this', createdAt: '2026-10-02T00:00:00Z' },
+            ]),
+            false,
+        );
+    });
+
+    it('posts a changed report after a human reply', async () => {
+        const older = { ...REPORT, docsReviewedAt: '1.4.0' };
+        assert.equal(
+            await commented([
+                { body: formatDriftBody(older), createdAt: '2026-10-01T00:00:00Z' },
+                { body: 'looking at this', createdAt: '2026-10-02T00:00:00Z' },
+            ]),
+            true,
+        );
     });
 });
 
