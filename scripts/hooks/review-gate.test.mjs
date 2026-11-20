@@ -577,6 +577,23 @@ describe('review-gate pull request gate', () => {
         }
     });
 
+    test('keeps the outer command across a command substitution in its arguments', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        // The arguments after the substitution (--base release) must still reach the PR's target.
+        for (const command of [
+            `${PR_CREATE} --title "$(printf t)" --base release`,
+            `gh pr create --title $(printf t) --base=release --body "$(date)"`,
+            `gh pr create --title "$(echo "$(printf t)")" -B release`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        assert.equal(commit(repo, `${PR_CREATE} --title "$(printf t)"`).status, 0);
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');

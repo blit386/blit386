@@ -54,6 +54,8 @@ const BOUNDARY_TOKENS = new Map([
     ['(', SUBSHELL_OPEN],
     [')', SUBSHELL_CLOSE],
 ]);
+/** Stands in for the unknown output of a `$(...)` among its outer command's words. */
+const SUBSTITUTION_WORD = '$(...)';
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
 /** Words skipped in front of a command: option-less wrappers. `VAR=x` assignments are skipped too. */
@@ -77,8 +79,9 @@ const PR_CREATE_NAMES = new Set(['create', 'new']);
 /** `gh pr create` options that take a value (`gh pr create --help`), long and short. */
 const CREATE_VALUE_FLAGS = new Set([
     ...['--assignee', '--base', '--body', '--body-file', '--head', '--label', '--milestone', '--project'],
-    ...['--recover', '--reviewer', '--template', '--title', '--repo'],
-    ...['-a', '-B', '-b', '-F', '-H', '-l', '-m', '-p', '-r', '-T', '-t', '-R'],
+    ...['--recover', '--reviewer', '--template', '--title'],
+    ...REPO_OPTIONS,
+    ...['-a', '-B', '-b', '-F', '-H', '-l', '-m', '-p', '-r', '-T', '-t'],
 ]);
 /** Git subcommands that change the checked-out branch, so a later `gh pr create` in the same command sees another one. */
 const BRANCH_SWITCHERS = new Set(['switch', 'checkout']);
@@ -228,7 +231,7 @@ function createTargets(words) {
             targets.base = value || undefined;
         } else if (flag === '--head' || flag === '-H') {
             targets.head = value || undefined;
-        } else if (flag === '--repo' || flag === '-R') {
+        } else if (REPO_OPTIONS.has(flag)) {
             targets.repo = value || undefined;
         }
     };
@@ -311,12 +314,21 @@ function gatedCommands(command, cwd) {
     const found = new Map();
     let switched = false;
     const outer = [];
+    const outerWords = [];
     let dir = cwd;
     let words = [];
 
     for (const token of [...shellTokens(command), BOUNDARY]) {
         if (typeof token === 'string') {
             words.push(token);
+            continue;
+        }
+
+        if (token === SUBSHELL_OPEN) {
+            // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
+            outerWords.push(words);
+            outer.push(dir);
+            words = [];
             continue;
         }
 
@@ -345,10 +357,10 @@ function gatedCommands(command, cwd) {
 
         words = [];
 
-        if (token === SUBSHELL_OPEN) {
-            outer.push(dir);
-        } else if (token === SUBSHELL_CLOSE) {
+        if (token === SUBSHELL_CLOSE) {
             dir = outer.pop() ?? dir;
+            // The substitution's output is one word of the outer command, so an option before it still has its operand.
+            words = [...(outerWords.pop() ?? []), SUBSTITUTION_WORD];
         }
     }
 

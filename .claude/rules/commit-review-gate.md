@@ -15,10 +15,11 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
   content therefore still blocks. `--head`/`-H` and `--repo`/`-R` are refused outright, since only this checkout's
   checked-out branch can be checked; so is any `git switch` or `git checkout` earlier in the same command as
   `gh pr create` (switch in a separate call). `--base` and `--head` are read the way `gh` reads them (string options
-  consume the next word, `-B=x`, `-Bx` and `-dB x` work, an empty value is "not given", the last occurrence wins). A PR
-  entry whose `origin/<base>` ref is missing fails open with the internal-error note, and does not drop a block another
-  entry in the same command earned. A PR whose changes are all generated paths passes. The block message names both
-  skills. Running the reviews only to open the commit gate is not enough: `/pr` still wants each as its own full report.
+  consume the next word, `-B=x`, `-Bx` and `-dB x` work, an empty value is "not given", the last occurrence wins, and
+  the words after a `$(...)` in the arguments still count). A PR entry whose `origin/<base>` ref is missing fails open
+  with the internal-error note, and does not drop a block another entry in the same command earned. A PR whose changes
+  are all generated paths passes. The block message names both skills. Running the reviews only to open the commit gate
+  is not enough: `/pr` still wants each as its own full report.
 
 - **How it knows.** `scripts/hooks/review-gate.mjs`, wired in `.claude/settings.json`. When either review runs (a Skill
   tool call, or the slash command typed as a prompt), it snapshots the working tree (tracked and untracked, `.gitignore`
