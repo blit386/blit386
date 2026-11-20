@@ -565,6 +565,18 @@ describe('review-gate pull request gate', () => {
         }
     });
 
+    test('one pull request command cannot hide another in the same command line', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of [
+            `gh pr -R owner/upstream create --base main && ${PR_CREATE} --base main`,
+            `${PR_CREATE} --base main && gh pr create --head feature`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');

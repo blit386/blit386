@@ -337,7 +337,8 @@ function gatedCommands(command, cwd) {
             const pr = ghPrCreate(args, dir);
 
             if (pr) {
-                const key = `${PULL_REQUEST}\0${dir}\0${pr.base}\0${pr.head}`;
+                // Every target is part of the key: one command must not hide another's --repo, --head or --base.
+                const key = JSON.stringify([PULL_REQUEST, dir, pr.base, pr.head, pr.repo, switched]);
                 found.set(key, { kind: PULL_REQUEST, ...pr, switched });
             }
         }
