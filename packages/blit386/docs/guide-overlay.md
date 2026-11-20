@@ -55,6 +55,8 @@ subsystem entirely (for example release builds or full-screen custom HUD demos).
 
 Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per frame after `render()` when the
 overlay body is visible. Return a reused array of row objects when possible - avoid allocating new strings every frame.
+Rows stack upward from the footer and are not capped: rows that do not fit above the top of the screen are clipped, so
+keep the list short.
 
 ```ts twoslash
 import { type IBTDemo } from 'blit386';

@@ -738,6 +738,8 @@ export interface IBTDemo {
      * Hot path: reuse the same array and row objects when content is unchanged; avoid
      * allocating new strings or arrays every frame when values only change in place.
      *
+     * Rows are not capped: they stack upward from the footer, and rows past the top of the screen are clipped.
+     *
      * @returns Read-only list of overlay rows, or `undefined` for none.
      */
     overlayRows?(): readonly OverlayRow[] | undefined;
