@@ -566,3 +566,26 @@ describe('fillBlock', () => {
         expect(palette.isDirty).toBe(false);
     });
 });
+
+describe('Palette.set and held references', () => {
+    it('keeps a reference from getRef pointing into the palette after set', () => {
+        const palette = new Palette(16);
+        const held = palette.getRef(5);
+
+        palette.set(5, new Color32(10, 20, 30));
+        held.r = 99;
+
+        expect(palette.get(5).r).toBe(99);
+        expect(palette.get(5).g).toBe(20);
+    });
+
+    it('does not alias the color passed to set', () => {
+        const palette = new Palette(16);
+        const source = new Color32(10, 20, 30);
+
+        palette.set(5, source);
+        source.r = 200;
+
+        expect(palette.get(5).r).toBe(10);
+    });
+});
