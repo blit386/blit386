@@ -46,6 +46,9 @@ const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 const BOUNDARY = Symbol('boundary');
 const SUBSHELL_OPEN = Symbol('subshell open');
 const SUBSHELL_CLOSE = Symbol('subshell close');
+/** Pushed last by {@link shellTokens} when a `$(` opened inside comment text never closes: the rest cannot be trusted. */
+const UNREADABLE = Symbol('unreadable');
+const UNREADABLE_KIND = 'command';
 const BOUNDARY_TOKENS = new Map([
     [';', BOUNDARY],
     ['&', BOUNDARY],
@@ -235,6 +238,10 @@ function shellTokens(command) {
 
     flush();
 
+    if (resume.some((saved) => saved.comment)) {
+        tokens.push(UNREADABLE);
+    }
+
     return tokens;
 }
 
@@ -385,6 +392,11 @@ function gatedCommands(command, cwd) {
             continue;
         }
 
+        if (token === UNREADABLE) {
+            found.set(UNREADABLE_KIND, { kind: UNREADABLE_KIND, dir, unreadable: true });
+            continue;
+        }
+
         if (token === SUBSHELL_OPEN) {
             // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
             outerWords.push(words);
@@ -475,10 +487,15 @@ function defaultPrBase(top) {
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
 async function staleReport(
-    { kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated, dirUnknown },
+    { kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated, dirUnknown, unreadable },
     sessionDir,
 ) {
     // Refusals first: none of them needs the repository, so a directory that is not one cannot turn them into a pass.
+    if (unreadable) {
+        // shortcut: a `$(` opened in comment text that never closes may hide a real command after a stray quote.
+        return ['  an unclosed $( inside a comment may hide a command from the gate: close it or drop the comment.'];
+    }
+
     if (unterminated) {
         // shortcut: the tokenizer does not know heredocs; an apostrophe in one leaves a `$(` open and hides what follows it.
         return [

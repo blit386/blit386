@@ -709,6 +709,21 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`).status, 0);
     });
 
+    test('fails closed when a substitution opened in comment text never closes', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        // Bash sees a comment, then a real PR command; the tokenizer would see a quote swallowing it.
+        const result = commit(repo, `# $(it's\n${PR_CREATE} --base main`);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /unclosed \$\( inside a comment/u);
+
+        // A comment whose substitution closes, and a plain comment with an apostrophe, are not refused.
+        assert.equal(commit(repo, "echo x # $(date) it's\necho y").status, 0);
+        assert.equal(commit(repo, "echo x # it's\necho y").status, 0);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');
