@@ -7,8 +7,8 @@
  *   review's marker in `<git dir>/review-gate/` (per worktree, never committed).
  * - `PreToolUse` (Bash): refuse `git commit` and `gh pr create` (exit 2) unless every changed tracked path - in the
  *   index and in the working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical
- *   to what both reviews last saw. A commit is measured against HEAD; a PR against the merge base with `origin/main`,
- *   so already-committed branch content counts too. An edit after a review therefore needs a fresh review. Generated
+ *   to what both reviews last saw. A commit is measured against HEAD; a PR against the merge base with `origin/<base>`
+ *   (`--base`, else main), where what HEAD changes counts too. An edit after a review therefore needs a fresh review. Generated
  *   paths are exempt.
  *
  * A missing or stale marker blocks; any internal error fails open with a stderr note, so a gate bug cannot block every
@@ -37,7 +37,8 @@ const ALLOW = 0;
 /** What a gated command proposes, and the ref its changed paths are counted from. */
 const COMMIT = 'commit';
 const PULL_REQUEST = 'pull request';
-const PR_BASE_REF = 'origin/main';
+const DEFAULT_PR_BASE = 'main';
+const REMOTE = 'origin';
 
 /** Written by `pnpm run api:history`, not by hand. Other generated paths come from the scripts that own them. */
 const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
@@ -73,6 +74,7 @@ const OPERAND_OPTIONS = new Set([
 ]);
 /** `gh` options whose value is the next word and that may precede a subcommand. */
 const REPO_OPTIONS = new Set(['-R', '--repo']);
+const PR_CREATE_NAMES = new Set(['create', 'new']);
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
 
@@ -207,13 +209,47 @@ function shellTokens(command) {
     return tokens;
 }
 
-/** The directory `gh pr create` acts on, or `null` for any other `gh` command (`gh pr view`, `gh pr list`, ...). */
-function ghPrCreateDir(args, dir) {
-    // `-R/--repo` is persistent on `pr`, so cobra accepts `gh pr -R owner/name create`; skip its operand.
-    const rest = args[0] === 'pr' ? args.slice(1) : [];
-    const subcommand = rest.findIndex((word, i) => !(word.startsWith('-') || REPO_OPTIONS.has(rest[i - 1])));
+/** Value of an option in its long (`--base v`, `--base=v`) or short (`-B v`, `-Bv`) form, or `undefined`. */
+function optionValue(words, long, short) {
+    for (const [i, word] of words.entries()) {
+        if (word === long || word === short) {
+            return words[i + 1];
+        }
 
-    return rest[subcommand] === 'create' ? dir : null;
+        if (word.startsWith(`${long}=`)) {
+            return word.slice(long.length + 1);
+        }
+
+        if (word.startsWith(short) && !word.startsWith('--')) {
+            return word.slice(short.length);
+        }
+    }
+
+    return undefined;
+}
+
+/**
+ * `{ dir, base, head }` for a `gh pr create` (or its alias `gh pr new`), else `null` for any other `gh` command.
+ * `-R/--repo` is persistent, so cobra accepts it before `pr` and before the subcommand; its operand is skipped.
+ */
+function ghPrCreate(args, dir) {
+    const positional = [];
+
+    for (let i = 0; i < args.length && positional.length < 3; i++) {
+        if (REPO_OPTIONS.has(args[i])) {
+            i++;
+        } else if (!args[i].startsWith('-')) {
+            positional.push(args[i]);
+        }
+    }
+
+    const [group, subcommand] = positional;
+
+    if (group !== 'pr' || !PR_CREATE_NAMES.has(subcommand)) {
+        return null;
+    }
+
+    return { dir, base: optionValue(args, '--base', '-B'), head: optionValue(args, '--head', '-H') };
 }
 
 /** The directory `git <global options> commit` acts on, or `null` when `args` run another subcommand. */
@@ -270,10 +306,10 @@ function gatedCommands(command, cwd) {
                 found.set(`${COMMIT}\0${commitDir}`, { kind: COMMIT, dir: commitDir });
             }
         } else if (name === 'gh') {
-            const prDir = ghPrCreateDir(args, dir);
+            const pr = ghPrCreate(args, dir);
 
-            if (prDir) {
-                found.set(`${PULL_REQUEST}\0${prDir}`, { kind: PULL_REQUEST, dir: prDir });
+            if (pr) {
+                found.set(`${PULL_REQUEST}\0${dir}\0${pr.base}\0${pr.head}`, { kind: PULL_REQUEST, ...pr });
             }
         }
 
@@ -291,24 +327,26 @@ function gatedCommands(command, cwd) {
 
 /**
  * Changed tracked paths, minus generated ones: `staged` differ from `base` in the index (intent-to-add placeholders are
- * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree.
+ * not staged content, and git leaves them out here), `all` adds those that differ only in the working tree, and
+ * `committed` (a PR only) are those `HEAD` itself changes: what the PR carries, whatever the index and tree hold now.
  */
-async function changedSourcePaths(top, base) {
+async function changedSourcePaths(top, base, forPullRequest) {
     const { OWNED_DIRS, OWNED_EXACT_FILES } = await import('../sync-maintainer-agents.mjs');
     const { COMMANDS_DIR_REL } = await import('../sync-cursor-commands.mjs');
     const generatedDirs = [...OWNED_DIRS, `${COMMANDS_DIR_REL}/`];
     const generatedFiles = new Set([...OWNED_EXACT_FILES, API_HISTORY_JSON]);
-    const list = (...args) =>
-        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...args, base])
+    const list = (...refs) =>
+        gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...refs])
             .split('\0')
             .filter((path) => path && !generatedFiles.has(path) && !generatedDirs.some((dir) => path.startsWith(dir)));
-    const staged = list('--cached');
+    const staged = list('--cached', base);
+    const committed = forPullRequest ? list(base, 'HEAD') : [];
 
-    return { staged, all: [...new Set([...staged, ...list()])] };
+    return { staged, committed, all: [...new Set([...committed, ...staged, ...list(base)])] };
 }
 
 /** Changed paths whose index or working-tree content differs from the review's recorded tree (all, if none). */
-function unreviewedPaths(repo, marker, { staged, all }) {
+function unreviewedPaths(repo, marker, { staged, committed, all }) {
     const markerFile = join(repo.markers, marker);
 
     if (!existsSync(markerFile)) {
@@ -318,11 +356,12 @@ function unreviewedPaths(repo, marker, { staged, all }) {
     const tree = readFileSync(markerFile, 'utf8').trim();
     // The index is compared only where it holds staged content; an empty pathspec would mean the whole tree.
     const checks = [
+        ['HEAD', committed],
         ['--cached', staged],
         [null, all],
     ].filter(([, paths]) => paths.length > 0);
-    const differing = checks.flatMap(([cached, paths]) => {
-        const result = git(repo.top, ['diff', '--name-only', '-z', ...(cached ? [cached] : []), tree, '--', ...paths]);
+    const differing = checks.flatMap(([ref, paths]) => {
+        const result = git(repo.top, ['diff', '--name-only', '-z', ...(ref ? [ref] : []), tree, '--', ...paths]);
 
         // A tree git no longer has (pruned) cannot vouch for anything.
         return result.status === 0 ? result.stdout.split('\0') : paths;
@@ -332,12 +371,23 @@ function unreviewedPaths(repo, marker, { staged, all }) {
 }
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
-async function staleReport({ kind, dir }, sessionDir) {
+async function staleReport({ kind, dir, base: prBase, head }, sessionDir) {
     const repo = repoOf(dir);
-    // shortcut: a PR is measured from the merge base with origin/main even if it targets another base (stricter, never
-    // looser); with no origin/main, git throws and the gate fails open.
-    const base = kind === PULL_REQUEST ? gitOut(repo.top, ['merge-base', 'HEAD', PR_BASE_REF]) : 'HEAD';
-    const paths = await changedSourcePaths(repo.top, base);
+    const isPullRequest = kind === PULL_REQUEST;
+
+    if (head) {
+        // shortcut: a head other than the checked-out branch is not followed; refused, not guessed at.
+        return [
+            `  gh pr create --head ${head}: only the checked-out branch can be checked; drop --head and switch to it.`,
+        ];
+    }
+
+    // The PR base is the one named by --base (else main), as the remote knows it; with no such ref git throws and the
+    // gate fails open.
+    const base = isPullRequest
+        ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBase ?? DEFAULT_PR_BASE}`])
+        : 'HEAD';
+    const paths = await changedSourcePaths(repo.top, base, isPullRequest);
     const stale =
         paths.all.length === 0
             ? []

@@ -358,6 +358,9 @@ describe('review-gate pull request gate', () => {
             `rtk ${PR_CREATE}`,
             'gh pr -R owner/name create --fill',
             'gh pr --repo owner/name create --fill',
+            'gh --repo owner/name pr create --fill',
+            'gh -R owner/name pr new --fill',
+            'gh pr new --title t',
         ]) {
             assert.equal(commit(repo, command).status, 2, command);
         }
@@ -401,6 +404,47 @@ describe('review-gate pull request gate', () => {
 
         assert.equal(result.status, 2);
         assert.match(result.stderr, /this commit and pull request contains changes/u);
+    });
+
+    test('blocks committed branch content that the index and working tree no longer hold', () => {
+        const repo = makePrRepo();
+        git(repo, 'restore', '--source=origin/main', '--staged', '--worktree', SOURCE);
+        reviewBoth(repo);
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /src\/a\.ts/u);
+    });
+
+    test('blocks when a reviewed working-tree correction sits over unreviewed committed content', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'corrected\n');
+        reviewBoth(repo);
+
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+    });
+
+    test('measures from the base named by --base, not always main', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+        for (const flags of ['--base release', '--base=release', '-B release']) {
+            assert.equal(commit(repo, `${PR_CREATE} ${flags}`).status, 2, flags);
+        }
+    });
+
+    test('refuses a --head override it cannot check', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const flags of ['--head feature', '--head=feature', '-H feature']) {
+            const result = commit(repo, `${PR_CREATE} ${flags}`);
+            assert.equal(result.status, 2, flags);
+            assert.match(result.stderr, /only the checked-out branch/u);
+        }
     });
 
     test('fails open when origin/main does not exist', () => {
