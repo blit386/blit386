@@ -7,10 +7,11 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
 - **Pull requests.** `gh pr create` (and its alias `gh pr new`, with `-R/--repo` before or after `pr`) is found with the
   same tokenizer, wrapper and `cd` handling as `git commit`; other `gh` commands (`gh pr view`, `gh pr edit`,
   `gh issue create`) and quoted mentions are ignored. A PR is usually clean and already committed, so its changed paths
-  are counted from the merge base with `origin/<base>` (not from `HEAD`), where `<base>` is `--base`/`-B` or `main`.
-  Three sets must match both review snapshots byte for byte: paths `HEAD` changes (what the PR carries), paths staged,
-  and paths changed in the working tree. A reviewed correction sitting over unreviewed committed content therefore still
-  blocks. `--head`/`-H` is refused outright, since only the checked-out branch can be checked; so is a `git switch` or
+  are counted from the merge base with `origin/<base>` (not from `HEAD`), where `<base>` is `--base`/`-B`, else the
+  branch's `gh-merge-base` config, else the remote's default branch (`origin/HEAD`), else `main`. Three sets must match
+  both review snapshots byte for byte: paths `HEAD` changes (what the PR carries), paths staged, and paths changed in
+  the working tree. A reviewed correction sitting over unreviewed committed content therefore still blocks.
+  `--head`/`-H` is refused outright, since only the checked-out branch can be checked; so is a `git switch` or
   `git checkout` earlier in the same command as `gh pr create` (switch in a separate call). `--base` and `--head` are
   read the way `gh` reads them (string options consume the next word, `-B=x` and `-Bx` work, the last occurrence wins).
   A PR entry whose `origin/<base>` ref is missing fails open with the internal-error note, and does not drop a block

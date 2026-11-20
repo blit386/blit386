@@ -488,6 +488,22 @@ describe('review-gate pull request gate', () => {
         }
     });
 
+    test('without --base, uses the branch gh-merge-base, then the remote default branch, then main', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/trunk', 'HEAD~1');
+
+        // origin/main equals HEAD, so a main base has nothing to review.
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+
+        git(repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/trunk');
+        assert.equal(commit(repo, PR_CREATE).status, 2);
+
+        git(repo, 'config', `branch.${git(repo, 'branch', '--show-current').trim()}.gh-merge-base`, 'main');
+        assert.equal(commit(repo, PR_CREATE).status, 0);
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');

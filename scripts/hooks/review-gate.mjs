@@ -37,6 +37,7 @@ const ALLOW = 0;
 /** What a gated command proposes, and the ref its changed paths are counted from. */
 const COMMIT = 'commit';
 const PULL_REQUEST = 'pull request';
+/** Last resort when neither `--base`, `branch.<name>.gh-merge-base` nor `origin/HEAD` names the PR base. */
 const DEFAULT_PR_BASE = 'main';
 const REMOTE = 'origin';
 
@@ -389,6 +390,20 @@ function unreviewedPaths(repo, marker, { staged, committed, all }) {
     return [...new Set(differing)].filter(Boolean);
 }
 
+/** The base `gh pr create` falls back to without `--base`: the branch's `gh-merge-base`, else the remote's default. */
+function defaultPrBase(top) {
+    const read = (args) => {
+        const result = git(top, args);
+
+        return result.status === 0 ? result.stdout.trim() : '';
+    };
+    const branch = read(['symbolic-ref', '--short', 'HEAD']);
+    const configured = branch && read(['config', '--get', `branch.${branch}.gh-merge-base`]);
+    const remoteHead = read(['symbolic-ref', '--short', `refs/remotes/${REMOTE}/HEAD`]).replace(`${REMOTE}/`, '');
+
+    return configured || remoteHead || DEFAULT_PR_BASE;
+}
+
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
 async function staleReport({ kind, dir, base: prBase, head, switched }, sessionDir) {
     const repo = repoOf(dir);
@@ -409,7 +424,7 @@ async function staleReport({ kind, dir, base: prBase, head, switched }, sessionD
     // The PR base is the one named by --base (else main), as the remote knows it; with no such ref git throws and the
     // gate fails open.
     const base = isPullRequest
-        ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBase ?? DEFAULT_PR_BASE}`])
+        ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBase ?? defaultPrBase(repo.top)}`])
         : 'HEAD';
     const paths = await changedSourcePaths(repo.top, base, isPullRequest);
     const stale =
