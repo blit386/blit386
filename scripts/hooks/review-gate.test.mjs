@@ -753,6 +753,20 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `echo $(( $(cat <<EOF\n1\nEOF\n) ))\n${PR_CREATE}`).status, 2);
     });
 
+    test('an escaped $( in an unquoted heredoc body is literal; an even run of backslashes is not an escape', () => {
+        const repo = makePrRepo();
+        const body = (slashes) => `cat <<EOF\n${slashes}$(${PR_CREATE})\nEOF`;
+
+        // Odd run: the last backslash escapes the $, so nothing runs. Even run: the $( runs.
+        for (const slashes of ['\\', '\\\\\\']) {
+            assert.equal(commit(repo, body(slashes)).status, 0, slashes);
+        }
+
+        for (const slashes of ['', '\\\\', '\\\\\\\\']) {
+            assert.equal(commit(repo, body(slashes)).status, 2, slashes);
+        }
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

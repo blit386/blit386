@@ -256,6 +256,11 @@ function shellTokens(command) {
                 continue;
             }
 
+            if (char === '\\') {
+                i++; // `\$(` is literal text in a heredoc body; a backslash pair is just a backslash.
+                continue;
+            }
+
             if (!(heredoc.live && char === '$' && command[i + 1] === '(')) {
                 continue;
             }
