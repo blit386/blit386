@@ -10,7 +10,8 @@ description:
 # Show a loading screen
 
 `BT.loadingAssetsCount` is the combined count of in-flight image, audio and font loads. Poll it each frame and draw a
-spinner (or a "Loading..." label) until it returns to `0`.
+spinner (or a "Loading..." label) until it returns to `0`. Font loads count from engine 1.9.0; on an older engine the
+count covers only images and audio, so upgrade `blit386` if a font must be part of the wait.
 
 ## The BLIT386 splash already covers init()
 
