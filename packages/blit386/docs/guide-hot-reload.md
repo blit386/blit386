@@ -290,8 +290,8 @@ code hot reload still works, but image, sound and font edits are silently ignore
 The plugin does three things, all dev-server only (`apply: 'serve'` - a production build never sees it, so there is zero
 runtime cost or behavior change to ship):
 
-- Appends a small hot-reload registration snippet to any served module that imports `blit386` and calls
-  `bootstrap(...)`:
+- Appends a small hot-reload registration snippet to any served module that imports `blit386` and calls `bootstrap(...)`
+  (mentions in comments do not count):
 
   ```js
   /* blit386:hot-reload-snippet */
