@@ -75,7 +75,8 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, palette `hitTest` / `tooltip` helpers and `PaletteInteraction` state, a
   hovered-frame allocation check (`Overlay.alloc.test.ts`), `RenderPaletteUsage` mask helpers (`markIndexUsed`,
-  `collectUsedIndices`), toggle hit-testing, and `updateAndRender` integration (Node)
+  `collectUsedIndices`), toggle hit-testing, and `updateAndRender` integration (Node). Pixels:
+  `tests/visual/overlay.spec.ts` (Tier 3, below)
 - FrameCapture - GPU readback, PNG conversion (Node + GPU mocks + browser stubs)
 - consumer-doc-imports - `src/docs/consumer-doc-imports.test.ts` guards README/docs import paths against `BLIT386.ts`
   exports
@@ -85,10 +86,11 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
 Actual GPU rendering verified via screenshot comparison. Requires Chrome with WebGPU flags enabled.
 
 Most specs cover both the default WebGPU backend and the `?backend=software` software backend, producing separate
-baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software backend throws on effects). Every fixture
-publishes `window.__ACTIVE_BACKEND__` and the specs open it through `tests/visual/open-fixture.ts`: a WebGPU test skips
-when the engine silently fell back to software, and a software test asserts `'software'`, so a fallback can no longer
-pass a WebGPU baseline by accident.
+baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software backend throws on effects). Fixtures
+publish `window.__ACTIVE_BACKEND__` and the specs open them through `tests/visual/open-fixture.ts`; `render-at.spec.ts`
+and `overlay.spec.ts`, which drive their own manual clock, read `BT.activeBackend` instead. Either way a WebGPU test
+skips when the engine silently fell back to software, and a software test asserts `'software'`, so a fallback can no
+longer pass a WebGPU baseline by accident.
 
 - Primitives - pixel, line, and rectangle rendering (WebGPU + software)
 - Sprites - palette-indexed sprite rendering, palette offsets, batching, plus the `sprites-oriented`,
@@ -98,6 +100,10 @@ pass a WebGPU baseline by accident.
   page that seeks to it with `BT.renderAt` must match byte for byte, on both backends
 - Camera - camera offset transforms applied to all geometry
 - Fonts - placeholder text rendering at known positions
+- Overlay - every overlay section at once (top bars, renderer diagnostics row, timing chart with tags, audio meter bars
+  at normal, warning and clip levels, a custom `overlayRows` row, a scrolling palette band, the toggle hint and its
+  hit-debug outline), run live under a manual `requestAnimationFrame` / `performance.now` clock with a stubbed
+  `AnalyserNode` reporting fixed bus levels, so every reading matches on every run (WebGPU + software)
 - Mixed - primitives and sprites combined with correct layering
 - Post-process - baseline scene, pixel/display-tier effects, CRT preset stacks, upscale filters
 
@@ -172,6 +178,7 @@ tests/visual/
   sprites.spec.ts       - Sprite rendering visual test
   camera.spec.ts        - Camera transform visual test
   fonts.spec.ts         - Text rendering visual test
+  overlay.spec.ts       - Engine overlay visual test under a manual clock
   mixed.spec.ts         - Combined rendering visual test
   post-process.spec.ts  - Post-process effect chain visual test
   render-at.spec.ts     - Live loop vs. BT.renderAt seek, byte-for-byte

@@ -144,6 +144,6 @@ width. Padding keeps the `|` dividers and the segments after them in place regar
   <Card title="API: Palette" href="/docs/api/palette">applyHUD, preset factories, effects.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer slots for corner toggle.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact HUD slot colors.</Card>
-  <Card title="Testing" href="/docs/reference/testing">Overlay integration tests.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Overlay unit, integration, and visual tests.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">overlayEnabled to isOverlayEnabled rename.</Card>
 </Cards>

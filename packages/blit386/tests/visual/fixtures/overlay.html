@@ -1,0 +1,120 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Overlay</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
+
+            window.BT = BT;
+            window.__BOOTED__ = false;
+            window.__INIT_FAILED__ = false;
+
+            const width = 320;
+            const height = 240;
+            const slotCount = 64;
+            const stripeWidth = width / slotCount;
+
+            // The spec's manual clock installs window.__spendMs; each call moves that clock forward, so update() and
+            // render() take a fixed, repeatable time and the timing chart gets real dots. A no-op without the spec.
+            const spendMs = (ms) => window.__spendMs?.(ms);
+
+            class OverlayTest {
+                // One reused custom row, as the overlay guide recommends.
+                #overlayRows = [{ leftText: 'Custom row', rightText: 'right' }];
+
+                configure() {
+                    return {
+                        // Release-build fixture: no splash over the snapshot.
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(width, height),
+                        targetFPS: 60,
+                        isOverlayVisibleAtStart: true,
+                        isOverlayTimingChartEnabled: true,
+                        isOverlayAudioMetersEnabled: true,
+                        isOverlayPaletteEnabled: true,
+                        isOverlayRendererDiagnosticsBarEnabled: true,
+                        overlayTimingChartDiagnostics: 'rich',
+                        isOverlayToggleHitDebugVisible: true,
+                        // 64 slots / 16 columns = 4 rows, 2 visible: the band scrolls.
+                        overlayPaletteColumns: 16,
+                        overlayPaletteRowsVisible: 2,
+                    };
+                }
+
+                async init() {
+                    const palette = new Palette(slotCount);
+
+                    // Slots 1 and 2 are the overlay's default bar and text colors.
+                    palette.set(1, new Color32(24, 24, 40));
+                    palette.set(2, Color32.white);
+                    // Slots 3 and 4 are the audio meter's default warning and clip tints.
+                    palette.set(3, Color32.yellow);
+                    palette.set(4, Color32.red);
+
+                    for (let slot = 5; slot < slotCount; slot++) {
+                        palette.set(slot, new Color32((slot * 37) % 256, (slot * 91) % 256, (slot * 53) % 256));
+                    }
+
+                    BT.paletteSet(palette);
+
+                    return true;
+                }
+
+                update() {
+                    // Two chart tags, far enough apart that their labels do not overlap.
+                    if (BT.ticks === 45 || BT.ticks === 95) {
+                        BT.assignTag('tag');
+                    }
+
+                    // Every 20th tick runs long, so the chart shows a spike over the frame budget.
+                    spendMs(BT.ticks % 20 === 0 ? 14 : 2);
+                }
+
+                render() {
+                    BT.clear(1);
+
+                    // One stripe per slot, so the palette grid marks every swatch as used.
+                    for (let slot = 0; slot < slotCount; slot++) {
+                        BT.drawRectFill(new Rect2i(slot * stripeWidth, 0, stripeWidth, height), slot);
+                    }
+
+                    spendMs(3);
+                }
+
+                overlayRows() {
+                    return this.#overlayRows;
+                }
+            }
+
+            // bootstrap resolves after BT.init() has created and started the loop - the earliest point the spec may
+            // drive frames.
+            bootstrap(OverlayTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            }).then((ok) => {
+                window.__BOOTED__ = ok;
+                window.__INIT_FAILED__ = window.__INIT_FAILED__ || !ok;
+            });
+        </script>
+    </body>
+</html>
