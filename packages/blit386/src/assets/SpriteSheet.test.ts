@@ -26,16 +26,6 @@ import { AssetLoader } from './AssetLoader';
 import { Palette } from './Palette';
 import { getHotReloadSheets, SpriteSheet, writeGridTileRect, writeTileRect } from './SpriteSheet';
 
-// SpriteSheet.destroy() unconditionally normalizes `sourceUrl` against `document.baseURI`
-// (see unregisterFromHotReload in SpriteSheet.ts) whenever a sheet was loaded via
-// SpriteSheet.load(), regardless of whether hot reload was ever active. Real browsers
-// always have `document`; this file's default Node test environment does not, so - like
-// the GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if missing,
-// so it survives every describe block's `vi.unstubAllGlobals()` call.
-if (typeof globalThis.document === 'undefined') {
-    (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
-}
-
 /**
  * Returns a minimal OffscreenCanvas mock whose getImageData yields the supplied
  * pixel buffer. Use vi.stubGlobal to install it for a single test.
