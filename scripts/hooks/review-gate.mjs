@@ -264,11 +264,15 @@ function shellTokens(command) {
     // `<<DELIM` seen, body not yet started (starts after the next newline) / body being skipped.
     const pendingHeredocs = [];
     let heredoc = null;
+    // False once a quote or backslash contributed to the word: only a plain digit run before `>` is a file descriptor.
+    let plainWord = true;
     const flush = () => {
         if (word !== null) {
             tokens.push(word);
             word = null;
         }
+
+        plainWord = true;
     };
 
     for (let i = 0; i < command.length; i++) {
@@ -302,6 +306,7 @@ function shellTokens(command) {
         }
 
         if (char === '\\' && quote !== SINGLE_QUOTE) {
+            plainWord = false;
             word = (word ?? '') + (command[++i] ?? '');
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
@@ -326,6 +331,7 @@ function shellTokens(command) {
             }
         } else if (char === DOUBLE_QUOTE || char === SINGLE_QUOTE) {
             quote = char;
+            plainWord = false;
             word ??= '';
         } else if (char === '#' && word === null) {
             // A `#` that starts a word begins a comment; inside a word it is just a character.
@@ -335,10 +341,10 @@ function shellTokens(command) {
             const doc = readHeredocDelimiter(command, i + 2);
             pendingHeredocs.push(doc);
             i = doc.next - 1;
-        } else if (char === '<' || char === '>') {
+        } else if ((char === '<' || char === '>') && !resume.at(-1)?.arithmetic) {
             // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
             // argument of the command, so the walker drops the word after the marker.
-            word = word !== null && FD_NUMBER.test(word) ? null : word;
+            word = plainWord && word !== null && FD_NUMBER.test(word) ? null : word;
             flush();
 
             while ('<>&|'.includes(command[i + 1] ?? ' ')) {

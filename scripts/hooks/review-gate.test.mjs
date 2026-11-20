@@ -809,6 +809,20 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `${PR_CREATE} --title '>' --base release`).status, 2);
     });
 
+    test('only a plain digit run before > is a file descriptor, and > in arithmetic is not a redirection', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        git(repo, 'update-ref', 'refs/remotes/origin/2', 'HEAD~1');
+
+        // A quoted or escaped digit is the base `2`, not an fd; unquoted `2>` is an fd and leaves the base alone.
+        assert.equal(commit(repo, `${PR_CREATE} --base "2">/dev/null --title t`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base \\2>/dev/null --title t`).status, 2);
+        assert.equal(commit(repo, `${PR_CREATE} --base main 2>/dev/null`).status, 0);
+
+        // `>` inside arithmetic is a comparison; the line after it is still judged.
+        assert.equal(commit(repo, `echo $((1>2))\n${PR_CREATE} --base 2`).status, 2);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');
