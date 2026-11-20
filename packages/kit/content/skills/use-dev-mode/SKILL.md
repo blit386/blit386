@@ -1,10 +1,9 @@
 ---
 name: use-dev-mode
 description:
-  Gate debug HUDs, cheat keys, verbose logging, and test fixtures on `BT.isDevMode` (engine 1.5.0+) instead of a
-  hand-rolled flag, and expose game state for play-testing with a `testState()` method (engine 1.8.0+). Use when the
-  user asks how to tell a dev build from a release build, wants a feature to only run while developing, wants something
-  like a cheat key to disappear once the game ships, or wants an agent or the console to read the game's state.
+  Gate code on `BT.isDevMode` (engine 1.5.0+) so cheat keys, verbose logging, and test fixtures run only in dev builds
+  and vanish from the shipped game, and expose game state for play-testing with `testState()` (engine 1.8.0+). Use to
+  tell a dev build from a release build. To show values like score or FPS on screen, use `show-debug-overlay` instead.
 ---
 
 # Use dev mode
@@ -30,8 +29,8 @@ render() {
 ```
 
 `BT.isDevMode` is a getter (no parentheses) and needs no setup beyond having `blit386/vite` installed - every scaffold
-has it already (see `use-hot-reload`). It reads `true` while `npm run dev` is running the game through that plugin, and
-`false` in a built/shipped game (`npm run build`).
+has it already (see `use-hot-reload`). It reads `true` while `{{pmRunDev}}` is running the game through that plugin, and
+`false` in a built/shipped game (`{{pmRunBuild}}`).
 
 ## What dev mode turns on for you (engine 1.7.0+)
 

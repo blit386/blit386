@@ -73,5 +73,5 @@ old rectangle does not.
 - A browser event listener you add yourself with `this.onTap.bind(this)` keeps the old `onTap` after a save. Write
   `(event) => this.onTap(event)` instead, so it finds the new one. A re-init also leaves the old game's listeners
   attached, so remove them in the game or add them only once.
-- Hot reload is local-dev only. It does nothing after `npm run build`.
+- Hot reload is local-dev only. It does nothing after `{{pmRunBuild}}`.
 - See `docs/hot-reload.md` for the beginner walkthrough.

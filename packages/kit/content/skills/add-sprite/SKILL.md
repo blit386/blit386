@@ -144,7 +144,7 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
 - For UI panels, buttons, and dialog boxes, use a nine-slice instead of stretching the whole panel (engine 1.8.0+):
   corners stay sharp while edges and center stretch or tile. See the draw-a-panel skill.
 
-- Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
+- Editing a PNG under `public/` while `{{pmRunDev}}` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the
   show-a-loading-screen skill (`BT.loadingAssetsCount`, `sheet.status`, `sheet.progress`).
 
