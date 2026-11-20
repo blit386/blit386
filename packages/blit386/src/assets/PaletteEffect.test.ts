@@ -1047,3 +1047,14 @@ describe('ExposureFadeEffect', () => {
         expect(palette.getRef(BRIGHT_SLOT).r).toBe(BRIGHT_COLOR.r);
     });
 });
+
+describe('ExposureFadeEffect highlightLead validation', () => {
+    it('throws for a NaN highlightLead instead of using the default', () => {
+        const palette = makeTestPalette();
+        const target = makeTestPalette();
+
+        expect(() => new ExposureFadeEffect(palette, target, 1000, { highlightLead: Number.NaN })).toThrow(
+            /highlightLead/,
+        );
+    });
+});

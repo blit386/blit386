@@ -5,6 +5,7 @@
 import type { Color32 } from '../utils/Color32';
 import { clampByte, clampUnit, INV_255, linearToSrgb, srgbToLinear } from '../utils/Color32';
 import type { EasingFunction } from '../utils/Easing';
+import { paletteExposureHighlightLeadError } from '../utils/errorMessages';
 import type { Palette } from './Palette';
 import type { PaletteEffect } from './PaletteEffect';
 import { computeFadeProgress, snapshotPaletteRange } from './paletteFade';
@@ -20,7 +21,7 @@ export interface ExposureFadeOptions {
      *
      * `0` is a plain linear-light fade - every entry on the same schedule. Higher
      * values push bright entries further ahead on the way up and further behind on
-     * the way down. Defaults to `0.5`. Values outside the range are clamped;
+     * the way down. Defaults to `0.5`. `NaN` throws; other values outside the range are clamped;
      * anything at or above the cap is held just below `1` so the schedule stays
      * divisible.
      */
@@ -52,10 +53,15 @@ const MAX_HIGHLIGHT_LEAD = 0.95;
  *
  * @param value - Raw option value, possibly missing or out of range.
  * @returns Offset in range [0, {@link MAX_HIGHLIGHT_LEAD}].
+ * @throws Error if `value` is NaN.
  */
 function resolveHighlightLead(value: number | undefined): number {
-    if (value === undefined || Number.isNaN(value)) {
+    if (value === undefined) {
         return DEFAULT_HIGHLIGHT_LEAD;
+    }
+
+    if (Number.isNaN(value)) {
+        throw new Error(paletteExposureHighlightLeadError(value));
     }
 
     return value < 0 ? 0 : value > MAX_HIGHLIGHT_LEAD ? MAX_HIGHLIGHT_LEAD : value;

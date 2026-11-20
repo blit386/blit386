@@ -193,10 +193,11 @@ export const palette = {
      *
      * @since 1.5.0
      * @changed 1.8.0 Advances once per fixed update on the tick clock instead of once per rendered frame on wall time.
+     * @changed 1.9.0 Throws for a `NaN` `highlightLead` instead of silently using the default.
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param options - Highlight lead and easing curve.
-     * @throws Error if no palette is set or `durationMs` is not a non-negative finite number.
+     * @throws Error if no palette is set, `durationMs` is not a non-negative finite number, or `highlightLead` is `NaN`.
      */
     paletteFadeExposure: (target: Palette, durationMs: number, options?: ExposureFadeOptions): void => {
         BTAPI.instance.palettes.paletteFadeExposure(target, durationMs, options);
