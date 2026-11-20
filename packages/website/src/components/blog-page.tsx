@@ -5,6 +5,7 @@ import { getBlogContext } from 'fumapress/plugins/blog';
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import type { TOCItemType } from 'fumadocs-core/toc';
 import Link from 'fumadocs-core/link';
+import { callFirstAdapter } from '../plugin-context';
 import { AuthorByline } from './author-byline';
 import { renderBlogPostMeta } from './blog-page-meta';
 import styles from './blog-page.module.css';
@@ -15,28 +16,6 @@ interface BlogPageProps {
     lang?: string;
     slugs: string[];
     page: BlogPost;
-}
-
-/**
- * Calls each adapter's hook in order and returns the first defined result (mirrors fumapress's
- * own `renderBody`/`renderToc`, which are not part of the public API - `ctx.adapters` is).
- */
-async function callFirstAdapter<T>(
-    ctx: AppContext,
-    page: BlogPost,
-    hook: (
-        adapter: AppContext['adapters'][number],
-    ) => ((this: AppContext, page: BlogPost) => T | Promise<T>) | undefined,
-): Promise<Awaited<T> | undefined> {
-    for (const adapter of ctx.adapters) {
-        const result = await hook(adapter)?.call(ctx, page);
-
-        if (result !== undefined) {
-            return result;
-        }
-    }
-
-    return undefined;
 }
 
 async function renderBody(ctx: AppContext, page: BlogPost): Promise<ReactNode> {
