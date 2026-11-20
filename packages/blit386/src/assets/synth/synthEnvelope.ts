@@ -41,12 +41,13 @@ export function resolveEnvelope(envelope: SynthEnvelope | undefined): ResolvedEn
  * Computes the ADSR gain multiplier for the attack and decay phases only, ignoring release.
  *
  * @param t - Time in seconds since the start of the clip.
- * @param envelope - Resolved envelope.
+ * @param attack - Attack time in seconds (the envelope's, or its squeezed value).
+ * @param envelope - Resolved envelope supplying `decay` and `sustain`.
  * @returns Gain in [0, 1] following the attack ramp, then the decay ramp, then holding at
  *   `sustain`.
  */
-function attackDecayGain(t: number, envelope: ResolvedEnvelope): number {
-    const { attack, decay, sustain } = envelope;
+function attackDecayGain(t: number, attack: number, envelope: ResolvedEnvelope): number {
+    const { decay, sustain } = envelope;
 
     if (attack > 0 && t < attack) {
         return t / attack;
@@ -82,15 +83,13 @@ export function envelopeValueAt(t: number, duration: number, resolved: ResolvedE
     // reaches full gain before the release starts (otherwise the release would begin at t=0 from
     // a gain of 0 and the whole clip would be silent).
     const fit = resolved.attack + resolved.release;
-    const envelope =
-        fit > duration && resolved.release > 0
-            ? { ...resolved, attack: (resolved.attack * duration) / fit, release: (resolved.release * duration) / fit }
-            : resolved;
-    const { release } = envelope;
+    const squeeze = fit > duration && resolved.release > 0;
+    const attack = squeeze ? (resolved.attack * duration) / fit : resolved.attack;
+    const release = squeeze ? (resolved.release * duration) / fit : resolved.release;
     const releaseStart = Math.max(duration - release, 0);
 
     if (t < releaseStart) {
-        return attackDecayGain(t, envelope);
+        return attackDecayGain(t, attack, resolved);
     }
 
     if (release <= 0) {
@@ -101,5 +100,5 @@ export function envelopeValueAt(t: number, duration: number, resolved: ResolvedE
     // the last sample is exactly 0.
     const releaseT = Math.min((t - releaseStart) / release, 1);
 
-    return attackDecayGain(releaseStart, envelope) * (1 - releaseT);
+    return attackDecayGain(releaseStart, attack, resolved) * (1 - releaseT);
 }
