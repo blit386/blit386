@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { InputTrace } from '../input/InputTrace';
 import type * as DevModeModule from './devMode';
-import { exposeGlobal, exposeInputTrace, resolveExposeGlobal } from './globalExpose';
+import { exposeGlobal, exposeInputTrace, exposeOverlayRows, resolveExposeGlobal } from './globalExpose';
 
 vi.mock('./devMode', async (importOriginal) => {
     const actual = await importOriginal<typeof DevModeModule>();
@@ -111,5 +111,40 @@ describe('exposeInputTrace', () => {
         exposeInputTrace(new InputTrace());
 
         expect(fakeWindow.__btInputTrace).toBeUndefined();
+    });
+});
+
+describe('exposeOverlayRows', () => {
+    afterEach(() => {
+        Reflect.deleteProperty(globalThis, 'window');
+    });
+
+    it('does not throw when there is no window', () => {
+        expect(() => exposeOverlayRows(() => [], true)).not.toThrow();
+    });
+
+    it('assigns a read facade that calls through on every read when gating allows it', () => {
+        const fakeWindow = {} as Window;
+
+        Object.defineProperty(globalThis, 'window', { value: fakeWindow, configurable: true });
+
+        const read = vi.fn(() => [{ side: 'left' as const, text: 'Row', x: 2, y: 3 }]);
+
+        exposeOverlayRows(read, true);
+
+        expect(fakeWindow.__btOverlayRows?.read()).toEqual([{ side: 'left', text: 'Row', x: 2, y: 3 }]);
+        expect(fakeWindow.__btOverlayRows?.read()).toHaveLength(1);
+        expect(read).toHaveBeenCalledTimes(2);
+        expect(Object.keys(fakeWindow.__btOverlayRows ?? {})).toEqual(['read']);
+    });
+
+    it('does not assign when gating disallows it (release build, no override)', () => {
+        const fakeWindow = {} as Window;
+
+        Object.defineProperty(globalThis, 'window', { value: fakeWindow, configurable: true });
+
+        exposeOverlayRows(() => []);
+
+        expect(fakeWindow.__btOverlayRows).toBeUndefined();
     });
 });

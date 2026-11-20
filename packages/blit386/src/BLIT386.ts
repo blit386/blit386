@@ -92,7 +92,7 @@ import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import type { FrameCaptureOptions, FrameCaptureSize } from './utils/FrameCapture';
-import { exposeGlobal, exposeInputTrace } from './utils/globalExpose';
+import { exposeGlobal, exposeInputTrace, exposeOverlayRows } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
 import { Random } from './utils/Random';
@@ -177,6 +177,7 @@ async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions =
 
     exposeGlobal(BT, options.exposeGlobal);
     exposeInputTrace(BTAPI.instance.inputTrace, options.exposeGlobal);
+    exposeOverlayRows(() => BTAPI.instance.overlay?.drawnCustomRows() ?? [], options.exposeGlobal);
 
     return success;
 }

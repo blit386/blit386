@@ -50,6 +50,7 @@ export { TimingChart } from './timing-chart/TimingChart';
 export type {
     OverlayAudioSnapshot,
     OverlayRendererDiagnostics,
+    OverlayRowText,
     OverlayTimingSnapshot,
     PaletteGridLayout,
 } from './types';

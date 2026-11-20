@@ -23,6 +23,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- Dev builds get `window.__btOverlayRows`, a readout of the demo overlay rows the last frame drew, with the display
+  position of each label. A script or an agent can compare the string a demo shows with what its code says instead of
+  reading pixels. Not part of the `BT` API. See
+  [Reading the drawn rows in a dev build](guide-overlay.md#reading-the-drawn-rows-in-a-dev-build).
 - Dev builds get `window.__btInputTrace`, a recorder of which pointer, key and gamepad edges each `update()` and each
   rendered frame saw, plus the pointer delta and wheel total. Start it, play, stop it, and count presses per clock
   instead of wrapping `BT` methods. Not part of the `BT` API; until started, the game loop only checks one flag per

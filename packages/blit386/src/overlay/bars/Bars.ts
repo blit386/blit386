@@ -6,11 +6,22 @@ import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants'
 import { overlayBitmapTextPaletteOffset, overlayRightAlignedTextX } from '../layout/layoutHelpers';
 import type { OverlayLayoutPlan } from '../layout/types';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
+import type { OverlayRowText } from '../types';
 
 /** Default bar and text palette indices for overlay drawing. */
 export interface OverlayBarStyle {
     readonly barIndex: number;
     readonly textIndex: number;
+}
+
+/** What one custom row drew last frame; reused across frames so recording allocates nothing. */
+interface DrawnRow {
+    leftText: string;
+    leftX: number;
+    /** Empty when the row drew no right label. */
+    rightText: string;
+    rightX: number;
+    y: number;
 }
 
 /**
@@ -20,6 +31,10 @@ export class OverlayBars {
     readonly #customLeftPos: Vector2i[] = [];
 
     readonly #customRightPos: Vector2i[] = [];
+
+    readonly #drawnRows: DrawnRow[] = [];
+
+    #drawnCount = 0;
 
     /**
      * Draws 1 px row gaps between stacked overlay bands.
@@ -228,6 +243,7 @@ export class OverlayBars {
         }
 
         this.#ensureCustomRowPool(rowCount);
+        this.#drawnCount = 0;
 
         const displayWidth = plan.titleBar.width;
 
@@ -250,6 +266,13 @@ export class OverlayBars {
 
             target.drawLabel(font, leftPos, row.leftText, textPaletteOffset);
 
+            const drawn = this.#nextDrawnRow();
+
+            drawn.leftText = row.leftText;
+            drawn.leftX = leftPos.x;
+            drawn.y = leftPos.y;
+            drawn.rightText = '';
+
             const rightText = row.rightText;
 
             if (rightText !== undefined && rightText.length > 0) {
@@ -257,9 +280,66 @@ export class OverlayBars {
                 rightPos.x = overlayRightAlignedTextX(rightText, displayWidth);
 
                 target.drawLabel(font, rightPos, rightText, textPaletteOffset);
+
+                drawn.rightText = rightText;
+                drawn.rightX = rightPos.x;
             }
         }
         /* eslint-enable security/detect-object-injection */
+    }
+
+    /** Forgets the rows drawn so far, so a frame that draws none reads as empty. */
+    resetDrawnRows(): void {
+        this.#drawnCount = 0;
+    }
+
+    /**
+     * The custom-row labels the last frame drew, in the order `overlayRows()` returned the rows (the first row sits lowest,
+     * just above the footer), left label before right. Builds a fresh array, so call
+     * it on demand (a dev-build readout), never per frame.
+     *
+     * @returns One entry per non-empty label, in display pixels.
+     */
+    drawnRows(): OverlayRowText[] {
+        const texts: OverlayRowText[] = [];
+
+        for (let rowIndex = 0; rowIndex < this.#drawnCount; rowIndex++) {
+            // eslint-disable-next-line security/detect-object-injection -- rowIndex bounded by #drawnCount
+            const drawn = this.#drawnRows[rowIndex];
+
+            if (drawn === undefined) {
+                continue;
+            }
+
+            if (drawn.leftText.length > 0) {
+                texts.push({ side: 'left', text: drawn.leftText, x: drawn.leftX, y: drawn.y });
+            }
+
+            if (drawn.rightText.length > 0) {
+                texts.push({ side: 'right', text: drawn.rightText, x: drawn.rightX, y: drawn.y });
+            }
+        }
+
+        return texts;
+    }
+
+    /**
+     * Claims the next pooled record for the row being drawn, growing the pool only the first time a count is reached.
+     *
+     * @returns The record to fill.
+     */
+    #nextDrawnRow(): DrawnRow {
+        let drawn = this.#drawnRows[this.#drawnCount];
+
+        if (drawn === undefined) {
+            drawn = { leftText: '', leftX: 0, rightText: '', rightX: 0, y: 0 };
+
+            this.#drawnRows.push(drawn);
+        }
+
+        this.#drawnCount++;
+
+        return drawn;
     }
 
     /**

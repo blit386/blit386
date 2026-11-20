@@ -251,8 +251,10 @@ individual demo files under `src/<topic>.js` are not part of that coverage.
 - `ui-core.js` (layout and flush, extending the pointer and hit-test state in `ui-input.js`) carries a `debug` overlay
   (the `uidebug` variant) and a `snapshot()` for the /shots page; both are off by default so the allocates-nothing rule
   holds. `ui-lint.js` is pure and tested (rules `overlap`, `out-of-display`, `margin`). `ui.js` publishes the context on
-  `globalThis.__blitDemoUi` for that page only. The page takes `snapshot()` before `captureFrame` on purpose - the
-  capture's extra render would double the recorded groups - so do not "fix" that order
+  `globalThis.__blitDemoUi` for that page only. Text is not part of `snapshot()` (its tests pin the layout-only shape):
+  `ui-core.js` tags its own `BT.systemPrint` calls as `kit` for `drawn-text.js`, and `_shots/capture.js` attaches that
+  readout as `snapshot.text`. The page takes `snapshot()` before `captureFrame` on purpose - the capture's extra render
+  would double the recorded groups - so do not "fix" that order
 - `configure()` runs before `init()`, so overlay styles needing theme colors use `THEME_OVERLAY_STYLE` (and
   `THEME_OVERLAY_AUDIO_METER_STYLE` for the audio meters) from `ui.js` on the default theme, `defaultThemeSlot(key)` for
   any one theme color on the default theme, literal slot numbers with a comment on a custom `startSlot`, or dedicated
@@ -354,7 +356,7 @@ Every page reads a few URL parameters; nothing else is runtime-configurable:
 | --- | --- |
 | `?embed` | Canvas only - no banner, no source panel. The form external iframes use: `https://demos.blit386.dev/<slug>?embed` |
 | `?embed&source` | Keeps the Twoslash source panel under the canvas; what the shell's own iframe loads |
-| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame` |
+| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame`, and publishing `window.__blitDrawnText.read()`, the strings the last frame drew (kit, `BT.systemPrint`, overlay rows) with display positions - see `src/shared/drawn-text.js` and the `/test demos` skill |
 | `?seed=N` | Pins `BT.random` (engine `SeedUrlParam`); every capture uses `seed=1`, which is why the same pose gives the same pixels on every machine |
 | `?backend=software` | Forces the Canvas 2D renderer |
 | `?nosplash` | Skips the release-build splash |

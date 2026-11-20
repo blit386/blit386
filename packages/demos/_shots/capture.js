@@ -176,7 +176,7 @@ async function captureOwnedBlob(engine, size) {
 /**
  * Capture one pose of the demo already addressed by `options.url`.
  *
- * @param {{ load: Function, engine: Function, ui: Function, canvas: Function }} frame
+ * @param {{ load: Function, engine: Function, ui: Function, canvas: Function, drawnText: Function }} frame
  * @param {{ id: string, at: number, keys?: string[], pointer?: { x: number, y: number }, touch?: boolean }} pose
  * @param {string} variant
  * @param {{ url: string }} options
@@ -202,7 +202,9 @@ async function runPose(frame, pose, variant, options) {
 
     // Before capture: BT.captureFrame re-renders the parked frame without an update tick, so the kit
     // would record every group a second time and each widget would overlap its own copy.
-    const snapshot = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
+    // `text` is what the frame drew (kit, BT.systemPrint, overlay rows), read at the same moment for the same reason.
+    const layout = ui ? ui.snapshot() : { display: { w: engine.displaySize.x, h: engine.displaySize.y }, groups: [] };
+    const snapshot = { ...layout, text: frame.drawnText() };
     const size = variant === OUTPUT_VARIANT ? 'output' : 'display';
     const blob = await stage('capture', () => captureOwnedBlob(engine, size), STEP_TIMEOUT_MS);
     const bitmap = size === 'output' ? await createImageBitmap(blob) : null;
@@ -297,6 +299,7 @@ function createFrameAdapter(iframe) {
         },
         engine: () => iframe.contentWindow.BT,
         ui: () => iframe.contentWindow.__blitDemoUi ?? null,
+        drawnText: () => iframe.contentWindow.__blitDrawnText.read(),
         canvas: () => iframe.contentDocument.getElementById(CANVAS_ID),
     };
 }
