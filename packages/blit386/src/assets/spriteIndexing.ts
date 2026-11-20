@@ -328,7 +328,8 @@ export function readRgbaPixels(image: HTMLImageElement, w: number, h: number): U
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(image, 0, 0);
 
-    return new Uint8Array(ctx.getImageData(0, 0, w, h).data.buffer.slice(0)) as Uint8Array<ArrayBuffer>;
+    // getImageData returns a fresh buffer, so wrapping it needs no copy.
+    return new Uint8Array(ctx.getImageData(0, 0, w, h).data.buffer) as Uint8Array<ArrayBuffer>;
 }
 
 /**
