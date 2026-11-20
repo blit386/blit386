@@ -39,8 +39,15 @@ if (import.meta.hot) {
 }
 `;
 
-/** Substring identifying a `bootstrap(` call site in a module's source. */
-const BOOTSTRAP_CALL_TOKEN = 'bootstrap(';
+/** Matches a `bootstrap(` call site, allowing whitespace before the paren. */
+const BOOTSTRAP_CALL_PATTERN = /\bbootstrap\s*\(/;
+
+/**
+ * Matches a block or line comment, so a mention of `bootstrap(` or the import in prose does not count.
+ * shortcut: a `bootstrap(` inside a string literal still matches, and a `//` inside a string (a URL) drops the rest of
+ * that line; upgrade to a real TypeScript-aware tokenizer if either bites.
+ */
+const COMMENT_PATTERN = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/g;
 
 /** Matches a `from 'blit386'` or `from "blit386"` import specifier. */
 const BLIT386_IMPORT_PATTERN = /from\s*['"]blit386['"]/;
@@ -71,7 +78,7 @@ export interface PlainJsSyntaxError {
  * @param code - Module source, pre-transform.
  * @param id - Module id (path, possibly with a query suffix).
  * @param include - Predicate selecting eligible module ids.
- * @returns `true` when `id` matches `include`, `code` calls `bootstrap(` and imports from `'blit386'`, and the
+ * @returns `true` when `id` matches `include`, `code` calls `bootstrap(` (comments ignored) and imports from `'blit386'`, and the
  *   injection marker is not already present.
  */
 export function shouldInjectSnippet(code: string, id: string, include: (id: string) => boolean): boolean {
@@ -83,7 +90,9 @@ export function shouldInjectSnippet(code: string, id: string, include: (id: stri
         return false;
     }
 
-    return code.includes(BOOTSTRAP_CALL_TOKEN) && BLIT386_IMPORT_PATTERN.test(code);
+    const withoutComments = code.replace(COMMENT_PATTERN, '');
+
+    return BOOTSTRAP_CALL_PATTERN.test(withoutComments) && BLIT386_IMPORT_PATTERN.test(withoutComments);
 }
 
 /**

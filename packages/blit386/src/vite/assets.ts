@@ -141,5 +141,10 @@ export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | u
 function inside(dir: string, file: string): string | null {
     const relative = dir.length > 0 ? path.relative(dir, file) : '';
 
-    return relative.length > 0 && !relative.startsWith('..') && !path.isAbsolute(relative) ? relative : null;
+    return relative.length > 0 &&
+        relative !== '..' &&
+        !relative.startsWith(`..${path.sep}`) &&
+        !path.isAbsolute(relative)
+        ? relative
+        : null;
 }

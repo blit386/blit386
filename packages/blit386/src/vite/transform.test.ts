@@ -131,3 +131,25 @@ describe('injectSnippet', () => {
         expect(result.map.mappings.length).toBeGreaterThan(0);
     });
 });
+
+describe('shouldInjectSnippet entry detection', () => {
+    const importLine = "import { bootstrap } from 'blit386';\n";
+
+    it('is true for an entry written with whitespace before the call paren', () => {
+        const code = `${importLine}bootstrap (Game);\n`;
+
+        expect(shouldInjectSnippet(code, '/project/src/main.ts', INCLUDE_ALL)).toBe(true);
+    });
+
+    it('is false when bootstrap( appears only in comments', () => {
+        const code = `${importLine}// call bootstrap(Game) from main.ts\n/* bootstrap(Game) */\nexport const x = 1;\n`;
+
+        expect(shouldInjectSnippet(code, '/project/src/helper.ts', INCLUDE_ALL)).toBe(false);
+    });
+
+    it('is false when the blit386 import appears only in a comment', () => {
+        const code = "// import { bootstrap } from 'blit386';\nbootstrap(Game);\n";
+
+        expect(shouldInjectSnippet(code, '/project/src/main.ts', INCLUDE_ALL)).toBe(false);
+    });
+});

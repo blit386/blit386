@@ -145,6 +145,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- Dev hot reload: an asset under a folder whose name starts with two dots, such as `public/..assets/`, now hot reloads.
+  The plugin used to treat any path starting with `..` as outside the project.
+- Dev hot reload: the `blit386/vite` plugin now finds the entry module when it is written `bootstrap (Game)` with a
+  space, and no longer treats a module that only mentions `bootstrap(` or the `blit386` import in a comment as the
+  entry. Before, such a module became self-accepting and edits to it stopped reaching its importers, while a spaced
+  entry got no hot reload and no `BT.isDevMode`.
 - The overlay's Present FPS no longer dips for about 30 frames after a tab returns from the background. A gap of a
   second or more between frames is now skipped, the same threshold the game loop uses for tab-switch pauses.
 - The overlay palette band now keeps scrolling under a finger drag while a second finger rests in the band. The two
