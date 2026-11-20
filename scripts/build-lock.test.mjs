@@ -118,9 +118,9 @@ describe('build-lock', () => {
             rmSync(lockDir, { recursive: true, force: true });
         });
 
-        it('reclaims a lock whose live pid was reused by a different process', {
-            skip: getProcessStart(process.pid) === null,
-        }, () => {
+        const skipWithoutProcessStart = { skip: getProcessStart(process.pid) === null };
+
+        it('reclaims a lock whose live pid was reused by a different process', skipWithoutProcessStart, () => {
             const lockDir = makeLockDir();
 
             mkdirSync(lockDir);
