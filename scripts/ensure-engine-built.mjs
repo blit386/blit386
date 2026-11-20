@@ -12,13 +12,16 @@
  * self-heals instead of surfacing as a confusing "Cannot find module" error partway through
  * `git push`.
  *
- * Also rebuilds when `dist/` exists but is stale - newer than the checked-in build, but older than
- * `packages/blit386/src`. The engine bundles from roughly 250 source files under `src/`, any one of
- * which can change the public API, so - unlike a single-entry proxy that could miss a change to a
- * file it doesn't happen to re-export through - the whole tree is walked for its newest mtime. That
- * walk is still one `readdirSync` plus one `statSync` per file, not a build: on this codebase's
- * source tree it costs low single-digit milliseconds, negligible next to the seconds a real rebuild
- * takes, so it stays a fast no-op on every normal `demos`/`website` dev, build, test, or `knip` run.
+ * Also rebuilds when `dist/` exists but is stale - older than anything in the build's inputs: the
+ * `packages/blit386/src` tree plus `vite.config.ts`, `vite.node.config.ts`, `package.json`, and
+ * `tsconfig.json`. The engine bundles from roughly 250 source files under `src/`, any one of which
+ * can change the public API, so - unlike a single-entry proxy that could miss a change to a file it
+ * doesn't happen to re-export through - the whole tree is walked for its newest mtime; the config
+ * files are single stats, since an alias or `exports` change there alters `dist/` just as a source
+ * edit does. That is one `readdirSync` plus one `statSync` per file, not a build: on this
+ * codebase's source tree it costs low single-digit milliseconds, negligible next to the seconds a
+ * real rebuild takes, so it stays a fast no-op on every normal `demos`/`website` dev, build, test,
+ * or `knip` run.
  *
  * A no-op once the engine is built and fresh - one existsSync plus one small directory walk is the
  * only cost on every normal run.
@@ -42,10 +45,18 @@ const resolveEngineViteEntry = () => resolve(scriptDir, '..', 'packages', 'blit3
 
 const resolveEngineSourceDir = () => resolve(scriptDir, '..', 'packages', 'blit386', 'src');
 
+/** Every input of the engine's `build:browser` (vite.config.ts) and `build:node` (vite.node.config.ts) steps. */
+const resolveEngineBuildInputs = () => [
+    resolveEngineSourceDir(),
+    ...['vite.config.ts', 'vite.node.config.ts', 'package.json', 'tsconfig.json'].map((file) =>
+        resolve(scriptDir, '..', 'packages', 'blit386', file),
+    ),
+];
+
 const resolveEngineBuildLockDir = () => resolve(scriptDir, '..', '.ensure-engine-built.lock');
 
-const isEngineBuilt = (entry = resolveEngineViteEntry(), sourceDir = resolveEngineSourceDir(), ...seams) =>
-    isBuilt(entry, sourceDir, ...seams);
+const isEngineBuilt = (entry = resolveEngineViteEntry(), sources = resolveEngineBuildInputs(), ...seams) =>
+    isBuilt(entry, sources, ...seams);
 
 const buildEngineBuildCommand = () => buildCommand('blit386');
 
@@ -82,6 +93,7 @@ export {
     buildEngineBuildCommand,
     getNewestMtimeMs,
     isEngineBuilt,
+    resolveEngineBuildInputs,
     resolveEngineBuildLockDir,
     resolveEngineSourceDir,
     resolveEngineViteEntry,

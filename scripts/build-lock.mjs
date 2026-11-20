@@ -228,14 +228,37 @@ const releaseBuildLock = (lockDir) => {
     rmSync(lockDir, { recursive: true, force: true });
 };
 
-/** Whether the build output `entry` exists and is no older than the newest file under `sourceDir`. */
+/**
+ * Newest mtime (ms) of one freshness source: a directory is walked, a file is stat'ed, and a path
+ * that does not exist counts as 0 so a config file a package does not have never crashes the check.
+ */
+const getSourceMtimeMs = (path) => {
+    let stats;
+
+    try {
+        stats = statSync(path);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            return 0;
+        }
+
+        throw err;
+    }
+
+    return stats.isDirectory() ? getNewestMtimeMs(path) : stats.mtimeMs;
+};
+
+/**
+ * Whether the build output `entry` exists and is no older than the newest of `sources` - one path
+ * or an array of directories and files (see `getSourceMtimeMs`).
+ */
 const isBuilt = (
     entry,
-    sourceDir,
+    sources,
     exists = existsSync,
     getBuiltMtimeMs = (path) => statSync(path).mtimeMs,
-    getSourceMtimeMs = getNewestMtimeMs,
-) => exists(entry) && getBuiltMtimeMs(entry) >= getSourceMtimeMs(sourceDir);
+    getMtimeMs = getSourceMtimeMs,
+) => exists(entry) && getBuiltMtimeMs(entry) >= Math.max(0, ...[sources].flat().map(getMtimeMs));
 
 /** `pnpm --filter <filter> run build`, run from the repo root, as `spawnSync` arguments. */
 const buildCommand = (filter) => ({
@@ -249,6 +272,7 @@ export {
     buildCommand,
     getNewestMtimeMs,
     getProcessStart,
+    getSourceMtimeMs,
     isBuilt,
     reclaimAbandonedLock,
     releaseBuildLock,
