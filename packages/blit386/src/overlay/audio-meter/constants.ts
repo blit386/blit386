@@ -1,7 +1,9 @@
 import type { AudioBus } from '../../core/IBTDemo';
+import { OVERLAY_DIVIDER_GAP_PX } from '../constants';
+import { OVERLAY_BAR_HEIGHT } from '../layout/constants';
 
 /** Default audio meter band height in pixels (single-row height, matches {@link OVERLAY_BAR_HEIGHT}). */
-export const DEFAULT_AUDIO_METER_HEIGHT = 13;
+export const DEFAULT_AUDIO_METER_HEIGHT = OVERLAY_BAR_HEIGHT;
 
 /** Bus level mapped to full meter band height (levels from {@link AudioManager.getBusLevels} are already normalized 0..1). */
 export const AUDIO_METER_FULL_SCALE = 1;
@@ -12,7 +14,7 @@ export const AUDIO_METER_WARNING_THRESHOLD = 0.7;
 /** Level at or above which a bus bar switches to the clip tint. */
 export const AUDIO_METER_CLIP_THRESHOLD = 0.95;
 
-/** Default warning palette index for audio meter semantic overlays. */
+/** Default warning palette index for audio meter semantic overlays. Independent of the timing chart's default (that one pairs warning with error, this one with clip). */
 export const AUDIO_METER_DEFAULT_WARNING_IDX = 3;
 
 /** Default clip palette index for audio meter semantic overlays. */
@@ -31,4 +33,4 @@ export const AUDIO_METER_BAR_WIDTH_PX = 3;
 export const AUDIO_METER_BAR_GAP_PX = 1;
 
 /** Horizontal gap in pixels between the bus bar block and the voice/steal/drop text readout. */
-export const AUDIO_METER_TEXT_GAP_PX = 7;
+export const AUDIO_METER_TEXT_GAP_PX = OVERLAY_DIVIDER_GAP_PX;
