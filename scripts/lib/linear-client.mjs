@@ -7,20 +7,31 @@
 
 const LINEAR_GRAPHQL_URL = 'https://api.linear.app/graphql';
 
+/** Without a cap a stalled Linear connection holds the CI runner until GitHub's 6-hour job default. */
+export const LINEAR_REQUEST_TIMEOUT_MS = 30_000;
+
 /**
  * @param {string} apiKey Linear Personal API key. Sent as a raw `Authorization` header value -
  *   Linear's API does not use a `Bearer` prefix.
  * @param {string} query GraphQL query or mutation document.
  * @param {Record<string, unknown>} [variables] GraphQL variables.
  * @param {typeof fetch} [fetchImpl] Injectable for tests.
+ * @param {number} [timeoutMs] Abort the request after this long. Injectable for tests.
  * @returns {Promise<Record<string, unknown>>} The `data` field of the GraphQL response.
- * @throws {Error} On a network failure, non-OK HTTP status, or a GraphQL `errors` array.
+ * @throws {Error} On a network failure, a timeout, non-OK HTTP status, or a GraphQL `errors` array.
  */
-export async function linearRequest(apiKey, query, variables = {}, fetchImpl = fetch) {
+export async function linearRequest(
+    apiKey,
+    query,
+    variables = {},
+    fetchImpl = fetch,
+    timeoutMs = LINEAR_REQUEST_TIMEOUT_MS,
+) {
     const response = await fetchImpl(LINEAR_GRAPHQL_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: apiKey },
         body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (!response.ok) {

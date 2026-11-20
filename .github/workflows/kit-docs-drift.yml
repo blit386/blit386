@@ -35,6 +35,9 @@ jobs:
   report-drift:
     name: Report kit docs drift
     runs-on: ubuntu-latest
+    # The script makes a handful of small Linear calls; a stalled run should die in minutes, not
+    # hold the runner for GitHub's 6-hour default.
+    timeout-minutes: 10
     # Gate for LINEAR_API_KEY, see the CWE-200 note on the last step.
     environment: kit-docs-drift
     permissions:

@@ -58,6 +58,24 @@ describe('linearRequest', () => {
     });
 });
 
+describe('linearRequest timeout', () => {
+    it('rejects when fetch never resolves', async () => {
+        // Honors the abort signal the way the real fetch does, and otherwise never settles.
+        const fetchImpl = (_url, init) =>
+            new Promise((_resolve, reject) => {
+                init.signal.addEventListener('abort', () => reject(init.signal.reason));
+            });
+
+        await assert.rejects(() => linearRequest('key-123', 'query { ok }', {}, fetchImpl, 20), /timed out|abort/iu);
+    });
+
+    it('passes an abort signal to fetch by default', async () => {
+        const { fetchImpl, getCapturedRequest } = makeFetch({ body: { data: {} } });
+        await linearRequest('key-123', 'query { ok }', {}, fetchImpl);
+        assert.ok(getCapturedRequest().init.signal instanceof AbortSignal);
+    });
+});
+
 describe('findTrackingIssue', () => {
     it('returns the first matching issue', async () => {
         const { fetchImpl } = makeFetch({
