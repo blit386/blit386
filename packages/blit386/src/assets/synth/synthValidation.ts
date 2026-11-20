@@ -70,11 +70,14 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
 
     validateEnvelope(params.envelope);
 
-    if (
-        params.pitchSweep !== undefined &&
-        !(Number.isFinite(params.pitchSweep.toFrequency) && params.pitchSweep.toFrequency > 0)
-    ) {
-        throw new Error(audioClipSynthPitchSweepFrequencyError(params.pitchSweep.toFrequency));
+    if (params.pitchSweep !== undefined) {
+        // JSON can hand us null even though the type forbids it.
+        const sweep = params.pitchSweep as SynthParams['pitchSweep'] | null;
+        const toFrequency = sweep?.toFrequency ?? Number.NaN;
+
+        if (!(Number.isFinite(toFrequency) && toFrequency > 0)) {
+            throw new Error(audioClipSynthPitchSweepFrequencyError(toFrequency));
+        }
     }
 
     if (params.vibrato !== undefined) {
