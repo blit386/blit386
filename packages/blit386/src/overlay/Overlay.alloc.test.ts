@@ -13,7 +13,7 @@ import { createOverlayLayout } from './layout/layoutHelpers';
 import { paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
 import { computeGrid, writeSwatchTopLeft } from './palette/PaletteView';
-import type { OverlayTimingSnapshot } from './types';
+import type { OverlayAudioSnapshot, OverlayTimingSnapshot } from './types';
 
 const { rect2iAllocStats } = vi.hoisted(() => ({ rect2iAllocStats: { count: 0 } }));
 
@@ -114,5 +114,88 @@ describe('Overlay hovered-frame allocation', () => {
         expect(splitSpy).not.toHaveBeenCalled();
         expect(stringSpy).not.toHaveBeenCalled();
         expect(rect2iAllocStats.count).toBe(rectCountAfterWarmup);
+    });
+});
+
+describe('Overlay audio meter and renderer diagnostics row allocation', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    /**
+     * Template literals never call the global `String`, so the audio counters are `Number` objects whose
+     * `toString` counts the conversions a template literal performs on them.
+     */
+    const toStringCalls = { count: 0 };
+    const countedNumber = (value: number): number => {
+        const boxed = new Number(value);
+
+        boxed.toString = (): string => {
+            toStringCalls.count++;
+
+            return `${value}`;
+        };
+
+        return boxed as unknown as number;
+    };
+    const audio: OverlayAudioSnapshot = {
+        levels: { main: 0.5, music: 0.25, sfx: 0.1 },
+        activeVoices: countedNumber(2),
+        totalVoices: countedNumber(16),
+        voiceStealCount: countedNumber(3),
+        voiceDropCount: countedNumber(4),
+        preUnlockDropCount: countedNumber(1),
+    };
+
+    const countStringBuilding = (settings: ConstructorParameters<typeof Overlay>[3]): number => {
+        let nowMs = 0;
+
+        vi.spyOn(performance, 'now').mockImplementation(() => nowMs);
+
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = new Overlay(layout, 'Demo', 'webgpu', settings);
+
+        overlay.handleFrameInput(null, true, 0);
+
+        const renderFrame = (): void => {
+            nowMs += 1000 / 60;
+            overlay.updateAndRender(
+                noopRenderer,
+                mockFont,
+                null,
+                null,
+                1,
+                undefined,
+                timing,
+                undefined,
+                undefined,
+                audio,
+            );
+        };
+
+        for (let frame = 0; frame < 8; frame++) {
+            renderFrame();
+        }
+
+        const padStartSpy = vi.spyOn(String.prototype, 'padStart');
+        const stringSpy = vi.spyOn(globalThis, 'String');
+
+        toStringCalls.count = 0;
+
+        for (let frame = 0; frame < 32; frame++) {
+            renderFrame();
+        }
+
+        expect(overlay.isBodyVisible).toBe(true);
+
+        return stringSpy.mock.calls.length + padStartSpy.mock.calls.length + toStringCalls.count;
+    };
+
+    it('builds no strings for the audio meter row while its inputs are unchanged', () => {
+        expect(countStringBuilding({ targetFPS: 60, isOverlayAudioMetersEnabled: true })).toBe(0);
+    });
+
+    it('builds no strings for the renderer diagnostics row while its inputs are unchanged', () => {
+        expect(countStringBuilding({ targetFPS: 60, isOverlayRendererDiagnosticsBarEnabled: true })).toBe(0);
     });
 });

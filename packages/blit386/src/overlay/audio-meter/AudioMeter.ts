@@ -61,6 +61,20 @@ export class AudioMeter {
     /** Last-sampled pre-unlock SFX drop count. */
     #preUnlockDropCount = 0;
 
+    /** Readout text built from the counters below; rebuilt only when one of them changes. */
+    #cachedText = '';
+
+    /** Counters {@link #cachedText} was built from; `-1` forces the first build. */
+    #cachedActiveVoices = -1;
+
+    #cachedTotalVoices = -1;
+
+    #cachedStealCount = -1;
+
+    #cachedDropCount = -1;
+
+    #cachedPreUnlockDropCount = -1;
+
     /**
      * Creates an audio meter with the given feature flag.
      *
@@ -172,8 +186,25 @@ export class AudioMeter {
         this.#textPos.x = rect.x + OVERLAY_EDGE_MARGIN_PX + barsBlockWidth + AUDIO_METER_TEXT_GAP_PX;
         this.#textPos.y = rect.y + OVERLAY_TOP_TEXT_Y;
 
-        const drops = this.#voiceDropCount + this.#preUnlockDropCount;
-        const text = `${this.#activeVoices}/${this.#totalVoices} voices|steal ${this.#voiceStealCount}|drop ${drops}`;
+        if (
+            this.#activeVoices !== this.#cachedActiveVoices ||
+            this.#totalVoices !== this.#cachedTotalVoices ||
+            this.#voiceStealCount !== this.#cachedStealCount ||
+            this.#voiceDropCount !== this.#cachedDropCount ||
+            this.#preUnlockDropCount !== this.#cachedPreUnlockDropCount
+        ) {
+            this.#cachedActiveVoices = this.#activeVoices;
+            this.#cachedTotalVoices = this.#totalVoices;
+            this.#cachedStealCount = this.#voiceStealCount;
+            this.#cachedDropCount = this.#voiceDropCount;
+            this.#cachedPreUnlockDropCount = this.#preUnlockDropCount;
+
+            const drops = this.#voiceDropCount + this.#preUnlockDropCount;
+
+            this.#cachedText = `${this.#activeVoices}/${this.#totalVoices} voices|steal ${this.#voiceStealCount}|drop ${drops}`;
+        }
+
+        const text = this.#cachedText;
 
         drawOverlayLabelWithDividers(
             target,

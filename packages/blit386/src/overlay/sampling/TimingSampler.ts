@@ -27,6 +27,18 @@ export class TimingSampler {
 
     #spriteSubmittedVertices = 0;
 
+    /** Counts the cached diagnostics label was built from; `-1` forces the first build. */
+    #cachedPrimVertices = -1;
+
+    #cachedPrimOverflow = -1;
+
+    #cachedSprVertices = -1;
+
+    #cachedSprOverflow = -1;
+
+    /** Diagnostics label rebuilt only when one of the four counts above changes. */
+    #cachedDiagnosticsLabel = '';
+
     /**
      * Smoothed full-frame CPU time in milliseconds.
      *
@@ -115,10 +127,26 @@ export class TimingSampler {
      * @returns Single-line GPU batch summary for the diagnostics bar.
      */
     formatRendererDiagnosticsLabel(): string {
+        if (
+            this.#primitiveSubmittedVertices === this.#cachedPrimVertices &&
+            this.#primitiveOverflowCount === this.#cachedPrimOverflow &&
+            this.#spriteSubmittedVertices === this.#cachedSprVertices &&
+            this.#spriteOverflowCount === this.#cachedSprOverflow
+        ) {
+            return this.#cachedDiagnosticsLabel;
+        }
+
+        this.#cachedPrimVertices = this.#primitiveSubmittedVertices;
+        this.#cachedPrimOverflow = this.#primitiveOverflowCount;
+        this.#cachedSprVertices = this.#spriteSubmittedVertices;
+        this.#cachedSprOverflow = this.#spriteOverflowCount;
+
         const primStats = this.#formatBatchStats(this.#primitiveSubmittedVertices, this.#primitiveOverflowCount);
         const sprStats = this.#formatBatchStats(this.#spriteSubmittedVertices, this.#spriteOverflowCount);
 
-        return `Prim ${primStats}|Spr ${sprStats}`;
+        this.#cachedDiagnosticsLabel = `Prim ${primStats}|Spr ${sprStats}`;
+
+        return this.#cachedDiagnosticsLabel;
     }
 
     /**
