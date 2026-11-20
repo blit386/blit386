@@ -350,9 +350,9 @@ test('every file the kit emits classifies as kit-owned or shared, except the use
     }
 });
 
-test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lock files and .env but not .env.example', () => {
+test('the Zed tool_permissions snippet in docs/zed.md is valid JSON that denies lock files and .env but not .env.example', () => {
     const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(body, 'AGENTS.md should carry a json snippet');
+    assert.ok(body, 'docs/zed.md should carry a json snippet');
 
     const { edit_file, write_file } = JSON.parse(body).agent.tool_permissions.tools;
     const denies = (rules, path) => rules.always_deny.some(({ pattern }) => new RegExp(pattern, 'i').test(path));
@@ -368,9 +368,9 @@ test('the Zed tool_permissions snippet in AGENTS.md is valid JSON that denies lo
     }
 });
 
-test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch forms that discard work (BT-617)', () => {
+test('the Zed tool_permissions snippet in docs/zed.md denies checkout and switch forms that discard work (BT-617)', () => {
     const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(body, 'AGENTS.md should carry a json snippet');
+    assert.ok(body, 'docs/zed.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
     const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
@@ -404,9 +404,9 @@ test('the Zed tool_permissions snippet in AGENTS.md denies checkout and switch f
     }
 });
 
-test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form the guard core denies (BT-641)', () => {
+test('the Zed tool_permissions snippet in docs/zed.md denies every hard reset form the guard core denies (BT-641)', () => {
     const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(body, 'AGENTS.md should carry a json snippet');
+    assert.ok(body, 'docs/zed.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
     const denies = (command) => terminal.always_deny.some(({ pattern }) => new RegExp(pattern).test(command));
@@ -431,13 +431,13 @@ test('the Zed tool_permissions snippet in AGENTS.md denies every hard reset form
 });
 
 /**
- * The Zed snippet's terminal deny check, read from the first json block of the shipped AGENTS.md, matched the way
+ * The Zed snippet's terminal deny check, read from the first json block of the shipped docs/zed.md, matched the way
  * Zed matches: quotes and backslashes removed first (Zed's shell parser rebuilds each command from unquoted words),
  * and case ignored unless a rule sets `case_sensitive`.
  */
 function zedTerminalDenies() {
     const body = zedDoc().match(/```json\n([\s\S]*?)\n```/)?.[1];
-    assert.ok(body, 'AGENTS.md should carry a json snippet');
+    assert.ok(body, 'docs/zed.md should carry a json snippet');
 
     const { terminal } = JSON.parse(body).agent.tool_permissions.tools;
     const rules = terminal.always_deny.map(
@@ -446,7 +446,7 @@ function zedTerminalDenies() {
     return (command) => rules.some((rule) => rule.test(command.replace(/['"\\]/g, '')));
 }
 
-test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the guard case table leaves out', () => {
+test('the Zed tool_permissions snippet in docs/zed.md denies the BT-748 forms the guard case table leaves out', () => {
     const denies = zedTerminalDenies();
 
     // The guard core asks before a force push or a forced branch delete; the snippet only denies, so it denies those.
@@ -492,7 +492,7 @@ test('the Zed tool_permissions snippet in AGENTS.md denies the BT-748 forms the 
     }
 });
 
-test('the Zed tool_permissions snippet in AGENTS.md denies every command the guard core denies or asks about (BT-748)', () => {
+test('the Zed tool_permissions snippet in docs/zed.md denies every command the guard core denies or asks about (BT-748)', () => {
     const denies = zedTerminalDenies();
 
     for (const [command, expected] of SHELL_CASES) {

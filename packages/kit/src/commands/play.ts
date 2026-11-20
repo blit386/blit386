@@ -289,7 +289,8 @@ async function runStep(page: Page, root: string, step: string): Promise<unknown>
             return { file };
         }
         case 'eval':
-            // Playwright runs a string argument as an expression in the page: the caller's own code, in their local game.
+            // Playwright runs a string argument as an expression in the page: the caller's own code, in their local
+            // game.
             return page.evaluate(args.join(':'));
         default:
             throw new Error(`Unknown step "${step}". Run \`npx blit play --help\` to see the steps.`);
