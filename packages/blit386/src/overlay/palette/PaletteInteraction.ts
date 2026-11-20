@@ -488,7 +488,7 @@ export class PaletteInteraction {
                 continue;
             }
 
-            if (!isInScrollRegion) {
+            if (!isInScrollRegion || this.#scrollDragSlot !== null) {
                 continue;
             }
 

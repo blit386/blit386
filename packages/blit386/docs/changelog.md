@@ -126,6 +126,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Fixed
 
+- The overlay palette band now keeps scrolling under a finger drag while a second finger rests in the band. The two
+  touches used to take the drag from each other every frame, so the band did not move.
 - Dev hot reload: saving an image that no sprite sheet and no `AssetLoader` call uses no longer fetches and caches it.
   An image only `AssetLoader.loadImage` loaded is refreshed in the cache, and the console says so instead of reporting
   that nothing was replaced.

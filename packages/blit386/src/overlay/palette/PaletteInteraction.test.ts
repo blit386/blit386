@@ -289,6 +289,33 @@ describe('PaletteInteraction scroll', () => {
     });
 });
 
+describe('PaletteInteraction two-touch scroll drag', () => {
+    it('keeps the scroll drag with the first touch while a second touch rests in the band', () => {
+        const interaction = new PaletteInteraction(60);
+        const grid = computeGrid(320, DEFAULT_PALETTE_SWATCH_SIZE, 256, PALETTE_SWATCH_GAP_PX, undefined, 3);
+        const paletteBandTop = paletteBandY(240, grid.totalHeight);
+        const plan = paletteOnlyPlan(new Rect2i(0, paletteBandTop, 320, grid.totalHeight));
+        const startY = paletteBandTop + 10;
+        let firstTouch = new Vector2i(5, startY);
+        const secondTouch = new Vector2i(40, startY);
+        const pointer = {
+            isActive: (slot: number) => slot < 2,
+            getPos: (slot: number) => (slot === 0 ? firstTouch : secondTouch),
+            getScrollDelta: () => 0,
+            consumeScrollDelta: vi.fn(),
+            isButtonPressed: () => false,
+            isButtonDown: (_code: unknown, slot: number) => slot < 2,
+        };
+
+        interaction.handleScroll(pointer as never, plan, grid, false);
+        firstTouch = new Vector2i(5, startY - 12);
+        interaction.handleScroll(pointer as never, plan, grid, false);
+
+        // Dragging up by three rows of SCROLL_DRAG_ROW_PX scrolls the band down by three rows.
+        expect(interaction.scrollRowOffset).toBe(3);
+    });
+});
+
 describe('layoutTooltip', () => {
     const layoutScratch = {
         body: new Rect2i(),
