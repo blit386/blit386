@@ -46,7 +46,7 @@ const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 const BOUNDARY = Symbol('boundary');
 const SUBSHELL_OPEN = Symbol('subshell open');
 const SUBSHELL_CLOSE = Symbol('subshell close');
-/** Pushed last by {@link shellTokens} when a `$(` opened inside comment text never closes: the rest cannot be trusted. */
+/** Pushed last by {@link shellTokens} when a `$(` opened inside a heredoc body never closes: the rest cannot be trusted. */
 const UNREADABLE = Symbol('unreadable');
 const UNREADABLE_KIND = 'command';
 const BOUNDARY_TOKENS = new Map([
@@ -262,10 +262,10 @@ function shellTokens(command) {
         }
 
         if (comment) {
-            // A comment runs to the end of the line. Only `$(` is still looked at: an unquoted heredoc runs it.
+            // A comment runs to the end of the line; bash runs nothing in it, so neither do we.
             if (char === '\n') {
                 comment = false;
-            } else if (!(char === '$' && command[i + 1] === '(')) {
+            } else {
                 continue;
             }
         }
@@ -275,10 +275,9 @@ function shellTokens(command) {
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push({ quote, word, comment, heredoc, substitution: true, arithmetic: false });
+            resume.push({ quote, word, heredoc, substitution: true, arithmetic: false });
             word = null;
             quote = '';
-            comment = false;
             heredoc = null;
             i++;
         } else if (quote) {
@@ -316,7 +315,6 @@ function shellTokens(command) {
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';
-                comment = saved?.comment ?? false;
                 heredoc = saved?.heredoc ?? null;
                 word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
@@ -329,7 +327,7 @@ function shellTokens(command) {
 
     flush();
 
-    if (resume.some((saved) => saved.comment || saved.heredoc)) {
+    if (resume.some((saved) => saved.heredoc)) {
         tokens.push(UNREADABLE);
     }
 
@@ -583,8 +581,10 @@ async function staleReport(
 ) {
     // Refusals first: none of them needs the repository, so a directory that is not one cannot turn them into a pass.
     if (unreadable) {
-        // shortcut: a `$(` opened in comment text that never closes may hide a real command after a stray quote.
-        return ['  an unclosed $( inside a comment may hide a command from the gate: close it or drop the comment.'];
+        // shortcut: a `$(` opened in a heredoc body that never closes may hide a real command after a stray quote.
+        return [
+            '  an unclosed $( inside a heredoc body may hide a command from the gate: close it or quote the delimiter.',
+        ];
     }
 
     if (unterminated) {

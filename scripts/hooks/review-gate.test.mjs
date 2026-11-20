@@ -691,18 +691,21 @@ describe('review-gate command substitutions', () => {
         assert.match(result.stderr, /never closes/u);
     });
 
-    test('still runs a substitution that sits in comment-looking text, as an unquoted heredoc does', () => {
+    test('ignores a substitution in an ordinary comment, which bash never runs', () => {
         const repo = makePrRepo();
 
         for (const command of [
-            `cat <<EOF\n# PR $(${PR_CREATE})\nEOF`,
-            `# note $(${PR_CREATE}) it's\n`,
-            `echo x # it's $(${PR_CREATE})`,
+            `echo ready # $(${PR_CREATE})`,
+            `# note $(${PR_CREATE}) it's\necho done`,
+            `echo x # it's $(${PR_CREATE})\necho y`,
         ]) {
-            assert.equal(commit(repo, command).status, 2, command);
+            const result = commit(repo, command);
+            assert.equal(result.status, 0, command);
+            assert.equal(result.stderr, '', command);
         }
 
-        assert.equal(commit(repo, "# it's just a comment about gh pr create\necho done").status, 0);
+        // The command after the comment line is a real command and is still judged.
+        assert.equal(commit(repo, `# it's\n${PR_CREATE}`).status, 2);
     });
 
     test('refuses gh pr create after a cd whose target comes from a substitution', () => {
@@ -720,19 +723,19 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`).status, 0);
     });
 
-    test('fails closed when a substitution opened in comment text never closes', () => {
+    test('fails closed when a substitution opened in a heredoc body never closes', () => {
         const repo = makePrRepo();
         reviewBoth(repo);
 
-        // Bash sees a comment, then a real PR command; the tokenizer would see a quote swallowing it.
-        const result = commit(repo, `# $(it's\n${PR_CREATE} --base main`);
+        // The unquoted body runs $(, which never closes; the apostrophe after it could hide the real command below.
+        const result = commit(repo, `cat <<EOF\n$(it's\nEOF\n${PR_CREATE} --base main`);
 
         assert.equal(result.status, 2);
-        assert.match(result.stderr, /unclosed \$\( inside a comment/u);
+        assert.match(result.stderr, /unclosed \$\( inside a heredoc body/u);
 
-        // A comment whose substitution closes, and a plain comment with an apostrophe, are not refused.
-        assert.equal(commit(repo, "echo x # $(date) it's\necho y").status, 0);
-        assert.equal(commit(repo, "echo x # it's\necho y").status, 0);
+        // A closed substitution, and a comment that merely looks like one, are not refused.
+        assert.equal(commit(repo, "cat <<EOF\n$(date) it's\nEOF\necho y").status, 0);
+        assert.equal(commit(repo, "echo x # $(it's\necho y").status, 0);
     });
 
     test('does not read an arithmetic shift as a heredoc', () => {
