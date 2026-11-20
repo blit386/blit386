@@ -39,6 +39,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   of `0.5`. Leave the option out for the default; `Infinity` and out-of-range numbers still clamp.
 - Behavior change: a fractional `.btfont` `lineHeight` or `baseline` (such as `9.5`) is truncated to whole pixels
   (minimum 1), so the pen never lands on a fractional pixel. Whole values load exactly as before.
+- Behavior change: `BT.loadingAssetsCount` now includes in-flight bitmap font loads (`BitmapFont.loadingCount`), so a
+  loading screen no longer reports "done" while a `.btfont` is still loading. `BitmapFont.load` also gives up with an
+  error after 15 seconds without data from the `.btfont` request instead of hanging forever, the same idle limit
+  `AudioClip.load` already had.
 - Behavior change: loading a sprite whose image the browser cannot read through a 2D canvas (canvas limit reached or
   canvas access blocked) now throws a clear error instead of a bare `TypeError`.
 - `Palette.set` copies the color into the slot's existing entry, so a `Color32` from `Palette.getRef` keeps pointing

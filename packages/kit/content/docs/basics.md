@@ -150,9 +150,9 @@ Call `bootstrap(Game)` once.
 
 ## Waiting for assets (a loading screen)
 
-`BT.loadingAssetsCount` is how many image and audio loads are still in flight. It is a property (no parentheses). To
-draw a "Loading..." message, return from `init()` before every load finishes (start loads in a helper you do not await
-from `init()`), then poll the counter in `update()` / `render()`:
+`BT.loadingAssetsCount` is how many image, audio and font loads are still in flight (fonts count from engine 1.9.0). It
+is a property (no parentheses). To draw a "Loading..." message, return from `init()` before every load finishes (start
+loads in a helper you do not await from `init()`), then poll the counter in `update()` / `render()`:
 
 ```js
 if (BT.loadingAssetsCount > 0) {

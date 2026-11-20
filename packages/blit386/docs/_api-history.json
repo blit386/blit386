@@ -987,7 +987,12 @@
     "BT.loadingAssetsCount": {
       "kind": "getter",
       "since": "1.4.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.9.0",
+          "note": "Includes in-flight `BitmapFont.load` calls, which were not counted before."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

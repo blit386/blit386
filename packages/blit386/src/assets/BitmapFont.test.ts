@@ -1171,3 +1171,123 @@ describe('BitmapFont', () => {
         });
     });
 });
+
+describe('BitmapFont load stall timeout and loadingCount', () => {
+    /** Response whose body stream never delivers a chunk. */
+    function stalledResponse() {
+        return {
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            body: new ReadableStream<Uint8Array>({ start: () => undefined }),
+        };
+    }
+
+    beforeEach(() => {
+        vi.stubGlobal('Image', createStubImage());
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+    });
+
+    it('rejects after the idle timeout when the body never arrives', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(stalledResponse()));
+
+        const rejection = expect(BitmapFont.load('stalled.btfont')).rejects.toThrow('stalled.btfont');
+
+        await vi.advanceTimersByTimeAsync(20_000);
+        await rejection;
+    });
+
+    it('rejects after the idle timeout when the headers never arrive', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockImplementation(
+                (_url: string, init?: { signal?: AbortSignal }) =>
+                    new Promise((_resolve, reject) => {
+                        init?.signal?.addEventListener('abort', () =>
+                            reject(new DOMException('aborted', 'AbortError')),
+                        );
+                    }),
+            ),
+        );
+
+        const rejection = expect(BitmapFont.load('slow-headers.btfont')).rejects.toThrow('slow-headers.btfont');
+
+        await vi.advanceTimersByTimeAsync(20_000);
+        await rejection;
+    });
+
+    it('does not cut off a body that keeps sending chunks', async () => {
+        vi.useFakeTimers();
+
+        const bytes = new TextEncoder().encode(JSON.stringify(MOCK_FONT_DATA));
+        const slice = Math.ceil(bytes.length / 3);
+        let sent = 0;
+
+        const body = new ReadableStream<Uint8Array>({
+            async pull(controller) {
+                await new Promise((resolve) => setTimeout(resolve, 10_000));
+
+                if (sent >= bytes.length) {
+                    controller.close();
+
+                    return;
+                }
+
+                controller.enqueue(bytes.slice(sent, sent + slice));
+                sent += slice;
+            },
+        });
+
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({ ok: true, status: 200, statusText: 'OK', headers: new Headers(), body }),
+        );
+
+        const loaded = BitmapFont.load('slow.btfont');
+
+        await vi.advanceTimersByTimeAsync(50_000);
+
+        await expect(loaded).resolves.toBeInstanceOf(BitmapFont);
+    });
+
+    it('counts a pending load and drops to 0 after success, HTTP error, and timeout', async () => {
+        expect(BitmapFont.loadingCount).toBe(0);
+
+        let release: (response: unknown) => void = () => undefined;
+
+        vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise((resolve) => (release = resolve))));
+
+        const ok = BitmapFont.load('count.btfont');
+
+        expect(BitmapFont.loadingCount).toBe(1);
+
+        release(mockFontFetchResponse(MOCK_FONT_DATA));
+        await ok;
+
+        expect(BitmapFont.loadingCount).toBe(0);
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' }));
+        await expect(BitmapFont.load('missing.btfont')).rejects.toThrow();
+
+        expect(BitmapFont.loadingCount).toBe(0);
+
+        vi.useFakeTimers();
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(stalledResponse()));
+
+        const stalled = expect(BitmapFont.load('stalled2.btfont')).rejects.toThrow();
+
+        expect(BitmapFont.loadingCount).toBe(1);
+
+        await vi.advanceTimersByTimeAsync(20_000);
+        await stalled;
+
+        expect(BitmapFont.loadingCount).toBe(0);
+    });
+});

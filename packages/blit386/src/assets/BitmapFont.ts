@@ -6,6 +6,7 @@ import {
     ASCII_CACHE_SIZE,
     buildGlyphsFromEntries,
     buildLoadErrorMessage,
+    buildLoadTimeoutMessage,
     bustTextureUrl,
     createAsciiGlyphTable,
     loadTexture,
@@ -20,6 +21,10 @@ import {
 import { HotReloadRegistry } from './hotReloadRegistry';
 import type { Palette } from './Palette';
 import { SpriteSheet } from './SpriteSheet';
+import { StallTimeoutError, withStallTimeout } from './stallTimeout';
+
+/** Number of {@link BitmapFont.load} calls currently in flight. */
+let loadsInFlight = 0;
 
 /**
  * Runtime glyph metadata used by the renderer.
@@ -176,6 +181,16 @@ export class BitmapFont {
     }
 
     /**
+     * Gets the number of font loads currently in flight.
+     *
+     * @since 1.9.0
+     * @returns Count of pending {@link BitmapFont.load} calls, from the request until the atlas is ready.
+     */
+    static get loadingCount(): number {
+        return loadsInFlight;
+    }
+
+    /**
      * Returns the total number of glyphs loaded into the font.
      *
      * @returns Total glyph count.
@@ -261,18 +276,50 @@ export class BitmapFont {
      *   `AssetLimitError` for every font, not only one loaded by a bare file name.
      * @changed 1.9.0 A fractional `lineHeight` or `baseline` is truncated to whole pixels (minimum 1) instead of
      *   putting the pen on a fractional pixel.
+     * @changed 1.9.0 Gives up with an error after 15 seconds without data from the `.btfont` request, instead of
+     *   waiting forever, and counts toward {@link BT.loadingAssetsCount} while loading.
      * @param url - Path to the .btfont file.
      * @returns Loaded bitmap font instance.
-     * @throws Error if the font descriptor or texture cannot be loaded.
+     * @throws Error if the font descriptor or texture cannot be loaded, or the request stalls.
      */
     static async load(url: string): Promise<BitmapFont> {
-        const response = await fetch(url);
+        loadsInFlight++;
 
-        if (!response.ok) {
-            throw new Error(buildLoadErrorMessage(url, response.status));
+        try {
+            return await BitmapFont.loadUncounted(url);
+        } finally {
+            loadsInFlight--;
+        }
+    }
+
+    /**
+     * Fetches and builds a font; {@link BitmapFont.load} wraps it so the call is counted.
+     *
+     * @param url - Path to the .btfont file.
+     * @returns Loaded bitmap font instance.
+     */
+    private static async loadUncounted(url: string): Promise<BitmapFont> {
+        let descriptor: ReturnType<typeof parseBtfontFile>;
+
+        try {
+            descriptor = await withStallTimeout(async (signal, rearm) => {
+                const response = await fetch(url, { signal });
+
+                if (!response.ok) {
+                    throw new Error(buildLoadErrorMessage(url, response.status));
+                }
+
+                rearm();
+
+                return parseBtfontFile(url, await readCappedText(response, rearm));
+            });
+        } catch (error) {
+            throw error instanceof StallTimeoutError
+                ? new Error(buildLoadTimeoutMessage(url), { cause: error })
+                : error;
         }
 
-        const { data, glyphEntries } = parseBtfontFile(url, await readCappedText(response));
+        const { data, glyphEntries } = descriptor;
 
         validateGlyphEntriesPreAtlas(glyphEntries);
 

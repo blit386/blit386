@@ -358,13 +358,14 @@ export const lifecycle = {
     },
 
     /**
-     * Total number of asset loads currently in flight (images and audio clips combined).
+     * Total number of asset loads currently in flight (images, audio clips and bitmap fonts combined).
      *
      * Useful for a loading-screen progress indicator: poll this each frame and show a
      * spinner or bar until it drops back to `0`.
      *
      * @since 1.4.0
-     * @returns Combined count of in-flight `AssetLoader` and `AudioClip` loads.
+     * @changed 1.9.0 Includes in-flight `BitmapFont.load` calls, which were not counted before.
+     * @returns Combined count of in-flight `AssetLoader`, `AudioClip` and `BitmapFont` loads.
      */
     get loadingAssetsCount(): number {
         return BTAPI.instance.getLoadingAssetsCount();
