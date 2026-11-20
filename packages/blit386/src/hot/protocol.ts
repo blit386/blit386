@@ -1,8 +1,8 @@
 /**
  * Shared types and DOM/HMR event names for the engine hot-reload runtime.
  *
- * Value-free (types and string constants only) so it can be imported from both the
- * browser-facing `src/hot/` runtime and the `src/vite/` plugin package
+ * Holds only types, string constants and the `ASSET_KINDS` list, with no `vite` import, so it can
+ * be imported from both the browser-facing `src/hot/` runtime and the `src/vite/` plugin package
  * without pulling `vite` into the published engine bundle.
  */
 
@@ -27,7 +27,10 @@ export interface AssetChangedPayload {
     /** Asset kind, used to route to the right hot-replace handler. */
     type: (typeof ASSET_KINDS)[number];
 
-    /** `Date.now()` when the plugin observed the change, for logging/ordering. */
+    /**
+     * `Date.now()` when the plugin observed the change. Reserved: the plugin sends it and the runtime checks its shape,
+     * but nothing reads the value. It stays on the wire so older plugin and engine versions keep talking.
+     */
     timestamp: number;
 }
 
