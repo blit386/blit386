@@ -22,6 +22,6 @@ export const ICON_WIDTH = ROWS[0].length;
 export const ICON_HEIGHT = ROWS.length;
 
 /**
- * Row-major tilde toggle hint mask (`width` × `height`); `1` is foreground, `0` transparent.
+ * Row-major tilde toggle hint mask (`width` x `height`); `1` is foreground, `0` transparent.
  */
 export const ICON_MASK: readonly number[] = ROWS.flatMap((row) => [...row].map((pixel) => (pixel === '#' ? 1 : 0)));
