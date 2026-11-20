@@ -88,6 +88,8 @@ const CREATE_VALUE_FLAGS = new Set([
 ]);
 /** Git subcommands that change the checked-out branch, so a later `gh pr create` in the same command sees another one. */
 const BRANCH_SWITCHERS = new Set(['switch', 'checkout']);
+/** Ends a heredoc delimiter word: whitespace and the shell's operators. */
+const HEREDOC_DELIMITER_END = /[\s;&|()<>]/u;
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
 const PATH_LIST_LIMIT = 10;
 
@@ -162,6 +164,64 @@ function recordReview(payload) {
     return ALLOW;
 }
 
+/** `<<[-]DELIM` after the `<<` at `from`: the delimiter, whether the body expands (`live`: unquoted delimiter), and where it ends. */
+function readHeredocDelimiter(command, from) {
+    let j = from;
+    const strip = command[j] === '-';
+    j += strip ? 1 : 0;
+
+    while (command[j] === ' ' || command[j] === '\t') {
+        j++;
+    }
+
+    let delim = '';
+    let live = true;
+
+    while (j < command.length && !HEREDOC_DELIMITER_END.test(command[j])) {
+        const char = command[j];
+
+        if (char === SINGLE_QUOTE || char === DOUBLE_QUOTE) {
+            const close = command.indexOf(char, j + 1);
+            const end = close < 0 ? command.length : close;
+            live = false;
+            delim += command.slice(j + 1, end);
+            j = end + 1;
+        } else if (char === '\\') {
+            live = false;
+            delim += command[j + 1] ?? '';
+            j += 2;
+        } else {
+            delim += char;
+            j++;
+        }
+    }
+
+    return { delim, strip, live, next: j };
+}
+
+/** Where a heredoc body starting at `from` ends: the line that equals `delim`, or `null` when no line does. */
+function heredocBody(command, from, delim, strip) {
+    let pos = from;
+
+    while (pos <= command.length) {
+        const newline = command.indexOf('\n', pos);
+        const lineEnd = newline < 0 ? command.length : newline;
+        const line = command.slice(pos, lineEnd);
+
+        if ((strip ? line.replace(/^\t+/u, '') : line) === delim) {
+            return { end: pos, resumeAt: lineEnd };
+        }
+
+        if (newline < 0) {
+            return null;
+        }
+
+        pos = newline + 1;
+    }
+
+    return null;
+}
+
 /**
  * Splits a shell command into words (quotes removed, backslash escapes applied) and boundary markers, one pass
  * per character so it cannot backtrack (CodeQL js/redos). Separators inside quotes stay part of the word; `$(` opens a
@@ -175,6 +235,9 @@ function shellTokens(command) {
     let word = null;
     let quote = '';
     let comment = false;
+    // `<<DELIM` seen, body not yet started (starts after the next newline) / body being skipped.
+    const pendingHeredocs = [];
+    let heredoc = null;
     const flush = () => {
         if (word !== null) {
             tokens.push(word);
@@ -184,6 +247,19 @@ function shellTokens(command) {
 
     for (let i = 0; i < command.length; i++) {
         const char = command[i];
+
+        if (heredoc) {
+            // A heredoc body is skipped to its delimiter line. Quotes in it are literal, but an unquoted one runs `$(`.
+            if (i >= heredoc.end) {
+                i = heredoc.resumeAt - 1;
+                heredoc = null;
+                continue;
+            }
+
+            if (!(heredoc.live && char === '$' && command[i + 1] === '(')) {
+                continue;
+            }
+        }
 
         if (comment) {
             // A comment runs to the end of the line. Only `$(` is still looked at: an unquoted heredoc runs it.
@@ -199,10 +275,11 @@ function shellTokens(command) {
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push({ quote, word, comment, substitution: true });
+            resume.push({ quote, word, comment, heredoc, substitution: true });
             word = null;
             quote = '';
             comment = false;
+            heredoc = null;
             i++;
         } else if (quote) {
             if (char === quote) {
@@ -216,10 +293,21 @@ function shellTokens(command) {
         } else if (char === '#' && word === null) {
             // A `#` that starts a word begins a comment; inside a word it is just a character.
             comment = true;
+        } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<') {
+            flush();
+            const doc = readHeredocDelimiter(command, i + 2);
+            pendingHeredocs.push(doc);
+            i = doc.next - 1;
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
             flush();
             tokens.push(token);
+
+            if (char === '\n' && pendingHeredocs.length > 0) {
+                const doc = pendingHeredocs.shift();
+                const body = heredocBody(command, i + 1, doc.delim, doc.strip);
+                heredoc = body && { ...body, live: doc.live };
+            }
 
             if (token === SUBSHELL_OPEN) {
                 resume.push({ quote: '', word: null, substitution: false });
@@ -227,6 +315,7 @@ function shellTokens(command) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';
                 comment = saved?.comment ?? false;
+                heredoc = saved?.heredoc ?? null;
                 word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
         } else if (/\s/u.test(char)) {
@@ -238,7 +327,7 @@ function shellTokens(command) {
 
     flush();
 
-    if (resume.some((saved) => saved.comment)) {
+    if (resume.some((saved) => saved.comment || saved.heredoc)) {
         tokens.push(UNREADABLE);
     }
 
@@ -497,10 +586,8 @@ async function staleReport(
     }
 
     if (unterminated) {
-        // shortcut: the tokenizer does not know heredocs; an apostrophe in one leaves a `$(` open and hides what follows it.
-        return [
-            '  gh pr create sits in a command substitution that never closes (a heredoc?): use --body-file instead.',
-        ];
+        // shortcut: a `$(` with no matching `)` hides whatever follows it, so the arguments of this PR are unknown.
+        return ['  gh pr create sits in a command substitution that never closes: close it, or use --body-file.'];
     }
 
     if (dirUnknown) {

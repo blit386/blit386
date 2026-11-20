@@ -640,17 +640,28 @@ describe('review-gate command substitutions', () => {
         }
     });
 
-    test('refuses a PR command that an unclosed substitution cuts off, such as a heredoc with an apostrophe', () => {
+    test('reads a heredoc: a quoted body is inert, an unquoted body still runs $(, apostrophes are literal', () => {
         const repo = makePrRepo();
         git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
         git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // A quoted body with an apostrophe closes cleanly, so --base release after it is read and checked.
+        const quoted = `gh pr create --body "$(cat <<'EOF'\nIt's ready.\nEOF\n)" --base release`;
+        const blocked = commit(repo, quoted);
+        assert.equal(blocked.status, 2);
+        assert.match(blocked.stderr, /did not see/u);
         reviewBoth(repo);
+        assert.equal(commit(repo, quoted).status, 0);
 
-        const command = `gh pr create --body "$(cat <<'EOF'\nIt's ready.\nEOF\n)" --base release`;
-        const result = commit(repo, command);
+        // Unquoted: the substitution runs, whatever the apostrophe before it.
+        for (const body of ["It's # PR $(@@)", '# PR $(@@)', "x 'y $(@@)"]) {
+            const command = `cat <<EOF\n${body.replace('@@', PR_CREATE)}\nEOF`;
+            assert.equal(commit(makePrRepo(), command).status, 2, command);
+        }
 
-        assert.equal(result.status, 2);
-        assert.match(result.stderr, /never closes/u);
+        // The same text in a quoted heredoc never runs, and the delimiter line ends the body.
+        assert.equal(commit(makePrRepo(), `cat <<'EOF'\n$(${PR_CREATE})\nEOF`).status, 0);
+        assert.equal(commit(makePrRepo(), `cat <<-EOF\n\t$(echo hi)\n\tEOF\n${PR_CREATE}`).status, 2);
     });
 
     test('ignores a shell comment, so its apostrophe does not swallow the PR command', () => {
