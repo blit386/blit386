@@ -356,7 +356,7 @@ Every page reads a few URL parameters; nothing else is runtime-configurable:
 | --- | --- |
 | `?embed` | Canvas only - no banner, no source panel. The form external iframes use: `https://demos.blit386.dev/<slug>?embed` |
 | `?embed&source` | Keeps the Twoslash source panel under the canvas; what the shell's own iframe loads |
-| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame`, and publishing `window.__blitDrawnText.read()`, the strings the last frame drew (kit, `BT.systemPrint`, overlay rows) with display positions - see `src/shared/drawn-text.js` and the `/test demos` skill |
+| `?embed&capture` | Also loads `_partials/capture-expose.js`, putting the engine on `window.BT` so `/shots` and `capture:og` can drive `BT.renderAt` / `BT.captureFrame`, and publishing `window.__blitDrawnText.read()`, the strings the last frame drew (kit, `BT.systemPrint`, overlay rows) with display positions. A frame that prints no `BT.systemPrint` text leaves the previous frame's list readable, so a vanished label can still read back - see `src/shared/drawn-text.js` and the `/test demos` skill |
 | `?seed=N` | Pins `BT.random` (engine `SeedUrlParam`); every capture uses `seed=1`, which is why the same pose gives the same pixels on every machine |
 | `?backend=software` | Forces the Canvas 2D renderer |
 | `?nosplash` | Skips the release-build splash |

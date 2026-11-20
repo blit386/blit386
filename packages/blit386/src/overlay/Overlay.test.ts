@@ -1391,6 +1391,27 @@ describe('Overlay drawnCustomRows', () => {
         expect(overlay.drawnCustomRows()).toEqual([]);
     });
 
+    it.each([
+        ['with the toggle hint still drawn', true],
+        ['with the toggle hint off, so the frame returns early', false],
+    ])('is empty on the frame after the body is hidden, %s', (_label, isHintVisible) => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', {
+            isOverlayVisibleAtStart: true,
+            isOverlayToggleHintVisible: isHintVisible,
+        });
+        const renderer = createMockRenderer();
+        const customRows = [{ leftText: 'Row' }];
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
+        expect(overlay.drawnCustomRows().map((row) => row.text)).toEqual(['Row']);
+
+        overlay.handleFrameInput(null, true, 1);
+        overlay.updateAndRender(renderer, mockFont, null, null, 1, () => customRows);
+
+        expect(overlay.drawnCustomRows()).toEqual([]);
+    });
+
     it('is empty when the overlay body is hidden, even if rows were drawn before', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: false });

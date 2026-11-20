@@ -13,10 +13,10 @@ import { stubBt } from './bt-stub.mjs';
 import { createReadyContext } from './ui-test-helpers.mjs';
 
 /** A fake `BT` that remembers what really reached the draw call. */
-function fakeBt() {
+function fakeBt(camera = { x: 0, y: 0 }) {
     const drawn = [];
 
-    return { drawn, systemPrint: (pos, color, text) => drawn.push({ x: pos.x, y: pos.y, color, text }) };
+    return { drawn, camera, systemPrint: (pos, color, text) => drawn.push({ x: pos.x, y: pos.y, color, text }) };
 }
 
 /** Lets the microtask that closes a frame run, like the end of a real render task. */
@@ -106,6 +106,62 @@ describe('installTextTap', () => {
         readDrawnText()[0].text = 'changed';
 
         assert.equal(readDrawnText()[0].text, 'text');
+    });
+});
+
+describe('what is on screen', () => {
+    it('still draws a transparent string but does not record it, since the engine draws nothing', async () => {
+        const bt = fakeBt();
+
+        installTextTap(bt);
+        bt.systemPrint({ x: 0, y: 0 }, 0, 'Hidden');
+        bt.systemPrint({ x: 0, y: 14 }, 3, 'Shown');
+        await endOfTask();
+
+        assert.deepEqual(
+            bt.drawn.map((call) => call.text),
+            ['Hidden', 'Shown'],
+        );
+        assert.deepEqual(
+            readDrawnText().map((entry) => entry.text),
+            ['Shown'],
+        );
+    });
+
+    it('records the display position, which is the passed position minus the camera', async () => {
+        const bt = fakeBt({ x: 30, y: 12 });
+
+        installTextTap(bt);
+        bt.systemPrint({ x: 100, y: 50 }, 3, 'World label');
+        await endOfTask();
+
+        assert.deepEqual(
+            readDrawnText().map((entry) => [entry.x, entry.y]),
+            [[70, 38]],
+        );
+    });
+
+    it('records nothing for a call the engine rejects', async () => {
+        const bt = fakeBt();
+        const drawShown = bt.systemPrint;
+
+        // The engine throws on a palette index outside the palette.
+        bt.systemPrint = (pos, color, text) => {
+            if (color > 255) {
+                throw new Error('palette index out of range');
+            }
+
+            drawShown(pos, color, text);
+        };
+        installTextTap(bt);
+        bt.systemPrint({ x: 0, y: 0 }, 3, 'fine');
+        assert.throws(() => bt.systemPrint({ x: 0, y: 14 }, 999, 'bad'), /out of range/);
+        await endOfTask();
+
+        assert.deepEqual(
+            readDrawnText().map((entry) => entry.text),
+            ['fine'],
+        );
     });
 });
 

@@ -82,7 +82,10 @@ Drive it from the page instead, from `packages/demos` with `pnpm run dev` runnin
    `overlayRows()`, with a `side`), and `x`, `y` are display pixels. Compare the string, not a screenshot. It is not
    `BT.testState()`, which returns whatever the game's own hook remembers (only `test-state` and `bunnymark` have one),
    so a wrong label beside a right internal value passes there. Overlay rows exist only while the engine overlay body is
-   visible, in a dev build; `BT.printFont` text is not recorded. `src/shared/drawn-text.js` explains the frame boundary.
+   visible, in a dev build; `BT.printFont` text is not recorded. Two limits to keep in mind: a frame that makes no
+   `BT.systemPrint` call leaves the previous frame's list in place, so a label that disappeared can still read back
+   (overlay rows are read fresh each time and do not); and `x`, `y` are the position on the display, the position the
+   demo passed minus the camera. `src/shared/drawn-text.js` explains the frame boundary and the rest.
 3. Input is synthetic `PointerEvent`s on `#blit386-canvas`, and `_shots/capture.js` (`seekWhenReady`,
    `pointerClientPoint`, `injectInput`) is the working recipe:
    - Map display pixels to client coordinates with `getBoundingClientRect()` and `BT.displaySize`, never `canvas.width`:
