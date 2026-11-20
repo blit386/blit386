@@ -215,3 +215,45 @@ describe('AudioMeter', () => {
         }
     });
 });
+
+describe('AudioMeter readout text', () => {
+    const drawnText = (meter: AudioMeter): string => {
+        const renderer = createMockRenderer();
+
+        meter.draw(renderer, meterRect, defaultStyle, mockFont);
+
+        return getBitmapTextCalls(renderer)
+            .map((call) => call.text)
+            .join('|');
+    };
+
+    it('reads voices, steals, and drops summed across both drop counters', () => {
+        const meter = new AudioMeter(true);
+
+        meter.sample(snapshot({ activeVoices: 2, voiceStealCount: 3, voiceDropCount: 4, preUnlockDropCount: 1 }));
+
+        expect(drawnText(meter)).toBe('2/16 voices|steal 3|drop 5');
+    });
+
+    it('rebuilds the readout when any single counter changes between draws', () => {
+        const meter = new AudioMeter(true);
+
+        meter.sample(snapshot());
+        expect(drawnText(meter)).toBe('0/16 voices|steal 0|drop 0');
+
+        const changes: [Partial<OverlayAudioSnapshot>, string][] = [
+            [{ activeVoices: 1 }, '1/16 voices|steal 0|drop 0'],
+            [{ totalVoices: 8 }, '0/8 voices|steal 0|drop 0'],
+            [{ voiceStealCount: 2 }, '0/16 voices|steal 2|drop 0'],
+            [{ voiceDropCount: 3 }, '0/16 voices|steal 0|drop 3'],
+            [{ preUnlockDropCount: 4 }, '0/16 voices|steal 0|drop 4'],
+        ];
+
+        for (const [override, expected] of changes) {
+            meter.sample(snapshot(override));
+            expect(drawnText(meter)).toBe(expected);
+            meter.sample(snapshot());
+            expect(drawnText(meter)).toBe('0/16 voices|steal 0|drop 0');
+        }
+    });
+});
