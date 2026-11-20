@@ -183,6 +183,8 @@ function shellTokens(command) {
         if (char === '\\' && quote !== SINGLE_QUOTE) {
             word = (word ?? '') + (command[++i] ?? '');
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
+            // A quote opened just before `$(` is not a word of its own; the substitution stands in for it.
+            word = word === '' ? null : word;
             flush();
             tokens.push(SUBSHELL_OPEN);
             resume.push(quote);
@@ -284,6 +286,11 @@ function ghPrCreate(args, dir) {
     return { dir, ...createTargets(args) };
 }
 
+/** `dir` moved by `target`; unchanged when the target is missing or comes from a `$(...)` we cannot evaluate. */
+function resolveDir(dir, target) {
+    return !target || target.includes(SUBSTITUTION_WORD) ? dir : resolve(dir, expandHome(target));
+}
+
 /** `{ name, dir }`: the subcommand of `git <global options> ...` and the directory it acts on, or `null` for none. */
 function gitSubcommand(args, startDir) {
     let dir = startDir;
@@ -296,7 +303,7 @@ function gitSubcommand(args, startDir) {
         if (OPERAND_OPTIONS.has(args[i])) {
             // shortcut: --git-dir and --work-tree are skipped, not followed; the commit is checked in `dir`.
             if (args[i] === DIR_OPTION) {
-                dir = resolve(dir, expandHome(args[i + 1] ?? ''));
+                dir = resolveDir(dir, args[i + 1]);
             }
 
             i++;
@@ -318,25 +325,13 @@ function gatedCommands(command, cwd) {
     let dir = cwd;
     let words = [];
 
-    for (const token of [...shellTokens(command), BOUNDARY]) {
-        if (typeof token === 'string') {
-            words.push(token);
-            continue;
-        }
-
-        if (token === SUBSHELL_OPEN) {
-            // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
-            outerWords.push(words);
-            outer.push(dir);
-            words = [];
-            continue;
-        }
-
-        const start = words.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
-        const [name, ...args] = start < 0 ? [] : words.slice(start);
+    /** Looks at one finished simple command: a `cd` moves `dir`, a gated command is recorded. */
+    const judge = (pending) => {
+        const start = pending.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
+        const [name, ...args] = start < 0 ? [] : pending.slice(start);
 
         if (name === 'cd' && args[0]) {
-            dir = resolve(dir, expandHome(args[0]));
+            dir = resolveDir(dir, args[0]);
         } else if (name === 'git') {
             const sub = gitSubcommand(args, dir);
 
@@ -354,7 +349,23 @@ function gatedCommands(command, cwd) {
                 found.set(key, { kind: PULL_REQUEST, ...pr, switched });
             }
         }
+    };
 
+    for (const token of [...shellTokens(command), BOUNDARY]) {
+        if (typeof token === 'string') {
+            words.push(token);
+            continue;
+        }
+
+        if (token === SUBSHELL_OPEN) {
+            // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
+            outerWords.push(words);
+            outer.push(dir);
+            words = [];
+            continue;
+        }
+
+        judge(words);
         words = [];
 
         if (token === SUBSHELL_CLOSE) {
@@ -363,6 +374,9 @@ function gatedCommands(command, cwd) {
             words = [...(outerWords.pop() ?? []), SUBSTITUTION_WORD];
         }
     }
+
+    // A `$(` that never closes (a stray quote, a heredoc) still leaves its outer command to be judged.
+    outerWords.reverse().forEach(judge);
 
     return [...found.values()];
 }

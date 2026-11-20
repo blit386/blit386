@@ -605,3 +605,34 @@ describe('review-gate pull request gate', () => {
         assert.match(result.stderr, /review-gate: internal error, allowing/u);
     });
 });
+
+describe('review-gate command substitutions', () => {
+    test('a substitution that never closes still leaves its outer commit or PR judged', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'six\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [
+            `git commit -m "$(cat <<'EOF'\nit's (not closed\nEOF`,
+            'git commit -m "$(cat',
+            `${PR_CREATE} --title "$(printf`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
+    test('a directory taken from a substitution leaves the directory unchanged', () => {
+        const repo = makePrRepo();
+        write(repo, SOURCE, 'six\n');
+        git(repo, 'add', '-A');
+
+        for (const command of [
+            `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`,
+            `git -C "$(pwd)" commit -m change`,
+        ]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.doesNotMatch(result.stderr, /internal error/u, command);
+        }
+    });
+});

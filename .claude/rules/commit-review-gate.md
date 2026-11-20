@@ -34,10 +34,11 @@ refused unless `/review` and `/ponytail:ponytail-review` both saw exactly the co
 - **What it sees as a commit.** The Bash command is split into simple commands, quotes respected, and walked in order:
   each `cd X` moves the directory, and every `git <global options> commit` is checked in the directory it runs in, so
   `git -C A commit && git -C B commit` checks both. `VAR=x` assignments and the wrappers `rtk`, `env`, `command`,
-  `exec`, `nohup`, `time`, `xargs`, `sudo` in front are skipped. Not seen: a wrapper given its own options
-  (`sudo -u x git commit`), a commit inside a shell string (`bash -c "git commit"`), or one built from `$VAR`. With
-  `--git-dir` or `--work-tree` the commit is checked in the current directory. The gate stops an agent that forgot to
-  review; it is not a sandbox.
+  `exec`, `nohup`, `time`, `xargs`, `sudo` in front are skipped. A directory taken from a `$(...)` (`cd "$(...)"`,
+  `git -C "$(...)"`) leaves the directory unchanged, and a `$(` that never closes still leaves its outer command judged.
+  Not seen: a wrapper given its own options (`sudo -u x git commit`), a commit inside a shell string
+  (`bash -c "git commit"`), or one built from `$VAR`. With `--git-dir` or `--work-tree` the commit is checked in the
+  current directory. The gate stops an agent that forgot to review; it is not a sandbox.
 - **What passes.** Every tracked path that differs from `HEAD`, in the index or in the working tree, must match both
   snapshots byte for byte. That covers `commit -a` and pathspec commits without parsing them. Staging after a review is
   fine; one review can cover several commits that split the change.
