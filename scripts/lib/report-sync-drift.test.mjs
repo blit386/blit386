@@ -27,7 +27,7 @@ describe('reportSyncDrift', () => {
 
     it('check mode with drift lists the entries, names the fix and returns 1', () => {
         assert.equal(reportSyncDrift({ ...base, drifted: ['a', 'b'], isCheck: true }), 1);
-        assert.match(err.join('\n'), /2 thing\(s\) out of date:[\s\S]*  a[\s\S]*  b[\s\S]*pnpm run sync:things/);
+        assert.match(err.join('\n'), /2 thing\(s\) out of date:[\s\S]* {2}a[\s\S]* {2}b[\s\S]*pnpm run sync:things/);
         assert.deepEqual(out, []);
     });
 
