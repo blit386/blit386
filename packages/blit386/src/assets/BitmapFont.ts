@@ -259,7 +259,7 @@ export class BitmapFont {
      *   folder, so a rooted path (`/fonts/atlas.png`) now loads instead of requesting
      *   `fonts//fonts/atlas.png`. An absolute URL on another site is now rejected with an
      *   `AssetLimitError` for every font, not only one loaded by a bare file name.
-     * @changed 1.9.0 A fractional `lineHeight` or `baseline` is truncated to whole pixels instead of
+     * @changed 1.9.0 A fractional `lineHeight` or `baseline` is truncated to whole pixels (minimum 1) instead of
      *   putting the pen on a fractional pixel.
      * @param url - Path to the .btfont file.
      * @returns Loaded bitmap font instance.
