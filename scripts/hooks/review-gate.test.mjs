@@ -680,6 +680,35 @@ describe('review-gate command substitutions', () => {
         assert.match(result.stderr, /never closes/u);
     });
 
+    test('still runs a substitution that sits in comment-looking text, as an unquoted heredoc does', () => {
+        const repo = makePrRepo();
+
+        for (const command of [
+            `cat <<EOF\n# PR $(${PR_CREATE})\nEOF`,
+            `# note $(${PR_CREATE}) it's\n`,
+            `echo x # it's $(${PR_CREATE})`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+
+        assert.equal(commit(repo, "# it's just a comment about gh pr create\necho done").status, 0);
+    });
+
+    test('refuses gh pr create after a cd whose target comes from a substitution', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of [`cd "$(mktemp -d)" && ${PR_CREATE}`, `cd x$(pwd) && ${PR_CREATE} --base main`]) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /directory from a command substitution/u, command);
+        }
+
+        // A subshell restores the directory, and a reviewed branch passes.
+        assert.equal(commit(repo, `(cd "$(mktemp -d)"); ${PR_CREATE}`).status, 0);
+        assert.equal(commit(repo, `cd "$(git rev-parse --show-toplevel)" && ${COMMIT}`).status, 0);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');

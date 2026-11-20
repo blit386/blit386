@@ -171,6 +171,7 @@ function shellTokens(command) {
     const resume = [];
     let word = null;
     let quote = '';
+    let comment = false;
     const flush = () => {
         if (word !== null) {
             tokens.push(word);
@@ -181,14 +182,24 @@ function shellTokens(command) {
     for (let i = 0; i < command.length; i++) {
         const char = command[i];
 
+        if (comment) {
+            // A comment runs to the end of the line. Only `$(` is still looked at: an unquoted heredoc runs it.
+            if (char === '\n') {
+                comment = false;
+            } else if (!(char === '$' && command[i + 1] === '(')) {
+                continue;
+            }
+        }
+
         if (char === '\\' && quote !== SINGLE_QUOTE) {
             word = (word ?? '') + (command[++i] ?? '');
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push({ quote, word, substitution: true });
+            resume.push({ quote, word, comment, substitution: true });
             word = null;
             quote = '';
+            comment = false;
             i++;
         } else if (quote) {
             if (char === quote) {
@@ -200,10 +211,8 @@ function shellTokens(command) {
             quote = char;
             word ??= '';
         } else if (char === '#' && word === null) {
-            // A comment runs to the end of the line; its quotes and `$(` mean nothing. A `#` inside a word is just a char.
-            while (i + 1 < command.length && command[i + 1] !== '\n') {
-                i++;
-            }
+            // A `#` that starts a word begins a comment; inside a word it is just a character.
+            comment = true;
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
             flush();
@@ -214,6 +223,7 @@ function shellTokens(command) {
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
                 quote = saved?.quote ?? '';
+                comment = saved?.comment ?? false;
                 word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
         } else if (/\s/u.test(char)) {
@@ -328,6 +338,7 @@ function gatedCommands(command, cwd) {
     const found = new Map();
     let switched = false;
     const outer = [];
+    let dirUnknown = false;
     const outerWords = [];
     let dir = cwd;
     let words = [];
@@ -339,6 +350,7 @@ function gatedCommands(command, cwd) {
 
         if (name === 'cd' && args[0]) {
             dir = resolveDir(dir, args[0]);
+            dirUnknown ||= args[0].includes(SUBSTITUTION_WORD);
         } else if (name === 'git') {
             const sub = gitSubcommand(args, dir);
 
@@ -352,8 +364,17 @@ function gatedCommands(command, cwd) {
 
             if (pr) {
                 // Every target is part of the key: one command must not hide another's --repo, --head or --base.
-                const key = JSON.stringify([PULL_REQUEST, dir, pr.base, pr.head, pr.repo, switched, unterminated]);
-                found.set(key, { kind: PULL_REQUEST, ...pr, switched, unterminated });
+                const key = JSON.stringify([
+                    PULL_REQUEST,
+                    dir,
+                    pr.base,
+                    pr.head,
+                    pr.repo,
+                    switched,
+                    unterminated,
+                    dirUnknown,
+                ]);
+                found.set(key, { kind: PULL_REQUEST, ...pr, switched, unterminated, dirUnknown });
             }
         }
     };
@@ -367,7 +388,7 @@ function gatedCommands(command, cwd) {
         if (token === SUBSHELL_OPEN) {
             // The words before `$(` are the start of a command that goes on after `)`: keep them, do not judge them yet.
             outerWords.push(words);
-            outer.push(dir);
+            outer.push([dir, dirUnknown]);
             words = [];
             continue;
         }
@@ -376,7 +397,7 @@ function gatedCommands(command, cwd) {
         words = [];
 
         if (token === SUBSHELL_CLOSE) {
-            dir = outer.pop() ?? dir;
+            [dir, dirUnknown] = outer.pop() ?? [dir, dirUnknown];
             // The substitution's output sits in the word the tokenizer carries on, so the outer words just resume.
             words = outerWords.pop() ?? [];
         }
@@ -453,13 +474,21 @@ function defaultPrBase(top) {
 }
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
-async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated }, sessionDir) {
+async function staleReport(
+    { kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated, dirUnknown },
+    sessionDir,
+) {
     // Refusals first: none of them needs the repository, so a directory that is not one cannot turn them into a pass.
     if (unterminated) {
         // shortcut: the tokenizer does not know heredocs; an apostrophe in one leaves a `$(` open and hides what follows it.
         return [
             '  gh pr create sits in a command substitution that never closes (a heredoc?): use --body-file instead.',
         ];
+    }
+
+    if (dirUnknown) {
+        // shortcut: where a `cd "$(...)"` lands is unknown here; a PR from there is refused (a commit just stays put).
+        return ['  gh pr create after a cd into a directory from a command substitution: cd in a separate call first.'];
     }
 
     if (switched) {
