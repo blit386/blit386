@@ -295,6 +295,7 @@ const PR_CREATE = 'gh pr create --title t --body b';
 function makePrRepo(path = SOURCE, content = 'two\n') {
     const repo = makeRepo();
     git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
     write(repo, path, content);
     git(repo, 'add', '-A');
     git(repo, 'commit', '--quiet', '-m', 'branch work');
@@ -488,7 +489,7 @@ describe('review-gate pull request gate', () => {
         }
     });
 
-    test('without --base, uses the branch gh-merge-base, then the remote default branch, then main', () => {
+    test('without --base, uses the branch gh-merge-base, then the remote default branch', () => {
         const repo = makePrRepo();
         git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
         git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
@@ -519,12 +520,57 @@ describe('review-gate pull request gate', () => {
         }
     });
 
+    test('refuses when the PR base cannot be determined, instead of guessing main', () => {
+        const repo = makePrRepo();
+        git(repo, 'symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+        reviewBoth(repo);
+
+        const result = commit(repo, PR_CREATE);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /base cannot be determined/u);
+        assert.equal(commit(repo, `${PR_CREATE} --base main`).status, 0);
+    });
+
+    test('stops short-flag scanning at a boolean assignment', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // -d=t is draft mode; its "t" must not read as -t (title) and swallow -B.
+        assert.equal(commit(repo, `${PR_CREATE} -d=t -B release`).status, 2);
+    });
+
+    test('refuses a --repo override it cannot check', () => {
+        const repo = makePrRepo();
+        reviewBoth(repo);
+
+        for (const command of ['gh pr -R owner/upstream create --base main', 'gh --repo=owner/upstream pr create']) {
+            const result = commit(repo, command);
+            assert.equal(result.status, 2, command);
+            assert.match(result.stderr, /only this checkout's own PRs/u);
+        }
+    });
+
+    test('a switch from a subdirectory, or before a cd, is still refused', () => {
+        const repo = makePrRepo();
+        write(repo, 'scripts/x.txt', 'x\n');
+        reviewBoth(repo);
+
+        for (const command of [
+            `git -C scripts switch feature && ${PR_CREATE}`,
+            `git switch feature && cd scripts && ${PR_CREATE}`,
+        ]) {
+            assert.equal(commit(repo, command).status, 2, command);
+        }
+    });
+
     test('fails open when origin/main does not exist', () => {
         const repo = makeRepo();
         write(repo, SOURCE, 'two\n');
         git(repo, 'add', '-A');
 
-        const result = commit(repo, PR_CREATE);
+        const result = commit(repo, `${PR_CREATE} --base main`);
 
         assert.equal(result.status, 0);
         assert.match(result.stderr, /review-gate: internal error, allowing/u);

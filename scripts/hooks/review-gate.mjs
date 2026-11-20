@@ -37,8 +37,6 @@ const ALLOW = 0;
 /** What a gated command proposes, and the ref its changed paths are counted from. */
 const COMMIT = 'commit';
 const PULL_REQUEST = 'pull request';
-/** Last resort when neither `--base`, `branch.<name>.gh-merge-base` nor `origin/HEAD` names the PR base. */
-const DEFAULT_PR_BASE = 'main';
 const REMOTE = 'origin';
 
 /** Written by `pnpm run api:history`, not by hand. Other generated paths come from the scripts that own them. */
@@ -230,6 +228,8 @@ function createTargets(words) {
             targets.base = value || undefined;
         } else if (flag === '--head' || flag === '-H') {
             targets.head = value || undefined;
+        } else if (flag === '--repo' || flag === '-R') {
+            targets.repo = value || undefined;
         }
     };
 
@@ -244,7 +244,7 @@ function createTargets(words) {
             }
         } else if (word.startsWith('-')) {
             // Short cluster: boolean letters pass, the first value letter takes the rest of the word or the next word.
-            for (let j = 1; j < word.length; j++) {
+            for (let j = 1; j < word.length && word[j] !== '='; j++) {
                 if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
                     const rest = word.slice(j + 1);
                     record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
@@ -309,7 +309,7 @@ function gitSubcommand(args, startDir) {
  */
 function gatedCommands(command, cwd) {
     const found = new Map();
-    const switched = new Set();
+    let switched = false;
     const outer = [];
     let dir = cwd;
     let words = [];
@@ -331,14 +331,14 @@ function gatedCommands(command, cwd) {
             if (sub?.name === 'commit') {
                 found.set(`${COMMIT}\0${sub.dir}`, { kind: COMMIT, dir: sub.dir });
             } else if (BRANCH_SWITCHERS.has(sub?.name)) {
-                switched.add(sub.dir);
+                switched = true;
             }
         } else if (name === 'gh') {
             const pr = ghPrCreate(args, dir);
 
             if (pr) {
                 const key = `${PULL_REQUEST}\0${dir}\0${pr.base}\0${pr.head}`;
-                found.set(key, { kind: PULL_REQUEST, ...pr, switched: switched.has(dir) });
+                found.set(key, { kind: PULL_REQUEST, ...pr, switched });
             }
         }
 
@@ -399,7 +399,10 @@ function unreviewedPaths(repo, marker, { staged, committed, all }) {
     return [...new Set(differing)].filter(Boolean);
 }
 
-/** The base `gh pr create` falls back to without `--base`: the branch's `gh-merge-base`, else the remote's default. */
+/**
+ * The base `gh pr create` falls back to without `--base`: the branch's `gh-merge-base`, else the remote's default as
+ * the local `origin/HEAD` records it (`git remote set-head origin -a` refreshes it), else `''`: not determinable.
+ */
 function defaultPrBase(top) {
     const read = (args) => {
         const result = git(top, args);
@@ -410,17 +413,22 @@ function defaultPrBase(top) {
     const configured = branch && read(['config', '--get', `branch.${branch}.gh-merge-base`]);
     const remoteHead = read(['symbolic-ref', '--short', `refs/remotes/${REMOTE}/HEAD`]).replace(`${REMOTE}/`, '');
 
-    return configured || remoteHead || DEFAULT_PR_BASE;
+    return configured || remoteHead;
 }
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
-async function staleReport({ kind, dir, base: prBase, head, switched }, sessionDir) {
+async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, switched }, sessionDir) {
     const repo = repoOf(dir);
     const isPullRequest = kind === PULL_REQUEST;
 
     if (switched) {
         // shortcut: the branch a pending switch lands on is not predicted; the switch has to be its own tool call.
         return ['  git switch/checkout in the same command as gh pr create: switch branches in a separate call first.'];
+    }
+
+    if (targetRepo) {
+        // shortcut: a repository other than this checkout's origin is not followed; refused, not guessed at.
+        return [`  gh pr create --repo ${targetRepo}: only this checkout's own PRs can be checked; drop --repo.`];
     }
 
     if (head) {
@@ -430,11 +438,14 @@ async function staleReport({ kind, dir, base: prBase, head, switched }, sessionD
         ];
     }
 
-    // The PR base is the one named by --base (else main), as the remote knows it; with no such ref git throws and the
-    // gate fails open.
-    const base = isPullRequest
-        ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBase ?? defaultPrBase(repo.top)}`])
-        : 'HEAD';
+    // The PR base is the one named by --base, as the remote knows it; with no such ref git throws and the gate fails open.
+    const prBaseName = isPullRequest ? (prBase ?? defaultPrBase(repo.top)) : '';
+
+    if (isPullRequest && !prBaseName) {
+        return ['  gh pr create: the PR base cannot be determined (no origin/HEAD); pass --base.'];
+    }
+
+    const base = isPullRequest ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBaseName}`]) : 'HEAD';
     const paths = await changedSourcePaths(repo.top, base, isPullRequest);
     const stale =
         paths.all.length === 0
