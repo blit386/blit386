@@ -162,7 +162,8 @@ function recordReview(payload) {
 /**
  * Splits a shell command into words (quotes removed, backslash escapes applied) and boundary markers, one pass
  * per character so it cannot backtrack (CodeQL js/redos). Separators inside quotes stay part of the word; `$(` opens a
- * command context even inside double quotes, and the quote resumes at its `)`.
+ * command context even inside double quotes, the quote resumes at its `)`, and the substitution's output becomes
+ * `SUBSTITUTION_WORD` inside the word it sits in (`rel$(x)` is the one word `rel$(...)`).
  * shortcut: no `$VAR` or glob expansion, and `bash -c "..."` stays one opaque word; documented in the rule file.
  */
 function shellTokens(command) {
@@ -183,11 +184,10 @@ function shellTokens(command) {
         if (char === '\\' && quote !== SINGLE_QUOTE) {
             word = (word ?? '') + (command[++i] ?? '');
         } else if (char === '$' && command[i + 1] === '(' && quote !== SINGLE_QUOTE) {
-            // A quote opened just before `$(` is not a word of its own; the substitution stands in for it.
-            word = word === '' ? null : word;
-            flush();
+            // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
-            resume.push(quote);
+            resume.push({ quote, word, substitution: true });
+            word = null;
             quote = '';
             i++;
         } else if (quote) {
@@ -205,9 +205,11 @@ function shellTokens(command) {
             tokens.push(token);
 
             if (token === SUBSHELL_OPEN) {
-                resume.push('');
+                resume.push({ quote: '', word: null, substitution: false });
             } else if (token === SUBSHELL_CLOSE) {
-                quote = resume.pop() ?? '';
+                const saved = resume.pop();
+                quote = saved?.quote ?? '';
+                word = saved?.substitution ? (saved.word ?? '') + SUBSTITUTION_WORD : null;
             }
         } else if (/\s/u.test(char)) {
             flush();
@@ -224,8 +226,7 @@ function shellTokens(command) {
 /**
  * `--base` and `--head` of a `gh pr create`, read the way its flag parser does: every string option consumes the next
  * word even when it starts with `-` (`--title --base=x` is a title), `-B=x`, `-Bx` and a cluster such as `-dB x` all
- * work, the last occurrence wins, and an empty value means "not given" (but `--base=$(...)`, tokenized as `--base=` then
- * the placeholder word, is that placeholder).
+ * work, the last occurrence wins, and an empty value means "not given".
  */
 function createTargets(words) {
     const targets = {};
@@ -246,18 +247,14 @@ function createTargets(words) {
             const [flag, ...inline] = word.split('=');
 
             if (CREATE_VALUE_FLAGS.has(flag)) {
-                let value = inline.length > 0 ? inline.join('=') : words[++i];
-                value = value === '' && words[i + 1] === SUBSTITUTION_WORD ? words[++i] : value;
-                record(flag, value);
+                record(flag, inline.length > 0 ? inline.join('=') : words[++i]);
             }
         } else if (word.startsWith('-')) {
             // Short cluster: boolean letters pass, the first value letter takes the rest of the word or the next word.
             for (let j = 1; j < word.length && word[j] !== '='; j++) {
                 if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
                     const rest = word.slice(j + 1);
-                    let value = rest === '' ? words[++i] : rest.replace(/^=/u, '');
-                    value = value === '' && words[i + 1] === SUBSTITUTION_WORD ? words[++i] : value;
-                    record(`-${word[j]}`, value);
+                    record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
                     break;
                 }
             }
@@ -375,8 +372,8 @@ function gatedCommands(command, cwd) {
 
         if (token === SUBSHELL_CLOSE) {
             dir = outer.pop() ?? dir;
-            // The substitution's output is one word of the outer command, so an option before it still has its operand.
-            words = [...(outerWords.pop() ?? []), SUBSTITUTION_WORD];
+            // The substitution's output sits in the word the tokenizer carries on, so the outer words just resume.
+            words = outerWords.pop() ?? [];
         }
     }
 

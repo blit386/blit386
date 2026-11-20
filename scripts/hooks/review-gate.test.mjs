@@ -611,7 +611,15 @@ describe('review-gate command substitutions', () => {
         const repo = makePrRepo();
         reviewBoth(repo);
 
-        for (const flags of ['--base "$(printf release)"', '--base=$(printf release)', '-B "$(printf release)"']) {
+        for (const flags of [
+            '--base "$(printf release)"',
+            '--base=$(printf release)',
+            '-B "$(printf release)"',
+            '--base "rel$(printf ease)"',
+            '--base rel$(printf ease)',
+            '--base "$(printf rel)ease"',
+            '-B=re$(printf lease)',
+        ]) {
             const result = commit(repo, `${PR_CREATE} ${flags}`);
             assert.equal(result.status, 2, flags);
             assert.match(result.stderr, /pass the base name literally/u, flags);
