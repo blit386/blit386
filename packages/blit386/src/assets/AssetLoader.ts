@@ -87,6 +87,10 @@ function clearInFlight(url: string): void {
  * `onload`/`onerror` handler can tell it is no longer the current request for that key and
  * skip mutating the shared caches - otherwise a stale request that finishes after a newer one
  * (or after an eviction) could silently overwrite the correct result with old data.
+ *
+ * Grows by one entry per key ever loaded, and {@link AssetLoader.clear} bumps entries rather than
+ * deleting them. That is deliberate: a stale request compares its captured number, so dropping
+ * an entry would restart the key at 1 and let a stale completion look current.
  */
 const loadGenerations = new Map<string, number>();
 
