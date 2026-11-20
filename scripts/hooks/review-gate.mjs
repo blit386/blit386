@@ -328,7 +328,7 @@ function gatedCommands(command, cwd) {
     let words = [];
 
     /** Looks at one finished simple command: a `cd` moves `dir`, a gated command is recorded. */
-    const judge = (pending) => {
+    const judge = (pending, unterminated = false) => {
         const start = pending.findIndex((word) => !ASSIGNMENT.test(word) && !COMMAND_WRAPPERS.has(word));
         const [name, ...args] = start < 0 ? [] : pending.slice(start);
 
@@ -347,8 +347,8 @@ function gatedCommands(command, cwd) {
 
             if (pr) {
                 // Every target is part of the key: one command must not hide another's --repo, --head or --base.
-                const key = JSON.stringify([PULL_REQUEST, dir, pr.base, pr.head, pr.repo, switched]);
-                found.set(key, { kind: PULL_REQUEST, ...pr, switched });
+                const key = JSON.stringify([PULL_REQUEST, dir, pr.base, pr.head, pr.repo, switched, unterminated]);
+                found.set(key, { kind: PULL_REQUEST, ...pr, switched, unterminated });
             }
         }
     };
@@ -378,7 +378,9 @@ function gatedCommands(command, cwd) {
     }
 
     // A `$(` that never closes (a stray quote, a heredoc) still leaves its outer command to be judged.
-    outerWords.reverse().forEach(judge);
+    for (const pending of outerWords.reverse()) {
+        judge(pending, true);
+    }
 
     return [...found.values()];
 }
@@ -446,9 +448,16 @@ function defaultPrBase(top) {
 }
 
 /** Block-message lines for a `kind` in `dir` whose content both reviews did not see; empty when it may proceed. */
-async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, switched }, sessionDir) {
+async function staleReport({ kind, dir, base: prBase, head, repo: targetRepo, switched, unterminated }, sessionDir) {
     const repo = repoOf(dir);
     const isPullRequest = kind === PULL_REQUEST;
+
+    if (unterminated) {
+        // shortcut: the tokenizer does not know heredocs; an apostrophe in one leaves a `$(` open and hides what follows it.
+        return [
+            '  gh pr create sits in a command substitution that never closes (a heredoc?): use --body-file instead.',
+        ];
+    }
 
     if (switched) {
         // shortcut: the branch a pending switch lands on is not predicted; the switch has to be its own tool call.

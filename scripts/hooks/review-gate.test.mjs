@@ -640,6 +640,19 @@ describe('review-gate command substitutions', () => {
         }
     });
 
+    test('refuses a PR command that an unclosed substitution cuts off, such as a heredoc with an apostrophe', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+        reviewBoth(repo);
+
+        const command = `gh pr create --body "$(cat <<'EOF'\nIt's ready.\nEOF\n)" --base release`;
+        const result = commit(repo, command);
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /never closes/u);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');
