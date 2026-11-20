@@ -75,7 +75,8 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, palette `hitTest` / `tooltip` helpers and `PaletteInteraction` state, a
   hovered-frame allocation check (`Overlay.alloc.test.ts`), `RenderPaletteUsage` mask helpers (`markIndexUsed`,
-  `collectUsedIndices`), toggle hit-testing, and `updateAndRender` integration (Node)
+  `collectUsedIndices`), toggle hit-testing, and `updateAndRender` integration (Node). Pixels:
+  `tests/visual/overlay.spec.ts` (Tier 3, below)
 - FrameCapture - GPU readback, PNG conversion (Node + GPU mocks + browser stubs)
 - consumer-doc-imports - `src/docs/consumer-doc-imports.test.ts` guards README/docs import paths against `BLIT386.ts`
   exports
@@ -98,6 +99,10 @@ pass a WebGPU baseline by accident.
   page that seeks to it with `BT.renderAt` must match byte for byte, on both backends
 - Camera - camera offset transforms applied to all geometry
 - Fonts - placeholder text rendering at known positions
+- Overlay - every overlay section at once (top bars, timing chart band, audio meter, a custom `overlayRows` row, a
+  scrolling palette band, the toggle hint), frozen with `BT.renderAt`: the seeked frame draws one fixed snapshot
+  (present FPS at the target, times and counts at 0, an empty chart), so the live readouts match on every run (WebGPU +
+  software)
 - Mixed - primitives and sprites combined with correct layering
 - Post-process - baseline scene, pixel/display-tier effects, CRT preset stacks, upscale filters
 
@@ -172,6 +177,7 @@ tests/visual/
   sprites.spec.ts       - Sprite rendering visual test
   camera.spec.ts        - Camera transform visual test
   fonts.spec.ts         - Text rendering visual test
+  overlay.spec.ts       - Engine overlay visual test, frozen with BT.renderAt
   mixed.spec.ts         - Combined rendering visual test
   post-process.spec.ts  - Post-process effect chain visual test
   render-at.spec.ts     - Live loop vs. BT.renderAt seek, byte-for-byte

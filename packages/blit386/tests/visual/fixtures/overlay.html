@@ -1,0 +1,99 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visual Test: Overlay</title>
+        <style>
+            body {
+                margin: 0;
+                background: black;
+            }
+
+            canvas {
+                image-rendering: pixelated;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container">
+            <canvas height="240" id="blit386-canvas" width="320"></canvas>
+        </div>
+
+        <script type="module">
+            import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
+
+            window.BT = BT;
+            window.__RENDER_COMPLETE__ = false;
+            window.__INIT_FAILED__ = false;
+            window.__ACTIVE_BACKEND__ = null;
+
+            const width = 320;
+            const height = 240;
+            const slotCount = 64;
+            const stripeWidth = width / slotCount;
+
+            class OverlayTest {
+                // One reused custom row, as the overlay guide recommends.
+                #overlayRows = [{ leftText: 'Custom row', rightText: 'right' }];
+
+                configure() {
+                    return {
+                        // Release-build fixture: no splash over the snapshot.
+                        isSplashEnabled: false,
+                        displaySize: new Vector2i(width, height),
+                        targetFPS: 60,
+                        isOverlayVisibleAtStart: true,
+                        isOverlayTimingChartEnabled: true,
+                        isOverlayAudioMetersEnabled: true,
+                        isOverlayPaletteEnabled: true,
+                        // 64 slots / 16 columns = 4 rows, 2 visible: the band scrolls.
+                        overlayPaletteColumns: 16,
+                        overlayPaletteRowsVisible: 2,
+                    };
+                }
+
+                async init() {
+                    const palette = new Palette(slotCount);
+
+                    // Slots 1 and 2 are the overlay's default bar and text colors.
+                    palette.set(1, new Color32(24, 24, 40));
+                    palette.set(2, Color32.white);
+
+                    for (let slot = 3; slot < slotCount; slot++) {
+                        palette.set(slot, new Color32((slot * 37) % 256, (slot * 91) % 256, (slot * 53) % 256));
+                    }
+
+                    BT.paletteSet(palette);
+
+                    return true;
+                }
+
+                update() {}
+
+                render() {
+                    BT.clear(1);
+
+                    // One stripe per slot, so the palette grid marks every swatch as used.
+                    for (let slot = 0; slot < slotCount; slot++) {
+                        BT.drawRectFill(new Rect2i(slot * stripeWidth, 0, stripeWidth, height), slot);
+                    }
+
+                    window.__ACTIVE_BACKEND__ = BT.activeBackend;
+                    window.__RENDER_COMPLETE__ = true;
+                }
+
+                overlayRows() {
+                    return this.#overlayRows;
+                }
+            }
+
+            bootstrap(OverlayTest, {
+                onError: () => {
+                    window.__INIT_FAILED__ = true;
+                },
+            });
+        </script>
+    </body>
+</html>
