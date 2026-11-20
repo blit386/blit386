@@ -845,6 +845,26 @@ describe('review-gate command substitutions', () => {
         assert.equal(commit(repo, `<<< "$(printf body)" ${PR_CREATE} --base main`).status, 0);
     });
 
+    test('a process substitution is a word of the command, not a redirection', () => {
+        const repo = makePrRepo();
+        git(repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD~1');
+        git(repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+
+        // <(true) is an argument; it must not swallow the --base that follows. Release shows the unreviewed change.
+        for (const command of [
+            `${PR_CREATE} --base main <(true) --base release`,
+            `${PR_CREATE} --base main >(cat) --base release`,
+            `${PR_CREATE} --base main < <(true) --base release`,
+            `${PR_CREATE} --base release <(true) --base main --title t`,
+        ]) {
+            assert.equal(commit(repo, command).status, command.includes('release <(') ? 0 : 2, command);
+        }
+
+        // Inside quotes it is just text, and the commands inside a process substitution are judged.
+        assert.equal(commit(repo, `${PR_CREATE} --base main --title "<(x)"`).status, 0);
+        assert.equal(commit(repo, `cat <(${PR_CREATE} --base release)`).status, 2);
+    });
+
     test('a directory taken from a substitution leaves the directory unchanged', () => {
         const repo = makePrRepo();
         write(repo, SOURCE, 'six\n');
