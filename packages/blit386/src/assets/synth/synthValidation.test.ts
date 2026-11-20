@@ -247,4 +247,10 @@ describe('validateSynthParams non-finite numbers', () => {
 
         expect(() => validateSynthParams(params, 48000)).not.toThrow();
     });
+
+    it('should throw the friendly pitch sweep error for a null pitchSweep', () => {
+        const params = buildParams({ pitchSweep: null as never });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/pitch sweep toFrequency/);
+    });
 });

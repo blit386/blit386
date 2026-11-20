@@ -433,6 +433,9 @@ export class Palette {
     /**
      * Writes a color into a palette slot.
      *
+     * The values are copied into the slot's existing color, so a reference from {@link getRef} stays valid.
+     *
+     * @changed 1.9.0 Copies into the slot's existing color instead of replacing it, so references from `getRef` stay linked to the palette.
      * @param index - Palette index to overwrite.
      * @param color - Color to store.
      * @throws Error if the index is invalid or if index `0` is set opaque.
@@ -449,8 +452,8 @@ export class Palette {
 
             this.colors[0] = Color32.transparent;
         } else {
-            // eslint-disable-next-line security/detect-object-injection -- Index range is validated by assertIndexInRange above
-            this.colors[index] = color.clone();
+            // Copy into the existing entry so a Color32 held from getRef() keeps pointing into the palette.
+            this.colorAt(index).copyFrom(color);
             this._isDirty = true;
         }
     }

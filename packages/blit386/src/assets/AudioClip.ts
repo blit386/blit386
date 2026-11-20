@@ -161,6 +161,7 @@ export class AudioClip {
      * when a container or codec isn't universally supported. If every
      * candidate fails, the error from the last candidate is thrown.
      *
+     * @changed 1.9.0 The decode error carries the browser's own failure as its `cause`.
      * @param url - Single audio URL, or an ordered list of fallback URLs.
      * @param options - Optional load options (progress reporting).
      * @returns Loaded clip, cached under its winning source URL.
@@ -198,7 +199,7 @@ export class AudioClip {
      * fresh, independent `AudioBuffer` on every call. See {@link SynthParams} for the full
      * parameter set.
      *
-     * @changed 1.9.0 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound. Also throws when `duration` rounds to 0 samples at the context's sample rate, instead of surfacing the browser's `NotSupportedError` from `createBuffer`.
+     * @changed 1.9.0 Throws when `seed` is missing or not a finite number, instead of rendering noise from a time-based seed. Also throws when any other numeric field is `NaN` or `Infinity`, or when `volume` is negative, instead of rendering a broken sound. Also throws when `duration` rounds to 0 samples at the context's sample rate, instead of surfacing the browser's `NotSupportedError` from `createBuffer`. Also throws the pitch-sweep frequency error for a `null` `pitchSweep` (for example from JSON) instead of a raw `TypeError`.
      * @param params - Deterministic synthesis parameters.
      * @returns A new clip wrapping the synthesized buffer.
      * @throws Error if `params` fails validation, or the engine has not registered a decode
@@ -405,8 +406,8 @@ export class AudioClip {
 
         try {
             return await decodeContext.decodeAudioData(audioData);
-        } catch {
-            throw new Error(audioClipDecodeError(url));
+        } catch (cause) {
+            throw new Error(audioClipDecodeError(url), { cause });
         }
     }
 

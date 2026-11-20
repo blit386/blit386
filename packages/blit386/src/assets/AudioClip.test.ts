@@ -584,6 +584,15 @@ describe('AudioClip', () => {
             await expect(AudioClip.load('bad-codec.mp3')).rejects.toThrow("Couldn't decode the audio file");
         });
 
+        it('should keep the browser decode failure as the error cause', async () => {
+            const reason = new Error('unsupported codec');
+
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            mockContext.decodeAudioDataImpl = () => Promise.reject(reason);
+
+            await expect(AudioClip.load('bad-codec-cause.mp3')).rejects.toMatchObject({ cause: reason });
+        });
+
         it('should throw the not-ready error when no decode context is registered', async () => {
             audioHooks.context = null;
             vi.stubGlobal('fetch', vi.fn());

@@ -297,7 +297,7 @@ and leaves the rest of the palette free for another effect.
     highlightLead: {
       type: 'number',
       default: '0.5',
-      description: 'How far ahead of the schedule a fully lit entry runs, 0-1. Clamped; 0 is a uniform linear-light fade.',
+      description: 'How far ahead of the schedule a fully lit entry runs, 0-1. Clamped; NaN throws; 0 is a uniform linear-light fade.',
     },
     easing: {
       type: 'EasingFunction',

@@ -30,6 +30,14 @@ export const SPRITE_NOT_INDEXIZED_MESSAGE =
     ' or call sheet.indexize(palette) after BT.paletteSet.';
 
 /**
+ * Error message shown when the browser will not give the engine a 2D canvas to read image pixels with.
+ */
+export const SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE =
+    "The browser wouldn't give the engine a canvas to read this image's pixels." +
+    ' This usually means the page has too many canvases open or canvas access is blocked.' +
+    ' Close unused canvases or allow canvas access for this page, then load the sprite again.';
+
+/**
  * Error message shown when a tile is looked up by grid position on
  * a sprite sheet that has no tile size.
  */

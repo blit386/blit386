@@ -1108,6 +1108,10 @@
         {
           "version": "1.8.0",
           "note": "Advances once per fixed update on the tick clock instead of once per rendered frame on wall time."
+        },
+        {
+          "version": "1.9.0",
+          "note": "Throws for a `NaN` `highlightLead` instead of silently using the default."
         }
       ],
       "deprecated": null,

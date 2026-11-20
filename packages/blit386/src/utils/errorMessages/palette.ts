@@ -70,6 +70,19 @@ export function paletteFlashColorError(color: unknown): string {
 }
 
 /**
+ * Returns the error message when `BT.paletteFadeExposure()` gets a `highlightLead` that is not a number.
+ *
+ * @param highlightLead - The invalid value that was supplied.
+ * @returns User-facing error string.
+ */
+export function paletteExposureHighlightLeadError(highlightLead: number): string {
+    return (
+        `BT.paletteFadeExposure() needs highlightLead to be a number from 0 to 1 (got ${highlightLead}). ` +
+        'Leave it out for the default, or pass a value like 0.5.'
+    );
+}
+
+/**
  * Returns the error message when `applyHUD` is called with `startSlot` less than 1.
  *
  * @param startSlot - The invalid start slot value that was supplied.

@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Rect2i } from '../utils/Rect2i';
-import { markUniqueIndicesInRect } from './spriteIndexing';
+import { markUniqueIndicesInRect, readRgbaPixels } from './spriteIndexing';
 
 const SIZE = 16;
 
@@ -37,5 +37,24 @@ describe('markUniqueIndicesInRect empty rects', () => {
 
     it('still marks the pixels of a rect inside the sheet', () => {
         expect(scan(new Rect2i(0, 0, 2, 1)).some(Boolean)).toBe(true);
+    });
+});
+
+describe('readRgbaPixels without a 2D context', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('should throw a clear error when the canvas returns no 2D context', () => {
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class {
+                public getContext(): null {
+                    return null;
+                }
+            },
+        );
+
+        expect(() => readRgbaPixels({} as HTMLImageElement, 2, 2)).toThrow(/canvas/);
     });
 });
