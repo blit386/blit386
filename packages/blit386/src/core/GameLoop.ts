@@ -1,3 +1,5 @@
+import { BACKGROUND_THRESHOLD_MS } from './frameTiming';
+
 /**
  * Information passed to a {@link GameLoop} dropped-frame callback.
  *
@@ -64,12 +66,6 @@ export class GameLoop {
      * be reported as a drop. 1.5x corresponds to a missed vsync deadline.
      */
     private static readonly DROP_THRESHOLD_MULTIPLIER = 1.5;
-
-    /**
-     * Gaps longer than this (in ms) are filtered out as likely tab-switch or
-     * page-visibility pauses, which would otherwise generate huge spurious drops.
-     */
-    private static readonly BACKGROUND_THRESHOLD_MS = 1000;
 
     /** Number of recent rAF deltas retained when computing the rolling baseline. */
     private static readonly BASELINE_WINDOW = 60;
@@ -410,7 +406,7 @@ export class GameLoop {
 
         // Tab-switch / huge gap: skip detection AND skip the rolling window so
         // the baseline stays representative of real frames.
-        if (deltaTime >= GameLoop.BACKGROUND_THRESHOLD_MS) {
+        if (deltaTime >= BACKGROUND_THRESHOLD_MS) {
             return;
         }
 

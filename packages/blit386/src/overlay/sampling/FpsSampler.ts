@@ -1,3 +1,4 @@
+import { BACKGROUND_THRESHOLD_MS } from '../../core/frameTiming';
 import { FPS_SMOOTHING, MS_PER_SECOND } from './constants';
 
 /**
@@ -46,11 +47,13 @@ export class FpsSampler {
             return;
         }
 
-        const deltaSeconds = (now - this.#lastSampleMs) / MS_PER_SECOND;
+        const deltaMs = now - this.#lastSampleMs;
+        const deltaSeconds = deltaMs / MS_PER_SECOND;
 
         this.#lastSampleMs = now;
 
-        if (deltaSeconds <= 0) {
+        // A background-tab gap is not a frame rate; feeding it in would drag the readout down for ~30 frames.
+        if (deltaMs >= BACKGROUND_THRESHOLD_MS || deltaSeconds <= 0) {
             return;
         }
 

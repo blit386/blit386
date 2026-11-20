@@ -38,6 +38,7 @@ src/
     IBTDemo.ts             # Demo interface (incl. optional testState() hook) + HardwareSettings (keyboardLayout, KEYBOARD_LAYOUTS) + TestStateSnapshot
     mergeHardwareSettings.ts # defaultConfig(), the configure() merge into HardwareSettings, audio voice default/cap, overlay diagnostics switches
     GameLoop.ts            # Fixed-timestep game loop; step(n) runs n updates + one render synchronously (the primitive behind BT.renderAt)
+    frameTiming.ts         # BACKGROUND_THRESHOLD_MS: the frame gap treated as a tab-switch pause, shared by GameLoop and the overlay FpsSampler
     SeedUrlParam.ts        # ?seed=N URL parameter: pure resolver + reader, seeds BT.random before the game's init()
     WebGPUContext.ts       # WebGPU adapter/device/context setup
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
