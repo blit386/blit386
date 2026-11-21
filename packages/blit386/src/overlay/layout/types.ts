@@ -31,7 +31,7 @@ export interface OverlayLayoutConfig {
 
     readonly timingChartHeight: number;
 
-    /** Mirrors {@link HardwareSettings.isOverlayRendererDiagnosticsBarEnabled}. */
+    /** Mirrors {@link HardwareSettings#isOverlayRendererDiagnosticsBarEnabled}. */
     readonly isOverlayRendererDiagnosticsBarEnabled: boolean;
 
     /** When true, reserves the audio meter band at the tail of the top overlay cluster. */
@@ -40,7 +40,7 @@ export interface OverlayLayoutConfig {
     /** Audio meter band height in pixels when {@link isOverlayAudioMetersEnabled} is true. */
     readonly audioMeterHeight: number;
 
-    /** Mirrors {@link HardwareSettings.isOverlayPaletteEnabled}. */
+    /** Mirrors {@link HardwareSettings#isOverlayPaletteEnabled}. */
     readonly isOverlayPaletteEnabled: boolean;
 
     readonly paletteGrid?: PaletteGridLayout;

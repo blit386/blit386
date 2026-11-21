@@ -103,7 +103,7 @@ export class WebGPUPostProcess {
     }
 
     /**
-     * Appends an effect to the chain matching its {@link Effect.tier}.
+     * Appends an effect to the chain matching its {@link Effect#tier}.
      *
      * @param effect - Effect instance to append.
      * @throws If {@link init} has not run.

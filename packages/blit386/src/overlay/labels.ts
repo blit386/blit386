@@ -27,10 +27,10 @@ const GLYPH_TRACKING_PX = 1;
  */
 const SEGMENT_SEPARATOR_ADVANCE_PX = 2 * OVERLAY_DIVIDER_GAP_PX;
 
-/** Reused divider fill rect; {@link OverlayDrawTarget.drawBarFill} consumes rects immediately. */
+/** Reused divider fill rect; {@link OverlayDrawTarget#drawBarFill} consumes rects immediately. */
 const dividerScratch = new Rect2i(0, 0, 1, 0);
 
-/** Reused segment draw position; {@link OverlayDrawTarget.drawLabel} consumes positions immediately. */
+/** Reused segment draw position; {@link OverlayDrawTarget#drawLabel} consumes positions immediately. */
 const segmentScratch = new Vector2i(0, 0);
 
 /**
@@ -112,7 +112,7 @@ export function resolveOverlayTopLeftLabel(pageTitle: string | undefined): strin
  * marker with no surrounding spaces. The text is drawn as individual segments so each
  * divider line keeps {@link OVERLAY_DIVIDER_GAP_PX} of visual space between itself and
  * the inked glyphs on both sides. User-supplied strings (demo title, custom rows) keep
- * literal pipes via plain {@link OverlayDrawTarget.drawLabel}. Measure the rendered
+ * literal pipes via plain {@link OverlayDrawTarget#drawLabel}. Measure the rendered
  * width with {@link overlayDividerLabelWidth}.
  *
  * @param target - Overlay draw target.

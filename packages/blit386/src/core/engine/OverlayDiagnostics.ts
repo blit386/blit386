@@ -46,7 +46,7 @@ export class OverlayDiagnostics {
     public isCollectRendererDiagnosticsEnabled = false;
 
     /**
-     * When true, {@link Subsystems.attachAudioSubsystem} enables bus metering and
+     * When true, `Subsystems.attachAudioSubsystem` enables bus metering and
      * {@link captureAudioDiagnostics} reads audio bus/voice counters each frame.
      */
     public isCollectAudioMetersEnabled = false;
@@ -104,10 +104,10 @@ export class OverlayDiagnostics {
     /**
      * Records dropped-frame severity for the timing chart and optionally logs a warning.
      *
-     * The {@link GameLoop} auto-calibrates its baseline to the actual rAF cadence,
+     * The `GameLoop` auto-calibrates its baseline to the actual rAF cadence,
      * so sustained slowness re-baselines instead of generating sustained log spam.
      *
-     * @param event - Dropped-frame event from {@link GameLoop}.
+     * @param event - Dropped-frame event from `GameLoop`.
      * @param logToConsole - When true, emits a one-line console warning.
      */
     public handleFrameDrop(event: FrameDropEvent, logToConsole: boolean): void {
@@ -124,7 +124,7 @@ export class OverlayDiagnostics {
     /**
      * Reads renderer pipeline diagnostic counters when overlay diagnostics collection is enabled.
      *
-     * Must run after demo and overlay draws and before {@link IRenderer.endFrame}
+     * Must run after demo and overlay draws and before `IRenderer.endFrame`
      * resets pipeline batch state.
      */
     public captureRendererDiagnostics(): void {

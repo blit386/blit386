@@ -11,7 +11,7 @@ import { applyFadeToRange, computeFadeProgress, snapshotPaletteRange } from './p
 /**
  * Fades only a subset of palette indices toward a target palette.
  *
- * Identical to {@link FadeEffect} but restricted to the range `[start, end]`.
+ * Identical to `FadeEffect` but restricted to the range `[start, end]`.
  * Auto-removes when the fade completes.
  */
 export class FadeRangeEffect implements PaletteEffect {

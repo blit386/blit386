@@ -7,7 +7,7 @@ import { isRepeatTick } from './repeatTick';
 
 /**
  * `KeyboardEvent.code` values that scroll the host page by default.
- * When {@link KeyboardInput.setIsCapturingScroll} is enabled, `keydown` calls
+ * When {@link KeyboardInput#setIsCapturingScroll} is enabled, `keydown` calls
  * `preventDefault` for these codes so games can map arrows / Space without moving the page.
  */
 const SCROLL_CODES: ReadonlySet<string> = new Set([
@@ -22,10 +22,10 @@ const SCROLL_CODES: ReadonlySet<string> = new Set([
     'End',
 ]);
 
-/** Lowest code point {@link KeyboardInput.getInputString} accepts as typed text (space). */
+/** Lowest code point {@link KeyboardInput#getInputString} accepts as typed text (space). */
 const FIRST_PRINTABLE = 32;
 
-/** Highest code point {@link KeyboardInput.getInputString} accepts as typed text (`~`). */
+/** Highest code point {@link KeyboardInput#getInputString} accepts as typed text (`~`). */
 const LAST_PRINTABLE = 126;
 
 /** Options supplied when attaching to the canvas. */
@@ -99,7 +99,7 @@ export class KeyboardInput {
      * stays buffered for the next update.
      *
      * @param canvas - Canvas that receives keyboard events when focused.
-     * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
+     * @param options - Supplies {@link KeyboardAttachOptions#getTicks} for repeat timing.
      */
     public attach(canvas: HTMLCanvasElement, options: KeyboardAttachOptions): void {
         this.detach();
@@ -522,7 +522,7 @@ export class KeyboardInput {
  *
  * @param event - DOM keydown event.
  * @param key - `event.key`, already known to be one character.
- * @returns `true` when the key should not reach {@link KeyboardInput.getInputString}.
+ * @returns `true` when the key should not reach {@link KeyboardInput#getInputString}.
  */
 const isShortcut = (event: KeyboardEvent, key: string): boolean => {
     if (event.ctrlKey) {

@@ -4,7 +4,7 @@
  * safe for what changed, preserving state whenever possible.
  *
  * Called only by `bootstrap()` (`src/utils/Bootstrap.ts`) when the engine is already
- * initialized and a Vite HMR context is registered ({@link isHotActive}); never
+ * initialized and a Vite HMR context is registered (`isHotActive`); never
  * called directly by demo/game code.
  */
 

@@ -3,15 +3,15 @@
  *
  * Covers the lazy GPU resource model:
  * - constructor does not touch the GPU
- * - {@link PostProcessChain.isActive} reflects effect-list contents
- * - first {@link PostProcessChain.add} allocates `texA` and a sampler; second
+ * - {@link PostProcessChain#isActive} reflects effect-list contents
+ * - first {@link PostProcessChain#add} allocates `texA` and a sampler; second
  *   allocates `texB`
- * - tier mismatch on {@link PostProcessChain.add} throws a clear error
- * - {@link PostProcessChain.remove} of the last effect and
- *   {@link PostProcessChain.clear} both destroy the offscreen textures and
+ * - tier mismatch on {@link PostProcessChain#add} throws a clear error
+ * - {@link PostProcessChain#remove} of the last effect and
+ *   {@link PostProcessChain#clear} both destroy the offscreen textures and
  *   revert to the no-effect path
- * - {@link PostProcessChain.getInputView} guard rails before activation
- * - {@link PostProcessChain.encode} orchestrates effects in registration order
+ * - {@link PostProcessChain#getInputView} guard rails before activation
+ * - {@link PostProcessChain#encode} orchestrates effects in registration order
  *
  * Effects are stubbed via a minimal `Effect` implementation that records
  * lifecycle calls; the chain orchestration is tested without involving the

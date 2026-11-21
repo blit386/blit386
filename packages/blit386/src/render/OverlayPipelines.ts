@@ -7,28 +7,28 @@ import { Vector2i } from '../utils/Vector2i';
 import { PrimitivePipeline } from './PrimitivePipeline';
 import { SpritePipeline } from './SpritePipeline';
 
-/** Writable view of the diagnostics counters {@link OverlayPipelines.addDiagnostics} adds to. */
+/** Writable view of the diagnostics counters {@link OverlayPipelines#addDiagnostics} adds to. */
 type Counts = { -readonly [K in keyof OverlayRendererDiagnostics]: OverlayRendererDiagnostics[K] };
 
 /** Either pipeline kind an overlay tier holds. */
 type Pipeline = PrimitivePipeline | SpritePipeline;
 
-/** Overlay bars ({@link OverlayDrawTarget.drawBarFill}). */
+/** Overlay bars (`OverlayDrawTarget.drawBarFill`). */
 const BARS = 0;
 
-/** Overlay labels ({@link OverlayDrawTarget.drawLabel}). */
+/** Overlay labels (`OverlayDrawTarget.drawLabel`). */
 const LABELS = 1;
 
-/** Tooltip chrome above the labels ({@link OverlayDrawTarget.drawBarFillOnTop}). */
+/** Tooltip chrome above the labels (`OverlayDrawTarget.drawBarFillOnTop`). */
 const TOP_BARS = 2;
 
-/** Tooltip labels ({@link OverlayDrawTarget.drawLabelOnTop}). */
+/** Tooltip labels (`OverlayDrawTarget.drawLabelOnTop`). */
 const TOP_LABELS = 3;
 
-/** Tier names for log messages, indexed like {@link OverlayPipelines.tiers}. */
+/** Tier names for log messages, indexed like {@link OverlayPipelines#tiers}. */
 const NAMES = ['overlayPrimitives', 'overlaySprites', 'overlayTopPrimitives', 'overlayTopSprites'] as const;
 
-/** Pipeline class for each tier, indexed like {@link OverlayPipelines.tiers}. */
+/** Pipeline class for each tier, indexed like {@link OverlayPipelines#tiers}. */
 const KINDS: ReadonlyArray<new () => Pipeline> = [PrimitivePipeline, SpritePipeline, PrimitivePipeline, SpritePipeline];
 
 /**

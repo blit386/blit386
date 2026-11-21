@@ -2,10 +2,10 @@
  * Fixed-size SFX voice pool for {@link AudioManager}.
  *
  * Each voice is a per-play `AudioBufferSourceNode -> GainNode -> StereoPannerNode -> sfx bus`
- * chain, built fresh on every {@link VoicePool.play} call (source nodes are one-shot and cannot
+ * chain, built fresh on every {@link VoicePool#play} call (source nodes are one-shot and cannot
  * be replayed). The pool is sized from `HardwareSettings.audioVoices` and never grows; when
  * every slot is in use, a new `play()` call steals the lowest-priority active voice at or below
- * the incoming priority (oldest start order breaks ties - see {@link VoiceSlot.startOrder}), or
+ * the incoming priority (oldest start order breaks ties - see {@link VoiceSlot#startOrder}), or
  * drops the request when no slot qualifies. Callers identify a playing voice by an opaque,
  * generational {@link SoundRef} - every accessor validates the ref's generation against the
  * live slot and silently no-ops with inert defaults on a stale ref.
@@ -20,26 +20,26 @@ import {
 } from '../utils/errorMessages';
 import type { AudioManager } from './AudioManager';
 
-/** Default per-voice gain applied when {@link SoundPlayOptions.volume} is omitted. */
+/** Default per-voice gain applied when {@link SoundPlayOptions#volume} is omitted. */
 export const DEFAULT_VOLUME = 1;
 
-/** Default playback rate applied when {@link SoundPlayOptions.pitch} is omitted. */
+/** Default playback rate applied when {@link SoundPlayOptions#pitch} is omitted. */
 export const DEFAULT_PITCH = 1;
 
-/** Default stereo pan applied when {@link SoundPlayOptions.pan} is omitted. */
+/** Default stereo pan applied when {@link SoundPlayOptions#pan} is omitted. */
 export const DEFAULT_PAN = 0;
 
-/** Default allocation priority applied when {@link SoundPlayOptions.priority} is omitted. */
+/** Default allocation priority applied when {@link SoundPlayOptions#priority} is omitted. */
 const DEFAULT_PRIORITY = 0;
 
-/** Default loop flag applied when {@link SoundPlayOptions.loop} is omitted. */
+/** Default loop flag applied when {@link SoundPlayOptions#loop} is omitted. */
 const DEFAULT_LOOP = false;
 
 /**
  * Opaque generational handle identifying a single pool-allocated voice.
  *
  * `generation` increments every time the referenced slot is recycled (natural completion,
- * explicit {@link VoicePool.stop}, or being stolen by a later `play()`), so a ref captured
+ * explicit {@link VoicePool#stop}, or being stolen by a later `play()`), so a ref captured
  * before a recycle silently fails every {@link VoicePool} accessor's generation check.
  *
  * @since 1.3.0
@@ -56,7 +56,7 @@ export interface SoundRef {
 export const INVALID_SOUND_REF: SoundRef = { voiceIndex: -1, generation: -1 };
 
 /**
- * Options accepted by {@link BT.soundPlay}, forwarded unchanged to {@link VoicePool.play}.
+ * Options accepted by {@link BT.soundPlay}, forwarded unchanged to {@link VoicePool#play}.
  *
  * @since 1.3.0
  */
@@ -117,7 +117,7 @@ interface VoiceSlot {
     /** Panner node for the current voice, or `null` when inactive. */
     panner: StereoPannerNode | null;
 
-    /** Buffer the current voice was started with, or `null` when inactive - used by {@link VoicePool.stopVoicesUsingBuffer}. */
+    /** Buffer the current voice was started with, or `null` when inactive - used by {@link VoicePool#stopVoicesUsingBuffer}. */
     buffer: AudioBuffer | null;
 
     /** `true` while this slot holds a live voice. */
@@ -134,7 +134,7 @@ interface VoiceSlot {
 }
 
 /**
- * Fixed-size pool of SFX voices, owned and constructed by {@link AudioManager.attach}.
+ * Fixed-size pool of SFX voices, owned and constructed by {@link AudioManager#attach}.
  */
 export class VoicePool {
     /** Owning audio manager; source of the live context and `sfx` bus. */
@@ -167,7 +167,7 @@ export class VoicePool {
      * Allocates a voice and starts playing `buffer` through it.
      *
      * Picks the first free slot, or steals the lowest-priority active slot at or below the
-     * incoming priority (oldest {@link VoiceSlot.startOrder} breaks ties). Returns
+     * incoming priority (oldest {@link VoiceSlot#startOrder} breaks ties). Returns
      * {@link INVALID_SOUND_REF} without allocating when the audio manager has no live context
      * or `sfx` bus (not attached, or already detached), and increments {@link getDropCount} when
      * every active slot outranks the incoming priority.
@@ -360,7 +360,7 @@ export class VoicePool {
     /**
      * Stops and disconnects every active voice, invalidating all outstanding refs.
      *
-     * Called by {@link AudioManager.detach} before the audio context closes.
+     * Called by {@link AudioManager#detach} before the audio context closes.
      */
     public stopAll(): void {
         for (const slot of this.slots) {
@@ -374,7 +374,7 @@ export class VoicePool {
      * Stops and disconnects every active voice currently playing `buffer`, invalidating their
      * refs.
      *
-     * Called by the {@link AudioClip.unload} guard (via `audioDecodeContext`'s unload handler)
+     * Called by the {@link AudioClip#unload} guard (via `audioDecodeContext`'s unload handler)
      * so a released buffer can never keep playing from a stale voice.
      *
      * A voice already mid-fade-out via {@link stop} is not affected by this call - `resetSlot`
@@ -454,7 +454,7 @@ export class VoicePool {
 
     /**
      * Finds the best active slot to steal for an incoming voice: the lowest-priority active
-     * slot at or below `incomingPriority`, breaking ties by oldest {@link VoiceSlot.startOrder}.
+     * slot at or below `incomingPriority`, breaking ties by oldest {@link VoiceSlot#startOrder}.
      *
      * @param incomingPriority - Allocation priority of the incoming voice.
      * @returns Slot index to steal, or `null` when every active slot outranks `incomingPriority`.
@@ -670,7 +670,7 @@ function createEmptySlot(): VoiceSlot {
 /**
  * Rejects bad numeric {@link SoundPlayOptions} before any slot is allocated.
  *
- * @param options - Options passed to {@link VoicePool.play}.
+ * @param options - Options passed to {@link VoicePool#play}.
  * @throws Error when a numeric option is not finite, or `atTime` is negative.
  */
 function validatePlayOptions(options: SoundPlayOptions): void {

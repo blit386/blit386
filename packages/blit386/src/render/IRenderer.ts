@@ -10,14 +10,14 @@ import type { Effect } from './effects/Effect';
  * Backend-agnostic renderer contract.
  *
  * Any rendering backend (WebGPU, software Canvas 2D, headless test stub, etc.)
- * must satisfy this interface. {@link BTAPI} holds a reference to `IRenderer`
+ * must satisfy this interface. `BTAPI` holds a reference to `IRenderer`
  * and never depends on the concrete implementation directly, allowing the engine
- * to swap backends at initialization time based on {@link HardwareSettings.backend}.
+ * to swap backends at initialization time based on {@link HardwareSettings#backend}.
  *
  * Lifecycle:
- * 1. Call {@link IRenderer.init} once after construction.
- * 2. Per frame: {@link IRenderer.beginFrame} -> draw calls -> {@link IRenderer.endFrame}.
- * 3. Palette must be set via {@link IRenderer.setPalette} before the first {@link IRenderer.beginFrame}.
+ * 1. Call {@link IRenderer#init} once after construction.
+ * 2. Per frame: {@link IRenderer#beginFrame} -> draw calls -> {@link IRenderer#endFrame}.
+ * 3. Palette must be set via {@link IRenderer#setPalette} before the first {@link IRenderer#beginFrame}.
  *
  * Every backend draws in call order and draws nothing for a rect, sprite source, or stretch target
  * whose width or height is zero or less; the software backend is the pixel spec.
@@ -94,7 +94,7 @@ export interface IRenderer {
 
     /**
      * Draws a single pixel at raw coordinates.
-     * More efficient than {@link IRenderer.drawPixel} when coordinates are already unpacked -
+     * More efficient than {@link IRenderer#drawPixel} when coordinates are already unpacked -
      * avoids constructing a `Vector2i` just to shuttle two numbers.
      *
      * @param x - X position.
@@ -195,7 +195,7 @@ export interface IRenderer {
      * Captures the next rendered frame as a PNG blob. A second call while a
      * capture is pending rejects the prior pending promise.
      *
-     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
+     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer#endFrame}.
      */
     captureFrame(): Promise<Blob>;
 
@@ -208,7 +208,7 @@ export interface IRenderer {
      * independent of {@link captureFrameForShortcut}, so a public capture and an F9 press
      * never supersede each other.
      *
-     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
+     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer#endFrame}.
      */
     captureFrameAtDisplaySize(): Promise<Blob>;
 
@@ -217,7 +217,7 @@ export interface IRenderer {
      * reserved for the F9 / Shift+F9 dev-mode shortcuts, so a shortcut press can neither
      * supersede nor be superseded by a public `BT.captureFrame({ size: 'display' })`.
      *
-     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer.endFrame}.
+     * @returns Promise resolving to a PNG Blob after the next {@link IRenderer#endFrame}.
      */
     captureFrameForShortcut(): Promise<Blob>;
 

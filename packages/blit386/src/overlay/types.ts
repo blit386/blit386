@@ -30,8 +30,8 @@ export type OverlaySettings = Pick<HardwareSettings, 'targetFPS'> & {
 /**
  * Per-frame WebGPU pipeline diagnostic counters for overlay timing/chart internals.
  *
- * Populated by {@link BTAPI} when timing-chart diagnostics mode or
- * {@link HardwareSettings.isOverlayRendererDiagnosticsBarEnabled} needs pipeline counters.
+ * Populated by `BTAPI` when timing-chart diagnostics mode or
+ * {@link HardwareSettings#isOverlayRendererDiagnosticsBarEnabled} needs pipeline counters.
  * Overflow counts are WebGPU-only; software reports zero overflow with comparable vertex totals.
  */
 export interface OverlayRendererDiagnostics {
@@ -49,11 +49,11 @@ export interface OverlayRendererDiagnostics {
 }
 
 /**
- * Per-frame timing snapshot fed into {@link Overlay.updateAndRender}.
+ * Per-frame timing snapshot fed into `Overlay.updateAndRender`.
  *
  * Values are wall-clock CPU timings from `performance.now()` measured by
- * {@link BTAPI}. The overlay smooths `frameMs`, `updateMs`, and `renderMs`
- * via {@link TimingSampler} and FPS via {@link FpsSampler} before display.
+ * `BTAPI`. The overlay smooths `frameMs`, `updateMs`, and `renderMs`
+ * via `TimingSampler` and FPS via `FpsSampler` before display.
  */
 export interface OverlayTimingSnapshot {
     /** Total frame CPU time in milliseconds (update + render callback work). */
@@ -73,27 +73,27 @@ export interface OverlayTimingSnapshot {
 
     /**
      * Estimated dropped refresh intervals detected at the start of this present frame.
-     * Zero when none; set from {@link GameLoop} before the overlay samples the chart.
+     * Zero when none; set from `GameLoop` before the overlay samples the chart.
      */
     readonly droppedFrames: number;
 
-    /** {@link OverlayRendererDiagnostics.primitiveOverflowCount} for this frame. */
+    /** {@link OverlayRendererDiagnostics#primitiveOverflowCount} for this frame. */
     readonly primitiveOverflowCount: number;
 
-    /** {@link OverlayRendererDiagnostics.spriteOverflowCount} for this frame. */
+    /** {@link OverlayRendererDiagnostics#spriteOverflowCount} for this frame. */
     readonly spriteOverflowCount: number;
 
-    /** {@link OverlayRendererDiagnostics.primitiveSubmittedVertices} for this frame. */
+    /** {@link OverlayRendererDiagnostics#primitiveSubmittedVertices} for this frame. */
     readonly primitiveSubmittedVertices: number;
 
-    /** {@link OverlayRendererDiagnostics.spriteSubmittedVertices} for this frame. */
+    /** {@link OverlayRendererDiagnostics#spriteSubmittedVertices} for this frame. */
     readonly spriteSubmittedVertices: number;
 }
 
 /**
- * Per-frame audio snapshot fed into {@link Overlay.updateAndRender}.
+ * Per-frame audio snapshot fed into `Overlay.updateAndRender`.
  *
- * Populated from {@link AudioManager.getBusLevels} and the {@link VoicePool} counters.
+ * Populated from `AudioManager.getBusLevels` and the `VoicePool` counters.
  */
 export interface OverlayAudioSnapshot {
     /** Normalized per-bus level (0..1), keyed the same way as the bus graph (`main`, `music`, `sfx`). */

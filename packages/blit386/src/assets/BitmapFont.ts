@@ -558,13 +558,13 @@ export class BitmapFont {
      * `.btfont` JSON, checks every glyph against the new texture, then
      * rebuilds the glyph tables and measurement cache in place and
      * replaces the underlying sprite sheet's image via
-     * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
+     * {@link SpriteSheet#hotReplaceImage} (which itself re-indexizes it when it was
      * already indexized). When the sheet skips that swap (indexized, no active palette),
      * the glyphs are left as they were too. `name`/`size`/`lineHeight`/`baseline` are not
      * updated by a hot reload - only glyph data and the texture.
      *
      * @param url - `.btfont` URL this font was originally loaded from.
-     * @param palette - Active palette, forwarded to {@link SpriteSheet.hotReplaceImage}.
+     * @param palette - Active palette, forwarded to {@link SpriteSheet#hotReplaceImage}.
      * @throws Error if the re-fetched `.btfont` file is missing or malformed (mirrors {@link BitmapFont.load}).
      */
     async hotReload(url: string, palette: Palette | null): Promise<void> {

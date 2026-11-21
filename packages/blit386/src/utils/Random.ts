@@ -29,12 +29,12 @@ const INT32_MIN = -(2 ** 31);
 /** Largest bound `| 0` keeps as-is. */
 const INT32_MAX = 2 ** 31 - 1;
 
-/** Two pi, used by {@link Random.angle}. */
+/** Two pi, used by {@link Random#angle}. */
 const TWO_PI = Math.PI * 2;
 
 /**
- * Eight king-move unit offsets for {@link Random.direction8} (Y-down). The first four rows are the
- * cardinals {@link Random.direction4} draws from.
+ * Eight king-move unit offsets for {@link Random#direction8} (Y-down). The first four rows are the
+ * cardinals {@link Random#direction4} draws from.
  */
 const DIRECTIONS8: readonly (readonly [number, number])[] = [
     [1, 0],
@@ -393,7 +393,7 @@ export class Random {
     }
 
     /**
-     * Returns a random integer point inside a rectangle (half-open, like {@link Rect2i.isContaining}).
+     * Returns a random integer point inside a rectangle (half-open, like {@link Rect2i#isContaining}).
      *
      * @param rect - Rectangle to sample; must have positive width and height.
      * @returns New point with `x` in `[rect.x, rect.right)` and `y` in `[rect.y, rect.bottom)`.
@@ -406,7 +406,7 @@ export class Random {
     /**
      * Writes a random integer point inside a rectangle into `out` (zero-alloc).
      *
-     * Half-open bounds match {@link Rect2i.isContaining}: `x` in `[rect.x, rect.right)`,
+     * Half-open bounds match {@link Rect2i#isContaining}: `x` in `[rect.x, rect.right)`,
      * `y` in `[rect.y, rect.bottom)`.
      *
      * @param rect - Rectangle to sample; must have positive width and height.

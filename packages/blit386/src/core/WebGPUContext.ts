@@ -21,7 +21,7 @@ export interface Result {
  *
  * Sets only the canvas backing store (`canvas.width` / `canvas.height`) to
  * `configuredDrawingBufferSize` when provided, otherwise to `displaySize`. This
- * routine does not change the canvas on-screen CSS size; {@link applyCanvasLayoutStyles}
+ * routine does not change the canvas on-screen CSS size; `applyCanvasLayoutStyles`
  * publishes layout custom properties from `displaySize`, optional `drawingBufferSize`,
  * and `maxCanvasSize` before init, and demo page CSS scales the canvas within that cap.
  *

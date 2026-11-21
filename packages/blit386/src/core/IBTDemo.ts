@@ -10,7 +10,7 @@ import type { Vector2i } from '../utils/Vector2i';
 export type OutputUpscaleFilter = 'nearest' | 'linear';
 
 /**
- * Rendering backend selection for {@link HardwareSettings.backend}.
+ * Rendering backend selection for {@link HardwareSettings#backend}.
  *
  * - `'webgpu'` - Hardware-accelerated WebGPU path (default). Supports all draw
  *   primitives, sprites, palette, camera, and fullscreen post-process effects.
@@ -51,7 +51,7 @@ export interface RenderAtOptions {
 }
 
 /**
- * Preferred display orientation for {@link HardwareSettings.preferredOrientation}.
+ * Preferred display orientation for {@link HardwareSettings#preferredOrientation}.
  *
  * - `'landscape'` / `'portrait'` - after init, attempt `screen.orientation.lock()`
  *   with that target (silent no-op when unsupported or rejected).
@@ -63,17 +63,17 @@ export type PreferredOrientation = 'landscape' | 'portrait' | 'any';
 
 /**
  * Every valid {@link KeyboardLayout} value, in declaration order. Used to validate
- * {@link HardwareSettings.keyboardLayout} coming from untyped `configure()` code.
+ * {@link HardwareSettings#keyboardLayout} coming from untyped `configure()` code.
  */
 export const KEYBOARD_LAYOUTS = ['versus', 'single'] as const;
 
 /**
- * Built-in keyboard face-button defaults for {@link HardwareSettings.keyboardLayout}.
+ * Built-in keyboard face-button defaults for {@link HardwareSettings#keyboardLayout}.
  *
  * - `'versus'` (default) - two keyboard players: player 0 steers with WASD, player 1 with
  *   the arrow keys.
  * - `'single'` - one keyboard player: player 0 steers with WASD *and* the arrow keys;
- *   player 1 moves to IJKL. Also turns on {@link HardwareSettings.isCapturingKeyboardScroll}
+ *   player 1 moves to IJKL. Also turns on {@link HardwareSettings#isCapturingKeyboardScroll}
  *   unless `configure()` sets that flag explicitly.
  *
  * @since 1.8.0
@@ -81,7 +81,7 @@ export const KEYBOARD_LAYOUTS = ['versus', 'single'] as const;
 export type KeyboardLayout = (typeof KEYBOARD_LAYOUTS)[number];
 
 /**
- * Passed to {@link IBTDemo.onHotReload} after a hot reload swaps in new code.
+ * Passed to {@link IBTDemo#onHotReload} after a hot reload swaps in new code.
  *
  * @since 1.4.0
  */
@@ -104,17 +104,17 @@ export interface HotReloadContext {
  * implements that optional hook, or by {@link defaultConfig} otherwise.
  *
  * @since 0.1.0
- * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
+ * @changed 1.3.1 Added {@link HardwareSettings#isOverlayToggleHitDebugVisible}.
  * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
- * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
- * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
- * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
- * @changed 1.3.1 Added {@link HardwareSettings.preferredOrientation}.
- * @changed 1.5.0 Added {@link HardwareSettings.isSplashEnabled}.
- * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
- * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
- * @changed 1.7.0 Added {@link HardwareSettings.isFrameCaptureShortcutEnabled}.
- * @changed 1.8.0 Added {@link HardwareSettings.keyboardLayout}.
+ * @changed 1.3.1 Added {@link HardwareSettings#isCapturingPointerScroll}.
+ * @changed 1.3.1 Added {@link HardwareSettings#isCapturingKeyboardScroll}.
+ * @changed 1.3.1 Added {@link HardwareSettings#isWakeLockEnabled}.
+ * @changed 1.3.1 Added {@link HardwareSettings#preferredOrientation}.
+ * @changed 1.5.0 Added {@link HardwareSettings#isSplashEnabled}.
+ * @changed 1.5.0 Added {@link HardwareSettings#splashColorDark}.
+ * @changed 1.5.0 Added {@link HardwareSettings#splashColorLight}.
+ * @changed 1.7.0 Added {@link HardwareSettings#isFrameCaptureShortcutEnabled}.
+ * @changed 1.8.0 Added {@link HardwareSettings#keyboardLayout}.
  */
 export interface HardwareSettings {
     /**
@@ -133,7 +133,7 @@ export interface HardwareSettings {
      * Output drawing-buffer size in pixels. When set, this drives the WebGPU
      * drawing buffer resolution and enables the `'display'` tier of the
      * post-process effect chain (CRT scanlines, barrel distortion, etc.). CSS
-     * layout uses {@link applyCanvasLayoutStyles} custom properties
+     * layout uses `applyCanvasLayoutStyles` custom properties
      * (`--canvas-aspect-*`, `--canvas-max-*`) derived from this and
      * {@link displaySize}; leave undefined to render at logical `displaySize`
      * with no display-tier effects.
@@ -173,7 +173,7 @@ export interface HardwareSettings {
     outputUpscaleFilter?: OutputUpscaleFilter;
 
     /**
-     * Target fixed-update rate: how often {@link IBTDemo.update} runs per second.
+     * Target fixed-update rate: how often {@link IBTDemo#update} runs per second.
      *
      * Not the measured render rate shown as `Present FPS` on the overlay; `render()` follows
      * `requestAnimationFrame` and may differ (for example 60 Hz updates on a 120 Hz display).
@@ -249,7 +249,7 @@ export interface HardwareSettings {
      * no-ops on browsers that do not support locking (for example iOS Safari) or when
      * the platform rejects the request. Defaults to `'any'` in {@link defaultConfig}
      * (no lock attempt). Detection via {@link BT.screenOrientation} and
-     * {@link IBTDemo.onOrientationChange} works regardless of this setting.
+     * {@link IBTDemo#onOrientationChange} works regardless of this setting.
      *
      * @since 1.3.1
      */
@@ -265,7 +265,7 @@ export interface HardwareSettings {
      *
      * Face and system buttons are the same in both layouts. Set `'single'` in a one-player
      * game so `BT.isDown(BT.BTN_LEFT)` answers to the left arrow as well as `A`. `'single'`
-     * also turns on {@link HardwareSettings.isCapturingKeyboardScroll} (so the arrows stop
+     * also turns on {@link HardwareSettings#isCapturingKeyboardScroll} (so the arrows stop
      * scrolling the host page) unless `configure()` sets that flag explicitly.
      *
      * Applied once, before the game's `init()` runs, so `BT.inputMap` calls in `init()`
@@ -292,7 +292,7 @@ export interface HardwareSettings {
      * Dark endpoint of the splash's 16-step gray ramp.
      *
      * Defaults to black. The 16 steps are spaced evenly in encoded sRGB channel
-     * values between this and {@link HardwareSettings.splashColorLight}, so
+     * values between this and {@link HardwareSettings#splashColorLight}, so
      * artwork lands on the nearest step to the value it was drawn as.
      *
      * @since 1.5.0
@@ -302,7 +302,7 @@ export interface HardwareSettings {
     /**
      * Light endpoint of the splash's 16-step gray ramp.
      *
-     * Defaults to white. See {@link HardwareSettings.splashColorDark}.
+     * Defaults to white. See {@link HardwareSettings#splashColorDark}.
      *
      * @since 1.5.0
      */
@@ -418,7 +418,7 @@ export interface HardwareSettings {
 
     /**
      * Maximum palette swatches per row in the overlay grid. When unset, the engine
-     * picks the widest column count that fits {@link HardwareSettings.displaySize}.
+     * picks the widest column count that fits {@link HardwareSettings#displaySize}.
      *
      * @changed 1.9.0 `BT.init()` resolves `false` unless this is a whole number of at least `1`.
      */
@@ -496,7 +496,7 @@ export interface HardwareSettings {
      * When `true`, the engine draws a per-bus level meter band (main/music/sfx bars plus a
      * voices used/total, steal, and drop text readout) in the overlay. Defaults to `false` in
      * {@link defaultConfig}. Enabling this also lazily creates the `AnalyserNode`s backing the
-     * bus level readings ({@link AudioManager.enableBusMetering}) - no metering cost is paid
+     * bus level readings (`AudioManager.enableBusMetering`) - no metering cost is paid
      * unless this flag is `true`.
      *
      * @since 1.3.0
@@ -537,7 +537,7 @@ export interface OverlayStyle {
     /**
      * Palette index for 1 px row gaps between overlay bands and boundary separators
      * (below the top cluster, above the bottom hint bar). Defaults to
-     * {@link OverlayStyle.barPaletteIndex} when omitted.
+     * {@link OverlayStyle#barPaletteIndex} when omitted.
      */
     gapPaletteIndex?: number;
 }
@@ -548,10 +548,10 @@ export interface OverlayStyle {
  * @since 1.1.0
  */
 export interface OverlayTimingChartStyle {
-    /** Update bar color; defaults to {@link OverlayStyle.barPaletteIndex} or overlay bar index. */
+    /** Update bar color; defaults to {@link OverlayStyle#barPaletteIndex} or overlay bar index. */
     updateBarPaletteIndex?: number;
 
-    /** Render bar color; defaults to {@link OverlayStyle.textPaletteIndex} or overlay text index. */
+    /** Render bar color; defaults to {@link OverlayStyle#textPaletteIndex} or overlay text index. */
     renderBarPaletteIndex?: number;
 
     /** Warning tint when a chart column is over budget or dropped one frame. */
@@ -565,11 +565,11 @@ export interface OverlayTimingChartStyle {
 
     /**
      * Faint horizontal grid lines behind chart dots. Defaults to
-     * {@link OverlayStyle.gapPaletteIndex} or {@link OverlayStyle.barPaletteIndex} when omitted.
+     * {@link OverlayStyle#gapPaletteIndex} or {@link OverlayStyle#barPaletteIndex} when omitted.
      */
     gridPaletteIndex?: number;
 
-    /** Overflow marker tint for {@link HardwareSettings.overlayTimingChartDiagnostics} minimal/rich modes. Defaults to {@link warningPaletteIndex}. */
+    /** Overflow marker tint for {@link HardwareSettings#overlayTimingChartDiagnostics} minimal/rich modes. Defaults to {@link warningPaletteIndex}. */
     overflowPaletteIndex?: number;
 }
 
@@ -579,12 +579,12 @@ export interface OverlayTimingChartStyle {
  * @since 1.3.0
  */
 export interface OverlayAudioMeterStyle {
-    /** Bus level bar color; defaults to {@link OverlayStyle.textPaletteIndex} or overlay text index. */
+    /** Bus level bar color; defaults to {@link OverlayStyle#textPaletteIndex} or overlay text index. */
     levelBarPaletteIndex?: number;
 
     /**
-     * Bar track (empty background) color. Defaults to {@link OverlayStyle.gapPaletteIndex} or
-     * {@link OverlayStyle.barPaletteIndex} when omitted.
+     * Bar track (empty background) color. Defaults to {@link OverlayStyle#gapPaletteIndex} or
+     * {@link OverlayStyle#barPaletteIndex} when omitted.
      */
     trackPaletteIndex?: number;
 
@@ -599,8 +599,8 @@ export interface OverlayAudioMeterStyle {
  * One optional overlay row supplied by a demo (left label, optional right label).
  *
  * Rendered as a 13 px bar stacked above the footer (palette grid + hint bar when
- * {@link HardwareSettings.isOverlayPaletteEnabled} is `true`, or the hint bar alone) with 1 px gaps.
- * Reuse the same array instance from {@link IBTDemo.overlayRows} when possible to avoid
+ * {@link HardwareSettings#isOverlayPaletteEnabled} is `true`, or the hint bar alone) with 1 px gaps.
+ * Reuse the same array instance from {@link IBTDemo#overlayRows} when possible to avoid
  * per-frame allocations.
  *
  * @since 1.1.0
@@ -614,20 +614,20 @@ export interface OverlayRow {
 
     /**
      * Bar fill palette index for this row only. Falls back to
-     * {@link HardwareSettings.overlayStyle} then overlay defaults.
+     * {@link HardwareSettings#overlayStyle} then overlay defaults.
      */
     barPaletteIndex?: number;
 
     /**
      * Text palette index for this row only (left and right labels). Falls back to
-     * {@link HardwareSettings.overlayStyle} then overlay defaults.
+     * {@link HardwareSettings#overlayStyle} then overlay defaults.
      */
     textPaletteIndex?: number;
 }
 
 /**
  * Envelope returned by {@link BT.testState}: the engine's tick and backend plus the game's own
- * {@link IBTDemo.testState} readout.
+ * {@link IBTDemo#testState} readout.
  *
  * @since 1.8.0
  */
@@ -639,7 +639,7 @@ export interface TestStateSnapshot {
     backend: Backend | null;
 
     /**
-     * Deep copy of the game's {@link IBTDemo.testState} result, or `null` when the game has no
+     * Deep copy of the game's {@link IBTDemo#testState} result, or `null` when the game has no
      * hook, the hook threw, or its result could not be serialized.
      */
     state: unknown;
@@ -659,13 +659,13 @@ export interface TestStateSnapshot {
  * 2. init() - Called after renderer setup, load assets here
  * 3. update() - Fixed timestep via accumulator (may run 0..N times per frame)
  * 4. render() - Called once per requestAnimationFrame (browser refresh rate)
- * 5. (engine) overlay - When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
+ * 5. (engine) overlay - When {@link HardwareSettings#isOverlayEnabled} is true, drawn after `render()` on top
  *
  * @since 0.1.0
- * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
- * @changed 1.4.0 Added optional {@link IBTDemo.onHotReload} hook.
- * @changed 1.7.0 Added optional {@link IBTDemo.onReducedMotionChange} hook.
- * @changed 1.8.0 Added optional {@link IBTDemo.testState} hook.
+ * @changed 1.3.1 Added optional {@link IBTDemo#onOrientationChange} hook.
+ * @changed 1.4.0 Added optional {@link IBTDemo#onHotReload} hook.
+ * @changed 1.7.0 Added optional {@link IBTDemo#onReducedMotionChange} hook.
+ * @changed 1.8.0 Added optional {@link IBTDemo#testState} hook.
  */
 export interface IBTDemo {
     /**
@@ -711,12 +711,12 @@ export interface IBTDemo {
      * Called once per `requestAnimationFrame` tick (browser refresh rate).
      * Issue all draw calls for the current frame here.
      *
-     * When {@link HardwareSettings.isOverlayEnabled} is `true` (default), the engine
+     * When {@link HardwareSettings#isOverlayEnabled} is `true` (default), the engine
      * draws a screen-space overlay HUD after this method returns (present FPS, target FPS, draw calls,
      * frame/update()/render() timings, backend, demo title). Optional {@link overlayRows} adds stacked bars above
      * the footer.
      * Demos do not need to duplicate engine overlay text. Reserve about ~42 px at the top and space for the bottom palette
-     * grid (or ~13 px when {@link HardwareSettings.isOverlayPaletteEnabled} is `false`) at the bottom (plus ~14 px per
+     * grid (or ~13 px when {@link HardwareSettings#isOverlayPaletteEnabled} is `false`) at the bottom (plus ~14 px per
      * custom overlay row) for overlay bars, or disable the overlay in `configure()` when using custom full-screen HUD
      * layouts.
      *
@@ -730,7 +730,7 @@ export interface IBTDemo {
     /**
      * Optional hook returning extra overlay rows for the current frame.
      *
-     * Called once per render frame after `render()` when {@link HardwareSettings.isOverlayEnabled}
+     * Called once per render frame after `render()` when {@link HardwareSettings#isOverlayEnabled}
      * is `true` and the overlay body is visible (not hidden via Backquote or corner toggle). Rows stack
      * upward from just above the bottom hint bar (1 px gap between bars). Omit this hook or return
      * an empty array when no custom rows are needed.

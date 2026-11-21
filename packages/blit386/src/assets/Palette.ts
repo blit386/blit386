@@ -3,8 +3,8 @@
  *
  * The class stores mutable indexed {@link Color32} entries, supports named
  * index aliases, handles serialization, and exposes fixed-layout conversion
- * helpers used by the GPU palette uniform upload path ({@link Palette.toFloat32Array},
- * {@link Palette.isDirty}).
+ * helpers used by the GPU palette uniform upload path ({@link Palette#toFloat32Array},
+ * {@link Palette#isDirty}).
  */
 
 import { Color32 } from '../utils/Color32';
@@ -38,7 +38,7 @@ const GPU_FLOATS_PER_COLOR = 4;
 /**
  * Number of bytes per palette color in packed RGB byte arrays.
  *
- * Used by {@link Palette.fromUint8Array} and {@link Palette.toUint8Array}.
+ * Used by {@link Palette.fromUint8Array} and {@link Palette#toUint8Array}.
  * Alpha is excluded from the packed format; it is always inferred as fully opaque.
  */
 const RGB_BYTES_PER_COLOR = 3;
@@ -177,7 +177,7 @@ export class Palette {
      *
      * Set by {@link set} and {@link copyFrom}. Cleared by {@link clearDirty} after
      * the renderer has uploaded the updated palette uniform buffer. Not set by the
-     * constructor - initial upload is always triggered by {@link IRenderer.setPalette}.
+     * constructor - initial upload is always triggered by `IRenderer.setPalette`.
      */
     private _isDirty: boolean = false;
 
@@ -208,7 +208,7 @@ export class Palette {
     }
 
     /**
-     * Reconstructs a palette from JSON data produced by {@link Palette.toJSON}.
+     * Reconstructs a palette from JSON data produced by {@link Palette#toJSON}.
      *
      * @param data - Serialized palette payload.
      * @returns Reconstructed palette.
@@ -543,7 +543,7 @@ export class Palette {
      * Creates a deep copy of the palette, including named indices.
      *
      * The returned clone starts with a clean dirty flag regardless of the source
-     * palette's state. When passed to {@link IRenderer.setPalette}, the renderer's
+     * palette's state. When passed to `IRenderer.setPalette`, the renderer's
      * own dirty flag ensures the first upload.
      *
      * @returns Independent palette clone.
@@ -586,7 +586,7 @@ export class Palette {
      * Clears the dirty flag after the renderer has uploaded the palette to the GPU.
      *
      * Do not call this from application code. It is part of the internal renderer
-     * contract between {@link Palette} and {@link IRenderer}.
+     * contract between {@link Palette} and `IRenderer`.
      */
     public clearDirty(): void {
         this._isDirty = false;

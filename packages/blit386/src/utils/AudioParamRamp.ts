@@ -1,6 +1,6 @@
 /**
- * Shared `AudioParam` ramp scheduling, used for bus-volume fades ({@link AudioManager}) and
- * per-voice volume/pitch/pan fades ({@link VoicePool}).
+ * Shared `AudioParam` ramp scheduling, used for bus-volume fades (`AudioManager`) and
+ * per-voice volume/pitch/pan fades (`VoicePool`).
  */
 
 import type { EasingFunction } from './Easing';

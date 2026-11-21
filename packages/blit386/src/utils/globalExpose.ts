@@ -31,13 +31,13 @@ declare global {
 
 /** What `window.__btInputTrace` offers: start, stop and a read-only recording flag, nothing else of the trace. */
 export interface InputTraceGlobal {
-    /** See {@link InputTrace.start}. */
+    /** See {@link InputTrace#start}. */
     start: (options?: InputTraceOptions) => void;
 
-    /** See {@link InputTrace.stop}. */
+    /** See {@link InputTrace#stop}. */
     stop: () => InputTraceResult;
 
-    /** See {@link InputTrace.isRecording}. */
+    /** See {@link InputTrace#isRecording}. */
     readonly isRecording: boolean;
 }
 

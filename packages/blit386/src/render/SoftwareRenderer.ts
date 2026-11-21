@@ -86,7 +86,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Estimates primitive vertices for a rectangle outline using {@link PrimitivePipeline.drawRect} rules.
+     * Estimates primitive vertices for a rectangle outline using `PrimitivePipeline.drawRect` rules.
      *
      * @param rect - Outline bounds.
      * @returns Vertex count for the outline draw.
@@ -230,7 +230,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Returns GPU-equivalent vertex counts for queued primitive and sprite work this frame.
      *
-     * Counts mirror {@link PrimitivePipeline} / {@link SpritePipeline} batch semantics so
+     * Counts mirror `PrimitivePipeline` / `SpritePipeline` batch semantics so
      * overlay diagnostics stay comparable across backends.
      *
      * @returns Diagnostic counters for the current frame.
@@ -582,7 +582,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Estimates primitive vertices for a line using the same rules as {@link PrimitivePipeline.drawLine}.
+     * Estimates primitive vertices for a line using the same rules as `PrimitivePipeline.drawLine`.
      *
      * @param x0 - Start X.
      * @param y0 - Start Y.

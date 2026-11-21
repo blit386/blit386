@@ -21,7 +21,7 @@ import type { Color32 } from '../utils/Color32';
  */
 export type SplashState = 'disabled' | 'fadingIn' | 'shown' | 'fadingOut' | 'done';
 
-/** Construction options for {@link Splash}. */
+/** Construction options for `Splash`. */
 export interface SplashOptions {
     /** Dark endpoint of the gray ramp. Defaults to black. */
     colorDark?: Color32 | undefined;

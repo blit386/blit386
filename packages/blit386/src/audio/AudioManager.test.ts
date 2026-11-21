@@ -30,7 +30,7 @@ import { MusicPlayer } from './MusicPlayer';
 import { INVALID_SOUND_REF } from './VoicePool';
 
 /**
- * Mounts a canvas for {@link AudioManager.attach}.
+ * Mounts a canvas for {@link AudioManager#attach}.
  */
 const createCanvas = (): HTMLCanvasElement => {
     const canvas = document.createElement('canvas');

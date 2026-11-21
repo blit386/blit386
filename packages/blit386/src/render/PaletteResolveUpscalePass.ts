@@ -7,7 +7,7 @@ import { VS_WGSL } from './effects/fullscreenVS';
  * Fullscreen pass that reads an `r8uint` palette-index texture, resolves indices through
  * the shared palette uniform buffer, and writes RGBA at an arbitrary output resolution.
  *
- * Replaces {@link UpscalePass} for logical-index framebuffers: palette lookup happens here,
+ * Replaces `UpscalePass` for logical-index framebuffers: palette lookup happens here,
  * after the pixel-tier chain.
  */
 export class PaletteResolveUpscalePass {

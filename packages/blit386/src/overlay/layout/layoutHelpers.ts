@@ -39,7 +39,7 @@ export function createOverlayLayout(displayWidth: number, displayHeight: number,
  *
  * @param text - Text to place flush right with {@link OVERLAY_EDGE_MARGIN_PX} inset.
  * @param displayWidth - Logical display width in pixels.
- * @returns Left edge X for {@link OverlayDrawTarget.drawLabel} (never less than the margin).
+ * @returns Left edge X for `OverlayDrawTarget.drawLabel` (never less than the margin).
  */
 export function overlayRightAlignedTextX(text: string, displayWidth: number): number {
     const width = text.length * SYSTEM_CHAR_ADVANCE;
@@ -49,14 +49,14 @@ export function overlayRightAlignedTextX(text: string, displayWidth: number): nu
 
 /**
  * X position for a right-aligned engine-composed label whose `|` markers render as
- * dividers via {@link drawOverlayLabelWithDividers}.
+ * dividers via `drawOverlayLabelWithDividers`.
  *
  * Same flush-right convention as {@link overlayRightAlignedTextX}, but measured with
  * {@link overlayDividerLabelWidth} so the divider spacing is accounted for.
  *
  * @param text - Engine-composed label with `|` separator markers.
  * @param displayWidth - Logical display width in pixels.
- * @returns Left edge X for {@link drawOverlayLabelWithDividers} (never less than the margin).
+ * @returns Left edge X for `drawOverlayLabelWithDividers` (never less than the margin).
  */
 export function overlayRightAlignedDividerLabelX(text: string, displayWidth: number): number {
     const width = overlayDividerLabelWidth(text);
@@ -79,7 +79,7 @@ export function overlayToggleHintIconX(): number {
  * Palette offset for system-font overlay text (foreground glyphs stored as index 1).
  *
  * @param paletteIndex - Palette color index for overlay text.
- * @returns Offset passed to {@link OverlayDrawTarget.drawLabel}, or `0` when index 0 (transparent).
+ * @returns Offset passed to `OverlayDrawTarget.drawLabel`, or `0` when index 0 (transparent).
  */
 export function overlayBitmapTextPaletteOffset(paletteIndex: number): number {
     return paletteIndex > 0 ? paletteIndex - 1 : 0;

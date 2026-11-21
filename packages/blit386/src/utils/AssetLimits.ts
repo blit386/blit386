@@ -435,7 +435,7 @@ function areFiniteIntegers(
  *
  * Built for hot-path callers that blit many times per frame (for example, a per-glyph blit
  * loop) and must not allocate a result object per call. Mirrors the `*To(out)` convention
- * used elsewhere on `Rect2i`/`Vector2i` (e.g. {@link Rect2i.intersectTo}).
+ * used elsewhere on `Rect2i`/`Vector2i` (e.g. {@link Rect2i#intersectTo}).
  *
  * @param srcX - Requested source rectangle X in sheet space.
  * @param srcY - Requested source rectangle Y in sheet space.

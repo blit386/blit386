@@ -45,7 +45,7 @@ package).
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
 | `pnpm run bench:baseline` | Run Tier 4 benchmarks and write `benchmark-baseline.json` (run on `main` before perf work) |
 | `pnpm run bench:compare` | Compare `benchmark-results.json` against `benchmark-baseline.json`, 25% regression threshold |
-| `pnpm run preflight` | All checks, in order: `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `api:deprecations:check`, `system-font:check`, `splash-logo:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`, `test:system-font`, `test:splash-logo`, `test:spellcheck-coverage`, `test:security-preflight`. `format:check`, `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
+| `pnpm run preflight` | All checks, in order: `lint`, `typecheck`, `jsdoc:links:check`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `api:deprecations:check`, `system-font:check`, `splash-logo:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:jsdoc-links`, `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`, `test:system-font`, `test:splash-logo`, `test:spellcheck-coverage`, `test:security-preflight`. `format:check`, `docs:links` and `agents:check` are repo-wide and run at the root, not here - see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files offline: relative files, heading anchors, and BLIT386's own URLs (third-party URLs are never fetched) |
 | `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`, cursor rules parity, cursor `.mcp.json`, maintainer dogfood for Antigravity/Codex/Gemini/Copilot/OpenCode, the hand-maintained `.cursor/hooks` symlinks, and that every script a `.claude/settings.json` or `.cursor/hooks.json` hook runs exists) |
 | `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
@@ -64,6 +64,8 @@ package).
 | `pnpm run splash-logo:check` | Check `src/splash/logoData.ts` for drift against `assets/splash-logo.png` (parsed rows, not bytes) |
 | `pnpm run test:api-history` | API history generator unit tests (Node test) |
 | `pnpm run test:api-getters` | API getter drift checker unit tests (Node test) |
+| `pnpm run jsdoc:links:check` | Fail on a JSDoc `{@link}` that does not resolve, or that uses `.` for an instance member (`A#b`, not `A.b`) |
+| `pnpm run test:jsdoc-links` | JSDoc link checker unit tests (Node test) |
 | `pnpm run test:api-deprecations` | Deprecation timeline generator unit tests (Node test) |
 | `pnpm run check-bench-coverage` | Remind (never fail) when a push touches a hot-path directory without a `*.bench.ts`; the pre-push hook runs it last |
 | `pnpm run test:check-bench-coverage` | Bench coverage reminder unit tests (Node test) |

@@ -6,7 +6,7 @@ import type { Vector2i } from '../utils/Vector2i';
 import { PrimitivePipeline } from './PrimitivePipeline';
 import { SpritePipeline } from './SpritePipeline';
 
-/** No segment is open (start of frame, or right after {@link SceneBatch.encode}). */
+/** No segment is open (start of frame, or right after {@link SceneBatch#encode}). */
 const NONE = -1;
 
 /** A run of primitive vertices; its end mark is a vertex count. */

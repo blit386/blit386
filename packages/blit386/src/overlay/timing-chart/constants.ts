@@ -16,8 +16,8 @@ export const TIMING_CHART_DEFAULT_TAG_IDX = 5;
 /**
  * WebGPU primitive/sprite pipeline vertex cap for rich-mode pressure scaling.
  *
- * Unit: vertices. Matches the batch limit used by {@link PrimitivePipeline} and
- * {@link SpritePipeline}; submitted counts are scaled against this value when
+ * Unit: vertices. Matches the batch limit used by `PrimitivePipeline` and
+ * `SpritePipeline`; submitted counts are scaled against this value when
  * drawing vertex-pressure dots. Increase only if those pipeline caps change.
  */
 export const TIMING_CHART_MAX_PIPELINE_VERTICES = 50000;

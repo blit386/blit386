@@ -1,7 +1,7 @@
 /**
  * Screen Wake Lock subsystem.
  *
- * Requests a `navigator.wakeLock` screen lock after {@link WakeLock.attach} and keeps
+ * Requests a `navigator.wakeLock` screen lock after {@link WakeLock#attach} and keeps
  * it alive across page visibility changes - the platform releases the sentinel
  * automatically while the page is hidden, so a `visibilitychange` listener
  * re-requests it once the page is visible again. Silently no-ops on browsers that

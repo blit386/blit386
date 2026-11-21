@@ -1,5 +1,5 @@
 /**
- * W3C standard-mapping tables for {@link GamepadInput}: raw button and axis indices, the `BTN_*` flags they set,
+ * W3C standard-mapping tables for `GamepadInput`: raw button and axis indices, the `BTN_*` flags they set,
  * the `BT.AXIS_*` values, the stick dead zone, and the pure readers that turn one browser `Gamepad` into a button
  * mask and an axis tuple.
  */

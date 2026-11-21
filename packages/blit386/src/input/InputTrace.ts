@@ -7,7 +7,7 @@
  * without wrapping `BT` methods. Not public API: dev builds reach it as
  * `window.__btInputTrace` (see `src/utils/globalExpose.ts`).
  *
- * Off by default. While off, `BTAPI` only reads {@link InputTrace.isRecording}, so it costs one
+ * Off by default. While off, `BTAPI` only reads {@link InputTrace#isRecording}, so it costs one
  * field read per update and per frame. Recording stops on its own at the size cap.
  */
 
@@ -19,10 +19,10 @@ import type { KeyboardInput } from './KeyboardInput';
 import type { PointerClock, PointerInput } from './PointerInput';
 import { POINTER_BUTTON_CODES, POINTER_SLOT_COUNT } from './PointerInput';
 
-/** Entries kept when {@link InputTraceOptions.maxEntries} is omitted: about a minute at 60 updates and 60 frames per second. */
+/** Entries kept when {@link InputTraceOptions#maxEntries} is omitted: about a minute at 60 updates and 60 frames per second. */
 const DEFAULT_MAX_ENTRIES = 10000;
 
-/** Largest accepted {@link InputTraceOptions.maxEntries}: hours of play, bounded so a typo cannot exhaust memory. */
+/** Largest accepted {@link InputTraceOptions#maxEntries}: hours of play, bounded so a typo cannot exhaust memory. */
 const MAX_ENTRIES_LIMIT = 1_000_000;
 
 /** Which loop phase an entry was recorded in. */
@@ -82,13 +82,13 @@ export interface InputTraceEntry {
     gamepad: InputTraceGamepad[];
 }
 
-/** Options for {@link InputTrace.start}. */
+/** Options for {@link InputTrace#start}. */
 export interface InputTraceOptions {
     /** Entries to keep before recording stops on its own. Integer from 1 to 1000000; defaults to 10000. */
     maxEntries?: number;
 }
 
-/** What {@link InputTrace.stop} returns. */
+/** What {@link InputTrace#stop} returns. */
 export interface InputTraceResult {
     /** Entries in recording order. */
     entries: InputTraceEntry[];

@@ -125,7 +125,7 @@ export const lifecycle = {
     /**
      * Target fixed-update rate in frames per second.
      *
-     * Mirrors {@link HardwareSettings.targetFPS} from `configure()`.
+     * Mirrors {@link HardwareSettings#targetFPS} from `configure()`.
      * `update()` runs at this frequency; rendering may occur at a different cadence.
      *
      * @since 1.0.4
@@ -285,7 +285,7 @@ export const lifecycle = {
      * JSON readout of the running game for automated play-testing.
      *
      * Returns the current tick and active backend plus a deep copy of the game's optional
-     * {@link IBTDemo.testState} result (`null` when the game has no hook). In dev builds `BT`
+     * {@link IBTDemo#testState} result (`null` when the game has no hook). In dev builds `BT`
      * is exposed as `window.BT`, so a browser-driving agent or a CDP script reads it with
      * `window.BT.testState()` - no per-game global needed.
      *
@@ -376,8 +376,8 @@ export const lifecycle = {
      *
      * Examples: `'landscape-primary'`, `'portrait-secondary'`. Returns `null` when
      * `screen.orientation` is unavailable. Pair with
-     * {@link HardwareSettings.preferredOrientation} to request a lock after init, and
-     * with {@link IBTDemo.onOrientationChange} to react when the user rotates the device.
+     * {@link HardwareSettings#preferredOrientation} to request a lock after init, and
+     * with {@link IBTDemo#onOrientationChange} to react when the user rotates the device.
      *
      * Named `screenOrientation` (not `orientation`) to leave room for a future
      * device-orientation (alpha/beta/gamma) getter.
@@ -394,7 +394,7 @@ export const lifecycle = {
      *
      * Resolves `window.matchMedia('(prefers-reduced-motion: reduce)')`, or the
      * `?reducedmotion` / `?noreducedmotion` URL flags when either is present. Pair with
-     * {@link IBTDemo.onReducedMotionChange} to react when the preference changes at runtime -
+     * {@link IBTDemo#onReducedMotionChange} to react when the preference changes at runtime -
      * it is not fixed for the session, the same way {@link BT.screenOrientation} is not.
      *
      * @since 1.7.0

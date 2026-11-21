@@ -41,7 +41,7 @@ import { validateSynthParams } from './synth/synthValidation';
 export type AudioClipLoadPhase = 'download' | 'decoding';
 
 /**
- * Progress snapshot reported to an {@link AudioClipLoadOptions.onProgress} callback.
+ * Progress snapshot reported to an {@link AudioClipLoadOptions#onProgress} callback.
  *
  * @since 1.9.0
  */

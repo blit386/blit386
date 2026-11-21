@@ -20,12 +20,12 @@ export function randomSeedNotFiniteError(owner: string, seed: unknown): string {
 }
 
 /**
- * Error message for {@link Random.pick} when the array is empty.
+ * Error message for {@link Random#pick} when the array is empty.
  */
 export const RANDOM_PICK_EMPTY_MESSAGE = "Can't pick from an empty array. Pass an array with at least one element";
 
 /**
- * Returns the error message for {@link Random.weighted} when items and weights lengths differ.
+ * Returns the error message for {@link Random#weighted} when items and weights lengths differ.
  *
  * @param itemCount - Number of items supplied.
  * @param weightCount - Number of weights supplied.
@@ -39,13 +39,13 @@ export function randomWeightedLengthError(itemCount: number, weightCount: number
 }
 
 /**
- * Error message for {@link Random.weighted} when there are no items.
+ * Error message for {@link Random#weighted} when there are no items.
  */
 export const RANDOM_WEIGHTED_EMPTY_MESSAGE =
     "Can't pick a weighted item from an empty list. Pass at least one item and weight";
 
 /**
- * Returns the error message for {@link Random.weighted} when total weight is not positive.
+ * Returns the error message for {@link Random#weighted} when total weight is not positive.
  *
  * @param total - Sum of the supplied weights.
  * @returns User-facing error string.
@@ -58,7 +58,7 @@ export function randomWeightedTotalError(total: number): string {
 }
 
 /**
- * Returns the error message for a {@link Random.int} or {@link Random.intInclusive} bound outside the
+ * Returns the error message for a {@link Random#int} or {@link Random#intInclusive} bound outside the
  * 32-bit integer range, which `| 0` would otherwise wrap into an unrelated number.
  *
  * @param method - Method that received the bound (`'int'` or `'intInclusive'`).
@@ -73,7 +73,7 @@ export function randomIntBoundError(method: string, value: number): string {
 }
 
 /**
- * Returns the error message for {@link Random.weighted} when a weight is not a finite number.
+ * Returns the error message for {@link Random#weighted} when a weight is not a finite number.
  *
  * @param index - Position of the bad weight.
  * @param weight - Weight that was supplied.
@@ -87,7 +87,7 @@ export function randomWeightNotFiniteError(index: number, weight: number): strin
 }
 
 /**
- * Returns the error message for an invalid half-open integer range on {@link Random.int}.
+ * Returns the error message for an invalid half-open integer range on {@link Random#int}.
  *
  * @param min - Inclusive lower bound that was supplied.
  * @param maxExclusive - Exclusive upper bound that was supplied.
@@ -101,7 +101,7 @@ export function randomIntRangeError(min: number, maxExclusive: number): string {
 }
 
 /**
- * Returns the error message for an invalid inclusive integer range on {@link Random.intInclusive}.
+ * Returns the error message for an invalid inclusive integer range on {@link Random#intInclusive}.
  *
  * @param min - Inclusive lower bound that was supplied.
  * @param max - Inclusive upper bound that was supplied.

@@ -32,7 +32,7 @@ type Batch = { bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number
  * Batched WebGPU pipeline for indexed-palette sprite rendering.
  *
  * Sprites are stored as `r8uint` palette-index textures. The fragment shader
- * loads sprite texels, applies {@link paletteOffset}, and writes the combined
+ * loads sprite texels, applies `paletteOffset`, and writes the combined
  * palette index into the logical `r8uint` framebuffer (colors resolve later).
  * Palette uniforms are still used to `discard` pixels mapped to fully transparent
  * palette slots.

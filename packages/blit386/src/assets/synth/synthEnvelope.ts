@@ -8,16 +8,16 @@ import { DEFAULT_ATTACK, DEFAULT_DECAY, DEFAULT_RELEASE, DEFAULT_SUSTAIN } from 
 
 /** {@link SynthEnvelope} with every field resolved to a concrete number. */
 export interface ResolvedEnvelope {
-    /** Resolved {@link SynthEnvelope.attack}. */
+    /** Resolved {@link SynthEnvelope#attack}. */
     attack: number;
 
-    /** Resolved {@link SynthEnvelope.decay}. */
+    /** Resolved {@link SynthEnvelope#decay}. */
     decay: number;
 
-    /** Resolved {@link SynthEnvelope.sustain}. */
+    /** Resolved {@link SynthEnvelope#sustain}. */
     sustain: number;
 
-    /** Resolved {@link SynthEnvelope.release}. */
+    /** Resolved {@link SynthEnvelope#release}. */
     release: number;
 }
 

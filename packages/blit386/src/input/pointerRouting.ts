@@ -1,5 +1,5 @@
 /**
- * DOM pointer event routing for {@link PointerInput}: `pointermove` / `pointerdown` / `pointerup` /
+ * DOM pointer event routing for `PointerInput`: `pointermove` / `pointerdown` / `pointerup` /
  * `pointercancel` / `pointerleave` onto the four slots (slot 0 the mouse, 1-3 touch / pen in arrival order).
  */
 
@@ -15,7 +15,7 @@ import {
     type Slot,
 } from './pointerSlot';
 
-/** What the routing functions need from {@link PointerInput}; built once in its constructor. */
+/** What the routing functions need from `PointerInput`; built once in its constructor. */
 export interface PointerRouter {
     /** The four slots (0 = mouse, 1-3 = touch / pen). */
     readonly slots: readonly [Slot, Slot, Slot, Slot];
@@ -48,7 +48,7 @@ const isMousePointer = (event: PointerEvent): boolean => event.pointerType === '
  * already bound to this `pointerId` for touch / pen. Drops touch / pen
  * moves with no slot binding (allocation only happens on `pointerdown`).
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param event - DOM pointer event from the canvas.
  */
 export function routeMove(ctx: PointerRouter, event: PointerEvent): void {
@@ -97,7 +97,7 @@ export function routeMove(ctx: PointerRouter, event: PointerEvent): void {
  * 1..3 and set `CODE_A`; events that arrive while all touch
  * slots are full are dropped silently.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param event - DOM pointer event from the canvas.
  */
 export function routeDown(ctx: PointerRouter, event: PointerEvent): void {
@@ -172,7 +172,7 @@ export function routeDown(ctx: PointerRouter, event: PointerEvent): void {
  * slot 0 but leave the slot valid. Touch / pen events free their slot
  * completely so a subsequent contact can reuse it.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param event - DOM pointer event from the canvas.
  */
 export function routeUp(ctx: PointerRouter, event: PointerEvent): void {
@@ -216,7 +216,7 @@ export function routeUp(ctx: PointerRouter, event: PointerEvent): void {
  * Routes a `pointercancel` (browser-initiated abort) or `pointerleave` (pointer left the canvas bounds) event.
  * For mouse: deactivates slot 0 and clears all buttons. For touch / pen: frees the slot.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param event - DOM pointer event from the canvas.
  */
 export function routeExit(ctx: PointerRouter, event: PointerEvent): void {
@@ -238,7 +238,7 @@ export function routeExit(ctx: PointerRouter, event: PointerEvent): void {
 /**
  * Finds the first free touch / pen slot in `[1, POINTER_SLOT_COUNT)`.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @returns Index of the free slot, or `-1` when slots 1..3 are all in use.
  */
 function allocateTouchSlot(ctx: PointerRouter): number {
@@ -262,7 +262,7 @@ function allocateTouchSlot(ctx: PointerRouter): number {
  * the release velocity via `getDelta`. The next pointerdown that reuses
  * this slot resyncs both so the first delta starts at zero.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param slotIndex - Index of the slot to free.
  */
 function freeSlot(ctx: PointerRouter, slotIndex: number): void {
@@ -297,7 +297,7 @@ function freeSlot(ctx: PointerRouter, slotIndex: number): void {
  * Clears all four buttons and sets `isActive = false`, but leaves `pos`
  * intact so a subsequent `pointermove` can pick up where it left off.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  */
 function deactivateMouseSlot(ctx: PointerRouter): void {
     const slot = ctx.slots[0];
@@ -314,7 +314,7 @@ function deactivateMouseSlot(ctx: PointerRouter): void {
  * Resolves the `idToSlot` map and the indexed slot lookup in one
  * helper so event handlers can early-return without repeating the guards.
  *
- * @param ctx - Slots and canvas access from {@link PointerInput}.
+ * @param ctx - Slots and canvas access from `PointerInput`.
  * @param pointerId - Native `pointerId` from a DOM pointer event.
  * @returns Slot bound to this `pointerId`, or `null` when no slot is bound.
  */

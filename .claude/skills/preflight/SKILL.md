@@ -45,6 +45,8 @@ package preflights pass (see `/preflight root` below); in CI, `quality-root` has
 
 - `lint` - ESLint
 - `typecheck` - TypeScript strict
+- `jsdoc:links:check` - every JSDoc `{@link}` in `src/` resolves, in its file or as a public export of `src/BLIT386.ts`,
+  and instance or interface members use `#` (`SpriteSheet#hotReplaceImage`), not `.`
 - `spellcheck` - cspell over `src/**/*.{ts,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `knip` - unused exports and dependencies
 - `sync:doc-banners:check` - blit386.dev banner freshness on every published doc
@@ -58,7 +60,7 @@ package preflights pass (see `/preflight root` below); in CI, `quality-root` has
   (`scripts/convert-system-font.mjs --check`)
 - `splash-logo:check` - `src/splash/logoData.ts` matches `assets/splash-logo.png`, compared as parsed rows, not bytes
   (`scripts/convert-splash-logo.mjs --check`)
-- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`,
+- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:jsdoc-links`,
   `test:api-deprecations`, `test:bench-compare`, `test:check-bench-coverage`, `test:compact-tables`, `test:bmfont`,
   `test:system-font`, `test:splash-logo`, `test:spellcheck-coverage`, `test:security-preflight`
 

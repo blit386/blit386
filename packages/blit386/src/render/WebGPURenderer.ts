@@ -77,8 +77,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
     /**
      * True after {@link setPalette} is called, guaranteeing at least one upload
-     * even when the palette was never mutated via {@link Palette.set}.
-     * Per-frame mutations are detected separately via {@link Palette.isDirty}.
+     * even when the palette was never mutated via {@link Palette#set}.
+     * Per-frame mutations are detected separately via {@link Palette#isDirty}.
      */
     private isPaletteDirty: boolean = false;
 
@@ -184,10 +184,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Sets the active palette used for rendering.
      *
      * Stores a reference to the supplied palette - no clone is made. Subsequent
-     * calls to {@link Palette.set} or {@link Palette.copyFrom} on the same object
-     * will be detected via {@link Palette.isDirty} and uploaded automatically at the
+     * calls to {@link Palette#set} or {@link Palette#copyFrom} on the same object
+     * will be detected via {@link Palette#isDirty} and uploaded automatically at the
      * start of the next frame. The internal dirty flag guarantees the initial
-     * upload even when the palette has never been mutated through {@link Palette.set}.
+     * upload even when the palette has never been mutated through {@link Palette#set}.
      *
      * @param palette - Palette to use for color lookups and GPU upload.
      */
@@ -386,7 +386,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Draws a flipped / quarter-turned sprite region (see {@link IRenderer.drawSpriteOriented}).
+     * Draws a flipped / quarter-turned sprite region (see {@link IRenderer#drawSpriteOriented}).
      *
      * @param spriteSheet - Source sprite sheet (must be indexized).
      * @param srcRect - Region to copy from the sprite sheet.
@@ -405,7 +405,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Draws a stretched sprite region (see {@link IRenderer.drawSpriteStretched}).
+     * Draws a stretched sprite region (see {@link IRenderer#drawSpriteStretched}).
      *
      * @param spriteSheet - Source sprite sheet (must be indexized).
      * @param srcRect - Region to copy from the sprite sheet.
@@ -544,7 +544,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
     /**
      * Appends a fullscreen post-processing effect to the chain matching its
-     * declared {@link Effect.tier}.
+     * declared {@link Effect#tier}.
      *
      * - `tier='pixel'` -> pixel chain (logical resolution).
      * - `tier='display'` -> display chain (output resolution); requires
@@ -562,7 +562,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Removes a previously registered post-processing effect.
      *
-     * Dispatches to the chain matching {@link Effect.tier}. If the effect is
+     * Dispatches to the chain matching {@link Effect#tier}. If the effect is
      * not found in the expected chain (e.g. it was never added), a defensive
      * fallback tries the other chain. Removing an effect that was never added
      * is a no-op.

@@ -19,7 +19,7 @@ import type { SynthEnvelope, SynthParams, SynthVibrato } from './SynthParams';
 import { MAX_SYNTH_DURATION_SECONDS, SYNTH_WAVEFORMS } from './SynthParams';
 import { synthSampleCount } from './synthRender';
 
-/** Waveform names accepted by {@link SynthParams.waveform}. */
+/** Waveform names accepted by {@link SynthParams#waveform}. */
 const VALID_WAVEFORMS = new Set<string>(SYNTH_WAVEFORMS);
 
 /**
@@ -43,7 +43,7 @@ function isUnitRange(value: number): boolean {
 }
 
 /**
- * Validates `params` and the target `sampleRate` before {@link renderSynthSamples} runs.
+ * Validates `params` and the target `sampleRate` before `renderSynthSamples` runs.
  *
  * @param params - Synthesis parameters supplied to {@link AudioClip.synth}.
  * @param sampleRate - Target sample rate, read from the live decode context.

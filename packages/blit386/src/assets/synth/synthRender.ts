@@ -41,7 +41,7 @@ export function synthSampleCount(duration: number, sampleRate: number): number {
  * regardless of envelope, volume, or noise mix.
  *
  * @param params - Synthesis parameters. Assumed already validated by
- *   {@link validateSynthParams}.
+ *   `validateSynthParams`.
  * @param sampleRate - Output sample rate in Hz.
  * @returns Rendered mono samples, {@link synthSampleCount} long.
  */

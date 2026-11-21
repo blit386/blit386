@@ -5,7 +5,7 @@ import { OVERLAY_BAR_HEIGHT } from '../layout/constants';
 /** Default audio meter band height in pixels (single-row height, matches {@link OVERLAY_BAR_HEIGHT}). */
 export const DEFAULT_AUDIO_METER_HEIGHT = OVERLAY_BAR_HEIGHT;
 
-/** Bus level mapped to full meter band height (levels from {@link AudioManager.getBusLevels} are already normalized 0..1). */
+/** Bus level mapped to full meter band height (levels from `AudioManager.getBusLevels` are already normalized 0..1). */
 export const AUDIO_METER_FULL_SCALE = 1;
 
 /** Level at or above which a bus bar switches to the warning tint. */

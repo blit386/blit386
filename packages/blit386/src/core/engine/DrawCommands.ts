@@ -329,7 +329,7 @@ export class DrawCommands {
     }
 
     /**
-     * Draws one tile from a sheet's own grid ({@link SpriteSheet.tileSize}).
+     * Draws one tile from a sheet's own grid ({@link SpriteSheet#tileSize}).
      *
      * @param spriteSheet - Indexized sheet with a tile grid.
      * @param colOrIndex - Row-major index when `row` is `undefined`, otherwise the column.

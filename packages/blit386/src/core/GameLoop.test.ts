@@ -617,7 +617,7 @@ describe('GameLoop', () => {
          * rescan baseline algorithm (identical ring-buffer write, warm-up
          * gating, and threshold semantics), used to generate the expected
          * event sequence for comparison against the production incremental
-         * tracker in {@link GameLoop.detectFrameDrop}.
+         * tracker in {@link GameLoop#detectFrameDrop}.
          */
         function referenceEvents(deltas: number[]): FrameDropEvent[] {
             const ring = new Array<number>(BASELINE_WINDOW).fill(0);

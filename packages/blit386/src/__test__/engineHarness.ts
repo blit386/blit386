@@ -88,8 +88,8 @@ type EngineHarness<T> = {
 /**
  * Boots the real engine with a test demo that records `read()` per update and per render.
  *
- * Runs `GameLoop.start()`'s two warm-up frames before resolving, so the next {@link EngineHarness.frame}
- * is the first one that can run an update. Call {@link EngineHarness.dispose} in `afterEach`.
+ * Runs `GameLoop.start()`'s two warm-up frames before resolving, so the next {@link EngineHarness#frame}
+ * is the first one that can run an update. Call {@link EngineHarness#dispose} in `afterEach`.
  *
  * @param options - The per-update/per-render reader and optional configure overrides.
  * @returns The harness handle.

@@ -3762,7 +3762,7 @@ describe('BTAPI', () => {
         /**
          * Runs game-loop ticks using a stubbed rAF queue seeded before init.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
+         * @param demo - Demo passed to {@link BTAPI#init}.
          * @param stopWhen - Stop draining once this returns true.
          * @returns Overlay spy from the initialized instance.
          */
@@ -3968,7 +3968,7 @@ describe('BTAPI', () => {
         /**
          * Runs game-loop ticks using a stubbed rAF queue seeded before init.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
+         * @param demo - Demo passed to {@link BTAPI#init}.
          * @param stopWhen - Stop draining once this returns true.
          * @returns Overlay spy from the initialized instance.
          */
@@ -4086,7 +4086,7 @@ describe('BTAPI', () => {
         /**
          * Drains the stubbed rAF queue until `stopWhen` returns true, spying on real renderer bar fills.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
+         * @param demo - Demo passed to {@link BTAPI#init}.
          * @returns Collected bar fills in draw order.
          */
         async function drainAndCollectBarFills(demo: IBTDemo): Promise<{ index: number; rect: Rect2i }[]> {
@@ -4144,7 +4144,7 @@ describe('BTAPI', () => {
         }
 
         /**
-         * The three bus bar left-edge X positions {@link AudioMeter} draws at, computed the same
+         * The three bus bar left-edge X positions `AudioMeter` draws at, computed the same
          * way as `busBarX()` in `src/overlay/audio-meter/AudioMeter.ts` (band left edge at `x: 0`).
          */
         const expectedAudioMeterBarXs = [0, 1, 2].map(

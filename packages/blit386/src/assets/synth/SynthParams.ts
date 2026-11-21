@@ -7,7 +7,7 @@
  */
 
 /**
- * Oscillator waveform shapes accepted by {@link SynthParams.waveform} - the single source of
+ * Oscillator waveform shapes accepted by {@link SynthParams#waveform} - the single source of
  * truth {@link SynthWaveform} is derived from, and that validation/error-message code reuses
  * (see `synthValidation.ts` and `errorMessages/synth.ts`) so the accepted set can never drift out of
  * sync between the type, the validator, and the error text.
@@ -25,7 +25,7 @@ export const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise
 export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
 
 /**
- * Attack/decay/sustain/release envelope descriptor; see {@link SynthParams.envelope}.
+ * Attack/decay/sustain/release envelope descriptor; see {@link SynthParams#envelope}.
  *
  * The release phase is always anchored to the end of the clip, so a note is fully released
  * by its last sample regardless of how `attack`/`decay`/`release` compare to the clip's total
@@ -62,7 +62,7 @@ export interface SynthEnvelope {
 }
 
 /**
- * Linear pitch sweep descriptor; see {@link SynthParams.pitchSweep}.
+ * Linear pitch sweep descriptor; see {@link SynthParams#pitchSweep}.
  *
  * @since 1.3.0
  */
@@ -72,7 +72,7 @@ export interface SynthPitchSweep {
 }
 
 /**
- * Sine-wave vibrato (periodic pitch wobble) descriptor; see {@link SynthParams.vibrato}.
+ * Sine-wave vibrato (periodic pitch wobble) descriptor; see {@link SynthParams#vibrato}.
  *
  * @since 1.3.0
  */
@@ -149,35 +149,35 @@ export interface SynthParams {
     seed: number;
 }
 
-/** Default {@link SynthParams.volume} applied when omitted. */
+/** Default {@link SynthParams#volume} applied when omitted. */
 export const DEFAULT_VOLUME = 1;
 
-/** Default {@link SynthEnvelope.attack} applied when omitted. */
+/** Default {@link SynthEnvelope#attack} applied when omitted. */
 export const DEFAULT_ATTACK = 0.01;
 
-/** Default {@link SynthEnvelope.decay} applied when omitted. */
+/** Default {@link SynthEnvelope#decay} applied when omitted. */
 export const DEFAULT_DECAY = 0.1;
 
-/** Default {@link SynthEnvelope.sustain} applied when omitted. */
+/** Default {@link SynthEnvelope#sustain} applied when omitted. */
 export const DEFAULT_SUSTAIN = 0.7;
 
-/** Default {@link SynthEnvelope.release} applied when omitted. */
+/** Default {@link SynthEnvelope#release} applied when omitted. */
 export const DEFAULT_RELEASE = 0.1;
 
-/** Default {@link SynthVibrato.rate} applied when omitted. */
+/** Default {@link SynthVibrato#rate} applied when omitted. */
 export const DEFAULT_VIBRATO_RATE = 5;
 
-/** Default {@link SynthVibrato.depth} applied when omitted. */
+/** Default {@link SynthVibrato#depth} applied when omitted. */
 export const DEFAULT_VIBRATO_DEPTH = 0;
 
-/** Default {@link SynthParams.noiseMix} applied when omitted. */
+/** Default {@link SynthParams#noiseMix} applied when omitted. */
 export const DEFAULT_NOISE_MIX = 0;
 
-/** Default {@link SynthParams.dutyCycle} applied when omitted. */
+/** Default {@link SynthParams#dutyCycle} applied when omitted. */
 export const DEFAULT_DUTY_CYCLE = 0.5;
 
 /**
- * Maximum accepted {@link SynthParams.duration}, in seconds. Rendering is synchronous CPU work
+ * Maximum accepted {@link SynthParams#duration}, in seconds. Rendering is synchronous CPU work
  * with no chunking, so an unbounded duration could block the caller for an unreasonable amount
  * of time; this cap is generous for sound effects and short stingers while keeping a single
  * `AudioClip.synth()` call bounded.

@@ -158,7 +158,7 @@ function applyExposureEntry(
 /**
  * Fades all palette entries toward a target the way an iris pull does.
  *
- * {@link FadeEffect} interpolates encoded sRGB values, which is a post-production
+ * `FadeEffect` interpolates encoded sRGB values, which is a post-production
  * crossfade: every entry drops by the same proportion for the whole fade and the
  * image sags uniformly into gray. This effect interpolates each RGB channel in
  * linear light instead, and gives each entry a luminance-derived timing offset,

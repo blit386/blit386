@@ -2,7 +2,7 @@
  * Live palette swatch grid for the overlay bottom band.
  *
  * {@link computeGrid} picks adaptive column counts from the active palette
- * size; {@link PaletteView.draw} renders indexed swatches with gaps and unused-slot
+ * size; {@link PaletteView#draw} renders indexed swatches with gaps and unused-slot
  * markers.
  */
 
@@ -77,7 +77,7 @@ export function gridRowStackHeight(rows: number, swatchSize: number, gap: number
  * @param swatchSize - Side length of each swatch.
  * @param gap - Gap between swatches.
  * @param colorCount - Active palette slot count.
- * @param maxColumns - Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
+ * @param maxColumns - Optional cap from {@link HardwareSettings#overlayPaletteColumns}.
  * @returns Column count (at least 1).
  */
 export function pickGridColumnCount(
@@ -109,7 +109,7 @@ export function pickGridColumnCount(
  * Resolves the visible row count for a palette grid viewport.
  *
  * @param totalRows - Full palette row count.
- * @param maxVisibleRows - Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
+ * @param maxVisibleRows - Optional cap from {@link HardwareSettings#overlayPaletteRowsVisible}.
  * @returns Visible rows (0 when `totalRows` is 0; otherwise clamped to `[1, totalRows]`).
  */
 export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: number): number {
@@ -133,8 +133,8 @@ export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: numbe
  * @param swatchSize - Side length of each swatch (default {@link DEFAULT_PALETTE_SWATCH_SIZE}).
  * @param colorCount - Number of palette slots to show (default 256).
  * @param gap - Gap between swatches (default 1).
- * @param maxColumns - Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
- * @param maxVisibleRows - Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
+ * @param maxColumns - Optional cap from {@link HardwareSettings#overlayPaletteColumns}.
+ * @param maxVisibleRows - Optional cap from {@link HardwareSettings#overlayPaletteRowsVisible}.
  * @returns Grid dimensions and viewport band height.
  */
 export function computeGrid(

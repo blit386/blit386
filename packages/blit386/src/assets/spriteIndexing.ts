@@ -37,7 +37,7 @@ const indexedRefs = new WeakMap<SpriteSheet, WeakRef<SpriteSheet>>();
 /**
  * Adds a sheet to the indexized-sheet registry. Idempotent.
  *
- * Internal - called by {@link SpriteSheet.indexize}.
+ * Internal - called by {@link SpriteSheet#indexize}.
  *
  * @param sheet - Sheet that has just been indexized.
  */
@@ -62,7 +62,7 @@ export function registerIndexedSheet(sheet: SpriteSheet): void {
 /**
  * Removes a sheet from the indexized-sheet registry. No-op when it is not registered.
  *
- * Internal - called by {@link SpriteSheet.destroy} and by `BT.spritesRefresh` when a
+ * Internal - called by {@link SpriteSheet#destroy} and by `BT.spritesRefresh` when a
  * sheet can no longer be re-mapped.
  *
  * @param sheet - Sheet to forget.

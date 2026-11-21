@@ -1,6 +1,6 @@
 /**
  * Fade helpers shared by the palette effects: range snapshots, eased progress, and the
- * per-entry and per-range lerp that {@link FadeEffect} and {@link FadeRangeEffect} apply.
+ * per-entry and per-range lerp that `FadeEffect` and `FadeRangeEffect` apply.
  */
 
 import { clampUnit, type Color32 } from '../utils/Color32';
@@ -68,7 +68,7 @@ export function applyFadeEntry(
 /**
  * Applies one fade step to a contiguous sub-range of palette entries.
  *
- * Both {@link FadeEffect} and {@link FadeRangeEffect} use this helper.
+ * Both `FadeEffect` and `FadeRangeEffect` use this helper.
  * Snapshot arrays use zero-based local indices; `offset` maps them to palette
  * indices: `snapshot[i - offset]` corresponds to palette entry `i`.
  *

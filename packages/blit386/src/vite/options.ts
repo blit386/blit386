@@ -52,12 +52,12 @@ export interface Blit386PluginOptions {
 }
 
 /**
- * Fully resolved plugin options, with `root` already applied to {@link Blit386PluginOptions.assetDirs}.
+ * Fully resolved plugin options, with `root` already applied to {@link Blit386PluginOptions#assetDirs}.
  *
  * @since 1.4.0
  */
 export interface ResolvedBlit386PluginOptions {
-    /** See {@link Blit386PluginOptions.include}. */
+    /** See {@link Blit386PluginOptions#include}. */
     include: (id: string) => boolean;
 
     /** Absolute, root-resolved asset directories. */
@@ -66,17 +66,17 @@ export interface ResolvedBlit386PluginOptions {
     /** Extension-to-asset-kind lookup, defaults merged with any user overrides. */
     assetTypes: Map<string, AssetKind>;
 
-    /** See {@link Blit386PluginOptions.fullReloadOnUnknownAssets}. */
+    /** See {@link Blit386PluginOptions#fullReloadOnUnknownAssets}. */
     fullReloadOnUnknownAssets: boolean;
 }
 
 /** Matches a module id under `/src/` ending a JS/TS extension, ignoring any query suffix. */
 const DEFAULT_INCLUDE_PATTERN = /\/src\/.*\.(?:js|ts|mjs|mts)$/;
 
-/** Default {@link Blit386PluginOptions.assetDirs} when Vite's `publicDir` is not known. */
+/** Default {@link Blit386PluginOptions#assetDirs} when Vite's `publicDir` is not known. */
 const DEFAULT_ASSET_DIRS = ['public'];
 
-/** Default {@link Blit386PluginOptions.assetTypes}. */
+/** Default {@link Blit386PluginOptions#assetTypes}. */
 const DEFAULT_ASSET_TYPES: Record<string, AssetKind> = {
     '.png': 'image',
     '.gif': 'image',
@@ -91,7 +91,7 @@ const DEFAULT_ASSET_TYPES: Record<string, AssetKind> = {
 };
 
 /**
- * Default {@link Blit386PluginOptions.include} predicate: a module id under `/src/` ending a JS/TS extension.
+ * Default {@link Blit386PluginOptions#include} predicate: a module id under `/src/` ending a JS/TS extension.
  *
  * @param id - Module id, possibly with a `?query` suffix.
  * @returns `true` when `id` (with any query suffix stripped) matches the default pattern.

@@ -108,10 +108,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isDown}.
+     * Backward-compatible alias for {@link BT.isDown}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isDown} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isDown} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads / keyboard, or pointer slot.
      * @returns `true` while the button remains pressed.
@@ -123,7 +123,7 @@ export const buttons = {
     /**
      * Checks whether a button was pressed on the current frame.
      *
-     * Same parameter semantics as {@link isDown}; returns `true` only on
+     * Same parameter semantics as {@link BT.isDown}; returns `true` only on
      * the frame the button transitions from up to down.
      *
      * Call from `update()`, not `render()`, for reliable detection: for keyboard and
@@ -210,10 +210,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isPressed}.
+     * Backward-compatible alias for {@link BT.isPressed}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isPressed} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isPressed} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot.
      * @param repeatRate - Optional repeat interval in fixed ticks (`0`/omitted = edge only).
@@ -226,7 +226,7 @@ export const buttons = {
     /**
      * Checks whether a button was released on the current frame.
      *
-     * Same parameter semantics as {@link isDown}; returns `true` only on
+     * Same parameter semantics as {@link BT.isDown}; returns `true` only on
      * the frame the button transitions from down to up.
      *
      * Call from `update()`, not `render()`, for reliable detection: for keyboard and
@@ -304,10 +304,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isReleased}.
+     * Backward-compatible alias for {@link BT.isReleased}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isReleased} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isReleased} instead.
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot.
      * @returns `true` on the release frame.
@@ -387,10 +387,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isGamepadConnected}.
+     * Backward-compatible alias for {@link BT.isGamepadConnected}.
      *
      * @since 1.0.3
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isGamepadConnected} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isGamepadConnected} instead.
      * @param player - Zero-based player index (`0`..`3`).
      * @returns `true` when a gamepad is available for that slot.
      */
@@ -422,10 +422,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isKeyDown}.
+     * Backward-compatible alias for {@link BT.isKeyDown}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyDown} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isKeyDown} instead.
      * @param key - DOM keyboard code string.
      * @returns `true` while the key remains pressed.
      */
@@ -456,10 +456,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isKeyPressed}.
+     * Backward-compatible alias for {@link BT.isKeyPressed}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyPressed} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isKeyPressed} instead.
      * @param key - DOM keyboard code string.
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
      * @returns `true` on the press edge (and on repeat ticks when configured).
@@ -486,10 +486,10 @@ export const buttons = {
     },
 
     /**
-     * Backward-compatible alias for {@link isKeyReleased}.
+     * Backward-compatible alias for {@link BT.isKeyReleased}.
      *
      * @since 0.1.0
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isKeyReleased} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isKeyReleased} instead.
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.
      */
@@ -527,7 +527,7 @@ export const buttons = {
      *
      * Fires when a key goes down, even if other keys are already held. With `repeatRate > 0` it
      * also fires every `repeatRate` ticks while keys stay held, counted from the earliest-pressed
-     * key that is still down. Call from `update()`, not `render()`, like {@link isKeyPressed}.
+     * key that is still down. Call from `update()`, not `render()`, like {@link BT.isKeyPressed}.
      *
      * @since 1.8.0
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
@@ -544,7 +544,7 @@ export const buttons = {
      *
      * Matches RetroBlit: `true` only on the tick where no key is held any more and at least one
      * was held before. Releasing one key while another stays down does not count; use
-     * {@link isKeyReleased} for per-key edges. Losing focus while keys are held counts as the release.
+     * {@link BT.isKeyReleased} for per-key edges. Losing focus while keys are held counts as the release.
      * Call from `update()`, not `render()`.
      *
      * @since 1.8.0
@@ -559,7 +559,7 @@ export const buttons = {
      * Checks whether at least one gamepad button is held for a player.
      *
      * Covers the `BTN_UP` to `BTN_SELECT` buttons of a connected gamepad. Sticks, triggers
-     * (analog or `BTN_L2` / `BTN_R2`), the keyboard, and pointers are not included; use {@link isAnyKeyDown} for the keyboard.
+     * (analog or `BTN_L2` / `BTN_R2`), the keyboard, and pointers are not included; use {@link BT.isAnyKeyDown} for the keyboard.
      *
      * @since 1.8.0
      * @param player - Zero-based gamepad index (0-3).
@@ -572,8 +572,8 @@ export const buttons = {
     /**
      * Checks whether any gamepad button was pressed since the last fixed update.
      *
-     * Same press and repeat semantics as {@link isAnyKeyPressed}, for one player's gamepad. Call from `update()`:
-     * like {@link isPressed}, the edge clears once per fixed update, so each press reaches exactly one `update()`.
+     * Same press and repeat semantics as {@link BT.isAnyKeyPressed}, for one player's gamepad. Call from `update()`:
+     * like {@link BT.isPressed}, the edge clears once per fixed update, so each press reaches exactly one `update()`.
      *
      * @since 1.8.0
      * @changed 1.9.0 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
@@ -590,9 +590,9 @@ export const buttons = {
     /**
      * Checks whether every gamepad button has just been released for a player.
      *
-     * Same "everything is up" meaning as {@link isAnyKeyReleased}: `true` only on the update where no button
+     * Same "everything is up" meaning as {@link BT.isAnyKeyReleased}: `true` only on the update where no button
      * is held any more and at least one was held before. A gamepad disconnecting while buttons were held
-     * also counts. Call from `update()`: like {@link isReleased}, the edge clears once per fixed update.
+     * also counts. Call from `update()`: like {@link BT.isReleased}, the edge clears once per fixed update.
      *
      * @since 1.8.0
      * @changed 1.9.0 The edge clears once per fixed update, not once per rendered frame, so it is no longer missed on a frame that runs no update or repeated on a frame that runs several.
