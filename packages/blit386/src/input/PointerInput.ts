@@ -40,7 +40,7 @@ export const POINTER_SLOT_COUNT = 4;
 /**
  * Which previous state a reader compares against. `'frame'` rolls over once per rendered frame ({@link
  * PointerInput.endFrame}) and serves render-side readers such as the overlay; `'update'` rolls over once per fixed
- * `update()` ({@link PointerInput.endUpdate}), so a frame that runs no update loses nothing and a frame that runs
+ * `update()` ({@link PointerInput#endUpdate}), so a frame that runs no update loses nothing and a frame that runs
  * several reports each edge once.
  */
 export type PointerClock = 'frame' | 'update';

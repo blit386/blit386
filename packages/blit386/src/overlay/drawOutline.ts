@@ -5,7 +5,7 @@
 import { Rect2i } from '../utils/Rect2i';
 import type { OverlayDrawTarget } from './OverlayDrawTarget';
 
-/** Reused edge rect; {@link OverlayDrawTarget.drawBarFillOnTop} consumes it immediately. */
+/** Reused edge rect; {@link OverlayDrawTarget#drawBarFillOnTop} consumes it immediately. */
 const edgeScratch = new Rect2i();
 
 /**

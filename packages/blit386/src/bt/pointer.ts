@@ -58,7 +58,7 @@ export const pointer = {
     /**
      * Writes the position of the pointer in the given slot, in display coordinates, into `out`.
      *
-     * Zero-allocation counterpart to {@link pointerPos}. Slot 0 is the mouse; slots 1 through 3 are
+     * Zero-allocation counterpart to {@link BT.pointerPos}. Slot 0 is the mouse; slots 1 through 3 are
      * touch / pen contacts assigned in arrival order. Writes `(0, 0)` into `out` when the engine has
      * not been initialized, the slot index is out of `[0, 3]`, or the slot has no live pointer.
      *
@@ -101,7 +101,7 @@ export const pointer = {
      * Writes how far a pointer slot moved into `out`: since the previous `update()` when read from `update()`, since
      * the previous rendered frame anywhere else.
      *
-     * Zero-allocation counterpart to {@link pointerDelta}, with the same timing. Writes `(0, 0)` into `out` when the
+     * Zero-allocation counterpart to {@link BT.pointerDelta}, with the same timing. Writes `(0, 0)` into `out` when the
      * engine is not initialized or `pointerIndex` is out of range.
      *
      * @since 1.7.0
@@ -139,10 +139,10 @@ export const pointer = {
     },
 
     /**
-     * Backward-compatible alias for {@link isPointerActive}.
+     * Backward-compatible alias for {@link BT.isPointerActive}.
      *
      * @since 1.0.3
-     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link isPointerActive} instead.
+     * @deprecated Deprecated since 1.1.1 (2026-05-31). Use {@link BT.isPointerActive} instead.
      * @param pointerIndex - Pointer slot (defaults to 0 = mouse).
      * @returns `true` while the slot has live position data.
      */
@@ -155,7 +155,7 @@ export const pointer = {
      * previous rendered frame anywhere else.
      *
      * Aggregates `WheelEvent.deltaY` across those wheel events, normalizing line and page delta modes to pixels.
-     * Requires {@link HardwareSettings.isCapturingPointerScroll} (or overlay
+     * Requires {@link HardwareSettings#isCapturingPointerScroll} (or overlay
      * palette-band force capture); otherwise this stays `0` and the host page
      * scrolls normally.
      *
@@ -186,7 +186,7 @@ export const pointer = {
     /**
      * Restores the native OS cursor over the canvas.
      *
-     * Reverses a prior {@link hideCursor} call. No-op before the engine is
+     * Reverses a prior {@link BT.hideCursor} call. No-op before the engine is
      * initialized.
      *
      * @since 1.0.3

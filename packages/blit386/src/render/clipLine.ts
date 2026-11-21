@@ -1,5 +1,5 @@
 /**
- * Integer viewport clipping for Bresenham lines, shared by {@link SoftwareRenderer} and {@link PrimitivePipeline}.
+ * Integer viewport clipping for Bresenham lines, shared by `SoftwareRenderer` and `PrimitivePipeline`.
  *
  * Clipping advances the start point along the Bresenham error term instead of computing a new line, so the
  * pixels inside the viewport are identical to an un-clipped line.

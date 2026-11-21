@@ -165,7 +165,7 @@ export class SoftwareRaster {
 
     /**
      * Fills the entire `framePixels` buffer with a solid RGBA color via a single word-at-a-time
-     * fill over {@link wordView}. Packing matches {@link Color32.toUint32}'s ABGR layout, which on
+     * fill over {@link wordView}. Packing matches {@link Color32#toUint32}'s ABGR layout, which on
      * little-endian platforms lays out as byte0=r, byte1=g, byte2=b, byte3=a - the same RGBA byte
      * order `framePixels` itself uses.
      *

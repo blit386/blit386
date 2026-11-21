@@ -4,14 +4,14 @@
  *
  * Owns its palette, its own {@link PaletteEffectManager}, and its own state
  * machine. It does *not* own the frame driver - `BTAPI.init()` calls
- * {@link Splash.advance} and {@link Splash.draw} from a `requestAnimationFrame`
+ * {@link Splash#advance} and {@link Splash#draw} from a `requestAnimationFrame`
  * loop that runs before the `GameLoop` is constructed. Keeping the loop outside
  * this class is what makes the state machine testable with a fake clock and
  * keeps the fixed-timestep accumulator from ever seeing splash time.
  *
  * No engine code outside this subsystem may branch on `fadingIn` / `fadingOut`.
  * The moment it does, the animation model becomes public API forever - which is
- * why {@link Splash.isVisible} is computed here rather than by the caller.
+ * why {@link Splash#isVisible} is computed here rather than by the caller.
  */
 
 import type { Palette } from '../assets/Palette';
@@ -36,8 +36,8 @@ import type { SplashOptions, SplashState } from './types';
 /**
  * The splash's palette, five-state lifecycle, and drawing.
  *
- * Construct it, {@link Splash.start} it, then drive {@link Splash.advance} and
- * {@link Splash.draw} once per frame until {@link Splash.state} reaches `done`.
+ * Construct it, {@link Splash#start} it, then drive {@link Splash#advance} and
+ * {@link Splash#draw} once per frame until {@link Splash#state} reaches `done`.
  */
 export class Splash {
     /** Current lifecycle state. */

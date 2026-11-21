@@ -1,5 +1,5 @@
 /**
- * Unit tests for which sprite sheets {@link BTAPI.spritesRefresh} re-maps.
+ * Unit tests for which sprite sheets `BTAPI.spritesRefresh` re-maps.
  *
  * A sheet is tracked from the moment it is indexized until it is destroyed,
  * whether or not it has ever been drawn (BT-726).

@@ -1,5 +1,5 @@
 /**
- * Self-contained crossfading music player, owned and constructed by {@link AudioManager.attach}.
+ * Self-contained crossfading music player, owned and constructed by `AudioManager.attach`.
  *
  * Tracks at most two live voices: a "current" voice (the most recently started track) and a
  * "previous" voice (a track crossfading out because a new one just started). Every fade and
@@ -18,26 +18,26 @@ import {
 } from '../utils/errorMessages';
 import { DEFAULT_VOLUME } from './VoicePool';
 
-/** Default crossfade duration in milliseconds when {@link MusicPlayOptions.fadeMs} is omitted (immediate switch). */
+/** Default crossfade duration in milliseconds when {@link MusicPlayOptions#fadeMs} is omitted (immediate switch). */
 const DEFAULT_FADE_MS = 0;
 
-/** Default crossfade timing offset when {@link MusicPlayOptions.overlap} is omitted (simultaneous fade-in/fade-out). */
+/** Default crossfade timing offset when {@link MusicPlayOptions#overlap} is omitted (simultaneous fade-in/fade-out). */
 const DEFAULT_OVERLAP = 1;
 
-/** Minimum accepted {@link MusicPlayOptions.overlap}. */
+/** Minimum accepted {@link MusicPlayOptions#overlap}. */
 const MIN_OVERLAP = -1;
 
-/** Maximum accepted {@link MusicPlayOptions.overlap}. */
+/** Maximum accepted {@link MusicPlayOptions#overlap}. */
 const MAX_OVERLAP = 1;
 
-/** Default loop flag applied when neither {@link MusicPlayOptions.loop} nor loop points are given. */
+/** Default loop flag applied when neither {@link MusicPlayOptions#loop} nor loop points are given. */
 const DEFAULT_LOOP = true;
 
 /** Default easing curve applied to a fade-in/fade-out ramp when omitted. */
 const DEFAULT_EASING: EasingFunction = 'linear';
 
 /**
- * Options accepted by {@link MusicPlayer.play}, {@link BTAPI.musicPlay}, and {@link BT.musicPlay}.
+ * Options accepted by {@link MusicPlayer#play}, `BTAPI.musicPlay`, and {@link BT.musicPlay}.
  *
  * @since 1.3.0
  */
@@ -65,10 +65,10 @@ export interface MusicPlayOptions {
     /** Whether the whole track loops. Ignored when `loopStart`/`loopEnd` are given. Defaults to `true`. */
     loop?: boolean;
 
-    /** Loop region start in seconds. Requires `loopEnd`; see {@link MusicPlayer.play}. */
+    /** Loop region start in seconds. Requires `loopEnd`; see {@link MusicPlayer#play}. */
     loopStart?: number;
 
-    /** Loop region end in seconds. Requires `loopStart`; see {@link MusicPlayer.play}. */
+    /** Loop region end in seconds. Requires `loopStart`; see {@link MusicPlayer#play}. */
     loopEnd?: number;
 }
 
@@ -85,7 +85,7 @@ interface Voice {
 }
 
 /**
- * Crossfading music player owned by {@link AudioManager}. See the module doc comment above for
+ * Crossfading music player owned by `AudioManager`. See the module doc comment above for
  * the crossfade model.
  */
 export class MusicPlayer {
@@ -371,7 +371,7 @@ export class MusicPlayer {
      *
      * Guards against a stale callback from a voice already replaced or force-stopped by
      * comparing object identity against {@link current} and {@link previous} - unlike
-     * {@link VoicePool}'s fixed, reused slots, `Voice` objects here are never recycled (each
+     * `VoicePool`'s fixed, reused slots, `Voice` objects here are never recycled (each
      * {@link startVoice} call allocates a fresh one), so identity alone disambiguates without
      * needing a generation counter.
      *
@@ -462,7 +462,7 @@ function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptio
  * Drops `loopStart`/`loopEnd` from `options` when they no longer describe a valid region for
  * `duration`, instead of letting an invalid region reach {@link validateLoopRegion} and throw.
  *
- * Used by {@link MusicPlayer.hotReplaceCurrentBuffer}: `lastOptions` was captured for the
+ * Used by {@link MusicPlayer#hotReplaceCurrentBuffer}: `lastOptions` was captured for the
  * previous buffer's duration, and a hot-reloaded replacement can be shorter, so its old loop
  * points may no longer fit. Falls back to whole-buffer looping via `options.loop` in that case,
  * so a valid buffer replacement always restarts successfully instead of throwing.
@@ -487,11 +487,11 @@ function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicP
 
 /**
  * Validates `options.loopStart` / `options.loopEnd` against a buffer's duration before any
- * playback state changes, so an invalid call to {@link MusicPlayer.play} never leaves the
+ * playback state changes, so an invalid call to {@link MusicPlayer#play} never leaves the
  * player mid-mutated.
  *
  * This is the one deliberate throw in the music playback path - clearly-invalid programmer
- * input, the same way {@link AudioClip.synth} and {@link VoicePool} validate their own
+ * input, the same way {@link AudioClip.synth} and `VoicePool` validate their own
  * boundary values.
  *
  * @param options - Playback options; see {@link MusicPlayOptions}.

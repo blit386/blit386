@@ -1,7 +1,7 @@
 /**
  * Palette effect system for animated color manipulation.
  *
- * Effects mutate {@link Palette} entries in place via {@link Palette.getRef}. The visual
+ * Effects mutate {@link Palette} entries in place via {@link Palette#getRef}. The visual
  * change happens automatically on the next frame when the renderer detects the
  * dirty flag and re-uploads the palette uniform buffer.
  *
@@ -27,7 +27,7 @@ export { FlashEffect } from './FlashEffect';
  * entries via `palette.getRef()` and returns `true` to keep running or `false`
  * to signal completion (the manager removes it automatically).
  *
- * An implementation **must** call {@link Palette.markDirty} itself on every tick
+ * An implementation **must** call {@link Palette#markDirty} itself on every tick
  * where it actually mutates an entry (including the terminal tick that lands on
  * a final value), and must not call it on a tick that leaves the palette
  * unchanged. The manager no longer marks the palette dirty on an effect's
@@ -48,7 +48,7 @@ export interface PaletteEffect {
 /**
  * Manages active palette effects and updates them once per fixed update.
  *
- * Tracks time through an injectable provider so the {@link GameLoop} callback signatures remain unchanged. The engine
+ * Tracks time through an injectable provider so the `GameLoop` callback signatures remain unchanged. The engine
  * passes its tick clock (`ticks * 1000 / targetFPS`), which is what makes palette effects seekable by `BT.renderAt`.
  */
 export class PaletteEffectManager {

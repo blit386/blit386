@@ -2,10 +2,10 @@
  * Gamepad input subsystem.
  *
  * Uses the browser Gamepad API. `navigator.getGamepads()` is polled exactly
- * once per rendered frame, inside {@link GamepadInput.endFrame}. Previous-state
- * (for edge detection via {@link GamepadInput.isButtonPressed} /
- * {@link GamepadInput.isButtonReleased} and repeat anchors) rolls over once per
- * fixed update, inside {@link GamepadInput.endUpdate}, so every edge is reported
+ * once per rendered frame, inside {@link GamepadInput#endFrame}. Previous-state
+ * (for edge detection via {@link GamepadInput#isButtonPressed} /
+ * {@link GamepadInput#isButtonReleased} and repeat anchors) rolls over once per
+ * fixed update, inside {@link GamepadInput#endUpdate}, so every edge is reported
  * to exactly one update - like `KeyboardInput`. Public accessors read the cached
  * snapshot and never trigger a poll themselves.
  */
@@ -47,7 +47,7 @@ export class GamepadInput {
     /** Current polled state per player slot. */
     private readonly current: readonly [PlayerSnapshot, PlayerSnapshot, PlayerSnapshot, PlayerSnapshot];
 
-    /** Snapshot taken at the last {@link GamepadInput.endUpdate}, per player slot. */
+    /** Snapshot taken at the last {@link GamepadInput#endUpdate}, per player slot. */
     private readonly previous: readonly [PlayerSnapshot, PlayerSnapshot, PlayerSnapshot, PlayerSnapshot];
 
     /** First tick each button was pressed per player (for repeat behavior). */

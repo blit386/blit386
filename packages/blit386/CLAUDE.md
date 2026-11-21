@@ -126,7 +126,10 @@ Full category tables, the new-API checklist, and the three boolean tiers: `.clau
 
 4-space indent, 120 columns, single quotes, semicolons, trailing commas, always arrow parens, named exports only. JSDoc
 is required on public APIs (ESLint `warn` rules that fail CI via `--max-warnings 0`). Update JSDoc and inline comments
-alongside the code they describe - never leave a comment asserting old behavior.
+alongside the code they describe - never leave a comment asserting old behavior. A `{@link}` must resolve - in its file,
+or as a public export of `src/BLIT386.ts` - and names an instance or interface member with `#`
+(`{@link SpriteSheet#hotReplaceImage}`), a static or `BT` member with `.` (`{@link BT.soundPlay}`); link an internal
+name the file does not import as a code span instead. `pnpm run jsdoc:links:check` enforces it (`tsc` does not).
 
 Class member order is enforced by `perfectionist/sort-classes` with `type: 'unsorted'`, so it fixes group order only
 (static fields, instance fields, constructor, accessors, static methods, instance methods - public before private) and

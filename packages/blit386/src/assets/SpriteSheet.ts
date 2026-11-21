@@ -49,7 +49,7 @@ export type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 /**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so
  * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded from a
- * changed image. Entries are removed in {@link SpriteSheet.destroy}.
+ * changed image. Entries are removed in {@link SpriteSheet#destroy}.
  */
 const hotReloadSheets = new HotReloadRegistry<SpriteSheet>();
 
@@ -251,7 +251,7 @@ export class SpriteSheet {
      * @changed 1.8.0 Added `options.tileSize`.
      * @param url - Path or URL to the image file.
      * @param options - Optional configuration.
-     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet.tileSize}).
+     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet#tileSize}).
      * @returns Promise resolving to the loaded SpriteSheet.
      * @throws RangeError if `options.tileSize` is not a positive integer on both axes.
      */
@@ -278,7 +278,7 @@ export class SpriteSheet {
      * This combines:
      * 1) {@link SpriteSheet.loadColorsIntoPalette}
      * 2) {@link SpriteSheet.load}
-     * 3) {@link SpriteSheet.indexize}
+     * 3) {@link SpriteSheet#indexize}
      *
      * It returns the indexized sheet plus a full-frame source rectangle and the
      * colors that were written into the palette. Callers still control when to
@@ -290,7 +290,7 @@ export class SpriteSheet {
      * @changed 1.8.0 Added `options.tileSize`.
      * @param options - Optional color-sort behavior for registration and tile grid size.
      * @param options.sort - Color ordering for palette registration.
-     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet.tileSize}).
+     * @param options.tileSize - Tile grid cell size (see {@link SpriteSheet#tileSize}).
      * @returns Object with `sheet`, `srcRect`, and registered `colors`.
      * @throws RangeError if `options.tileSize` is not a positive integer on both axes.
      */
@@ -326,7 +326,7 @@ export class SpriteSheet {
      * without throwing on missing colors.
      *
      * By default colors are sorted darkest-first by perceived luminance
-     * ({@link Color32.luminance}); pass `{ sort: 'none' }` to keep the
+     * ({@link Color32#luminance}); pass `{ sort: 'none' }` to keep the
      * row-major scan order of the source image.
      *
      * Image loading goes through {@link AssetLoader.loadImage}, so the call
@@ -685,7 +685,7 @@ export class SpriteSheet {
      */
     tileRect(col: number, row: number): Rect2i;
     /**
-     * Implementation of the {@link SpriteSheet.tileRect} overloads.
+     * Implementation of the {@link SpriteSheet#tileRect} overloads.
      *
      * @param colOrIndex - Row-major index when `row` is omitted, otherwise the column.
      * @param row - Zero-based row, or omitted for the index form.

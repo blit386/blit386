@@ -1,7 +1,7 @@
 /**
  * Covers the defensive `writeUniforms` null-`uniformData` early return shared by
  * every concrete pixel and display effect. That branch is unreachable through
- * {@link FullscreenEffect.updateUniforms} / {@link FullscreenPixelEffect.updateUniforms}
+ * {@link FullscreenEffect#updateUniforms} / {@link FullscreenPixelEffect#updateUniforms}
  * (those methods return earlier), so it is exercised here via a protected-method cast.
  */
 

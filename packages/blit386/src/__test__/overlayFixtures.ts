@@ -11,7 +11,7 @@ import type { OverlayRenderer } from '../overlay/OverlayDrawTarget';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 
-/** Parsed {@link OverlayDrawTarget.drawLabel} call from a mock renderer. */
+/** Parsed `OverlayDrawTarget.drawLabel` call from a mock renderer. */
 export type BitmapTextCall = {
     pos: Vector2i;
     text: string;
@@ -39,7 +39,7 @@ function createSnapshotMock<TArgs extends unknown[], TSnapshot>(
 }
 
 /**
- * Minimal renderer stub for {@link Overlay.updateAndRender}.
+ * Minimal renderer stub for `Overlay.updateAndRender`.
  *
  * @returns Renderer with spied camera, bar fills, and bitmap text draws.
  */
@@ -92,7 +92,7 @@ export function createMockRenderer(): OverlayRenderer & {
 }
 
 /**
- * Collects {@link OverlayDrawTarget.drawLabel} calls from a mock renderer.
+ * Collects `OverlayDrawTarget.drawLabel` calls from a mock renderer.
  *
  * @param renderer - Mock from {@link createMockRenderer}.
  * @returns Parsed draw calls in invocation order.
@@ -106,7 +106,7 @@ export function getBitmapTextCalls(renderer: ReturnType<typeof createMockRendere
 }
 
 /**
- * Collects {@link OverlayDrawTarget.drawLabelOnTop} calls from a mock renderer.
+ * Collects `OverlayDrawTarget.drawLabelOnTop` calls from a mock renderer.
  *
  * @param renderer - Mock from {@link createMockRenderer}.
  * @returns Parsed draw calls in invocation order.
@@ -120,7 +120,7 @@ export function getLabelOnTopCalls(renderer: ReturnType<typeof createMockRendere
 }
 
 /**
- * Collects {@link OverlayDrawTarget.drawBarFill} rects from a mock renderer.
+ * Collects `OverlayDrawTarget.drawBarFill` rects from a mock renderer.
  *
  * @param renderer - Mock from {@link createMockRenderer}.
  * @returns Filled rectangles in invocation order.
@@ -134,7 +134,7 @@ export function getRectFillCalls(renderer: ReturnType<typeof createMockRenderer>
  *
  * @param displayHeight - Logical display height.
  * @param rowIndex - Custom row index.
- * @param footerHeight - Reserved footer height from {@link resolveOverlayFooterHeight}.
+ * @param footerHeight - Reserved footer height from `resolveOverlayFooterHeight`.
  * @returns Bar top Y.
  */
 export function customRowBarY(displayHeight: number, rowIndex: number, footerHeight = OVERLAY_BAR_HEIGHT): number {

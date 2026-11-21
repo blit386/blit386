@@ -6,8 +6,8 @@ import type { Vector2i } from '../utils/Vector2i';
 /**
  * Internal draw port for the engine overlay HUD.
  *
- * Not part of the public {@link BT} API. {@link WebGPURenderer} and
- * {@link SoftwareRenderer} implement this alongside {@link IRenderer}.
+ * Not part of the public {@link BT} API. `WebGPURenderer` and
+ * `SoftwareRenderer` implement this alongside {@link IRenderer}.
  */
 export interface OverlayDrawTarget {
     /**
@@ -35,7 +35,7 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlaySprites` after overlay bar fills.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
+     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet#isIndexed}).
      * @param pos - Text position (top-left corner).
      * @param text - String to render.
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
@@ -47,7 +47,7 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlayTopSprites` after `overlayTopPrimitives`.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
+     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet#isIndexed}).
      * @param pos - Text position (top-left corner).
      * @param text - String to render.
      * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
@@ -56,7 +56,7 @@ export interface OverlayDrawTarget {
 }
 
 /**
- * Renderer surface used by {@link Overlay.updateAndRender}.
+ * Renderer surface used by `Overlay.updateAndRender`.
  *
  * Combines screen-space camera helpers with overlay draw batches.
  */

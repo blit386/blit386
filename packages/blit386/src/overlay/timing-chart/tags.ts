@@ -36,7 +36,7 @@ export type TimingChartTagColumnGroup = {
 };
 
 /**
- * Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per {@link TimingChart}
+ * Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per `TimingChart`
  * instance. `groups`' capacity only grows across calls, never shrinks - only the first
  * `groupCount` entries are live for the most recent call. Consumers must iterate
  * `groups[0..groupCount)`, not `groups` itself, so a frame with fewer tag columns than a
@@ -216,7 +216,7 @@ export function computeTimingChartTagLabelY(chartTopY: number, stackIndex: numbe
 /**
  * Groups on-screen tags by sample column for stacked drawing.
  *
- * Relies on {@link TimingChartTag.sampleIndex} being non-decreasing across `tags` (tags are
+ * Relies on {@link TimingChartTag#sampleIndex} being non-decreasing across `tags` (tags are
  * pushed in assignment order and `sampleIndex` is the monotonic sample counter at assign time,
  * and pruning preserves relative order), so tags sharing a column are always contiguous - a
  * single run-length pass over pooled group descriptors replaces the previous per-call

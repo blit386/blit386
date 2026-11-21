@@ -11,7 +11,7 @@ import type { SpriteSheet } from './SpriteSheet';
 
 /**
  * Validates a tile size given as a number (square) or a `Vector2i` and returns
- * it as a frozen `Vector2i` copy. Shared by the {@link SpriteSheet.tileSize}
+ * it as a frozen `Vector2i` copy. Shared by the {@link SpriteSheet#tileSize}
  * setter and the `tileSize` option of `load` / `loadIndexed`.
  *
  * @param value - Tile size in pixels.
@@ -31,7 +31,7 @@ export function toTileSize(value: number | Vector2i): Vector2i {
  * Writes the source rectangle of one tile into `out`, validating the tile size
  * and checking the tile against the sheet's current grid of whole tiles.
  *
- * Engine-internal: shared by {@link SpriteSheet.tileRect} and `BT.drawTile` so
+ * Engine-internal: shared by {@link SpriteSheet#tileRect} and `BT.drawTile` so
  * both apply the same bounds rules. Not re-exported from the package entry.
  *
  * @param out - Rectangle to write into.
@@ -72,7 +72,7 @@ export function writeTileRect(
 
 /**
  * Writes the source rectangle of one tile into `out` using the sheet's own
- * {@link SpriteSheet.tileSize}: a row-major index when `row` is `undefined`,
+ * {@link SpriteSheet#tileSize}: a row-major index when `row` is `undefined`,
  * otherwise a column and row.
  *
  * Engine-internal; not re-exported from the package entry.

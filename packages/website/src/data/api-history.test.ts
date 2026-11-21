@@ -8,7 +8,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { apiHistory, compareVersions, getPageSymbols, getSymbol, type SymbolStatus } from './api-history';
+import {
+    apiHistory,
+    compareVersions,
+    getPageSymbols,
+    getSymbol,
+    resolveSymbolLink,
+    type SymbolStatus,
+} from './api-history';
 
 const STATUSES: SymbolStatus[] = ['stable', 'unreleased', 'deprecated'];
 const NUMERIC_VERSION = /^\d+(\.\d+)*$/;
@@ -165,5 +172,25 @@ describe('the generated history', () => {
             .map(([name]) => name);
 
         expect(ahead).toEqual([]);
+    });
+});
+
+describe('resolveSymbolLink', () => {
+    const tracked = Object.values(apiHistory.pages).flat();
+    const member = tracked.find((name) => name.includes('.'));
+
+    it('resolves an instance-member # link the same as the . form apiHistory keys it by', () => {
+        expect(member).toBeDefined();
+
+        const hashForm = (member ?? '').replace(/\.(?=[^.]*$)/u, '#');
+
+        expect(resolveSymbolLink(hashForm)).toEqual(resolveSymbolLink(member ?? ''));
+        expect(resolveSymbolLink(hashForm)).toBeDefined();
+    });
+
+    it('falls back to the base symbol for an untracked # member', () => {
+        const base = tracked.find((name) => !name.includes('.')) ?? '';
+
+        expect(resolveSymbolLink(`${base}#notTrackedAnywhere`)).toEqual(resolveSymbolLink(base));
     });
 });

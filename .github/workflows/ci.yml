@@ -265,6 +265,10 @@ jobs:
         run: pnpm --filter blit386 run api:getters:check
         background: true
 
+      - name: Check JSDoc link targets resolve
+        run: pnpm --filter blit386 run jsdoc:links:check
+        background: true
+
       - name: Check system font data against its PNG
         run: pnpm --filter blit386 run system-font:check
         background: true
@@ -280,6 +284,10 @@ jobs:
 
       - name: Run API getters drift guard tests
         run: pnpm --filter blit386 run test:api-getters
+        background: true
+
+      - name: Run JSDoc link check tests
+        run: pnpm --filter blit386 run test:jsdoc-links
         background: true
 
       - name: Run API deprecations generator tests

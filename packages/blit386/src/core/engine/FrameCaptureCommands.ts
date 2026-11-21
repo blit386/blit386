@@ -10,7 +10,7 @@ import type { BTAPI } from '../BTAPI';
 /**
  * `KeyboardEvent.code` for the dev-mode frame-capture shortcuts: bare F9 copies the frame to
  * the OS clipboard, Shift+F9 downloads it as a PNG file; see
- * {@link HardwareSettings.isFrameCaptureShortcutEnabled}. Combined with {@link SHIFT_KEY_CODES}.
+ * {@link HardwareSettings#isFrameCaptureShortcutEnabled}. Combined with {@link SHIFT_KEY_CODES}.
  */
 const FRAME_CAPTURE_SHORTCUT_KEY_CODE = 'F9';
 
@@ -24,7 +24,7 @@ const SHIFT_KEY_CODES = ['ShiftLeft', 'ShiftRight'] as const;
 export class FrameCaptureCommands {
     /**
      * True while a Shift+F9 save or bare-F9 clipboard-copy dev-mode frame capture is in
-     * flight (see {@link HardwareSettings.isFrameCaptureShortcutEnabled}). Shared by both
+     * flight (see {@link HardwareSettings#isFrameCaptureShortcutEnabled}). Shared by both
      * shortcuts rather than one guard each: both ultimately call
      * `IRenderer.captureFrameForShortcut()`, which is backed by a single-slot
      * `FrameCapture` request queue on the renderer - a second call while the first is still
@@ -38,7 +38,7 @@ export class FrameCaptureCommands {
     public isFrameCaptureShortcutInFlight = false;
 
     /**
-     * Incremented by {@link BTAPI.stop}; both shortcut methods capture the current value before
+     * Incremented by {@link BTAPI#stop}; both shortcut methods capture the current value before
      * starting and only clear {@link isFrameCaptureShortcutInFlight} in their completion
      * handler if it still matches. `FrameCapture.resolve()` captures its pending
      * resolve/reject callbacks into locals before its own `await`s, so a capture already
@@ -85,7 +85,7 @@ export class FrameCaptureCommands {
     }
 
     /**
-     * Whether Shift+F9 was pressed this tick, per {@link HardwareSettings.isFrameCaptureShortcutEnabled}
+     * Whether Shift+F9 was pressed this tick, per {@link HardwareSettings#isFrameCaptureShortcutEnabled}
      * gating and both Shift key codes. Extracted from the fixed-update tick closure to keep
      * its cyclomatic complexity within lint limits.
      *
@@ -102,14 +102,14 @@ export class FrameCaptureCommands {
 
     /**
      * Bound `keydown` listener for the bare-F9 clipboard-copy shortcut, attached directly to
-     * the canvas by {@link Subsystems.attachInputSubsystems} alongside {@link KeyboardInput} rather than
+     * the canvas by `Subsystems.attachInputSubsystems` alongside `KeyboardInput` rather than
      * polled from the fixed-update tick. `navigator.clipboard.write()` needs to run inside
      * the browser's synchronous `keydown` dispatch to reliably count as tied to the
      * triggering user gesture in Firefox and Safari, which can reject the call once a task
      * boundary - not just a microtask/await boundary - has passed since the keypress; a
      * `GameLoop` tick is always scheduled via `requestAnimationFrame`, a later task than the
      * `keydown` event that triggers it. Reads `event.shiftKey` and `event.repeat` directly
-     * instead of {@link KeyboardInput}'s tracked state, so this needs no coordination with
+     * instead of `KeyboardInput`'s tracked state, so this needs no coordination with
      * that tracker. Shift+F9 (the file-download path, see {@link isShiftF9ShortcutPressed})
      * stays on the tick-based check - its `downloadBlob` call has no equivalent
      * user-activation staleness constraint, so there is nothing to gain by moving it too.
@@ -204,7 +204,7 @@ export class FrameCaptureCommands {
     }
 
     /**
-     * Settles a pending frame capture while {@link Seek.renderAt} holds the loop stopped. Runs after every
+     * Settles a pending frame capture while `Seek.renderAt` holds the loop stopped. Runs after every
      * `renderAt` called so far; when a seek has parked the loop no frame end is coming, so this re-renders the
      * current tick with zero updates (no clock moves, the frame is the seeked one). Does nothing while the loop runs.
      *

@@ -89,7 +89,7 @@ export class PostProcessChain {
     /**
      * Registers an effect at the end of the chain.
      *
-     * The effect's {@link Effect.init} is called once and only on success is
+     * The effect's {@link Effect#init} is called once and only on success is
      * the effect appended to the chain. GPU resources for the chain itself
      * are allocated lazily here: {@link texA} on the first add, {@link texB}
      * on the second. Existing offscreen textures are **reused** across
@@ -131,7 +131,7 @@ export class PostProcessChain {
     /**
      * Removes a previously registered effect.
      *
-     * Calls the effect's {@link Effect.dispose} hook if defined. When the last
+     * Calls the effect's {@link Effect#dispose} hook if defined. When the last
      * effect is removed, the offscreen textures are destroyed and the chain
      * reverts to its inactive state.
      *
@@ -207,8 +207,8 @@ export class PostProcessChain {
      *   writes into the other offscreen texture; the **last** pass always
      *   writes to `destinationView`.
      *
-     * Each effect's {@link Effect.updateUniforms} is called immediately before
-     * its {@link Effect.encodePass}.
+     * Each effect's {@link Effect#updateUniforms} is called immediately before
+     * its {@link Effect#encodePass}.
      *
      * No-op when no effects are registered.
      *

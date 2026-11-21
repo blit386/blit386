@@ -38,7 +38,7 @@ export class SplashBoot {
     /**
      * Drives the splash's own animation frames until it reaches `done`.
      *
-     * Deliberately not the {@link GameLoop}: running the splash on a separate
+     * Deliberately not the `GameLoop`: running the splash on a separate
      * driver keeps the loop's fixed-timestep accumulator, its `lastUpdateTime`,
      * and its rolling dropped-frame baseline from ever seeing splash time.
      *
@@ -185,7 +185,7 @@ export function createSplashIfEnabled(hwSettings: HardwareSettings): Splash | nu
 /**
  * Whether a restart may skip the splash: gating turned it off, or it played to `done`.
  *
- * Only {@link Splash.advance} reaches `done`, so a splash frame that threw leaves the
+ * Only {@link Splash#advance} reaches `done`, so a splash frame that threw leaves the
  * splash unfinished and the next init plays it again. Module-level for the same
  * complexity reason as {@link createSplashIfEnabled}.
  *

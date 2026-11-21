@@ -14,7 +14,7 @@ import { reportDrawError } from './internal';
 export const effects = {
     /**
      * Appends a fullscreen post-processing effect to whichever chain matches
-     * its declared {@link Effect.tier}.
+     * its declared {@link Effect#tier}.
      *
      * - `tier='pixel'` -> pixel chain (logical resolution).
      * - `tier='display'` -> display chain (output resolution); requires

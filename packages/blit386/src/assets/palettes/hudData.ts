@@ -1,5 +1,5 @@
 /**
- * Built-in HUD palette preset data used by {@link Palette.applyHUD}.
+ * Built-in HUD palette preset data used by {@link Palette#applyHUD}.
  *
  * Six named UI color slots applied contiguously starting at a caller-supplied
  * start index. Values match the most common pattern seen across blit386 demos:

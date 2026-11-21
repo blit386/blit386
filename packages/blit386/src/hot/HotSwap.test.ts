@@ -323,7 +323,7 @@ describe('hotSwapDemo', () => {
         vi.unstubAllGlobals();
     });
 
-    /** Minimal 2D-context canvas mock, enough for {@link SoftwareRenderer.init} to succeed. */
+    /** Minimal 2D-context canvas mock, enough for `SoftwareRenderer.init` to succeed. */
     function makeMock2DCanvas(): HTMLCanvasElement {
         return {
             ...makeMockCanvas(),

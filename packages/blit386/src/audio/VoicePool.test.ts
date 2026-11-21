@@ -23,7 +23,7 @@ import { AudioManager } from './AudioManager';
 import { INVALID_SOUND_REF, VoicePool } from './VoicePool';
 
 /**
- * Mounts a canvas for {@link AudioManager.attach}.
+ * Mounts a canvas for {@link AudioManager#attach}.
  */
 const createCanvas = (): HTMLCanvasElement => {
     const canvas = document.createElement('canvas');

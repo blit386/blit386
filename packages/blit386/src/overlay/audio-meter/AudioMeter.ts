@@ -24,7 +24,7 @@ import {
 } from './constants';
 import { type AudioMeterDrawStyle, computeAudioMeterBarHeight } from './style';
 
-/** Levels used before the first {@link AudioMeter.sample} call. */
+/** Levels used before the first {@link AudioMeter#sample} call. */
 const ZERO_LEVELS: Readonly<Record<AudioBus, number>> = { main: 0, music: 0, sfx: 0 };
 
 /**
@@ -114,9 +114,9 @@ export class AudioMeter {
     /**
      * Draws per-bus level bars side by side, plus a voices/steal/drop text readout.
      *
-     * Uses {@link OverlayDrawTarget.drawBarFill} for bar/level rects and
-     * {@link OverlayDrawTarget.drawLabel} for the text readout, mirroring
-     * {@link TimingChart.draw}.
+     * Uses {@link OverlayDrawTarget#drawBarFill} for bar/level rects and
+     * {@link OverlayDrawTarget#drawLabel} for the text readout, mirroring
+     * `TimingChart.draw`.
      *
      * @param target - Overlay draw target.
      * @param rect - Screen-space meter band from layout plan.

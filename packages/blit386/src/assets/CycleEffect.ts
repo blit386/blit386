@@ -10,7 +10,7 @@ import type { PaletteEffect } from './PaletteEffect';
  * Rotates a range of palette entries at a constant speed.
  *
  * Classic water/fire/plasma animation. Runs indefinitely until canceled
- * via {@link PaletteEffectManager.clear}.
+ * via `PaletteEffectManager.clear`.
  *
  * Uses a fractional accumulator for sub-step precision and a pre-allocated
  * temporary {@link Color32} to avoid per-update allocations.

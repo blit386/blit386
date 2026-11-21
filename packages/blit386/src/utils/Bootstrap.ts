@@ -2,7 +2,7 @@
  * Bootstrap Utilities for BLIT386
  *
  * Provides a one-liner demo bootstrap that resolves the canvas, calls
- * {@link BTAPI.init}, and displays initialization errors on failure. Backend
+ * {@link BTAPI#init}, and displays initialization errors on failure. Backend
  * selection and WebGPU fallback are handled inside BTAPI.
  */
 
@@ -278,7 +278,7 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
  *
  * Internal implementation - `BLIT386.ts` wraps this as the public `bootstrap()` export (see its
  * JSDoc for the full public contract, `@since`/`@changed` history, and usage examples) to also
- * expose `BT` on `window` per {@link BootstrapOptions.exposeGlobal} once this resolves.
+ * expose `BT` on `window` per {@link BootstrapOptions#exposeGlobal} once this resolves.
  *
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.

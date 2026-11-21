@@ -74,7 +74,7 @@ function getSymbolPageIndex(): Map<string, string> {
  */
 export const symbolAnchorId = (name: string): string => name.replaceAll('.', '-');
 
-/** Where a `{@link Name}` / `{@link Name.member}` target is documented. */
+/** Where a `{@link Name}` / `{@link Name.member}` / `{@link Name#member}` target is documented. */
 export interface SymbolLink {
     page: string;
     /** The resolved symbol's own name - e.g. `HardwareSettings` for a `HardwareSettings.foo` link - for use with {@link symbolAnchorId}. */
@@ -82,15 +82,17 @@ export interface SymbolLink {
 }
 
 /**
- * Resolves a `{@link Name}` or `{@link Name.member}` target to the page and symbol it is
- * documented under, or `undefined` when neither the full name nor its base symbol (before the
- * first `.`) is tracked in `apiHistory.pages` - e.g. a deprecated helper that never received a
- * `<Since>` tag of its own.
+ * Resolves a `{@link Name}`, `{@link Name.member}` or `{@link Name#member}` target to the page
+ * and symbol it is documented under, or `undefined` when neither the full name nor its base
+ * symbol (before the first `.`) is tracked in `apiHistory.pages` - e.g. a deprecated helper that
+ * never received a `<Since>` tag of its own. `apiHistory` keys every member with `.`, so the
+ * TSDoc instance-member `#` (which the engine's `jsdoc:links:check` requires) is read as `.`.
  */
 export function resolveSymbolLink(name: string): SymbolLink | undefined {
     const index = getSymbolPageIndex();
-    const base = name.split('.', 1)[0] ?? name;
-    const symbol = index.has(name) ? name : base;
+    const dotted = name.replaceAll('#', '.');
+    const base = dotted.split('.', 1)[0] ?? dotted;
+    const symbol = index.has(dotted) ? dotted : base;
     const page = index.get(symbol);
 
     return page ? { page, symbol } : undefined;

@@ -3,9 +3,9 @@
  * state machine, SFX voice pool, music player, a pre-unlock SFX drop counter, and a single
  * remembered pre-unlock music request.
  *
- * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code. This class
+ * Owned by `BTAPI` (not itself a singleton) and never exposed to demo code. This class
  * manages the audio graph, bus volume/mute, unlock tracking, SFX voice playback via
- * {@link playSound}, and music playback via {@link musicPlay}.
+ * `playSound`, and music playback via `musicPlay`.
  */
 
 import type { AudioBus } from '../core/IBTDemo';
@@ -224,7 +224,7 @@ export class AudioManager {
     /**
      * Reports whether the audio context has been unlocked by a user gesture.
      *
-     * @returns `true` once {@link AudioContext.resume} has resolved after a gesture.
+     * @returns `true` once {@link AudioContext#resume} has resolved after a gesture.
      */
     public isUnlocked(): boolean {
         return this.unlocked;
@@ -617,7 +617,7 @@ export class AudioManager {
     /**
      * Starts the music request remembered from before unlock (see {@link musicPlay}), if any.
      *
-     * Clears {@link pendingMusicRequest} before calling {@link MusicPlayer.play} (rather than
+     * Clears {@link pendingMusicRequest} before calling {@link MusicPlayer#play} (rather than
      * after), so a `play()` failure (an invalid loop region is already rejected in
      * {@link musicPlay}) can never leave a stale request dangling forever. `unlock()` never
      * calls {@link resumeAndUnlock} again once {@link unlocked} is `true`, so a request left

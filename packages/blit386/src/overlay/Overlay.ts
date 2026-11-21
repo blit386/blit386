@@ -104,7 +104,7 @@ function createTimingChart(
  * Screen-space overlay HUD rendered after demo content each frame.
  *
  * Internal to the engine; demos do not instantiate this class. Use
- * {@link HardwareSettings.isOverlayEnabled} and {@link BT.activeBackend} instead.
+ * {@link HardwareSettings#isOverlayEnabled} and {@link BT.activeBackend} instead.
  */
 export class Overlay {
     readonly #layout: OverlayLayout;
@@ -211,7 +211,7 @@ export class Overlay {
     /**
      * Creates an overlay with fixed layout and text strings.
      *
-     * @param layout - Cached display layout from {@link createOverlayLayout}.
+     * @param layout - Cached display layout from `createOverlayLayout`.
      * @param topLeftLabel - Short title shown on the top-left.
      * @param activeBackend - Backend started by BTAPI (`webgpu` or `software`).
      * @param settings - Overlay fields of {@link HardwareSettings} plus `targetFPS`; unset fields take
@@ -295,7 +295,7 @@ export class Overlay {
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
      * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. The caller must
-     * sample this before the keyboard subsystem's end-of-tick edge reset runs; see {@link Toggle.handleInput}.
+     * sample this before the keyboard subsystem's end-of-tick edge reset runs; see {@link Toggle#handleInput}.
      * @param currentTick - Current fixed-update tick for keyboard edge detection.
      * @param getCustomRows - Optional supplier for demo rows (layout plan for palette hits).
      * @param palette - Active demo palette for slot count, if any.
@@ -342,7 +342,7 @@ export class Overlay {
 
     /**
      * Draws the overlay. Toggle input is handled earlier in the frame by BTAPI
-     * ({@link BTAPI.beginRenderFrame}) so palette usage tracking matches visibility.
+     * (`BTAPI.beginRenderFrame`) so palette usage tracking matches visibility.
      *
      * @param renderer - Active {@link OverlayRenderer} instance.
      * @param font - System bitmap font.

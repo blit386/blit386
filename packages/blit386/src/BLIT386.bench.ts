@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 /**
- * CPU benchmarks for the `BT` draw-call facade in {@link BLIT386.ts}.
+ * CPU benchmarks for the `BT` draw-call facade in `BLIT386.ts`.
  *
  * BT-229 removed the per-call closure `executeDrawCall(methodName, () => {...})` used to wrap
  * every hot draw method (`drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`, …) and

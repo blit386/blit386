@@ -14,7 +14,7 @@ import { resetUsage } from '../RenderPaletteUsage';
 export class FrameLoop {
     /**
      * Overlay Backquote toggle press captured during a fixed-update tick, before
-     * {@link KeyboardInput.endUpdate} clears that tick's press edge. Read and reset by
+     * `KeyboardInput.endUpdate` clears that tick's press edge. Read and reset by
      * {@link beginRenderFrame} so the overlay (checked during the render phase, after every
      * update tick for the frame has already run) still observes a press that landed inside a tick.
      */
@@ -196,10 +196,10 @@ export class FrameLoop {
     }
 
     /**
-     * Applies a deferred {@link BTAPI.resetCamera} to {@link BTAPI.lastCameraOffset}, if one is pending.
+     * Applies a deferred {@link BTAPI#resetCamera} to {@link BTAPI#lastCameraOffset}, if one is pending.
      * Called at the start of the fixed-update tick, before the demo's own `update()` runs, so a
      * `setCameraOffset()` call inside that `update()` overrides it normally - see
-     * {@link BTAPI.pendingCameraReset}.
+     * {@link BTAPI#pendingCameraReset}.
      */
     private commitPendingCameraReset(): void {
         if (this.engine.pendingCameraReset) {
@@ -209,7 +209,7 @@ export class FrameLoop {
     }
 
     /**
-     * Bound supplier for {@link IBTDemo.overlayRows}, passed to `Overlay.handleFrameInput` and
+     * Bound supplier for {@link IBTDemo#overlayRows}, passed to `Overlay.handleFrameInput` and
      * `Overlay.updateAndRender`. A field instead of an inline closure at each call site so the
      * two call sites (input handling, then draw) do not each allocate a fresh arrow function
      * every frame.
@@ -221,7 +221,7 @@ export class FrameLoop {
     /**
      * Applies overlay input (palette swatch copy, then body toggle) and clears per-frame palette usage.
      *
-     * Input runs here (not in {@link Overlay.updateAndRender}) so visibility is current
+     * Input runs here (not in `Overlay.updateAndRender`) so visibility is current
      * when deciding whether to track palette usage during `demo.render()`. The usage mask is
      * only cleared when tracking is actually active this frame (it toggles with overlay/palette
      * visibility above) - nothing reads or repopulates it otherwise, so clearing it would be

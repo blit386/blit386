@@ -61,7 +61,7 @@ function cloneVector2i(size: Vector2i): Vector2i {
     return new Vector2i(size.x, size.y);
 }
 
-/** Non-positive sentinel surfaced when configure() passes null vectors; rejected by {@link validateDimensions}. */
+/** Non-positive sentinel surfaced when configure() passes null vectors; rejected by `validateDimensions`. */
 const INVALID_CONFIGURE_VECTOR_SIZE = new Vector2i(0, 0);
 
 /** Legacy-to-current boolean field aliases accepted by configure() compatibility handling. */
@@ -131,7 +131,7 @@ const FIELD_PICK_KINDS = {
 const FIELD_KEYS = Object.keys(FIELD_PICK_KINDS) as (keyof typeof FIELD_PICK_KINDS)[];
 
 /**
- * Validates a defined {@link HardwareSettings.keyboardLayout}: unknown values (possible from untyped JS
+ * Validates a defined {@link HardwareSettings#keyboardLayout}: unknown values (possible from untyped JS
  * `configure()` code) log a warning and resolve to the `'versus'` fallback, on both merge paths.
  *
  * @param value - Raw `keyboardLayout` value from `configure()`.
@@ -174,7 +174,7 @@ function pickValue(kind: PickKind, value: unknown): unknown {
  * Copies only the set fields of a `configure()` return value.
  *
  * `undefined` and `null` both count as unset, except on a vector field: there `null` becomes
- * {@link INVALID_CONFIGURE_VECTOR_SIZE} so {@link validateDimensions} rejects it with a clear error.
+ * {@link INVALID_CONFIGURE_VECTOR_SIZE} so `validateDimensions` rejects it with a clear error.
  * Deprecated and unknown keys are never copied.
  *
  * @param partial - Normalized values returned by the demo's `configure()` hook.
@@ -256,7 +256,7 @@ function explicitProfileBase(defaults: HardwareSettings): HardwareSettings {
 
 /**
  * Turns on keyboard scroll capture for the `'single'` {@link KeyboardLayout} when
- * `configure()` left {@link HardwareSettings.isCapturingKeyboardScroll} unset - the arrow
+ * `configure()` left {@link HardwareSettings#isCapturingKeyboardScroll} unset - the arrow
  * keys then steer player 0, so they should not also scroll the host page.
  *
  * @param merged - Resolved settings from either merge path.
@@ -311,7 +311,7 @@ type TimingChartDiagnosticsSettings = {
 };
 
 /**
- * Resolves {@link HardwareSettings.overlayTimingChartDiagnostics} for runtime overlay/chart code.
+ * Resolves {@link HardwareSettings#overlayTimingChartDiagnostics} for runtime overlay/chart code.
  *
  * Defaults to `'minimal'` when the timing chart is enabled and the field is omitted; `false` otherwise.
  *

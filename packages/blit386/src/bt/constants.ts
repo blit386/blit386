@@ -22,7 +22,7 @@ import {
 /** Constant members of `BT`, merged into it by `BLIT386.ts`. */
 export const constants = {
     /**
-     * Horizontal flip flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
+     * Horizontal flip flag for sprite rendering. Pass in {@link SpriteDrawParams#flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
      * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
@@ -30,7 +30,7 @@ export const constants = {
     FLIP_H: SPRITE_FLIP_H,
 
     /**
-     * Vertical flip flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
+     * Vertical flip flag for sprite rendering. Pass in {@link SpriteDrawParams#flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
      * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
@@ -38,7 +38,7 @@ export const constants = {
     FLIP_V: SPRITE_FLIP_V,
 
     /**
-     * Rotate 90° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
+     * Rotate 90° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams#flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
      * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
@@ -46,7 +46,7 @@ export const constants = {
     ROT_90_CW: SPRITE_ROT_90_CW,
 
     /**
-     * Rotate 180° flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
+     * Rotate 180° flag for sprite rendering. Pass in {@link SpriteDrawParams#flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
      * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.
@@ -54,7 +54,7 @@ export const constants = {
     ROT_180_CW: SPRITE_ROT_180_CW,
 
     /**
-     * Rotate 270° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams.flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
+     * Rotate 270° clockwise flag for sprite rendering. Pass in {@link SpriteDrawParams#flags}; combine with the other `FLIP_*` / `ROT_*` bits using `|`.
      *
      * @since 0.1.0
      * @changed 1.8.0 Accepted by `BT.drawSprite` through `SpriteDrawParams.flags`.

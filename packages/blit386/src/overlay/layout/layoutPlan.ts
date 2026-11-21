@@ -3,7 +3,7 @@
  *
  * Computes bar rects and text anchors each frame from display size, custom row count,
  * and optional timing-chart / palette-grid feature flags (timing chart default off,
- * opt-in via {@link HardwareSettings.isOverlayTimingChartEnabled}).
+ * opt-in via {@link HardwareSettings#isOverlayTimingChartEnabled}).
  */
 
 import { Rect2i } from '../../utils/Rect2i';
@@ -78,7 +78,7 @@ export function hintBarY(displayHeight: number): number {
  * Top Y of the palette swatch grid band stacked above the hint bar row gap.
  *
  * @param displayHeight - Logical display height in pixels.
- * @param paletteGridHeight - Total palette grid height from {@link computeGrid}.
+ * @param paletteGridHeight - Total palette grid height from `computeGrid`.
  * @returns Palette band top Y.
  */
 export function paletteBandY(displayHeight: number, paletteGridHeight: number): number {
@@ -149,7 +149,7 @@ function ensureCustomBarPool(scratch: OverlayLayoutPlanScratch, count: number, d
  * @param scratch - Layout scratch object.
  * @param bar - Bar whose bottom edge precedes the gap.
  * @param displayWidth - Logical display width.
- * @param gapIndex - Index into {@link OverlayLayoutPlanScratch.rowGapRects}.
+ * @param gapIndex - Index into {@link OverlayLayoutPlanScratch#rowGapRects}.
  * @returns Next gap index.
  */
 function writeRowGapBelow(

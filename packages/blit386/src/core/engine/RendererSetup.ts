@@ -16,7 +16,7 @@ import type { Backend, HardwareSettings, IBTDemo } from '../IBTDemo';
 import { defaultConfig, MAX_AUDIO_VOICES, mergeHardwareSettings } from '../mergeHardwareSettings';
 import { initWebGPU } from '../WebGPUContext';
 
-/** Reads hardware settings and builds the renderer for {@link BTAPI.init}. */
+/** Reads hardware settings and builds the renderer for {@link BTAPI#init}. */
 export class RendererSetup {
     /**
      * Creates the part for one engine.
@@ -83,8 +83,8 @@ export class RendererSetup {
     /**
      * Constructs and initializes the renderer for the active hardware settings.
      *
-     * Logs the selected backend name, constructs the matching {@link IRenderer},
-     * calls {@link IRenderer.init}, and reports success or failure.
+     * Logs the selected backend name, constructs the matching `IRenderer`,
+     * calls `IRenderer.init`, and reports success or failure.
      *
      * @param canvas - Render target canvas.
      * @param hw - Active hardware settings.

@@ -24,7 +24,7 @@ export type EffectTier = 'pixel' | 'display';
  *
  * An effect samples a single source color texture and writes a processed result
  * into a destination color texture (the next chain link or the swap chain). The
- * {@link PostProcessChain} owns the source/destination wiring; effects are
+ * `PostProcessChain` owns the source/destination wiring; effects are
  * responsible only for their own pipeline, uniform buffer, and per-pass encoding.
  *
  * Lifetime:
@@ -67,7 +67,7 @@ export interface Effect {
     /**
      * Writes per-frame uniform data to the GPU.
      *
-     * Called by {@link PostProcessChain} immediately before {@link encodePass}.
+     * Called by `PostProcessChain` immediately before {@link encodePass}.
      *
      * @param deltaMs - Milliseconds since the previous frame on the engine's tick clock (seekable by BT.renderAt).
      * @param sourceSize - Pixel dimensions of the source texture for this pass.

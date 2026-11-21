@@ -1,5 +1,5 @@
 /**
- * Per-slot pointer state for {@link PointerInput}: the slot shape, the pointer button codes and
+ * Per-slot pointer state for `PointerInput`: the slot shape, the pointer button codes and
  * DOM button tables, the button-mask helpers, and the pure functions that create, reset and edge-mark a slot.
  */
 
