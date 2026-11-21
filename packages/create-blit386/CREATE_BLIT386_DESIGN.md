@@ -551,11 +551,11 @@ in phase 2.
       `blit doctor`, `blit upgrade`, and `blit agents sync` all exit 0 from both PowerShell and cmd, with no path
       separator, line-ending, or quoting problems. One cross-platform finding: `blit agents sync` rewrites
       `.blit/manifest.json` even when it reports "Everything is already up to date", because `writeManifest`
-      (`packages/kit/src/commands/agents-sync.ts`) puts `files` before `createdAt`/`vars` while the scaffolder writes
-      them after, so the first sync always leaves a key-order diff (fixed in the same change, with a test in
-      `packages/kit/test/manifest-shape.test.mjs`). Not covered: the interactive clack prompts (runs had no TTY, so the
-      defaults path ran - JavaScript, no assistant, no CI), a fresh user account, and the Node installer from
-      nodejs.org.
+      (`packages/kit/src/commands/agents-sync.ts`) puts `files` before `createdAt`/`vars` while the scaffolder puts
+      `createdAt`/`vars` before `files`, so the first sync always leaves a key-order diff (fixed in the same change,
+      with a test in `packages/kit/test/manifest-shape.test.mjs`). Not covered: the interactive clack prompts (runs had
+      no TTY, so the defaults path ran - JavaScript, no assistant, no CI), a fresh user account, and the Node installer
+      from nodejs.org.
 - [x] Prototype `blit agents sync` from the canonical kit IR (phase 2), implementing the ownership model in 4.10. Done
       2026-06-13 (Round 15): full write path in `packages/kit/src/commands/agents.ts` + generate-to-memory
       `packages/kit/src/adapters.ts`, manifest `vars` for deterministic regeneration, git three-way merge + `.new`
