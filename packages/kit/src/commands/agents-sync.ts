@@ -207,8 +207,8 @@ function gitThreeWayMerge(current: string, basePath: string, incoming: string): 
 }
 
 /**
- * Write the refreshed `.blit/manifest.json`: `kitVersion`, the entries sorted by path for stable diffs, and `createdAt`
- * and `vars` carried over when the manifest that was read had them.
+ * Write the refreshed `.blit/manifest.json`: `kitVersion`, then `createdAt` and `vars` carried over when the manifest
+ * that was read had them, then the entries sorted by path for stable diffs.
  */
 export function writeManifest(
     root: string,
@@ -216,16 +216,13 @@ export function writeManifest(
     kitVersion: string,
     entries: Iterable<ReadBlitManifest['files'][number]>,
 ): void {
+    // Key order matches create-blit386's scaffold(), so a sync that changes nothing leaves the file byte-identical.
     const refreshed: ReadBlitManifest = {
         kitVersion,
+        ...(manifest.createdAt === undefined ? {} : { createdAt: manifest.createdAt }),
+        ...(manifest.vars === undefined ? {} : { vars: manifest.vars }),
         files: [...entries].sort((a, b) => a.path.localeCompare(b.path)),
     };
-    if (manifest.createdAt !== undefined) {
-        refreshed.createdAt = manifest.createdAt;
-    }
-    if (manifest.vars !== undefined) {
-        refreshed.vars = manifest.vars;
-    }
     writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
 }
 

@@ -537,9 +537,25 @@ in phase 2.
       `localhost`/`[::1]` return 200. (2) A local pnpm `minimumReleaseAge` gate made `pnpm create blit386@latest`
       resolve the SCAFFOLDER to the older `create-blit386@0.1.0`; a clean pnpm install of a kit `^1.0.0` project
       installs 1.0.0 (auto-recorded in `minimumReleaseAgeExclude`) and `doctor`/`run` both pass.
-- [ ] Scaffold and run a game on Windows (PowerShell + cmd): wizard, `git init` absent-git path, install,
-      `npm run     dev`, `npx blit doctor`. Most beginners are on Windows and nothing has been tested there. Record
-      result here. → [BT-300](https://linear.app/vancura/issue/BT-300/windows-end-to-end-scaffold-and-play-verification)
+- [x] Scaffold and run a game on Windows (PowerShell + cmd): wizard, `git init` absent-git path, install, `npm run dev`,
+      `npx blit doctor`. DONE 2026-11-21 (Windows 11 Pro, Node 22.23.3 via fnm, npm 10.9.9, Git for Windows 2.56.1,
+      developer account, not a fresh one) →
+      [BT-300](https://linear.app/vancura/issue/BT-300/windows-end-to-end-scaffold-and-play-verification). Published
+      `npm create blit386@latest` (`create-blit386@1.8.0`) scaffolds and commits, but its automatic install fails and
+      the next-steps `cd pub ps game` is unquoted - both are BT-621, fixed after 1.8.0 shipped, so they reach users with
+      1.9.0. Main (packed scaffolder + kit + engine tarballs, folder names with spaces): in PowerShell the install
+      succeeds, the first commit lands on `main` with the lockfile, next steps print `cd "head ps game"`, and the
+      checkout is LF throughout (`.gitattributes` works). In cmd with git removed from `PATH` the scaffold completes
+      (exit 0), skips git silently, and `blit doctor` then prints the friendly "Not saved with git" nag. `npm run dev`
+      serves the game on `localhost` and Catcher renders through WebGPU (Chromium 156) with no console errors.
+      `blit doctor`, `blit upgrade`, and `blit agents sync` all exit 0 from both PowerShell and cmd, with no path
+      separator, line-ending, or quoting problems. One cross-platform finding: `blit agents sync` rewrites
+      `.blit/manifest.json` even when it reports "Everything is already up to date", because `writeManifest`
+      (`packages/kit/src/commands/agents-sync.ts`) puts `files` before `createdAt`/`vars` while the scaffolder puts
+      `createdAt`/`vars` before `files`, so the first sync always leaves a key-order diff (fixed in the same change,
+      with a test in `packages/kit/test/manifest-shape.test.mjs`). Not covered: the interactive clack prompts (runs had
+      no TTY, so the defaults path ran - JavaScript, no assistant, no CI), a fresh user account, and the Node installer
+      from nodejs.org.
 - [x] Prototype `blit agents sync` from the canonical kit IR (phase 2), implementing the ownership model in 4.10. Done
       2026-06-13 (Round 15): full write path in `packages/kit/src/commands/agents.ts` + generate-to-memory
       `packages/kit/src/adapters.ts`, manifest `vars` for deterministic regeneration, git three-way merge + `.new`

@@ -19,6 +19,8 @@ build/
 
 # Generated files
 vite.config.*.timestamp-*
+# tsup's temporary bundle of its own config, alive while a build runs (CI's audit:modules:check can see it)
+tsup.config.bundled_*
 
 # TypeScript
 *.tsbuildinfo

@@ -190,3 +190,25 @@ test('blit agents sync treats null manifest vars as missing and writes the detec
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+test('blit agents sync writes the manifest keys in the scaffolder order', () => {
+    // Same order as create-blit386's scaffold(): a different order rewrote the file on every first sync (BT-300).
+    const keys = ['kitVersion', 'createdAt', 'vars', 'files'];
+    const root = makeGame(
+        JSON.stringify({
+            kitVersion: '0.0.0',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            vars: { pmInstall: 'npm install' },
+            files: [],
+        }),
+    );
+
+    try {
+        const { status, output } = runBlit(root, ['agents', 'sync']);
+        assert.equal(status, 0, `expected success, got ${status}:\n${output}`);
+        const written = JSON.parse(readFileSync(join(root, '.blit', 'manifest.json'), 'utf8'));
+        assert.deepEqual(Object.keys(written), keys);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
