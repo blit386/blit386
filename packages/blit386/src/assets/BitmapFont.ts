@@ -23,6 +23,9 @@ import type { Palette } from './Palette';
 import { SpriteSheet } from './SpriteSheet';
 import { StallTimeoutError, withStallTimeout } from './stallTimeout';
 
+/** Local copy of the imported size: under Vitest every imported read is a getter call (see CLAUDE.md). */
+const ASCII_LIMIT = ASCII_CACHE_SIZE;
+
 /** Number of {@link BitmapFont.load} calls currently in flight. */
 let loadsInFlight = 0;
 
@@ -144,7 +147,7 @@ export class BitmapFont {
     private fallbackGlyph: Glyph | null = null;
 
     /** Direct array lookup for ASCII characters (codes 0-127) for fast access. */
-    private readonly asciiGlyphs: (Glyph | null)[] = new Array<Glyph | null>(ASCII_CACHE_SIZE).fill(null);
+    private readonly asciiGlyphs: (Glyph | null)[] = new Array<Glyph | null>(ASCII_LIMIT).fill(null);
 
     /** Cache for text measurement results to avoid repeated calculations. */
     private measureCache: Map<string, number> = new Map();
@@ -374,7 +377,7 @@ export class BitmapFont {
         if (char.length === 1) {
             const code = char.charCodeAt(0);
 
-            if (code < ASCII_CACHE_SIZE) {
+            if (code < ASCII_LIMIT) {
                 // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
                 glyph = this.asciiGlyphs[code] ?? null;
             }
@@ -403,7 +406,7 @@ export class BitmapFont {
     getGlyphByCode(charCode: number): Glyph | null {
         let glyph: Glyph | null;
 
-        if (charCode < ASCII_CACHE_SIZE) {
+        if (charCode < ASCII_LIMIT) {
             // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
             glyph = this.asciiGlyphs[charCode] ?? this.fallbackGlyph;
         } else if (Number.isInteger(charCode) && charCode <= MAX_UNICODE_CODE_POINT) {
@@ -523,7 +526,7 @@ export class BitmapFont {
         if (char.length === 1) {
             const code = char.charCodeAt(0);
 
-            if (code < ASCII_CACHE_SIZE) {
+            if (code < ASCII_LIMIT) {
                 // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
                 found = this.asciiGlyphs[code] != null;
             } else {
