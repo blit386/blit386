@@ -176,6 +176,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   included; set your own by hand. Writing `remote.<name>.push` or `.mirror` the same ways now asks first. Reading an
   alias (`git config --get alias.x`) still works. To pick up the fix in an existing game, update `@blit386/kit` to this
   release first, then run `npx blit agents sync`: sync copies the guard from the kit you have installed.
+- `@blit386/kit`: `blit agents sync` no longer rewrites `.blit/manifest.json` when nothing changed. It wrote the
+  manifest's keys in a different order from the scaffolder, so the first sync in every new game left a diff that only
+  moved `createdAt` and `vars` below `files`.
 - Types that public signatures already used can now be imported by name: `AudioClipLoadOptions`, `AudioClipLoadPhase`,
   `AudioClipProgress`, `AudioClipProgressCallback`, `DemoConstructor`, `ErrorContent`, `Glyph`, `OutputUpscaleFilter`,
   `PaletteJSON` (what `Palette.toJSON()` returns), `SpriteSheetStatus`, and `SpriteUV` (the `out` argument of
