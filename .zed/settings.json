@@ -54,11 +54,21 @@
     },
 
     "Markdown": {
+      // Prettier owns Markdown (printWidth 120, proseWrap always). The global markdownlint
+      // extension has no repo config (a .markdownlint.json is deliberately not used), so it falls
+      // back to its 80-column MD013 default and flags every line Prettier wrapped at 120.
+      "language_servers": ["!markdownlint", "..."],
+
+      // Zed forces its own parser name ("markdown") over prettier.config.js overrides, which would
+      // bypass the compact-tables plugin and re-pad every table. Name the plugin's parser here.
+      "prettier": { "parser": "markdown-compact" },
+
       "formatter": "prettier",
       "format_on_save": "on"
     },
 
     "MDX": {
+      "prettier": { "parser": "markdown-compact" },
       "formatter": "prettier",
       "format_on_save": "on"
     },
