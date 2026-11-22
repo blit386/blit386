@@ -29,7 +29,7 @@ export class SplashBoot {
         const splash = this.engine.splash;
 
         if (!splash || this.engine.isRestartAfterSplash) {
-            return this.engine.runDemoInit(demo);
+            return this.engine.lifecycle.runDemoInit(demo);
         }
 
         return this.runDemoInitBehindSplash(demo, splash, hwSettings.displaySize);
@@ -129,7 +129,7 @@ export class SplashBoot {
 
         // markInitSettled fires on failure too, so a failed init() cannot leave the
         // hold running forever.
-        const initPromise = this.engine.runDemoInit(demo).then((ok) => {
+        const initPromise = this.engine.lifecycle.runDemoInit(demo).then((ok) => {
             splash.markInitSettled();
 
             return ok;
@@ -160,7 +160,7 @@ export class SplashBoot {
             }
 
             this.engine.palettes.endPaletteCapture(reducedMotion);
-            this.engine.drainInputEdges(0);
+            this.engine.lifecycle.drainInputEdges(0);
         }
     }
 }
