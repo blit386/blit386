@@ -25,7 +25,7 @@ export const audio = {
      * @returns `true` once unlocked; `false` when locked or before initialization.
      */
     get isAudioUnlocked(): boolean {
-        return BTAPI.instance.isAudioUnlocked();
+        return BTAPI.instance.audioCommands.isAudioUnlocked();
     },
 
     /**
@@ -39,7 +39,7 @@ export const audio = {
      * @param options.easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
      */
     audioVolumeSet: (bus: AudioBus, value: number, options?: { fadeMs?: number; easing?: EasingFunction }): void => {
-        BTAPI.instance.audioVolumeSet(bus, value, options?.fadeMs, options?.easing);
+        BTAPI.instance.audioCommands.audioVolumeSet(bus, value, options?.fadeMs, options?.easing);
     },
 
     /**
@@ -53,7 +53,7 @@ export const audio = {
      * @returns Volume in `[0, 1]`, or `1` (every bus's default) before initialization.
      */
     audioVolumeGet: (bus: AudioBus): number => {
-        return BTAPI.instance.audioVolumeGet(bus);
+        return BTAPI.instance.audioCommands.audioVolumeGet(bus);
     },
 
     /**
@@ -64,7 +64,7 @@ export const audio = {
      * @param muted - `true` to mute, `false` to unmute.
      */
     audioMuteSet: (bus: AudioBus, muted: boolean): void => {
-        BTAPI.instance.audioMuteSet(bus, muted);
+        BTAPI.instance.audioCommands.audioMuteSet(bus, muted);
     },
 
     /**
@@ -75,7 +75,7 @@ export const audio = {
      * @returns `true` when muted; `false` when unmuted or before initialization.
      */
     isAudioMuted: (bus: AudioBus): boolean => {
-        return BTAPI.instance.isAudioMuted(bus);
+        return BTAPI.instance.audioCommands.isAudioMuted(bus);
     },
 
     /**
@@ -93,7 +93,7 @@ export const audio = {
      *   on an inert handle is a no-op.
      */
     soundPlay: (clip: AudioClip, options?: SoundPlayOptions): SoundRef => {
-        return BTAPI.instance.soundPlay(clip, options);
+        return BTAPI.instance.audioCommands.soundPlay(clip, options);
     },
 
     /**
@@ -105,7 +105,7 @@ export const audio = {
      * @param options.fadeOutMs - Fade-out duration in milliseconds. Omit to stop immediately.
      */
     soundStop: (ref: SoundRef, options?: SoundStopOptions): void => {
-        BTAPI.instance.soundStop(ref, options?.fadeOutMs);
+        BTAPI.instance.audioCommands.soundStop(ref, options?.fadeOutMs);
     },
 
     /**
@@ -116,7 +116,7 @@ export const audio = {
      * @returns `true` when still playing; `false` once it has stopped, been stolen, or completed.
      */
     isSoundPlaying: (ref: SoundRef): boolean => {
-        return BTAPI.instance.isSoundPlaying(ref);
+        return BTAPI.instance.audioCommands.isSoundPlaying(ref);
     },
 
     /**
@@ -129,7 +129,7 @@ export const audio = {
      * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
      */
     soundVolumeSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
-        BTAPI.instance.soundVolumeSet(ref, value, options?.fadeMs);
+        BTAPI.instance.audioCommands.soundVolumeSet(ref, value, options?.fadeMs);
     },
 
     /**
@@ -140,7 +140,7 @@ export const audio = {
      * @returns Current gain, or `1` once the sound has stopped.
      */
     soundVolumeGet: (ref: SoundRef): number => {
-        return BTAPI.instance.soundVolumeGet(ref);
+        return BTAPI.instance.audioCommands.soundVolumeGet(ref);
     },
 
     /**
@@ -153,7 +153,7 @@ export const audio = {
      * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
      */
     soundPitchSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
-        BTAPI.instance.soundPitchSet(ref, value, options?.fadeMs);
+        BTAPI.instance.audioCommands.soundPitchSet(ref, value, options?.fadeMs);
     },
 
     /**
@@ -164,7 +164,7 @@ export const audio = {
      * @returns Current playback rate, or `1` once the sound has stopped.
      */
     soundPitchGet: (ref: SoundRef): number => {
-        return BTAPI.instance.soundPitchGet(ref);
+        return BTAPI.instance.audioCommands.soundPitchGet(ref);
     },
 
     /**
@@ -177,7 +177,7 @@ export const audio = {
      * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
      */
     soundPanSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
-        BTAPI.instance.soundPanSet(ref, value, options?.fadeMs);
+        BTAPI.instance.audioCommands.soundPanSet(ref, value, options?.fadeMs);
     },
 
     /**
@@ -188,7 +188,7 @@ export const audio = {
      * @returns Current pan, or `0` once the sound has stopped.
      */
     soundPanGet: (ref: SoundRef): number => {
-        return BTAPI.instance.soundPanGet(ref);
+        return BTAPI.instance.audioCommands.soundPanGet(ref);
     },
 
     /**
@@ -209,7 +209,7 @@ export const audio = {
      *   locked); the current track is left alone and nothing is remembered.
      */
     musicPlay: (clip: AudioClip, options?: MusicPlayOptions): void => {
-        BTAPI.instance.musicPlay(clip, options);
+        BTAPI.instance.audioCommands.musicPlay(clip, options);
     },
 
     /**
@@ -223,7 +223,7 @@ export const audio = {
      * @throws Error when `options.fadeMs` is not a finite number; the current track keeps playing.
      */
     musicStop: (options?: { fadeMs?: number }): void => {
-        BTAPI.instance.musicStop(options?.fadeMs);
+        BTAPI.instance.audioCommands.musicStop(options?.fadeMs);
     },
 
     /**
@@ -234,7 +234,7 @@ export const audio = {
      *   not yet started.
      */
     get isMusicPlaying(): boolean {
-        return BTAPI.instance.isMusicPlaying();
+        return BTAPI.instance.audioCommands.isMusicPlaying();
     },
 
     /**
@@ -246,7 +246,7 @@ export const audio = {
      * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
      */
     musicVolumeSet: (value: number, options?: { fadeMs?: number }): void => {
-        BTAPI.instance.musicVolumeSet(value, options?.fadeMs);
+        BTAPI.instance.audioCommands.musicVolumeSet(value, options?.fadeMs);
     },
 
     /**
@@ -256,7 +256,7 @@ export const audio = {
      * @returns Current target gain, or `1` before initialization.
      */
     musicVolumeGet: (): number => {
-        return BTAPI.instance.musicVolumeGet();
+        return BTAPI.instance.audioCommands.musicVolumeGet();
     },
 
     /**

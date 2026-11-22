@@ -279,7 +279,7 @@ describe('sound playback passthroughs', () => {
     it('soundPlay returns INVALID_SOUND_REF when the audio subsystem is not initialized', () => {
         const clip = { buffer: createMockAudioBuffer() } as unknown as AudioClip;
 
-        expect(BTAPI.instance.soundPlay(clip)).toEqual(INVALID_SOUND_REF);
+        expect(BTAPI.instance.audioCommands.soundPlay(clip)).toEqual(INVALID_SOUND_REF);
     });
 
     it('soundPlay returns INVALID_SOUND_REF when the clip buffer is null', () => {
@@ -287,7 +287,7 @@ describe('sound playback passthroughs', () => {
 
         const clip = { buffer: null } as unknown as AudioClip;
 
-        expect(BTAPI.instance.soundPlay(clip)).toEqual(INVALID_SOUND_REF);
+        expect(BTAPI.instance.audioCommands.soundPlay(clip)).toEqual(INVALID_SOUND_REF);
     });
 
     it('soundPlay delegates to AudioManager.playSound with the clip buffer', () => {
@@ -299,7 +299,7 @@ describe('sound playback passthroughs', () => {
         setAudio(audio);
 
         const clip = { buffer } as unknown as AudioClip;
-        const result = BTAPI.instance.soundPlay(clip, { volume: 0.5 });
+        const result = BTAPI.instance.audioCommands.soundPlay(clip, { volume: 0.5 });
 
         expect(spy).toHaveBeenCalledWith(buffer, { volume: 0.5 });
         expect(result).toBe(ref);
@@ -312,13 +312,13 @@ describe('sound playback passthroughs', () => {
         vi.spyOn(audio, 'voices', 'get').mockReturnValue({ stop: spy } as unknown as VoicePool);
 
         setAudio(audio);
-        BTAPI.instance.soundStop(INVALID_SOUND_REF, 200);
+        BTAPI.instance.audioCommands.soundStop(INVALID_SOUND_REF, 200);
 
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF, 200);
     });
 
     it('soundStop is a no-op when the audio subsystem is not initialized', () => {
-        expect(() => BTAPI.instance.soundStop(INVALID_SOUND_REF)).not.toThrow();
+        expect(() => BTAPI.instance.audioCommands.soundStop(INVALID_SOUND_REF)).not.toThrow();
     });
 
     it("isSoundPlaying delegates to the voice pool's isPlaying", () => {
@@ -329,12 +329,12 @@ describe('sound playback passthroughs', () => {
 
         setAudio(audio);
 
-        expect(BTAPI.instance.isSoundPlaying(INVALID_SOUND_REF)).toBe(true);
+        expect(BTAPI.instance.audioCommands.isSoundPlaying(INVALID_SOUND_REF)).toBe(true);
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF);
     });
 
     it('isSoundPlaying returns false when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+        expect(BTAPI.instance.audioCommands.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
     });
 
     it("soundVolumeSet delegates to the voice pool's volumeSet", () => {
@@ -344,7 +344,7 @@ describe('sound playback passthroughs', () => {
         vi.spyOn(audio, 'voices', 'get').mockReturnValue({ volumeSet: spy } as unknown as VoicePool);
 
         setAudio(audio);
-        BTAPI.instance.soundVolumeSet(INVALID_SOUND_REF, 0.5, 100);
+        BTAPI.instance.audioCommands.soundVolumeSet(INVALID_SOUND_REF, 0.5, 100);
 
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF, 0.5, 100);
     });
@@ -357,12 +357,12 @@ describe('sound playback passthroughs', () => {
 
         setAudio(audio);
 
-        expect(BTAPI.instance.soundVolumeGet(INVALID_SOUND_REF)).toBe(0.75);
+        expect(BTAPI.instance.audioCommands.soundVolumeGet(INVALID_SOUND_REF)).toBe(0.75);
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF);
     });
 
     it('soundVolumeGet returns 1 when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.soundVolumeGet(INVALID_SOUND_REF)).toBe(1);
+        expect(BTAPI.instance.audioCommands.soundVolumeGet(INVALID_SOUND_REF)).toBe(1);
     });
 
     it("soundPitchSet delegates to the voice pool's pitchSet", () => {
@@ -372,13 +372,13 @@ describe('sound playback passthroughs', () => {
         vi.spyOn(audio, 'voices', 'get').mockReturnValue({ pitchSet: spy } as unknown as VoicePool);
 
         setAudio(audio);
-        BTAPI.instance.soundPitchSet(INVALID_SOUND_REF, 1.5, 50);
+        BTAPI.instance.audioCommands.soundPitchSet(INVALID_SOUND_REF, 1.5, 50);
 
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF, 1.5, 50);
     });
 
     it('soundPitchGet returns 1 when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.soundPitchGet(INVALID_SOUND_REF)).toBe(1);
+        expect(BTAPI.instance.audioCommands.soundPitchGet(INVALID_SOUND_REF)).toBe(1);
     });
 
     it("soundPanSet delegates to the voice pool's panSet", () => {
@@ -388,13 +388,13 @@ describe('sound playback passthroughs', () => {
         vi.spyOn(audio, 'voices', 'get').mockReturnValue({ panSet: spy } as unknown as VoicePool);
 
         setAudio(audio);
-        BTAPI.instance.soundPanSet(INVALID_SOUND_REF, -0.5, 50);
+        BTAPI.instance.audioCommands.soundPanSet(INVALID_SOUND_REF, -0.5, 50);
 
         expect(spy).toHaveBeenCalledWith(INVALID_SOUND_REF, -0.5, 50);
     });
 
     it('soundPanGet returns 0 when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.soundPanGet(INVALID_SOUND_REF)).toBe(0);
+        expect(BTAPI.instance.audioCommands.soundPanGet(INVALID_SOUND_REF)).toBe(0);
     });
 });
 
@@ -416,7 +416,7 @@ describe('music playback passthroughs', () => {
     it('musicPlay is a no-op when the audio subsystem is not initialized', () => {
         const clip = { buffer: createMockAudioBuffer() } as unknown as AudioClip;
 
-        expect(() => BTAPI.instance.musicPlay(clip)).not.toThrow();
+        expect(() => BTAPI.instance.audioCommands.musicPlay(clip)).not.toThrow();
     });
 
     it('musicPlay is a no-op when the clip buffer is null', () => {
@@ -427,7 +427,7 @@ describe('music playback passthroughs', () => {
 
         const clip = { buffer: null } as unknown as AudioClip;
 
-        BTAPI.instance.musicPlay(clip);
+        BTAPI.instance.audioCommands.musicPlay(clip);
 
         expect(spy).not.toHaveBeenCalled();
     });
@@ -441,7 +441,7 @@ describe('music playback passthroughs', () => {
 
         const clip = { buffer } as unknown as AudioClip;
 
-        BTAPI.instance.musicPlay(clip, { volume: 0.5 });
+        BTAPI.instance.audioCommands.musicPlay(clip, { volume: 0.5 });
 
         expect(spy).toHaveBeenCalledWith(buffer, { volume: 0.5 });
     });
@@ -451,13 +451,13 @@ describe('music playback passthroughs', () => {
         const spy = vi.spyOn(audio, 'musicStop').mockReturnValue(undefined);
 
         setAudio(audio);
-        BTAPI.instance.musicStop(200);
+        BTAPI.instance.audioCommands.musicStop(200);
 
         expect(spy).toHaveBeenCalledWith(200);
     });
 
     it('musicStop is a no-op when the audio subsystem is not initialized', () => {
-        expect(() => BTAPI.instance.musicStop()).not.toThrow();
+        expect(() => BTAPI.instance.audioCommands.musicStop()).not.toThrow();
     });
 
     it("isMusicPlaying delegates to the music player's isPlaying", () => {
@@ -468,17 +468,17 @@ describe('music playback passthroughs', () => {
 
         setAudio(audio);
 
-        expect(BTAPI.instance.isMusicPlaying()).toBe(true);
+        expect(BTAPI.instance.audioCommands.isMusicPlaying()).toBe(true);
         expect(spy).toHaveBeenCalledWith();
     });
 
     it('isMusicPlaying returns false when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.isMusicPlaying()).toBe(false);
+        expect(BTAPI.instance.audioCommands.isMusicPlaying()).toBe(false);
     });
 
     it('audioVolumeGet returns the default bus volume, 1, when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.audioVolumeGet('main')).toBe(1);
-        expect(new AudioManager().volumeGet('main')).toBe(BTAPI.instance.audioVolumeGet('main'));
+        expect(BTAPI.instance.audioCommands.audioVolumeGet('main')).toBe(1);
+        expect(new AudioManager().volumeGet('main')).toBe(BTAPI.instance.audioCommands.audioVolumeGet('main'));
     });
 
     it("musicVolumeSet delegates to the music player's volumeSet", () => {
@@ -488,7 +488,7 @@ describe('music playback passthroughs', () => {
         vi.spyOn(audio, 'music', 'get').mockReturnValue({ volumeSet: spy } as unknown as MusicPlayer);
 
         setAudio(audio);
-        BTAPI.instance.musicVolumeSet(0.4, 100);
+        BTAPI.instance.audioCommands.musicVolumeSet(0.4, 100);
 
         expect(spy).toHaveBeenCalledWith(0.4, 100);
     });
@@ -501,12 +501,12 @@ describe('music playback passthroughs', () => {
 
         setAudio(audio);
 
-        expect(BTAPI.instance.musicVolumeGet()).toBe(0.75);
+        expect(BTAPI.instance.audioCommands.musicVolumeGet()).toBe(0.75);
         expect(spy).toHaveBeenCalledWith();
     });
 
     it('musicVolumeGet returns 1 when the audio subsystem is not initialized', () => {
-        expect(BTAPI.instance.musicVolumeGet()).toBe(1);
+        expect(BTAPI.instance.audioCommands.musicVolumeGet()).toBe(1);
     });
 });
 
@@ -1848,7 +1848,7 @@ describe('BTAPI', () => {
             vi.spyOn(audio, 'unpark');
             vi.spyOn(audio, 'playSound').mockReturnValue({ voiceIndex: 7, generation: 1 });
             vi.mocked(demo.update).mockImplementation(() => {
-                refs.push(BTAPI.instance.soundPlay(clip));
+                refs.push(BTAPI.instance.audioCommands.soundPlay(clip));
             });
             await boot(demo);
             (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
