@@ -188,6 +188,7 @@ src/
     engineHarness.ts       # Test-only: boots the real BTAPI (software backend, fake canvas), owns the rAF clock, dispatches input between frames, records per-update/per-render reads (refresh-rate tests)
     overlayFixtures.ts     # Shared mock renderer + snapshot helpers for overlay unit tests
     btFacadeFixtures.ts    # Shared fixtures for the src/bt/*.test.ts facade tests: minimal HardwareSettings and the dev error-panel container wrapper
+    btapiFixtures.ts       # Shared fixtures for BTAPI.test.ts and the core/engine/*.test.ts part specs: singleton reset, mock demos and canvases, PNG capture stubs
     setup.ts               # Vitest global setup (GPU constants)
 ```
 
