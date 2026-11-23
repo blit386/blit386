@@ -226,8 +226,8 @@ After writing `RELEASE.md`, report:
 ### After RELEASE.md: the rest of the release
 
 `/release` only writes `RELEASE.md` by default. Everything below is manual-on-request, not automatic - walk through it
-in this order when the user asks for more, since later steps depend on earlier ones (the API-history step in particular
-is order-sensitive and silently produces wrong data if done too early).
+in this order when the user asks for more, since later steps depend on earlier ones (the API history in particular is
+split across the release PR and a post-tag PR, and the wrong split silently mislabels the release).
 
 ### Agent guardrails (never skip)
 
@@ -256,7 +256,8 @@ is order-sensitive and silently produces wrong data if done too early).
 1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
    lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`, then run
    `pnpm run bump:check` - it must report `Lockstep is in step at X.Y.Z.`
-2. Mark the changelog as released (below) and verify docs coverage (below).
+2. Mark the changelog as released (below), verify docs coverage (below), and move `UNRELEASED_VERSION` and regenerate
+   `docs/_api-history.json` (below).
 3. Land the bump through a PR: `main` is protected - branch, PR, wait for checks, merge (`gh pr merge --merge`; squash
    merging is disabled on the repository).
 4. From the merged `main` commit: publish the engine (`cd packages/blit386 && pnpm run release`, which builds then
@@ -268,7 +269,7 @@ is order-sensitive and silently produces wrong data if done too early).
    sandboxed shell.
 6. When the release ships migrations or hot-reload / agent changes, include the extra smoke checks and the
    `blit upgrade` / `blit migrate` callout for existing games from `PUBLISHING.md` step 7.
-7. Regenerate `packages/blit386/docs/_api-history.json` - see below, only after the tag exists.
+7. Fill in the release date in `packages/blit386/docs/_api-history.json` - see below, only after the tag exists.
 
 #### Mark the changelog as released
 
@@ -298,30 +299,35 @@ Then check the two downstream packages:
   from the sibling packages on disk, so nothing needs pushing first. Commit new engine docs before building - each
   page's `lastModified` comes from `git log`, and the sync fails on a doc with no commit.
 
-#### Regenerate `docs/_api-history.json` - only after the tag exists
+#### Move `UNRELEASED_VERSION` and regenerate `docs/_api-history.json` - in the release PR
 
-The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the single release tag
-from "How to run the release" step 4 exists:
+The release tag triggers the production docs deploy (`deploy.yml`), so the tagged commit must already show this
+release's symbols as `"stable"` ("Since X.Y.Z"), not `"unreleased"`. Do this in the release PR, after the bump:
 
-1. In `packages/blit386/scripts/gen-api-history.mjs`, bump `UNRELEASED_VERSION` from the version just tagged to the next
-   one (e.g. `1.5.0` -> `1.5.1`).
+1. In `packages/blit386/scripts/gen-api-history.mjs`, move `UNRELEASED_VERSION` from the version being released to the
+   next patch (e.g. `1.5.0` -> `1.5.1`). Its doc comment says the same: bump it in the commit that bumps `package.json`.
 2. Run `pnpm --filter blit386 run api:history`.
 3. Verify: `pnpm --filter blit386 run api:history:check`, `pnpm --filter blit386 run api:since:check`,
    `pnpm --filter blit386 run test:api-history`.
-4. `main` is protected - branch, PR, merge (`gh pr merge --merge`). Make sure the regenerated `docs/_api-history.json`
-   is part of that PR.
 
-Both possible mistakes here produce a subtly wrong `docs/_api-history.json` and neither fails loudly, so get the order
-right rather than debugging it after the fact:
+The expected output: `packageVersion` is the new version, `unreleasedVersion` the next patch, every symbol from this
+release `"stable"`, and `versions["X.Y.Z"]` still `null`, because no tag exists yet to date it. Run it in a checkout
+with every tag fetched, or the earlier versions' dates regenerate as `null` too
+(`.claude/rules/environment-gotchas.md`).
 
-- Regenerating before the tag exists, with `UNRELEASED_VERSION` still equal to the version already bumped into
-  `package.json`: `packageVersion` in the output flips to that version (a lie - it isn't published yet) while every
-  symbol from this release correctly stays `"unreleased"` with a `null` date. `api:history:check` also starts failing at
-  this point, purely because `package.json` no longer matches the committed manifest - that failure is expected and
-  resolves itself once this section's steps are followed.
-- Bumping `UNRELEASED_VERSION` before the tag exists: `packageVersion` and the version being bumped away from are now
-  equal, so the generator's "future and untagged -> unreleased" rule never fires. Every symbol from this release flips
-  straight to `"stable"` with a `null` date, claiming it shipped when it hasn't.
+The mistake to avoid is skipping step 1. With `UNRELEASED_VERSION` still equal to the version in `package.json`, every
+symbol from this release stays `"unreleased"` (`deriveStatus` in the generator), and the production deploy the tag
+triggers labels the whole release as unreleased until a follow-up PR lands. Nothing fails loudly.
+
+#### Fill in the release date - after the tag exists
+
+The only API-history step left once the tag from "How to run the release" step 4 is pushed:
+
+1. On a branch from the merged `main`, run `pnpm --filter blit386 run api:history`. The only diff should be
+   `"X.Y.Z": null` becoming the tagged commit's date. If this release's symbols still read `"unreleased"`, the release
+   PR missed the step above: move `UNRELEASED_VERSION` now and regenerate again in this PR.
+2. Run the same three checks.
+3. `main` is protected - branch, PR, merge (`gh pr merge --merge`).
 
 ### Troubleshooting
 
@@ -339,4 +345,4 @@ After a successful release:
   Release is published with `--latest`
 - Whether the tag also triggered the docs/demos production deploy (`deploy.yml`) and whether it succeeded
 - Whether release notes mentioned `blit upgrade` / `blit migrate` for existing games
-- Whether `docs/_api-history.json` was regenerated after the tag
+- Whether `docs/_api-history.json` got its release date after the tag
