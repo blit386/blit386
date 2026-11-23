@@ -104,6 +104,9 @@ rendered frame and not by wall time. Two things follow:
 ## Notes
 
 - These animate the active palette; set one up first (use-palette skill).
+- Ranges and swap slots start at 1 and stay inside the palette. Slot 0 is the frozen transparent color, so on engine
+  1.9.0+ `BT.paletteCycle`, `BT.paletteFadeRange`, and `BT.paletteSwap` throw right at the call when a range touches
+  slot 0 or an `end` reaches past the last slot (older engines stopped the game on the next step instead).
 - A fade target is a whole `Palette` - build the "night" palette once in `init()`. The use-palette skill shows
   `fillBlock`, which copies a whole block of colors with one change applied (dimmed, tinted) in one call.
 - Slots past the end of the target palette are left alone. Hand `paletteFadeExposure` a small target palette and it only

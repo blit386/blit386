@@ -27,7 +27,7 @@ export default defineConfig({
 });
 ```
 
-Needs blit386 `^1.4.0`, and Vite 6 or newer for asset edits (on Vite 5 they are silently ignored). Production builds
+Needs blit386 `^1.4.0`, and Vite 6.4.6 or newer for asset edits (on Vite 5 they are silently ignored). Production builds
 skip the plugin (`apply: 'serve'`), so shipped games are unchanged.
 
 ### 2. Know which save you made

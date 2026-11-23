@@ -1,0 +1,165 @@
+---
+title: BLIT386 1.9.0 - the release where nothing is new
+description:
+  The audit release - input that holds up at 120 Hz, matching WebGPU and software pixels, steadier hot reload, and seeds
+  that give new worlds.
+date: 2026-11-23
+tags: [release, audit]
+author: vancura
+---
+
+At some point every engine reaches the stage where the features list looks done and you can't shake the feeling that
+something underneath is quietly wrong. Nothing crashed, the demos ran, the tests were green, and yet I kept finding
+small things - a click that went missing on my 120 Hz laptop but never on the old monitor, a HUD bar that was there on
+one backend and gone on the other. So instead of adding the next big thing, I did something I had been putting off for
+months, honestly: I read the whole thing again, module by module, with a checklist and no mercy, and wrote down every
+place where the code said one thing and did another.
+
+It turned out to be a long list. 1.9.0 is that list, fixed - about 260 pull requests, almost none of them a new feature,
+which is a strange thing to announce and maybe the most useful release so far anyway. If your game seeds its worlds,
+reads gamepad buttons from `render()`, or leans on a palette effect touching slot 0, read the parts below that talk
+about behavior changes. Everyone else should just notice that things work more like the docs always said they did.
+
+## Input that holds up at 120 Hz
+
+The engine runs `update()` on a fixed clock, 60 times a second by default, and draws as often as the display wants. On a
+60 Hz screen those two line up and every bug hides. On a 120 Hz ProMotion screen half the rendered frames run no update
+at all, and that is where the input layer quietly lost things: gamepad presses that rolled over once per rendered frame,
+so `update()` saw about half of them, a pointer delta that covered only the last frame, so a drag ran at half speed, and
+wheel scroll that went missing the same way.
+
+All of it now follows the update clock. Gamepad, pointer, and keyboard edges reach exactly one `update()`, a click whose
+down and up both land between two updates (a zero-delay `page.mouse.click()`, a fast trackpad tap) still counts once,
+and `BT.pointerDelta()` read from `update()` covers everything since the previous one. If you moved gamepad reads into
+`render()` to work around the old behavior, move them back - `render()` no longer sees an edge an update already used.
+
+<DemoEmbed demo="pointer-drag-flick" title="BLIT386 pointer drag and flick demo" />
+
+I don't trust a hand check on my own screen for this anymore, so the fix comes with tests that boot the real engine and
+drive its frame clock at 60, 120 and 144 Hz, sending input between frames. They are test-only and ship nowhere, but they
+are why I'm fairly sure this stays fixed.
+
+A few keyboard things belong here too. `BT.inputString` was built from the `beforeinput` event, which browsers only send
+to editable elements and never to a canvas, so a name-entry screen stayed empty no matter what you typed. It reads
+`keydown` now:
+
+```ts twoslash
+import { BT } from 'blit386';
+let playerName = '';
+// ---cut---
+// In update(): everything typed since the previous tick.
+for (const ch of BT.inputString) {
+  if (ch === '\x08') {
+    playerName = playerName.slice(0, -1); // Backspace
+  } else if (ch !== '\x0d') {
+    playerName += ch; // Enter arrives as \x0d
+  }
+}
+```
+
+A key held while the window loses focus now reports a release, so an alt-tab mid-charge no longer leaves the shot stuck.
+On macOS, Cmd plus a letter no longer leaves that letter held forever, because the browser never sends its `keyup`. And
+a single gamepad that Chrome reports at index 1 is player 0, which is what everybody assumed it was anyway.
+
+## Two backends, one picture
+
+BLIT386 draws with WebGPU and falls back to a Canvas 2D software renderer, and the promise is that both draw the same
+pixels. Mostly they did. The audit found the places where they didn't, and the worst one was draw order: WebGPU drew
+every rectangle, line, and pixel before every sprite in a frame, so a `BT.drawRectFill` HUD bar drawn over a sprite
+background vanished under it on WebGPU, while the software backend showed it right where you put it. Draws now keep the
+order `render()` made them in.
+
+The rest are smaller and just as annoying to find. A partially transparent palette slot shows the page behind the canvas
+the same way on both. A zero or negative rect draws nothing on both, instead of a backwards fill on one of them. A
+sprite source that runs past the sheet edge stops at the edge, instead of reading whatever the GPU driver keeps there. A
+palette color with alpha 0 is transparent on both, and an emoji in bitmap text counts as one character on WebGPU, so
+centered text lines up again. A lost GPU device - a driver reset, a laptop switching graphics cards - logs a clear
+message instead of freezing on a black canvas.
+
+## Hot reload that keeps reloading
+
+Asset hot reload had one bug that I think almost everybody hit without knowing it: it worked until your first code edit,
+and from then on saving a PNG did nothing until a full page reload. It re-subscribes on every code reload now. It also
+works with a Vite `base` other than `/`, with a custom `publicDir`, with a file called `hero@2x.png`, and with a sound
+loaded by a relative path, none of which reached the engine before.
+
+Two quick saves no longer let the older one win, Finder's `.DS_Store` no longer reloads the page, and a throw in your
+`update()` no longer freezes the game until a page reload - the next save that fixes it starts the loop again, keeping
+your state.
+
+## Seeds that give new worlds
+
+1.5.0 promised the same world every time, and it delivered, maybe a little too well. The coordinate hashes folded the
+seed in as an XOR on `x`, so changing the seed only slid the same world sideways - a game seeding its terrain by level
+number got nearly the same landscape on every level, shifted a few columns. The seed is now mixed in after the
+coordinates, so each seed gives an unrelated world:
+
+```ts twoslash
+import { ValueNoise } from 'blit386';
+declare const level: number;
+// ---cut---
+const terrain = new ValueNoise(level); // level 2 is no longer level 1 moved over
+const height = terrain.noise2D(12, 7);
+```
+
+This is the one change in the release that breaks something on purpose. Seed `0`, and an omitted seed, are unchanged bit
+for bit, but every other seed now builds a different world than it did in 1.5.0 to 1.8.0, so a saved seed rebuilds
+something new and golden tests on seeded output need re-recording. `PerlinNoise` also reaches about -1 and 1 in 1D and
+2D now, as documented, so a threshold like `noise2D(x, y) > 0.7` finally fires. And a seed that is `NaN` or `undefined`
+throws, instead of becoming seed `0` and handing every bad seed the same world.
+
+<DemoEmbed demo="seeded-worlds" title="BLIT386 seeded worlds demo" />
+
+## Errors at the line that caused them
+
+A lot of the audit was about where an error shows up. `BT.paletteCycle(0, 4, 1)` used to be accepted and then throw from
+inside the engine on the next tick, which stopped the game loop and pointed at engine code. Palette effects that touch
+slot 0 or reach past the palette now throw at the call, and so do `BT.paletteFlash` with a missing color, `BT.soundPlay`
+and `BT.musicPlay` with a `NaN` volume or fade, `AudioClip.synth` with a broken envelope, and the overlay settings in
+`configure()` that used to draw at fractional pixels.
+
+Going the other way, one bad draw call no longer blanks the whole game: the error is reported once, dev builds show it
+above the canvas, and the game keeps running behind it.
+
+## Other changes
+
+### Restarting cleanly
+
+A second `BT.init()` - back to the title screen, say - used to start a new game loop without stopping the old one, so
+the game ran at double speed and leaked the previous GPU device. It now stops the old loop, destroys the old device, and
+starts with no palette and no palette effects, like a first boot. The splash plays once per page load.
+
+### Small honest fixes
+
+The system font's em dash was a copy of the hyphen. `Palette.nes()` drew its last row of colors as black.
+`Color32.toUint32()` came back negative for every color with alpha 128 or more. `Vector2i.normalized()` on a standing
+entity handed out the frozen zero vector, so `velocity.normalized().mulInPlace(speed)` threw only when the player stood
+still, which is a lovely bug to debug at night. All fixed.
+
+### Readouts for agents
+
+Dev builds get `window.__btInputTrace`, which records which input edges each `update()` and each frame saw, and
+`window.__btOverlayRows`, which reads back the overlay text the last frame drew. Both are for a script or an agent that
+wants to check what the game saw and showed without reading pixels, and neither is part of the `BT` API.
+
+### Guards that fail closed
+
+The kit's agent shell guard, the one that keeps a coding assistant from running `git reset --hard` on your afternoon,
+got the same treatment. It catches destructive git commands hidden in a subshell, across a line continuation, written as
+`GIT` or `git.exe`, or tucked behind a git alias written earlier, and it now blocks instead of allowing when the guard
+itself cannot load, in Claude Code, Gemini CLI, and OpenCode alike. Force pushes and forced branch deletes ask you
+first, in any spelling.
+
+`blit play` learned drag and wheel steps, so an agent can test a drag, and `blit doctor` warns when your Vite is too old
+for asset hot reload. The scaffolder installs on Windows, the starter paddle follows a finger on a phone, and the first
+commit holds the lockfile its optional CI workflow needs.
+
+Existing games pick up the kit changes with `npx blit upgrade` and `npx blit agents sync`. No API was renamed, so there
+is nothing to migrate - only the behavior changes above, which [the changelog](/docs/reference/changelog) lists one by
+one.
+
+```bash
+npm create blit386@latest my-game
+```
+
+Go break something, and tell me where.
