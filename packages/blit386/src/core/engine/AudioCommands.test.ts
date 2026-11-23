@@ -6,19 +6,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetSingleton } from '../../__test__/btapiFixtures';
 import { createMockAudioBuffer } from '../../__test__/webaudio-mock';
 import type { AudioClip } from '../../assets/AudioClip';
 import { AudioManager } from '../../audio/AudioManager';
 import type { MusicPlayer } from '../../audio/MusicPlayer';
 import { INVALID_SOUND_REF, type VoicePool } from '../../audio/VoicePool';
 import { BTAPI } from '../BTAPI';
-
-function resetSingleton(): void {
-    // BTAPI._instance is private; the cast is intentional - there is no public
-    // reset API, and this is the least-invasive way to isolate singleton state
-    // between tests without modifying production code.
-    (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
-}
 
 describe('sound playback passthroughs', () => {
     beforeEach(() => {
@@ -30,11 +24,9 @@ describe('sound playback passthroughs', () => {
     });
 
     function setAudio(audio: AudioManager | null): void {
-        // BTAPI's `audio` field is private; this cast is the same test-isolation technique
-        // `resetSingleton()` above uses for `_instance` - it lets these tests inject a real
-        // AudioManager without running a full init()/WebGPU/AudioContext mock setup, since none
-        // of these passthroughs need a live renderer or context.
-        (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
+        // Injects a real AudioManager without a full init()/WebGPU/AudioContext mock setup - none of
+        // these passthroughs need a live renderer or context.
+        BTAPI.instance.audio = audio;
     }
 
     it('soundPlay returns INVALID_SOUND_REF when the audio subsystem is not initialized', () => {
@@ -169,9 +161,8 @@ describe('music playback passthroughs', () => {
     });
 
     function setAudio(audio: AudioManager | null): void {
-        // Same test-isolation technique as the "sound playback passthroughs" block above - see
-        // its comment for why this cast is safe here.
-        (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
+        // Same injection as the "sound playback passthroughs" block above.
+        BTAPI.instance.audio = audio;
     }
 
     it('musicPlay is a no-op when the audio subsystem is not initialized', () => {
