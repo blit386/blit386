@@ -187,6 +187,7 @@ src/
     spriteOrientationFixture.ts # Shared ABC/DEF sprite source + grid oracle for every flip/rotation mask (used by both backends' tests)
     engineHarness.ts       # Test-only: boots the real BTAPI (software backend, fake canvas), owns the rAF clock, dispatches input between frames, records per-update/per-render reads (refresh-rate tests)
     overlayFixtures.ts     # Shared mock renderer + snapshot helpers for overlay unit tests
+    btFacadeFixtures.ts    # Shared fixtures for the src/bt/*.test.ts facade tests: minimal HardwareSettings and the dev error-panel container wrapper
     setup.ts               # Vitest global setup (GPU constants)
 ```
 
