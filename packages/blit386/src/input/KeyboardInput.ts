@@ -169,7 +169,8 @@ export class KeyboardInput {
     }
 
     /**
-     * Whether `code` is held this frame (`KeyboardEvent.code`).
+     * Whether `code` is held this frame (`KeyboardEvent.code`). A tap whose keydown and keyup both land between two
+     * {@link endUpdate} calls is not held; it shows only in {@link isKeyPressed} and {@link isKeyReleased}.
      *
      * @param code - DOM key code string (for example `"Space"`).
      * @returns `true` while the key is held.

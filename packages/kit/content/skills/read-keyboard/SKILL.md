@@ -91,7 +91,8 @@ BT.inputMapReset(); // back to the keyboardLayout's defaults
 
 ## Key calls
 
-- `BT.isKeyDown(code)` / `BT.isKeyPressed(code, repeat?)` / `BT.isKeyReleased(code)` - methods.
+- `BT.isKeyDown(code)` / `BT.isKeyPressed(code, repeat?)` / `BT.isKeyReleased(code)` - methods. A tap shorter than one
+  update tick is never `isKeyDown`, only pressed and released; use `isKeyPressed` when every tap must count.
 - `BT.isAnyKeyDown()` / `BT.isAnyKeyPressed(repeat?)` / `BT.isAnyKeyReleased()` - methods, engine 1.8.0+ (whole
   keyboard).
 - `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods (face buttons).

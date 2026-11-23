@@ -776,6 +776,23 @@ describe('KeyboardInput any-key helpers', () => {
         expect(kb.isAnyKeyPressed(undefined, 0)).toBe(true);
     });
 
+    // BT-841: documented contract - a sub-tick tap shows only as edges, never as held.
+    it('a tap that starts and ends between two updates is pressed and released but not held', () => {
+        kb.endUpdate();
+        down('ArrowRight');
+        up('ArrowRight');
+
+        expect(kb.isKeyPressed('ArrowRight', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('ArrowRight')).toBe(true);
+        expect(kb.isKeyDown('ArrowRight')).toBe(false);
+        expect(kb.isAnyKeyDown()).toBe(false);
+
+        kb.endUpdate();
+
+        expect(kb.isKeyPressed('ArrowRight', undefined, 0)).toBe(false);
+        expect(kb.isKeyReleased('ArrowRight')).toBe(false);
+    });
+
     it('isAnyKeyPressed repeats on schedule anchored to the earliest held key', () => {
         tick = 10;
         down('ArrowDown');

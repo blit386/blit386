@@ -211,6 +211,12 @@ under rapid input - the tick already consumed and cleared the edge before render
 
 </Callout>
 
+A key tap shorter than one update tick shows up only as edges. When the key goes down and comes back up before the next
+`update()` (a quick tap at a low `targetFPS`, a stalled frame, a Playwright `keyboard.press`), `BT.isKeyPressed` and
+`BT.isKeyReleased` are both true on that one `update()`, while `BT.isKeyDown` is already false - it reports whether the
+key is held when the tick runs. The same holds for `BT.isAnyKeyDown` and for `BT.isDown` on a keyboard-mapped button.
+Movement that must react to every tap, such as one grid step per press, reads `BT.isKeyPressed`.
+
 <DemoEmbed demo="keyboard-input" title="BLIT386 keyboard input demo" />
 
 ### Any key and any button
