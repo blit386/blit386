@@ -85,7 +85,9 @@ if (BT.isKeyPressed('Enter')) {
 }
 ```
 
-`isKeyDown` is "held", `isKeyPressed` and `isKeyReleased` are the one-frame edges, exactly like the buttons above.
+`isKeyDown` is "held", `isKeyPressed` and `isKeyReleased` are the one-frame edges, exactly like the buttons above. A tap
+shorter than one update (fast fingers, a low `targetFPS`, a Playwright `keyboard.press`) is never "held", only pressed
+and released, so if every tap must move the player one step, read `isKeyPressed`.
 
 For a "press any key to start" screen, you do not need to name a key (engine 1.8.0+):
 

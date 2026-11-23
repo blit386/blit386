@@ -411,7 +411,8 @@ export const buttons = {
     /**
      * Checks whether a keyboard key is currently held.
      *
-     * Uses `KeyboardEvent.code` (for example `"KeyW"`, `"Space"`, `"ArrowUp"`).
+     * Uses `KeyboardEvent.code` (for example `"KeyW"`, `"Space"`, `"ArrowUp"`). A tap that goes down and up
+     * between two `update()` ticks never reads as held; catch it with {@link BT.isKeyPressed}.
      *
      * @since 1.1.1
      * @param key - DOM keyboard code string.
