@@ -26,7 +26,7 @@ overrides:
   # (coverage tooling in packages/blit386), so it never enters a runtime bundle - but
   # `security:audit` covers dev + prod, so it fails CI. 14.0.2 is the patch and the only
   # line that has it, so this crosses the major nyc declares.
-  glob@>=9.0.0 <14.0.2: 14.0.2
+  glob@>=9.0.0 <14.0.2: 14.0.6
   # GHSA-qv5m-9pm6-hqp3 and GHSA-jpvv-r467-5p4w (moderate): path-separator parsing bypass and an
   # unhandled ECONNRESET during WebSocket upgrade in @hono/node-server. Reached only through waku
   # (packages/website, fumadocs), which the docs site build uses, but `security:audit` covers
