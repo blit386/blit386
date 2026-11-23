@@ -166,9 +166,9 @@ overrides:
   esbuild: ^0.28.2
   undici@>=7.0.0 <7.30.1: ^7.30.1
   zod@<4.6.6: ^4.6.6
-  minimatch@<11.0.1: 11.0.1
-  glob@>=9.0.0 <14.0.2: 14.0.2
-  '@hono/node-server@>=2.0.0 <2.1.6': ^2.1.6
+  minimatch@<11.0.1: 11.0.8
+  glob@>=9.0.0 <14.0.2: 14.0.6
+  '@hono/node-server@>=2.0.0 <2.1.6': ^2.1.8
   '@opencode-ai/plugin>effect': '-'
 
 importers:
@@ -197,8 +197,8 @@ importers:
         specifier: ^6.45.1
         version: 6.45.1
       lint-staged:
-        specifier: ^17.6.0
-        version: 17.6.0
+        specifier: ^17.6.1
+        version: 17.6.1
       prettier:
         specifier: ^3.10.1
         version: 3.10.1
@@ -1333,8 +1333,8 @@ packages:
       tailwindcss:
         optional: true
 
-  '@hono/node-server@2.1.6':
-    resolution: {integrity: sha512-p/KH9MnfNcsm3sR6x4lNgm5j+QN4Et8srKredl9DZfXiyZ1UQ3aQ2YVpFLbqktYN5JI+DB+VZFKM2PqE5hLKjQ==}
+  '@hono/node-server@2.1.8':
+    resolution: {integrity: sha512-jdf7FHh6A1lzjpHHQUgxsg2GeER2vMetnAOfeActzcoli6jamlK+NAwL6Dsr5Fl3BS3tYUQzCdtZjU8Qxv7bEA==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
@@ -1521,8 +1521,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@isaacs/nonrecursive-glob-match@1.0.1':
-    resolution: {integrity: sha512-rNKPuTXBacPpn5+CP+S3/UI6uq/0jHZjPpaBLaRE3blpgX+E+ZUIrGfViPvUjUnQG6W1+3OTFUiVRCjTffs2+Q==}
+  '@isaacs/nonrecursive-glob-match@1.1.0':
+    resolution: {integrity: sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==}
 
   '@istanbuljs/load-nyc-config@1.1.0':
     resolution: {integrity: sha512-VjeHSlIzpv/NyD3N0YuHfXOPDIixcA1q2ZV98wsMqcYlPmv2n3Yb2lYP9XMElnaFVXg5A7YLTeLu6V84uQDjmQ==}
@@ -4056,8 +4056,8 @@ packages:
     resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
     engines: {node: '>=10.13.0'}
 
-  glob@14.0.2:
-    resolution: {integrity: sha512-vfMgTR2djMHPUchsJMLpZlYQvtjVL+mHpEr5wPpoCbQs2vr/FBNK+3Gnl9Ara1DSs4Aeg4eG9HiADb5/rkY/ZA==}
+  glob@14.0.6:
+    resolution: {integrity: sha512-OwXjVP2svY5EyLY75Vek96C8qK43gqrt4xsZ+qSILdnaEiJPXkd62mcfUSNx/TQErQRdu5uM5kF67sfONragKw==}
     engines: {node: 18 || 20 || >=22}
 
   global-directory@5.0.0:
@@ -4507,8 +4507,8 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
-  lint-staged@17.6.0:
-    resolution: {integrity: sha512-nOhBfYkZEwkFtNzD5pK9s9LkcWoxJ+whLzEnhqi9nl7zTB5n7tg8+9iYgMGx2Wm3VlLu8cbNj0RACzY+nWi5iQ==}
+  lint-staged@17.6.1:
+    resolution: {integrity: sha512-3MXgVN7BERDR/6CXZs2fDHGc+r0+hlvGAa9wqMlVbIS6RVRuaPOnb5SnN6wMXulwfEy9DXVkMVUN/8cUlpPDnw==}
     engines: {node: '>=22.22.1'}
     hasBin: true
 
@@ -4735,9 +4735,9 @@ packages:
     resolution: {integrity: sha512-6ylv8tamkrspDI2R/cAYfv+YWmfGNdXe76Pi9TauEUWsFVXn3LNF9Yk8oduzf1a+TYsSRYTqlOE7+nGGRsMHdw==}
     engines: {node: '>=22.0.0'}
 
-  minimatch@11.0.1:
-    resolution: {integrity: sha512-t+Vn6DX4wPCxS23y03C0uhF7S1jpi1GfqPrnlEipCJaA2ykiNbMkVlDutZtmvLfRcUN6R8AYVlzTsQrT4RZoLQ==}
-    engines: {node: 18 || 20 || >=22}
+  minimatch@11.0.8:
+    resolution: {integrity: sha512-nFQuYSTVrGvysVBps5Ih+0BdnYFN/Cj3C816r6+p7yK+FHrVLGE4O4N9AFwykrlNlvM2HYt+Rad1Uiro6h88Ig==}
+    engines: {node: 20 || >=22}
 
   minimizer-webpack-plugin@5.6.1:
     resolution: {integrity: sha512-DoeAZz8Q1C1znwsUzej1fdoi4jCf7/+Em27ouLqfK/+3m8G+D7yDhUwrc3CNhjSzGUN1kn7Iv4sWmjflQHenpw==}
@@ -5352,6 +5352,10 @@ packages:
     resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
     engines: {node: '>=0.6.19'}
 
+  string-argv@0.4.0:
+    resolution: {integrity: sha512-UOtaksJ3SK3KLHba2i9I27fvuZNfBlImDP5wKsCOxCDMRDNxlipCe8rmnUAaDpqlQ93upnA0SzF2pjWhttozSA==}
+    engines: {node: '>=16.20.0'}
+
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
     engines: {node: '>=8'}
@@ -5901,9 +5905,11 @@ packages:
 
   yuku-analyzer@0.6.12:
     resolution: {integrity: sha512-0zu/gwv6nKA3wm2GMjM1iczw9rbt77ijEyR5tXpPQ8AZcXIpXlll66BXOtMHgYudLn91bJx0ybhpARoJWm5/dw==}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   yuku-ast@0.6.11:
     resolution: {integrity: sha512-ZfXkFYVsDewS45+kv3WiA/qNB73CRfxFDEQwfnRMUAR4AD5zRI7PRqxmI2U3Jz/oG41GneTVW6mxDOQal0lgeA==}
+    deprecated: 'Yuku is now one package with one core. Use "yuku" instead: https://yuku.fyi/javascript/. Existing installs keep working but get no more fixes.'
 
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
@@ -6629,7 +6635,7 @@ snapshots:
     dependencies:
       '@eslint/object-schema': 3.0.5
       debug: 4.4.3(supports-color@10.2.2)
-      minimatch: 11.0.1
+      minimatch: 11.0.8
     transitivePeerDependencies:
       - supports-color
 
@@ -6680,7 +6686,7 @@ snapshots:
     optionalDependencies:
       tailwindcss: 4.3.3
 
-  '@hono/node-server@2.1.6(hono@4.13.16)':
+  '@hono/node-server@2.1.8(hono@4.13.16)':
     dependencies:
       hono: 4.13.16
 
@@ -6806,7 +6812,7 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@isaacs/nonrecursive-glob-match@1.0.1': {}
+  '@isaacs/nonrecursive-glob-match@1.1.0': {}
 
   '@istanbuljs/load-nyc-config@1.1.0':
     dependencies:
@@ -6903,7 +6909,7 @@ snapshots:
       '@rushstack/terminal': 0.24.2(@types/node@22.20.1)
       '@rushstack/ts-command-line': 5.3.12(@types/node@22.20.1)
       diff: 8.0.4
-      minimatch: 11.0.1
+      minimatch: 11.0.8
       resolve: 1.22.12
       semver: 7.7.4
       source-map: 0.6.1
@@ -7947,7 +7953,7 @@ snapshots:
       '@typescript-eslint/types': 8.72.1
       '@typescript-eslint/visitor-keys': 8.72.1
       debug: 4.4.3(supports-color@10.2.2)
-      minimatch: 11.0.1
+      minimatch: 11.0.8
       semver: 7.8.6
       tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
@@ -8110,7 +8116,7 @@ snapshots:
       '@vue/compiler-vue2': 2.7.16
       '@vue/shared': 3.5.40
       alien-signals: 0.4.14
-      minimatch: 11.0.1
+      minimatch: 11.0.8
       muggle-string: 0.4.1
       path-browserify: 1.0.1
     optionalDependencies:
@@ -8866,7 +8872,7 @@ snapshots:
       imurmurhash: 0.1.4
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
-      minimatch: 11.0.1
+      minimatch: 11.0.8
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
@@ -9231,9 +9237,9 @@ snapshots:
     dependencies:
       is-glob: 4.0.3
 
-  glob@14.0.2:
+  glob@14.0.6:
     dependencies:
-      minimatch: 11.0.1
+      minimatch: 11.0.8
       minipass: 7.1.3
       path-scurry: 3.0.0
 
@@ -9680,10 +9686,10 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
-  lint-staged@17.6.0:
+  lint-staged@17.6.1:
     dependencies:
       picomatch: 4.0.7
-      string-argv: 0.3.2
+      string-argv: 0.4.0
       tinyexec: 1.3.1
     optionalDependencies:
       yaml: 2.9.1
@@ -10186,9 +10192,9 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  minimatch@11.0.1:
+  minimatch@11.0.8:
     dependencies:
-      '@isaacs/nonrecursive-glob-match': 1.0.1
+      '@isaacs/nonrecursive-glob-match': 1.1.0
       brace-expansion: 5.0.12
 
   minimizer-webpack-plugin@5.6.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)(webpack@5.109.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)):
@@ -10268,7 +10274,7 @@ snapshots:
       find-up: 4.1.0
       foreground-child: 3.3.1
       get-package-type: 0.1.0
-      glob: 14.0.2
+      glob: 14.0.6
       istanbul-lib-coverage: 3.2.2
       istanbul-lib-hook: 3.0.0
       istanbul-lib-instrument: 6.0.3(supports-color@10.2.2)
@@ -10696,7 +10702,7 @@ snapshots:
 
   rimraf@6.1.3:
     dependencies:
-      glob: 14.0.2
+      glob: 14.0.6
       package-json-from-dist: 1.0.1
 
   rolldown@1.2.19:
@@ -10894,6 +10900,8 @@ snapshots:
 
   string-argv@0.3.2: {}
 
+  string-argv@0.4.0: {}
+
   string-width@4.2.3:
     dependencies:
       emoji-regex: 8.0.0
@@ -10986,8 +10994,8 @@ snapshots:
   test-exclude@8.0.0:
     dependencies:
       '@istanbuljs/schema': 0.1.6
-      glob: 14.0.2
-      minimatch: 11.0.1
+      glob: 14.0.6
+      minimatch: 11.0.8
 
   thenify-all@1.6.0:
     dependencies:
@@ -11327,7 +11335,7 @@ snapshots:
 
   waku@1.0.0-beta.6(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react-server-dom-webpack@19.2.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.109.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(react@19.2.8)(terser@5.49.0)(yaml@2.9.1):
     dependencies:
-      '@hono/node-server': 2.1.6(hono@4.13.16)
+      '@hono/node-server': 2.1.8(hono@4.13.16)
       '@vitejs/plugin-react': 6.0.4(vite@8.3.8(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       '@vitejs/plugin-rsc': 0.5.30(react-dom@19.2.8(react@19.2.8))(react-server-dom-webpack@19.2.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.109.1(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.32)))(react@19.2.8)(vite@8.3.8(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       dotenv: 17.4.2

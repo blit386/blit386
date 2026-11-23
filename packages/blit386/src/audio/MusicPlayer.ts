@@ -37,7 +37,7 @@ const DEFAULT_LOOP = true;
 const DEFAULT_EASING: EasingFunction = 'linear';
 
 /**
- * Options accepted by {@link MusicPlayer#play}, `BTAPI.musicPlay`, and {@link BT.musicPlay}.
+ * Options accepted by {@link MusicPlayer#play} and {@link BT.musicPlay}.
  *
  * @since 1.3.0
  */
