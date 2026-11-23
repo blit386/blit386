@@ -1,6 +1,6 @@
 {
-  "packageVersion": "1.8.0",
-  "unreleasedVersion": "1.9.0",
+  "packageVersion": "1.9.0",
+  "unreleasedVersion": "1.9.1",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -16,7 +16,8 @@
     "1.7.0": "2026-09-11T17:44:36+02:00",
     "1.7.1": "2026-09-27T11:48:26+02:00",
     "1.8.0": "2026-10-18T19:19:24+02:00",
-    "1.9.0": null
+    "1.9.0": null,
+    "1.9.1": null
   },
   "symbols": {
     "AssetLoader": {
@@ -45,28 +46,28 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "AudioClipLoadPhase": {
       "kind": "type",
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "AudioClipProgress": {
       "kind": "interface",
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "AudioClipProgressCallback": {
       "kind": "type",
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.AXIS_LEFT_X": {
       "kind": "const",
@@ -1571,7 +1572,7 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "EasingFunction": {
       "kind": "type",
@@ -1604,7 +1605,7 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "ExposureFadeOptions": {
       "kind": "interface",
@@ -1658,7 +1659,7 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "HardwareSettings": {
       "kind": "interface",
@@ -1811,7 +1812,7 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "OverlayAudioMeterStyle": {
       "kind": "interface",
@@ -1858,7 +1859,7 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "PerlinNoise": {
       "kind": "class",
@@ -2038,14 +2039,14 @@
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SpriteUV": {
       "kind": "type",
       "since": "1.9.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SynthEnvelope": {
       "kind": "interface",

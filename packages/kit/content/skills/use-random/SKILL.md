@@ -85,7 +85,9 @@ async init() {
 ```
 
 That is what makes daily challenges, level codes, and bug reports you can actually reproduce possible. Store the seed
-with the save and you can rebuild the same world from a single number.
+with the save and you can rebuild the same world from a single number. The seed must be a real number: on engine 1.9.0+
+`BT.randomSeed(NaN)`, `undefined`, or `Infinity` (say, a seed parsed from bad text) throws instead of quietly becoming
+seed 0. The same goes for a `weighted()` weight - guard a weight like `score / total` when `total` can be 0.
 
 To reproduce a run without touching code, open the game with `?seed=1234` in the URL. The engine seeds `BT.random` right
 before `init()` runs and logs `[BT] Seeded BT.random from ?seed=1234`; it works in a built game too. A `BT.randomSeed()`

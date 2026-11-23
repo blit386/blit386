@@ -284,8 +284,9 @@ export default defineConfig({
 });
 ```
 
-The plugin needs Vite 6 or newer: asset hot reload relies on the `hotUpdate` hook, which Vite added in 6.0. On Vite 5
-code hot reload still works, but image, sound and font edits are silently ignored.
+The plugin needs Vite 6.4.6 or newer, the floor of the optional `vite` peer range `blit386` declares: asset hot reload
+relies on the `hotUpdate` hook, which Vite added in 6.0. On Vite 5 code hot reload still works, but image, sound and
+font edits are silently ignored.
 
 The plugin does three things, all dev-server only (`apply: 'serve'` - a production build never sees it, so there is zero
 runtime cost or behavior change to ship):

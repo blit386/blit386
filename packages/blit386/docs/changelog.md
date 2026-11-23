@@ -19,7 +19,7 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.9.0 - Unreleased
+## 1.9.0 - 2026-11-23
 
 ### Added
 
@@ -36,6 +36,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   with a fake canvas, controls the frame clock, and sends pointer, wheel, keyboard and gamepad input between frames. It
   is not shipped in the package and changes nothing for games. See
   [Refresh-rate tests](reference-testing.md#refresh-rate-tests).
+- `@blit386/kit`: `blit play` takes `drag:<x1>:<y1>:<x2>:<y2>:<ms>` and `wheel:<dy>` / `wheel:<dx>:<dy>` steps, so an
+  agent can test drag and scroll input. Steps are checked before a browser opens, so a typo fails at once. The game sees
+  only `<dy>`: `BT.pointerScrollDelta` is vertical.
+- `@blit386/kit`: `blit doctor` warns when the installed Vite is older than the `vite` peer range the installed
+  `blit386` declares, since asset hot reload needs Vite's `hotUpdate` hook. It stays quiet when Vite is not installed.
 
 ### Changed
 
@@ -75,10 +80,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   fired and terrain came out flatter than designed. 1D output is now twice as large and 2D about 1.5 times, so seeded
   Perlin worlds keep their shape but change amplitude; 3D and `ValueNoise` / `SimplexNoise` are unchanged. Perlin fBm
   stays narrower than a single octave (about `±0.8` in 1D, `±0.65` in 2D). See [Random](api-random.md#pattern-noise).
-- `blit386` now declares an optional peer dependency on `vite` `>=6`, the first version that calls the `hotUpdate` hook
-  the `blit386/vite` plugin uses for asset hot reload. Engine-only projects without Vite see no warning. A project on
-  Vite 5 is now told: pnpm and yarn warn, and npm may refuse to install until Vite is upgraded, instead of asset edits
-  silently being ignored.
+- `blit386` now declares an optional peer dependency on `vite` `>=6.4.6`. Vite 6.0 is the first version that calls the
+  `hotUpdate` hook the `blit386/vite` plugin uses for asset hot reload. Engine-only projects without Vite see no
+  warning. A project on an older Vite is now told: pnpm and yarn warn, and npm may refuse to install until Vite is
+  upgraded, instead of asset edits silently being ignored on Vite 5.
 - Loading a sprite sheet no longer keeps an unused full-size `ImageBitmap` in memory (16 MB for a 2048x2048 sheet) or
   decodes the image a second time. Drawing already required an indexed sheet, so that bitmap was never uploaded.
   Behavior change: `SpriteSheet.getTexture()` now throws for a sheet that was never indexized instead of building an
@@ -142,6 +147,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   throw a `TypeError` on the next fixed update and stop the game loop, and `BT.paletteSwap(n, 0)` wiped slot `n` before
   throwing. `BT.paletteCycle` now also needs a palette set first, like the fade effects. See
   [Palette effects](api-palette.md#palette-effects).
+- Faster: mapping a sprite sheet to palette indices (`SpriteSheet.loadIndexed`, `indexize`, `BT.spritesRefresh`) looks
+  colors up in a map instead of scanning the palette per pixel, about 19 times faster for a 256×256 sheet with a
+  256-color palette. The result is unchanged: the lowest matching slot still wins. The overlay also stops building new
+  strings every frame for a hovered swatch or divider, the audio meter, and the renderer diagnostics row.
+- Behavior change: `@blit386/kit`'s `blit play` rejects a `wait`, `hold`, or `drag` time outside 0-60000 ms before a
+  browser opens. A `wait:1000000` used to hold a headless browser open for about 17 minutes.
 
 ### Fixed
 
@@ -401,8 +412,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A second `BT.init()` after the first one resolved now restarts cleanly. It used to start a new game loop without
   stopping the old one, so the game ran at double speed, and it leaked the previous `GPUDevice`. The old loop now stops,
   the old device is destroyed, and sprite sheets and fonts kept across the restart keep working. The BLIT386 splash
-  plays once per page load, not again on the restart. An `init()` made while another is still running is still rejected.
-  See [Initialization](api-core.md#initialization).
+  plays once per page load, not again on the restart (unless a splash frame threw, which plays it again instead of
+  leaving it stuck mid-fade). An `init()` made while another is still running is still rejected. See
+  [Initialization](api-core.md#initialization).
 - `BT.drawPixel` with a fractional coordinate now truncates toward zero, like `Vector2i`. On the software backend it
   used to write the color at a shifted byte offset and corrupt the neighboring pixels.
 - A keyboard key no longer stays held when focus leaves the canvas mid-press (it used to swallow the next press), and a
@@ -432,11 +444,17 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The overlay's `Copied N` / `Copy failed` swatch tooltip clears after its usual 0.75 s when `BT.ticksReset()` or a
   `BT.renderAt` replay restarts the tick counter while it shows. It used to stay up for as many ticks as had passed
   before the reset.
+- The overlay timing chart picks its tag label colors with the same palette offset rule as the rest of the overlay text,
+  so a tag at index 0 draws with offset 0 instead of `-1`.
+- The JSDoc of the eight `BT` aliases deprecated on 2026-05-31 now says `Deprecated since 1.1.1`, the release that
+  deprecated them. It used to name `0.1.0` or `1.0.3`. See [Deprecation Timeline](reference-deprecations.md).
 - The overlay's Present FPS no longer dips each time the overlay body is shown again. It was sampled only while the body
   was visible, so the first frame after 10 s hidden read about 53 instead of 60 and took about 30 frames to recover.
 - A lost WebGPU device (a GPU process crash, a driver reset, a laptop switching graphics cards) now logs one clear
   console error that says to reload the page. The game used to freeze on a black canvas with no message while the loop
   kept running. See [Browser Support](api-browser-support.md).
+- A WebGPU start that fails after it got a device (a texture limit too small for the canvas, an unusable canvas context,
+  or a failed `configure`) now destroys that `GPUDevice` before falling back, instead of leaking it.
 - Pressing F9 while `BT.renderAt` holds the loop stopped now copies the seeked frame to the clipboard. The copy used to
   wait for a frame that never came until `BT.resume()`, and every later F9 press was ignored meanwhile. Shift+F9 still
   waits for `BT.resume()`. See [Core](api-core.md#seeking-a-frame-with-renderat).
@@ -473,17 +491,30 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `git push` with `--delete`, `-d`, a `:branch` refspec or `--mirror`, and any push refspec or mirror mode set inline
   with `-c` or `--config-env`, now ask you first (Codex and Gemini CLI refuse them) where they used to run. The Claude
   Code and Gemini CLI hooks also block, instead of allowing, when the guard cannot load, and Claude Code's when `node`
-  is missing.
+  is missing. The guard now also asks first for a force push bundled with other flags (`git push -uf`), an abbreviated
+  `--force-with-lease` (`--force-w`), and a forced branch delete in any spelling (`-df`, `-d -f`, `--delete --force`).
+- `@blit386/kit`: the OpenCode guard plugin in generated games blocks the call when the guard cannot load, instead of
+  OpenCode dropping the plugin and running everything. It also blocks a git command the guard wants you to confirm when
+  OpenCode's own permission list would not prompt for it as written (an uppercase `GIT`, `git -C "my dir" push -f`, a
+  tab-separated or `bash -c` form); the plain form still reaches OpenCode's prompt. Run `npx blit agents sync` in an
+  existing game to pick up the fix.
 - `@blit386/kit`: `blit migrate --write` no longer breaks a `vite.config` whose last import spans several lines - it
   used to insert the `blit386/vite` import inside that statement. It also ignores imports, `defineConfig` calls, and
   `plugins` keys inside comments and strings, and adds `blit386()` only to the top-level `plugins` list, not a nested
   one such as `build.rollupOptions.plugins`. Behavior change: a config it cannot edit safely (a quoted or shorthand
   `plugins` key, a spread in the config object, an import attribute) is now reported as one to change by hand instead of
-  being rewritten. `blit agents sync`, `add`, and `doctor` report a damaged `vars` block in `.blit/manifest.json`
-  instead of crashing. `blit agents add zed` merges into a `.zed/settings.json` that has comments or trailing commas,
-  keeping the comments, and says which keys to copy by hand when it cannot. `blit doctor` prints install and update
-  hints for the package manager the game uses, and the commands the CLI tells you to run start with `npx blit`, so they
-  work from the game folder.
+  being rewritten. It no longer writes through a symlinked source file or `vite.config` that points outside the project.
+  `blit agents sync`, `add`, and `doctor` report a damaged `vars` block, or a `.blit/manifest.json` that is `null` or an
+  array, instead of crashing. `blit doctor`, `blit upgrade`, and `blit migrate --write` treat a git repository with no
+  commit yet as unsaved work, the same as no repository. `blit agents sync --force <path>` accepts `./CLAUDE.md` and
+  absolute paths inside the game, refuses a path outside it, and warns and exits 1 for a path that matches no kit file
+  or names a file you own. `blit agents add zed` merges into a `.zed/settings.json` that has comments or trailing
+  commas, keeping the comments, and says which keys to copy by hand when it cannot. `blit doctor` prints install and
+  update hints for the package manager the game uses, and the commands the CLI tells you to run start with `npx blit`,
+  so they work from the game folder.
+- `@blit386/kit`: the code snippets in the kit docs run when pasted into a game - several lacked their `import` line or
+  used a field they never set - and the agent skills name the game's own package manager instead of always `npm run`.
+  Run `npx blit agents sync` in an existing game to pick up the fix.
 - `create-blit386`: the starter game's paddle now follows a finger on a phone or tablet - it read only pointer slot 0,
   which the engine keeps for the mouse - and a mouse resting over the game no longer switches the arrow keys off. The
   scaffolder installs before it makes the first commit, so the commit holds the lockfile that the optional CI workflow
@@ -491,7 +522,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   set), it says how to fix that instead of saying nothing. The optional CI workflow and the GitHub Copilot setup
   workflow use current `actions/checkout` and `actions/setup-node` pins. A folder named after one of the game's own
   packages (`vite`, `blit386`) gets a `-game` package name, which npm can install. A game created with Yarn 2 or later
-  gets a `.yarnrc.yml` that makes Yarn install a `node_modules` folder, which `npx blit` needs.
+  gets a `.yarnrc.yml` that makes Yarn install a `node_modules` folder, which `npx blit` needs, and its optional CI
+  workflow installs with `yarn install --immutable`, which Yarn 2 and later read as a frozen lockfile.
 
 ## 1.8.0 - 2026-10-18
 
