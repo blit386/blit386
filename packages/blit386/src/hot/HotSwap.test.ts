@@ -863,7 +863,7 @@ describe('hotSwapDemo after a runtime throw (BT-725)', () => {
         const { loop } = haltOnError();
         (loop as unknown as { ticks: number }).ticks = 42;
         const drain = vi.spyOn(
-            BTAPI.instance as unknown as { drainInputEdges: (tick: number) => void },
+            BTAPI.instance.lifecycle as unknown as { drainInputEdges: (tick: number) => void },
             'drainInputEdges',
         );
 

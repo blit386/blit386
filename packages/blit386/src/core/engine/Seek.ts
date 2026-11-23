@@ -161,13 +161,13 @@ export class Seek {
 
         this.engine.resetCamera();
         this.engine.lastCameraOffset = Vector2i.zero();
-        this.engine.drainInputEdges(0);
+        this.engine.lifecycle.drainInputEdges(0);
         loop.resetTicks();
         this.engine.lastRenderClockMs = 0;
 
         // Install it before init() runs, so BT calls init() makes (palette, input maps, hooks) and the
         // loop's update/render callbacks all reach the instance being replayed.
-        this.engine.installDemo(replay);
+        this.engine.lifecycle.installDemo(replay);
 
         let ok = false;
 
@@ -178,7 +178,7 @@ export class Seek {
         }
 
         if (!ok) {
-            this.engine.installDemo(demo);
+            this.engine.lifecycle.installDemo(demo);
             // The failed init() may have started effects; the restored game never asked for them.
             this.engine.paletteEffects.clear();
             loop.setTicks(ticks);

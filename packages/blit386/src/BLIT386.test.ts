@@ -377,10 +377,10 @@ describe('BT.soundPlay', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.soundPlay', () => {
+    it('delegates to BTAPI.instance.audioCommands.soundPlay', () => {
         const ref = { voiceIndex: 0, generation: 1 };
         const clip = {} as unknown as AudioClip;
-        const spy = vi.spyOn(BTAPI.instance, 'soundPlay').mockReturnValue(ref);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundPlay').mockReturnValue(ref);
 
         const result = BT.soundPlay(clip, { volume: 0.5 });
 
@@ -394,9 +394,9 @@ describe('BT.soundStop', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.soundStop, unpacking fadeOutMs', () => {
+    it('delegates to BTAPI.instance.audioCommands.soundStop, unpacking fadeOutMs', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundStop').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundStop').mockReturnValue(undefined);
 
         BT.soundStop(ref, { fadeOutMs: 200 });
 
@@ -405,7 +405,7 @@ describe('BT.soundStop', () => {
 
     it('passes undefined fadeOutMs when options are omitted', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundStop').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundStop').mockReturnValue(undefined);
 
         BT.soundStop(ref);
 
@@ -418,9 +418,9 @@ describe('BT.isSoundPlaying', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.isSoundPlaying', () => {
+    it('delegates to BTAPI.instance.audioCommands.isSoundPlaying', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'isSoundPlaying').mockReturnValue(true);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'isSoundPlaying').mockReturnValue(true);
 
         expect(BT.isSoundPlaying(ref)).toBe(true);
         expect(spy).toHaveBeenCalledWith(ref);
@@ -432,18 +432,18 @@ describe('BT.soundVolumeSet / BT.soundVolumeGet', () => {
         vi.restoreAllMocks();
     });
 
-    it('soundVolumeSet delegates to BTAPI.instance.soundVolumeSet, unpacking fadeMs', () => {
+    it('soundVolumeSet delegates to BTAPI.instance.audioCommands.soundVolumeSet, unpacking fadeMs', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundVolumeSet').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundVolumeSet').mockReturnValue(undefined);
 
         BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 });
 
         expect(spy).toHaveBeenCalledWith(ref, 0.5, 100);
     });
 
-    it('soundVolumeGet delegates to BTAPI.instance.soundVolumeGet', () => {
+    it('soundVolumeGet delegates to BTAPI.instance.audioCommands.soundVolumeGet', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundVolumeGet').mockReturnValue(0.5);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundVolumeGet').mockReturnValue(0.5);
 
         expect(BT.soundVolumeGet(ref)).toBe(0.5);
         expect(spy).toHaveBeenCalledWith(ref);
@@ -455,18 +455,18 @@ describe('BT.soundPitchSet / BT.soundPitchGet', () => {
         vi.restoreAllMocks();
     });
 
-    it('soundPitchSet delegates to BTAPI.instance.soundPitchSet, unpacking fadeMs', () => {
+    it('soundPitchSet delegates to BTAPI.instance.audioCommands.soundPitchSet, unpacking fadeMs', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundPitchSet').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundPitchSet').mockReturnValue(undefined);
 
         BT.soundPitchSet(ref, 1.5, { fadeMs: 50 });
 
         expect(spy).toHaveBeenCalledWith(ref, 1.5, 50);
     });
 
-    it('soundPitchGet delegates to BTAPI.instance.soundPitchGet', () => {
+    it('soundPitchGet delegates to BTAPI.instance.audioCommands.soundPitchGet', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundPitchGet').mockReturnValue(1.5);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundPitchGet').mockReturnValue(1.5);
 
         expect(BT.soundPitchGet(ref)).toBe(1.5);
         expect(spy).toHaveBeenCalledWith(ref);
@@ -478,18 +478,18 @@ describe('BT.soundPanSet / BT.soundPanGet', () => {
         vi.restoreAllMocks();
     });
 
-    it('soundPanSet delegates to BTAPI.instance.soundPanSet, unpacking fadeMs', () => {
+    it('soundPanSet delegates to BTAPI.instance.audioCommands.soundPanSet, unpacking fadeMs', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundPanSet').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundPanSet').mockReturnValue(undefined);
 
         BT.soundPanSet(ref, -0.5, { fadeMs: 50 });
 
         expect(spy).toHaveBeenCalledWith(ref, -0.5, 50);
     });
 
-    it('soundPanGet delegates to BTAPI.instance.soundPanGet', () => {
+    it('soundPanGet delegates to BTAPI.instance.audioCommands.soundPanGet', () => {
         const ref = { voiceIndex: 0, generation: 1 };
-        const spy = vi.spyOn(BTAPI.instance, 'soundPanGet').mockReturnValue(-0.5);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'soundPanGet').mockReturnValue(-0.5);
 
         expect(BT.soundPanGet(ref)).toBe(-0.5);
         expect(spy).toHaveBeenCalledWith(ref);
@@ -501,9 +501,9 @@ describe('BT.musicPlay', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.musicPlay', () => {
+    it('delegates to BTAPI.instance.audioCommands.musicPlay', () => {
         const clip = {} as unknown as AudioClip;
-        const spy = vi.spyOn(BTAPI.instance, 'musicPlay').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'musicPlay').mockReturnValue(undefined);
 
         BT.musicPlay(clip, { volume: 0.5, fadeMs: 400 });
 
@@ -516,8 +516,8 @@ describe('BT.musicStop', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.musicStop, unpacking fadeMs', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'musicStop').mockReturnValue(undefined);
+    it('delegates to BTAPI.instance.audioCommands.musicStop, unpacking fadeMs', () => {
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'musicStop').mockReturnValue(undefined);
 
         BT.musicStop({ fadeMs: 500 });
 
@@ -525,7 +525,7 @@ describe('BT.musicStop', () => {
     });
 
     it('passes undefined fadeMs when options are omitted', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'musicStop').mockReturnValue(undefined);
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'musicStop').mockReturnValue(undefined);
 
         BT.musicStop();
 
@@ -538,8 +538,8 @@ describe('BT.isMusicPlaying', () => {
         vi.restoreAllMocks();
     });
 
-    it('delegates to BTAPI.instance.isMusicPlaying', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'isMusicPlaying').mockReturnValue(true);
+    it('delegates to BTAPI.instance.audioCommands.isMusicPlaying', () => {
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'isMusicPlaying').mockReturnValue(true);
 
         expect(BT.isMusicPlaying).toBe(true);
         expect(spy).toHaveBeenCalledWith();
@@ -754,16 +754,16 @@ describe('BT.musicVolumeSet / BT.musicVolumeGet', () => {
         vi.restoreAllMocks();
     });
 
-    it('musicVolumeSet delegates to BTAPI.instance.musicVolumeSet, unpacking fadeMs', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'musicVolumeSet').mockReturnValue(undefined);
+    it('musicVolumeSet delegates to BTAPI.instance.audioCommands.musicVolumeSet, unpacking fadeMs', () => {
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'musicVolumeSet').mockReturnValue(undefined);
 
         BT.musicVolumeSet(0.5, { fadeMs: 100 });
 
         expect(spy).toHaveBeenCalledWith(0.5, 100);
     });
 
-    it('musicVolumeGet delegates to BTAPI.instance.musicVolumeGet', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'musicVolumeGet').mockReturnValue(0.5);
+    it('musicVolumeGet delegates to BTAPI.instance.audioCommands.musicVolumeGet', () => {
+        const spy = vi.spyOn(BTAPI.instance.audioCommands, 'musicVolumeGet').mockReturnValue(0.5);
 
         expect(BT.musicVolumeGet()).toBe(0.5);
         expect(spy).toHaveBeenCalledWith();

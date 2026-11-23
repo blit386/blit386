@@ -24,7 +24,7 @@ src/
   docs/
     consumer-doc-imports.test.ts # Guards README/docs import paths against BLIT386.ts exports
   core/
-    BTAPI.ts               # Internal singleton: engine state, init / stop / hot replace, readiness gate behind BT.isReady, and the audio, camera, effect and getter passthroughs; holds the core/engine/ parts below as fields
+    BTAPI.ts               # Internal singleton: engine state, init / stop / hot replace delegators, readiness gate behind BT.isReady, and the camera, effect and getter passthroughs; holds the core/engine/ parts below as fields
     engine/                # BTAPI's parts: one class per job, constructed with the engine, reached as BTAPI.instance.<field>; not part of the BT API
       RendererSetup.ts     # Hardware settings load, ?backend= override, WebGPU init with software fallback (lazy-loads WebGPURenderer); getBackendQueryOverride for HotSwap
       OverlayDiagnostics.ts # Per-frame overlay timing, renderer and audio diagnostics snapshots, frame-drop handling
@@ -35,6 +35,8 @@ src/
       DrawCommands.ts      # Every BT draw call, nine-slice and sprite helpers, per-frame palette-usage marks (field draw) - per-frame hot path
       FrameLoop.ts         # GameLoop update / render callbacks, tick clock, deferred camera reset (field frameLoop) - per-frame hot path
       Subsystems.ts        # Attach / clear input, audio, overlay, reduced motion during init (field subsystems)
+      AudioCommands.ts     # Bus volume and mute, sound effects, music: the engine side of src/bt/audio.ts (field audioCommands)
+      Lifecycle.ts         # init / stop / Tier 2 hot replace, runInit and releaseRenderer, the runDemoInit / drainInputEdges / installDemo helpers SplashBoot and Seek call; owns RendererSetup and SplashBoot (field lifecycle)
     IBTDemo.ts             # Demo interface (incl. optional testState() hook) + HardwareSettings (keyboardLayout, KEYBOARD_LAYOUTS) + TestStateSnapshot
     mergeHardwareSettings.ts # defaultConfig(), the configure() merge into HardwareSettings, audio voice default/cap, overlay diagnostics switches
     GameLoop.ts            # Fixed-timestep game loop; step(n) runs n updates + one render synchronously (the primitive behind BT.renderAt)
