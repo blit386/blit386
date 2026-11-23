@@ -175,3 +175,21 @@ export function compareVersions(a: string, b: string): number {
 
     return 0;
 }
+
+/**
+ * Whether `version` has shipped. A version with a date has: the date comes from its release tag.
+ * A version without one has shipped when it is at or below `packageVersion` and is not
+ * `unreleasedVersion` - the same rule `deriveStatus` in packages/blit386/scripts/gen-api-history.mjs
+ * applies to symbols. A missing date alone never means unreleased: the release tag deploys the site
+ * before a post-tag regeneration can read that tag's date.
+ */
+export function isVersionReleased(
+    version: string,
+    history: Pick<ApiHistory, 'packageVersion' | 'unreleasedVersion' | 'versions'> = apiHistory,
+): boolean {
+    if (Object.hasOwn(history.versions, version) && history.versions[version]) {
+        return true;
+    }
+
+    return version !== history.unreleasedVersion && compareVersions(version, history.packageVersion) <= 0;
+}

@@ -13,6 +13,7 @@ import {
     compareVersions,
     getPageSymbols,
     getSymbol,
+    isVersionReleased,
     resolveSymbolLink,
     type SymbolStatus,
 } from './api-history';
@@ -81,6 +82,52 @@ describe('compareVersions', () => {
 
         expect([...shuffled].sort(compareVersions)).toEqual([...versions].sort(compareVersions));
         expect(versions.length).toBeGreaterThan(0);
+    });
+});
+
+describe('isVersionReleased', () => {
+    // The state the release tag deploys: UNRELEASED_VERSION already moved on, but the version's
+    // date only exists once a post-tag regeneration reads it from the tag.
+    const taggedRelease = {
+        packageVersion: '1.9.0',
+        unreleasedVersion: '1.9.1',
+        versions: { '1.8.0': '2026-10-18T19:19:24+02:00', '1.9.0': null, '1.9.1': null },
+    };
+
+    it('counts the version just released as released before its date exists', () => {
+        expect(isVersionReleased('1.9.0', taggedRelease)).toBe(true);
+    });
+
+    it('counts an older dated version as released', () => {
+        expect(isVersionReleased('1.8.0', taggedRelease)).toBe(true);
+    });
+
+    it('never counts the unreleased version as released', () => {
+        expect(isVersionReleased('1.9.1', taggedRelease)).toBe(false);
+    });
+
+    it('does not count a dateless version above the package version as released', () => {
+        expect(isVersionReleased('1.10.0', taggedRelease)).toBe(false);
+    });
+
+    it('counts a dated version as released even above the package version', () => {
+        // A tag may name a planned future version on purpose (ALLOWED_FUTURE_VERSIONS in the
+        // generator); its date comes from that tag, so it has shipped.
+        const history = { ...taggedRelease, versions: { ...taggedRelease.versions, '1.10.0': '2026-12-01T10:00:00Z' } };
+
+        expect(isVersionReleased('1.10.0', history)).toBe(true);
+    });
+
+    it('keeps the version unreleased when the release PR skipped the UNRELEASED_VERSION bump', () => {
+        const history = { ...taggedRelease, unreleasedVersion: '1.9.0' };
+
+        expect(isVersionReleased('1.9.0', history)).toBe(false);
+    });
+
+    it('matches the generated history: the package version is released unless it is the unreleased one', () => {
+        expect(isVersionReleased(apiHistory.packageVersion)).toBe(
+            apiHistory.packageVersion !== apiHistory.unreleasedVersion,
+        );
     });
 });
 

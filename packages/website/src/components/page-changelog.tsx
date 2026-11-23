@@ -6,6 +6,7 @@ import {
     compareVersions,
     getPageSymbols,
     getSymbol,
+    isVersionReleased,
     resolveSymbolLink,
     symbolAnchorId,
 } from '../data/api-history';
@@ -147,7 +148,10 @@ export function PageChangelog({ page }: PageChangelogProps) {
                 const date = formatVersionDate(apiHistory.versions[version]);
 
                 return (
-                    <section key={version} className={`${styles.version} ${date ? '' : styles.unreleased}`}>
+                    <section
+                        key={version}
+                        className={`${styles.version} ${isVersionReleased(version) ? '' : styles.unreleased}`}
+                    >
                         <h3 className={styles.versionHeading}>
                             {version}
                             {date && <span className={styles.versionDate}> - {date}</span>}
