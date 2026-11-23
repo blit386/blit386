@@ -256,8 +256,8 @@ Available mocks:
 - `createMockPaletteBuffer()` - returns a 4096-byte stub GPUBuffer for palette uniform tests
 - `installMockNavigatorGPU()` / `uninstallMockNavigatorGPU()` - install/remove global navigator.gpu
 
-For software-renderer tests that need a Canvas 2D context, use the `makeMock2DCanvas()` helper defined in
-`src/core/BTAPI.test.ts`. It returns an `HTMLCanvasElement` stub whose `getContext('2d')` yields a minimal
+For software-renderer tests that need a Canvas 2D context, use the `makeMock2DCanvas()` helper exported from
+`src/__test__/btapiFixtures.ts`. It returns an `HTMLCanvasElement` stub whose `getContext('2d')` yields a minimal
 `CanvasRenderingContext2D` mock (with `createImageData`, `putImageData`, `drawImage`, and `toBlob` stubs).
 
 `src/__test__/setup.ts` also installs a global `OffscreenCanvas` stub in Node.js (returns zero-filled pixel data from
