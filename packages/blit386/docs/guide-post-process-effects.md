@@ -418,8 +418,9 @@ pixel + display:  scene -> texA -> [px...] -> sceneTex -> paletteResolve -> texA
 
 ## Full demos
 
-Two demos put the effect chain to work in a complete scene: a hand-built CRT stack layered onto the basics demo, and a
-full CRT-post-processed game.
+Two demos put the effect chain to work in a complete scene: the basics demo behind the shared PipBoy CRT chain, with
+each effect kept as an object so `update()` can drive its uniforms through a glitch state machine, and a full
+CRT-post-processed game.
 
 <DemoEmbed demo="basics-enhanced" title="BLIT386 basics enhanced demo" />
 
