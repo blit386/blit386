@@ -245,6 +245,7 @@
     "packages/create-blit386/templates/**",
     "cspell.json",
     "docs/roadmap-ideas.md",
+    "docs/homepage-research/**",
     "packages/demos/styles/twoslash-rich.css",
     "packages/demos/public/fonts/DepartureMono/README.md",
     "packages/website/.source",
