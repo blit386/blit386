@@ -1,0 +1,154 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Rock Dodger</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#wrap{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#wrap canvas{image-rendering:pixelated;width:min(100vw,calc(100vh*4/3));height:min(100vh,calc(100vw*3/4))}</style>
+</head><body><div id="wrap"><canvas id="blit386-canvas"></canvas></div>
+<script type="module">
+import { bootstrap, BT, Color32, Rect2i, Vector2i, AudioClip } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.0/dist/blit386.js';
+
+const W = 320;
+const H = 240;
+const SHIP_Y = 220;
+const SHIP_W = 14;
+const SHIP_H = 8;
+const SHIP_SPEED = 3;
+const BULLET_SPEED = 4;
+const MAX_FALL_SPEED = 4;
+
+const BG = 1;
+const SHIP = 2;
+const ROCK = 3;
+const BULLET = 4;
+const TEXT = 5;
+const ALERT = 6;
+
+const rockRect = (r) => new Rect2i(Math.floor(r.x), Math.floor(r.y), r.size, r.size);
+const bulletRect = (b) => new Rect2i(Math.floor(b.x), Math.floor(b.y), 1, 4);
+
+class Game {
+  configure() { return { displaySize: new Vector2i(W, H), targetFPS: 60, keyboardLayout: 'single' }; }
+
+  async init() {
+    const p = BT.paletteCreate(16);
+    p.set(BG, new Color32(20, 24, 40));
+    p.set(SHIP, new Color32(240, 200, 80));
+    p.set(ROCK, new Color32(150, 110, 90));
+    p.set(BULLET, new Color32(255, 255, 255));
+    p.set(TEXT, new Color32(230, 230, 230));
+    p.set(ALERT, new Color32(230, 80, 60));
+    BT.paletteSet(p);
+
+    this.laserSound = await AudioClip.synth(BT.synthPreset.laser());
+    this.explosionSound = await AudioClip.synth(BT.synthPreset.explosion());
+    this.hitSound = await AudioClip.synth(BT.synthPreset.hit());
+
+    this.reset();
+    return true;
+  }
+
+  reset() {
+    this.shipX = (W - SHIP_W) / 2;
+    this.bullets = [];
+    this.rocks = [];
+    this.score = 0;
+    this.frames = 0;
+    this.spawnTimer = 0;
+    this.over = false;
+  }
+
+  // Falls faster the longer you survive, capped so it stays playable.
+  fallSpeed() {
+    return Math.min(MAX_FALL_SPEED, 0.8 + this.frames / 1200) + BT.random.float(0, 0.5);
+  }
+
+  update() {
+    if (this.over) {
+      if (BT.isPressed(BT.BTN_A, 0)) this.reset();
+      return;
+    }
+    this.frames++;
+
+    // Move the ship left and right, keeping it on screen.
+    if (BT.isDown(BT.BTN_LEFT, 0)) this.shipX -= SHIP_SPEED;
+    if (BT.isDown(BT.BTN_RIGHT, 0)) this.shipX += SHIP_SPEED;
+    this.shipX = Math.max(0, Math.min(W - SHIP_W, this.shipX));
+
+    // Space fires a bullet from the nose of the ship.
+    if (BT.isPressed(BT.BTN_A, 0)) {
+      this.bullets = [...this.bullets, { x: this.shipX + SHIP_W / 2 - 0.5, y: SHIP_Y - 4 }];
+      BT.soundPlay(this.laserSound);
+    }
+    this.bullets = this.bullets
+      .map((b) => ({ ...b, y: b.y - BULLET_SPEED }))
+      .filter((b) => b.y > -4);
+
+    // Spawn rocks; the interval shrinks over time too.
+    const interval = Math.max(18, 60 - Math.floor(this.frames / 600));
+    this.spawnTimer++;
+    if (this.spawnTimer >= interval) {
+      this.spawnTimer = 0;
+      const size = BT.random.int(6, 14);
+      this.rocks = [...this.rocks, {
+        x: BT.random.int(0, W - size),
+        y: -size,
+        size,
+        speed: this.fallSpeed(),
+      }];
+    }
+    this.rocks = this.rocks
+      .map((r) => ({ ...r, y: r.y + r.speed }))
+      .filter((r) => r.y < H);
+
+    // Each bullet destroys the first rock it touches.
+    const deadRocks = new Set();
+    const usedBullets = new Set();
+    this.bullets.forEach((b, bi) => {
+      const br = bulletRect(b);
+      const ri = this.rocks.findIndex((r, idx) => !deadRocks.has(idx) && rockRect(r).isIntersecting(br));
+      if (ri >= 0) {
+        deadRocks.add(ri);
+        usedBullets.add(bi);
+      }
+    });
+    if (deadRocks.size > 0) {
+      this.score += deadRocks.size;
+      BT.soundPlay(this.explosionSound);
+    }
+    this.rocks = this.rocks.filter((_, i) => !deadRocks.has(i));
+    this.bullets = this.bullets.filter((_, i) => !usedBullets.has(i));
+
+    // A rock hitting the ship ends the game.
+    const shipRect = new Rect2i(Math.floor(this.shipX), SHIP_Y, SHIP_W, SHIP_H);
+    if (this.rocks.some((r) => rockRect(r).isIntersecting(shipRect))) {
+      this.over = true;
+      BT.soundPlay(this.hitSound);
+    }
+  }
+
+  centerText(text, y, slot) {
+    const size = BT.systemPrintMeasure(text);
+    BT.systemPrint(new Vector2i(Math.floor((W - size.x) / 2), y), slot, text);
+  }
+
+  render() {
+    BT.clear(BG);
+
+    for (const r of this.rocks) BT.drawRectFill(rockRect(r), ROCK);
+    for (const b of this.bullets) BT.drawRectFill(bulletRect(b), BULLET);
+
+    const sx = Math.floor(this.shipX);
+    BT.drawRectFill(new Rect2i(sx, SHIP_Y, SHIP_W, SHIP_H), SHIP);
+    BT.drawRectFill(new Rect2i(sx + 5, SHIP_Y - 3, 4, 3), SHIP);
+
+    BT.systemPrint(new Vector2i(4, 4), TEXT, 'Score ' + this.score);
+
+    if (this.over) {
+      this.centerText('GAME OVER', 100, ALERT);
+      this.centerText('Press Space to restart', 120, TEXT);
+    }
+  }
+}
+
+bootstrap(Game);
+</script></body></html>

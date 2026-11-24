@@ -1,0 +1,234 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Breakout</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#wrap{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#wrap canvas{image-rendering:pixelated;width:min(100vw,calc(100vh*4/3));height:min(100vh,calc(100vw*3/4))}</style>
+</head><body><div id="wrap"><canvas id="blit386-canvas"></canvas></div>
+<script type="module">
+import { bootstrap, BT, Color32, Rect2i, Vector2i, AudioClip } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.0/dist/blit386.js';
+
+const SCREEN_W = 320;
+const SCREEN_H = 240;
+const START_LIVES = 3;
+
+// Palette slots
+const SLOT_BG = 1;
+const SLOT_TEXT = 2;
+const SLOT_PADDLE = 3;
+const SLOT_BRICK_0 = 4; // rows use slots 4 to 8, top row is slot 4
+
+const PADDLE_W = 44;
+const PADDLE_H = 5;
+const PADDLE_Y = 226;
+const PADDLE_SPEED = 4;
+
+const BALL_SIZE = 4;
+const BALL_SPEED_Y = 2;
+const BALL_SPEED_X = 1.5;
+const BALL_MAX_X = 2.5;
+
+const BRICK_COLS = 10;
+const BRICK_ROWS = 5;
+const BRICK_W = 30;
+const BRICK_H = 8;
+const BRICK_GAP = 2;
+const BRICK_TOP = 30;
+const BRICK_LEFT = Math.floor((SCREEN_W - (BRICK_COLS * (BRICK_W + BRICK_GAP) - BRICK_GAP)) / 2);
+
+const POINTS_PER_ROW = 10;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function makeBricks() {
+  const bricks = [];
+  for (let row = 0; row < BRICK_ROWS; row++) {
+    for (let col = 0; col < BRICK_COLS; col++) {
+      bricks.push({
+        x: BRICK_LEFT + col * (BRICK_W + BRICK_GAP),
+        y: BRICK_TOP + row * (BRICK_H + BRICK_GAP),
+        row,
+        alive: true,
+      });
+    }
+  }
+  return bricks;
+}
+
+function brickRect(brick) {
+  return new Rect2i(brick.x, brick.y, BRICK_W, BRICK_H);
+}
+
+function drawCentered(text, y, slot) {
+  const width = BT.systemPrintMeasure(text).x;
+  BT.systemPrint(new Vector2i(Math.floor((SCREEN_W - width) / 2), y), slot, text);
+}
+
+class Game {
+  configure() {
+    return { displaySize: new Vector2i(SCREEN_W, SCREEN_H), targetFPS: 60, keyboardLayout: 'single' };
+  }
+
+  async init() {
+    const p = BT.paletteCreate(16);
+    p.set(1, new Color32(20, 24, 40));
+    p.set(2, new Color32(240, 240, 240));
+    p.set(3, new Color32(120, 200, 255));
+    p.set(4, new Color32(230, 70, 70));
+    p.set(5, new Color32(240, 140, 50));
+    p.set(6, new Color32(240, 210, 70));
+    p.set(7, new Color32(90, 200, 100));
+    p.set(8, new Color32(80, 150, 240));
+    BT.paletteSet(p);
+
+    this.hitSound = await AudioClip.synth(BT.synthPreset.hit());
+    this.breakSound = await AudioClip.synth(BT.synthPreset.pickup());
+    this.loseSound = await AudioClip.synth(BT.synthPreset.explosion());
+
+    this.resetGame();
+    return true;
+  }
+
+  resetGame() {
+    this.score = 0;
+    this.lives = START_LIVES;
+    this.bricks = makeBricks();
+    this.paddleX = (SCREEN_W - PADDLE_W) / 2;
+    this.ballX = 0;
+    this.ballY = 0;
+    this.vx = 0;
+    this.vy = 0;
+    this.state = 'serve'; // serve | play | over | won
+  }
+
+  ballRect() {
+    return new Rect2i(Math.floor(this.ballX), Math.floor(this.ballY), BALL_SIZE, BALL_SIZE);
+  }
+
+  update() {
+    if (BT.isDown(BT.BTN_POINTER_A, 0)) {
+      this.paddleX = BT.pointerPos(0).x - PADDLE_W / 2;
+    } else {
+      if (BT.isDown(BT.BTN_LEFT, 0)) this.paddleX -= PADDLE_SPEED;
+      if (BT.isDown(BT.BTN_RIGHT, 0)) this.paddleX += PADDLE_SPEED;
+    }
+    this.paddleX = clamp(this.paddleX, 0, SCREEN_W - PADDLE_W);
+
+    const fire = BT.isPressed(BT.BTN_A, 0) || BT.isPressed(BT.BTN_POINTER_A, 0);
+
+    if (this.state === 'serve') {
+      this.ballX = this.paddleX + PADDLE_W / 2 - BALL_SIZE / 2;
+      this.ballY = PADDLE_Y - BALL_SIZE;
+      if (fire) {
+        this.vx = (BT.random.int(2) === 0 ? -1 : 1) * BALL_SPEED_X;
+        this.vy = -BALL_SPEED_Y;
+        this.state = 'play';
+      }
+    } else if (this.state === 'play') {
+      this.moveBall();
+    } else if (fire) {
+      this.resetGame();
+    }
+  }
+
+  moveBall() {
+    this.ballX += this.vx;
+    this.ballY += this.vy;
+
+    // Side and top walls
+    if (this.ballX < 0) {
+      this.ballX = 0;
+      this.vx = Math.abs(this.vx);
+    }
+    if (this.ballX > SCREEN_W - BALL_SIZE) {
+      this.ballX = SCREEN_W - BALL_SIZE;
+      this.vx = -Math.abs(this.vx);
+    }
+    if (this.ballY < 0) {
+      this.ballY = 0;
+      this.vy = Math.abs(this.vy);
+    }
+
+    // Paddle: steer the ball by where it lands
+    const paddle = new Rect2i(Math.floor(this.paddleX), PADDLE_Y, PADDLE_W, PADDLE_H);
+    if (this.vy > 0 && paddle.isIntersecting(this.ballRect())) {
+      const offset = (this.ballX + BALL_SIZE / 2 - (this.paddleX + PADDLE_W / 2)) / (PADDLE_W / 2);
+      this.vx = clamp(offset * BALL_MAX_X, -BALL_MAX_X, BALL_MAX_X);
+      this.vy = -BALL_SPEED_Y;
+      this.ballY = PADDLE_Y - BALL_SIZE;
+      BT.soundPlay(this.hitSound);
+    }
+
+    // Bottom edge: lose a life
+    if (this.ballY > SCREEN_H) {
+      this.lives -= 1;
+      BT.soundPlay(this.loseSound);
+      if (this.lives <= 0) {
+        this.state = 'over';
+        this.vx = 0;
+        this.vy = 0;
+      } else {
+        this.state = 'serve';
+        this.vx = 0;
+        this.vy = 0;
+      }
+      return;
+    }
+
+    // Bricks: break at most one per frame
+    const ball = this.ballRect();
+    const hit = this.bricks.find((brick) => brick.alive && brickRect(brick).isIntersecting(ball));
+    if (hit) {
+      hit.alive = false;
+      this.score += (BRICK_ROWS - hit.row) * POINTS_PER_ROW;
+
+      // Bounce off the side that overlaps least
+      const overlapX = Math.min(this.ballX + BALL_SIZE, hit.x + BRICK_W) - Math.max(this.ballX, hit.x);
+      const overlapY = Math.min(this.ballY + BALL_SIZE, hit.y + BRICK_H) - Math.max(this.ballY, hit.y);
+      if (overlapX < overlapY) {
+        this.vx = -this.vx;
+      } else {
+        this.vy = -this.vy;
+      }
+
+      BT.soundPlay(this.breakSound);
+      if (this.bricks.every((brick) => !brick.alive)) {
+        this.state = 'won';
+        this.vx = 0;
+        this.vy = 0;
+      }
+    }
+  }
+
+  render() {
+    BT.clear(SLOT_BG);
+
+    for (const brick of this.bricks) {
+      if (brick.alive) {
+        BT.drawRectFill(brickRect(brick), SLOT_BRICK_0 + brick.row);
+      }
+    }
+
+    BT.drawRectFill(new Rect2i(Math.floor(this.paddleX), PADDLE_Y, PADDLE_W, PADDLE_H), SLOT_PADDLE);
+    BT.drawRectFill(this.ballRect(), SLOT_TEXT);
+
+    BT.systemPrint(new Vector2i(4, 4), SLOT_TEXT, 'SCORE ' + this.score);
+    const livesText = 'LIVES ' + this.lives;
+    const livesWidth = BT.systemPrintMeasure(livesText).x;
+    BT.systemPrint(new Vector2i(SCREEN_W - livesWidth - 4, 4), SLOT_TEXT, livesText);
+
+    if (this.state === 'serve') {
+      drawCentered('SPACE OR CLICK TO LAUNCH', 150, SLOT_TEXT);
+    } else if (this.state === 'over') {
+      drawCentered('GAME OVER', 110, SLOT_TEXT);
+      drawCentered('SPACE OR CLICK TO RESTART', 124, SLOT_TEXT);
+    } else if (this.state === 'won') {
+      drawCentered('YOU WIN', 110, SLOT_TEXT);
+      drawCentered('SPACE OR CLICK TO RESTART', 124, SLOT_TEXT);
+    }
+  }
+}
+
+bootstrap(Game);
+</script></body></html>
