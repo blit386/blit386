@@ -640,7 +640,10 @@ Code, TODO (each is small and independently shippable):
 - [x] Non-TTY guard in `create-blit386` (4.8): DONE 2026-06-13. When `stdin`/`stdout` is not a TTY, the CLI behaves as
       `--yes` and prints one Tier-1 info line naming the defaults used and the flags (`--yes`, `--no-install`,
       `--no-git`). Covered by an end-to-end test that runs the CLI with `stdio: 'ignore'` (with a timeout that fails if
-      it ever hangs on a prompt). Logic in `src/env.ts` (`isInteractive`), wired in `src/index.ts`.
+      it ever hangs on a prompt). Logic in `src/env.ts` (`isInteractive`), wired in `src/index.ts`. BT-851 (2026-11-25):
+      a run without a TTY now sets up the calling agent's assistant files (`detectCallingAgents`, off whenever `CI` is
+      set), `--agent <names>` picks them explicitly, and the next steps ask for a new session in the game folder, since
+      an assistant never loads hooks or MCP config from a subfolder.
 - [x] Node version gate at CLI start (4.8): DONE 2026-06-13. The very first step of `main()` checks
       `process.versions.node` against the engine floor (`NODE_FLOOR = 22.18.0`) and, on failure, prints one Tier-1
       sentence pointing at nodejs.org and exits before any prompt - no `EBADENGINE` wall. Pure comparison

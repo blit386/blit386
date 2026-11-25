@@ -8,6 +8,11 @@ This file is the home base for anyone (a person or an AI assistant) working on t
 tells you how a BLIT386 game is shaped, the rules to follow, and which doc to open when you need detail. Read the linked
 doc only when the task needs it - do not load everything at once.
 
+An AI assistant that has no files of its own here (for Claude Code, no `CLAUDE.md`) can add them with
+`npx blit agents add <name>` - see [Working with an AI assistant](#working-with-an-ai-assistant). An assistant loads its
+hooks and the docs server only from the folder its session started in. If you created this game from a parent folder,
+ask the user to open a new session in this folder (in Claude Code, `/cd` into it).
+
 BLIT386 is a palette-first 2D pixel engine. You draw with small whole-number coordinates and numbered colors, and the
 engine puts pixels on a `<canvas>`. It runs on WebGPU when available and falls back to plain Canvas 2D otherwise, so a
 game always renders.
@@ -147,7 +152,8 @@ Copilot, Antigravity, Codex, Gemini CLI, OpenCode, and Zed read their skills fro
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
 `npx blit agents add copilot`, `npx blit agents add antigravity`, `npx blit agents add codex`,
-`npx blit agents add gemini`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now.
+`npx blit agents add gemini`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now, then
+start a new session in this folder so the assistant loads them.
 
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 
