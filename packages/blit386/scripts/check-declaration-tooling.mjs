@@ -290,6 +290,51 @@ export function findMissingViteDeclarationMembers(dtsText, requiredMembers = REQ
     return failures;
 }
 
+/** Type entry TypeScript below 6.0 resolves to, ahead of `dist/blit386.d.ts`. Manual-sync hazard: `vite.config.ts` writes it. */
+const TS5_TYPES_EXPORT = './dist/blit386-ts5.d.ts';
+
+const TS5_TYPES_OUTPUT = path.join(REPO_ROOT, TS5_TYPES_EXPORT);
+
+const WEBGPU_TYPES_REFERENCE = '/// <reference types="@webgpu/types" />';
+
+/**
+ * Verifies the WebGPU types reach every consumer without conflicting with TypeScript 6 (BT-867). The public types name
+ * WebGPU globals (`GPUDevice`, ...). TS 5 has no WebGPU in `lib.dom`, so a `types@<6.0` export condition, listed
+ * first, points it at a wrapper whose first line references `@webgpu/types` (a runtime dependency). TS 6 declares
+ * WebGPU itself and loading `@webgpu/types` on top fails with TS6200/TS2717, so the plain rollup must not reference it.
+ *
+ * @param {string} dtsText Contents of `dist/blit386.d.ts`.
+ * @param {string | null} ts5EntryText Contents of `dist/blit386-ts5.d.ts`, or null when it was not emitted.
+ * @param {{ dependencies?: Record<string, string>, exports?: Record<string, Record<string, string>> }} packageJson
+ *     Parsed engine package.json.
+ * @returns {string[]} Human-readable failure messages (empty when wired correctly).
+ */
+export function findWebgpuTypesFailures(dtsText, ts5EntryText, packageJson) {
+    const failures = [];
+
+    if (!Object.hasOwn(packageJson.dependencies ?? {}, '@webgpu/types')) {
+        failures.push('package.json must list @webgpu/types in dependencies, not devDependencies');
+    }
+
+    const [firstCondition, firstTarget] = Object.entries(packageJson.exports?.['.'] ?? {})[0] ?? [];
+    if (firstCondition !== 'types@<6.0' || firstTarget !== TS5_TYPES_EXPORT) {
+        failures.push(`package.json exports["."] must start with "types@<6.0": "${TS5_TYPES_EXPORT}"`);
+    }
+
+    if (ts5EntryText === null) {
+        failures.push(`Missing TypeScript 5 type entry: ${TS5_TYPES_EXPORT}`);
+    } else if (!ts5EntryText.startsWith(`${WEBGPU_TYPES_REFERENCE}\n`)) {
+        // A triple-slash directive only counts before the first statement.
+        failures.push(`${TS5_TYPES_EXPORT} must start with ${WEBGPU_TYPES_REFERENCE}`);
+    }
+
+    if (dtsText.includes(WEBGPU_TYPES_REFERENCE)) {
+        failures.push('dist/blit386.d.ts must not reference @webgpu/types: it conflicts with TypeScript 6 lib.dom');
+    }
+
+    return failures;
+}
+
 /**
  * Validates declaration build output and log alignment.
  *
@@ -308,6 +353,9 @@ export function validateDeclarationTooling(logText, options = {}) {
         const dtsText = fs.readFileSync(DECLARATION_OUTPUT, 'utf8');
         failures.push(...findMissingBtDeclarationMembers(dtsText));
         failures.push(...findUnexportedDeclarations(dtsText));
+        const ts5EntryText = fs.existsSync(TS5_TYPES_OUTPUT) ? fs.readFileSync(TS5_TYPES_OUTPUT, 'utf8') : null;
+        const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
+        failures.push(...findWebgpuTypesFailures(dtsText, ts5EntryText, packageJson));
     }
 
     if (requireOutputFile && !fs.existsSync(VITE_DECLARATION_OUTPUT)) {

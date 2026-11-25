@@ -50,6 +50,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   starts Claude Code with `ENABLE_TOOL_SEARCH=false`, since a small model never loads the docs tools Claude Code
   otherwise hides behind its tool search.
 
+### Fixed
+
+- A new TypeScript game passes `npm run typecheck` again. The engine's types use WebGPU names such as `GPUDevice` and
+  `GPUTextureView`, but on TypeScript 5 a game never got their definitions, so a fresh `create-blit386 --ts` project
+  failed with 25 errors inside `blit386.d.ts`. `blit386` now depends on `@webgpu/types` and points TypeScript below 6.0
+  at a type entry that loads it, so a game that writes its own `Effect` gets the real GPU types with no `tsconfig.json`
+  change and no `skipLibCheck`. TypeScript 6 already declares WebGPU itself and keeps the plain type file.
+
 ## 1.9.0 - 2026-11-23
 
 ### Added

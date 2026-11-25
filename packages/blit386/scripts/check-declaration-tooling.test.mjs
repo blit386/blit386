@@ -10,6 +10,7 @@ import {
     findMissingViteDeclarationMembers,
     findUnexportedDeclarations,
     findViteDeclarationSizeFailure,
+    findWebgpuTypesFailures,
     INTERNAL_BASE_CLASSES,
     REQUIRED_BT_DECLARATION_MEMBERS,
     REQUIRED_VITE_DECLARATION_MEMBERS,
@@ -180,5 +181,52 @@ describe('findUnexportedDeclarations', () => {
         const dts = INTERNAL_BASE_CLASSES.map((name) => `declare abstract class ${name} {}`).join('\n');
 
         assert.deepEqual(findUnexportedDeclarations(dts), []);
+    });
+});
+
+describe('findWebgpuTypesFailures', () => {
+    const reference = '/// <reference types="@webgpu/types" />';
+    const ts5Entry = `${reference}\nexport * from './blit386.js';\n`;
+    const pkg = {
+        dependencies: { '@webgpu/types': '^0.1.74' },
+        exports: { '.': { 'types@<6.0': './dist/blit386-ts5.d.ts', types: './dist/blit386.d.ts' } },
+    };
+
+    it('accepts a gated TS 5 entry and a plain rollup', () => {
+        assert.deepEqual(findWebgpuTypesFailures('export {}', ts5Entry, pkg), []);
+    });
+
+    it('reports a type package left in devDependencies', () => {
+        const devOnly = { ...pkg, dependencies: {}, devDependencies: { '@webgpu/types': '^0.1.74' } };
+
+        assert.deepEqual(findWebgpuTypesFailures('export {}', ts5Entry, devOnly), [
+            'package.json must list @webgpu/types in dependencies, not devDependencies',
+        ]);
+    });
+
+    it('reports a types@<6.0 condition shadowed by an earlier types condition', () => {
+        const shadowed = {
+            ...pkg,
+            exports: { '.': { types: './dist/blit386.d.ts', 'types@<6.0': './dist/blit386-ts5.d.ts' } },
+        };
+
+        assert.deepEqual(findWebgpuTypesFailures('export {}', ts5Entry, shadowed), [
+            'package.json exports["."] must start with "types@<6.0": "./dist/blit386-ts5.d.ts"',
+        ]);
+    });
+
+    it('reports a missing TS 5 entry and a reference that is not on its first line', () => {
+        assert.deepEqual(findWebgpuTypesFailures('export {}', null, pkg), [
+            'Missing TypeScript 5 type entry: ./dist/blit386-ts5.d.ts',
+        ]);
+        assert.deepEqual(findWebgpuTypesFailures('export {}', `export {};\n${reference}\n`, pkg), [
+            './dist/blit386-ts5.d.ts must start with /// <reference types="@webgpu/types" />',
+        ]);
+    });
+
+    it('reports a rollup that references @webgpu/types, which TS 6 rejects', () => {
+        assert.deepEqual(findWebgpuTypesFailures(`${reference}\nexport {}`, ts5Entry, pkg), [
+            'dist/blit386.d.ts must not reference @webgpu/types: it conflicts with TypeScript 6 lib.dom',
+        ]);
     });
 });
