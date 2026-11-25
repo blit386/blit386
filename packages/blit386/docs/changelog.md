@@ -40,6 +40,16 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   computer with Ollama and `ollama launch claude`, using Inkling 2 Mini, the small model it was tested with - what
   worked, what did not, the hardware it needs, and why the safety hooks matter more with a small model.
 
+### Changed
+
+- `@blit386/kit`: `AGENTS.md` now tells an assistant where to look things up, in order: the matching skill and the local
+  `docs/`, then the `blit386-docs` docs server (`search_docs`, then `get_doc_page`), and only then `node_modules` -
+  `blit386.d.ts` for an exact signature, never the minified engine bundle. The `ask-the-docs` and `add-crt-effect`
+  skills and the always-on API-names rule say the same. Before, the docs server was one option among several, and a
+  small local model asked to add a CRT look read the bundle 27 times and never asked the docs. `docs/local-model.md` now
+  starts Claude Code with `ENABLE_TOOL_SEARCH=false`, since a small model never loads the docs tools Claude Code
+  otherwise hides behind its tool search.
+
 ## 1.9.0 - 2026-11-23
 
 ### Added

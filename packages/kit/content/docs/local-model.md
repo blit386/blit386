@@ -47,13 +47,17 @@ So it is a good helper for one small change at a time, and the safety hooks matt
 From your game's folder:
 
 ```bash
-ollama launch claude --model inkling-2-mini:26b-a5b-nvfp4
+ENABLE_TOOL_SEARCH=false ollama launch claude --model inkling-2-mini:26b-a5b-nvfp4
 ```
 
 This starts Claude Code on the local model. If the game is set up for Claude Code, it loads the game's `CLAUDE.md`,
 skills, safety hooks, and docs server exactly like a normal session - only the model is different. No `.claude/` folder
 in your game? Run `npx blit agents add claude` first, or the model works with no safety hooks at all. It changes no
 Claude Code settings, so plain `claude` next time is back on the cloud model.
+
+The `ENABLE_TOOL_SEARCH=false` part matters: without it, Claude Code hides the docs server's tools until the model asks
+for them, and this model never asks - it reads the engine's minified code in `node_modules` instead, which is slow and
+easy to misread. With it, the docs tools are there from the start.
 
 Ollama can start other assistants the same way - `ollama launch codex`, `ollama launch opencode`,
 `ollama launch copilot`. Each one gets this game's safety rules only if the game has its files: add them with

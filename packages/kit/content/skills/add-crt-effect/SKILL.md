@@ -10,6 +10,10 @@ description:
 Stack fullscreen effects (CRT curvature, scanlines, bloom, glitch) on top of the finished frame. These run on WebGPU
 only.
 
+This skill is the whole local recipe: `docs/` has no effects page. For anything it does not show, ask the `blit386-docs`
+docs server (`search_docs` for `crt effect`, then `get_doc_page` on the Post-Process Effects guide) - do not dig through
+`node_modules/blit386`.
+
 ## Step 1 (optional): a bigger output buffer
 
 Display-tier effects (curvature, scanlines, mask, bloom) draw into the output buffer, not the logical screen. A game
@@ -147,5 +151,5 @@ BT.effectAdd(lines);
   it still says `'webgpu'` even after the engine has quietly fallen back to Canvas 2D - so a guard built on it passes on
   exactly the machines it was meant to protect, and `BT.effectAdd` throws there.
 - Hold onto effect instances and reuse them; rebuilding every toggle re-allocates GPU pipelines.
-- Full effect reference lives at blit386.dev (the ask-the-docs skill shows how to reach it); the local docs do not cover
-  every effect.
+- The full effect reference (every class and its fields) is the Post-Process Effects guide at blit386.dev: ask the
+  `blit386-docs` server for it, as above. The ask-the-docs skill covers the other ways to reach it.

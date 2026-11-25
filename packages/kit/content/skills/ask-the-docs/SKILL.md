@@ -4,18 +4,23 @@ description:
   Look up BLIT386 detail the project's own files do not cover, using the live documentation at blit386.dev - the
   blit386-docs MCP server, the llms.txt summary, or a doc page fetched as markdown. Use whenever AGENTS.md and the local
   docs/ folder do not answer the question, an engine API or option is unfamiliar, or the user asks about something newer
-  than this game's BLIT386 version.
+  than this game's BLIT386 version - and always before opening anything in node_modules.
 ---
 
 # Ask the docs
 
 Look up BLIT386 detail the project's own files do not cover, using the live documentation at blit386.dev.
 
-## Read the local docs first
+## The order to look things up
 
-The guides in `docs/` are already on disk, cost nothing to open, and describe the BLIT386 version this game actually
-pins in `package.json`. `AGENTS.md` has a table telling you which one to open. Go to the network only after that table
-comes up empty.
+1. The matching skill and the local `docs/`. They are already on disk, cost nothing to open, and describe the BLIT386
+   version this game actually pins in `package.json`. `AGENTS.md` has a table telling you which doc to open.
+2. The live docs, below - start with the `blit386-docs` MCP server: `search_docs`, then `get_doc_page`.
+3. Only if the docs did not answer it: `node_modules/blit386/dist/blit386.d.ts`, to check one exact signature.
+
+Never read `node_modules/blit386/dist/blit386.js` (or `blit386.cjs`). It is the minified engine bundle: slow to search,
+easy to misread, and full of internals your game cannot call. If step 1 comes up empty, go to step 2 - not to
+`node_modules`.
 
 ## Three ways to reach the live docs
 
