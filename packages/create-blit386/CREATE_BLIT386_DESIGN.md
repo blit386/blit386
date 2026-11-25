@@ -808,5 +808,5 @@ ships both at `^1.4.0`.
 
 This doc records durable decisions, not a dated release log - chronological history (what shipped when, which PR, which
 commit) lives in `git log` and the GitHub Releases at <https://github.com/blit386/blit386/releases>. When a change is
-genuinely a new durable decision, fold it into the relevant numbered section above (per-file rule in `.coderabbit.yaml`)
-instead of appending a dated entry here.
+genuinely a new durable decision, fold it into the relevant numbered section above instead of appending a dated entry
+here.

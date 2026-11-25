@@ -116,17 +116,10 @@ For each PR in the list from step 4, build a content object:
 - title: the PR title as-is (conventional commit format, e.g. `feat(assets): cap sprite dimensions`)
 - number: the PR number
 - description: extracted from `.body` as follows:
-  1. Take everything before the HTML comment
-     `<!-- This is an auto-generated comment: release notes by coderabbit.ai -->`. Strip leading/trailing whitespace.
-     This is the human-written description.
-  2. After that marker, look for CodeRabbit structured content: sections starting with `## Overview`, `## Key Changes`,
-     `## Changes Made`, `## Changes Overview`, `## Summary`. If any such heading is found, extract the text of those
-     sections (stop before badge lines or `<!-- end of auto-generated` markers). This is the CodeRabbit summary.
-  3. Strip all HTML comments (`<!-- ... -->`), markdown image links (`[![...](...)](...)` patterns), and lines that
+  1. Cut everything from the first `<!-- This is an auto-generated comment` marker on (a review bot's appended block,
+     present on some older PRs). Strip leading/trailing whitespace.
+  2. Strip all HTML comments (`<!-- ... -->`), markdown image links (`[![...](...)](...)` patterns), and lines that
      contain only a bare URL.
-  4. Priority: if the CodeRabbit summary exists and has more than one bullet or paragraph, use it as the primary source.
-     If only a human description exists, use that. If both exist, lead with the human description (one sentence) and use
-     the CodeRabbit summary for detail.
 
 ### 7. Group PRs - first by package, then by topic
 

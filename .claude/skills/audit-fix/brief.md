@@ -143,8 +143,7 @@ The repo's shell-safety hook scans the WHOLE Bash command text, so destructive-g
   loop. Traps:
   - Checks shown as `skipping` that should run: read the real run via
     `gh run list --branch <branch> --workflow CI --json databaseId,headSha,status,event` and
-    `gh run view <id> --json jobs`. `Benchmarks`, `CodeRabbit` and package jobs for untouched packages legitimately
-    skip.
+    `gh run view <id> --json jobs`. `Benchmarks` and package jobs for untouched packages legitimately skip.
   - CodeQL `Analyze (...)` comes from GitHub default setup and cannot be re-run; a checkout-stage TLS flake needs a new
     SHA. Check `gh pr view <n> --json mergeStateStatus`: `UNSTABLE` = not required, merge allowed once the flake is
     confirmed; `BLOCKED` = needs a new SHA.
