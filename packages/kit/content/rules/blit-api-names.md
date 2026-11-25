@@ -141,4 +141,6 @@ from game code is unsupported.
 
 `BT.buttonDown` (use `BT.isDown`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
 
-Full reference: `AGENTS.md` and `docs/` in this project.
+Full reference: `AGENTS.md` and `docs/` in this project, then the `blit386-docs` docs server (`search_docs`, then
+`get_doc_page`). Look an API up there, not in `node_modules`: never read the bundled
+`node_modules/blit386/dist/blit386.js` or `blit386.cjs`.

@@ -59,6 +59,10 @@ bootstrap(Game);
 - Never edit `.env` files (`.env`, `.env.local`, `.env.production`, and similar). They hold secrets. `.env.example` is a
   template and is fine to edit.
 - No emoji anywhere in code, comments, or text.
+- Look things up in this order: the matching skill and `docs/`, then the `blit386-docs` docs server (`search_docs`, then
+  `get_doc_page`), and only then `node_modules`. There, open `node_modules/blit386/dist/blit386.d.ts` only to check one
+  exact signature, and never read the bundled engine (`blit386.js`, `blit386.cjs`) - it is minified build output, slow
+  to search and easy to misread. The next section has the details.
 
 ## When you need detail, open the right doc
 
@@ -78,10 +82,12 @@ bootstrap(Game);
 | Turn off the BLIT386 splash, or see it during development | `docs/basics.md` (The splash) |
 | Fix a blank screen, an error, a broken change | `docs/when-something-breaks.md` |
 
-When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
-this game already knows how to query it:
+No row fits, or the doc does not answer it? Go to the live documentation at https://blit386.dev next - before you open
+anything in `node_modules`. It has the full engine reference (effects, every `BT` call, every option), and this game
+already knows how to query it:
 
-- Ask the `blit386-docs` MCP server. If you set up Claude Code, Cursor, GitHub Copilot, Antigravity, Codex, Gemini CLI,
+- Ask the `blit386-docs` MCP server first: `search_docs` with a few keywords (`crt effect`, `gamepad deadzone`), then
+  `get_doc_page` on a URL it returns. If you set up Claude Code, Cursor, GitHub Copilot, Antigravity, Codex, Gemini CLI,
   OpenCode, or Zed, it is already configured (`.mcp.json` for Claude Code and Copilot, `.cursor/mcp.json` for Cursor,
   `.agents/mcp_config.json` for Antigravity, `.codex/config.toml` for Codex, `.gemini/settings.json` for Gemini CLI,
   `opencode.json` for OpenCode, `.zed/settings.json` for Zed) and gives your assistant three tools: `search_docs`
@@ -93,8 +99,11 @@ this game already knows how to query it:
 - Reading a page? Request its URL with the header `Accept: text/markdown` and the site returns markdown instead of HTML
   \- far less to wade through.
 
-The `ask-the-docs` skill walks an assistant through all of these. The source code lives at
-https://github.com/blit386/blit386 - go there only when the documentation itself does not answer the question.
+The `ask-the-docs` skill walks an assistant through all of these. Only when the docs truly do not answer it, open
+`node_modules/blit386/dist/blit386.d.ts` to check an exact signature. Never read `node_modules/blit386/dist/blit386.js`
+(or `blit386.cjs`) - it is the minified engine bundle, and an answer found there may describe internals rather than what
+your game can call. The source code lives at https://github.com/blit386/blit386 - the last stop, for when the
+documentation itself does not answer the question.
 
 ## Running the game
 
