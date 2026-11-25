@@ -8,15 +8,19 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { scaffold } from '../dist/scaffold.js';
 import { cli, installedKit, assertNoPlaceholders } from './helpers.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 // The engine range is derived by scripts/bump-lockstep.mjs at release time, so read it from the
 // source instead of hardcoding a value the bump would silently invalidate.
@@ -699,6 +703,66 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
         assert.ok(!game.includes(RETIRED_GAME_GLOBAL), 'game.ts should not assign the retired window.__game');
         assert.ok(game.includes('testState(): GameState'), 'game.ts should carry the typed testState() hook');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+// A fresh TS game used to fail its own typecheck with 25 TS2304s inside the engine's .d.ts, because the
+// WebGPU types it names never reached the consumer (BT-867). Typechecks against the workspace engine build,
+// installed the way a package manager would: the engine's package.json + dist copied (so resolution cannot
+// fall back to the engine's own devDependencies) and only its `dependencies` linked beside it. Runs both
+// TypeScript 5 (the engine's pin, which needs @webgpu/types) and TypeScript 6 (the website's, whose lib.dom
+// declares WebGPU and conflicts with @webgpu/types if the engine loads it).
+test('a scaffolded TypeScript project passes its own typecheck against the engine build', () => {
+    const engineRoot = join(here, '..', '..', 'blit386');
+    // Output is captured, not ignored, so a failed engine build surfaces its stderr in the thrown error.
+    execFileSync(process.execPath, [join(engineRoot, '..', '..', 'scripts', 'ensure-engine-built.mjs')], {
+        cwd: engineRoot,
+        encoding: 'utf8',
+    });
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-ts-typecheck-'));
+
+    try {
+        const project = join(work, 'ts-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'ts-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            language: 'ts',
+            packageManager: 'npm@10.9.2',
+            agents: [],
+        });
+
+        const installedEngine = join(project, 'node_modules', 'blit386');
+        const enginePkg = JSON.parse(readFileSync(join(engineRoot, 'package.json'), 'utf8'));
+        cpSync(join(engineRoot, 'dist'), join(installedEngine, 'dist'), { recursive: true });
+        cpSync(join(engineRoot, 'package.json'), join(installedEngine, 'package.json'));
+
+        // pnpm links every direct dependency into the engine's own node_modules; reading the link avoids
+        // `exports` maps that do not expose `<name>/package.json`.
+        for (const name of Object.keys(enginePkg.dependencies ?? {})) {
+            const target = join(project, 'node_modules', name);
+            mkdirSync(dirname(target), { recursive: true });
+            symlinkSync(realpathSync(join(engineRoot, 'node_modules', name)), target, 'dir');
+        }
+
+        for (const workspacePackage of ['blit386', 'website']) {
+            const fromPackage = createRequire(join(here, '..', '..', workspacePackage, 'package.json'));
+            const { version } = fromPackage('typescript/package.json');
+            const tsc = fromPackage.resolve('typescript/bin/tsc');
+            const result = spawnSync(process.execPath, [tsc, '--noEmit', '-p', project], { encoding: 'utf8' });
+            assert.equal(
+                result.status,
+                0,
+                `tsc ${version} --noEmit failed in the scaffolded TS game:\n${result.stdout}${result.stderr}`,
+            );
+        }
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

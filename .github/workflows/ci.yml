@@ -108,6 +108,16 @@ jobs:
             scaffolder:
               - 'packages/create-blit386/**'
               - 'packages/kit/**'
+              # scaffold.test.mjs typechecks a TS game against the built engine (BT-867), with the
+              # engine's TypeScript 5 and the website's TypeScript 6.
+              - 'packages/blit386/src/**'
+              - 'packages/blit386/package.json'
+              - 'packages/blit386/vite.config.ts'
+              - 'packages/blit386/tsconfig.json'
+              - 'tsconfig.base.json'
+              - 'packages/website/package.json'
+              - 'scripts/ensure-engine-built.mjs'
+              - 'scripts/build-lock.mjs'
 
   quality-root:
     name: Code Quality (root)
@@ -788,7 +798,8 @@ jobs:
 
       # create-blit386's tests import from its own dist/ and from @blit386/kit's dist/,
       # and unlike kit it has no `pretest` to build itself. Both builds are therefore
-      # prerequisites, in this order.
+      # prerequisites, in this order. The engine build the TS typecheck test needs is made by the
+      # test itself, through scripts/ensure-engine-built.mjs.
       - name: Build kit (workspace dependency)
         run: pnpm --filter @blit386/kit run build
 

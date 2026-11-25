@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import process from 'node:process';
 
 import type { LibraryFormats, PluginOption } from 'vite';
@@ -14,6 +15,17 @@ import dts from 'vite-plugin-dts';
  * @returns `true` under `--watch` or `-w`, `false` otherwise.
  */
 export const resolveIsWatch = (argv: readonly string[]): boolean => argv.includes('--watch') || argv.includes('-w');
+
+/**
+ * Type entry for TypeScript below 6.0, picked by the `types@<6.0` condition in `package.json` `exports`. TS 5 has no
+ * WebGPU in `lib.dom`, so this wrapper pulls in `@webgpu/types` (a runtime dependency) for the `GPUDevice`, ... names
+ * the public types use; TS 6 declares them itself and gets the plain rollup, since loading `@webgpu/types` on top fails
+ * with TS6200/TS2717 conflicts (BT-867). Manual-sync hazard: the path is also in `package.json` `exports` and in
+ * `scripts/check-declaration-tooling.mjs`.
+ */
+const TS5_TYPES_ENTRY = 'dist/blit386-ts5.d.ts';
+
+const TS5_TYPES_ENTRY_CONTENT = `/// <reference types="@webgpu/types" />\nexport * from './blit386.js';\n`;
 
 /**
  * The declaration-emit plugins for a build, empty under watch.
@@ -40,6 +52,9 @@ export const createDeclarationPlugins = (isWatch: boolean): PluginOption[] =>
                       filePath: filePath.replace(/BLIT386\.d\.ts$/, 'blit386.d.ts'),
                       content,
                   }),
+                  afterBuild: () =>
+                      // eslint-disable-next-line security/detect-non-literal-fs-filename -- module constant, not input
+                      writeFileSync(new URL(TS5_TYPES_ENTRY, import.meta.url), TS5_TYPES_ENTRY_CONTENT),
               }),
           ];
 

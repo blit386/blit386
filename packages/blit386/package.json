@@ -43,6 +43,7 @@
   "types": "./dist/blit386.d.ts",
   "exports": {
     ".": {
+      "types@<6.0": "./dist/blit386-ts5.d.ts",
       "types": "./dist/blit386.d.ts",
       "import": "./dist/blit386.js",
       "require": "./dist/blit386.cjs"
@@ -139,6 +140,9 @@
       "optional": true
     }
   },
+  "dependencies": {
+    "@webgpu/types": "^0.1.74"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.6.7",
     "@eslint/js": "^10.0.1",
@@ -147,7 +151,6 @@
     "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@typescript-eslint/parser": "^8.72.1",
     "@vitest/coverage-v8": "^4.1.12",
-    "@webgpu/types": "^0.1.74",
     "acorn": "^8.19.0",
     "cspell": "^10.4.1",
     "esbuild": "^0.28.2",

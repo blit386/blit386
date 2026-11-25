@@ -204,6 +204,10 @@ importers:
         version: 3.10.1
 
   packages/blit386:
+    dependencies:
+      '@webgpu/types':
+        specifier: ^0.1.74
+        version: 0.1.74
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.6.7
@@ -226,9 +230,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^4.1.12
         version: 4.1.12(vitest@4.1.12)
-      '@webgpu/types':
-        specifier: ^0.1.74
-        version: 0.1.74
       acorn:
         specifier: ^8.19.0
         version: 8.19.0
