@@ -183,6 +183,8 @@ test('scaffolds without --yes when no interactive terminal is attached', () => {
         execFileSync(process.execPath, [cli, 'agent-game', '--no-install', '--no-git'], {
             cwd: work,
             stdio: 'ignore',
+            // CI turns off assistant detection, so the suite run by an agent still gets the no-assistant default.
+            env: { ...process.env, CI: 'true' },
             timeout: 30_000,
         });
 

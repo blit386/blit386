@@ -2,21 +2,23 @@
  * `create-blit386` entry point.
  *
  * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> install -> git init -> print next steps.
- * Flags: --yes/-y (skip prompts), --ts (TypeScript template), --no-install, --no-git.
+ * Flags: --yes/-y (skip prompts), --ts (TypeScript template), --agent <names> (AI assistant files, comma-separated or
+ * repeated), --no-install, --no-git.
  *
  * Two guards run before the wizard: the Node version must meet the engine floor (a friendly message beats an
  * EBADENGINE wall), and without an interactive terminal (an AI agent or CI) we behave as --yes instead of hanging on
- * a prompt nobody can answer.
+ * a prompt nobody can answer. In that case the assistant files go to the agent found in the environment, never in CI.
  */
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
+import { parseArgs } from 'node:util';
 
-import { GAME_FILE_JS, GAME_FILE_TS } from '@blit386/kit/adapters';
+import { AGENT_ADAPTERS, AGENT_KINDS, type AgentKind, GAME_FILE_JS, GAME_FILE_TS } from '@blit386/kit/adapters';
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
-import { isInteractive, meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from './env';
+import { detectCallingAgents, isInteractive, meetsNodeFloor, NODE_FLOOR, quoteIfSpaced } from './env';
 import { detectPackageManager, packageManagerField, pmHints } from './pkgManager';
 import { scaffold } from './scaffold';
 import { defaultWizardOptions, runWizard } from './wizard';
@@ -61,6 +63,29 @@ function tryInstall(dir: string, command: string, args: string[]): boolean {
     }
 }
 
+/**
+ * The `--agent` values as assistant kinds: comma-separated or repeated, deduplicated. Undefined when the flag is absent.
+ * An unknown name, or `--agent` with no value, stops the run with the list of valid names.
+ */
+function parseAgentFlag(raw: (string | boolean)[] | undefined): AgentKind[] | undefined {
+    if (raw === undefined) {
+        return undefined;
+    }
+
+    const names = raw.flatMap((value) => (typeof value === 'string' ? value.split(',') : [''])).map((n) => n.trim());
+    const unknown = names.find((name) => !(AGENT_KINDS as readonly string[]).includes(name));
+    if (unknown !== undefined) {
+        log.error(
+            unknown === '' || unknown.startsWith('-')
+                ? `--agent needs an assistant name: ${AGENT_KINDS.join(', ')}.`
+                : `I do not know the assistant "${unknown}". You can set up: ${AGENT_KINDS.join(', ')}.`,
+        );
+        process.exit(1);
+    }
+
+    return [...new Set(names as AgentKind[])];
+}
+
 async function resolveTargetDir(positional: string | undefined, yes: boolean): Promise<string> {
     if (positional) {
         return positional;
@@ -91,22 +116,41 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    const argv = process.argv.slice(2);
-    const positional = argv.filter((arg) => !arg.startsWith('-'));
-    const flagYes = argv.includes('--yes') || argv.includes('-y');
-    const flagTs = argv.includes('--ts');
-    const noInstall = argv.includes('--no-install');
-    const noGit = argv.includes('--no-git');
+    // strict: false keeps unknown flags ignored, as they always were. A forwarded `--` (some runners pass it along from
+    // `create blit386 my-game -- --yes`) is dropped, or parseArgs would read every flag after it as a positional.
+    const { values, positionals: positional } = parseArgs({
+        args: process.argv.slice(2).filter((arg) => arg !== '--'),
+        strict: false,
+        allowPositionals: true,
+        options: {
+            yes: { type: 'boolean', short: 'y' },
+            ts: { type: 'boolean' },
+            agent: { type: 'string', multiple: true },
+            'no-install': { type: 'boolean' },
+            'no-git': { type: 'boolean' },
+        },
+    });
+    const flagYes = values.yes === true;
+    const flagTs = values.ts === true;
+    const noInstall = values['no-install'] === true;
+    const noGit = values['no-git'] === true;
+    const flagAgents = parseAgentFlag(values.agent as (string | boolean)[] | undefined);
 
     // Without a real terminal (an AI agent or CI), the clack wizard would hang waiting for input. Use the defaults
-    // instead and say so once, kindly, with the flags that control them.
+    // instead, give the assistant files to the agent running us, and say so once with the flags that control them.
     const interactive = isInteractive();
     const yes = flagYes || !interactive;
+    // Undefined leaves the choice to the wizard (or to the --yes defaults in a real terminal).
+    const presetAgents = flagAgents ?? (interactive ? undefined : detectCallingAgents());
     if (!interactive && !flagYes) {
         const defaultLanguageLabel = flagTs ? 'TypeScript' : 'JavaScript';
+        const agentPart =
+            presetAgents !== undefined && presetAgents.length > 0
+                ? `assistant files for ${agentLabels(presetAgents)}${flagAgents ? '' : ' (found in your environment)'}`
+                : `no assistant files (pass --agent with one of ${AGENT_KINDS.join(', ')} to add them)`;
         log.info(
-            `No interactive terminal detected, so I used the defaults: ${defaultLanguageLabel}, no AI assistant, no CI. ` +
-                'Pass --yes to silence this, or run me in a terminal to choose. Other flags: --no-install, --no-git.',
+            `No interactive terminal, so I skipped the questions: ${defaultLanguageLabel}, no CI, and ${agentPart}. ` +
+                'Pass --yes to silence this. Other flags: --ts, --no-install, --no-git.',
         );
     }
 
@@ -122,6 +166,8 @@ async function main(): Promise<void> {
     }
 
     const wizardOptions = yes ? defaultWizardOptions() : await runWizard();
+    // --agent overrides the wizard's pick, the same way --ts does.
+    const agents = presetAgents ?? wizardOptions.agents;
 
     // --ts flag overrides the wizard's language choice so pros can skip the prompt.
     const language = flagTs ? 'ts' : wizardOptions.language;
@@ -144,7 +190,7 @@ async function main(): Promise<void> {
         pmCiPrepare: pm.ciPrepareCmd,
         ...(packageManager === undefined ? {} : { packageManager }),
         includeCi: wizardOptions.includeCi,
-        agents: wizardOptions.agents,
+        agents,
         language,
     });
     log.success(`Created ${projectName} (${languageLabel})`);
@@ -173,11 +219,25 @@ async function main(): Promise<void> {
         );
     }
 
-    const steps = [`cd ${quoteIfSpaced(dirArg)}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
+    const cdStep = `cd ${quoteIfSpaced(dirArg)}`;
+    const steps = [cdStep, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
+    // An assistant loads its hooks and docs server only from the folder its session started in (Claude Code, for one,
+    // never reads them from a subfolder), so the session that ran this command does not have them yet.
+    if (agents.length > 0) {
+        steps.push(
+            `Start a new assistant session (${agentLabels(agents)}) in ${dirArg} so it loads its skills and hooks`,
+        );
+    } else if (!interactive) {
+        steps.push(`AI assistant? ${cdStep} && npx blit agents add <name>, then open a new session in ${dirArg}`);
+    }
     note(steps.join('\n'), 'Next steps');
 
     const gameFile = language === 'ts' ? GAME_FILE_TS : GAME_FILE_JS;
     outro(`Have fun. Open ${gameFile} to change the game.`);
+}
+
+function agentLabels(agents: readonly AgentKind[]): string {
+    return agents.map((kind) => AGENT_ADAPTERS[kind].label).join(', ');
 }
 
 main().catch((error: unknown) => {

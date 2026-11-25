@@ -16,7 +16,9 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistants
    (multi-select: none, or any mix of Claude / Cursor / Antigravity / Codex / GitHub Copilot / Gemini CLI / OpenCode /
-   Zed), optional CI.
+   Zed; `--agent <names>` overrides the pick), optional CI. Without a TTY (an AI agent or CI) the wizard is skipped: the
+   assistants come from `--agent`, else from `detectCallingAgents()` in `src/env.ts` (the calling agent's env marker,
+   never when `CI` is set).
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.
 4. The chosen assistants' config comes from one kit call, `generateAgentFiles(kit, vars, agents)` from
    `@blit386/kit/adapters`; the scaffolder writes the returned `{ path, content }` pairs and never branches on an agent

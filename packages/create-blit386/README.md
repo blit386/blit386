@@ -44,24 +44,34 @@ Zed: `.zed/settings.json`; Antigravity, Codex, GitHub Copilot, Gemini CLI, OpenC
 `.agents/skills/` folder) from the kit's canonical content, and `npx blit agents sync` keeps it current. The MCP config
 registers the BLIT386 documentation server, so your assistant can search the live docs at blit386.dev instead of
 guessing; Claude Code's `settings.json` pre-approves it, so there is no separate prompt once the project folder is
-trusted. Did not pick one at the start? Run `npx blit agents add claude`, `npx blit agents add cursor`,
-`npx blit agents add antigravity`, `npx blit agents add codex`, `npx blit agents add copilot`,
-`npx blit agents add gemini`, `npx blit agents add opencode`, or `npx blit agents add zed` later to set it up.
-Antigravity, GitHub Copilot, and Zed ignore a project's config until you trust the workspace. Codex needs two steps:
-trust the project, then approve each of its hooks once in `/hooks`.
+trusted. Did not pick one at the start (or want one without the prompt)? Pass `--agent <name>`, or run
+`npx blit agents add claude`, `npx blit agents add cursor`, `npx blit agents add antigravity`,
+`npx blit agents add codex`, `npx blit agents add copilot`, `npx blit agents add gemini`,
+`npx blit agents add opencode`, or `npx blit agents add zed` later to set it up. Antigravity, GitHub Copilot, and Zed
+ignore a project's config until you trust the workspace. Codex needs two steps: trust the project, then approve each of
+its hooks once in `/hooks`.
 
 ## Options
 
 ```bash
-npm create blit386@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files, no CI)
+npm create blit386@latest my-game -- --yes         # skip the prompts (JavaScript, no CI; AI files: see below)
 npm create blit386@latest my-game -- --ts          # use the TypeScript starter instead of JavaScript
+npm create blit386@latest my-game -- --agent claude  # an assistant's files (comma-separate several)
 npm create blit386@latest my-game -- --no-install  # do not install dependencies
 npm create blit386@latest my-game -- --no-git      # do not initialize a git repository
 ```
 
 Without an interactive terminal - an AI assistant or a CI job running the command - there is nobody to answer the
-prompts, so the scaffolder behaves as if you passed `--yes` and says so once. `--ts` still applies. Pass `--yes`
-yourself to silence the notice.
+prompts, so the scaffolder behaves as if you passed `--yes` and says so once. `--ts` and `--agent` still apply. Pass
+`--yes` yourself to silence the notice.
+
+With no `--agent`, a run without a terminal sets up the assistant whose agent is running it, found from the variable
+that agent sets in its shell: Claude Code (`CLAUDECODE`), Cursor (`CURSOR_AGENT`), Codex (`CODEX_THREAD_ID`), GitHub
+Copilot (`COPILOT_AGENT` or `COPILOT_CLI`), Gemini CLI (`GEMINI_CLI`), and OpenCode (`OPENCODE`). Antigravity and Zed
+set none, so name them with `--agent`. Detection never runs when `CI` has a non-empty value, so a CI job gets no
+assistant files unless it passes `--agent`, and a real terminal with `--yes` gets none either. An assistant loads its
+hooks and the docs server only from the folder its session started in, so the next steps end by asking for a new session
+in the game folder (in Claude Code, `/cd my-game` does it without losing the conversation).
 
 ## Requirements
 
