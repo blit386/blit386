@@ -10,8 +10,8 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together wit
 TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), pnpm, Node >= 22.18.0. Scripts are
 `pnpm run <script>` from this package's directory (or `pnpm --filter @blit386/kit run <script>` from the repo root).
 
-The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit play`, `blit doctor`,
-`blit upgrade`, `blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
+The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit play`, `blit bundle`,
+`blit doctor`, `blit upgrade`, `blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
 
 ## Kit content vs engine docs
 

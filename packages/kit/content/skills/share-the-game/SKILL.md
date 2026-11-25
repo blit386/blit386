@@ -53,6 +53,17 @@ back a web address you can share.
    that starts with `/` always means the top of the website, and `base` does not change the paths you type in your code.
    Paths without the slash work in `{{pmRunDev}}` too.
 
+## Share one HTML file
+
+For an offline file instead of a hosted folder, run `npx blit bundle --single`. It writes `dist/bundle.html` and reports
+its size without replacing the other files in `dist/`. Open it in a browser and test the whole game offline before
+sharing it.
+
+The export embeds Vite imports and all `public/` files except hidden dotfiles, including sprites, sounds and fonts
+loaded through the BLIT386 loaders. Unused public files make it bigger. External services and files loaded through other
+browser APIs can still need separate resources; unsupported static resources and some HTML settings cause a build error.
+Browser and audio restrictions still apply.
+
 ## Notes
 
 - The game runs on WebGPU where it is available and falls back to plain Canvas 2D everywhere else, so friends can play
