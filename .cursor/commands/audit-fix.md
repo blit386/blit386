@@ -39,8 +39,7 @@ The first run was the 2026-11-08 umbrella BT-751: 22 tickets, 22 ticket PRs plus
      when a ticket teaches something; every later implementer reads the new version.
 5. Check repo facts once:
    `gh api repos/{owner}/{repo} --jq '{allow_auto_merge,allow_squash_merge,delete_branch_on_merge}'`. This repo: no
-   auto-merge, merge commits only, branches deleted on merge. CodeRabbit reviews only PRs labeled `cr`
-   (`.coderabbit.yaml`, `auto_review.enabled: false`) and costs money, so never add the label unless the user asks.
+   auto-merge, merge commits only, branches deleted on merge.
 
 ## Step 1 - per ticket
 

@@ -53,7 +53,7 @@ For each package named, gather its slice:
 
   ```bash
   ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/settings.json .husky/ \
-    .github/ .zed/ scripts/ .devcontainer/ .coderabbit.yaml .editorconfig .gitattributes .gitignore \
+    .github/ .zed/ scripts/ .devcontainer/ .editorconfig .gitattributes .gitignore \
     .lintstagedrc.json .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md \
     LICENSE SECURITY.md biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml \
     pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json .agents/ .codex/ .cursor/ .gemini/ \
