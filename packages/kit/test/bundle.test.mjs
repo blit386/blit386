@@ -152,6 +152,17 @@ test('the embedded loader resolves root and page-relative paths without redirect
         assert.equal(calls[2], 'https://elsewhere.invalid/sprites/hero.png');
         assert.equal(calls[3], '/sprites/hero.png');
         assert.match(calls[4].url, /^data:image\/png;base64,/);
+
+        // A folder name with a space is percent-encoded in document.baseURI; relative paths must still resolve.
+        const spaced = { fetch: (url) => url };
+        runInNewContext(code, {
+            window: spaced,
+            document: { baseURI: 'file:///Users/Jane%20Doe/My%20Game/bundle.html' },
+            HTMLImageElement: Image,
+            URL,
+            Request,
+        });
+        assert.match(spaced.fetch('sprites/hero.png'), /^data:image\/png;base64,/);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }
@@ -254,6 +265,18 @@ test('embeds image inputs, objects, feImage, and multi-word icon links; ignores 
         }
         assert.equal(html.match(/charset=/gi)?.length, 1);
         assert.ok(html.search(/charset=/i) < html.indexOf('<script>'));
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('embeds public files referenced from HTML in a game with a non-root base', () => {
+    const root = game();
+    try {
+        writeFileSync(join(root, 'vite.config.js'), "export default { base: '/game/' };");
+        const result = run(root, '--single');
+        assert.equal(result.status, 0, result.output);
+        assert.match(readFileSync(join(root, 'dist', 'bundle.html'), 'utf8'), /<img src="data:image\/png;base64,/);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

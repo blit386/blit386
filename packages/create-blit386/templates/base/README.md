@@ -35,7 +35,8 @@ More about hot reload: `docs/hot-reload.md`.
 - `{{pmRunDev}}` - start the game (the everyday command).
 - `npx blit run` - the same thing, the friendly way.
 - `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
-- `npx blit bundle --single` - export the whole game as one offline HTML file, `dist/bundle.html`, to send to a friend.
+- `npx blit bundle --single` - pack the game and its `public/` files into one HTML file, `dist/bundle.html`, that plays
+  without a server (see "Share one HTML file" below for its limits).
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version.
 - `npx blit agents add <name>` - set up an AI assistant you did not pick at the start (`claude`, `cursor`,
