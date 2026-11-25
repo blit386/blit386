@@ -10,8 +10,8 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) - read together wit
 TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), pnpm, Node >= 22.18.0. Scripts are
 `pnpm run <script>` from this package's directory (or `pnpm --filter @blit386/kit run <script>` from the repo root).
 
-The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit play`, `blit doctor`,
-`blit upgrade`, `blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
+The `blit` CLI is a project-local bin inside every generated game: `blit run`, `blit play`, `blit bundle`,
+`blit doctor`, `blit upgrade`, `blit migrate`, `blit agents sync` / `blit agents add`, `blit clean`, `blit help`.
 
 ## Kit content vs engine docs
 
@@ -97,6 +97,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead`, building a fade target with `fillBlock` |
 | `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, `BT.testState()`, the dev-only `window.__btInputTrace` entry shape (`packages/blit386/src/input/InputTrace.ts`), the pre-1.8.0 `window.__game` note, and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
+| `content/skills/share-the-game/SKILL.md` | The production build or `preview` flow, or what `blit bundle --single` embeds or rejects (`src/commands/bundle.ts`) - the skill, the kit `README.md`, and the template `README.md` each list those limits |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/templates/game.js`, `game.ts` | The `blit clean` skeletons (`src/commands/clean.ts`). Review when `IBTDemo`'s required methods, `bootstrap`'s signature or defaults (`packages/blit386/src/utils/Bootstrap.ts`, `defaultConfig`), or the `testState()` hook change; `test/clean.test.mjs` pins `class Game`, the TS `init` signature, and the JS/TS split. Keep them the empty shape, never the scaffolder's Catcher starter |
@@ -177,6 +178,7 @@ Conventional Commits and DCO sign-off are root-level policy (see root `CLAUDE.md
 | Question | Where to look |
 | --- | --- |
 | What does the `blit` CLI do? | `src/cli.ts`, `README.md` |
+| What does `blit bundle --single` embed, and what does it reject? | `src/commands/bundle.ts` (the HTML walk, the `public/` map, and the runtime loader script), `test/bundle.test.mjs` |
 | How are agent files generated? | `src/adapters/` (one module per agent, `shared.ts` for what they share), re-exported through the `src/adapters.ts` barrel; every path it emits is built from `src/ownership.ts`, and the scaffolder writes them to disk |
 | Docs-MCP config shipped into games | `MCP_SERVER_ENTRY` in `src/adapters/shared.ts`, path per agent in `AGENT_SPECS[kind].mcpConfig`; canonical server definition lives in `packages/website` |
 | Which agents exist, and how to add one | The registry: `AGENT_SPECS` in `src/ownership.ts` (label, setup hint, private paths, MCP config path, `readsSharedSkills`, `readsSharedFiles`) plus `AGENT_ADAPTERS` in `src/adapters.ts` (which wires in the generator from `src/adapters/<agent>.ts`). Scaffold, `sync`, and `add` all go through `generateAgentFiles`, never a per-agent branch |

@@ -35,6 +35,8 @@ More about hot reload: `docs/hot-reload.md`.
 - `{{pmRunDev}}` - start the game (the everyday command).
 - `npx blit run` - the same thing, the friendly way.
 - `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
+- `npx blit bundle --single` - pack the game and its `public/` files into one HTML file, `dist/bundle.html`, that plays
+  without a server (see "Share one HTML file" below for its limits).
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version.
 - `npx blit agents add <name>` - set up an AI assistant you did not pick at the start (`claude`, `cursor`,
@@ -70,6 +72,16 @@ When you want to show your game to a friend:
 This packs everything into a `dist/` folder - a plain website, no server needed. Drag that folder onto a free static
 host such as [Netlify Drop](https://app.netlify.com/drop) or [Cloudflare Pages](https://pages.cloudflare.com), and you
 get a link anyone can open.
+
+## Share one HTML file
+
+For an offline copy, run `npx blit bundle --single` and send `dist/bundle.html` to your friend. Open the file in a
+browser to try it. The command reports its size and leaves the other files in `dist/` alone.
+
+The export includes all files in `public/` except hidden dotfiles, even unused ones, so remove files you do not need to
+make it smaller. Test the entire game offline: external services and assets loaded by other browser APIs may still need
+separate resources. The command reports unsupported static resources and HTML settings. Browser and audio restrictions
+still apply.
 
 ## When something breaks
 

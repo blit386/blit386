@@ -143,6 +143,7 @@ Inside a project created by `create-blit386`:
 ```bash
 npx blit run
 npx blit play --help
+npx blit bundle --single
 npx blit doctor
 npx blit upgrade
 npx blit migrate
@@ -159,6 +160,20 @@ npx blit clean
 npx blit clean --yes
 npx blit help
 ```
+
+## Single-file export
+
+Run `npx blit bundle --single` inside a Vite game to write `dist/bundle.html`. The production build tree-shakes and
+minifies code; the command prints the final file size. It keeps other files in `dist/` intact.
+
+Vite imports and every file in `public/` (except hidden dotfiles) are embedded. Public files loaded by `fetch` or an
+image's `src`, including BLIT386 sprites, audio and bitmap fonts, can be used offline. Remove unused public assets
+before exporting to reduce the file size. A public file the page itself references (an `<img>` in `index.html`, a CSS
+`url()`) is stored twice, once in place and once for runtime loads, so load large assets from code instead. The export
+rejects unsupported static resources, `srcset`, `<base>`, CSP meta tags, and local `<link>` files other than
+stylesheets, icons and preloads, and an SVG `<use>` of another file. Runtime requests to external services or APIs other
+than `fetch` and image `src` may still need separate resources. Open the HTML file and test the whole game offline
+before sharing it. Browser features and audio playback still have their usual restrictions.
 
 ## Requirements
 

@@ -19,6 +19,18 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.9.1 - Unreleased
+
+### Added
+
+- `@blit386/kit`: `blit bundle --single` exports a game as one offline HTML file, `dist/bundle.html`, that a player can
+  open straight from disk. The production build is minified, and every file in `public/` except hidden dotfiles is
+  embedded. Sprites, sounds and bitmap fonts loaded with `fetch` or an image's `src` work offline without code changes.
+  The command rejects what it cannot embed (external scripts and stylesheets, `srcset`, `<base>`, a CSP meta tag, and
+  local `<link>` files other than stylesheets, icons and preloads, or an SVG `<use>` of another file) instead of writing
+  a broken file. Other files in `dist/` are left alone. The generated README and the `share-the-game` skill explain when
+  to share one file instead of the `dist/` folder.
+
 ## 1.9.0 - 2026-11-23
 
 ### Added
