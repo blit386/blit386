@@ -30,6 +30,15 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   local `<link>` files other than stylesheets, icons and preloads, or an SVG `<use>` of another file) instead of writing
   a broken file. Other files in `dist/` are left alone. The generated README and the `share-the-game` skill explain when
   to share one file instead of the `dist/` folder.
+- `create-blit386`: an AI agent that runs `npm create blit386` now gets its own assistant files. With no interactive
+  terminal, the scaffolder reads the variable the calling agent sets in its shell (Claude Code, Cursor, Codex, GitHub
+  Copilot, Gemini CLI, OpenCode) and sets that assistant up, never when `CI` is set; before, it chose no assistant. A
+  new `--agent <names>` flag names assistants outright (comma-separated or repeated) and overrides both the detection
+  and the questions. The next steps end by asking for a new assistant session in the game folder, since that is where
+  hooks and the docs server load from.
+- `@blit386/kit`: new games get `docs/local-model.md`, which explains how to run the assistant on a model on your own
+  computer with Ollama and `ollama launch claude`, using Inkling 2 Mini, the small model it was tested with - what
+  worked, what did not, the hardware it needs, and why the safety hooks matter more with a small model.
 
 ## 1.9.0 - 2026-11-23
 

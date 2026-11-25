@@ -150,6 +150,9 @@ Copilot, Antigravity, Codex, Gemini CLI, OpenCode, and Zed read their skills fro
   `docs/zed.md` has a snippet to paste into your own settings.
 - Any other assistant (Windsurf and others): this file is its home base.
 
+Want your assistant to run on a model on your own computer, offline, instead of in the cloud? `docs/local-model.md`
+covers a tested small model and how to start it.
+
 Did not set up an assistant when you started the game? Run `npx blit agents add claude`, `npx blit agents add cursor`,
 `npx blit agents add copilot`, `npx blit agents add antigravity`, `npx blit agents add codex`,
 `npx blit agents add gemini`, `npx blit agents add opencode`, or `npx blit agents add zed` to add its files now, then
