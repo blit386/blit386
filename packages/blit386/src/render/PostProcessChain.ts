@@ -114,8 +114,8 @@ export class PostProcessChain {
         }
 
         // Allocate any missing offscreen textures *before* init: init can
-        // throw, but the textures are inert until referenced and will be
-        // freed by the next clear()/dispose() if init fails.
+        // throw, but the textures are inert until referenced: a later add()
+        // reuses them, and clear()/dispose() frees them even with no effects.
         if (this.texA === null) {
             this.allocatePrimary();
         }
@@ -164,10 +164,8 @@ export class PostProcessChain {
      * from scratch.
      */
     clear(): void {
-        if (this.effects.length === 0) {
-            return;
-        }
-
+        // No early return on an empty chain: a first add() whose init threw
+        // leaves texA allocated with no effects, and it must still be freed.
         for (const effect of this.effects) {
             effect.dispose?.();
         }
