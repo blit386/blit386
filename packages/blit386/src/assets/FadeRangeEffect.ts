@@ -59,6 +59,7 @@ export class FadeRangeEffect implements PaletteEffect {
         const { t, easedT, isRunning } = computeFadeProgress(this.elapsed, this.durationMs, this.easing);
 
         applyFadeToRange(palette, this.snapshotColors, this.targetColors, this.start, this.end, this.start, t, easedT);
+
         palette.markDirty();
 
         return isRunning;

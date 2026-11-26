@@ -19,6 +19,7 @@
  * after `sync-docs-from-engine.mjs`, and `build`, `typecheck`, `test`, and `dev` run that first.
  * This script owns `content/docs/build-a-game/` outright and deletes it before writing.
  */
+
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -164,7 +165,6 @@ const codeBlock = (lang, source, title) => {
     return `${fence}${lang}${meta}\n${source.trimEnd()}\n${fence}`;
 };
 
-/** Render a kit markdown file (H1 title) into a page body, escaped for MDX. */
 // The package-manager commands the scaffolder fills into kit content per game (`TemplateVars` in
 // packages/create-blit386/src/scaffold.ts). These pages target no particular game, so they use npm,
 // matching the starter page's instructions. A placeholder outside this set fails the sync.
@@ -176,6 +176,7 @@ const PACKAGE_MANAGER_VARS = {
     pmRunLint: 'npm run lint',
 };
 
+/** Render a kit markdown file (H1 title) into a page body, escaped for MDX. */
 const markdownPage = ({ sourcePath, release, description, title: titleOverride }) => {
     const source = fillPlaceholders(readFileSync(sourcePath, 'utf8'), PACKAGE_MANAGER_VARS, repoRel(sourcePath));
     const { fields, body: withoutFrontmatter } = splitFrontmatter(source);

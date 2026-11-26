@@ -326,7 +326,7 @@ export class BitmapFont {
 
         validateGlyphEntriesPreAtlas(glyphEntries);
 
-        // Load texture - embedded PNG data URIs and relative PNG paths are both allowed.
+        // Embedded PNG data URIs and same-origin texture paths (relative or rooted) are both allowed.
         const image = await loadTexture(data.texture, url);
         const spriteSheet = new SpriteSheet(image);
         const atlasWidth = spriteSheet.width;
@@ -454,8 +454,6 @@ export class BitmapFont {
                 }
             }
 
-            // Cache the result with FIFO eviction when full.
-
             // Maximum number of cached string-width measurements retained at once.
             // The cache uses FIFO eviction (insertion order) when this limit is reached.
             const measureCacheMaxSize = 256;
@@ -580,6 +578,7 @@ export class BitmapFont {
 
         const image = await loadTexture(bustTextureUrl(data.texture), url);
         const atlas = getDecodedImageSize(image);
+
         // Check the glyphs against the new atlas before swapping it, so a bad file leaves the font untouched.
         const { glyphs, asciiGlyphs } = buildGlyphsFromEntries(glyphEntries, atlas.width, atlas.height);
 

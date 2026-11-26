@@ -3,6 +3,7 @@
  * mutating the `palette` it is given and the module-level `T` singleton, so every case here
  * uses a small fake palette instead of a real `blit386` one.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

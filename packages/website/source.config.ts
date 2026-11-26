@@ -11,10 +11,10 @@ import { isTwoslashEnabled, TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash
 // popup missing and silent (BT-188).
 //
 // Dev is opt-in (`pnpm run dev:twoslash`) because the annotated page payload is huge,
-// not because the language service is: one shared service handles all 155 blocks in
-// ~320 MB, but a twoslashed page renders ~6.8 MB of HTML against ~0.6 MB plain, and the
-// dev server retains roughly 2 GB per distinct page visited. Measurements and the
-// resulting usage limits: CLAUDE.md, Twoslash.
+// not because the language service is: one shared service handled all 155 blocks (the
+// count when measured) in ~320 MB, but a twoslashed page renders ~6.8 MB of HTML against
+// ~0.6 MB plain, and the dev server retains roughly 2 GB per distinct page visited.
+// Measurements and the resulting usage limits: CLAUDE.md, Twoslash.
 const twoslashEnabled = isTwoslashEnabled();
 
 export default defineConfig({

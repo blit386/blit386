@@ -103,8 +103,8 @@ const SLOT_LABELS = ['Mouse', 'Touch 1', 'Touch 2', 'Touch 3'];
 // pixels; a radius of 0 paints a single pixel.
 const BRUSH_SIZES = [0, 2, 4];
 
-// Human-readable names for the same brushes, shown on the Brush button and in the panel's
-// Brush row. Same order as BRUSH_SIZES.
+// Human-readable names for the same brushes, shown on the Brush button. Same order as
+// BRUSH_SIZES.
 const BRUSH_NAMES = ['Thin', 'Medium', 'Thick'];
 
 // The Paint panel sits in the bottom-right corner, 4 pixels from the edges. Its height

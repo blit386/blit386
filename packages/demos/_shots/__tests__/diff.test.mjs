@@ -1,6 +1,7 @@
 /**
  * The pixel diff is what turns a before/after capture into a glance.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

@@ -42,6 +42,7 @@ interface ListingMetaOptions {
      * those. `/blog` gets a hand-rolled equivalent (`press.config.tsx`, `/blog.webp`); the tags
      * routes do not, since no template exists for what a per-tag card should show. */
     ogImage?: { width: number; height: number };
+
     /** Only `/blog` carries a JSON-LD `Blog` block; the tags listing and per-tag pages are
      * navigational, not content the site wants indexed as structured data. */
     jsonLd?: boolean;

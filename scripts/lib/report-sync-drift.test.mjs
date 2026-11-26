@@ -6,8 +6,10 @@ import { reportSyncDrift } from './report-sync-drift.mjs';
 describe('reportSyncDrift', () => {
     const realLog = console.log;
     const realError = console.error;
+
     /** @type {string[]} */
     let out;
+
     /** @type {string[]} */
     let err;
 

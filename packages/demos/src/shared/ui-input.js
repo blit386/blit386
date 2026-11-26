@@ -55,9 +55,9 @@ class UiInput {
 
     /**
      * Widget ids flushed so far during the frame currently being declared. Compared against
-     * `hitRects` at the next frame's first begin() so widgets that stopped being declared
-     * (conditional UI) get their stale rectangle removed instead of leaving a dead zone that
-     * `isInsideAnyWidget()` keeps reporting as occupied forever.
+     * `hitRects` at the next frame's startFrame() (ui-core.js) so widgets that stopped being
+     * declared (conditional UI) get their stale rectangle removed instead of leaving a dead
+     * zone that `isInsideAnyWidget()` keeps reporting as occupied forever.
      *
      * @type {Set<string>}
      */
@@ -108,8 +108,9 @@ class UiInput {
         }
     };
 
-    // True after any begin() ran; the first tick() afterwards empties the mailbox, so a
-    // press is delivered to exactly one render frame and never lingers.
+    // True after a render's first kit call ran startFrame() (ui-core.js); the first
+    // tick() afterwards empties the mailbox, so a press is delivered to exactly one render
+    // frame and never lingers.
     renderedSinceTick = false;
 
     // Counts update ticks (used by the swipe recognizer to time gestures).
@@ -304,9 +305,9 @@ class UiInput {
 
     /**
      * Drops any cached hit rectangle whose id was not flushed during the frame that just
-     * finished (see the call site in begin()). Widgets that disappeared - a panel that
-     * closed, a conditional row that stopped rendering - stop blocking taps and swipes at
-     * their old location instead of leaving a permanent dead zone.
+     * finished (see the call site in UiContext.startFrame()). Widgets that disappeared - a
+     * panel that closed, a conditional row that stopped rendering - stop blocking taps and
+     * swipes at their old location instead of leaving a permanent dead zone.
      */
     pruneHitRects() {
         this.hitRects.forEach(this.pruneVisitor);

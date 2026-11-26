@@ -7,8 +7,10 @@ import type { Rect2i } from '../../utils/Rect2i';
  * Handles overlay body visibility toggle input (Backquote and corner pointer).
  */
 export class Toggle {
+    /** Whether the overlay body is drawn. */
     #isBodyVisible: boolean;
 
+    /** Whether toggle input is honored; fixed at construction. */
     readonly #isEnabled: boolean;
 
     /**
@@ -39,7 +41,7 @@ export class Toggle {
      * sample this before the keyboard subsystem's own end-of-tick edge reset runs, so a press landing
      * inside a fixed-update tick is not lost by the time this render-phase check runs.
      * @param toggleRect - Bottom-left toggle hit region.
-     * @param isPointerPressConsumed - When true, skip pointer corner toggle (palette swatch handled the press).
+     * @param isPointerPressConsumed - When true, skip pointer corner toggle (the palette band handled the press).
      */
     handleInput(
         pointer: PointerInput | null,

@@ -4,6 +4,7 @@
  * All three are string-in/string-out, so they are tested directly rather than through
  * `buildRegistry` (which needs a real src/ directory on disk).
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

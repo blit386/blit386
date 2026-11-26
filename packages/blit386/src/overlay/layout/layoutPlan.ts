@@ -280,7 +280,7 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
  * @param scratch - Reusable scratch object mutated in place.
  * @param topRightLabel - Text for top-right backend/resolution label.
  * @param toggleRect - Bottom-left toggle hit region from init layout.
- * @returns The same scratch object as {@link OverlayLayoutPlan}.
+ * @returns `scratch` itself, typed as a read-only {@link OverlayLayoutPlan}.
  */
 export function buildOverlayLayoutPlan(
     config: OverlayLayoutConfig,
@@ -415,7 +415,7 @@ export function buildOverlayLayoutPlan(
 }
 
 /**
- * Default layout config with chart and palette features disabled.
+ * Default layout config with every optional band (timing chart, diagnostics, audio meter, palette) disabled.
  *
  * @param displayWidth - Logical display width.
  * @param displayHeight - Logical display height.

@@ -25,7 +25,7 @@ export interface HotReloadViteResult {
     status: HotReloadViteStatus;
 }
 
-/** Filenames we look for at the project root, in preference order (ESM only - no .cjs). */
+/** Filenames looked for at the project root, in preference order (ESM only - no .cjs). */
 export const VITE_CONFIG_NAMES = ['vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts'] as const;
 
 /** Engine version that first shipped `blit386/vite`. */
@@ -103,7 +103,7 @@ function insertImport(source: string): string | null {
  * Ensure `plugins: [blit386(), ...]` appears at the top level of the unique `defineConfig({ ... })` object.
  *
  * Returns null when the config shape is too unusual to rewrite safely: a `plugins` key that is not one plain
- * `plugins: [` (quoted, shorthand, a variable, or two of them), or a spread, which could replace the key we add. A
+ * `plugins: [` (quoted, shorthand, a variable, or two of them), or a spread, which could replace the added key. A
  * `plugins` list nested deeper (`build.rollupOptions.plugins`) or inside a comment is not the Vite list and is ignored.
  */
 function ensurePluginsInDefineConfig(source: string): { text: string; already: boolean } | null {

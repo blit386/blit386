@@ -470,6 +470,7 @@ describe('bump-lockstep', () => {
     describe('bumpLockstep', () => {
         it('updates all three package.json files, BTAPI.ts, engineRange, and BLIT386_RANGE in one pass', () => {
             const files = makeFixtureFiles();
+
             /** @type {string[]} */
             const writes = [];
 

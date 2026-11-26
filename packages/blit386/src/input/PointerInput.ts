@@ -39,7 +39,7 @@ export const POINTER_SLOT_COUNT = 4;
 
 /**
  * Which previous state a reader compares against. `'frame'` rolls over once per rendered frame ({@link
- * PointerInput.endFrame}) and serves render-side readers such as the overlay; `'update'` rolls over once per fixed
+ * PointerInput#endFrame}) and serves render-side readers such as the overlay; `'update'` rolls over once per fixed
  * `update()` ({@link PointerInput#endUpdate}), so a frame that runs no update loses nothing and a frame that runs
  * several reports each edge once.
  */
@@ -138,6 +138,7 @@ export class PointerInput {
     private readonly onPointerExit: (event: PointerEvent) => void;
     private readonly onWheel: (event: WheelEvent) => void;
     private readonly onContextMenu: (event: Event) => void;
+
     /** Marks {@link cachedRect} dirty on the canvas window's `resize` event. */
     private readonly onWindowResize: () => void;
 
@@ -237,8 +238,8 @@ export class PointerInput {
     /**
      * Removes all DOM listeners and resets per-slot state.
      *
-     * Restores the canvas's original `touchAction` value (whatever it was at
-     * the time of {@link attach}) so this class doesn't leak CSS state.
+     * Restores the canvas's original `touchAction` and `cursor` values (whatever
+     * they were at the time of {@link attach}) so this class doesn't leak CSS state.
      * Safe to call repeatedly or before {@link attach}.
      */
     public detach(): void {
@@ -465,9 +466,9 @@ export class PointerInput {
     /**
      * Reports whether the pointer in slot `slot` is currently active.
      *
-     * For slot 0 (mouse) this means a `pointermove` has been observed inside
-     * the canvas and no subsequent `pointerleave` has cleared it. For touch /
-     * pen slots this means the contact is still down.
+     * For slot 0 (mouse) this means a `pointermove` or `pointerdown` has been
+     * observed on the canvas and no later `pointerleave` / `pointercancel` has
+     * cleared it. For touch / pen slots this means the contact is still down.
      *
      * @param slot - Pointer slot index.
      * @returns `true` when the slot has live position data.
@@ -655,7 +656,7 @@ export class PointerInput {
     /**
      * Routes a `wheel` event: when scroll capture is active, normalizes `deltaY`
      * to pixels (line and page delta modes are converted), accumulates into
-     * `scrollDeltaY` for the current frame, and calls `preventDefault` so the
+     * both the frame and update wheel totals, and calls `preventDefault` so the
      * page does not scroll. When capture is inactive, leaves the event alone
      * so the host page can scroll.
      *

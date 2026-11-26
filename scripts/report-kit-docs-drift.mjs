@@ -7,13 +7,14 @@
  * `quality-root` step, since it needs a live `LINEAR_API_KEY` and makes a real network call.
  * Never a required check on drift: finding drift exits 0, as does an unset `LINEAR_API_KEY`, so a
  * standing content-review backlog never shows as a red workflow run - the Linear issue/comment is
- * the only signal. A run that cannot do its job (the drift check throws, the Linear call fails, or a
- * clean run finds the key rejected - e.g. an expired key or a missing `_api-history.json`) exits 1,
- * so a dead reporter is visible.
+ * the only signal. A run that cannot do its job (the drift check throws, e.g. on a missing
+ * `_api-history.json`; the Linear call fails; or a clean run finds the key rejected, e.g. an expired
+ * key) exits 1, so a dead reporter is visible.
  *
  * Usage:
  *   LINEAR_API_KEY=... node scripts/report-kit-docs-drift.mjs
  */
+
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

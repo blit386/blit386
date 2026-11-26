@@ -7,7 +7,6 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import globals from 'globals';
 
 export default [
-    // Global ignores
     {
         ignores: [
             '.env*',
@@ -24,7 +23,7 @@ export default [
         ],
     },
 
-    // JavaScript config files (vite.config.js, eslint.config.js, etc.)
+    // Node-side JS: root config files, plugins/, scripts/ (the _partials/ and _shots/ block below extends it)
     {
         files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
         ignores: ['src/**/*.js'],
@@ -52,13 +51,10 @@ export default [
             'jsdoc/check-param-names': 'warn',
             'jsdoc/check-tag-names': 'warn',
 
-            // Code quality rules
             complexity: ['warn', { max: 15 }],
 
-            // Security rules
             'security/detect-object-injection': 'warn',
 
-            // General code style
             'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],
         },
     },
@@ -86,7 +82,6 @@ export default [
             'no-debugger': 'error',
             'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 
-            // Import sorting
             'simple-import-sort/imports': 'error',
             'simple-import-sort/exports': 'error',
 
@@ -94,10 +89,8 @@ export default [
             'jsdoc/check-alignment': 'warn',
             'jsdoc/check-tag-names': 'warn',
 
-            // Code quality rules
             complexity: ['warn', { max: 15 }],
 
-            // Promise rules
             ...promisePlugin.configs.recommended.rules,
             'promise/always-return': 'warn',
             'promise/catch-or-return': 'warn',
@@ -105,13 +98,11 @@ export default [
             'promise/param-names': 'error',
             'promise/no-nesting': 'warn',
 
-            // Security rules
             // detect-object-injection is disabled for demos: all array/object indexing here
             // uses controlled game-state values, never untrusted user input.
             ...securityPlugin.configs.recommended.rules,
             'security/detect-object-injection': 'off',
 
-            // General code style
             'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],
         },
     },

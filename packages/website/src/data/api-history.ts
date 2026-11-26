@@ -17,8 +17,8 @@ export interface SymbolHistory {
 
 /**
  * Shape of the generated `api-history.generated.json` file. It is produced by the engine
- * repo's JSDoc-driven history extractor and copied here by `pnpm run sync:docs` (a later
- * task); this file only describes and consumes that shape.
+ * package's JSDoc-driven history extractor (`packages/blit386/scripts/gen-api-history.mjs`) and
+ * copied here by `pnpm run sync:docs`; this file only describes and consumes that shape.
  */
 export interface ApiHistory {
     packageVersion: string;
@@ -77,6 +77,7 @@ export const symbolAnchorId = (name: string): string => name.replaceAll('.', '-'
 /** Where a `{@link Name}` / `{@link Name.member}` / `{@link Name#member}` target is documented. */
 export interface SymbolLink {
     page: string;
+
     /** The resolved symbol's own name - e.g. `HardwareSettings` for a `HardwareSettings.foo` link - for use with {@link symbolAnchorId}. */
     symbol: string;
 }
@@ -102,6 +103,7 @@ export function resolveSymbolLink(name: string): SymbolLink | undefined {
 interface VersionSegment {
     /** Leading zeros stripped, so `""` means zero. Kept as digits rather than a `number`. */
     digits: string;
+
     prerelease: boolean;
 }
 

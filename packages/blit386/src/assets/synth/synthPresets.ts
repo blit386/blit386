@@ -28,7 +28,7 @@ const FREQUENCY_JITTER = 0.08;
 /** Standard jitter bound applied to duration fields: +/-12%. */
 const DURATION_JITTER = 0.12;
 
-/** Jitter bound applied to `noiseMix`/`dutyCycle` fields, which must stay within [0, 1]. */
+/** Jitter bound applied to `noiseMix`, which is clamped back into [0, 1] afterward. */
 const MIX_JITTER = 0.1;
 
 /**

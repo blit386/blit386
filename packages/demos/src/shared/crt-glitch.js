@@ -17,7 +17,7 @@
  * logo-lowres.js have real behavioral differences from that group and from each other
  * (different tuning constants, logo-lowres's hshift also drives chroma aberration, its
  * flicker scales by peak instead of envelope) and keep their own bespoke apply methods -
- * they only import the type list and labels from here, not the shared functions.
+ * they only import the type list and labels from here, not the glitch-apply functions.
  *
  * isMotionEffect() is shared by every CRT demo that honors BT.isReducedMotionPreferred,
  * and applyCrtChain() is the remove-then-re-add rebuild those demos run when the
@@ -287,7 +287,7 @@ function createPipboyChain(instance, curvature, rows) {
     // phosphor grille of an aperture-grille CRT.
     instance.mask = new RGBMask();
     instance.mask.intensity = 0.18; // 0 hides the mask, 1 = max influence
-    instance.mask.size = 6; // mask cell pitch in source pixels
+    instance.mask.size = 6; // mask cell pitch in output pixels
     instance.mask.border = 0.5; // border darkening within each cell
 
     // Vignette: darker edges to sell the curved-glass illusion.

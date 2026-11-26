@@ -1,20 +1,4 @@
 {
-  // Project-level Zed settings for the blit386 monorepo - the only .zed/settings.json in this
-  // repo (see scripts/check-agent-config.mjs). Zed cascades local settings down from the opened
-  // worktree root, so opening Zed at this repo root (not a package subdirectory) already applies
-  // these to every package, including packages/website and packages/demos.
-  //
-  // `agent.tool_permissions` cannot live here - as of this Zed version it is a global-only
-  // setting and Zed silently strips it from local settings.json on save ("Property agent is not
-  // allowed"). Those permissions are configured in the global ~/.config/zed/settings.json instead.
-  //
-  // Editor formatting mirrors the repo toolchain: Biome for TS/TSX/JS/JSON/CSS, Prettier for
-  // MD/MDX/YAML. Biome runs via its Zed extension (language server); Prettier is built in and
-  // reads prettier.config.js. organizeImports is intentionally omitted - ESLint perfectionist owns
-  // import ordering here.
-
-  // The blit386.dev docs MCP server. Zed does not read the root .mcp.json, so it is declared here
-  // too - keep the URL in step with PROJECT_MCP_SERVER_URL in scripts/lib/agent-config/mcp.mjs.
   "context_servers": {
     "blit386-docs": { "url": "https://blit386.dev/mcp" }
   },
@@ -54,15 +38,8 @@
     },
 
     "Markdown": {
-      // Prettier owns Markdown (printWidth 120, proseWrap always). The global markdownlint
-      // extension has no repo config (a .markdownlint.json is deliberately not used), so it falls
-      // back to its 80-column MD013 default and flags every line Prettier wrapped at 120.
       "language_servers": ["!markdownlint", "..."],
-
-      // Zed forces its own parser name ("markdown") over prettier.config.js overrides, which would
-      // bypass the compact-tables plugin and re-pad every table. Name the plugin's parser here.
       "prettier": { "parser": "markdown-compact" },
-
       "formatter": "prettier",
       "format_on_save": "on"
     },

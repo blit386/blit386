@@ -201,6 +201,7 @@ const CURVES: Record<EasingFunction, Curve> = {
  * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
  * @param easing - Easing curve to apply.
  * @returns Eased value. Guaranteed to return 0 for `t = 0` and 1 for `t = 1`.
+ * @throws Error when `easing` is not a known curve name (only reachable from untyped callers).
  */
 export function applyEasing(t: number, easing: EasingFunction): number {
     // eslint-disable-next-line security/detect-object-injection -- `easing` is a typed EasingFunction union key

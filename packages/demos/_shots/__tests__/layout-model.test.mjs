@@ -2,6 +2,7 @@
  * The gallery's navigation math, tested without a DOM: rows from client rects, nearest-center
  * up/down moves across a ragged flow layout, and stacking.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

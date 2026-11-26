@@ -37,6 +37,7 @@ type HookedAgent = Exclude<AgentKind, 'zed'>;
 export interface GeneratedFile {
     /** Path relative to the project root, using forward slashes. */
     path: string;
+
     /** Full file content as the kit would write it. */
     content: string;
 }
@@ -209,7 +210,7 @@ export function readHooksManifest(contentRoot: string): HooksManifest {
     return JSON.parse(readFileSync(join(contentRoot, 'hooks.manifest.json'), 'utf8')) as HooksManifest;
 }
 
-/** A sibling `.cjs` a hook script loads with `require('./name.cjs')` (the guard core, today). */
+/** A sibling `.cjs` a hook script loads with `require('./name.cjs')` (`guard-core.cjs`, `bootstrap-core.cjs`, ...). */
 const LOCAL_REQUIRE = /require\(\s*['"]\.\/([\w.-]+\.cjs)['"]\s*\)/g;
 
 /**
@@ -264,8 +265,8 @@ function referencedHookScripts(manifest: HooksManifest, agent: HookedAgent, hook
 
 /**
  * Every hook script one adapter wires up, copied verbatim under `destDir`. Only scripts the adapter's manifest entries
- * reference (and their `require()` siblings) ship - a script referenced by only one adapter (e.g. the Claude-only
- * SessionStart bootstrap) must not land as dead weight in another adapter's project.
+ * reference (and their `require()` siblings) ship - a script some adapters never wire up (e.g. `session-start.sh`, which
+ * Cursor has no event for) must not land as dead weight in their projects.
  */
 export function collectHookScripts(
     contentRoot: string,
@@ -365,13 +366,18 @@ interface HookManifestEntry {
     intent: string;
     cursor?: HookManifestCursorBlock;
     claude?: HookManifestCommandBlock;
+
     /** Same shape as Claude's block; `.agents/hooks.json` groups it under `blit-<id>`, tool events in a matcher group. */
     antigravity?: HookManifestCommandBlock;
+
     opencode?: HookManifestOpenCodeBlock;
+
     /** Same shape as Claude's block; `.codex/hooks.json` nests it the same way. */
     codex?: HookManifestCommandBlock;
+
     /** Same shape as Claude's block, except `timeout` is in milliseconds. */
     gemini?: HookManifestCommandBlock;
+
     /** Same shape as Claude's block; `timeout` is seconds (Copilot's `timeoutSec`), and `command` must be Node only. */
     copilot?: HookManifestCommandBlock;
 }
@@ -435,15 +441,18 @@ type McpJsonAgent = Exclude<HookedAgent, 'opencode' | 'codex' | 'copilot'>;
 export interface McpServerEntry {
     /** Transport marker. Required by Claude Code, omitted for Cursor - see `MCP_SERVER_ENTRY`. */
     type?: string;
+
     /** Streamable HTTP endpoint, in Claude Code and Cursor. Gemini CLI reads this key as SSE, so it uses `httpUrl`. */
     url?: string;
+
     /** Gemini CLI's streamable HTTP endpoint. */
     httpUrl?: string;
+
     /** Antigravity's key for a remote server; it rejects `url` and `httpUrl`. */
     serverUrl?: string;
 }
 
-/** The `mcpServers` wrapper every assistant reads. */
+/** The `mcpServers` wrapper of a standalone MCP config file. */
 interface McpConfigJson {
     mcpServers: Record<string, McpServerEntry>;
 }
@@ -454,7 +463,8 @@ interface McpConfigJson {
  * The entries differ on purpose, and the difference is not cosmetic:
  * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
  * while for Cursor a `type` is the marker of a local stdio server - adding one there would make it
- * misread a remote HTTP endpoint. Antigravity accepts only `serverUrl` for a remote server. Do not harmonize the shapes.
+ * misread a remote HTTP endpoint. Antigravity accepts only `serverUrl` for a remote server. Do not harmonize the
+ * shapes.
  *
  * Gemini CLI's entry is a third shape: `url` there means SSE, and streamable HTTP is `httpUrl`. It sits in
  * `.gemini/settings.json` beside other settings, so it has its own builder (`buildGeminiSettings`).

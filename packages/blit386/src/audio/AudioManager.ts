@@ -133,8 +133,8 @@ export class AudioManager {
     }
 
     /**
-     * Creates the audio context and bus graph, and installs one-shot unlock
-     * gesture listeners on `target`.
+     * Creates the audio context and bus graph, and installs unlock gesture
+     * listeners on `target` that stay until a gesture unlocks the context.
      *
      * Calls {@link detach} first so a repeated `attach()` (for example across
      * engine restarts) never leaks a previous context or listener set. Logs and
@@ -145,7 +145,7 @@ export class AudioManager {
      * closed. Fills in `audioHooks` on success, so `AudioClip.load()` can later
      * decode against the live context.
      *
-     * @param target - Canvas that receives the one-shot unlock gesture listeners.
+     * @param target - Canvas that receives the unlock gesture listeners.
      * @param voiceCount - Number of voice slots for the SFX pool.
      */
     public attach(target: HTMLCanvasElement, voiceCount: number): void {
@@ -155,7 +155,9 @@ export class AudioManager {
 
         try {
             this.context = new AudioContext();
+
             busNodes = this.buildBusGraph(this.context);
+
             this.busNodes = busNodes;
         } catch (error) {
             console.error('[BT] Failed to create the audio context', error);
@@ -163,6 +165,7 @@ export class AudioManager {
             this.context?.close().catch(() => {
                 // Same as detach(): close() rejects rather than throwing synchronously.
             });
+
             this.context = null;
             this.busNodes = null;
 
@@ -173,7 +176,9 @@ export class AudioManager {
         this.musicPlayer = new MusicPlayer(this.context, busNodes.music);
 
         audioHooks.context = this.context;
+
         audioHooks.onUnload = (buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer);
+
         audioHooks.onHotReplace = (oldBuffer, newBuffer) =>
             this.musicPlayer?.hotReplaceCurrentBuffer(oldBuffer, newBuffer) ?? false;
 
@@ -469,6 +474,7 @@ export class AudioManager {
      * Also cancels a request remembered by {@link musicPlay} while the context was still locked.
      *
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     * @throws Error when `fadeMs` is not a finite number; nothing changes in that case.
      */
     public musicStop(fadeMs?: number): void {
         validateFinite(fadeMs, undefined, 'BT.musicStop');
@@ -491,6 +497,7 @@ export class AudioManager {
 
         const context = this.context;
         const busNodes = this.busNodes;
+
         const analyzerNodes: PerBus<AnalyserNode> = {
             main: context.createAnalyser(),
             music: context.createAnalyser(),
@@ -502,6 +509,7 @@ export class AudioManager {
         busNodes.sfx.connect(analyzerNodes.sfx);
 
         this.analyzerNodes = analyzerNodes;
+
         this.analyzerBuffers = {
             main: new Float32Array(analyzerNodes.main.fftSize),
             music: new Float32Array(analyzerNodes.music.fftSize),

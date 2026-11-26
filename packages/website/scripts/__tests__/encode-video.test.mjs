@@ -144,8 +144,10 @@ describe('buildOutputPaths', () => {
     test('matches the suffixes VideoEmbed derives from its src prop', () => {
         const src = '/media/blog/1-4-0/hot-reload';
         const paths = buildOutputPaths('public/media/blog/1-4-0', 'hot-reload');
+
         /** @param {string} suffix */
         const tail = (suffix) => `${src}${suffix}`.replace('/media', 'media').split('/').join(sep);
+
         assert.ok(paths.av1.endsWith(tail('.av1.mp4')));
         assert.ok(paths.h264.endsWith(tail('.h264.mp4')));
         assert.ok(paths.posterWebp.endsWith(tail('.webp')));

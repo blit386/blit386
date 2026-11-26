@@ -1,9 +1,7 @@
 /** Represents a demo entry for the showcase. */
 export type DemoEntry = {
-    /** The title of the demo. */
     title: string;
 
-    /** The description of the demo. */
     description: string;
 
     /** Path to a local thumbnail screenshot under `public/`. */

@@ -4,6 +4,7 @@
  * `buildSocialMeta` is pure (no fs, no process.env - channel state is passed in), so every
  * case here is a plain string assertion.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

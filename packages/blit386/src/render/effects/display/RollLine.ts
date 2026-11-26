@@ -6,7 +6,7 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * stripe of the image. Combination of three cosines + smoothstep gives the
  * stripe a soft top/bottom edge.
  *
- * Display-tier. Demo drives {@link time} (typically `BT.ticks / BT.targetFPS`).
+ * Display-tier. Demo drives {@link time} (typically `BT.timeSeconds`).
  *
  * @since 1.0.3
  */
@@ -24,7 +24,7 @@ export class RollLine extends FullscreenEffect {
 
     protected readonly label = 'RollLine';
 
-    /** vec2 resolution + amount + speed + time + 1 pad = 32 bytes. */
+    /** vec2 resolution + amount + speed + time + 3 pads = 32 bytes. */
     protected readonly uniformBytes = 32;
 
     protected readonly fragmentShader = FRAGMENT_WGSL;

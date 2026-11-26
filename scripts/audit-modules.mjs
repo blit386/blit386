@@ -24,6 +24,7 @@
  *   node scripts/audit-modules.mjs --list [--json]  # print the units for the audit orchestrator
  *   node scripts/audit-modules.mjs --stamp <YYYY-MM-DD> <BT-ID> <unit>...   # record an audit on those rows
  */
+
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, resolve } from 'node:path';
@@ -134,23 +135,30 @@ export function hasAuditableFiles(root, rel) {
 export function deriveUnits(root = ROOT) {
     /** @type {Unit[]} */
     const units = [];
+
     const add = (key, kind, paths) => {
         if (units.some((unit) => unit.key === key)) {
             throw new Error(`audit unit key ${key} derived twice; rename one rule in scripts/audit-modules.mjs`);
         }
+
         units.push({ key, kind, paths });
     };
+
     const existing = (paths) => paths.filter((rel) => existsSync(join(root, rel)));
 
     const engineSrc = 'packages/blit386/src';
+
     for (const dir of dirNames(root, engineSrc)) {
         const rel = posix.join(engineSrc, dir);
+
         if (!IGNORED_NAMES.has(dir) && hasAuditableFiles(root, rel)) {
             // The engine's source art (logo, splash, system-font sheet) is read by the assets loaders and scripts.
             add(`engine-${dir}`, KIND_CODE, dir === 'assets' ? [rel, ...existing(['packages/blit386/assets'])] : [rel]);
         }
     }
+
     const entryFiles = fileNames(root, engineSrc).filter((name) => !TEST_FILE.test(name));
+
     if (entryFiles.length > 0) {
         add(
             'engine-entry',
@@ -158,17 +166,21 @@ export function deriveUnits(root = ROOT) {
             entryFiles.map((name) => posix.join(engineSrc, name)),
         );
     }
+
     add('engine-scripts', KIND_CODE, ['packages/blit386/scripts']);
     add('engine-docs', KIND_PROSE, ['packages/blit386/docs']);
 
     const demosSrc = 'packages/demos/src';
+
     for (const name of fileNames(root, demosSrc)) {
         if (name.endsWith('.js') && !TEST_FILE.test(name)) {
             add(`demo:${name.slice(0, -'.js'.length)}`, KIND_CODE, [posix.join(demosSrc, name)]);
         }
     }
+
     add('demos-shared', KIND_CODE, ['packages/demos/src/shared']);
     add('demos-scripts', KIND_CODE, ['packages/demos/scripts']);
+
     add(
         'demos-build',
         KIND_CODE,
@@ -207,9 +219,11 @@ export function deriveUnits(root = ROOT) {
     ]);
 
     const isMarkdown = (name) => name.endsWith('.md');
+
     // In a linked git worktree `.git` is a file, not a directory; it is never audited.
     const rootFiles = fileNames(root, '.').filter((name) => name !== '.git');
     const packageFiles = KNOWN_PACKAGES.flatMap((pkg) => fileNames(root, pkg).map((name) => posix.join(pkg, name)));
+
     add('repo-docs', KIND_PROSE, [
         ...rootFiles.filter(isMarkdown),
         ...existing([
@@ -220,6 +234,7 @@ export function deriveUnits(root = ROOT) {
         ]),
         ...packageFiles.filter((rel) => isMarkdown(posix.basename(rel))),
     ]);
+
     add('tooling-config', KIND_CODE, [
         ...rootFiles.filter((name) => !isMarkdown(name)),
         ...existing([
@@ -261,13 +276,16 @@ function uncoveredIn(root, rel, claimed) {
 
         return false;
     };
+
     const hasUnitInside = (entry) => [...claimed].some((path) => path.startsWith(`${entry}/`));
 
     for (const name of dirNames(root, rel)) {
         const entry = posix.join(rel, name);
+
         if (IGNORED_NAMES.has(name) || covers(entry) || !hasAuditableFiles(root, entry)) {
             continue;
         }
+
         if (hasUnitInside(entry)) {
             uncovered.push(...uncoveredIn(root, entry, claimed));
         } else {
@@ -276,6 +294,7 @@ function uncoveredIn(root, rel, claimed) {
     }
     for (const name of fileNames(root, rel)) {
         const entry = posix.join(rel, name);
+
         if (!TEST_FILE.test(name) && !covers(entry)) {
             uncovered.push(entry);
         }
@@ -298,10 +317,11 @@ export function findUncovered(root, units) {
 
     for (const name of dirNames(root, 'packages')) {
         const pkg = posix.join('packages', name);
-        if (!KNOWN_PACKAGES.includes(pkg)) {
-            uncovered.push(pkg);
-        } else {
+
+        if (KNOWN_PACKAGES.includes(pkg)) {
             uncovered.push(...uncoveredIn(root, pkg, claimed));
+        } else {
+            uncovered.push(pkg);
         }
     }
 
@@ -321,7 +341,9 @@ function dropGitignored(root, paths) {
     if (paths.length === 0) {
         return paths;
     }
+
     let ignored = '';
+
     try {
         ignored = execFileSync('git', ['-C', root, 'check-ignore', '--stdin'], {
             input: `${paths.join('\n')}\n`,
@@ -332,6 +354,7 @@ function dropGitignored(root, paths) {
         // Exit 1 means "none of these are ignored"; anything else (no git, not a repository) also means keep all.
         ignored = typeof error.stdout === 'string' ? error.stdout : '';
     }
+
     const ignoredSet = new Set(ignored.split('\n').filter(Boolean));
 
     return paths.filter((entry) => !ignoredSet.has(entry));
@@ -347,24 +370,31 @@ export function parseLedger(text) {
 
     for (const rawLine of text.split('\n')) {
         const line = rawLine.trim();
+
         if (line === LEDGER_HEADER) {
             inTable = true;
             continue;
         }
+
         if (!inTable) {
             continue;
         }
+
         if (!line.startsWith('|')) {
             break;
         }
+
         const cells = line
             .slice(1, -1)
             .split('|')
             .map((cell) => cell.trim());
+
         if (cells.length !== 5 || cells[0].startsWith('--')) {
             continue;
         }
+
         const [key, kind, paths, audited, ticket] = cells;
+
         rows.push({ key: key.replace(/`/gu, ''), kind, paths: paths.replace(/`/gu, ''), audited, ticket });
     }
 
@@ -387,10 +417,13 @@ export function mergeLedger(existingRows, units) {
     const rows = units.map((unit) => {
         const previous = byKey.get(unit.key);
         const paths = pathsCell(unit);
-        if (!previous) {
+
+        if (previous) {
+            if (previous.kind !== unit.kind || previous.paths !== paths) {
+                drifted.push(`re-derived ${unit.key}`);
+            }
+        } else {
             drifted.push(`added ${unit.key}`);
-        } else if (previous.kind !== unit.kind || previous.paths !== paths) {
-            drifted.push(`re-derived ${unit.key}`);
         }
 
         return {
@@ -401,7 +434,9 @@ export function mergeLedger(existingRows, units) {
             ticket: previous?.ticket ?? NEVER,
         };
     });
+
     const keys = new Set(units.map((unit) => unit.key));
+
     for (const row of existingRows) {
         if (!keys.has(row.key)) {
             drifted.push(`removed ${row.key}`);
@@ -461,6 +496,7 @@ export function syncLedger({ root = ROOT, isCheck = false } = {}) {
 
     if (uncovered.length > 0) {
         console.error(`\n${uncovered.length} path(s) no audit unit covers - add a rule to scripts/audit-modules.mjs:`);
+
         for (const entry of uncovered) {
             console.error(`  ${entry}`);
         }
@@ -469,6 +505,7 @@ export function syncLedger({ root = ROOT, isCheck = false } = {}) {
     }
 
     const { rows, drifted } = mergeLedger(readLedger(root), units);
+
     if (!isCheck && (drifted.length > 0 || !existsSync(join(root, LEDGER_REL)))) {
         writeLedger(root, rows);
     }
@@ -489,30 +526,39 @@ export function syncLedger({ root = ROOT, isCheck = false } = {}) {
 export function stampLedger({ root = ROOT, date, ticket, keys }) {
     if (!/^\d{4}-\d{2}-\d{2}$/u.test(date)) {
         console.error(`--stamp: date must be YYYY-MM-DD, got ${JSON.stringify(date)}`);
+
         return 1;
     }
+
     if (!/^[A-Z][A-Z0-9]*-\d+$/u.test(ticket)) {
         console.error(`--stamp: ticket must look like BT-123, got ${JSON.stringify(ticket)}`);
+
         return 1;
     }
+
     if (keys.length === 0) {
         console.error('--stamp: name at least one unit');
+
         return 1;
     }
 
     const rows = readLedger(root);
     const known = new Set(rows.map((row) => row.key));
     const unknown = keys.filter((key) => !known.has(key));
+
     if (unknown.length > 0) {
         console.error(`--stamp: no ledger row for ${unknown.join(', ')} (run pnpm run audit:modules first)`);
+
         return 1;
     }
 
     const wanted = new Set(keys);
+
     writeLedger(
         root,
         rows.map((row) => (wanted.has(row.key) ? { ...row, audited: date, ticket } : row)),
     );
+
     console.log(`stamped ${keys.length} row(s) with ${date} ${ticket}`);
 
     return 0;
@@ -525,6 +571,7 @@ export function stampLedger({ root = ROOT, date, ticket, keys }) {
 export function main(argv) {
     if (argv[0] === '--list') {
         const units = deriveUnits();
+
         if (argv.includes('--json')) {
             console.log(JSON.stringify(units, null, 2));
         } else {

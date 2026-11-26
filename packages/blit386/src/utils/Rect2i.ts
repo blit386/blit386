@@ -36,7 +36,6 @@ export class Rect2i {
         /** Height in pixels (defaults to 0). */
         public height: number = 0,
     ) {
-        // Truncate to integer using bitwise OR (faster than Math.floor).
         this.x = x | 0;
         this.y = y | 0;
         this.width = width | 0;
@@ -169,7 +168,7 @@ export class Rect2i {
 
     /**
      * Creates a rectangle from two corner points specified as raw coordinates.
-     * Zero allocation alternative to fromMinMax() when you have raw coordinates.
+     * Takes raw coordinates instead of fromMinMax()'s corner vectors, so no vectors are allocated.
      *
      * Note: min coordinates must be less than or equal to max coordinates.
      * If min > max on any axis, the resulting width/height will be negative.
@@ -195,7 +194,6 @@ export class Rect2i {
      * @returns New rectangle centered on the given point.
      */
     static fromCenterSize(center: Vector2i, size: Vector2i): Rect2i {
-        // Use |0 to truncate division results.
         const halfWidth = (size.x / 2) | 0;
         const halfHeight = (size.y / 2) | 0;
 
@@ -205,7 +203,7 @@ export class Rect2i {
 
     /**
      * Creates a rectangle centered on raw coordinates with a given size.
-     * Zero allocation alternative to fromCenterSize() when you have raw coordinates.
+     * Takes raw coordinates instead of fromCenterSize()'s vectors, so no vectors are allocated.
      *
      * @param centerX - Center X coordinate.
      * @param centerY - Center Y coordinate.
@@ -481,7 +479,7 @@ export class Rect2i {
      *
      * Note: Creates a new Vector2i. Use intersectionDepthTo() in hot paths.
      *
-     * Assumes this rectangle already isIntersecting {@link other}. Call
+     * Assumes this rectangle already intersects `other`. Call
      * {@link isIntersecting} first; if they don't overlap, the returned depths
      * may be zero or negative and aren't meaningful for resolution.
      *
@@ -507,7 +505,7 @@ export class Rect2i {
      * Calculates intersection depth and writes to an existing vector.
      * Zero allocation alternative to intersectionDepth().
      *
-     * Assumes this rectangle already isIntersecting {@link other}. Call
+     * Assumes this rectangle already intersects `other`. Call
      * {@link isIntersecting} first; if they don't overlap, the returned depths
      * may be zero or negative and aren't meaningful for resolution.
      *

@@ -5,9 +5,9 @@
 import { vi } from 'vitest';
 
 import type { BitmapFont } from '../assets/BitmapFont';
+import type { OverlayRenderer } from '../overlay';
+import { customBarY } from '../overlay';
 import { OVERLAY_BAR_HEIGHT } from '../overlay/layout/constants';
-import { customBarY } from '../overlay/layout/layoutHelpers';
-import type { OverlayRenderer } from '../overlay/OverlayDrawTarget';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 
@@ -31,6 +31,7 @@ function createSnapshotMock<TArgs extends unknown[], TSnapshot>(
     snapshot: (...args: TArgs) => TSnapshot,
 ): { mock: ReturnType<typeof vi.fn>; snapshots: TSnapshot[] } {
     const snapshots: TSnapshot[] = [];
+
     const mock = vi.fn((...args: TArgs) => {
         snapshots.push(snapshot(...args));
     });

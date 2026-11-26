@@ -216,7 +216,6 @@ export function displayError(title: string, content: ErrorContent, containerID: 
         appendTextWithLineBreaks(msg, content.text);
 
         if (content.code) {
-            // Add code block using DOM for safety.
             const codeBlock = document.createElement('code');
 
             codeBlock.style.cssText =

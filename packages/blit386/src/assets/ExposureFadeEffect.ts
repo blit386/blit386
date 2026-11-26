@@ -21,9 +21,9 @@ export interface ExposureFadeOptions {
      *
      * `0` is a plain linear-light fade - every entry on the same schedule. Higher
      * values push bright entries further ahead on the way up and further behind on
-     * the way down. Defaults to `0.5`. `NaN` throws; other values outside the range are clamped;
-     * anything at or above the cap is held just below `1` so the schedule stays
-     * divisible.
+     * the way down. Defaults to `0.5`. `NaN` throws; a negative value is clamped to `0`, and
+     * anything above `0.95` (including `1` and `Infinity`) is held at `0.95` so the schedule
+     * stays divisible.
      */
     highlightLead?: number;
 
@@ -92,6 +92,7 @@ function entryLead(snap: Color32, target: Color32, highlightLead: number): numbe
     // Rising entries are timed off where they end up, falling entries off where
     // they started - either way it is the lit end that gets the headroom.
     const isRising = targetLuminance >= sourceLuminance;
+
     const litLuminance = isRising ? targetLuminance : sourceLuminance;
 
     return highlightLead * (isRising ? 1 - litLuminance : litLuminance);
@@ -156,7 +157,7 @@ function applyExposureEntry(
 }
 
 /**
- * Fades all palette entries toward a target the way an iris pull does.
+ * Fades every palette entry except index 0 (transparent) toward a target the way an iris pull does.
  *
  * `FadeEffect` interpolates encoded sRGB values, which is a post-production
  * crossfade: every entry drops by the same proportion for the whole fade and the
@@ -239,6 +240,7 @@ export class ExposureFadeEffect implements PaletteEffect {
         for (let i = 1; i < count; i++) {
             // eslint-disable-next-line security/detect-object-injection -- i derived from loop bounds
             const snap = this.snapshotColors[i];
+
             // eslint-disable-next-line security/detect-object-injection -- i derived from loop bounds
             const tgt = this.targetColors[i];
 

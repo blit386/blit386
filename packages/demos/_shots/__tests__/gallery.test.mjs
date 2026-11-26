@@ -3,6 +3,7 @@
  * selection, view and capture actions must not run there, and must not report themselves as
  * handled (the sheet calls preventDefault on a handled key, which would swallow Space-to-scroll).
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

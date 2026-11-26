@@ -7,6 +7,7 @@
  * ui-theme.test.mjs keeps its own richer fake palette (it inspects the slots/names applyTheme()
  * wrote), so it is not consolidated here.
  */
+
 import { UiContext } from '../ui-core.js';
 import { applyTheme } from '../ui-theme.js';
 

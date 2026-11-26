@@ -12,6 +12,7 @@
  * that a card capture inherits. The card script reuses the one browser it launched across every
  * demo in the run.
  */
+
 import { spawnSync } from 'node:child_process';
 
 import { chromium } from 'playwright-core';

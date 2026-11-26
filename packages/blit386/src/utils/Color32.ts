@@ -83,7 +83,6 @@ export class Color32 {
      * @param a - Alpha channel (0-255, defaults to 255 = opaque).
      */
     constructor(r: number = 255, g: number = 255, b: number = 255, a: number = 255) {
-        // Clamp and truncate to integer using optimized clampByte helper.
         this.r = clampByte(r);
         this.g = clampByte(g);
         this.b = clampByte(b);
@@ -409,7 +408,6 @@ export class Color32 {
      * @param offset - Starting index in the array (default: 0).
      */
     writeToFloat32Array(target: Float32Array, offset: number = 0): void {
-        // Using direct index assignment for the best performance.
         // This is safe: offset is truncated to integer, the target is a typed Float32Array.
         const i = offset | 0;
 
@@ -482,8 +480,6 @@ export class Color32 {
      * @returns True if all RGBA channels are identical.
      */
     isEqual(other: Color32): boolean {
-        // Simple comparison with early exit on the first mismatch.
-        // Modern JS engines optimize this well.
         return (
             other !== null &&
             other !== undefined &&

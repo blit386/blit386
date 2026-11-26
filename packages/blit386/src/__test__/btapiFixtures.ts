@@ -41,6 +41,7 @@ export function makeMockDemo(targetFPS = 60, initResult = true, audioVoices?: nu
             targetFPS,
             ...(audioVoices === undefined ? {} : { audioVoices }),
         }),
+
         init: vi.fn().mockResolvedValue(initResult),
         update: vi.fn(),
         render: vi.fn(),
@@ -62,7 +63,9 @@ export function makeMockCanvas(): HTMLCanvasElement {
             setProperty: vi.fn(),
             getPropertyValue: vi.fn(() => ''),
         },
+
         getContext: (type: string) => (type === 'webgpu' ? createMockGPUCanvasContext(canvas) : null),
+
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
     } as unknown as HTMLCanvasElement;
@@ -81,17 +84,20 @@ export function makeMock2DCanvas(): HTMLCanvasElement {
             if (type === '2d') {
                 return {
                     imageSmoothingEnabled: false,
+
                     createImageData: (w: number, h: number) =>
                         ({
                             data: new Uint8ClampedArray(w * h * 4),
                             width: w,
                             height: h,
                         }) as ImageData,
+
                     putImageData: vi.fn(),
                     clearRect: vi.fn(),
                     drawImage: vi.fn(),
                 };
             }
+
             return null;
         },
         toBlob: (callback: (blob: Blob | null) => void) => {
@@ -116,12 +122,14 @@ export type OffscreenCanvas2DMock = {
 export function makeOffscreenCanvas2dContext(): OffscreenCanvas2DMock {
     return {
         imageSmoothingEnabled: false,
+
         createImageData: (w: number, h: number) =>
             ({
                 data: new Uint8ClampedArray(w * h * 4),
                 width: w,
                 height: h,
             }) as ImageData,
+
         putImageData: vi.fn(),
     };
 }
@@ -140,6 +148,7 @@ export function installRealPNGOffscreenCanvasMock(): void {
             data: Uint8ClampedArray;
             width: number;
             height: number;
+
             constructor(data: Uint8ClampedArray, width: number, height: number) {
                 this.data = data;
                 this.width = width;

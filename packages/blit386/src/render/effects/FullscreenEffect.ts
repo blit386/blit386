@@ -30,8 +30,8 @@ export abstract class FullscreenEffect implements Effect {
 
     /**
      * Sampler filter mode. Defaults to `'linear'` (smooth - appropriate for
-     * display-tier effects). Pixel-tier effects can override to `'nearest'` to
-     * preserve palette colors during sampling.
+     * display-tier effects). Subclasses can override to `'nearest'` for
+     * hard-edged sampling.
      */
     protected readonly samplerFilter: OutputUpscaleFilter = 'linear';
 
@@ -49,11 +49,13 @@ export abstract class FullscreenEffect implements Effect {
     protected uniformBuffer: GPUBuffer | null = null;
     protected sampler: GPUSampler | null = null;
     protected bindGroupLayout: GPUBindGroupLayout | null = null;
+
     /**
      * Backing array for the uniform block. Lazily allocated in {@link init}
      * after subclass constants are set on `this`.
      */
     protected uniformData: Float32Array<ArrayBuffer> | null = null;
+
     /**
      * Per-source-view bind group cache. The chain ping-pongs between two
      * stable views, so a `WeakMap` keyed by view is safe.
@@ -66,8 +68,8 @@ export abstract class FullscreenEffect implements Effect {
      * Creates the GPU pipeline, uniform buffer, sampler, and bind-group layout.
      *
      * @param device - WebGPU device used for resource creation.
-     * @param format - Color attachment format. Pixel chain: `r8uint`; display
-     *   chain: swap-chain RGBA format.
+     * @param format - Color attachment format: the display chain's swap-chain RGBA
+     *   format. Pixel-tier effects on the `r8uint` chain extend `FullscreenPixelEffect`.
      * @param _displaySize - Source render target resolution. Most effects ignore
      *   this and use the per-frame `sourceSize` from {@link updateUniforms}.
      */

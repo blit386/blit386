@@ -111,6 +111,7 @@ const RESOLVE_LABEL_IDS_QUERY = `
  */
 export async function resolveLabelIds(apiKey, { teamId, names }, fetchImpl = fetch) {
     const data = await linearRequest(apiKey, RESOLVE_LABEL_IDS_QUERY, { teamId, names }, fetchImpl);
+
     const nodes = /** @type {{ issueLabels: { nodes: { id: string, name: string }[] } }} */ (data).issueLabels.nodes;
 
     return Object.fromEntries(nodes.map((node) => [node.name, node.id]));
@@ -177,6 +178,7 @@ const ADD_COMMENT_MUTATION = `
  */
 export async function addComment(apiKey, { issueId, body }, fetchImpl = fetch) {
     const data = await linearRequest(apiKey, ADD_COMMENT_MUTATION, { issueId, body }, fetchImpl);
+
     const result = /** @type {{ commentCreate: { success: boolean, comment: { id: string } } }} */ (data).commentCreate;
 
     if (!result.success) {

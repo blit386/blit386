@@ -37,8 +37,8 @@ type Batch = { bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number
  * Palette uniforms are still used to `discard` pixels mapped to fully transparent
  * palette slots.
  *
- * Vertices are collected during a frame, grouped by texture, and emitted as one
- * draw call per texture batch in `encodePass()`.
+ * Vertices are collected during a frame, split into a new batch at each texture
+ * switch (or {@link endBatch}), and emitted as one draw call per batch.
  */
 export class SpritePipeline {
     /** WebGPU device, set during init(). */
@@ -83,7 +83,7 @@ export class SpritePipeline {
     /** Cache of per-texture bind groups (group 1) for reuse. WeakMap allows GC to collect destroyed textures. */
     private textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
 
-    /** Sprite batches to render (one per texture). */
+    /** Closed batches this frame, in call order; a texture switch or {@link endBatch} closes one. */
     private readonly batches: Batch[] = [];
 
     /**
@@ -618,7 +618,6 @@ export class SpritePipeline {
             return;
         }
 
-        // Flush if switching textures.
         if (this.currentTexture !== texture) {
             if (this.vertexCount > 0) {
                 this.flushCurrentBatch();

@@ -1,9 +1,17 @@
+/**
+ * Compares a Vitest benchmark report (`--current`) against a baseline report (`--baseline`), writes
+ * a JSON and a markdown comparison, and exits 1 on a regression past `--threshold` percent, a
+ * benchmark missing from the current run, or a baseline that matches nothing. Wired up as
+ * `pnpm run bench:compare` after `pnpm run bench:baseline` (on `main`) and `pnpm run bench:json`.
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';
 
+/** Allowed slowdown in percent when `--threshold` is omitted (`bench:compare` passes its own). */
 const DEFAULT_THRESHOLD = 10;
 const PACKAGE_MARKER = '/packages/blit386/';
 
@@ -55,6 +63,7 @@ export function parseArgs(argv) {
     for (let index = 0; index < argv.length; index += 1) {
         // eslint-disable-next-line security/detect-object-injection -- CLI flags are parsed from a fixed argv array shape.
         const value = argv[index];
+
         const nextValue = argv[index + 1];
 
         // pnpm forwards the separator of `pnpm run bench:compare -- <args>` to the script.
@@ -71,22 +80,27 @@ export function parseArgs(argv) {
                 args.baseline = nextValue;
                 index += 1;
                 break;
+
             case '--current':
                 args.current = nextValue;
                 index += 1;
                 break;
+
             case '--json-out':
                 args.jsonOut = nextValue;
                 index += 1;
                 break;
+
             case '--markdown-out':
                 args.markdownOut = nextValue;
                 index += 1;
                 break;
+
             case '--threshold':
                 args.threshold = Number(nextValue);
                 index += 1;
                 break;
+
             default:
                 throw new Error(`Unknown argument: ${value}`);
         }
@@ -152,6 +166,7 @@ function validateBenchmarkReport(report, sourceLabel) {
         report !== null && typeof report === 'object',
         `Invalid benchmark report in ${sourceLabel}: expected object`,
     );
+
     assert(Array.isArray(report.files), `Invalid benchmark report in ${sourceLabel}: report.files must be an array`);
 }
 
@@ -184,10 +199,12 @@ export function flattenBenchmarks(report) {
                 group !== null && typeof group === 'object',
                 `Invalid group entry at index ${groupIndex} for ${file.filepath} in ${reportLabel}`,
             );
+
             assert(
                 typeof group.fullName === 'string',
                 `Invalid group.fullName at index ${groupIndex} for ${file.filepath} in ${reportLabel}`,
             );
+
             assert(Array.isArray(group.benchmarks), `Invalid group.benchmarks for ${group.fullName} in ${reportLabel}`);
 
             for (const [benchmarkIndex, benchmark] of group.benchmarks.entries()) {
@@ -195,14 +212,17 @@ export function flattenBenchmarks(report) {
                     benchmark !== null && typeof benchmark === 'object',
                     `Invalid benchmark entry at index ${benchmarkIndex} for ${group.fullName} in ${reportLabel}`,
                 );
+
                 assert(
                     typeof benchmark.name === 'string',
                     `Invalid benchmark.name at index ${benchmarkIndex} for ${group.fullName} in ${reportLabel}`,
                 );
+
                 assert(
                     Number.isFinite(benchmark.hz),
                     `Invalid benchmark.hz for ${group.fullName} > ${benchmark.name} in ${reportLabel}`,
                 );
+
                 const matchKey = `${normalizeFilepath(file.filepath)}::${group.fullName}::${benchmark.name}`;
                 const label = `${group.fullName} > ${benchmark.name}`;
 
@@ -364,12 +384,16 @@ function formatStatus(status) {
     switch (status) {
         case STATUS.FAIL:
             return 'FAIL';
+
         case STATUS.IMPROVED:
             return 'IMPROVED';
+
         case STATUS.NEW:
             return 'NEW';
+
         case STATUS.MISSING:
             return 'MISSING';
+
         default:
             return 'PASS';
     }
@@ -442,6 +466,7 @@ export function buildMarkdown(report) {
  */
 function writeFile(filePath, content) {
     ensureParentDirectory(filePath);
+
     fs.writeFileSync(filePath, content);
 }
 
@@ -473,8 +498,7 @@ export function hasZeroMatches(report) {
 
 /**
  * Runs the benchmark comparison CLI. Exits with a nonzero code when {@link hasZeroMatches} or
- * {@link hasComparisonFailures} is true, so the
- * command can gate a local workflow the same way CI used to gate a PR.
+ * {@link hasComparisonFailures} is true, so the command can gate the local baseline/compare loop.
  *
  * @returns {void}
  */
@@ -491,8 +515,11 @@ function main() {
     }
 
     const currentReport = readJsonFile(args.current);
+
     currentReport.__sourceLabel = args.current;
+
     const baselineReport = readJsonFile(args.baseline);
+
     baselineReport.__sourceLabel = args.baseline;
 
     const report = compareReports(currentReport, baselineReport, args.threshold);
@@ -505,6 +532,7 @@ function main() {
             'No benchmarks matched between the baseline and the current run. The baseline is likely stale or recorded ' +
                 'from a different benchmark layout; re-record it with `pnpm run bench:baseline`.',
         );
+
         process.exitCode = 1;
     } else if (hasComparisonFailures(report)) {
         process.exitCode = 1;

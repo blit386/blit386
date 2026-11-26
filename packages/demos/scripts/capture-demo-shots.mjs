@@ -18,6 +18,7 @@
  * Usage: pnpm run capture:shots -- --all | --demos a,b | --changed [--variants display,uidebug]
  *        [--out <dir>] [--base-url http://localhost:5173] [--check-stable] [--dry-run]
  */
+
 import { execFileSync } from 'node:child_process';
 import {
     existsSync,
@@ -74,8 +75,13 @@ const OPTIONS = {
 // #region Pure helpers
 
 /**
+ * Parse the CLI flags. Exactly one of --all, --demos, or --changed must be given; under
+ * --changed `slugs` is empty here and main() fills it from git. Variants default to
+ * COMMITTED_VARIANTS.
+ *
  * @param {string[]} argv
  * @returns {{ slugs: string[], variants: string[], out: string, baseUrl: string, all: boolean, changed: boolean, dryRun: boolean, checkStable: boolean }}
+ * @throws {Error} On an unknown option, an invalid selection, or an unknown slug or variant.
  */
 export function parseArgs(argv) {
     const { values } = parseCliArgs(argv, OPTIONS);

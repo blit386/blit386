@@ -8,8 +8,10 @@ export const DEFAULT_MAX_CANVAS_SIZE = { x: 960, y: 720 } as const;
 export interface CanvasLayoutStyleOptions {
     /** Logical render resolution (used for aspect ratio when `drawingBufferSize` is omitted). */
     displaySize: Vector2i;
+
     /** Optional output / drawing-buffer size (drives aspect ratio when set). */
     drawingBufferSize?: Vector2i;
+
     /** Maximum on-screen canvas size in CSS pixels (letterboxing still applies below this). */
     maxCanvasSize: Vector2i;
 }

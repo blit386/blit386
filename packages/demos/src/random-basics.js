@@ -127,7 +127,7 @@ const DROP_START_Y = 38;
 const DROP_FLOOR_Y = 112;
 
 // The bar chart of drops so far: one bar per tier, as tall as that tier's share of all
-// drops (a 100% share would be BAR_MAX_H tall), with a faint line at the share the code
+// drops (a 100% share would be BAR_MAX_H tall), with a white line at the share the code
 // asked for.
 const BAR_W = 20;
 const BAR_GAP = 12;
@@ -231,7 +231,7 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
-// Five small scenes covering the parts of BT.random the other demos do not use.
+// Four small scenes covering the parts of BT.random the other demos do not use.
 class Demo {
     /** @type {Palette | null} */
     palette = null;
@@ -451,7 +451,7 @@ class Demo {
 
         this.gems.push({
             // int(a, b) gives a whole number from a up to (but not including) b, so this
-            // lands somewhere across the middle of the screen.
+            // lands somewhere across the width of the chest.
             x: BT.random.int(CHEST_RECT.x + 4, CHEST_RECT.x + CHEST_RECT.width - 10),
             y: DROP_START_Y,
             tier,
@@ -593,7 +593,7 @@ class Demo {
         this.renderDropChart();
     }
 
-    // One bar per tier, as tall as that tier's share of all drops, with a faint line at
+    // One bar per tier, as tall as that tier's share of all drops, with a white line at
     // the share the weights asked for. Above each bar, its share in percent; under it,
     // the tier's first letter.
     renderDropChart() {

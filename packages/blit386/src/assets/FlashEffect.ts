@@ -74,16 +74,21 @@ export class FlashEffect implements PaletteEffect {
         if (this.snapshotColors === null) {
             // First update: snapshot and apply flash.
             this.snapshotColors = snapshotPaletteRange(palette, 0, palette.size - 1);
+
             copyColorToNonZeroSlots(palette, this.color);
+
             palette.markDirty();
         } else {
             this.elapsed += deltaMs;
 
             if (this.elapsed >= this.durationMs) {
                 restoreNonZeroSlots(palette, this.snapshotColors);
+
                 palette.markDirty();
+
                 keepRunning = false;
             }
+
             // Otherwise still holding the flash color: nothing changed this tick.
         }
 

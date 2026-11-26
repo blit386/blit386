@@ -30,7 +30,7 @@ export { FlashEffect } from './FlashEffect';
  * An implementation **must** call {@link Palette#markDirty} itself on every tick
  * where it actually mutates an entry (including the terminal tick that lands on
  * a final value), and must not call it on a tick that leaves the palette
- * unchanged. The manager no longer marks the palette dirty on an effect's
+ * unchanged. The manager never marks the palette dirty on an effect's
  * behalf, so a tick that mutates without calling `markDirty` silently skips the
  * next GPU upload.
  */
@@ -105,6 +105,7 @@ export class PaletteEffectManager {
      */
     update(palette: Palette): void {
         const now = this.timeProvider();
+
         // Clamped: a clock that moved backwards (BT.ticksReset() mid-effect) must not run effects in reverse.
         const deltaMs = Math.max(0, now - this.lastTime);
 
@@ -123,6 +124,7 @@ export class PaletteEffectManager {
                 if (effect?.update(palette, deltaMs)) {
                     // eslint-disable-next-line security/detect-object-injection -- Safe: writeIdx <= i, always within bounds
                     this.effects[writeIdx] = effect;
+
                     writeIdx++;
                 }
             }

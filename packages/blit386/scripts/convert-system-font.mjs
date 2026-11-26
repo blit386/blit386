@@ -79,6 +79,7 @@ function extractBitmaps(inputPath) {
                 const x = baseX + px;
                 const y = baseY + py;
                 const idx = (y * ATLAS_WIDTH + x) * 4;
+
                 // eslint-disable-next-line security/detect-object-injection
                 const red = png.data[idx];
 
@@ -234,7 +235,7 @@ function generateTypeScript(bitmaps) {
     lines.push('/** Number of bytes per glyph (one byte per row). */');
     lines.push('export const SYSTEM_FONT_BYTES_PER_GLYPH = SYSTEM_FONT_GLYPH_HEIGHT;');
 
-    return lines.join('\n') + '\n';
+    return `${lines.join('\n')}\n`;
 }
 
 function main() {
@@ -282,10 +283,12 @@ Options:
             const inputArg = positional[0] ? ` '${positional[0].replaceAll("'", "'\\''")}'` : '';
 
             console.error(`systemFontData.ts is stale - run pnpm run system-font:convert${inputArg}`);
+
             process.exit(1);
         }
 
         console.log('systemFontData.ts is up to date.');
+
         return;
     }
 

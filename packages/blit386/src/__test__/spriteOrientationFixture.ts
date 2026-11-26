@@ -86,6 +86,7 @@ export function orientRows(rows: readonly string[], mask: number): string[] {
     for (let t = 0; t < turns; t++) {
         const height = grid.length;
         const width = grid[0]?.length ?? 0;
+
         // Clockwise: new row c is old column c read bottom to top.
         grid = Array.from({ length: width }, (_, c) =>
             // eslint-disable-next-line security/detect-object-injection
@@ -120,6 +121,7 @@ export function applyMaskToGrid(mask: number): string {
 export function stretchRows(rows: readonly string[], dw: number, dh: number): string[] {
     const fh = rows.length;
     const fw = rows[0]?.length ?? 0;
+
     const pick = (d: number, f: number, size: number): number => {
         const num = (2 * d + 1) * f;
         const den = 2 * size;
@@ -156,6 +158,7 @@ function padRows(rows: readonly string[], sheetW: number, sheetH: number): Uint8
     return Uint8Array.from({ length: sheetW * sheetH }, (_, i) => {
         const x = (i % sheetW) - 1;
         const y = Math.floor(i / sheetW) - 1;
+
         // eslint-disable-next-line security/detect-object-injection
         const ch = rows[y]?.[x];
 
@@ -166,6 +169,7 @@ function padRows(rows: readonly string[], sheetW: number, sheetH: number): Uint8
 /** A 5x3 source with 15 distinct letters, for stretch tests that need a 5-texel axis (5 -> 7). */
 export const WIDE_W = 5;
 export const WIDE_H = 3;
+
 export const WIDE_ROWS: readonly string[] = Array.from({ length: WIDE_H }, (_, r) =>
     Array.from({ length: WIDE_W }, (_, c) => String.fromCharCode(65 + r * WIDE_W + c)).join(''),
 );

@@ -2,6 +2,7 @@
  * Unit tests for the pure sitemap XML builder behind `sitemapPlugin`. Pure and exported so it
  * can be unit-tested without touching disk.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

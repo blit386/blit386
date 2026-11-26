@@ -219,7 +219,7 @@ function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
     }
 
     // The running settings already have any `?backend=software` URL override baked in (applied
-    // once at init by BTAPI.applyBackendQueryOverride). The candidate's configure() output never
+    // once at init by RendererSetup.applyBackendQueryOverride). The candidate's configure() output never
     // sees that override, so without reapplying it here `backend` would mismatch on every single
     // check under an override - forcing a hard reload on every edit, not just a real configure()
     // change.

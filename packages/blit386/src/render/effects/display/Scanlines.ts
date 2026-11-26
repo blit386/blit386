@@ -5,7 +5,7 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * CRT scanlines: alternating bright/dark horizontal bands aligned to the
  * source vertical resolution.
  *
- * Display-tier: at output resolution there is enough vertical pixels for
+ * Display-tier: at output resolution there are enough vertical pixels for
  * scanlines to read as alternating bright/dark bands. At logical 320x240 the
  * Gaussian weight quantizes to one of two values per source row and you lose
  * the smooth fade.

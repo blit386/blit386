@@ -45,7 +45,6 @@ export class Vector2i extends Vector2iOps {
     ) {
         super();
 
-        // Truncate to integer using bitwise OR (faster than Math.floor).
         // |0 truncates toward zero, which is acceptable for most use cases.
         this.x = x | 0;
         this.y = y | 0;
@@ -417,14 +416,16 @@ export class Vector2i extends Vector2iOps {
      * Useful for determining which side of a line a point is on.
      *
      * @param other - Vector to cross with.
-     * @returns Scalar cross-product (positive = other is counter-clockwise from this).
+     * @returns Scalar cross-product (positive = other is counter-clockwise from this in Y-up math axes, which
+     *   is clockwise on screen, where Y points down).
      */
     cross(other: Vector2i): number {
         return this.x * other.y - this.y * other.x;
     }
 
     /**
-     * Returns a new vector perpendicular to this one (rotated 90 degrees counter-clockwise).
+     * Returns a new vector perpendicular to this one (rotated 90 degrees counter-clockwise in Y-up math axes,
+     * which is clockwise on screen: `(1, 0)` becomes `(0, 1)`, pointing down).
      *
      * @returns New perpendicular vector.
      */
@@ -433,7 +434,8 @@ export class Vector2i extends Vector2iOps {
     }
 
     /**
-     * Returns a new vector perpendicular to this one (rotated 90 degrees clockwise).
+     * Returns a new vector perpendicular to this one (rotated 90 degrees clockwise in Y-up math axes,
+     * which is counter-clockwise on screen: `(1, 0)` becomes `(0, -1)`, pointing up).
      *
      * @returns New perpendicular vector.
      */

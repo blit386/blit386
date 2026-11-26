@@ -19,6 +19,7 @@ export interface FakeLoader {
 export interface FakeLoaderCalls {
     /** Slug arrays handed to `getPage`, in call order. */
     getPage: string[][];
+
     /** How many times `getPages` ran - the feed and MCP corpus caches must hold this at 1. */
     getPages: number;
 }
@@ -46,8 +47,10 @@ export interface FakePageInput {
     url: string;
     title?: string | undefined;
     description?: string | undefined;
+
     /** Content-source name. `feedPlugin` selects on `type === 'blog'`. */
     type?: string;
+
     /** Extra frontmatter, for example `{ date: '2026-06-25' }`. */
     data?: Record<string, unknown>;
 }
@@ -88,6 +91,7 @@ export function createTextAdapter(texts: ReadonlyMap<string, string>, onCall?: (
 export interface MockAppContextOptions {
     /** Pass a function to hand out a different loader per call, for cache-invalidation tests. */
     loader?: FakeLoader | (() => FakeLoader | Promise<FakeLoader>);
+
     adapters?: Adapter[];
     siteConfig?: AppContext['siteConfig'];
 }

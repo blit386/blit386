@@ -30,8 +30,10 @@ const ASSET_HEADERS = {
 interface RewriterSpy {
     /** Selectors the plugin registered a handler for. */
     readonly selectors: string[];
+
     /** Every `nonce` stamped onto a `<script>`, one entry per element seen. */
     readonly stamped: string[];
+
     createRewriter: NonNullable<CspNonceOptions['createRewriter']>;
 }
 

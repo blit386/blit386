@@ -9,10 +9,13 @@
 export interface ClippedLine {
     /** X of the first in-viewport pixel. */
     x: number;
+
     /** Y of the first in-viewport pixel. */
     y: number;
+
     /** Bresenham error term at that pixel (`dx - dy` at the un-clipped start). */
     err: number;
+
     /** Number of pixels to visit from the start pixel, inclusive. */
     steps: number;
 }

@@ -317,7 +317,6 @@ export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOp
 
     let success: boolean;
 
-    // Wait for DOM if needed.
     if (isWaitingForDOMReady) {
         await waitForDOM();
     }

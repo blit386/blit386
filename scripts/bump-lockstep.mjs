@@ -14,6 +14,7 @@
  *
  * Does not create git tags, commit, or publish. Dry-run with --dry-run.
  */
+
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,7 +86,9 @@ export function deriveCaretRange(version) {
 
 // A JSON string literal, escapes included, captured whole.
 const STRING_LITERAL = String.raw`("(?:[^"\\]|\\.)*")`;
+
 const ENGINE_RANGE_RE = new RegExp(String.raw`^[ \t]*"engineRange"[ \t]*:[ \t]*${STRING_LITERAL}`, 'gmu');
+
 // The indent of the first key: top-level keys sit at exactly this indent, nested ones deeper.
 const TOP_LEVEL_INDENT_RE = /^\{\r?\n([ \t]*)"/u;
 
@@ -133,6 +136,7 @@ export function applyVersion(raw, version) {
         parsed = JSON.parse(raw);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+
         throw new Error(`Invalid JSON: ${message}`);
     }
 
@@ -147,6 +151,7 @@ export function applyVersion(raw, version) {
     }
 
     const indent = TOP_LEVEL_INDENT_RE.exec(raw)?.[1] ?? '';
+
     const { start, end } = findStringFieldSpan(
         raw,
         new RegExp(String.raw`^${indent}"version"[ \t]*:[ \t]*${STRING_LITERAL}`, 'gmu'),
@@ -204,6 +209,7 @@ export function applyEngineVersionConstants(raw, version) {
 
     const previous = `${majorMatch[2]}.${minorMatch[2]}.${patchMatch[2]}`;
     const [major, minor, patch] = version.split('.');
+
     const next = raw
         .replace(VERSION_MAJOR_RE, `$1${major}$3`)
         .replace(VERSION_MINOR_RE, `$1${minor}$3`)
@@ -297,6 +303,7 @@ const LOCKSTEP_TARGETS = [
             };
         },
     },
+
     {
         path: KIT_PACKAGE_JSON_PATH,
         apply: (raw, version) => {
@@ -316,6 +323,7 @@ const LOCKSTEP_TARGETS = [
             };
         },
     },
+
     versionOnlyTarget(CREATE_BLIT386_PACKAGE_JSON_PATH),
     {
         path: CDN_PIN_FILE,
@@ -324,6 +332,7 @@ const LOCKSTEP_TARGETS = [
             return { next, results: [{ path: `${CDN_PIN_FILE} (jsDelivr pin)`, previous, next: version }] };
         },
     },
+
     {
         path: SCAFFOLD_RANGE_FILE,
         apply: (raw, version) => {
@@ -352,6 +361,7 @@ export function bumpLockstep(options) {
         const absolute = join(root, target.path);
         const raw = readFile(absolute);
         const { next, results } = target.apply(raw, version);
+
         staged.push({ absolute, next, previousContents: raw, results });
     }
 
@@ -530,7 +540,9 @@ export function main(argv, hooks = {}) {
         return 0;
     } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
+
         error(message);
+
         return 1;
     }
 }

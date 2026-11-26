@@ -43,6 +43,7 @@ const decodeQuotedScalar = (raw) => {
     if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
         /** @type {Record<string, string>} */
         const escapes = { '"': '"', '\\': '\\', n: '\n', t: '\t' };
+
         return raw.slice(1, -1).replace(/\\(["\\nt])/g, (_match, escaped) => escapes[escaped] ?? escaped);
     }
 
@@ -75,19 +76,27 @@ const BLOCK_SCALAR_PATTERN = /^([|>])(?:[1-9][+-]?|[+-][1-9]?|[+-]?)$/;
  */
 const parseFrontmatter = (contents) => {
     const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(contents);
-    if (!match) return {};
+
+    if (!match) {
+        return {};
+    }
 
     /** @type {Record<string, string>} */
     const fields = {};
+
     /** @type {string | null} */
     let currentKey = null;
+
     /** @type {string[]} */
     let currentLines = [];
+
     /** @type {' ' | '\n'} */
     let joiner = ' ';
 
     const flush = () => {
-        if (currentKey) fields[currentKey] = currentLines.join(joiner).trim();
+        if (currentKey) {
+            fields[currentKey] = currentLines.join(joiner).trim();
+        }
         currentLines = [];
         joiner = ' ';
     };

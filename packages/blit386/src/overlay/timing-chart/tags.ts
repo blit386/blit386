@@ -22,8 +22,11 @@ export const TIMING_CHART_TAG_LABEL_STACK_SPACING = 9;
 
 /** Stored tag entry for the timing chart ring timeline. */
 export type TimingChartTag = {
+    /** Label text, already normalized by {@link normalizeTimingChartTagLabel}. */
+
     label: string;
     /** Absolute fixed-update tick when the tag was assigned (tick row only). */
+
     tick: number;
     /** Overlay timing sample ordinal at assign; drives horizontal column. */
     sampleIndex: number;
@@ -31,7 +34,10 @@ export type TimingChartTag = {
 
 /** Tags sharing one timing-chart column, in assignment order. */
 export type TimingChartTagColumnGroup = {
+    /** Sample ordinal every tag in the group shares. */
     sampleIndex: number;
+
+    /** The group's tags; the first one carries the tick label. */
     tags: TimingChartTag[];
 };
 
@@ -218,9 +224,8 @@ export function computeTimingChartTagLabelY(chartTopY: number, stackIndex: numbe
  *
  * Relies on {@link TimingChartTag#sampleIndex} being non-decreasing across `tags` (tags are
  * pushed in assignment order and `sampleIndex` is the monotonic sample counter at assign time,
- * and pruning preserves relative order), so tags sharing a column are always contiguous - a
- * single run-length pass over pooled group descriptors replaces the previous per-call
- * `Map`/array allocations.
+ * and pruning preserves relative order), so tags sharing a column are always contiguous and a
+ * single run-length pass over pooled group descriptors groups them without allocating.
  *
  * @param tags - Active tags for the current frame.
  * @param totalSamples - Timing samples recorded since the last chart width reset.

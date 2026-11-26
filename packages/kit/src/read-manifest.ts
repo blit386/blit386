@@ -24,8 +24,9 @@ type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; ex
  * A missing manifest is informational (exit 0); a damaged one is an error (exit 1).
  *
  * The shape is checked here, once: a plain object with a `files` array and, when present, `vars` of strings (`null`
- * reads as absent). Entries without a string `path` are dropped
- * with one warning (a command that then saves the manifest removes them from the file). JSON can legally hold `null` or `{ "path": 5 }`, and every caller indexes into the result.
+ * reads as absent). Entries without a string `path` are dropped with one warning (a command that then saves the
+ * manifest removes them from the file). JSON can legally hold `null` or `{ "path": 5 }`, and every caller indexes
+ * into the result.
  *
  * @param missingTip - what scaffolding the project enables, for the "no manifest" hint
  */

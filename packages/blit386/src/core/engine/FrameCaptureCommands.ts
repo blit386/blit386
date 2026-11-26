@@ -64,8 +64,7 @@ export class FrameCaptureCommands {
      *
      * @param size - `'output'` (default) captures at `outputSize`; `'display'` captures at
      *   logical `displaySize` without the upscale or display-tier effects.
-     * @returns Promise resolving to a PNG Blob.
-     * @throws Error if the renderer is not initialized.
+     * @returns Promise resolving to a PNG Blob; rejects when the renderer is not initialized.
      */
     public captureFrame(size: FrameCaptureSize = 'output'): Promise<Blob> {
         if (!this.engine.renderer) {
@@ -86,8 +85,7 @@ export class FrameCaptureCommands {
 
     /**
      * Whether Shift+F9 was pressed this tick, per {@link HardwareSettings#isFrameCaptureShortcutEnabled}
-     * gating and both Shift key codes. Extracted from the fixed-update tick closure to keep
-     * its cyclomatic complexity within lint limits.
+     * gating and both Shift key codes.
      *
      * @param tick - Current fixed-update tick, for the keyboard's edge-detection window.
      * @returns `true` when Shift+F9 was pressed this tick and the shortcut is enabled.
@@ -196,7 +194,7 @@ export class FrameCaptureCommands {
 
         // The clipboard.write() call inside writeBlobToClipboard() has already started
         // synchronously by this point; awaiting its result is handled separately so this
-        // method itself never becomes `async` (see the class doc above).
+        // method itself never becomes `async` (see {@link handleClipboardShortcutKeydown}).
         void this.settleFrameCopy(writeBlobToClipboard(this.engine.renderer.captureFrameForShortcut()), generation);
         this.renderParkedFrame().catch((error: unknown) => {
             console.error('[BT] Frame copy (F9) failed:', error);

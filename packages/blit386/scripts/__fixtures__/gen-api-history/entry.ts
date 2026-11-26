@@ -4,6 +4,7 @@
  * object literal (exercising getter/method/const member classification).
  */
 export { helper, legacyDeprecated, versionedDeprecated, Widget } from './Source';
+
 export type { FixtureType } from './Source';
 
 /** Fixture BT-like namespace object exercising getter/method/const member kinds. */

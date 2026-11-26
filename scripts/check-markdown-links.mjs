@@ -2,8 +2,8 @@
 /**
  * Check every tracked Markdown file for dead links, fully offline.
  *
- * The file list comes from `git ls-files "*.md" "*.mdx"`, so enumeration honors
- * `.gitignore` and only covers tracked markdown (no recursive walk / denylist).
+ * The file list comes from `git ls-files`, filtered to `*.md` / `*.mdx`, so enumeration
+ * honors `.gitignore` and only covers tracked markdown (no recursive walk / denylist).
  * Symlinked `.agents/skills/*` entries are intentionally skipped: git tracks them
  * as symlink blobs and lists the underlying `.claude/skills/*` markdown directly,
  * so those files are checked exactly once and never double-processed.
@@ -33,6 +33,7 @@
  *   - `deadAnchors`: every relative `#frag` / `file.md#frag` must name a heading on the
  *     target page, slugged by `headingAnchors`, the rule blit386.dev and GitHub both use.
  */
+
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -69,13 +70,16 @@ const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u, /(
 
 const FENCED_BLOCK_PATTERN = /^ {0,3}(`{3,}|~{3,})[\s\S]*?^ {0,3}\1/gmu;
 const CODE_SPAN_PATTERN = /`[^`\n]*`/gu;
+
 // An inline link target, a reference definition at the start of a line, or an HTML / JSX
 // `href="..."` attribute (the docs' `<Card href="/docs/...">` See also links).
 // An inline target keeps one level of balanced parentheses, as CommonMark allows (`guide(v2).md`).
 const LINK_TARGET_PATTERN =
     /\]\(\s*<?((?:[^()\s>]|\([^()\s>]*\))+)|^ {0,3}\[[^\]]+\]:\s*<?([^\s>]+)|\bhref="([^"\s]+)"/gmu;
+
 // A scheme (`https:`, `mailto:`) or a site route (`/docs/...`): not a file in this repo.
 const NON_FILE_TARGET_PATTERN = /^(?:[a-z][a-z\d+.-]*:|\/)/iu;
+
 const MARKDOWN_FILE_PATTERN = /\.mdx?$/u;
 
 /** @type {Map<string, Set<string>>} */
@@ -377,7 +381,8 @@ function listTrackedPaths() {
 }
 
 /**
- * Tracked markdown files as absolute paths, excluding generated doc-mirror pages (see `isIgnoredFile`).
+ * Tracked markdown files as absolute paths, excluding generated doc-mirror pages and test fixtures
+ * (see `isIgnoredFile`).
  *
  * @param {string[]} trackedPaths Repo-relative tracked paths.
  * @returns {string[]} Absolute paths to tracked markdown files.

@@ -1,4 +1,5 @@
 /** Integration tests for the single-file Vite build. Run after the kit build. */
+
 import { strict as assert } from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';

@@ -16,7 +16,7 @@ import type { OverlayLayout } from './types';
  * @param displayWidth - Logical display width in pixels.
  * @param displayHeight - Logical display height in pixels.
  * @param lineHeight - System font line height in pixels.
- * @returns Frozen layout used for the lifetime of the overlay instance.
+ * @returns Layout used unchanged for the lifetime of the overlay instance.
  */
 export function createOverlayLayout(displayWidth: number, displayHeight: number, lineHeight: number): OverlayLayout {
     const toggleRect = new Rect2i(

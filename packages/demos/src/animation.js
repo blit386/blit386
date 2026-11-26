@@ -515,7 +515,7 @@ class Demo {
     // jump arc is a vertical offset computed in renderCharacter().
     updateWalkerPosition() {
         if (this.animState === AnimState.Walking) {
-            // Move 1 pixel per tick; turn around near the screen edges.
+            // Move 1 pixel per tick; turn around at WALK_MIN_X and WALK_MAX_X.
             this.charPos.x += this.walkDir;
 
             if (this.charPos.x >= WALK_MAX_X) {

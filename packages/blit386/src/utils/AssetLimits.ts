@@ -61,16 +61,22 @@ export class AssetLimitError extends Error {
 export interface BtfontGlyphData {
     /** X position in the texture atlas. */
     x: number;
+
     /** Y position in the texture atlas. */
     y: number;
+
     /** Glyph width in pixels. */
     w: number;
+
     /** Glyph height in pixels. */
     h: number;
+
     /** Horizontal offset when rendering. */
     ox: number;
+
     /** Vertical offset when rendering. */
     oy: number;
+
     /** Horizontal advance width. */
     adv: number;
 }

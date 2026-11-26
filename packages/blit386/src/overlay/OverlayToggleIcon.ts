@@ -24,8 +24,8 @@ export function hintIconY(hintBarTopY: number): number {
 /**
  * Draws the toggle hint icon from {@link ICON_MASK} using on-top bar fills.
  *
- * Collapses each mask row into horizontal runs to minimize draw calls. Reuses scratch rects
- * so the path stays allocation-free after warmup.
+ * Collapses each mask row into horizontal runs to minimize draw calls. Reuses one scratch rect
+ * so the path stays allocation-free.
  *
  * @param target - Overlay draw target.
  * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.

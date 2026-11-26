@@ -2,6 +2,7 @@
  * The public sheet's tile selection: one display capture per nav-visible demo, in nav order,
  * with anything the review page would badge (errors, lint, extra variants) left out.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

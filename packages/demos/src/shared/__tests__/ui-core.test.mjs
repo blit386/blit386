@@ -3,6 +3,7 @@
  * draw-command pool, begin()/end() group invariants, and layout anchor math (exercised
  * end-to-end, since resolveOriginX()/resolveOriginY() are internal and not exported).
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

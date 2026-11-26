@@ -407,7 +407,7 @@ class Demo {
             ui.caption(destX, facingY + 24, FACINGS[i].name, { color: 'dim' });
         }
 
-        // The turnable one: right or left, with a 20-pixel gap after the four fixed
+        // The turnable one: right or left, in the next slot after the four fixed
         // examples.
         const playerX = 12 + 4 * shapeSpacing;
 

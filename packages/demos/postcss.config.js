@@ -1,5 +1,5 @@
 /**
- * PostCSS for all Vite-owned styles under styles/ (and any future CSS imports).
+ * PostCSS for every stylesheet Vite processes (styles/ and the _shots/*.css pages).
  * Nesting runs first so Autoprefixer sees flattened selectors.
  */
 import autoprefixer from 'autoprefixer';

@@ -10,6 +10,7 @@
  *
  * Neither function touches the network; callers pass the registries in.
  */
+
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -118,8 +119,10 @@ export function findDemoLinkFailures(urls, demoSlugs) {
  */
 export function readSitemap(docsDir) {
     const sitemap = JSON.parse(readFileSync(join(docsDir, '_sitemap.json'), 'utf8'));
+
     const anchorsByPath = new Map(
         sitemap.pages.map((page) => [page.path, headingAnchors(readFileSync(join(docsDir, page.src), 'utf8'))]),
     );
+
     return { sitemapPaths: new Set(anchorsByPath.keys()), anchorsByPath, sections: Object.keys(sitemap.sections) };
 }

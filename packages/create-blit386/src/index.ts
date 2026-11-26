@@ -6,8 +6,9 @@
  * repeated), --no-install, --no-git.
  *
  * Two guards run before the wizard: the Node version must meet the engine floor (a friendly message beats an
- * EBADENGINE wall), and without an interactive terminal (an AI agent or CI) we behave as --yes instead of hanging on
- * a prompt nobody can answer. In that case the assistant files go to the agent found in the environment, never in CI.
+ * EBADENGINE wall), and without an interactive terminal (an AI agent or CI) the run behaves as --yes instead of
+ * hanging on a prompt nobody can answer. In that case the assistant files go to the agent found in the environment,
+ * never in CI.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -64,8 +65,8 @@ function tryInstall(dir: string, command: string, args: string[]): boolean {
 }
 
 /**
- * The `--agent` values as assistant kinds: comma-separated or repeated, deduplicated. Undefined when the flag is absent.
- * An unknown name, or `--agent` with no value, stops the run with the list of valid names.
+ * The `--agent` values as assistant kinds: comma-separated or repeated, deduplicated. Undefined when the flag is
+ * absent. An unknown name, or `--agent` with no value, stops the run with the list of valid names.
  */
 function parseAgentFlag(raw: (string | boolean)[] | undefined): AgentKind[] | undefined {
     if (raw === undefined) {
@@ -137,7 +138,8 @@ async function main(): Promise<void> {
     const flagAgents = parseAgentFlag(values.agent as (string | boolean)[] | undefined);
 
     // Without a real terminal (an AI agent or CI), the clack wizard would hang waiting for input. Use the defaults
-    // instead, give the assistant files to the agent running us, and say so once with the flags that control them.
+    // instead, give the assistant files to the agent running this command, and say so once with the flags that
+    // control them.
     const interactive = isInteractive();
     const yes = flagYes || !interactive;
     // Undefined leaves the choice to the wizard (or to the --yes defaults in a real terminal).

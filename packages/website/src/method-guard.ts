@@ -13,7 +13,7 @@ const ALLOWED_METHODS = 'GET, HEAD';
  * Chosen over an `/mcp` exception inside `markdownNegotiationPlugin`: registered LAST in the chain,
  * it only ever sees requests nothing claimed, so a future POST route (`/mcp` today) works the moment
  * its plugin is registered, with no path list here to forget. `OPTIONS` is refused like any other
- * method: nothing serves CORS (not even `/mcp`), and the MCP clients we target (Claude Code, Cursor)
+ * method: nothing serves CORS (not even `/mcp`), and the targeted MCP clients (Claude Code, Cursor)
  * are not browsers, so they send no preflight.
  */
 export function methodGuardPlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {

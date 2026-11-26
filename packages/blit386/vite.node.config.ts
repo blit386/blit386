@@ -12,12 +12,12 @@ export default defineConfig({
         dts({
             // `vite-plugin-dts`'s `rollupTypes` mode resolves both the source and destination path for its
             // single-entry bundle from the nearest `package.json`'s `types` field (walking up from `root`) before
-            // falling back to `outDir`/`fileName`. This repo's root `package.json` already declares
+            // falling back to `outDir`/`fileName`. This package's own `package.json` already declares
             // `types: "./dist/blit386.d.ts"` for the main build, so without this override the second (node) build
             // would silently reuse that same path instead of writing `dist/vite.d.ts` - it would read
             // `dist/blit386.d.ts` as its bundle entry point and write the (unchanged) result back to it, leaving no
             // `vite.d.ts` behind at all. Pointing `root` at the filesystem root stops the package.json lookup from
-            // ever reaching this repo's `package.json` (`/package.json` does not exist), so the plugin falls back to
+            // ever reaching this package's `package.json` (`/package.json` does not exist), so the plugin falls back to
             // its `outDir`/`fileName`-derived path (`dist/vite.d.ts`) instead. `outDir`, `tsconfigPath`, and
             // `include` are given as absolute paths so they still resolve correctly against the real project despite
             // the detached `root`.

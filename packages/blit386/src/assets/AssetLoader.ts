@@ -292,8 +292,10 @@ export class AssetLoader {
      */
     static async hotReloadImage(url: string, options?: { isForced?: boolean }): Promise<HTMLImageElement | null> {
         const target = normalizeAssetUrl(url);
+
         // In-flight keys count too: an image still loading when its save arrives must re-cache under the game's key.
         const keys = new Set([...loadedImages.keys(), ...loadingPromises.keys()]);
+
         const [matchedKey, ...duplicates] = [...keys].filter((key) => normalizeAssetUrl(key) === target);
 
         if (matchedKey === undefined && !options?.isForced) {

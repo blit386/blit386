@@ -207,7 +207,7 @@ function tryMergeCodexConfig(existingContent: string, generatedContent: string):
     return isDeepStrictEqual(table, kitTable) ? existingContent : null;
 }
 
-/** Mark every comma that closes a JSONC object or array (`[1, 2,]`) for removal, ignoring commas inside strings. */
+/** Blank out (as a space) every comma that closes a JSONC object or array (`[1, 2,]`), ignoring commas in strings. */
 function withoutTrailingCommas(text: string, masked: string): string {
     return text.replace(/,(?=\s*[}\]])/g, (comma, offset: number) => (masked[offset] === ',' ? ' ' : comma));
 }

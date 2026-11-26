@@ -32,6 +32,7 @@
  * at /demos/<slug>.html instead and is not supported. Use `pnpm run build && pnpm run preview`
  * to capture a demo that is not deployed yet.
  */
+
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -264,7 +265,8 @@ export function captureViewportFor(width, height) {
  * @param {number} [targetWidth] Card width.
  * @param {number} [targetHeight] Card height.
  * @returns {{ scale: number, drawWidth: number, drawHeight: number }} Chosen factor and the
- *   even-numbered dimensions to scale to.
+ *   dimensions to scale to - exact multiples for a whole-number factor, rounded to even (at
+ *   least 2) for a fractional one.
  */
 export function computeOgScale(
     width,
@@ -450,7 +452,7 @@ export function buildCanvasPrepScript(canvasId) {
         canvas.style.setProperty(property, value, 'important');
     }
 
-    // The container's top padding would otherwise offset the element box we screenshot.
+    // The container's top padding would otherwise offset the element box being screenshotted.
     const container = document.getElementById('canvas-container');
     if (container) {
         container.style.setProperty('padding', '0', 'important');
@@ -539,7 +541,7 @@ async function captureOne(page, slug, options) {
     await page.goto(buildCaptureUrl(options.baseUrl, slug));
 
     // Strict: a card rendered from the browser's 300x150 default would be a silently wrong
-    // image rather than a visible failure, and this runs unattended across 46 demos.
+    // image rather than a visible failure, and this runs unattended across every demo.
     await page.evaluate(buildCanvasReadyScript(CANVAS_ID, CANVAS_READY_TIMEOUT_MS, true));
     await page.evaluate(buildWebGPUProbeScript(CANVAS_ID));
 
@@ -626,7 +628,7 @@ async function main() {
         return;
     }
 
-    // Fail before opening a browser, not after 46 screenshots.
+    // Fail before opening a browser, not after a full run of screenshots.
     requireFfmpeg('the card render');
 
     mkdirSync(outDir, { recursive: true });
@@ -636,7 +638,7 @@ async function main() {
     let browser;
 
     try {
-        // One browser for the whole run: 46 cold starts would roughly triple the wall-clock
+        // One browser for the whole run: a cold start per demo would roughly triple the wall-clock
         // time, and each navigation tears the previous demo's WebGPU device down.
         const launched = await launchCaptureBrowser({
             viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
@@ -650,7 +652,7 @@ async function main() {
             try {
                 await captureOne(launched.page, slug, { ...options, out: outDir, ogScaleBySlug });
             } catch (error) {
-                // Keep going: one demo that will not initialize should not cost the other 45.
+                // Keep going: one demo that will not initialize should not cost all the others.
                 console.error(`  FAILED: ${error.message}`);
                 failures.push(slug);
             }

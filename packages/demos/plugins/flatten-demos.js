@@ -5,8 +5,8 @@ import { join } from 'node:path';
  * Move every page from `<distDir>/demos/` up to `distDir` and remove the folder.
  * A missing `demos/` folder (dev mode) is a no-op; any other failure, including a nested
  * subdirectory, throws so the build fails instead of shipping a half-flattened site.
- * Also rewrites asset paths in HTML files (../assets/ -> ./assets/).
- * @param {string} distDir
+ * HTML pages also get every `src="../` / `href="../` reference rewritten to `./`.
+ * @param {string} distDir - Absolute path to the build output directory.
  */
 export function flattenDemos(distDir) {
     const demosDir = join(distDir, 'demos');
@@ -36,7 +36,6 @@ export function flattenDemos(distDir) {
         const srcPath = join(demosDir, file);
         const destPath = join(distDir, file);
 
-        // For HTML files, rewrite asset paths before copying.
         if (file.endsWith('.html')) {
             let content = readFileSync(srcPath, 'utf-8');
 
@@ -54,6 +53,5 @@ export function flattenDemos(distDir) {
         unlinkSync(srcPath);
     }
 
-    // Remove empty demos directory.
     rmSync(demosDir, { recursive: true });
 }

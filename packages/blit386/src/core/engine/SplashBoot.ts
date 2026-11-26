@@ -168,9 +168,6 @@ export class SplashBoot {
 /**
  * Creates the splash when gating says it should play on this page load.
  *
- * A module-level helper rather than a method so `init()` stays within its
- * complexity budget; it needs no instance state.
- *
  * @param hwSettings - Resolved hardware settings for this run.
  * @returns A fresh splash, or `null` when gating turned it off.
  */
@@ -186,8 +183,7 @@ export function createSplashIfEnabled(hwSettings: HardwareSettings): Splash | nu
  * Whether a restart may skip the splash: gating turned it off, or it played to `done`.
  *
  * Only {@link Splash#advance} reaches `done`, so a splash frame that threw leaves the
- * splash unfinished and the next init plays it again. Module-level for the same
- * complexity reason as {@link createSplashIfEnabled}.
+ * splash unfinished and the next init plays it again.
  *
  * @param splash - The splash the last init created, or `null` when gating turned it off.
  * @returns `true` when there is no splash or it finished.

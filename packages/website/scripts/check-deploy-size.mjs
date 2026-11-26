@@ -20,6 +20,7 @@
  * Usage:
  *   node scripts/check-deploy-size.mjs
  */
+
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -98,7 +99,11 @@ export function findOversizedAssets(files) {
 /** @param {string[]} failures @returns {never} */
 function fail(failures) {
     console.error('Deploy size check failed:');
-    for (const failure of failures) console.error(`  - ${failure}`);
+
+    for (const failure of failures) {
+        console.error(`  - ${failure}`);
+    }
+
     process.exit(1);
 }
 
@@ -109,26 +114,37 @@ function main() {
             console.error(
                 `check:deploy-size requires a build first - ${required} does not exist. Run "pnpm run build".`,
             );
+
             process.exit(1);
         }
     }
 
     const [largest, ...rest] = listFilesBySize(DIST_PUBLIC_DIR);
-    if (!largest) fail([`${DIST_PUBLIC_DIR} is empty - the build did not emit any static assets`]);
+
+    if (!largest) {
+        fail([`${DIST_PUBLIC_DIR} is empty - the build did not emit any static assets`]);
+    }
+
     console.log(
         `Largest asset: dist/public/${largest.path}, ${formatMiB(largest.bytes)} (limit ${formatMiB(MAX_ASSET_BYTES)})`,
     );
+
     // Checked before wrangler runs: an oversized asset makes the dry-run itself fail.
     const oversized = findOversizedAssets([largest, ...rest]);
-    if (oversized.length > 0) fail(oversized);
+
+    if (oversized.length > 0) {
+        fail(oversized);
+    }
 
     // Run wrangler's own bin with this Node rather than `pnpm exec`: no `.cmd` shim to need a
     // shell on Windows, and no pnpm deps check that could reinstall node_modules mid-check.
     const wranglerPackageJson = createRequire(import.meta.url).resolve('wrangler/package.json');
+
     const wranglerBin = join(
         dirname(wranglerPackageJson),
         JSON.parse(readFileSync(wranglerPackageJson, 'utf8')).bin.wrangler,
     );
+
     const wrangler = spawnSync(
         process.execPath,
         [wranglerBin, 'deploy', '--dry-run', '--config', DIST_SERVER_WRANGLER_CONFIG],
@@ -138,16 +154,25 @@ function main() {
             env: { ...process.env, WRANGLER_SEND_METRICS: 'false', CI: 'true' },
         },
     );
-    if (wrangler.error) fail([`could not run wrangler: ${wrangler.error.message}`]);
+
+    if (wrangler.error) {
+        fail([`could not run wrangler: ${wrangler.error.message}`]);
+    }
+
     const output = wrangler.stdout + wrangler.stderr;
     const uploadBytes = parseWranglerUploadBytes(output);
+
     if (wrangler.status !== 0 || uploadBytes === null) {
         fail([`wrangler deploy --dry-run did not report an upload size (exit ${wrangler.status}):\n${output}`]);
     }
 
     console.log(`Worker upload: ${formatMiB(uploadBytes)} (budget ${formatMiB(WORKER_BUDGET_BYTES)})`);
+
     const oversizedWorker = findOversizedWorker(uploadBytes);
-    if (oversizedWorker.length > 0) fail(oversizedWorker);
+
+    if (oversizedWorker.length > 0) {
+        fail(oversizedWorker);
+    }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

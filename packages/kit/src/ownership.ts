@@ -258,16 +258,25 @@ export const AGENT_KINDS: readonly AgentKind[] = [
 export interface AgentSpec {
     /** Human-readable assistant name for Tier-1 messages and wizard hints. */
     readonly label: string;
+
     /** Project-relative hint of what setting up the assistant adds, for wizard/CLI copy. */
     readonly setupHint: string;
+
     /** Exact paths only this agent's adapter emits. */
     readonly files: readonly string[];
+
     /** Directory prefixes (trailing slash) only this agent's adapter emits. */
     readonly dirs: readonly string[];
+
     /** Where the agent's docs-MCP config lives, so `blit doctor` can check every agent without hardcoding one. */
     readonly mcpConfig: string;
-    /** Does the agent read `SHARED_SKILLS_DIR`? Six do; Claude Code does not and Cursor is unverified, so those two keep private copies. */
+
+    /**
+     * Does the agent read `SHARED_SKILLS_DIR`? Six do; Claude Code does not and Cursor is unverified, so those two keep
+     * private copies.
+     */
     readonly readsSharedSkills: boolean;
+
     /**
      * Exact root paths this agent reads that another agent's adapter emits too (`ROOT_MCP_JSON`: Claude Code and
      * Copilot). Like a shared skill, such a path belongs to every agent that lists it and never counts as evidence

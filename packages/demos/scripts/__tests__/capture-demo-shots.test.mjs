@@ -1,6 +1,7 @@
 /**
  * Unit tests for the pure helpers in scripts/capture-demo-shots.mjs.
  */
+
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';

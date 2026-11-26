@@ -2,8 +2,9 @@ import type { Vector2i } from '../../../utils/Vector2i';
 import { FullscreenPixelEffect } from '../FullscreenPixelEffect';
 
 /**
- * Chunky pixel-aligned horizontal glitch: every Nth row of source pixels gets
- * a random horizontal shift. Shifts snap to integer source-pixel offsets so
+ * Chunky pixel-aligned horizontal glitch: rows are grouped into bands of
+ * {@link bandHeight} source pixels, and about 15% of bands get a random
+ * horizontal shift. Shifts snap to integer source-pixel offsets so
  * palette indices move whole-texel (no RGB resampling).
  *
  * Pixel-tier: runs on the logical `r8uint` framebuffer (palette indices).

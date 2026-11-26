@@ -107,10 +107,12 @@ function createTimingChart(
  * {@link HardwareSettings#isOverlayEnabled} and {@link BT.activeBackend} instead.
  */
 export class Overlay {
+    /** Display layout fixed at construction. */
     readonly #layout: OverlayLayout;
 
     readonly #topLeftLabel: string;
 
+    /** Composed `backend|WxH` label, fixed at construction. */
     readonly #topRightLabel: string;
 
     readonly #targetFps: number;
@@ -151,12 +153,14 @@ export class Overlay {
 
     readonly #layoutScratch = createOverlayLayoutPlanScratch();
 
+    /** Reused bar style passed to {@link OverlayBars}; refreshed from the resolved indices each frame. */
     readonly #barStyle = { barIndex: DEFAULT_IDX_BG, textIndex: DEFAULT_IDX_TEXT };
 
     #idxBg = DEFAULT_IDX_BG;
 
     #idxText = DEFAULT_IDX_TEXT;
 
+    /** Palette index for row gaps, dividers, and cluster separators. */
     #idxGap = DEFAULT_IDX_BG;
 
     /**
@@ -266,7 +270,7 @@ export class Overlay {
      * Whether demo draw calls should populate the per-frame palette usage mask.
      *
      * True when the palette swatch grid is configured and the overlay body is visible.
-     * BTAPI gates per-frame palette usage tracking on this flag.
+     * `DrawCommands` gates per-frame palette usage tracking on this flag.
      *
      * @returns `true` when sprite/text palette usage scanning is needed.
      */
@@ -296,7 +300,7 @@ export class Overlay {
      * @param pointer - Pointer subsystem, or `null` when unavailable.
      * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. The caller must
      * sample this before the keyboard subsystem's end-of-tick edge reset runs; see {@link Toggle#handleInput}.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
+     * @param currentTick - Current fixed-update tick for copy-status expiry.
      * @param getCustomRows - Optional supplier for demo rows (layout plan for palette hits).
      * @param palette - Active demo palette for slot count, if any.
      */
@@ -341,13 +345,13 @@ export class Overlay {
     }
 
     /**
-     * Draws the overlay. Toggle input is handled earlier in the frame by BTAPI
-     * (`BTAPI.beginRenderFrame`) so palette usage tracking matches visibility.
+     * Draws the overlay. Toggle input is handled earlier in the frame
+     * (`FrameLoop.beginRenderFrame`) so palette usage tracking matches visibility.
      *
      * @param renderer - Active {@link OverlayRenderer} instance.
      * @param font - System bitmap font.
      * @param pointer - Pointer subsystem for palette swatch hover tooltips.
-     * @param _keyboard - Reserved; toggle input is handled in BTAPI before render.
+     * @param _keyboard - Reserved; toggle input is handled before render.
      * @param currentTick - Current fixed-update tick for copy-status expiry.
      * @param getCustomRows - Optional supplier for demo rows; not invoked while the overlay body is hidden.
      * @param timing - Optional timing snapshot from the previous rendered frame.
@@ -550,8 +554,7 @@ export class Overlay {
      * Returns the per-frame layout plan, rebuilding only when the custom row count or palette
      * color count differ from the cached build. `handleFrameInput` and `updateAndRender` both
      * call this for the same frame with the same inputs, so at most one rebuild happens per
-     * frame instead of the previous two (`createDefaultLayoutConfig` plus `PaletteView.computeGrid`
-     * each ran twice). Display size, palette columns/rows, and feature flags never change across
+     * frame. Display size, palette columns/rows, and feature flags never change across
      * an `Overlay` instance's lifetime, so `customRowCount` and palette color count are the only
      * inputs that need watching.
      *
@@ -658,9 +661,9 @@ export class Overlay {
      * Draws overlay content for one frame.
      *
      * Body panels and the footer hint bar draw only when the `isBodyVisible`
-     * parameter is true. The toggle hint icon draws whenever this method runs;
-     * when the body is visible it renders inverted (cutout) against the hint bar,
-     * otherwise as a solid glyph.
+     * parameter is true. The toggle hint icon draws while the body is visible or
+     * the hint is enabled; with the body visible it renders inverted (cutout)
+     * against the hint bar, otherwise as a solid glyph.
      *
      * @param renderer - Active renderer.
      * @param font - System bitmap font.

@@ -90,8 +90,8 @@ that RGBA output. BarrelDistortion therefore computes its curve at 1280x960, not
 HOW THE GLITCH STATE MACHINE WORKS
 ----------------------------------
 
-The machine is stepGlitchMachine() in src/shared/crt-glitch.js, shared with Snake Game.
-Two counters drive it:
+The machine is stepGlitchMachine() in src/shared/crt-glitch.js, shared with Snake Game
+and Basics Enhanced. Two counters drive it:
 
 - glitchCooldown: ticks remaining until the next burst starts.
 - glitchTicksLeft: ticks remaining in the current burst (0 means idle).

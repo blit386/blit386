@@ -29,7 +29,7 @@ const ANTIGRAVITY_TOOL_EVENTS: ReadonlySet<string> = new Set(['PreToolUse', 'Pos
 
 /**
  * Translate the canonical hooks manifest into Antigravity's `.agents/hooks.json`. One group per manifest hook,
- * named `blit-<id>` so a user's own groups never collide with ours; tool events use Claude's matcher-group shape.
+ * named `blit-<id>` so a user's own groups never collide with the kit's; tool events use Claude's matcher-group shape.
  */
 function buildAntigravityHooks(manifest: HooksManifest, vars: TemplateVars): AntigravityHooksJson {
     const groups: AntigravityHooksJson = {};

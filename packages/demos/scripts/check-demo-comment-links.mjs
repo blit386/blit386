@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Catch dead or placeholder links in `src/*.js` header comments - the `Prerequisites:` /
- * `Guide:` / `Live version:` block every demo carries (see `.claude/rules/file-structure.md`).
+ * `Live version:` / `Guides:` / `Reference:` block every demo carries (see
+ * `.claude/rules/file-structure.md`).
  * These are reader-visible: the demo source is published and rendered in the source panel on
  * demos.blit386.dev, so a stale link there is a stale link a visitor can click. BT-448 fixed
  * twenty header comments that linked to vancura.dev walkthrough articles that all 404'd;
@@ -26,6 +27,7 @@
  * Usage:
  *   node scripts/check-demo-comment-links.mjs
  */
+
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,10 +52,10 @@ const PLACEHOLDER_DOMAIN = 'vancura.dev';
 const URL_PATTERN = /https:\/\/[^\s)'"]+/gu;
 
 /**
- * Extracts the leading header comment block of a demo source file - either a `/** *\/` block at
- * the very top, or a run of consecutive `//`-prefixed lines from the top, stopping at the first
- * line that is not a `//` comment. Mirrors the "header comment -> imports" section order
- * documented in `.claude/rules/file-structure.md`.
+ * Extracts the leading header comment block of a demo source file - either a `/* *\/` (or
+ * `/** *\/`) block at the very top, or a run of consecutive `//`-prefixed lines from the top,
+ * stopping at the first line that is not a `//` comment. Mirrors the "header comment ->
+ * imports" section order documented in `.claude/rules/file-structure.md`.
  *
  * @param {string} source Full file contents.
  * @returns {string} The header comment text (including comment markers), or `''` if the file

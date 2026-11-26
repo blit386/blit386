@@ -14,7 +14,7 @@ const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
 const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
 
-// The one non-demo page this plugin serves: the capture gallery at /shots (dev: /shots and
+// The capture gallery at /shots, never a demo page (dev: /shots and
 // /shots.html; build: dist/shots.html, which Pages serves at /shots). check-demo-registry.mjs
 // refuses a demo file with this name. The slug itself is defined in demo-registry.js.
 export { SHOTS_SLUG };
@@ -54,7 +54,7 @@ const CHANNEL_BANNER_HTML =
  * @param {string} options.layoutTemplate - Raw contents of `_partials/layout.html`.
  * @param {{ title: string, scriptFile: string, slug: string }} options.entry - Registry entry.
  * @param {boolean} options.isDevMode - True under `vite dev`, false for a production build.
- * @param {string} options.demoListJson - JSON array of nav-visible demos.
+ * @param {string} options.demoListJson - JSON array of every registry entry's slug, navLabel, title.
  * @param {string} options.sourceHtml - Pre-rendered Twoslash/Shiki source panel markup.
  * @param {string} options.sourcePanelScript - Dev-only `<script>` tag, or '' in a build.
  * @param {string} options.robotsMeta - `<meta name="robots">` tag on the next channel, else ''.
@@ -171,9 +171,10 @@ function inlineJson(value) {
 }
 
 /**
- * Vite plugin that serves/generates demo HTML pages virtually from src/*.js demo files.
- * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
- * and is rendered via simple string substitution.
+ * Vite plugin that serves (dev) and generates (build) the demo HTML pages virtually from
+ * src/*.js, plus the /shots gallery and the public demo sheet at the site index. No per-demo
+ * HTML file is needed on disk; the demo template lives in _partials/layout.html and is
+ * rendered via simple string substitution.
  *
  * Each page is dual-mode (static hosts serve one HTML for both URLs):
  * - Shell (default): persistent banner + iframe pointing at `?embed&source`.
@@ -284,8 +285,8 @@ export function virtualDemos() {
     }
 
     /**
-     * Render the public demo sheet served at the site index. Nav-visible demos only, like the
-     * shell's own list. The tiles are picked from the committed manifest here and inlined, not
+     * Render the public demo sheet served at the site index. Every registry entry, in nav order
+     * like the shell's own list. The tiles are picked from the committed manifest here and inlined, not
      * fetched by the page: they then render before the load event, so the browser can restore the
      * scroll position on reload or Back. A missing or malformed manifest fails the render.
      * @returns {string}
@@ -409,8 +410,9 @@ export function virtualDemos() {
         },
 
         configureServer(server) {
-            // Watch the partials directory (not a glob): layout.html + chrome scripts
-            // (demo-shell.js, source-panel*.js). Any edit invalidates page chrome.
+            // Watch the partials and _shots directories (not globs): layout.html, the chrome scripts
+            // (demo-shell*.js, source-panel*.js), and the /shots and sheet templates. Any edit there
+            // invalidates page chrome.
             //
             // Deliberately NOT adding `join(srcDir, '*.js')` / `join(srcDir, 'shared', '*.js')`
             // here: Vite's watcher runs with chokidar's `disableGlobbing: true`, so a `*.js`

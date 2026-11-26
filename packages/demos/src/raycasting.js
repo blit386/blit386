@@ -123,7 +123,7 @@ const WALL_BASE = 16;
 const SHADES = 8;
 
 // The map letters that mean a wall, in the same order as WALL_COLORS below. Any other
-// wall letter (such as '#') falls back to the first color.
+// wall letter falls back to the first color, the gray stone of '#'.
 const WALL_KINDS = '#AB';
 const WALL_COLORS = [new Color32(215, 215, 225), new Color32(235, 100, 80), new Color32(90, 135, 245)];
 

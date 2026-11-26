@@ -52,7 +52,7 @@ export interface Effect {
      * the chain format requires texture sampling). The `r8uint` pixel-tier path
      * uses `textureLoad` only and does not bind a sampler.
      *
-     * Idempotent: calling twice on the same instance is undefined behavior; the
+     * Not idempotent: calling twice on the same instance is undefined behavior; the
      * chain guarantees it is only invoked once per effect instance.
      *
      * @param device - WebGPU device used for resource creation.

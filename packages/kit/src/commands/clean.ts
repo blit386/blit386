@@ -10,7 +10,7 @@
  * for it at scaffold time. A match means the file is still the untouched default; a mismatch means the
  * user has started their own game, so the confirm prompt below is phrased as a warning instead of a
  * routine question. Either way, nothing is written without an explicit yes - or `--yes` to skip the
- * prompt for scripted use, mirroring `confirm()`'s own non-TTY safe default.
+ * prompt for scripted use, since `confirm()` answers no when there is no terminal to ask.
  *
  * After a successful write, the manifest entry's hash is updated to match the new skeleton, so the
  * skeleton becomes the new tracked baseline instead of showing as permanently modified.

@@ -1,5 +1,15 @@
+/**
+ * Post-build gate over the declaration rollup: reads the build log (path argument or stdin), fails on
+ * TypeScript / API Extractor version drift, and checks `dist/blit386.d.ts`, `dist/blit386-ts5.d.ts`
+ * and `dist/vite.d.ts` for the members, exports and WebGPU wiring consumers rely on.
+ *
+ * Usage:
+ *   node scripts/check-declaration-tooling.mjs <build.log>
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -62,6 +72,7 @@ export function findDriftWarnings(logText) {
 
     for (const pattern of DRIFT_WARNING_PATTERNS) {
         const match = logText.match(pattern);
+
         if (match) {
             failures.push(`Declaration tooling drift pattern matched: ${match[0]}`);
         }
@@ -86,10 +97,12 @@ export function findAlignmentFailures(logText, expectedVersion) {
         failures.push(
             'Expected API Extractor alignment log line "Analysis will use the bundled TypeScript version X.Y.Z" was not found',
         );
+
         return failures;
     }
 
     const reportedVersion = match[1];
+
     if (reportedVersion !== expectedVersion) {
         failures.push(
             `API Extractor bundled TypeScript ${reportedVersion} does not match workspace pin ${expectedVersion}`,
@@ -121,18 +134,22 @@ const BT_INTERSECTION_DECLARATION =
  */
 function braceBlockAfter(text, fromIndex) {
     const openBrace = text.indexOf('{', fromIndex);
+
     if (openBrace < 0) {
         return null;
     }
 
     const body = text.slice(openBrace);
     let depth = 0;
+
     for (let i = 0; i < body.length; i++) {
         const char = body.charAt(i);
+
         if (char === '{') {
             depth++;
         } else if (char === '}') {
             depth--;
+
             if (depth === 0) {
                 return body.slice(0, i + 1);
             }
@@ -151,6 +168,7 @@ function braceBlockAfter(text, fromIndex) {
  */
 export function extractBtDeclarationBlock(dtsText) {
     const intersection = BT_INTERSECTION_DECLARATION.exec(dtsText);
+
     if (intersection) {
         const blocks = [...intersection[1].matchAll(/typeof\s+(\w+)/g)].map(([, part]) => {
             const opener = new RegExp(`declare\\s+const\\s+${part}\\s*:\\s*\\{`).exec(dtsText);
@@ -163,11 +181,13 @@ export function extractBtDeclarationBlock(dtsText) {
 
     for (const opener of BT_DECLARATION_OPENERS) {
         const match = opener.exec(dtsText);
+
         if (!match) {
             continue;
         }
 
         const block = braceBlockAfter(dtsText, match.index);
+
         if (block !== null) {
             return block;
         }
@@ -185,6 +205,7 @@ export function extractBtDeclarationBlock(dtsText) {
  */
 export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUIRED_BT_DECLARATION_MEMBERS) {
     const btBlock = extractBtDeclarationBlock(dtsText);
+
     if (!btBlock) {
         return requiredMembers.map(
             (member) => `dist/blit386.d.ts is missing BT declaration block (cannot verify getter: ${member})`,
@@ -195,6 +216,7 @@ export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUI
 
     for (const member of requiredMembers) {
         const pattern = new RegExp(`\\breadonly\\s+${member}\\s*:`, 'm');
+
         if (!pattern.test(btBlock)) {
             failures.push(`dist/blit386.d.ts is missing BT getter: ${member}`);
         }
@@ -213,7 +235,7 @@ export const INTERNAL_BASE_CLASSES = ['SeededNoise', 'SeededNoise1D', 'Vector2iO
 const TYPE_DECLARATION = /^(export\s+)?declare\s+(?:abstract\s+)?(?:type|interface|class|enum)\s+([A-Za-z_$][\w$]*)/gm;
 
 /** An `export { a, b as c }` list in the rollup. */
-const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
+const EXPORT_LIST = /^export\s*\{([^}]*)}/gm;
 
 /**
  * Finds types the rolled-up declarations contain but do not export (forgotten exports).
@@ -282,6 +304,7 @@ export function findMissingViteDeclarationMembers(dtsText, requiredMembers = REQ
 
     for (const member of requiredMembers) {
         const pattern = new RegExp(`\\bdeclare\\s+function\\s+${member}\\s*\\(`, 'm');
+
         if (!pattern.test(dtsText)) {
             failures.push(`dist/vite.d.ts is missing export: ${member}`);
         }
@@ -317,6 +340,7 @@ export function findWebgpuTypesFailures(dtsText, ts5EntryText, packageJson) {
     }
 
     const [firstCondition, firstTarget] = Object.entries(packageJson.exports?.['.'] ?? {})[0] ?? [];
+
     if (firstCondition !== 'types@<6.0' || firstTarget !== TS5_TYPES_EXPORT) {
         failures.push(`package.json exports["."] must start with "types@<6.0": "${TS5_TYPES_EXPORT}"`);
     }
@@ -351,10 +375,13 @@ export function validateDeclarationTooling(logText, options = {}) {
         failures.push(`Missing rolled-up declaration output: ${path.relative(REPO_ROOT, DECLARATION_OUTPUT)}`);
     } else if (requireOutputFile) {
         const dtsText = fs.readFileSync(DECLARATION_OUTPUT, 'utf8');
+
         failures.push(...findMissingBtDeclarationMembers(dtsText));
         failures.push(...findUnexportedDeclarations(dtsText));
+
         const ts5EntryText = fs.existsSync(TS5_TYPES_OUTPUT) ? fs.readFileSync(TS5_TYPES_OUTPUT, 'utf8') : null;
         const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
+
         failures.push(...findWebgpuTypesFailures(dtsText, ts5EntryText, packageJson));
     }
 
@@ -362,9 +389,11 @@ export function validateDeclarationTooling(logText, options = {}) {
         failures.push(`Missing rolled-up declaration output: ${path.relative(REPO_ROOT, VITE_DECLARATION_OUTPUT)}`);
     } else if (requireOutputFile) {
         const viteFileSizeBytes = fs.statSync(VITE_DECLARATION_OUTPUT).size;
+
         failures.push(...findViteDeclarationSizeFailure(viteFileSizeBytes));
 
         const viteDtsText = fs.readFileSync(VITE_DECLARATION_OUTPUT, 'utf8');
+
         failures.push(...findMissingViteDeclarationMembers(viteDtsText));
     }
 
@@ -377,9 +406,11 @@ export function validateDeclarationTooling(logText, options = {}) {
  */
 function exitWithFailures(failures) {
     console.error('Declaration tooling check failed:');
+
     for (const failure of failures) {
         console.error(`  - ${failure}`);
     }
+
     process.exit(1);
 }
 
@@ -393,15 +424,18 @@ function main() {
         logText = fs.readFileSync(0, 'utf8');
     } else {
         console.error('Usage: node scripts/check-declaration-tooling.mjs <build.log>');
+
         process.exit(2);
     }
 
     const failures = validateDeclarationTooling(logText);
+
     if (failures.length > 0) {
         exitWithFailures(failures);
     }
 
     const version = readPinnedTypeScriptVersion();
+
     console.log(
         `Declaration tooling OK (TypeScript ${version}, ${path.relative(REPO_ROOT, DECLARATION_OUTPUT)} and ` +
             `${path.relative(REPO_ROOT, VITE_DECLARATION_OUTPUT)} present)`,

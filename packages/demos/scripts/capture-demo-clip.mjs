@@ -16,6 +16,7 @@
  * (production, the next channel, or `vite preview`) - the `pnpm run dev` server routes
  * demos at /demos/<slug>.html instead and is not supported by this script.
  */
+
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -95,8 +96,9 @@ function toNumber(option, value) {
  * @param {string[]} argv Arguments after the script name, i.e. `process.argv.slice(2)`.
  * @returns {object} Parsed options, with `name` defaulted to the slug.
  * @throws {Error} When the slug is missing or unknown, a required option is missing, an
- *   option lacks its value, a numeric option is not a number, `--duration` or `--upscale`
- *   is not positive, an option is unrecognized, or a second positional argument appears.
+ *   option lacks its value, a numeric option is not a number, `--duration`, `--upscale`, or
+ *   `--bitrate` is not positive, an option is unrecognized, or a second positional argument
+ *   appears.
  */
 export function parseArgs(argv) {
     const { values, positionals } = parseCliArgs(argv, OPTIONS, true);
@@ -152,7 +154,8 @@ export function parseArgs(argv) {
  * @param {number} width Source canvas width in pixels.
  * @param {number} height Source canvas height in pixels.
  * @param {number} factor Upscale factor, e.g. 2.
- * @returns {{ width: number, height: number }} Rounded target dimensions.
+ * @returns {{ width: number, height: number }} Target dimensions, each rounded to the nearest
+ *   even number, since 4:2:0 video encoders reject odd frame sizes.
  */
 export function computeUpscaleTarget(width, height, factor) {
     return {
@@ -258,9 +261,10 @@ export function buildRecorderScript(bitrate) {
 
 /**
  * Browser-side script that stops the recorder, concatenates the recorded chunks into a
- * Blob, and base64-encodes it into window.__b64 in B64_PUSH_CHUNK_CHARS-sized slices -
- * String.fromCharCode.apply blows the call stack on one giant array, so the encode has to
- * happen in pieces even though the result is one string.
+ * Blob, turns its bytes into a binary string in B64_PUSH_CHUNK_CHARS-sized slices, and
+ * base64-encodes that into window.__b64 - String.fromCharCode.apply blows the call stack on
+ * one giant array, so the conversion has to happen in pieces even though the result is one
+ * string.
  *
  * A direct file download does not work here: headless Chrome cancels it. The base64 string
  * is read back with one `page.evaluate`.

@@ -115,7 +115,7 @@ export class AudioClip {
 
     /**
      * Creates an `AudioClip` from an already-decoded buffer.
-     * Use {@link AudioClip.load} or {@link AudioClip.loadAll} to construct instances.
+     * Use {@link AudioClip.load}, {@link AudioClip.loadAll}, or {@link AudioClip.synth} to construct instances.
      *
      * @param url - Winning source URL the buffer was decoded from.
      * @param buffer - Decoded audio buffer.
@@ -282,6 +282,7 @@ export class AudioClip {
      */
     static async hotReload(url: string): Promise<boolean> {
         const target = normalizeAssetUrl(url);
+
         const matches = [...resolvedClips].filter(
             ([key, clip]) => clip.decodedBuffer !== null && normalizeAssetUrl(key) === target,
         );
@@ -299,6 +300,7 @@ export class AudioClip {
 
             if (oldBuffer !== null) {
                 clip.decodedBuffer = newBuffer;
+
                 isReplaced = true;
 
                 audioHooks.onUnload(oldBuffer);
@@ -465,7 +467,7 @@ export class AudioClip {
 
         // Content-Length is the compressed size when the body is content-encoded, so the decoded
         // byte count would overshoot it: treat the length as unknown.
-        const contentLength = contentLengthHeader !== null ? Number(contentLengthHeader) : Number.NaN;
+        const contentLength = contentLengthHeader === null ? Number.NaN : Number(contentLengthHeader);
 
         const encoding = response.headers.get('content-encoding')?.toLowerCase() ?? null;
         const isEncoded = encoding !== null && encoding !== 'identity';

@@ -2,6 +2,7 @@
  * Unit tests for the shared HTML-escaping helper used by `virtual-demos.js` and
  * `social-meta.js`. Pure and single-pass, so every case here is a plain string assertion.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

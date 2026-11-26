@@ -66,11 +66,10 @@ export default defineConfig(() => {
 
         plugins: [...createDeclarationPlugins(isWatch)],
 
-        // Handle WGSL shader files as raw text
+        // Serve any `.wgsl` file as a static asset; today's shaders are inline template strings, so nothing matches.
         assetsInclude: ['**/*.wgsl'],
 
         build: {
-            // Library build configuration
             lib: {
                 entry: 'src/BLIT386.ts',
                 name: 'BLIT386',

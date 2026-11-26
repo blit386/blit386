@@ -1,8 +1,9 @@
 /**
  * Splash layout, palette, and timing constants.
  *
- * Deliberately file-local to the splash subsystem rather than exported to
- * consumers: these are tuning values, not API.
+ * Engine-internal rather than exported to game code: these are tuning values,
+ * not API. Only {@link HANDOFF_FADE_MS} leaves the splash subsystem, for the
+ * palette handoff in `PaletteController`.
  */
 
 /**

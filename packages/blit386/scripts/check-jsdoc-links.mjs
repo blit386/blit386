@@ -16,6 +16,7 @@
  * Usage:
  *   node scripts/check-jsdoc-links.mjs
  */
+
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -29,6 +30,7 @@ export const LINK_INSTANCE_MEMBER = 'instance-member';
 
 const SRC_DIR = join(ROOT, 'src') + sep;
 const TSCONFIG_PATH = join(ROOT, 'tsconfig.json');
+
 /** TypeScript parses `{@link https://x}` as name `https` plus text `://x`; a URL link has no symbol to resolve. */
 const URL_LINK_TEXT = /^:\/\//;
 
@@ -94,6 +96,7 @@ export function findJsdocLinkProblems(program, { entryFile, isTarget }) {
     const publicExports = new Map(
         checker.getExportsOfModule(checker.getSymbolAtLocation(entry)).map((symbol) => [symbol.escapedName, symbol]),
     );
+
     const problems = [];
 
     for (const sourceFile of program.getSourceFiles()) {
@@ -103,6 +106,7 @@ export function findJsdocLinkProblems(program, { entryFile, isTarget }) {
 
         const report = (node, problem) => {
             const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+
             problems.push({ file: sourceFile.fileName, line: line + 1, text: node.getText(sourceFile), ...problem });
         };
 

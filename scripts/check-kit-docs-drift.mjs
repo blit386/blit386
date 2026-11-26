@@ -14,6 +14,7 @@
  * Usage:
  *   node scripts/check-kit-docs-drift.mjs
  */
+
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,8 +34,9 @@ export const KIT_PACKAGE_JSON_PATH = 'packages/kit/package.json';
  * failure mode here is "ask a human to spend five minutes reading," not "block a merge," so an
  * over-inclusive false positive is cheap and a false negative is not.
  *
- * `getting-started.md` and `when-something-breaks.md` have no entry - neither maps to one API
- * surface. They stay covered by the manual `/kit-audit` checklist, not this script.
+ * `getting-started.md`, `when-something-breaks.md`, `local-model.md`, `shipping-to-a-compo.md`, and
+ * `zed.md` have no entry - none maps to one API surface. They stay covered by the manual
+ * `/kit-audit` checklist, not this script.
  */
 export const KIT_DOC_TRIGGER_PAGES = {
     'content/docs/basics.md': ['api/core', 'api/game-loop', 'api/assets'],

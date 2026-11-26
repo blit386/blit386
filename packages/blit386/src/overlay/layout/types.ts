@@ -25,10 +25,13 @@ export interface OverlayLayoutConfig {
 
     readonly lineHeight: number;
 
+    /** Demo-supplied rows stacked above the footer this frame. */
     readonly customRowCount: number;
 
+    /** Mirrors {@link HardwareSettings#isOverlayTimingChartEnabled}. */
     readonly isOverlayTimingChartEnabled: boolean;
 
+    /** Timing chart band height in pixels; a non-positive value falls back to the default. */
     readonly timingChartHeight: number;
 
     /** Mirrors {@link HardwareSettings#isOverlayRendererDiagnosticsBarEnabled}. */
@@ -43,6 +46,7 @@ export interface OverlayLayoutConfig {
     /** Mirrors {@link HardwareSettings#isOverlayPaletteEnabled}. */
     readonly isOverlayPaletteEnabled: boolean;
 
+    /** Palette grid dimensions; the palette band is reserved only when this is set and the palette is enabled. */
     readonly paletteGrid?: PaletteGridLayout;
 }
 
@@ -77,6 +81,7 @@ export interface OverlayLayoutPlan {
 
     readonly rendererDiagnosticsPos: Vector2i;
 
+    /** Demo row bars; index `0` sits directly above the footer stack. May hold unused pooled rects past the count. */
     readonly customBars: readonly Rect2i[];
 
     /** 1 px row gaps between stacked overlay bands (top stack, custom rows, palette/hint). */

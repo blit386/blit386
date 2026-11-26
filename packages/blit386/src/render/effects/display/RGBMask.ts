@@ -27,7 +27,7 @@ export class RGBMask extends FullscreenEffect {
 
     protected readonly label = 'RGBMask';
 
-    /** vec2 resolution + intensity + size + border + 1 pad = 32 bytes. */
+    /** vec2 resolution + intensity + size + border + 3 pads = 32 bytes. */
     protected readonly uniformBytes = 32;
 
     protected readonly fragmentShader = FRAGMENT_WGSL;

@@ -12,12 +12,25 @@ import {
 
 /** Resolved palette indices used when drawing the overlay timing chart band. */
 export interface TimingChartDrawStyle {
+    /** Update-time dot color. */
     readonly updateBarIndex: number;
+
+    /** Render-time dot color. */
     readonly renderBarIndex: number;
+
+    /** Column tint for warning severity. */
     readonly warningBarIndex: number;
+
+    /** Column tint for error severity. */
     readonly errorBarIndex: number;
+
+    /** Tag marker and tag/tick text color. */
     readonly tagBarIndex: number;
+
+    /** Horizontal grid line color. */
     readonly gridBarIndex: number;
+
+    /** Pipeline-overflow marker color in diagnostics modes. */
     readonly overflowBarIndex: number;
 }
 
@@ -94,7 +107,7 @@ export function computeTimingChartGridLineY(
  * @param ms - Sample value in milliseconds.
  * @param chartRect - Chart band bounds.
  * @param fullScaleMs - Milliseconds mapped to full band height.
- * @returns Screen Y for the dot, or `null` when the sample is zero.
+ * @returns Screen Y for the dot, or `null` when the sample, band, or scale is not positive.
  */
 export function computeTimingChartDotY(
     ms: number,

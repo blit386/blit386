@@ -22,7 +22,7 @@ const scrollbarScratch = {
 };
 
 /**
- * Tests whether a pointer lies outside the palette band, including the scrollbar track.
+ * Tests whether a pointer lies outside the band's swatch hit region; the scrollbar track counts as outside.
  *
  * @param pointerX - Pointer X in display coordinates.
  * @param pointerY - Pointer Y in display coordinates.

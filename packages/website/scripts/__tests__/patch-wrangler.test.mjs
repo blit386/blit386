@@ -145,6 +145,7 @@ describe('patchRequireMetaUrl', () => {
 describe('stripPrerenderedPages', () => {
     /** @param {[string, string][]} entries */
     const metadataModule = (entries) => `export const buildMetadata = new Map(${JSON.stringify(entries)});`;
+
     /** @param {string} source @returns {Map<string, string>} */
     const parseModule = (source) =>
         new Map(JSON.parse(source.slice('export const buildMetadata = new Map('.length, -');'.length)));

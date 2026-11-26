@@ -340,6 +340,7 @@ export const draw = {
         try {
             if (font instanceof Promise) {
                 reportMissingAwait('BitmapFont.load()');
+
                 return;
             }
 
@@ -427,6 +428,7 @@ export const draw = {
         try {
             if (spriteSheet instanceof Promise) {
                 reportMissingAwait('SpriteSheet.load()');
+
                 return;
             }
 
@@ -436,7 +438,7 @@ export const draw = {
                 if (typeof paletteOffsetOrParams === 'object') {
                     BTAPI.instance.draw.drawSpriteWithParams(spriteSheet, srcRect, destPos, paletteOffsetOrParams);
                 } else {
-                    // Typed callers cannot reach here with a Rect2i; untyped ones hit BTAPI's dev-mode guard.
+                    // Typed callers cannot reach here with a Rect2i; untyped ones hit the dev-mode guard in DrawCommands.drawSprite.
                     BTAPI.instance.draw.drawSprite(spriteSheet, srcRect, destPos as Vector2i, paletteOffsetOrParams);
                 }
 
@@ -444,6 +446,7 @@ export const draw = {
             }
 
             const srcType = typeof srcRect;
+
             throw new Error(
                 srcType === 'string'
                     ? 'drawSprite does not accept a frame name yet; pass a Rect2i source rectangle'
@@ -454,6 +457,7 @@ export const draw = {
         } catch (error) {
             reportDrawError(error);
         }
+
         // Object literals cannot declare overloads; the cast gives callers the typed forms. The
         // shipped fast path is declared first. gen-api-history.mjs unwraps the `as`.
     }) as {
@@ -509,6 +513,7 @@ export const draw = {
         try {
             if (spriteSheet instanceof Promise) {
                 reportMissingAwait('SpriteSheet.load()');
+
                 return;
             }
 
@@ -518,6 +523,7 @@ export const draw = {
                 // (sheet, index, destPos, paletteOffset?)
                 if (!isVectorArg(arg4)) {
                     BTAPI.instance.draw.drawTile(spriteSheet, colOrIndex, undefined, rowOrDestPos, arg4);
+
                     return;
                 }
             } else if (isVectorArg(arg5)) {
@@ -527,11 +533,13 @@ export const draw = {
                     const tileH = typeof arg4 === 'number' ? arg4 : arg4.y;
 
                     BTAPI.instance.draw.drawTileSized(spriteSheet, colOrIndex, rowOrDestPos, tileW, tileH, arg5, arg6);
+
                     return;
                 }
             } else if (isVectorArg(arg4)) {
                 // (sheet, col, row, destPos, paletteOffset?)
                 BTAPI.instance.draw.drawTile(spriteSheet, colOrIndex, rowOrDestPos, arg4, arg5);
+
                 return;
             }
 
@@ -547,6 +555,7 @@ export const draw = {
         } catch (error) {
             reportDrawError(error);
         }
+
         // Object literals cannot declare overloads; the cast gives callers the three typed forms.
         // gen-api-history.mjs unwraps the `as` and still classifies this member as a method.
     }) as {

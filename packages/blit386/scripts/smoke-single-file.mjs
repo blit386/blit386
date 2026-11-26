@@ -11,6 +11,7 @@
  *
  * Usage (after `pnpm run build`): pnpm run test:single-file
  */
+
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,8 +45,10 @@ const PAGE_HTML = `<!doctype html>
 
                 async init() {
                     const palette = BT.paletteCreate(16);
+
                     palette.set(1, new Color32(${CLEAR_RGB.join(', ')}));
                     BT.paletteSet(palette);
+
                     return true;
                 }
 
@@ -72,6 +75,7 @@ const PAGE_HTML = `<!doctype html>
 async function run() {
     const engineSource = readFileSync(ENGINE_BUNDLE, 'utf8');
     const browser = await chromium.launch({ channel: 'chrome' });
+
     /** @type {string[]} */
     const problems = [];
 
@@ -113,6 +117,7 @@ async function run() {
             );
         } catch {
             problems.push(`no frame drawn within ${FRAME_TIMEOUT_MS} ms`);
+
             return problems;
         }
 

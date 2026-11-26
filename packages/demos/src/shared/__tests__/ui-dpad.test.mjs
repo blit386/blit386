@@ -7,6 +7,7 @@
  * true left by a previous test in this file, because stepDpad() unconditionally recomputes
  * downState[dir] = isHeld every call - see the note on each test below.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

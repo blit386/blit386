@@ -2,9 +2,9 @@
 // Shared by the Claude Code PostToolUse hook, the Cursor afterFileEdit hook, the Gemini CLI AfterTool
 // hook, and the Antigravity and Codex PostToolUse hooks: each sends a JSON payload on stdin that names
 // the file (Claude and Gemini: tool_input.file_path, Cursor: file_path, Antigravity:
-// toolCall.args.TargetFile). Codex sends the
-// raw apply_patch text in tool_input.command instead, so its files are parsed out of the patch and
-// resolved against the payload's cwd (the session's working directory, not always the project root).
+// toolCall.args.TargetFile). Codex sends the raw apply_patch text in tool_input.command instead, so
+// its files are parsed out of the patch and resolved against the payload's cwd (the session's working
+// directory, not always the project root).
 // GitHub Copilot's entry (copilot-hook.cjs) requires this file instead of running it, because only it knows
 // which Copilot tools edit files; `formatFile` is exported for that, and the stdin handling below runs only
 // when this file is the script node was started with.

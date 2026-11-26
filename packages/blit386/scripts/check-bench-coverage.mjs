@@ -14,6 +14,7 @@
  * Usage:
  *   node scripts/check-bench-coverage.mjs --base <git-ref>
  */
+
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,6 +47,7 @@ export function checkBenchCoverage(changedFiles) {
             !file.endsWith('.bench.ts') &&
             !file.endsWith('.test.ts'),
     );
+
     const benchFilesTouched = changedFiles.filter((file) => file.endsWith('.bench.ts'));
 
     return { hotFiles, benchFilesTouched, needsReminder: hotFiles.length > 0 && benchFilesTouched.length === 0 };
@@ -54,7 +56,7 @@ export function checkBenchCoverage(changedFiles) {
 /**
  * @param {string} baseRef Git ref to diff the current worktree against.
  * @param {string} [cwd] Directory to diff from; paths are reported relative to it. Defaults to this package root.
- * @returns {string[]} Changed `src/` file paths relative to this package root, or `[]` if the diff cannot be
+ * @returns {string[]} Changed `src/` file paths relative to `cwd`, or `[]` if the diff cannot be
  *   computed (for example, `baseRef` does not exist locally) - this reminder is best-effort, never fatal.
  */
 export function changedFilesSince(baseRef, cwd = ROOT) {

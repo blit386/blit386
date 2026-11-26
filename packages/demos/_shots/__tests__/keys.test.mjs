@@ -1,6 +1,7 @@
 /**
  * The key map is the gallery's whole interaction model; a wrong binding is a usability bug.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

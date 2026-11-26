@@ -1,6 +1,7 @@
 /**
  * Manifest merging is what keeps a subset capture run from wiping every other demo's tiles.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

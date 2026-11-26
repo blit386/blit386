@@ -141,11 +141,13 @@ export class SpriteSheet {
 
         if (image) {
             assertImageElementWithinLimits('sprite sheet', image);
+
             const decoded = getDecodedImageSize(image);
 
             this._size = Object.freeze(new Vector2i(decoded.width, decoded.height));
         } else if (size) {
             assertDimensions('sprite sheet', size.x, size.y);
+
             this._size = Object.freeze(new Vector2i(size.x, size.y));
         } else {
             throw new Error('Either an image or explicit size must be provided.');
@@ -258,6 +260,7 @@ export class SpriteSheet {
     static async load(url: string, options?: { tileSize?: number | Vector2i }): Promise<SpriteSheet> {
         // Validate before any loading so a bad size fails fast with no side effects.
         const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
+
         const image = await AssetLoader.loadImage(url);
         const sheet = new SpriteSheet(image);
 
@@ -302,6 +305,7 @@ export class SpriteSheet {
     ): Promise<IndexedSpriteLoadResult> {
         // Validate before loadColorsIntoPalette writes the palette, so a bad size leaves it untouched.
         const tileSize = options?.tileSize === undefined ? null : toTileSize(options.tileSize);
+
         const colors = await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options);
         const sheet = await SpriteSheet.load(url);
 
@@ -415,6 +419,7 @@ export class SpriteSheet {
         this.indexedPixels = mapRgbaPixelsToIndexed(w, h, this.rgbaPixels, palette, this.sourceName);
 
         this.invalidateTexture();
+
         registerIndexedSheet(this);
     }
 
@@ -423,8 +428,8 @@ export class SpriteSheet {
      *
      * Use this only when the **slot layout** of the palette has changed - that is,
      * when the same colors now live at different index positions. It works by
-     * replaying the original RGBA data through `palette.findColor()` and assigning
-     * each opaque pixel the index of its matching color in the new palette.
+     * replaying the original RGBA data through the same exact-RGB lookup as `indexize()`
+     * and assigning each opaque pixel the lowest slot holding its color in the new palette.
      *
      * **Do not call this to change what color a slot displays.** If you only want
      * to swap the visible color at a slot (e.g. animate a fire effect), mutate the
@@ -447,10 +452,9 @@ export class SpriteSheet {
      * BT.spritesRefresh();
      * ```
      *
-     * If the new palette does not contain a pixel's original RGBA value,
-     * `palette.findColor()` returns `-1` and `reindexize()` throws an `Error`
-     * with the offending color and coordinates, e.g.:
-     * `[SpriteSheet] 'sheet.png' pixel at (x, y) has color #rrggbb which is not in the active palette.`
+     * If no fully opaque slot in the new palette holds a pixel's original RGB value,
+     * `reindexize()` throws an `Error` with the offending color and coordinates, e.g.:
+     * `The pixel at (x, y) in 'sheet.png' has the color #rrggbb, but that color isn't in your palette. ...`
      *
      * Must be preceded by a call to `indexize()`. The GPU texture is invalidated and
      * re-created on the next `getTexture()` call.
@@ -470,6 +474,7 @@ export class SpriteSheet {
 
         const w = this.size.x;
         const h = this.size.y;
+
         this.indexedPixels = mapRgbaPixelsToIndexed(w, h, this.rgbaPixels, palette, this.sourceName);
 
         this.invalidateTexture();
@@ -524,6 +529,7 @@ export class SpriteSheet {
     hotReplaceImage(image: HTMLImageElement, palette: Palette | null): void {
         if (!this.image) {
             console.warn('[BT] Hot reload: sprite sheet has no source image (raw indexed data); skipping.');
+
             this._status = 'failed';
 
             return;
@@ -531,6 +537,7 @@ export class SpriteSheet {
 
         if (this.indexedPixels !== null && palette === null) {
             console.warn(`[BT] Hot reload: ${this.sourceName} is indexized but no active palette is set; skipping.`);
+
             this._status = 'failed';
 
             return;
@@ -552,6 +559,7 @@ export class SpriteSheet {
             this._size = Object.freeze(new Vector2i(width, height));
             this.rgbaPixels = rgbaPixels;
             this.indexedPixels = indexedPixels;
+
             this.invalidateTexture();
 
             this._status = 'ready';

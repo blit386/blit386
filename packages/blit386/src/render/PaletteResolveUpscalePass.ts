@@ -7,22 +7,24 @@ import { VS_WGSL } from './effects/fullscreenVS';
  * Fullscreen pass that reads an `r8uint` palette-index texture, resolves indices through
  * the shared palette uniform buffer, and writes RGBA at an arbitrary output resolution.
  *
- * Replaces `UpscalePass` for logical-index framebuffers: palette lookup happens here,
- * after the pixel-tier chain.
+ * Palette lookup happens here, after the pixel-tier chain.
  */
 export class PaletteResolveUpscalePass {
     private device: GPUDevice | null = null;
     private pipeline: GPURenderPipeline | null = null;
     private paletteBuffer: GPUBuffer | null = null;
     private uniformBuffer: GPUBuffer | null = null;
+
     /** logicalW, logicalH, filterLinear (0|1), pad */
     private uniformData: Float32Array<ArrayBuffer> = new Float32Array(new ArrayBuffer(16));
+
     private filterMode: OutputUpscaleFilter = 'nearest';
     private bindGroups = new WeakMap<GPUTextureView, GPUBindGroup>();
 
     /** Cached encode params so redundant uniform uploads are skipped when unchanged. */
     private lastLogicalSizeX = -1;
     private lastLogicalSizeY = -1;
+
     /** Unset -1; then 0 = nearest, 1 = linear (matches uniformData[2]). */
     private lastFilterLinear = -1;
 

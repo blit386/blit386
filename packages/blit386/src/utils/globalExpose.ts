@@ -5,14 +5,14 @@
  * override always wins, otherwise the assignment follows `BT.isDevMode` so a consumer's
  * production page never gets a global it did not ask for.
  *
- * The assignment itself is guarded with the `typeof globalThis.window === 'undefined'` idiom
- * already established by `BTAPI.ts`, `Orientation.ts`, and `WakeLock.ts` (BT-416), so importing
+ * The assignment itself is guarded with the same `typeof globalThis.<name>` idiom that
+ * `Orientation.ts` and `WakeLock.ts` use (BT-416), so importing
  * this module never throws under the default Node vitest environment or any other non-browser
  * context.
  */
 
 import type { InputTrace, InputTraceOptions, InputTraceResult } from '../input/InputTrace';
-import type { OverlayRowText } from '../overlay/types';
+import type { OverlayRowText } from '../overlay';
 import { isDevMode } from './devMode';
 
 declare global {

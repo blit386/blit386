@@ -20,12 +20,16 @@ export function oscillatorSample(waveform: Exclude<SynthWaveform, 'noise'>, phas
     switch (waveform) {
         case 'sine':
             return Math.sin(2 * Math.PI * phase);
+
         case 'square':
             return phase < dutyCycle ? 1 : -1;
+
         case 'triangle':
             return 1 - 4 * Math.abs(phase - 0.5);
+
         case 'sawtooth':
             return 2 * phase - 1;
+
         default:
             throw new Error(`Unsupported synth waveform: ${waveform as string}`);
     }

@@ -169,7 +169,7 @@ class Demo {
 
         // Install the shared UI theme the captions draw with. It writes 12 colors
         // starting at the slot we pass - 20 through 31 here, which stays clear of the
-        // artwork colors (1-11) and fills the top of our 32-slot palette exactly. Must
+        // artwork colors (2-11) and fills the top of our 32-slot palette exactly. Must
         // happen before BT.paletteSet().
         this.theme = applyTheme(this.palette, 20);
 

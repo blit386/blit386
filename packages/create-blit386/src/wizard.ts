@@ -25,6 +25,7 @@ function bail(): never {
     process.exit(0);
 }
 
+/** Ask the setup questions. Cancelling any prompt exits the process with code 0 instead of returning. */
 export async function runWizard(): Promise<WizardOptions> {
     const language = await select({
         message: 'Which language do you want?',

@@ -89,8 +89,9 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
 /**
  * Default template vars when an older manifest did not record them.
  *
- * Only the package-manager commands, which is exactly the set `content/` substitutes - so a manifest
+ * Only the package-manager commands, which is every var the kit-managed files use - so a manifest
  * predating `vars` still regenerates byte-identical kit files once the package manager is detected.
+ * (`packageName` feeds only the user-owned `.claude/launch.json`, which falls back to `game`.)
  */
 export function fallbackVars(root: string): TemplateVars {
     const pm: PackageManager = detectPackageManager(root);
@@ -115,7 +116,7 @@ function regenerate(manifest: ReadBlitManifest, root: string): Map<string, strin
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
 
-    // Lock the resolved vars into the manifest the first time we have to fall back. Without this a
+    // Lock the resolved vars into the manifest the first time a fallback is needed. Without this a
     // project scaffolded before vars were tracked would re-detect the package manager on every sync.
     if (manifest.vars === undefined) {
         manifest.vars = vars;
@@ -233,8 +234,10 @@ interface SyncTally {
     restored: string[];
     added: string[];
     review: string[];
+
     /** Untracked files already on disk at a path the kit newly ships; the kit version went to `.new`. */
     collided: { path: string; sidecarSaved: boolean }[];
+
     orphaned: string[];
     unchanged: number;
 }

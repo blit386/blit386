@@ -30,19 +30,19 @@ export class Orientation {
 
     /**
      * True while this instance successfully holds an orientation lock it requested.
-     * Guards {@link detach} so we never call `unlock()` for `'any'`, unsupported
-     * lock APIs, failed requests, or a host page lock we did not acquire.
+     * Guards {@link detach} so it never calls `unlock()` for `'any'`, unsupported
+     * lock APIs, failed requests, or a host page lock this instance did not acquire.
      */
     private held = false;
 
     /**
      * Monotonic attach/detach generation. Each {@link attach} / {@link detach}
      * bumps it so an in-flight {@link lock} can tell whether it still belongs to
-     * the current attachment (avoids a detach→reattach race claiming `held`).
+     * the current attachment (avoids a detach-then-reattach race claiming `held`).
      */
     private generation = 0;
 
-    /** Demo callback for orientation changes, or null when the demo omitted the hook. */
+    /** Orientation-change callback from {@link attach}; null before attach and after {@link detach}. */
     private onChange: ChangeHandler | null = null;
 
     /** Bound `change` handler so it can be removed in {@link detach}. */
@@ -178,7 +178,7 @@ export class Orientation {
      *
      * No-ops when `lock` is missing from the platform object (for example iOS Safari).
      * Captures the {@link attach} generation so a lock that resolves after
-     * detach→reattach is treated as stale: released when nothing newer holds a
+     * detach-then-reattach is treated as stale: released when nothing newer holds a
      * lock, and never recorded as {@link held} for the new attachment.
      *
      * @param preferred - `'landscape'` or `'portrait'` lock target.

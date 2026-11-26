@@ -43,6 +43,7 @@
  * Usage:
  *   node scripts/check-agent-config.mjs
  */
+
 import { existsSync, readdirSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -180,8 +181,7 @@ function readRuleNames(dir, extension) {
  * (`description`/`globs`/`alwaysApply`) differs from Claude's `paths:` key - so this checks
  * basename parity rather than file contents, matching the policy this check had before PR #434
  * removed it (it is intentionally scoped to whatever rule files exist on either side today,
- * not a fixed list - `.claude/rules/` has shrunk from 12 files to 2 since 2026-07 as most rule
- * content migrated into CLAUDE.md, and this check tracks that count automatically).
+ * not a fixed list, so it tracks the rule count automatically as rules are added or retired).
  *
  * @param {string[]} cursorRuleNames Basenames (no extension) of `.cursor/rules/*.mdc`.
  * @param {string[]} claudeRuleNames Basenames (no extension) of `.claude/rules/*.md`.
@@ -249,7 +249,7 @@ export function discoverPackageAgentRoots(packagesDir) {
         .sort();
 }
 
-/** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
+/** @returns {string[]} Failure messages from every check listed in the file header, each tagged with its root. */
 function runAllChecks() {
     const failures = [];
 
@@ -298,6 +298,7 @@ function runAllChecks() {
 
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
+
         collect(failures, `packages/${packageName}`, checkAgentsPointer(root));
     }
 

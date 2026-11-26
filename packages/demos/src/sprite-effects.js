@@ -34,7 +34,7 @@ with its effect name and a one-line note on when a game would use it centered un
   - Static (full width, top): Normal, Silhouette, Team Red, Team Blue, Team Green, Frozen.
   - Animated (bottom left): Damage (flashes white and red for 30 ticks, once every 3
     seconds), Ghost (alpha pulsing between 40 and 180), Invincible (hue rotating through
-    the rainbow), Poisoned (green tint pulsing 5 times per second).
+    the rainbow), Poisoned (green tint pulsing at five radians per second).
   - Day/night cycle (bottom right): the sprite dims toward a cool blue night tint and back
     over 20 seconds, and a marker in the sprite's brightest ambient color crosses a
     180-pixel bar split into four quarters labeled Day, Sunset, Night, Dawn.
@@ -1042,9 +1042,9 @@ class Demo {
         }
     }
 
-    // Draws the Animated panel: four effects whose theme blocks update() rewrites every
-    // tick - Damage, Ghost, Invincible, Poisoned. render() draws them exactly like the
-    // static ones; only the colors in their blocks change.
+    // Draws the Animated panel: Damage, Ghost, Invincible, Poisoned. update() rewrites
+    // the last three theme blocks every tick, and Damage switches between static
+    // blocks. render() draws them exactly like the static ones.
     renderDynamicEffects() {
         this.renderPanel(PANEL_X, ANIMATED_PANEL_Y, ANIMATED_PANEL_W, 'Animated - rewritten in update()');
 

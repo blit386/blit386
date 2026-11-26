@@ -152,7 +152,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
 
             // Primitive and sprite pipelines run at logical resolution. The
             // viewport is automatic since each pass binds a target view; only
-            // the camera scaling here cares about logical size.
+            // their clip-space conversion needs the logical size.
             await this.scene.init(this.device, this.displaySize, this.paletteBuffer, LOGICAL_TARGET_FORMAT);
 
             // Overlay pipelines are lazily allocated: eagerly (re)initialize them here only
@@ -471,7 +471,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Captures the next rendered frame as a PNG blob.
      * The capture happens on the next `endFrame()` call.
-     * If a capture is already pending, the previous one is rejected.
+     * If a capture is already pending in this slot, the previous one is rejected;
+     * the logical-size slots are unaffected.
      *
      * @returns Promise resolving to a PNG Blob of the rendered frame.
      */

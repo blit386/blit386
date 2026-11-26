@@ -49,8 +49,8 @@ WHAT YOU WILL LEARN
 - BT.isGamepadConnected(player) and BT.gamepadCount for connection status, with a simple
   rising-edge check to react once when a pad appears.
 - BT.getAxis(axis, player) with BT.AXIS_LEFT_X / AXIS_LEFT_Y / AXIS_RIGHT_X / AXIS_RIGHT_Y
-  (-1 to +1) and BT.AXIS_TRIGGER_L / AXIS_TRIGGER_R (0 to 1), dead-zone filtered by the
-  engine.
+  (-1 to +1) and BT.AXIS_TRIGGER_L / AXIS_TRIGGER_R (0 to 1). The engine dead-zone
+  filters the stick axes; the triggers arrive raw.
 - Button masks: BT.isDown(BT.BTN_A | BT.BTN_B, player) is true when either button is
   held.
 - The triggers as digital buttons: BT.isDown(BT.BTN_L2, player) and
@@ -329,7 +329,8 @@ class Demo {
             this.boostTicks = BOOST_TICKS;
         }
 
-        // Axes are dead-zone filtered by the engine (see renderArena for the details).
+        // Stick axes are dead-zone filtered by the engine, trigger axes arrive raw (see
+        // renderArena for the details).
         const moveX = BT.getAxis(BT.AXIS_LEFT_X, PLAYER);
         const moveY = BT.getAxis(BT.AXIS_LEFT_Y, PLAYER);
         const aimX = BT.getAxis(BT.AXIS_RIGHT_X, PLAYER);

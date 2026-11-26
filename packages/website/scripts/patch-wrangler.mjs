@@ -50,21 +50,25 @@ export const patchWranglerConfig = (config, options = {}) => {
     const { isNextChannel = false, isCspReportOnly = false } = options;
     const existingFlags = Array.isArray(config.compatibility_flags) ? config.compatibility_flags : [];
     const flags = existingFlags.includes(REQUIRED_FLAG) ? existingFlags : [...existingFlags, REQUIRED_FLAG];
+
     const assets =
         config.assets && config.assets.run_worker_first !== true
             ? { ...config.assets, run_worker_first: true }
             : config.assets;
+
     const extraVars = {
         ...(isNextChannel ? { BLIT386_CHANNEL: NEXT_CHANNEL } : {}),
         ...(isCspReportOnly ? { BLIT386_CSP_REPORT_ONLY: REPORT_ONLY_ENABLED } : {}),
     };
+
     const vars = Object.keys(extraVars).length > 0 ? { ...config.vars, ...extraVars } : config.vars;
     const observability = { ...config.observability, enabled: true };
+
     return {
         ...config,
         compatibility_flags: flags,
-        ...(config.assets !== undefined ? { assets } : {}),
-        ...(vars !== undefined ? { vars } : {}),
+        ...(config.assets === undefined ? {} : { assets }),
+        ...(vars === undefined ? {} : { vars }),
         observability,
     };
 };
@@ -94,17 +98,27 @@ export const patchRequireMetaUrl = (content) => content.replace(CREATE_REQUIRE_P
  */
 export const stripPrerenderedPages = (source) => {
     const match = BUILD_METADATA_PATTERN.exec(source.trim());
-    if (!match) throw new Error(`${BUILD_METADATA_FILE} is not the "new Map([...])" module this patch expects`);
+
+    if (!match) {
+        throw new Error(`${BUILD_METADATA_FILE} is not the "new Map([...])" module this patch expects`);
+    }
+
     /** @type {[string, string][]} */
     const entries = JSON.parse(match[1]);
+
     if (!entries.some(([key]) => key === CACHED_ELEMENTS_KEY)) {
         throw new Error(`${BUILD_METADATA_FILE} has no ${CACHED_ELEMENTS_KEY} entry`);
     }
     const stripped = entries.map(([key, value]) => {
-        if (key !== CACHED_ELEMENTS_KEY) return [key, value];
+        if (key !== CACHED_ELEMENTS_KEY) {
+            return [key, value];
+        }
+
         const kept = Object.entries(JSON.parse(value)).filter(([cacheId]) => !cacheId.startsWith(PAGE_SLOT_PREFIX));
+
         return [key, JSON.stringify(Object.fromEntries(kept))];
     });
+
     return `export const buildMetadata = new Map(${JSON.stringify(stripped)});`;
 };
 
@@ -113,15 +127,23 @@ const main = () => {
     const isNextChannel = process.env.BLIT386_CHANNEL === NEXT_CHANNEL;
     const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === REPORT_ONLY_ENABLED;
     const config = JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8'));
+
     // Without an assets block there is nowhere to put run_worker_first, and markdown negotiation
     // silently stops working, so fail the build the way stripPrerenderedPages does.
-    if (config.assets === undefined) throw new Error(`${WRANGLER_CONFIG} has no assets block for run_worker_first`);
+    if (config.assets === undefined) {
+        throw new Error(`${WRANGLER_CONFIG} has no assets block for run_worker_first`);
+    }
+
     const patchedConfig = patchWranglerConfig(config, { isNextChannel, isCspReportOnly });
+
     writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(patchedConfig, null, 2)}\n`);
 
     const bytesBefore = statSync(BUILD_METADATA_FILE).size;
+
     writeFileSync(BUILD_METADATA_FILE, stripPrerenderedPages(readFileSync(BUILD_METADATA_FILE, 'utf8')));
+
     const toMiB = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MiB`;
+
     console.log(
         `stripped prerendered pages: ${BUILD_METADATA_FILE} ${toMiB(bytesBefore)} -> ${toMiB(statSync(BUILD_METADATA_FILE).size)}`,
     );
@@ -132,12 +154,20 @@ const main = () => {
     // (such as export-*.js) that contain the same call. Missing either turned every
     // unhandled route into a 500 instead of a clean 404.
     for (const entry of readdirSync(SERVER_DIR, { recursive: true })) {
-        if (!entry.endsWith('.js') && !entry.endsWith('.mjs')) continue;
+        if (!entry.endsWith('.js') && !entry.endsWith('.mjs')) {
+            continue;
+        }
+
         const filePath = join(SERVER_DIR, entry);
         const content = readFileSync(filePath, 'utf8');
         const patchedContent = patchRequireMetaUrl(content);
-        if (patchedContent === content) continue;
+
+        if (patchedContent === content) {
+            continue;
+        }
+
         console.log(`patched: ${filePath}`);
+
         writeFileSync(filePath, patchedContent);
     }
 };

@@ -2,6 +2,7 @@
  * Unit tests for the pure `robots.txt` / `_headers` builders behind `channelHeadersPlugin`.
  * Pure and exported so they can be unit-tested without touching disk.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

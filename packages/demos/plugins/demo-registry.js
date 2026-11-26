@@ -38,7 +38,8 @@ export const RESERVED_SLUGS = new Set([SHOTS_SLUG, INDEX_SLUG]);
 /**
  * Build the list of demos by scanning src/*.js for number-free kebab-case files.
  * Order comes from `DEMO_ORDER` (not filenames). Each entry's title defaults to
- * "BLIT386 Demo - Title Cased Topic" and may be overridden by a `@pageTitle ...` tag
+ * "BLIT386 Demo", an en dash, and the Title Cased Topic, and may be overridden by a
+ * `@pageTitle ...` tag
  * in the JS file header. `navLabel` is always the short title (searchable, no number).
  * `description` comes from the required `@description ...` header tag and feeds the page's
  * meta description and og:description (see `plugins/social-meta.js`).

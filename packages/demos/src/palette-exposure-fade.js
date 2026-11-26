@@ -73,7 +73,7 @@ bright elements such as a fireball hang on far longer than the dark rocks around
 
 BT.paletteFadeExposure() models the iris. It interpolates each RGB channel in linear
 light, and it gives each palette entry its own schedule offset derived from its luminance:
-bright colors leave first and arrive last; dark colors leave last and arrive first.
+bright colors arrive first and leave last; dark colors arrive last and leave first.
 
 WHY FADING UP LOOKS DIFFERENT FROM FADING DOWN?
 -----------------------------------------------

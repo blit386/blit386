@@ -42,8 +42,10 @@ export class RenderDimensionLimitError extends Error {
 export interface RenderDimensionSettings {
     /** Logical render resolution in pixels. */
     displaySize: Vector2i;
+
     /** Optional output drawing-buffer size in pixels. */
     drawingBufferSize?: Vector2i;
+
     /** Optional maximum on-screen canvas CSS size in pixels. */
     maxCanvasSize?: Vector2i;
 }
@@ -153,6 +155,7 @@ export function validateDimensions(settings: RenderDimensionSettings): string | 
 
 /**
  * Validates a render texture size against the current WebGPU adapter/device limit.
+ * Skips the check when the limit is missing or not a positive integer.
  *
  * @param field - Hardware settings field being checked.
  * @param size - Requested texture or drawing-buffer size.

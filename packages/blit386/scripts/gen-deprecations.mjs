@@ -15,6 +15,7 @@
  *   node scripts/gen-deprecations.mjs            # write docs/reference-deprecations.md
  *   node scripts/gen-deprecations.mjs --check    # report drift, write nothing, exit 1
  */
+
 import { writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +30,10 @@ const DOCS_DIR = join(ROOT, 'docs');
 const OUTPUT_FILE = join(DOCS_DIR, 'reference-deprecations.md');
 const KIT_REGISTRY_URL = new URL('../../kit/dist/migrations/registry.js', import.meta.url);
 
-/** "Generated, do not edit" header note, matching `sync-docs-from-engine.mjs`'s wording style. */
+/**
+ * "Generated, do not edit" header note. The `generated:start` / `generated:end` sentinels are what
+ * `GENERATED_NOTE_REGION` in packages/website/scripts/sync-docs-from-engine.mjs strips from the site copy.
+ */
 export const GENERATED_HEADER = `<!-- generated:start -->
 
 <!-- prettier-ignore -->
@@ -123,8 +127,8 @@ export function groupMigrationSections(migration) {
 
 /**
  * Renders one migration's `## <date> - compatibility aliases added` block, or `null` when it has
- * no sectioned renames (excluded from the doc entirely, matching the current hand-written file's
- * omission of `importPath`-only and empty-`renames` migrations).
+ * no sectioned renames (an `importPath`-only or empty-`renames` migration), which leaves it out of
+ * the doc entirely.
  *
  * @param {import('../../kit/src/migrations/types.ts').Migration} migration - Migration to render.
  * @returns {string | null} Rendered markdown block, or `null` if excluded.
@@ -209,6 +213,7 @@ async function main() {
     }
 
     writeFileSync(OUTPUT_FILE, markdown);
+
     console.log(`Wrote ${relativeToRoot(OUTPUT_FILE)}.`);
 }
 

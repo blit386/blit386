@@ -39,8 +39,10 @@ function makeBenchSheet(width: number, height: number): SpriteSheet {
 
 const glyphSheet = makeBenchSheet(8, 8);
 const spriteSheet = makeBenchSheet(64, 64);
+
 /** 64x64 sheet cut into 8x8 tiles: 64 tiles. */
 const tileSheet = makeBenchSheet(64, 64);
+
 tileSheet.tileSize = 8;
 
 /** Keeps each `tileRect` result live so V8 cannot scalar-replace the allocation being measured. */

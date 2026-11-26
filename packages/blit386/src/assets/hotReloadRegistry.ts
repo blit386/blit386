@@ -25,6 +25,7 @@ export class HotReloadRegistry<T> {
         const bucket = this.buckets.get(key) ?? new Set<T>();
 
         bucket.add(item);
+
         this.buckets.set(key, bucket);
     }
 

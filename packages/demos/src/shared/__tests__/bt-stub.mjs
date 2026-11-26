@@ -15,6 +15,7 @@
  * pointer/keyboard query methods are safe to leave un-stubbed (they default to `false`/
  * zero pre-boot), but stubbing them too gives every test full control over simulated input.
  */
+
 import { BT } from 'blit386';
 
 const STUB_KEYS = [

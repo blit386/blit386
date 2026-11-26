@@ -16,6 +16,7 @@
  *   node scripts/gen-api-history.mjs --check          # report drift, write nothing, exit 1
  *   node scripts/gen-api-history.mjs --since-check    # exit 1 if any public export lacks @since
  */
+
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -115,8 +116,8 @@ const DEPRECATED_PATTERN =
     /^Deprecated since (?:(?<version>\d+\.\d+\.\d+) \((?<versionDate>\d{4}-\d{2}-\d{2})\)|(?<date>\d{4}-\d{2}-\d{2}))\.?\s*(?<note>[\s\S]*)$/u;
 
 /**
- * Parses an `@deprecated` tag's comment text into a structured record. Backward compatible
- * with the 52 pre-existing date-only tags (`version` resolves to `null`).
+ * Parses an `@deprecated` tag's comment text into a structured record. Still accepts the legacy
+ * date-only form, for which `version` resolves to `null`.
  *
  * @param {string} text - Flattened `@deprecated` comment text.
  * @returns {{ version: string | null, date: string | null, note: string }} Parsed fields.
@@ -549,17 +550,21 @@ export function findVersionProblems(symbols, context) {
             ...entry.changes.map((change) => ['changed', change.version]),
             ['deprecated', entry.deprecated?.version ?? null],
         ];
+
         for (const [tag, version] of tagged) {
             if (version === null) {
                 continue;
             }
-            if (!PLAIN_SEMVER.test(version)) {
+
+            if (PLAIN_SEMVER.test(version)) {
+                if (compareVersions(version, context.unreleasedVersion) > 0 && !allowed.includes(version)) {
+                    problems.push(
+                        `${name}: @${tag} ${version} is past the next release ${context.unreleasedVersion} ` +
+                            '(add it to ALLOWED_FUTURE_VERSIONS if that release is planned)',
+                    );
+                }
+            } else {
                 problems.push(`${name}: @${tag} ${JSON.stringify(version)} is not a plain major.minor.patch version`);
-            } else if (compareVersions(version, context.unreleasedVersion) > 0 && !allowed.includes(version)) {
-                problems.push(
-                    `${name}: @${tag} ${version} is past the next release ${context.unreleasedVersion} ` +
-                        '(add it to ALLOWED_FUTURE_VERSIONS if that release is planned)',
-                );
             }
         }
     }
@@ -696,10 +701,13 @@ export function buildApiHistoryJson(rawSymbols, params) {
         docsDir = DOCS_DIR,
         resolveDate = resolveTagDate,
     } = params;
+
     const problems = findVersionProblems(rawSymbols, { unreleasedVersion, allowedFutureVersions });
+
     if (problems.length > 0) {
         throw new Error(`${problems.length} invalid version tag(s):\n  ${problems.join('\n  ')}`);
     }
+
     const versions = buildVersionsMap(rawSymbols, packageVersion, unreleasedVersion, resolveDate);
     const hasTag = (version) =>
         // eslint-disable-next-line security/detect-object-injection -- version string from our own versionSet, not external input
@@ -754,6 +762,7 @@ function loadPackageVersion() {
  */
 function generate() {
     assertReleaseTagsPresent();
+
     const program = createRepoProgram();
     const rawSymbols = enumerateSymbols(program, ENTRY_FILE);
 
@@ -829,6 +838,7 @@ function main() {
     }
 
     writeFileSync(OUTPUT_FILE, json);
+
     console.log(`Wrote ${relativeToRoot(OUTPUT_FILE)} (${Object.keys(history.symbols).length} symbols).`);
 }
 

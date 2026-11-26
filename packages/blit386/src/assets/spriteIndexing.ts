@@ -1,7 +1,8 @@
 /**
  * Palette indexing for {@link SpriteSheet}: the registry of indexized sheets that
  * `BT.spritesRefresh` walks, RGBA-to-index mapping, palette color discovery for
- * `loadColorsIntoPalette`, and the used-index scan behind the dev overlay.
+ * `loadColorsIntoPalette`, the used-index scan behind the dev overlay, and the `r8uint`
+ * texture upload.
  */
 
 import { markIndexUsed } from '../core/RenderPaletteUsage';
@@ -168,8 +169,10 @@ export function mapRgbaPixelsToIndexed(
                 r.toString(16).padStart(2, '0') +
                 g.toString(16).padStart(2, '0') +
                 b.toString(16).padStart(2, '0');
+
             const x = i % w;
             const y = Math.floor(i / w);
+
             throw new Error(spriteColorNotInPaletteError(x, y, imageSrc, hex));
         }
 
@@ -210,6 +213,7 @@ function collectUniqueOpaqueColors(data: Uint8Array): Color32[] {
         }
 
         seen.add(key);
+
         collected.push(new Color32(r, g, b, 255));
     }
 

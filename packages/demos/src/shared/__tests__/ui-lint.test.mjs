@@ -1,6 +1,7 @@
 /**
  * Unit tests for the pure layout lint the /shots page runs over a UiContext snapshot.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

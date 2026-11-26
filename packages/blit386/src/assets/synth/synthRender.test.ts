@@ -17,10 +17,12 @@ function buildParams(overrides: Partial<SynthParams> = {}): SynthParams {
     return {
         waveform: 'sine',
         frequency: 440,
+
         // Comfortably longer than the default envelope's attack + decay + release (0.21s), so
         // the sustain phase actually plays and tests aren't accidentally silenced by envelope
         // gain hitting 0 across the whole clip.
         duration: 0.3,
+
         seed: 1,
         ...overrides,
     };

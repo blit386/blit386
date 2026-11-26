@@ -27,6 +27,7 @@
  *   node scripts/sync-cursor-commands.mjs            # write commands (run by hand; pre-push and a staged SKILL.md at pre-commit run --check)
  *   node scripts/sync-cursor-commands.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
+
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

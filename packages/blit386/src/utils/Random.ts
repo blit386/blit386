@@ -258,6 +258,7 @@ export class Random {
      *
      * @param arr - Array to pick from; must contain at least one element.
      * @returns Chosen element.
+     * @throws RangeError if `arr` is empty.
      * @since 1.5.0
      */
     public pick<T>(arr: readonly T[]): T {

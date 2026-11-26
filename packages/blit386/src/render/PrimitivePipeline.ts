@@ -178,7 +178,7 @@ export class PrimitivePipeline {
      * @param paletteIndex - Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void {
-        // Vector2i already guarantees integers, but |0 ensures the 32-bit int for bitwise ops.
+        // Vector2i already guarantees integers; |0 also pins them to the 32-bit range clipBresenhamLine is exact for.
         const x0 = p0.x | 0;
         const y0 = p0.y | 0;
         const x1 = p1.x | 0;
@@ -574,12 +574,10 @@ export class PrimitivePipeline {
     private writeVertex(x: number, y: number, paletteIndex: number): void {
         const index = this.vertexCount * VALUES_PER_VERTEX;
 
-        // Position stored as float32 via the float view.
         // eslint-disable-next-line security/detect-object-injection
         this.vertexFloats[index] = x - this.cameraOffset.x;
         this.vertexFloats[index + 1] = y - this.cameraOffset.y;
 
-        // Palette index stored as uint32 via the uint view.
         this.vertexIndices[index + 2] = paletteIndex;
 
         this.vertexCount++;

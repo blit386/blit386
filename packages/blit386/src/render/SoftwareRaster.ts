@@ -49,8 +49,10 @@ type SpriteCommand = {
     srcRect: Rect2i;
     destPos: Vector2i;
     paletteOffset: number;
+
     /** Row of `SPRITE_ORIENTATIONS`; `0` takes the unchanged `blitIndexedRect` path. */
     orientation: number;
+
     cameraX: number;
     cameraY: number;
 };
@@ -71,8 +73,10 @@ type StretchedSpriteCommand = {
     destW: number;
     destH: number;
     paletteOffset: number;
+
     /** Row of {@link SPRITE_ORIENTATIONS}, `0`-`7`. */
     orientation: number;
+
     cameraX: number;
     cameraY: number;
 };

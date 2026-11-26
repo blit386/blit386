@@ -2,7 +2,8 @@
  * Shared helpers for procedural pattern noise (value / Perlin / simplex).
  *
  * Not exported from the package - used only by {@link ValueNoise}, {@link PerlinNoise},
- * and {@link SimplexNoise}.
+ * {@link SimplexNoise}, their `SeededNoise` base, the coordinate hashes in `hash.ts`, and `Random`
+ * (which shares {@link INV_2_32}).
  */
 
 /** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
