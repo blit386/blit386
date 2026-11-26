@@ -6,7 +6,7 @@
  * `x` and `y` are declared, not defined, so the subclass constructor still creates them first and in the same order.
  */
 
-import { vectorDivideByZeroError } from './errorMessages';
+import { vectorDivideByZeroError } from './errorMessages/math';
 import type { Vector2i } from './Vector2i';
 
 /**

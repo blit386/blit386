@@ -1,4 +1,4 @@
-import { vectorDivideByZeroError } from './errorMessages';
+import { vectorDivideByZeroError } from './errorMessages/math';
 import { Vector2iOps } from './Vector2iOps';
 
 /**
