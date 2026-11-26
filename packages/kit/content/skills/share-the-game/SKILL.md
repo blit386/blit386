@@ -64,6 +64,13 @@ loaded through the BLIT386 loaders. Unused public files make it bigger. External
 browser APIs can still need separate resources; unsupported static resources and some HTML settings cause a build error.
 Browser and audio restrictions still apply.
 
+For a compo or jam entry, `--out demo.html` names the file (always inside `dist/`) and `--title "My Demo"` sets the tab
+name. `--engine cdn` leaves the engine out of the file and loads the exact installed BLIT386 version from jsDelivr, for
+compos with an "engine allowed" category where the runtime does not count toward the size limit, like PICO-8. It prints
+two sizes, the game alone and the game plus the engine, and it needs a network connection to start. The splash still
+plays; a player opens the file as is, so `isSplashEnabled: false` in `configure()` is the way to turn it off.
+`docs/shipping-to-a-compo.md` has the details.
+
 ## Notes
 
 - The game runs on WebGPU where it is available and falls back to plain Canvas 2D everywhere else, so friends can play

@@ -114,7 +114,8 @@ From the project folder:
 - `npx blit play` - play-test the game from the terminal and print its state (`npx blit play --help` for the steps).
 - `npx blit bundle --single` - pack the game and its `public/` files into one HTML file, `dist/bundle.html`, that plays
   without a server. A game that calls an online service still needs a connection; the `share-the-game` skill lists the
-  limits.
+  limits. `--out`, `--title` and `--engine cdn` (load the engine from the web, ship only the game) make it compo-ready;
+  `docs/shipping-to-a-compo.md` explains them.
 - `npx blit doctor` - check your setup if something seems off.
 - `npx blit upgrade` - update BLIT386 to the latest version (and offer to fix any renamed API names for you).
 - `npx blit migrate` - update old BLIT386 names in your game to the current ones (and enable hot reload on blit386
@@ -158,6 +159,9 @@ Copilot, Antigravity, Codex, Gemini CLI, OpenCode, and Zed read their skills fro
 - Zed: `.zed/settings.json` sets format on save and the docs server. Zed cannot take safety rules from project files;
   `docs/zed.md` has a snippet to paste into your own settings.
 - Any other assistant (Windsurf and others): this file is its home base.
+
+Entering a demo party compo or a game jam? `docs/shipping-to-a-compo.md` covers the single-file export, the
+engine-from-the-web size option, the splash, and the checks before you submit.
 
 Want your assistant to run on a model on your own computer, offline, instead of in the cloud? `docs/local-model.md`
 covers a tested small model and how to start it.

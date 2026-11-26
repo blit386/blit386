@@ -15,12 +15,12 @@ The `blit` CLI is a project-local bin inside every generated game: `blit run`, `
 
 ## Kit content vs engine docs
 
-Generated games receive `AGENTS.md`, eleven beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
-`input`, `palette`, `random`, `audio`, `hot-reload`, `when-something-breaks`, `zed`, `local-model`), and the game-author
-skills in `content/skills/`. These are not copies of the engine's full `docs/` tree - they teach the starter game and
-route anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP server (`search_docs`,
-`get_doc_page`, `get_docs_summary`), `https://blit386.dev/llms.txt`, or any doc page fetched with
-`Accept: text/markdown`. GitHub is the last resort, for when the documentation itself falls short.
+Generated games receive `AGENTS.md`, twelve beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
+`input`, `palette`, `random`, `audio`, `hot-reload`, `when-something-breaks`, `zed`, `local-model`,
+`shipping-to-a-compo`), and the game-author skills in `content/skills/`. These are not copies of the engine's full
+`docs/` tree - they teach the starter game and route anything deeper to the live documentation at blit386.dev: the
+`blit386-docs` MCP server (`search_docs`, `get_doc_page`, `get_docs_summary`), `https://blit386.dev/llms.txt`, or any
+doc page fetched with `Accept: text/markdown`. GitHub is the last resort, for when the documentation itself falls short.
 
 `content/` is also published to blit386.dev under `/docs/build-a-game/` by
 `packages/website/scripts/sync-kit-pages.mjs`, for agents with no scaffolded project. After editing anything in
@@ -87,6 +87,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `window.BT` console debugging |
 | `content/docs/zed.md` | Zed's trust and Biome setup, or the guard core's shell policy (every deny or ask form gets a pattern in its paste-in snippet; the snippet tests in `test/ownership.test.mjs` read it from here) |
 | `content/docs/local-model.md` | Ollama's `launch` command, model tags, or context-length advice change; a new local model gets tested with the kit; or a listed assistant's hook support changes. Its trial results are dated (November 2026, Inkling 2 Mini through Claude Code) - re-run the trial before changing a claim about the model |
+| `content/docs/shipping-to-a-compo.md` | `blit bundle` flags or output change, the jsDelivr URL form changes, or the splash gating rules in the engine's `guide-splash.md` change |
 | `content/AGENTS.md` | Overall game shape, hard rules, doc routing, hot-reload tiers, one line per assistant |
 | `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / `onReducedMotionChange` / `testState`, never `registerHotReload` |
 | `content/rules/blit-integer-coords.md` | Integer-coordinate rule (`Vector2i` / `Rect2i`) |

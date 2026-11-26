@@ -281,3 +281,175 @@ test('embeds public files referenced from HTML in a game with a non-root base', 
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+/** Install a stand-in engine package so the game can import 'blit386'. */
+function installEngine(root, version, engine = join(root, 'node_modules', 'blit386')) {
+    mkdirSync(join(engine, 'dist'), { recursive: true });
+    writeFileSync(
+        join(engine, 'package.json'),
+        JSON.stringify({
+            name: 'blit386',
+            version,
+            type: 'module',
+            exports: { '.': { import: './dist/blit386.js', require: './dist/blit386.cjs' } },
+        }),
+    );
+    // A dist/package.json of its own, as some builds ship, must not be mistaken for the engine's.
+    writeFileSync(join(engine, 'dist', 'package.json'), '{"type":"module"}');
+    const source = "export const BT = { marker: 'ENGINE_MARKER_51734' };\n";
+    writeFileSync(join(engine, 'dist', 'blit386.js'), source);
+    writeFileSync(join(engine, 'dist', 'blit386.cjs'), "exports.BT = { marker: 'ENGINE_MARKER_51734' };\n");
+    writeFileSync(join(root, 'main.js'), "import { BT } from 'blit386'; document.body.dataset.value = BT.marker;");
+    return Buffer.byteLength(source);
+}
+
+test('--engine cdn imports the installed engine version from jsDelivr and reports both sizes', () => {
+    const root = game();
+    try {
+        const engineBytes = installEngine(root, '9.8.7');
+        const inline = run(root, '--single');
+        assert.equal(inline.status, 0, inline.output);
+        assert.match(readFileSync(join(root, 'dist', 'bundle.html'), 'utf8'), /ENGINE_MARKER_51734/);
+
+        const result = run(root, '--single', '--engine', 'cdn');
+        assert.equal(result.status, 0, result.output);
+        const html = readFileSync(join(root, 'dist', 'bundle.html'), 'utf8');
+        assert.match(html, /from"https:\/\/cdn\.jsdelivr\.net\/npm\/blit386@9\.8\.7\/dist\/blit386\.js"/);
+        assert.doesNotMatch(html, /ENGINE_MARKER_51734/);
+        const bytes = Buffer.byteLength(html);
+        assert.match(result.output, new RegExp(`${bytes} bytes`));
+        assert.match(result.output, new RegExp(`${bytes + engineBytes} bytes`));
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--engine cdn fails without an installed engine or with a version jsDelivr cannot pin', () => {
+    const root = game();
+    try {
+        let result = run(root, '--single', '--engine', 'cdn');
+        assert.notEqual(result.status, 0);
+        assert.match(result.output, /blit386/);
+        installEngine(root, '9.8.7');
+        rmSync(join(root, 'node_modules', 'blit386', 'dist', 'blit386.js'));
+        result = run(root, '--single', '--engine', 'cdn');
+        assert.notEqual(result.status, 0);
+        assert.match(result.output, /Run npm install/);
+        installEngine(root, 'workspace:*');
+        result = run(root, '--single', '--engine', 'cdn');
+        assert.notEqual(result.status, 0);
+        assert.match(result.output, /workspace:\*/);
+        assert.equal(existsSync(join(root, 'dist', 'bundle.html')), false);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--out writes another file in dist/ and rejects paths outside it', () => {
+    const root = game();
+    try {
+        const result = run(root, '--single', '--out', 'demo.html');
+        assert.equal(result.status, 0, result.output);
+        assert.ok(existsSync(join(root, 'dist', 'demo.html')));
+        assert.equal(existsSync(join(root, 'dist', 'bundle.html')), false);
+        assert.match(result.output, /dist\/demo\.html/);
+        for (const out of ['../index.html', 'sub/demo.html', 'demo.txt', '.html', 'C:demo.html']) {
+            const rejected = run(root, '--single', '--out', out);
+            assert.notEqual(rejected.status, 0, out);
+            assert.match(rejected.output, /--out/);
+        }
+        assert.match(readFileSync(join(root, 'index.html'), 'utf8'), /<!doctype html>/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--title replaces the page title or adds one', () => {
+    const root = game();
+    try {
+        let result = run(root, '--single', '--title', 'Fish & <Chips>');
+        assert.equal(result.status, 0, result.output);
+        let html = readFileSync(join(root, 'dist', 'bundle.html'), 'utf8');
+        assert.equal(html.match(/<title>/g)?.length, 1);
+        assert.match(html, /<title>Fish &amp; &lt;Chips&gt;<\/title>/);
+
+        const page = readFileSync(join(root, 'index.html'), 'utf8');
+        writeFileSync(join(root, 'index.html'), page.replace('<head>', '<head><title>Old</title>'));
+        result = run(root, '--single', '--title', 'New');
+        assert.equal(result.status, 0, result.output);
+        html = readFileSync(join(root, 'dist', 'bundle.html'), 'utf8');
+        assert.equal(html.match(/<title>/g)?.length, 1);
+        assert.match(html, /<title>New<\/title>/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('rejects unknown options and engine modes without writing output', () => {
+    const root = game();
+    try {
+        for (const args of [
+            ['--single', '--engine', 'remote'],
+            ['--single', '--splash'],
+            ['--single', 'extra'],
+        ]) {
+            const result = run(root, ...args);
+            assert.notEqual(result.status, 0, args.join(' '));
+            assert.match(result.output, /blit bundle --single/);
+        }
+        assert.equal(existsSync(join(root, 'dist', 'bundle.html')), false);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--title leaves an inline SVG title alone and titles the page', () => {
+    const root = game();
+    try {
+        const page = readFileSync(join(root, 'index.html'), 'utf8');
+        writeFileSync(join(root, 'index.html'), page.replace('<body>', '<body><svg><title>Logo tip</title></svg>'));
+        const result = run(root, '--single', '--title', 'Demo');
+        assert.equal(result.status, 0, result.output);
+        const html = readFileSync(join(root, 'dist', 'bundle.html'), 'utf8');
+        assert.match(html, /<head>.*<title>Demo<\/title>.*<\/head>/s);
+        assert.match(html, /<svg><title>Logo tip<\/title><\/svg>/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--out replaces an earlier bundle but never another file in dist/', () => {
+    const root = game();
+    try {
+        writeFileSync(join(root, 'dist', 'index.html'), 'hosted build');
+        const refused = run(root, '--single', '--out', 'index.html');
+        assert.notEqual(refused.status, 0);
+        assert.match(refused.output, /not a file blit bundle wrote/);
+        assert.equal(readFileSync(join(root, 'dist', 'index.html'), 'utf8'), 'hosted build');
+
+        assert.equal(run(root, '--single', '--out', 'demo.html').status, 0);
+        const again = run(root, '--single', '--out', 'demo.html', '--title', 'Again');
+        assert.equal(again.status, 0, again.output);
+        assert.match(readFileSync(join(root, 'dist', 'demo.html'), 'utf8'), /<title>Again<\/title>/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('--engine cdn refuses a linked engine, which jsDelivr may not have', () => {
+    const root = game();
+    // A workspace or `npm link` engine: a real folder outside any node_modules, symlinked in.
+    const linked = mkdtempSync(join(tmpdir(), 'blit-engine-'));
+    try {
+        installEngine(root, '9.8.7', linked);
+        mkdirSync(join(root, 'node_modules'));
+        symlinkSync(linked, join(root, 'node_modules', 'blit386'));
+        const result = run(root, '--single', '--engine', 'cdn');
+        assert.notEqual(result.status, 0);
+        assert.match(result.output, /linked copy/);
+        assert.equal(existsSync(join(root, 'dist', 'bundle.html')), false);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+        rmSync(linked, { recursive: true, force: true });
+    }
+});
